@@ -43,7 +43,7 @@ export default function DirectorLoginPage() {
 
         localStorage.setItem("directorToken", data.token)
 
-        router.push("/director/start-session")
+        router.push("/director/events")
     }
 
     async function handleCreate(e: React.FormEvent) {

@@ -20,7 +20,7 @@ export function createDirectorSession(): string {
 
     // Insert into DB
     db.prepare(`
-    INSERT INTO sessions (token, director)
+    INSERT INTO loginsessions (token, director)
     VALUES (?, ?)
   `).run(token, 1); // 1 = director
 
@@ -30,11 +30,11 @@ export function createDirectorSession(): string {
 /**
  * Get a session by token
  */
-export function getSession(token: string | undefined): DirectorSession | null {
+export function getDirectorSession(token: string | undefined): DirectorSession | null {
     if (!token) return null;
 
     // Tell TS the returned row type
-    const row = db.prepare("SELECT * FROM sessions WHERE token = ?").get(token) as SessionRow | undefined;
+    const row = db.prepare("SELECT * FROM loginsessions WHERE token = ?").get(token) as SessionRow | undefined;
     if (!row) return null;
 
     return {
@@ -45,6 +45,6 @@ export function getSession(token: string | undefined): DirectorSession | null {
 /**
  * Optional: delete session (logout)
  */
-export function deleteSession(token: string) {
-    db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+export function deleteDirectorSession(token: string) {
+    db.prepare("DELETE FROM loginsessions WHERE token = ?").run(token);
 }

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE IF NOT EXISTS loginsessions (
     token TEXT PRIMARY KEY,
     director INTEGER NOT NULL -- 0 = false, 1 = true
 );
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 CREATE TABLE IF NOT EXISTS events (
-    id INTEGER PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     event_name TEXT,
     event_date TEXT,
     director TEXT,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
-    id INTEGER PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     event_id INTEGER,
     session_number INTEGER,
     movement_type TEXT,
