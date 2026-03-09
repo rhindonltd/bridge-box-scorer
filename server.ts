@@ -1,7 +1,6 @@
 import next from "next";
 import { createServer } from "http";
-import { startSocketServer } from "./websocket";
-import db from "../db"; // ensures DB is initialized
+import { startSocketServer } from "@/server/websocket"; // ensures DB is initialized
 
 const port = 3000;
 const dev = false;
@@ -20,7 +19,4 @@ const handle = app.getRequestHandler();
     server.listen(port, () => {
         console.log(`Next.js + Socket.IO server running on http://localhost:${port}`);
     });
-
-    // Example: broadcast new result to table 3
-    // io.to("table:3").emit("traveller_update", { board: 7, score: 620 });
 })();

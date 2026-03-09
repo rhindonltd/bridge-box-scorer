@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
+import db from "@/db/index";
 
 export function initDatabase(): Database.Database {
     // Ensure the 'data' folder exists
@@ -20,6 +21,8 @@ export function initDatabase(): Database.Database {
 
     // Execute schema
     db.exec(schemaSQL);
+
+    db.prepare(`INSERT OR REPLACE INTO settings (setting_key, setting_value) VALUES ('session_started','false')`).run()
 
     console.log("Database initialized successfully");
 

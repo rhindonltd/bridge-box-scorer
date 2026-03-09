@@ -1,10 +1,12 @@
-# total -> 324
+# total -> 345
 
-# MIT - 273
+# MIT - 293
 
 # Apache-2.0 - 14
 
 # LGPL-3.0-or-later - 1
+
+# Python-2.0 - 1
 
 # MPL-2.0 - 2
 
@@ -50,6 +52,12 @@
  1. https://github.com/toyobayashi/emnapi
  2. MIT
 
+# @esbuild/darwin-arm64@0.27.3
+
+
+ 1. https://github.com/evanw/esbuild
+ 2. MIT
+
 # @eslint-community/eslint-utils@4.9.1
 
 
@@ -62,11 +70,23 @@
  1. https://github.com/eslint-community/regexpp
  2. MIT
 
-# @eslint/config-array@0.23.3
+# @eslint/config-array@0.21.2
 
 
  1. https://github.com/eslint/rewrite
  2. Apache-2.0
+
+# @eslint/eslintrc@3.3.5
+
+
+ 1. https://github.com/eslint/eslintrc
+ 2. MIT
+
+# @eslint/js@9.39.4
+
+
+ 1. https://github.com/eslint/eslint
+ 2. MIT
 
 # @humanfs/core@0.19.1
 
@@ -194,7 +214,7 @@
  1. https://github.com/toyobayashi/wasm-util
  2. MIT
 
-# @types/better-sqlite3@7.6.13
+# @types/bcrypt@6.0.0
 
 
  1. https://github.com/DefinitelyTyped/DefinitelyTyped
@@ -236,11 +256,23 @@
  1. https://github.com/ajv-validator/ajv
  2. MIT
 
+# ansi-styles@4.3.0
+
+
+ 1. https://github.com/chalk/ansi-styles
+ 2. MIT
+
 # arg@4.1.3
 
 
  1. https://github.com/zeit/arg
  2. MIT
+
+# argparse@2.0.1
+
+
+ 1. https://github.com/nodeca/argparse
+ 2. Python-2.0
 
 # aria-query@5.3.2
 
@@ -350,6 +382,12 @@
  1. https://github.com/web-platform-dx/baseline-browser-mapping
  2. Apache-2.0
 
+# bcrypt@6.0.0
+
+
+ 1. https://github.com/kelektiv/node.bcrypt.js
+ 2. MIT
+
 # better-sqlite3@12.6.2
 
 
@@ -410,11 +448,23 @@
  1. https://github.com/ljharb/call-bound
  2. MIT
 
+# callsites@3.1.0
+
+
+ 1. https://github.com/sindresorhus/callsites
+ 2. MIT
+
 # caniuse-lite@1.0.30001777
 
 
  1. https://github.com/browserslist/caniuse-lite
  2. CC-BY-4.0
+
+# chalk@4.1.2
+
+
+ 1. https://github.com/chalk/chalk
+ 2. MIT
 
 # chownr@1.1.4
 
@@ -426,6 +476,18 @@
 
 
  1. 
+ 2. MIT
+
+# color-convert@2.0.1
+
+
+ 1. https://github.com/Qix-/color-convert
+ 2. MIT
+
+# color-name@1.1.4
+
+
+ 1. https://github.com/colorjs/color-name
  2. MIT
 
 # concat-map@0.0.1
@@ -578,7 +640,7 @@
  1. https://github.com/mafintosh/end-of-stream
  2. MIT
 
-# engine.io-parser@5.2.3
+# engine.io-client@6.6.4
 
 
  1. https://github.com/socketio/socket.io
@@ -680,7 +742,7 @@
  1. https://github.com/jsx-eslint/eslint-plugin-react
  2. MIT
 
-# eslint-scope@9.1.2
+# eslint-scope@8.4.0
 
 
  1. https://github.com/eslint/js
@@ -691,12 +753,6 @@
 
  1. https://github.com/eslint/eslint-visitor-keys
  2. Apache-2.0
-
-# eslint@10.0.3
-
-
- 1. https://github.com/eslint/eslint
- 2. MIT
 
 # esquery@1.7.0
 
@@ -812,6 +868,12 @@
  1. https://github.com/mafintosh/fs-constants
  2. MIT
 
+# fsevents@2.3.3
+
+
+ 1. https://github.com/fsevents/fsevents
+ 2. MIT
+
 # function-bind@1.1.2
 
 
@@ -878,7 +940,7 @@
  1. https://github.com/gulpjs/glob-parent
  2. ISC
 
-# globals@16.4.0
+# globals@14.0.0
 
 
  1. https://github.com/sindresorhus/globals
@@ -906,6 +968,12 @@
 
 
  1. https://github.com/ljharb/has-bigints
+ 2. MIT
+
+# has-flag@4.0.0
+
+
+ 1. https://github.com/sindresorhus/has-flag
  2. MIT
 
 # has-property-descriptors@1.0.2
@@ -954,6 +1022,12 @@
 
 
  1. https://github.com/kaelzhang/node-ignore
+ 2. MIT
+
+# import-fresh@3.3.1
+
+
+ 1. https://github.com/sindresorhus/import-fresh
  2. MIT
 
 # imurmurhash@0.1.4
@@ -1166,6 +1240,12 @@
  1. https://github.com/lydell/js-tokens
  2. MIT
 
+# js-yaml@4.1.1
+
+
+ 1. https://github.com/nodeca/js-yaml
+ 2. MIT
+
 # jsesc@3.1.0
 
 
@@ -1236,6 +1316,12 @@
 
 
  1. https://github.com/sindresorhus/locate-path
+ 2. MIT
+
+# lodash.merge@4.6.2
+
+
+ 1. https://github.com/lodash/lodash
  2. MIT
 
 # loose-envify@1.4.0
@@ -1358,10 +1444,22 @@
  1. https://github.com/electron/node-abi
  2. MIT
 
+# node-addon-api@8.6.0
+
+
+ 1. https://github.com/nodejs/node-addon-api
+ 2. MIT
+
 # node-exports-info@1.6.0
 
 
  1. https://github.com/inspect-js/node-exports-info
+ 2. MIT
+
+# node-gyp-build@4.8.4
+
+
+ 1. https://github.com/prebuild/node-gyp-build
  2. MIT
 
 # node-releases@2.0.36
@@ -1446,6 +1544,12 @@
 
 
  1. https://github.com/sindresorhus/p-locate
+ 2. MIT
+
+# parent-module@1.0.1
+
+
+ 1. https://github.com/sindresorhus/parent-module
  2. MIT
 
 # path-exists@4.0.0
@@ -1548,6 +1652,12 @@
 
 
  1. https://github.com/es-shims/RegExp.prototype.flags
+ 2. MIT
+
+# resolve-from@4.0.0
+
+
+ 1. https://github.com/sindresorhus/resolve-from
  2. MIT
 
 # resolve-pkg-maps@1.0.0
@@ -1748,6 +1858,12 @@
  1. https://github.com/vercel/styled-jsx
  2. MIT
 
+# supports-color@7.2.0
+
+
+ 1. https://github.com/chalk/supports-color
+ 2. MIT
+
 # supports-preserve-symlinks-flag@1.0.0
 
 
@@ -1807,6 +1923,12 @@
 
  1. https://github.com/Microsoft/tslib
  2. 0BSD
+
+# tsx@4.21.0
+
+
+ 1. https://github.com/privatenumber/tsx
+ 2. MIT
 
 # tunnel-agent@0.6.0
 
@@ -1938,6 +2060,12 @@
 
 
  1. https://github.com/websockets/ws
+ 2. MIT
+
+# xmlhttprequest-ssl@2.1.2
+
+
+ 1. https://github.com/mjwwit/node-XMLHttpRequest
  2. MIT
 
 # yallist@3.1.1
