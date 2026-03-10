@@ -1,50 +1,68 @@
 'use client'
 
-import { useState, useRef, useEffect } from "react"
-import { io, Socket } from "socket.io-client"
+import { useState } from "react"
+import useSWR from "swr"
+import { fetcher } from "@/lib/fetcher"
+import { useDirectorStore } from "@/stores/directorStore"
+import { useDirectorSocket } from "@/hooks/useDirectorSocket"
+import {DirectorEvent } from "@/types/directorSocket";
 
 export default function DirectorEventsPage() {
     const [eventName, setEventName] = useState("")
     const [directorName, setDirectorName] = useState("")
     const [scoringType, setScoringType] = useState("MP_PAIRS")
 
-    const [eventsCreated, setEventsCreated] = useState<{ id: string; event_name: string; director: string; scoring_type: string; }[]>([])
-    const socketRef = useRef<Socket | null>(null)
+    const events = useDirectorStore((state) => state.events)
+    const addEvent = useDirectorStore((state) => state.addEvent)
+    const updateEvent = useDirectorStore((state) => state.updateEvent)
 
-    useEffect(() => {
-        const token = localStorage.getItem("directorToken")
-        if (!token) {
-            console.error("No director token found")
-            return
-        }
+    const socketRef = useDirectorSocket()
 
-        const socket = io("http://localhost:3000", {
-            auth: { token },
-        })
+    // Fetch existing events from API
+    useSWR<DirectorEvent[]>("/api/director/events", fetcher, {
+        onSuccess: (data) => {
+            if (data) {
+                useDirectorStore.getState().setEvents(data)
+            }
+        },
+    })
 
-        socketRef.current = socket
-
-        // Listen for confirmation of created events
-        socket.on("event:created", (newEvent) => {
-            setEventsCreated((prev) => [...prev, newEvent])
-        })
-
-        return () => {
-            socket.disconnect()
-        }
-    }, [])
-
-    const createEvent = () => {
+    const createEvent = (e: React.FormEvent) => {
+        e.preventDefault()
         if (!eventName.trim()) return
 
-        const newEvent = {
+        const clientId = Math.random().toString(36).substring(2, 9)
+
+        // Optimistic event with temporary ID
+        const tempEvent: DirectorEvent & { clientId: string; pending: boolean } = {
+            id: clientId, // temporary id
+            clientId,
+            pending: true,
             event_name: eventName.trim(),
             director: directorName.trim(),
-            scoringType: scoringType.trim(),
+            scoring_type: scoringType.trim(),
         }
 
-        // Emit the event to the server
-        socketRef.current?.emit("director:createEvent", newEvent)
+        addEvent(tempEvent)
+
+        const payload = {
+            event_name: tempEvent.event_name,
+            director: tempEvent.director,
+            scoring_type: tempEvent.scoring_type,
+        }
+
+        // Emit to server with acknowledgement
+        socketRef.current?.emit(
+            "director:createEvent",
+            payload,
+            (response: { success: boolean; error?: string }) => {
+                if (!response.success) {
+                    updateEvent(clientId, { pending: false, error: response.error ?? "Failed to create event" })
+                } else {
+                    updateEvent(clientId, { pending: false })
+                }
+            }
+        )
 
         setEventName("")
         setDirectorName("")
@@ -72,23 +90,21 @@ export default function DirectorEventsPage() {
                 />
                 <input
                     type="text"
-                    placeholder="MP_PAIRS"
+                    placeholder="Scoring Type"
                     value={scoringType}
                     onChange={(e) => setScoringType(e.target.value)}
                     style={input}
                 />
-                <button style={button}>
-                    Create
-                </button>
+                <button style={button}>Create</button>
             </form>
 
-            {eventsCreated.length > 0 && (
+            {events.length > 0 && (
                 <div>
                     <h2>Events Created</h2>
                     <ul>
-                        {eventsCreated.map((event) => (
-                            <li key={event.id}>
-                                {event.event_name}
+                        {events.map((e) => (
+                            <li key={e.id ?? e.clientId}>
+                                {e.event_name} {e.pending && "(sending...)"} {e.error && `(Error: ${e.error})`}
                             </li>
                         ))}
                     </ul>
@@ -98,28 +114,29 @@ export default function DirectorEventsPage() {
     )
 }
 
+// Styles
 const container: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
     height: "100vh",
-    fontFamily: "sans-serif"
+    fontFamily: "sans-serif",
 }
 
 const form: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
     gap: "10px",
-    width: "260px"
+    width: "260px",
 }
 
 const input: React.CSSProperties = {
     padding: "10px",
-    fontSize: "16px"
+    fontSize: "16px",
 }
 
 const button: React.CSSProperties = {
     padding: "10px",
-    fontSize: "16px"
+    fontSize: "16px",
 }

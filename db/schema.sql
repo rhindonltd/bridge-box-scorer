@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS events (
     id TEXT PRIMARY KEY,
     event_name TEXT,
-    event_date TEXT,
+    event_date DATETIME,
     director TEXT,
     scoring_type TEXT,
     created_at DATETIME
@@ -19,52 +19,36 @@ CREATE TABLE IF NOT EXISTS events (
 
 CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,
-    event_id INTEGER,
-    session_number INTEGER,
-    movement_type TEXT,
-    boards_per_round INTEGER,
-    rounds INTEGER,
+    event_id TEXT,
+    session_name TEXT,
+    started INTEGER,
     FOREIGN KEY (event_id) REFERENCES events (id)
 );
 
+CREATE TABLE IF NOT EXISTS sections (
+    id TEXT PRIMARY KEY,
+    session_id TEXT,
+    section_name TEXT,
+    movement_type TEXT,
+    boards_per_round INTEGER,
+    rounds INTEGER,
+    bridge_tables INTEGER,
+    FOREIGN KEY (session_id) REFERENCES sessions (id)
+);
+
 CREATE TABLE IF NOT EXISTS pairs (
-    id INTEGER PRIMARY KEY,
-    event_id INTEGER,
+    section_id TEXT,
     pair_number INTEGER,
     player1 TEXT,
     player2 TEXT,
     direction TEXT,
-    FOREIGN KEY (event_id) REFERENCES events (id)
-);
-
-CREATE TABLE IF NOT EXISTS tables (
-    id INTEGER PRIMARY KEY,
-    session_id INTEGER,
-    table_number INTEGER,
-    FOREIGN KEY (session_id) REFERENCES sessions (id)
-);
-
-CREATE TABLE IF NOT EXISTS boards (
-    id INTEGER PRIMARY KEY,
-    session_id INTEGER,
-    board_number INTEGER,
-    dealer TEXT,
-    vulnerability TEXT,
-    FOREIGN KEY (session_id) REFERENCES sessions (id)
-);
-
-CREATE TABLE IF NOT EXISTS rounds (
-    id INTEGER PRIMARY KEY,
-    session_id INTEGER,
-    round_number INTEGER,
-    start_board INTEGER,
-    end_board INTEGER,
-    FOREIGN KEY (session_id) REFERENCES sessions (id)
+    PRIMARY KEY (section_id, pair_number, direction),
+    FOREIGN KEY (section_id) REFERENCES sections (id)
 );
 
 CREATE TABLE IF NOT EXISTS results (
-    id INTEGER PRIMARY KEY,
-    session_id INTEGER,
+    section_id TEXT,
+    round_number INTEGER,
     board_number INTEGER,
     table_number INTEGER,
     ns_pair INTEGER,
@@ -72,17 +56,20 @@ CREATE TABLE IF NOT EXISTS results (
     contract TEXT,
     declarer TEXT,
     tricks INTEGER,
-    score INTEGER,
+    score TEXT,  -- to allow adjusted score
     created_at DATETIME,
-    FOREIGN KEY (session_id) REFERENCES sessions (id)
+    PRIMARY KEY (section_id, round_number, board_number, table_number),
+    FOREIGN KEY (section_id) REFERENCES sections (id)
 );
 
 CREATE TABLE IF NOT EXISTS movements (
-    id INTEGER PRIMARY KEY,
-    session_id INTEGER,
+    section_id TEXT,
     round_number INTEGER,
     table_number INTEGER,
     ns_pair INTEGER,
     ew_pair INTEGER,
-    board_group INTEGER
+    start_board INTEGER,
+    end_board INTEGER,
+    PRIMARY KEY (section_id, round_number, table_number),
+    FOREIGN KEY (section_id) REFERENCES sections (id)
 );

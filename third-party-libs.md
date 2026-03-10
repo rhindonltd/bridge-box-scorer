@@ -1,6 +1,6 @@
-# total -> 345
+# total -> 348
 
-# MIT - 293
+# MIT - 296
 
 # Apache-2.0 - 14
 
@@ -596,6 +596,12 @@
 
 
  1. https://github.com/ljharb/define-properties
+ 2. MIT
+
+# dequal@2.0.3
+
+
+ 1. https://github.com/lukeed/dequal
  2. MIT
 
 # detect-libc@2.1.2
@@ -1870,6 +1876,12 @@
  1. https://github.com/inspect-js/node-supports-preserve-symlinks-flag
  2. MIT
 
+# swr@2.4.1
+
+
+ 1. https://github.com/vercel/swr
+ 2. MIT
+
 # tapable@2.3.0
 
 
@@ -2096,4 +2108,10 @@
 
 
  1. https://github.com/colinhacks/zod
+ 2. MIT
+
+# zustand@5.0.11
+
+
+ 1. https://github.com/pmndrs/zustand
  2. MIT

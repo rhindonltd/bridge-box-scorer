@@ -9,10 +9,7 @@ export function startSocketServer(server: http.Server) {
     });
 
     io.use((socket, next) => {
-        const token = socket.handshake.auth.token;
-        console.log("token: ", token);
-        const session = getDirectorSession(token);
-        socket.data.isDirector = session?.director || false;
+        socket.data.isDirector = getDirectorSession(socket.handshake.auth.token)?.director || false;
         next();
     });
 
@@ -49,10 +46,49 @@ export function startSocketServer(server: http.Server) {
 
             console.log("Event: " + JSON.stringify(event))
 
+            const eventId = crypto.randomUUID();
+            const sessionId = crypto.randomUUID();
+            const sectionId = crypto.randomUUID();
+
+            // EVENT
             db.prepare(`
                 INSERT INTO events (id, event_name, event_date, director, scoring_type, created_at)
-                VALUES ('${crypto.randomUUID()}', '${event.event_name}', '${new Date().toISOString()}', '${event.director}', '${event.scoring_type}', '${new Date().toISOString()}')
+                VALUES ('${eventId}', '${event.event_name}', '${new Date().toISOString()}', '${event.director}', '${event.scoring_type}', '${new Date().toISOString()}')
             `).run()
+
+            // SESSION
+            db.prepare(`
+                INSERT INTO sessions (id, event_id, session_name, started)
+                VALUES ('${sessionId}', '${eventId}', '1', 0)
+            `).run()
+
+            // SECTION
+            db.prepare(`
+                INSERT INTO sections (id, session_id, section_name, movement_type, boards_per_round, rounds, bridge_tables)
+                VALUES ('${sectionId}', '${sessionId}', 'A', 'Mitchell', 2, 12, 10)
+            `).run()
+
+            // PAIR
+            db.prepare(`
+                INSERT INTO pairs (section_id, pair_number, player1, player2, direction)
+                VALUES ('${sectionId}', '1', '', '', 'NS')
+            `).run()
+
+            db.prepare(`
+                INSERT INTO pairs (section_id, pair_number, player1, player2, direction)
+                VALUES ('${sectionId}', '2', '', '', 'NS')
+            `).run()
+
+            db.prepare(`
+                INSERT INTO pairs (section_id, pair_number, player1, player2, direction)
+                VALUES ('${sectionId}', '1', '', '', 'EW')
+            `).run()
+
+            db.prepare(`
+                INSERT INTO pairs (section_id, pair_number, player1, player2, direction)
+                VALUES ('${sectionId}', '2', '', '', 'EW')
+            `).run()
+
             io.emit("event:created", event)
         });
 
