@@ -7,12 +7,14 @@ type LobbyState = {
     sectionId: string | null
     tableId: number | null
     direction: 'NS' | 'EW' | null
+    player1: string | null
+    player2: string | null
 
     selectEvent: (id: string) => void
     selectSession: (id: string) => void
     selectSection: (id: string) => void
-    selectTable: (id: number) => void
-    selectDirection: (direction: 'NS' | 'EW') => void
+    selectTableAndDirection: (id: number, direction: 'NS' | 'EW') => void
+    selectPlayers: (player1: string, player2: string) => void
 }
 
 export const useLobbyStore = create<LobbyState>()(
@@ -23,6 +25,8 @@ export const useLobbyStore = create<LobbyState>()(
             sectionId: null,
             tableId: null,
             direction: null,
+            player1: null,
+            player2: null,
 
             selectEvent: (id) =>
                 set({
@@ -30,7 +34,9 @@ export const useLobbyStore = create<LobbyState>()(
                     sessionId: null,
                     sectionId: null,
                     tableId: null,
-                    direction: null
+                    direction: null,
+                    player1: null,
+                    player2: null,
                 }),
 
             selectSession: (id) =>
@@ -38,19 +44,23 @@ export const useLobbyStore = create<LobbyState>()(
                     sessionId: id,
                     sectionId: null,
                     tableId: null,
-                    direction: null
+                    direction: null,
+                    player1: null,
+                    player2: null,
                 }),
 
             selectSection: (id) =>
                 set({
                     sectionId: id,
                     tableId: null,
-                    direction: null
+                    direction: null,
+                    player1: null,
+                    player2: null,
                 }),
 
-            selectTable: (id) => set({ tableId: id }),
+            selectTableAndDirection: (tableId, direction) => set({ tableId, direction }),
 
-            selectDirection: (direction: 'NS' | 'EW') => set({ direction }),
+            selectPlayers: (player1, player2) => set({ player1, player2 })
         }),
         {
             name: "lobby-storage"

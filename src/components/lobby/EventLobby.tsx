@@ -14,6 +14,8 @@ import { Event } from "@/model/event"
 import { Section } from "@/model/section"
 import { Session } from "@/model/session";
 import EnterPlayerNames from "@/components/lobby/EnterPlayerNames";
+import RoundInfo from "@/components/lobby/RoundInfo";
+import EnterContract from "@/components/lobby/EnterContract";
 
 export default function EventLobby() {
 
@@ -25,11 +27,12 @@ export default function EventLobby() {
         sectionId,
         tableId,
         direction,
+        player1,
         selectEvent,
         selectSession,
         selectSection,
-        selectTable,
-        selectDirection
+        selectTableAndDirection,
+        selectPlayers
     } = useLobbyStore()
 
     const { data: events } = useSWR<Event[]>("/api/events", fetcher)
@@ -47,32 +50,38 @@ export default function EventLobby() {
     const selectedSection = sections?.find(s => s.id === sectionId)
 
     return (
-        <div style={{ padding: 20 }}>
-            {tableId && direction && (
-                <EnterPlayerNames direction={direction} submitPlayerNames={(x, y) => {
+        <div>
+            {player1 && (
+                // <RoundInfo roundNumber={1} tableNumber={2} boards={[1,2,3]} players={{
+                //     N: { firstName: 'David', lastName: 'Collier' },
+                //     S: { firstName: 'Jacqui', lastName: 'Collier' },
+                //     E: { firstName: 'Peter', lastName: 'Collier' },
+                //     W: { firstName: 'Andrew', lastName: 'Robson' },
+                // }} onEnterRound = {() => {}} />
 
-                }} />
+                <EnterContract />
+            )}
+
+            {tableId && direction && !player1 && (
+                <EnterPlayerNames direction={direction} submitPlayerNames={selectPlayers} />
             )}
 
             {!eventId && (
                 <SelectEvent events={events ?? []} selectEvent={selectEvent} />
             )}
 
-            {eventId && !sessionId && (
+            {!sessionId && (
                 <SelectSession sessions={sessions ?? []} selectSession={selectSession} />
             )}
 
-            {sessionId && !sectionId && (
+            {!sectionId && (
                 <SelectSection sections={sections ?? []} selectSection={selectSection} />
             )}
 
-            {sectionId && selectedSection && (
+            {selectedSection && !tableId && (
                 <SelectTable
                     tables={selectedSection.bridge_tables}
-                    selectTable={(table, direction) => {
-                        selectTable(table);
-                        selectDirection(direction)
-                    }}
+                    selectTable={selectTableAndDirection}
                 />
             )}
         </div>

@@ -5,7 +5,7 @@ import EventLobby from "@/components/lobby/EventLobby";
 export default function PlayerLobbyPage() {
 
     return (
-        <div style={{ maxWidth: 600, margin: '0 auto', padding: 20 }}>
+        <div style={{ margin: '0 auto' }}>
             <EventLobby />
         </div>
     )

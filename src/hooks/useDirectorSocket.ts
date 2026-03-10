@@ -18,7 +18,7 @@ export function useDirectorSocket() {
         socketRef.current = socket
 
         socket.on("event:created", (serverEvent: DirectorEvent & { clientId?: string }) => {
-            mutate("/api/director/events", (events: (DirectorEvent & { clientId?: string })[] = []) => {
+            mutate("/api/events", (events: (DirectorEvent & { clientId?: string })[] = []) => {
                 const index = events.findIndex((e) => e.clientId === serverEvent.clientId)
                 if (index !== -1) {
                     const newEvents = [...events]
