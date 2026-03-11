@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server"
-import db from "@/db"
+import { NextResponse } from "next/server";
+import db from "@/db";
 
 export async function POST() {
-
-    db.prepare(`
+  db.prepare(
+    `
     INSERT OR REPLACE INTO settings (key,value)
     VALUES ('session_started','true')
-  `).run()
+  `,
+  ).run();
 
-    return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true });
 }

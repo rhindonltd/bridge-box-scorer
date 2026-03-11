@@ -1,3 +1,1 @@
-export default function BridgeResults() {
-
-}
+export default function BridgeResults() {}

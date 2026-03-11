@@ -1,4 +1,4 @@
 export type Event = {
-    id: string
-    event_name: string
-}
+  id: string;
+  event_name: string;
+};

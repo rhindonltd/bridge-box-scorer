@@ -8,15 +8,17 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 (async () => {
-    await app.prepare();
+  await app.prepare();
 
-    const server = createServer((req, res) => {
-        handle(req, res);
-    });
+  const server = createServer((req, res) => {
+    handle(req, res);
+  });
 
-    const io = startSocketServer(server);
+  const io = startSocketServer(server);
 
-    server.listen(port, () => {
-        console.log(`Next.js + Socket.IO server running on http://localhost:${port}`);
-    });
+  server.listen(port, () => {
+    console.log(
+      `Next.js + Socket.IO server running on http://localhost:${port}`,
+    );
+  });
 })();
