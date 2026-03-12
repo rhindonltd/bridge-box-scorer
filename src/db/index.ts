@@ -1,8 +1,15 @@
-// db/index.ts
-import { initDatabase } from "./initDatabase";
 import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import path from "path";
+import fs from "fs";
 
-// singleton DB instance
-const db: Database.Database = initDatabase();
+const dataDir = path.join(process.cwd(), "data");
 
-export default db;
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir);
+}
+
+const dbFile = path.join(dataDir, "bridge.db");
+const sqlite = new Database(dbFile);
+
+export const db = drizzle(sqlite);

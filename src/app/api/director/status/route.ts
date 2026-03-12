@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
-import { directorPasswordExists } from "@/server/auth/directorAuth";
+import { directorPasswordExists } from "@/db/queries/login-sessions";
 
 export async function GET() {
-  return NextResponse.json({
-    passwordSet: directorPasswordExists(),
-  });
+  try {
+    return NextResponse.json({
+      passwordSet: await directorPasswordExists(),
+    });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { success: false, error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

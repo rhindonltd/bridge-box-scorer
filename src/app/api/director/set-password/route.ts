@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import {
-  setDirectorPassword,
   directorPasswordExists,
-} from "@/server/auth/directorAuth";
+  setDirectorPassword,
+} from "@/db/queries/login-sessions";
 
 export async function POST(req: Request) {
   const { password } = await req.json();
 
-  if (directorPasswordExists()) {
-    return NextResponse.json(
-      { error: "Password already set" },
-      { status: 400 },
-    );
+  if (await directorPasswordExists()) {
+    return NextResponse.json({ error: "Password already set" }, { status: 400 });
   }
 
   await setDirectorPassword(password);

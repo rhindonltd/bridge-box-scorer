@@ -7,15 +7,11 @@ import { useLobbyStore } from "@/stores/lobbyStore";
 import SelectEvent from "@/components/lobby/SelectEvent";
 import SelectSession from "@/components/lobby/SelectSession";
 import SelectSection from "@/components/lobby/SelectSection";
-import SelectTable from "@/components/lobby/SelectTable";
 import { useLobbySocket } from "@/hooks/useLobbySocket";
 
-import { Event } from "@/model/event";
-import { Section } from "@/model/section";
-import { Session } from "@/model/session";
 import EnterPlayerNames from "@/components/lobby/EnterPlayerNames";
-import RoundInfo from "@/components/lobby/RoundInfo";
 import EnterContract from "@/components/lobby/EnterContract";
+import { BridgeEvent, BridgeSection, BridgeSession } from "@/db/schema";
 
 export default function EventLobby() {
   const socketRef = useLobbySocket();
@@ -30,18 +26,17 @@ export default function EventLobby() {
     selectEvent,
     selectSession,
     selectSection,
-    selectTableAndDirection,
     selectPlayers,
   } = useLobbyStore();
 
-  const { data: events } = useSWR<Event[]>("/api/events", fetcher);
+  const { data: events } = useSWR<BridgeEvent[]>("/api/events", fetcher);
 
-  const { data: sessions } = useSWR<Session[]>(
+  const { data: sessions } = useSWR<BridgeSession[]>(
     eventId ? `/api/events/${eventId}/sessions` : null,
     fetcher,
   );
 
-  const { data: sections } = useSWR<Section[]>(
+  const { data: sections } = useSWR<BridgeSection[]>(
     sessionId ? `/api/sessions/${sessionId}/sections` : null,
     fetcher,
   );
@@ -86,12 +81,12 @@ export default function EventLobby() {
         />
       )}
 
-      {selectedSection && !tableId && (
-        <SelectTable
-          tables={selectedSection.bridge_tables}
-          selectTable={selectTableAndDirection}
-        />
-      )}
+      {/*{selectedSection && !tableId && (*/}
+      {/*  <SelectTable*/}
+      {/*    tables={selectedSection.bridge_tables}*/}
+      {/*    selectTable={selectTableAndDirection}*/}
+      {/*  />*/}
+      {/*)}*/}
     </div>
   );
 }

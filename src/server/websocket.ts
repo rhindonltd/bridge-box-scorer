@@ -1,7 +1,9 @@
 import { Server } from "socket.io";
-import { getDirectorSession } from "@/server/auth/sessions";
 import http from "http";
-import db from "@/db";
+import { BridgeEvent } from "@/db/schema";
+import { isDirector } from "@/db/queries/login-sessions";
+import { createBridgeEvent } from "@/db/actions/create-bridge-event";
+import { startBridgeSection } from "@/db/actions/start-bridge-section";
 
 export function startSocketServer(server: http.Server) {
   const io = new Server(server, {
@@ -9,8 +11,7 @@ export function startSocketServer(server: http.Server) {
   });
 
   io.use((socket, next) => {
-    socket.data.isDirector =
-      getDirectorSession(socket.handshake.auth.token)?.director || false;
+    socket.data.isDirector = isDirector(socket.handshake.auth.token);
     next();
   });
 
@@ -40,84 +41,24 @@ export function startSocketServer(server: http.Server) {
     });
 
     // DIRECTOR EVENTS
-    socket.on("director:createEvent", (event) => {
+    socket.on("director:createEvent", (event: BridgeEvent) => {
       if (!socket.data.isDirector) {
         return;
       }
 
-      console.log("Event: " + JSON.stringify(event));
-
-      const eventId = crypto.randomUUID();
-      const sessionId = crypto.randomUUID();
-      const sectionId = crypto.randomUUID();
-
-      // EVENT
-      db.prepare(
-        `
-                INSERT INTO events (id, event_name, event_date, director, scoring_type, created_at)
-                VALUES ('${eventId}', '${event.event_name}', '${new Date().toISOString()}', '${event.director}', '${event.scoring_type}', '${new Date().toISOString()}')
-            `,
-      ).run();
-
-      // SESSION
-      db.prepare(
-        `
-                INSERT INTO sessions (id, event_id, session_name, started)
-                VALUES ('${sessionId}', '${eventId}', '1', 0)
-            `,
-      ).run();
-
-      // SECTION
-      db.prepare(
-        `
-                INSERT INTO sections (id, session_id, section_name, movement_type, boards_per_round, rounds, bridge_tables)
-                VALUES ('${sectionId}', '${sessionId}', 'A', 'Mitchell', 2, 12, 10)
-            `,
-      ).run();
-
-      // PAIR
-      db.prepare(
-        `
-                INSERT INTO pairs (section_id, pair_number, player1, player2, direction)
-                VALUES ('${sectionId}', '1', '', '', 'NS')
-            `,
-      ).run();
-
-      db.prepare(
-        `
-                INSERT INTO pairs (section_id, pair_number, player1, player2, direction)
-                VALUES ('${sectionId}', '2', '', '', 'NS')
-            `,
-      ).run();
-
-      db.prepare(
-        `
-                INSERT INTO pairs (section_id, pair_number, player1, player2, direction)
-                VALUES ('${sectionId}', '1', '', '', 'EW')
-            `,
-      ).run();
-
-      db.prepare(
-        `
-                INSERT INTO pairs (section_id, pair_number, player1, player2, direction)
-                VALUES ('${sectionId}', '2', '', '', 'EW')
-            `,
-      ).run();
-
-      io.emit("event:created", event);
+      createBridgeEvent(event).then(() => {
+        io.emit("event:created", event);
+      })
     });
 
-    socket.on("director:startSession", () => {
+    socket.on("director:startSession", (sectionId: string) => {
       if (!socket.data.isDirector) {
         return;
       }
-      db.prepare(
-        `
-                INSERT OR REPLACE INTO settings (setting_key, setting_value)
-                VALUES ('session_started','true')
-              `,
-      ).run();
-      io.emit("session:started");
+
+      startBridgeSection(sectionId).then(() => {
+        io.emit("session:started");
+      })
     });
 
     socket.on("director:startRound", () => {

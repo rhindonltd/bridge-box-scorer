@@ -1,7 +1,7 @@
-import { Session } from "@/model/session";
+import { BridgeSession } from "@/db/schema";
 
 interface SelectSessionProps {
-  sessions: Session[];
+  sessions: BridgeSession[];
   selectSession: (sessionId: string) => void;
 }
 
@@ -24,7 +24,7 @@ export default function SelectSession({
           {sessions.map((session) => (
             <li key={session.id}>
               <button onClick={() => selectSession(session.id)}>
-                {session.session_name}
+                {session.sessionName}
               </button>
             </li>
           ))}

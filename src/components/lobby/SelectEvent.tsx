@@ -1,7 +1,7 @@
-import { Event } from "@/model/event";
+import { BridgeEvent } from "@/db/schema";
 
 interface SelectEventProps {
-  events: Event[];
+  events: BridgeEvent[];
   selectEvent: (eventId: string) => void;
 }
 
@@ -17,7 +17,7 @@ export default function SelectEvent({ events, selectEvent }: SelectEventProps) {
           {events.map((event) => (
             <li key={event.id}>
               <button onClick={() => selectEvent(event.id)}>
-                {event.event_name}
+                {event.eventName}
               </button>
             </li>
           ))}

@@ -1,7 +1,7 @@
-import { Section } from "@/model/section";
+import { BridgeSection } from "@/db/schema";
 
 interface SelectSectionProps {
-  sections: Section[];
+  sections: BridgeSection[];
   selectSection: (sectionId: string) => void;
 }
 
@@ -24,7 +24,7 @@ export default function SelectSection({
           {sections.map((section) => (
             <li key={section.id}>
               <button onClick={() => selectSection(section.id)}>
-                {section.section_name}
+                {section.sectionName}
               </button>
             </li>
           ))}

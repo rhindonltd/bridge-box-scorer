@@ -1,24 +1,37 @@
 import { create } from "zustand";
-import { DirectorEvent, OptimisticDirectorEvent } from "@/types/directorSocket";
+import { BridgeEvent, BridgeSession, BridgeSection } from "@/db/schema";
 
 interface DirectorState {
-  events: OptimisticDirectorEvent[];
-  addEvent: (event: OptimisticDirectorEvent) => void;
-  updateEvent: (
-    clientId: string,
-    updates: Partial<OptimisticDirectorEvent>,
-  ) => void;
-  setEvents: (events: DirectorEvent[]) => void;
+  bridgeEvents: BridgeEvent[];
+  sessions: Record<string, BridgeSession[]>;
+  sections: Record<string, BridgeSection[]>;
+
+  addBridgeEvent: (event: BridgeEvent) => void;
+  updateBridgeEvent: (id: string, updates: Partial<BridgeEvent>) => void;
+  setBridgeEvents: (events: BridgeEvent[]) => void;
+
+  setSessionsForEvent: (eventId: string, sessions: BridgeSession[]) => void;
+  setSectionsForSession: (sessionId: string, sections: BridgeSection[]) => void;
 }
 
 export const useDirectorStore = create<DirectorState>((set) => ({
-  events: [],
-  addEvent: (event) => set((state) => ({ events: [...state.events, event] })),
-  updateEvent: (clientId, updates) =>
+  bridgeEvents: [],
+  sessions: {},
+  sections: {},
+
+  addBridgeEvent: (event) =>
+    set((state) => ({ bridgeEvents: [...state.bridgeEvents, event] })),
+  updateBridgeEvent: (id, updates) =>
     set((state) => ({
-      events: state.events.map((e) =>
-        e.clientId === clientId ? { ...e, ...updates } : e,
+      bridgeEvents: state.bridgeEvents.map((e) =>
+        e.id === id ? { ...e, ...updates } : e
       ),
     })),
-  setEvents: (events) => set({ events }),
+  setBridgeEvents: (events) => set({ bridgeEvents: events }),
+
+  setSessionsForEvent: (eventId, sessions) =>
+    set((state) => ({ sessions: { ...state.sessions, [eventId]: sessions } })),
+
+  setSectionsForSession: (sessionId, sections) =>
+    set((state) => ({ sections: { ...state.sections, [sessionId]: sections } })),
 }));

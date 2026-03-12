@@ -2,15 +2,15 @@ import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { useDirectorStore } from "@/stores/directorStore";
 import {
-  DirectorEvent,
   DirectorServerToClientEvents,
   DirectorClientToServerEvents,
 } from "@/types/directorSocket";
 import { mutate } from "swr";
+import { BridgeEvent } from "@/db/schema";
 
 export function useDirectorSocket() {
-  const addEvent = useDirectorStore((state) => state.addEvent);
-  const updateEvent = useDirectorStore((state) => state.updateEvent);
+  const addEvent = useDirectorStore((state) => state.addBridgeEvent);
+  const updateEvent = useDirectorStore((state) => state.updateBridgeEvent);
 
   const socketRef = useRef<Socket<
     DirectorServerToClientEvents,
@@ -26,12 +26,12 @@ export function useDirectorSocket() {
 
     socket.on(
       "event:created",
-      (serverEvent: DirectorEvent & { clientId?: string }) => {
+      (serverEvent: BridgeEvent) => {
         mutate(
           "/api/events",
-          (events: (DirectorEvent & { clientId?: string })[] = []) => {
+          (events: (BridgeEvent)[] = []) => {
             const index = events.findIndex(
-              (e) => e.clientId === serverEvent.clientId,
+              (e) => e.id === serverEvent.id,
             );
             if (index !== -1) {
               const newEvents = [...events];
