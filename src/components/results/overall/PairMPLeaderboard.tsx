@@ -5,7 +5,49 @@ interface Props {
   results: PairMPResult[];
 }
 
+export type RankedResult<T> = T & {
+  rank: number;
+  tied: boolean;
+};
+
+export function rankByPercentage<T extends { percentage: number }>(
+  rows: T[],
+): RankedResult<T>[] {
+  const ranked: RankedResult<T>[] = [];
+
+  let i = 0;
+
+  while (i < rows.length) {
+    const start = i;
+    const percentage = rows[i].percentage;
+
+    // Find how many rows share this percentage
+    while (
+      i < rows.length &&
+      Math.abs(rows[i].percentage - percentage) < 0.0001
+    ) {
+      i++;
+    }
+
+    const groupSize = i - start;
+    const rank = start + 1;
+    const tied = groupSize > 1;
+
+    for (let j = start; j < i; j++) {
+      ranked.push({
+        ...rows[j],
+        rank,
+        tied,
+      });
+    }
+  }
+
+  return ranked;
+}
+
 export function PairMPLeaderboard({ results }: Props) {
+  const rankedResults = rankByPercentage(results);
+
   return (
     <div className="p-2 overflow-x-auto max-w-3xl mx-auto">
       <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden text-sm shadow">
@@ -19,15 +61,13 @@ export function PairMPLeaderboard({ results }: Props) {
         </thead>
 
         <tbody>
-          {results.map((row, index) => {
-            const rank = index + 1;
-
+          {rankedResults.map((row) => {
             const highlight =
-              rank === 1
+              row.rank === 1
                 ? "bg-yellow-100 font-semibold"
-                : rank === 2
+                : row.rank === 2
                   ? "bg-gray-100"
-                  : rank === 3
+                  : row.rank === 3
                     ? "bg-orange-100"
                     : "even:bg-gray-50";
 
@@ -36,7 +76,9 @@ export function PairMPLeaderboard({ results }: Props) {
                 key={row.pairId}
                 className={`${highlight} hover:bg-blue-50 transition-colors`}
               >
-                <td className="px-3 py-2 text-center">{rank}</td>
+                <td className="px-3 py-2 text-center">
+                  {row.tied ? `${row.rank}=` : row.rank}
+                </td>
 
                 <td className="px-3 py-2 text-center font-medium">
                   {row.pairId}
