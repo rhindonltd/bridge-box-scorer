@@ -122,17 +122,18 @@ export function scoreMatchpoints(
     const averageRank = rank + (tiedCount - 1) / 2;
 
     // Total available MPs for this board
-    const baseMPs = 2 * (numberPlayed - 1);
+    const maxMatchPoints = 2 * (numberPlayed - 1);
 
     // NS matchpoints scaled with Neuberg correction
     const nsMatchPoints =
-      baseMPs - (averageRank * baseMPs) / (numberPlayed - 1);
-    const ewMatchPoints = baseMPs - nsMatchPoints;
+      maxMatchPoints - (averageRank * maxMatchPoints) / (numberPlayed - 1);
+    const ewMatchPoints = maxMatchPoints - nsMatchPoints;
 
     for (const entry of group) {
       result.push({
         ...entry.line,
         score: entry.score,
+        maxMatchPoints,
         nsMatchPoints,
         ewMatchPoints,
       });

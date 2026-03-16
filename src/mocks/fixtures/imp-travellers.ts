@@ -10,6 +10,20 @@ export const players: Map<string, Player[]> = new Map([
     ],
   ],
   [
+    "1:2",
+    [
+      { firstName: "David", lastName: "Tookey" },
+      { firstName: "Peter", lastName: "Verkroost" },
+    ],
+  ],
+  [
+    "3:1",
+    [
+      { firstName: "Peter", lastName: "Clark" },
+      { firstName: "Roy", lastName: "Button" },
+    ],
+  ],
+  [
     "3:2",
     [
       { firstName: "Tim", lastName: "Nash" },

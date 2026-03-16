@@ -1,9 +1,18 @@
 import { Player } from "@/model/player";
 
+export type PairIMPResult = {
+  pairId: string;
+  players: Player[];
+  crossImps: number;
+  boardsPlayed: number;
+  percentage: number;
+};
+
 export type PairMPResult = {
   pairId: string;
   players: Player[];
   totalMP: number;
+  maxMP: number;
   boardsPlayed: number;
   percentage: number;
 };

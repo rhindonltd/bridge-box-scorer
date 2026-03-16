@@ -19,6 +19,7 @@ export interface ScoredTravellerLineBase {
 /* ---------- scoring fields ---------- */
 
 export interface MatchpointScore {
+  maxMatchPoints: number;
   nsMatchPoints: number;
   ewMatchPoints: number;
 }

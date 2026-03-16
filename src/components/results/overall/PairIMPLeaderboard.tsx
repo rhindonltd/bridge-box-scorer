@@ -1,11 +1,11 @@
 import React from "react";
-import { PairMPResult } from "@/model/overall-result";
+import { PairIMPResult } from "@/model/overall-result";
 
 interface Props {
-  results: PairMPResult[];
+  results: PairIMPResult[];
 }
 
-export function PairMPLeaderboard({ results }: Props) {
+export function PairIMPLeaderboard({ results }: Props) {
   return (
     <div className="p-2 overflow-x-auto max-w-3xl mx-auto">
       <table className="min-w-full border border-gray-200 rounded-lg overflow-hidden text-sm shadow">
@@ -14,7 +14,7 @@ export function PairMPLeaderboard({ results }: Props) {
             <th className="px-3 py-2 text-center">Rank</th>
             <th className="px-3 py-2 text-center">Pair</th>
             <th className="px-3 py-2 text-left">Players</th>
-            <th className="px-3 py-2 text-right">%</th>
+            <th className="px-3 py-2 text-right">X-Imps</th>
           </tr>
         </thead>
 
@@ -49,7 +49,7 @@ export function PairMPLeaderboard({ results }: Props) {
                 </td>
 
                 <td className="px-3 py-2 text-right font-semibold">
-                  {row.percentage.toFixed(2)}
+                  {row.crossImps.toFixed(2)}
                 </td>
               </tr>
             );
