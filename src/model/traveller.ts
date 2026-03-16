@@ -14,29 +14,14 @@ export interface TravellerLineBase {
   play?: string;
 }
 
-/* ---------- scoring fields ---------- */
-
-export interface MatchpointScore {
-  nsMatchPoints: number;
-  ewMatchPoints: number;
-}
-
-export interface ImpScore {
-  nsImps: number;
-  ewImps: number;
-}
-
 /* ---------- generic traveller lines ---------- */
 
-export type TeamTravellerLine<TScore extends object = Record<string, never>> =
-  TravellerLineBase & TeamParticipants & TScore;
+export type TeamTravellerLine = TravellerLineBase & TeamParticipants;
 
-export type PairTravellerLine<TScore extends object = Record<string, never>> =
-  TravellerLineBase & PairParticipants & TScore;
+export type PairTravellerLine = TravellerLineBase & PairParticipants;
 
-export type IndividualTravellerLine<
-  TScore extends object = Record<string, never>,
-> = TravellerLineBase & IndividualParticipants & TScore;
+export type IndividualTravellerLine = TravellerLineBase &
+  IndividualParticipants;
 
 /* ---------- base traveller container ---------- */
 
@@ -49,25 +34,19 @@ export interface TravellerBase<TLine> {
 
 /* ---------- concrete traveller types ---------- */
 
-export type PairMPTraveller = TravellerBase<
-  PairTravellerLine<MatchpointScore>
-> & {
+export type PairMPTraveller = TravellerBase<PairTravellerLine> & {
   type: "PAIR_MP";
 };
 
-export type PairIMPTraveller = TravellerBase<PairTravellerLine<ImpScore>> & {
+export type PairIMPTraveller = TravellerBase<PairTravellerLine> & {
   type: "PAIR_IMP";
 };
 
-export type IndividualMPTraveller = TravellerBase<
-  IndividualTravellerLine<MatchpointScore>
-> & {
+export type IndividualMPTraveller = TravellerBase<IndividualTravellerLine> & {
   type: "INDIVIDUAL_MP";
 };
 
-export type IndividualIMPTraveller = TravellerBase<
-  IndividualTravellerLine<ImpScore>
-> & {
+export type IndividualIMPTraveller = TravellerBase<IndividualTravellerLine> & {
   type: "INDIVIDUAL_IMP";
 };
 

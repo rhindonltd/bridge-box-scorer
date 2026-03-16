@@ -2,13 +2,10 @@ import { parsePlayedContract, PlayedContractCode } from "@/model/result";
 import { scoreContract } from "@/model/score";
 import { getVulnerability } from "@/model/vulnerability";
 import { ImpTable } from "@/model/imp-table";
-import {
-  MatchpointScore,
-  PairIMPTraveller,
-  PairMPTraveller,
-} from "@/model/traveller";
+import { PairIMPTraveller, PairMPTraveller } from "@/model/traveller";
 import {
   CrossImpScore,
+  MatchpointScore,
   ScoredPairIMPTraveller,
   ScoredPairMPTraveller,
   ScoredPairTravellerLine,
@@ -56,7 +53,6 @@ export function compareWithField(score: number, scores: number[]): number {
 
 export function scoreCrossIMP(
   traveller: PairIMPTraveller,
-  maximumTimesBoardPlayed: number,
 ): ScoredPairIMPTraveller {
   const prepared = prepareScores(traveller.board, traveller.lines);
 
@@ -77,6 +73,7 @@ export function scoreCrossIMP(
       }
 
       const impTotal = compareWithField(entry.score, validScores);
+      const maximumTimesBoardPlayed = traveller.lines.length;
 
       const crossImps =
         (maximumTimesBoardPlayed * impTotal) /

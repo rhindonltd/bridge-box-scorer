@@ -1,4 +1,5 @@
 import { ScoredIndividualMPTraveller } from "@/model/scored-traveller";
+import { BoardResult } from "@/components/results/traveller/BoardOutcome";
 
 type Props = {
   scoredTraveller: ScoredIndividualMPTraveller;
@@ -34,7 +35,9 @@ export function IndividualMPTable({ scoredTraveller }: Props) {
                   <td className="px-1 py-2 text-center">
                     {row.ePlayerId}-{row.wPlayerId}
                   </td>
-                  <td className="px-1 py-2 text-center">{row.outcome}</td>
+                  <td className="px-1 py-2 text-center">
+                    <BoardResult boardOutcome={row.outcome} />
+                  </td>
                   <td className="px-1 py-2 text-center">{row.score}</td>
                   <td className="px-1 py-2 text-center">{row.nsMatchPoints}</td>
                   <td className="px-1 py-2 text-center">{row.ewMatchPoints}</td>

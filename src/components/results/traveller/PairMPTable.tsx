@@ -1,4 +1,5 @@
 import { ScoredPairMPTraveller } from "@/model/scored-traveller";
+import { BoardResult } from "@/components/results/traveller/BoardOutcome";
 
 type Props = {
   scoredTraveller: ScoredPairMPTraveller;
@@ -30,7 +31,9 @@ export function PairMPTable({ scoredTraveller }: Props) {
                 >
                   <td className="px-1 py-2 text-center">{row.nsPairId}</td>
                   <td className="px-1 py-2 text-center">{row.ewPairId}</td>
-                  <td className="px-1 py-2 text-center">{row.outcome}</td>
+                  <td className="px-1 py-2 text-center">
+                    <BoardResult boardOutcome={row.outcome} />
+                  </td>
                   <td className="px-1 py-2 text-center">{row.score}</td>
                   <td className="px-1 py-2 text-center">{row.nsMatchPoints}</td>
                   <td className="px-1 py-2 text-center">{row.ewMatchPoints}</td>

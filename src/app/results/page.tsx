@@ -1,21 +1,29 @@
-import { RankedPairResultRow } from "@/model/ranks";
-import { PairLeaderboard } from "@/components/results/PairLeaderboard";
+import { PairMPLeaderboard } from "@/components/results/overall/PairMPLeaderboard";
+import { PairMPResult } from "@/model/overall-result";
 
 export default function ResultsPage() {
   const rows = [
     {
       pairId: "1",
-      totalNs: 10,
-      totalEw: 12,
-      percentage: 51.25,
-      travellerType: "MP",
-      rank: 1,
+      totalMP: 100,
+      boardsPlayed: 24,
+      percentage: 53.99,
+      players: [
+        {
+          firstName: "Jacqui",
+          lastName: "Collier",
+        },
+        {
+          firstName: "David",
+          lastName: "Collier",
+        },
+      ],
     },
-  ] as RankedPairResultRow[];
+  ] as PairMPResult[];
 
   return (
     <>
-      <PairLeaderboard results={rows} />
+      <PairMPLeaderboard results={rows} />
     </>
   );
 }

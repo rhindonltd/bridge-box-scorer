@@ -8,6 +8,7 @@ import {
 import { PairMPTable } from "@/components/results/traveller/PairMPTable";
 import { PairIMPTable } from "@/components/results/traveller/PairIMPTable";
 import { IndividualMPTable } from "@/components/results/traveller/IndividualMPTable";
+import { IndividualIMPTable } from "@/components/results/traveller/IndividualIMPTable";
 
 type Props = {
   scoredTraveller: ScoredTraveller;
@@ -35,19 +36,11 @@ export function TravellerPage({ scoredTraveller }: Props) {
       );
     case "INDIVIDUAL_IMP":
       return (
-        <IndividualIMPGroup
+        <IndividualIMPTable
           scoredTraveller={scoredTraveller as ScoredIndividualIMPTraveller}
         />
       );
     default:
       return null;
   }
-}
-
-type IndividualIMPProps = {
-  scoredTraveller: ScoredIndividualIMPTraveller;
-};
-
-function IndividualIMPGroup({ scoredTraveller }: IndividualIMPProps) {
-  return <></>;
 }
