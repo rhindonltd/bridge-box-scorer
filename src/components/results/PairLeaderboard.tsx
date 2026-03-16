@@ -13,6 +13,12 @@ export const PairLeaderboard: React.FC<PairLeaderboardProps> = ({
   showCrossImps = true,
 }) => {
   return (
+    // NS No. 1
+    // EW No. 3
+    // Result. 2S+1X-3
+    // NS Score. -300
+    // NS IMPS. 1.23
+
     <div className="overflow-x-auto">
       <table className="min-w-full border border-gray-300 shadow-sm rounded-lg">
         <thead className="bg-gray-100">

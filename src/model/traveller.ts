@@ -1,15 +1,9 @@
 import { BoardOutcome } from "@/model/score-traveller";
-
-/* ---------- session wrapper ---------- */
-
-export interface SessionTraveller {
-  date: string;
-  sessionId: string;
-  sectionId?: string;
-  boardNumber: number;
-  scoringType: TravellerType;
-  traveller: Traveller;
-}
+import {
+  IndividualParticipants,
+  PairParticipants,
+  TeamParticipants,
+} from "@/model/participants";
 
 /* ---------- base line data ---------- */
 
@@ -18,25 +12,6 @@ export interface TravellerLineBase {
   lead?: string;
   auction?: string;
   play?: string;
-}
-
-/* ---------- participants ---------- */
-
-export interface TeamParticipants {
-  nsTeamId: string;
-  ewTeamId: string;
-}
-
-export interface PairParticipants {
-  nsPairId: string;
-  ewPairId: string;
-}
-
-export interface IndividualParticipants {
-  nPlayerId: string;
-  sPlayerId: string;
-  ePlayerId: string;
-  wPlayerId: string;
 }
 
 /* ---------- scoring fields ---------- */
@@ -68,7 +43,7 @@ export type IndividualTravellerLine<
 export interface TravellerBase<TLine> {
   type: TravellerType;
   board: number;
-  section?: string;
+  section: string;
   lines: TLine[];
 }
 

@@ -6,8 +6,13 @@ import {
   MatchpointScore,
   PairIMPTraveller,
   PairMPTraveller,
-  PairTravellerLine,
 } from "@/model/traveller";
+import {
+  CrossImpScore,
+  ScoredPairIMPTraveller,
+  ScoredPairMPTraveller,
+  ScoredPairTravellerLine,
+} from "@/model/scored-traveller";
 
 export type BoardOutcome = PlayedContractCode | "PO" | "NP";
 
@@ -52,35 +57,46 @@ export function compareWithField(score: number, scores: number[]): number {
 export function scoreCrossIMP(
   traveller: PairIMPTraveller,
   maximumTimesBoardPlayed: number,
-): PairIMPTraveller {
+): ScoredPairIMPTraveller {
   const prepared = prepareScores(traveller.board, traveller.lines);
 
   const validScores = prepared
     .map((x) => x.score)
     .filter((x): x is number => x !== null);
 
-  const lines = prepared.map((entry) => {
-    if (entry.score === null) {
-      return { ...entry.line, nsImps: 0, ewImps: 0 };
-    }
+  const lines = prepared.map(
+    (entry): ScoredPairTravellerLine<CrossImpScore> => {
+      // Not played
+      if (entry.score === null) {
+        return {
+          ...entry.line,
+          score: null,
+          nsCrossImps: 0,
+          ewCrossImps: 0,
+        };
+      }
 
-    const impTotal = compareWithField(entry.score, validScores);
+      const impTotal = compareWithField(entry.score, validScores);
 
-    const crossImps =
-      (maximumTimesBoardPlayed * impTotal) /
-      (validScores.length * (maximumTimesBoardPlayed - 1));
+      const crossImps =
+        (maximumTimesBoardPlayed * impTotal) /
+        (validScores.length * (maximumTimesBoardPlayed - 1));
 
-    return {
-      ...entry.line,
-      nsImps: crossImps,
-      ewImps: -crossImps,
-    };
-  });
+      return {
+        ...entry.line,
+        score: entry.score,
+        nsCrossImps: crossImps,
+        ewCrossImps: -crossImps,
+      };
+    },
+  );
 
   return { ...traveller, lines };
 }
 
-export function scoreMatchpoints(traveller: PairMPTraveller): PairMPTraveller {
+export function scoreMatchpoints(
+  traveller: PairMPTraveller,
+): ScoredPairMPTraveller {
   // Convert outcomes to numeric scores
   const prepared = prepareScores(traveller.board, traveller.lines);
 
@@ -88,12 +104,15 @@ export function scoreMatchpoints(traveller: PairMPTraveller): PairMPTraveller {
   const valid = prepared.filter((x) => x.score !== null);
 
   const numberPlayed = valid.length;
-  if (numberPlayed === 0) return traveller; // no scored lines
+  if (numberPlayed === 0)
+    return {
+      ...traveller,
+    } as ScoredPairMPTraveller; // no scored lines
 
   // Sort descending: higher score = better
   const sorted = [...valid].sort((a, b) => b.score! - a.score!);
 
-  const result: PairTravellerLine<MatchpointScore>[] = [];
+  const result: ScoredPairTravellerLine<MatchpointScore>[] = [];
   let index = 0;
 
   while (index < sorted.length) {
@@ -109,13 +128,16 @@ export function scoreMatchpoints(traveller: PairMPTraveller): PairMPTraveller {
     const baseMPs = 2 * (numberPlayed - 1);
 
     // NS matchpoints scaled with Neuberg correction
-    const nsMatchPoints = (averageRank * baseMPs) / (numberPlayed - 1);
+    const nsMatchPoints =
+      baseMPs - (averageRank * baseMPs) / (numberPlayed - 1);
+    const ewMatchPoints = baseMPs - nsMatchPoints;
 
     for (const entry of group) {
       result.push({
         ...entry.line,
+        score: entry.score,
         nsMatchPoints,
-        ewMatchPoints: baseMPs - nsMatchPoints,
+        ewMatchPoints,
       });
     }
 
@@ -128,7 +150,9 @@ export function scoreMatchpoints(traveller: PairMPTraveller): PairMPTraveller {
   };
 }
 
-export function scoreButler(traveller: PairIMPTraveller): PairIMPTraveller {
+export function scoreButler(
+  traveller: PairIMPTraveller,
+): ScoredPairIMPTraveller {
   const prepared = prepareScores(traveller.board, traveller.lines);
 
   const validScores = prepared
@@ -137,19 +161,22 @@ export function scoreButler(traveller: PairIMPTraveller): PairIMPTraveller {
 
   const average = validScores.reduce((a, b) => a + b, 0) / validScores.length;
 
-  const lines = prepared.map((entry) => {
-    if (entry.score === null) {
-      return { ...entry.line, nsImps: 0, ewImps: 0 };
-    }
+  const lines = prepared.map(
+    (entry): ScoredPairTravellerLine<CrossImpScore> => {
+      if (entry.score === null) {
+        return { ...entry.line, score: null, nsCrossImps: 0, ewCrossImps: 0 };
+      }
 
-    const imps = ImpTable.calculateImps(entry.score - average);
+      const imps = ImpTable.calculateImps(entry.score - average);
 
-    return {
-      ...entry.line,
-      nsImps: imps,
-      ewImps: -imps,
-    };
-  });
+      return {
+        ...entry.line,
+        score: entry.score,
+        nsCrossImps: imps,
+        ewCrossImps: -imps,
+      };
+    },
+  );
 
   return { ...traveller, lines };
 }
