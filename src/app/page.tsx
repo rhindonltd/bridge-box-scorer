@@ -1,6 +1,6 @@
 "use client";
 
-import EventLobby from "@/components/lobby/EventLobby";
+import EventLobby from "@/components/player/lobby/EventLobby";
 
 export default function PlayerLobbyPage() {
   return (

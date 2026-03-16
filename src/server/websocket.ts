@@ -48,7 +48,7 @@ export function startSocketServer(server: http.Server) {
 
       createBridgeEvent(event).then(() => {
         io.emit("event:created", event);
-      })
+      });
     });
 
     socket.on("director:startSession", (sectionId: string) => {
@@ -58,7 +58,7 @@ export function startSocketServer(server: http.Server) {
 
       startBridgeSection(sectionId).then(() => {
         io.emit("session:started");
-      })
+      });
     });
 
     socket.on("director:startRound", () => {

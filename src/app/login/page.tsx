@@ -78,82 +78,84 @@ export default function DirectorLoginPage() {
   }
 
   if (passwordSet === null) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 text-gray-600">
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <div style={container}>
-      <h1>Bridge Director</h1>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
+      <div className="w-full max-w-sm bg-white shadow-lg rounded-2xl p-8">
+        <h1 className="text-2xl font-bold text-center mb-6">Bridge Director</h1>
 
-      {passwordSet ? (
-        <form onSubmit={handleLogin} style={form}>
-          <h2>Director Login</h2>
+        {passwordSet ? (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <h2 className="text-sm font-medium text-gray-600 text-center">
+              Director Login
+            </h2>
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={input}
-          />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              focus:border-blue-500"
+            />
 
-          <button disabled={loading} style={button}>
-            Login
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={handleCreate} style={form}>
-          <h2>Create Director Password</h2>
+            <button
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-2 rounded-lg
+              hover:bg-blue-700 transition
+              disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleCreate} className="space-y-4">
+            <h2 className="text-sm font-medium text-gray-600 text-center">
+              Create Director Password
+            </h2>
 
-          <input
-            type="password"
-            placeholder="New password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={input}
-          />
+            <input
+              type="password"
+              placeholder="New password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              focus:border-blue-500"
+            />
 
-          <input
-            type="password"
-            placeholder="Confirm password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            style={input}
-          />
+            <input
+              type="password"
+              placeholder="Confirm password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2
+              focus:outline-none focus:ring-2 focus:ring-blue-500
+              focus:border-blue-500"
+            />
 
-          <button disabled={loading} style={button}>
-            Create Password
-          </button>
-        </form>
-      )}
+            <button
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-2 rounded-lg
+              hover:bg-blue-700 transition
+              disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Creating..." : "Create Password"}
+            </button>
+          </form>
+        )}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && (
+          <p className="text-red-500 text-sm text-center mt-4">{error}</p>
+        )}
+      </div>
     </div>
   );
 }
-
-const container: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "center",
-  height: "100vh",
-  fontFamily: "sans-serif",
-};
-
-const form: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "10px",
-  width: "260px",
-};
-
-const input: React.CSSProperties = {
-  padding: "10px",
-  fontSize: "16px",
-};
-
-const button: React.CSSProperties = {
-  padding: "10px",
-  fontSize: "16px",
-};

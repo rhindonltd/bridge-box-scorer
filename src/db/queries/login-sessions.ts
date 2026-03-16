@@ -37,8 +37,8 @@ export async function verifyDirectorPassword(
 }
 
 export async function isDirector(token: string) {
-  return db
-    .select()
-    .from(loginSessions)
-    .where(eq(loginSessions.token, token)) !== null;
+  return (
+    db.select().from(loginSessions).where(eq(loginSessions.token, token)) !==
+    null
+  );
 }

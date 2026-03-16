@@ -15,4 +15,4 @@ const sqlite = new Database(dbFile);
 
 export const db = drizzle(sqlite);
 
-migrate(db, { migrationsFolder: "./drizzle" })
+migrate(db, { migrationsFolder: "./drizzle" });

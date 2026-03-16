@@ -139,23 +139,15 @@
           "name": "movements_section_id_sections_id_fk",
           "tableFrom": "movements",
           "tableTo": "sections",
-          "columnsFrom": [
-            "section_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["section_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "movements_section_id_round_number_table_number_pk": {
-          "columns": [
-            "section_id",
-            "round_number",
-            "table_number"
-          ],
+          "columns": ["section_id", "round_number", "table_number"],
           "name": "movements_section_id_round_number_table_number_pk"
         }
       },
@@ -207,23 +199,15 @@
           "name": "pairs_section_id_sections_id_fk",
           "tableFrom": "pairs",
           "tableTo": "sections",
-          "columnsFrom": [
-            "section_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["section_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "pairs_section_id_pair_number_direction_pk": {
-          "columns": [
-            "section_id",
-            "pair_number",
-            "direction"
-          ],
+          "columns": ["section_id", "pair_number", "direction"],
           "name": "pairs_section_id_pair_number_direction_pk"
         }
       },
@@ -317,12 +301,8 @@
           "name": "results_section_id_sections_id_fk",
           "tableFrom": "results",
           "tableTo": "sections",
-          "columnsFrom": [
-            "section_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["section_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -386,12 +366,8 @@
           "name": "sectionmovements_id_sections_id_fk",
           "tableFrom": "sectionmovements",
           "tableTo": "sections",
-          "columnsFrom": [
-            "id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -438,12 +414,8 @@
           "name": "sections_session_id_sessions_id_fk",
           "tableFrom": "sections",
           "tableTo": "sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["session_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -483,12 +455,8 @@
           "name": "sessions_event_id_events_id_fk",
           "tableFrom": "sessions",
           "tableTo": "events",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["event_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

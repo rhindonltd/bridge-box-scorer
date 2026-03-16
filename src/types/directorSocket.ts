@@ -1,9 +1,7 @@
 import { BridgeEvent } from "@/db/schema";
 
 // Events the client emits to the server
-export interface DirectorClientToServerEvents {
-
-}
+export interface DirectorClientToServerEvents {}
 
 // Events the server emits to the client
 export interface DirectorServerToClientEvents {

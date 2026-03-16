@@ -4,14 +4,14 @@ import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { useLobbyStore } from "@/stores/lobbyStore";
 
-import SelectEvent from "@/components/lobby/SelectEvent";
-import SelectSession from "@/components/lobby/SelectSession";
-import SelectSection from "@/components/lobby/SelectSection";
 import { useLobbySocket } from "@/hooks/useLobbySocket";
 
-import EnterPlayerNames from "@/components/lobby/EnterPlayerNames";
-import EnterContract from "@/components/lobby/EnterContract";
 import { BridgeEvent, BridgeSection, BridgeSession } from "@/db/schema";
+import EnterPlayerNames from "@/components/player/lobby/EnterPlayerNames";
+import SelectEvent from "@/components/player/lobby/SelectEvent";
+import SelectSession from "@/components/player/lobby/SelectSession";
+import SelectSection from "@/components/player/lobby/SelectSection";
+import EnterContract from "@/components/player/contract/EnterContract";
 
 export default function EventLobby() {
   const socketRef = useLobbySocket();

@@ -12,7 +12,10 @@ export async function POST(req: NextRequest) {
   const loginSession = { token: crypto.randomUUID(), director: true };
   await createLoginSession(loginSession);
 
-  const response = NextResponse.json({ success: true, token: loginSession.token });
+  const response = NextResponse.json({
+    success: true,
+    token: loginSession.token,
+  });
   response.cookies.set("directorToken", loginSession.token, {
     httpOnly: true,
     path: "/",

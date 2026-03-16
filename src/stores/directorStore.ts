@@ -24,7 +24,7 @@ export const useDirectorStore = create<DirectorState>((set) => ({
   updateBridgeEvent: (id, updates) =>
     set((state) => ({
       bridgeEvents: state.bridgeEvents.map((e) =>
-        e.id === id ? { ...e, ...updates } : e
+        e.id === id ? { ...e, ...updates } : e,
       ),
     })),
   setBridgeEvents: (events) => set({ bridgeEvents: events }),
@@ -33,5 +33,7 @@ export const useDirectorStore = create<DirectorState>((set) => ({
     set((state) => ({ sessions: { ...state.sessions, [eventId]: sessions } })),
 
   setSectionsForSession: (sessionId, sections) =>
-    set((state) => ({ sections: { ...state.sections, [sessionId]: sections } })),
+    set((state) => ({
+      sections: { ...state.sections, [sessionId]: sections },
+    })),
 }));

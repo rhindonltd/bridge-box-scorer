@@ -14,7 +14,7 @@ export async function findUpcomingBridgeSections(): Promise<UpcomingSection[]> {
       sectionId: sections.id,
       eventName: events.eventName,
       sectionName: sections.sectionName,
-      sessionName: sessions.sessionName
+      sessionName: sessions.sessionName,
     })
     .from(sections)
     .innerJoin(sessions, eq(sections.sessionId, sessions.id))
