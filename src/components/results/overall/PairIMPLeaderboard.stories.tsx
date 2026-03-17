@@ -18,7 +18,7 @@ import {
   board8,
   board9,
   players,
-} from "@/mocks/fixtures/imp-travellers";
+} from "@/mocks/fixtures/ximp-travellers";
 import { scoreCrossIMP } from "@/model/score-traveller";
 
 const meta: Meta<typeof PairIMPLeaderboard> = {

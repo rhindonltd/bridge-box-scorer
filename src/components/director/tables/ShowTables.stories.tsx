@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import ShowTables from "./ShowTables";
 
 const meta: Meta<typeof ShowTables> = {
-  title: "Director/Tables/ShowTables",
+  title: "Components/Director/Tables/ShowTables",
   component: ShowTables,
   parameters: {
     layout: "fullscreen",

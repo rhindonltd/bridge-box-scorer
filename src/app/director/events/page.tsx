@@ -1,7 +1,7 @@
 "use client";
 
 import { useDirectorEvents } from "@/hooks/useDirectorEvents";
-import EventPage from "@/components/director/events/event/EventPage";
+import CreateEventPage from "@/components/pages/director/CreateEventPage";
 
 export default function DirectorPage() {
   const director = useDirectorEvents();
@@ -12,7 +12,7 @@ export default function DirectorPage() {
         <h1 className="text-3xl font-bold text-center text-gray-800">
           Bridge Events
         </h1>
-        <EventPage
+        <CreateEventPage
           events={director.events}
           onAdd={() => {}}
           onClick={() => {}}

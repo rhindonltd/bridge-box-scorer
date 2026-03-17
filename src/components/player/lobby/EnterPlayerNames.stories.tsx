@@ -3,7 +3,7 @@ import EnterPlayerNames from "./EnterPlayerNames";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof EnterPlayerNames> = {
-  title: "Player/Lobby/EnterPlayerNames",
+  title: "Components/Player/Lobby/EnterPlayerNames",
   component: EnterPlayerNames,
   parameters: {
     layout: "fullscreen",

@@ -16,7 +16,7 @@ import {
   board7,
   board8,
   board9,
-} from "@/mocks/fixtures/imp-travellers";
+} from "@/mocks/fixtures/ximp-travellers";
 
 const meta: Meta<typeof PairIMPTable> = {
   title: "Results/Traveller/PairIMPTable",

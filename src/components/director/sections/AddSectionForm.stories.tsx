@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-
-import CreateEventForm from "./CreateEventForm";
+import AddSectionForm from "./AddSectionForm";
 import { fn } from "storybook/test";
 
-const meta: Meta<typeof CreateEventForm> = {
-  title: "Director/Events/Event/CreateEventForm",
-  component: CreateEventForm,
+const meta: Meta<typeof AddSectionForm> = {
+  title: "Components/Director/Sections/AddSectionForm",
+  component: AddSectionForm,
   parameters: {
     layout: "fullscreen",
   },
@@ -17,6 +16,6 @@ const meta: Meta<typeof CreateEventForm> = {
 
 export default meta;
 
-type Story = StoryObj<typeof CreateEventForm>;
+type Story = StoryObj<typeof AddSectionForm>;
 
 export const Default: Story = {};

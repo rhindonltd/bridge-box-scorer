@@ -4,7 +4,7 @@ import EventCard from "./EventCard";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof EventCard> = {
-  title: "Director/Events/Event/EventCard",
+  title: "Components/Director/Events/EventCard",
   component: EventCard,
   parameters: {
     layout: "fullscreen",

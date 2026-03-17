@@ -2,7 +2,7 @@ import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { ToggleButton } from "./ToggleButton";
 
 const meta: Meta<typeof ToggleButton> = {
-  title: "Common/ToggleButton",
+  title: "Components/Common/ToggleButton",
   component: ToggleButton,
   parameters: {
     layout: "fullscreen",

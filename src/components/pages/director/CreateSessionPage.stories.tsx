@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
-import SessionPage from "@/components/director/events/session/SessionPage";
+import CreateSessionPage from "@/components/pages/director/CreateSessionPage";
 
-const meta: Meta<typeof SessionPage> = {
-  title: "Director/Events/Session/SessionPage",
-  component: SessionPage,
+const meta: Meta<typeof CreateSessionPage> = {
+  title: "Pages/Director/Session/CreateSessionPage",
+  component: CreateSessionPage,
   parameters: {
     layout: "fullscreen",
   },
@@ -18,7 +18,7 @@ const meta: Meta<typeof SessionPage> = {
 
 export default meta;
 
-type Story = StoryObj<typeof SessionPage>;
+type Story = StoryObj<typeof CreateSessionPage>;
 
 export const Default: Story = {
   args: {

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import CardTable from "./CardTable";
 
 const meta: Meta<typeof CardTable> = {
-  title: "Common/CardTable",
+  title: "Components/Common/CardTable",
   component: CardTable,
   parameters: {
     layout: "fullscreen",

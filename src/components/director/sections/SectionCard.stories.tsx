@@ -4,7 +4,7 @@ import SectionCard from "./SectionCard";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof SectionCard> = {
-  title: "Director/Events/Section/SectionCard",
+  title: "Components/Director/Sections/SectionCard",
   component: SectionCard,
   parameters: {
     layout: "fullscreen",

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import SelectTable from "./SelectTable";
 
 const meta: Meta<typeof SelectTable> = {
-  title: "Player/Lobby/SelectTable",
+  title: "Components/Player/Lobby/SelectTable",
   component: SelectTable,
   parameters: {
     layout: "fullscreen",

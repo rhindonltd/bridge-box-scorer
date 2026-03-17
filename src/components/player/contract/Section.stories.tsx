@@ -3,7 +3,7 @@ import Section from "@/components/player/contract/Section";
 import { ToggleButton } from "@/components/common/ToggleButton";
 
 const meta: Meta<typeof Section> = {
-  title: "Player/Contract/Section",
+  title: "Components/Player/Contract/Section",
   component: Section,
   parameters: {
     layout: "fullscreen",
@@ -14,7 +14,7 @@ const meta: Meta<typeof Section> = {
 export default meta;
 type Story = StoryObj<typeof Section>;
 
-export const Example: Story = {
+export const Default: Story = {
   render: () => (
     <Section title="Level" gridCols={3}>
       <ToggleButton>1</ToggleButton>

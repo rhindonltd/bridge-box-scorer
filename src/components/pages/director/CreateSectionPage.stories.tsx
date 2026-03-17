@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import SectionPage from "./SectionPage";
 import { fn } from "storybook/test";
+import CreateSectionPage from "@/components/pages/director/CreateSectionPage";
 
-const meta: Meta<typeof SectionPage> = {
-  title: "Director/Events/Section/SectionPage",
-  component: SectionPage,
+const meta: Meta<typeof CreateSectionPage> = {
+  title: "Pages/Director/Section/CreateSectionPage",
+  component: CreateSectionPage,
   parameters: {
     layout: "fullscreen",
   },
@@ -18,7 +18,7 @@ const meta: Meta<typeof SectionPage> = {
 
 export default meta;
 
-type Story = StoryObj<typeof SectionPage>;
+type Story = StoryObj<typeof CreateSectionPage>;
 
 export const Default: Story = {
   args: {

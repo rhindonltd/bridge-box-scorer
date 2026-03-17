@@ -11,7 +11,7 @@ import EnterPlayerNames from "@/components/player/lobby/EnterPlayerNames";
 import SelectEvent from "@/components/player/lobby/SelectEvent";
 import SelectSession from "@/components/player/lobby/SelectSession";
 import SelectSection from "@/components/player/lobby/SelectSection";
-import EnterContract from "@/components/player/contract/EnterContract";
+import EnterContractPage from "@/components/pages/player/EnterContractPage";
 
 export default function EventLobby() {
   const socketRef = useLobbySocket();
@@ -53,7 +53,7 @@ export default function EventLobby() {
         //     W: { firstName: 'Andrew', lastName: 'Robson' },
         // }} onEnterRound = {() => {}} />
 
-        <EnterContract />
+        <EnterContractPage />
       )}
 
       {tableId && direction && !player1 && (

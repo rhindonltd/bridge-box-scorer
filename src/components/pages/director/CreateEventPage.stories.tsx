@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import EventPage from "./EventPage";
 import { fn } from "storybook/test";
+import CreateEventPage from "@/components/pages/director/CreateEventPage";
 
-const meta: Meta<typeof EventPage> = {
-  title: "Director/Events/Event/EventPage",
-  component: EventPage,
+const meta: Meta<typeof CreateEventPage> = {
+  title: "Pages/Director/Event/CreateEventPage",
+  component: CreateEventPage,
   parameters: {
     layout: "fullscreen",
   },
@@ -18,7 +18,7 @@ const meta: Meta<typeof EventPage> = {
 
 export default meta;
 
-type Story = StoryObj<typeof EventPage>;
+type Story = StoryObj<typeof CreateEventPage>;
 
 export const Default: Story = {
   args: {

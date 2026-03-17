@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import SelectField from "./SelectField";
 
 const meta: Meta<typeof SelectField> = {
-  title: "Common/SelectField",
+  title: "Components/Common/SelectField",
   component: SelectField,
   parameters: {
     layout: "fullscreen",

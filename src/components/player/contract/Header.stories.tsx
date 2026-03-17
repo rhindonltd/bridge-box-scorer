@@ -2,7 +2,7 @@ import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import Header from "@/components/player/contract/Header";
 
 const meta: Meta<typeof Header> = {
-  title: "Player/Contract/Header",
+  title: "Components/Player/Contract/Header",
   component: Header,
   parameters: {
     layout: "fullscreen",
@@ -13,9 +13,9 @@ const meta: Meta<typeof Header> = {
 export default meta;
 type Story = StoryObj<typeof Header>;
 
-export const Example: Story = {
+export const Default: Story = {
   args: {
     contract: "4S",
-    resultText: "+1",
+    result: 1,
   },
 };

@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import FormCard from "./FormCard";
 
 const meta: Meta<typeof FormCard> = {
-  title: "Common/FormCard",
+  title: "Components/Common/FormCard",
   component: FormCard,
   parameters: {
     layout: "fullscreen",

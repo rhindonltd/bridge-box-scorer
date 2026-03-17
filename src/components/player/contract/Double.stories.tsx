@@ -3,7 +3,7 @@ import Double from "@/components/player/contract/Double";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof Double> = {
-  title: "Player/Contract/Double",
+  title: "Components/Player/Contract/Double",
   component: Double,
   parameters: {
     layout: "fullscreen",
@@ -17,7 +17,7 @@ const meta: Meta<typeof Double> = {
 export default meta;
 type Story = StoryObj<typeof Double>;
 
-export const Example: Story = {
+export const Default: Story = {
   args: {
     dbl: "X",
   },

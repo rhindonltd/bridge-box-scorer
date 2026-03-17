@@ -5,17 +5,18 @@ import { BridgeEvent } from "@/db/schema";
 import TextField from "@/components/common/TextField";
 import FormCard from "@/components/common/FormCard";
 import SelectField from "@/components/common/SelectField";
+import { MovementCategories } from "@/movement/movement-category";
 
 type Props = {
   onAdd: (event: BridgeEvent) => void;
 };
 
-const eventTypes = ["Pairs", "Teams"];
-
 export default function CreateEventForm({ onAdd }: Props) {
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
-  const [eventType, setEventType] = useState(eventTypes[0]);
+  const [eventType, setEventType] = useState<
+    (typeof MovementCategories)[number]
+  >(MovementCategories[0]);
 
   function handleCreate() {
     const event: BridgeEvent = {
@@ -56,7 +57,7 @@ export default function CreateEventForm({ onAdd }: Props) {
       <SelectField
         label={"Event Type"}
         value={eventType}
-        options={eventTypes}
+        options={MovementCategories}
         onSelect={setEventType}
       />
     </FormCard>

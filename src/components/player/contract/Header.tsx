@@ -1,9 +1,18 @@
 type Props = {
   contract: string | null;
-  resultText: string | null;
+  result: number | null;
 };
 
-export default function Header({ contract, resultText }: Props) {
+export default function Header({ contract, result }: Props) {
+  const resultText =
+    result == null
+      ? ""
+      : result === 0
+        ? "="
+        : result > 0
+          ? `+${result}`
+          : `${result}`;
+
   return (
     <div className="text-center mb-2">
       <div className="text-lg">Board 3</div>

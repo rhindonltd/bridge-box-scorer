@@ -4,7 +4,7 @@ import SessionCard from "./SessionCard";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof SessionCard> = {
-  title: "Director/Events/Session/SessionCard",
+  title: "Components/Director/Sessions/SessionCard",
   component: SessionCard,
   parameters: {
     layout: "fullscreen",

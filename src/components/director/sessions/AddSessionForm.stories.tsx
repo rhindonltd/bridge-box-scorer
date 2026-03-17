@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import AddSessionForm from "./AddSessionForm";
 
 const meta: Meta<typeof AddSessionForm> = {
-  title: "Director/Events/Session/AddSessionForm",
+  title: "Components/Director/Sessions/AddSessionForm",
   component: AddSessionForm,
   parameters: {
     layout: "fullscreen",

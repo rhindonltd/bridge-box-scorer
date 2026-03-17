@@ -3,7 +3,7 @@ import PassOutButton from "@/components/player/contract/PassOutButton";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof PassOutButton> = {
-  title: "Player/Contract/PassOutButton",
+  title: "Components/Player/Contract/PassOutButton",
   component: PassOutButton,
   parameters: {
     layout: "centered",
@@ -17,4 +17,4 @@ const meta: Meta<typeof PassOutButton> = {
 export default meta;
 type Story = StoryObj<typeof PassOutButton>;
 
-export const Example: Story = {};
+export const Default: Story = {};

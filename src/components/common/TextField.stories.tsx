@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import TextField from "./TextField";
 
 const meta: Meta<typeof TextField> = {
-  title: "Common/TextField",
+  title: "Components/Common/TextField",
   component: TextField,
   parameters: {
     layout: "fullscreen",

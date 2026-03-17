@@ -3,7 +3,7 @@ import Declarer from "@/components/player/contract/Declarer";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof Declarer> = {
-  title: "Player/Contract/Declarer",
+  title: "Components/Player/Contract/Declarer",
   component: Declarer,
   parameters: {
     layout: "fullscreen",
@@ -17,7 +17,7 @@ const meta: Meta<typeof Declarer> = {
 export default meta;
 type Story = StoryObj<typeof Declarer>;
 
-export const Example: Story = {
+export const Default: Story = {
   args: {
     declarer: "N",
   },

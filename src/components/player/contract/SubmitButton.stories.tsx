@@ -3,7 +3,7 @@ import SubmitButton from "@/components/player/contract/SubmitButton";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof SubmitButton> = {
-  title: "Player/Contract/SubmitButton",
+  title: "Components/Player/Contract/SubmitButton",
   component: SubmitButton,
   parameters: {
     layout: "fullscreen",
@@ -17,4 +17,4 @@ const meta: Meta<typeof SubmitButton> = {
 export default meta;
 type Story = StoryObj<typeof SubmitButton>;
 
-export const Example: Story = {};
+export const Default: Story = {};

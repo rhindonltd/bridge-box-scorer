@@ -1,6 +1,6 @@
 import { BridgeSession, BridgeSection } from "@/db/schema";
-import AddSectionForm from "@/components/director/events/section/AddSectionForm";
-import SectionCard from "@/components/director/events/section/SectionCard";
+import SectionCard from "@/components/director/sections/SectionCard";
+import AddSectionForm from "@/components/director/sections/AddSectionForm";
 
 type Props = {
   session: BridgeSession;
@@ -9,7 +9,7 @@ type Props = {
   onClick: (id: string) => void;
 };
 
-export default function SectionPage({
+export default function CreateSectionPage({
   session,
   sections,
   onAdd,

@@ -3,7 +3,7 @@ import Suit from "@/components/player/contract/Suit";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof Suit> = {
-  title: "Player/Contract/Suit",
+  title: "Components/Player/Contract/Suit",
   component: Suit,
   parameters: {
     layout: "fullscreen",
@@ -17,7 +17,7 @@ const meta: Meta<typeof Suit> = {
 export default meta;
 type Story = StoryObj<typeof Suit>;
 
-export const Example: Story = {
+export const Default: Story = {
   args: {
     suit: "♦",
   },

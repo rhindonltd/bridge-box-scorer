@@ -3,7 +3,7 @@ import Level from "@/components/player/contract/Level";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof Level> = {
-  title: "Player/Contract/Level",
+  title: "Components/Player/Contract/Level",
   component: Level,
   parameters: {
     layout: "fullscreen",
@@ -17,7 +17,7 @@ const meta: Meta<typeof Level> = {
 export default meta;
 type Story = StoryObj<typeof Level>;
 
-export const Example: Story = {
+export const Default: Story = {
   args: {
     level: 2,
   },
