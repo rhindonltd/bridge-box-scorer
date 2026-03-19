@@ -1,6 +1,14 @@
+import {
+  MovementRounds,
+  MovementTables,
+  PairRound,
+  Round,
+  Table,
+} from "@/model/movement";
+
 type MovementType = "mitchell" | "skip" | "arrow" | "double" | "rover";
 
-export interface MovementSpec {
+export interface MitchellMovementSpec {
   tables: number;
   rounds: number;
   boardsPerRound: number;
@@ -8,18 +16,7 @@ export interface MovementSpec {
   arrowSwitchRounds?: number;
 }
 
-export interface PairRound {
-  ns: number;
-  ew: number;
-  boards: number[];
-}
-
-export interface Table {
-  table: number;
-  rounds: PairRound[];
-}
-
-export function generateMovement(spec: MovementSpec): Table[] {
+export function generateMovement(spec: MitchellMovementSpec): MovementTables {
   const {
     tables,
     rounds,
@@ -67,7 +64,9 @@ export function generateMovement(spec: MovementSpec): Table[] {
     });
   }
 
-  return result;
+  return {
+    tables: result
+  };
 }
 
 function wrap(v: number, m: number) {
@@ -77,4 +76,30 @@ function wrap(v: number, m: number) {
 function boardsForSet(set: number, perRound: number) {
   const start = (set - 1) * perRound + 1;
   return Array.from({ length: perRound }, (_, i) => start + i);
+}
+
+export function groupByRound(movement: MovementTables) : MovementRounds {
+  if (movement.tables.length === 0) return {
+    rounds: []
+  };
+
+  const roundsCount = movement.tables[0].rounds.length;
+
+  const rounds: Round[] = [];
+
+  for (let roundIdx = 0; roundIdx < roundsCount; roundIdx++) {
+    const roundTables = movement.tables.map((table) => ({
+      table: table.table,
+      pair: table.rounds[roundIdx],
+    }));
+
+    rounds.push({
+      round: roundIdx + 1, // 1-indexed
+      tables: roundTables,
+    });
+  }
+
+  return {
+    rounds
+  };
 }

@@ -18,8 +18,8 @@ export default function EnterContractPage() {
   const [dbl, setDbl] = useState("");
   const [result, setResult] = useState(0);
 
-  const adjustResult = (delta: number) => {
-    setResult((r) => Math.max(-13, Math.min(7, r + delta)));
+  const adjustResult = (value: number) => {
+    setResult((r) => Math.max(-13, Math.min(7, value)));
   };
 
   const submitResult = () => {
@@ -45,7 +45,7 @@ export default function EnterContractPage() {
       <NumberStepper
         value={result}
         zeroCharacter={"="}
-        onAdjustValue={adjustResult}
+        onChange={adjustResult}
       />
 
       {/* ACTIONS */}

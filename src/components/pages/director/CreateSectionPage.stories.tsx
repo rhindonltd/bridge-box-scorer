@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import CreateSectionPage from "@/components/pages/director/CreateSectionPage";
 
 const meta: Meta<typeof CreateSectionPage> = {
-  title: "Pages/Director/Section/CreateSectionPage",
+  title: "Pages/Director/CreateSectionPage",
   component: CreateSectionPage,
   parameters: {
     layout: "fullscreen",

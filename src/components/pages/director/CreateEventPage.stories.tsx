@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import CreateEventPage from "@/components/pages/director/CreateEventPage";
 
 const meta: Meta<typeof CreateEventPage> = {
-  title: "Pages/Director/Event/CreateEventPage",
+  title: "Pages/Director/CreateEventPage",
   component: CreateEventPage,
   parameters: {
     layout: "fullscreen",

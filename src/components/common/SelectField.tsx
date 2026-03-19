@@ -1,6 +1,6 @@
 type Props<T extends string> = {
   label: string;
-  value: T;
+  value?: T;
   options: readonly T[];
   onSelect: (value: T) => void;
 };

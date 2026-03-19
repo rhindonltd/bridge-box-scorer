@@ -30,8 +30,8 @@ export default function FormCard({
   disabled = false,
 }: Props) {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 font-sans p-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg overflow-hidden">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 font-sans">
+      <div className="w-full max-w-sm bg-white shadow-lg overflow-hidden">
         {/* Header */}
         <div
           className={`${headerColor} text-white text-center py-4 text-xl font-bold`}
