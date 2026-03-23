@@ -19,7 +19,6 @@ type Story = StoryObj<typeof MovementRounds>;
 
 export const Default: Story = {
   args: {
-    name: "Monday PM Pairs",
     rounds: groupByRound(
       generateMitchell({
         tables: 9,

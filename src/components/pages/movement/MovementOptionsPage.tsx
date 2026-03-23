@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import SelectField from "@/components/common/SelectField";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
 import FormCardLayout from "@/components/layout/FormCardLayout";
+import {SectionInfo} from "@/components/common/SectionInfo";
 
 type Props = {
+  eventName: string
+  sessionName?: string
+  sectionName?: string
   tables: number;
   onSubmit: (value: MovementOptions) => void;
 };
@@ -15,7 +19,7 @@ type MovementOptions = {
   arrowSwitchedRounds: number;
 };
 
-export default function MovementOptionsPage({ tables, onSubmit }: Props) {
+export default function MovementOptionsPage({ eventName, sessionName, sectionName, tables, onSubmit }: Props) {
   const [missingPair, setMissingPair] = useState<string>("None");
   const [arrowSwitchedRounds, setArrowSwitchedRounds] = useState(0);
 
@@ -32,6 +36,11 @@ export default function MovementOptionsPage({ tables, onSubmit }: Props) {
   const options = generateMissingPairs(tables);
 
   return (
+      <div className="h-screen flex flex-col bg-gray-100">
+
+          <SectionInfo eventName={eventName} sessionName={sessionName} sectionName={sectionName} />
+
+          <div className="flex-1 flex items-center justify-center p-2 min-h-0">
     <FormCardLayout
       header="Movement Options"
       primaryText="Select"
@@ -58,5 +67,8 @@ export default function MovementOptionsPage({ tables, onSubmit }: Props) {
         onSelect={setMissingPair}
       />
     </FormCardLayout>
+          </div>
+
+      </div>
   );
 }

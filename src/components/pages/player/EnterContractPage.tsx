@@ -15,6 +15,8 @@ import NotPlayedButton from "@/components/player/contract/NotPlayedButton";
 import {ContractCode, ContractSuit, ContractSuits, Doubling, Level} from "@/model/contract";
 import {SpecialBoardOutcome} from "@/model/score-traveller";
 import {Direction, Suit} from "@/model/common";
+import {SectionInfo} from "@/components/common/SectionInfo";
+import {TableRoundPairBoardInfo} from "@/components/common/TableRoundPairBoardInfo";
 
 export type BoardAndContract = {
     board: number;
@@ -22,12 +24,17 @@ export type BoardAndContract = {
 }
 
 type Props = {
+  eventName: string
+  sessionName?: string
+  sectionName?: string
+  round: number
+  table: number
   board: number;
   roundBoards: number[];
   onOk: (boardAndContract: BoardAndContract) => void;
 };
 
-export default function EnterContractPage({ board, roundBoards, onOk }: Props) {
+export default function EnterContractPage({ eventName, sessionName, sectionName, round, table, board, roundBoards, onOk }: Props) {
   const [level, setLevel] = useState<Level | null>(null);
   const [suit, setSuit] = useState<ContractSuit | null>(null);
   const [declarer, setDeclarer] = useState<Direction | null>(null);
@@ -113,15 +120,16 @@ export default function EnterContractPage({ board, roundBoards, onOk }: Props) {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      {/* TOP GRID (unchanged layout you liked) */}
-      <div className="grid grid-cols-2 w-full items-stretch">
-        <div className="flex flex-col bg-blue-200">
-          <div className="p-2 text-center font-bold">Monday PM Pairs</div>
-          <div className="p-2 text-center">Round 1 - Table 2</div>
-        </div>
 
-        <div className="flex flex-col items-center justify-center bg-blue-300">
-          <span className="text-sm font-medium">Board</span>
+      <SectionInfo eventName={eventName} sessionName={sessionName} sectionName={sectionName} />
+
+      {/* TOP GRID */}
+      <div className="grid grid-cols-2 w-full items-stretch">
+
+        <TableRoundPairBoardInfo round={round} table={table} />
+
+        <div className="flex flex-row items-center justify-center bg-blue-300">
+          <span className="pr-2 font-bold">Board:</span>
           <select
             className="p-1 border rounded-md bg-white text-center"
             value={board}
@@ -135,7 +143,7 @@ export default function EnterContractPage({ board, roundBoards, onOk }: Props) {
           </select>
         </div>
 
-        <div className="flex flex-col justify-center gap-1 p-1">
+        <div className="flex flex-row justify-center gap-1 p-1">
           <PassOutButton onPassOut={onPassOut} />
           <NotPlayedButton onNotPlayed={onNotPlayed} />
         </div>
@@ -147,11 +155,7 @@ export default function EnterContractPage({ board, roundBoards, onOk }: Props) {
 
       {/* MIDDLE: 2x2 CONTROLS (fills ALL remaining space) */}
         <div className="flex-1 min-h-0 p-2">
-            <div className="
-    grid grid-cols-2 grid-rows-2
-    gap-x-2 gap-y-3
-    md:h-full md:auto-rows-fr
-  ">
+            <div className="grid grid-cols-2 grid-rows-2 gap-x-2 gap-y-3 h-full auto-rows-fr">
 
                 <div className="h-full flex">
                     <LevelSection className="flex-1" level={level} onLevelSelected={onLevelSelected} />

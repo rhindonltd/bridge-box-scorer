@@ -1,11 +1,11 @@
 import Button from "@/components/common/Button";
 
-interface SelectTableProps {
+interface Props {
   tables: number;
   selectTable: (table: number, direction: "NS" | "EW") => void;
 }
 
-export default function SelectTable({ tables, selectTable }: SelectTableProps) {
+export default function SelectTable({ tables, selectTable }: Props) {
   const tableNumbers = Array.from({ length: tables }, (_, i) => i + 1);
 
   return (

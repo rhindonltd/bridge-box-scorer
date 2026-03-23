@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import SelectField from "@/components/common/SelectField";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
 import FormCardLayout from "@/components/layout/FormCardLayout";
+import {SectionInfo} from "@/components/common/SectionInfo";
 
 type Props = {
+    eventName: string
+    sessionName?: string
+    sectionName?: string
   onConfirm: (value: Movement) => void;
 };
 
@@ -16,7 +20,7 @@ type Movement = {
   boardsPerRound: number;
 };
 
-export default function SelectMovementPage({ onConfirm }: Props) {
+export default function SelectMovementPage({ eventName, sessionName, sectionName, onConfirm }: Props) {
   const [tables, setTables] = useState(3);
   const [rounds, setRounds] = useState(3);
   const [boardsPerRound, setBoardsPerRound] = useState(3);
@@ -53,6 +57,12 @@ export default function SelectMovementPage({ onConfirm }: Props) {
   const [movement, setMovement] = useState<Movement | null>(movements[0]);
 
   return (
+      <div className="h-screen flex flex-col bg-gray-100">
+
+          <SectionInfo eventName={eventName} sessionName={sessionName} sectionName={sectionName} />
+
+          <div className="flex-1 flex items-center justify-center p-2 min-h-0">
+
     <FormCardLayout
       header="Select Movement"
       primaryText="Select"
@@ -94,5 +104,7 @@ export default function SelectMovementPage({ onConfirm }: Props) {
         }}
       />
     </FormCardLayout>
+          </div>
+      </div>
   );
 }

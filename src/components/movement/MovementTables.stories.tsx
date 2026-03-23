@@ -18,7 +18,6 @@ type Story = StoryObj<typeof MovementTables>;
 
 export const Default: Story = {
   args: {
-    name: "Monday PM Pairs",
     tables: generateMitchell({
       tables: 9,
       rounds: 9,

@@ -12,7 +12,7 @@ export default function MovementTable({ table }: Props) {
       className="w-full border rounded-lg shadow-md overflow-hidden"
     >
       {/* Table Heading */}
-      <div className="bg-blue-600 text-white px-2 py-2 font-semibold text-lg flex justify-center items-center">
+      <div className="bg-blue-600 text-white px-2 py-0.5 font-semibold text-lg flex justify-center items-center">
         Table {table.table}
       </div>
 
@@ -20,19 +20,19 @@ export default function MovementTable({ table }: Props) {
       <table className="w-full table-auto border-collapse text-center">
         <thead className="bg-gray-100">
           <tr>
-            <th className="border px-2 py-2">Round</th>
-            <th className="border px-2 py-2">NS</th>
-            <th className="border px-2 py-2">EW</th>
-            <th className="border px-2 py-2">Boards</th>
+            <th className="border px-2 py-0.5">Round</th>
+            <th className="border px-2 py-0.5">NS</th>
+            <th className="border px-2 py-0.5">EW</th>
+            <th className="border px-2 py-0.5">Boards</th>
           </tr>
         </thead>
         <tbody>
           {table.rounds.map((round, idx) => (
             <tr key={idx} className="even:bg-gray-50">
-              <td className="border px-2 py-2">{idx + 1}</td>
-              <td className="border px-2 py-2">{round.ns}</td>
-              <td className="border px-2 py-2">{round.ew}</td>
-              <td className="border px-2 py-2">{formatBoards(round.boards)}</td>
+              <td className="border px-2 py-0.5">{idx + 1}</td>
+              <td className="border px-2 py-0.5">{round.ns}</td>
+              <td className="border px-2 py-0.5">{round.ew}</td>
+              <td className="border px-2 py-0.5">{formatBoards(round.boards)}</td>
             </tr>
           ))}
         </tbody>
