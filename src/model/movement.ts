@@ -9,20 +9,18 @@ export interface Table {
   rounds: PairRound[];
 }
 
-export interface MovementTables {
+export interface Tables {
   tables: Table[];
 }
-
-
 
 export interface Round {
   round: number;
   tables: {
-    table: number,
-    pair: PairRound
+    table: number;
+    pair: PairRound;
   }[];
 }
 
-export interface MovementRounds {
+export interface Rounds {
   rounds: Round[];
 }

@@ -19,7 +19,7 @@ import {
 } from "@/mocks/fixtures/ximp-travellers";
 
 const meta: Meta<typeof PairIMPTable> = {
-  title: "Results/Traveller/PairIMPTable",
+  title: "Components/Results/Traveller/PairIMPTable",
   component: PairIMPTable,
   parameters: {
     layout: "fullscreen",

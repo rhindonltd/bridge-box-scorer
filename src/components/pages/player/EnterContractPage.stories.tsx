@@ -13,4 +13,9 @@ const meta: Meta<typeof EnterContractPage> = {
 export default meta;
 type Story = StoryObj<typeof EnterContractPage>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  args: {
+    board: 2,
+    roundBoards: [1, 2, 3],
+  },
+};

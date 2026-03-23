@@ -1,105 +1,125 @@
-import {
-  MovementRounds,
-  MovementTables,
-  PairRound,
-  Round,
-  Table,
-} from "@/model/movement";
-
-type MovementType = "mitchell" | "skip" | "arrow" | "double" | "rover";
+import { PairRound, Table, Tables } from "@/model/movement";
 
 export interface MitchellMovementSpec {
   tables: number;
   rounds: number;
   boardsPerRound: number;
-  type?: MovementType;
   arrowSwitchRounds?: number;
+  skip?: boolean;
 }
 
-export function generateMovement(spec: MitchellMovementSpec): MovementTables {
+export function generateMitchell(spec: MitchellMovementSpec): Tables {
   const {
     tables,
     rounds,
     boardsPerRound,
-    type = "mitchell",
     arrowSwitchRounds = 0,
+    skip = false,
   } = spec;
 
-  const skipAfter = Math.floor(tables / 2);
+  if (skip && tables % 2 === 1) {
+    throw new Error("Skip Mitchell cannot have an odd number of tables");
+  }
+
+  // ewAdd ensures NS and EW pairs don't overlap (needed for arrow switch)
+  const ewAdd = arrowSwitchRounds > 0 ? tables : 0;
+
+  const skipAfter = skip ? Math.floor(tables / 2) : tables;
 
   const result: Table[] = [];
 
-  for (let t = 1; t <= tables; t++) {
-    const roundsList: PairRound[] = [];
+  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
+    result.push(
+      createMitchellTable({
+        tableNumber,
+        tables,
+        rounds,
+        boardsPerRound,
+        arrowSwitchRounds,
+        skipAfter,
+        ewAdd,
+      }),
+    );
+  }
 
-    for (let r = 0; r < rounds; r++) {
-      let distance = r;
+  return { tables: result };
+}
 
-      if (type === "skip" && r >= skipAfter) distance++;
-      if (type === "double") distance = r * 2;
+interface TableParams {
+  tableNumber: number;
+  tables: number;
+  rounds: number;
+  boardsPerRound: number;
+  arrowSwitchRounds: number;
+  skipAfter: number;
+  ewAdd: number;
+}
 
-      let ns = t;
-      let ew = wrap(t - distance, tables);
+function createMitchellTable(params: TableParams): Table {
+  const {
+    tableNumber,
+    tables,
+    rounds,
+    boardsPerRound,
+    arrowSwitchRounds,
+    skipAfter,
+    ewAdd,
+  } = params;
 
-      if (type === "rover" && t === tables) {
-        ew = wrap(ew + r, tables);
-      }
+  // 🔑 Share & Relay detection
+  const relayNeeded = tables % 2 === 0 && skipAfter >= rounds;
 
-      const boardSet = wrap(t + r, tables);
+  // 🔑 This creates SHARE
+  const firstSet =
+    relayNeeded && tableNumber > tables / 2 ? tableNumber + 1 : tableNumber;
 
-      if (type === "arrow" && r >= rounds - arrowSwitchRounds) {
-        [ns, ew] = [ew, ns];
-      }
+  const arrowSwitchFrom = rounds - arrowSwitchRounds + 1;
 
-      roundsList.push({
-        ns,
-        ew,
-        boards: boardsForSet(boardSet, boardsPerRound),
-      });
+  const roundsList: PairRound[] = [];
+
+  for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
+    // 🔁 Skip logic
+    const distanceMoved =
+      roundNumber > skipAfter ? roundNumber : roundNumber - 1;
+
+    // 🔁 EW movement
+    const movingPair = wrapValue(tableNumber - distanceMoved, tables) + ewAdd;
+
+    // 🔁 Board assignment (THIS creates relay)
+    const boardSet = wrapValue(firstSet + (roundNumber - 1), tables);
+
+    const boards = boardsForSet(boardSet, boardsPerRound);
+
+    // 🔀 Arrow switch handling
+    let ns: number;
+    let ew: number;
+
+    if (roundNumber < arrowSwitchFrom) {
+      ns = tableNumber;
+      ew = movingPair;
+    } else {
+      ns = movingPair;
+      ew = tableNumber;
     }
 
-    result.push({
-      table: t,
-      rounds: roundsList,
-    });
+    roundsList.push({ ns, ew, boards });
   }
 
   return {
-    tables: result
+    table: tableNumber,
+    rounds: roundsList,
   };
 }
 
-function wrap(v: number, m: number) {
-  return ((v - 1 + m * 1000) % m) + 1;
+function wrapValue(v: number, modulus: number): number {
+  if (v > 0) {
+    return ((v - 1) % modulus) + 1;
+  } else {
+    return modulus - (-v % modulus);
+  }
 }
 
-function boardsForSet(set: number, perRound: number) {
+function boardsForSet(set: number, perRound: number): number[] {
   const start = (set - 1) * perRound + 1;
   return Array.from({ length: perRound }, (_, i) => start + i);
-}
-
-export function groupByRound(movement: MovementTables) : MovementRounds {
-  if (movement.tables.length === 0) return {
-    rounds: []
-  };
-
-  const roundsCount = movement.tables[0].rounds.length;
-
-  const rounds: Round[] = [];
-
-  for (let roundIdx = 0; roundIdx < roundsCount; roundIdx++) {
-    const roundTables = movement.tables.map((table) => ({
-      table: table.table,
-      pair: table.rounds[roundIdx],
-    }));
-
-    rounds.push({
-      round: roundIdx + 1, // 1-indexed
-      tables: roundTables,
-    });
-  }
-
-  return {
-    rounds
-  };
 }

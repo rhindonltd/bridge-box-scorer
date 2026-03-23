@@ -1,10 +1,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-
 import { defineConfig } from "vitest/config";
 
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
-
 import { playwright } from "@vitest/browser-playwright";
 
 const dirname =
@@ -12,28 +10,42 @@ const dirname =
     ? __dirname
     : path.dirname(fileURLToPath(import.meta.url));
 
-// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
+const alias = {
+  "@": path.resolve(__dirname, "src"),
+};
+
 export default defineConfig({
+  resolve: { alias }, // root alias
+
   test: {
     projects: [
+      // Node tests
       {
-        extends: true,
-        plugins: [
-          // The plugin will run tests for the stories defined in your Storybook config
-          // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
-          storybookTest({ configDir: path.join(dirname, ".storybook") }),
-        ],
+        resolve: { alias }, // important: apply alias per project
         test: {
-          name: "storybook",
-          browser: {
-            enabled: true,
-            headless: true,
-            provider: playwright({}),
-            instances: [{ browser: "chromium" }],
-          },
-          setupFiles: [".storybook/vitest.setup.ts"],
+          globals: true,
+          environment: "node",
+          include: ["tests/**/*.test.ts", "src/**/*.test.ts"],
         },
       },
+
+      // Storybook tests
+      // {
+      //   extends: true,
+      //   plugins: [
+      //     storybookTest({ configDir: path.join(dirname, ".storybook") }),
+      //   ],
+      //   resolve: { alias }, // also apply alias here if your storybook code uses it
+      //   test: {
+      //     browser: {
+      //       enabled: true,
+      //       headless: true,
+      //       provider: playwright({}),
+      //       instances: [{ browser: "chromium" }],
+      //     },
+      //     setupFiles: [".storybook/vitest.setup.ts"],
+      //   },
+      // },
     ],
   },
 });

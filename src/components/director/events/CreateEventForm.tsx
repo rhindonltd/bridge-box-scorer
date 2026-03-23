@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { BridgeEvent } from "@/db/schema";
 import TextField from "@/components/common/TextField";
-import FormCard from "@/components/common/FormCard";
 import SelectField from "@/components/common/SelectField";
 import { MovementCategories } from "@/movement/movement-category";
+import FormCardLayout from "@/components/layout/FormCardLayout";
 
 type Props = {
   onAdd: (event: BridgeEvent) => void;
@@ -32,7 +32,7 @@ export default function CreateEventForm({ onAdd }: Props) {
   }
 
   return (
-    <FormCard
+    <FormCardLayout
       header="New Event"
       primaryText="Create"
       secondaryText="Cancel"
@@ -60,6 +60,6 @@ export default function CreateEventForm({ onAdd }: Props) {
         options={MovementCategories}
         onSelect={setEventType}
       />
-    </FormCard>
+    </FormCardLayout>
   );
 }

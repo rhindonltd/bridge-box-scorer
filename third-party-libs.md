@@ -48,7 +48,7 @@
 1.  https://github.com/bcoe/v8-coverage
 2.  MIT
 
-# @chromatic-com/storybook@5.0.1
+# @chromatic-com/storybook@5.0.2
 
 1.  https://github.com/chromaui/addon-visual-tests
 2.  MIT
@@ -208,7 +208,7 @@
 1.  https://github.com/rollup/plugins
 2.  MIT
 
-# @rollup/rollup-darwin-arm64@4.59.0
+# @rollup/rollup-darwin-arm64@4.60.0
 
 1.  https://github.com/rollup/rollup
 2.  MIT
@@ -228,7 +228,7 @@
 1.  https://github.com/standard-schema/standard-schema
 2.  MIT
 
-# @storybook/addon-a11y@10.2.17
+# @storybook/addon-a11y@10.3.2
 
 1.  https://github.com/storybookjs/storybook
 2.  MIT
@@ -448,7 +448,7 @@
 1.  https://github.com/kelektiv/node.bcrypt.js
 2.  MIT
 
-# better-sqlite3@12.6.2
+# better-sqlite3@12.8.0
 
 1.  https://github.com/WiseLibs/better-sqlite3
 2.  MIT
@@ -698,7 +698,7 @@
 1.  https://github.com/eps1lon/dom-accessibility-api
 2.  MIT
 
-# drizzle-kit@0.31.9
+# drizzle-kit@0.31.10
 
 1.  https://github.com/drizzle-team/drizzle-orm
 2.  MIT
@@ -1383,7 +1383,7 @@
 1.  https://github.com/chaijs/loupe
 2.  MIT
 
-# lru-cache@11.2.6
+# lru-cache@11.2.7
 
 1.  https://github.com/isaacs/node-lru-cache
 2.  BlueOak-1.0.0
@@ -1728,7 +1728,7 @@
 1.  https://github.com/styleguidist/react-docgen-typescript
 2.  MIT
 
-# react-docgen@8.0.2
+# react-docgen@8.0.3
 
 1.  https://github.com/reactjs/react-docgen
 2.  MIT
@@ -2258,7 +2258,7 @@
 1.  https://github.com/colinhacks/zod
 2.  MIT
 
-# zustand@5.0.11
+# zustand@5.0.12
 
 1.  https://github.com/pmndrs/zustand
 2.  MIT

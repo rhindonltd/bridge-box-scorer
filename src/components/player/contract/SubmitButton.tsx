@@ -8,7 +8,7 @@ export default function SubmitButton({ onSubmit }: Props) {
       className="w-full mt-3 p-3 text-lg bg-green-700 text-white rounded-xl"
       onSubmit={onSubmit}
     >
-      Submit Result
+      OK
     </button>
   );
 }

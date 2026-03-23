@@ -1,11 +1,11 @@
-type Props<T extends string> = {
+type Props<T extends string | number> = {
   label: string;
   value?: T;
   options: readonly T[];
   onSelect: (value: T) => void;
 };
 
-export default function SelectField<T extends string>({
+export default function SelectField<T extends string | number>({
   label,
   value,
   options,

@@ -5,6 +5,9 @@ import NumberStepper, { Props } from "./NumberStepper";
 const meta: Meta<typeof NumberStepper> = {
   title: "Components/Common/NumberStepper",
   component: NumberStepper,
+  parameters: {
+    layout: "fullscreen",
+  },
   tags: ["autodocs"],
 };
 
@@ -16,11 +19,7 @@ type Story = StoryObj<typeof NumberStepper>;
 const StatefulWrapper = (args: Props) => {
   const [value, setValue] = useState(args.value ?? 0);
 
-  const handleAdjust = (delta: number) => {
-    setValue((prev: number) => prev + delta);
-  };
-
-  return <NumberStepper {...args} value={value} onAdjustValue={handleAdjust} />;
+  return <NumberStepper {...args} value={value} onChange={setValue} />;
 };
 
 // ✅ Default

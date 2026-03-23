@@ -26,7 +26,7 @@ import {
 } from "@/mocks/fixtures/mp-travellers";
 
 const meta: Meta<typeof PairMPTable> = {
-  title: "Results/Traveller/PairMPTable",
+  title: "Components/Results/Traveller/PairMPTable",
   component: PairMPTable,
   parameters: {
     layout: "fullscreen",

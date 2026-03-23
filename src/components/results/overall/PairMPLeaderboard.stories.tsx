@@ -32,7 +32,7 @@ import {
 import { scoreMatchpoints } from "@/model/score-traveller";
 
 const meta: Meta<typeof PairMPLeaderboard> = {
-  title: "Results/Overall/PairMPLeaderboard",
+  title: "Components/Results/Overall/PairMPLeaderboard",
   component: PairMPLeaderboard,
   parameters: {
     layout: "fullscreen",

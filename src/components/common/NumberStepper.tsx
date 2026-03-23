@@ -10,13 +10,13 @@ export type Props = {
 };
 
 export default function NumberStepper({
-                                        value,
-                                        showPlus,
-                                        zeroCharacter = "=",
-                                        min = -Infinity,
-                                        max = Infinity,
-                                        onChange,
-                                      }: Props) {
+  value,
+  showPlus,
+  zeroCharacter = "=",
+  min = -Infinity,
+  max = Infinity,
+  onChange,
+}: Props) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 

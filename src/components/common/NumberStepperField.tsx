@@ -1,6 +1,6 @@
 import NumberStepper from "@/components/common/NumberStepper";
 
-type Props = {
+export type Props = {
   label: string;
   value: number;
   onChange: (x: number) => void;

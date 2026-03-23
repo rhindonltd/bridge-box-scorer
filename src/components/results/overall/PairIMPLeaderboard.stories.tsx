@@ -22,7 +22,7 @@ import {
 import { scoreCrossIMP } from "@/model/score-traveller";
 
 const meta: Meta<typeof PairIMPLeaderboard> = {
-  title: "Results/Overall/PairIMPLeaderboard",
+  title: "Components/Results/Overall/PairIMPLeaderboard",
   component: PairIMPLeaderboard,
   parameters: {
     layout: "fullscreen",

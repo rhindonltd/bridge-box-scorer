@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { IndividualMPTable } from "@/components/results/traveller/IndividualMPTable";
 
 const meta: Meta<typeof IndividualMPTable> = {
-  title: "Results/Traveller/IndividualMPTable",
+  title: "Components/Results/Traveller/IndividualMPTable",
   component: IndividualMPTable,
   parameters: {
     layout: "fullscreen",

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import MovementDisplay from "./MovementDisplay";
 
 const meta: Meta<typeof MovementDisplay> = {
-  title: "Player/Table/MovementDisplay",
+  title: "Components/Player/Table/MovementDisplay",
   component: MovementDisplay,
   parameters: {
     layout: "fullscreen",

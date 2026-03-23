@@ -136,3 +136,39 @@ export const movements = sqliteTable(
 );
 
 export type Movement = typeof movements.$inferSelect;
+
+export const movementspec = sqliteTable("movementspec", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  tables: integer("tables").notNull(),
+  boards: integer("boards").notNull(),
+  boardsPerRound: integer("boards_per_round").notNull(),
+  rounds: integer("rounds").notNull(),
+  missingPair: integer("missing_pair"),
+});
+
+export type MovementSpecInsert = typeof movementspec.$inferInsert;
+export type MovementSpecSelect = typeof movementspec.$inferSelect;
+
+export const movementtablespec = sqliteTable("movementtablespec", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  movementId: integer("movement_id").references(() => movementspec.id),
+  tableNumber: integer("table_number").notNull(),
+});
+
+export type MovementTableSpecInsert = typeof movementtablespec.$inferInsert;
+export type MovementTableSpecSelect = typeof movementtablespec.$inferSelect;
+
+export const movementroundspec = sqliteTable("movementroundspec", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  tableId: integer("table_id").references(() => movementtablespec.id),
+  roundNumber: integer("round_number").notNull(),
+  ns: integer("ns").notNull(),
+  ew: integer("ew").notNull(),
+  boardStart: integer("board_start").notNull(),
+  boardEnd: integer("board_end").notNull(),
+});
+
+export type MovementRoundSpecInsert = typeof movementroundspec.$inferInsert;
+export type MovementRoundSpecSelect = typeof movementroundspec.$inferSelect;

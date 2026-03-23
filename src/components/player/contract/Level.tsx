@@ -10,7 +10,7 @@ type Props = {
 
 export default function Level({ level, onLevelSelected }: Props) {
   return (
-    <Section title="Level" gridCols={3}>
+    <Section title="Level" gridCols={4}>
       {[1, 2, 3, 4, 5, 6, 7].map((l) => (
         <ToggleButton
           key={l}
