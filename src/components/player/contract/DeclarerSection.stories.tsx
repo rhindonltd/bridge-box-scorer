@@ -1,10 +1,10 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import Declarer from "@/components/player/contract/Declarer";
+import DeclarerSection from "@/components/player/contract/DeclarerSection";
 import { fn } from "storybook/test";
 
-const meta: Meta<typeof Declarer> = {
-  title: "Components/Player/Contract/Declarer",
-  component: Declarer,
+const meta: Meta<typeof DeclarerSection> = {
+  title: "Components/Player/Contract/DeclarerSection",
+  component: DeclarerSection,
   parameters: {
     layout: "fullscreen",
   },
@@ -15,7 +15,7 @@ const meta: Meta<typeof Declarer> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Declarer>;
+type Story = StoryObj<typeof DeclarerSection>;
 
 export const Default: Story = {
   args: {

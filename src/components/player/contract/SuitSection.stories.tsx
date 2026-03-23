@@ -1,10 +1,10 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import Suit from "@/components/player/contract/Suit";
+import SuitSection from "@/components/player/contract/SuitSection";
 import { fn } from "storybook/test";
 
-const meta: Meta<typeof Suit> = {
-  title: "Components/Player/Contract/Suit",
-  component: Suit,
+const meta: Meta<typeof SuitSection> = {
+  title: "Components/Player/Contract/SuitSection",
+  component: SuitSection,
   parameters: {
     layout: "fullscreen",
   },
@@ -15,10 +15,10 @@ const meta: Meta<typeof Suit> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Suit>;
+type Story = StoryObj<typeof SuitSection>;
 
 export const Default: Story = {
   args: {
-    suit: "♦",
+    suit: "D",
   },
 };

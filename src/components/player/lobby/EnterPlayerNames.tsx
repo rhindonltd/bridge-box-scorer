@@ -1,6 +1,6 @@
 import { useState } from "react";
 import TextField from "@/components/common/TextField";
-import FormCard from "@/components/common/FormCard";
+import FormCardLayout from "@/components/layout/FormCardLayout";
 
 interface Props {
   direction: "NS" | "EW";
@@ -20,7 +20,7 @@ export default function EnterPlayerNames({
   const headerColor = direction === "NS" ? "bg-blue-600" : "bg-green-600";
 
   return (
-    <FormCard
+    <FormCardLayout
       header={`${direction} Players`}
       headerColor={headerColor}
       primaryText="Continue"
@@ -40,6 +40,6 @@ export default function EnterPlayerNames({
         value={player2Name}
         onChange={setPlayer2Name}
       />
-    </FormCard>
+    </FormCardLayout>
   );
 }

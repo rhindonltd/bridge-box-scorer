@@ -11,7 +11,8 @@ import {
   ScoredPairTravellerLine,
 } from "@/model/scored-traveller";
 
-export type BoardOutcome = PlayedContractCode | "PO" | "NP";
+export type SpecialBoardOutcome = "PO" | "NP";
+export type BoardOutcome = PlayedContractCode | SpecialBoardOutcome;
 
 export function outcomeToScore(
   boardNumber: number,

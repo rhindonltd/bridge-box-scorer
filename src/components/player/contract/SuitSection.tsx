@@ -1,15 +1,18 @@
 import Section from "@/components/player/contract/Section";
 import { ToggleButton } from "@/components/common/ToggleButton";
+import {ContractSuit, ContractSuits} from "@/model/contract";
 
 type Props = {
-  suit: string | null;
-  onSuitSelected: (x: string) => void;
+  className?: string;
+  suit: ContractSuit | null;
+  onSuitSelected: (x: ContractSuit) => void;
 };
 
-export default function Suit({ suit, onSuitSelected }: Props) {
+export default function SuitSection({ className, suit, onSuitSelected }: Props) {
+
   return (
-    <Section title="Suit" gridCols={3}>
-      {["♣", "♦", "♥", "♠", "NT"].map((s) => (
+    <Section className={className} title="Suit" gridCols={3}>
+      {ContractSuits.map((s) => (
         <ToggleButton
           key={s}
           active={suit === s}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import TextField from "@/components/common/TextField";
-import FormCard from "@/components/common/FormCard";
+import FormCardLayout from "@/components/layout/FormCardLayout";
 
 type Props = {
   onAdd: (name: string) => void;
@@ -10,7 +10,7 @@ export default function AddSectionForm({ onAdd }: Props) {
   const [name, setName] = useState("");
 
   return (
-    <FormCard
+    <FormCardLayout
       header={`New Section`}
       primaryText="Create"
       onSubmit={(e) => {
@@ -19,6 +19,6 @@ export default function AddSectionForm({ onAdd }: Props) {
       }}
     >
       <TextField label={`Section Name`} value={name} onChange={setName} />
-    </FormCard>
+    </FormCardLayout>
   );
 }

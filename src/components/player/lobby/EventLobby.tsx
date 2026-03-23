@@ -53,7 +53,7 @@ export default function EventLobby() {
         //     W: { firstName: 'Andrew', lastName: 'Robson' },
         // }} onEnterRound = {() => {}} />
 
-        <EnterContractPage />
+        <EnterContractPage board={2} roundBoards={[1, 2, 3]} onOk={() => {}} />
       )}
 
       {tableId && direction && !player1 && (

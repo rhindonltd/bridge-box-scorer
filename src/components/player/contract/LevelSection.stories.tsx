@@ -1,10 +1,10 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import Level from "@/components/player/contract/Level";
+import LevelSection from "@/components/player/contract/LevelSection";
 import { fn } from "storybook/test";
 
-const meta: Meta<typeof Level> = {
+const meta: Meta<typeof LevelSection> = {
   title: "Components/Player/Contract/Level",
-  component: Level,
+  component: LevelSection,
   parameters: {
     layout: "fullscreen",
   },
@@ -15,7 +15,7 @@ const meta: Meta<typeof Level> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof Level>;
+type Story = StoryObj<typeof LevelSection>;
 
 export const Default: Story = {
   args: {
