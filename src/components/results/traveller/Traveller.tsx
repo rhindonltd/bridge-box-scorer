@@ -5,22 +5,20 @@ import {
   ScoredPairMPTraveller,
   ScoredTraveller,
 } from "@/model/scored-traveller";
-import { PairMPTable } from "@/components/results/traveller/PairMPTable";
 import { PairIMPTable } from "@/components/results/traveller/PairIMPTable";
 import { IndividualMPTable } from "@/components/results/traveller/IndividualMPTable";
 import { IndividualIMPTable } from "@/components/results/traveller/IndividualIMPTable";
+import { PairMP } from "@/components/results/traveller/PairMP";
 
 type Props = {
   scoredTraveller: ScoredTraveller;
 };
 
-export function TravellerPage({ scoredTraveller }: Props) {
+export function Traveller({ scoredTraveller }: Props) {
   switch (scoredTraveller.type) {
     case "PAIR_MP":
       return (
-        <PairMPTable
-          scoredTraveller={scoredTraveller as ScoredPairMPTraveller}
-        />
+        <PairMP scoredTraveller={scoredTraveller as ScoredPairMPTraveller} />
       );
     case "PAIR_IMP":
       return (

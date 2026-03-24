@@ -21,16 +21,16 @@ type Story = StoryObj<typeof MovementOptionsPage>;
 
 export const Default: Story = {
   args: {
-    eventName: 'Monday PM Pairs',
+    eventName: "Monday PM Pairs",
     tables: 5,
   },
 };
 
 export const EventWithSessionAndSection: Story = {
-    args: {
-        eventName: 'Monday PM Pairs',
-        sessionName: 'Session 1',
-        sectionName: 'Section A',
-        tables: 5,
-    },
+  args: {
+    eventName: "Monday PM Pairs",
+    sessionName: "Session 1",
+    sectionName: "Section A",
+    tables: 5,
+  },
 };

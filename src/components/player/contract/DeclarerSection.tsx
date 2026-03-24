@@ -1,6 +1,6 @@
 import Section from "@/components/player/contract/Section";
 import { ToggleButton } from "@/components/common/ToggleButton";
-import {Direction, Directions} from "@/model/common";
+import { Direction, Directions } from "@/model/common";
 
 type Props = {
   className?: string;
@@ -8,7 +8,11 @@ type Props = {
   onDeclarerSelected: (x: Direction) => void;
 };
 
-export default function DeclarerSection({ className, declarer, onDeclarerSelected }: Props) {
+export default function DeclarerSection({
+  className,
+  declarer,
+  onDeclarerSelected,
+}: Props) {
   return (
     <Section className={className} title="Declarer" gridCols={2}>
       {Directions.map((d) => (

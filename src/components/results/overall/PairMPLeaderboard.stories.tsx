@@ -6,7 +6,7 @@ import {
   calculateOverallMPResults,
 } from "@/model/score-pair";
 import {
-  board1,
+  mpBoard1,
   board10,
   board11,
   board12,
@@ -47,7 +47,7 @@ type Story = StoryObj<typeof PairMPLeaderboard>;
 export const Default: Story = {
   args: {
     results: calculateOverallMPResults(players, [
-      scoreMatchpoints(board1),
+      scoreMatchpoints(mpBoard1),
       scoreMatchpoints(board2),
       scoreMatchpoints(board3),
       scoreMatchpoints(board4),

@@ -60,7 +60,7 @@ export const players: Map<string, Player[]> = new Map([
   ],
 ]);
 
-export const board1 = {
+export const impBoard1 = {
   type: "PAIR_IMP",
   board: 1,
   section: crypto.randomUUID(),

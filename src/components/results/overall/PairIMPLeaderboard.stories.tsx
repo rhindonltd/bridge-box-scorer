@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { PairIMPLeaderboard } from "./PairIMPLeaderboard";
 import { calculateOverallIMPResults } from "@/model/score-pair";
 import {
-  board1,
+  impBoard1,
   board10,
   board11,
   board12,
@@ -37,7 +37,7 @@ type Story = StoryObj<typeof PairIMPLeaderboard>;
 export const Default: Story = {
   args: {
     results: calculateOverallIMPResults(players, [
-      scoreCrossIMP(board1),
+      scoreCrossIMP(impBoard1),
       scoreCrossIMP(board2),
       scoreCrossIMP(board3),
       scoreCrossIMP(board4),

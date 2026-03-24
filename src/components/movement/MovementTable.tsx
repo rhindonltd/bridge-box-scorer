@@ -32,7 +32,9 @@ export default function MovementTable({ table }: Props) {
               <td className="border px-2 py-0.5">{idx + 1}</td>
               <td className="border px-2 py-0.5">{round.ns}</td>
               <td className="border px-2 py-0.5">{round.ew}</td>
-              <td className="border px-2 py-0.5">{formatBoards(round.boards)}</td>
+              <td className="border px-2 py-0.5">
+                {formatBoards(round.boards)}
+              </td>
             </tr>
           ))}
         </tbody>

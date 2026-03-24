@@ -4,15 +4,15 @@ import { fn } from "storybook/test";
 import { SelectTablePage } from "@/components/pages/player/SelectTablePage";
 
 const meta: Meta<typeof SelectTablePage> = {
-    title: "Pages/Player/SelectTablePage",
-    component: SelectTablePage,
-    parameters: {
-        layout: "fullscreen",
-    },
-    tags: ["autodocs"],
-    args: {
-        selectTable: fn(),
-    },
+  title: "Pages/Player/SelectTablePage",
+  component: SelectTablePage,
+  parameters: {
+    layout: "fullscreen",
+  },
+  tags: ["autodocs"],
+  args: {
+    selectTable: fn(),
+  },
 };
 
 export default meta;
@@ -20,7 +20,7 @@ export default meta;
 type Story = StoryObj<typeof SelectTablePage>;
 
 export const Default: Story = {
-    args: {
-        tables: 8,
-    },
+  args: {
+    tables: 8,
+  },
 };

@@ -1,6 +1,6 @@
 import Section from "@/components/player/contract/Section";
 import { ToggleButton } from "@/components/common/ToggleButton";
-import {Doubling} from "@/model/contract";
+import { Doubling } from "@/model/contract";
 
 type Props = {
   className?: string;
@@ -8,7 +8,11 @@ type Props = {
   onDblSelected: (x: Doubling) => void;
 };
 
-export default function DoubleSection({ className, dbl, onDblSelected }: Props) {
+export default function DoubleSection({
+  className,
+  dbl,
+  onDblSelected,
+}: Props) {
   return (
     <Section className={className} title="Double">
       <div>

@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { PairMPTable } from "@/components/results/traveller/PairMPTable";
 import { scoreMatchpoints } from "@/model/score-traveller";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
+import { PairMP } from "@/components/results/traveller/PairMP";
 
-const meta: Meta<typeof PairMPTable> = {
-  title: "Components/Results/Traveller/PairMPTable",
-  component: PairMPTable,
+const meta: Meta<typeof PairMP> = {
+  title: "Components/Results/Traveller/PairMP",
+  component: PairMP,
   parameters: {
     layout: "fullscreen",
   },
@@ -14,7 +14,7 @@ const meta: Meta<typeof PairMPTable> = {
 
 export default meta;
 
-type Story = StoryObj<typeof PairMPTable>;
+type Story = StoryObj<typeof PairMP>;
 
 export const Default: Story = {
   args: {

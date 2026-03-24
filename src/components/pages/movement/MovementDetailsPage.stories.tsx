@@ -4,12 +4,12 @@ import { MovementDetailsPage } from "@/components/pages/movement/MovementDetails
 import { generateMitchell } from "@/movement/mitchell";
 
 const meta: Meta<typeof MovementDetailsPage> = {
-    title: "Pages/Movement/MovementDetailsPage",
-    component: MovementDetailsPage,
-    parameters: {
-        layout: "fullscreen",
-    },
-    tags: ["autodocs"],
+  title: "Pages/Movement/MovementDetailsPage",
+  component: MovementDetailsPage,
+  parameters: {
+    layout: "fullscreen",
+  },
+  tags: ["autodocs"],
 };
 
 export default meta;
@@ -17,29 +17,29 @@ export default meta;
 type Story = StoryObj<typeof MovementDetailsPage>;
 
 export const Default: Story = {
-    args: {
-        movementName: '9-table Switch Mitchell',
-        eventName: 'Monday PM Pairs',
-        tables: generateMitchell({
-            tables: 9,
-            rounds: 9,
-            boardsPerRound: 3,
-            arrowSwitchRounds: 0,
-        }),
-    },
+  args: {
+    movementName: "9-table Switch Mitchell",
+    eventName: "Monday PM Pairs",
+    tables: generateMitchell({
+      tables: 9,
+      rounds: 9,
+      boardsPerRound: 3,
+      arrowSwitchRounds: 0,
+    }),
+  },
 };
 
 export const WithSection: Story = {
-    args: {
-        movementName: '9-table Switch Mitchell',
-        eventName: 'Monday PM Pairs',
-        sessionName: 'Session 1',
-        sectionName: 'Section A',
-        tables: generateMitchell({
-            tables: 9,
-            rounds: 9,
-            boardsPerRound: 3,
-            arrowSwitchRounds: 0,
-        }),
-    },
+  args: {
+    movementName: "9-table Switch Mitchell",
+    eventName: "Monday PM Pairs",
+    sessionName: "Session 1",
+    sectionName: "Section A",
+    tables: generateMitchell({
+      tables: 9,
+      rounds: 9,
+      boardsPerRound: 3,
+      arrowSwitchRounds: 0,
+    }),
+  },
 };

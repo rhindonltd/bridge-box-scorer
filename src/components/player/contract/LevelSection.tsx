@@ -2,7 +2,7 @@
 
 import Section from "@/components/player/contract/Section";
 import { ToggleButton } from "@/components/common/ToggleButton";
-import {Level, Levels} from "@/model/contract";
+import { Level, Levels } from "@/model/contract";
 
 type Props = {
   className?: string;
@@ -10,7 +10,11 @@ type Props = {
   onLevelSelected: (x: Level) => void;
 };
 
-export default function LevelSection({ className, level, onLevelSelected }: Props) {
+export default function LevelSection({
+  className,
+  level,
+  onLevelSelected,
+}: Props) {
   return (
     <Section className={className} title="Level" gridCols={4}>
       {Levels.map((l) => (
