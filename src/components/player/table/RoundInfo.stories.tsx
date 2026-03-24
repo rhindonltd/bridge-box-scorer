@@ -10,8 +10,7 @@ const meta: Meta<typeof RoundInfo> = {
   },
   tags: ["autodocs"],
   args: {
-    roundNumber: 1,
-    tableNumber: 5,
+    table: 5,
     boards: [1, 2, 3],
     players: {
       N: { firstName: "Alice", lastName: "Smith" },
@@ -19,7 +18,6 @@ const meta: Meta<typeof RoundInfo> = {
       E: { firstName: "Carol", lastName: "Williams" },
       W: { firstName: "David", lastName: "Brown" },
     },
-    onEnterRound: () => alert("Enter Round clicked"),
   },
 };
 
@@ -31,8 +29,7 @@ export const Default: Story = {};
 
 export const LaterRound: Story = {
   args: {
-    roundNumber: 4,
-    tableNumber: 12,
+    table: 12,
     boards: [10, 11, 12],
   },
 };

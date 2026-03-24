@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test": "vitest"
+    "test": "vitest",
+    "e2e": "npx playwright test"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -28,6 +29,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.2",
+    "@playwright/test": "^1.58.2",
     "@storybook/addon-a11y": "^10.3.2",
     "@storybook/addon-docs": "^10.3.2",
     "@storybook/addon-onboarding": "^10.3.2",
