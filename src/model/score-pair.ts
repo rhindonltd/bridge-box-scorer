@@ -2,13 +2,18 @@ import {
   ScoredPairIMPTraveller,
   ScoredPairMPTraveller,
 } from "@/model/scored-traveller";
-import { PairIMPResult, PairMPResult } from "@/model/overall-result";
-import { Player } from "@/model/player";
+import {
+  CrossImpOverallScore,
+  MatchpointOverallScore,
+  OverallPairIMPScore,
+  OverallPairMPScore,
+  PairOverallScoreLine,
+} from "@/model/leaderboard";
+import { rank } from "@/model/common-score";
 
 export function calculateOverallIMPResults(
-  pairs: Map<string, Player[]>,
   travellers: ScoredPairIMPTraveller[],
-): PairIMPResult[] {
+): OverallPairIMPScore {
   const totals = new Map<string, { imp: number; boards: number }>();
 
   for (const traveller of travellers) {
@@ -29,25 +34,24 @@ export function calculateOverallIMPResults(
     }
   }
 
-  const results: PairIMPResult[] = [];
+  const results: PairOverallScoreLine<CrossImpOverallScore>[] = [];
 
   for (const [pairId, data] of totals.entries()) {
     results.push({
       pairId,
       crossImps: data.imp,
-      boardsPlayed: data.boards,
-      percentage: 50 + (data.imp / data.boards) * 6.48,
-      players: pairs.get(pairId) || [],
     });
   }
 
-  return results.sort((a, b) => b.crossImps - a.crossImps);
+  return {
+    type: "PAIR_IMP",
+    lines: rank(results, (x) => x.crossImps),
+  };
 }
 
 export function calculateOverallMPResults(
-  pairs: Map<string, Player[]>,
   travellers: ScoredPairMPTraveller[],
-): PairMPResult[] {
+): OverallPairMPScore {
   const totals = new Map<
     string,
     { mp: number; maxMp: number; boards: number }
@@ -73,18 +77,18 @@ export function calculateOverallMPResults(
     }
   }
 
-  const results: PairMPResult[] = [];
+  const results: PairOverallScoreLine<MatchpointOverallScore>[] = [];
 
   for (const [pairId, data] of totals.entries()) {
     results.push({
       pairId,
       totalMP: data.mp,
       maxMP: data.maxMp,
-      boardsPlayed: data.boards,
-      percentage: (data.mp / data.maxMp) * 100,
-      players: pairs.get(pairId) || [],
     });
   }
 
-  return results.sort((a, b) => b.percentage - a.percentage);
+  return {
+    type: "PAIR_MP",
+    lines: rank(results, (x) => x.totalMP / x.maxMP),
+  };
 }

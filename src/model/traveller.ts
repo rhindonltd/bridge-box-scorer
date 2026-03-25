@@ -1,8 +1,8 @@
 import { BoardOutcome } from "@/model/score-traveller";
 import {
-  IndividualParticipants,
-  PairParticipants,
-  TeamParticipants,
+  TravellerIndividualParticipants,
+  TravellerPairParticipants,
+  TravellerTeamParticipants,
 } from "@/model/participants";
 
 /* ---------- base line data ---------- */
@@ -16,12 +16,12 @@ export interface TravellerLineBase {
 
 /* ---------- generic traveller lines ---------- */
 
-export type TeamTravellerLine = TravellerLineBase & TeamParticipants;
+export type TeamTravellerLine = TravellerLineBase & TravellerTeamParticipants;
 
-export type PairTravellerLine = TravellerLineBase & PairParticipants;
+export type PairTravellerLine = TravellerLineBase & TravellerPairParticipants;
 
 export type IndividualTravellerLine = TravellerLineBase &
-  IndividualParticipants;
+  TravellerIndividualParticipants;
 
 /* ---------- base traveller container ---------- */
 

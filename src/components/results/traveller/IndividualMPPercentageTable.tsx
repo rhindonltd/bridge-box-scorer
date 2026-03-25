@@ -7,10 +7,15 @@ type Props = {
   scoredTraveller: ScoredIndividualMPTraveller;
 };
 
-export function IndividualMPTable({ scoredTraveller }: Props) {
+export function IndividualMPPercentageTable({ scoredTraveller }: Props) {
+  function mpToPercent(mp: number): number {
+    const maxMP = 2 * (scoredTraveller.lines.length - 1);
+    return (mp / maxMP) * 100;
+  }
+
   return (
     <Table
-      columns={["N-S", "E-W", "", "NS Score", "NS MP", "EW MP"]}
+      columns={["N-S", "E-W", "", "NS Score", "NS %", "EW %"]}
       body={scoredTraveller.lines
         .filter((x) => x.score !== null)
         .map((row, index, arr) => {
@@ -23,8 +28,8 @@ export function IndividualMPTable({ scoredTraveller }: Props) {
                 `${row.ePlayerId}-${row.wPlayerId}`,
                 <BoardResult key={index} boardOutcome={row.outcome} />,
                 row.score,
-                row.nsMatchPoints,
-                row.ewMatchPoints,
+                mpToPercent(row.nsMatchPoints).toFixed(2),
+                mpToPercent(row.ewMatchPoints).toFixed(2),
               ]}
               className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
             />

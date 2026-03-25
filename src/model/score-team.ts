@@ -1,9 +1,9 @@
 import { PairIMPTraveller } from "@/model/traveller";
 import {
   OverallTeamResult,
-  TeamMatchLine,
-  TeamMatchResult,
-} from "@/model/overall-result";
+  TeamMatchLineScore,
+  TeamMatchScore,
+} from "@/model/leaderboard";
 
 // /**
 //  * Convert scored PairIMPTravellers into TeamMatchLines

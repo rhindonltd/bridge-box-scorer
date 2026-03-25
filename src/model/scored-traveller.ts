@@ -1,9 +1,9 @@
 import { BoardOutcome } from "@/model/score-traveller";
 
 import {
-  IndividualParticipants,
-  PairParticipants,
-  TeamParticipants,
+  TravellerIndividualParticipants,
+  TravellerPairParticipants,
+  TravellerTeamParticipants,
 } from "@/model/participants";
 
 /* ---------- base line data ---------- */
@@ -18,13 +18,13 @@ export interface ScoredTravellerLineBase {
 
 /* ---------- scoring fields ---------- */
 
-export interface MatchpointScore {
+export interface MatchpointTravellerScore {
   maxMatchPoints: number;
   nsMatchPoints: number;
   ewMatchPoints: number;
 }
 
-export interface CrossImpScore {
+export interface CrossImpTravellerScore {
   nsCrossImps: number;
   ewCrossImps: number;
 }
@@ -33,15 +33,15 @@ export interface CrossImpScore {
 
 export type ScoredTeamTravellerLine<
   TScore extends object = Record<string, never>,
-> = ScoredTravellerLineBase & TeamParticipants & TScore;
+> = ScoredTravellerLineBase & TravellerTeamParticipants & TScore;
 
 export type ScoredPairTravellerLine<
   TScore extends object = Record<string, never>,
-> = ScoredTravellerLineBase & PairParticipants & TScore;
+> = ScoredTravellerLineBase & TravellerPairParticipants & TScore;
 
 export type ScoredIndividualTravellerLine<
   TScore extends object = Record<string, never>,
-> = ScoredTravellerLineBase & IndividualParticipants & TScore;
+> = ScoredTravellerLineBase & TravellerIndividualParticipants & TScore;
 
 /* ---------- base traveller container ---------- */
 
@@ -54,40 +54,40 @@ export interface ScoredTravellerBase<TLine> {
 
 /* ---------- concrete traveller types ---------- */
 
-export type ScoredPairMPTraveller = ScoredTravellerBase<
-  ScoredPairTravellerLine<MatchpointScore>
-> & {
-  type: "PAIR_MP";
-};
-
-export type ScoredPairIMPTraveller = ScoredTravellerBase<
-  ScoredPairTravellerLine<CrossImpScore>
-> & {
-  type: "PAIR_IMP";
-};
-
 export type ScoredIndividualMPTraveller = ScoredTravellerBase<
-  ScoredIndividualTravellerLine<MatchpointScore>
+  ScoredIndividualTravellerLine<MatchpointTravellerScore>
 > & {
   type: "INDIVIDUAL_MP";
 };
 
 export type ScoredIndividualIMPTraveller = ScoredTravellerBase<
-  ScoredIndividualTravellerLine<CrossImpScore>
+  ScoredIndividualTravellerLine<CrossImpTravellerScore>
 > & {
   type: "INDIVIDUAL_IMP";
+};
+
+export type ScoredPairMPTraveller = ScoredTravellerBase<
+  ScoredPairTravellerLine<MatchpointTravellerScore>
+> & {
+  type: "PAIR_MP";
+};
+
+export type ScoredPairIMPTraveller = ScoredTravellerBase<
+  ScoredPairTravellerLine<CrossImpTravellerScore>
+> & {
+  type: "PAIR_IMP";
 };
 
 /* ---------- unions ---------- */
 
 export type ScoredTraveller =
-  | ScoredPairMPTraveller
-  | ScoredPairIMPTraveller
   | ScoredIndividualMPTraveller
-  | ScoredIndividualIMPTraveller;
+  | ScoredIndividualIMPTraveller
+  | ScoredPairMPTraveller
+  | ScoredPairIMPTraveller;
 
 export type TravellerType =
-  | "PAIR_MP"
-  | "PAIR_IMP"
   | "INDIVIDUAL_MP"
-  | "INDIVIDUAL_IMP";
+  | "INDIVIDUAL_IMP"
+  | "PAIR_MP"
+  | "PAIR_IMP";

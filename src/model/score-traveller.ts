@@ -4,8 +4,8 @@ import { getVulnerability } from "@/model/vulnerability";
 import { ImpTable } from "@/model/imp-table";
 import { PairIMPTraveller, PairMPTraveller } from "@/model/traveller";
 import {
-  CrossImpScore,
-  MatchpointScore,
+  CrossImpTravellerScore,
+  MatchpointTravellerScore,
   ScoredPairIMPTraveller,
   ScoredPairMPTraveller,
   ScoredPairTravellerLine,
@@ -62,7 +62,7 @@ export function scoreCrossIMP(
     .filter((x): x is number => x !== null);
 
   const lines = prepared.map(
-    (entry): ScoredPairTravellerLine<CrossImpScore> => {
+    (entry): ScoredPairTravellerLine<CrossImpTravellerScore> => {
       // Not played
       if (entry.score === null) {
         return {
@@ -110,7 +110,7 @@ export function scoreMatchpoints(
   // Sort descending: higher score = better
   const sorted = [...valid].sort((a, b) => b.score! - a.score!);
 
-  const result: ScoredPairTravellerLine<MatchpointScore>[] = [];
+  const result: ScoredPairTravellerLine<MatchpointTravellerScore>[] = [];
   let index = 0;
 
   while (index < sorted.length) {
@@ -147,35 +147,4 @@ export function scoreMatchpoints(
     ...traveller,
     lines: result,
   };
-}
-
-export function scoreButler(
-  traveller: PairIMPTraveller,
-): ScoredPairIMPTraveller {
-  const prepared = prepareScores(traveller.board, traveller.lines);
-
-  const validScores = prepared
-    .map((x) => x.score)
-    .filter((x): x is number => x !== null);
-
-  const average = validScores.reduce((a, b) => a + b, 0) / validScores.length;
-
-  const lines = prepared.map(
-    (entry): ScoredPairTravellerLine<CrossImpScore> => {
-      if (entry.score === null) {
-        return { ...entry.line, score: null, nsCrossImps: 0, ewCrossImps: 0 };
-      }
-
-      const imps = ImpTable.calculateImps(entry.score - average);
-
-      return {
-        ...entry.line,
-        score: entry.score,
-        nsCrossImps: imps,
-        ewCrossImps: -imps,
-      };
-    },
-  );
-
-  return { ...traveller, lines };
 }

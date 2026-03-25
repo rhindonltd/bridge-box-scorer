@@ -19,8 +19,8 @@ export function IndividualIMPTable({ scoredTraveller }: Props) {
             <TableRow
               key={index}
               cells={[
-                `${row.nPlayerId} - ${row.sPlayerId}`,
-                `${row.ePlayerId} - ${row.wPlayerId}`,
+                `${row.nPlayerId}-${row.sPlayerId}`,
+                `${row.ePlayerId}-${row.wPlayerId}`,
                 <BoardResult key={index} boardOutcome={row.outcome} />,
                 row.score,
                 row.nsCrossImps,

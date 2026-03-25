@@ -6,9 +6,9 @@ import {
   ScoredTraveller,
 } from "@/model/scored-traveller";
 import { PairIMPTable } from "@/components/results/traveller/PairIMPTable";
-import { IndividualMPTable } from "@/components/results/traveller/IndividualMPTable";
 import { IndividualIMPTable } from "@/components/results/traveller/IndividualIMPTable";
 import { PairMP } from "@/components/results/traveller/PairMP";
+import { IndividualMP } from "@/components/results/traveller/IndividualMP";
 
 type Props = {
   scoredTraveller: ScoredTraveller;
@@ -28,7 +28,7 @@ export function Traveller({ scoredTraveller }: Props) {
       );
     case "INDIVIDUAL_MP":
       return (
-        <IndividualMPTable
+        <IndividualMP
           scoredTraveller={scoredTraveller as ScoredIndividualMPTraveller}
         />
       );
