@@ -9,7 +9,7 @@ if (typeof window !== "undefined") {
   throw new Error("SQLite can only be used on the server");
 }
 
-const dataDir = path.join(process.cwd(), "data");
+const dataDir = process.env.DATABASE_URL!;
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
 const dbFile = path.join(dataDir, "bridge.db");
