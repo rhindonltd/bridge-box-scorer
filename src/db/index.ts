@@ -9,8 +9,8 @@ if (typeof window !== "undefined") {
   throw new Error("SQLite can only be used on the server");
 }
 
-const dataDir = process.env.DATABASE_URL!;
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir ?? '/home/bridgebox/data');
+const dataDir = process.env.DATABASE_URL ?? '/home/bridgebox/data';
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
 const dbFile = path.join(dataDir, "bridge.db");
 const sqlite = new Database(dbFile);
