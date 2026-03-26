@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function RestartingScreen() {
+export default function Page() {
   const [seconds, setSeconds] = useState(30);
   const [status, setStatus] = useState("Rebooting device...");
 
