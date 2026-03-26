@@ -10,7 +10,7 @@ if (typeof window !== "undefined") {
 }
 
 const dataDir = process.env.DATABASE_URL!;
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir ?? '/home/bridgebox/data');
 
 const dbFile = path.join(dataDir, "bridge.db");
 const sqlite = new Database(dbFile);
