@@ -11,7 +11,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest",
-    "e2e": "npx playwright test"
+    "e2e": "npx playwright test",
+    "migrate": "npx tsx src/scripts/migrate.ts"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

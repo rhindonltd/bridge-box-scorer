@@ -119,7 +119,9 @@ export default function WifiSettings() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "40px auto", fontFamily: "sans-serif" }}>
+    <div
+      style={{ maxWidth: 400, margin: "40px auto", fontFamily: "sans-serif" }}
+    >
       <h2>WiFi Settings</h2>
 
       {/* Network dropdown */}
@@ -149,29 +151,17 @@ export default function WifiSettings() {
 
       {/* Buttons */}
       <div style={{ display: "flex", gap: 10 }}>
-        <button
-          onClick={testConnection}
-          disabled={testing}
-          style={{ flex: 1 }}
-        >
+        <button onClick={testConnection} disabled={testing} style={{ flex: 1 }}>
           {testing ? "Testing..." : "Test Connection"}
         </button>
 
-        <button
-          onClick={saveWifi}
-          disabled={loading}
-          style={{ flex: 1 }}
-        >
+        <button onClick={saveWifi} disabled={loading} style={{ flex: 1 }}>
           {loading ? "Saving..." : "Save & Apply"}
         </button>
       </div>
 
       {/* Message */}
-      {message && (
-        <p style={{ marginTop: 15 }}>
-          {message}
-        </p>
-      )}
+      {message && <p style={{ marginTop: 15 }}>{message}</p>}
     </div>
   );
 }

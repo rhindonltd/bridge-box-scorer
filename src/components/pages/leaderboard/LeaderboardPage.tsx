@@ -28,11 +28,11 @@ export function LeaderboardPage({
         />
       </div>
 
-        <div className="w-full">
-            <div className="flex flex-col bg-blue-300 py-2">
-                <div className="text-center font-bold">Results</div>
-            </div>
+      <div className="w-full">
+        <div className="flex flex-col bg-blue-300 py-2">
+          <div className="text-center font-bold">Results</div>
         </div>
+      </div>
 
       <div className="flex-1 min-h-0">
         <Leaderboard overallScore={overallScore} />
