@@ -10,7 +10,7 @@ type Network = {
 
 const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || "";
 
-export default function WifiSettings() {
+export default function WifiSettingsPage() {
   const [networks, setNetworks] = useState<Network[]>([]);
   const [selectedSSID, setSelectedSSID] = useState("");
   const [password, setPassword] = useState("");
