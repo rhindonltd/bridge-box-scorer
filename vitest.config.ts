@@ -14,7 +14,6 @@ export default mergeConfig(
     viteConfig,
     defineConfig({
         test: {
-            // Use `workspace` field in Vitest < 3.2
             projects: [
                 {
                     extends: true,

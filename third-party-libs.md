@@ -1,10 +1,12 @@
-# total -> 438
+# total -> 457
 
-# MIT - 374
+# MIT - 391
 
-# Apache-2.0 - 17
+# Apache-2.0 - 18
 
 # LGPL-3.0-or-later - 1
+
+# Python-2.0 - 1
 
 # MPL-2.0 - 2
 
@@ -112,11 +114,35 @@
  1. https://github.com/eslint-community/regexpp
  2. MIT
 
-# @eslint/config-array@0.23.3
+# @eslint/config-array@0.21.2
 
 
  1. https://github.com/eslint/rewrite
  2. Apache-2.0
+
+# @eslint/eslintrc@3.3.5
+
+
+ 1. https://github.com/eslint/eslintrc
+ 2. MIT
+
+# @eslint/js@9.39.4
+
+
+ 1. https://github.com/eslint/eslint
+ 2. MIT
+
+# @floating-ui/core@1.7.5
+
+
+ 1. https://github.com/floating-ui/floating-ui
+ 2. MIT
+
+# @headlessui/react@2.2.9
+
+
+ 1. https://github.com/tailwindlabs/headlessui
+ 2. MIT
 
 # @humanfs/core@0.19.1
 
@@ -244,6 +270,12 @@
  1. https://github.com/lukeed/polka
  2. MIT
 
+# @react-aria/focus@3.21.5
+
+
+ 1. https://github.com/adobe/react-spectrum
+ 2. Apache-2.0
+
 # @rolldown/binding-darwin-arm64@1.0.0-rc.12
 
 
@@ -304,6 +336,12 @@
  1. https://github.com/tailwindlabs/tailwindcss
  2. MIT
 
+# @tanstack/react-virtual@3.13.23
+
+
+ 1. https://github.com/TanStack/virtual
+ 2. MIT
+
 # @testing-library/dom@10.4.1
 
 
@@ -314,6 +352,12 @@
 
 
  1. https://github.com/testing-library/jest-dom
+ 2. MIT
+
+# @testing-library/react@16.3.2
+
+
+ 1. https://github.com/testing-library/react-testing-library
  2. MIT
 
 # @testing-library/user-event@14.6.1
@@ -352,6 +396,12 @@
  1. https://github.com/unrs/unrs-resolver
  2. MIT
 
+# @vitejs/plugin-react@6.0.1
+
+
+ 1. https://github.com/vitejs/vite-plugin-react
+ 2. MIT
+
 # @vitest/browser-playwright@4.1.1
 
 
@@ -388,7 +438,7 @@
  1. https://github.com/chalk/ansi-regex
  2. MIT
 
-# ansi-styles@5.2.0
+# ansi-styles@4.3.0
 
 
  1. https://github.com/chalk/ansi-styles
@@ -399,6 +449,12 @@
 
  1. https://github.com/zeit/arg
  2. MIT
+
+# argparse@2.0.1
+
+
+ 1. https://github.com/nodeca/argparse
+ 2. Python-2.0
 
 # aria-query@5.3.0
 
@@ -610,6 +666,12 @@
  1. https://github.com/ljharb/call-bound
  2. MIT
 
+# callsites@3.1.0
+
+
+ 1. https://github.com/sindresorhus/callsites
+ 2. MIT
+
 # caniuse-lite@1.0.30001781
 
 
@@ -620,6 +682,12 @@
 
 
  1. https://github.com/chaijs/chai
+ 2. MIT
+
+# chalk@4.1.2
+
+
+ 1. https://github.com/chalk/chalk
  2. MIT
 
 # check-error@2.1.3
@@ -638,6 +706,24 @@
 
 
  1. https://github.com/chromaui/chromatic-cli
+ 2. MIT
+
+# clsx@2.1.1
+
+
+ 1. https://github.com/lukeed/clsx
+ 2. MIT
+
+# color-convert@2.0.1
+
+
+ 1. https://github.com/Qix-/color-convert
+ 2. MIT
+
+# color-name@1.1.4
+
+
+ 1. https://github.com/colorjs/color-name
  2. MIT
 
 # concat-map@0.0.1
@@ -958,7 +1044,7 @@
  1. https://github.com/jsx-eslint/eslint-plugin-react
  2. MIT
 
-# eslint-scope@9.1.2
+# eslint-scope@8.4.0
 
 
  1. https://github.com/eslint/js
@@ -969,12 +1055,6 @@
 
  1. https://github.com/eslint/eslint-visitor-keys
  2. Apache-2.0
-
-# eslint@10.1.0
-
-
- 1. https://github.com/eslint/eslint
- 2. MIT
 
 # esprima@4.0.1
 
@@ -1192,7 +1272,7 @@
  1. https://github.com/isaacs/node-glob
  2. BlueOak-1.0.0
 
-# globals@16.4.0
+# globals@14.0.0
 
 
  1. https://github.com/sindresorhus/globals
@@ -1292,6 +1372,12 @@
 
 
  1. https://github.com/image-size/image-size
+ 2. MIT
+
+# import-fresh@3.3.1
+
+
+ 1. https://github.com/sindresorhus/import-fresh
  2. MIT
 
 # imurmurhash@0.1.4
@@ -1534,6 +1620,12 @@
  1. https://github.com/lydell/js-tokens
  2. MIT
 
+# js-yaml@4.1.1
+
+
+ 1. https://github.com/nodeca/js-yaml
+ 2. MIT
+
 # jsesc@3.1.0
 
 
@@ -1610,6 +1702,12 @@
 
 
  1. https://github.com/sindresorhus/locate-path
+ 2. MIT
+
+# lodash.merge@4.6.2
+
+
+ 1. https://github.com/lodash/lodash
  2. MIT
 
 # loose-envify@1.4.0
@@ -1894,6 +1992,12 @@
  1. https://github.com/sindresorhus/p-locate
  2. MIT
 
+# parent-module@1.0.1
+
+
+ 1. https://github.com/sindresorhus/parent-module
+ 2. MIT
+
 # path-exists@4.0.0
 
 
@@ -2054,6 +2158,12 @@
 
 
  1. https://github.com/es-shims/RegExp.prototype.flags
+ 2. MIT
+
+# resolve-from@4.0.0
+
+
+ 1. https://github.com/sindresorhus/resolve-from
  2. MIT
 
 # resolve-pkg-maps@1.0.0
@@ -2324,6 +2434,12 @@
 
 
  1. https://github.com/vercel/swr
+ 2. MIT
+
+# tabbable@6.4.0
+
+
+ 1. https://github.com/focus-trap/tabbable
  2. MIT
 
 # tapable@2.3.2
