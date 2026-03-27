@@ -1,12 +1,4 @@
-import {
-  OverallIndividualIMPScore,
-  OverallIndividualMPScore,
-  OverallPairIMPScore,
-  OverallPairMPScore,
-  OverallScore,
-  OverallTeamMatchScore,
-  OverallTeamScore,
-} from "@/model/leaderboard";
+import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { PairIMPLeaderboard } from "@/components/results/leaderboard/PairIMPLeaderboard";
 import { IndividualIMPLeaderboard } from "@/components/results/leaderboard/IndividualIMPLeaderboard";
 import { TeamMatchLeaderboard } from "@/components/results/leaderboard/TeamMatchLeaderboard";
@@ -15,37 +7,51 @@ import { PairMP } from "@/components/results/leaderboard/PairMP";
 import { IndividualMP } from "@/components/results/leaderboard/IndividualMP";
 
 type Props = {
-  overallScore: OverallScore;
+  overallScoreAndParticipant: OverallScoreAndParticipant;
 };
 
-export function Leaderboard({ overallScore }: Props) {
-  switch (overallScore.type) {
+export function Leaderboard({ overallScoreAndParticipant }: Props) {
+  switch (overallScoreAndParticipant.type) {
     case "INDIVIDUAL_MP":
       return (
-        <IndividualMP leaderboard={overallScore as OverallIndividualMPScore} />
+        <IndividualMP
+          individuals={overallScoreAndParticipant.participants}
+          leaderboard={overallScoreAndParticipant.overallScore}
+        />
       );
     case "INDIVIDUAL_IMP":
       return (
         <IndividualIMPLeaderboard
-          leaderboard={overallScore as OverallIndividualIMPScore}
+          individuals={overallScoreAndParticipant.participants}
+          leaderboard={overallScoreAndParticipant.overallScore}
         />
       );
     case "PAIR_MP":
-      return <PairMP leaderboard={overallScore as OverallPairMPScore} />;
+      return (
+        <PairMP
+          pairs={overallScoreAndParticipant.participants}
+          leaderboard={overallScoreAndParticipant.overallScore}
+        />
+      );
     case "PAIR_IMP":
       return (
-        <PairIMPLeaderboard leaderboard={overallScore as OverallPairIMPScore} />
+        <PairIMPLeaderboard
+          pairs={overallScoreAndParticipant.participants}
+          leaderboard={overallScoreAndParticipant.overallScore}
+        />
       );
     case "TEAM_MATCH":
       return (
         <TeamMatchLeaderboard
-          leaderboard={overallScore as OverallTeamMatchScore}
+          teams={overallScoreAndParticipant.participants}
+          leaderboard={overallScoreAndParticipant.overallScore}
         />
       );
     case "TEAM_OVERALL":
       return (
         <TeamOverallLeaderboard
-          leaderboard={overallScore as OverallTeamScore}
+          teams={overallScoreAndParticipant.participants}
+          leaderboard={overallScoreAndParticipant.overallScore}
         />
       );
     default:

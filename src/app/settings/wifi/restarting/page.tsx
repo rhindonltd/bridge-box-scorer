@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {WifiRestartingPage} from "@/components/pages/settings/WifiRestartingPage";
+import { WifiRestartingPage } from "@/components/pages/settings/WifiRestartingPage";
 
 export default function WifiRestarting() {
   const [seconds, setSeconds] = useState(30);
@@ -33,7 +33,5 @@ export default function WifiRestarting() {
     }
   }, [seconds]);
 
-  return (
-      <WifiRestartingPage seconds={seconds} status={status} />
-  );
+  return <WifiRestartingPage seconds={seconds} status={status} />;
 }

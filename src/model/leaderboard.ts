@@ -1,8 +1,13 @@
 import {
+  Individual,
   OverallIndividualParticipant,
   OverallPairParticipant,
   OverallTeamParticipant,
+  Pair,
+  Team,
 } from "@/model/participants";
+
+/* ---------- ranked result ---------- */
 
 export type RankedResult<T> = T & {
   rank: number;
@@ -60,41 +65,27 @@ export interface OverallScoreBase<TLine> {
 
 export type OverallIndividualMPScore = OverallScoreBase<
   IndividualOverallScoreLine<MatchpointOverallScore>
-> & {
-  type: "INDIVIDUAL_MP";
-};
+> & { type: "INDIVIDUAL_MP" };
 
 export type OverallIndividualIMPScore = OverallScoreBase<
   IndividualOverallScoreLine<CrossImpOverallScore>
-> & {
-  type: "INDIVIDUAL_IMP";
-};
+> & { type: "INDIVIDUAL_IMP" };
 
 export type OverallPairMPScore = OverallScoreBase<
   PairOverallScoreLine<MatchpointOverallScore>
-> & {
-  type: "PAIR_MP";
-};
+> & { type: "PAIR_MP" };
 
 export type OverallPairIMPScore = OverallScoreBase<
   PairOverallScoreLine<CrossImpOverallScore>
-> & {
-  type: "PAIR_IMP";
-};
+> & { type: "PAIR_IMP" };
 
-// IMP or PAB
 export type OverallTeamMatchScore = OverallScoreBase<
   TeamOverallScoreLine<TeamMatchScore>
-> & {
-  type: "TEAM_MATCH";
-};
+> & { type: "TEAM_MATCH" };
 
-// IMP, VP or PAB
 export type OverallTeamScore = OverallScoreBase<
   TeamOverallScoreLine<OverallTeamResult>
-> & {
-  type: "TEAM_OVERALL";
-};
+> & { type: "TEAM_OVERALL" };
 
 export type OverallScore =
   | OverallIndividualMPScore
@@ -111,3 +102,30 @@ export type OverallScoreType =
   | "PAIR_IMP"
   | "TEAM_MATCH"
   | "TEAM_OVERALL";
+
+/* ---------- automatic OverallScoreAndParticipants ---------- */
+
+// Map from score type literal to participant type
+type ParticipantsMap = {
+  INDIVIDUAL_MP: Individual[];
+  INDIVIDUAL_IMP: Individual[];
+  PAIR_MP: Pair[];
+  PAIR_IMP: Pair[];
+  TEAM_MATCH: Team[];
+  TEAM_OVERALL: Team[];
+};
+
+// Helper to extract OverallScore by type literal
+type OverallScoreByType<T extends OverallScoreType> = Extract<
+  OverallScore,
+  { type: T }
+>;
+
+// Automatic discriminated union for OverallScoreAndParticipants
+export type OverallScoreAndParticipant = {
+  [K in OverallScoreType]: {
+    type: K;
+    overallScore: OverallScoreByType<K>;
+    participants: ParticipantsMap[K];
+  };
+}[OverallScoreType];

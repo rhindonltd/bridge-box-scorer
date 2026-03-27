@@ -5,12 +5,14 @@ import { Toggle } from "@/components/common/Toggle";
 import { OverallPairMPScore } from "@/model/leaderboard";
 import { PairMPPercentageLeaderboard } from "@/components/results/leaderboard/PairMPPercentageLeaderboard";
 import { PairMPLeaderboard } from "@/components/results/leaderboard/PairMPLeaderboard";
+import { Pair } from "@/model/participants";
 
 type Props = {
+  pairs: Pair[];
   leaderboard: OverallPairMPScore;
 };
 
-export function PairMP({ leaderboard }: Props) {
+export function PairMP({ pairs, leaderboard }: Props) {
   const [showPercentage, setShowPercentage] = useState(true);
 
   return (
@@ -27,9 +29,9 @@ export function PairMP({ leaderboard }: Props) {
 
       {/* Scrollable table */}
       {showPercentage ? (
-        <PairMPPercentageLeaderboard leaderboard={leaderboard} />
+        <PairMPPercentageLeaderboard pairs={pairs} leaderboard={leaderboard} />
       ) : (
-        <PairMPLeaderboard leaderboard={leaderboard} />
+        <PairMPLeaderboard pairs={pairs} leaderboard={leaderboard} />
       )}
     </div>
   );

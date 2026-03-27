@@ -5,12 +5,14 @@ import { Toggle } from "@/components/common/Toggle";
 import { OverallIndividualMPScore } from "@/model/leaderboard";
 import { IndividualMPLeaderboard } from "@/components/results/leaderboard/IndividualMPLeaderboard";
 import { IndividualMPPercentageLeaderboard } from "@/components/results/leaderboard/IndividualMPPercentageLeaderboard";
+import { Individual } from "@/model/participants";
 
 type Props = {
+  individuals: Individual[];
   leaderboard: OverallIndividualMPScore;
 };
 
-export function IndividualMP({ leaderboard }: Props) {
+export function IndividualMP({ individuals, leaderboard }: Props) {
   const [showPercentage, setShowPercentage] = useState(true);
 
   return (
@@ -27,9 +29,15 @@ export function IndividualMP({ leaderboard }: Props) {
 
       {/* Scrollable table */}
       {showPercentage ? (
-        <IndividualMPPercentageLeaderboard leaderboard={leaderboard} />
+        <IndividualMPPercentageLeaderboard
+          individuals={individuals}
+          leaderboard={leaderboard}
+        />
       ) : (
-        <IndividualMPLeaderboard leaderboard={leaderboard} />
+        <IndividualMPLeaderboard
+          individuals={individuals}
+          leaderboard={leaderboard}
+        />
       )}
     </div>
   );

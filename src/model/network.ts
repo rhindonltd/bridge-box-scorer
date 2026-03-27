@@ -1,4 +1,4 @@
 export type Network = {
-    ssid: string;
-    signal: number;
+  ssid: string;
+  signal: number;
 };
