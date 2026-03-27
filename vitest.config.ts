@@ -1,51 +1,46 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from 'vitest/config';
+import { playwright } from '@vitest/browser-playwright';
 
-import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
-import { playwright } from "@vitest/browser-playwright";
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 
-const dirname =
-  typeof __dirname !== "undefined"
-    ? __dirname
-    : path.dirname(fileURLToPath(import.meta.url));
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const alias = {
-  "@": path.resolve(__dirname, "src"),
-};
+const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig({
-  resolve: { alias }, // root alias
+import viteConfig from './vite.config';
 
-  test: {
-    projects: [
-      // Node tests
-      {
-        resolve: { alias }, // important: apply alias per project
+export default mergeConfig(
+    viteConfig,
+    defineConfig({
         test: {
-          globals: true,
-          environment: "node",
-          include: ["tests/**/*.test.ts", "src/**/*.test.ts"],
+            // Use `workspace` field in Vitest < 3.2
+            projects: [
+                {
+                    extends: true,
+                    plugins: [
+                        storybookTest({
+                            // The location of your Storybook config, main.js|ts
+                            configDir: path.join(dirname, '.storybook'),
+                            // This should match your package.json script to run Storybook
+                            // The --no-open flag will skip the automatic opening of a browser
+                            storybookScript: 'npm run storybook dev -p 6006',
+                        }),
+                    ],
+                    test: {
+                        name: 'storybook',
+                        // Enable browser mode
+                        browser: {
+                            enabled: true,
+                            // Make sure to install Playwright
+                            provider: playwright({}),
+                            headless: true,
+                            instances: [{ browser: 'chromium' }],
+                        },
+                        setupFiles: ['./.storybook/vitest.setup.ts'],
+                    },
+                },
+            ],
         },
-      },
-
-      // Storybook tests
-      // {
-      //   extends: true,
-      //   plugins: [
-      //     storybookTest({ configDir: path.join(dirname, ".storybook") }),
-      //   ],
-      //   resolve: { alias }, // also apply alias here if your storybook code uses it
-      //   test: {
-      //     browser: {
-      //       enabled: true,
-      //       headless: true,
-      //       provider: playwright({}),
-      //       instances: [{ browser: "chromium" }],
-      //     },
-      //     setupFiles: [".storybook/vitest.setup.ts"],
-      //   },
-      // },
-    ],
-  },
-});
+    }),
+);

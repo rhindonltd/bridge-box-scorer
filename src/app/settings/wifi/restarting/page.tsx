@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {WifiRestartingPage} from "@/components/pages/settings/WifiRestartingPage";
 
-export default function WifiRestartingPage() {
+export default function WifiRestarting() {
   const [seconds, setSeconds] = useState(30);
   const [status, setStatus] = useState("Rebooting device...");
 
@@ -33,10 +34,6 @@ export default function WifiRestartingPage() {
   }, [seconds]);
 
   return (
-    <div style={{ textAlign: "center", marginTop: 100 }}>
-      <h1>{status}</h1>
-      <p>Reconnecting in {seconds}s...</p>
-      <p>If disconnected, reconnect to BridgeBox WiFi</p>
-    </div>
+      <WifiRestartingPage seconds={seconds} status={status} />
   );
 }
