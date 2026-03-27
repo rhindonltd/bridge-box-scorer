@@ -16,6 +16,34 @@ type Story = StoryObj<typeof TeamOverallLeaderboard>;
 
 export const Default: Story = {
   args: {
+    teams: [
+      {
+        type: "TEAM",
+        teamId: "1",
+        players: [
+          {
+            firstName: "David",
+            lastName: "Collier",
+            nationalId: 404476,
+          },
+          {
+            firstName: "Jacqui",
+            lastName: "Collier",
+            nationalId: 477484,
+          },
+          {
+            firstName: "Peter",
+            lastName: "Collier",
+            nationalId: 123456,
+          },
+          {
+            firstName: "Andrew",
+            lastName: "Robson",
+            nationalId: 234567,
+          },
+        ],
+      },
+    ],
     leaderboard: {
       type: "TEAM_OVERALL",
       lines: [

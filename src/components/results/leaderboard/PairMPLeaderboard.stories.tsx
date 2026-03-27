@@ -17,6 +17,24 @@ type Story = StoryObj<typeof PairMPLeaderboard>;
 
 export const Default: Story = {
   args: {
+    pairs: [
+      {
+        type: "PAIR",
+        pairId: "1",
+        players: [
+          {
+            firstName: "David",
+            lastName: "Collier",
+            nationalId: 404476,
+          },
+          {
+            firstName: "Jacqui",
+            lastName: "Collier",
+            nationalId: 477484,
+          },
+        ],
+      },
+    ],
     leaderboard: {
       type: "PAIR_MP",
       lines: [

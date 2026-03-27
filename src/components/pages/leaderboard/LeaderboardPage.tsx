@@ -1,13 +1,13 @@
 import { SectionInfo } from "@/components/common/SectionInfo";
 import React from "react";
 import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
-import { OverallScore } from "@/model/leaderboard";
+import { OverallScoreAndParticipant } from "@/model/leaderboard";
 
 interface Props {
   eventName: string;
   sessionName?: string;
   sectionName?: string;
-  overallScore: OverallScore;
+  overallScoreAndParticipant: OverallScoreAndParticipant;
   onNext: () => void;
 }
 
@@ -15,7 +15,7 @@ export function LeaderboardPage({
   eventName,
   sessionName,
   sectionName,
-  overallScore,
+  overallScoreAndParticipant,
   onNext,
 }: Props) {
   return (
@@ -35,7 +35,7 @@ export function LeaderboardPage({
       </div>
 
       <div className="flex-1 min-h-0">
-        <Leaderboard overallScore={overallScore} />
+        <Leaderboard overallScoreAndParticipant={overallScoreAndParticipant} />
       </div>
 
       <div className="p-2">

@@ -1,8 +1,8 @@
 import { OverallTeamMatchScore } from "@/model/leaderboard";
-import { Table } from "@/components/common/table/Table";
-import { TableRow } from "@/components/common/table/TableRow";
+import { Team } from "@/model/participants";
 
 interface Props {
+  teams: Team[];
   leaderboard: OverallTeamMatchScore;
 }
 

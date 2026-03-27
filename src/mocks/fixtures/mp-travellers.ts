@@ -1,5 +1,5 @@
+import { Player } from "@/model/participants";
 import { PairMPTraveller } from "@/model/traveller";
-import { Player } from "@/model/player";
 
 export const players: Map<string, Player[]> = new Map([
   [
