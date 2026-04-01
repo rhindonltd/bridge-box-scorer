@@ -23,6 +23,8 @@ import { SpecialBoardOutcome } from "@/model/score-traveller";
 import { Direction, Suit } from "@/model/common";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
+import { PlayedContract } from "@/components/results/traveller/PlayedContract";
+import { PlayableContract } from "@/components/pages/player/PlayableContract";
 
 export type BoardAndContract = {
   board: number;
@@ -174,40 +176,17 @@ export default function EnterContractPage({
       </div>
 
       {/* MIDDLE: 2x2 CONTROLS (fills ALL remaining space) */}
-      <div className="flex-1 min-h-0 p-2">
-        <div className="grid grid-cols-2 grid-rows-2 gap-x-2 gap-y-3 h-full auto-rows-fr">
-          <div className="h-full flex">
-            <LevelSection
-              className="flex-1"
-              level={level}
-              onLevelSelected={onLevelSelected}
-            />
-          </div>
-
-          <div className="h-full flex">
-            <SuitSection
-              className="flex-1"
-              suit={suit}
-              onSuitSelected={onSuitSelected}
-            />
-          </div>
-
-          <div className="h-full flex">
-            <DeclarerSection
-              className="flex-1"
-              declarer={declarer}
-              onDeclarerSelected={onDeclarerSelected}
-            />
-          </div>
-
-          <div className="h-full flex">
-            <DoubleSection
-              className="flex-1"
-              dbl={dbl}
-              onDblSelected={onDblSelected}
-            />
-          </div>
-        </div>
+      <div className="flex-1 min-h-0">
+        <PlayableContract
+          level={level}
+          suit={suit}
+          declarer={declarer}
+          dbl={dbl}
+          onLevelSelected={onLevelSelected}
+          onSuitSelected={onSuitSelected}
+          onDeclarerSelected={onDeclarerSelected}
+          onDblSelected={onDblSelected}
+        />
       </div>
 
       {/* BOTTOM */}

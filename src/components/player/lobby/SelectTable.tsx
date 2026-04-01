@@ -1,43 +1,65 @@
-import Button from "@/components/common/Button";
+import { SectionInfo } from "@/components/common/SectionInfo";
 
 interface Props {
+  eventName: string;
+  sessionName?: string;
+  sectionName?: string;
   tables: number;
   selectTable: (table: number, direction: "NS" | "EW") => void;
 }
 
-export default function SelectTable({ tables, selectTable }: Props) {
+export default function SelectTable({
+  eventName,
+  sessionName,
+  sectionName,
+  tables,
+  selectTable,
+}: Props) {
   const tableNumbers = Array.from({ length: tables }, (_, i) => i + 1);
 
   return (
-    <div className="flex flex-col w-screen min-h-screen bg-gray-100 font-sans p-4 gap-4">
-      {tableNumbers.map((table) => (
-        <div
-          key={table}
-          className="w-full bg-white rounded-2xl shadow-lg overflow-hidden"
-        >
-          {/* Header */}
-          <div className="bg-blue-600 text-white text-center py-3 text-lg font-bold">
-            Table {table}
-          </div>
-
-          {/* NS / EW split row */}
-          <div className="flex">
-            {/* NS */}
-            <Button
-              value="NS"
-              bgColour="bg-indigo-500"
-              hoverColour="hover:bg-indigo-600"
-              onClick={() => selectTable(table, "NS")}
-            />
-            <Button
-              value="EW"
-              bgColour="bg-green-600"
-              hoverColour="hover:bg-green-700"
-              onClick={() => selectTable(table, "EW")}
-            />
-          </div>
+    <div className="h-screen flex flex-col bg-gray-100">
+      {/* Header */}
+      <div className="w-full flex-shrink-0">
+        <SectionInfo
+          eventName={eventName}
+          sessionName={sessionName}
+          sectionName={sectionName}
+        />
+        <div className="px-4 mt-4 mb-2">
+          <span>Please select the table and direction you are sitting:</span>
         </div>
-      ))}
+      </div>
+
+      {/* Scrollable Grid */}
+      <div className="flex-1 overflow-auto px-4 pb-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
+          {tableNumbers.map((table) => (
+            <div
+              key={table}
+              className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden"
+            >
+              <div className="text-center py-3 text-lg font-semibold text-gray-700 border-b border-gray-200 bg-blue-300">
+                Table {table}
+              </div>
+              <div className="grid grid-cols-2">
+                <button
+                  onClick={() => selectTable(table, "NS")}
+                  className="py-5 text-lg font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition border-r border-gray-200"
+                >
+                  NS
+                </button>
+                <button
+                  onClick={() => selectTable(table, "EW")}
+                  className="py-5 text-lg font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition"
+                >
+                  EW
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
