@@ -5,7 +5,7 @@ type Props = {
 export default function SubmitButton({ onSubmit }: Props) {
   return (
     <button
-      className="w-full mt-3 p-3 text-lg bg-green-700 text-white rounded-xl"
+      className="w-full p-2 text-lg bg-green-700 text-white rounded-xl"
       onSubmit={onSubmit}
     >
       OK

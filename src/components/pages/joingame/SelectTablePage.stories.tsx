@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
-import { SelectTablePage } from "@/components/pages/player/SelectTablePage";
+import { SelectTablePage } from "@/components/pages/joingame/SelectTablePage";
 
 const meta: Meta<typeof SelectTablePage> = {
-  title: "Pages/Player/SelectTablePage",
+  title: "Pages/JoinGame/SelectTablePage",
   component: SelectTablePage,
   parameters: {
     layout: "fullscreen",
@@ -21,6 +21,7 @@ type Story = StoryObj<typeof SelectTablePage>;
 
 export const Default: Story = {
   args: {
+    eventName: "Monday PM Pairs",
     tables: 8,
   },
 };

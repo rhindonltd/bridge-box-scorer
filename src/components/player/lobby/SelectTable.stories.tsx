@@ -19,18 +19,21 @@ type Story = StoryObj<typeof SelectTable>;
 
 export const Default: Story = {
   args: {
+    eventName: "Monday PM Pairs",
     tables: 8,
   },
 };
 
 export const FewTables: Story = {
   args: {
+    eventName: "Monday PM Pairs",
     tables: 3,
   },
 };
 
 export const ManyTables: Story = {
   args: {
+    eventName: "Monday PM Pairs",
     tables: 16,
   },
 };

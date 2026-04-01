@@ -25,7 +25,7 @@ export default function DoubleSection({
         </ToggleButton>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-1">
         <ToggleButton
           active={dbl === "X"}
           onClick={() => onDblSelected("X")}

@@ -1,8 +1,8 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { EnterPlayerNamesPage } from "@/components/pages/player/EnterPlayerNamesPage";
+import { EnterPlayerNamesPage } from "./EnterPlayerNamesPage";
 
 const meta: Meta<typeof EnterPlayerNamesPage> = {
-  title: "Pages/Player/EnterPlayerNamesPage",
+  title: "Pages/JoinGame/EnterPlayerNamesPage",
   component: EnterPlayerNamesPage,
   parameters: {
     layout: "fullscreen",
