@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
 import MovementOptionsPage from "@/components/pages/movement/MovementOptionsPage";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof MovementOptionsPage> = {
   title: "Pages/Movement/MovementOptionsPage",
@@ -20,17 +21,15 @@ export default meta;
 type Story = StoryObj<typeof MovementOptionsPage>;
 
 export const Default: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     tables: 5,
   },
 };
 
 export const EventWithSessionAndSection: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs", sessionName: 'Session 1', sectionName: 'Section A' })],
   args: {
-    eventName: "Monday PM Pairs",
-    sessionName: "Session 1",
-    sectionName: "Section A",
     tables: 5,
   },
 };

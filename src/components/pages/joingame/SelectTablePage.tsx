@@ -1,29 +1,29 @@
-import SelectTable from "@/components/player/lobby/SelectTable";
+import { SectionInfo } from "@/components/common/SectionInfo";
+import SelectTable from "@/components/joingame/SelectTable";
+
+type Assignment = {
+  table: number;
+  direction: "NS" | "EW";
+};
 
 interface Props {
-  eventName: string;
-  sessionName?: string;
-  sectionName?: string;
   tables: number;
   selectTable: (table: number, direction: "NS" | "EW") => void;
+  assigned: Assignment[];
 }
 
-export function SelectTablePage({
-  eventName,
-  sessionName,
-  sectionName,
-  tables,
-  selectTable,
-}: Props) {
+export function SelectTablePage({ tables, selectTable, assigned }: Props) {
   return (
-    <>
+    <div className="h-screen flex flex-col bg-gray-100">
+      <div className="w-full">
+        <SectionInfo />
+      </div>
+
       <SelectTable
-        eventName={eventName}
-        sessionName={sessionName}
-        sectionName={sectionName}
         tables={tables}
         selectTable={selectTable}
+        assigned={assigned}
       />
-    </>
+    </div>
   );
 }

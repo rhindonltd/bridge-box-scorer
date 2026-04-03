@@ -7,9 +7,6 @@ import FormCardLayout from "@/components/layout/FormCardLayout";
 import { SectionInfo } from "@/components/common/SectionInfo";
 
 type Props = {
-  eventName: string;
-  sessionName?: string;
-  sectionName?: string;
   onConfirm: (value: Movement) => void;
 };
 
@@ -20,12 +17,7 @@ type Movement = {
   boardsPerRound: number;
 };
 
-export default function SelectMovementPage({
-  eventName,
-  sessionName,
-  sectionName,
-  onConfirm,
-}: Props) {
+export default function SelectMovementPage({ onConfirm }: Props) {
   const [tables, setTables] = useState(3);
   const [rounds, setRounds] = useState(3);
   const [boardsPerRound, setBoardsPerRound] = useState(3);
@@ -63,11 +55,7 @@ export default function SelectMovementPage({
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <SectionInfo
-        eventName={eventName}
-        sessionName={sessionName}
-        sectionName={sectionName}
-      />
+      <SectionInfo />
 
       <div className="flex-1 flex items-center justify-center p-2 min-h-0">
         <FormCardLayout

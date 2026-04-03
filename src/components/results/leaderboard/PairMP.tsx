@@ -5,10 +5,10 @@ import { Toggle } from "@/components/common/Toggle";
 import { OverallPairMPScore } from "@/model/leaderboard";
 import { PairMPPercentageLeaderboard } from "@/components/results/leaderboard/PairMPPercentageLeaderboard";
 import { PairMPLeaderboard } from "@/components/results/leaderboard/PairMPLeaderboard";
-import { Pair } from "@/model/participants";
+import { PairWithPlayers } from "@/model/participants";
 
 type Props = {
-  pairs: Pair[];
+  pairs: PairWithPlayers[];
   leaderboard: OverallPairMPScore;
 };
 

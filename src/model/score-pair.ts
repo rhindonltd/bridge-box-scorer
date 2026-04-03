@@ -19,17 +19,17 @@ export function calculateOverallIMPResults(
   for (const traveller of travellers) {
     for (const line of traveller.lines) {
       if (line.nsCrossImps !== undefined) {
-        const ns = totals.get(line.nsPairId) ?? { imp: 0, boards: 0 };
+        const ns = totals.get(line.nsId) ?? { imp: 0, boards: 0 };
         ns.imp += line.nsCrossImps;
         ns.boards += 1;
-        totals.set(line.nsPairId, ns);
+        totals.set(line.nsId, ns);
       }
 
       if (line.ewCrossImps !== undefined) {
-        const ew = totals.get(line.ewPairId) ?? { imp: 0, boards: 0 };
+        const ew = totals.get(line.ewId) ?? { imp: 0, boards: 0 };
         ew.imp += line.ewCrossImps;
         ew.boards += 1;
-        totals.set(line.ewPairId, ew);
+        totals.set(line.ewId, ew);
       }
     }
   }
@@ -38,6 +38,7 @@ export function calculateOverallIMPResults(
 
   for (const [pairId, data] of totals.entries()) {
     results.push({
+      type: "PAIR",
       pairId,
       crossImps: data.imp,
     });
@@ -60,19 +61,19 @@ export function calculateOverallMPResults(
   for (const traveller of travellers) {
     for (const line of traveller.lines) {
       if (line.nsMatchPoints !== undefined) {
-        const ns = totals.get(line.nsPairId) ?? { mp: 0, maxMp: 0, boards: 0 };
+        const ns = totals.get(line.nsId) ?? { mp: 0, maxMp: 0, boards: 0 };
         ns.mp += line.nsMatchPoints;
         ns.maxMp += line.maxMatchPoints;
         ns.boards += 1;
-        totals.set(line.nsPairId, ns);
+        totals.set(line.nsId, ns);
       }
 
       if (line.ewMatchPoints !== undefined) {
-        const ew = totals.get(line.ewPairId) ?? { mp: 0, maxMp: 0, boards: 0 };
+        const ew = totals.get(line.ewId) ?? { mp: 0, maxMp: 0, boards: 0 };
         ew.mp += line.ewMatchPoints;
         ew.maxMp += line.maxMatchPoints;
         ew.boards += 1;
-        totals.set(line.ewPairId, ew);
+        totals.set(line.ewId, ew);
       }
     }
   }
@@ -81,6 +82,7 @@ export function calculateOverallMPResults(
 
   for (const [pairId, data] of totals.entries()) {
     results.push({
+      type: "PAIR",
       pairId,
       totalMP: data.mp,
       maxMP: data.maxMp,

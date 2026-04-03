@@ -9,7 +9,7 @@ const networks: Network[] = [
 ];
 
 const meta: Meta<typeof WifiSettingsForm> = {
-  title: "Pages/Player/WifiSettingsForm",
+  title: "Pages/Settings/WifiSettingsForm",
   component: WifiSettingsForm,
   parameters: {
     layout: "fullscreen",

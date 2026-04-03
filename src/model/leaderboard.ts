@@ -1,10 +1,10 @@
 import {
   Individual,
-  OverallIndividualParticipant,
-  OverallPairParticipant,
-  OverallTeamParticipant,
+  IndividualWithPlayer,
   Pair,
+  PairWithPlayers,
   Team,
+  TeamWithPlayers,
 } from "@/model/participants";
 
 /* ---------- ranked result ---------- */
@@ -44,15 +44,15 @@ export interface OverallTeamResult {
 
 export type TeamOverallScoreLine<
   TScore extends object = Record<string, never>,
-> = OverallTeamParticipant & TScore;
+> = Team & TScore;
 
 export type PairOverallScoreLine<
   TScore extends object = Record<string, never>,
-> = OverallPairParticipant & TScore;
+> = Pair & TScore;
 
 export type IndividualOverallScoreLine<
   TScore extends object = Record<string, never>,
-> = OverallIndividualParticipant & TScore;
+> = Individual & TScore;
 
 /* ---------- base overall container ---------- */
 
@@ -107,12 +107,12 @@ export type OverallScoreType =
 
 // Map from score type literal to participant type
 type ParticipantsMap = {
-  INDIVIDUAL_MP: Individual[];
-  INDIVIDUAL_IMP: Individual[];
-  PAIR_MP: Pair[];
-  PAIR_IMP: Pair[];
-  TEAM_MATCH: Team[];
-  TEAM_OVERALL: Team[];
+  INDIVIDUAL_MP: IndividualWithPlayer[];
+  INDIVIDUAL_IMP: IndividualWithPlayer[];
+  PAIR_MP: PairWithPlayers[];
+  PAIR_IMP: PairWithPlayers[];
+  TEAM_MATCH: TeamWithPlayers[];
+  TEAM_OVERALL: TeamWithPlayers[];
 };
 
 // Helper to extract OverallScore by type literal

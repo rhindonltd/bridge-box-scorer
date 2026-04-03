@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { LeaderboardPage } from "@/components/pages/leaderboard/LeaderboardPage";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof LeaderboardPage> = {
   title: "Pages/Leaderboard/LeaderboardPage",
@@ -14,27 +15,26 @@ export default meta;
 type Story = StoryObj<typeof LeaderboardPage>;
 
 export const IndividualIMP: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     overallScoreAndParticipant: {
       type: "INDIVIDUAL_IMP",
       participants: [
         {
           type: "INDIVIDUAL",
           playerId: "1",
-          players: [
-            {
-              firstName: "David",
-              lastName: "Collier",
-              nationalId: 404476,
-            },
-          ],
+          player: {
+            firstName: "David",
+            lastName: "Collier",
+            nationalId: 404476,
+          },
         },
       ],
       overallScore: {
         type: "INDIVIDUAL_IMP",
         lines: [
           {
+            type: "INDIVIDUAL",
             rank: 1,
             tied: false,
             playerId: "1",
@@ -47,27 +47,26 @@ export const IndividualIMP: Story = {
 };
 
 export const IndividualMP: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     overallScoreAndParticipant: {
       type: "INDIVIDUAL_MP",
       participants: [
         {
           type: "INDIVIDUAL",
           playerId: "1",
-          players: [
-            {
-              firstName: "David",
-              lastName: "Collier",
-              nationalId: 404476,
-            },
-          ],
+          player: {
+            firstName: "David",
+            lastName: "Collier",
+            nationalId: 404476,
+          },
         },
       ],
       overallScore: {
         type: "INDIVIDUAL_MP",
         lines: [
           {
+            type: "INDIVIDUAL",
             tied: false,
             rank: 1,
             playerId: "1",
@@ -81,27 +80,31 @@ export const IndividualMP: Story = {
 };
 
 export const PairIMP: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     overallScoreAndParticipant: {
       type: "PAIR_IMP",
       participants: [
         {
           type: "PAIR",
           pairId: "1",
-          players: [
-            {
-              firstName: "David",
-              lastName: "Collier",
-              nationalId: 404476,
-            },
-          ],
+          player1: {
+            firstName: "David",
+            lastName: "Collier",
+            nationalId: 404476,
+          },
+          player2: {
+            firstName: "Jacqui",
+            lastName: "Collier",
+            nationalId: 477484,
+          },
         },
       ],
       overallScore: {
         type: "PAIR_IMP",
         lines: [
           {
+            type: "PAIR",
             tied: false,
             rank: 1,
             pairId: "1",
@@ -114,27 +117,31 @@ export const PairIMP: Story = {
 };
 
 export const PairMP: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     overallScoreAndParticipant: {
       type: "PAIR_MP",
       participants: [
         {
           type: "PAIR",
           pairId: "1",
-          players: [
-            {
-              firstName: "David",
-              lastName: "Collier",
-              nationalId: 404476,
-            },
-          ],
+          player1: {
+            firstName: "David",
+            lastName: "Collier",
+            nationalId: 404476,
+          },
+          player2: {
+            firstName: "Jacqui",
+            lastName: "Collier",
+            nationalId: 477484,
+          },
         },
       ],
       overallScore: {
         type: "PAIR_MP",
         lines: [
           {
+            type: "PAIR",
             tied: false,
             rank: 1,
             pairId: "1",
@@ -148,8 +155,8 @@ export const PairMP: Story = {
 };
 
 export const Team: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     overallScoreAndParticipant: {
       type: "TEAM_OVERALL",
       participants: [
@@ -162,6 +169,21 @@ export const Team: Story = {
               lastName: "Collier",
               nationalId: 404476,
             },
+            {
+              firstName: "Jacqui",
+              lastName: "Collier",
+              nationalId: 477484,
+            },
+            {
+              firstName: "Peter",
+              lastName: "Collier",
+              nationalId: 123456,
+            },
+            {
+              firstName: "Andrew",
+              lastName: "Robson",
+              nationalId: 654321,
+            },
           ],
         },
       ],
@@ -169,6 +191,7 @@ export const Team: Story = {
         type: "TEAM_OVERALL",
         lines: [
           {
+            type: "TEAM",
             tied: false,
             rank: 1,
             teamId: "1",

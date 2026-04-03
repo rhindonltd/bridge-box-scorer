@@ -3,7 +3,6 @@ import { BoardOutcome } from "@/model/score-traveller";
 import {
   TravellerIndividualParticipants,
   TravellerPairParticipants,
-  TravellerTeamParticipants,
 } from "@/model/participants";
 
 /* ---------- base line data ---------- */
@@ -30,10 +29,6 @@ export interface CrossImpTravellerScore {
 }
 
 /* ---------- generic traveller lines ---------- */
-
-export type ScoredTeamTravellerLine<
-  TScore extends object = Record<string, never>,
-> = ScoredTravellerLineBase & TravellerTeamParticipants & TScore;
 
 export type ScoredPairTravellerLine<
   TScore extends object = Record<string, never>,

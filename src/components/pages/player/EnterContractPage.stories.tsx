@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import EnterContractPage from "@/components/pages/player/EnterContractPage";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof EnterContractPage> = {
   title: "Pages/Player/EnterContractPage",
@@ -14,8 +15,8 @@ export default meta;
 type Story = StoryObj<typeof EnterContractPage>;
 
 export const Default: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     table: 2,
     round: 1,
     board: 2,
@@ -24,10 +25,8 @@ export const Default: Story = {
 };
 
 export const SessionAndSection: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs", sessionName: 'Session 1', sectionName: 'Section A' })],
   args: {
-    eventName: "Monday PM Pairs",
-    sessionName: "Session 1",
-    sectionName: "Section A",
     table: 2,
     round: 1,
     board: 2,

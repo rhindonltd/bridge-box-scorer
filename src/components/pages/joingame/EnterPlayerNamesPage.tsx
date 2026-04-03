@@ -1,21 +1,15 @@
 import React from "react";
-import EnterPlayerNames from "@/components/player/lobby/EnterPlayerNames";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
+import EnterPlayerNames from "@/components/joingame/EnterPlayerNames";
 
 interface Props {
-  eventName: string;
-  sessionName?: string;
-  sectionName?: string;
   table: number;
   direction: "NS" | "EW";
   submitPlayerNames: (player1: string, player2: string) => void;
 }
 
 export function EnterPlayerNamesPage({
-  eventName,
-  sessionName,
-  sectionName,
   table,
   direction,
   submitPlayerNames,
@@ -24,11 +18,7 @@ export function EnterPlayerNamesPage({
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header / Section info */}
       <div className="w-full">
-        <SectionInfo
-          eventName={eventName}
-          sessionName={sessionName}
-          sectionName={sectionName}
-        />
+        <SectionInfo />
       </div>
 
       <div className="w-full">

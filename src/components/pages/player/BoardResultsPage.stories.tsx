@@ -5,6 +5,7 @@ import { individualMpTraveller } from "@/mocks/fixtures/traveller/individual-mp"
 import { scoreCrossIMP, scoreMatchpoints } from "@/model/score-traveller";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof BoardResultsPage> = {
   title: "Pages/Player/BoardResultsPage",
@@ -19,8 +20,8 @@ export default meta;
 type Story = StoryObj<typeof BoardResultsPage>;
 
 export const IndividualIMP: Story = {
+    decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     board: 5,
     lastBoardOfRound: false,
     scoredTraveller: individualIMPTraveller,
@@ -28,8 +29,8 @@ export const IndividualIMP: Story = {
 };
 
 export const IndividualMP: Story = {
+    decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     board: 5,
     lastBoardOfRound: false,
     scoredTraveller: individualMpTraveller,
@@ -37,8 +38,8 @@ export const IndividualMP: Story = {
 };
 
 export const PairIMP: Story = {
+    decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     board: 5,
     lastBoardOfRound: false,
     scoredTraveller: scoreCrossIMP(impBoard1),
@@ -46,8 +47,8 @@ export const PairIMP: Story = {
 };
 
 export const PairMP: Story = {
+    decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     board: 5,
     lastBoardOfRound: false,
     scoredTraveller: scoreMatchpoints(mpBoard1),
