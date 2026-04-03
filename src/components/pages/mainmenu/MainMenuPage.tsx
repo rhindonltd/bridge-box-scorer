@@ -1,18 +1,29 @@
-import React from "react";
+import { Settings } from "lucide-react";
 
 interface Props {
   onCreateNewGame: () => void;
   onJoinGame: () => void;
   onManagePastGames: () => void;
+  onOpenSettings: () => void;
 }
 
 export function MainMenuPage({
   onCreateNewGame,
   onJoinGame,
   onManagePastGames,
+  onOpenSettings,
 }: Props) {
   return (
-    <div className="h-screen flex flex-col overflow-y-auto">
+    <div className="h-screen flex flex-col overflow-y-auto relative">
+      {/* Settings Cog */}
+      <button
+        onClick={onOpenSettings}
+        className="absolute top-3 right-3 z-50 p-2 text-gray-400 hover:text-gray-600 transition-opacity opacity-60 hover:opacity-100"
+        aria-label="Settings"
+      >
+        <Settings size={30} />
+      </button>
+
       {/* Logo */}
       <div className="flex flex-col items-center mt-6 mb-6 relative z-0">
         <img

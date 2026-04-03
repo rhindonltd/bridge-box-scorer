@@ -1,11 +1,24 @@
 "use client";
 
-import EventLobby from "@/components/player/lobby/EventLobby";
+import { MainMenuPage } from "../components/pages/mainmenu/MainMenuPage";
 
 export default function PlayerLobbyPage() {
+  function createNewGame() {}
+
+  function joinGame() {}
+
+  function managePastGames() {}
+
+  function openSettings() {}
+
   return (
     <div style={{ margin: "0 auto" }}>
-      <EventLobby />
+      <MainMenuPage
+        onCreateNewGame={createNewGame}
+        onJoinGame={joinGame}
+        onManagePastGames={managePastGames}
+        onOpenSettings={openSettings}
+      />
     </div>
   );
 }

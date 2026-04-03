@@ -1,5 +1,5 @@
-import { findUpcomingBridgeSections } from "@/db/queries";
 import { NextResponse } from "next/server";
+import { findUpcomingBridgeSections } from "@/db/queries";
 
 export interface UpcomingSection {
   sectionId: string;
@@ -10,9 +10,8 @@ export interface UpcomingSection {
 
 export async function GET() {
   try {
-    return findUpcomingBridgeSections().then((sections) =>
-      NextResponse.json(sections),
-    );
+    const sections: UpcomingSection[] = await findUpcomingBridgeSections();
+    return NextResponse.json(sections);
   } catch (error) {
     console.error(error);
     return NextResponse.json(

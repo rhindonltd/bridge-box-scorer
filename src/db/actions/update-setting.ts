@@ -1,9 +1,10 @@
 "use server";
 
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { Setting, settings } from "@/db/schema";
 
 export async function updateSetting(item: Setting) {
+  const db = await getDb();
   await db
     .insert(settings)
     .values(item)

@@ -1,7 +1,7 @@
 "use server";
 
 import { UpcomingSection } from "@/app/api/sections/upcoming-sections/route";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { events, sections, sessions } from "@/db/schema";
 import { eq, gte } from "drizzle-orm";
 
@@ -9,6 +9,7 @@ export async function findUpcomingBridgeSections(): Promise<UpcomingSection[]> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const db = await getDb();
   return db
     .select({
       sectionId: sections.id,
@@ -23,6 +24,7 @@ export async function findUpcomingBridgeSections(): Promise<UpcomingSection[]> {
 }
 
 export async function getSectionsForSession(sessionId: string) {
+  const db = await getDb();
   return db
     .select()
     .from(sections)

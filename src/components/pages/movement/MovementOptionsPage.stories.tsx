@@ -28,7 +28,13 @@ export const Default: Story = {
 };
 
 export const EventWithSessionAndSection: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs", sessionName: 'Session 1', sectionName: 'Section A' })],
+  decorators: [
+    withGame({
+      eventName: "Monday PM Pairs",
+      sessionName: "Session 1",
+      sectionName: "Section A",
+    }),
+  ],
   args: {
     tables: 5,
   },

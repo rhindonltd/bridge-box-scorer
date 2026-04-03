@@ -31,7 +31,9 @@ export const Default: Story = {
 };
 
 export const WithSection: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs", sectionName: 'Section A' })],
+  decorators: [
+    withGame({ eventName: "Monday PM Pairs", sectionName: "Section A" }),
+  ],
   args: {
     movementName: "9-table Switch Mitchell",
     tables: generateMitchell({
