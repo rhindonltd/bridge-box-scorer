@@ -1,10 +1,10 @@
 import { OverallPairMPScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { Pair } from "@/model/participants";
+import { PairWithPlayers } from "@/model/participants";
 
 interface Props {
-  pairs: Pair[];
+  pairs: PairWithPlayers[];
   leaderboard: OverallPairMPScore;
 }
 
@@ -15,11 +15,12 @@ export function PairMPPercentageLeaderboard({ pairs, leaderboard }: Props) {
 
     return (
       <div className="text-left">
-        {participant.players.map((p, i) => (
-          <div key={i}>
-            {p.firstName} {p.lastName}
-          </div>
-        ))}
+        <div>
+          {participant.player1.firstName} {participant.player1.lastName}
+        </div>
+        <div>
+          {participant.player2.firstName} {participant.player2.lastName}
+        </div>
       </div>
     );
   };

@@ -1,25 +1,28 @@
 import { OverallPairIMPScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { Pair } from "@/model/participants";
+import { PairWithPlayers } from "@/model/participants";
 
 interface Props {
-  pairs: Pair[];
+  pairs: PairWithPlayers[];
   leaderboard: OverallPairIMPScore;
 }
 
 export function PairIMPLeaderboard({ pairs, leaderboard }: Props) {
   const getPlayerNames = (playerId: string) => {
-    const participant = pairs.find((ind) => ind.pairId === playerId);
+    const participant = pairs.find(
+      (pairWithPlayers) => pairWithPlayers.pairId === playerId,
+    );
     if (!participant) return playerId;
 
     return (
       <div className="text-left">
-        {participant.players.map((p, i) => (
-          <div key={i}>
-            {p.firstName} {p.lastName}
-          </div>
-        ))}
+        <div>
+          {participant.player1.firstName} {participant.player1.lastName}
+        </div>
+        <div>
+          {participant.player2.firstName} {participant.player2.lastName}
+        </div>
       </div>
     );
   };

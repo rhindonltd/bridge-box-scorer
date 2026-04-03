@@ -4,28 +4,15 @@ import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
 
 interface Props {
-  eventName: string;
-  sessionName?: string;
-  sectionName?: string;
   overallScoreAndParticipant: OverallScoreAndParticipant;
   onNext: () => void;
 }
 
-export function LeaderboardPage({
-  eventName,
-  sessionName,
-  sectionName,
-  overallScoreAndParticipant,
-  onNext,
-}: Props) {
+export function LeaderboardPage({ overallScoreAndParticipant, onNext }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <div className="w-full">
-        <SectionInfo
-          eventName={eventName}
-          sessionName={sessionName}
-          sectionName={sectionName}
-        />
+        <SectionInfo />
       </div>
 
       <div className="w-full">

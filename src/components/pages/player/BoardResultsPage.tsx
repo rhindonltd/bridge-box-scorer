@@ -5,9 +5,6 @@ import { ScoredTraveller } from "@/model/scored-traveller";
 import { Traveller } from "@/components/results/traveller/Traveller";
 
 interface Props {
-  eventName: string;
-  sessionName?: string;
-  sectionName?: string;
   board: number;
   lastBoardOfRound: boolean;
   scoredTraveller: ScoredTraveller;
@@ -15,9 +12,6 @@ interface Props {
 }
 
 export function BoardResultsPage({
-  eventName,
-  sessionName,
-  sectionName,
   board,
   lastBoardOfRound,
   scoredTraveller,
@@ -26,11 +20,7 @@ export function BoardResultsPage({
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <div className="w-full">
-        <SectionInfo
-          eventName={eventName}
-          sessionName={sessionName}
-          sectionName={sectionName}
-        />
+        <SectionInfo />
       </div>
 
       <div className="w-full">

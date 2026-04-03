@@ -20,19 +20,18 @@ export const Default: Story = {
       {
         type: "INDIVIDUAL",
         playerId: "1",
-        players: [
-          {
-            firstName: "David",
-            lastName: "Collier",
-            nationalId: 404476,
-          },
-        ],
+        player: {
+          firstName: "David",
+          lastName: "Collier",
+          nationalId: 404476,
+        },
       },
     ],
     leaderboard: {
       type: "INDIVIDUAL_MP",
       lines: [
         {
+          type: "INDIVIDUAL",
           tied: false,
           rank: 1,
           playerId: "1",

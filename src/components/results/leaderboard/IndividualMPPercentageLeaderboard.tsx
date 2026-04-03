@@ -1,10 +1,10 @@
 import { OverallIndividualMPScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { Individual } from "@/model/participants";
+import { IndividualWithPlayer } from "@/model/participants";
 
 type Props = {
-  individuals: Individual[];
+  individuals: IndividualWithPlayer[];
   leaderboard: OverallIndividualMPScore;
 };
 
@@ -13,16 +13,16 @@ export function IndividualMPPercentageLeaderboard({
   leaderboard,
 }: Props) {
   const getPlayerNames = (playerId: string) => {
-    const participant = individuals.find((ind) => ind.playerId === playerId);
+    const participant = individuals.find(
+      (individualWithPlayer) => individualWithPlayer.playerId === playerId,
+    );
     if (!participant) return playerId;
 
     return (
       <div className="text-left">
-        {participant.players.map((p, i) => (
-          <div key={i}>
-            {p.firstName} {p.lastName}
-          </div>
-        ))}
+        <div>
+          {participant.player.firstName} {participant.player.lastName}
+        </div>
       </div>
     );
   };

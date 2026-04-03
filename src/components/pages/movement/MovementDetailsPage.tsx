@@ -4,31 +4,17 @@ import { SectionInfo } from "@/components/common/SectionInfo";
 import React from "react";
 
 type Props = {
-  eventName: string;
-  sessionName?: string;
-  sectionName?: string;
   movementName: string;
   tables: Tables;
   onCreate: () => void;
 };
 
-export function MovementDetailsPage({
-  eventName,
-  sessionName,
-  sectionName,
-  movementName,
-  tables,
-  onCreate,
-}: Props) {
+export function MovementDetailsPage({ movementName, tables, onCreate }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
       <div className="w-full">
-        <SectionInfo
-          eventName={eventName}
-          sessionName={sessionName}
-          sectionName={sectionName}
-        />
+        <SectionInfo />
       </div>
 
       {/* Movement name */}

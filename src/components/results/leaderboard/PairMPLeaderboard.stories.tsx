@@ -21,24 +21,23 @@ export const Default: Story = {
       {
         type: "PAIR",
         pairId: "1",
-        players: [
-          {
-            firstName: "David",
-            lastName: "Collier",
-            nationalId: 404476,
-          },
-          {
-            firstName: "Jacqui",
-            lastName: "Collier",
-            nationalId: 477484,
-          },
-        ],
+        player1: {
+          firstName: "David",
+          lastName: "Collier",
+          nationalId: 404476,
+        },
+        player2: {
+          firstName: "Jacqui",
+          lastName: "Collier",
+          nationalId: 477484,
+        },
       },
     ],
     leaderboard: {
       type: "PAIR_MP",
       lines: [
         {
+          type: "PAIR",
           tied: false,
           rank: 1,
           pairId: "1",

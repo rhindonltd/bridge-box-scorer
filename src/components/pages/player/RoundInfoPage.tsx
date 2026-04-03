@@ -9,9 +9,6 @@ interface PlayerName {
 }
 
 interface Props {
-  eventName: string;
-  sessionName?: string;
-  sectionName?: string;
   round: number;
   table: number;
   boards: number[];
@@ -25,9 +22,6 @@ interface Props {
 }
 
 export function RoundInfoPage({
-  eventName,
-  sessionName,
-  sectionName,
   round,
   table,
   boards,
@@ -37,11 +31,7 @@ export function RoundInfoPage({
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <div className="w-full">
-        <SectionInfo
-          eventName={eventName}
-          sessionName={sessionName}
-          sectionName={sectionName}
-        />
+        <SectionInfo />
       </div>
 
       <div className="w-full">

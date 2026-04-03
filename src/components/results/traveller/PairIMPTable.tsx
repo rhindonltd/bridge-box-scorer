@@ -19,8 +19,8 @@ export function PairIMPTable({ scoredTraveller }: Props) {
             <TableRow
               key={index}
               cells={[
-                `${row.nsPairId}`,
-                `${row.ewPairId}`,
+                `${row.nsId}`,
+                `${row.ewId}`,
                 <BoardResult key={index} boardOutcome={row.outcome} />,
                 row.score,
                 row.nsCrossImps.toFixed(2),

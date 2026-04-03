@@ -48,6 +48,7 @@ export const Default: Story = {
       type: "TEAM_OVERALL",
       lines: [
         {
+          type: "TEAM",
           tied: false,
           rank: 1,
           teamId: "1",

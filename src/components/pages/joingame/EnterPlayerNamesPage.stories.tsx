@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { EnterPlayerNamesPage } from "./EnterPlayerNamesPage";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof EnterPlayerNamesPage> = {
   title: "Pages/JoinGame/EnterPlayerNamesPage",
@@ -14,36 +15,44 @@ export default meta;
 type Story = StoryObj<typeof EnterPlayerNamesPage>;
 
 export const NS: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     table: 3,
     direction: "NS",
   },
 };
 
 export const NSWithSection: Story = {
+  decorators: [
+    withGame({
+      eventName: "Monday PM Pairs",
+      sessionName: "Session 1",
+      sectionName: "Section A",
+    }),
+  ],
   args: {
-    eventName: "Monday PM Pairs",
-    sessionName: "Session 1",
-    sectionName: "Section A",
     table: 3,
     direction: "NS",
   },
 };
 
 export const EW: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
-    eventName: "Monday PM Pairs",
     table: 3,
     direction: "EW",
   },
 };
 
 export const EWWithSection: Story = {
+  decorators: [
+    withGame({
+      eventName: "Monday PM Pairs",
+      sessionName: "Session 1",
+      sectionName: "Section A",
+    }),
+  ],
   args: {
-    eventName: "Monday PM Pairs",
-    sessionName: "Session 1",
-    sectionName: "Section A",
     table: 3,
     direction: "EW",
   },

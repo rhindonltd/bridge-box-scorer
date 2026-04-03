@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { WifiRestartingPage } from "@/components/pages/settings/WifiRestartingPage";
 
 const meta: Meta<typeof WifiRestartingPage> = {
-  title: "Pages/Player/WifiRestartingPage",
+  title: "Pages/Settings/WifiRestartingPage",
   component: WifiRestartingPage,
   parameters: {
     layout: "fullscreen",

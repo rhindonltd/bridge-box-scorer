@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { RoundInfoPage } from "@/components/pages/player/RoundInfoPage";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof RoundInfoPage> = {
   title: "Pages/Player/RoundInfoPage",
@@ -10,7 +11,6 @@ const meta: Meta<typeof RoundInfoPage> = {
   },
   tags: ["autodocs"],
   args: {
-    eventName: "Monday PM Pairs",
     round: 1,
     table: 5,
     boards: [1, 2, 3],
@@ -28,9 +28,12 @@ export default meta;
 
 type Story = StoryObj<typeof RoundInfoPage>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+};
 
 export const LaterRound: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
     round: 4,
     table: 12,
@@ -39,6 +42,7 @@ export const LaterRound: Story = {
 };
 
 export const LongNames: Story = {
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
     players: {
       N: { firstName: "Alexandria", lastName: "Montgomery-Wellington" },

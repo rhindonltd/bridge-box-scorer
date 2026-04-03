@@ -32,9 +32,6 @@ export type BoardAndContract = {
 };
 
 type Props = {
-  eventName: string;
-  sessionName?: string;
-  sectionName?: string;
   round: number;
   table: number;
   board: number;
@@ -43,9 +40,6 @@ type Props = {
 };
 
 export default function EnterContractPage({
-  eventName,
-  sessionName,
-  sectionName,
   round,
   table,
   board,
@@ -140,11 +134,7 @@ export default function EnterContractPage({
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <SectionInfo
-        eventName={eventName}
-        sessionName={sessionName}
-        sectionName={sectionName}
-      />
+      <SectionInfo />
 
       {/* TOP GRID */}
       <div className="grid grid-cols-2 w-full items-stretch">
