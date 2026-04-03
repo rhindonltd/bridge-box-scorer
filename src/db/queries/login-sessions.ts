@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { loginSessions, settings } from "@/db/schema";
 import bcrypt from "bcrypt";
 import { findSetting } from "@/db/queries/settings";
@@ -15,6 +15,7 @@ export async function directorPasswordExists(): Promise<boolean> {
 export async function setDirectorPassword(password: string): Promise<void> {
   const hash = await bcrypt.hash(password, 10);
 
+  const db = await getDb();
   await db
     .insert(settings)
     .values({
@@ -37,6 +38,7 @@ export async function verifyDirectorPassword(
 }
 
 export async function isDirector(token: string) {
+  const db = await getDb();
   return (
     db.select().from(loginSessions).where(eq(loginSessions.token, token)) !==
     null

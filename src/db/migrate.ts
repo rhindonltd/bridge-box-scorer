@@ -1,13 +1,13 @@
-// app/lib/migrate.ts
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { db } from "@/db";
+import { getDb } from "@/db";
 
 export async function runMigrations() {
+  const db = await getDb();
   await migrate(db, { migrationsFolder: "./drizzle" });
   console.log("Migrations complete");
 }
 
-// Optional: run migrations if this file is executed directly
+// Run if called directly
 if (require.main === module) {
   runMigrations().catch((err) => {
     console.error("Migration failed:", err);

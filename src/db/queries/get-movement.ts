@@ -1,6 +1,6 @@
 "use server";
 
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { movementroundspec, movementtablespec } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -20,6 +20,7 @@ export async function getMovement(movementSpecId: number) {
 }
 
 async function getMovementTableSpecsForMovementSpecId(movementSpecId: number) {
+  const db = await getDb();
   return db
     .select()
     .from(movementtablespec)
@@ -29,6 +30,7 @@ async function getMovementTableSpecsForMovementSpecId(movementSpecId: number) {
 async function getMovementRoundSpecsForMovementSpecTableId(
   movementTableSpecId: number,
 ) {
+  const db = await getDb();
   return db
     .select()
     .from(movementroundspec)

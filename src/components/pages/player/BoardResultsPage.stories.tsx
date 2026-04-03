@@ -20,7 +20,7 @@ export default meta;
 type Story = StoryObj<typeof BoardResultsPage>;
 
 export const IndividualIMP: Story = {
-    decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
     board: 5,
     lastBoardOfRound: false,
@@ -29,7 +29,7 @@ export const IndividualIMP: Story = {
 };
 
 export const IndividualMP: Story = {
-    decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
     board: 5,
     lastBoardOfRound: false,
@@ -38,7 +38,7 @@ export const IndividualMP: Story = {
 };
 
 export const PairIMP: Story = {
-    decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
     board: 5,
     lastBoardOfRound: false,
@@ -47,7 +47,7 @@ export const PairIMP: Story = {
 };
 
 export const PairMP: Story = {
-    decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [withGame({ eventName: "Monday PM Pairs" })],
   args: {
     board: 5,
     lastBoardOfRound: false,

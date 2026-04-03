@@ -1,10 +1,11 @@
 "use server";
 
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { settings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function findSetting(key: string): Promise<string | null> {
+  const db = await getDb();
   const rows = await db
     .select({ value: settings.settingValue })
     .from(settings)

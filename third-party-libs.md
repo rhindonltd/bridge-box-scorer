@@ -1,4 +1,4 @@
-# total -> 457
+# total -> 458
 
 # MIT - 391
 
@@ -14,7 +14,7 @@
 
 # CC-BY-4.0 - 1
 
-# ISC - 18
+# ISC - 19
 
 # BSD-2-Clause - 8
 
@@ -1444,6 +1444,11 @@
 
 1.  https://github.com/isaacs/node-lru-cache
 2.  BlueOak-1.0.0
+
+# lucide-react@1.7.0
+
+1.  https://github.com/lucide-icons/lucide
+2.  ISC
 
 # lz-string@1.5.0
 
