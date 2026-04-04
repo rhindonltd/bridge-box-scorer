@@ -1,4 +1,4 @@
-import { GameContext } from "../../src/context/GameSelectionContext";
+import { GameContext } from "@/context/GameSelectionContext";
 
 export const withGame = (selection: any) => (Story: any) => (
   <GameContext.Provider

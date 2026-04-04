@@ -1,15 +1,27 @@
 "use client";
 
-import { MainMenuPage } from "../components/pages/mainmenu/MainMenuPage";
+import { useRouter } from "next/navigation";
+
+import { MainMenuPage } from "@/components/pages/mainmenu/MainMenuPage";
 
 export default function PlayerLobbyPage() {
-  function createNewGame() {}
+  const router = useRouter();
 
-  function joinGame() {}
+  function createNewGame() {
+    router.push("/create");
+  }
 
-  function managePastGames() {}
+  function joinGame() {
+    router.push("/join");
+  }
 
-  function openSettings() {}
+  function managePastGames() {
+    router.push("/manage");
+  }
+
+  function openSettings() {
+    router.push("/settings/wifi");
+  }
 
   return (
     <div style={{ margin: "0 auto" }}>
