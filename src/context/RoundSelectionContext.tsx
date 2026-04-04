@@ -12,7 +12,7 @@ interface ContextType {
   clearSelection: () => void;
 }
 
-const RoundContext = createContext<ContextType | undefined>(undefined);
+export const RoundContext = createContext<ContextType | undefined>(undefined);
 
 export function RoundProvider({ children }: { children: ReactNode }) {
   const [selection, setSelection] = useState<Selection>(null);

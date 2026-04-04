@@ -1,3 +1,5 @@
+"use client";
+
 import { RoundInfoPage } from "@/components/pages/play/RoundInfoPage";
 
 export default function PlayGame() {

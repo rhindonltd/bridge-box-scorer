@@ -1,3 +1,5 @@
+"use client";
+
 import RoundInfo from "@/components/play/RoundInfo";
 import React from "react";
 import { SectionInfo } from "@/components/common/SectionInfo";
