@@ -2,8 +2,10 @@
 
 import { GameProvider } from "@/context/GameSelectionContext";
 
-export default function GameLayout({ children }: {
-    children: React.ReactNode;
+export default function GameLayout({
+  children,
+}: {
+  children: React.ReactNode;
 }) {
-    return <GameProvider>{children}</GameProvider>;
+  return <GameProvider>{children}</GameProvider>;
 }
