@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
 import { ShowDirectorPinPage } from "@/components/pages/director/ShowDirectorPinPage";
-import { GameProvider } from "@/context/GameSelectionContext";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof ShowDirectorPinPage> = {

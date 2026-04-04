@@ -1,8 +1,9 @@
-import { GameContext } from "@/context/GameSelectionContext";
+import { GameContext } from "@/context/GameContext";
 
-export const withGame = (selection: any) => (Story: any) => (
+export const withGame = (gameSelection?: any, assignmentSelection?: any) => (Story: any) => (
   <GameContext.Provider
-    value={{ selection, selectGame: () => {}, clearSelection: () => {} }}
+    value={{ gameSelection, selectGame: () => {}, clearGame: () => {},
+        assignmentSelection, selectAssignment: () => {}, clearAssignment: () => {} }}
   >
     <Story />
   </GameContext.Provider>

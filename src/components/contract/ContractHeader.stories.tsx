@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { ContractHeader } from "@/components/contract/ContractHeader";
-import { withBoard } from "@storybook/decorators/BoardDecorator";
+import { withPlay } from "@storybook/decorators/PlayDecorator";
 
 const meta: Meta<typeof ContractHeader> = {
   title: "Components/Contract/ContractHeader",
@@ -9,7 +9,7 @@ const meta: Meta<typeof ContractHeader> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
-  decorators: [withBoard(3)],
+  decorators: [withPlay(3, 2)],
 };
 
 export default meta;
