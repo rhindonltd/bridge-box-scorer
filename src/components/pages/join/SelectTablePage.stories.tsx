@@ -21,7 +21,17 @@ export default meta;
 type Story = StoryObj<typeof SelectTablePage>;
 
 export const Default: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     tables: 8,
     assigned: [

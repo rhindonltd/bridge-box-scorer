@@ -9,7 +9,7 @@ const meta: Meta<typeof ContractHeader> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
-  decorators: [withPlay(3, 2)],
+  decorators: [withPlay({ board: 3 }, { round: 2 })],
 };
 
 export default meta;

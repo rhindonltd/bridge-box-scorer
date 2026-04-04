@@ -4,9 +4,9 @@ import { Game } from "@/model/common";
 import { Assignment } from "@/model/participants";
 import { createContext, useContext, useState, ReactNode } from "react";
 
-type GameSelection = Game | null;
+export type GameSelection = Game | null;
 
-type AssignmentSelection = Assignment | null;
+export type AssignmentSelection = Assignment | null;
 
 interface ContextType {
   gameSelection: GameSelection;
@@ -22,7 +22,8 @@ export const GameContext = createContext<ContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [gameSelection, setGameSelection] = useState<GameSelection>(null);
-  const [assignmentSelection, setAssignmentSelection] = useState<AssignmentSelection>(null);
+  const [assignmentSelection, setAssignmentSelection] =
+    useState<AssignmentSelection>(null);
 
   const selectGame = (game: Game) => {
     setGameSelection(game);
@@ -37,7 +38,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const clearAssignment = () => setAssignmentSelection(null);
 
   return (
-    <GameContext.Provider value={{ gameSelection, selectGame, clearGame, assignmentSelection, selectAssignment, clearAssignment }}>
+    <GameContext.Provider
+      value={{
+        gameSelection,
+        selectGame,
+        clearGame,
+        assignmentSelection,
+        selectAssignment,
+        clearAssignment,
+      }}
+    >
       {children}
     </GameContext.Provider>
   );

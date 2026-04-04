@@ -18,7 +18,17 @@ export default meta;
 type Story = StoryObj<typeof MovementDetailsPage>;
 
 export const Default: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     movementName: "9-table Switch Mitchell",
     tables: generateMitchell({
@@ -32,7 +42,15 @@ export const Default: Story = {
 
 export const WithSection: Story = {
   decorators: [
-    withGame({ eventName: "Monday PM Pairs", sectionName: "Section A" }),
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "Section A",
+      },
+      null,
+    ),
   ],
   args: {
     movementName: "9-table Switch Mitchell",

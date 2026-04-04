@@ -21,7 +21,17 @@ export default meta;
 type Story = StoryObj<typeof MovementOptionsPage>;
 
 export const Default: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     tables: 5,
   },
@@ -29,11 +39,15 @@ export const Default: Story = {
 
 export const EventWithSessionAndSection: Story = {
   decorators: [
-    withGame({
-      eventName: "Monday PM Pairs",
-      sessionName: "Session 1",
-      sectionName: "Section A",
-    }),
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "Session 1",
+        sectionName: "Section A",
+      },
+      null,
+    ),
   ],
   args: {
     tables: 5,

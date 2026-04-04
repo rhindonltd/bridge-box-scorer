@@ -9,7 +9,17 @@ const meta: Meta<typeof AwaitingMovementPage> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
 };
 
 export default meta;

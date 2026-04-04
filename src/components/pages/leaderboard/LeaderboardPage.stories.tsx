@@ -15,7 +15,17 @@ export default meta;
 type Story = StoryObj<typeof LeaderboardPage>;
 
 export const IndividualIMP: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     overallScoreAndParticipant: {
       type: "INDIVIDUAL_IMP",
@@ -48,7 +58,17 @@ export const IndividualIMP: Story = {
 };
 
 export const IndividualMP: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     overallScoreAndParticipant: {
       type: "INDIVIDUAL_MP",
@@ -82,7 +102,17 @@ export const IndividualMP: Story = {
 };
 
 export const PairIMP: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     overallScoreAndParticipant: {
       type: "PAIR_IMP",
@@ -120,7 +150,17 @@ export const PairIMP: Story = {
 };
 
 export const PairMP: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     overallScoreAndParticipant: {
       type: "PAIR_MP",
@@ -159,7 +199,17 @@ export const PairMP: Story = {
 };
 
 export const Team: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     overallScoreAndParticipant: {
       type: "TEAM_OVERALL",
