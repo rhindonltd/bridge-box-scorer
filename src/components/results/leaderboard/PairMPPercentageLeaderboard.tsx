@@ -1,10 +1,10 @@
 import { OverallPairMPScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { PairWithPlayers } from "@/model/participants";
+import { PairAssignment } from "@/model/participants";
 
 interface Props {
-  pairs: PairWithPlayers[];
+  pairs: PairAssignment[];
   leaderboard: OverallPairMPScore;
 }
 

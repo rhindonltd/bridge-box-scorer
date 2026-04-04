@@ -19,6 +19,7 @@ export const Default: Story = {
     teams: [
       {
         type: "TEAM",
+        initialTableNumber: 1,
         teamId: "1",
         players: [
           {
@@ -48,7 +49,6 @@ export const Default: Story = {
       type: "TEAM_OVERALL",
       lines: [
         {
-          type: "TEAM",
           tied: false,
           rank: 1,
           teamId: "1",

@@ -5,12 +5,7 @@ import React, { useState } from "react";
 import SubmitButton from "@/components/player/contract/SubmitButton";
 import PassOutButton from "@/components/player/contract/PassOutButton";
 import NotPlayedButton from "@/components/player/contract/NotPlayedButton";
-import {
-  ContractCode,
-  ContractSuit,
-  Doubling,
-  Level,
-} from "@/model/contract";
+import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
 import { SpecialBoardOutcome } from "@/model/score-traveller";
 import { Direction, Suit } from "@/model/common";
 import { SectionInfo } from "@/components/common/SectionInfo";

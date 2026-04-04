@@ -19,6 +19,8 @@ export const Default: Story = {
     pairs: [
       {
         type: "PAIR",
+        initialTableNumber: 1,
+        initialDirection: "NS",
         pairId: "1",
         player1: {
           firstName: "David",
@@ -36,7 +38,6 @@ export const Default: Story = {
       type: "PAIR_MP",
       lines: [
         {
-          type: "PAIR",
           tied: false,
           rank: 1,
           pairId: "1",

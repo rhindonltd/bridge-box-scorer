@@ -1,10 +1,10 @@
 import { OverallIndividualMPScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { IndividualWithPlayer } from "@/model/participants";
+import { IndividualAssignment } from "@/model/participants";
 
 type Props = {
-  individuals: IndividualWithPlayer[];
+  individuals: IndividualAssignment[];
   leaderboard: OverallIndividualMPScore;
 };
 

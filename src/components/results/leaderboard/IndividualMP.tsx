@@ -5,10 +5,10 @@ import { Toggle } from "@/components/common/Toggle";
 import { OverallIndividualMPScore } from "@/model/leaderboard";
 import { IndividualMPLeaderboard } from "@/components/results/leaderboard/IndividualMPLeaderboard";
 import { IndividualMPPercentageLeaderboard } from "@/components/results/leaderboard/IndividualMPPercentageLeaderboard";
-import { IndividualWithPlayer } from "@/model/participants";
+import { IndividualAssignment } from "@/model/participants";
 
 type Props = {
-  individuals: IndividualWithPlayer[];
+  individuals: IndividualAssignment[];
   leaderboard: OverallIndividualMPScore;
 };
 
