@@ -12,7 +12,7 @@ export default function PlayerLobbyPage() {
   }
 
   function joinGame() {
-    router.push("/join");
+    router.push("/game/join");
   }
 
   function managePastGames() {
