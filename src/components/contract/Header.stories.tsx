@@ -1,8 +1,8 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import Header from "@/components/player/contract/Header";
+import Header from "@/components/contract/Header";
 
 const meta: Meta<typeof Header> = {
-  title: "Components/Player/Contract/Header",
+  title: "Components/Contract/Header",
   component: Header,
   parameters: {
     layout: "fullscreen",

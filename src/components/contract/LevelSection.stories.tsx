@@ -1,9 +1,9 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import LevelSection from "@/components/player/contract/LevelSection";
+import LevelSection from "@/components/contract/LevelSection";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof LevelSection> = {
-  title: "Components/Player/Contract/Level",
+  title: "Components/Contract/Level",
   component: LevelSection,
   parameters: {
     layout: "fullscreen",

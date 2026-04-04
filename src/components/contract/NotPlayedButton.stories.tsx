@@ -1,9 +1,9 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import NotPlayedButton from "@/components/player/contract/NotPlayedButton";
+import NotPlayedButton from "@/components/contract/NotPlayedButton";
 
 const meta: Meta<typeof NotPlayedButton> = {
-  title: "Components/Player/Contract/NotPlayedButton",
+  title: "Components/Contract/NotPlayedButton",
   component: NotPlayedButton,
   parameters: {
     layout: "centered",

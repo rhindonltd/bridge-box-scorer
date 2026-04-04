@@ -2,48 +2,38 @@
 
 import React, { useState } from "react";
 
-import SubmitButton from "@/components/player/contract/SubmitButton";
-import PassOutButton from "@/components/player/contract/PassOutButton";
-import NotPlayedButton from "@/components/player/contract/NotPlayedButton";
-import {
-  ContractCode,
-  ContractSuit,
-  Doubling,
-  Level,
-} from "@/model/contract";
+import SubmitButton from "@/components/contract/SubmitButton";
+import PassOutButton from "@/components/contract/PassOutButton";
+import NotPlayedButton from "@/components/contract/NotPlayedButton";
+import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
 import { SpecialBoardOutcome } from "@/model/score-traveller";
-import { Direction, Suit } from "@/model/common";
+import { Direction } from "@/model/common";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
-import { PlayableContract } from "@/components/pages/player/PlayableContract";
-
-export type BoardAndContract = {
-  board: number;
-  contract: ContractCode | SpecialBoardOutcome;
-};
+import { PlayableContract } from "@/components/pages/play/PlayableContract";
+import { useBoard } from "@/context/BoardSelectionContext";
 
 type Props = {
   round: number;
   table: number;
-  board: number;
   roundBoards: number[];
-  onOk: (boardAndContract: BoardAndContract) => void;
+  onOk: (contract: ContractCode | SpecialBoardOutcome) => void;
 };
 
 export default function EnterContractPage({
   round,
   table,
-  board,
   roundBoards,
   onOk,
 }: Props) {
+  const { selection, selectBoard } = useBoard();
+
   const [level, setLevel] = useState<Level | null>(null);
   const [suit, setSuit] = useState<ContractSuit | null>(null);
   const [declarer, setDeclarer] = useState<Direction | null>(null);
   const [passOut, setPassOut] = useState<boolean>(false);
   const [notPlayed, setNotPlayed] = useState<boolean>(false);
   const [dbl, setDbl] = useState<Doubling>("");
-  const [currentBoard, setCurrentBoard] = useState(board);
   // const [result, setResult] = useState(0);
 
   // const adjustResult = (value: number) => {
@@ -52,24 +42,15 @@ export default function EnterContractPage({
 
   const handleOnOK = () => {
     if (passOut) {
-      onOk({
-        board: currentBoard,
-        contract: "PO",
-      });
+      onOk("PO");
     }
 
     if (notPlayed) {
-      onOk({
-        board: currentBoard,
-        contract: "NP",
-      });
+      onOk("NP");
     }
 
     if (level !== null && suit !== null && dbl !== null && declarer !== null) {
-      onOk({
-        board: currentBoard,
-        contract: `${level}${suit}${dbl}${declarer}`,
-      });
+      onOk(`${level}${suit}${dbl}${declarer}`);
     }
   };
 
@@ -135,8 +116,8 @@ export default function EnterContractPage({
           <span className="pr-2 font-bold">Board:</span>
           <select
             className="p-1 border rounded-md bg-white text-center"
-            value={board}
-            onChange={(e) => setCurrentBoard(Number(e.target.value))}
+            value={selection!.board}
+            onChange={(e) => selectBoard(Number(e.target.value))}
           >
             {roundBoards.map((roundBoard) => (
               <option key={roundBoard} value={roundBoard}>

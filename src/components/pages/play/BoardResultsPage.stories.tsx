@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { BoardResultsPage } from "@/components/pages/player/BoardResultsPage";
+import { BoardResultsPage } from "@/components/pages/play/BoardResultsPage";
 import { individualIMPTraveller } from "@/mocks/fixtures/traveller/individual-imp";
 import { individualMpTraveller } from "@/mocks/fixtures/traveller/individual-mp";
 import { scoreCrossIMP, scoreMatchpoints } from "@/model/score-traveller";

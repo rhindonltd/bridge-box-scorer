@@ -1,9 +1,9 @@
-import LevelSection from "../../player/contract/LevelSection";
-import SuitSection from "../../player/contract/SuitSection";
-import DeclarerSection from "../../player/contract/DeclarerSection";
-import DoubleSection from "../../player/contract/DoubleSection";
-import { ContractSuit, Doubling, Level } from "../../../model/contract";
-import { Direction } from "../../../model/common";
+import LevelSection from "../../contract/LevelSection";
+import SuitSection from "../../contract/SuitSection";
+import DeclarerSection from "../../contract/DeclarerSection";
+import DoubleSection from "../../contract/DoubleSection";
+import { ContractSuit, Doubling, Level } from "@/model/contract";
+import { Direction } from "@/model/common";
 
 type Props = {
   level: Level | null;

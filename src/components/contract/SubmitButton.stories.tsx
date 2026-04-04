@@ -1,9 +1,9 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import SubmitButton from "@/components/player/contract/SubmitButton";
+import SubmitButton from "@/components/contract/SubmitButton";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof SubmitButton> = {
-  title: "Components/Player/Contract/SubmitButton",
+  title: "Components/Contract/SubmitButton",
   component: SubmitButton,
   parameters: {
     layout: "fullscreen",

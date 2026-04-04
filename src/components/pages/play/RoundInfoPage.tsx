@@ -1,22 +1,18 @@
-import RoundInfo from "@/components/player/table/RoundInfo";
+import RoundInfo from "@/components/play/RoundInfo";
 import React from "react";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
-
-interface PlayerName {
-  firstName: string;
-  lastName: string;
-}
+import { Player } from "@/model/participants";
 
 interface Props {
   round: number;
   table: number;
   boards: number[];
   players: {
-    N: PlayerName;
-    S: PlayerName;
-    E: PlayerName;
-    W: PlayerName;
+    N: Player;
+    S: Player;
+    E: Player;
+    W: Player;
   };
   onEnterRound: () => void;
 }

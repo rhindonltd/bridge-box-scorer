@@ -1,9 +1,9 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import DeclarerSection from "@/components/player/contract/DeclarerSection";
+import DeclarerSection from "@/components/contract/DeclarerSection";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof DeclarerSection> = {
-  title: "Components/Player/Contract/DeclarerSection",
+  title: "Components/Contract/DeclarerSection",
   component: DeclarerSection,
   parameters: {
     layout: "fullscreen",

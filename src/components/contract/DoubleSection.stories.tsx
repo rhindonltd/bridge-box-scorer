@@ -1,9 +1,9 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import DoubleSection from "@/components/player/contract/DoubleSection";
+import DoubleSection from "@/components/contract/DoubleSection";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof DoubleSection> = {
-  title: "Components/Player/Contract/DoubleSection",
+  title: "Components/Contract/DoubleSection",
   component: DoubleSection,
   parameters: {
     layout: "fullscreen",

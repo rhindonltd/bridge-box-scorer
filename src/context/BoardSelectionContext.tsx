@@ -12,7 +12,7 @@ interface ContextType {
   clearSelection: () => void;
 }
 
-const BoardContext = createContext<ContextType | undefined>(undefined);
+export const BoardContext = createContext<ContextType | undefined>(undefined);
 
 export function BoardProvider({ children }: { children: ReactNode }) {
   const [selection, setSelection] = useState<Selection>(null);

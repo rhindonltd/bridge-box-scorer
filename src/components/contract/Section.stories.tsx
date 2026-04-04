@@ -1,9 +1,9 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import Section from "@/components/player/contract/Section";
+import Section from "@/components/contract/Section";
 import { ToggleButton } from "@/components/common/ToggleButton";
 
 const meta: Meta<typeof Section> = {
-  title: "Components/Player/Contract/Section",
+  title: "Components/Contract/Section",
   component: Section,
   parameters: {
     layout: "fullscreen",

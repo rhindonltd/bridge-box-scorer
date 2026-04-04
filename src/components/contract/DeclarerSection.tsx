@@ -1,4 +1,4 @@
-import Section from "@/components/player/contract/Section";
+import Section from "@/components/contract/Section";
 import { ToggleButton } from "@/components/common/ToggleButton";
 import { Direction, Directions } from "@/model/common";
 

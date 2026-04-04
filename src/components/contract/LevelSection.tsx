@@ -1,6 +1,6 @@
 "use client";
 
-import Section from "@/components/player/contract/Section";
+import Section from "@/components/contract/Section";
 import { ToggleButton } from "@/components/common/ToggleButton";
 import { Level, Levels } from "@/model/contract";
 
