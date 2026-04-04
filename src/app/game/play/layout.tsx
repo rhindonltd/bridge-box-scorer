@@ -1,11 +1,11 @@
 "use client";
 
-import { BoardProvider } from "@/context/BoardSelectionContext";
+import { PlayProvider } from "@/context/PlayContext";
 
 export default function GameLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <BoardProvider>{children}</BoardProvider>;
+  return <PlayProvider>{children}</PlayProvider>;
 }

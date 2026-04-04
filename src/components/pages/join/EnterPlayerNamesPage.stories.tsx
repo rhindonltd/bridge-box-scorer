@@ -15,7 +15,17 @@ export default meta;
 type Story = StoryObj<typeof EnterPlayerNamesPage>;
 
 export const NS: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     table: 3,
     direction: "NS",
@@ -24,11 +34,15 @@ export const NS: Story = {
 
 export const NSWithSection: Story = {
   decorators: [
-    withGame({
-      eventName: "Monday PM Pairs",
-      sessionName: "Session 1",
-      sectionName: "Section A",
-    }),
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "Session 1",
+        sectionName: "Section A",
+      },
+      null,
+    ),
   ],
   args: {
     table: 3,
@@ -37,7 +51,17 @@ export const NSWithSection: Story = {
 };
 
 export const EW: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     table: 3,
     direction: "EW",
@@ -46,11 +70,15 @@ export const EW: Story = {
 
 export const EWWithSection: Story = {
   decorators: [
-    withGame({
-      eventName: "Monday PM Pairs",
-      sessionName: "Session 1",
-      sectionName: "Section A",
-    }),
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "Session 1",
+        sectionName: "Section A",
+      },
+      null,
+    ),
   ],
   args: {
     table: 3,

@@ -21,5 +21,15 @@ export default meta;
 type Story = StoryObj<typeof SelectMovementPage>;
 
 export const Default: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
 };

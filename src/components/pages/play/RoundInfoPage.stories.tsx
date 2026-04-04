@@ -4,7 +4,7 @@ import { RoundInfoPage } from "@/components/pages/play/RoundInfoPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof RoundInfoPage> = {
-  title: "Pages/Player/RoundInfoPage",
+  title: "Pages/Play/RoundInfoPage",
   component: RoundInfoPage,
   parameters: {
     layout: "fullscreen",
@@ -29,11 +29,31 @@ export default meta;
 type Story = StoryObj<typeof RoundInfoPage>;
 
 export const Default: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
 };
 
 export const LaterRound: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     round: 4,
     table: 12,
@@ -42,7 +62,30 @@ export const LaterRound: Story = {
 };
 
 export const LongNames: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      {
+        type: "PAIR",
+        player1: {
+          firstName: "Jacqui",
+          lastName: "Collier",
+        },
+        player2: {
+          firstName: "David",
+          lastName: "Collier",
+        },
+        initialTableNumber: 3,
+        initialDirection: "EW",
+        pairId: "11EW",
+      },
+    ),
+  ],
   args: {
     players: {
       N: { firstName: "Alexandria", lastName: "Montgomery-Wellington" },

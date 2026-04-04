@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
 import { ShowDirectorPinPage } from "@/components/pages/director/ShowDirectorPinPage";
-import { GameProvider } from "@/context/GameSelectionContext";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof ShowDirectorPinPage> = {
@@ -22,7 +21,17 @@ export default meta;
 type Story = StoryObj<typeof ShowDirectorPinPage>;
 
 export const Default: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     directorPin: 123456,
   },

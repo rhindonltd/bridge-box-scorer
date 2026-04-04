@@ -8,7 +8,7 @@ import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof BoardResultsPage> = {
-  title: "Pages/Player/BoardResultsPage",
+  title: "Pages/Play/BoardResultsPage",
   component: BoardResultsPage,
   parameters: {
     layout: "fullscreen",
@@ -20,7 +20,17 @@ export default meta;
 type Story = StoryObj<typeof BoardResultsPage>;
 
 export const IndividualIMP: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     board: 5,
     lastBoardOfRound: false,
@@ -29,7 +39,17 @@ export const IndividualIMP: Story = {
 };
 
 export const IndividualMP: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     board: 5,
     lastBoardOfRound: false,
@@ -38,7 +58,17 @@ export const IndividualMP: Story = {
 };
 
 export const PairIMP: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     board: 5,
     lastBoardOfRound: false,
@@ -47,7 +77,17 @@ export const PairIMP: Story = {
 };
 
 export const PairMP: Story = {
-  decorators: [withGame({ eventName: "Monday PM Pairs" })],
+  decorators: [
+    withGame(
+      {
+        id: crypto.randomUUID(),
+        eventName: "Monday PM Pairs",
+        sessionName: "",
+        sectionName: "",
+      },
+      null,
+    ),
+  ],
   args: {
     board: 5,
     lastBoardOfRound: false,

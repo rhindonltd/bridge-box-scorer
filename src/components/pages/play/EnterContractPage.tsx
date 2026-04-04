@@ -11,7 +11,7 @@ import { Direction } from "@/model/common";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
 import { PlayableContract } from "@/components/pages/play/PlayableContract";
-import { useBoard } from "@/context/BoardSelectionContext";
+import { usePlay } from "@/context/PlayContext";
 
 type Props = {
   round: number;
@@ -26,7 +26,7 @@ export default function EnterContractPage({
   roundBoards,
   onOk,
 }: Props) {
-  const { selection, selectBoard } = useBoard();
+  const { boardSelection, selectBoard } = usePlay();
 
   const [level, setLevel] = useState<Level | null>(null);
   const [suit, setSuit] = useState<ContractSuit | null>(null);
@@ -116,7 +116,7 @@ export default function EnterContractPage({
           <span className="pr-2 font-bold">Board:</span>
           <select
             className="p-1 border rounded-md bg-white text-center"
-            value={selection!.board}
+            value={boardSelection!.board}
             onChange={(e) => selectBoard(Number(e.target.value))}
           >
             {roundBoards.map((roundBoard) => (

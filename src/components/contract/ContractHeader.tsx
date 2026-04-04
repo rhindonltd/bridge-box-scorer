@@ -1,6 +1,6 @@
 "use client";
 
-import { useBoard } from "@/context/BoardSelectionContext";
+import { usePlay } from "@/context/PlayContext";
 
 type Props = {
   contract: string;
@@ -8,11 +8,11 @@ type Props = {
 };
 
 export function ContractHeader({ contract, result }: Props) {
-  const { selection, selectBoard } = useBoard();
+  const { boardSelection, selectBoard } = usePlay();
 
   return (
     <div className="text-center mb-2">
-      <div className="text-lg">Board {selection!.board}</div>
+      <div className="text-lg">Board {boardSelection!.board}</div>
       <div className="text-2xl font-bold">
         {contract} {result}
       </div>
