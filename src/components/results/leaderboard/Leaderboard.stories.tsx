@@ -21,6 +21,8 @@ export const IndividualIMP: Story = {
       participants: [
         {
           type: "INDIVIDUAL",
+          initialTableNumber: 1,
+          initialDirection: "E",
           playerId: "1",
           player: {
             firstName: "David",
@@ -33,7 +35,6 @@ export const IndividualIMP: Story = {
         type: "INDIVIDUAL_IMP",
         lines: [
           {
-            type: "INDIVIDUAL",
             rank: 1,
             tied: false,
             playerId: "1",
@@ -52,6 +53,8 @@ export const IndividualMP: Story = {
       participants: [
         {
           type: "INDIVIDUAL",
+          initialTableNumber: 1,
+          initialDirection: "E",
           playerId: "1",
           player: {
             firstName: "David",
@@ -64,7 +67,6 @@ export const IndividualMP: Story = {
         type: "INDIVIDUAL_MP",
         lines: [
           {
-            type: "INDIVIDUAL",
             tied: false,
             rank: 1,
             playerId: "1",
@@ -84,6 +86,8 @@ export const PairIMP: Story = {
       participants: [
         {
           type: "PAIR",
+          initialTableNumber: 1,
+          initialDirection: "NS",
           pairId: "1",
           player1: {
             firstName: "David",
@@ -101,7 +105,6 @@ export const PairIMP: Story = {
         type: "PAIR_IMP",
         lines: [
           {
-            type: "PAIR",
             tied: false,
             rank: 1,
             pairId: "1",
@@ -120,6 +123,8 @@ export const PairMP: Story = {
       participants: [
         {
           type: "PAIR",
+          initialTableNumber: 1,
+          initialDirection: "NS",
           pairId: "1",
           player1: {
             firstName: "David",
@@ -137,7 +142,6 @@ export const PairMP: Story = {
         type: "PAIR_MP",
         lines: [
           {
-            type: "PAIR",
             tied: false,
             rank: 1,
             pairId: "1",
@@ -157,6 +161,7 @@ export const Team: Story = {
       participants: [
         {
           type: "TEAM",
+          initialTableNumber: 1,
           teamId: "1",
           players: [
             {
@@ -171,7 +176,6 @@ export const Team: Story = {
         type: "TEAM_OVERALL",
         lines: [
           {
-            type: "TEAM",
             tied: false,
             rank: 1,
             teamId: "1",

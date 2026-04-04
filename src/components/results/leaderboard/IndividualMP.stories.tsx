@@ -19,6 +19,8 @@ export const Default: Story = {
     individuals: [
       {
         type: "INDIVIDUAL",
+        initialTableNumber: 1,
+        initialDirection: "E",
         playerId: "1",
         player: {
           firstName: "David",
@@ -31,7 +33,6 @@ export const Default: Story = {
       type: "INDIVIDUAL_MP",
       lines: [
         {
-          type: "INDIVIDUAL",
           tied: false,
           rank: 1,
           playerId: "1",

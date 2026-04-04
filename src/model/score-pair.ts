@@ -38,7 +38,6 @@ export function calculateOverallIMPResults(
 
   for (const [pairId, data] of totals.entries()) {
     results.push({
-      type: "PAIR",
       pairId,
       crossImps: data.imp,
     });
@@ -82,7 +81,6 @@ export function calculateOverallMPResults(
 
   for (const [pairId, data] of totals.entries()) {
     results.push({
-      type: "PAIR",
       pairId,
       totalMP: data.mp,
       maxMP: data.maxMp,

@@ -1,3 +1,5 @@
+import { Direction, PairDirection } from "@/model/common";
+
 export type Player = {
   firstName: string;
   lastName: string;
@@ -20,36 +22,42 @@ export interface TravellerIndividualParticipants {
 
 export type Team = {
   type: "TEAM";
-  teamId: string;
+  players: Player[];
+  initialTableNumber: number;
 };
 
 export type Pair = {
   type: "PAIR";
-  pairId: string;
+  player1: Player;
+  player2: Player;
+  initialTableNumber: number;
+  initialDirection: PairDirection;
 };
 
 export type Individual = {
   type: "INDIVIDUAL";
-  playerId: string;
-};
-
-/* ---------- participants and players ---------- */
-
-export type TeamWithPlayers = Team & {
-  players: Player[];
-};
-
-export type PairWithPlayers = Pair & {
-  player1: Player;
-  player2: Player;
-};
-
-export type IndividualWithPlayer = Individual & {
   player: Player;
+  initialTableNumber: number;
+  initialDirection: Direction;
+};
+
+/* ---------- participant assignments ---------- */
+
+export type TeamAssignment = Team & {
+  teamId: string;
+};
+
+export type PairAssignment = Pair & {
+  pairId: string;
+};
+
+export type IndividualAssignment = Individual & {
+  playerId: string;
 };
 
 /* ---------- unions ---------- */
 
-export type Traveller = Team | Pair | Individual;
+export type Participant = Team | Pair | Individual;
+export type Assignment = TeamAssignment | PairAssignment | IndividualAssignment;
 
 export type ParticipantType = "TEAM" | "PAIR" | "INDIVIDUAL";
