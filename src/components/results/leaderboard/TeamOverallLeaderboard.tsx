@@ -1,10 +1,10 @@
 import { OverallTeamScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { TeamWithPlayers } from "@/model/participants";
+import { TeamAssignment } from "@/model/participants";
 
 interface Props {
-  teams: TeamWithPlayers[];
+  teams: TeamAssignment[];
   leaderboard: OverallTeamScore;
 }
 
