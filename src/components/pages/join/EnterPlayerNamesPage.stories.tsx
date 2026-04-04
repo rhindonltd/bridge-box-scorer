@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { EnterPlayerNamesPage } from "./EnterPlayerNamesPage";
+import { EnterPlayerNamesPage } from "@/components/pages/join/EnterPlayerNamesPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof EnterPlayerNamesPage> = {

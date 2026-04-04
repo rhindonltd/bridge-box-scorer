@@ -2,20 +2,12 @@
 
 import React, { useState } from "react";
 
-import LevelSection from "@/components/player/contract/LevelSection";
-import SuitSection from "@/components/player/contract/SuitSection";
-import DeclarerSection from "@/components/player/contract/DeclarerSection";
-import DoubleSection from "@/components/player/contract/DoubleSection";
-import Header from "@/components/player/contract/Header";
 import SubmitButton from "@/components/player/contract/SubmitButton";
 import PassOutButton from "@/components/player/contract/PassOutButton";
-import NumberStepper from "@/components/common/NumberStepper";
-import { HeaderContentButtonLayout } from "@/components/layout/HeaderContentButtonLayout";
 import NotPlayedButton from "@/components/player/contract/NotPlayedButton";
 import {
   ContractCode,
   ContractSuit,
-  ContractSuits,
   Doubling,
   Level,
 } from "@/model/contract";
@@ -23,7 +15,6 @@ import { SpecialBoardOutcome } from "@/model/score-traveller";
 import { Direction, Suit } from "@/model/common";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
-import { PlayedContract } from "@/components/results/traveller/PlayedContract";
 import { PlayableContract } from "@/components/pages/player/PlayableContract";
 
 export type BoardAndContract = {

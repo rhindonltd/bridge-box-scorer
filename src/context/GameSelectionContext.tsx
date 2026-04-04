@@ -1,20 +1,13 @@
 "use client";
 
+import { Game } from "@/model/common";
 import { createContext, useContext, useState, ReactNode } from "react";
 
-type Selection = {
-  eventName: string;
-  sessionName: string;
-  sectionName: string;
-} | null;
+type Selection = Game | null;
 
 interface ContextType {
   selection: Selection;
-  selectGame: (
-    eventName: string,
-    sessionName: string,
-    sectionName: string,
-  ) => void;
+  selectGame: (game: Game) => void;
   clearSelection: () => void;
 }
 
@@ -23,12 +16,8 @@ export const GameContext = createContext<ContextType | undefined>(undefined);
 export function GameProvider({ children }: { children: ReactNode }) {
   const [selection, setSelection] = useState<Selection>(null);
 
-  const selectGame = (
-    eventName: string,
-    sessionName: string,
-    sectionName: string,
-  ) => {
-    setSelection({ eventName, sessionName, sectionName });
+  const selectGame = (game: Game) => {
+    setSelection(game);
   };
 
   const clearSelection = () => setSelection(null);

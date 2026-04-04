@@ -1,7 +1,7 @@
 import React from "react";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
-import EnterPlayerNames from "@/components/joingame/EnterPlayerNames";
+import EnterPlayerNames from "@/components/join/EnterPlayerNames";
 
 interface Props {
   table: number;

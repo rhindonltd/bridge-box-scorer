@@ -8,7 +8,7 @@ export type Network = {
   signal: number;
 };
 
-export type WifiSettingsFormProps = {
+export type Props = {
   networks: Network[];
   onTestConnection?: (ssid: string, password: string) => Promise<boolean>; // returns success
   onSaveWifi?: (ssid: string, password: string) => void;
@@ -24,7 +24,7 @@ export function WifiSettingsForm({
   testing = false,
   loading = false,
   message = null,
-}: WifiSettingsFormProps) {
+}: Props) {
   const [selectedSSID, setSelectedSSID] = useState<Network | null>(null);
   const [password, setPassword] = useState("");
   const [testedSSID, setTestedSSID] = useState<string | null>(null); // Track successfully tested network

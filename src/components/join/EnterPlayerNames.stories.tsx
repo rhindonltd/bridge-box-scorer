@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import EnterPlayerNames from "./EnterPlayerNames";
 import { fn } from "storybook/test";
+import EnterPlayerNames from "@/components/join/EnterPlayerNames";
 
 const meta: Meta<typeof EnterPlayerNames> = {
   title: "Components/JoinGame/EnterPlayerNames",

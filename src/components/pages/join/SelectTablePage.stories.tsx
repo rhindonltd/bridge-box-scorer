@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
-import { SelectTablePage } from "@/components/pages/joingame/SelectTablePage";
+import { SelectTablePage } from "@/components/pages/join/SelectTablePage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof SelectTablePage> = {

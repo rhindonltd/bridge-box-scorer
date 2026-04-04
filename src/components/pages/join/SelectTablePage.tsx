@@ -1,5 +1,5 @@
 import { SectionInfo } from "@/components/common/SectionInfo";
-import SelectTable from "@/components/joingame/SelectTable";
+import SelectTable from "@/components/join/SelectTable";
 
 type Assignment = {
   table: number;
