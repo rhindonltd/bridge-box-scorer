@@ -21,14 +21,20 @@ export const Default: Story = {
       table: 1,
       rounds: [
         {
-          ns: 2,
-          ew: 3,
+          round: 1,
           boards: [1, 2, 3],
+          participants: {
+            nsId: "2",
+            ewId: "3",
+          },
         },
         {
-          ns: 4,
-          ew: 5,
+          round: 2,
           boards: [4, 5, 6],
+          participants: {
+            nsId: "4",
+            ewId: "5",
+          },
         },
       ],
     },

@@ -19,34 +19,43 @@ export const Default: Story = {
     teams: [
       {
         type: "TEAM",
-        initialTableNumber: 1,
         teamId: "1",
-        players: [
-          {
+        pair1: {
+          type: "PAIR",
+          initialDirection: "NS",
+          initialTableNumber: 1,
+          player1: {
             firstName: "David",
             lastName: "Collier",
             nationalId: 404476,
           },
-          {
+          player2: {
             firstName: "Jacqui",
             lastName: "Collier",
             nationalId: 477484,
           },
-          {
+        },
+        pair2: {
+          type: "PAIR",
+          initialDirection: "EW",
+          initialTableNumber: 1,
+          player1: {
             firstName: "Peter",
             lastName: "Collier",
             nationalId: 123456,
           },
-          {
-            firstName: "Andrew",
-            lastName: "Robson",
-            nationalId: 234567,
+          player2: {
+            firstName: "Nye",
+            lastName: "Collier",
+            nationalId: 654321,
           },
-        ],
+        },
       },
     ],
     leaderboard: {
       type: "TEAM_OVERALL",
+      mode: "TEAM",
+      scoring: "OVERALL",
       lines: [
         {
           tied: false,

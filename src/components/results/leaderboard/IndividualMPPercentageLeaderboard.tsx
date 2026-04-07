@@ -1,11 +1,11 @@
-import { OverallIndividualMPScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
 import { IndividualAssignment } from "@/model/participants";
+import { IndividualMatchpointOverallScore } from "@/model/leaderboard";
 
 type Props = {
   individuals: IndividualAssignment[];
-  leaderboard: OverallIndividualMPScore;
+  leaderboard: IndividualMatchpointOverallScore;
 };
 
 export function IndividualMPPercentageLeaderboard({

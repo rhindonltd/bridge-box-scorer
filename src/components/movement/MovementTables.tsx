@@ -4,7 +4,7 @@ import { Tables } from "@/model/movement";
 import MovementTable from "@/components/movement/MovementTable";
 
 type Props = {
-  tables: Tables;
+  tables: Tables<"PAIR">;
 };
 
 export default function MovementTables({ tables }: Props) {

@@ -1,9 +1,9 @@
-import { OverallTeamMatchScore } from "@/model/leaderboard";
+import { TeamMatchOverallScore } from "@/model/leaderboard";
 import { Team } from "@/model/participants";
 
 interface Props {
   teams: Team[];
-  leaderboard: OverallTeamMatchScore;
+  leaderboard: TeamMatchOverallScore;
 }
 
 export function TeamMatchLeaderboard({ leaderboard }: Props) {

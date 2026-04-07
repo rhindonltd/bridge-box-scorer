@@ -4,7 +4,7 @@ import { Rounds } from "@/model/movement";
 import MovementRound from "@/components/movement/MovementRound";
 
 type Props = {
-  rounds: Rounds;
+  rounds: Rounds<"PAIR">;
 };
 
 export default function MovementRounds({ rounds }: Props) {

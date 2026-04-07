@@ -1,10 +1,8 @@
 import { BoardOutcome } from "@/model/score-traveller";
 import {
-  TravellerIndividualParticipants,
-  TravellerPairParticipants,
+  TravellerParticipantMode,
+  ParticipantsByMode,
 } from "@/model/participants";
-
-/* ---------- base line data ---------- */
 
 export interface TravellerLineBase {
   outcome: BoardOutcome;
@@ -13,50 +11,32 @@ export interface TravellerLineBase {
   play?: string;
 }
 
-/* ---------- generic traveller lines ---------- */
+/* ---------- generic traveller line ---------- */
 
-export type PairTravellerLine = TravellerLineBase & TravellerPairParticipants;
+export type TravellerLine<M extends TravellerParticipantMode> =
+  TravellerLineBase & ParticipantsByMode[M];
 
-export type IndividualTravellerLine = TravellerLineBase &
-  TravellerIndividualParticipants;
+/* ---------- traveller type helper ---------- */
+
+export type TravellerType<M extends TravellerParticipantMode> = `${M}`;
 
 /* ---------- base traveller container ---------- */
 
-export interface TravellerBase<TLine> {
-  type: TravellerType;
+export interface TravellerBase<M extends TravellerParticipantMode> {
+  type: TravellerType<M>;
+  mode: M;
   board: number;
   section: string;
-  lines: TLine[];
+  lines: TravellerLine<M>[];
 }
 
-/* ---------- concrete traveller types ---------- */
+/* ---------- concrete helpers (optional) ---------- */
 
-export type PairMPTraveller = TravellerBase<PairTravellerLine> & {
-  type: "PAIR_MP";
-};
-
-export type PairIMPTraveller = TravellerBase<PairTravellerLine> & {
-  type: "PAIR_IMP";
-};
-
-export type IndividualMPTraveller = TravellerBase<IndividualTravellerLine> & {
-  type: "INDIVIDUAL_MP";
-};
-
-export type IndividualIMPTraveller = TravellerBase<IndividualTravellerLine> & {
-  type: "INDIVIDUAL_IMP";
-};
+export type PairTraveller = TravellerBase<"PAIR">;
+export type IndividualTraveller = TravellerBase<"INDIVIDUAL">;
 
 /* ---------- unions ---------- */
 
-export type Traveller =
-  | PairMPTraveller
-  | PairIMPTraveller
-  | IndividualMPTraveller
-  | IndividualIMPTraveller;
+export type Traveller = PairTraveller | IndividualTraveller;
 
-export type TravellerType =
-  | "PAIR_MP"
-  | "PAIR_IMP"
-  | "INDIVIDUAL_MP"
-  | "INDIVIDUAL_IMP";
+export type AnyTravellerType = TravellerType<TravellerParticipantMode>;

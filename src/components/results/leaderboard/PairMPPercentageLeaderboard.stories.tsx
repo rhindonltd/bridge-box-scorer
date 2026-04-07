@@ -36,6 +36,8 @@ export const Default: Story = {
     ],
     leaderboard: {
       type: "PAIR_MP",
+      mode: "PAIR",
+      scoring: "MP",
       lines: [
         {
           tied: false,

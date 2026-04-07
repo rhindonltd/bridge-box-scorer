@@ -31,6 +31,8 @@ export const Default: Story = {
     ],
     leaderboard: {
       type: "INDIVIDUAL_MP",
+      mode: "INDIVIDUAL",
+      scoring: "MP",
       lines: [
         {
           tied: false,

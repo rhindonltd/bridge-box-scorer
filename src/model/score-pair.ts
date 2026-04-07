@@ -1,19 +1,17 @@
 import {
-  ScoredPairIMPTraveller,
-  ScoredPairMPTraveller,
+  PairXIMPScoredTraveller,
+  PairMatchpointScoredTraveller,
 } from "@/model/scored-traveller";
-import {
-  CrossImpOverallScore,
-  MatchpointOverallScore,
-  OverallPairIMPScore,
-  OverallPairMPScore,
-  PairOverallScoreLine,
-} from "@/model/leaderboard";
 import { rank } from "@/model/common-score";
+import {
+  OverallLine,
+  PairMatchpointOverallScore,
+  PairXIMPOverallScore,
+} from "./leaderboard";
 
-export function calculateOverallIMPResults(
-  travellers: ScoredPairIMPTraveller[],
-): OverallPairIMPScore {
+export function calculateOverallXIMPResults(
+  travellers: PairXIMPScoredTraveller[],
+): PairXIMPOverallScore {
   const totals = new Map<string, { imp: number; boards: number }>();
 
   for (const traveller of travellers) {
@@ -34,7 +32,7 @@ export function calculateOverallIMPResults(
     }
   }
 
-  const results: PairOverallScoreLine<CrossImpOverallScore>[] = [];
+  const results: OverallLine<"PAIR", "XIMP">[] = [];
 
   for (const [pairId, data] of totals.entries()) {
     results.push({
@@ -44,14 +42,16 @@ export function calculateOverallIMPResults(
   }
 
   return {
-    type: "PAIR_IMP",
+    type: "PAIR_XIMP",
+    mode: "PAIR",
+    scoring: "XIMP",
     lines: rank(results, (x) => x.crossImps),
   };
 }
 
 export function calculateOverallMPResults(
-  travellers: ScoredPairMPTraveller[],
-): OverallPairMPScore {
+  travellers: PairMatchpointScoredTraveller[],
+): PairMatchpointOverallScore {
   const totals = new Map<
     string,
     { mp: number; maxMp: number; boards: number }
@@ -77,7 +77,7 @@ export function calculateOverallMPResults(
     }
   }
 
-  const results: PairOverallScoreLine<MatchpointOverallScore>[] = [];
+  const results: OverallLine<"PAIR", "MP">[] = [];
 
   for (const [pairId, data] of totals.entries()) {
     results.push({
@@ -89,6 +89,8 @@ export function calculateOverallMPResults(
 
   return {
     type: "PAIR_MP",
+    mode: "PAIR",
+    scoring: "MP",
     lines: rank(results, (x) => x.totalMP / x.maxMP),
   };
 }

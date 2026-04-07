@@ -30,7 +30,9 @@ export const Default: Story = {
       },
     ],
     leaderboard: {
-      type: "INDIVIDUAL_IMP",
+      type: "INDIVIDUAL_XIMP",
+      mode: "INDIVIDUAL",
+      scoring: "XIMP",
       lines: [
         {
           rank: 1,

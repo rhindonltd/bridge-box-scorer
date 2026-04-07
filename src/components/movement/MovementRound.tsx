@@ -2,15 +2,12 @@ import { Round } from "@/model/movement";
 import { formatBoards } from "@/movement/shared";
 
 type Props = {
-  round: Round;
+  round: Round<"PAIR">;
 };
 
 export default function MovementRound({ round }: Props) {
   return (
-    <div
-      key={round.round}
-      className="w-full border rounded-lg shadow-md overflow-hidden"
-    >
+    <div className="w-full border rounded-lg shadow-md overflow-hidden">
       {/* Table Heading */}
       <div className="bg-blue-600 text-white px-2 py-0.5 font-semibold text-lg flex justify-center items-center">
         Round {round.round}
@@ -30,10 +27,10 @@ export default function MovementRound({ round }: Props) {
           {round.tables.map((table, idx) => (
             <tr key={idx} className="even:bg-gray-50">
               <td className="border px-2 py-0.5">{table.table}</td>
-              <td className="border px-2 py-0.5">{table.pair.ns}</td>
-              <td className="border px-2 py-0.5">{table.pair.ew}</td>
+              <td className="border px-2 py-0.5">{table.participants.nsId}</td>
+              <td className="border px-2 py-0.5">{table.participants.ewId}</td>
               <td className="border px-2 py-0.5">
-                {formatBoards(table.pair.boards)}
+                {formatBoards(table.boards)}
               </td>
             </tr>
           ))}

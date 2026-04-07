@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
-import { OverallPairMPScore } from "@/model/leaderboard";
 import { PairMPPercentageLeaderboard } from "@/components/results/leaderboard/PairMPPercentageLeaderboard";
 import { PairMPLeaderboard } from "@/components/results/leaderboard/PairMPLeaderboard";
 import { PairAssignment } from "@/model/participants";
+import { PairMatchpointOverallScore } from "../../../model/leaderboard";
 
 type Props = {
   pairs: PairAssignment[];
-  leaderboard: OverallPairMPScore;
+  leaderboard: PairMatchpointOverallScore;
 };
 
 export function PairMP({ pairs, leaderboard }: Props) {

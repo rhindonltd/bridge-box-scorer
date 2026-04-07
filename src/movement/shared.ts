@@ -1,6 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
-import { PairRound, Round, Rounds, Table, Tables } from "@/model/movement";
+import { Round, Rounds, Table, Tables } from "@/model/movement";
+import {
+  ParticipantsByMode,
+  TravellerParticipantMode,
+} from "@/model/participants";
 
 // ---- Types ----
 
@@ -31,7 +35,7 @@ export type Movement = {
   boards: number;
   boardsPerRound: number;
   rounds: number;
-  tableData: Table[];
+  tableData: Table<"PAIR">[];
   missingPair?: number;
   type: MovementType;
 };
@@ -84,7 +88,7 @@ export const chunk = <T>(arr: T[], size: number): T[][] =>
 
 export const buildMovementBase = <T>(
   header: MovementHeader,
-  tables: Table[],
+  tables: Table<"PAIR">[],
 ): Movement => ({
   name: header.name,
   description: header.name,
@@ -99,8 +103,12 @@ export const buildMovementBase = <T>(
 
 export const buildTables = (
   lines: string[],
-  roundParser: (line: string) => PairRound[],
-): Table[] =>
+  roundParser: (line: string) => {
+    round: number;
+    boards: number[];
+    participants: ParticipantsByMode["PAIR"];
+  }[],
+): Table<"PAIR">[] =>
   lines.slice(2).map((line, idx) => ({
     table: idx + 1,
     rounds: roundParser(line),
@@ -134,7 +142,9 @@ export const formatBoards = (boards: number[]): string => {
   return ranges.join(",");
 };
 
-export function groupByRound(movement: Tables): Rounds {
+export function groupByRound<M extends TravellerParticipantMode>(
+  movement: Tables<M>,
+): Rounds<M> {
   if (movement.tables.length === 0)
     return {
       rounds: [],
@@ -142,12 +152,13 @@ export function groupByRound(movement: Tables): Rounds {
 
   const roundsCount = movement.tables[0].rounds.length;
 
-  const rounds: Round[] = [];
+  const rounds: Round<M>[] = [];
 
   for (let roundIdx = 0; roundIdx < roundsCount; roundIdx++) {
     const roundTables = movement.tables.map((table) => ({
       table: table.table,
-      pair: table.rounds[roundIdx],
+      boards: table.rounds[roundIdx].boards,
+      participants: table.rounds[roundIdx].participants,
     }));
 
     rounds.push({

@@ -1,11 +1,11 @@
-import { OverallTeamScore } from "@/model/leaderboard";
+import { TeamOverallOverallScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
 import { TeamAssignment } from "@/model/participants";
 
 interface Props {
   teams: TeamAssignment[];
-  leaderboard: OverallTeamScore;
+  leaderboard: TeamOverallOverallScore;
 }
 
 export function TeamOverallLeaderboard({ teams, leaderboard }: Props) {
@@ -15,11 +15,22 @@ export function TeamOverallLeaderboard({ teams, leaderboard }: Props) {
 
     return (
       <div className="text-left">
-        {participant.players.map((p, i) => (
-          <div key={i}>
-            {p.firstName} {p.lastName}
-          </div>
-        ))}
+        <div>
+          {participant.pair1.player1.firstName}{" "}
+          {participant.pair1.player1.lastName}
+        </div>
+        <div>
+          {participant.pair1.player2.firstName}{" "}
+          {participant.pair1.player2.lastName}
+        </div>
+        <div>
+          {participant.pair2.player1.firstName}{" "}
+          {participant.pair2.player1.lastName}
+        </div>
+        <div>
+          {participant.pair2.player2.firstName}{" "}
+          {participant.pair2.player2.lastName}
+        </div>
       </div>
     );
   };

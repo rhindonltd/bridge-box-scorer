@@ -52,8 +52,8 @@ async function seedMovements(movements: Movement[]) {
         await createMovementRoundSpec({
           tableId,
           roundNumber: idx + 1,
-          ns: round.ns,
-          ew: round.ew,
+          ns: round.participants.nsId,
+          ew: round.participants.ewId,
           boardStart: round.boards[0],
           boardEnd: round.boards[round.boards.length - 1],
         });

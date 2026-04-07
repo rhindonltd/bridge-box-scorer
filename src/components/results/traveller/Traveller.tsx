@@ -1,8 +1,8 @@
 import {
-  ScoredIndividualIMPTraveller,
-  ScoredIndividualMPTraveller,
-  ScoredPairIMPTraveller,
-  ScoredPairMPTraveller,
+  IndividualMatchpointScoredTraveller,
+  IndividualXIMPScoredTraveller,
+  PairMatchpointScoredTraveller,
+  PairXIMPScoredTraveller,
   ScoredTraveller,
 } from "@/model/scored-traveller";
 import { PairIMPTable } from "@/components/results/traveller/PairIMPTable";
@@ -18,24 +18,28 @@ export function Traveller({ scoredTraveller }: Props) {
   switch (scoredTraveller.type) {
     case "PAIR_MP":
       return (
-        <PairMP scoredTraveller={scoredTraveller as ScoredPairMPTraveller} />
+        <PairMP
+          scoredTraveller={scoredTraveller as PairMatchpointScoredTraveller}
+        />
       );
-    case "PAIR_IMP":
+    case "PAIR_XIMP":
       return (
         <PairIMPTable
-          scoredTraveller={scoredTraveller as ScoredPairIMPTraveller}
+          scoredTraveller={scoredTraveller as PairXIMPScoredTraveller}
         />
       );
     case "INDIVIDUAL_MP":
       return (
         <IndividualMP
-          scoredTraveller={scoredTraveller as ScoredIndividualMPTraveller}
+          scoredTraveller={
+            scoredTraveller as IndividualMatchpointScoredTraveller
+          }
         />
       );
-    case "INDIVIDUAL_IMP":
+    case "INDIVIDUAL_XIMP":
       return (
         <IndividualIMPTable
-          scoredTraveller={scoredTraveller as ScoredIndividualIMPTraveller}
+          scoredTraveller={scoredTraveller as IndividualXIMPScoredTraveller}
         />
       );
     default:

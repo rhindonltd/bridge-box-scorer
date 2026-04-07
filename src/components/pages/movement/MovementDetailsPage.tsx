@@ -5,7 +5,7 @@ import React from "react";
 
 type Props = {
   movementName: string;
-  tables: Tables;
+  tables: Tables<"PAIR">;
   onCreate: () => void;
 };
 
