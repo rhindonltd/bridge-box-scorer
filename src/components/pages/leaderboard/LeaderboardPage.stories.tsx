@@ -28,7 +28,7 @@ export const IndividualIMP: Story = {
   ],
   args: {
     overallScoreAndParticipant: {
-      type: "INDIVIDUAL_IMP",
+      type: "INDIVIDUAL_XIMP",
       participants: [
         {
           type: "INDIVIDUAL",
@@ -43,7 +43,9 @@ export const IndividualIMP: Story = {
         },
       ],
       overallScore: {
-        type: "INDIVIDUAL_IMP",
+        mode: "INDIVIDUAL",
+        scoring: "XIMP",
+        type: "INDIVIDUAL_XIMP",
         lines: [
           {
             rank: 1,
@@ -86,6 +88,8 @@ export const IndividualMP: Story = {
         },
       ],
       overallScore: {
+        mode: "INDIVIDUAL",
+        scoring: "MP",
         type: "INDIVIDUAL_MP",
         lines: [
           {
@@ -115,7 +119,7 @@ export const PairIMP: Story = {
   ],
   args: {
     overallScoreAndParticipant: {
-      type: "PAIR_IMP",
+      type: "PAIR_XIMP",
       participants: [
         {
           type: "PAIR",
@@ -135,7 +139,9 @@ export const PairIMP: Story = {
         },
       ],
       overallScore: {
-        type: "PAIR_IMP",
+        mode: "PAIR",
+        scoring: "XIMP",
+        type: "PAIR_XIMP",
         lines: [
           {
             tied: false,
@@ -183,6 +189,8 @@ export const PairMP: Story = {
         },
       ],
       overallScore: {
+        mode: "PAIR",
+        scoring: "MP",
         type: "PAIR_MP",
         lines: [
           {
@@ -216,33 +224,42 @@ export const Team: Story = {
       participants: [
         {
           type: "TEAM",
-          initialTableNumber: 1,
           teamId: "1",
-          players: [
-            {
+          pair1: {
+            type: "PAIR",
+            player1: {
               firstName: "David",
               lastName: "Collier",
               nationalId: 404476,
             },
-            {
+            player2: {
               firstName: "Jacqui",
               lastName: "Collier",
               nationalId: 477484,
             },
-            {
+            initialDirection: "NS",
+            initialTableNumber: 1,
+          },
+          pair2: {
+            type: "PAIR",
+            player1: {
               firstName: "Peter",
               lastName: "Collier",
               nationalId: 123456,
             },
-            {
-              firstName: "Andrew",
-              lastName: "Robson",
+            player2: {
+              firstName: "Nye",
+              lastName: "Collier",
               nationalId: 654321,
             },
-          ],
+            initialDirection: "EW",
+            initialTableNumber: 1,
+          },
         },
       ],
       overallScore: {
+        mode: "TEAM",
+        scoring: "OVERALL",
         type: "TEAM_OVERALL",
         lines: [
           {

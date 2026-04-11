@@ -1,4 +1,5 @@
-import { PairRound, Table, Tables } from "@/model/movement";
+import { Round, Tables, Table } from "@/model/movement";
+import { ParticipantsByMode } from "@/model/participants";
 
 export interface MitchellMovementSpec {
   tables: number;
@@ -8,7 +9,7 @@ export interface MitchellMovementSpec {
   skip?: boolean;
 }
 
-export function generateMitchell(spec: MitchellMovementSpec): Tables {
+export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
   const {
     tables,
     rounds,
@@ -26,7 +27,7 @@ export function generateMitchell(spec: MitchellMovementSpec): Tables {
 
   const skipAfter = skip ? Math.floor(tables / 2) : tables;
 
-  const result: Table[] = [];
+  const result: Table<"PAIR">[] = [];
 
   for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
     result.push(
@@ -55,7 +56,7 @@ interface TableParams {
   ewAdd: number;
 }
 
-function createMitchellTable(params: TableParams): Table {
+function createMitchellTable(params: TableParams): Table<"PAIR"> {
   const {
     tableNumber,
     tables,
@@ -75,7 +76,11 @@ function createMitchellTable(params: TableParams): Table {
 
   const arrowSwitchFrom = rounds - arrowSwitchRounds + 1;
 
-  const roundsList: PairRound[] = [];
+  const roundsList: {
+    round: number;
+    boards: number[];
+    participants: ParticipantsByMode["PAIR"];
+  }[] = [];
 
   for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
     // 🔁 Skip logic
@@ -91,18 +96,22 @@ function createMitchellTable(params: TableParams): Table {
     const boards = boardsForSet(boardSet, boardsPerRound);
 
     // 🔀 Arrow switch handling
-    let ns: number;
-    let ew: number;
+    let nsId: string;
+    let ewId: string;
 
     if (roundNumber < arrowSwitchFrom) {
-      ns = tableNumber;
-      ew = movingPair;
+      nsId = `${tableNumber}`;
+      ewId = `${movingPair}`;
     } else {
-      ns = movingPair;
-      ew = tableNumber;
+      nsId = `${movingPair}`;
+      ewId = `${tableNumber}`;
     }
 
-    roundsList.push({ ns, ew, boards });
+    roundsList.push({
+      round: roundNumber,
+      boards,
+      participants: { nsId, ewId },
+    });
   }
 
   return {

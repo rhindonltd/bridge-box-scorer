@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
-import { OverallIndividualMPScore } from "@/model/leaderboard";
 import { IndividualMPLeaderboard } from "@/components/results/leaderboard/IndividualMPLeaderboard";
 import { IndividualMPPercentageLeaderboard } from "@/components/results/leaderboard/IndividualMPPercentageLeaderboard";
 import { IndividualAssignment } from "@/model/participants";
+import { IndividualMatchpointOverallScore } from "@/model/leaderboard";
 
 type Props = {
   individuals: IndividualAssignment[];
-  leaderboard: OverallIndividualMPScore;
+  leaderboard: IndividualMatchpointOverallScore;
 };
 
 export function IndividualMP({ individuals, leaderboard }: Props) {

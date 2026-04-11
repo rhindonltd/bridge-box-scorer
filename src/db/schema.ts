@@ -164,8 +164,8 @@ export const movementroundspec = sqliteTable("movementroundspec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   tableId: integer("table_id").references(() => movementtablespec.id),
   roundNumber: integer("round_number").notNull(),
-  ns: integer("ns").notNull(),
-  ew: integer("ew").notNull(),
+  ns: text("ns").notNull(),
+  ew: text("ew").notNull(),
   boardStart: integer("board_start").notNull(),
   boardEnd: integer("board_end").notNull(),
 });

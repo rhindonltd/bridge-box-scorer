@@ -1,11 +1,11 @@
-import { OverallIndividualIMPScore } from "@/model/leaderboard";
 import { TableRow } from "@/components/common/table/TableRow";
 import { Table } from "../../common/table/Table";
 import { IndividualAssignment } from "@/model/participants";
+import { IndividualXIMPOverallScore } from "@/model/leaderboard";
 
 type Props = {
   individuals: IndividualAssignment[];
-  leaderboard: OverallIndividualIMPScore;
+  leaderboard: IndividualXIMPOverallScore;
 };
 
 export function IndividualIMPLeaderboard({ individuals, leaderboard }: Props) {

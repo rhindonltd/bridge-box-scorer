@@ -1,5 +1,5 @@
 import { Player } from "@/model/participants";
-import { PairIMPTraveller } from "@/model/traveller";
+import { PairTraveller } from "@/model/traveller";
 
 export const players: Map<string, Player[]> = new Map([
   [
@@ -61,7 +61,7 @@ export const players: Map<string, Player[]> = new Map([
 ]);
 
 export const impBoard1 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 1,
   section: crypto.randomUUID(),
   lines: [
@@ -86,10 +86,10 @@ export const impBoard1 = {
       outcome: "2DN-1",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board2 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 2,
   section: crypto.randomUUID(),
   lines: [
@@ -114,10 +114,10 @@ export const board2 = {
       outcome: "3HE=",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board3 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 3,
   section: crypto.randomUUID(),
   lines: [
@@ -142,10 +142,10 @@ export const board3 = {
       outcome: "5CN-1",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board4 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 4,
   section: crypto.randomUUID(),
   lines: [
@@ -170,10 +170,10 @@ export const board4 = {
       outcome: "2SN+2",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board5 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 5,
   section: crypto.randomUUID(),
   lines: [
@@ -198,10 +198,10 @@ export const board5 = {
       outcome: "5CW+1",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board6 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 6,
   section: crypto.randomUUID(),
   lines: [
@@ -226,10 +226,10 @@ export const board6 = {
       outcome: "3SW-1",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board7 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 7,
   section: crypto.randomUUID(),
   lines: [
@@ -254,10 +254,10 @@ export const board7 = {
       outcome: "3NTS-1",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board8 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 8,
   section: crypto.randomUUID(),
   lines: [
@@ -282,10 +282,10 @@ export const board8 = {
       outcome: "3DE-1",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board9 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 9,
   section: crypto.randomUUID(),
   lines: [
@@ -310,10 +310,10 @@ export const board9 = {
       outcome: "2CE=",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board10 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 10,
   section: crypto.randomUUID(),
   lines: [
@@ -338,10 +338,10 @@ export const board10 = {
       outcome: "2SS+1",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board11 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 11,
   section: crypto.randomUUID(),
   lines: [
@@ -366,10 +366,10 @@ export const board11 = {
       outcome: "2HS-2",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board12 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 12,
   section: crypto.randomUUID(),
   lines: [
@@ -394,10 +394,10 @@ export const board12 = {
       outcome: "3CN=",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board13 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 13,
   section: crypto.randomUUID(),
   lines: [
@@ -422,10 +422,10 @@ export const board13 = {
       outcome: "4SW-1",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;
 
 export const board14 = {
-  type: "PAIR_IMP",
+  mode: "PAIR",
   board: 14,
   section: crypto.randomUUID(),
   lines: [
@@ -450,4 +450,4 @@ export const board14 = {
       outcome: "3HW=",
     },
   ],
-} as PairIMPTraveller;
+} as PairTraveller;

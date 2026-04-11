@@ -1,10 +1,10 @@
-import { ScoredPairMPTraveller } from "@/model/scored-traveller";
 import { BoardResult } from "@/components/results/traveller/BoardResult";
 import { TableRow } from "@/components/common/table/TableRow";
 import { Table } from "@/components/common/table/Table";
+import { PairMatchpointScoredTraveller } from "@/model/scored-traveller";
 
 type Props = {
-  scoredTraveller: ScoredPairMPTraveller;
+  scoredTraveller: PairMatchpointScoredTraveller;
 };
 
 export function PairMPPercentageTable({ scoredTraveller }: Props) {

@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Traveller } from "@/components/results/traveller/Traveller";
 import { individualIMPTraveller } from "@/mocks/fixtures/traveller/individual-imp";
 import { individualMpTraveller } from "@/mocks/fixtures/traveller/individual-mp";
-import { scoreCrossIMP, scoreMatchpoints } from "@/model/score-traveller";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
+import { score } from "@/model/score-traveller";
 
 const meta: Meta<typeof Traveller> = {
   title: "Components/Results/Traveller/Traveller",
@@ -33,12 +33,12 @@ export const IndividualMP: Story = {
 
 export const PairIMP: Story = {
   args: {
-    scoredTraveller: scoreCrossIMP(impBoard1),
+    scoredTraveller: score(impBoard1, "PAIR_XIMP"),
   },
 };
 
 export const PairMP: Story = {
   args: {
-    scoredTraveller: scoreMatchpoints(mpBoard1),
+    scoredTraveller: score(mpBoard1, "PAIR_MP"),
   },
 };

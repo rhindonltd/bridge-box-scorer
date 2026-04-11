@@ -36,7 +36,9 @@ export const Default: Story = {
       },
     ],
     leaderboard: {
-      type: "PAIR_IMP",
+      type: "PAIR_XIMP",
+      mode: "PAIR",
+      scoring: "XIMP",
       lines: [
         {
           tied: false,

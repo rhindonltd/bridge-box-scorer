@@ -2,10 +2,10 @@ import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { BoardResultsPage } from "@/components/pages/play/BoardResultsPage";
 import { individualIMPTraveller } from "@/mocks/fixtures/traveller/individual-imp";
 import { individualMpTraveller } from "@/mocks/fixtures/traveller/individual-mp";
-import { scoreCrossIMP, scoreMatchpoints } from "@/model/score-traveller";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { score } from "@/model/score-traveller";
 
 const meta: Meta<typeof BoardResultsPage> = {
   title: "Pages/Play/BoardResultsPage",
@@ -19,7 +19,7 @@ const meta: Meta<typeof BoardResultsPage> = {
 export default meta;
 type Story = StoryObj<typeof BoardResultsPage>;
 
-export const IndividualIMP: Story = {
+export const IndividualXIMP: Story = {
   decorators: [
     withGame(
       {
@@ -57,7 +57,7 @@ export const IndividualMP: Story = {
   },
 };
 
-export const PairIMP: Story = {
+export const PairXIMP: Story = {
   decorators: [
     withGame(
       {
@@ -72,7 +72,7 @@ export const PairIMP: Story = {
   args: {
     board: 5,
     lastBoardOfRound: false,
-    scoredTraveller: scoreCrossIMP(impBoard1),
+    scoredTraveller: score(impBoard1, "PAIR_XIMP"),
   },
 };
 
@@ -91,6 +91,6 @@ export const PairMP: Story = {
   args: {
     board: 5,
     lastBoardOfRound: false,
-    scoredTraveller: scoreMatchpoints(mpBoard1),
+    scoredTraveller: score(mpBoard1, "PAIR_MP"),
   },
 };

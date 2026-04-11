@@ -118,25 +118,32 @@ export const EventSessionAndTeam: Story = {
       },
       {
         type: "TEAM",
-        players: [
-          {
+        pair1: {
+          type: "PAIR",
+          player1: {
             firstName: "Jacqui",
             lastName: "Collier",
           },
-          {
+          player2: {
             firstName: "David",
             lastName: "Collier",
           },
-          {
-            firstName: "Nye",
-            lastName: "Collier",
-          },
-          {
+          initialTableNumber: 3,
+          initialDirection: "NS",
+        },
+        pair2: {
+          type: "PAIR",
+          player1: {
             firstName: "Peter",
             lastName: "Collier",
           },
-        ],
-        initialTableNumber: 3,
+          player2: {
+            firstName: "Nye",
+            lastName: "Collier",
+          },
+          initialTableNumber: 3,
+          initialDirection: "EW",
+        },
         teamId: "1",
       },
     ),

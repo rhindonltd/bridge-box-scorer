@@ -1,10 +1,14 @@
-/* ---------- ranked result ---------- */
-
 import {
   IndividualAssignment,
   PairAssignment,
   TeamAssignment,
+  TravellerParticipantMode,
 } from "@/model/participants";
+
+export type TeamMode = "TEAM";
+export type OverallScoreMode = TravellerParticipantMode | TeamMode;
+
+/* ---------- ranked result ---------- */
 
 export type RankedResult<T> = T & {
   rank: number;
@@ -37,92 +41,119 @@ export interface OverallTeamResult {
   score: number;
 }
 
-/* ---------- generic overall lines ---------- */
+/* ---------- mode -> id mapping ---------- */
 
-export type TeamOverallScoreLine<
-  TScore extends object = Record<string, never>,
-> = { teamId: string } & TScore;
-
-export type PairOverallScoreLine<
-  TScore extends object = Record<string, never>,
-> = { pairId: string } & TScore;
-
-export type IndividualOverallScoreLine<
-  TScore extends object = Record<string, never>,
-> = { playerId: string } & TScore;
-
-/* ---------- base overall container ---------- */
-
-export interface OverallScoreBase<TLine> {
-  type: OverallScoreType;
-  lines: RankedResult<TLine>[];
+interface IdFieldByMode {
+  INDIVIDUAL: { playerId: string };
+  PAIR: { pairId: string };
+  TEAM: { teamId: string };
 }
 
-/* ---------- concrete traveller types ---------- */
+/* ---------- scoring mapping ---------- */
 
-export type OverallIndividualMPScore = OverallScoreBase<
-  IndividualOverallScoreLine<MatchpointOverallScore>
-> & { type: "INDIVIDUAL_MP" };
+interface ScoreByModeAndScoring {
+  INDIVIDUAL: {
+    MP: MatchpointOverallScore;
+    XIMP: CrossImpOverallScore;
+  };
+  PAIR: {
+    MP: MatchpointOverallScore;
+    XIMP: CrossImpOverallScore;
+  };
+  TEAM: {
+    MATCH: TeamMatchScore;
+    OVERALL: OverallTeamResult;
+  };
+}
 
-export type OverallIndividualIMPScore = OverallScoreBase<
-  IndividualOverallScoreLine<CrossImpOverallScore>
-> & { type: "INDIVIDUAL_IMP" };
+/* ---------- scoring keys per mode ---------- */
 
-export type OverallPairMPScore = OverallScoreBase<
-  PairOverallScoreLine<MatchpointOverallScore>
-> & { type: "PAIR_MP" };
-
-export type OverallPairIMPScore = OverallScoreBase<
-  PairOverallScoreLine<CrossImpOverallScore>
-> & { type: "PAIR_IMP" };
-
-export type OverallTeamMatchScore = OverallScoreBase<
-  TeamOverallScoreLine<TeamMatchScore>
-> & { type: "TEAM_MATCH" };
-
-export type OverallTeamScore = OverallScoreBase<
-  TeamOverallScoreLine<OverallTeamResult>
-> & { type: "TEAM_OVERALL" };
-
-export type OverallScore =
-  | OverallIndividualMPScore
-  | OverallIndividualIMPScore
-  | OverallPairMPScore
-  | OverallPairIMPScore
-  | OverallTeamMatchScore
-  | OverallTeamScore;
-
-export type OverallScoreType =
-  | "INDIVIDUAL_MP"
-  | "INDIVIDUAL_IMP"
-  | "PAIR_MP"
-  | "PAIR_IMP"
-  | "TEAM_MATCH"
-  | "TEAM_OVERALL";
-
-/* ---------- automatic OverallScoreAndParticipants ---------- */
-
-// Map from score type literal to participant type
-type ParticipantsMap = {
-  INDIVIDUAL_MP: IndividualAssignment[];
-  INDIVIDUAL_IMP: IndividualAssignment[];
-  PAIR_MP: PairAssignment[];
-  PAIR_IMP: PairAssignment[];
-  TEAM_MATCH: TeamAssignment[];
-  TEAM_OVERALL: TeamAssignment[];
-};
-
-// Helper to extract OverallScore by type literal
-type OverallScoreByType<T extends OverallScoreType> = Extract<
-  OverallScore,
-  { type: T }
+export type ScoringByMode<M extends OverallScoreMode> = Extract<
+  keyof ScoreByModeAndScoring[M],
+  string
 >;
 
-// Automatic discriminated union for OverallScoreAndParticipants
+/* ---------- type builder ---------- */
+
+export type OverallScoreType<
+  M extends OverallScoreMode,
+  S extends ScoringByMode<M>,
+> = `${M}_${S}`;
+
+/* ---------- line ---------- */
+
+export type OverallLine<
+  M extends OverallScoreMode,
+  S extends ScoringByMode<M>,
+> = IdFieldByMode[M] & ScoreByModeAndScoring[M][S];
+
+/* ---------- container ---------- */
+
+export interface OverallScoreBase<
+  M extends OverallScoreMode,
+  S extends ScoringByMode<M>,
+> {
+  type: OverallScoreType<M, S>;
+  mode: M;
+  scoring: S;
+  lines: RankedResult<OverallLine<M, S>>[];
+}
+
+/* ---------- unions ---------- */
+
+export type IndividualMatchpointOverallScore = OverallScoreBase<
+  "INDIVIDUAL",
+  "MP"
+>;
+export type IndividualXIMPOverallScore = OverallScoreBase<"INDIVIDUAL", "XIMP">;
+export type PairMatchpointOverallScore = OverallScoreBase<"PAIR", "MP">;
+export type PairXIMPOverallScore = OverallScoreBase<"PAIR", "XIMP">;
+export type TeamMatchOverallScore = OverallScoreBase<"TEAM", "MATCH">;
+export type TeamOverallOverallScore = OverallScoreBase<"TEAM", "OVERALL">;
+
+export type OverallScore =
+  | IndividualMatchpointOverallScore
+  | IndividualXIMPOverallScore
+  | PairMatchpointOverallScore
+  | PairXIMPOverallScore
+  | TeamMatchOverallScore
+  | TeamOverallOverallScore;
+
+/* ---------- participants mapping ---------- */
+
+interface ParticipantsByOverallScoreMode {
+  INDIVIDUAL: IndividualAssignment[];
+  PAIR: PairAssignment[];
+  TEAM: TeamAssignment[];
+}
+
+/* ---------- final combined type ---------- */
+
 export type OverallScoreAndParticipant = {
-  [K in OverallScoreType]: {
-    type: K;
-    overallScore: OverallScoreByType<K>;
-    participants: ParticipantsMap[K];
-  };
-}[OverallScoreType];
+  [M in OverallScoreMode]: {
+    [S in ScoringByMode<M>]: {
+      type: OverallScoreType<M, S>;
+      overallScore: OverallScoreBase<M, S>;
+      participants: ParticipantsByOverallScoreMode[M];
+    };
+  }[ScoringByMode<M>];
+}[OverallScoreMode];
+
+// --------------------
+// Example
+// --------------------
+//
+// const exampleOverall: OverallScoreBase<"PAIR", "MP"> = {
+//     type: "PAIR_MP",
+//     mode: "PAIR",
+//     scoring: "MP",
+//     lines: [
+//         {
+//             rank: 1,
+//             tied: false,
+//             pairId: "P1",
+//             totalMP: 60,
+//             maxMP: 100,
+//         },
+//     ],
+// };

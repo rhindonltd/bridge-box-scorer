@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { scoreMatchpoints } from "@/model/score-traveller";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { PairMP } from "@/components/results/traveller/PairMP";
+import { score } from "@/model/score-traveller";
 
 const meta: Meta<typeof PairMP> = {
   title: "Components/Results/Traveller/PairMP",
@@ -18,6 +18,6 @@ type Story = StoryObj<typeof PairMP>;
 
 export const Default: Story = {
   args: {
-    scoredTraveller: scoreMatchpoints(mpBoard1),
+    scoredTraveller: score(mpBoard1, "PAIR_MP"),
   },
 };

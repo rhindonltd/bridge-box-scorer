@@ -1,10 +1,10 @@
-import { ScoredIndividualIMPTraveller } from "@/model/scored-traveller";
 import { BoardResult } from "@/components/results/traveller/BoardResult";
 import { TableRow } from "@/components/common/table/TableRow";
 import { Table } from "@/components/common/table/Table";
+import { IndividualXIMPScoredTraveller } from "@/model/scored-traveller";
 
 type Props = {
-  scoredTraveller: ScoredIndividualIMPTraveller;
+  scoredTraveller: IndividualXIMPScoredTraveller;
 };
 
 export function IndividualIMPTable({ scoredTraveller }: Props) {

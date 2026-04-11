@@ -1,9 +1,8 @@
-import { ScoredIndividualIMPTraveller } from "@/model/scored-traveller";
+import { IndividualXIMPScoredTraveller } from "@/model/scored-traveller";
 
-export const individualIMPTraveller: ScoredIndividualIMPTraveller = {
-  type: "INDIVIDUAL_IMP",
+export const individualIMPTraveller: IndividualXIMPScoredTraveller = {
+  type: "INDIVIDUAL_XIMP",
   board: 10,
-  section: crypto.randomUUID(),
   lines: [
     {
       outcome: "4SS=",

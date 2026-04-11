@@ -1,11 +1,11 @@
-import { OverallPairIMPScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
 import { PairAssignment } from "@/model/participants";
+import { PairXIMPOverallScore } from "@/model/leaderboard";
 
 interface Props {
   pairs: PairAssignment[];
-  leaderboard: OverallPairIMPScore;
+  leaderboard: PairXIMPOverallScore;
 }
 
 export function PairIMPLeaderboard({ pairs, leaderboard }: Props) {

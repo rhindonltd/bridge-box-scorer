@@ -19,7 +19,7 @@ export function Leaderboard({ overallScoreAndParticipant }: Props) {
           leaderboard={overallScoreAndParticipant.overallScore}
         />
       );
-    case "INDIVIDUAL_IMP":
+    case "INDIVIDUAL_XIMP":
       return (
         <IndividualIMPLeaderboard
           individuals={overallScoreAndParticipant.participants}
@@ -33,7 +33,7 @@ export function Leaderboard({ overallScoreAndParticipant }: Props) {
           leaderboard={overallScoreAndParticipant.overallScore}
         />
       );
-    case "PAIR_IMP":
+    case "PAIR_XIMP":
       return (
         <PairIMPLeaderboard
           pairs={overallScoreAndParticipant.participants}

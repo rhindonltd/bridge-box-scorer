@@ -1,13 +1,13 @@
 "use client";
 
-import { ScoredIndividualMPTraveller } from "@/model/scored-traveller";
 import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
 import { IndividualMPPercentageTable } from "@/components/results/traveller/IndividualMPPercentageTable";
 import { IndividualMPTable } from "@/components/results/traveller/IndividualMPTable";
+import { IndividualMatchpointScoredTraveller } from "@/model/scored-traveller";
 
 type Props = {
-  scoredTraveller: ScoredIndividualMPTraveller;
+  scoredTraveller: IndividualMatchpointScoredTraveller;
 };
 
 export function IndividualMP({ scoredTraveller }: Props) {

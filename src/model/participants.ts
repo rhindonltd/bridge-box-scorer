@@ -6,24 +6,28 @@ export type Player = {
   nationalId?: number;
 };
 
-export interface TravellerPairParticipants {
-  nsId: string;
-  ewId: string;
+export interface ParticipantsByMode {
+  INDIVIDUAL: {
+    nId: string;
+    sId: string;
+    eId: string;
+    wId: string;
+  };
+  PAIR: {
+    nsId: string;
+    ewId: string;
+  };
 }
 
-export interface TravellerIndividualParticipants {
-  nId: string;
-  sId: string;
-  eId: string;
-  wId: string;
-}
+export type TravellerParticipantMode = "INDIVIDUAL" | "PAIR";
 
 /* ---------- participants ---------- */
 
-export type Team = {
-  type: "TEAM";
-  players: Player[];
+export type Individual = {
+  type: "INDIVIDUAL";
+  player: Player;
   initialTableNumber: number;
+  initialDirection: Direction;
 };
 
 export type Pair = {
@@ -34,30 +38,26 @@ export type Pair = {
   initialDirection: PairDirection;
 };
 
-export type Individual = {
-  type: "INDIVIDUAL";
-  player: Player;
-  initialTableNumber: number;
-  initialDirection: Direction;
+export type Team = {
+  type: "TEAM";
+  pair1: Pair;
+  pair2: Pair;
 };
 
 /* ---------- participant assignments ---------- */
 
-export type TeamAssignment = Team & {
-  teamId: string;
+export type IndividualAssignment = Individual & {
+  playerId: string;
 };
 
 export type PairAssignment = Pair & {
   pairId: string;
 };
 
-export type IndividualAssignment = Individual & {
-  playerId: string;
+export type TeamAssignment = Team & {
+  teamId: string;
 };
 
 /* ---------- unions ---------- */
 
-export type Participant = Team | Pair | Individual;
 export type Assignment = TeamAssignment | PairAssignment | IndividualAssignment;
-
-export type ParticipantType = "TEAM" | "PAIR" | "INDIVIDUAL";

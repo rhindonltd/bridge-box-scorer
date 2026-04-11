@@ -17,7 +17,7 @@ type Story = StoryObj<typeof LeaderboardPage>;
 export const IndividualIMP: Story = {
   args: {
     overallScoreAndParticipant: {
-      type: "INDIVIDUAL_IMP",
+      type: "INDIVIDUAL_XIMP",
       participants: [
         {
           type: "INDIVIDUAL",
@@ -32,7 +32,9 @@ export const IndividualIMP: Story = {
         },
       ],
       overallScore: {
-        type: "INDIVIDUAL_IMP",
+        type: "INDIVIDUAL_XIMP",
+        mode: "INDIVIDUAL",
+        scoring: "XIMP",
         lines: [
           {
             rank: 1,
@@ -65,6 +67,8 @@ export const IndividualMP: Story = {
       ],
       overallScore: {
         type: "INDIVIDUAL_MP",
+        mode: "INDIVIDUAL",
+        scoring: "MP",
         lines: [
           {
             tied: false,
@@ -82,7 +86,7 @@ export const IndividualMP: Story = {
 export const PairIMP: Story = {
   args: {
     overallScoreAndParticipant: {
-      type: "PAIR_IMP",
+      type: "PAIR_XIMP",
       participants: [
         {
           type: "PAIR",
@@ -102,7 +106,9 @@ export const PairIMP: Story = {
         },
       ],
       overallScore: {
-        type: "PAIR_IMP",
+        type: "PAIR_XIMP",
+        mode: "PAIR",
+        scoring: "XIMP",
         lines: [
           {
             tied: false,
@@ -140,6 +146,8 @@ export const PairMP: Story = {
       ],
       overallScore: {
         type: "PAIR_MP",
+        mode: "PAIR",
+        scoring: "MP",
         lines: [
           {
             tied: false,
@@ -161,19 +169,43 @@ export const Team: Story = {
       participants: [
         {
           type: "TEAM",
-          initialTableNumber: 1,
           teamId: "1",
-          players: [
-            {
+          pair1: {
+            type: "PAIR",
+            initialDirection: "NS",
+            initialTableNumber: 1,
+            player1: {
               firstName: "David",
               lastName: "Collier",
               nationalId: 404476,
             },
-          ],
+            player2: {
+              firstName: "Jacqui",
+              lastName: "Collier",
+              nationalId: 477484,
+            },
+          },
+          pair2: {
+            type: "PAIR",
+            initialDirection: "EW",
+            initialTableNumber: 1,
+            player1: {
+              firstName: "Peter",
+              lastName: "Collier",
+              nationalId: 123456,
+            },
+            player2: {
+              firstName: "Nye",
+              lastName: "Collier",
+              nationalId: 654321,
+            },
+          },
         },
       ],
       overallScore: {
         type: "TEAM_OVERALL",
+        mode: "TEAM",
+        scoring: "OVERALL",
         lines: [
           {
             tied: false,

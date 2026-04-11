@@ -22,18 +22,18 @@ export const Default: Story = {
       tables: [
         {
           table: 1,
-          pair: {
-            ns: 2,
-            ew: 3,
-            boards: [1, 2, 3],
+          boards: [1, 2, 3],
+          participants: {
+            nsId: "2",
+            ewId: "3",
           },
         },
         {
           table: 2,
-          pair: {
-            ns: 4,
-            ew: 5,
-            boards: [4, 5, 6],
+          boards: [4, 5, 6],
+          participants: {
+            nsId: "4",
+            ewId: "5",
           },
         },
       ],
