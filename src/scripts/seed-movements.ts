@@ -18,16 +18,16 @@ async function main() {
 main();
 
 async function seedPairs() {
-  seedMovements(generatePairsMovements());
+  seedPairMovements(generatePairsMovements());
 
   console.log("✅ Pairs movements seeded!");
 
-  seedMovements(generateTeamsMovements());
+  seedPairMovements(generateTeamsMovements());
 
   console.log("✅ Teams movements seeded!");
 }
 
-async function seedMovements(movements: Movement[]) {
+async function seedPairMovements(movements: Movement<'PAIR'>[]) {
   for (const movement of movements) {
     // 1️⃣ Insert movement
     const movementId = await createMovementSpec({
@@ -48,7 +48,8 @@ async function seedMovements(movements: Movement[]) {
       });
 
       // 3️⃣ Insert rounds
-      table.rounds.forEach(async (round, idx) => {
+      for (const round of table.rounds) {
+          const idx = table.rounds.indexOf(round);
         await createMovementRoundSpec({
           tableId,
           roundNumber: idx + 1,
@@ -57,7 +58,7 @@ async function seedMovements(movements: Movement[]) {
           boardStart: round.boards[0],
           boardEnd: round.boards[round.boards.length - 1],
         });
-      });
+      }
     }
   }
 

@@ -33,7 +33,7 @@ const parsePairsRounds =
 
 // ---- Generator ----
 
-export const generatePairsMovements = (): Movement[] =>
+export const generatePairsMovements = (): Movement<'PAIR'>[] =>
   splitLinesOfFile("PSMovements.txt")
     .filter((lines) => lines.length >= 2)
     .map((lines) => {

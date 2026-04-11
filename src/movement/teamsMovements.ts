@@ -33,13 +33,13 @@ const parsePairsRounds =
 
 // ---- Generator ----
 
-export const generateTeamsMovements = (): Movement[] =>
+export const generateTeamsMovements = (): Movement<'PAIR'>[] =>
   splitLinesOfFile("TSMovements.txt")
     .filter((lines) => lines.length >= 2)
     .map((lines) => {
       const header = parseHeader(lines);
 
-      const tables: Table<"PAIR">[] = buildTables(
+      const tables: Table<'PAIR'>[] = buildTables(
         lines,
         parsePairsRounds(header.defaultBoardsPerSet),
       );

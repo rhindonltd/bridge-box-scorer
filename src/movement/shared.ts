@@ -28,14 +28,14 @@ export type MovementHeader = {
   missingPair: number;
 };
 
-export type Movement = {
+export type Movement<M extends TravellerParticipantMode> = {
   name: string;
   description: string;
   tables: number;
   boards: number;
   boardsPerRound: number;
   rounds: number;
-  tableData: Table<"PAIR">[];
+  tableData: Table<M>[];
   missingPair?: number;
   type: MovementType;
 };
@@ -86,10 +86,10 @@ export const chunk = <T>(arr: T[], size: number): T[][] =>
     arr.slice(i * size, i * size + size),
   );
 
-export const buildMovementBase = <T>(
+export const buildMovementBase = <M extends TravellerParticipantMode>(
   header: MovementHeader,
-  tables: Table<"PAIR">[],
-): Movement => ({
+  tables: Table<M>[],
+): Movement<M> => ({
   name: header.name,
   description: header.name,
   tables: header.numberOfTables,
@@ -101,18 +101,19 @@ export const buildMovementBase = <T>(
   type: header.movementType,
 });
 
-export const buildTables = (
+export function buildTables<M extends TravellerParticipantMode>(
   lines: string[],
   roundParser: (line: string) => {
     round: number;
     boards: number[];
-    participants: ParticipantsByMode["PAIR"];
+    participants: ParticipantsByMode[M];
   }[],
-): Table<"PAIR">[] =>
-  lines.slice(2).map((line, idx) => ({
+): Table<M>[] {
+  return lines.slice(2).map((line, idx) => ({
     table: idx + 1,
     rounds: roundParser(line),
   }));
+}
 
 export const boardSetToBoardList = (
   boardSet: number,
