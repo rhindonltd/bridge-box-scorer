@@ -1,6 +1,6 @@
-# total -> 486
+# total -> 487
 
-# MIT - 412
+# MIT - 413
 
 # MIT-0 - 1
 
@@ -110,7 +110,7 @@
  1. https://github.com/drizzle-team/brocli
  2. Apache-2.0
 
-# @emnapi/core@1.9.1
+# @emnapi/core@1.9.2
 
 
  1. https://github.com/toyobayashi/emnapi
@@ -176,7 +176,7 @@
  1. https://github.com/floating-ui/floating-ui
  2. MIT
 
-# @headlessui/react@2.2.9
+# @headlessui/react@2.2.10
 
 
  1. https://github.com/tailwindlabs/headlessui
@@ -218,7 +218,7 @@
  1. https://github.com/lovell/sharp-libvips
  2. LGPL-3.0-or-later
 
-# @joshwooding/vite-plugin-react-docgen-typescript@0.6.4
+# @joshwooding/vite-plugin-react-docgen-typescript@0.7.0
 
 
  1. https://github.com/joshwooding/vite-plugin-react-docgen-typescript
@@ -248,7 +248,7 @@
  1. https://github.com/mdx-js/mdx
  2. MIT
 
-# @napi-rs/wasm-runtime@1.1.1
+# @napi-rs/wasm-runtime@0.2.12
 
 
  1. https://github.com/napi-rs/napi-rs
@@ -290,13 +290,13 @@
  1. https://github.com/SukkaW/nolyfill
  2. MIT
 
-# @oxc-project/types@0.122.0
+# @oxc-project/types@0.124.0
 
 
  1. https://github.com/oxc-project/oxc
  2. MIT
 
-# @playwright/test@1.58.2
+# @playwright/test@1.59.1
 
 
  1. https://github.com/microsoft/playwright
@@ -314,7 +314,7 @@
  1. https://github.com/adobe/react-spectrum
  2. Apache-2.0
 
-# @rolldown/binding-darwin-arm64@1.0.0-rc.12
+# @rolldown/binding-darwin-arm64@1.0.0-rc.15
 
 
  1. https://github.com/rolldown/rolldown
@@ -344,7 +344,7 @@
  1. https://github.com/standard-schema/standard-schema
  2. MIT
 
-# @storybook/addon-a11y@10.3.3
+# @storybook/addon-a11y@10.3.5
 
 
  1. https://github.com/storybookjs/storybook
@@ -422,7 +422,7 @@
  1. https://github.com/DefinitelyTyped/DefinitelyTyped
  2. MIT
 
-# @typescript-eslint/eslint-plugin@8.57.2
+# @typescript-eslint/eslint-plugin@8.58.1
 
 
  1. https://github.com/typescript-eslint/typescript-eslint
@@ -440,10 +440,16 @@
  1. https://github.com/vitejs/vite-plugin-react
  2. MIT
 
-# @vitest/browser-playwright@4.1.1
+# @vitest/browser-playwright@4.1.4
 
 
  1. https://github.com/vitest-dev/vitest
+ 2. MIT
+
+# @webcontainer/env@1.1.1
+
+
+ 1. https://github.com/stackblitz/webcontainer-core
  2. MIT
 
 # accepts@1.3.8
@@ -584,7 +590,7 @@
  1. https://github.com/inspect-js/available-typed-arrays
  2. MIT
 
-# axe-core@4.11.1
+# axe-core@4.11.2
 
 
  1. https://github.com/dequelabs/axe-core
@@ -614,7 +620,7 @@
  1. https://github.com/faeldt/base64id
  2. MIT
 
-# baseline-browser-mapping@2.10.10
+# baseline-browser-mapping@2.10.17
 
 
  1. https://github.com/web-platform-dx/baseline-browser-mapping
@@ -668,7 +674,7 @@
  1. 
  2. UNLICENSED
 
-# browserslist@4.28.1
+# browserslist@4.28.2
 
 
  1. https://github.com/browserslist/browserslist
@@ -698,7 +704,7 @@
  1. https://github.com/ljharb/call-bind-apply-helpers
  2. MIT
 
-# call-bind@1.0.8
+# call-bind@1.0.9
 
 
  1. https://github.com/ljharb/call-bind
@@ -716,7 +722,7 @@
  1. https://github.com/sindresorhus/callsites
  2. MIT
 
-# caniuse-lite@1.0.30001781
+# caniuse-lite@1.0.30001787
 
 
  1. https://github.com/browserslist/caniuse-lite
@@ -956,7 +962,7 @@
  1. https://github.com/eps1lon/dom-accessibility-api
  2. MIT
 
-# dotenv@17.3.1
+# dotenv@17.4.1
 
 
  1. https://github.com/motdotla/dotenv
@@ -974,7 +980,7 @@
  1. https://github.com/es-shims/dunder-proto
  2. MIT
 
-# electron-to-chromium@1.5.325
+# electron-to-chromium@1.5.335
 
 
  1. https://github.com/Kilian/electron-to-chromium
@@ -1016,7 +1022,7 @@
  1. https://github.com/fb55/entities
  2. BSD-2-Clause
 
-# es-abstract@1.24.1
+# es-abstract@1.24.2
 
 
  1. https://github.com/ljharb/es-abstract
@@ -1034,7 +1040,7 @@
  1. https://github.com/ljharb/es-errors
  2. MIT
 
-# es-iterator-helpers@1.3.1
+# es-iterator-helpers@1.3.2
 
 
  1. https://github.com/es-shims/iterator-helpers
@@ -1082,7 +1088,7 @@
  1. https://github.com/sindresorhus/escape-string-regexp
  2. MIT
 
-# eslint-import-resolver-node@0.3.9
+# eslint-import-resolver-node@0.3.10
 
 
  1. https://github.com/import-js/eslint-plugin-import
@@ -1808,13 +1814,13 @@
  1. https://github.com/chaijs/loupe
  2. MIT
 
-# lru-cache@11.2.7
+# lru-cache@11.3.3
 
 
  1. https://github.com/isaacs/node-lru-cache
  2. BlueOak-1.0.0
 
-# lucide-react@1.7.0
+# lucide-react@1.8.0
 
 
  1. https://github.com/lucide-icons/lucide
@@ -1898,7 +1904,7 @@
  1. https://github.com/thejameskyle/min-indent
  2. MIT
 
-# minimatch@10.2.4
+# minimatch@10.2.5
 
 
  1. https://github.com/isaacs/minimatch
@@ -1976,7 +1982,7 @@
  1. https://github.com/electron/node-abi
  2. MIT
 
-# node-addon-api@8.6.0
+# node-addon-api@8.7.0
 
 
  1. https://github.com/nodejs/node-addon-api
@@ -1994,7 +2000,7 @@
  1. https://github.com/prebuild/node-gyp-build
  2. MIT
 
-# node-releases@2.0.36
+# node-releases@2.0.37
 
 
  1. https://github.com/chicoxyzzy/node-releases
@@ -2180,7 +2186,7 @@
  1. https://github.com/gkz/prelude-ls
  2. MIT
 
-# prettier@3.8.1
+# prettier@3.8.2
 
 
  1. https://github.com/prettier/prettier
@@ -2372,7 +2378,7 @@
  1. https://github.com/sindresorhus/shebang-regex
  2. MIT
 
-# side-channel-list@1.0.0
+# side-channel-list@1.0.1
 
 
  1. https://github.com/ljharb/side-channel-list
@@ -2594,13 +2600,13 @@
  1. https://github.com/tinylibs/tinybench
  2. MIT
 
-# tinyexec@1.0.4
+# tinyexec@1.1.1
 
 
  1. https://github.com/tinylibs/tinyexec
  2. MIT
 
-# tinyglobby@0.2.15
+# tinyglobby@0.2.16
 
 
  1. https://github.com/SuperchupuDev/tinyglobby
@@ -2738,7 +2744,7 @@
  1. https://github.com/ljharb/unbox-primitive
  2. MIT
 
-# undici-types@7.18.2
+# undici-types@7.19.2
 
 
  1. https://github.com/nodejs/undici
@@ -2798,7 +2804,7 @@
  1. https://github.com/aleclarson/vite-tsconfig-paths
  2. MIT
 
-# vite@8.0.3
+# vite@8.0.8
 
 
  1. https://github.com/vitejs/vite
