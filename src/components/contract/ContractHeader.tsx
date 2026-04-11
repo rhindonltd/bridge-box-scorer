@@ -8,7 +8,7 @@ type Props = {
 };
 
 export function ContractHeader({ contract, result }: Props) {
-  const { boardSelection, selectBoard } = usePlay();
+  const { boardSelection } = usePlay();
 
   return (
     <div className="text-center mb-2">
