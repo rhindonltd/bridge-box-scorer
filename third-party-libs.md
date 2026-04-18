@@ -86,7 +86,7 @@
  1. https://github.com/bramus/specificity
  2. MIT
 
-# @chromatic-com/storybook@5.1.1
+# @chromatic-com/storybook@5.1.2
 
 
  1. https://github.com/chromaui/addon-visual-tests
@@ -632,7 +632,7 @@
  1. https://github.com/kelektiv/node.bcrypt.js
  2. MIT
 
-# better-sqlite3@12.8.0
+# better-sqlite3@12.9.0
 
 
  1. https://github.com/WiseLibs/better-sqlite3
@@ -962,7 +962,7 @@
  1. https://github.com/eps1lon/dom-accessibility-api
  2. MIT
 
-# dotenv@17.4.1
+# dotenv@17.4.2
 
 
  1. https://github.com/motdotla/dotenv
@@ -2186,7 +2186,7 @@
  1. https://github.com/gkz/prelude-ls
  2. MIT
 
-# prettier@3.8.2
+# prettier@3.8.3
 
 
  1. https://github.com/prettier/prettier

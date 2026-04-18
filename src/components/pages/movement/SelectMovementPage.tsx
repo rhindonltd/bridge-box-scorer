@@ -7,6 +7,7 @@ import FormCardLayout from "@/components/layout/FormCardLayout";
 import { SectionInfo } from "@/components/common/SectionInfo";
 
 type Props = {
+  tables: number;
   onConfirm: (value: Movement) => void;
 };
 
@@ -17,8 +18,7 @@ type Movement = {
   boardsPerRound: number;
 };
 
-export default function SelectMovementPage({ onConfirm }: Props) {
-  const [tables, setTables] = useState(3);
+export default function SelectMovementPage({ tables, onConfirm }: Props) {
   const [rounds, setRounds] = useState(3);
   const [boardsPerRound, setBoardsPerRound] = useState(3);
 
@@ -68,12 +68,6 @@ export default function SelectMovementPage({ onConfirm }: Props) {
             onConfirm(movement!);
           }}
         >
-          <NumberStepperField
-            label="Number of tables:"
-            value={tables}
-            onChange={setTables}
-            min={2}
-          />
 
           <NumberStepperField
             label="Number of rounds:"
