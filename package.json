@@ -12,7 +12,8 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest",
-    "e2e": "npx playwright test"
+    "e2e": "npx playwright test",
+    "seed-movements": "npx tsx src/scripts/seed-movements.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
