@@ -12,17 +12,18 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest",
-    "e2e": "npx playwright test"
+    "e2e": "npx playwright test",
+    "seed-movements": "npx tsx src/scripts/seed-movements.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
     "@testing-library/react": "^16.3.2",
     "bcrypt": "^6.0.0",
-    "better-sqlite3": "^12.8.0",
-    "dotenv": "^17.4.1",
+    "better-sqlite3": "^12.9.0",
+    "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.8.0",
-    "next": "16.2.3",
+    "next": "16.2.4",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "socket.io": "^4.8.3",
@@ -33,7 +34,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@chromatic-com/storybook": "^5.1.1",
+    "@chromatic-com/storybook": "^5.1.2",
     "@playwright/test": "^1.59.1",
     "@storybook/addon-a11y": "^10.3.5",
     "@storybook/addon-docs": "^10.3.5",
@@ -48,20 +49,20 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/browser-playwright": "^4.1.1",
-    "@vitest/coverage-v8": "^4.1.1",
+    "@vitest/browser-playwright": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.4",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "16.2.3",
+    "eslint-config-next": "16.2.4",
     "eslint-plugin-storybook": "^10.3.5",
     "jsdom": "^29.0.2",
     "playwright": "^1.59.1",
-    "prettier": "^3.8.2",
+    "prettier": "^3.8.3",
     "storybook": "^10.3.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
     "vite": "^8.0.8",
-    "vitest": "^4.1.1"
+    "vitest": "^4.1.4"
   }
 }

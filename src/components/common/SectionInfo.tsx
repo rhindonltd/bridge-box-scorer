@@ -28,7 +28,7 @@ export function SectionInfo() {
           </div>
         )}
       </div>
-      {assignmentSelection && Participant()}
+      {assignmentSelection && <Participant />}
     </div>
   );
 

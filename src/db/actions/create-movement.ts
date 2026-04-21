@@ -1,9 +1,14 @@
 "use server";
 
 import { getDb } from "@/db";
-import { Movement, movements } from "@/db/schema";
+import { IndividualMovement, individualMovements, PairMovement, pairMovements } from "@/db/schema";
 
-export async function createMovement(item: Movement) {
+export async function createIndividualMovement(item: IndividualMovement) {
+    const db = await getDb();
+    await db.insert(individualMovements).values(item);
+}
+
+export async function createPairMovement(item: PairMovement) {
   const db = await getDb();
-  await db.insert(movements).values(item);
+  await db.insert(pairMovements).values(item);
 }

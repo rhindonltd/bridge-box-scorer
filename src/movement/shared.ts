@@ -25,7 +25,7 @@ export type MovementHeader = {
   numberOfBoardSets: number;
   numberOfRounds: number;
   defaultBoardsPerSet: number;
-  missingPair: number;
+  missingParticipant: number;
 };
 
 export type Movement<M extends TravellerParticipantMode> = {
@@ -36,7 +36,7 @@ export type Movement<M extends TravellerParticipantMode> = {
   boardsPerRound: number;
   rounds: number;
   tableData: Table<M>[];
-  missingPair?: number;
+  missingParticipant?: number;
   type: MovementType;
 };
 
@@ -77,7 +77,7 @@ export const parseHeader = ([
     numberOfBoardSets: ints[2] / ints[3],
     defaultBoardsPerSet: ints[3],
     numberOfRounds: ints[4],
-    missingPair: ints.length >= 6 ? ints[5] : 0,
+    missingParticipant: ints.length >= 6 ? ints[5] : 0,
   };
 };
 
@@ -97,7 +97,7 @@ export const buildMovementBase = <M extends TravellerParticipantMode>(
   boardsPerRound: header.defaultBoardsPerSet,
   rounds: header.numberOfRounds,
   tableData: tables,
-  missingPair: header.missingPair,
+  missingParticipant: header.missingParticipant,
   type: header.movementType,
 });
 

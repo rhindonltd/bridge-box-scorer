@@ -1,13 +1,37 @@
 import { getDb } from "@/db";
-import { movementspec, MovementSpecSelect } from "@/db/schema";
+import {
+    individualmovementspec,
+    pairmovementspec,
+    teammovementspec
+} from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-export async function getMovementSpecsForNumberOfTables(
-  numberOfTables: number,
-): Promise<MovementSpecSelect[]> {
-  const db = await getDb();
-  return db
-    .select()
-    .from(movementspec)
-    .where(eq(movementspec.tables, numberOfTables));
+export async function getIndividualMovementSpecsForTables(
+    tables: number,
+) {
+    const db = await getDb();
+    return db
+        .select()
+        .from(individualmovementspec)
+        .where(eq(individualmovementspec.tables, tables));
+}
+
+export async function getPairMovementSpecsForTables(
+    tables: number,
+) {
+    const db = await getDb();
+    return db
+        .select()
+        .from(pairmovementspec)
+        .where(eq(pairmovementspec.tables, tables));
+}
+
+export async function getTeamMovementSpecsForTables(
+    tables: number,
+) {
+    const db = await getDb();
+    return db
+        .select()
+        .from(teammovementspec)
+        .where(eq(teammovementspec.tables, tables));
 }
