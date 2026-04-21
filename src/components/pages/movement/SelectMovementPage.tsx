@@ -68,7 +68,6 @@ export default function SelectMovementPage({ tables, onConfirm }: Props) {
             onConfirm(movement!);
           }}
         >
-
           <NumberStepperField
             label="Number of rounds:"
             value={rounds}

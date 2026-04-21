@@ -27,12 +27,8 @@ export default function MovementTable({ table }: Props) {
           {table.rounds.map((round, idx) => (
             <tr key={idx} className="even:bg-gray-50">
               <td className="border px-2 py-0.5">{idx + 1}</td>
-              <td className="border px-2 py-0.5">
-                {round.participants.nsId}
-              </td>
-              <td className="border px-2 py-0.5">
-                {round.participants.ewId}
-              </td>
+              <td className="border px-2 py-0.5">{round.participants.nsId}</td>
+              <td className="border px-2 py-0.5">{round.participants.ewId}</td>
               <td className="border px-2 py-0.5">
                 {formatBoards(round.boards)}
               </td>

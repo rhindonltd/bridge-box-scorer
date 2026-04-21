@@ -18,11 +18,11 @@ export default mergeConfig(
         {
           extends: true,
           test: {
-              name: "unit",
-              environment: "jsdom",
-              globals: true,
-              setupFiles: ["./vitest.setup.ts"],
-              include: ["src/**/*.test.{ts,tsx}"], // 👈 IMPORTANT
+            name: "unit",
+            environment: "jsdom",
+            globals: true,
+            setupFiles: ["./vitest.setup.ts"],
+            include: ["src/**/*.test.{ts,tsx}"], // 👈 IMPORTANT
           },
         },
         {
