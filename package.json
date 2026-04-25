@@ -13,7 +13,10 @@
     "build-storybook": "storybook build",
     "test": "vitest",
     "e2e": "npx playwright test",
-    "seed-movements": "npx tsx src/scripts/seed-movements.ts"
+    "generate_movements_migration": "npx drizzle-kit generate --config=drizzle.config.movements.ts",
+    "run_movements_migration": "npx drizzle-kit migrate --config=drizzle.config.movements.ts",
+    "generate_players_migration": "npx drizzle-kit generate --config=drizzle.config.players.ts",
+    "run_players_migration": "npx drizzle-kit migrate --config=drizzle.config.players.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
