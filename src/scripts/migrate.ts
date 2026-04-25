@@ -1,8 +1,12 @@
 import "dotenv/config";
 
-import { runMigrations } from "@/db/migrate";
+import { runMovementsMigrations } from "@/db/movements/migrate";
+import { runPlayersMigrations } from "@/db/players/migrate";
 
-runMigrations()
+runMovementsMigrations()
+  .then(() => {
+    runPlayersMigrations();
+  })
   .then(() => {
     console.log("✅ Migrations finished successfully.");
     process.exit(0);
