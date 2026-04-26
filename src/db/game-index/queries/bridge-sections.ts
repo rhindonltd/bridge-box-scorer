@@ -23,7 +23,7 @@ export async function findUpcomingBridgeSections(): Promise<UpcomingSection[]> {
     .where(gte(events.eventDate, today.toISOString()));
 }
 
-export async function getSectionsForSession(sessionId: string) {
+export async function getSectionsForSession(sessionId: number) {
   const db = await getDb();
   return db
     .select()

@@ -1,9 +1,9 @@
 "use server";
 
 import { getDb } from "@/db/game-index";
-import { BridgeSession, sessions } from "@/db/game-index/schema";
+import { NewBridgeSession, sessions } from "@/db/game-index/schema";
 
-export async function createBridgeSession(data: BridgeSession) {
+export async function createBridgeSession(data: NewBridgeSession) {
   const db = await getDb();
   await db.insert(sessions).values(data);
 }

@@ -22,8 +22,7 @@ type Story = StoryObj<typeof SessionCard>;
 export const Default: Story = {
   args: {
     session: {
-      id: crypto.randomUUID(),
-      eventId: "Monday AM Pairs",
+      eventId: 1,
       sessionName: "Session 1",
     },
   },

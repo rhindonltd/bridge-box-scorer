@@ -1,4 +1,4 @@
-import { getPairMovementSpecsForTables } from "@/db/queries/get-movements";
+import { getPairMovementSpecsForTables } from "@/db/movements/queries/get-movements";
 
 export default async function MovementsPage() {
   const movements = await getPairMovementSpecsForTables(6);

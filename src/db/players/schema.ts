@@ -1,23 +1,22 @@
 import {
-    sqliteTable,
-    text,
-    integer,
-    primaryKey,
+  sqliteTable,
+  text,
+  integer,
+  primaryKey,
 } from "drizzle-orm/sqlite-core";
 
 export const players = sqliteTable(
-    "players",
-    {
-        pairNumber: integer("pair_number"),
-        player1: text("player1"),
-        player2: text("player2"),
-        direction: text("direction"),
-    },
-    (table) => ({
-        pk: primaryKey({
-            columns: [table.pairNumber, table.direction],
-        }),
+  "players",
+  {
+    ebuNumber: integer("ebu_number"),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.ebuNumber],
     }),
+  }),
 );
 
 export type Player = typeof players.$inferSelect;

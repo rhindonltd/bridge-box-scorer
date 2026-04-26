@@ -8,18 +8,18 @@ import fs from "fs";
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
-    if (dbInstance) return dbInstance;
+  if (dbInstance) return dbInstance;
 
-    if (typeof window !== "undefined") {
-        throw new Error("SQLite can only be used on the server");
-    }
+  if (typeof window !== "undefined") {
+    throw new Error("SQLite can only be used on the server");
+  }
 
-    const dataDir = process.env.DATABASE_URL ?? "/home/bridgebox/data";
-    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+  const dataDir = process.env.DATABASE_URL ?? "/home/bridgebox/data";
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
-    const dbFile = path.join(dataDir, "players.db");
-    const sqlite = new Database(dbFile);
-    dbInstance = drizzle(sqlite);
+  const dbFile = path.join(dataDir, "players.db");
+  const sqlite = new Database(dbFile);
+  dbInstance = drizzle(sqlite);
 
-    return dbInstance;
+  return dbInstance;
 }

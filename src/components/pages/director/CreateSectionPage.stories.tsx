@@ -23,24 +23,24 @@ type Story = StoryObj<typeof CreateSectionPage>;
 export const Default: Story = {
   args: {
     session: {
-      id: crypto.randomUUID(),
-      eventId: "Monday AM Pairs",
+      id: 1,
+      eventId: 1,
       sessionName: "Session 1",
     },
     sections: [
       {
         id: crypto.randomUUID(),
-        sessionId: crypto.randomUUID(),
+        sessionId: 1,
         sectionName: "Section A",
-        started: false,
-        finished: false,
+        gameDb: crypto.randomUUID(),
+        status: 'CREATED'
       },
       {
         id: crypto.randomUUID(),
-        sessionId: crypto.randomUUID(),
+        sessionId: 1,
         sectionName: "Section B",
-        started: false,
-        finished: false,
+        gameDb: crypto.randomUUID(),
+        status: "CREATED"
       },
     ],
   },

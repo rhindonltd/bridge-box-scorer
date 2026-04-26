@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
 
 /* events */
 export const events = sqliteTable("events", {
@@ -11,6 +11,7 @@ export const events = sqliteTable("events", {
 });
 
 export type BridgeEvent = typeof events.$inferSelect;
+export type NewBridgeEvent = typeof events.$inferInsert;
 
 /* sessions */
 export const sessions = sqliteTable("sessions", {
@@ -22,14 +23,19 @@ export const sessions = sqliteTable("sessions", {
 });
 
 export type BridgeSession = typeof sessions.$inferSelect;
+export type NewBridgeSession = typeof sessions.$inferInsert;
 
 /* sections */
 export const sections = sqliteTable("sections", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  sessionId: text("session_id").references(() => sessions.id),
+  id: text("id").notNull(),
+  sessionId: integer("session_id").references(() => sessions.id),
   sectionName: text("section_name").notNull(),
   status: text().notNull(), // CREATED, MOVEMENT_SET, RUNNING, FINALISED, UPLOADED,
   gameDb: text().notNull(),
-});
+}, (table) => ({
+    pk: primaryKey({
+        columns: [table.id],
+    }),
+}),);
 
 export type BridgeSection = typeof sections.$inferSelect;

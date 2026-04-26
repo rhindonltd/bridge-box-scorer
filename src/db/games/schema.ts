@@ -50,11 +50,7 @@ export const results = sqliteTable(
   },
   (table) => ({
     pk: primaryKey({
-      columns: [
-        table.roundNumber,
-        table.boardNumber,
-        table.tableNumber,
-      ],
+      columns: [table.roundNumber, table.boardNumber, table.tableNumber],
     }),
   }),
 );

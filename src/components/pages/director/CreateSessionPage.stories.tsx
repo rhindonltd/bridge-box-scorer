@@ -23,7 +23,7 @@ type Story = StoryObj<typeof CreateSessionPage>;
 export const Default: Story = {
   args: {
     event: {
-      id: crypto.randomUUID(),
+      id: 1,
       eventName: "Monday AM Pairs",
       eventDate: new Date().toISOString(),
       director: "Jacqui Collier",
@@ -32,13 +32,13 @@ export const Default: Story = {
     },
     sessions: [
       {
-        id: crypto.randomUUID(),
-        eventId: "Monday AM Pairs",
+        id: 1,
+        eventId: 1,
         sessionName: "Session 1",
       },
       {
-        id: crypto.randomUUID(),
-        eventId: "Monday AM Pairs",
+        id: 2,
+        eventId: 1,
         sessionName: "Session 2",
       },
     ],
