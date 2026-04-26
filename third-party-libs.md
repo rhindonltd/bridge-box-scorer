@@ -247,7 +247,7 @@
 1.  https://github.com/SukkaW/nolyfill
 2.  MIT
 
-# @oxc-project/types@0.124.0
+# @oxc-project/types@0.126.0
 
 1.  https://github.com/oxc-project/oxc
 2.  MIT
@@ -267,7 +267,7 @@
 1.  https://github.com/adobe/react-spectrum
 2.  Apache-2.0
 
-# @rolldown/binding-darwin-arm64@1.0.0-rc.15
+# @rolldown/binding-darwin-arm64@1.0.0-rc.16
 
 1.  https://github.com/rolldown/rolldown
 2.  MIT
@@ -2342,7 +2342,7 @@
 1.  https://github.com/aleclarson/vite-tsconfig-paths
 2.  MIT
 
-# vite@8.0.8
+# vite@8.0.9
 
 1.  https://github.com/vitejs/vite
 2.  MIT

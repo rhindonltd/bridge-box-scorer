@@ -1,6 +1,6 @@
 "use server";
 
-import { getDb } from "@/db";
+import { getDb } from "@/db/movements";
 import { eq } from "drizzle-orm";
 import {
   pairmovementtablespec,

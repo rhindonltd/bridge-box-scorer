@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { directorPasswordExists } from "@/db/queries/login-sessions";
+import { directorPasswordExists } from "@/db/system/queries/login-sessions";
 
 export async function GET() {
   try {

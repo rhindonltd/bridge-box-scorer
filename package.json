@@ -16,7 +16,9 @@
     "generate_movements_migration": "npx drizzle-kit generate --config=drizzle.config.movements.ts",
     "run_movements_migration": "npx drizzle-kit migrate --config=drizzle.config.movements.ts",
     "generate_players_migration": "npx drizzle-kit generate --config=drizzle.config.players.ts",
-    "run_players_migration": "npx drizzle-kit migrate --config=drizzle.config.players.ts"
+    "run_players_migration": "npx drizzle-kit migrate --config=drizzle.config.players.ts",
+    "generate_game_index_migration": "npx drizzle-kit generate --config=drizzle.config.game-index.ts",
+    "run_game_index_migration": "npx drizzle-kit migrate --config=drizzle.config.game-index.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
@@ -65,7 +67,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
-    "vite": "^8.0.8",
+    "vite": "^8.0.9",
     "vitest": "^4.1.4"
   }
 }

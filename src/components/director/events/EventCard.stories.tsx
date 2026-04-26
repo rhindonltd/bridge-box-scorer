@@ -22,7 +22,6 @@ type Story = StoryObj<typeof EventCard>;
 export const Default: Story = {
   args: {
     event: {
-      id: crypto.randomUUID(),
       eventName: "Monday AM Pairs",
       eventDate: new Date().toISOString(),
       director: "Jacqui Collier",

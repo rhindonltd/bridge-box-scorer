@@ -1,9 +1,9 @@
 "use server";
 
-import { getDb } from "@/db";
-import { loginSessions, settings } from "@/db/schema";
+import { getDb } from "@/db/games";
+import { loginSessions, settings } from "@/db/system/schema";
 import bcrypt from "bcrypt";
-import { findSetting } from "@/db/queries/settings";
+import { findSetting } from "@/db/system/queries/settings";
 import { eq } from "drizzle-orm";
 
 const PASSWORD_KEY = "director_password_hash";
