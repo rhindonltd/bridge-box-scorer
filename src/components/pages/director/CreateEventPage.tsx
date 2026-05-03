@@ -1,11 +1,11 @@
-import { BridgeEvent } from "@/db/schema";
+import { NewBridgeEvent } from "@/db/game-index/schema";
 import EventCard from "@/components/director/events/EventCard";
 import CreateEventForm from "@/components/director/events/CreateEventForm";
 
 type Props = {
-  events: BridgeEvent[];
-  onAdd: (event: BridgeEvent) => void;
-  onClick: (id: string) => void;
+  events: NewBridgeEvent[];
+  onAdd: (event: NewBridgeEvent) => void;
+  onClick: (id: number) => void;
 };
 
 export default function CreateEventPage({ events, onAdd, onClick }: Props) {

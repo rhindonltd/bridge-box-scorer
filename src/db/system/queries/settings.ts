@@ -1,7 +1,7 @@
 "use server";
 
-import { getDb } from "@/db";
-import { settings } from "@/db/schema";
+import { getDb } from "@/db/system";
+import { settings } from "@/db/system/schema";
 import { eq } from "drizzle-orm";
 
 export async function findSetting(key: string): Promise<string | null> {

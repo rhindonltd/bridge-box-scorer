@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSectionsForSession } from "@/db/queries";
+import { getSectionsForSession } from "@/db/game-index/queries";
 
 // Define GET using apiHandler
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   const { sessionId } = await params;
 
   try {
-    return NextResponse.json(await getSectionsForSession(sessionId));
+    return NextResponse.json(await getSectionsForSession(Number(sessionId)));
   } catch (error) {
     console.error(error);
     return NextResponse.json(

@@ -24,7 +24,7 @@ export const Default: Story = {
   args: {
     events: [
       {
-        id: crypto.randomUUID(),
+        id: 1,
         eventName: "Monday PM Pairs",
         eventDate: new Date().toISOString(),
         director: "Jacqui Collier",
@@ -32,7 +32,7 @@ export const Default: Story = {
         createdAt: new Date().toISOString(),
       },
       {
-        id: crypto.randomUUID(),
+        id: 2,
         eventName: "Tuesday PM Pairs",
         eventDate: new Date().toISOString(),
         director: "Jacqui Collier",

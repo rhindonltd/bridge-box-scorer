@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { startBridgeSection } from "@/db/actions/start-bridge-section";
+import { updateGameStatus } from "@/db/game-index/actions/update-game-status";
 
 export async function POST(
   _req: NextRequest,
@@ -9,7 +9,7 @@ export async function POST(
 
   try {
     return (
-      startBridgeSection(sectionId)
+      updateGameStatus(sectionId, 'STARTED')
         // Send to websocket
         .then(() => NextResponse.json({ success: true }))
     );

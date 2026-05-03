@@ -4,7 +4,7 @@ import { getDb } from "@/db/movements";
 export async function runMovementsMigrations() {
   const db = await getDb();
   await migrate(db, { migrationsFolder: "./drizzle/movements" });
-  console.log("Movement migration complete");
+  console.log("Movement migrations complete");
 }
 
 // Run if called directly

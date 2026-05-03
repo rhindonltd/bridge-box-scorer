@@ -1,4 +1,4 @@
-import { BridgeSession, BridgeSection } from "@/db/schema";
+import { BridgeSession, BridgeSection } from "@/db/game-index/schema";
 import SectionCard from "@/components/director/sections/SectionCard";
 import AddSectionForm from "@/components/director/sections/AddSectionForm";
 

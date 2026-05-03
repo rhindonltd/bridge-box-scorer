@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyDirectorPassword } from "@/db/queries/login-sessions";
-import { createLoginSession } from "@/db/actions/create-login-session";
+import { verifyDirectorPassword } from "@/db/system/queries/login-sessions";
+import { createLoginSession } from "@/db/system/actions/create-login-session";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const valid = await verifyDirectorPassword(password);
   if (!valid) return NextResponse.json({ success: false }, { status: 401 });
 
-  const loginSession = { token: crypto.randomUUID(), director: true };
+  const loginSession = { token: crypto.randomUUID(), gameId: null, role: 'DIRECTOR' };
   await createLoginSession(loginSession);
 
   const response = NextResponse.json({

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   directorPasswordExists,
   setDirectorPassword,
-} from "@/db/queries/login-sessions";
+} from "@/db/system/queries/login-sessions";
 
 export async function POST(req: Request) {
   const { password } = await req.json();

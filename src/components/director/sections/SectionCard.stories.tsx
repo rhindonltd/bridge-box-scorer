@@ -23,10 +23,10 @@ export const Default: Story = {
   args: {
     section: {
       id: crypto.randomUUID(),
-      sessionId: crypto.randomUUID(),
+      sessionId: 1,
       sectionName: "Section A",
-      started: false,
-      finished: false,
+      gameDb: crypto.randomUUID(),
+      status: 'CREATED'
     },
   },
 };

@@ -1,9 +1,9 @@
 import { Server } from "socket.io";
 import http from "http";
-import { BridgeEvent } from "@/db/schema";
-import { isDirector } from "@/db/queries/login-sessions";
-import { createBridgeEvent } from "@/db/actions/create-bridge-event";
-import { startBridgeSection } from "@/db/actions/start-bridge-section";
+import { BridgeEvent } from "@/db/game-index/schema";
+import { isDirector } from "@/db/system/queries/login-sessions";
+import { createBridgeEvent } from "@/db/game-index/actions/create-bridge-event";
+import { updateGameStatus } from "@/db/game-index/actions/update-game-status";
 
 export function startSocketServer(server: http.Server) {
   const io = new Server(server, {
@@ -56,7 +56,7 @@ export function startSocketServer(server: http.Server) {
         return;
       }
 
-      startBridgeSection(sectionId).then(() => {
+      updateGameStatus(sectionId, 'STARTED').then(() => {
         io.emit("session:started");
       });
     });

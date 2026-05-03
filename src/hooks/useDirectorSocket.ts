@@ -6,7 +6,7 @@ import {
   DirectorClientToServerEvents,
 } from "@/types/directorSocket";
 import { mutate } from "swr";
-import { BridgeEvent } from "@/db/schema";
+import { BridgeEvent } from "@/db/game-index/schema";
 
 export function useDirectorSocket() {
   const addEvent = useDirectorStore((state) => state.addBridgeEvent);

@@ -1,8 +1,8 @@
 "use server";
 
 import { UpcomingSection } from "@/app/api/sections/upcoming-sections/route";
-import { getDb } from "@/db";
-import { events, sections, sessions } from "@/db/schema";
+import { getDb } from "@/db/game-index";
+import { events, sections, sessions } from "@/db/game-index/schema";
 import { eq, gte } from "drizzle-orm";
 
 export async function findUpcomingBridgeSections(): Promise<UpcomingSection[]> {
@@ -23,7 +23,7 @@ export async function findUpcomingBridgeSections(): Promise<UpcomingSection[]> {
     .where(gte(events.eventDate, today.toISOString()));
 }
 
-export async function getSectionsForSession(sessionId: string) {
+export async function getSectionsForSession(sessionId: number) {
   const db = await getDb();
   return db
     .select()

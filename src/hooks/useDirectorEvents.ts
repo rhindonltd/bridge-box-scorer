@@ -3,13 +3,13 @@
 import { useState, useTransition } from "react";
 import { useDirectorStore } from "@/stores/directorStore";
 
-import { createBridgeEvent } from "@/db/actions/create-bridge-event";
-import { createBridgeSession } from "@/db/actions/create-bridge-session";
-import { createBridgeSection } from "@/db/actions/create-bridge-section";
+import { createBridgeEvent } from "@/db/game-index/actions/create-bridge-event";
+import { createBridgeSession } from "@/db/game-index/actions/create-bridge-session";
+import { createBridgeSection } from "@/db/game-index/actions/create-bridge-section";
 
-import { findSessionsForEventId, getSectionsForSession } from "@/db/queries";
+import { findSessionsForEventId, getSectionsForSession } from "@/db/game-index/queries";
 
-import { BridgeSession, BridgeSection } from "@/db/schema";
+import { BridgeSession, BridgeSection } from "@/db/game-index/schema";
 
 const EVENT_TYPES = ["Pairs", "Teams"];
 
@@ -20,12 +20,12 @@ export function useDirectorEvents() {
   const [director, setDirector] = useState("");
   const [eventType, setEventType] = useState(EVENT_TYPES[0]);
 
-  const [expandedEvents, setExpandedEvents] = useState<string[]>([]);
+  const [expandedEvents, setExpandedEvents] = useState<number[]>([]);
   const [expandedSessions, setExpandedSessions] = useState<
     Record<string, number[]>
   >({});
   const [sessionsMap, setSessionsMap] = useState<
-    Record<string, BridgeSession[]>
+    Record<number, BridgeSession[]>
   >({});
   const [sectionsMap, setSectionsMap] = useState<
     Record<string, BridgeSection[]>
@@ -40,7 +40,6 @@ export function useDirectorEvents() {
 
     startTransition(() => {
       createBridgeEvent({
-        id: crypto.randomUUID(),
         eventName,
         eventDate: new Date().toISOString(),
         director,
@@ -56,11 +55,10 @@ export function useDirectorEvents() {
 
   /* CREATE SESSION */
 
-  const createSession = async (eventId: string, sessionName: string) => {
+  const createSession = async (eventId: number, sessionName: string) => {
     if (!sessionName.trim()) return;
 
     const session = {
-      id: crypto.randomUUID(),
       eventId,
       sessionName,
     };
@@ -79,15 +77,17 @@ export function useDirectorEvents() {
 
   /* CREATE SECTION */
 
-  const createSection = async (sessionId: string, sectionName: string) => {
+  const createSection = async (sessionId: number, sectionName: string) => {
     if (!sectionName.trim()) return;
 
+    const id = crypto.randomUUID();
+
     const section = {
-      id: crypto.randomUUID(),
+      id,
       sessionId,
       sectionName,
-      started: false,
-      finished: false,
+      gameDb: `${id}.db`,
+      status: 'CREATED'
     };
 
     startTransition(async () => {
@@ -104,7 +104,7 @@ export function useDirectorEvents() {
 
   /* TOGGLES */
 
-  const toggleEvent = async (eventId: string) => {
+  const toggleEvent = async (eventId: number) => {
     setExpandedEvents((prev) =>
       prev.includes(eventId)
         ? prev.filter((e) => e !== eventId)
@@ -121,7 +121,7 @@ export function useDirectorEvents() {
     }
   };
 
-  const toggleSession = async (eventId: string, sessionIdx: number) => {
+  const toggleSession = async (eventId: number, sessionIdx: number) => {
     setExpandedSessions((prev) => {
       const expanded = prev[eventId] || [];
 

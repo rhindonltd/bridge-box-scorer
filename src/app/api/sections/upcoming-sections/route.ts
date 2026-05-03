@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findUpcomingBridgeSections } from "@/db/queries";
+import { findUpcomingBridgeSections } from "@/db/game-index/queries";
 
 export interface UpcomingSection {
   sectionId: string;

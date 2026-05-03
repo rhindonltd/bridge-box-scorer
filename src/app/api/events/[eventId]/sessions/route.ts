@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findSessionsForEventId } from "@/db/queries";
+import { findSessionsForEventId } from "@/db/game-index/queries";
 
 export async function POST(
   _req: NextRequest,
@@ -9,7 +9,7 @@ export async function POST(
 
   try {
     return NextResponse.json({
-      sessions: await findSessionsForEventId(eventId),
+      sessions: await findSessionsForEventId(Number(eventId)),
     });
   } catch (error) {
     console.error(error);

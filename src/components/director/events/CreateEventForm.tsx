@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { BridgeEvent } from "@/db/schema";
+import { NewBridgeEvent } from "@/db/game-index/schema";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import { MovementCategories } from "@/movement/movement-category";
 import FormCardLayout from "@/components/layout/FormCardLayout";
 
 type Props = {
-  onAdd: (event: BridgeEvent) => void;
+  onAdd: (event: NewBridgeEvent) => void;
 };
 
 export default function CreateEventForm({ onAdd }: Props) {
@@ -19,8 +19,7 @@ export default function CreateEventForm({ onAdd }: Props) {
   >(MovementCategories[0]);
 
   function handleCreate() {
-    const event: BridgeEvent = {
-      id: crypto.randomUUID(),
+    const event: NewBridgeEvent = {
       eventDate: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       eventName,
