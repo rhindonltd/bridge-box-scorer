@@ -9,8 +9,8 @@ export const players = sqliteTable(
   "players",
   {
     ebuNumber: integer("ebu_number").notNull(),
-    firstName: text("first_name").notNull(),
-    lastName: text("last_name").notNull(),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
   },
   (table) => ({
     pk: primaryKey({

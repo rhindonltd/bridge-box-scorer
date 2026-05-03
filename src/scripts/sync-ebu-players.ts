@@ -7,7 +7,7 @@ import { Player } from "@/db/players/schema";
 async function main() {
     try {
         await syncPlayersFromEbu();
-        console.log("✅ Seed complete!");
+        console.log("✅ EBU Player Sync complete!");
     } catch (err) {
         console.error(err);
         process.exit(1);
@@ -57,8 +57,8 @@ function mapToPlayers(rows: string[][]): Player[] {
 
             return {
                 ebuNumber,
-                lastName: row[1]?.trim() || null,
-                firstName: row[4]?.trim() || null,
+                lastName: row[2]?.trim() || null,
+                firstName: row[1]?.trim() || null,
             };
         })
         .filter((p): p is Player => p !== null);

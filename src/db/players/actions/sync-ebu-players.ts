@@ -3,18 +3,15 @@ import { players, Player } from "@/db/players/schema";
 import { sql, inArray } from "drizzle-orm";
 
 type DB = Awaited<ReturnType<typeof getDb>>;
-type Tx = Parameters<Parameters<DB["transaction"]>[0]>[0];
 
 export async function syncPlayers(playersData: Player[]) {
     const db = await getDb();
 
-    await db.transaction(async (tx) => {
-        await upsertPlayers(playersData, tx);
-        await deleteMissingPlayers(playersData, tx);
-    });
+    await upsertPlayers(playersData, db);
+    await deleteMissingPlayers(playersData, db);
 }
 
-async function upsertPlayers(playersData: Player[], db: DB | Tx) {
+async function upsertPlayers(playersData: Player[], db: DB) {
     const chunkSize = 1000;
 
     for (let i = 0; i < playersData.length; i += chunkSize) {
@@ -22,7 +19,7 @@ async function upsertPlayers(playersData: Player[], db: DB | Tx) {
 
         await db
             .insert(players)
-            .values(chunk) // ✅ FIXED
+            .values(chunk)
             .onConflictDoUpdate({
                 target: players.ebuNumber,
                 set: {
@@ -37,7 +34,7 @@ async function upsertPlayers(playersData: Player[], db: DB | Tx) {
     }
 }
 
-async function deleteMissingPlayers(playersData: Player[], db: DB | Tx) {
+async function deleteMissingPlayers(playersData: Player[], db: DB) {
     const incomingIds = playersData.map((p) => p.ebuNumber);
 
     const existing = await db
