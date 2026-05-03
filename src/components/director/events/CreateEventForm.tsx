@@ -1,64 +1,83 @@
 "use client";
 
 import { useState } from "react";
-import { NewBridgeEvent } from "@/db/game-index/schema";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
-import { MovementCategories } from "@/movement/movement-category";
-import FormCardLayout from "@/components/layout/FormCardLayout";
+import {NumberStepperField} from "../../common/NumberStepperField";
+import Button from "@/components/common/Button";
+
+const EventTypes = ["Teams/Pairs", "Individual"] as const;
+type EventType = (typeof EventTypes)[number];
+
+export type InitialGameDetails = {
+    eventName: string;
+    director: string;
+    eventType: EventType;
+    sessions: number;
+}
 
 type Props = {
-  onAdd: (event: NewBridgeEvent) => void;
+  onNext: (event: InitialGameDetails) => void;
 };
 
-export default function CreateEventForm({ onAdd }: Props) {
+export default function CreateEventForm({ onNext }: Props) {
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
-  const [eventType, setEventType] = useState<
-    (typeof MovementCategories)[number]
-  >(MovementCategories[0]);
+  const [eventType, setEventType] = useState<EventType>('Teams/Pairs');
+  const [sessions, setSessions] = useState(1);
 
   function handleCreate() {
-    const event: NewBridgeEvent = {
-      eventDate: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      eventName,
-      director,
-      eventType,
-    };
-
-    onAdd(event);
+    onNext({
+        eventName,
+        director,
+        eventType,
+        sessions
+    });
   }
 
   return (
-    <FormCardLayout
-      header="New Event"
-      primaryText="Create"
-      secondaryText="Cancel"
-      onSecondaryClick={() => {}}
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleCreate();
-      }}
-    >
-      <TextField
-        label={`Event Name`}
-        value={eventName}
-        onChange={setEventName}
-      />
+    <div className="flex-1 flex justify-center">
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                handleCreate();
+            }}
+            className="flex flex-col w-full max-w-md p-4"
+        >
+            {/* Fields (spread area) */}
+            <div className="flex flex-col gap-5 flex-1 justify-center">
+                <TextField
+                    label="Event Name"
+                    value={eventName}
+                    onChange={setEventName}
+                />
 
-      <TextField
-        label={`Director Name`}
-        value={director}
-        onChange={setDirector}
-      />
+                <TextField
+                    label="Director Name"
+                    value={director}
+                    onChange={setDirector}
+                />
 
-      <SelectField
-        label={"Event Type"}
-        value={eventType}
-        options={MovementCategories}
-        onSelect={setEventType}
-      />
-    </FormCardLayout>
+                <SelectField
+                    label="Event Type"
+                    value={eventType}
+                    options={EventTypes}
+                    onSelect={setEventType}
+                />
+
+                <NumberStepperField
+                    label="Sessions"
+                    value={sessions}
+                    onChange={setSessions}
+                    min={1}
+                />
+            </div>
+
+            {/* Button (bottom) */}
+            <div className="mt-auto pt-4">
+                <Button type="submit" value="Next" className="w-full"/>
+            </div>
+        </form>
+    </div>
   );
 }
