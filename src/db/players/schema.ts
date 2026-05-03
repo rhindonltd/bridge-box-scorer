@@ -8,9 +8,9 @@ import {
 export const players = sqliteTable(
   "players",
   {
-    ebuNumber: integer("ebu_number"),
-    firstName: text("first_name"),
-    lastName: text("last_name"),
+    ebuNumber: integer("ebu_number").notNull(),
+    firstName: text("first_name").notNull(),
+    lastName: text("last_name").notNull(),
   },
   (table) => ({
     pk: primaryKey({

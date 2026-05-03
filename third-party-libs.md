@@ -1,6 +1,6 @@
-# total -> 488
+# total -> 489
 
-# MIT - 414
+# MIT - 415
 
 # MIT-0 - 1
 
@@ -834,6 +834,12 @@
 
 
  1. https://github.com/frenic/csstype
+ 2. MIT
+
+# csv-parse@6.2.1
+
+
+ 1. https://github.com/adaltas/node-csv
  2. MIT
 
 # damerau-levenshtein@1.0.8

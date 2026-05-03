@@ -22,7 +22,7 @@ import { generateTeamsMovements } from "@/movement/teamsMovements";
 
 async function main() {
   try {
-    await seedPairs();
+    await seedMovements();
     console.log("✅ Seed complete!");
   } catch (err) {
     console.error(err);
@@ -32,7 +32,7 @@ async function main() {
 
 main();
 
-async function seedPairs() {
+async function seedMovements() {
   await seedIndividualMovements(generateIndividualMovements());
 
   console.log("✅ Individual movements seeded!");

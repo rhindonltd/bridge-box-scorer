@@ -18,13 +18,14 @@
     "generate_players_migration": "npx drizzle-kit generate --config=drizzle.config.players.ts",
     "run_players_migration": "npx drizzle-kit migrate --config=drizzle.config.players.ts",
     "generate_game_index_migration": "npx drizzle-kit generate --config=drizzle.config.game-index.ts",
-    "run_game_index_migration": "npx drizzle-kit migrate --config=drizzle.config.game-index.ts"
+    "run_game_index_migration": "npx drizzle-kit migrate --config=drizzle.config.game-index.ts",
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
     "@testing-library/react": "^16.3.2",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.9.0",
+    "csv-parse": "^6.2.1",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.14.0",
