@@ -26,7 +26,7 @@ export const Default: Story = {
       sessionId: 1,
       sectionName: "Section A",
       gameDb: crypto.randomUUID(),
-      status: 'CREATED'
+      status: "CREATED",
     },
   },
 };

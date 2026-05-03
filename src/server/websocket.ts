@@ -56,7 +56,7 @@ export function startSocketServer(server: http.Server) {
         return;
       }
 
-      updateGameStatus(sectionId, 'STARTED').then(() => {
+      updateGameStatus(sectionId, "STARTED").then(() => {
         io.emit("session:started");
       });
     });

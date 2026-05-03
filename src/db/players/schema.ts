@@ -8,7 +8,7 @@ import {
 export const players = sqliteTable(
   "players",
   {
-    ebuNumber: integer("ebu_number"),
+    ebuNumber: integer("ebu_number").notNull(),
     firstName: text("first_name"),
     lastName: text("last_name"),
   },

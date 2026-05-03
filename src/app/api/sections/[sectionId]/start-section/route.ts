@@ -9,7 +9,7 @@ export async function POST(
 
   try {
     return (
-      updateGameStatus(sectionId, 'STARTED')
+      updateGameStatus(sectionId, "STARTED")
         // Send to websocket
         .then(() => NextResponse.json({ success: true }))
     );

@@ -9,7 +9,11 @@ export async function POST(req: NextRequest) {
   const valid = await verifyDirectorPassword(password);
   if (!valid) return NextResponse.json({ success: false }, { status: 401 });
 
-  const loginSession = { token: crypto.randomUUID(), gameId: null, role: 'DIRECTOR' };
+  const loginSession = {
+    token: crypto.randomUUID(),
+    gameId: null,
+    role: "DIRECTOR",
+  };
   await createLoginSession(loginSession);
 
   const response = NextResponse.json({
