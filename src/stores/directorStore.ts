@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { BridgeEvent, BridgeSession, BridgeSection } from "@/db/game-index/schema";
+import {
+  BridgeEvent,
+  BridgeSession,
+  BridgeSection,
+} from "@/db/game-index/schema";
 
 interface DirectorState {
   bridgeEvents: BridgeEvent[];

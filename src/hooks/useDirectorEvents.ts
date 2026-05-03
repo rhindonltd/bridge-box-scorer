@@ -7,7 +7,10 @@ import { createBridgeEvent } from "@/db/game-index/actions/create-bridge-event";
 import { createBridgeSession } from "@/db/game-index/actions/create-bridge-session";
 import { createBridgeSection } from "@/db/game-index/actions/create-bridge-section";
 
-import { findSessionsForEventId, getSectionsForSession } from "@/db/game-index/queries";
+import {
+  findSessionsForEventId,
+  getSectionsForSession,
+} from "@/db/game-index/queries";
 
 import { BridgeSession, BridgeSection } from "@/db/game-index/schema";
 
@@ -87,7 +90,7 @@ export function useDirectorEvents() {
       sessionId,
       sectionName,
       gameDb: `${id}.db`,
-      status: 'CREATED'
+      status: "CREATED",
     };
 
     startTransition(async () => {
