@@ -7,10 +7,10 @@ interface PlayerName {
 }
 
 interface Players {
-  N?: PlayerName;
-  S?: PlayerName;
-  E?: PlayerName;
-  W?: PlayerName;
+  N: PlayerName | null;
+  S: PlayerName | null;
+  E: PlayerName | null;
+  W: PlayerName | null;
 }
 
 interface Props {

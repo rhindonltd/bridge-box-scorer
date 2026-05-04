@@ -1,11 +1,11 @@
 "use client";
 
-import CreateEventForm from "../../components/director/events/CreateEventForm";
+import { CreateGamePage } from "@/components/pages/create/CreateGamePage";
 
 export default function CreateGame() {
   return (
     <>
-      <CreateEventForm onAdd={() => {}} />
+      <CreateGamePage />
     </>
   );
 }

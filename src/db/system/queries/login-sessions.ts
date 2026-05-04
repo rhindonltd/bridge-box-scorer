@@ -1,6 +1,6 @@
 "use server";
 
-import { getDb } from "@/db/games";
+import { getDb } from "@/db/system";
 import { loginSessions, settings } from "@/db/system/schema";
 import bcrypt from "bcrypt";
 import { findSetting } from "@/db/system/queries/settings";

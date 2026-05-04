@@ -7,7 +7,7 @@ interface PlayerName {
 
 interface Props {
   label: string;
-  player?: PlayerName;
+  player: PlayerName | null;
 }
 
 export default function PlayerCard({ label, player }: Props) {

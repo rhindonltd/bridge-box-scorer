@@ -1,0 +1,17 @@
+"use server";
+
+import { getDb } from "@/db/game-index";
+import { gte } from "drizzle-orm";
+import { BridgeGame, games } from "../schema";
+
+export async function findJoinableGames(): Promise<BridgeGame[]> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const db = await getDb();
+
+  return db
+    .select()
+    .from(games)
+    .where(gte(games.eventDate, today.toISOString()));
+}

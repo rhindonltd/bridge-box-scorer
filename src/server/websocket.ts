@@ -1,9 +1,6 @@
 import { Server } from "socket.io";
 import http from "http";
-import { BridgeEvent } from "@/db/game-index/schema";
 import { isDirector } from "@/db/system/queries/login-sessions";
-import { createBridgeEvent } from "@/db/game-index/actions/create-bridge-event";
-import { updateGameStatus } from "@/db/game-index/actions/update-game-status";
 
 export function startSocketServer(server: http.Server) {
   const io = new Server(server, {
@@ -41,25 +38,25 @@ export function startSocketServer(server: http.Server) {
     });
 
     // DIRECTOR EVENTS
-    socket.on("director:createEvent", (event: BridgeEvent) => {
-      if (!socket.data.isDirector) {
-        return;
-      }
+    // socket.on("director:createEvent", (event: BridgeGame) => {
+    //   if (!socket.data.isDirector) {
+    //     return;
+    //   }
+    //
+    //   crea(event).then(() => {
+    //     io.emit("event:created", event);
+    //   });
+    // });
 
-      createBridgeEvent(event).then(() => {
-        io.emit("event:created", event);
-      });
-    });
-
-    socket.on("director:startSession", (sectionId: string) => {
-      if (!socket.data.isDirector) {
-        return;
-      }
-
-      updateGameStatus(sectionId, "STARTED").then(() => {
-        io.emit("session:started");
-      });
-    });
+    // socket.on("director:startSession", (sectionId: string) => {
+    //   if (!socket.data.isDirector) {
+    //     return;
+    //   }
+    //
+    //   updateGameStatus(sectionId, "STARTED").then(() => {
+    //     io.emit("session:started");
+    //   });
+    // });
 
     socket.on("director:startRound", () => {
       if (!socket.data.isDirector) {
