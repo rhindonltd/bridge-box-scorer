@@ -5,21 +5,25 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import path from "path";
 import fs from "fs";
 
-let dbInstance: ReturnType<typeof drizzle> | null = null;
+const dbInstances: Map<number, ReturnType<typeof drizzle>> = new Map();
 
-export async function getDb() {
-  if (dbInstance) return dbInstance;
+export async function getDb(gameId: number) {
+  if (dbInstances.has(gameId)) {
+    return dbInstances.get(gameId)!;
+  }
 
   if (typeof window !== "undefined") {
     throw new Error("SQLite can only be used on the server");
   }
 
-  const dataDir = process.env.DATABASE_URL ?? "/home/bridgebox/data";
+  const dataDir = process.env.DATABASE_GAMES_URL ?? "/home/bridgebox/data/games";
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
-  const dbFile = path.join(dataDir, "games.db");
+  const dbFile = path.join(dataDir, `${gameId}.db`);
   const sqlite = new Database(dbFile);
-  dbInstance = drizzle(sqlite);
+
+  const dbInstance = drizzle(sqlite);
+  dbInstances.set(gameId, dbInstance);
 
   return dbInstance;
 }
