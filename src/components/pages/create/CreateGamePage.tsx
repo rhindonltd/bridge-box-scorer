@@ -1,10 +1,23 @@
 "use client";
 
 import SimpleCreateGameForm from "@/components/create/SimpleCreateGameForm";
+import ShowTables, { Table } from "@/components/tables/ShowTables";
 import { useState } from "react";
 
 export function CreateGamePage() {
   const [gameId, setGameId] = useState<number | null>(null);
+
+  function createTables(count: number): Table[] {
+    return Array.from({ length: count }, (_, i) => ({
+      tableNumber: i + 1,
+      players: {
+        N: null,
+        S: null,
+        E: null,
+        W: null,
+      },
+    }));
+  }
 
   return (
     <div className="h-screen flex flex-col overflow-y-auto relative">
@@ -21,7 +34,7 @@ export function CreateGamePage() {
       {gameId === null ? (
         <SimpleCreateGameForm onGameCreated={(id: number) => setGameId(id)} />
       ) : (
-        <></>
+        <ShowTables tables={createTables(10)} />
       )}
     </div>
   );

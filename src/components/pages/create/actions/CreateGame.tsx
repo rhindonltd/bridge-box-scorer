@@ -2,7 +2,7 @@
 
 import { GameDetails } from "@/components/create/SimpleCreateGameForm";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
-import { createGameDb } from "../../../../db/games/actions/create-game";
+import { createGameDb } from "@/db/games/actions/create-game";
 
 export async function createGame(gameDetails: GameDetails) {
   const gameId = await createBridgeGame({

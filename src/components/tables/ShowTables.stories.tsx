@@ -113,6 +113,8 @@ export const Default: Story = {
             firstName: "Michael",
             lastName: "Byrne",
           },
+          E: null,
+          W: null
         },
       },
     ],
