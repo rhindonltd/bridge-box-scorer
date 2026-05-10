@@ -1,6 +1,5 @@
 import { defineConfig, mergeConfig } from "vitest/config";
 import { playwright } from "@vitest/browser-playwright";
-
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 
 import path from "node:path";
@@ -14,6 +13,24 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
+      // 👇 ADD THIS BLOCK
+      coverage: {
+        provider: "v8",
+        reporter: ["text", "html", "lcov"],
+        reportsDirectory: "./coverage",
+        include: ["src/**/*.{ts,tsx}"],
+        exclude: [
+          "node_modules/",
+          ".next/",
+          "coverage/",
+          "**/*.d.ts",
+          "**/*.config.*",
+          ".storybook/**",
+          "**/*.stories.*",
+          "**/*.test.*",
+        ],
+      },
+
       projects: [
         {
           extends: true,
@@ -22,26 +39,21 @@ export default mergeConfig(
             environment: "jsdom",
             globals: true,
             setupFiles: ["./vitest.setup.ts"],
-            include: ["src/**/*.test.{ts,tsx}"], // 👈 IMPORTANT
+            include: ["src/**/*.test.{ts,tsx}"],
           },
         },
         {
           extends: true,
           plugins: [
             storybookTest({
-              // The location of your Storybook config, main.js|ts
               configDir: path.join(dirname, ".storybook"),
-              // This should match your package.json script to run Storybook
-              // The --no-open flag will skip the automatic opening of a browser
               storybookScript: "npm run storybook dev -p 6006",
             }),
           ],
           test: {
             name: "storybook",
-            // Enable browser mode
             browser: {
               enabled: true,
-              // Make sure to install Playwright
               provider: playwright({}),
               headless: true,
               instances: [{ browser: "chromium" }],

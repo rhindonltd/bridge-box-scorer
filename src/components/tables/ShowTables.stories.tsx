@@ -114,7 +114,7 @@ export const Default: Story = {
             lastName: "Byrne",
           },
           E: null,
-          W: null
+          W: null,
         },
       },
     ],
