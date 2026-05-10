@@ -30,7 +30,7 @@ describe("Header", () => {
     // it("renders null contract", () => {
     //     render(<Header contract={null} result={1} />);
     //
-    //     expect(screen.getByText(" +1")).toBeInTheDocument();
+    //     expect(screen.getByText(" ")).toBeInTheDocument();
     // });
 
     it("applies expected styling classes", () => {
