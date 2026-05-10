@@ -6,7 +6,7 @@ type Props = {
   onChangePin: () => void;
 };
 
-export function ShowDirectorPinPage({ directorPin, onChangePin }: Props) {
+export function ChangePinPage({ directorPin, onChangePin }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <SectionInfo />
