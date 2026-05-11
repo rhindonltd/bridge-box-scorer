@@ -1,3 +1,5 @@
+"use client";
+
 import SelectGame from "@/components/join/SelectGame";
 import { BridgeGame } from "@/db/game-index/schema";
 

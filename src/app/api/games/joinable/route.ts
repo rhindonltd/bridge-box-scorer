@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { directorPasswordExists } from "@/db/system/queries/login-sessions";
+import { findJoinableGames } from "@/db/game-index/queries";
 
 export async function GET() {
   try {
-    return NextResponse.json({
-      passwordSet: await directorPasswordExists(),
-    });
+    return NextResponse.json(await findJoinableGames());
   } catch (error) {
     console.error(error);
     return NextResponse.json(

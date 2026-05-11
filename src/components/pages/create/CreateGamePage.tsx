@@ -3,9 +3,18 @@
 import SimpleCreateGameForm from "@/components/create/SimpleCreateGameForm";
 import ShowTables, { Table } from "@/components/tables/ShowTables";
 import { useState } from "react";
+import { getSocket } from "@/lib/socket";
+import { NewBridgeGame } from "@/db/game-index/schema";
 
 export function CreateGamePage() {
   const [gameId, setGameId] = useState<number | null>(null);
+
+  function createGame(game: NewBridgeGame) {
+    getSocket().emit("game:create", game, (response: { gameId: any }) => {
+      console.log("created game:", response.gameId);
+      setGameId(gameId);
+    });
+  }
 
   function createTables(count: number): Table[] {
     return Array.from({ length: count }, (_, i) => ({
@@ -32,7 +41,7 @@ export function CreateGamePage() {
       </div>
 
       {gameId === null ? (
-        <SimpleCreateGameForm onGameCreated={(id: number) => setGameId(id)} />
+        <SimpleCreateGameForm onCreateGame={createGame} />
       ) : (
         <ShowTables tables={createTables(10)} />
       )}

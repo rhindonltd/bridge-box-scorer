@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { fn } from "storybook/test";
 import SimpleCreateGameForm from "./SimpleCreateGameForm";
 
 const meta: Meta<typeof SimpleCreateGameForm> = {
@@ -9,10 +8,7 @@ const meta: Meta<typeof SimpleCreateGameForm> = {
   parameters: {
     layout: "fullscreen",
   },
-  tags: ["autodocs"],
-  args: {
-    onGameCreated: fn(),
-  },
+  tags: ["autodocs"]
 };
 
 export default meta;
