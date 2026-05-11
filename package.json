@@ -12,6 +12,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest",
+    "coverage": "vitest --project unit run --coverage",
     "e2e": "npx playwright test",
     "generate_movements_migration": "npx drizzle-kit generate --config=drizzle.config.movements.ts",
     "run_movements_migration": "npx drizzle-kit migrate --config=drizzle.config.movements.ts",
@@ -38,8 +39,8 @@
     "socket.io-client": "^4.8.3",
     "swr": "^2.4.1",
     "ts-node": "^10.9.2",
-    "zod": "^4.4.2",
-    "zustand": "^5.0.12"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.1.2",
@@ -61,7 +62,7 @@
     "@vitest/coverage-v8": "^4.1.4",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "16.2.6",
     "eslint-plugin-storybook": "^10.3.6",
     "jsdom": "^29.1.1",
     "playwright": "^1.59.1",
@@ -70,7 +71,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^6",
-    "vite": "^8.0.10",
+    "vite": "^8.0.11",
     "vitest": "^4.1.4"
   }
 }

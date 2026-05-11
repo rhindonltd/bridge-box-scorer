@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
-import { ShowDirectorPinPage } from "@/components/pages/director/ShowDirectorPinPage";
+import { ChangePinPage } from "@/components/pages/edit/ChangePinPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
-const meta: Meta<typeof ShowDirectorPinPage> = {
-  title: "Pages/Director/ShowDirectorPinPage",
-  component: ShowDirectorPinPage,
+const meta: Meta<typeof ChangePinPage> = {
+  title: "Pages/Edit/ChangePinPage",
+  component: ChangePinPage,
   parameters: {
     layout: "fullscreen",
   },
@@ -18,7 +18,7 @@ const meta: Meta<typeof ShowDirectorPinPage> = {
 
 export default meta;
 
-type Story = StoryObj<typeof ShowDirectorPinPage>;
+type Story = StoryObj<typeof ChangePinPage>;
 
 export const Default: Story = {
   decorators: [

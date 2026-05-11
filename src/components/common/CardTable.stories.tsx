@@ -31,7 +31,7 @@ export const Default: Story = {
         firstName: "Peter",
         lastName: "Collier",
       },
-      W: null
+      W: null,
     },
   },
 };
