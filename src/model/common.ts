@@ -56,10 +56,3 @@ export interface Board {
 }
 
 export type Deal = Record<Direction, string>;
-
-export type Game = {
-  id: string;
-  eventName: string;
-  sessionName: string;
-  sectionName: string;
-};

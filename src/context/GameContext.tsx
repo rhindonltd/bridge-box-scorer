@@ -1,16 +1,16 @@
 "use client";
 
-import { Game } from "@/model/common";
+import { BridgeGame } from "@/db/game-index/schema";
 import { Assignment } from "@/model/participants";
 import { createContext, useContext, useState, ReactNode } from "react";
 
-export type GameSelection = Game | null;
+export type GameSelection = BridgeGame | null;
 
 export type AssignmentSelection = Assignment | null;
 
 interface ContextType {
   gameSelection: GameSelection;
-  selectGame: (game: Game) => void;
+  selectGame: (game: BridgeGame) => void;
   clearGame: () => void;
 
   assignmentSelection: AssignmentSelection;
@@ -25,7 +25,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [assignmentSelection, setAssignmentSelection] =
     useState<AssignmentSelection>(null);
 
-  const selectGame = (game: Game) => {
+  const selectGame = (game: BridgeGame) => {
     setGameSelection(game);
   };
 

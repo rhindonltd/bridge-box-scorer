@@ -1,8 +1,8 @@
-import { Game } from "@/model/common";
+import { BridgeGame } from "@/db/game-index/schema";
 
 interface Props {
-  games: Game[];
-  onGameSelected: (game: Game) => void;
+  games: BridgeGame[];
+  onGameSelected: (game: BridgeGame) => void;
 }
 
 export default function SelectGame({ games, onGameSelected }: Props) {

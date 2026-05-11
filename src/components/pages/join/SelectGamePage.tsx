@@ -1,9 +1,9 @@
 import SelectGame from "@/components/join/SelectGame";
-import { Game } from "@/model/common";
+import { BridgeGame } from "@/db/game-index/schema";
 
 interface Props {
-  games: Game[];
-  onGameSelected: (game: Game) => void;
+  games: BridgeGame[] | undefined;
+  onGameSelected: (game: BridgeGame) => void;
 }
 
 export default function SelectGamePage({ games, onGameSelected }: Props) {
@@ -14,7 +14,7 @@ export default function SelectGamePage({ games, onGameSelected }: Props) {
           <span>Select Game</span>
         </div>
       </div>
-      <SelectGame games={games} onGameSelected={onGameSelected} />
+      {games && <SelectGame games={games} onGameSelected={onGameSelected} />}
     </>
   );
 }

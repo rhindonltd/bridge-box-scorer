@@ -5,7 +5,7 @@ import {
   LobbyEvent,
   LobbyClientToServerEvents,
   LobbyServerToClientEvents,
-} from "@/types/lobbySocket";
+} from "@/server/lobbySocket";
 
 export function useLobbySocket() {
   const socketRef = useRef<Socket<
