@@ -4,88 +4,76 @@ import { LeaderboardPage } from "./LeaderboardPage";
 
 // Mock dependencies
 vi.mock("@/components/common/SectionInfo", () => ({
-    SectionInfo: () => <div data-testid="section-info" />,
+  SectionInfo: () => <div data-testid="section-info" />,
 }));
 
 vi.mock("@/components/results/leaderboard/Leaderboard", () => ({
-    Leaderboard: ({ overallScoreAndParticipant }: any) => (
-        <div data-testid="leaderboard">
-            Participants: {overallScoreAndParticipant?.length ?? 0}
-        </div>
-    ),
+  Leaderboard: ({ overallScoreAndParticipant }: any) => (
+    <div data-testid="leaderboard">
+      Participants: {overallScoreAndParticipant?.length ?? 0}
+    </div>
+  ),
 }));
 
 describe("LeaderboardPage", () => {
-    const baseProps = {
-        overallScoreAndParticipant: [{ score: 10 }, { score: 20 }] as any,
-        onNext: vi.fn(),
-    };
+  const baseProps = {
+    overallScoreAndParticipant: [{ score: 10 }, { score: 20 }] as any,
+    onNext: vi.fn(),
+  };
 
-    it("renders SectionInfo", () => {
-        render(<LeaderboardPage {...baseProps} />);
+  it("renders SectionInfo", () => {
+    render(<LeaderboardPage {...baseProps} />);
 
-        expect(screen.getByTestId("section-info")).toBeInTheDocument();
-    });
+    expect(screen.getByTestId("section-info")).toBeInTheDocument();
+  });
 
-    it("renders Results header", () => {
-        render(<LeaderboardPage {...baseProps} />);
+  it("renders Results header", () => {
+    render(<LeaderboardPage {...baseProps} />);
 
-        expect(screen.getByText("Results")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Results")).toBeInTheDocument();
+  });
 
-    it("renders Leaderboard component", () => {
-        render(<LeaderboardPage {...baseProps} />);
+  it("renders Leaderboard component", () => {
+    render(<LeaderboardPage {...baseProps} />);
 
-        expect(screen.getByTestId("leaderboard")).toBeInTheDocument();
-    });
+    expect(screen.getByTestId("leaderboard")).toBeInTheDocument();
+  });
 
-    it("passes data to Leaderboard", () => {
-        render(<LeaderboardPage {...baseProps} />);
+  it("passes data to Leaderboard", () => {
+    render(<LeaderboardPage {...baseProps} />);
 
-        expect(screen.getByText("Participants: 2")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Participants: 2")).toBeInTheDocument();
+  });
 
-    it("renders Close button", () => {
-        render(<LeaderboardPage {...baseProps} />);
+  it("renders Close button", () => {
+    render(<LeaderboardPage {...baseProps} />);
 
-        expect(
-            screen.getByRole("button", { name: "Close" })
-        ).toBeInTheDocument();
-    });
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
+  });
 
-    it("calls onNext when Close button is clicked", () => {
-        const fn = vi.fn();
+  it("calls onNext when Close button is clicked", () => {
+    const fn = vi.fn();
 
-        render(<LeaderboardPage {...baseProps} onNext={fn} />);
+    render(<LeaderboardPage {...baseProps} onNext={fn} />);
 
-        fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
-        expect(fn).toHaveBeenCalledTimes(1);
-    });
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
 
-    it("applies layout classes", () => {
-        const { container } = render(
-            <LeaderboardPage {...baseProps} />
-        );
+  it("applies layout classes", () => {
+    const { container } = render(<LeaderboardPage {...baseProps} />);
 
-        const root = container.firstChild as HTMLElement;
+    const root = container.firstChild as HTMLElement;
 
-        expect(root).toHaveClass(
-            "h-screen",
-            "flex",
-            "flex-col",
-            "bg-gray-100"
-        );
-    });
+    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+  });
 
-    it("keeps leaderboard in flexible container", () => {
-        const { container } = render(
-            <LeaderboardPage {...baseProps} />
-        );
+  it("keeps leaderboard in flexible container", () => {
+    const { container } = render(<LeaderboardPage {...baseProps} />);
 
-        const leaderboardWrapper =
-            screen.getByTestId("leaderboard").parentElement;
+    const leaderboardWrapper = screen.getByTestId("leaderboard").parentElement;
 
-        expect(leaderboardWrapper).toHaveClass("flex-1", "min-h-0");
-    });
+    expect(leaderboardWrapper).toHaveClass("flex-1", "min-h-0");
+  });
 });

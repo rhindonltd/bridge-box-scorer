@@ -15,34 +15,7 @@ export default meta;
 type Story = StoryObj<typeof SelectGamePage>;
 
 export const Default: Story = {
-  args: {
-    games: [
-      {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
-        sessionName: "",
-        sectionName: "",
-      },
-      {
-        id: crypto.randomUUID(),
-        eventName: "Tuesday PM Pairs",
-        sessionName: "Session 1",
-        sectionName: "",
-      },
-      {
-        id: crypto.randomUUID(),
-        eventName: "Wednesday PM Pairs",
-        sessionName: "",
-        sectionName: "Section A",
-      },
-      {
-        id: crypto.randomUUID(),
-        eventName: "Wednesday PM Pairs",
-        sessionName: "",
-        sectionName: "Section B",
-      },
-    ],
-  },
+  args: {},
 };
 
 export const NoGames: Story = {

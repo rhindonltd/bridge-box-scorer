@@ -4,96 +4,81 @@ import { MovementDetailsPage } from "./MovementDetailsPage";
 
 // Mock dependencies
 vi.mock("@/components/common/SectionInfo", () => ({
-    SectionInfo: () => <div data-testid="section-info" />,
+  SectionInfo: () => <div data-testid="section-info" />,
 }));
 
 vi.mock("@/components/movement/MovementTables", () => ({
-    default: ({ tables }: any) => (
-        <div data-testid="movement-tables">
-            Tables: {tables?.tables?.length ?? 0}
-        </div>
-    ),
+  default: ({ tables }: any) => (
+    <div data-testid="movement-tables">
+      Tables: {tables?.tables?.length ?? 0}
+    </div>
+  ),
 }));
 
 describe("MovementDetailsPage", () => {
-    const baseProps = {
-        movementName: "Mitchell Movement",
-        tables: {
-            tables: [{ table: 1 }, { table: 2 }],
-        } as any,
-        onCreate: vi.fn(),
-    };
+  const baseProps = {
+    movementName: "Mitchell Movement",
+    tables: {
+      tables: [{ table: 1 }, { table: 2 }],
+    } as any,
+    onCreate: vi.fn(),
+  };
 
-    it("renders SectionInfo", () => {
-        render(<MovementDetailsPage {...baseProps} />);
+  it("renders SectionInfo", () => {
+    render(<MovementDetailsPage {...baseProps} />);
 
-        expect(screen.getByTestId("section-info")).toBeInTheDocument();
-    });
+    expect(screen.getByTestId("section-info")).toBeInTheDocument();
+  });
 
-    it("renders movement name", () => {
-        render(<MovementDetailsPage {...baseProps} />);
+  it("renders movement name", () => {
+    render(<MovementDetailsPage {...baseProps} />);
 
-        expect(screen.getByText("Mitchell Movement")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Mitchell Movement")).toBeInTheDocument();
+  });
 
-    it("passes tables to MovementTables", () => {
-        render(<MovementDetailsPage {...baseProps} />);
+  it("passes tables to MovementTables", () => {
+    render(<MovementDetailsPage {...baseProps} />);
 
-        expect(screen.getByText("Tables: 2")).toBeInTheDocument();
-    });
+    expect(screen.getByText("Tables: 2")).toBeInTheDocument();
+  });
 
-    it("renders Create button", () => {
-        render(<MovementDetailsPage {...baseProps} />);
+  it("renders Create button", () => {
+    render(<MovementDetailsPage {...baseProps} />);
 
-        expect(
-            screen.getByRole("button", { name: "Create" })
-        ).toBeInTheDocument();
-    });
+    expect(screen.getByRole("button", { name: "Create" })).toBeInTheDocument();
+  });
 
-    it("calls onCreate when Create button is clicked", () => {
-        const fn = vi.fn();
+  it("calls onCreate when Create button is clicked", () => {
+    const fn = vi.fn();
 
-        render(<MovementDetailsPage {...baseProps} onCreate={fn} />);
+    render(<MovementDetailsPage {...baseProps} onCreate={fn} />);
 
-        fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
 
-        expect(fn).toHaveBeenCalledTimes(1);
-    });
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
 
-    it("applies layout structure classes", () => {
-        const { container } = render(
-            <MovementDetailsPage {...baseProps} />
-        );
+  it("applies layout structure classes", () => {
+    const { container } = render(<MovementDetailsPage {...baseProps} />);
 
-        const root = container.firstChild as HTMLElement;
+    const root = container.firstChild as HTMLElement;
 
-        expect(root).toHaveClass(
-            "h-screen",
-            "flex",
-            "flex-col",
-            "bg-gray-100"
-        );
-    });
+    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+  });
 
-    it("wraps movement name in styled header", () => {
-        render(<MovementDetailsPage {...baseProps} />);
+  it("wraps movement name in styled header", () => {
+    render(<MovementDetailsPage {...baseProps} />);
 
-        const name = screen.getByText("Mitchell Movement").parentElement;
+    const name = screen.getByText("Mitchell Movement").parentElement;
 
-        expect(name?.parentElement).toHaveClass("bg-blue-300", "py-2");
-    });
+    expect(name?.parentElement).toHaveClass("bg-blue-300", "py-2");
+  });
 
-    it("scrollable table section exists", () => {
-        const { container } = render(
-            <MovementDetailsPage {...baseProps} />
-        );
+  it("scrollable table section exists", () => {
+    const { container } = render(<MovementDetailsPage {...baseProps} />);
 
-        const scrollArea = screen.getByTestId("movement-tables").parentElement;
+    const scrollArea = screen.getByTestId("movement-tables").parentElement;
 
-        expect(scrollArea).toHaveClass(
-            "flex-1",
-            "min-h-0",
-            "overflow-y-auto"
-        );
-    });
+    expect(scrollArea).toHaveClass("flex-1", "min-h-0", "overflow-y-auto");
+  });
 });

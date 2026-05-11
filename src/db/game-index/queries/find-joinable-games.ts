@@ -1,7 +1,7 @@
 "use server";
 
 import { getDb } from "@/db/game-index";
-import { gte } from "drizzle-orm";
+import { and, eq, gte } from "drizzle-orm";
 import { BridgeGame, games } from "../schema";
 
 export async function findJoinableGames(): Promise<BridgeGame[]> {
@@ -13,5 +13,10 @@ export async function findJoinableGames(): Promise<BridgeGame[]> {
   return db
     .select()
     .from(games)
-    .where(gte(games.eventDate, today.toISOString()));
+    .where(
+      and(
+        gte(games.eventDate, today.toISOString()),
+        eq(games.status, "JOINABLE"),
+      ),
+    );
 }

@@ -32,10 +32,15 @@ export const Default: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
         sessionName: "",
         sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       null,
     ),
@@ -46,10 +51,15 @@ export const LaterRound: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
         sessionName: "",
         sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       null,
     ),
@@ -65,10 +75,15 @@ export const LongNames: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
         sessionName: "",
         sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       {
         type: "PAIR",

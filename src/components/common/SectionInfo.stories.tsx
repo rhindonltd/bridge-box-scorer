@@ -19,10 +19,15 @@ export const EventOnly: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
         sessionName: "",
         sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       null,
     ),
@@ -33,10 +38,15 @@ export const EventAndPairOnly: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
         sessionName: "",
         sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       {
         type: "PAIR",
@@ -60,10 +70,15 @@ export const EventAndSection: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
         sessionName: "",
-        sectionName: "Section A",
+        sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       null,
     ),
@@ -74,10 +89,15 @@ export const EventSectionAndPlayer: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
         sessionName: "",
-        sectionName: "Section A",
+        sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       {
         type: "INDIVIDUAL",
@@ -97,10 +117,15 @@ export const EventAndSession: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
-        sessionName: "Session 1",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
+        sessionName: "",
         sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       null,
     ),
@@ -111,10 +136,15 @@ export const EventSessionAndTeam: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
-        sessionName: "Session 1",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
+        sessionName: "",
         sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       {
         type: "TEAM",
@@ -154,10 +184,15 @@ export const EventSessionAndSection: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
-        sessionName: "Session 1",
-        sectionName: "Section A",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
+        sessionName: "",
+        sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       null,
     ),
@@ -168,10 +203,15 @@ export const EventSessionSectionAndPair: Story = {
   decorators: [
     withGame(
       {
-        id: crypto.randomUUID(),
-        eventName: "Monday PM Pairs",
-        sessionName: "Session 1",
-        sectionName: "Section A",
+        id: 1,
+        eventName: "Monday AM Pairs",
+        director: null,
+        eventType: null,
+        sessionName: "",
+        sectionName: "",
+        eventDate: new Date().toISOString(),
+        status: "CREATED",
+        createdAt: new Date().toISOString(),
       },
       {
         type: "PAIR",
