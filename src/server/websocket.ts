@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import http from "http";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
-import { NewBridgeGame } from "@/db/game-index/schema";
+import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
 import { createGameDb } from "@/db/games/actions/create-game";
 import { findJoinableGames } from "../db/game-index/queries";
 import { EventType } from "@/components/create/SimpleCreateGameForm";
@@ -16,12 +16,15 @@ export function startSocketServer(server: http.Server) {
   io.on("connection", (socket) => {
     console.log("connected", socket.id);
 
-    socket.on("game:create", async (game: NewBridgeGame, cb) => {
+    socket.on("game:create", async (newBridgeGame: NewBridgeGame, cb) => {
       try {
-        const gameId = await createBridgeGame(game);
-        cb({ gameId }); // ack back to client
+        const bridgeGame: BridgeGame = await createBridgeGame(newBridgeGame);
+        await createGameDb(
+          bridgeGame.gameId,
+          bridgeGame.eventType as EventType,
+        );
 
-        await createGameDb(gameId, game.eventType as EventType);
+        cb({ game: bridgeGame });
 
         getIO().emit("joinable-games", await findJoinableGames());
       } catch (err) {
