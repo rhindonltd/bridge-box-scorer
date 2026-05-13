@@ -41,7 +41,6 @@ export const Default: Story = {
     ),
   ],
   args: {
-    tables: 8,
     assigned: [
       {
         table: 4,

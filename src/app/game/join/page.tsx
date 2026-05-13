@@ -39,7 +39,7 @@ export default function JoinGame() {
       {gameSelection == null ? (
         <SelectGamePage games={data} onGameSelected={selectGame} />
       ) : (
-        <SelectTablePage tables={4} selectTable={() => {}} assigned={[]} />
+        <SelectTablePage selectTable={() => {}} assigned={[]} />
       )}
     </>
   );

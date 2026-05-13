@@ -1,5 +1,8 @@
+"use client";
+
 import { SectionInfo } from "@/components/common/SectionInfo";
 import SelectTable from "@/components/join/SelectTable";
+import { useGame } from "@/context/GameContext";
 
 type Assignment = {
   table: number;
@@ -7,12 +10,13 @@ type Assignment = {
 };
 
 interface Props {
-  tables: number;
   selectTable: (table: number, direction: "NS" | "EW") => void;
   assigned: Assignment[];
 }
 
-export function SelectTablePage({ tables, selectTable, assigned }: Props) {
+export function SelectTablePage({ selectTable, assigned }: Props) {
+  const { gameSelection } = useGame();
+
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <div className="w-full">
@@ -20,7 +24,7 @@ export function SelectTablePage({ tables, selectTable, assigned }: Props) {
       </div>
 
       <SelectTable
-        tables={tables}
+        tables={gameSelection!.tables}
         selectTable={selectTable}
         assigned={assigned}
       />
