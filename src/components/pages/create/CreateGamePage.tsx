@@ -12,7 +12,7 @@ export function CreateGamePage() {
   function createGame(game: NewBridgeGame) {
     getSocket().emit("game:create", game, (response: { gameId: any }) => {
       console.log("created game:", response.gameId);
-      setGameId(gameId);
+      setGameId(response.gameId);
     });
   }
 
