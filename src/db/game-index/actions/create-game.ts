@@ -9,7 +9,7 @@ export async function createBridgeGame(data: NewBridgeGame) {
   const result = await db
     .insert(games)
     .values(data)
-    .returning({ id: games.id });
+    .returning({ gameId: games.gameId });
 
-  return result[0]?.id;
+  return result[0]?.gameId;
 }

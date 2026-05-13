@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
 export const games = sqliteTable("games", {
@@ -5,15 +6,20 @@ export const games = sqliteTable("games", {
   eventName: text("event_name").notNull(),
   director: text("director"),
   eventType: text("event_type"),
+  gameId: text("game_id")
+    .notNull()
+    .default(sql`(lower(hex(randomblob(16))))`),
   sessionName: text("session_name").notNull(),
   sectionName: text("section_name").notNull(),
   eventDate: text("event_date").notNull(),
-  status: text()
-    .notNull()
-    .$defaultFn(() => "CREATED"),
+  tables: integer("tables").notNull(),
+  status: text().notNull().default("CREATED"),
   createdAt: text("created_at")
     .notNull()
-    .$defaultFn(() => new Date().toISOString()),
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
 });
 
 export type BridgeGame = typeof games.$inferSelect;

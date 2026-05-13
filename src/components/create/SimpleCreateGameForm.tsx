@@ -36,6 +36,7 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
       eventDate: new Date().toISOString(),
       status: "JOINABLE",
       sectionName: "",
+      tables: tables,
     });
   }
 

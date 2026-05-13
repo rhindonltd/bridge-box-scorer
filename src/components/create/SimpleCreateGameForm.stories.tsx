@@ -8,7 +8,7 @@ const meta: Meta<typeof SimpleCreateGameForm> = {
   parameters: {
     layout: "fullscreen",
   },
-  tags: ["autodocs"]
+  tags: ["autodocs"],
 };
 
 export default meta;
