@@ -7,7 +7,7 @@ import {
 } from "@/db/games/individual/schema";
 
 export async function createIndividualMovement(
-  gameId: number,
+  gameId: string,
   item: IndividualMovement,
 ) {
   const db = await getDb(gameId);

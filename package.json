@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npx tsx server.ts",
+    "dev": "tsx watch server.ts",
     "prebuild": "npx tsx src/scripts/migrate.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production tsx server.ts",
     "lint": "eslint",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
@@ -21,7 +21,9 @@
     "generate_game_index_migration": "npx drizzle-kit generate --config=drizzle.config.game-index.ts",
     "run_game_index_migration": "npx drizzle-kit migrate --config=drizzle.config.game-index.ts",
     "generate_individual_migration": "npx drizzle-kit generate --config=drizzle.config.game.individual.ts",
-    "generate_pairs_migration": "npx drizzle-kit generate --config=drizzle.config.game.pairs.ts"
+    "generate_pairs_migration": "npx drizzle-kit generate --config=drizzle.config.game.pairs.ts",
+    "sync:ebu-players": "tsx src/scripts/sync-ebu-players.ts",
+    "seed-movements": "tsx src/scripts/seed-movements.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",

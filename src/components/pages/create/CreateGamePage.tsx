@@ -1,32 +1,11 @@
 "use client";
 
-import SimpleCreateGameForm from "@/components/create/SimpleCreateGameForm";
-import ShowTables, { Table } from "@/components/tables/ShowTables";
-import { useState } from "react";
-import { getSocket } from "@/lib/socket";
-import { NewBridgeGame } from "@/db/game-index/schema";
+import { useGame } from "@/context/GameContext";
+import { ShowTablesPage } from "./ShowTablesPage";
+import { CreateGameFormPage } from "./CreateGameFormPage";
 
 export function CreateGamePage() {
-  const [gameId, setGameId] = useState<number | null>(null);
-
-  function createGame(game: NewBridgeGame) {
-    getSocket().emit("game:create", game, (response: { gameId: any }) => {
-      console.log("created game:", response.gameId);
-      setGameId(gameId);
-    });
-  }
-
-  function createTables(count: number): Table[] {
-    return Array.from({ length: count }, (_, i) => ({
-      tableNumber: i + 1,
-      players: {
-        N: null,
-        S: null,
-        E: null,
-        W: null,
-      },
-    }));
-  }
+  const { gameSelection } = useGame();
 
   return (
     <div className="h-screen flex flex-col overflow-y-auto relative">
@@ -40,11 +19,7 @@ export function CreateGamePage() {
         </div>
       </div>
 
-      {gameId === null ? (
-        <SimpleCreateGameForm onCreateGame={createGame} />
-      ) : (
-        <ShowTables tables={createTables(10)} />
-      )}
+      {gameSelection === null ? <CreateGameFormPage /> : <ShowTablesPage />}
     </div>
   );
 }

@@ -5,9 +5,9 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import path from "path";
 import fs from "fs";
 
-const dbInstances: Map<number, ReturnType<typeof drizzle>> = new Map();
+const dbInstances: Map<string, ReturnType<typeof drizzle>> = new Map();
 
-export async function getDb(gameId: number) {
+export async function getDb(gameId: string) {
   if (dbInstances.has(gameId)) {
     return dbInstances.get(gameId)!;
   }

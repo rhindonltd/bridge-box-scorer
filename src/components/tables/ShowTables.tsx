@@ -19,14 +19,26 @@ export interface Table {
 }
 
 interface Props {
-  tables: Table[];
+  tables: number;
 }
 
 export default function ShowTables({ tables }: Props) {
+  function createTables(count: number): Table[] {
+    return Array.from({ length: count }, (_, i) => ({
+      tableNumber: i + 1,
+      players: {
+        N: null,
+        S: null,
+        E: null,
+        W: null,
+      },
+    }));
+  }
+
   return (
     <div className="w-full max-w-6xl mx-auto">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {tables.map((table) => (
+        {createTables(tables).map((table) => (
           <div
             key={table.tableNumber}
             className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-200"

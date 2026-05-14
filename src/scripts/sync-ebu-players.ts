@@ -25,7 +25,7 @@ async function syncPlayersFromEbu() {
     throw new Error("EBU file looks suspiciously small — aborting sync");
   }
 
-  syncPlayers(playersData);
+  await syncPlayers(playersData);
 }
 
 async function fetchPlayersCsv(): Promise<string> {
