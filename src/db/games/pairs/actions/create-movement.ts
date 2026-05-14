@@ -1,9 +1,10 @@
 "use server";
 
 import { getDb } from "@/db/games";
-import { PairMovement, pairMovements } from "@/db/games/pairs/schema";
+import { movements } from "@/db/games/pairs/schema";
+import { PairMovement } from "@/db/games/pairs/tables/movements";
 
 export async function createPairMovement(gameId: string, item: PairMovement) {
   const db = await getDb(gameId);
-  await db.insert(pairMovements).values(item);
+  await db.insert(movements).values(item);
 }
