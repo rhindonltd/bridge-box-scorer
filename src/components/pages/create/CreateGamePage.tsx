@@ -3,6 +3,7 @@
 import { useGame } from "@/context/GameContext";
 import { ShowTablesPage } from "./ShowTablesPage";
 import { CreateGameFormPage } from "./CreateGameFormPage";
+import { ShowMovementsPage } from "./ShowMovementsPage";
 
 export function CreateGamePage() {
   const { gameSelection } = useGame();
@@ -19,7 +20,7 @@ export function CreateGamePage() {
         </div>
       </div>
 
-      {gameSelection === null ? <CreateGameFormPage /> : <ShowTablesPage />}
+      {gameSelection === null ? <CreateGameFormPage /> : <ShowMovementsPage />}
     </div>
   );
 }

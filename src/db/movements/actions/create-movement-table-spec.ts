@@ -1,15 +1,15 @@
 import {
   individualmovementtablespec,
-  IndividualMovementTableSpecInsert,
+  NewIndividualMovementTableSpec,
   pairmovementtablespec,
-  PairMovementTableSpecInsert,
+  NewPairMovementTableSpec,
   teammovementtablespec,
-  TeamMovementTableSpecInsert,
+  NewTeamMovementTableSpec,
 } from "@/db/movements/schema";
 import { getDb } from "@/db/movements";
 
 export async function createIndividualMovementTableSpec(
-  data: IndividualMovementTableSpecInsert,
+  data: NewIndividualMovementTableSpec,
 ) {
   const db = await getDb();
   const result = await db.insert(individualmovementtablespec).values(data);
@@ -17,7 +17,7 @@ export async function createIndividualMovementTableSpec(
 }
 
 export async function createPairMovementTableSpec(
-  data: PairMovementTableSpecInsert,
+  data: NewPairMovementTableSpec,
 ) {
   const db = await getDb();
   const result = await db.insert(pairmovementtablespec).values(data);
@@ -25,7 +25,7 @@ export async function createPairMovementTableSpec(
 }
 
 export async function createTeamMovementTableSpec(
-  data: TeamMovementTableSpecInsert,
+  data: NewTeamMovementTableSpec,
 ) {
   const db = await getDb();
   const result = await db.insert(teammovementtablespec).values(data);

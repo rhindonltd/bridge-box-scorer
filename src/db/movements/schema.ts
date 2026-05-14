@@ -11,10 +11,9 @@ export const individualmovementspec = sqliteTable("individualmovementspec", {
   missingPlayer: integer("missing_player"),
 });
 
-export type IndividualMovementSpecInsert =
+export type NewIndividualMovementSpec =
   typeof individualmovementspec.$inferInsert;
-export type IndividualMovementSpecSelect =
-  typeof individualmovementspec.$inferSelect;
+export type IndividualMovementSpec = typeof individualmovementspec.$inferSelect;
 
 export const individualmovementtablespec = sqliteTable(
   "individualmovementtablespec",
@@ -27,9 +26,9 @@ export const individualmovementtablespec = sqliteTable(
   },
 );
 
-export type IndividualMovementTableSpecInsert =
+export type NewIndividualMovementTableSpec =
   typeof individualmovementtablespec.$inferInsert;
-export type IndividualMovementTableSpecSelect =
+export type IndividualMovementTableSpec =
   typeof individualmovementtablespec.$inferSelect;
 
 export const individualmovementroundspec = sqliteTable(
@@ -49,9 +48,9 @@ export const individualmovementroundspec = sqliteTable(
   },
 );
 
-export type IndividualMovementRoundSpecInsert =
+export type NewIndividualMovementRoundSpec =
   typeof individualmovementroundspec.$inferInsert;
-export type IndividualMovementRoundSpecSelect =
+export type IndividualMovementRoundSpec =
   typeof individualmovementroundspec.$inferSelect;
 
 export const pairmovementspec = sqliteTable("pairmovementspec", {
@@ -65,8 +64,8 @@ export const pairmovementspec = sqliteTable("pairmovementspec", {
   missingPair: integer("missing_pair"),
 });
 
-export type PairMovementSpecInsert = typeof pairmovementspec.$inferInsert;
-export type PairMovementSpecSelect = typeof pairmovementspec.$inferSelect;
+export type NewPairMovementSpec = typeof pairmovementspec.$inferInsert;
+export type PairMovementSpec = typeof pairmovementspec.$inferSelect;
 
 export const pairmovementtablespec = sqliteTable("pairmovementtablespec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -74,10 +73,9 @@ export const pairmovementtablespec = sqliteTable("pairmovementtablespec", {
   tableNumber: integer("table_number").notNull(),
 });
 
-export type PairMovementTableSpecInsert =
+export type NewPairMovementTableSpec =
   typeof pairmovementtablespec.$inferInsert;
-export type PairMovementTableSpecSelect =
-  typeof pairmovementtablespec.$inferSelect;
+export type PairMovementTableSpec = typeof pairmovementtablespec.$inferSelect;
 
 export const pairmovementroundspec = sqliteTable("pairmovementroundspec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -89,10 +87,9 @@ export const pairmovementroundspec = sqliteTable("pairmovementroundspec", {
   boardEnd: integer("board_end").notNull(),
 });
 
-export type PairMovementRoundSpecInsert =
+export type NewPairMovementRoundSpec =
   typeof pairmovementroundspec.$inferInsert;
-export type PairMovementRoundSpecSelect =
-  typeof pairmovementroundspec.$inferSelect;
+export type PairMovementRoundSpec = typeof pairmovementroundspec.$inferSelect;
 
 export const teammovementspec = sqliteTable("teammovementspec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -104,8 +101,8 @@ export const teammovementspec = sqliteTable("teammovementspec", {
   rounds: integer("rounds").notNull(),
 });
 
-export type TeamMovementSpecInsert = typeof teammovementspec.$inferInsert;
-export type TeamMovementSpecSelect = typeof teammovementspec.$inferSelect;
+export type NewTeamMovementSpec = typeof teammovementspec.$inferInsert;
+export type TeamMovementSpec = typeof teammovementspec.$inferSelect;
 
 export const teammovementtablespec = sqliteTable("teammovementtablespec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -113,10 +110,9 @@ export const teammovementtablespec = sqliteTable("teammovementtablespec", {
   tableNumber: integer("table_number").notNull(),
 });
 
-export type TeamMovementTableSpecInsert =
+export type NewTeamMovementTableSpec =
   typeof teammovementtablespec.$inferInsert;
-export type TeamMovementTableSpecSelect =
-  typeof teammovementtablespec.$inferSelect;
+export type TeamMovementTableSpec = typeof teammovementtablespec.$inferSelect;
 
 export const teammovementroundspec = sqliteTable("teammovementroundspec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -128,7 +124,6 @@ export const teammovementroundspec = sqliteTable("teammovementroundspec", {
   boardEnd: integer("board_end").notNull(),
 });
 
-export type TeamMovementRoundSpecInsert =
+export type NewTeamMovementRoundSpec =
   typeof teammovementroundspec.$inferInsert;
-export type TeamMovementRoundSpecSelect =
-  typeof teammovementroundspec.$inferSelect;
+export type TeamMovementRoundSpec = typeof teammovementroundspec.$inferSelect;
