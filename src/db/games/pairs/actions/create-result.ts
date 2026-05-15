@@ -1,9 +1,9 @@
 "use server";
 
-import { Result, results } from "@/db/games/pairs/schema";
+import { PairsResult, results } from "@/db/games/pairs/tables/results";
 import { getDb } from "@/db/games";
 
-export async function createResult(gameId: string, item: Result) {
+export async function createResult(gameId: string, item: PairsResult) {
   const db = await getDb(gameId);
   await db.insert(results).values(item);
 }

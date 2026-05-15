@@ -2,13 +2,35 @@
 
 import SelectGame from "@/components/join/SelectGame";
 import { BridgeGame } from "@/db/game-index/schema";
+import { useGame } from "@/context/GameContext";
+import { fetcher } from "@/lib/fetcher";
+import { getSocket } from "@/lib/socket";
+import { useEffect } from "react";
+import useSWR, { useSWRConfig } from "swr";
 
-interface Props {
-  games: BridgeGame[] | undefined;
-  onGameSelected: (game: BridgeGame) => void;
-}
+export default function SelectGamePage() {
+  const { data } = useSWR<BridgeGame[], Error>("/api/games/joinable", fetcher);
+  const { mutate } = useSWRConfig();
+  const { selectGame } = useGame();
 
-export default function SelectGamePage({ games, onGameSelected }: Props) {
+  useEffect(() => {
+    function handleReconnect() {
+      mutate("/api/games/joinable");
+    }
+
+    function handleJoinableGames(games: BridgeGame[]) {
+      mutate("/api/games/joinable", games, false);
+    }
+
+    getSocket().on("connect", handleReconnect);
+    getSocket().on("joinable-games", handleJoinableGames);
+
+    return () => {
+      getSocket().off("connect", handleReconnect);
+      getSocket().off("joinable-games", handleJoinableGames);
+    };
+  }, [mutate]);
+
   return (
     <>
       <div className="w-full">
@@ -16,7 +38,7 @@ export default function SelectGamePage({ games, onGameSelected }: Props) {
           <span>Select Game</span>
         </div>
       </div>
-      {games && <SelectGame games={games} onGameSelected={onGameSelected} />}
+      {data && <SelectGame games={data} onGameSelected={selectGame} />}
     </>
   );
 }
