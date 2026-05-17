@@ -1,9 +1,54 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d3069e4f-81ac-43de-90ee-e18d770a23e8",
+  "id": "15f52ba4-a521-4db3-bcc1-8a097bd91adc",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "boardplays": {
+      "name": "boardplays",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "round_number": {
+          "name": "round_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "table_number": {
+          "name": "table_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "board_number": {
+          "name": "board_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "metadata": {
       "name": "metadata",
       "columns": {
@@ -99,36 +144,121 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "movements_round_number_table_number_pk": {
-          "columns": ["round_number", "table_number"],
+          "columns": [
+            "round_number",
+            "table_number"
+          ],
           "name": "movements_round_number_table_number_pk"
         }
       },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "playermovementmap": {
+      "name": "playermovementmap",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pair": {
+          "name": "pair",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "playermovementmap_pair_pairs_id_fk": {
+          "name": "playermovementmap_pair_pairs_id_fk",
+          "tableFrom": "playermovementmap",
+          "tableTo": "pairs",
+          "columnsFrom": [
+            "pair"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pairs": {
+      "name": "pairs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "player1": {
+          "name": "player1",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "player2": {
+          "name": "player2",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pairs_player1_players_id_fk": {
+          "name": "pairs_player1_players_id_fk",
+          "tableFrom": "pairs",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player1"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "pairs_player2_players_id_fk": {
+          "name": "pairs_player2_players_id_fk",
+          "tableFrom": "pairs",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player2"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "players": {
       "name": "players",
       "columns": {
-        "initialTable": {
-          "name": "initialTable",
+        "id": {
+          "name": "id",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "initialDirection": {
-          "name": "initialDirection",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ebu_number": {
-          "name": "ebu_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
         },
         "first_name": {
           "name": "first_name",
@@ -143,29 +273,62 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "national_id": {
+          "name": "national_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "players_initialTable_initialDirection_pk": {
-          "columns": ["initialTable", "initialDirection"],
-          "name": "players_initialTable_initialDirection_pk"
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
     "results": {
       "name": "results",
       "columns": {
-        "round_number": {
-          "name": "round_number",
+        "board_play_id": {
+          "name": "board_play_id",
           "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "results_board_play_id_boardplays_id_fk": {
+          "name": "results_board_play_id_boardplays_id_fk",
+          "tableFrom": "results",
+          "tableTo": "boardplays",
+          "columnsFrom": [
+            "board_play_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "startingpositions": {
+      "name": "startingpositions",
+      "columns": {
         "table_number": {
           "name": "table_number",
           "type": "integer",
@@ -173,69 +336,44 @@
           "notNull": false,
           "autoincrement": false
         },
-        "ns": {
-          "name": "ns",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ew": {
-          "name": "ew",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "board_number": {
-          "name": "board_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "contract": {
-          "name": "contract",
+        "direction": {
+          "name": "direction",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "declarer": {
-          "name": "declarer",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "tricks": {
-          "name": "tricks",
+        "player": {
+          "name": "player",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "score": {
-          "name": "score",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "startingpositions_player_players_id_fk": {
+          "name": "startingpositions_player_players_id_fk",
+          "tableFrom": "startingpositions",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
-        "results_round_number_table_number_board_number_pk": {
-          "columns": ["round_number", "table_number", "board_number"],
-          "name": "results_round_number_table_number_board_number_pk"
+        "startingpositions_table_number_direction_pk": {
+          "columns": [
+            "table_number",
+            "direction"
+          ],
+          "name": "startingpositions_table_number_direction_pk"
         }
       },
       "uniqueConstraints": {},

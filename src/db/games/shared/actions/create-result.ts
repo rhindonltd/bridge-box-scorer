@@ -1,12 +1,12 @@
 "use server";
 
 import {
-  IndividualResult,
+  Result,
   results,
-} from "@/db/games/individual/tables/results";
+} from "@/db/games/shared/tables/results";
 import { getDb } from "@/db/games";
 
-export async function createResult(gameId: string, item: IndividualResult) {
+export async function createResult(gameId: string, item: Result) {
   const db = await getDb(gameId);
   await db.insert(results).values(item);
 }
