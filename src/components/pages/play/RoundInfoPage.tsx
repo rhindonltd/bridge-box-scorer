@@ -4,7 +4,7 @@ import RoundInfo from "@/components/play/RoundInfo";
 import React from "react";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
-import { Player } from "@/model/participants";
+import { Player } from "@/db/games/shared/tables/players";
 
 interface Props {
   round: number;

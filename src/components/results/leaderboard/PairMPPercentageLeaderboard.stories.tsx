@@ -23,14 +23,16 @@ export const Default: Story = {
         initialDirection: "NS",
         pairId: "1",
         player1: {
+          id: 1,
           firstName: "David",
           lastName: "Collier",
-          nationalId: 404476,
+          nationalId: "404476",
         },
         player2: {
+          id: 2,
           firstName: "Jacqui",
           lastName: "Collier",
-          nationalId: 477484,
+          nationalId: "477484",
         },
       },
     ],

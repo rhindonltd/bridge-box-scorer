@@ -15,10 +15,15 @@ const meta: Meta<typeof RoundInfoPage> = {
     table: 5,
     boards: [1, 2, 3],
     players: {
-      N: { firstName: "Alice", lastName: "Smith" },
-      S: { firstName: "Bob", lastName: "Johnson" },
-      E: { firstName: "Carol", lastName: "Williams" },
-      W: { firstName: "David", lastName: "Brown" },
+      N: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: "477484" },
+      S: { id: 2, firstName: "Bob", lastName: "Johnson", nationalId: null },
+      E: {
+        id: 3,
+        firstName: "Carol",
+        lastName: "Williams",
+        nationalId: "123456",
+      },
+      W: { id: 4, firstName: "David", lastName: "Brown", nationalId: "654321" },
     },
     onEnterRound: () => alert("Enter Round clicked"),
   },
@@ -97,12 +102,16 @@ export const LongNames: Story = {
       {
         type: "PAIR",
         player1: {
+          id: 1,
           firstName: "Jacqui",
           lastName: "Collier",
+          nationalId: "477484",
         },
         player2: {
+          id: 2,
           firstName: "David",
           lastName: "Collier",
+          nationalId: "404476",
         },
         initialTableNumber: 3,
         initialDirection: "EW",
@@ -112,10 +121,30 @@ export const LongNames: Story = {
   ],
   args: {
     players: {
-      N: { firstName: "Alexandria", lastName: "Montgomery-Wellington" },
-      S: { firstName: "Christopher", lastName: "Van Der Berg" },
-      E: { firstName: "Maximilian", lastName: "Fitzgerald-Smythe" },
-      W: { firstName: "Elizabeth", lastName: "O’Connell-Rutherford" },
+      N: {
+        id: 1,
+        firstName: "Alexandria",
+        lastName: "Montgomery-Wellington",
+        nationalId: "123456",
+      },
+      S: {
+        id: 2,
+        firstName: "Christopher",
+        lastName: "Van Der Berg",
+        nationalId: null,
+      },
+      E: {
+        id: 3,
+        firstName: "Maximilian",
+        lastName: "Fitzgerald-Smythe",
+        nationalId: null,
+      },
+      W: {
+        id: 4,
+        firstName: "Elizabeth",
+        lastName: "O’Connell-Rutherford",
+        nationalId: null,
+      },
     },
   },
 };

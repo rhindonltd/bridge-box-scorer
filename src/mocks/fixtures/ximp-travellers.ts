@@ -1,61 +1,66 @@
-import { Player } from "@/model/participants";
+import { Player } from "@/db/games/shared/tables/players";
 import { PairTraveller } from "@/model/traveller";
 
 export const players: Map<string, Player[]> = new Map([
   [
     "1:1",
     [
-      { firstName: "Piers", lastName: "Fuller" },
-      { firstName: "Sally", lastName: "Bennett" },
+      { id: 1, firstName: "Piers", lastName: "Fuller", nationalId: null },
+      { id: 2, firstName: "Sally", lastName: "Bennett", nationalId: null },
     ],
   ],
   [
     "1:2",
     [
-      { firstName: "David", lastName: "Tookey" },
-      { firstName: "Peter", lastName: "Verkroost" },
+      { id: 3, firstName: "David", lastName: "Tookey", nationalId: null },
+      { id: 4, firstName: "Peter", lastName: "Verkroost", nationalId: null },
     ],
   ],
   [
     "3:1",
     [
-      { firstName: "Peter", lastName: "Clark" },
-      { firstName: "Roy", lastName: "Button" },
+      { id: 5, firstName: "Peter", lastName: "Clark", nationalId: null },
+      { id: 6, firstName: "Roy", lastName: "Button", nationalId: null },
     ],
   ],
   [
     "3:2",
     [
-      { firstName: "Tim", lastName: "Nash" },
-      { firstName: "Jeff", lastName: "Green" },
+      { id: 7, firstName: "Tim", lastName: "Nash", nationalId: null },
+      { id: 8, firstName: "Jeff", lastName: "Green", nationalId: null },
     ],
   ],
   [
     "2:1",
     [
-      { firstName: "Bobbie", lastName: "Rodney" },
-      { firstName: "Phillip", lastName: "Levy" },
+      { id: 9, firstName: "Bobbie", lastName: "Rodney", nationalId: null },
+      { id: 10, firstName: "Phillip", lastName: "Levy", nationalId: null },
     ],
   ],
   [
     "4:2",
     [
-      { firstName: "Rachel", lastName: "Thomas" },
-      { firstName: "Srimath", lastName: "Agalawatte" },
+      { id: 11, firstName: "Rachel", lastName: "Thomas", nationalId: null },
+      {
+        id: 12,
+        firstName: "Srimath",
+        lastName: "Agalawatte",
+        nationalId: null,
+      },
     ],
   ],
   [
     "4:1",
     [
-      { firstName: "Karima", lastName: "Basse" },
-      { firstName: "Helen", lastName: "Robinson" },
+      { id: 13, firstName: "Karima", lastName: "Basse", nationalId: null },
+      { id: 14, firstName: "Helen", lastName: "Robinson", nationalId: null },
     ],
   ],
   [
     "2:2",
     [
-      { firstName: "Geoff", lastName: "Horn" },
-      { firstName: "Jill", lastName: "Horn" },
+      { id: 15, firstName: "Geoff", lastName: "Horn", nationalId: null },
+      { id: 16, firstName: "Jill", lastName: "Horn", nationalId: null },
     ],
   ],
 ]);

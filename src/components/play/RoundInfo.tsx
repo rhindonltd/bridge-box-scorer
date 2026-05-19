@@ -1,19 +1,15 @@
 import React from "react";
 import CardTable from "@/components/common/CardTable";
-
-interface PlayerName {
-  firstName: string;
-  lastName: string;
-}
+import { Player } from "@/db/games/shared/tables/players";
 
 interface Props {
   table: number;
   boards: number[];
   players: {
-    N: PlayerName;
-    S: PlayerName;
-    E: PlayerName;
-    W: PlayerName;
+    N: Player;
+    S: Player;
+    E: Player;
+    W: Player;
   };
 }
 

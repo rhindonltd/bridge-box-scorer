@@ -1,14 +1,19 @@
-import { sqliteTable, integer, primaryKey } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  integer,
+  primaryKey,
+  text,
+} from "drizzle-orm/sqlite-core";
 
 export const movements = sqliteTable(
   "movements",
   {
     roundNumber: integer("round_number"),
     tableNumber: integer("table_number"),
-    n: integer("n"),
-    s: integer("s"),
-    e: integer("e"),
-    w: integer("w"),
+    n: text("n"),
+    s: text("s"),
+    e: text("e"),
+    w: text("w"),
     startBoard: integer("start_board"),
     endBoard: integer("end_board"),
   },

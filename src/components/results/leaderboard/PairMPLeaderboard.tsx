@@ -1,7 +1,7 @@
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
 import { PairAssignment } from "@/model/participants";
-import { PairMatchpointOverallScore } from "../../../model/leaderboard";
+import { PairMatchpointOverallScore } from "@//model/leaderboard";
 
 interface Props {
   pairs: PairAssignment[];

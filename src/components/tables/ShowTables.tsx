@@ -1,38 +1,46 @@
 import CardTable from "@/components/common/CardTable";
+import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
+import { Player } from "@/db/games/shared/tables/players";
 import React from "react";
 
-interface PlayerName {
-  firstName: string;
-  lastName: string;
-}
-
 interface Players {
-  N: PlayerName | null;
-  S: PlayerName | null;
-  E: PlayerName | null;
-  W: PlayerName | null;
+  N: Player | null;
+  S: Player | null;
+  E: Player | null;
+  W: Player | null;
 }
 
-export interface Table {
+interface Table {
   tableNumber: number;
   players: Players;
 }
 
 interface Props {
   tables: number;
+  startingPositions: StartingPositionWithPlayer[];
 }
 
-export default function ShowTables({ tables }: Props) {
+export default function ShowTables({ tables, startingPositions }: Props) {
   function createTables(count: number): Table[] {
-    return Array.from({ length: count }, (_, i) => ({
-      tableNumber: i + 1,
+    return Array.from({ length: count }, (_, i) => createTable(i + 1));
+  }
+
+  function createTable(tableNumber: number): Table {
+    const playersByDirection = Object.fromEntries(
+      startingPositions
+        .filter((x) => x.tableNumber === tableNumber)
+        .map((x) => [x.direction, x.player]),
+    );
+
+    return {
+      tableNumber,
       players: {
-        N: null,
-        S: null,
-        E: null,
-        W: null,
+        N: playersByDirection.N ?? null,
+        S: playersByDirection.S ?? null,
+        E: playersByDirection.E ?? null,
+        W: playersByDirection.W ?? null,
       },
-    }));
+    };
   }
 
   return (
