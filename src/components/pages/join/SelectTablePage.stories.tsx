@@ -40,20 +40,4 @@ export const Default: Story = {
       null,
     ),
   ],
-  args: {
-    assigned: [
-      {
-        table: 4,
-        direction: "NS",
-      },
-      {
-        table: 6,
-        direction: "NS",
-      },
-      {
-        table: 6,
-        direction: "EW",
-      },
-    ],
-  },
 };

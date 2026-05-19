@@ -12,7 +12,7 @@ export default function JoinGame() {
       {gameSelection == null ? (
         <SelectGamePage />
       ) : (
-        <SelectTablePage selectTable={() => {}} assigned={[]} />
+        <SelectTablePage selectTable={() => {}} />
       )}
     </>
   );

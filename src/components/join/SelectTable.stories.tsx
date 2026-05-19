@@ -20,18 +20,36 @@ type Story = StoryObj<typeof SelectTable>;
 export const Default: Story = {
   args: {
     tables: 8,
-    assigned: [
+    startingPositions: [
       {
-        table: 4,
-        direction: "NS",
+        tableNumber: 4,
+        direction: "N",
+        player: {
+          id: 1,
+          firstName: "Jacqui",
+          lastName: "Collier",
+          nationalId: "477484",
+        },
       },
       {
-        table: 6,
-        direction: "NS",
+        tableNumber: 6,
+        direction: "S",
+        player: {
+          id: 2,
+          firstName: "David",
+          lastName: "Collier",
+          nationalId: "404476",
+        },
       },
       {
-        table: 6,
-        direction: "EW",
+        tableNumber: 6,
+        direction: "E",
+        player: {
+          id: 3,
+          firstName: "Peter",
+          lastName: "Collier",
+          nationalId: null,
+        },
       },
     ],
   },
@@ -40,13 +58,13 @@ export const Default: Story = {
 export const FewTables: Story = {
   args: {
     tables: 3,
-    assigned: [],
+    startingPositions: [],
   },
 };
 
 export const ManyTables: Story = {
   args: {
     tables: 16,
-    assigned: [],
+    startingPositions: [],
   },
 };
