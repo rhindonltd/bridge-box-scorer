@@ -1,9 +1,6 @@
 "use server";
 
-import {
-  Result,
-  results,
-} from "@/db/games/shared/tables/results";
+import { Result, results } from "@/db/games/shared/tables/results";
 import { getDb } from "@/db/games";
 
 export async function createResult(gameId: string, item: Result) {

@@ -7,10 +7,10 @@ interface PlayerName {
 }
 
 interface Players {
-  N: PlayerName | null;
-  S: PlayerName | null;
-  E: PlayerName | null;
-  W: PlayerName | null;
+  N: Player | null;
+  S: Player | null;
+  E: Player | null;
+  W: Player | null;
 }
 
 interface Props {
@@ -19,6 +19,7 @@ interface Props {
 }
 
 import TableCompassLayout from "@/components/layout/TableCompassLayout";
+import { Player } from "@/db/games/shared/tables/players";
 
 export default function CardTable({ players, tableNumber }: Props) {
   return (

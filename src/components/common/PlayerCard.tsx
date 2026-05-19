@@ -1,13 +1,9 @@
+import { Player } from "@/db/games/shared/tables/players";
 import React from "react";
-
-interface PlayerName {
-  firstName: string;
-  lastName: string;
-}
 
 interface Props {
   label: string;
-  player: PlayerName | null;
+  player: Player | null;
 }
 
 export default function PlayerCard({ label, player }: Props) {

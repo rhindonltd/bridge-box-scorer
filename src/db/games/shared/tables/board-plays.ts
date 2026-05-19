@@ -8,4 +8,4 @@ export const boardPlays = sqliteTable("boardplays", {
   status: text("status"), // "NOT_PLAYED", "PENDING_CONFIRMATION", "CONFIRMED", "OVERRIDDEN"
 });
 
-export type BoardPlays = typeof boardPlays.$inferSelect;
+export type BoardPlay = typeof boardPlays.$inferSelect;

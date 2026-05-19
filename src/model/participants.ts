@@ -1,10 +1,5 @@
+import { Player } from "@/db/games/shared/tables/players";
 import { Direction, PairDirection } from "@/model/common";
-
-export type Player = {
-  firstName: string;
-  lastName: string;
-  nationalId?: number;
-};
 
 export interface ParticipantsByMode {
   INDIVIDUAL: {

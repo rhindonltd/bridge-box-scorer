@@ -1,75 +1,75 @@
-import { Player } from "@/model/participants";
+import { Player } from "@/db/games/shared/tables/players";
 import { PairTraveller } from "@/model/traveller";
 
 export const players: Map<string, Player[]> = new Map([
   [
     "1",
     [
-      { firstName: "Steven", lastName: "Leung" },
-      { firstName: "Colin", lastName: "Holehouse" },
+      { id: 1, firstName: "Steven", lastName: "Leung", nationalId: null },
+      { id: 2, firstName: "Colin", lastName: "Holehouse", nationalId: null },
     ],
   ],
   [
     "2",
     [
-      { firstName: "Roy", lastName: "Button" },
-      { firstName: "Nadia", lastName: "Button" },
+      { id: 3, firstName: "Roy", lastName: "Button", nationalId: null },
+      { id: 4, firstName: "Nadia", lastName: "Button", nationalId: null },
     ],
   ],
   [
     "3",
     [
-      { firstName: "Piers", lastName: "Fuller" },
-      { firstName: "Sally", lastName: "Bennett" },
+      { id: 5, firstName: "Piers", lastName: "Fuller", nationalId: null },
+      { id: 6, firstName: "Sally", lastName: "Bennett", nationalId: null },
     ],
   ],
   [
     "4",
     [
-      { firstName: "Srimath", lastName: "Agalawatte" },
-      { firstName: "Rachel", lastName: "Thomas" },
+      { id: 7, firstName: "Srimath", lastName: "Agalawatte", nationalId: null },
+      { id: 8, firstName: "Rachel", lastName: "Thomas", nationalId: null },
     ],
   ],
   [
     "5",
     [
-      { firstName: "Bobbie", lastName: "Rodney" },
-      { firstName: "Maria", lastName: "Budd" },
+      { id: 9, firstName: "Bobbie", lastName: "Rodney", nationalId: null },
+      { id: 10, firstName: "Maria", lastName: "Budd", nationalId: null },
     ],
   ],
   [
     "6",
     [
-      { firstName: "Jacqui", lastName: "Collier" },
-      { firstName: "David", lastName: "Collier" },
+      { id: 11, firstName: "Jacqui", lastName: "Collier", nationalId: null },
+      { id: 12, firstName: "David", lastName: "Collier", nationalId: null },
     ],
   ],
   [
     "7",
     [
-      { firstName: "Geoff", lastName: "Horn" },
-      { firstName: "Jill", lastName: "Horn" },
+      { id: 13, firstName: "Geoff", lastName: "Horn", nationalId: null },
+      { id: 14, firstName: "Jill", lastName: "Horn", nationalId: null },
     ],
   ],
   [
     "8",
     [
-      { firstName: "Chris", lastName: "Mooney" },
-      { firstName: "Jeff", lastName: "Green" },
+      { id: 15, firstName: "Chris", lastName: "Mooney", nationalId: null },
+      { id: 16, firstName: "Jeff", lastName: "Green", nationalId: null },
     ],
   ],
   [
     "9",
     [
-      { firstName: "Karima", lastName: "Basse" },
-      { firstName: "Helen", lastName: "Robinson" },
+      { id: 17, firstName: "Karima", lastName: "Basse", nationalId: null },
+      { id: 18, firstName: "Helen", lastName: "Robinson", nationalId: null },
     ],
   ],
   [
     "10",
     [
-      { firstName: "Peter", lastName: "Clark" },
-      { firstName: "John", lastName: "Eyre" },
+      { id: 19, firstName: "Peter", lastName: "Clark", nationalId: null },
+      { id: 20, firstName: "John", lastName: "Eyre", nationalId: null },
     ],
   ],
 ]);

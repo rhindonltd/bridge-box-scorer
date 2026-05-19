@@ -9,9 +9,11 @@ import {
 export const startingPositions = sqliteTable(
   "startingpositions",
   {
-    tableNumber: integer("table_number"),
-    direction: text("direction"),
-    player: integer("player").references(() => players.id),
+    tableNumber: integer("table_number").notNull(),
+    direction: text("direction").notNull(),
+    player: integer("player")
+      .notNull()
+      .references(() => players.id),
   },
   (table) => ({
     pk: primaryKey({
@@ -20,4 +22,4 @@ export const startingPositions = sqliteTable(
   }),
 );
 
-export type StartingPositions = typeof startingPositions.$inferSelect;
+export type StartingPosition = typeof startingPositions.$inferSelect;

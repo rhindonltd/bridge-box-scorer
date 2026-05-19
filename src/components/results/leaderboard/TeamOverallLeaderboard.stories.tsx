@@ -25,14 +25,16 @@ export const Default: Story = {
           initialDirection: "NS",
           initialTableNumber: 1,
           player1: {
+            id: 1,
             firstName: "David",
             lastName: "Collier",
-            nationalId: 404476,
+            nationalId: "404476",
           },
           player2: {
+            id: 2,
             firstName: "Jacqui",
             lastName: "Collier",
-            nationalId: 477484,
+            nationalId: "477484",
           },
         },
         pair2: {
@@ -40,14 +42,16 @@ export const Default: Story = {
           initialDirection: "EW",
           initialTableNumber: 1,
           player1: {
+            id: 1,
             firstName: "Peter",
             lastName: "Collier",
-            nationalId: 123456,
+            nationalId: "123456",
           },
           player2: {
+            id: 2,
             firstName: "Nye",
             lastName: "Collier",
-            nationalId: 654321,
+            nationalId: "654321",
           },
         },
       },

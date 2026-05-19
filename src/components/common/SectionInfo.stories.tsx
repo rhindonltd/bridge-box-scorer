@@ -57,12 +57,16 @@ export const EventAndPairOnly: Story = {
       {
         type: "PAIR",
         player1: {
+          id: 1,
           firstName: "Jacqui",
           lastName: "Collier",
+          nationalId: "477484",
         },
         player2: {
+          id: 2,
           firstName: "David",
           lastName: "Collier",
+          nationalId: "404476",
         },
         initialTableNumber: 3,
         initialDirection: "EW",
@@ -114,8 +118,10 @@ export const EventSectionAndPlayer: Story = {
       {
         type: "INDIVIDUAL",
         player: {
+          id: 1,
           firstName: "Jacqui",
           lastName: "Collier",
+          nationalId: "477484",
         },
         initialTableNumber: 3,
         initialDirection: "E",
@@ -169,12 +175,16 @@ export const EventSessionAndTeam: Story = {
         pair1: {
           type: "PAIR",
           player1: {
+            id: 1,
             firstName: "Jacqui",
             lastName: "Collier",
+            nationalId: "477484",
           },
           player2: {
+            id: 2,
             firstName: "David",
             lastName: "Collier",
+            nationalId: "404476",
           },
           initialTableNumber: 3,
           initialDirection: "NS",
@@ -182,12 +192,16 @@ export const EventSessionAndTeam: Story = {
         pair2: {
           type: "PAIR",
           player1: {
+            id: 3,
             firstName: "Peter",
             lastName: "Collier",
+            nationalId: "123456",
           },
           player2: {
+            id: 4,
             firstName: "Nye",
             lastName: "Collier",
+            nationalId: null,
           },
           initialTableNumber: 3,
           initialDirection: "EW",
@@ -240,12 +254,16 @@ export const EventSessionSectionAndPair: Story = {
       {
         type: "PAIR",
         player1: {
+          id: 1,
           firstName: "Jacqui",
           lastName: "Collier",
+          nationalId: "477484",
         },
         player2: {
+          id: 2,
           firstName: "David",
           lastName: "Collier",
+          nationalId: "404476",
         },
         initialTableNumber: 3,
         initialDirection: "EW",
