@@ -1,6 +1,6 @@
-# total -> 491
+# total -> 489
 
-# MIT - 416
+# MIT - 415
 
 # MIT-0 - 1
 
@@ -20,7 +20,7 @@
 
 # BSD-2-Clause - 10
 
-# BSD-3-Clause - 8
+# BSD-3-Clause - 7
 
 # (MIT OR WTFPL) - 1
 
@@ -82,7 +82,7 @@
 1.  https://github.com/bramus/specificity
 2.  MIT
 
-# @chromatic-com/storybook@5.1.2
+# @chromatic-com/storybook@5.2.1
 
 1.  https://github.com/chromaui/addon-visual-tests
 2.  MIT
@@ -101,11 +101,6 @@
 
 1.  https://github.com/drizzle-team/brocli
 2.  Apache-2.0
-
-# @emnapi/core@1.10.0
-
-1.  https://github.com/toyobayashi/emnapi
-2.  MIT
 
 # @esbuild-kit/core-utils@3.3.2
 
@@ -227,11 +222,6 @@
 1.  https://github.com/mdx-js/mdx
 2.  MIT
 
-# @napi-rs/wasm-runtime@1.1.4
-
-1.  https://github.com/napi-rs/napi-rs
-2.  MIT
-
 # @neoconfetti/react@1.0.0
 
 1.  https://github.com/puruvj/neoconfetti
@@ -262,12 +252,17 @@
 1.  https://github.com/SukkaW/nolyfill
 2.  MIT
 
-# @oxc-project/types@0.128.0
+# @oxc-parser/binding-darwin-arm64@0.127.0
 
 1.  https://github.com/oxc-project/oxc
 2.  MIT
 
-# @playwright/test@1.59.1
+# @oxc-resolver/binding-darwin-arm64@11.19.1
+
+1.  https://github.com/oxc-project/oxc-resolver
+2.  MIT
+
+# @playwright/test@1.60.0
 
 1.  https://github.com/microsoft/playwright
 2.  Apache-2.0
@@ -277,9 +272,14 @@
 1.  https://github.com/lukeed/polka
 2.  MIT
 
-# @rolldown/binding-darwin-arm64@1.0.0-rc.18
+# @rolldown/binding-darwin-arm64@1.0.1
 
 1.  https://github.com/rolldown/rolldown
+2.  MIT
+
+# @rolldown/pluginutils@1.0.1
+
+1.  https://github.com/rolldown/plugins
 2.  MIT
 
 # @rollup/pluginutils@5.3.0
@@ -302,7 +302,7 @@
 1.  https://github.com/standard-schema/standard-schema
 2.  MIT
 
-# @storybook/addon-a11y@10.3.6
+# @storybook/addon-a11y@10.4.0
 
 1.  https://github.com/storybookjs/storybook
 2.  MIT
@@ -357,11 +357,6 @@
 1.  https://github.com/tsconfig/bases
 2.  MIT
 
-# @tybys/wasm-util@0.10.1
-
-1.  https://github.com/toyobayashi/wasm-util
-2.  MIT
-
 # @types/aria-query@5.0.4
 
 1.  https://github.com/DefinitelyTyped/DefinitelyTyped
@@ -377,7 +372,7 @@
 1.  https://github.com/unrs/unrs-resolver
 2.  MIT
 
-# @vitejs/plugin-react@6.0.1
+# @vitejs/plugin-react@6.0.2
 
 1.  https://github.com/vitejs/vite-plugin-react
 2.  MIT
@@ -547,7 +542,7 @@
 1.  https://github.com/kelektiv/node.bcrypt.js
 2.  MIT
 
-# better-sqlite3@12.9.0
+# better-sqlite3@12.10.0
 
 1.  https://github.com/WiseLibs/better-sqlite3
 2.  MIT
@@ -647,7 +642,7 @@
 1.  https://github.com/isaacs/chownr
 2.  ISC
 
-# chromatic@13.3.5
+# chromatic@16.10.0
 
 1.  https://github.com/chromaui/chromatic-cli
 2.  MIT
@@ -1046,11 +1041,6 @@
 
 1.  https://github.com/TooTallNate/file-uri-to-path
 2.  MIT
-
-# filesize@10.1.6
-
-1.  https://github.com/avoidwork/filesize.js
-2.  BSD-3-Clause
 
 # fill-range@7.1.1
 
@@ -1542,7 +1532,7 @@
 1.  https://github.com/isaacs/node-lru-cache
 2.  BlueOak-1.0.0
 
-# lucide-react@1.14.0
+# lucide-react@1.16.0
 
 1.  https://github.com/lucide-icons/lucide
 2.  ISC
@@ -2267,7 +2257,7 @@
 1.  https://github.com/Microsoft/tslib
 2.  0BSD
 
-# tsx@4.21.0
+# tsx@4.22.3
 
 1.  https://github.com/privatenumber/tsx
 2.  MIT
@@ -2362,7 +2352,7 @@
 1.  https://github.com/aleclarson/vite-tsconfig-paths
 2.  MIT
 
-# vite@8.0.11
+# vite@8.0.13
 
 1.  https://github.com/vitejs/vite
 2.  MIT
