@@ -6,14 +6,13 @@ import { useGame } from "@/context/GameContext";
 import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
+import { SocketEvents } from "@/socket/socket-events";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
-interface Props {
-  selectTable: (table: number, direction: "NS" | "EW") => void;
-}
+interface Props {}
 
-export function SelectTablePage({ selectTable }: Props) {
+export function SelectTablePage() {
   const { gameSelection } = useGame();
   const { mutate } = useSWRConfig();
 
@@ -43,18 +42,12 @@ export function SelectTablePage({ selectTable }: Props) {
       mutate(key, startingPositions, false);
     }
 
-    getSocket().on("connect", handleReconnect);
-    getSocket().on(
-      `game:${gameId}:starting-positions`,
-      handleStartingPositions,
-    );
+    getSocket().on(SocketEvents.CONNECT, handleReconnect);
+    getSocket().on(SocketEvents.SELECTED_SEATS, handleStartingPositions);
 
     return () => {
-      getSocket().off("connect", handleReconnect);
-      getSocket().off(
-        `game:${gameId}:starting-positions`,
-        handleStartingPositions,
-      );
+      getSocket().off(SocketEvents.CONNECT, handleReconnect);
+      getSocket().off(SocketEvents.SELECTED_SEATS, handleStartingPositions);
     };
   }, [gameId, mutate]);
 
@@ -66,7 +59,7 @@ export function SelectTablePage({ selectTable }: Props) {
 
       <SelectTable
         tables={gameSelection.tables}
-        selectTable={selectTable}
+        setStartingPosition={setStartingPosition}
         startingPositions={data ?? []}
       />
     </div>

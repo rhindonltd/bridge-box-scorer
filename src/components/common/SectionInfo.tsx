@@ -1,9 +1,11 @@
 "use client";
 
+import { useAssignment } from "@/context/AssignmentContext";
 import { useGame } from "@/context/GameContext";
 
 export function SectionInfo() {
-  const { gameSelection, assignmentSelection } = useGame();
+  const { gameSelection } = useGame();
+  const { assignmentSelection } = useAssignment();
 
   if (!gameSelection) return null;
 

@@ -8,12 +8,6 @@ export default function JoinGame() {
   const { gameSelection } = useGame();
 
   return (
-    <>
-      {gameSelection == null ? (
-        <SelectGamePage />
-      ) : (
-        <SelectTablePage selectTable={() => {}} />
-      )}
-    </>
+    <>{gameSelection == null ? <SelectGamePage /> : <SelectTablePage />}</>
   );
 }

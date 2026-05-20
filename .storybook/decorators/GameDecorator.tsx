@@ -1,22 +1,13 @@
-import {
-  GameContext,
-  GameSelection,
-  AssignmentSelection,
-} from "@/context/GameContext";
+import { GameContext, GameSelection } from "@/context/GameContext";
 
-export const withGame =
-  (gameSelection: GameSelection, assignmentSelection: AssignmentSelection) =>
-  (Story: any) => (
-    <GameContext.Provider
-      value={{
-        gameSelection,
-        selectGame: () => {},
-        clearGame: () => {},
-        assignmentSelection,
-        selectAssignment: () => {},
-        clearAssignment: () => {},
-      }}
-    >
-      <Story />
-    </GameContext.Provider>
-  );
+export const withGame = (gameSelection: GameSelection) => (Story: any) => (
+  <GameContext.Provider
+    value={{
+      gameSelection,
+      selectGame: () => {},
+      clearGame: () => {},
+    }}
+  >
+    <Story />
+  </GameContext.Provider>
+);

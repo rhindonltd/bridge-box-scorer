@@ -8,9 +8,9 @@ const meta: Meta<typeof SelectTable> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
-  argTypes: {
-    selectTable: { action: "table selected" },
-  },
+  // argTypes: {
+  //   selectTable: { action: "table selected" },
+  // },
 };
 
 export default meta;
