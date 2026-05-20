@@ -1,11 +1,12 @@
 import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
-import { StartingPosition } from "@/db/games/shared/tables/starting-positions";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
 
 interface Props {
   tables: number;
-  setStartingPosition: (startingPosition: StartingPosition) => void;
+  setStartingPosition: (
+    startingPositionWithPlayer: StartingPositionWithPlayer,
+  ) => void;
   startingPositions: StartingPositionWithPlayer[];
 }
 
@@ -55,7 +56,18 @@ export default function SelectTable({
                   return (
                     <button
                       key={direction}
-                      // onClick={() => selectTable(table, direction)}
+                      onClick={() =>
+                        setStartingPosition({
+                          tableNumber: table,
+                          direction: "N",
+                          player: {
+                            id: 0,
+                            firstName: "Jacqui",
+                            lastName: "Collier",
+                            nationalId: "477484",
+                          },
+                        })
+                      }
                       disabled={taken}
                       className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200
                         ${

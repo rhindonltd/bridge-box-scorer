@@ -43,13 +43,22 @@ export function SelectTablePage() {
     }
 
     getSocket().on(SocketEvents.CONNECT, handleReconnect);
-    getSocket().on(SocketEvents.SELECTED_SEATS, handleStartingPositions);
+    getSocket().on(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
 
     return () => {
       getSocket().off(SocketEvents.CONNECT, handleReconnect);
-      getSocket().off(SocketEvents.SELECTED_SEATS, handleStartingPositions);
+      getSocket().off(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
     };
   }, [gameId, mutate]);
+
+  function setStartingPosition(
+    startingPositionWithPlayer: StartingPositionWithPlayer,
+  ) {
+    getSocket().emit(SocketEvents.SELECT_SEAT, {
+      gameId,
+      startingPositionWithPlayer,
+    });
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">

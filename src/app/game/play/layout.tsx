@@ -1,5 +1,6 @@
 "use client";
 
+import { AssignmentProvider } from "@/context/AssignmentContext";
 import { PlayProvider } from "@/context/PlayContext";
 
 export default function GameLayout({
@@ -7,5 +8,9 @@ export default function GameLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <PlayProvider>{children}</PlayProvider>;
+  return (
+    <AssignmentProvider>
+      <PlayProvider>{children}</PlayProvider>
+    </AssignmentProvider>
+  );
 }

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { RoundInfoPage } from "@/components/pages/play/RoundInfoPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
 const meta: Meta<typeof RoundInfoPage> = {
   title: "Pages/Play/RoundInfoPage",
@@ -35,45 +36,39 @@ type Story = StoryObj<typeof RoundInfoPage>;
 
 export const Default: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
 };
 
 export const LaterRound: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
   args: {
     round: 4,
@@ -84,40 +79,38 @@ export const LaterRound: Story = {
 
 export const LongNames: Story = {
   decorators: [
-    withGame(
-      {
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
+    withAssignment({
+      type: "PAIR",
+      player1: {
         id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        firstName: "Jacqui",
+        lastName: "Collier",
+        nationalId: "477484",
       },
-      {
-        type: "PAIR",
-        player1: {
-          id: 1,
-          firstName: "Jacqui",
-          lastName: "Collier",
-          nationalId: "477484",
-        },
-        player2: {
-          id: 2,
-          firstName: "David",
-          lastName: "Collier",
-          nationalId: "404476",
-        },
-        initialTableNumber: 3,
-        initialDirection: "EW",
-        pairId: "11EW",
+      player2: {
+        id: 2,
+        firstName: "David",
+        lastName: "Collier",
+        nationalId: "404476",
       },
-    ),
+      initialTableNumber: 3,
+      initialDirection: "EW",
+      pairId: "11EW",
+    }),
   ],
   args: {
     players: {
