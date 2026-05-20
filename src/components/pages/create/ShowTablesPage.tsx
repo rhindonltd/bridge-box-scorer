@@ -21,6 +21,10 @@ export function ShowTablesPage() {
     fetcher,
   );
 
+  if (!gameSelection) {
+    return null;
+  }
+
   useEffect(() => {
     if (!gameId) return;
 
@@ -28,38 +32,15 @@ export function ShowTablesPage() {
 
     const key = `/api/games/${gameId}/starting-positions`;
 
-    socket.emit(
-      SocketEvents.JOIN_GAME,
-      { gameId },
-      (response: { success: boolean; error?: string }) => {
-        if (!response.success) {
-          console.error(response.error);
-        }
-      },
-    );
-
-    function handleReconnect() {
-      mutate(key);
-      socket.emit(SocketEvents.JOIN_GAME, { gameId });
-    }
-
     function handleStartingPositions(payload: {
-      gameId: string;
       startingPositions: StartingPositionWithPlayer[];
     }) {
-      //
-      // optional safety check
-      //
-      if (payload.gameId !== gameId) return;
-
       mutate(key, payload.startingPositions, false);
     }
 
-    socket.on(SocketEvents.CONNECT, handleReconnect);
     socket.on(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
 
     return () => {
-      socket.off(SocketEvents.CONNECT, handleReconnect);
       socket.off(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
     };
   }, [gameId, mutate]);

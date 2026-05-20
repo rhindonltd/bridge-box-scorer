@@ -2,7 +2,7 @@
 
 import { getDb } from "@/db/games";
 import {
-  startingPositions,
+  startingpositions,
   StartingPosition,
 } from "@/db/games/shared/tables/starting-positions";
 
@@ -11,5 +11,5 @@ export async function createStartingPosition(
   data: StartingPosition,
 ) {
   const db = await getDb(gameId);
-  await db.insert(startingPositions).values(data);
+  await db.insert(startingpositions).values(data);
 }

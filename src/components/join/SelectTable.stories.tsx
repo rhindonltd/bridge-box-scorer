@@ -25,7 +25,6 @@ export const Default: Story = {
         tableNumber: 4,
         direction: "N",
         player: {
-          id: 1,
           firstName: "Jacqui",
           lastName: "Collier",
           nationalId: "477484",
@@ -35,7 +34,6 @@ export const Default: Story = {
         tableNumber: 6,
         direction: "S",
         player: {
-          id: 2,
           firstName: "David",
           lastName: "Collier",
           nationalId: "404476",
@@ -45,7 +43,6 @@ export const Default: Story = {
         tableNumber: 6,
         direction: "E",
         player: {
-          id: 3,
           firstName: "Peter",
           lastName: "Collier",
           nationalId: null,

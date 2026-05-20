@@ -30,24 +30,20 @@ export function SelectTablePage() {
   useEffect(() => {
     if (!gameId) return;
 
+    const socket = getSocket();
+
     const key = `/api/games/${gameId}/starting-positions`;
 
-    function handleReconnect() {
-      mutate(key);
+    function handleStartingPositions(payload: {
+      startingPositions: StartingPositionWithPlayer[];
+    }) {
+      mutate(key, payload.startingPositions, false);
     }
 
-    function handleStartingPositions(
-      startingPositions: StartingPositionWithPlayer[],
-    ) {
-      mutate(key, startingPositions, false);
-    }
-
-    getSocket().on(SocketEvents.CONNECT, handleReconnect);
-    getSocket().on(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
+    socket.on(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
 
     return () => {
-      getSocket().off(SocketEvents.CONNECT, handleReconnect);
-      getSocket().off(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
+      socket.off(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
     };
   }, [gameId, mutate]);
 

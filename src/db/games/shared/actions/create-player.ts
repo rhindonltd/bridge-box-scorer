@@ -5,7 +5,7 @@ import { Player, players } from "@/db/games/shared/tables/players";
 
 export async function createPlayer(
   gameId: string,
-  item: Player,
+  item: Omit<Player, "id">,
 ): Promise<Player> {
   const db = await getDb(gameId);
   const result = await db.insert(players).values(item).returning();

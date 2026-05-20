@@ -5,4 +5,4 @@ export { pairs } from "@/db/games/pairs/tables/pairs";
 export { pairMovementMap } from "@/db/games/pairs/tables/pair-movement-map";
 export { players } from "@/db/games/shared/tables/players";
 export { results } from "@/db/games/shared/tables/results";
-export { startingPositions } from "@/db/games/shared/tables/starting-positions";
+export { startingpositions } from "@/db/games/shared/tables/starting-positions";

@@ -15,6 +15,9 @@ export default function SelectTable({
   setStartingPosition,
   startingPositions,
 }: Props) {
+
+    console.log("STARTING POSITIONS: " + JSON.stringify(startingPositions));
+
   const isTaken = (table: number, direction: PairDirection) => {
     return startingPositions.some(
       (a) => a.tableNumber === table && a.direction === direction,
@@ -61,7 +64,6 @@ export default function SelectTable({
                           tableNumber: table,
                           direction: "N",
                           player: {
-                            id: 0,
                             firstName: "Jacqui",
                             lastName: "Collier",
                             nationalId: "477484",

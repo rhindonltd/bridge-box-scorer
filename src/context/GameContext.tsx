@@ -50,7 +50,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     socket.on(SocketEvents.CONNECT, handleReconnect);
 
     return () => {
-      socket.emit("game:leave", { gameId });
+      socket.emit(SocketEvents.LEAVE_GAME, { gameId });
       socket.off(SocketEvents.CONNECT, handleReconnect);
     };
   }, [gameSelection]);

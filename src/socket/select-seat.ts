@@ -5,7 +5,7 @@ import {
   StartingPositionWithPlayer,
 } from "@/db/games/shared/queries/find-starting-positions";
 import { createPlayer } from "@/db/games/shared/actions/create-player";
-import { createStartingPosition } from "../db/games/actions/create-starting-position";
+import { createStartingPosition } from "@/db/games/shared/actions/create-starting-position";
 
 export function registerSelectSeatHandler(socket: Socket, io: Server) {
   socket.on(
@@ -30,10 +30,9 @@ export function registerSelectSeatHandler(socket: Socket, io: Server) {
           player: playerId,
         });
 
-        io.to(gameId).emit(
-          SocketEvents.STARTING_POSITIONS,
-          findStartingPositions(gameId),
-        );
+        io.to(gameId).emit(SocketEvents.STARTING_POSITIONS, {
+          startingPositions: findStartingPositions(gameId),
+        });
 
         cb?.({ success: true });
       } catch (err) {

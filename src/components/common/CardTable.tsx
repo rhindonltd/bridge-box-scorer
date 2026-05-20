@@ -1,16 +1,11 @@
 import PlayerCard from "@/components/common/PlayerCard";
 import React from "react";
 
-interface PlayerName {
-  firstName: string;
-  lastName: string;
-}
-
 interface Players {
-  N: Player | null;
-  S: Player | null;
-  E: Player | null;
-  W: Player | null;
+  N: Omit<Player, "id"> | null;
+  S: Omit<Player, "id"> | null;
+  E: Omit<Player, "id"> | null;
+  W: Omit<Player, "id"> | null;
 }
 
 interface Props {
