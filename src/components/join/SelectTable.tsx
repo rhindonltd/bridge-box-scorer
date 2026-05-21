@@ -65,7 +65,7 @@ export default function SelectTable({
                         setStartingPositions([
                           {
                             tableNumber: table,
-                            direction: "N",
+                            direction: direction == 'NS' ? "N" : "E",
                             player: {
                               firstName: "Jacqui",
                               lastName: "Collier",
@@ -74,7 +74,7 @@ export default function SelectTable({
                           },
                           {
                             tableNumber: table,
-                            direction: "S",
+                            direction: direction == 'NS' ? "S" : "W",
                             player: {
                               firstName: "David",
                               lastName: "Collier",

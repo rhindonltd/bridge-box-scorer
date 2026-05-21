@@ -38,8 +38,6 @@ export function SelectTablePage() {
     function handleStartingPositions(payload: {
       startingPositions: StartingPositionWithPlayer[];
     }) {
-      console.log("STARTING POS: " + JSON.stringify(payload));
-
       mutate(key, payload.startingPositions, false);
     }
 
