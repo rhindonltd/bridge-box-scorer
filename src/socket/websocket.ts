@@ -10,13 +10,7 @@ export function startSocketServer(server: http.Server) {
   });
 
   io.on("connection", (socket) => {
-    console.log("connected", socket.id);
-
     registerGameHandlers(socket, getIO());
-
-    socket.on("disconnect", () => {
-      console.log("disconnected", socket.id);
-    });
   });
 
   return io;

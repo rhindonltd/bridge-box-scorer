@@ -6,6 +6,7 @@ import {
 } from "@/db/games/shared/queries/find-starting-positions";
 import { createPlayer } from "@/db/games/shared/actions/create-player";
 import { createStartingPosition } from "@/db/games/shared/actions/create-starting-position";
+import { Rooms } from "./rooms";
 
 export function registerSelectSeatHandler(socket: Socket, io: Server) {
   socket.on(
@@ -24,18 +25,27 @@ export function registerSelectSeatHandler(socket: Socket, io: Server) {
         const playerId = (
           await createPlayer(gameId, startingPositionWithPlayer.player)
         ).id;
+
         await createStartingPosition(gameId, {
           tableNumber: startingPositionWithPlayer.tableNumber,
           direction: startingPositionWithPlayer.direction,
           player: playerId,
         });
 
-        io.to(gameId).emit(SocketEvents.STARTING_POSITIONS, {
-          startingPositions: findStartingPositions(gameId),
+        const startingPositions = await findStartingPositions(gameId);
+
+        io.to(Rooms.game(gameId)).emit(SocketEvents.STARTING_POSITIONS, {
+          startingPositions,
         });
 
         cb?.({ success: true });
       } catch (err) {
+        console.error(
+          "Failed to create starting position " +
+            JSON.stringify(startingPositionWithPlayer) +
+            " for game " +
+            gameId,
+        );
         cb?.({ success: false });
       }
     },

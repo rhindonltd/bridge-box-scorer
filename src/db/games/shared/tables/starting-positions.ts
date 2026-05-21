@@ -1,4 +1,5 @@
 import { players } from "@/db/games/shared/tables/players";
+import { Directions } from "@/model/common";
 import {
   sqliteTable,
   text,
@@ -10,7 +11,9 @@ export const startingpositions = sqliteTable(
   "startingpositions",
   {
     tableNumber: integer("table_number").notNull(),
-    direction: text("direction").notNull(),
+    direction: text("direction", {
+      enum: Directions,
+    }).notNull(),
     player: integer("player")
       .notNull()
       .references(() => players.id),

@@ -33,24 +33,35 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     if (!gameId) return;
 
-    socket.emit(
-      SocketEvents.JOIN_GAME,
-      { gameId },
-      (response: { success: boolean; error?: string }) => {
-        if (!response.success) {
-          console.error(response.error);
-        }
-      },
-    );
+    handleReconnect();
+
+    if (!gameId) return;
 
     function handleReconnect() {
-      socket.emit(SocketEvents.JOIN_GAME, { gameId });
+      socket.emit(
+        SocketEvents.JOIN_GAME,
+        { gameId },
+        (response: { success: boolean; error?: string }) => {
+          if (!response.success) {
+            console.error(response.error);
+          }
+        },
+      );
     }
 
     socket.on(SocketEvents.CONNECT, handleReconnect);
 
     return () => {
-      socket.emit(SocketEvents.LEAVE_GAME, { gameId });
+      socket.emit(
+        SocketEvents.LEAVE_GAME,
+        { gameId },
+        (response: { success: boolean; error?: string }) => {
+          if (!response.success) {
+            console.error(response.error);
+          }
+        },
+      );
+
       socket.off(SocketEvents.CONNECT, handleReconnect);
     };
   }, [gameSelection]);

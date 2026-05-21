@@ -3,6 +3,7 @@
 import { getDb } from "@/db/games";
 import { players } from "@/db/games/shared/tables/players";
 import { startingpositions } from "@/db/games/shared/tables/starting-positions";
+import { Direction } from "@/model/common";
 import { eq } from "drizzle-orm";
 
 export async function findStartingPositions(
@@ -27,7 +28,7 @@ export async function findStartingPositions(
 
 export type StartingPositionWithPlayer = {
   tableNumber: number;
-  direction: string;
+  direction: Direction;
   player: {
     firstName: string;
     lastName: string;

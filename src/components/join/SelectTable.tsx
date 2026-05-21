@@ -2,25 +2,27 @@ import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-start
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
 
+interface AssignedPairs {
+  tableNumber: number;
+  pairDirection: PairDirection;
+}
+
 interface Props {
   tables: number;
   setStartingPosition: (
     startingPositionWithPlayer: StartingPositionWithPlayer,
   ) => void;
-  startingPositions: StartingPositionWithPlayer[];
+  assignedPairs: AssignedPairs[];
 }
 
 export default function SelectTable({
   tables,
   setStartingPosition,
-  startingPositions,
+  assignedPairs,
 }: Props) {
-
-    console.log("STARTING POSITIONS: " + JSON.stringify(startingPositions));
-
   const isTaken = (table: number, direction: PairDirection) => {
-    return startingPositions.some(
-      (a) => a.tableNumber === table && a.direction === direction,
+    return assignedPairs.some(
+      (a) => a.tableNumber === table && a.pairDirection === direction,
     );
   };
 
@@ -59,7 +61,7 @@ export default function SelectTable({
                   return (
                     <button
                       key={direction}
-                      onClick={() =>
+                      onClick={() => {
                         setStartingPosition({
                           tableNumber: table,
                           direction: "N",
@@ -68,8 +70,18 @@ export default function SelectTable({
                             lastName: "Collier",
                             nationalId: "477484",
                           },
-                        })
-                      }
+                        });
+
+                        setStartingPosition({
+                          tableNumber: table,
+                          direction: "S",
+                          player: {
+                            firstName: "David",
+                            lastName: "Collier",
+                            nationalId: "404476",
+                          },
+                        });
+                      }}
                       disabled={taken}
                       className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200
                         ${

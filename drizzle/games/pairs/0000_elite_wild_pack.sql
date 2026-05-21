@@ -40,8 +40,8 @@ CREATE TABLE `pairs` (
 --> statement-breakpoint
 CREATE TABLE `players` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`first_name` text,
-	`last_name` text,
+	`first_name` text NOT NULL,
+	`last_name` text NOT NULL,
 	`national_id` text
 );
 --> statement-breakpoint
@@ -52,9 +52,9 @@ CREATE TABLE `results` (
 );
 --> statement-breakpoint
 CREATE TABLE `startingpositions` (
-	`table_number` integer,
-	`direction` text,
-	`player` integer,
+	`table_number` integer NOT NULL,
+	`direction` text NOT NULL,
+	`player` integer NOT NULL,
 	PRIMARY KEY(`table_number`, `direction`),
 	FOREIGN KEY (`player`) REFERENCES `players`(`id`) ON UPDATE no action ON DELETE no action
 );
