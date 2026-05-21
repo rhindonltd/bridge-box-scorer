@@ -3,7 +3,7 @@
 import { SectionInfo } from "@/components/common/SectionInfo";
 import SelectTable from "@/components/join/SelectTable";
 import { useGame } from "@/context/GameContext";
-import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
+import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions-with-player";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { Direction, PairDirection } from "@/model/common";

@@ -1,37 +1,15 @@
 "use server";
 
 import { getDb } from "@/db/games";
-import { players } from "@/db/games/shared/tables/players";
-import { startingpositions } from "@/db/games/shared/tables/starting-positions";
-import { Direction } from "@/model/common";
-import { eq } from "drizzle-orm";
+import {
+  StartingPosition,
+  startingpositions,
+} from "@/db/games/shared/tables/starting-positions";
 
 export async function findStartingPositions(
   gameId: string,
-): Promise<StartingPositionWithPlayer[]> {
+): Promise<StartingPosition[]> {
   const db = await getDb(gameId);
 
-  return db
-    .select({
-      tableNumber: startingpositions.tableNumber,
-      direction: startingpositions.direction,
-      player: {
-        id: players.id,
-        firstName: players.firstName,
-        lastName: players.lastName,
-        nationalId: players.nationalId,
-      },
-    })
-    .from(startingpositions)
-    .innerJoin(players, eq(startingpositions.player, players.id));
+  return db.select().from(startingpositions);
 }
-
-export type StartingPositionWithPlayer = {
-  tableNumber: number;
-  direction: Direction;
-  player: {
-    firstName: string;
-    lastName: string;
-    nationalId: string | null;
-  };
-};

@@ -1,5 +1,5 @@
 import CardTable from "@/components/common/CardTable";
-import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
+import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions-with-player";
 import { Player } from "@/db/games/shared/tables/players";
 import React from "react";
 

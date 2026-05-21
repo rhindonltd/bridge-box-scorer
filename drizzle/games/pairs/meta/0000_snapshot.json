@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "245729ee-cb3e-4513-8bda-ce701c89e721",
+  "id": "ef46ff7f-4d1c-4bac-b367-9eb33af8253c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "boardplays": {
@@ -208,7 +208,13 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "pairs_player1_player2_unique": {
+          "name": "pairs_player1_player2_unique",
+          "columns": ["player1", "player2"],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {
         "pairs_player1_players_id_fk": {
           "name": "pairs_player1_players_id_fk",

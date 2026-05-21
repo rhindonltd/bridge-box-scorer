@@ -38,6 +38,7 @@ CREATE TABLE `pairs` (
 	FOREIGN KEY (`player2`) REFERENCES `players`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `pairs_player1_player2_unique` ON `pairs` (`player1`,`player2`);--> statement-breakpoint
 CREATE TABLE `players` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`first_name` text NOT NULL,

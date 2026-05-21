@@ -1,4 +1,4 @@
-import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
+import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions-with-player";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
 
@@ -65,7 +65,7 @@ export default function SelectTable({
                         setStartingPositions([
                           {
                             tableNumber: table,
-                            direction: direction == 'NS' ? "N" : "E",
+                            direction: direction == "NS" ? "N" : "E",
                             player: {
                               firstName: "Jacqui",
                               lastName: "Collier",
@@ -74,7 +74,7 @@ export default function SelectTable({
                           },
                           {
                             tableNumber: table,
-                            direction: direction == 'NS' ? "S" : "W",
+                            direction: direction == "NS" ? "S" : "W",
                             player: {
                               firstName: "David",
                               lastName: "Collier",

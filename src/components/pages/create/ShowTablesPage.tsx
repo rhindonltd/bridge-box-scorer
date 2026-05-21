@@ -7,7 +7,7 @@ import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
-import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
+import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions-with-player";
 import { SocketEvents } from "@/socket/socket-events";
 
 export function ShowTablesPage() {
