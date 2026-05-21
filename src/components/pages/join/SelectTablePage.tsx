@@ -50,12 +50,12 @@ export function SelectTablePage() {
     };
   }, [gameId, mutate]);
 
-  function setStartingPosition(
-    startingPositionWithPlayer: StartingPositionWithPlayer,
+  function setStartingPositions(
+    startingPositionsWithPlayer: StartingPositionWithPlayer[],
   ) {
     getSocket().emit(SocketEvents.SELECT_SEAT, {
       gameId,
-      startingPositionWithPlayer,
+      startingPositionsWithPlayer,
     });
   }
 
@@ -112,7 +112,7 @@ export function SelectTablePage() {
 
       <SelectTable
         tables={gameSelection.tables}
-        setStartingPosition={setStartingPosition}
+        setStartingPositions={setStartingPositions}
         assignedPairs={assignedPairs()}
       />
     </div>

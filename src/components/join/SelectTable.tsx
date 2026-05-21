@@ -9,15 +9,15 @@ interface AssignedPairs {
 
 interface Props {
   tables: number;
-  setStartingPosition: (
-    startingPositionWithPlayer: StartingPositionWithPlayer,
+  setStartingPositions: (
+    startingPositionWithPlayer: StartingPositionWithPlayer[],
   ) => void;
   assignedPairs: AssignedPairs[];
 }
 
 export default function SelectTable({
   tables,
-  setStartingPosition,
+  setStartingPositions,
   assignedPairs,
 }: Props) {
   const isTaken = (table: number, direction: PairDirection) => {
@@ -62,25 +62,26 @@ export default function SelectTable({
                     <button
                       key={direction}
                       onClick={() => {
-                        setStartingPosition({
-                          tableNumber: table,
-                          direction: "N",
-                          player: {
-                            firstName: "Jacqui",
-                            lastName: "Collier",
-                            nationalId: "477484",
+                        setStartingPositions([
+                          {
+                            tableNumber: table,
+                            direction: "N",
+                            player: {
+                              firstName: "Jacqui",
+                              lastName: "Collier",
+                              nationalId: "477484",
+                            },
                           },
-                        });
-
-                        setStartingPosition({
-                          tableNumber: table,
-                          direction: "S",
-                          player: {
-                            firstName: "David",
-                            lastName: "Collier",
-                            nationalId: "404476",
+                          {
+                            tableNumber: table,
+                            direction: "S",
+                            player: {
+                              firstName: "David",
+                              lastName: "Collier",
+                              nationalId: "404476",
+                            },
                           },
-                        });
+                        ]);
                       }}
                       disabled={taken}
                       className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200

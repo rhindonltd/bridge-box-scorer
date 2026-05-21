@@ -1,12 +1,16 @@
 import { Server, Socket } from "socket.io";
+
 import { SocketEvents } from "./socket-events";
+import { Rooms } from "./rooms";
+
 import {
   findStartingPositions,
   StartingPositionWithPlayer,
 } from "@/db/games/shared/queries/find-starting-positions";
+
 import { createPlayer } from "@/db/games/shared/actions/create-player";
+
 import { createStartingPosition } from "@/db/games/shared/actions/create-starting-position";
-import { Rooms } from "./rooms";
 
 export function registerSelectSeatHandler(socket: Socket, io: Server) {
   socket.on(
@@ -14,23 +18,23 @@ export function registerSelectSeatHandler(socket: Socket, io: Server) {
     async (
       {
         gameId,
-        startingPositionWithPlayer,
+        startingPositionsWithPlayer,
       }: {
         gameId: string;
-        startingPositionWithPlayer: StartingPositionWithPlayer;
+        startingPositionsWithPlayer: StartingPositionWithPlayer[];
       },
       cb,
     ) => {
       try {
-        const playerId = (
-          await createPlayer(gameId, startingPositionWithPlayer.player)
-        ).id;
+        for (const it of startingPositionsWithPlayer) {
+          const playerId = (await createPlayer(gameId, it.player)).id;
 
-        await createStartingPosition(gameId, {
-          tableNumber: startingPositionWithPlayer.tableNumber,
-          direction: startingPositionWithPlayer.direction,
-          player: playerId,
-        });
+          await createStartingPosition(gameId, {
+            tableNumber: it.tableNumber,
+            direction: it.direction,
+            player: playerId,
+          });
+        }
 
         const startingPositions = await findStartingPositions(gameId);
 
@@ -41,12 +45,13 @@ export function registerSelectSeatHandler(socket: Socket, io: Server) {
         cb?.({ success: true });
       } catch (err) {
         console.error(
-          "Failed to create starting position " +
-            JSON.stringify(startingPositionWithPlayer) +
-            " for game " +
-            gameId,
+          `Failed to create starting positions for game ${gameId}`,
+          err,
         );
-        cb?.({ success: false });
+
+        cb?.({
+          success: false,
+        });
       }
     },
   );
