@@ -19,9 +19,9 @@ export const individualmovementtablespec = sqliteTable(
   "individualmovementtablespec",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    movementId: integer("movement_id").references(
-      () => individualmovementspec.id,
-    ),
+    movementId: integer("movement_id")
+      .references(() => individualmovementspec.id)
+      .notNull(),
     tableNumber: integer("table_number").notNull(),
   },
 );
@@ -69,7 +69,9 @@ export type PairMovementSpec = typeof pairmovementspec.$inferSelect;
 
 export const pairmovementtablespec = sqliteTable("pairmovementtablespec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  movementId: integer("movement_id").references(() => pairmovementspec.id),
+  movementId: integer("movement_id")
+    .references(() => pairmovementspec.id)
+    .notNull(),
   tableNumber: integer("table_number").notNull(),
 });
 
@@ -106,7 +108,9 @@ export type TeamMovementSpec = typeof teammovementspec.$inferSelect;
 
 export const teammovementtablespec = sqliteTable("teammovementtablespec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  movementId: integer("movement_id").references(() => teammovementspec.id),
+  movementId: integer("movement_id")
+    .references(() => teammovementspec.id)
+    .notNull(),
   tableNumber: integer("table_number").notNull(),
 });
 

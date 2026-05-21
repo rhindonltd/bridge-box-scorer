@@ -9,10 +9,18 @@ import {
   individualmovementroundspec,
   teammovementtablespec,
   teammovementroundspec,
+  TeamMovementRoundSpec,
+  TeamMovementTableSpec,
+  PairMovementRoundSpec,
+  PairMovementTableSpec,
+  IndividualMovementRoundSpec,
+  IndividualMovementTableSpec,
 } from "@/db/movements/schema";
 
-export async function getIndividualMovement(movementSpecId: number) {
-  const tablesWithRounds = [];
+export async function getIndividualMovement(
+  movementSpecId: number,
+): Promise<IndividualMovement[]> {
+  const tablesWithRounds: IndividualMovement[] = [];
 
   for (const table of await getIndividualMovementTableSpecsForMovementSpecId(
     movementSpecId,
@@ -28,8 +36,17 @@ export async function getIndividualMovement(movementSpecId: number) {
   return tablesWithRounds;
 }
 
-export async function getPairMovement(movementSpecId: number) {
-  const tablesWithRounds = [];
+export type IndividualMovement = {
+  id: number;
+  movementId: number;
+  tableNumber: number;
+  rounds: IndividualMovementRoundSpec[];
+};
+
+export async function getPairMovement(
+  movementSpecId: number,
+): Promise<PairMovement[]> {
+  const tablesWithRounds: PairMovement[] = [];
 
   for (const table of await getPairMovementTableSpecsForMovementSpecId(
     movementSpecId,
@@ -43,8 +60,17 @@ export async function getPairMovement(movementSpecId: number) {
   return tablesWithRounds;
 }
 
-export async function getTeamMovement(movementSpecId: number) {
-  const tablesWithRounds = [];
+export type PairMovement = {
+  id: number;
+  movementId: number;
+  tableNumber: number;
+  rounds: PairMovementRoundSpec[];
+};
+
+export async function getTeamMovement(
+  movementSpecId: number,
+): Promise<TeamMovement[]> {
+  const tablesWithRounds: TeamMovement[] = [];
 
   for (const table of await getTeamMovementTableSpecsForMovementSpecId(
     movementSpecId,
@@ -58,9 +84,16 @@ export async function getTeamMovement(movementSpecId: number) {
   return tablesWithRounds;
 }
 
+export type TeamMovement = {
+  id: number;
+  movementId: number;
+  tableNumber: number;
+  rounds: TeamMovementRoundSpec[];
+};
+
 async function getIndividualMovementTableSpecsForMovementSpecId(
   movementSpecId: number,
-) {
+): Promise<IndividualMovementTableSpec[]> {
   const db = await getDb();
   return db
     .select()
@@ -70,7 +103,7 @@ async function getIndividualMovementTableSpecsForMovementSpecId(
 
 async function getIndividualMovementRoundSpecsForMovementSpecTableId(
   movementTableSpecId: number,
-) {
+): Promise<IndividualMovementRoundSpec[]> {
   const db = await getDb();
   return db
     .select()
@@ -80,7 +113,7 @@ async function getIndividualMovementRoundSpecsForMovementSpecTableId(
 
 async function getPairMovementTableSpecsForMovementSpecId(
   movementSpecId: number,
-) {
+): Promise<PairMovementTableSpec[]> {
   const db = await getDb();
   return db
     .select()
@@ -90,7 +123,7 @@ async function getPairMovementTableSpecsForMovementSpecId(
 
 async function getPairMovementRoundSpecsForMovementSpecTableId(
   movementTableSpecId: number,
-) {
+): Promise<PairMovementRoundSpec[]> {
   const db = await getDb();
   return db
     .select()
@@ -100,7 +133,7 @@ async function getPairMovementRoundSpecsForMovementSpecTableId(
 
 async function getTeamMovementTableSpecsForMovementSpecId(
   movementSpecId: number,
-) {
+): Promise<TeamMovementTableSpec[]> {
   const db = await getDb();
   return db
     .select()
@@ -110,7 +143,7 @@ async function getTeamMovementTableSpecsForMovementSpecId(
 
 async function getTeamMovementRoundSpecsForMovementSpecTableId(
   movementTableSpecId: number,
-) {
+): Promise<TeamMovementRoundSpec[]> {
   const db = await getDb();
   return db
     .select()

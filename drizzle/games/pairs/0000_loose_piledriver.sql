@@ -1,9 +1,9 @@
 CREATE TABLE `boardplays` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`round_number` integer,
 	`table_number` integer,
 	`board_number` integer,
-	`status` text
+	`status` text,
+	PRIMARY KEY(`round_number`, `table_number`, `board_number`)
 );
 --> statement-breakpoint
 CREATE TABLE `metadata` (
@@ -19,8 +19,8 @@ CREATE TABLE `movements` (
 	`table_number` integer,
 	`ns` text,
 	`ew` text,
-	`start_board` integer,
-	`end_board` integer,
+	`board_start` integer,
+	`board_end` integer,
 	PRIMARY KEY(`round_number`, `table_number`)
 );
 --> statement-breakpoint
@@ -46,9 +46,10 @@ CREATE TABLE `players` (
 );
 --> statement-breakpoint
 CREATE TABLE `results` (
-	`board_play_id` integer PRIMARY KEY NOT NULL,
+	`round_number` integer,
+	`table_number` integer,
 	`result` text,
-	FOREIGN KEY (`board_play_id`) REFERENCES `boardplays`(`id`) ON UPDATE no action ON DELETE no action
+	PRIMARY KEY(`round_number`, `table_number`)
 );
 --> statement-breakpoint
 CREATE TABLE `startingpositions` (

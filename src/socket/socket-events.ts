@@ -6,6 +6,7 @@ export const SocketEvents = {
   // Client initiated - Game specific
   JOIN_GAME: "game:join",
   SELECT_SEAT: "game:selectSeat",
+  SELECT_MOVEMENT: "game:selectMovement",
   LEAVE_GAME: "game:leave",
 
   // Server initiated - Global

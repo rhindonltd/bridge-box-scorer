@@ -14,8 +14,8 @@ export const movements = sqliteTable(
     s: text("s"),
     e: text("e"),
     w: text("w"),
-    startBoard: integer("start_board"),
-    endBoard: integer("end_board"),
+    boardStart: integer("board_start"),
+    boardEnd: integer("board_end"),
   },
   (table) => ({
     pk: primaryKey({

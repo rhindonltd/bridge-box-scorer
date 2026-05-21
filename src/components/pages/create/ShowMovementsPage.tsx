@@ -8,7 +8,9 @@ import {
   PairMovementSpec,
   TeamMovementSpec,
 } from "@/db/movements/schema";
-import { MovementCard } from "./MovementCard";
+import { MovementCard } from "@/components/pages/create/MovementCard";
+import { getSocket } from "@/lib/socket";
+import { SocketEvents } from "@/socket/socket-events";
 
 export function ShowMovementsPage() {
   const { gameSelection } = useGame();
@@ -54,18 +56,41 @@ export function ShowMovementsPage() {
     return <div>Failed to load movements.</div>;
   }
 
-  const allMovements = [
-    ...(individualMovements ?? []),
-    ...(pairMovements ?? []),
-    ...(teamMovements ?? []),
-  ];
+  function onMovementSelected(id: number, type: string) {
+    if (!gameSelection) {
+      return;
+    }
+
+    console.log("Movement selected: " + id);
+
+    getSocket().emit(SocketEvents.SELECT_MOVEMENT, {
+      gameId: gameSelection.gameId,
+      type,
+      id,
+    });
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {allMovements.map((movement) => (
+      {(individualMovements ?? []).map((movement) => (
         <MovementCard
           key={`${movement.type}-${movement.id}`}
           movement={movement}
+          onSelected={(id) => onMovementSelected(id, "INDIVIDUAL")}
+        />
+      ))}
+      {(pairMovements ?? []).map((movement) => (
+        <MovementCard
+          key={`${movement.type}-${movement.id}`}
+          movement={movement}
+          onSelected={(id) => onMovementSelected(id, "PAIRS")}
+        />
+      ))}
+      {(teamMovements ?? []).map((movement) => (
+        <MovementCard
+          key={`${movement.type}-${movement.id}`}
+          movement={movement}
+          onSelected={(id) => onMovementSelected(id, "TEAMS")}
         />
       ))}
     </div>
