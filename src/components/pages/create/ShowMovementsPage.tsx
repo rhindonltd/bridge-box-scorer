@@ -2,17 +2,43 @@
 
 import { useGame } from "@/context/GameContext";
 import useSWR from "swr";
-import { PairMovement } from "../../../db/games/pairs/tables/movements";
 import { fetcher } from "@/lib/fetcher";
-import { ShowMovements } from "@/components/create/ShowMovements";
+import {
+  IndividualMovementSpec,
+  PairMovementSpec,
+  TeamMovementSpec,
+} from "@/db/movements/schema";
+import { MovementCard } from "./MovementCard";
 
 export function ShowMovementsPage() {
   const { gameSelection } = useGame();
 
   const tables = gameSelection?.tables;
 
-  const { data, error, isLoading } = useSWR<PairMovement[], Error>(
+  const {
+    data: individualMovements,
+    error: individualError,
+    isLoading: individualLoading,
+  } = useSWR<IndividualMovementSpec[], Error>(
+    tables ? `/api/movements/individual/${tables}` : null,
+    fetcher,
+  );
+
+  const {
+    data: pairMovements,
+    error: pairError,
+    isLoading: pairLoading,
+  } = useSWR<PairMovementSpec[], Error>(
     tables ? `/api/movements/pairs/${tables}` : null,
+    fetcher,
+  );
+
+  const {
+    data: teamMovements,
+    error: teamError,
+    isLoading: teamLoading,
+  } = useSWR<TeamMovementSpec[], Error>(
+    tables ? `/api/movements/teams/${tables}` : null,
     fetcher,
   );
 
@@ -20,13 +46,28 @@ export function ShowMovementsPage() {
     return null;
   }
 
-  if (isLoading) {
+  if (individualLoading || pairLoading || teamLoading) {
     return <div>Loading movements...</div>;
   }
 
-  if (error) {
+  if (individualError || pairError || teamError) {
     return <div>Failed to load movements.</div>;
   }
 
-  return <ShowMovements movements={data ?? []} />;
+  const allMovements = [
+    ...(individualMovements ?? []),
+    ...(pairMovements ?? []),
+    ...(teamMovements ?? []),
+  ];
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {allMovements.map((movement) => (
+        <MovementCard
+          key={`${movement.type}-${movement.id}`}
+          movement={movement}
+        />
+      ))}
+    </div>
+  );
 }

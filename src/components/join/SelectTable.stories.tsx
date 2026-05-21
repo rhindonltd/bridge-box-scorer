@@ -8,9 +8,6 @@ const meta: Meta<typeof SelectTable> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
-  argTypes: {
-    selectTable: { action: "table selected" },
-  },
 };
 
 export default meta;
@@ -20,18 +17,18 @@ type Story = StoryObj<typeof SelectTable>;
 export const Default: Story = {
   args: {
     tables: 8,
-    assigned: [
+    assignedPairs: [
       {
-        table: 4,
-        direction: "NS",
+        tableNumber: 4,
+        pairDirection: "NS",
       },
       {
-        table: 6,
-        direction: "NS",
+        tableNumber: 6,
+        pairDirection: "NS",
       },
       {
-        table: 6,
-        direction: "EW",
+        tableNumber: 6,
+        pairDirection: "EW",
       },
     ],
   },
@@ -40,13 +37,13 @@ export const Default: Story = {
 export const FewTables: Story = {
   args: {
     tables: 3,
-    assigned: [],
+    assignedPairs: [],
   },
 };
 
 export const ManyTables: Story = {
   args: {
     tables: 16,
-    assigned: [],
+    assignedPairs: [],
   },
 };

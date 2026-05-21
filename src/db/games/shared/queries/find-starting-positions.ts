@@ -2,7 +2,8 @@
 
 import { getDb } from "@/db/games";
 import { players } from "@/db/games/shared/tables/players";
-import { startingPositions } from "@/db/games/shared/tables/starting-positions";
+import { startingpositions } from "@/db/games/shared/tables/starting-positions";
+import { Direction } from "@/model/common";
 import { eq } from "drizzle-orm";
 
 export async function findStartingPositions(
@@ -12,8 +13,8 @@ export async function findStartingPositions(
 
   return db
     .select({
-      tableNumber: startingPositions.tableNumber,
-      direction: startingPositions.direction,
+      tableNumber: startingpositions.tableNumber,
+      direction: startingpositions.direction,
       player: {
         id: players.id,
         firstName: players.firstName,
@@ -21,15 +22,14 @@ export async function findStartingPositions(
         nationalId: players.nationalId,
       },
     })
-    .from(startingPositions)
-    .innerJoin(players, eq(startingPositions.player, players.id));
+    .from(startingpositions)
+    .innerJoin(players, eq(startingpositions.player, players.id));
 }
 
 export type StartingPositionWithPlayer = {
   tableNumber: number;
-  direction: string;
+  direction: Direction;
   player: {
-    id: number;
     firstName: string;
     lastName: string;
     nationalId: string | null;

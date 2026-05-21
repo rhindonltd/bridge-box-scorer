@@ -19,7 +19,6 @@ export const Default: Story = {
   args: {
     label: "N",
     player: {
-      id: 1,
       firstName: "Peter",
       lastName: "Collier",
       nationalId: "123456",

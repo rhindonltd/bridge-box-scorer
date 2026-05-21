@@ -19,23 +19,20 @@ type Story = StoryObj<typeof MovementDetailsPage>;
 
 export const Default: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
   args: {
     movementName: "9-table Switch Mitchell",
@@ -50,23 +47,20 @@ export const Default: Story = {
 
 export const WithSection: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "Section A",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "Section A",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
   args: {
     movementName: "9-table Switch Mitchell",

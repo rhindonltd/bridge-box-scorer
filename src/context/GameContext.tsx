@@ -1,41 +1,76 @@
 "use client";
 
 import { BridgeGame } from "@/db/game-index/schema";
-import { Assignment } from "@/model/participants";
-import { createContext, useContext, useState, ReactNode } from "react";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+
+import { getSocket } from "@/lib/socket";
+import { SocketEvents } from "@/socket/socket-events";
 
 export type GameSelection = BridgeGame | null;
-
-export type AssignmentSelection = Assignment | null;
 
 interface ContextType {
   gameSelection: GameSelection;
   selectGame: (game: BridgeGame) => void;
   clearGame: () => void;
-
-  assignmentSelection: AssignmentSelection;
-  selectAssignment: (assignment: Assignment) => void;
-  clearAssignment: () => void;
 }
 
 export const GameContext = createContext<ContextType | undefined>(undefined);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [gameSelection, setGameSelection] = useState<GameSelection>(null);
-  const [assignmentSelection, setAssignmentSelection] =
-    useState<AssignmentSelection>(null);
+
+  useEffect(() => {
+    const socket = getSocket();
+
+    const gameId = gameSelection?.gameId;
+
+    if (!gameId) return;
+
+    handleReconnect();
+
+    if (!gameId) return;
+
+    function handleReconnect() {
+      socket.emit(
+        SocketEvents.JOIN_GAME,
+        { gameId },
+        (response: { success: boolean; error?: string }) => {
+          if (!response.success) {
+            console.error(response.error);
+          }
+        },
+      );
+    }
+
+    socket.on(SocketEvents.CONNECT, handleReconnect);
+
+    return () => {
+      socket.emit(
+        SocketEvents.LEAVE_GAME,
+        { gameId },
+        (response: { success: boolean; error?: string }) => {
+          if (!response.success) {
+            console.error(response.error);
+          }
+        },
+      );
+
+      socket.off(SocketEvents.CONNECT, handleReconnect);
+    };
+  }, [gameSelection]);
 
   const selectGame = (game: BridgeGame) => {
     setGameSelection(game);
   };
 
-  const selectAssignment = (assignment: Assignment) => {
-    setAssignmentSelection(assignment);
-  };
-
   const clearGame = () => setGameSelection(null);
-
-  const clearAssignment = () => setAssignmentSelection(null);
 
   return (
     <GameContext.Provider
@@ -43,9 +78,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         gameSelection,
         selectGame,
         clearGame,
-        assignmentSelection,
-        selectAssignment,
-        clearAssignment,
       }}
     >
       {children}
@@ -55,6 +87,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
 export function useGame() {
   const ctx = useContext(GameContext);
-  if (!ctx) throw new Error("useGame must be used within GameProvider");
+
+  if (!ctx) {
+    throw new Error("useGame must be used within GameProvider");
+  }
+
   return ctx;
 }

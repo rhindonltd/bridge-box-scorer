@@ -22,38 +22,19 @@ type Story = StoryObj<typeof SelectTablePage>;
 
 export const Default: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
-  args: {
-    assigned: [
-      {
-        table: 4,
-        direction: "NS",
-      },
-      {
-        table: 6,
-        direction: "NS",
-      },
-      {
-        table: 6,
-        direction: "EW",
-      },
-    ],
-  },
 };

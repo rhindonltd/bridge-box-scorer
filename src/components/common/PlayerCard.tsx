@@ -3,7 +3,7 @@ import React from "react";
 
 interface Props {
   label: string;
-  player: Player | null;
+  player: Omit<Player, "id"> | null;
 }
 
 export default function PlayerCard({ label, player }: Props) {

@@ -7,6 +7,7 @@ import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
+import { SocketEvents } from "@/socket/socket-events";
 
 export default function SelectGamePage() {
   const { data } = useSWR<BridgeGame[], Error>("/api/games/joinable", fetcher);
@@ -22,12 +23,12 @@ export default function SelectGamePage() {
       mutate("/api/games/joinable", games, false);
     }
 
-    getSocket().on("connect", handleReconnect);
-    getSocket().on("joinable-games", handleJoinableGames);
+    getSocket().on(SocketEvents.CONNECT, handleReconnect);
+    getSocket().on(SocketEvents.JOINABLE_GAMES, handleJoinableGames);
 
     return () => {
-      getSocket().off("connect", handleReconnect);
-      getSocket().off("joinable-games", handleJoinableGames);
+      getSocket().off(SocketEvents.CONNECT, handleReconnect);
+      getSocket().off(SocketEvents.JOINABLE_GAMES, handleJoinableGames);
     };
   }, [mutate]);
 

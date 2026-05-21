@@ -1,6 +1,6 @@
 import next from "next";
 import { createServer } from "http";
-import { startSocketServer } from "@/server/websocket"; // ensures DB is initialized
+import { startSocketServer } from "@/socket/websocket"; // ensures DB is initialized
 
 const port = 3000;
 const dev = false;
@@ -14,7 +14,7 @@ const handle = app.getRequestHandler();
     handle(req, res);
   });
 
-  const io = startSocketServer(server);
+  startSocketServer(server);
 
   server.listen(port, () => {
     console.log(

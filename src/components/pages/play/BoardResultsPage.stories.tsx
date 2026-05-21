@@ -21,23 +21,20 @@ type Story = StoryObj<typeof BoardResultsPage>;
 
 export const IndividualXIMP: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
   args: {
     board: 5,
@@ -48,23 +45,20 @@ export const IndividualXIMP: Story = {
 
 export const IndividualMP: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
   args: {
     board: 5,
@@ -75,23 +69,20 @@ export const IndividualMP: Story = {
 
 export const PairXIMP: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
   args: {
     board: 5,
@@ -102,23 +93,20 @@ export const PairXIMP: Story = {
 
 export const PairMP: Story = {
   decorators: [
-    withGame(
-      {
-        id: 1,
-        eventName: "Monday AM Pairs",
-        director: null,
-        eventType: null,
-        gameId: crypto.randomUUID(),
-        sessionName: "",
-        sectionName: "",
-        eventDate: new Date().toISOString(),
-        status: "CREATED",
-        tables: 10,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      null,
-    ),
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      eventType: null,
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
   ],
   args: {
     board: 5,

@@ -6,7 +6,9 @@ import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
+
 import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
+import { SocketEvents } from "@/socket/socket-events";
 
 export function ShowTablesPage() {
   const { gameSelection } = useGame();
@@ -19,33 +21,27 @@ export function ShowTablesPage() {
     fetcher,
   );
 
+  if (!gameSelection) {
+    return null;
+  }
+
   useEffect(() => {
     if (!gameId) return;
 
+    const socket = getSocket();
+
     const key = `/api/games/${gameId}/starting-positions`;
 
-    function handleReconnect() {
-      mutate(key);
+    function handleStartingPositions(payload: {
+      startingPositions: StartingPositionWithPlayer[];
+    }) {
+      mutate(key, payload.startingPositions, false);
     }
 
-    function handleStartingPositions(
-      startingPositions: StartingPositionWithPlayer[],
-    ) {
-      mutate(key, startingPositions, false);
-    }
-
-    getSocket().on("connect", handleReconnect);
-    getSocket().on(
-      `game:${gameId}:starting-positions`,
-      handleStartingPositions,
-    );
+    socket.on(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
 
     return () => {
-      getSocket().off("connect", handleReconnect);
-      getSocket().off(
-        `game:${gameId}:starting-positions`,
-        handleStartingPositions,
-      );
+      socket.off(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
     };
   }, [gameId, mutate]);
 

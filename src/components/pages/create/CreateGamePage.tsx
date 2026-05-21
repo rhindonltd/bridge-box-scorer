@@ -20,7 +20,7 @@ export function CreateGamePage() {
         </div>
       </div>
 
-      {gameSelection === null ? <CreateGameFormPage /> : <ShowMovementsPage />}
+      {gameSelection === null ? <CreateGameFormPage /> : <ShowTablesPage />}
     </div>
   );
 }
