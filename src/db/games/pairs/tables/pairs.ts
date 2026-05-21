@@ -7,4 +7,4 @@ export const pairs = sqliteTable("pairs", {
   player2: integer("player2").references(() => players.id),
 });
 
-export type Pairs = typeof pairs.$inferSelect;
+export type Pair = typeof pairs.$inferSelect;

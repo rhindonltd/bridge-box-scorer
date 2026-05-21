@@ -40,11 +40,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "boardplays_round_number_table_number_board_number_pk": {
-          "columns": [
-            "round_number",
-            "table_number",
-            "board_number"
-          ],
+          "columns": ["round_number", "table_number", "board_number"],
           "name": "boardplays_round_number_table_number_board_number_pk"
         }
       },
@@ -146,10 +142,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "movements_round_number_table_number_pk": {
-          "columns": [
-            "round_number",
-            "table_number"
-          ],
+          "columns": ["round_number", "table_number"],
           "name": "movements_round_number_table_number_pk"
         }
       },
@@ -180,12 +173,8 @@
           "name": "playermovementmap_pair_pairs_id_fk",
           "tableFrom": "playermovementmap",
           "tableTo": "pairs",
-          "columnsFrom": [
-            "pair"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["pair"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -225,12 +214,8 @@
           "name": "pairs_player1_players_id_fk",
           "tableFrom": "pairs",
           "tableTo": "players",
-          "columnsFrom": [
-            "player1"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player1"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -238,12 +223,8 @@
           "name": "pairs_player2_players_id_fk",
           "tableFrom": "pairs",
           "tableTo": "players",
-          "columnsFrom": [
-            "player2"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player2"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -319,10 +300,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "results_round_number_table_number_pk": {
-          "columns": [
-            "round_number",
-            "table_number"
-          ],
+          "columns": ["round_number", "table_number"],
           "name": "results_round_number_table_number_pk"
         }
       },
@@ -360,22 +338,15 @@
           "name": "startingpositions_player_players_id_fk",
           "tableFrom": "startingpositions",
           "tableTo": "players",
-          "columnsFrom": [
-            "player"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "startingpositions_table_number_direction_pk": {
-          "columns": [
-            "table_number",
-            "direction"
-          ],
+          "columns": ["table_number", "direction"],
           "name": "startingpositions_table_number_direction_pk"
         }
       },

@@ -6,4 +6,4 @@ export const pairMovementMap = sqliteTable("playermovementmap", {
   pair: integer("pair").references(() => pairs.id),
 });
 
-export type PairMovementMap = typeof pairMovementMap.$inferSelect;
+export type PairMovementMapEntry = typeof pairMovementMap.$inferSelect;

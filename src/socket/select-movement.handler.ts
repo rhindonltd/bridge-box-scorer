@@ -13,6 +13,10 @@ import {
 import { createPairMovement } from "../db/games/pairs/actions/create-movement";
 import { createIndividualMovement } from "../db/games/individual/actions/create-movement";
 import { createBoardPlay } from "../db/games/shared/actions/create-board-play";
+import { findPlayerForStartingPosition } from "../db/games/shared/queries/find-player-for-starting-position";
+import { createIndividualPlayerMovementMapEntry } from "../db/games/individual/actions/create-player-movement-map-entry";
+import { findPairForPlayerId } from "../db/games/pairs/queries/find-pair-for-player-id";
+import { createPairMovementMapEntry } from "../db/games/pairs/actions/create-pair-movement-map-entry";
 
 /**
  * Expand board ranges into individual board plays
@@ -80,6 +84,30 @@ async function handleIndividualMovement(
         boardStart: r.boardStart,
         boardEnd: r.boardEnd,
       });
+
+      if (r.roundNumber === 1) {
+        const seats = [
+          { position: "N", movementId: r.n },
+          { position: "S", movementId: r.s },
+          { position: "E", movementId: r.e },
+          { position: "W", movementId: r.w },
+        ] as const;
+
+        for (const { position, movementId } of seats) {
+          const player = await findPlayerForStartingPosition(
+            gameId,
+            m.tableNumber,
+            position,
+          );
+
+          if (player) {
+            await createIndividualPlayerMovementMapEntry(gameId, {
+              id: movementId,
+              player,
+            });
+          }
+        }
+      }
     }
   }
 
@@ -112,6 +140,42 @@ async function handlePairLikeMovement(
         boardStart: r.boardStart,
         boardEnd: r.boardEnd,
       });
+
+      if (r.roundNumber === 1) {
+        const nPlayer = await findPlayerForStartingPosition(
+          gameId,
+          m.tableNumber,
+          "N",
+        );
+
+        if (nPlayer) {
+          const nsPair = await findPairForPlayerId(gameId, nPlayer);
+
+          if (nsPair) {
+            await createPairMovementMapEntry(gameId, {
+              id: r.ns,
+              pair: nsPair,
+            });
+          }
+        }
+
+        const ePlayer = await findPlayerForStartingPosition(
+          gameId,
+          m.tableNumber,
+          "E",
+        );
+
+        if (ePlayer) {
+          const ewPair = await findPairForPlayerId(gameId, ePlayer);
+
+          if (ewPair) {
+            await createPairMovementMapEntry(gameId, {
+              id: r.ew,
+              pair: ewPair,
+            });
+          }
+        }
+      }
     }
   }
 
