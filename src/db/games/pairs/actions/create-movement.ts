@@ -1,6 +1,6 @@
 "use server";
 
-import { getDb } from "@/db/games";
+import { getDb } from "@/db/games/pairs";
 import { movements } from "@/db/games/pairs/schema";
 import { PairMovement } from "@/db/games/pairs/tables/movements";
 

@@ -1,5 +1,5 @@
 import CardTable from "@/components/common/CardTable";
-import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions-with-player";
+import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-starting-positions";
 import { Player } from "@/db/games/shared/tables/players";
 import React from "react";
 
@@ -17,7 +17,7 @@ interface Table {
 
 interface Props {
   tables: number;
-  startingPositions: StartingPositionWithPlayer[];
+  startingPositions: PlayerStartingPosition[];
 }
 
 export default function ShowTables({ tables, startingPositions }: Props) {

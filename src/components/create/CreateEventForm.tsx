@@ -5,14 +5,12 @@ import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import Button from "@/components/common/Button";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
-
-const EventTypes = ["Teams/Pairs", "Individual"] as const;
-type EventType = (typeof EventTypes)[number];
+import { GameType } from "@/db/games/types/game-type";
 
 export type EventDetails = {
   eventName: string;
   director: string;
-  eventType: EventType;
+  eventType: GameType;
   sessions: number;
 };
 
@@ -23,7 +21,7 @@ type Props = {
 export default function CreateEventForm({ onNext }: Props) {
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
-  const [eventType, setEventType] = useState<EventType>("Teams/Pairs");
+  const [eventType, setEventType] = useState<GameType>("PAIRS");
   const [sessions, setSessions] = useState(1);
 
   function handleCreate() {
@@ -61,7 +59,10 @@ export default function CreateEventForm({ onNext }: Props) {
           <SelectField
             label="Event Type"
             value={eventType}
-            options={EventTypes}
+            options={[
+              { label: "Pairs/Teams", value: "PAIRS" },
+              { label: "Individual", value: "INDIVIDUAL" },
+            ]}
             onSelect={setEventType}
           />
 

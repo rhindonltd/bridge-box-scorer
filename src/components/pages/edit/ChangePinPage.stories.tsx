@@ -26,7 +26,7 @@ export const Default: Story = {
       id: 1,
       eventName: "Monday AM Pairs",
       director: null,
-      eventType: null,
+      gameType: "PAIRS",
       gameId: crypto.randomUUID(),
       sessionName: "",
       sectionName: "",

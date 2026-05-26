@@ -1,6 +1,6 @@
 "use server";
 
-import { getDb } from "@/db/games";
+import { getDb } from "@/db/games/pairs";
 import {
   PairMovementMapEntry,
   pairMovementMap,

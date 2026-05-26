@@ -17,11 +17,13 @@ import { findPlayerForStartingPosition } from "../db/games/shared/queries/find-p
 import { createIndividualPlayerMovementMapEntry } from "../db/games/individual/actions/create-player-movement-map-entry";
 import { findPairForPlayerId } from "../db/games/pairs/queries/find-pair-for-player-id";
 import { createPairMovementMapEntry } from "../db/games/pairs/actions/create-pair-movement-map-entry";
+import { GameType } from "@/db/games/types/game-type";
 
 /**
  * Expand board ranges into individual board plays
  */
 async function createBoardPlaysFromRounds(
+  gameType: GameType,
   gameId: string,
   rounds: {
     roundNumber: number;
@@ -36,7 +38,7 @@ async function createBoardPlaysFromRounds(
       boardNumber <= r.boardEnd;
       boardNumber++
     ) {
-      await createBoardPlay(gameId, {
+      await createBoardPlay(gameType, gameId, {
         roundNumber: r.roundNumber,
         tableNumber: r.tableNumber,
         boardNumber,
@@ -95,6 +97,7 @@ async function handleIndividualMovement(
 
         for (const { position, movementId } of seats) {
           const player = await findPlayerForStartingPosition(
+            "INDIVIDUAL",
             gameId,
             m.tableNumber,
             position,
@@ -143,6 +146,7 @@ async function handlePairLikeMovement(
 
       if (r.roundNumber === 1) {
         const nPlayer = await findPlayerForStartingPosition(
+          "PAIRS",
           gameId,
           m.tableNumber,
           "N",
@@ -160,6 +164,7 @@ async function handlePairLikeMovement(
         }
 
         const ePlayer = await findPlayerForStartingPosition(
+          "PAIRS",
           gameId,
           m.tableNumber,
           "E",
@@ -206,15 +211,16 @@ export function registerSelectedMovementHandler(socket: Socket, io: Server) {
         if (type === "INDIVIDUAL") {
           const movement = await getIndividualMovement(id);
           rounds = await handleIndividualMovement(movement, gameId);
+          await createBoardPlaysFromRounds("INDIVIDUAL", gameId, rounds);
         } else if (type === "PAIRS") {
           const movement = await getPairMovement(id);
           rounds = await handlePairLikeMovement(movement, gameId);
+          await createBoardPlaysFromRounds("PAIRS", gameId, rounds);
         } else {
           const movement = await getTeamMovement(id);
           rounds = await handlePairLikeMovement(movement, gameId);
+          await createBoardPlaysFromRounds("PAIRS", gameId, rounds);
         }
-
-        await createBoardPlaysFromRounds(gameId, rounds);
 
         cb?.({ success: true });
       } catch (err) {

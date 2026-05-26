@@ -1,28 +1,21 @@
-import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions-with-player";
+import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-starting-positions";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
 
-interface AssignedPairs {
-  tableNumber: number;
-  pairDirection: PairDirection;
-}
-
 interface Props {
   tables: number;
-  setStartingPositions: (
-    startingPositionWithPlayer: StartingPositionWithPlayer[],
-  ) => void;
-  assignedPairs: AssignedPairs[];
+  setStartingPosition: (pairStartingPosition: PairStartingPosition) => void;
+  startingPositions: PairStartingPosition[];
 }
 
-export default function SelectTable({
+export default function SelectPairsTable({
   tables,
-  setStartingPositions,
-  assignedPairs,
+  setStartingPosition,
+  startingPositions,
 }: Props) {
   const isTaken = (table: number, direction: PairDirection) => {
-    return assignedPairs.some(
-      (a) => a.tableNumber === table && a.pairDirection === direction,
+    return startingPositions.some(
+      (a) => a.tableNumber === table && a.direction === direction,
     );
   };
 
@@ -62,26 +55,22 @@ export default function SelectTable({
                     <button
                       key={direction}
                       onClick={() => {
-                        setStartingPositions([
-                          {
-                            tableNumber: table,
-                            direction: direction == "NS" ? "N" : "E",
-                            player: {
+                        setStartingPosition({
+                          tableNumber: table,
+                          direction: direction,
+                          pair: {
+                            player1: {
                               firstName: "Jacqui",
                               lastName: "Collier",
                               nationalId: "477484",
                             },
-                          },
-                          {
-                            tableNumber: table,
-                            direction: direction == "NS" ? "S" : "W",
-                            player: {
+                            player2: {
                               firstName: "David",
                               lastName: "Collier",
                               nationalId: "404476",
                             },
                           },
-                        ]);
+                        });
                       }}
                       disabled={taken}
                       className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200

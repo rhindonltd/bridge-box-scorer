@@ -1,16 +1,19 @@
 "use server";
 
-import { getDb } from "@/db/games";
+import { getDb } from "@/db/games/pairs";
 import { pairs } from "@/db/games/pairs/schema";
-import { Pair } from "@/db/games/pairs/tables/pairs";
+import { NewPair } from "@/db/games/pairs/tables/pairs";
 
-export async function createPair(gameId: string, pair: Omit<Pair, "id">) {
+export async function createPair(
+  gameId: string,
+  pair: NewPair,
+): Promise<number> {
   const db = await getDb(gameId);
 
-  await db
+  const inserted = await db
     .insert(pairs)
     .values(pair)
-    .onConflictDoNothing({
-      target: [pairs.player1, pairs.player2],
-    });
+    .returning({ id: pairs.id });
+
+  return inserted[0].id;
 }

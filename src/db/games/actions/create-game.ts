@@ -1,17 +1,18 @@
 "use server";
 
-import { getDb } from "@/db/games";
+import { getDb as individualDb } from "@/db/games/individual";
+import { getDb as pairsDb } from "@/db/games/pairs";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { EventType } from "@/components/create/SimpleCreateGameForm";
+import { GameType } from "@/db/games/types/game-type";
 
-export async function createGameDb(gameId: string, eventType: EventType) {
-  const db = await getDb(gameId);
-
-  if (eventType === "Individual") {
-    migrate(db, { migrationsFolder: "./drizzle/games/individual" });
+export async function createGameDb(gameId: string, gameType: GameType) {
+  if (gameType === "INDIVIDUAL") {
+    migrate(await individualDb(gameId), {
+      migrationsFolder: "./drizzle/games/individual",
+    });
   } else {
-    migrate(db, { migrationsFolder: "./drizzle/games/pairs" });
+    migrate(await pairsDb(gameId), {
+      migrationsFolder: "./drizzle/games/pairs",
+    });
   }
-
-  return db;
 }

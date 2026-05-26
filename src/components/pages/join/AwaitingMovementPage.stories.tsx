@@ -14,7 +14,7 @@ const meta: Meta<typeof AwaitingMovementPage> = {
       id: 1,
       eventName: "Monday AM Pairs",
       director: null,
-      eventType: null,
+      gameType: "PAIRS",
       gameId: crypto.randomUUID(),
       sessionName: "",
       sectionName: "",

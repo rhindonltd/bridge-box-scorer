@@ -1,11 +1,14 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { GameTypes } from "@/db/games/types/game-type";
 
 export const games = sqliteTable("games", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   eventName: text("event_name").notNull(),
   director: text("director"),
-  eventType: text("event_type"),
+  gameType: text("game_type", {
+    enum: GameTypes,
+  }).notNull(),
   gameId: text("game_id")
     .notNull()
     .default(sql`(lower(hex(randomblob(16))))`),

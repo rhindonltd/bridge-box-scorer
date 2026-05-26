@@ -4,6 +4,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import path from "path";
 import fs from "fs";
+import * as schema from "./schema";
 
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
@@ -19,7 +20,7 @@ export async function getDb() {
 
   const dbFile = path.join(dataDir, "game-index.db");
   const sqlite = new Database(dbFile);
-  dbInstance = drizzle(sqlite);
+  dbInstance = drizzle(sqlite, { schema });
 
   return dbInstance;
 }

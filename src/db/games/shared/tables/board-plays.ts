@@ -4,6 +4,7 @@ import {
   integer,
   primaryKey,
 } from "drizzle-orm/sqlite-core";
+import { BoardStatuses } from "../../types/board-status";
 
 export const boardPlays = sqliteTable(
   "boardplays",
@@ -11,7 +12,9 @@ export const boardPlays = sqliteTable(
     roundNumber: integer("round_number"),
     tableNumber: integer("table_number"),
     boardNumber: integer("board_number"),
-    status: text("status"), // "NOT_PLAYED", "PENDING_CONFIRMATION", "CONFIRMED", "OVERRIDDEN"
+    status: text("status", {
+      enum: BoardStatuses,
+    }),
   },
   (table) => ({
     pk: primaryKey({

@@ -1,100 +1,83 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi } from "vitest";
+
 import SelectField from "./SelectField";
-import { describe, expect, it, vi } from "vitest";
+
+type Option = {
+  label: string;
+  value: string;
+};
 
 describe("SelectField", () => {
-  it("renders label", () => {
+  const options: Option[] = [
+    { label: "Admin", value: "admin" },
+    { label: "User", value: "user" },
+  ];
+
+  it("renders label and options", () => {
     render(
       <SelectField
-        label="Choose option"
-        value="A"
-        options={["A", "B"]}
-        onSelect={vi.fn()}
-      />,
-    );
-
-    expect(screen.getByText("Choose option")).toBeInTheDocument();
-  });
-
-  it("renders all options", () => {
-    const options = ["A", "B", "C"];
-
-    render(
-      <SelectField
-        label="Options"
-        value="A"
+        label="Role"
+        value="admin"
         options={options}
         onSelect={vi.fn()}
       />,
     );
 
-    options.forEach((opt) => {
-      expect(screen.getByRole("option", { name: opt })).toBeInTheDocument();
-    });
+    expect(screen.getByText("Role")).toBeInTheDocument();
+
+    expect(screen.getByRole("option", { name: "Admin" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "User" })).toBeInTheDocument();
   });
 
-  it("sets the selected value", () => {
+  it("sets the correct selected value", () => {
     render(
       <SelectField
-        label="Options"
-        value="B"
-        options={["A", "B", "C"]}
+        label="Role"
+        value="user"
+        options={options}
         onSelect={vi.fn()}
       />,
     );
 
     const select = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(select.value).toBe("B");
+
+    expect(select.value).toBe("user");
   });
 
-  it("calls onSelect when value changes", async () => {
+  it("calls onSelect when a new option is chosen", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
 
     render(
       <SelectField
-        label="Options"
-        value="A"
-        options={["A", "B", "C"]}
+        label="Role"
+        value="admin"
+        options={options}
         onSelect={onSelect}
       />,
     );
 
     const select = screen.getByRole("combobox");
 
-    await user.selectOptions(select, "B");
+    await user.selectOptions(select, "user");
 
-    expect(onSelect).toHaveBeenCalledWith("B");
+    expect(onSelect).toHaveBeenCalledWith("user");
   });
 
-  it("works with number options", async () => {
-    const user = userEvent.setup();
-    const onSelect = vi.fn();
-
+  it("renders option values correctly (label vs value separation)", () => {
     render(
       <SelectField
-        label="Numbers"
-        value={1}
-        options={[1, 2, 3]}
-        onSelect={onSelect}
+        label="Role"
+        value="admin"
+        options={options}
+        onSelect={vi.fn()}
       />,
     );
 
-    const select = screen.getByRole("combobox");
+    const adminOption = screen.getByRole("option", { name: "Admin" });
 
-    await user.selectOptions(select, "2");
-
-    // ⚠️ value comes from DOM as string
-    expect(onSelect).toHaveBeenCalledWith("2");
-  });
-
-  it("renders without a value (uncontrolled initial)", () => {
-    render(
-      <SelectField label="Options" options={["A", "B"]} onSelect={vi.fn()} />,
-    );
-
-    const select = screen.getByRole("combobox");
-    expect(select).toBeInTheDocument();
+    expect(adminOption).toHaveValue("admin");
   });
 });

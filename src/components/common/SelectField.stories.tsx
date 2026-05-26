@@ -23,6 +23,9 @@ export const Default: Story = {
   args: {
     label: "Label",
     value: "Value 1",
-    options: ["Value 1", "Value 2", "Value 3"],
+    options: [
+      { label: "Admin", value: "admin" },
+      { label: "User", value: "user" },
+    ],
   },
 };

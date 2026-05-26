@@ -6,16 +6,7 @@ import SelectField from "@/components/common/SelectField";
 import Button from "@/components/common/Button";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
 import { NewBridgeGame } from "@/db/game-index/schema";
-
-const EventTypes = ["Teams/Pairs", "Individual"] as const;
-export type EventType = (typeof EventTypes)[number];
-
-export type GameDetails = {
-  eventName: string;
-  director: string;
-  eventType: EventType;
-  tables: number;
-};
+import { GameType } from "../../db/games/types/game-type";
 
 type Props = {
   onCreateGame: (game: NewBridgeGame) => void;
@@ -24,14 +15,14 @@ type Props = {
 export default function SimpleCreateGameForm({ onCreateGame }: Props) {
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
-  const [eventType, setEventType] = useState<EventType>("Teams/Pairs");
+  const [gameType, setGameType] = useState<GameType>("PAIRS");
   const [tables, setTables] = useState(1);
 
   async function handleCreate() {
     onCreateGame({
       eventName,
       director,
-      eventType,
+      gameType,
       sessionName: "",
       eventDate: new Date().toISOString(),
       status: "JOINABLE",
@@ -65,9 +56,12 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
 
           <SelectField
             label="Event Type"
-            value={eventType}
-            options={EventTypes}
-            onSelect={setEventType}
+            value={gameType}
+            options={[
+              { label: "Pairs/Teams", value: "PAIRS" },
+              { label: "Individual", value: "INDIVIDUAL" },
+            ]}
+            onSelect={setGameType}
           />
 
           <NumberStepperField
