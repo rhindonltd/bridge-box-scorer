@@ -38,7 +38,7 @@ export function registerCreatePairHandler(socket: Socket, io: Server) {
       await createStartingPosition("PAIRS", gameId, {
         tableNumber: pairStartingPosition.tableNumber,
         direction: pairStartingPosition.direction == "NS" ? "S" : "W",
-        player: player1,
+        player: player2,
       });
 
       io.to(Rooms.game(gameId)).emit(SocketEvents.STARTING_POSITIONS, {

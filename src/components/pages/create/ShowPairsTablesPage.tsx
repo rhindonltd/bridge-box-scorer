@@ -1,28 +1,57 @@
 "use client";
 
-import ShowTables from "@/components/tables/ShowTables";
+import ShowTables, { Table } from "@/components/tables/ShowTables";
 import { useGame } from "@/context/GameContext";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-starting-positions";
 import { SocketEvents } from "@/socket/socket-events";
+import Button from "@/components/common/Button";
+import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-starting-positions";
 
-export function ShowPairsTablesPage() {
+type Props = {
+  onShowMovementsPage: () => void;
+};
+
+export function ShowPairsTablesPage({ onShowMovementsPage }: Props) {
   const { gameSelection } = useGame();
   const { mutate } = useSWRConfig();
 
   const gameId = gameSelection?.gameId;
 
-  const { data } = useSWR<PlayerStartingPosition[], Error>(
+  const { data } = useSWR<PairStartingPosition[], Error>(
     gameId ? `/api/games/pairs/${gameId}/starting-positions` : null,
     fetcher,
   );
 
   if (!gameSelection) {
     return null;
+  }
+
+  function createTables(): Table[] {
+    return Array.from({ length: gameSelection!.tables }, (_, i) =>
+      createTable(i + 1),
+    );
+  }
+
+  function createTable(tableNumber: number): Table {
+    const pairsByDirection = Object.fromEntries(
+      (data ?? [])
+        .filter((x) => x.tableNumber === tableNumber)
+        .map((x) => [x.direction, x.pair]),
+    );
+
+    return {
+      tableNumber,
+      players: {
+        N: pairsByDirection.NS.player1 ?? null,
+        S: pairsByDirection.NS.player2 ?? null,
+        E: pairsByDirection.EW.player1 ?? null,
+        W: pairsByDirection.EW.player2 ?? null,
+      },
+    };
   }
 
   useEffect(() => {
@@ -33,7 +62,7 @@ export function ShowPairsTablesPage() {
     const key = `/api/games/pairs/${gameId}/starting-positions`;
 
     function handleStartingPositions(payload: {
-      startingPositions: PlayerStartingPosition[];
+      startingPositions: PairStartingPosition[];
     }) {
       mutate(key, payload.startingPositions, false);
     }
@@ -50,6 +79,9 @@ export function ShowPairsTablesPage() {
   }
 
   return (
-    <ShowTables tables={gameSelection.tables} startingPositions={data ?? []} />
+    <>
+      <ShowTables tables={createTables()} />
+      <Button value={"Select Movement"} onClick={onShowMovementsPage} />
+    </>
   );
 }

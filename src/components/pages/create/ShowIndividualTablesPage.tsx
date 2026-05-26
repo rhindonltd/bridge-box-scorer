@@ -1,6 +1,6 @@
 "use client";
 
-import ShowTables from "@/components/tables/ShowTables";
+import ShowTables, { Table } from "@/components/tables/ShowTables";
 import { useGame } from "@/context/GameContext";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
@@ -9,8 +9,13 @@ import useSWR, { useSWRConfig } from "swr";
 
 import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-starting-positions";
 import { SocketEvents } from "@/socket/socket-events";
+import Button from "@/components/common/Button";
 
-export function ShowIndividualTablesPage() {
+type Props = {
+  onShowMovementsPage: () => void;
+};
+
+export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
   const { gameSelection } = useGame();
   const { mutate } = useSWRConfig();
 
@@ -23,6 +28,30 @@ export function ShowIndividualTablesPage() {
 
   if (!gameSelection) {
     return null;
+  }
+
+  function createTables(): Table[] {
+    return Array.from({ length: gameSelection!.tables }, (_, i) =>
+      createTable(i + 1),
+    );
+  }
+
+  function createTable(tableNumber: number): Table {
+    const playersByDirection = Object.fromEntries(
+      (data ?? [])
+        .filter((x) => x.tableNumber === tableNumber)
+        .map((x) => [x.direction, x.player]),
+    );
+
+    return {
+      tableNumber,
+      players: {
+        N: playersByDirection.N ?? null,
+        S: playersByDirection.S ?? null,
+        E: playersByDirection.E ?? null,
+        W: playersByDirection.W ?? null,
+      },
+    };
   }
 
   useEffect(() => {
@@ -50,6 +79,9 @@ export function ShowIndividualTablesPage() {
   }
 
   return (
-    <ShowTables tables={gameSelection.tables} startingPositions={data ?? []} />
+    <>
+      <ShowTables tables={createTables()} />
+      <Button value={"Select Movement"} onClick={onShowMovementsPage} />
+    </>
   );
 }

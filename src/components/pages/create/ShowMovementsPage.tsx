@@ -11,88 +11,80 @@ import {
 import { MovementCard } from "@/components/pages/create/MovementCard";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
+import Button from "@/components/common/Button";
 
-export function ShowMovementsPage() {
+type Props = {
+  onShowTablesPage: () => void;
+};
+
+export function ShowMovementsPage({ onShowTablesPage }: Props) {
   const { gameSelection } = useGame();
-
-  const tables = gameSelection?.tables;
-
-  const {
-    data: individualMovements,
-    error: individualError,
-    isLoading: individualLoading,
-  } = useSWR<IndividualMovementSpec[], Error>(
-    tables ? `/api/movements/individual/${tables}` : null,
-    fetcher,
-  );
-
-  const {
-    data: pairMovements,
-    error: pairError,
-    isLoading: pairLoading,
-  } = useSWR<PairMovementSpec[], Error>(
-    tables ? `/api/movements/pairs/${tables}` : null,
-    fetcher,
-  );
-
-  const {
-    data: teamMovements,
-    error: teamError,
-    isLoading: teamLoading,
-  } = useSWR<TeamMovementSpec[], Error>(
-    tables ? `/api/movements/teams/${tables}` : null,
-    fetcher,
-  );
 
   if (!gameSelection) {
     return null;
   }
 
-  if (individualLoading || pairLoading || teamLoading) {
-    return <div>Loading movements...</div>;
-  }
+  const tables = gameSelection.tables;
+  const gameType = gameSelection.gameType;
 
-  if (individualError || pairError || teamError) {
-    return <div>Failed to load movements.</div>;
-  }
+  const shouldLoadIndividual = gameType === "INDIVIDUAL";
+  const shouldLoadPairs = gameType === "PAIRS";
+  const shouldLoadTeams = gameType === "PAIRS";
+
+  const { data: individualMovements } = useSWR<IndividualMovementSpec[]>(
+    shouldLoadIndividual ? `/api/movements/individual/${tables}` : null,
+    fetcher,
+  );
+
+  const { data: pairMovements } = useSWR<PairMovementSpec[]>(
+    shouldLoadPairs ? `/api/movements/pairs/${tables}` : null,
+    fetcher,
+  );
+
+  const { data: teamMovements } = useSWR<TeamMovementSpec[]>(
+    shouldLoadTeams ? `/api/movements/teams/${tables}` : null,
+    fetcher,
+  );
 
   function onMovementSelected(id: number, type: string) {
-    if (!gameSelection) {
-      return;
-    }
-
-    console.log("Movement selected: " + id);
-
     getSocket().emit(SocketEvents.SELECT_MOVEMENT, {
-      gameId: gameSelection.gameId,
+      gameId: gameSelection!.gameId,
       type,
       id,
     });
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {(individualMovements ?? []).map((movement) => (
-        <MovementCard
-          key={`${movement.type}-${movement.id}`}
-          movement={movement}
-          onSelected={(id) => onMovementSelected(id, "INDIVIDUAL")}
-        />
-      ))}
-      {(pairMovements ?? []).map((movement) => (
-        <MovementCard
-          key={`${movement.type}-${movement.id}`}
-          movement={movement}
-          onSelected={(id) => onMovementSelected(id, "PAIRS")}
-        />
-      ))}
-      {(teamMovements ?? []).map((movement) => (
-        <MovementCard
-          key={`${movement.type}-${movement.id}`}
-          movement={movement}
-          onSelected={(id) => onMovementSelected(id, "TEAMS")}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {shouldLoadIndividual &&
+          (individualMovements ?? []).map((movement) => (
+            <MovementCard
+              key={`${movement.type}-${movement.id}`}
+              movement={movement}
+              onSelected={(id) => onMovementSelected(id, "INDIVIDUAL")}
+            />
+          ))}
+
+        {shouldLoadPairs &&
+          (pairMovements ?? []).map((movement) => (
+            <MovementCard
+              key={`${movement.type}-${movement.id}`}
+              movement={movement}
+              onSelected={(id) => onMovementSelected(id, "PAIRS")}
+            />
+          ))}
+
+        {shouldLoadTeams &&
+          (teamMovements ?? []).map((movement) => (
+            <MovementCard
+              key={`${movement.type}-${movement.id}`}
+              movement={movement}
+              onSelected={(id) => onMovementSelected(id, "TEAMS")}
+            />
+          ))}
+      </div>
+      <Button value={"Show Tables"} onClick={onShowTablesPage} />
+    </>
   );
 }
