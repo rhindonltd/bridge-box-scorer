@@ -2,7 +2,7 @@ CREATE TABLE `games` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`event_name` text NOT NULL,
 	`director` text,
-	`event_type` text,
+	`game_type` text NOT NULL,
 	`game_id` text DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`session_name` text NOT NULL,
 	`section_name` text NOT NULL,

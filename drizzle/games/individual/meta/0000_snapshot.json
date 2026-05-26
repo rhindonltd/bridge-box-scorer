@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f7ed94d1-33ad-45e9-a1cf-a2c6cb7cbe55",
+  "id": "36710181-2256-4577-8574-27367905e17d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "boardplays": {
@@ -40,7 +40,11 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "boardplays_round_number_table_number_board_number_pk": {
-          "columns": ["round_number", "table_number", "board_number"],
+          "columns": [
+            "round_number",
+            "table_number",
+            "board_number"
+          ],
           "name": "boardplays_round_number_table_number_board_number_pk"
         }
       },
@@ -156,7 +160,10 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "movements_round_number_table_number_pk": {
-          "columns": ["round_number", "table_number"],
+          "columns": [
+            "round_number",
+            "table_number"
+          ],
           "name": "movements_round_number_table_number_pk"
         }
       },
@@ -187,8 +194,12 @@
           "name": "playermovementmap_player_players_id_fk",
           "tableFrom": "playermovementmap",
           "tableTo": "players",
-          "columnsFrom": ["player"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "player"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -264,7 +275,10 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "results_round_number_table_number_pk": {
-          "columns": ["round_number", "table_number"],
+          "columns": [
+            "round_number",
+            "table_number"
+          ],
           "name": "results_round_number_table_number_pk"
         }
       },
@@ -302,15 +316,22 @@
           "name": "startingpositions_player_players_id_fk",
           "tableFrom": "startingpositions",
           "tableTo": "players",
-          "columnsFrom": ["player"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "player"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "startingpositions_table_number_direction_pk": {
-          "columns": ["table_number", "direction"],
+          "columns": [
+            "table_number",
+            "direction"
+          ],
           "name": "startingpositions_table_number_direction_pk"
         }
       },

@@ -32,8 +32,8 @@ CREATE TABLE `playermovementmap` (
 --> statement-breakpoint
 CREATE TABLE `pairs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`player1` integer,
-	`player2` integer,
+	`player1` integer NOT NULL,
+	`player2` integer NOT NULL,
 	FOREIGN KEY (`player1`) REFERENCES `players`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`player2`) REFERENCES `players`(`id`) ON UPDATE no action ON DELETE no action
 );

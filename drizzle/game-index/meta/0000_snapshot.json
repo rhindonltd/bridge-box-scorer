@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a67305d7-9602-4d1a-92ac-9bbef1de242b",
+  "id": "4dc9d4d2-36c4-41af-807c-e320f3817a1d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "games": {
@@ -28,11 +28,11 @@
           "notNull": false,
           "autoincrement": false
         },
-        "event_type": {
-          "name": "event_type",
+        "game_type": {
+          "name": "game_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "game_id": {
