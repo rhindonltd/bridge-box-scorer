@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import SelectField from "@/components/common/SelectField";
+import SelectField, { SelectOption } from "@/components/common/SelectField";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
 import FormCardLayout from "@/components/layout/FormCardLayout";
 import { SectionInfo } from "@/components/common/SectionInfo";
@@ -20,11 +20,14 @@ export default function MovementOptionsPage({ tables, onSubmit }: Props) {
   const [missingPair, setMissingPair] = useState<string>("None");
   const [arrowSwitchedRounds, setArrowSwitchedRounds] = useState(0);
 
-  const generateMissingPairs = (tables: number): string[] => {
-    const result = ["None"];
+  const generateMissingPairs = (tables: number): SelectOption<string>[] => {
+    const result: SelectOption<string>[] = [{ label: "None", value: "None" }];
 
     for (let i = 1; i <= tables; i++) {
-      result.push(`${i}NS`, `${i}EW`);
+      result.push(
+        { label: `${i}NS`, value: `${i}NS` },
+        { label: `${i}EW`, value: `${i}EW` },
+      );
     }
 
     return result;

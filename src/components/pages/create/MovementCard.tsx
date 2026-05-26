@@ -6,15 +6,18 @@ import {
 
 type Props = {
   movement: IndividualMovementSpec | PairMovementSpec | TeamMovementSpec;
+  onSelected: (movementId: number) => void;
 };
 
-export function MovementCard({ movement }: Props) {
+export function MovementCard({ movement, onSelected }: Props) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div
+      className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+      onClick={() => onSelected(movement.id)}
+    >
       <h2 className="text-lg font-semibold text-gray-900">{movement.name}</h2>
 
       <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
-        {/*<Info label="Type" value={movement.type} />*/}
         <Info label="Rounds" value={movement.rounds} />
         <Info label="Boards Per Round" value={movement.boardsPerRound} />
         <Info label="Boards" value={movement.boards} />

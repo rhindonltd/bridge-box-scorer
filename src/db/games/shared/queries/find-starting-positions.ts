@@ -1,37 +1,20 @@
 "use server";
 
-import { getDb } from "@/db/games";
-import { players } from "@/db/games/shared/tables/players";
-import { startingpositions } from "@/db/games/shared/tables/starting-positions";
-import { Direction } from "@/model/common";
-import { eq } from "drizzle-orm";
+import { getDb as individualDb } from "@/db/games/individual";
+import { getDb as pairDb } from "@/db/games/pairs";
+import {
+  StartingPosition,
+  startingpositions,
+} from "@/db/games/shared/tables/starting-positions";
+import { GameType } from "@/db/games/types/game-type";
 
 export async function findStartingPositions(
+  gameType: GameType,
   gameId: string,
-): Promise<StartingPositionWithPlayer[]> {
-  const db = await getDb(gameId);
+): Promise<StartingPosition[]> {
+  const db = await (gameType == "INDIVIDUAL"
+    ? individualDb(gameId)
+    : pairDb(gameId));
 
-  return db
-    .select({
-      tableNumber: startingpositions.tableNumber,
-      direction: startingpositions.direction,
-      player: {
-        id: players.id,
-        firstName: players.firstName,
-        lastName: players.lastName,
-        nationalId: players.nationalId,
-      },
-    })
-    .from(startingpositions)
-    .innerJoin(players, eq(startingpositions.player, players.id));
+  return db.select().from(startingpositions);
 }
-
-export type StartingPositionWithPlayer = {
-  tableNumber: number;
-  direction: Direction;
-  player: {
-    firstName: string;
-    lastName: string;
-    nationalId: string | null;
-  };
-};

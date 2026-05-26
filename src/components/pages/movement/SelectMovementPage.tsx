@@ -85,7 +85,10 @@ export default function SelectMovementPage({ tables, onConfirm }: Props) {
           <SelectField
             label="Movement"
             value={movement?.name}
-            options={movements.map((m) => m.name)}
+            options={movements.map((m) => ({
+              label: m.name,
+              value: m.name,
+            }))}
             onSelect={(name) => {
               const selected = movements.find((m) => m.name === name) || null;
               setMovement(selected);

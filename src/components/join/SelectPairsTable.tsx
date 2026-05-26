@@ -1,28 +1,21 @@
-import { StartingPositionWithPlayer } from "@/db/games/shared/queries/find-starting-positions";
+import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-starting-positions";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
 
-interface AssignedPairs {
-  tableNumber: number;
-  pairDirection: PairDirection;
-}
-
 interface Props {
   tables: number;
-  setStartingPosition: (
-    startingPositionWithPlayer: StartingPositionWithPlayer,
-  ) => void;
-  assignedPairs: AssignedPairs[];
+  setStartingPosition: (pairStartingPosition: PairStartingPosition) => void;
+  startingPositions: PairStartingPosition[];
 }
 
-export default function SelectTable({
+export default function SelectPairsTable({
   tables,
   setStartingPosition,
-  assignedPairs,
+  startingPositions,
 }: Props) {
   const isTaken = (table: number, direction: PairDirection) => {
-    return assignedPairs.some(
-      (a) => a.tableNumber === table && a.pairDirection === direction,
+    return startingPositions.some(
+      (a) => a.tableNumber === table && a.direction === direction,
     );
   };
 
@@ -64,21 +57,18 @@ export default function SelectTable({
                       onClick={() => {
                         setStartingPosition({
                           tableNumber: table,
-                          direction: "N",
-                          player: {
-                            firstName: "Jacqui",
-                            lastName: "Collier",
-                            nationalId: "477484",
-                          },
-                        });
-
-                        setStartingPosition({
-                          tableNumber: table,
-                          direction: "S",
-                          player: {
-                            firstName: "David",
-                            lastName: "Collier",
-                            nationalId: "404476",
+                          direction: direction,
+                          pair: {
+                            player1: {
+                              firstName: "Jacqui",
+                              lastName: "Collier",
+                              nationalId: "477484",
+                            },
+                            player2: {
+                              firstName: "David",
+                              lastName: "Collier",
+                              nationalId: "404476",
+                            },
                           },
                         });
                       }}

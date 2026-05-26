@@ -1,11 +1,23 @@
-import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
+import {
+  sqliteTable,
+  integer,
+  text,
+  primaryKey,
+} from "drizzle-orm/sqlite-core";
 import { boardPlays } from "@/db/games/shared/tables/board-plays";
 
-export const results = sqliteTable("results", {
-  boardPlayId: integer("board_play_id")
-    .primaryKey()
-    .references(() => boardPlays.id),
-  result: text("result"),
-});
+export const results = sqliteTable(
+  "results",
+  {
+    roundNumber: integer("round_number"),
+    tableNumber: integer("table_number"),
+    result: text("result"),
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.roundNumber, table.tableNumber],
+    }),
+  }),
+);
 
 export type Result = typeof results.$inferSelect;

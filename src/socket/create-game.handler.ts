@@ -3,8 +3,8 @@ import { SocketEvents } from "./socket-events";
 import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
-import { EventType } from "@/components/create/SimpleCreateGameForm";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
+import { GameType } from "@/db/games/types/game-type";
 
 export function registerCreateGameHandler(socket: Socket, io: Server) {
   socket.on(
@@ -12,10 +12,7 @@ export function registerCreateGameHandler(socket: Socket, io: Server) {
     async (newBridgeGame: NewBridgeGame, cb) => {
       try {
         const bridgeGame: BridgeGame = await createBridgeGame(newBridgeGame);
-        await createGameDb(
-          bridgeGame.gameId,
-          bridgeGame.eventType as EventType,
-        );
+        await createGameDb(bridgeGame.gameId, bridgeGame.gameType as GameType);
 
         cb({ game: bridgeGame, success: true });
 

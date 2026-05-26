@@ -1,5 +1,5 @@
+import { findPairStartingPositions } from "@/db/games/pairs/queries/find-pair-starting-positions";
 import { NextResponse } from "next/server";
-import { findStartingPositions } from "@/db/games/shared/queries/find-starting-positions";
 
 export async function GET(
   _req: Request,
@@ -8,7 +8,7 @@ export async function GET(
   const gameId = (await params).gameId;
 
   try {
-    return NextResponse.json(await findStartingPositions(gameId));
+    return NextResponse.json(await findPairStartingPositions(gameId));
   } catch (error) {
     console.error(error);
     return NextResponse.json(
