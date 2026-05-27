@@ -1,8 +1,8 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import { ShowIndividualTablesPage } from "@/components/pages/create/ShowIndividualTablesPage";
-import { ShowPairsTablesPage } from "@/components/pages/create/ShowPairsTablesPage";
+import { ShowIndividualTablesPage } from "@/components/pages/create/individual/ShowIndividualTablesPage";
+import { ShowPairsTablesPage } from "@/components/pages/create/pairs/ShowPairsTablesPage";
 
 type Props = {
   onShowMovementsPage: () => void;

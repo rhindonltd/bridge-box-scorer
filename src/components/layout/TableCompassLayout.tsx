@@ -16,7 +16,7 @@ export default function TableCompassLayout({
   center,
 }: Props) {
   return (
-    <div className="flex flex-col items-center gap-5 w-full max-w-[360px]">
+    <div className="flex flex-col items-center gap-5 w-full max-w-[360px] mx-auto">
       {/* North */}
       {north}
 

@@ -26,10 +26,6 @@ export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
     fetcher,
   );
 
-  if (!gameSelection) {
-    return null;
-  }
-
   function createTables(): Table[] {
     return Array.from({ length: gameSelection!.tables }, (_, i) =>
       createTable(i + 1),

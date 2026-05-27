@@ -17,9 +17,3 @@ type Story = StoryObj<typeof SelectGamePage>;
 export const Default: Story = {
   args: {},
 };
-
-export const NoGames: Story = {
-  args: {
-    games: [],
-  },
-};

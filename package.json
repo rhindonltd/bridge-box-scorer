@@ -7,7 +7,7 @@
     "prebuild": "npx tsx src/scripts/migrate.ts",
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",
-    "lint": "eslint",
+    "lint": "eslint .",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

@@ -1,23 +1,28 @@
 "use client";
 
 import { SectionInfo } from "@/components/common/SectionInfo";
-import SelectIndividualTable from "@/components/join/SelectIndividualTable";
+import SelectPairsTable from "@/components/join/SelectPairsTable";
 import { useGame } from "@/context/GameContext";
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-starting-positions";
+import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-starting-positions";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
+import { Seat } from "@/model/participants";
 import { SocketEvents } from "@/socket/socket-events";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
-export function SelectIndividualTablePage() {
+interface Props {
+  onSeatSelected: (seat: Seat) => void;
+}
+
+export function SelectPairsTablePage({ onSeatSelected }: Props) {
   const { gameSelection } = useGame();
   const { mutate } = useSWRConfig();
 
   const gameId = gameSelection?.gameId;
 
-  const { data } = useSWR<PlayerStartingPosition[], Error>(
-    gameId ? `/api/games/individual/${gameId}/starting-positions` : null,
+  const { data } = useSWR<PairStartingPosition[], Error>(
+    gameId ? `/api/games/pairs/${gameId}/starting-positions` : null,
     fetcher,
   );
 
@@ -30,10 +35,10 @@ export function SelectIndividualTablePage() {
 
     const socket = getSocket();
 
-    const key = `/api/games/individual/${gameId}/starting-positions`;
+    const key = `/api/games/pairs/${gameId}/starting-positions`;
 
     function handleStartingPositions(payload: {
-      startingPositions: PlayerStartingPosition[];
+      startingPositions: PairStartingPosition[];
     }) {
       mutate(key, payload.startingPositions, false);
     }
@@ -45,22 +50,15 @@ export function SelectIndividualTablePage() {
     };
   }, [gameId, mutate]);
 
-  function setStartingPosition(playerStartingPosition: PlayerStartingPosition) {
-    getSocket().emit(SocketEvents.SELECT_SEAT, {
-      gameId,
-      playerStartingPosition,
-    });
-  }
-
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <div className="w-full">
         <SectionInfo />
       </div>
 
-      <SelectIndividualTable
+      <SelectPairsTable
         tables={gameSelection.tables}
-        setStartingPosition={setStartingPosition}
+        onSeatSelected={onSeatSelected}
         startingPositions={data ?? []}
       />
     </div>

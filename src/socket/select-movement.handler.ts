@@ -1,4 +1,4 @@
-import { Server, Socket } from "socket.io";
+import { Socket } from "socket.io";
 import { SocketEvents } from "./socket-events";
 
 import {
@@ -190,7 +190,7 @@ async function handlePairLikeMovement(
 /**
  * Socket handler
  */
-export function registerSelectedMovementHandler(socket: Socket, io: Server) {
+export function registerSelectedMovementHandler(socket: Socket) {
   socket.on(
     SocketEvents.SELECT_MOVEMENT,
     async (

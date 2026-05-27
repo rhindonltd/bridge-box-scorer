@@ -1,10 +1,10 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { EnterPlayerNamesPage } from "@/components/pages/join/EnterPlayerNamesPage";
+import { EnterIndividualPlayerNamesPage } from "@/components/pages/join/individual/EnterIndividualPlayerNamesPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
-const meta: Meta<typeof EnterPlayerNamesPage> = {
-  title: "Pages/JoinGame/EnterPlayerNamesPage",
-  component: EnterPlayerNamesPage,
+const meta: Meta<typeof EnterIndividualPlayerNamesPage> = {
+  title: "Pages/JoinGame/EnterIndividualPlayerNamesPage",
+  component: EnterIndividualPlayerNamesPage,
   parameters: {
     layout: "fullscreen",
   },
@@ -12,7 +12,7 @@ const meta: Meta<typeof EnterPlayerNamesPage> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof EnterPlayerNamesPage>;
+type Story = StoryObj<typeof EnterIndividualPlayerNamesPage>;
 
 export const NS: Story = {
   decorators: [
@@ -32,8 +32,11 @@ export const NS: Story = {
     }),
   ],
   args: {
-    table: 3,
-    direction: "NS",
+    seat: {
+      type: "INDIVIDUAL",
+      tableNumber: 3,
+      direction: "N",
+    },
   },
 };
 
@@ -55,8 +58,11 @@ export const NSWithSection: Story = {
     }),
   ],
   args: {
-    table: 3,
-    direction: "NS",
+    seat: {
+      type: "INDIVIDUAL",
+      tableNumber: 3,
+      direction: "N",
+    },
   },
 };
 
@@ -78,8 +84,11 @@ export const EW: Story = {
     }),
   ],
   args: {
-    table: 3,
-    direction: "EW",
+    seat: {
+      type: "INDIVIDUAL",
+      tableNumber: 3,
+      direction: "N",
+    },
   },
 };
 
@@ -101,7 +110,10 @@ export const EWWithSection: Story = {
     }),
   ],
   args: {
-    table: 3,
-    direction: "EW",
+    seat: {
+      type: "INDIVIDUAL",
+      tableNumber: 3,
+      direction: "N",
+    },
   },
 };

@@ -12,10 +12,6 @@ export default function WifiSettings() {
   const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchNetworks();
-  }, []);
-
   const fetchNetworks = async () => {
     try {
       const res = await fetch("/api/system/wifi/scan");
@@ -26,6 +22,10 @@ export default function WifiSettings() {
       setMessage("Failed to load WiFi networks");
     }
   };
+
+  useEffect(() => {
+    fetchNetworks();
+  }, []);
 
   const handleTest = async (
     ssid: string,

@@ -20,8 +20,8 @@ export const Default: Story = {
     pairs: [
       {
         type: "PAIR",
-        initialTableNumber: 1,
-        initialDirection: "NS",
+        tableNumber: 1,
+        direction: "NS",
         pairId: "1",
         player1: {
           id: 1,

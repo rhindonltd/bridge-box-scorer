@@ -26,10 +26,6 @@ export function ShowPairsTablesPage({ onShowMovementsPage }: Props) {
     fetcher,
   );
 
-  if (!gameSelection) {
-    return null;
-  }
-
   function createTables(): Table[] {
     return Array.from({ length: gameSelection!.tables }, (_, i) =>
       createTable(i + 1),
@@ -46,10 +42,10 @@ export function ShowPairsTablesPage({ onShowMovementsPage }: Props) {
     return {
       tableNumber,
       players: {
-        N: pairsByDirection.NS.player1 ?? null,
-        S: pairsByDirection.NS.player2 ?? null,
-        E: pairsByDirection.EW.player1 ?? null,
-        W: pairsByDirection.EW.player2 ?? null,
+        N: pairsByDirection.NS?.player1 ?? null,
+        S: pairsByDirection.NS?.player2 ?? null,
+        E: pairsByDirection.EW?.player1 ?? null,
+        W: pairsByDirection.EW?.player2 ?? null,
       },
     };
   }

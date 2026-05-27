@@ -1,22 +1,22 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import EnterPlayerNames from "@/components/join/EnterPlayerNames";
+import EnterPairPlayerNames from "@/components/join/EnterPairPlayerNames";
 
-const meta: Meta<typeof EnterPlayerNames> = {
+const meta: Meta<typeof EnterPairPlayerNames> = {
   title: "Components/JoinGame/EnterPlayerNames",
-  component: EnterPlayerNames,
+  component: EnterPairPlayerNames,
   parameters: {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
   args: {
-    submitPlayerNames: fn(),
+    onSubmitPair: fn(),
   },
 };
 
 export default meta;
 
-type Story = StoryObj<typeof EnterPlayerNames>;
+type Story = StoryObj<typeof EnterPairPlayerNames>;
 
 export const NorthSouth: Story = {
   args: {

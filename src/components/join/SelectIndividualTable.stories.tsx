@@ -10,7 +10,7 @@ const meta: Meta<typeof SelectIndividualTable> = {
   },
   tags: ["autodocs"],
   args: {
-    setStartingPosition: vi.fn(),
+    onSeatSelected: vi.fn(),
   },
 };
 

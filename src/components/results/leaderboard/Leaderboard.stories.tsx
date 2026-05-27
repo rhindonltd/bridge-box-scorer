@@ -21,8 +21,8 @@ export const IndividualIMP: Story = {
       participants: [
         {
           type: "INDIVIDUAL",
-          initialTableNumber: 1,
-          initialDirection: "E",
+          tableNumber: 1,
+          direction: "E",
           playerId: "1",
           player: {
             id: 1,
@@ -56,8 +56,8 @@ export const IndividualMP: Story = {
       participants: [
         {
           type: "INDIVIDUAL",
-          initialTableNumber: 1,
-          initialDirection: "E",
+          tableNumber: 1,
+          direction: "E",
           playerId: "1",
           player: {
             id: 1,
@@ -92,8 +92,8 @@ export const PairIMP: Story = {
       participants: [
         {
           type: "PAIR",
-          initialTableNumber: 1,
-          initialDirection: "NS",
+          tableNumber: 1,
+          direction: "NS",
           pairId: "1",
           player1: {
             id: 1,
@@ -133,8 +133,8 @@ export const PairMP: Story = {
       participants: [
         {
           type: "PAIR",
-          initialTableNumber: 1,
-          initialDirection: "NS",
+          tableNumber: 1,
+          direction: "NS",
           pairId: "1",
           player1: {
             id: 1,
@@ -178,8 +178,8 @@ export const Team: Story = {
           teamId: "1",
           pair1: {
             type: "PAIR",
-            initialDirection: "NS",
-            initialTableNumber: 1,
+            direction: "NS",
+            tableNumber: 1,
             player1: {
               id: 1,
               firstName: "David",
@@ -195,8 +195,8 @@ export const Team: Story = {
           },
           pair2: {
             type: "PAIR",
-            initialDirection: "EW",
-            initialTableNumber: 1,
+            direction: "EW",
+            tableNumber: 1,
             player1: {
               id: 1,
               firstName: "Peter",

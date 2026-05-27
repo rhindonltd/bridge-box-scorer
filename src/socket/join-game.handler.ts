@@ -1,8 +1,8 @@
-import { Server, Socket } from "socket.io";
+import { Socket } from "socket.io";
 import { SocketEvents } from "./socket-events";
 import { Rooms } from "./rooms";
 
-export function registerJoinGameHandler(socket: Socket, io: Server) {
+export function registerJoinGameHandler(socket: Socket) {
   socket.on(
     SocketEvents.JOIN_GAME,
     async ({ gameId }: { gameId: string }, cb) => {

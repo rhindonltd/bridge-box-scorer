@@ -2,17 +2,19 @@
 
 import SelectGame from "@/components/join/SelectGame";
 import { BridgeGame } from "@/db/game-index/schema";
-import { useGame } from "@/context/GameContext";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { SocketEvents } from "@/socket/socket-events";
 
-export default function SelectGamePage() {
+interface Props {
+  onGameSelected: (game: BridgeGame) => void;
+}
+
+export default function SelectGamePage({ onGameSelected }: Props) {
   const { data } = useSWR<BridgeGame[], Error>("/api/games/joinable", fetcher);
   const { mutate } = useSWRConfig();
-  const { selectGame } = useGame();
 
   useEffect(() => {
     function handleReconnect() {
@@ -39,7 +41,7 @@ export default function SelectGamePage() {
           <span>Select Game</span>
         </div>
       </div>
-      {data && <SelectGame games={data} onGameSelected={selectGame} />}
+      {data && <SelectGame games={data} onGameSelected={onGameSelected} />}
     </>
   );
 }

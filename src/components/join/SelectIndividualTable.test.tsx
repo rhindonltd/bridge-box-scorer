@@ -5,7 +5,7 @@ import SelectIndividualTable from "./SelectIndividualTable";
 describe("SelectIndividualTable", () => {
   const baseProps = {
     tables: 2,
-    setStartingPosition: vi.fn(),
+    onSeatSelected: vi.fn(),
     startingPositions: [],
   };
 
@@ -30,7 +30,7 @@ describe("SelectIndividualTable", () => {
   it("calls selectTable for NS click", () => {
     const fn = vi.fn();
 
-    render(<SelectIndividualTable {...baseProps} setStartingPosition={fn} />);
+    render(<SelectIndividualTable {...baseProps} onSeatSelected={fn} />);
 
     fireEvent.click(screen.getAllByRole("button", { name: "NS" })[0]);
 
@@ -40,7 +40,7 @@ describe("SelectIndividualTable", () => {
   it("calls selectTable for EW click", () => {
     const fn = vi.fn();
 
-    render(<SelectIndividualTable {...baseProps} setStartingPosition={fn} />);
+    render(<SelectIndividualTable {...baseProps} onSeatSelected={fn} />);
 
     fireEvent.click(screen.getAllByRole("button", { name: "EW" })[0]);
 
@@ -51,7 +51,7 @@ describe("SelectIndividualTable", () => {
     render(
       <SelectIndividualTable
         tables={1}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,
@@ -73,7 +73,7 @@ describe("SelectIndividualTable", () => {
     render(
       <SelectIndividualTable
         tables={1}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,
@@ -95,7 +95,7 @@ describe("SelectIndividualTable", () => {
     render(
       <SelectIndividualTable
         tables={1}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,
@@ -117,7 +117,7 @@ describe("SelectIndividualTable", () => {
     render(
       <SelectIndividualTable
         tables={1}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,
@@ -139,7 +139,7 @@ describe("SelectIndividualTable", () => {
     const { container } = render(
       <SelectIndividualTable
         tables={1}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,
@@ -174,7 +174,7 @@ describe("SelectIndividualTable", () => {
     render(
       <SelectIndividualTable
         tables={2}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,

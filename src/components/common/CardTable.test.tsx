@@ -30,10 +30,10 @@ vi.mock("@/components/layout/TableCompassLayout", () => ({
 
 describe("CardTable", () => {
   const players = {
-    N: { firstName: "Alice", lastName: "North" },
-    S: { firstName: "Bob", lastName: "South" },
-    E: { firstName: "Carol", lastName: "East" },
-    W: { firstName: "Dan", lastName: "West" },
+    N: { firstName: "Alice", lastName: "North", nationalId: null },
+    S: { firstName: "Bob", lastName: "South", nationalId: null },
+    E: { firstName: "Carol", lastName: "East", nationalId: null },
+    W: { firstName: "Dan", lastName: "West", nationalId: null },
   };
 
   it("renders table number in center", () => {
@@ -53,7 +53,17 @@ describe("CardTable", () => {
   });
 
   it("handles missing players gracefully", () => {
-    render(<CardTable players={{}} tableNumber={99} />);
+    render(
+      <CardTable
+        players={{
+          N: null,
+          S: null,
+          E: null,
+          W: null,
+        }}
+        tableNumber={99}
+      />,
+    );
 
     expect(screen.getByTestId("player-north")).toHaveTextContent("Empty");
     expect(screen.getByTestId("player-south")).toHaveTextContent("Empty");

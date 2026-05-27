@@ -16,21 +16,33 @@ export interface ParticipantsByMode {
 
 export type TravellerParticipantMode = "INDIVIDUAL" | "PAIR";
 
-/* ---------- participants ---------- */
+/* ---------- seat ---------- */
 
-export type Individual = {
+export type IndividualSeat = {
   type: "INDIVIDUAL";
-  player: Player;
-  initialTableNumber: number;
-  initialDirection: Direction;
+  tableNumber: number;
+  direction: Direction;
 };
 
-export type Pair = {
+export type PairSeat = {
+  type: "PAIR";
+  tableNumber: number;
+  direction: PairDirection;
+};
+
+export type Seat = IndividualSeat | PairSeat;
+
+/* ---------- participants ---------- */
+
+export type Individual = IndividualSeat & {
+  type: "INDIVIDUAL";
+  player: Player;
+};
+
+export type Pair = PairSeat & {
   type: "PAIR";
   player1: Player;
   player2: Player;
-  initialTableNumber: number;
-  initialDirection: PairDirection;
 };
 
 export type Team = {

@@ -19,8 +19,8 @@ export const Default: Story = {
     individuals: [
       {
         type: "INDIVIDUAL",
-        initialTableNumber: 1,
-        initialDirection: "E",
+        tableNumber: 1,
+        direction: "E",
         playerId: "1",
         player: {
           id: 1,

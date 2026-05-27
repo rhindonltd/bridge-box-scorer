@@ -4,7 +4,6 @@ import {
   text,
   primaryKey,
 } from "drizzle-orm/sqlite-core";
-import { boardPlays } from "@/db/games/shared/tables/board-plays";
 
 export const results = sqliteTable(
   "results",

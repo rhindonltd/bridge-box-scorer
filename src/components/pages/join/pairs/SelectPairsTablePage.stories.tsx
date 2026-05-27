@@ -1,24 +1,24 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
-import { SelectTablePage } from "@/components/pages/join/SelectTablePage";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { SelectPairsTablePage } from "./SelectPairsTablePage";
 
-const meta: Meta<typeof SelectTablePage> = {
+const meta: Meta<typeof SelectPairsTablePage> = {
   title: "Pages/JoinGame/SelectPairsTablePage",
-  component: SelectTablePage,
+  component: SelectPairsTablePage,
   parameters: {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
   args: {
-    selectTable: fn(),
+    onSeatSelected: fn(),
   },
 };
 
 export default meta;
 
-type Story = StoryObj<typeof SelectTablePage>;
+type Story = StoryObj<typeof SelectPairsTablePage>;
 
 export const Default: Story = {
   decorators: [
