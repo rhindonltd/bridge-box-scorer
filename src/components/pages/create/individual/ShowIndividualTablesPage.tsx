@@ -7,7 +7,7 @@ import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-initial-seats";
+import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { SocketEvents } from "@/socket/socket-events";
 import Button from "@/components/common/Button";
 
@@ -21,7 +21,7 @@ export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
 
   const gameId = gameSelection?.gameId;
 
-  const { data } = useSWR<PlayerStartingPosition[], Error>(
+  const { data } = useSWR<PlayerInitialSeat[], Error>(
     gameId ? `/api/games/individual/${gameId}/starting-positions` : null,
     fetcher,
   );
@@ -58,7 +58,7 @@ export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
     const key = `/api/games/individual/${gameId}/starting-positions`;
 
     function handleStartingPositions(payload: {
-      startingPositions: PlayerStartingPosition[];
+      startingPositions: PlayerInitialSeat[];
     }) {
       mutate(key, payload.startingPositions, false);
     }

@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 
 export async function findPlayerInitialSeats(
   gameId: string,
-): Promise<PlayerStartingPosition[]> {
+): Promise<PlayerInitialSeat[]> {
   const db = await getDb(gameId);
 
   return db
@@ -26,7 +26,7 @@ export async function findPlayerInitialSeats(
     .innerJoin(players, eq(initialSeat.player, players.id));
 }
 
-export type PlayerStartingPosition = {
+export type PlayerInitialSeat = {
   tableNumber: number;
   direction: Direction;
   player: {

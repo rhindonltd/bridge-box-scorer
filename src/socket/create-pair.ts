@@ -7,7 +7,7 @@ import { createInitialSeat } from "@/db/games/shared/actions/create-initial-seat
 import { Rooms } from "./rooms";
 import {
   findPairInitialSeats,
-  PairStartingPosition,
+  PairInitialSeat,
 } from "@/db/games/pairs/queries/find-pair-initial-seats";
 
 export function registerCreatePairHandler(socket: Socket, io: Server) {
@@ -16,28 +16,28 @@ export function registerCreatePairHandler(socket: Socket, io: Server) {
     async (
       {
         gameId,
-        pairStartingPosition,
-      }: { gameId: string; pairStartingPosition: PairStartingPosition },
+        pairInitialSeat,
+      }: { gameId: string; pairInitialSeat: PairInitialSeat },
       cb,
     ) => {
       const player1 = (
-        await createPlayer("PAIRS", gameId, pairStartingPosition.pair.player1)
+        await createPlayer("PAIRS", gameId, pairInitialSeat.pair.player1)
       ).id;
       const player2 = (
-        await createPlayer("PAIRS", gameId, pairStartingPosition.pair.player2)
+        await createPlayer("PAIRS", gameId, pairInitialSeat.pair.player2)
       ).id;
 
       await createPair(gameId, { player1, player2 });
 
       await createInitialSeat("PAIRS", gameId, {
-        tableNumber: pairStartingPosition.tableNumber,
-        direction: pairStartingPosition.direction == "NS" ? "N" : "E",
+        tableNumber: pairInitialSeat.tableNumber,
+        direction: pairInitialSeat.direction == "NS" ? "N" : "E",
         player: player1,
       });
 
       await createInitialSeat("PAIRS", gameId, {
-        tableNumber: pairStartingPosition.tableNumber,
-        direction: pairStartingPosition.direction == "NS" ? "S" : "W",
+        tableNumber: pairInitialSeat.tableNumber,
+        direction: pairInitialSeat.direction == "NS" ? "S" : "W",
         player: player2,
       });
 

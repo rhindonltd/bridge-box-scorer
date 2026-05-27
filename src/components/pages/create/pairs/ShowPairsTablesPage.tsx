@@ -9,7 +9,7 @@ import useSWR, { useSWRConfig } from "swr";
 
 import { SocketEvents } from "@/socket/socket-events";
 import Button from "@/components/common/Button";
-import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-initial-seats";
+import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 
 type Props = {
   onShowMovementsPage: () => void;
@@ -21,7 +21,7 @@ export function ShowPairsTablesPage({ onShowMovementsPage }: Props) {
 
   const gameId = gameSelection?.gameId;
 
-  const { data } = useSWR<PairStartingPosition[], Error>(
+  const { data } = useSWR<PairInitialSeat[], Error>(
     gameId ? `/api/games/pairs/${gameId}/starting-positions` : null,
     fetcher,
   );
@@ -58,7 +58,7 @@ export function ShowPairsTablesPage({ onShowMovementsPage }: Props) {
     const key = `/api/games/pairs/${gameId}/starting-positions`;
 
     function handleStartingPositions(payload: {
-      startingPositions: PairStartingPosition[];
+      startingPositions: PairInitialSeat[];
     }) {
       mutate(key, payload.startingPositions, false);
     }

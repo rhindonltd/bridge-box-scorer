@@ -6,6 +6,14 @@ CREATE TABLE `boardplays` (
 	PRIMARY KEY(`round_number`, `table_number`, `board_number`)
 );
 --> statement-breakpoint
+CREATE TABLE `initialseat` (
+	`table_number` integer NOT NULL,
+	`direction` text NOT NULL,
+	`player` integer NOT NULL,
+	PRIMARY KEY(`table_number`, `direction`),
+	FOREIGN KEY (`player`) REFERENCES `players`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
 CREATE TABLE `metadata` (
 	`id` text PRIMARY KEY NOT NULL,
 	`movement_type` text NOT NULL,
@@ -51,12 +59,4 @@ CREATE TABLE `results` (
 	`table_number` integer,
 	`result` text,
 	PRIMARY KEY(`round_number`, `table_number`)
-);
---> statement-breakpoint
-CREATE TABLE `startingpositions` (
-	`table_number` integer NOT NULL,
-	`direction` text NOT NULL,
-	`player` integer NOT NULL,
-	PRIMARY KEY(`table_number`, `direction`),
-	FOREIGN KEY (`player`) REFERENCES `players`(`id`) ON UPDATE no action ON DELETE no action
 );

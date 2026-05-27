@@ -7,7 +7,7 @@ import { createPlayer } from "@/db/games/shared/actions/create-player";
 
 import { createInitialSeat } from "@/db/games/shared/actions/create-initial-seat";
 import {
-  PlayerStartingPosition,
+  PlayerInitialSeat,
   findPlayerInitialSeats,
 } from "@/db/games/shared/queries/find-player-initial-seats";
 
@@ -17,10 +17,10 @@ export function registerSelectSeatHandler(socket: Socket, io: Server) {
     async (
       {
         gameId,
-        playerStartingPosition,
+        playerInitialSeat,
       }: {
         gameId: string;
-        playerStartingPosition: PlayerStartingPosition;
+        playerInitialSeat: PlayerInitialSeat;
       },
       cb,
     ) => {
@@ -29,13 +29,13 @@ export function registerSelectSeatHandler(socket: Socket, io: Server) {
           await createPlayer(
             "INDIVIDUAL",
             gameId,
-            playerStartingPosition.player,
+            playerInitialSeat.player,
           )
         ).id;
 
         await createInitialSeat("INDIVIDUAL", gameId, {
-          tableNumber: playerStartingPosition.tableNumber,
-          direction: playerStartingPosition.direction,
+          tableNumber: playerInitialSeat.tableNumber,
+          direction: playerInitialSeat.direction,
           player: playerId,
         });
 

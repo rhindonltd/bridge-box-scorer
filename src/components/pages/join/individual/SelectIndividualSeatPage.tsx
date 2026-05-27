@@ -3,7 +3,7 @@
 import { SectionInfo } from "@/components/common/SectionInfo";
 import SelectIndividualTable from "@/components/join/SelectIndividualTable";
 import { useGame } from "@/context/GameContext";
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-initial-seats";
+import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { Seat } from "@/model/participants";
@@ -21,7 +21,7 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
 
   const gameId = gameSelection?.gameId;
 
-  const { data } = useSWR<PlayerStartingPosition[], Error>(
+  const { data } = useSWR<PlayerInitialSeat[], Error>(
     gameId ? `/api/games/individual/${gameId}/initial-seat` : null,
     fetcher,
   );
@@ -38,7 +38,7 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
     const key = `/api/games/individual/${gameId}/initial-seat`;
 
     function handleStartingPositions(payload: {
-      startingPositions: PlayerStartingPosition[];
+      startingPositions: PlayerInitialSeat[];
     }) {
       mutate(key, payload.startingPositions, false);
     }

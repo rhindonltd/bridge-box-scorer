@@ -4,14 +4,14 @@ import { getDb } from "@/db/games/pairs";
 import { initialSeat } from "@/db/games/shared/tables/initial-seat";
 import { players } from "@/db/games/shared/tables/players";
 import { eq } from "drizzle-orm";
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-initial-seats";
+import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 
 export async function findPairInitialSeats(
   gameId: string,
-): Promise<PairStartingPosition[]> {
+): Promise<PairInitialSeat[]> {
   const db = await getDb(gameId);
 
-  const playerStartingPositions: PlayerStartingPosition[] = await db
+  const playerInitialSeats: PlayerInitialSeat[] = await db
     .select({
       tableNumber: initialSeat.tableNumber,
       direction: initialSeat.direction,
@@ -25,19 +25,19 @@ export async function findPairInitialSeats(
     .from(initialSeat)
     .innerJoin(players, eq(initialSeat.player, players.id));
 
-  return pairStartingPositions(playerStartingPositions);
+  return pairInitialSeats(playerInitialSeats);
 }
 
-function pairStartingPositions(
-  playerStartingPositions: PlayerStartingPosition[],
-): PairStartingPosition[] {
+function pairInitialSeats(
+  playerInitialSeats: PlayerInitialSeat[],
+): PairInitialSeat[] {
   const grouped = new Map<
     number,
-    Partial<Record<Direction, PlayerStartingPosition>>
+    Partial<Record<Direction, PlayerInitialSeat>>
   >();
 
   // Group by table
-  for (const entry of playerStartingPositions) {
+  for (const entry of playerInitialSeats) {
     if (!grouped.has(entry.tableNumber)) {
       grouped.set(entry.tableNumber, {});
     }
@@ -45,7 +45,7 @@ function pairStartingPositions(
     grouped.get(entry.tableNumber)![entry.direction] = entry;
   }
 
-  const assignedPairs: PairStartingPosition[] = [];
+  const assignedPairs: PairInitialSeat[] = [];
 
   for (const [tableNumber, directions] of grouped) {
     if (directions.N && directions.S) {
@@ -74,7 +74,7 @@ function pairStartingPositions(
   return assignedPairs;
 }
 
-export type PairStartingPosition = {
+export type PairInitialSeat = {
   tableNumber: number;
   direction: PairDirection;
   pair: {
