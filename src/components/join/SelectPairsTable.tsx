@@ -1,4 +1,4 @@
-import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-starting-positions";
+import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
 import { Seat } from "@/model/participants";

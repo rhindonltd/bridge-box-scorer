@@ -7,8 +7,8 @@ import {
   primaryKey,
 } from "drizzle-orm/sqlite-core";
 
-export const startingpositions = sqliteTable(
-  "startingpositions",
+export const initialSeat = sqliteTable(
+  "initialseat",
   {
     tableNumber: integer("table_number").notNull(),
     direction: text("direction", {
@@ -25,4 +25,4 @@ export const startingpositions = sqliteTable(
   }),
 );
 
-export type StartingPosition = typeof startingpositions.$inferSelect;
+export type InitialSeat = typeof initialSeat.$inferSelect;

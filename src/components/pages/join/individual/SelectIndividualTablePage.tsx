@@ -3,7 +3,7 @@
 import { SectionInfo } from "@/components/common/SectionInfo";
 import SelectIndividualTable from "@/components/join/SelectIndividualTable";
 import { useGame } from "@/context/GameContext";
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-starting-positions";
+import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-initial-seats";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { Seat } from "@/model/participants";

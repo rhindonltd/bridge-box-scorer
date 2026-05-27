@@ -5,11 +5,11 @@ import { Rooms } from "./rooms";
 
 import { createPlayer } from "@/db/games/shared/actions/create-player";
 
-import { createStartingPosition } from "@/db/games/shared/actions/create-starting-position";
+import { createInitialSeat } from "@/db/games/shared/actions/create-initial-seat";
 import {
   PlayerStartingPosition,
-  findPlayerStartingPositions,
-} from "@/db/games/shared/queries/find-player-starting-positions";
+  findPlayerInitialSeats,
+} from "@/db/games/shared/queries/find-player-initial-seats";
 
 export function registerSelectSeatHandler(socket: Socket, io: Server) {
   socket.on(
@@ -33,14 +33,14 @@ export function registerSelectSeatHandler(socket: Socket, io: Server) {
           )
         ).id;
 
-        await createStartingPosition("INDIVIDUAL", gameId, {
+        await createInitialSeat("INDIVIDUAL", gameId, {
           tableNumber: playerStartingPosition.tableNumber,
           direction: playerStartingPosition.direction,
           player: playerId,
         });
 
         io.to(Rooms.game(gameId)).emit(SocketEvents.STARTING_POSITIONS, {
-          startingPositions: await findPlayerStartingPositions(gameId),
+          startingPositions: await findPlayerInitialSeats(gameId),
         });
 
         cb?.({ success: true });

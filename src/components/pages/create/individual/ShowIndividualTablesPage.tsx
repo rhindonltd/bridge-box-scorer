@@ -7,7 +7,7 @@ import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-starting-positions";
+import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-initial-seats";
 import { SocketEvents } from "@/socket/socket-events";
 import Button from "@/components/common/Button";
 

@@ -1,20 +1,20 @@
 import { Direction, PairDirection } from "@/model/common";
 
 import { getDb } from "@/db/games/pairs";
-import { startingpositions } from "@/db/games/shared/tables/starting-positions";
+import { initialSeat } from "@/db/games/shared/tables/initial-seat";
 import { players } from "@/db/games/shared/tables/players";
 import { eq } from "drizzle-orm";
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-starting-positions";
+import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-initial-seats";
 
-export async function findPairStartingPositions(
+export async function findPairInitialSeats(
   gameId: string,
 ): Promise<PairStartingPosition[]> {
   const db = await getDb(gameId);
 
   const playerStartingPositions: PlayerStartingPosition[] = await db
     .select({
-      tableNumber: startingpositions.tableNumber,
-      direction: startingpositions.direction,
+      tableNumber: initialSeat.tableNumber,
+      direction: initialSeat.direction,
       player: {
         id: players.id,
         firstName: players.firstName,
@@ -22,8 +22,8 @@ export async function findPairStartingPositions(
         nationalId: players.nationalId,
       },
     })
-    .from(startingpositions)
-    .innerJoin(players, eq(startingpositions.player, players.id));
+    .from(initialSeat)
+    .innerJoin(players, eq(initialSeat.player, players.id));
 
   return pairStartingPositions(playerStartingPositions);
 }

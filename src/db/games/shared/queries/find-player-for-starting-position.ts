@@ -1,4 +1,4 @@
-import { startingpositions } from "../tables/starting-positions";
+import { initialSeat } from "../tables/initial-seat";
 import { getDb as individualDb } from "@/db/games/individual";
 import { getDb as pairDb } from "@/db/games/pairs";
 import { and, eq } from "drizzle-orm";
@@ -22,14 +22,14 @@ export async function findPlayerForStartingPosition(
         id: players.id,
       },
     })
-    .from(startingpositions)
+    .from(initialSeat)
     .where(
       and(
-        eq(startingpositions.tableNumber, tableNumber),
-        eq(startingpositions.direction, direction),
+        eq(initialSeat.tableNumber, tableNumber),
+        eq(initialSeat.direction, direction),
       ),
     )
-    .leftJoin(players, eq(startingpositions.player, players.id));
+    .leftJoin(players, eq(initialSeat.player, players.id));
 
   if (!results) {
     return null;

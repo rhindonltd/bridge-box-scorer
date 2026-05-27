@@ -1,4 +1,4 @@
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-starting-positions";
+import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-initial-seats";
 import { Direction, Directions } from "@/model/common";
 import { Seat } from "@/model/participants";
 

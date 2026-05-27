@@ -9,7 +9,7 @@ import useSWR, { useSWRConfig } from "swr";
 
 import { SocketEvents } from "@/socket/socket-events";
 import Button from "@/components/common/Button";
-import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-starting-positions";
+import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-initial-seats";
 
 type Props = {
   onShowMovementsPage: () => void;

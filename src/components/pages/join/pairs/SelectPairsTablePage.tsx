@@ -3,7 +3,7 @@
 import { SectionInfo } from "@/components/common/SectionInfo";
 import SelectPairsTable from "@/components/join/SelectPairsTable";
 import { useGame } from "@/context/GameContext";
-import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-starting-positions";
+import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { Seat } from "@/model/participants";
