@@ -1,9 +1,9 @@
 "use client";
 
 import { SectionInfo } from "@/components/common/SectionInfo";
-import SelectIndividualTable from "@/components/join/SelectIndividualTable";
+import SelectPairsTable from "@/components/join/SelectPairsTable";
 import { useGame } from "@/context/GameContext";
-import { PlayerStartingPosition } from "@/db/games/shared/queries/find-player-initial-seats";
+import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { Seat } from "@/model/participants";
@@ -15,14 +15,14 @@ interface Props {
   onSeatSelected: (seat: Seat) => void;
 }
 
-export function SelectIndividualTablePage({ onSeatSelected }: Props) {
+export function SelectPairSeatPage({ onSeatSelected }: Props) {
   const { gameSelection } = useGame();
   const { mutate } = useSWRConfig();
 
   const gameId = gameSelection?.gameId;
 
-  const { data } = useSWR<PlayerStartingPosition[], Error>(
-    gameId ? `/api/games/individual/${gameId}/starting-positions` : null,
+  const { data } = useSWR<PairStartingPosition[], Error>(
+    gameId ? `/api/games/pairs/${gameId}/initial-seat` : null,
     fetcher,
   );
 
@@ -35,10 +35,10 @@ export function SelectIndividualTablePage({ onSeatSelected }: Props) {
 
     const socket = getSocket();
 
-    const key = `/api/games/individual/${gameId}/starting-positions`;
+    const key = `/api/games/pairs/${gameId}/initial-seat`;
 
     function handleStartingPositions(payload: {
-      startingPositions: PlayerStartingPosition[];
+      startingPositions: PairStartingPosition[];
     }) {
       mutate(key, payload.startingPositions, false);
     }
@@ -56,9 +56,9 @@ export function SelectIndividualTablePage({ onSeatSelected }: Props) {
         <SectionInfo />
       </div>
 
-      <SelectIndividualTable
-        onSeatSelected={onSeatSelected}
+      <SelectPairsTable
         tables={gameSelection.tables}
+        onSeatSelected={onSeatSelected}
         startingPositions={data ?? []}
       />
     </div>

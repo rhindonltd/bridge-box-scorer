@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SelectIndividualTablePage } from "./SelectIndividualTablePage";
+import { SelectPairSeatPage } from "./SelectPairSeatPage";
 import { SocketEvents } from "@/socket/socket-events";
 
 const mockMutate = vi.fn();
@@ -11,22 +11,22 @@ vi.mock("@/components/common/SectionInfo", () => ({
   SectionInfo: () => <div data-testid="section-info" />,
 }));
 
-vi.mock("@/components/join/SelectIndividualTable", () => ({
+vi.mock("@/components/join/SelectPairsTable", () => ({
   default: vi.fn(
     ({
       tables,
       startingPositions,
-      onSeatSelected,
+      onSelectSeat,
     }: {
       tables: unknown[];
       startingPositions: unknown[];
-      onSeatSelected: unknown;
+      onSelectSeat: unknown;
     }) => (
-      <div data-testid="table">
+      <div data-testid="pairs-table">
         {JSON.stringify({
           tables,
           startingPositions,
-          hasHandler: !!onSeatSelected,
+          hasHandler: !!onSelectSeat,
         })}
       </div>
     ),
@@ -34,7 +34,6 @@ vi.mock("@/components/join/SelectIndividualTable", () => ({
 }));
 
 const mockUseGame = vi.fn();
-
 vi.mock("@/context/GameContext", () => ({
   useGame: () => mockUseGame(),
 }));
@@ -64,7 +63,7 @@ vi.mock("swr", async () => {
   };
 });
 
-describe("SelectIndividualTablePage", () => {
+describe("SelectPairsTablePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -73,13 +72,13 @@ describe("SelectIndividualTablePage", () => {
     });
   });
 
-  it("renders nothing when no gameSelection exists", () => {
+  it("renders nothing when gameSelection is missing", () => {
     mockUseGame.mockReturnValue({
       gameSelection: null,
     });
 
     const { container } = render(
-      <SelectIndividualTablePage onSeatSelected={vi.fn()} />,
+      <SelectPairSeatPage onSeatSelected={vi.fn()} />,
     );
 
     expect(container.firstChild).toBeNull();
@@ -89,32 +88,32 @@ describe("SelectIndividualTablePage", () => {
     mockUseGame.mockReturnValue({
       gameSelection: {
         gameId: "game-1",
-        tables: ["table-a"],
+        tables: ["table-1"],
       },
     });
 
     mockUseSWR.mockReturnValue({
-      data: [{ playerId: "1", seat: "A" }],
+      data: [{ pairId: "pair-1" }],
     });
 
-    render(<SelectIndividualTablePage onSeatSelected={vi.fn()} />);
+    render(<SelectPairSeatPage onSeatSelected={vi.fn()} />);
 
     expect(screen.getByTestId("section-info")).toBeInTheDocument();
 
-    expect(screen.getByTestId("table")).toHaveTextContent(
+    expect(screen.getByTestId("pairs-table")).toHaveTextContent(
       JSON.stringify({
-        tables: ["table-a"],
-        startingPositions: [{ playerId: "1", seat: "A" }],
+        tables: ["table-1"],
+        startingPositions: [{ pairId: "pair-1" }],
         hasHandler: true,
       }),
     );
   });
 
-  it("uses empty array when SWR data is undefined", () => {
+  it("passes empty array when SWR data is undefined", () => {
     mockUseGame.mockReturnValue({
       gameSelection: {
         gameId: "game-1",
-        tables: ["table-a"],
+        tables: ["table-1"],
       },
     });
 
@@ -122,9 +121,9 @@ describe("SelectIndividualTablePage", () => {
       data: undefined,
     });
 
-    render(<SelectIndividualTablePage onSeatSelected={vi.fn()} />);
+    render(<SelectPairSeatPage onSeatSelected={vi.fn()} />);
 
-    expect(screen.getByTestId("table")).toHaveTextContent(
+    expect(screen.getByTestId("pairs-table")).toHaveTextContent(
       `"startingPositions":[]`,
     );
   });
@@ -132,12 +131,12 @@ describe("SelectIndividualTablePage", () => {
   it("subscribes to socket updates", () => {
     mockUseGame.mockReturnValue({
       gameSelection: {
-        gameId: "game-123",
+        gameId: "pairs-123",
         tables: [],
       },
     });
 
-    render(<SelectIndividualTablePage onSeatSelected={vi.fn()} />);
+    render(<SelectPairSeatPage onSeatSelected={vi.fn()} />);
 
     expect(mockOn).toHaveBeenCalledWith(
       SocketEvents.STARTING_POSITIONS,
@@ -145,26 +144,26 @@ describe("SelectIndividualTablePage", () => {
     );
   });
 
-  it("mutates SWR cache when socket event fires", () => {
+  it("updates SWR cache when socket event fires", () => {
     mockUseGame.mockReturnValue({
       gameSelection: {
-        gameId: "game-123",
+        gameId: "pairs-123",
         tables: [],
       },
     });
 
-    render(<SelectIndividualTablePage onSeatSelected={vi.fn()} />);
+    render(<SelectPairSeatPage onSeatSelected={vi.fn()} />);
 
     const handler = mockOn.mock.calls[0][1];
 
     const payload = {
-      startingPositions: [{ playerId: "99", seat: "B" }],
+      startingPositions: [{ pairId: "updated" }],
     };
 
     handler(payload);
 
     expect(mockMutate).toHaveBeenCalledWith(
-      "/api/games/individual/game-123/starting-positions",
+      "/api/games/pairs/pairs-123/starting-positions",
       payload.startingPositions,
       false,
     );
@@ -173,13 +172,13 @@ describe("SelectIndividualTablePage", () => {
   it("removes socket listener on unmount", () => {
     mockUseGame.mockReturnValue({
       gameSelection: {
-        gameId: "game-123",
+        gameId: "pairs-123",
         tables: [],
       },
     });
 
     const { unmount } = render(
-      <SelectIndividualTablePage onSeatSelected={vi.fn()} />,
+      <SelectPairSeatPage onSeatSelected={vi.fn()} />,
     );
 
     const handler = mockOn.mock.calls[0][1];
@@ -200,8 +199,26 @@ describe("SelectIndividualTablePage", () => {
       },
     });
 
-    render(<SelectIndividualTablePage onSeatSelected={vi.fn()} />);
+    render(<SelectPairSeatPage onSeatSelected={vi.fn()} />);
 
     expect(mockOn).not.toHaveBeenCalled();
+    expect(mockOff).not.toHaveBeenCalled();
+  });
+
+  it("passes onSelectSeat through to SelectPairsTable", () => {
+    const onSelectSeat = vi.fn();
+
+    mockUseGame.mockReturnValue({
+      gameSelection: {
+        gameId: "game-1",
+        tables: [],
+      },
+    });
+
+    render(<SelectPairSeatPage onSeatSelected={onSelectSeat} />);
+
+    expect(screen.getByTestId("pairs-table")).toHaveTextContent(
+      `"hasHandler":true`,
+    );
   });
 });

@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
 import { withGame } from "@storybook/decorators/GameDecorator";
-import { SelectIndividualTablePage } from "@/components/pages/join/individual/SelectIndividualTablePage";
+import { SelectIndividualSeatPage } from "@/components/pages/join/individual/SelectIndividualSeatPage";
 
-const meta: Meta<typeof SelectIndividualTablePage> = {
-  title: "Pages/JoinGame/SelectIndividualTablePage",
-  component: SelectIndividualTablePage,
+const meta: Meta<typeof SelectIndividualSeatPage> = {
+  title: "Pages/JoinGame/SelectIndividualSeatPage",
+  component: SelectIndividualSeatPage,
   parameters: {
     layout: "fullscreen",
   },
@@ -18,7 +18,7 @@ const meta: Meta<typeof SelectIndividualTablePage> = {
 
 export default meta;
 
-type Story = StoryObj<typeof SelectIndividualTablePage>;
+type Story = StoryObj<typeof SelectIndividualSeatPage>;
 
 export const Default: Story = {
   decorators: [

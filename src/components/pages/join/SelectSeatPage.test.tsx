@@ -11,7 +11,7 @@ vi.mock("@/context/GameContext", () => ({
 }));
 
 vi.mock("@/components/pages/join/individual/SelectIndividualTablePage", () => ({
-  SelectIndividualTablePage: (props: unknown) => {
+  SelectIndividualSeatPage: (props: unknown) => {
     mockSelectIndividualTablePage(props);
 
     return <div data-testid="individual-page" />;
@@ -19,7 +19,7 @@ vi.mock("@/components/pages/join/individual/SelectIndividualTablePage", () => ({
 }));
 
 vi.mock("@/components/pages/join/pairs/SelectPairsTablePage", () => ({
-  SelectPairsTablePage: (props: unknown) => {
+  SelectPairSeatPage: (props: unknown) => {
     mockSelectPairsTablePage(props);
 
     return <div data-testid="pairs-page" />;

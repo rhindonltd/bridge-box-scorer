@@ -1,8 +1,8 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import { SelectIndividualTablePage } from "@/components/pages/join/individual/SelectIndividualTablePage";
-import { SelectPairsTablePage } from "@/components/pages/join/pairs/SelectPairsTablePage";
+import { SelectIndividualSeatPage } from "@/components/pages/join/individual/SelectIndividualSeatPage";
+import { SelectPairSeatPage } from "@/components/pages/join/pairs/SelectPairSeatPage";
 import { Seat } from "@/model/participants";
 
 interface Props {
@@ -17,8 +17,8 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   }
 
   return gameSelection.gameType == "INDIVIDUAL" ? (
-    <SelectIndividualTablePage onSeatSelected={onSeatSelected} />
+    <SelectIndividualSeatPage onSeatSelected={onSeatSelected} />
   ) : (
-    <SelectPairsTablePage onSeatSelected={onSeatSelected} />
+    <SelectPairSeatPage onSeatSelected={onSeatSelected} />
   );
 }
