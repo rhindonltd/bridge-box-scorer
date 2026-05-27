@@ -1,16 +1,17 @@
-import { PairStartingPosition } from "@/db/games/pairs/queries/find-pair-starting-positions";
+import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
+import { Seat } from "@/model/participants";
 
 interface Props {
   tables: number;
-  setStartingPosition: (pairStartingPosition: PairStartingPosition) => void;
-  startingPositions: PairStartingPosition[];
+  onSeatSelected: (seat: Seat) => void;
+  startingPositions: PairInitialSeat[];
 }
 
 export default function SelectPairsTable({
   tables,
-  setStartingPosition,
+  onSeatSelected,
   startingPositions,
 }: Props) {
   const isTaken = (table: number, direction: PairDirection) => {
@@ -36,42 +37,27 @@ export default function SelectPairsTable({
       {/* Scrollable Grid */}
       <div className="flex-1 overflow-auto px-4 pb-4">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
-          {tableNumbers.map((table) => (
+          {tableNumbers.map((tableNumber) => (
             <div
-              key={table}
+              key={tableNumber}
               className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden ${
-                isTableFull(table) ? "opacity-50" : ""
+                isTableFull(tableNumber) ? "opacity-50" : ""
               }`}
             >
               <div className="text-center py-3 text-lg font-semibold text-gray-700 border-b border-gray-200 bg-blue-300">
-                Table {table}
+                Table {tableNumber}
               </div>
 
               <div className="grid grid-cols-2">
                 {PairDirections.map((direction) => {
-                  const taken = isTaken(table, direction);
+                  const taken = isTaken(tableNumber, direction);
 
                   return (
                     <button
                       key={direction}
-                      onClick={() => {
-                        setStartingPosition({
-                          tableNumber: table,
-                          direction: direction,
-                          pair: {
-                            player1: {
-                              firstName: "Jacqui",
-                              lastName: "Collier",
-                              nationalId: "477484",
-                            },
-                            player2: {
-                              firstName: "David",
-                              lastName: "Collier",
-                              nationalId: "404476",
-                            },
-                          },
-                        });
-                      }}
+                      onClick={() =>
+                        onSeatSelected({ type: "PAIR", tableNumber, direction })
+                      }
                       disabled={taken}
                       className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200
                         ${

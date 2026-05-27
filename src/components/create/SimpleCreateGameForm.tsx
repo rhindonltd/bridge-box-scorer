@@ -25,7 +25,7 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
       gameType,
       sessionName: "",
       eventDate: new Date().toISOString(),
-      status: "JOINABLE",
+      status: "CREATED",
       sectionName: "",
       tables: tables,
     });

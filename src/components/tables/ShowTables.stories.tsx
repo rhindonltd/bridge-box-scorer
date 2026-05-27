@@ -17,6 +17,29 @@ type Story = StoryObj<typeof ShowTables>;
 
 export const Default: Story = {
   args: {
-    tables: 5,
+    tables: [
+      {
+        tableNumber: 1,
+        players: {
+          N: {
+            firstName: "xx",
+            lastName: "yy",
+            nationalId: null,
+          },
+          S: null,
+          E: null,
+          W: null,
+        },
+      },
+      {
+        tableNumber: 2,
+        players: {
+          N: null,
+          S: null,
+          E: null,
+          W: null,
+        },
+      },
+    ],
   },
 };

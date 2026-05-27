@@ -1,4 +1,4 @@
-import { Round, Tables, Table } from "@/model/movement";
+import { Tables, Table } from "@/model/movement";
 import { ParticipantsByMode } from "@/model/participants";
 
 export interface MitchellMovementSpec {

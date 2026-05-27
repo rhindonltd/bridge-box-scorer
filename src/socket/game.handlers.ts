@@ -8,9 +8,9 @@ import { registerCreatePairHandler } from "@/socket/create-pair";
 
 export function registerGameHandlers(socket: Socket, io: Server) {
   registerCreateGameHandler(socket, io);
-  registerJoinGameHandler(socket, io);
+  registerJoinGameHandler(socket);
   registerCreatePairHandler(socket, io);
   registerSelectSeatHandler(socket, io);
-  registerSelectedMovementHandler(socket, io);
-  registerLeaveGameHandler(socket, io);
+  registerSelectedMovementHandler(socket);
+  registerLeaveGameHandler(socket);
 }

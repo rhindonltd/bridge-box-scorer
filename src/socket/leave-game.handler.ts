@@ -1,8 +1,8 @@
-import { Server, Socket } from "socket.io";
+import { Socket } from "socket.io";
 import { SocketEvents } from "./socket-events";
 import { Rooms } from "./rooms";
 
-export function registerLeaveGameHandler(socket: Socket, io: Server) {
+export function registerLeaveGameHandler(socket: Socket) {
   socket.on(
     SocketEvents.LEAVE_GAME,
     async ({ gameId }: { gameId: string }, cb) => {

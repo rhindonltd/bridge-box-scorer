@@ -5,7 +5,7 @@ import SelectPairsTable from "./SelectPairsTable";
 describe("SelectPairsTable", () => {
   const baseProps = {
     tables: 2,
-    setStartingPosition: vi.fn(),
+    onSeatSelected: vi.fn(),
     startingPositions: [],
   };
 
@@ -30,7 +30,7 @@ describe("SelectPairsTable", () => {
   it("calls selectTable for NS click", () => {
     const fn = vi.fn();
 
-    render(<SelectPairsTable {...baseProps} setStartingPosition={fn} />);
+    render(<SelectPairsTable {...baseProps} onSeatSelected={fn} />);
 
     fireEvent.click(screen.getAllByRole("button", { name: "NS" })[0]);
 
@@ -40,7 +40,7 @@ describe("SelectPairsTable", () => {
   it("calls selectTable for EW click", () => {
     const fn = vi.fn();
 
-    render(<SelectPairsTable {...baseProps} setStartingPosition={fn} />);
+    render(<SelectPairsTable {...baseProps} onSeatSelected={fn} />);
 
     fireEvent.click(screen.getAllByRole("button", { name: "EW" })[0]);
 
@@ -51,7 +51,7 @@ describe("SelectPairsTable", () => {
     render(
       <SelectPairsTable
         tables={1}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,
@@ -84,7 +84,7 @@ describe("SelectPairsTable", () => {
     render(
       <SelectPairsTable
         tables={1}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,
@@ -117,7 +117,7 @@ describe("SelectPairsTable", () => {
     const { container } = render(
       <SelectPairsTable
         tables={1}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,
@@ -164,7 +164,7 @@ describe("SelectPairsTable", () => {
     render(
       <SelectPairsTable
         tables={2}
-        setStartingPosition={vi.fn()}
+        onSeatSelected={vi.fn()}
         startingPositions={[
           {
             tableNumber: 1,

@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { GameTypes } from "@/db/games/types/game-type";
+import { GameStatuses } from "@/db/games/types/game-status";
 
 export const games = sqliteTable("games", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -16,7 +17,9 @@ export const games = sqliteTable("games", {
   sectionName: text("section_name").notNull(),
   eventDate: text("event_date").notNull(),
   tables: integer("tables").notNull(),
-  status: text().notNull().default("CREATED"),
+  status: text("status", {
+    enum: GameStatuses,
+  }).notNull(),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
