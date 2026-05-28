@@ -177,9 +177,7 @@ describe("SelectPairsTablePage", () => {
       },
     });
 
-    const { unmount } = render(
-      <SelectPairSeatPage onSeatSelected={vi.fn()} />,
-    );
+    const { unmount } = render(<SelectPairSeatPage onSeatSelected={vi.fn()} />);
 
     const handler = mockOn.mock.calls[0][1];
 

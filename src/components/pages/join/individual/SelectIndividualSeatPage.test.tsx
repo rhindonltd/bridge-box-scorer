@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SelectIndividualSeatPage} from "./SelectIndividualSeatPage";
+import { SelectIndividualSeatPage } from "./SelectIndividualSeatPage";
 import { SocketEvents } from "@/socket/socket-events";
 
 const mockMutate = vi.fn();
