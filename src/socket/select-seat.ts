@@ -26,11 +26,7 @@ export function registerSelectSeatHandler(socket: Socket, io: Server) {
     ) => {
       try {
         const playerId = (
-          await createPlayer(
-            "INDIVIDUAL",
-            gameId,
-            playerInitialSeat.player,
-          )
+          await createPlayer("INDIVIDUAL", gameId, playerInitialSeat.player)
         ).id;
 
         await createInitialSeat("INDIVIDUAL", gameId, {

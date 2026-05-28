@@ -67,6 +67,7 @@
     "eslint-config-next": "16.2.6",
     "eslint-plugin-storybook": "^10.4.0",
     "jsdom": "^29.1.1",
+    "next-test-api-route-handler": "^5.0.5",
     "playwright": "^1.60.0",
     "prettier": "^3.8.3",
     "storybook": "^10.4.0",
