@@ -24,7 +24,7 @@ export async function GET() {
       currentSSID,
       savedSSID: savedConfig?.ssid ?? null,
     });
-  } catch (err) {
+  } catch {
     return Response.json(
       { error: "Failed to get network status" },
       { status: 500 },

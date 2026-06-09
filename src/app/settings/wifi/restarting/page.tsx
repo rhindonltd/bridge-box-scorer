@@ -5,7 +5,7 @@ import { WifiRestartingPage } from "@/components/pages/settings/WifiRestartingPa
 
 export default function WifiRestarting() {
   const [seconds, setSeconds] = useState(30);
-  const [status, setStatus] = useState("Rebooting device...");
+  const [status] = useState("Rebooting device...");
 
   useEffect(() => {
     const timer = setInterval(() => {

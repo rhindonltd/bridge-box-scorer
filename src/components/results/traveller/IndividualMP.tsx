@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
 import { IndividualMPPercentageTable } from "@/components/results/traveller/IndividualMPPercentageTable";
 import { IndividualMPTable } from "@/components/results/traveller/IndividualMPTable";
-import { IndividualMatchpointScoredTraveller } from "@/model/scored-traveller";
+import { ScoredTravellerOfType } from "../../../scoring/traveller/score-traveller";
 
 type Props = {
-  scoredTraveller: IndividualMatchpointScoredTraveller;
+  scoredTraveller: ScoredTravellerOfType<"INDIVIDUAL_MP">;
 };
 
 export function IndividualMP({ scoredTraveller }: Props) {

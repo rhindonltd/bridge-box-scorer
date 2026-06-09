@@ -1,8 +1,8 @@
-import { BoardOutcome } from "@/model/score-traveller";
 import {
   TravellerParticipantMode,
   ParticipantsByMode,
 } from "@/model/participants";
+import { BoardOutcome } from "./score";
 
 export interface TravellerLineBase {
   outcome: BoardOutcome;

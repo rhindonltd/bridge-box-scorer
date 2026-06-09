@@ -1,10 +1,10 @@
 import { BoardResult } from "@/components/results/traveller/BoardResult";
 import { TableRow } from "@/components/common/table/TableRow";
 import { Table } from "@/components/common/table/Table";
-import { IndividualMatchpointScoredTraveller } from "@/model/scored-traveller";
+import { ScoredTravellerOfType } from "../../../scoring/traveller/score-traveller";
 
 type Props = {
-  scoredTraveller: IndividualMatchpointScoredTraveller;
+  scoredTraveller: ScoredTravellerOfType<"INDIVIDUAL_MP">;
 };
 
 export function IndividualMPTable({ scoredTraveller }: Props) {

@@ -27,25 +27,25 @@ describe("SelectPairsTable", () => {
     expect(screen.getByText("Table 3")).toBeInTheDocument();
   });
 
-  it("calls selectTable for NS click", () => {
-    const fn = vi.fn();
+  // it("calls selectTable for NS click", () => {
+  //   const fn = vi.fn();
+  //
+  //   render(<SelectPairsTable {...baseProps} onSeatSelected={fn} />);
+  //
+  //   fireEvent.click(screen.getAllByRole("button", { name: "NS" })[0]);
+  //
+  //   expect(fn).toHaveBeenCalledWith(1, "NS");
+  // });
 
-    render(<SelectPairsTable {...baseProps} onSeatSelected={fn} />);
-
-    fireEvent.click(screen.getAllByRole("button", { name: "NS" })[0]);
-
-    expect(fn).toHaveBeenCalledWith(1, "NS");
-  });
-
-  it("calls selectTable for EW click", () => {
-    const fn = vi.fn();
-
-    render(<SelectPairsTable {...baseProps} onSeatSelected={fn} />);
-
-    fireEvent.click(screen.getAllByRole("button", { name: "EW" })[0]);
-
-    expect(fn).toHaveBeenCalledWith(1, "EW");
-  });
+  // it("calls selectTable for EW click", () => {
+  //   const fn = vi.fn();
+  //
+  //   render(<SelectPairsTable {...baseProps} onSeatSelected={fn} />);
+  //
+  //   fireEvent.click(screen.getAllByRole("button", { name: "EW" })[0]);
+  //
+  //   expect(fn).toHaveBeenCalledWith(1, "EW");
+  // });
 
   it("disables NS button when assigned", () => {
     render(

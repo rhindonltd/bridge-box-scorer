@@ -5,7 +5,7 @@ import { individualMpTraveller } from "@/mocks/fixtures/traveller/individual-mp"
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";
-import { score } from "@/model/score-traveller";
+import { score } from "@/scoring/traveller/score-traveller";
 
 const meta: Meta<typeof BoardResultsPage> = {
   title: "Pages/Play/BoardResultsPage",
@@ -87,7 +87,7 @@ export const PairXIMP: Story = {
   args: {
     board: 5,
     lastBoardOfRound: false,
-    scoredTraveller: score(impBoard1, "PAIR_XIMP"),
+    scoredTraveller: score(impBoard1, "XIMP"),
   },
 };
 
@@ -111,6 +111,6 @@ export const PairMP: Story = {
   args: {
     board: 5,
     lastBoardOfRound: false,
-    scoredTraveller: score(mpBoard1, "PAIR_MP"),
+    scoredTraveller: score(mpBoard1, "MP"),
   },
 };

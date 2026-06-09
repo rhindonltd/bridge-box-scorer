@@ -6,12 +6,12 @@ import SubmitButton from "@/components/contract/SubmitButton";
 import PassOutButton from "@/components/contract/PassOutButton";
 import NotPlayedButton from "@/components/contract/NotPlayedButton";
 import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
-import { SpecialBoardOutcome } from "@/model/score-traveller";
 import { Direction } from "@/model/common";
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
 import { PlayableContract } from "@/components/pages/play/PlayableContract";
 import { usePlay } from "@/context/PlayContext";
+import { SpecialBoardOutcome } from "@/model/result";
 
 type Props = {
   round: number;

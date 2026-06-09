@@ -4,10 +4,10 @@ import { PairMPTable } from "@/components/results/traveller/PairMPTable";
 import { PairMPPercentageTable } from "@/components/results/traveller/PairMPPercentageTable";
 import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
-import { PairMatchpointScoredTraveller } from "@/model/scored-traveller";
+import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
 type Props = {
-  scoredTraveller: PairMatchpointScoredTraveller;
+  scoredTraveller: ScoredTravellerOfType<"PAIR_MP">;
 };
 
 export function PairMP({ scoredTraveller }: Props) {

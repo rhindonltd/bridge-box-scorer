@@ -1,8 +1,8 @@
 import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
 import React from "react";
-import { ScoredTraveller } from "@/model/scored-traveller";
 import { Traveller } from "@/components/results/traveller/Traveller";
+import { ScoredTraveller } from "@/scoring/traveller/score-traveller";
 
 interface Props {
   board: number;

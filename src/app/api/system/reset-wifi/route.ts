@@ -15,7 +15,7 @@ export async function POST() {
       success: true,
       message: "WiFi reset. Device restarting...",
     });
-  } catch (err) {
+  } catch {
     return Response.json({ error: "Failed to reset WiFi" }, { status: 500 });
   }
 }

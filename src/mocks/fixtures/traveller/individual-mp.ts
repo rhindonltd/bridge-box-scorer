@@ -1,6 +1,6 @@
-import { IndividualMatchpointScoredTraveller } from "@/model/scored-traveller";
+import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
-export const individualMpTraveller: IndividualMatchpointScoredTraveller = {
+export const individualMpTraveller: ScoredTravellerOfType<"INDIVIDUAL_MP"> = {
   type: "INDIVIDUAL_MP",
   board: 10,
   lines: [
