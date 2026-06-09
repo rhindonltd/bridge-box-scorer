@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
 import http from "http";
-import { registerGameHandlers } from "@/socket/game.handlers";
+import { registerGameHandlers } from "@/socket/handlers/game/game.handlers";
 
 let io: Server | null = null;
 
