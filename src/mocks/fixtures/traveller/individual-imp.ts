@@ -1,38 +1,39 @@
-import { IndividualXIMPScoredTraveller } from "@/model/scored-traveller";
+import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
-export const individualIMPTraveller: IndividualXIMPScoredTraveller = {
-  type: "INDIVIDUAL_XIMP",
-  board: 10,
-  lines: [
-    {
-      outcome: "4SS=",
-      score: 620,
-      nId: "1",
-      sId: "2",
-      wId: "3",
-      eId: "4",
-      nsCrossImps: 6.23,
-      ewCrossImps: 2.12,
-    },
-    {
-      outcome: "NP",
-      score: null,
-      nId: "5",
-      sId: "6",
-      wId: "7",
-      eId: "8",
-      nsCrossImps: 0,
-      ewCrossImps: 0,
-    },
-    {
-      outcome: "PO",
-      score: 0,
-      nId: "9",
-      sId: "10",
-      wId: "11",
-      eId: "12",
-      nsCrossImps: 3.98,
-      ewCrossImps: 3.98,
-    },
-  ],
-};
+export const individualIMPTraveller: ScoredTravellerOfType<"INDIVIDUAL_XIMP"> =
+  {
+    type: "INDIVIDUAL_XIMP",
+    board: 10,
+    lines: [
+      {
+        outcome: "4SS=",
+        score: 620,
+        nId: "1",
+        sId: "2",
+        wId: "3",
+        eId: "4",
+        nsCrossImps: 6.23,
+        ewCrossImps: 2.12,
+      },
+      {
+        outcome: "NP",
+        score: null,
+        nId: "5",
+        sId: "6",
+        wId: "7",
+        eId: "8",
+        nsCrossImps: 0,
+        ewCrossImps: 0,
+      },
+      {
+        outcome: "PO",
+        score: 0,
+        nId: "9",
+        sId: "10",
+        wId: "11",
+        eId: "12",
+        nsCrossImps: 3.98,
+        ewCrossImps: 3.98,
+      },
+    ],
+  };

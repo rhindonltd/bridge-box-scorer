@@ -1,7 +1,7 @@
 import { BoardResult } from "@/components/results/traveller/BoardResult";
 import { TableRow } from "@/components/common/table/TableRow";
 import { Table } from "@/components/common/table/Table";
-import {ScoredTravellerOfType} from "../../../scoring/traveller/score-traveller";
+import { ScoredTravellerOfType } from "../../../scoring/traveller/score-traveller";
 
 type Props = {
   scoredTraveller: ScoredTravellerOfType<"INDIVIDUAL_MP">;

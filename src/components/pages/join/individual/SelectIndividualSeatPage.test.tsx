@@ -164,7 +164,7 @@ describe("SelectIndividualTablePage", () => {
     handler(payload);
 
     expect(mockMutate).toHaveBeenCalledWith(
-      "/api/games/individual/game-123/starting-positions",
+      "/api/games/individual/game-123/initial-seat",
       payload.startingPositions,
       false,
     );

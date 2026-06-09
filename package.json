@@ -11,7 +11,7 @@
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "test": "vitest",
+    "test": "vitest --project unit",
     "coverage": "vitest --project unit run --coverage",
     "e2e": "npx playwright test",
     "generate_movements_migration": "npx drizzle-kit generate --config=drizzle.config.movements.ts",

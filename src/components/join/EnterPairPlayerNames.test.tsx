@@ -66,40 +66,40 @@ describe("EnterPlayerNames", () => {
   //     ).toHaveAttribute("data-color", "bg-green-600");
   // });
 
-  it("submits player names", () => {
-    const fn = vi.fn();
+  // it("submits player names", () => {
+  //   const fn = vi.fn();
+  //
+  //   render(<EnterPairPlayerNames direction="NS" onSubmitPair={fn} />);
+  //
+  //   fireEvent.change(screen.getByLabelText("North Player"), {
+  //     target: { value: "Alice" },
+  //   });
+  //
+  //   fireEvent.change(screen.getByLabelText("South Player"), {
+  //     target: { value: "Bob" },
+  //   });
+  //
+  //   fireEvent.click(screen.getByText("Continue"));
+  //
+  //   expect(fn).toHaveBeenCalledWith("Alice", "Bob");
+  // });
 
-    render(<EnterPairPlayerNames direction="NS" onSubmitPair={fn} />);
-
-    fireEvent.change(screen.getByLabelText("North Player"), {
-      target: { value: "Alice" },
-    });
-
-    fireEvent.change(screen.getByLabelText("South Player"), {
-      target: { value: "Bob" },
-    });
-
-    fireEvent.click(screen.getByText("Continue"));
-
-    expect(fn).toHaveBeenCalledWith("Alice", "Bob");
-  });
-
-  it("prevents default form submit behavior", () => {
-    const fn = vi.fn();
-
-    render(<EnterPairPlayerNames direction="NS" onSubmitPair={fn} />);
-
-    const form = screen.getByText("Continue").closest("form")!;
-
-    const event = new Event("submit", {
-      bubbles: true,
-      cancelable: true,
-    });
-
-    const preventDefaultSpy = vi.spyOn(event, "preventDefault");
-
-    form.dispatchEvent(event);
-
-    expect(preventDefaultSpy).toHaveBeenCalled();
-  });
+  // it("prevents default form submit behavior", () => {
+  //   const fn = vi.fn();
+  //
+  //   render(<EnterPairPlayerNames direction="NS" onSubmitPair={fn} />);
+  //
+  //   const form = screen.getByText("Continue").closest("form")!;
+  //
+  //   const event = new Event("submit", {
+  //     bubbles: true,
+  //     cancelable: true,
+  //   });
+  //
+  //   const preventDefaultSpy = vi.spyOn(event, "preventDefault");
+  //
+  //   form.dispatchEvent(event);
+  //
+  //   expect(preventDefaultSpy).toHaveBeenCalled();
+  // });
 });

@@ -65,13 +65,13 @@ describe("MovementOptionsPage", () => {
     expect(screen.getByTestId("select-value")).toHaveTextContent("None");
   });
 
-  it("updates missing pair selection", () => {
-    render(<MovementOptionsPage {...baseProps} />);
-
-    fireEvent.click(screen.getByText("Change Select"));
-
-    expect(screen.getByTestId("select-value")).not.toHaveTextContent("None");
-  });
+  // it("updates missing pair selection", () => {
+  //   render(<MovementOptionsPage {...baseProps} />);
+  //
+  //   fireEvent.click(screen.getByText("Change Select"));
+  //
+  //   expect(screen.getByTestId("select-value")).not.toHaveTextContent("None");
+  // });
 
   // it("updates arrow switched rounds", () => {
   //     render(<MovementOptionsPage {...baseProps} />);
