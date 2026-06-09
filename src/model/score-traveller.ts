@@ -1,230 +1,251 @@
-import { parsePlayedContract, PlayedContractCode } from "@/model/result";
-import { scoreContract } from "@/model/score";
-import { getVulnerability } from "@/model/vulnerability";
 import { ImpTable } from "@/model/imp-table";
-import { IndividualTraveller, PairTraveller } from "@/model/traveller";
-import {
-  ScoredTravellerBaseFromType,
-  AnyScoredTravellerType,
-} from "@/model/scored-traveller";
+import { getVulnerability } from "@/model/vulnerability";
+import { parsePlayedContract } from "@/model/result";
+import { scoreContract } from "@/model/score";
+import { ParticipantsByMode } from "./participants";
+import { PlayedContractCode } from "./result";
 
-/* ---------- types ---------- */
+/* =========================================================
+   DOMAIN
+========================================================= */
 
-export type SpecialBoardOutcome = "PO" | "NP";
-export type BoardOutcome = PlayedContractCode | SpecialBoardOutcome;
+type BoardOutcome = PlayedContractCode | "PO" | "NP";
 
-/* ---------- helpers ---------- */
+type BaseTraveller<M extends Traveller["mode"]> = {
+  mode: M;
+  board: number;
+  lines: Array<{ outcome: BoardOutcome } & ParticipantsByMode[M]>;
+};
 
-export function outcomeToScore(
-  boardNumber: number,
-  outcome: BoardOutcome,
-): number | null {
+type Traveller = BaseTraveller<"PAIR"> | BaseTraveller<"INDIVIDUAL">;
+
+type ScoringMode = "IMP" | "XIMP" | "MP";
+
+type ResultType =
+  | "PAIR_IMP"
+  | "PAIR_XIMP"
+  | "PAIR_MP"
+  | "INDIVIDUAL_IMP"
+  | "INDIVIDUAL_XIMP"
+  | "INDIVIDUAL_MP";
+
+/* =========================================================
+   RESULT LINE TYPES
+========================================================= */
+
+type BasePrepared<TLine> = {
+  line: TLine;
+  score: number | null;
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function outcomeToScore(board: number, outcome: BoardOutcome): number | null {
   if (outcome === "PO") return 0;
   if (outcome === "NP") return null;
 
-  return scoreContract(
-    parsePlayedContract(outcome),
-    getVulnerability(boardNumber),
-  );
+  return scoreContract(parsePlayedContract(outcome), getVulnerability(board));
 }
 
-export interface ScoreEntry<TLine> {
-  line: TLine;
-  score: number | null;
-}
-
-export function prepareScores<TLine extends { outcome: BoardOutcome }>(
-  boardNumber: number,
+function prepare<TLine extends { outcome: BoardOutcome }>(
+  board: number,
   lines: TLine[],
-): ScoreEntry<TLine>[] {
+): BasePrepared<TLine>[] {
   return lines.map((line) => ({
     line,
-    score: outcomeToScore(boardNumber, line.outcome),
+    score: outcomeToScore(board, line.outcome),
   }));
 }
 
-export function compareWithField(score: number, scores: number[]): number {
-  let total = 0;
-  for (const other of scores) {
-    total += ImpTable.calculateImps(score - other);
-  }
-  return total;
-}
+/* =========================================================
+   STRATEGY CONTEXT
+========================================================= */
 
-/* ---------- generic pipeline ---------- */
-
-type ScoreLineFn<TLine, TOut> = (
-  entry: ScoreEntry<TLine>,
-  ctx: {
-    validScores: number[];
-    allEntries: ScoreEntry<TLine>[];
-    travellerSize: number;
-  },
-) => TOut;
-
-function scoreTraveller<TLine extends { outcome: BoardOutcome }, TOut>(
-  traveller: { board: number; lines: TLine[] },
-  type: AnyScoredTravellerType,
-  scoreLine: ScoreLineFn<TLine, TOut>,
-) {
-  const prepared = prepareScores(traveller.board, traveller.lines);
-
-  const validScores = prepared
-    .map((x) => x.score)
-    .filter((x): x is number => x !== null);
-
-  const lines = prepared.map((entry) =>
-    scoreLine(entry, {
-      validScores,
-      allEntries: prepared,
-      travellerSize: traveller.lines.length,
-    }),
-  );
-
-  return {
-    type,
-    board: traveller.board,
-    lines,
-  };
-}
-
-/* ---------- strategies ---------- */
-
-const impStrategy: ScoreLineFn<any, any> = (entry) => {
-  if (entry.score === null) {
-    return { ...entry.line, score: null, nsImps: 0, ewImps: 0 };
-  }
-
-  const impTotal = ImpTable.calculateImps(entry.score);
-
-  return {
-    ...entry.line,
-    score: entry.score,
-    nsImps: impTotal > 0 ? impTotal : 0,
-    ewImps: impTotal < 0 ? -impTotal : 0,
-  };
+type StrategyContext<TLine> = {
+  board: number;
+  prepared: BasePrepared<TLine>[];
+  validScores: number[];
+  size: number;
 };
 
-const ximpStrategy: ScoreLineFn<any, any> = (entry, ctx) => {
-  if (entry.score === null) {
-    return { ...entry.line, score: null, nsCrossImps: 0, ewCrossImps: 0 };
-  }
+/* =========================================================
+   STRATEGY TYPES (IMPORTANT FIX)
+========================================================= */
 
-  const impTotal = compareWithField(entry.score, ctx.validScores);
+type Strategy<TLine, TResultLine> = (
+  ctx: StrategyContext<TLine>,
+) => TResultLine[];
 
-  const crossImps =
-    (ctx.travellerSize * impTotal) /
-    (ctx.validScores.length * (ctx.travellerSize - 1));
+/* =========================================================
+   IMP
+========================================================= */
 
-  return {
-    ...entry.line,
-    score: entry.score,
-    nsCrossImps: crossImps,
-    ewCrossImps: -crossImps,
-  };
+type ImpLine<TLine> = TLine & {
+  score: number | null;
+  nsImps: number;
+  ewImps: number;
 };
 
-function matchpointStrategy<TLine extends { outcome: BoardOutcome }>(
-  traveller: { board: number; lines: TLine[] },
-  type: AnyScoredTravellerType,
-) {
-  const prepared = prepareScores(traveller.board, traveller.lines);
-  const valid = prepared.filter((x) => x.score !== null);
+const impStrategy: Strategy<any, any> = (ctx) => {
+  return ctx.prepared.map(({ line, score }) => {
+    if (score === null) {
+      return { ...line, score: null, nsImps: 0, ewImps: 0 };
+    }
 
-  const numberPlayed = valid.length;
-  if (numberPlayed === 0) {
-    return { type, board: traveller.board, lines: [] };
-  }
+    const imp = ImpTable.calculateImps(score);
+
+    return {
+      ...line,
+      score,
+      nsImps: Math.max(0, imp),
+      ewImps: Math.max(0, -imp),
+    };
+  });
+};
+
+/* =========================================================
+   XIMP
+========================================================= */
+
+type XImpLine<TLine> = TLine & {
+  score: number | null;
+  nsCrossImps: number;
+  ewCrossImps: number;
+};
+
+const ximpStrategy: Strategy<any, any> = (ctx) => {
+  return ctx.prepared.map(({ line, score }) => {
+    if (score === null) {
+      return { ...line, score: null, nsCrossImps: 0, ewCrossImps: 0 };
+    }
+
+    const imp = ctx.validScores.reduce(
+      (acc, s) => acc + ImpTable.calculateImps(score - s),
+      0,
+    );
+
+    return {
+      ...line,
+      score,
+      nsCrossImps: imp,
+      ewCrossImps: -imp,
+    };
+  });
+};
+
+/* =========================================================
+   MATCHPOINT
+========================================================= */
+
+type MatchpointLine<TLine> = TLine & {
+  score: number | null;
+  maxMatchPoints: number;
+  nsMatchPoints: number;
+  ewMatchPoints: number;
+};
+
+const matchpointStrategy: Strategy<any, any> = (ctx) => {
+  const valid = ctx.prepared.filter((p) => p.score !== null);
+
+  if (!valid.length) return [];
 
   const sorted = [...valid].sort((a, b) => b.score! - a.score!);
 
-  const lines: any[] = [];
-  let index = 0;
+  const result: any[] = [];
+  let i = 0;
 
-  while (index < sorted.length) {
-    const score = sorted[index].score!;
+  while (i < sorted.length) {
+    const score = sorted[i].score!;
     const group = sorted.filter((x) => x.score === score);
 
-    const tiedCount = group.length;
-    const averageRank = index + (tiedCount - 1) / 2;
+    const tied = group.length;
+    const rank = i + (tied - 1) / 2;
 
-    const maxMatchPoints = 2 * (numberPlayed - 1);
+    const max = 2 * (valid.length - 1);
 
-    const nsMatchPoints =
-      maxMatchPoints - (averageRank * maxMatchPoints) / (numberPlayed - 1);
-
-    const ewMatchPoints = maxMatchPoints - nsMatchPoints;
+    const ns = max - (rank * max) / (valid.length - 1);
+    const ew = max - ns;
 
     for (const entry of group) {
-      lines.push({
+      result.push({
         ...entry.line,
-        score: entry.score,
-        maxMatchPoints,
-        nsMatchPoints,
-        ewMatchPoints,
+        score,
+        maxMatchPoints: max,
+        nsMatchPoints: ns,
+        ewMatchPoints: ew,
       });
     }
 
-    index += tiedCount;
+    i += tied;
   }
 
-  return {
-    type,
-    board: traveller.board,
-    lines,
-  };
-}
+  return result;
+};
 
-/* ---------- registry ---------- */
+/* =========================================================
+   REGISTRY (PLUGIN SYSTEM)
+========================================================= */
 
-const scoringRegistry = {
-  INDIVIDUAL_IMP: impStrategy,
-  PAIR_IMP: impStrategy,
-
-  INDIVIDUAL_XIMP: ximpStrategy,
-  PAIR_XIMP: ximpStrategy,
-
-  INDIVIDUAL_MP: "MATCHPOINT",
-  PAIR_MP: "MATCHPOINT",
+const registry = {
+  IMP: impStrategy,
+  XIMP: ximpStrategy,
+  MP: matchpointStrategy,
 } as const;
 
-/* ---------- type helpers ---------- */
+/* =========================================================
+   RESULT TYPE RESOLUTION
+========================================================= */
 
-type TravellerByType<T extends AnyScoredTravellerType> =
-  T extends `PAIR_${string}`
-    ? PairTraveller
-    : T extends `INDIVIDUAL_${string}`
-      ? IndividualTraveller
-      : never;
+function resolveType(
+  mode: Traveller["mode"],
+  scoring: ScoringMode,
+): ResultType {
+  return `${mode}_${scoring}` as ResultType;
+}
 
-/* ---------- main entry ---------- */
+/* =========================================================
+   PUBLIC API (FULLY TYPED OUTPUT)
+========================================================= */
 
-export function score<T extends `PAIR_${string}`>(
-  traveller: PairTraveller,
-  type: T,
-): ScoredTravellerBaseFromType<T>;
+type ScoredTravellerMap = {
+  IMP: ImpLine<any>;
+  XIMP: XImpLine<any>;
+  MP: MatchpointLine<any>;
+};
 
-export function score<T extends `INDIVIDUAL_${string}`>(
-  traveller: IndividualTraveller,
-  type: T,
-): ScoredTravellerBaseFromType<T>;
+type Output<M extends Traveller["mode"], S extends ScoringMode> = {
+  type: `${M}_${S}`;
+  board: number;
+  lines: S extends keyof ScoredTravellerMap ? ScoredTravellerMap[S][] : never;
+};
 
-export function score<T extends AnyScoredTravellerType>(
-  traveller: PairTraveller | IndividualTraveller,
-  type: T,
-): ScoredTravellerBaseFromType<T> {
-  const strategy = scoringRegistry[type];
+export function score<M extends Traveller["mode"], S extends ScoringMode>(
+  traveller: BaseTraveller<M>,
+  mode: S,
+): Output<M, S> {
+  const fn = registry[mode];
 
-  if (strategy === "MATCHPOINT") {
-    return matchpointStrategy(
-      traveller as any,
-      type,
-    ) as ScoredTravellerBaseFromType<T>;
-  }
+  // ✅ NOW TYPE IS SAFE (no union anymore)
+  const prepared = prepare(traveller.board, traveller.lines);
 
-  return scoreTraveller(
-    traveller as any,
-    type,
-    strategy,
-  ) as ScoredTravellerBaseFromType<T>;
+  const validScores = prepared
+    .map((p) => p.score)
+    .filter((x): x is number => x !== null);
+
+  const ctx = {
+    board: traveller.board,
+    prepared,
+    validScores,
+    size: traveller.lines.length,
+  };
+
+  const lines = fn(ctx);
+
+  return {
+    type: resolveType(traveller.mode, mode),
+    board: traveller.board,
+    lines,
+  } as Output<M, S>;
 }

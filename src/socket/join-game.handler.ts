@@ -10,7 +10,7 @@ export function registerJoinGameHandler(socket: Socket) {
         socket.join(Rooms.game(gameId));
 
         cb?.({ success: true });
-      } catch (err) {
+      } catch {
         cb?.({ success: false });
       }
     },

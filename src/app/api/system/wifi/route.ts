@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       success: true,
       message: "WiFi saved. Restart required.",
     });
-  } catch (err) {
+  } catch {
     return Response.json({ error: "Failed to save WiFi" }, { status: 500 });
   }
 }

@@ -10,7 +10,7 @@ export function registerLeaveGameHandler(socket: Socket) {
         socket.leave(Rooms.game(gameId));
 
         cb?.({ success: true });
-      } catch (err) {
+      } catch {
         cb?.({ success: false });
       }
     },

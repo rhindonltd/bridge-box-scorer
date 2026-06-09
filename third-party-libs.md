@@ -1,14 +1,12 @@
-# total -> 495
+# total -> 484
 
-# MIT - 421
+# MIT - 411
 
 # MIT-0 - 1
 
 # Apache-2.0 - 20
 
 # LGPL-3.0-or-later - 1
-
-# Python-2.0 - 1
 
 # MPL-2.0 - 2
 
@@ -32,7 +30,7 @@
 
 # 0BSD - 1
 
-# @adobe/css-tools@4.4.4
+# @adobe/css-tools@4.5.0
 
 1.  https://github.com/adobe/css-tools
 2.  MIT
@@ -62,7 +60,7 @@
 1.  https://github.com/dperini/nwsapi
 2.  MIT
 
-# @babel/code-frame@7.29.0
+# @babel/code-frame@7.29.7
 
 1.  https://github.com/babel/babel
 2.  MIT
@@ -132,22 +130,12 @@
 1.  https://github.com/eslint-community/regexpp
 2.  MIT
 
-# @eslint/config-array@0.21.2
+# @eslint/config-array@0.23.5
 
 1.  https://github.com/eslint/rewrite
 2.  Apache-2.0
 
-# @eslint/eslintrc@3.3.5
-
-1.  https://github.com/eslint/eslintrc
-2.  MIT
-
-# @eslint/js@9.39.4
-
-1.  https://github.com/eslint/eslint
-2.  MIT
-
-# @exodus/bytes@1.15.0
+# @exodus/bytes@1.15.1
 
 1.  https://github.com/ExodusOSS/bytes
 2.  MIT
@@ -167,7 +155,7 @@
 1.  https://github.com/tailwindlabs/headlessui
 2.  MIT
 
-# @humanfs/core@0.19.1
+# @humanfs/core@0.19.2
 
 1.  https://github.com/humanwhocodes/humanfs
 2.  Apache-2.0
@@ -197,12 +185,12 @@
 1.  https://github.com/lovell/sharp-libvips
 2.  LGPL-3.0-or-later
 
-# @internationalized/date@3.12.1
+# @internationalized/date@3.12.2
 
 1.  https://github.com/adobe/react-spectrum/tree/main/packages/@internationalized/date
 2.  Apache-2.0
 
-# @internationalized/number@3.6.6
+# @internationalized/number@3.6.7
 
 1.  https://github.com/adobe/react-spectrum
 2.  Apache-2.0
@@ -267,7 +255,7 @@
 1.  https://github.com/oxc-project/oxc
 2.  MIT
 
-# @oxc-resolver/binding-darwin-arm64@11.19.1
+# @oxc-resolver/binding-darwin-arm64@11.20.0
 
 1.  https://github.com/oxc-project/oxc-resolver
 2.  MIT
@@ -282,7 +270,7 @@
 1.  https://github.com/lukeed/polka
 2.  MIT
 
-# @rolldown/binding-darwin-arm64@1.0.1
+# @rolldown/binding-darwin-arm64@1.0.3
 
 1.  https://github.com/rolldown/rolldown
 2.  MIT
@@ -292,7 +280,7 @@
 1.  https://github.com/rolldown/plugins
 2.  MIT
 
-# @rollup/pluginutils@5.3.0
+# @rollup/pluginutils@5.4.0
 
 1.  https://github.com/rollup/plugins
 2.  MIT
@@ -312,7 +300,7 @@
 1.  https://github.com/standard-schema/standard-schema
 2.  MIT
 
-# @storybook/addon-a11y@10.4.0
+# @storybook/addon-a11y@10.4.2
 
 1.  https://github.com/storybookjs/storybook
 2.  MIT
@@ -332,12 +320,12 @@
 1.  https://github.com/swc-project/swc
 2.  Apache-2.0
 
-# @tailwindcss/node@4.2.2
+# @tailwindcss/node@4.3.0
 
 1.  https://github.com/tailwindlabs/tailwindcss
 2.  MIT
 
-# @tanstack/react-virtual@3.13.24
+# @tanstack/react-virtual@3.14.2
 
 1.  https://github.com/TanStack/virtual
 2.  MIT
@@ -372,12 +360,12 @@
 1.  https://github.com/DefinitelyTyped/DefinitelyTyped
 2.  MIT
 
-# @typescript-eslint/eslint-plugin@8.58.1
+# @typescript-eslint/eslint-plugin@8.61.0
 
 1.  https://github.com/typescript-eslint/typescript-eslint
 2.  MIT
 
-# @unrs/resolver-binding-darwin-arm64@1.11.1
+# @unrs/resolver-binding-darwin-arm64@1.12.2
 
 1.  https://github.com/unrs/unrs-resolver
 2.  MIT
@@ -387,7 +375,7 @@
 1.  https://github.com/vitejs/vite-plugin-react
 2.  MIT
 
-# @vitest/browser-playwright@4.1.4
+# @vitest/browser-playwright@4.1.8
 
 1.  https://github.com/vitest-dev/vitest
 2.  MIT
@@ -427,7 +415,7 @@
 1.  https://github.com/chalk/ansi-regex
 2.  MIT
 
-# ansi-styles@4.3.0
+# ansi-styles@5.2.0
 
 1.  https://github.com/chalk/ansi-styles
 2.  MIT
@@ -436,11 +424,6 @@
 
 1.  https://github.com/zeit/arg
 2.  MIT
-
-# argparse@2.0.1
-
-1.  https://github.com/nodeca/argparse
-2.  Python-2.0
 
 # aria-hidden@1.2.6
 
@@ -507,7 +490,7 @@
 1.  https://github.com/benjamn/ast-types
 2.  MIT
 
-# ast-v8-to-istanbul@1.0.0
+# ast-v8-to-istanbul@1.0.3
 
 1.  https://github.com/AriPerkkio/ast-v8-to-istanbul
 2.  MIT
@@ -522,7 +505,7 @@
 1.  https://github.com/inspect-js/available-typed-arrays
 2.  MIT
 
-# axe-core@4.11.2
+# axe-core@4.12.0
 
 1.  https://github.com/dequelabs/axe-core
 2.  MPL-2.0
@@ -547,7 +530,7 @@
 1.  https://github.com/faeldt/base64id
 2.  MIT
 
-# baseline-browser-mapping@2.10.17
+# baseline-browser-mapping@2.10.34
 
 1.  https://github.com/web-platform-dx/baseline-browser-mapping
 2.  Apache-2.0
@@ -577,7 +560,7 @@
 1.  https://github.com/rvagg/bl
 2.  MIT
 
-# brace-expansion@1.1.14
+# brace-expansion@1.1.15
 
 1.  https://github.com/juliangruber/brace-expansion
 2.  MIT
@@ -627,12 +610,7 @@
 1.  https://github.com/ljharb/call-bound
 2.  MIT
 
-# callsites@3.1.0
-
-1.  https://github.com/sindresorhus/callsites
-2.  MIT
-
-# caniuse-lite@1.0.30001787
+# caniuse-lite@1.0.30001797
 
 1.  https://github.com/browserslist/caniuse-lite
 2.  CC-BY-4.0
@@ -640,11 +618,6 @@
 # chai@5.3.3
 
 1.  https://github.com/chaijs/chai
-2.  MIT
-
-# chalk@4.1.2
-
-1.  https://github.com/chalk/chalk
 2.  MIT
 
 # check-error@2.1.3
@@ -665,16 +638,6 @@
 # clsx@2.1.1
 
 1.  https://github.com/lukeed/clsx
-2.  MIT
-
-# color-convert@2.0.1
-
-1.  https://github.com/Qix-/color-convert
-2.  MIT
-
-# color-name@1.1.4
-
-1.  https://github.com/colorjs/color-name
 2.  MIT
 
 # concat-map@0.0.1
@@ -857,7 +820,7 @@
 1.  https://github.com/es-shims/dunder-proto
 2.  MIT
 
-# electron-to-chromium@1.5.349
+# electron-to-chromium@1.5.369
 
 1.  https://github.com/Kilian/electron-to-chromium
 2.  ISC
@@ -877,12 +840,12 @@
 1.  https://github.com/mafintosh/end-of-stream
 2.  MIT
 
-# engine.io-client@6.6.4
+# engine.io-client@6.6.5
 
 1.  https://github.com/socketio/socket.io
 2.  MIT
 
-# enhanced-resolve@5.20.1
+# enhanced-resolve@5.23.0
 
 1.  https://github.com/webpack/enhanced-resolve
 2.  MIT
@@ -912,12 +875,12 @@
 1.  https://github.com/es-shims/iterator-helpers
 2.  MIT
 
-# es-module-lexer@2.0.0
+# es-module-lexer@2.1.0
 
 1.  https://github.com/guybedford/es-module-lexer
 2.  MIT
 
-# es-object-atoms@1.1.1
+# es-object-atoms@1.1.2
 
 1.  https://github.com/ljharb/es-object-atoms
 2.  MIT
@@ -972,7 +935,7 @@
 1.  https://github.com/jsx-eslint/eslint-plugin-react
 2.  MIT
 
-# eslint-scope@8.4.0
+# eslint-scope@9.1.2
 
 1.  https://github.com/eslint/js
 2.  BSD-2-Clause
@@ -981,6 +944,11 @@
 
 1.  https://github.com/eslint/eslint-visitor-keys
 2.  Apache-2.0
+
+# eslint@10.4.1
+
+1.  https://github.com/eslint/eslint
+2.  MIT
 
 # esprima@4.0.1
 
@@ -1137,7 +1105,7 @@
 1.  https://github.com/inspect-js/get-symbol-description
 2.  MIT
 
-# get-tsconfig@4.13.7
+# get-tsconfig@4.14.0
 
 1.  https://github.com/privatenumber/get-tsconfig
 2.  MIT
@@ -1157,7 +1125,7 @@
 1.  https://github.com/isaacs/node-glob
 2.  BlueOak-1.0.0
 
-# globals@14.0.0
+# globals@16.4.0
 
 1.  https://github.com/sindresorhus/globals
 2.  MIT
@@ -1212,7 +1180,7 @@
 1.  https://github.com/inspect-js/has-tostringtag
 2.  MIT
 
-# hasown@2.0.3
+# hasown@2.0.4
 
 1.  https://github.com/inspect-js/hasOwn
 2.  MIT
@@ -1245,11 +1213,6 @@
 # image-size@2.0.2
 
 1.  https://github.com/image-size/image-size
-2.  MIT
-
-# import-fresh@3.3.1
-
-1.  https://github.com/sindresorhus/import-fresh
 2.  MIT
 
 # imurmurhash@0.1.4
@@ -1307,7 +1270,7 @@
 1.  https://github.com/inspect-js/is-callable
 2.  MIT
 
-# is-core-module@2.16.1
+# is-core-module@2.16.2
 
 1.  https://github.com/inspect-js/is-core-module
 2.  MIT
@@ -1447,7 +1410,7 @@
 1.  https://github.com/ljharb/Iterator.prototype
 2.  MIT
 
-# jiti@2.6.1
+# jiti@2.7.0
 
 1.  https://github.com/unjs/jiti
 2.  MIT
@@ -1455,11 +1418,6 @@
 # js-tokens@10.0.0
 
 1.  https://github.com/lydell/js-tokens
-2.  MIT
-
-# js-yaml@4.1.1
-
-1.  https://github.com/nodeca/js-yaml
 2.  MIT
 
 # jsdom@29.1.1
@@ -1492,7 +1450,7 @@
 1.  https://github.com/json5/json5
 2.  MIT
 
-# jsonfile@6.2.0
+# jsonfile@6.2.1
 
 1.  https://github.com/jprichardson/node-jsonfile
 2.  MIT
@@ -1532,11 +1490,6 @@
 1.  https://github.com/sindresorhus/locate-path
 2.  MIT
 
-# lodash.merge@4.6.2
-
-1.  https://github.com/lodash/lodash
-2.  MIT
-
 # loose-envify@1.4.0
 
 1.  https://github.com/zertosh/loose-envify
@@ -1547,12 +1500,12 @@
 1.  https://github.com/chaijs/loupe
 2.  MIT
 
-# lru-cache@11.3.5
+# lru-cache@11.5.1
 
 1.  https://github.com/isaacs/node-lru-cache
 2.  BlueOak-1.0.0
 
-# lucide-react@1.16.0
+# lucide-react@1.17.0
 
 1.  https://github.com/lucide-icons/lucide
 2.  ISC
@@ -1567,7 +1520,7 @@
 1.  https://github.com/Rich-Harris/magic-string
 2.  MIT
 
-# magicast@0.5.2
+# magicast@0.5.3
 
 1.  https://github.com/unjs/magicast
 2.  MIT
@@ -1657,7 +1610,7 @@
 1.  https://github.com/vercel/ms
 2.  MIT
 
-# nanoid@3.3.11
+# nanoid@3.3.12
 
 1.  https://github.com/ai/nanoid
 2.  MIT
@@ -1687,12 +1640,12 @@
 1.  https://github.com/Xunnamius/next-test-api-route-handler
 2.  MIT
 
-# node-abi@3.89.0
+# node-abi@3.92.0
 
 1.  https://github.com/electron/node-abi
 2.  MIT
 
-# node-addon-api@8.7.0
+# node-addon-api@8.8.0
 
 1.  https://github.com/nodejs/node-addon-api
 2.  MIT
@@ -1707,7 +1660,7 @@
 1.  https://github.com/prebuild/node-gyp-build
 2.  MIT
 
-# node-releases@2.0.38
+# node-releases@2.0.47
 
 1.  https://github.com/chicoxyzzy/node-releases
 2.  MIT
@@ -1752,7 +1705,7 @@
 1.  https://github.com/es-shims/Object.values
 2.  MIT
 
-# obug@2.1.1
+# obug@2.1.2
 
 1.  https://github.com/sxzz/obug
 2.  MIT
@@ -1785,11 +1738,6 @@
 # p-locate@5.0.0
 
 1.  https://github.com/sindresorhus/p-locate
-2.  MIT
-
-# parent-module@1.0.1
-
-1.  https://github.com/sindresorhus/parent-module
 2.  MIT
 
 # parse5@8.0.1
@@ -1937,11 +1885,6 @@
 1.  https://github.com/floatdrop/require-from-string
 2.  MIT
 
-# resolve-from@4.0.0
-
-1.  https://github.com/sindresorhus/resolve-from
-2.  MIT
-
 # resolve-pkg-maps@1.0.0
 
 1.  https://github.com/privatenumber/resolve-pkg-maps
@@ -1967,7 +1910,7 @@
 1.  https://github.com/feross/run-parallel
 2.  MIT
 
-# safe-array-concat@1.1.3
+# safe-array-concat@1.1.4
 
 1.  https://github.com/ljharb/safe-array-concat
 2.  MIT
@@ -2037,7 +1980,7 @@
 1.  https://github.com/ljharb/side-channel-weakmap
 2.  MIT
 
-# side-channel@1.1.0
+# side-channel@1.1.1
 
 1.  https://github.com/ljharb/side-channel
 2.  MIT
@@ -2087,7 +2030,7 @@
 1.  https://github.com/shtylman/node-stackback
 2.  MIT
 
-# std-env@4.0.0
+# std-env@4.1.0
 
 1.  https://github.com/unjs/std-env
 2.  MIT
@@ -2112,12 +2055,12 @@
 1.  https://github.com/mathiasbynens/String.prototype.repeat
 2.  MIT
 
-# string.prototype.trim@1.2.10
+# string.prototype.trim@1.2.11
 
 1.  https://github.com/es-shims/String.prototype.trim
 2.  MIT
 
-# string.prototype.trimend@1.0.9
+# string.prototype.trimend@1.0.10
 
 1.  https://github.com/es-shims/String.prototype.trimEnd
 2.  MIT
@@ -2182,7 +2125,7 @@
 1.  https://github.com/focus-trap/tabbable
 2.  MIT
 
-# tapable@2.3.2
+# tapable@2.3.3
 
 1.  https://github.com/webpack/tapable
 2.  MIT
@@ -2207,12 +2150,12 @@
 1.  https://github.com/tinylibs/tinybench
 2.  MIT
 
-# tinyexec@1.1.1
+# tinyexec@1.2.4
 
 1.  https://github.com/tinylibs/tinyexec
 2.  MIT
 
-# tinyglobby@0.2.16
+# tinyglobby@0.2.17
 
 1.  https://github.com/SuperchupuDev/tinyglobby
 2.  MIT
@@ -2227,7 +2170,7 @@
 1.  https://github.com/tinylibs/tinyspy
 2.  MIT
 
-# tldts-core@7.0.28
+# tldts-core@7.4.2
 
 1.  https://github.com/remusao/tldts
 2.  MIT
@@ -2282,7 +2225,7 @@
 1.  https://github.com/Microsoft/tslib
 2.  0BSD
 
-# tsx@4.22.3
+# tsx@4.22.4
 
 1.  https://github.com/privatenumber/tsx
 2.  MIT
@@ -2312,7 +2255,7 @@
 1.  https://github.com/inspect-js/typed-array-byte-offset
 2.  MIT
 
-# typed-array-length@1.0.7
+# typed-array-length@1.0.8
 
 1.  https://github.com/inspect-js/typed-array-length
 2.  MIT
@@ -2327,7 +2270,7 @@
 1.  https://github.com/ljharb/unbox-primitive
 2.  MIT
 
-# undici-types@7.19.2
+# undici-types@7.24.6
 
 1.  https://github.com/nodejs/undici
 2.  MIT
@@ -2372,7 +2315,7 @@
 1.  https://github.com/jshttp/vary
 2.  MIT
 
-# vite-plugin-storybook-nextjs@3.2.4
+# vite-plugin-storybook-nextjs@3.3.0
 
 1.  https://github.com/storybookjs/vite-plugin-storybook-nextjs
 2.  MIT
@@ -2382,7 +2325,7 @@
 1.  https://github.com/aleclarson/vite-tsconfig-paths
 2.  MIT
 
-# vite@8.0.13
+# vite@8.0.16
 
 1.  https://github.com/vitejs/vite
 2.  MIT
@@ -2427,7 +2370,7 @@
 1.  https://github.com/inspect-js/which-collection
 2.  MIT
 
-# which-typed-array@1.1.20
+# which-typed-array@1.1.22
 
 1.  https://github.com/inspect-js/which-typed-array
 2.  MIT
@@ -2452,7 +2395,7 @@
 1.  https://github.com/npm/wrappy
 2.  ISC
 
-# ws@8.18.3
+# ws@8.20.1
 
 1.  https://github.com/websockets/ws
 2.  MIT
@@ -2502,7 +2445,7 @@
 1.  https://github.com/colinhacks/zod
 2.  MIT
 
-# zustand@5.0.13
+# zustand@5.0.14
 
 1.  https://github.com/pmndrs/zustand
 2.  MIT
