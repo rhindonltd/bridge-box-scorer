@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { SocketEvents } from "./socket-events";
+import { SocketEvents } from "@/socket/socket-events";
 import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";

@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { SocketEvents } from "./socket-events";
+import { SocketEvents } from "@/socket/socket-events";
 
 import {
   getIndividualMovement,
@@ -10,13 +10,13 @@ import {
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
 
-import { createPairMovement } from "../db/games/pairs/actions/create-movement";
-import { createIndividualMovement } from "../db/games/individual/actions/create-movement";
-import { createBoardPlay } from "../db/games/shared/actions/create-board-play";
-import { findPlayerForStartingPosition } from "../db/games/shared/queries/find-player-for-starting-position";
-import { createIndividualPlayerMovementMapEntry } from "../db/games/individual/actions/create-player-movement-map-entry";
-import { findPairForPlayerId } from "../db/games/pairs/queries/find-pair-for-player-id";
-import { createPairMovementMapEntry } from "../db/games/pairs/actions/create-pair-movement-map-entry";
+import { createPairMovement } from "@/db/games/pairs/actions/create-movement";
+import { createIndividualMovement } from "@/db/games/individual/actions/create-movement";
+import { createBoardPlay } from "@/db/games/shared/actions/create-board-play";
+import { findPlayerForStartingPosition } from "@/db/games/shared/queries/find-player-for-starting-position";
+import { createIndividualPlayerMovementMapEntry } from "@/db/games/individual/actions/create-player-movement-map-entry";
+import { findPairForPlayerId } from "@/db/games/pairs/queries/find-pair-for-player-id";
+import { createPairMovementMapEntry } from "@/db/games/pairs/actions/create-pair-movement-map-entry";
 import { GameType } from "@/db/games/types/game-type";
 
 /**

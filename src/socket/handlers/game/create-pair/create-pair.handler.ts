@@ -1,10 +1,10 @@
 import { Server, Socket } from "socket.io";
-import { SocketEvents } from "./socket-events";
+import { SocketEvents } from "@/socket/socket-events";
 
 import { createPlayer } from "@/db/games/shared/actions/create-player";
 import { createPair } from "@/db/games/pairs/actions/create-pair";
 import { createInitialSeat } from "@/db/games/shared/actions/create-initial-seat";
-import { Rooms } from "./rooms";
+import { Rooms } from "@/socket/rooms";
 import {
   findPairInitialSeats,
   PairInitialSeat,

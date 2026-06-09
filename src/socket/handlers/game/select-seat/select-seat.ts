@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 
-import { SocketEvents } from "./socket-events";
-import { Rooms } from "./rooms";
+import { SocketEvents } from "@/socket/socket-events";
+import { Rooms } from "@/socket/rooms";
 
 import { createPlayer } from "@/db/games/shared/actions/create-player";
 

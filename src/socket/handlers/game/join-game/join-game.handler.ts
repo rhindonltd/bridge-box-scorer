@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
-import { SocketEvents } from "./socket-events";
-import { Rooms } from "./rooms";
+import { SocketEvents } from "@/socket/socket-events";
+import { Rooms } from "@/socket/rooms";
 
 export function registerJoinGameHandler(socket: Socket) {
   socket.on(
