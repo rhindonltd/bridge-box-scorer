@@ -4,7 +4,7 @@ import { individualIMPTraveller } from "@/mocks/fixtures/traveller/individual-im
 import { individualMpTraveller } from "@/mocks/fixtures/traveller/individual-mp";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
-import { score } from "@/model/score-traveller";
+import { score } from "@/scoring/traveller/score-traveller";
 
 const meta: Meta<typeof Traveller> = {
   title: "Components/Results/Traveller/Traveller",
@@ -33,12 +33,12 @@ export const IndividualMP: Story = {
 
 export const PairIMP: Story = {
   args: {
-    scoredTraveller: score(impBoard1, "PAIR_XIMP"),
+    scoredTraveller: score(impBoard1, "XIMP"),
   },
 };
 
 export const PairMP: Story = {
   args: {
-    scoredTraveller: score(mpBoard1, "PAIR_MP"),
+    scoredTraveller: score(mpBoard1, "MP"),
   },
 };

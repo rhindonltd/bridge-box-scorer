@@ -9,6 +9,8 @@ export type UnderTricks = `-${1 | 2 | 3 | 4 | 5 | 6 | 7}`;
 export type ContractResult = "=" | OverTricks | UnderTricks;
 export type PlayedContractCode = `${ContractCode}${ContractResult}`;
 
+export type SpecialBoardOutcome = "PO" | "NP"
+
 export type ParsedContract = {
   level: Level;
   suit: ContractSuit;

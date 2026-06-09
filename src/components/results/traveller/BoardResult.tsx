@@ -1,6 +1,6 @@
+import { BoardOutcome } from "@/model/score";
 import { PlayedContract } from "./PlayedContract";
 import { isPlayedContractCode } from "@/model/result";
-import { BoardOutcome } from "@/model/score-traveller";
 
 type Props = {
   boardOutcome: BoardOutcome;

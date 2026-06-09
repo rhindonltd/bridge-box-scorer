@@ -1,10 +1,10 @@
 import { BoardResult } from "@/components/results/traveller/BoardResult";
 import { TableRow } from "@/components/common/table/TableRow";
 import { Table } from "@/components/common/table/Table";
-import { PairXIMPScoredTraveller } from "@/model/scored-traveller";
+import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
 type Props = {
-  scoredTraveller: PairXIMPScoredTraveller;
+  scoredTraveller: ScoredTravellerOfType<"PAIR_IMP">;
 };
 
 export function PairIMPTable({ scoredTraveller }: Props) {
@@ -23,8 +23,8 @@ export function PairIMPTable({ scoredTraveller }: Props) {
                 `${row.ewId}`,
                 <BoardResult key={index} boardOutcome={row.outcome} />,
                 row.score,
-                row.nsCrossImps.toFixed(2),
-                row.ewCrossImps.toFixed(2),
+                row.nsImps.toFixed(2),
+                row.ewImps.toFixed(2),
               ]}
               className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
             />
