@@ -1,5 +1,12 @@
+import { Bebas_Neue } from "next/font/google";
 import "@/styles/globals.css";
 import type { Metadata } from "next";
+
+const bebas = Bebas_Neue({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-bebas",
+});
 
 export const metadata: Metadata = {
   title: "Bridge Box",
@@ -13,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={bebas.variable}>{children}</body>
     </html>
   );
 }
