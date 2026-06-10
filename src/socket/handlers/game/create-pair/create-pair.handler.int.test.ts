@@ -47,15 +47,15 @@ describe("registerCreatePairHandler (integration)", () => {
       { tableNumber: 1, player: "p1" },
     ]);
 
-      const { io, client, close } = await createSocketTestServer((io) => {
-          io.on("connection", (socket) => {
-              socket.on("join", (room: string) => {
-                  socket.join(room);
-              });
+    const { io, client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket) => {
+        socket.on("join", (room: string) => {
+          socket.join(room);
+        });
 
-              registerCreatePairHandler(socket, io);
-          });
+        registerCreatePairHandler(socket, io);
       });
+    });
 
     // ---- listen for emitted event ----
     const emittedPromise = waitForEvent(
@@ -63,7 +63,7 @@ describe("registerCreatePairHandler (integration)", () => {
       SocketEvents.STARTING_POSITIONS,
     );
 
-      client.emit("join", Rooms.game("game-1"));
+    client.emit("join", Rooms.game("game-1"));
 
     // ---- act ----
     const response = await emitWithAck(client, SocketEvents.CREATE_PAIR, {
