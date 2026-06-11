@@ -10,7 +10,7 @@ import { TimerState } from "@/timer/timer-state";
 export function registerNextRoundHandler(socket: Socket, io: Server) {
   function broadcast(gameId: string, timerState: TimerState) {
     io.to(Rooms.game(gameId)).emit("timer:sync", {
-      timerState,
+      ...timerState,
       serverNow: Date.now(),
     });
   }

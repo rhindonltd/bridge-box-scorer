@@ -1,8 +1,7 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import { useEffect, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import { getSocket } from "@/lib/socket";
 
 export default function ControlsPage() {
   const { gameSelection } = useGame();
@@ -11,23 +10,13 @@ export default function ControlsPage() {
     return null;
   }
 
-  const socketRef = useRef<Socket | null>(null);
-
   /* ---------------- SOCKET ---------------- */
 
-  useEffect(() => {
-    const socket = io();
-    socketRef.current = socket;
-
-    socket.emit("game:join", { gameSelection });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [gameSelection]);
-
   function emit(event: string) {
-    socketRef.current?.emit(event, { gameSelection });
+    getSocket().emit(event, {
+      gameType: gameSelection!.gameType,
+      gameId: gameSelection!.gameId,
+    });
   }
 
   /* ---------------- CONTROLS ---------------- */

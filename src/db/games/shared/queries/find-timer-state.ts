@@ -18,5 +18,5 @@ export async function findTimerState(
     .from(metadata)
     .where(eq(metadata.key, "timer"));
 
-  return timers ? JSON.parse(timers[0].value) : null;
+  return timers.length == 1 ? JSON.parse(timers[0].value) : null;
 }

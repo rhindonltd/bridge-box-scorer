@@ -10,7 +10,7 @@ import { Server, Socket } from "socket.io";
 export function registerUpdateConfigHandler(socket: Socket, io: Server) {
   function broadcast(gameId: string, timerState: TimerState) {
     io.to(Rooms.game(gameId)).emit("timer:sync", {
-      timerState,
+      ...timerState,
       serverNow: Date.now(),
     });
   }

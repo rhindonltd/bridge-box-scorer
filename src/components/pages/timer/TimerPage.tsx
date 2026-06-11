@@ -23,7 +23,7 @@ export default function TimerPage() {
     return null;
   }
 
-  const { timerState, now } = useTimerSync(gameSelection.gameId);
+  const { timerState, now } = useTimerSync();
 
   const { remaining, phase, round, boardLabel, title, isRunning } =
     useTimerDerived(timerState, now());

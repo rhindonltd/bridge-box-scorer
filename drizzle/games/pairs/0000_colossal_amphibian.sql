@@ -15,11 +15,8 @@ CREATE TABLE `initialseat` (
 );
 --> statement-breakpoint
 CREATE TABLE `metadata` (
-	`id` text PRIMARY KEY NOT NULL,
-	`movement_type` text NOT NULL,
-	`boards_per_round` integer NOT NULL,
-	`rounds` integer NOT NULL,
-	`bridge_tables` integer NOT NULL
+	`key` text PRIMARY KEY NOT NULL,
+	`value` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `movements` (
