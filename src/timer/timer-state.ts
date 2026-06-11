@@ -7,7 +7,7 @@ export type TimerState = {
   board: number;
   round: number;
 
-  totalBoards: number;
+  boardsPerRound: number;
   totalRounds: number;
 
   playDuration: number;

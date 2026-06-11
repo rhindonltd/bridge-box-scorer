@@ -9,7 +9,45 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       boardLabel: null,
       title: "Connecting…",
       isRunning: false,
+      projectedEndDate: new Date(),
     };
+  }
+
+  function computeRemainingSessionMs(now = Date.now()): number {
+    if (!state || state.phase === "finished") {
+      return 0;
+    }
+
+    const playMs = state.playDuration * 1000;
+    const moveMs = state.moveDuration * 1000;
+
+    let remainingCurrentPhaseMs: number;
+
+    if (!state.isRunning) {
+      remainingCurrentPhaseMs =
+        state.remainingMs ?? (state.phase === "play" ? playMs : moveMs);
+    } else {
+      const elapsed = now - state.phaseStartedAt!;
+
+      const phaseDurationMs = state.phase === "play" ? playMs : moveMs;
+
+      remainingCurrentPhaseMs = Math.max(0, phaseDurationMs - elapsed);
+    }
+
+    const futureRounds = state.totalRounds - state.round;
+
+    if (state.phase === "play") {
+      return (
+        remainingCurrentPhaseMs + futureRounds * playMs + futureRounds * moveMs
+      );
+    }
+
+    // phase === "move"
+    return (
+      remainingCurrentPhaseMs +
+      futureRounds * playMs +
+      Math.max(0, futureRounds - 1) * moveMs
+    );
   }
 
   const getRemaining = () => {
@@ -34,6 +72,10 @@ export function useTimerDerived(state: TimerState | null, now: number) {
 
   const remaining = getRemaining();
 
+  const sessionRemainingMs = computeRemainingSessionMs();
+  const projectedEnd = sessionRemainingMs ? now + sessionRemainingMs : now;
+  const projectedEndDate = new Date(projectedEnd);
+
   const title =
     state.phase === "finished"
       ? "Session Complete"
@@ -43,7 +85,7 @@ export function useTimerDerived(state: TimerState | null, now: number) {
 
   const boardLabel =
     state.phase === "play"
-      ? `Board ${state.board} of ${state.totalBoards}`
+      ? `Board ${state.board} of ${state.boardsPerRound}`
       : null;
 
   return {
@@ -53,5 +95,6 @@ export function useTimerDerived(state: TimerState | null, now: number) {
     boardLabel,
     title,
     isRunning: state.isRunning,
+    projectedEndDate,
   };
 }

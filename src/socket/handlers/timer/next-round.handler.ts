@@ -20,12 +20,14 @@ export function registerNextRoundHandler(socket: Socket, io: Server) {
     async ({ gameType, gameId }: { gameType: GameType; gameId: string }) => {
       const engine = await getEngine(gameType, gameId);
 
-      engine.nextPhase();
+      if (engine) {
+        engine.nextPhase();
 
-      await updateTimerState(gameType, gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+        await updateTimerState(gameType, gameId, engine.getState());
+        broadcast(gameId, engine.getState());
 
-      scheduleGame(gameType, gameId, engine, { updateTimerState, broadcast });
+        scheduleGame(gameType, gameId, engine, { updateTimerState, broadcast });
+      }
     },
   );
 }

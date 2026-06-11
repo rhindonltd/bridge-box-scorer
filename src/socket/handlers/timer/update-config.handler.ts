@@ -31,12 +31,14 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
     }) => {
       const engine = await getEngine(gameType, gameId);
 
-      engine.updateConfig(cfg);
+      if (engine) {
+        engine.updateConfig(cfg);
 
-      await updateTimerState(gameType, gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+        await updateTimerState(gameType, gameId, engine.getState());
+        broadcast(gameId, engine.getState());
 
-      scheduleGame(gameType, gameId, engine, { updateTimerState, broadcast });
+        scheduleGame(gameType, gameId, engine, { updateTimerState, broadcast });
+      }
     },
   );
 }

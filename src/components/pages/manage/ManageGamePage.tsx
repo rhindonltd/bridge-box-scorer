@@ -39,9 +39,9 @@ export function ManageGamePage() {
   return (
     <div className="h-screen flex flex-col overflow-y-auto">
       {/* HEADER */}
-      <div className="w-full bg-blue-200 py-2 text-center font-bold">
-        Join Game
-      </div>
+      {/*<div className="w-full bg-blue-200 py-2 text-center font-bold">*/}
+      {/*  Join Game*/}
+      {/*</div>*/}
 
       {/* GAME LIST */}
       {step === "LIST_GAMES" && (

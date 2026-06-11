@@ -20,12 +20,14 @@ export function registerPauseTimerHandler(socket: Socket, io: Server) {
     async ({ gameType, gameId }: { gameType: GameType; gameId: string }) => {
       const engine = await getEngine(gameType, gameId);
 
-      engine.pause();
+      if (engine) {
+        engine.pause();
 
-      await updateTimerState(gameType, gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+        await updateTimerState(gameType, gameId, engine.getState());
+        broadcast(gameId, engine.getState());
 
-      scheduleGame(gameType, gameId, engine, { updateTimerState, broadcast });
+        scheduleGame(gameType, gameId, engine, { updateTimerState, broadcast });
+      }
     },
   );
 }

@@ -17,8 +17,29 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
 
   socket.on(
     SocketEvents.CREATE_TIMER,
-    async ({ gameType, gameId }: { gameType: GameType; gameId: string }) => {
-      const engine = await createEngine(gameType, gameId);
+    async ({
+      gameType,
+      gameId,
+      boardsPerRound,
+      totalRounds,
+      playDuration,
+      moveDuration,
+    }: {
+      gameType: GameType;
+      gameId: string;
+      boardsPerRound: number;
+      totalRounds: number;
+      playDuration: number;
+      moveDuration: number;
+    }) => {
+      const engine = await createEngine(
+        gameType,
+        gameId,
+        boardsPerRound,
+        totalRounds,
+        playDuration,
+        moveDuration,
+      );
 
       engine.pause();
 

@@ -76,7 +76,7 @@ export class BridgeTimerEngine {
   }
 
   reset() {
-    this.state.phase = "move";
+    this.state.phase = "play";
     this.state.round = 1;
 
     this.state.isRunning = false;

@@ -25,8 +25,15 @@ export default function TimerPage() {
 
   const { timerState, now } = useTimerSync();
 
-  const { remaining, phase, round, boardLabel, title, isRunning } =
-    useTimerDerived(timerState, now());
+  const {
+    remaining,
+    phase,
+    round,
+    boardLabel,
+    title,
+    isRunning,
+    projectedEndDate,
+  } = useTimerDerived(timerState, now());
 
   /* ---------------- LOCAL TICK (render only) ---------------- */
 
@@ -69,6 +76,14 @@ export default function TimerPage() {
       {!isRunning && phase !== "finished" && (
         <div className="mt-8 text-yellow-400 text-3xl">PAUSED</div>
       )}
+
+      <div className="text-white/70 text-sm mt-4">
+        Projected end:{" "}
+        {projectedEndDate.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </div>
     </div>
   );
 }
