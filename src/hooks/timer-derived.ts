@@ -1,8 +1,6 @@
 import { TimerState } from "@/timer/timer-state";
 
 export function useTimerDerived(state: TimerState | null, now: number) {
-  console.log("STATE: " + JSON.stringify(state));
-
   if (!state) {
     return {
       remaining: 0,
@@ -41,14 +39,14 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       ? "Session Complete"
       : state.phase === "play"
         ? `Round ${state.round} of ${state.totalRounds}`
-        : `Move for Round ${state.round + 1}`;
+        : `Move for Round ${state.round}`;
 
   const boardLabel =
     state.phase === "play"
-      ? `Board ${state.board + 1} of ${state.totalBoards}`
+      ? `Board ${state.board} of ${state.totalBoards}`
       : null;
 
-  const x = {
+  return {
     remaining,
     phase: state.phase,
     round: state.round,
@@ -56,8 +54,4 @@ export function useTimerDerived(state: TimerState | null, now: number) {
     title,
     isRunning: state.isRunning,
   };
-
-  console.log("RESULT: " + JSON.stringify(x));
-
-  return x;
 }

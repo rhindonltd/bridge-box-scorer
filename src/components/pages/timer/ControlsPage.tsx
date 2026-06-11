@@ -28,6 +28,13 @@ export default function ControlsPage() {
       {/* PRIMARY CONTROLS */}
       <div className="grid grid-cols-2 gap-4 w-full max-w-md">
         <button
+          onClick={() => emit("timer:create")}
+          className="bg-cyan-600 py-6 rounded-xl text-xl font-semibold"
+        >
+          Create
+        </button>
+
+        <button
           onClick={() => emit("timer:start")}
           className="bg-green-600 py-6 rounded-xl text-xl font-semibold"
         >

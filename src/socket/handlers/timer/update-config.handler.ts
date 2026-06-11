@@ -2,7 +2,7 @@ import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
 import { GameType } from "@/db/games/types/game-type";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
-import { getOrCreateEngine } from "@/timer/game-store";
+import { getEngine } from "@/timer/game-store";
 import { scheduleGame } from "@/timer/scheduler";
 import { TimerState } from "@/timer/timer-state";
 import { Server, Socket } from "socket.io";
@@ -29,7 +29,7 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
         moveDuration: number;
       }>;
     }) => {
-      const engine = await getOrCreateEngine(gameType, gameId);
+      const engine = await getEngine(gameType, gameId);
 
       engine.updateConfig(cfg);
 

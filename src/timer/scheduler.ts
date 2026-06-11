@@ -48,7 +48,7 @@ export function scheduleGame(
     return;
   }
 
-  const delay = engine.getRemainingMs();
+  const delay = Math.max(0, engine.getRemainingMs() + 1000);
 
   const timeout = setTimeout(async () => {
     engine.nextPhase();

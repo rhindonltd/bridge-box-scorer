@@ -17,6 +17,7 @@ export const SocketEvents = {
   STARTING_POSITIONS: "game:startingPositions",
 
   // Server initiated - Timer specific
+  CREATE_TIMER: "timer:create",
   START_TIMER: "timer:start",
   PAUSE_TIMER: "timer:pause",
   NEXT_ROUND_TIMER: "timer:nextRound",
