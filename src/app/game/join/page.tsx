@@ -1,5 +1,5 @@
-import { JoinGamePage } from "@/components/pages/join/JoinGamePage";
+import { JoinAsTimerPage } from "@/components/pages/join/JoinAsTimerPage";
 
 export default function JoinGame() {
-  return <JoinGamePage />;
+  return <JoinAsTimerPage />;
 }

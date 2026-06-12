@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f332f851-2f24-4ece-83a8-266e596a7efc",
+  "id": "d72a1a30-4c2a-4117-a8fc-3df94acc0387",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "boardplays": {
@@ -96,37 +96,16 @@
     "metadata": {
       "name": "metadata",
       "columns": {
-        "id": {
-          "name": "id",
+        "key": {
+          "name": "key",
           "type": "text",
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false
         },
-        "movement_type": {
-          "name": "movement_type",
+        "value": {
+          "name": "value",
           "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "boards_per_round": {
-          "name": "boards_per_round",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "rounds": {
-          "name": "rounds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "bridge_tables": {
-          "name": "bridge_tables",
-          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false

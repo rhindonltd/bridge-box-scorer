@@ -3,36 +3,36 @@ import { Server } from "socket.io";
 import { io as Client } from "socket.io-client";
 
 export async function createSocketTestServer(register: (io: Server) => void) {
-    const httpServer = createServer();
+  const httpServer = createServer();
 
-    const io = new Server(httpServer, {
-        cors: { origin: "*" },
-    });
+  const io = new Server(httpServer, {
+    cors: { origin: "*" },
+  });
 
-    register(io);
+  register(io);
 
-    await new Promise<void>((resolve) => {
-        httpServer.listen(() => resolve());
-    });
+  await new Promise<void>((resolve) => {
+    httpServer.listen(() => resolve());
+  });
 
-    const port = (httpServer.address() as any).port;
+  const port = (httpServer.address() as any).port;
 
-    const client = Client(`http://localhost:${port}`);
+  const client = Client(`http://localhost:${port}`);
 
-    await new Promise<void>((resolve, reject) => {
-        client.on("connect", resolve);
-        client.on("connect_error", reject);
-    });
+  await new Promise<void>((resolve, reject) => {
+    client.on("connect", resolve);
+    client.on("connect_error", reject);
+  });
 
-    return {
-        io,
-        client,
-        httpServer,
+  return {
+    io,
+    client,
+    httpServer,
 
-        async close() {
-            client.disconnect();
-            io.close();
-            httpServer.close();
-        },
-    };
+    async close() {
+      client.disconnect();
+      io.close();
+      httpServer.close();
+    },
+  };
 }

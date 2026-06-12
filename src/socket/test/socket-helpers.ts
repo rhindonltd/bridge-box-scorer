@@ -13,14 +13,14 @@ export function emitWithAck<T = any>(
 }
 
 export function waitForEvent(socket: any, event: string, timeout = 3000) {
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => {
-            reject(new Error(`Timeout waiting for event: ${event}`));
-        }, timeout);
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timeout waiting for event: ${event}`));
+    }, timeout);
 
-        socket.on(event, (data: any) => {
-            clearTimeout(timer);
-            resolve(data);
-        });
+    socket.on(event, (data: any) => {
+      clearTimeout(timer);
+      resolve(data);
     });
+  });
 }
