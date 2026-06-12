@@ -135,17 +135,36 @@ export class BridgeTimerEngine {
   }
 
   updateConfig(
-    cfg: Partial<{
-      playDuration: number;
-      moveDuration: number;
-    }>,
+    boardsPerRound: number,
+    totalRounds: number,
+    playDuration: number,
+    moveDuration: number,
   ) {
-    if (cfg.playDuration != null) {
-      this.state.playDuration = cfg.playDuration;
+    this.state.boardsPerRound = boardsPerRound;
+    this.state.totalRounds = totalRounds;
+
+    const currentDuration =
+      this.state.phase === "play"
+        ? this.state.playDuration
+        : this.state.moveDuration;
+
+    const newDuration =
+      this.state.phase === "play"
+        ? (playDuration ?? this.state.playDuration)
+        : (moveDuration ?? this.state.moveDuration);
+
+    if (!this.state.isRunning && this.state.remainingMs != null) {
+      const elapsedMs = currentDuration * 1000 - this.state.remainingMs;
+
+      this.state.remainingMs = Math.max(0, newDuration * 1000 - elapsedMs);
     }
 
-    if (cfg.moveDuration != null) {
-      this.state.moveDuration = cfg.moveDuration;
+    if (playDuration != null) {
+      this.state.playDuration = playDuration;
+    }
+
+    if (moveDuration != null) {
+      this.state.moveDuration = moveDuration;
     }
   }
 }

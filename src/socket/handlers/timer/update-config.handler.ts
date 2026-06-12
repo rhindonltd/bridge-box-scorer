@@ -20,19 +20,27 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
     async ({
       gameType,
       gameId,
-      cfg,
+      boardsPerRound,
+      totalRounds,
+      playDuration,
+      moveDuration,
     }: {
       gameType: GameType;
       gameId: string;
-      cfg: Partial<{
-        playDuration: number;
-        moveDuration: number;
-      }>;
+      boardsPerRound: number;
+      totalRounds: number;
+      playDuration: number;
+      moveDuration: number;
     }) => {
       const engine = await getEngine(gameType, gameId);
 
       if (engine) {
-        engine.updateConfig(cfg);
+        engine.updateConfig(
+          boardsPerRound,
+          totalRounds,
+          playDuration,
+          moveDuration,
+        );
 
         await updateTimerState(gameType, gameId, engine.getState());
         broadcast(gameId, engine.getState());

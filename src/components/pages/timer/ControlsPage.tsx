@@ -67,8 +67,8 @@ export default function ControlsPage() {
     });
   }
 
-  function emitCreateGame() {
-    getSocket().emit("timer:create", {
+  function emitUpdateConfig(event: string) {
+    getSocket().emit(event, {
       gameType: gameSelection!.gameType,
       gameId: gameSelection!.gameId,
       boardsPerRound,
@@ -77,6 +77,13 @@ export default function ControlsPage() {
       moveDuration,
       timingMode,
     });
+  }
+
+  function formatTime(totalSeconds: number) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   }
 
   return (
@@ -96,7 +103,11 @@ export default function ControlsPage() {
 
             <div className="flex justify-between mt-2">
               <span className="text-white/60">Remaining</span>
-              <span>{timer.remaining}s</span>
+              <span>
+                {timer.phase === "finished"
+                  ? "00:00"
+                  : formatTime(timer.remaining)}
+              </span>
             </div>
 
             <div className="flex justify-between mt-2">
@@ -223,13 +234,22 @@ export default function ControlsPage() {
       <div className="grid grid-cols-2 gap-4 w-full max-w-md">
         {!hasSession ? (
           <button
-            onClick={emitCreateGame}
+            onClick={() => {
+              emitUpdateConfig("timer:create");
+            }}
             className="bg-cyan-600 py-6 rounded-xl text-xl font-semibold col-span-2"
           >
             Create
           </button>
         ) : (
           <>
+            <button
+              onClick={() => emitUpdateConfig("timer:updateConfig")}
+              className="bg-blue-600 py-6 rounded-xl text-xl font-semibold col-span-2"
+            >
+              Apply Changes
+            </button>
+
             <button
               onClick={() => emit("timer:start")}
               className="bg-green-600 py-6 rounded-xl text-xl font-semibold"
@@ -241,7 +261,7 @@ export default function ControlsPage() {
               onClick={() => emit("timer:pause")}
               className="bg-yellow-600 py-6 rounded-xl text-xl font-semibold"
             >
-              Stop
+              Pause
             </button>
           </>
         )}
