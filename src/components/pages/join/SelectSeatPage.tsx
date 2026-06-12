@@ -10,13 +10,13 @@ interface Props {
 }
 
 export function SelectSeatPage({ onSeatSelected }: Props) {
-  const { gameSelection } = useGame();
+  const { game } = useGame();
 
-  if (!gameSelection) {
+  if (!game) {
     return null;
   }
 
-  return gameSelection.gameType == "INDIVIDUAL" ? (
+  return game.gameType == "INDIVIDUAL" ? (
     <SelectIndividualSeatPage onSeatSelected={onSeatSelected} />
   ) : (
     <SelectPairSeatPage onSeatSelected={onSeatSelected} />

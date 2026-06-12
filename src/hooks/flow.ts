@@ -51,13 +51,12 @@ export function useFlow<TState, TFlow extends AnyFlow<TState>>(
 
   const step = useMemo(() => {
     if (!flow.canEnter(rawStep, state)) {
-      return flow.getDefaultStep() as Step;
+      return flow.getDefaultStep();
     }
     return rawStep;
-  }, [rawStep, state, flow]);
+  }, [rawStep, state]);
 
   function goTo(next: Step) {
-    if (!flow.canEnter(next, state)) return;
     router.push(`${basePath}?step=${next}`);
   }
 

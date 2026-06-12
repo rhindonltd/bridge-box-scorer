@@ -9,13 +9,13 @@ type Props = {
 };
 
 export function ShowTablesPage({ onShowMovementsPage }: Props) {
-  const { gameSelection } = useGame();
+  const { game } = useGame();
 
-  if (!gameSelection) {
+  if (!game) {
     return null;
   }
 
-  return gameSelection.gameType == "INDIVIDUAL" ? (
+  return game.gameType == "INDIVIDUAL" ? (
     <ShowIndividualTablesPage onShowMovementsPage={onShowMovementsPage} />
   ) : (
     <ShowPairsTablesPage onShowMovementsPage={onShowMovementsPage} />

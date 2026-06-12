@@ -9,23 +9,22 @@ import {
   TeamMovementSpec,
 } from "@/db/movements/schema";
 import { MovementCard } from "@/components/pages/create/MovementCard";
-import { getSocket } from "@/lib/socket";
-import { SocketEvents } from "@/socket/socket-events";
 import Button from "@/components/common/Button";
+import { selectMovement } from "@/lib/game-service";
 
 type Props = {
   onShowTablesPage: () => void;
 };
 
 export function ShowMovementsPage({ onShowTablesPage }: Props) {
-  const { gameSelection } = useGame();
+  const { game } = useGame();
 
-  if (!gameSelection) {
+  if (!game) {
     return null;
   }
 
-  const tables = gameSelection.tables;
-  const gameType = gameSelection.gameType;
+  const tables = game.tables;
+  const gameType = game.gameType;
 
   const shouldLoadIndividual = gameType === "INDIVIDUAL";
   const shouldLoadPairs = gameType === "PAIRS";
@@ -47,11 +46,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
   );
 
   function onMovementSelected(id: number, type: string) {
-    getSocket().emit(SocketEvents.SELECT_MOVEMENT, {
-      gameId: gameSelection!.gameId,
-      type,
-      id,
-    });
+    selectMovement(game!.gameId, id, type);
   }
 
   return (

@@ -6,6 +6,7 @@ import { SelectSeatPage } from "./SelectSeatPage";
 import { EnterPlayerNamesPage } from "./EnterPlayerNamesPage";
 import { AwaitingMovementPage } from "./AwaitingMovementPage";
 import { createFlow, useFlow } from "@/hooks/flow";
+import { useGame } from "@/context/GameContext";
 
 type JoinState = {
   seat: Seat | null;
@@ -27,11 +28,17 @@ const joinFlow = createFlow(
   ["seat", "names", "waiting"] as const,
 );
 
-export default function JoinAsPlayerRoute() {
+export default function JoinAsPlayerPage() {
+  const { game } = useGame();
+
   const [seat, setSeat] = useState<Seat | null>(null);
   const [names, setNames] = useState<string | null>(null);
 
-  const { step, goTo } = useFlow(joinFlow, { seat, names }, "/join/player");
+  const { step, goTo } = useFlow(
+    joinFlow,
+    { seat, names },
+    `/join/${game!.gameId}/player`,
+  );
 
   if (step === "seat") {
     return (

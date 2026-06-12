@@ -7,32 +7,37 @@ import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { SocketEvents } from "@/socket/socket-events";
+import { swrKeys } from "@/swr/swr-keys";
+import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 
 interface Props {
-  onGameSelected: (game: BridgeGame) => void;
+  onGameSelected: (gameId: string) => void;
 }
 
 export default function SelectGamePage({ onGameSelected }: Props) {
-  const { data } = useSWR<BridgeGame[], Error>("/api/games/joinable", fetcher);
+  const { data } = useSWR<BridgeGame[], Error>(swrKeys.joinableGames, fetcher);
   const { mutate } = useSWRConfig();
 
   useEffect(() => {
     function handleReconnect() {
-      mutate("/api/games/joinable");
-    }
-
-    function handleJoinableGames(games: BridgeGame[]) {
-      mutate("/api/games/joinable", games, false);
+      mutate(swrKeys.joinableGames);
     }
 
     getSocket().on(SocketEvents.CONNECT, handleReconnect);
-    getSocket().on(SocketEvents.JOINABLE_GAMES, handleJoinableGames);
 
     return () => {
       getSocket().off(SocketEvents.CONNECT, handleReconnect);
-      getSocket().off(SocketEvents.JOINABLE_GAMES, handleJoinableGames);
     };
   }, [mutate]);
+
+  useSocketSWRSync(
+    SocketEvents.JOINABLE_GAMES,
+    (p) => ({
+      key: swrKeys.joinableGames(),
+      data: p.joinableGames,
+    }),
+    [],
+  );
 
   return (
     <>

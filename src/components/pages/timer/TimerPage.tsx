@@ -17,9 +17,9 @@ function formatTime(totalSeconds: number) {
 /* ---------------- COMPONENT ---------------- */
 
 export default function TimerPage() {
-  const { gameSelection } = useGame();
+  const { game } = useGame();
 
-  if (!gameSelection) {
+  if (!game) {
     return null;
   }
 

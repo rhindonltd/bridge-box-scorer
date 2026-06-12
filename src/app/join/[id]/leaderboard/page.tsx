@@ -1,14 +1,22 @@
 "use client";
 
-import SelectGameGate from "@/components/gate/SelectGameGate";
 import { LeaderboardPage } from "@/components/pages/leaderboard/LeaderboardPage";
 import { useGame } from "@/context/GameContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LeaderboardRoute() {
-  const { gameSelection } = useGame();
+  const { game } = useGame();
+  const router = useRouter();
 
-  if (!gameSelection) {
-    return <SelectGameGate nextRoute="/join/leaderboard" />;
+  useEffect(() => {
+    if (!game) {
+      router.replace("/join/select-game");
+    }
+  }, [game, router]);
+
+  if (!game) {
+    return null;
   }
 
   return (

@@ -16,7 +16,9 @@ export function registerCreateGameHandler(socket: Socket, io: Server) {
 
         cb({ game: bridgeGame, success: true });
 
-        io.emit(SocketEvents.JOINABLE_GAMES, await findJoinableGames());
+        io.emit(SocketEvents.JOINABLE_GAMES, {
+          joinableGames: await findJoinableGames(),
+        });
       } catch {
         cb({ success: false });
       }

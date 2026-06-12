@@ -1,5 +1,5 @@
-import { ManageGamePage } from "@/components/pages/manage/ManageGamePage";
+import { redirect } from "next/navigation";
 
-export default function ManageGame() {
-  return <ManageGamePage />;
+export default function JoinPage() {
+  redirect("/manage/select-game");
 }

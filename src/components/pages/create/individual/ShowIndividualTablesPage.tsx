@@ -2,34 +2,30 @@
 
 import ShowTables, { Table } from "@/components/tables/ShowTables";
 import { useGame } from "@/context/GameContext";
-import { fetcher } from "@/lib/fetcher";
-import { getSocket } from "@/lib/socket";
-import { useEffect } from "react";
-import useSWR, { useSWRConfig } from "swr";
 
 import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { SocketEvents } from "@/socket/socket-events";
 import Button from "@/components/common/Button";
+import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 
 type Props = {
   onShowMovementsPage: () => void;
 };
 
 export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
-  const { gameSelection } = useGame();
-  const { mutate } = useSWRConfig();
+  const { game } = useGame();
 
-  const gameId = gameSelection?.gameId;
+  const gameId = game?.gameId;
 
-  const { data } = useSWR<PlayerInitialSeat[], Error>(
-    gameId ? `/api/games/individual/${gameId}/starting-positions` : null,
-    fetcher,
-  );
+  const key = gameId ? swrKeys.individualInitialSeats(gameId) : null;
+
+  const { data } = useSWR<PlayerInitialSeat[], Error>(key, fetcher);
 
   function createTables(): Table[] {
-    return Array.from({ length: gameSelection!.tables }, (_, i) =>
-      createTable(i + 1),
-    );
+    return Array.from({ length: game!.tables }, (_, i) => createTable(i + 1));
   }
 
   function createTable(tableNumber: number): Table {
@@ -50,29 +46,18 @@ export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
     };
   }
 
-  useEffect(() => {
-    if (!gameId) return;
-
-    const socket = getSocket();
-
-    const key = `/api/games/individual/${gameId}/starting-positions`;
-
-    function handleStartingPositions(payload: {
-      startingPositions: PlayerInitialSeat[];
-    }) {
-      mutate(key, payload.startingPositions, false);
-    }
-
-    socket.on(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
-
-    return () => {
-      socket.off(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
-    };
-  }, [gameId, mutate]);
-
-  if (!gameSelection) {
+  if (!gameId) {
     return null;
   }
+
+  useSocketSWRSync(
+    SocketEvents.STARTING_POSITIONS,
+    (p) => ({
+      key: swrKeys.individualInitialSeats(gameId),
+      data: p.startingPositions,
+    }),
+    [gameId],
+  );
 
   return (
     <>

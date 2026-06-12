@@ -7,7 +7,7 @@ import { getSocket } from "@/lib/socket";
 import { useEffect, useState } from "react";
 
 export default function ControlsPage() {
-  const { gameSelection } = useGame();
+  const { game } = useGame();
   const { timerState } = useTimerSync();
 
   const [tick, setTick] = useState(Date.now());
@@ -32,7 +32,7 @@ export default function ControlsPage() {
     "perRound",
   );
 
-  if (!gameSelection) return null;
+  if (!game) return null;
 
   const enteredPlaySeconds = playMinutes * 60 + playSeconds;
   const moveDuration = moveMinutes * 60 + moveSeconds;
@@ -62,15 +62,15 @@ export default function ControlsPage() {
 
   function emit(event: string) {
     getSocket().emit(event, {
-      gameType: gameSelection!.gameType,
-      gameId: gameSelection!.gameId,
+      gameType: game!.gameType,
+      gameId: game!.gameId,
     });
   }
 
   function emitUpdateConfig(event: string) {
     getSocket().emit(event, {
-      gameType: gameSelection!.gameType,
-      gameId: gameSelection!.gameId,
+      gameType: game!.gameType,
+      gameId: game!.gameId,
       boardsPerRound,
       totalRounds,
       playDuration: effectivePlayDuration,

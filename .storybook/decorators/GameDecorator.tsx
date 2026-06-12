@@ -1,13 +1,16 @@
-import { GameContext, GameSelection } from "@/context/GameContext";
+import { GameContext } from "@/context/GameContext";
+import { BridgeGame } from "@/db/game-index/schema";
 
-export const withGame = (gameSelection: GameSelection) => (Story: any) => (
-  <GameContext.Provider
-    value={{
-      gameSelection,
-      selectGame: () => {},
-      clearGame: () => {},
-    }}
-  >
-    <Story />
-  </GameContext.Provider>
-);
+export const withGame =
+  (game: BridgeGame, isLoading: boolean = false) =>
+  (Story: any) => (
+    <GameContext.Provider
+      value={{
+        game,
+        isLoading,
+        mutateGame: () => {},
+      }}
+    >
+      <Story />
+    </GameContext.Provider>
+  );

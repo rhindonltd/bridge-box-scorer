@@ -4,51 +4,38 @@ import { SectionInfo } from "@/components/common/SectionInfo";
 import SelectPairsTable from "@/components/join/SelectPairsTable";
 import { useGame } from "@/context/GameContext";
 import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
+import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { fetcher } from "@/lib/fetcher";
-import { getSocket } from "@/lib/socket";
 import { Seat } from "@/model/participants";
 import { SocketEvents } from "@/socket/socket-events";
-import { useEffect } from "react";
-import useSWR, { useSWRConfig } from "swr";
+import { swrKeys } from "@/swr/swr-keys";
+import useSWR from "swr";
 
 interface Props {
   onSeatSelected: (seat: Seat) => void;
 }
 
 export function SelectPairSeatPage({ onSeatSelected }: Props) {
-  const { gameSelection } = useGame();
-  const { mutate } = useSWRConfig();
+  const { game } = useGame();
 
-  const gameId = gameSelection?.gameId;
+  const gameId = game?.gameId;
 
-  const { data } = useSWR<PairInitialSeat[], Error>(
-    gameId ? `/api/games/pairs/${gameId}/initial-seat` : null,
-    fetcher,
-  );
+  const key = gameId ? swrKeys.pairsInitialSeats(gameId) : null;
 
-  if (!gameSelection) {
+  const { data } = useSWR<PairInitialSeat[], Error>(key, fetcher);
+
+  if (!gameId) {
     return null;
   }
 
-  useEffect(() => {
-    if (!gameId) return;
-
-    const socket = getSocket();
-
-    const key = `/api/games/pairs/${gameId}/initial-seat`;
-
-    function handleStartingPositions(payload: {
-      startingPositions: PairInitialSeat[];
-    }) {
-      mutate(key, payload.startingPositions, false);
-    }
-
-    socket.on(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
-
-    return () => {
-      socket.off(SocketEvents.STARTING_POSITIONS, handleStartingPositions);
-    };
-  }, [gameId, mutate]);
+  useSocketSWRSync(
+    SocketEvents.STARTING_POSITIONS,
+    (p) => ({
+      key: swrKeys.pairsInitialSeats(gameId),
+      data: p.startingPositions,
+    }),
+    [gameId],
+  );
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -57,7 +44,7 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
       </div>
 
       <SelectPairsTable
-        tables={gameSelection.tables}
+        tables={game.tables}
         onSeatSelected={onSeatSelected}
         startingPositions={data ?? []}
       />
