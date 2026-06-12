@@ -7,5 +7,7 @@ export const swrKeys = {
 
   joinableGames: () => "/api/games/joinable",
 
-  game: (gameId: string) => `/api/games/${gameId}`,
+  game: (gameId: string) => {
+      return `/api/games/${gameId}`;
+  },
 };

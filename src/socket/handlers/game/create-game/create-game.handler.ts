@@ -14,13 +14,13 @@ export function registerCreateGameHandler(socket: Socket, io: Server) {
         const bridgeGame: BridgeGame = await createBridgeGame(newBridgeGame);
         await createGameDb(bridgeGame.gameId, bridgeGame.gameType as GameType);
 
-        cb({ game: bridgeGame, success: true });
+        cb({ data: { game: bridgeGame }, success: true });
 
         io.emit(SocketEvents.JOINABLE_GAMES, {
           joinableGames: await findJoinableGames(),
         });
-      } catch {
-        cb({ success: false });
+      } catch (error) {
+        cb({ error, success: false });
       }
     },
   );

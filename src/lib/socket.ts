@@ -1,3 +1,4 @@
+import { SocketResponse } from "@/socket/socket-response";
 import { io, Socket } from "socket.io-client";
 
 let socket: Socket;
@@ -9,18 +10,6 @@ export function getSocket() {
 
   return socket;
 }
-
-type SuccessResponse<T> = {
-  success: true;
-  data: T;
-};
-
-type ErrorResponse = {
-  success: false;
-  error: string;
-};
-
-type SocketResponse<T> = SuccessResponse<T> | ErrorResponse;
 
 export function emitWithAck<T>(
   event: string,
@@ -36,6 +25,8 @@ export function emitWithAck<T>(
 
     socket.emit(event, payload, (response: SocketResponse<T>) => {
       clearTimeout(timeout);
+
+      console.log("RESPONSE: " + JSON.stringify(response))
 
       if (!response.success) {
         reject(new Error(response.error));

@@ -9,6 +9,7 @@ export default async function GameLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
   return (
     <GameProviderClient gameId={id}>
       <AssignmentProvider>{children}</AssignmentProvider>

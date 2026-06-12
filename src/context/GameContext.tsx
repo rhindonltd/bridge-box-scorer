@@ -25,9 +25,10 @@ export function GameProvider({
   children: ReactNode;
   gameId: string | null;
 }) {
+
   const socket = getSocket();
 
-  const key = gameId ? swrKeys.game : null;
+  const key = gameId ? swrKeys.game(gameId) : null;
 
   const { data: game, isLoading, mutate } = useSWR<BridgeGame>(key, fetcher);
 
