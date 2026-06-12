@@ -1,84 +1,60 @@
 "use client";
 
-import { useGame } from "@/context/GameContext";
-import { useEffect, useState } from "react";
-import SelectGamePage from "./SelectGamePage";
-import { AwaitingMovementPage } from "./AwaitingMovementPage";
-import { BridgeGame } from "@/db/game-index/schema";
+import { useState } from "react";
 import { Seat } from "@/model/participants";
-import { EnterPlayerNamesPage } from "./EnterPlayerNamesPage";
 import { SelectSeatPage } from "./SelectSeatPage";
+import { EnterPlayerNamesPage } from "./EnterPlayerNamesPage";
+import { AwaitingMovementPage } from "./AwaitingMovementPage";
+import { createFlow, useFlow } from "@/hooks/flow";
 
-type Step =
-  | "LIST_GAMES"
-  | "SELECT_SEAT"
-  | "ENTER_PLAYER_NAMES"
-  | "AWAITING_MOVEMENT";
+type JoinState = {
+  seat: Seat | null;
+  names: string | null;
+};
 
-export function JoinAsPlayerPage() {
-  const { selectGame } = useGame();
+const joinFlow = createFlow(
+  {
+    seat: {},
 
-  const [step, setStep] = useState<Step>("LIST_GAMES");
+    names: {
+      canEnter: (s: JoinState) => !!s.seat,
+    },
 
+    waiting: {
+      canEnter: (s: JoinState) => !!s.seat && !!s.names,
+    },
+  },
+  ["seat", "names", "waiting"] as const,
+);
+
+export default function JoinAsPlayerRoute() {
   const [seat, setSeat] = useState<Seat | null>(null);
+  const [names, setNames] = useState<string | null>(null);
 
-  // Push step into browser history
-  const goToStep = (next: Step) => {
-    window.history.pushState({ step: next }, "", "");
-    setStep(next);
-  };
+  const { step, goTo } = useFlow(joinFlow, { seat, names }, "/join/player");
 
-  // Sync browser back/forward buttons
-  useEffect(() => {
-    const onPopState = (event: PopStateEvent) => {
-      if (event.state?.step) {
-        setStep(event.state.step);
-      } else {
-        setStep("LIST_GAMES");
-      }
-    };
-
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
-
-  function onGameSelected(game: BridgeGame) {
-    selectGame(game);
-    setStep("SELECT_SEAT");
+  if (step === "seat") {
+    return (
+      <SelectSeatPage
+        onSeatSelected={(s) => {
+          setSeat(s);
+          goTo("names");
+        }}
+      />
+    );
   }
 
-  function onSeatSelected(seat: Seat) {
-    setSeat(seat);
-    setStep("ENTER_PLAYER_NAMES");
+  if (step === "names") {
+    return (
+      <EnterPlayerNamesPage
+        seat={seat!}
+        onSubmit={() => {
+          setNames("value");
+          goTo("waiting");
+        }}
+      />
+    );
   }
 
-  return (
-    <div className="h-screen flex flex-col overflow-y-auto">
-      {/* HEADER */}
-      <div className="w-full bg-blue-200 py-2 text-center font-bold">
-        Join Game
-      </div>
-
-      {/* GAME LIST */}
-      {step === "LIST_GAMES" && (
-        <SelectGamePage onGameSelected={onGameSelected} />
-      )}
-
-      {/* TABLE SELECT */}
-      {step === "SELECT_SEAT" && (
-        <SelectSeatPage onSeatSelected={onSeatSelected} />
-      )}
-
-      {/* PLAYER NAMES ENTRY */}
-      {step === "ENTER_PLAYER_NAMES" && (
-        <EnterPlayerNamesPage
-          seat={seat!}
-          onSubmit={() => goToStep("AWAITING_MOVEMENT")}
-        />
-      )}
-
-      {/* AWAITING MOVEMENT (should be in play game?) */}
-      {step === "AWAITING_MOVEMENT" && <AwaitingMovementPage />}
-    </div>
-  );
+  return <AwaitingMovementPage />;
 }
