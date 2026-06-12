@@ -1,5 +1,5 @@
 import { JoinAsTimerPage } from "@/components/pages/join/JoinAsTimerPage";
 
-export default function JoinGame() {
+export default function JoinAsTimer() {
   return <JoinAsTimerPage />;
 }

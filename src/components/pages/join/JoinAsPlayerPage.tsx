@@ -15,7 +15,7 @@ type Step =
   | "ENTER_PLAYER_NAMES"
   | "AWAITING_MOVEMENT";
 
-export function JoinGamePage() {
+export function JoinAsPlayerPage() {
   const { selectGame } = useGame();
 
   const [step, setStep] = useState<Step>("LIST_GAMES");
