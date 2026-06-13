@@ -300,7 +300,7 @@
 1.  https://github.com/standard-schema/standard-schema
 2.  MIT
 
-# @storybook/addon-a11y@10.4.2
+# @storybook/addon-a11y@10.4.4
 
 1.  https://github.com/storybookjs/storybook
 2.  MIT
@@ -945,7 +945,7 @@
 1.  https://github.com/eslint/eslint-visitor-keys
 2.  Apache-2.0
 
-# eslint@10.4.1
+# eslint@10.5.0
 
 1.  https://github.com/eslint/eslint
 2.  MIT
@@ -1505,7 +1505,7 @@
 1.  https://github.com/isaacs/node-lru-cache
 2.  BlueOak-1.0.0
 
-# lucide-react@1.17.0
+# lucide-react@1.18.0
 
 1.  https://github.com/lucide-icons/lucide
 2.  ISC
@@ -1810,7 +1810,7 @@
 1.  https://github.com/gkz/prelude-ls
 2.  MIT
 
-# prettier@3.8.3
+# prettier@3.8.4
 
 1.  https://github.com/prettier/prettier
 2.  MIT

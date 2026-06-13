@@ -26,8 +26,6 @@ export function emitWithAck<T>(
     socket.emit(event, payload, (response: SocketResponse<T>) => {
       clearTimeout(timeout);
 
-      console.log("RESPONSE: " + JSON.stringify(response))
-
       if (!response.success) {
         reject(new Error(response.error));
         return;

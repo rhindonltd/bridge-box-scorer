@@ -16,6 +16,10 @@ const setupGameFlow = createFlow(
 export function SetupGamePage() {
   const { game } = useGame();
 
+  if (!game) {
+    return null;
+  }
+
   const { step, goTo } = useFlow(setupGameFlow, {}, `/create/${game!.gameId}`);
 
   if (step === "tables") {

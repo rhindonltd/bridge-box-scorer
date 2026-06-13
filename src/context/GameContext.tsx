@@ -7,8 +7,7 @@ import { BridgeGame } from "@/db/game-index/schema";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 interface ContextType {
   game: BridgeGame | undefined;
@@ -25,7 +24,6 @@ export function GameProvider({
   children: ReactNode;
   gameId: string | null;
 }) {
-
   const socket = getSocket();
 
   const key = gameId ? swrKeys.game(gameId) : null;
