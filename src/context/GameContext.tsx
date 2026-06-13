@@ -1,83 +1,58 @@
 "use client";
 
+import { createContext, useContext, ReactNode, useEffect } from "react";
+
+import useSWR from "swr";
 import { BridgeGame } from "@/db/game-index/schema";
-
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
-
-export type GameSelection = BridgeGame | null;
+import { swrKeys } from "@/swr/swr-keys";
+import { fetcher } from "@/lib/fetcher";
 
 interface ContextType {
-  gameSelection: GameSelection;
-  selectGame: (game: BridgeGame) => void;
-  clearGame: () => void;
+  game: BridgeGame | undefined;
+  isLoading: boolean;
+  mutateGame: () => void;
 }
 
 export const GameContext = createContext<ContextType | undefined>(undefined);
 
-export function GameProvider({ children }: { children: ReactNode }) {
-  const [gameSelection, setGameSelection] = useState<GameSelection>(null);
+export function GameProvider({
+  children,
+  gameId,
+}: {
+  children: ReactNode;
+  gameId: string | null;
+}) {
+  const socket = getSocket();
+
+  const key = gameId ? swrKeys.game(gameId) : null;
+
+  const { data: game, isLoading, mutate } = useSWR<BridgeGame>(key, fetcher);
 
   useEffect(() => {
-    const socket = getSocket();
-
-    const gameId = gameSelection?.gameId;
-
     if (!gameId) return;
 
-    handleReconnect();
+    socket.emit(SocketEvents.JOIN_GAME, { gameId });
 
-    if (!gameId) return;
-
-    function handleReconnect() {
-      socket.emit(
-        SocketEvents.JOIN_GAME,
-        { gameId },
-        (response: { success: boolean; error?: string }) => {
-          if (!response.success) {
-            console.error(response.error);
-          }
-        },
-      );
-    }
+    const handleReconnect = () => {
+      socket.emit(SocketEvents.JOIN_GAME, { gameId });
+    };
 
     socket.on(SocketEvents.CONNECT, handleReconnect);
 
     return () => {
-      socket.emit(
-        SocketEvents.LEAVE_GAME,
-        { gameId },
-        (response: { success: boolean; error?: string }) => {
-          if (!response.success) {
-            console.error(response.error);
-          }
-        },
-      );
-
+      socket.emit(SocketEvents.LEAVE_GAME, { gameId });
       socket.off(SocketEvents.CONNECT, handleReconnect);
     };
-  }, [gameSelection]);
-
-  const selectGame = (game: BridgeGame) => {
-    setGameSelection(game);
-  };
-
-  const clearGame = () => setGameSelection(null);
+  }, [gameId]);
 
   return (
     <GameContext.Provider
       value={{
-        gameSelection,
-        selectGame,
-        clearGame,
+        game,
+        isLoading,
+        mutateGame: mutate,
       }}
     >
       {children}

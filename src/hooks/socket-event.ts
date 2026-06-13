@@ -1,0 +1,18 @@
+import { useEffect } from "react";
+import { getSocket } from "@/lib/socket";
+
+export function useSocketEvent<T>(
+  event: string,
+  handler: (payload: T) => void,
+  deps: any[] = [],
+) {
+  useEffect(() => {
+    const socket = getSocket();
+
+    socket.on(event, handler);
+
+    return () => {
+      socket.off(event, handler);
+    };
+  }, deps);
+}

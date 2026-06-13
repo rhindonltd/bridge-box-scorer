@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { MainMenuPage } from "@/components/pages/mainmenu/MainMenuPage";
 
-export default function PlayerLobbyPage() {
+export default function MainMenu() {
   const router = useRouter();
 
   function createNewGame() {
@@ -12,7 +12,7 @@ export default function PlayerLobbyPage() {
   }
 
   function joinGame() {
-    router.push("/game/join");
+    router.push("/join");
   }
 
   function managePastGames() {

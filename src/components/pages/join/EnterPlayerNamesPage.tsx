@@ -11,9 +11,9 @@ interface Props {
 }
 
 export function EnterPlayerNamesPage({ seat, onSubmit }: Props) {
-  const { gameSelection } = useGame();
+  const { game } = useGame();
 
-  if (!gameSelection) {
+  if (!game) {
     return null;
   }
 
