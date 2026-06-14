@@ -1,11 +1,11 @@
 import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
-import { Seat } from "@/model/participants";
+import { PairSeat } from "@/model/participants";
 
 interface Props {
   tables: number;
-  onSeatSelected: (seat: Seat) => void;
+  onSeatSelected: (seat: PairSeat) => void;
   startingPositions: PairInitialSeat[];
 }
 

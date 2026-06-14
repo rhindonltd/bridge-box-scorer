@@ -1,10 +1,10 @@
 import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { Direction, Directions } from "@/model/common";
-import { Seat } from "@/model/participants";
+import { IndividualSeat } from "@/model/participants";
 
 interface Props {
   tables: number;
-  onSeatSelected: (seat: Seat) => void;
+  onSeatSelected: (seat: IndividualSeat) => void;
   startingPositions: PlayerInitialSeat[];
 }
 
