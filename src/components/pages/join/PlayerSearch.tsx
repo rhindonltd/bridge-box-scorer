@@ -104,7 +104,6 @@ export default function PlayerSearch({ label, value, onChange }: Props) {
             bg-white
             py-3
             pl-10
-            pr-3
             text-sm
             shadow-sm
             focus:border-blue-500

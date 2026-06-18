@@ -27,9 +27,9 @@ vi.mock("@/components/common/TextField", () => ({
 describe("EnterPlayerNames", () => {
   it("renders NS labels correctly", () => {
     const seat = {
-        type: 'PAIR',
-        direction: 'NS',
-        tableNumber: 1,
+      type: "PAIR",
+      direction: "NS",
+      tableNumber: 1,
     } as PairSeat;
 
     render(<EnterPairPlayerNames seat={seat} onSubmitPair={vi.fn()} />);
@@ -40,11 +40,11 @@ describe("EnterPlayerNames", () => {
   });
 
   it("renders EW labels correctly", () => {
-      const seat = {
-          type: 'PAIR',
-          direction: 'EW',
-          tableNumber: 1,
-      } as PairSeat;
+    const seat = {
+      type: "PAIR",
+      direction: "EW",
+      tableNumber: 1,
+    } as PairSeat;
 
     render(<EnterPairPlayerNames seat={seat} onSubmitPair={vi.fn()} />);
 

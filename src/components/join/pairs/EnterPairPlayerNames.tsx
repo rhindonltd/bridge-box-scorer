@@ -18,37 +18,46 @@ export default function EnterPairPlayerNames({ seat, onSubmitPair }: Props) {
   const canSubmit = player1 !== null && player2 !== null;
 
   return (
-    <div className="mx-auto max-w-xl space-y-4">
-      <div>
+    <div className="w-full">
+      {/* Header */}
+      <div className="w-full bg-blue-900 text-white px-4 py-3 shadow-sm">
+        <div className="mx-auto max-w-xl font-semibold">
+          Table {seat.tableNumber}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="mx-auto w-full max-w-xl space-y-4 p-4">
         <div className="space-y-6">
           <PlayerSearch
-            label="Player 1"
+            label={player1Label}
             value={player1}
             onChange={setPlayer1}
           />
 
           <PlayerSearch
-            label="Player 2"
+            label={player2Label}
             value={player2}
             onChange={setPlayer2}
           />
         </div>
-      </div>
 
-      <button
-        disabled={!canSubmit}
-        className="
-    w-full
-    rounded-xl
-    bg-blue-600
-    py-3
-    font-medium
-    text-white
-    disabled:opacity-50
-    "
-      >
-        Enter Pair
-      </button>
+        <button
+          disabled={!canSubmit}
+          onClick={() => onSubmitPair(player1!, player2!)}
+          className="
+            w-full
+            rounded-xl
+            bg-blue-600
+            py-3
+            font-medium
+            text-white
+            disabled:opacity-50
+          "
+        >
+          Enter Pair
+        </button>
+      </div>
     </div>
   );
 }

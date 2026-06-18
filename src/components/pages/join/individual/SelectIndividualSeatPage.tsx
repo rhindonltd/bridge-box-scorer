@@ -79,7 +79,6 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
           bg-white
           shadow-2xl
           rounded-t-2xl
-          p-6
           transform
           transition-transform duration-300 ease-out
           ${selectedSeat ? "translate-y-0" : "translate-y-full"}
