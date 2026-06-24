@@ -35,6 +35,6 @@ export const Default: Story = {
       tables: 10,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }),
+    })
   ],
 };

@@ -1,7 +1,7 @@
 import { Tables } from "@/model/movement";
 import MovementTables from "@/components/movement/MovementTables";
-import { SectionInfo } from "@/components/common/SectionInfo";
 import React from "react";
+import { GameInfo } from "@/components/common/GameInfo";
 
 type Props = {
   movementName: string;
@@ -13,9 +13,9 @@ export function MovementDetailsPage({ movementName, tables, onCreate }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <div className="w-full">
-        <SectionInfo />
-      </div>
+        <div className="flex flex-row w-full">
+            <GameInfo />
+        </div>
 
       {/* Movement name */}
       <div className="w-full">

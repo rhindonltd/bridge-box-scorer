@@ -6,6 +6,7 @@ import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { score } from "@/scoring/traveller/score-traveller";
+import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
 const meta: Meta<typeof BoardResultsPage> = {
   title: "Pages/Play/BoardResultsPage",
@@ -35,6 +36,24 @@ export const IndividualXIMP: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
+      withAssignment({
+          type: "PAIR",
+          player1: {
+              id: 1,
+              firstName: "Jacqui",
+              lastName: "Collier",
+              nationalId: "477484",
+          },
+          player2: {
+              id: 2,
+              firstName: "David",
+              lastName: "Collier",
+              nationalId: "404476",
+          },
+          tableNumber: 3,
+          direction: "EW",
+          pairId: "1",
+      }),
   ],
   args: {
     board: 5,
@@ -59,6 +78,18 @@ export const IndividualMP: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
+      withAssignment({
+          type: "INDIVIDUAL",
+          player: {
+              id: 1,
+              firstName: "Jacqui",
+              lastName: "Collier",
+              nationalId: "477484",
+          },
+          tableNumber: 3,
+          direction: "E",
+          playerId: "12",
+      }),
   ],
   args: {
     board: 5,
@@ -83,6 +114,24 @@ export const PairXIMP: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
+      withAssignment({
+          type: "PAIR",
+          player1: {
+              id: 1,
+              firstName: "Jacqui",
+              lastName: "Collier",
+              nationalId: "477484",
+          },
+          player2: {
+              id: 2,
+              firstName: "David",
+              lastName: "Collier",
+              nationalId: "404476",
+          },
+          tableNumber: 3,
+          direction: "EW",
+          pairId: "1",
+      }),
   ],
   args: {
     board: 5,
@@ -107,6 +156,24 @@ export const PairMP: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
+      withAssignment({
+          type: "PAIR",
+          player1: {
+              id: 1,
+              firstName: "Jacqui",
+              lastName: "Collier",
+              nationalId: "477484",
+          },
+          player2: {
+              id: 2,
+              firstName: "David",
+              lastName: "Collier",
+              nationalId: "404476",
+          },
+          tableNumber: 3,
+          direction: "EW",
+          pairId: "1",
+      }),
   ],
   args: {
     board: 5,

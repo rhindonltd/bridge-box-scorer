@@ -1,4 +1,4 @@
-import { SectionInfo } from "@/components/common/SectionInfo";
+import { GameInfo } from "@/components/common/GameInfo";
 import React from "react";
 
 type Props = {
@@ -9,7 +9,9 @@ type Props = {
 export function ChangePinPage({ directorPin, onChangePin }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <SectionInfo />
+        <div className="flex flex-row w-full">
+            <GameInfo />
+        </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-2 min-h-0">
         <span>Director PIN:</span>

@@ -2,9 +2,10 @@
 
 import RoundInfo from "@/components/play/RoundInfo";
 import React from "react";
-import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
 import { Player } from "@/db/games/shared/tables/players";
+import { GameInfo } from "@/components/common/GameInfo";
+import { ParticipantInfo } from "@/components/common/ParticipantInfo";
 
 interface Props {
   round: number;
@@ -28,8 +29,9 @@ export function RoundInfoPage({
 }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <div className="w-full">
-        <SectionInfo />
+      <div className="flex flex-row w-full">
+          <GameInfo />
+          <ParticipantInfo />
       </div>
 
       <div className="w-full">

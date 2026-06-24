@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { SectionInfo } from "@/components/common/SectionInfo";
 import SelectIndividualTable from "@/components/join/individual/SelectIndividualTable";
 import { useGame } from "@/context/GameContext";
 import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
@@ -14,6 +13,7 @@ import useSWR from "swr";
 import EnterIndividualPlayerNames from "@/components/join/individual/EnterIndividualPlayerNames";
 import { IndividualSeat } from "@/model/participants";
 import { NewPlayer } from "@/db/games/shared/tables/players";
+import { GameInfo } from "@/components/common/GameInfo";
 
 interface Props {
   onSeatSelected: (seat: Seat) => void;
@@ -53,9 +53,9 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <div className="w-full">
-        <SectionInfo />
-      </div>
+        <div className="flex flex-row w-full">
+          <GameInfo />
+        </div>
 
       {/* Main table selection */}
       <SelectIndividualTable

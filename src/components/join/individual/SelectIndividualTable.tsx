@@ -1,3 +1,4 @@
+import { GameInfo } from "@/components/common/GameInfo";
 import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { Direction, Directions } from "@/model/common";
 import { IndividualSeat } from "@/model/participants";
@@ -27,7 +28,9 @@ export default function SelectIndividualTable({
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <div className="w-full flex-shrink-0">{/* <SectionInfo /> */}</div>
+        <div className="flex flex-row w-full">
+            <GameInfo />
+        </div>
 
       <div className="px-4 mt-4 mb-2">
         <span>Please select the table and direction you are sitting:</span>

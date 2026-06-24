@@ -1,3 +1,4 @@
+import { GameInfo } from "@/components/common/GameInfo";
 import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
@@ -28,7 +29,9 @@ export default function SelectPairsTable({
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <div className="w-full flex-shrink-0">{/* <SectionInfo /> */}</div>
+        <div className="flex flex-row w-full">
+            <GameInfo />
+        </div>
 
       <div className="px-4 mt-4 mb-2">
         <span>Please select the table and direction you are sitting:</span>

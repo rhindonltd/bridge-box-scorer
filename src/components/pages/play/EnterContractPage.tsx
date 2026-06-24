@@ -7,11 +7,12 @@ import PassOutButton from "@/components/contract/PassOutButton";
 import NotPlayedButton from "@/components/contract/NotPlayedButton";
 import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
 import { Direction } from "@/model/common";
-import { SectionInfo } from "@/components/common/SectionInfo";
 import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
 import { PlayableContract } from "@/components/pages/play/PlayableContract";
 import { usePlay } from "@/context/PlayContext";
 import { SpecialBoardOutcome } from "@/model/result";
+import { ParticipantInfo } from "@/components/common/ParticipantInfo";
+import { GameInfo } from "@/components/common/GameInfo";
 
 type Props = {
   round: number;
@@ -106,7 +107,10 @@ export default function EnterContractPage({
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <SectionInfo />
+        <div className="flex flex-row w-full">
+            <GameInfo />
+            <ParticipantInfo />
+        </div>
 
       {/* TOP GRID */}
       <div className="grid grid-cols-2 w-full items-stretch">

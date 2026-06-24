@@ -1,6 +1,5 @@
 "use client";
 
-import { SectionInfo } from "@/components/common/SectionInfo";
 import SelectPairsTable from "@/components/join/pairs/SelectPairsTable";
 import { useGame } from "@/context/GameContext";
 import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
@@ -13,6 +12,7 @@ import useSWR from "swr";
 import { PairSeat } from "@/model/participants";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
+import { GameInfo } from "@/components/common/GameInfo";
 
 interface Props {
   onSeatSelected: (seat: PairSeat) => void;
@@ -52,9 +52,9 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
-      <div className="w-full">
-        <SectionInfo />
-      </div>
+        <div className="flex flex-row w-full">
+            <GameInfo />
+        </div>
 
       {/* Main table selection */}
       <SelectPairsTable
