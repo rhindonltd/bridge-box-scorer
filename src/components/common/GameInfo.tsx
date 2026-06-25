@@ -8,7 +8,6 @@ export function GameInfo() {
   if (!game) return null;
 
   return (
-    <div className="flex flex-row w-full">
       <div className="flex flex-col bg-blue-200 py-2 flex-1">
         <div className="text-center font-bold">
           <span>{game.eventName}</span>
@@ -22,7 +21,5 @@ export function GameInfo() {
           </div>
         )}
       </div>
-      {/*{assignmentSelection && <ParticipantInfo />}*/}
-    </div>
   );
 }

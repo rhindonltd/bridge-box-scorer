@@ -306,7 +306,7 @@
  1. https://github.com/oxc-project/oxc-resolver
  2. MIT
 
-# @playwright/test@1.60.0
+# @playwright/test@1.61.1
 
 
  1. https://github.com/microsoft/playwright
@@ -354,7 +354,7 @@
  1. https://github.com/standard-schema/standard-schema
  2. MIT
 
-# @storybook/addon-a11y@10.4.4
+# @storybook/addon-a11y@10.4.6
 
 
  1. https://github.com/storybookjs/storybook
@@ -642,7 +642,7 @@
  1. https://github.com/kelektiv/node.bcrypt.js
  2. MIT
 
-# better-sqlite3@12.10.0
+# better-sqlite3@12.11.1
 
 
  1. https://github.com/WiseLibs/better-sqlite3
@@ -822,7 +822,7 @@
  1. https://github.com/frenic/csstype
  2. MIT
 
-# csv-parse@6.2.1
+# csv-parse@7.0.0
 
 
  1. https://github.com/adaltas/node-csv
@@ -1800,7 +1800,7 @@
  1. https://github.com/isaacs/node-lru-cache
  2. BlueOak-1.0.0
 
-# lucide-react@1.18.0
+# lucide-react@1.21.0
 
 
  1. https://github.com/lucide-icons/lucide
@@ -2526,7 +2526,7 @@
  1. https://github.com/inspect-js/node-supports-preserve-symlinks-flag
  2. MIT
 
-# swr@2.4.1
+# swr@2.4.2
 
 
  1. https://github.com/vercel/swr
@@ -2718,7 +2718,7 @@
  1. https://github.com/ljharb/unbox-primitive
  2. MIT
 
-# undici-types@7.24.6
+# undici-types@8.3.0
 
 
  1. https://github.com/nodejs/undici
