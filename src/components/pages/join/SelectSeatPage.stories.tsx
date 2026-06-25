@@ -3,9 +3,10 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { SelectSeatPage } from "@/components/pages/join/SelectSeatPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
 const meta: Meta<typeof SelectSeatPage> = {
-  title: "Pages/JoinGame/SelectTablePage",
+  title: "Pages/JoinGame/SelectSeatPage",
   component: SelectSeatPage,
   parameters: {
     layout: "fullscreen",
@@ -36,6 +37,7 @@ export const Individual: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
+    withAssignment(null),
   ],
 };
 
@@ -55,5 +57,6 @@ export const Pairs: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
+    withAssignment(null),
   ],
 };

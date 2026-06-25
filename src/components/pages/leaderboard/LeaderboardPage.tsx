@@ -1,7 +1,7 @@
-import { SectionInfo } from "@/components/common/SectionInfo";
 import React from "react";
 import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
+import { GameInfo } from "@/components/common/GameInfo";
 
 interface Props {
   overallScoreAndParticipant: OverallScoreAndParticipant;
@@ -11,8 +11,8 @@ interface Props {
 export function LeaderboardPage({ overallScoreAndParticipant, onNext }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <div className="w-full">
-        <SectionInfo />
+      <div className="flex flex-row w-full">
+        <GameInfo />
       </div>
 
       <div className="w-full">

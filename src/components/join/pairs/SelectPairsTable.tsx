@@ -1,11 +1,12 @@
+import { GameInfo } from "@/components/common/GameInfo";
 import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
-import { Seat } from "@/model/participants";
+import { PairSeat } from "@/model/participants";
 
 interface Props {
   tables: number;
-  onSeatSelected: (seat: Seat) => void;
+  onSeatSelected: (seat: PairSeat) => void;
   startingPositions: PairInitialSeat[];
 }
 
@@ -27,9 +28,6 @@ export default function SelectPairsTable({
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      {/* Header */}
-      <div className="w-full flex-shrink-0">{/* <SectionInfo /> */}</div>
-
       <div className="px-4 mt-4 mb-2">
         <span>Please select the table and direction you are sitting:</span>
       </div>

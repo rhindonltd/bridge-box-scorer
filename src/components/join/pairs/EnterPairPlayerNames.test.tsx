@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import EnterPairPlayerNames from "./EnterPairPlayerNames";
+import { PairSeat } from "@/model/participants";
 
 // Mock FormCardLayout
 vi.mock("@/components/layout/FormCardLayout", () => ({
@@ -25,7 +26,13 @@ vi.mock("@/components/common/TextField", () => ({
 
 describe("EnterPlayerNames", () => {
   it("renders NS labels correctly", () => {
-    render(<EnterPairPlayerNames direction="NS" onSubmitPair={vi.fn()} />);
+    const seat = {
+      type: "PAIR",
+      direction: "NS",
+      tableNumber: 1,
+    } as PairSeat;
+
+    render(<EnterPairPlayerNames seat={seat} onSubmitPair={vi.fn()} />);
 
     expect(screen.getByLabelText("North Player")).toBeInTheDocument();
 
@@ -33,7 +40,13 @@ describe("EnterPlayerNames", () => {
   });
 
   it("renders EW labels correctly", () => {
-    render(<EnterPairPlayerNames direction="EW" onSubmitPair={vi.fn()} />);
+    const seat = {
+      type: "PAIR",
+      direction: "EW",
+      tableNumber: 1,
+    } as PairSeat;
+
+    render(<EnterPairPlayerNames seat={seat} onSubmitPair={vi.fn()} />);
 
     expect(screen.getByLabelText("East Player")).toBeInTheDocument();
 

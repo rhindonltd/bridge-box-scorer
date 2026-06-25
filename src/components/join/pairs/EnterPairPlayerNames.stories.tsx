@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import EnterPairPlayerNames from "@/components/join/EnterPairPlayerNames";
+import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
 
 const meta: Meta<typeof EnterPairPlayerNames> = {
   title: "Components/JoinGame/EnterPlayerNames",
@@ -20,12 +20,20 @@ type Story = StoryObj<typeof EnterPairPlayerNames>;
 
 export const NorthSouth: Story = {
   args: {
-    direction: "NS",
+    seat: {
+      type: "PAIR",
+      tableNumber: 1,
+      direction: "NS",
+    },
   },
 };
 
 export const EastWest: Story = {
   args: {
-    direction: "EW",
+    seat: {
+      type: "PAIR",
+      tableNumber: 1,
+      direction: "EW",
+    },
   },
 };

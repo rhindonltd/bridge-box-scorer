@@ -1,10 +1,11 @@
+import { GameInfo } from "@/components/common/GameInfo";
 import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { Direction, Directions } from "@/model/common";
-import { Seat } from "@/model/participants";
+import { IndividualSeat } from "@/model/participants";
 
 interface Props {
   tables: number;
-  onSeatSelected: (seat: Seat) => void;
+  onSeatSelected: (seat: IndividualSeat) => void;
   startingPositions: PlayerInitialSeat[];
 }
 
@@ -26,9 +27,6 @@ export default function SelectIndividualTable({
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      {/* Header */}
-      <div className="w-full flex-shrink-0">{/* <SectionInfo /> */}</div>
-
       <div className="px-4 mt-4 mb-2">
         <span>Please select the table and direction you are sitting:</span>
       </div>

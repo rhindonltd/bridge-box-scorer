@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Seat } from "@/model/participants";
 import { SelectSeatPage } from "./SelectSeatPage";
-import { EnterPlayerNamesPage } from "./EnterPlayerNamesPage";
 import { AwaitingMovementPage } from "./AwaitingMovementPage";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useGame } from "@/context/GameContext";
@@ -16,10 +15,6 @@ type JoinState = {
 const joinFlow = createFlow(
   {
     seat: {},
-
-    names: {
-      canEnter: (s: JoinState) => !!s.seat,
-    },
 
     waiting: {
       canEnter: (s: JoinState) => !!s.seat && !!s.names,
@@ -46,18 +41,6 @@ export default function JoinAsPlayerPage() {
         onSeatSelected={(s) => {
           setSeat(s);
           goTo("names");
-        }}
-      />
-    );
-  }
-
-  if (step === "names") {
-    return (
-      <EnterPlayerNamesPage
-        seat={seat!}
-        onSubmit={() => {
-          setNames("value");
-          goTo("waiting");
         }}
       />
     );

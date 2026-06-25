@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import SelectField, { SelectOption } from "@/components/common/SelectField";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
 import FormCardLayout from "@/components/layout/FormCardLayout";
-import { SectionInfo } from "@/components/common/SectionInfo";
+import { GameInfo } from "@/components/common/GameInfo";
 
 type Props = {
   tables: number;
@@ -37,7 +37,9 @@ export default function MovementOptionsPage({ tables, onSubmit }: Props) {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <SectionInfo />
+      <div className="flex flex-row w-full">
+        <GameInfo />
+      </div>
 
       <div className="flex-1 flex items-center justify-center p-2 min-h-0">
         <FormCardLayout

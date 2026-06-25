@@ -1,10 +1,10 @@
-import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { EnterIndividualPlayerNamesPage } from "@/components/pages/join/individual/EnterIndividualPlayerNamesPage";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { GameInfo } from "@/components/common/GameInfo";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
-const meta: Meta<typeof EnterIndividualPlayerNamesPage> = {
-  title: "Pages/JoinGame/EnterIndividualPlayerNamesPage",
-  component: EnterIndividualPlayerNamesPage,
+const meta: Meta<typeof GameInfo> = {
+  title: "Components/Common/GameInfo",
+  component: GameInfo,
   parameters: {
     layout: "fullscreen",
   },
@@ -12,9 +12,10 @@ const meta: Meta<typeof EnterIndividualPlayerNamesPage> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof EnterIndividualPlayerNamesPage>;
 
-export const NS: Story = {
+type Story = StoryObj<typeof GameInfo>;
+
+export const EventOnly: Story = {
   decorators: [
     withGame({
       id: 1,
@@ -31,16 +32,9 @@ export const NS: Story = {
       updatedAt: new Date().toISOString(),
     }),
   ],
-  args: {
-    seat: {
-      type: "INDIVIDUAL",
-      tableNumber: 3,
-      direction: "N",
-    },
-  },
 };
 
-export const NSWithSection: Story = {
+export const EventAndSection: Story = {
   decorators: [
     withGame({
       id: 1,
@@ -57,16 +51,9 @@ export const NSWithSection: Story = {
       updatedAt: new Date().toISOString(),
     }),
   ],
-  args: {
-    seat: {
-      type: "INDIVIDUAL",
-      tableNumber: 3,
-      direction: "N",
-    },
-  },
 };
 
-export const EW: Story = {
+export const EventAndSession: Story = {
   decorators: [
     withGame({
       id: 1,
@@ -74,7 +61,7 @@ export const EW: Story = {
       director: null,
       gameType: "PAIRS",
       gameId: crypto.randomUUID(),
-      sessionName: "",
+      sessionName: "Session 1",
       sectionName: "",
       eventDate: new Date().toISOString(),
       status: "CREATED",
@@ -83,16 +70,9 @@ export const EW: Story = {
       updatedAt: new Date().toISOString(),
     }),
   ],
-  args: {
-    seat: {
-      type: "INDIVIDUAL",
-      tableNumber: 3,
-      direction: "N",
-    },
-  },
 };
 
-export const EWWithSection: Story = {
+export const EventSessionAndSection: Story = {
   decorators: [
     withGame({
       id: 1,
@@ -109,11 +89,4 @@ export const EWWithSection: Story = {
       updatedAt: new Date().toISOString(),
     }),
   ],
-  args: {
-    seat: {
-      type: "INDIVIDUAL",
-      tableNumber: 3,
-      direction: "N",
-    },
-  },
 };
