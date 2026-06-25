@@ -50,6 +50,24 @@ export const Default: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
+    withAssignment({
+      type: "PAIR",
+      player1: {
+        id: 1,
+        firstName: "Jacqui",
+        lastName: "Collier",
+        nationalId: "477484",
+      },
+      player2: {
+        id: 2,
+        firstName: "David",
+        lastName: "Collier",
+        nationalId: "404476",
+      },
+      tableNumber: 3,
+      direction: "EW",
+      pairId: "1",
+    }),
   ],
 };
 
@@ -68,6 +86,24 @@ export const LaterRound: Story = {
       tables: 10,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+    }),
+    withAssignment({
+      type: "PAIR",
+      player1: {
+        id: 1,
+        firstName: "Jacqui",
+        lastName: "Collier",
+        nationalId: "477484",
+      },
+      player2: {
+        id: 2,
+        firstName: "David",
+        lastName: "Collier",
+        nationalId: "404476",
+      },
+      tableNumber: 3,
+      direction: "EW",
+      pairId: "1",
     }),
   ],
   args: {

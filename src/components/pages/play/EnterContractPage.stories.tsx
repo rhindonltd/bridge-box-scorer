@@ -2,6 +2,7 @@ import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import EnterContractPage from "@/components/pages/play/EnterContractPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { withPlay } from "@storybook/decorators/PlayDecorator";
+import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
 const meta: Meta<typeof EnterContractPage> = {
   title: "Pages/Play/EnterContractPage",
@@ -32,6 +33,24 @@ export const Default: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
+    withAssignment({
+      type: "PAIR",
+      player1: {
+        id: 1,
+        firstName: "Jacqui",
+        lastName: "Collier",
+        nationalId: "477484",
+      },
+      player2: {
+        id: 2,
+        firstName: "David",
+        lastName: "Collier",
+        nationalId: "404476",
+      },
+      tableNumber: 3,
+      direction: "EW",
+      pairId: "1",
+    }),
   ],
   args: {
     table: 2,
@@ -56,6 +75,24 @@ export const SessionAndSection: Story = {
       tables: 10,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+    }),
+    withAssignment({
+      type: "PAIR",
+      player1: {
+        id: 1,
+        firstName: "Jacqui",
+        lastName: "Collier",
+        nationalId: "477484",
+      },
+      player2: {
+        id: 2,
+        firstName: "David",
+        lastName: "Collier",
+        nationalId: "404476",
+      },
+      tableNumber: 3,
+      direction: "EW",
+      pairId: "1",
     }),
   ],
   args: {

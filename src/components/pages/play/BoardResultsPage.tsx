@@ -19,17 +19,17 @@ export function BoardResultsPage({
 }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-        <div className="flex flex-row w-full">
-            <GameInfo />
-            <ParticipantInfo />
-        </div>
+      <div className="flex flex-row w-full">
+        <GameInfo />
+        <ParticipantInfo />
+      </div>
 
       <div className="w-full">
-          <div className="flex flex-col bg-blue-300 py-2">
-              <div className="text-center font-bold">
-                  <span>Board {board}</span>
-              </div>
+        <div className="flex flex-col bg-blue-300 py-2">
+          <div className="text-center font-bold">
+            <span>Board {board}</span>
           </div>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0">

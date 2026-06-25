@@ -30,8 +30,8 @@ export function RoundInfoPage({
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       <div className="flex flex-row w-full">
-          <GameInfo />
-          <ParticipantInfo />
+        <GameInfo />
+        <ParticipantInfo />
       </div>
 
       <div className="w-full">

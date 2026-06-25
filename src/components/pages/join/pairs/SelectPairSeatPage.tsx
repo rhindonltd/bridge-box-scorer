@@ -52,9 +52,9 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
-        <div className="flex flex-row w-full">
-            <GameInfo />
-        </div>
+      <div className="flex flex-row w-full">
+        <GameInfo />
+      </div>
 
       {/* Main table selection */}
       <SelectPairsTable

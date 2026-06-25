@@ -30,7 +30,7 @@ export const EventOnly: Story = {
       tables: 10,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    })
+    }),
   ],
 };
 

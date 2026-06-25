@@ -107,10 +107,10 @@ export default function EnterContractPage({
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-        <div className="flex flex-row w-full">
-            <GameInfo />
-            <ParticipantInfo />
-        </div>
+      <div className="flex flex-row w-full">
+        <GameInfo />
+        <ParticipantInfo />
+      </div>
 
       {/* TOP GRID */}
       <div className="grid grid-cols-2 w-full items-stretch">
