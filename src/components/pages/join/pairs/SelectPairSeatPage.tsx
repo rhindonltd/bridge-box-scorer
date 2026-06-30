@@ -2,14 +2,13 @@
 
 import SelectPairsTable from "@/components/join/pairs/SelectPairsTable";
 import { useGame } from "@/context/GameContext";
-import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { fetcher } from "@/lib/fetcher";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { useState } from "react";
 import useSWR from "swr";
-import { Seat } from "@/model/participants";
+import { Pair, Seat } from "@/model/participants";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
 import { GameInfo } from "@/components/common/GameInfo";
@@ -26,7 +25,7 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
 
   const key = gameId ? swrKeys.pairsInitialSeats(gameId) : null;
 
-  const { data } = useSWR<PairInitialSeat[], Error>(key, fetcher);
+  const { data } = useSWR<Pair[], Error>(key, fetcher);
 
   if (!gameId) {
     return null;

@@ -18,8 +18,8 @@ export type TravellerParticipantMode = "INDIVIDUAL" | "PAIR";
 
 /* ---------- seat ---------- */
 
-type IndividualSeat = `${number}${Direction}`;
-type PairSeat = `${number}${PairDirection}`;
+export type IndividualSeat = `${number}${Direction}`;
+export type PairSeat = `${number}${PairDirection}`;
 
 export type Seat = IndividualSeat | PairSeat;
 
@@ -43,15 +43,17 @@ export function parseSeat(seat: Seat) {
 
 /* ---------- participants ---------- */
 
+// Create NewIndividual, NewPair and NewParticipant
+
 export type Individual = {
   type: "INDIVIDUAL";
-  initialSeat: Seat;
+  initialSeat: IndividualSeat;
   player: Player;
 };
 
 export type Pair = {
   type: "PAIR";
-  initialSeat: Seat;
+  initialSeat: PairSeat;
   player1: Player;
   player2: Player;
 };

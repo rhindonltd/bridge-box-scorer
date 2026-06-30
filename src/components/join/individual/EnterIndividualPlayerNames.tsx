@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import PlayerSearch from "@/components/pages/join/PlayerSearch";
-import { parseSeat, Seat } from "@/model/participants";
+import { IndividualSeat, parseSeat } from "@/model/participants";
 
 interface Props {
-  seat: Seat;
+  seat: IndividualSeat;
   onSubmitPlayer: (player: NewPlayer) => void;
 }
 

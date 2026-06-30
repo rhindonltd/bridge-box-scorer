@@ -1,9 +1,9 @@
-import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
-import { pairs } from "@/db/games/pairs/tables/pairs";
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { participants } from "@/db/games/pairs/tables/participants";
 
 export const pairMovementMap = sqliteTable("playermovementmap", {
   id: text("id").primaryKey(),
-  pair: integer("pair").references(() => pairs.id),
+  initialSeat: text("initial_seat").references(() => participants.initialSeat),
 });
 
 export type PairMovementMapEntry = typeof pairMovementMap.$inferSelect;

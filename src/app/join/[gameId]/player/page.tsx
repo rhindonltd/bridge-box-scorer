@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import JoinAsPlayerPage from "@/components/pages/join/JoinAsPlayerPage";
 import { useGame } from "@/context/GameContext";
+import { SelectSeatPage } from "@/components/pages/join/SelectSeatPage";
 
 export default function JoinAsPlayer() {
   const { game } = useGame();
@@ -19,5 +19,9 @@ export default function JoinAsPlayer() {
     return null;
   }
 
-  return <JoinAsPlayerPage />;
+  return (
+    <SelectSeatPage
+      onSeatSelected={(seat) => router.replace(`/play/${game.gameId}/${seat}`)}
+    />
+  );
 }

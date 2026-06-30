@@ -1,5 +1,5 @@
+import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 import { NextResponse } from "next/server";
-import { findPlayerInitialSeats } from "@/db/games/shared/queries/find-player-initial-seats";
 
 export async function GET(
   _req: Request,
@@ -8,7 +8,7 @@ export async function GET(
   const gameId = (await params).gameId;
 
   try {
-    return NextResponse.json(await findPlayerInitialSeats(gameId));
+    return NextResponse.json(await findIndividuals(gameId));
   } catch (error) {
     console.error(error);
     return NextResponse.json(
