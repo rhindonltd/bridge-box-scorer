@@ -10,4 +10,8 @@ export const swrKeys = {
   game: (gameId: string) => {
     return `/api/games/${gameId}`;
   },
+
+  assignment: (gameId: string, participantId: string) => {
+    return `/api/games/${gameId}/assignment/${participantId}`;
+  },
 };

@@ -52,21 +52,7 @@ export const Default: Story = {
     }),
     withAssignment({
       type: "PAIR",
-      player1: {
-        id: 1,
-        firstName: "Jacqui",
-        lastName: "Collier",
-        nationalId: "477484",
-      },
-      player2: {
-        id: 2,
-        firstName: "David",
-        lastName: "Collier",
-        nationalId: "404476",
-      },
-      tableNumber: 3,
-      direction: "EW",
-      pairId: "1",
+      id: "1",
     }),
   ],
 };
@@ -89,21 +75,7 @@ export const LaterRound: Story = {
     }),
     withAssignment({
       type: "PAIR",
-      player1: {
-        id: 1,
-        firstName: "Jacqui",
-        lastName: "Collier",
-        nationalId: "477484",
-      },
-      player2: {
-        id: 2,
-        firstName: "David",
-        lastName: "Collier",
-        nationalId: "404476",
-      },
-      tableNumber: 3,
-      direction: "EW",
-      pairId: "1",
+      id: "1",
     }),
   ],
   args: {
@@ -131,21 +103,7 @@ export const LongNames: Story = {
     }),
     withAssignment({
       type: "PAIR",
-      player1: {
-        id: 1,
-        firstName: "Jacqui",
-        lastName: "Collier",
-        nationalId: "477484",
-      },
-      player2: {
-        id: 2,
-        firstName: "David",
-        lastName: "Collier",
-        nationalId: "404476",
-      },
-      tableNumber: 3,
-      direction: "EW",
-      pairId: "11EW",
+      id: "11EW",
     }),
   ],
   args: {

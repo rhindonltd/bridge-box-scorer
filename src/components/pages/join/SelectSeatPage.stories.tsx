@@ -37,7 +37,6 @@ export const Individual: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
-    withAssignment(null),
   ],
 };
 
@@ -57,6 +56,5 @@ export const Pairs: Story = {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
-    withAssignment(null),
   ],
 };

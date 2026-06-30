@@ -1,17 +1,17 @@
 import { TableRow } from "@/components/common/table/TableRow";
-import { Table } from "../../common/table/Table";
-import { IndividualAssignment } from "@/model/participants";
+import { Table } from "@/components/common/table/Table";
 import { IndividualXIMPOverallScore } from "@/model/leaderboard";
+import { AssignedIndividual } from "@/model/participants";
 
 type Props = {
-  individuals: IndividualAssignment[];
+  individuals: AssignedIndividual[];
   leaderboard: IndividualXIMPOverallScore;
 };
 
 export function IndividualIMPLeaderboard({ individuals, leaderboard }: Props) {
   const getPlayerNames = (playerId: string) => {
     const participant = individuals.find(
-      (individualWithPlayer) => individualWithPlayer.playerId === playerId,
+      (individualWithPlayer) => individualWithPlayer.id === playerId,
     );
     if (!participant) return playerId;
 

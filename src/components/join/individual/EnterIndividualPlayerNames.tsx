@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import PlayerSearch from "@/components/pages/join/PlayerSearch";
-import { IndividualSeat } from "@/model/participants";
+import { parseSeat, Seat } from "@/model/participants";
 
 interface Props {
-  seat: IndividualSeat;
+  seat: Seat;
   onSubmitPlayer: (player: NewPlayer) => void;
 }
 
@@ -14,13 +14,15 @@ export default function EnterIndividualPlayerNames({
 }: Props) {
   const [player, setPlayer] = useState<NewPlayer | null>(null);
 
+  const parsedSeat = parseSeat(seat);
+
   return (
     <div className="w-full">
       {/* Header */}
       <div className="w-full bg-blue-900 text-white px-4 py-3">
         <div className="mx-auto max-w-xl">
           <div className="font-semibold">
-            Table {seat.tableNumber} - {seat.direction}
+            Table {parsedSeat.tableNumber} - {parsedSeat.direction}
           </div>
         </div>
       </div>

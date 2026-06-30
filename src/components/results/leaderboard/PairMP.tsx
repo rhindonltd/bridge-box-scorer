@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
 import { PairMPPercentageLeaderboard } from "@/components/results/leaderboard/PairMPPercentageLeaderboard";
 import { PairMPLeaderboard } from "@/components/results/leaderboard/PairMPLeaderboard";
-import { PairAssignment } from "@/model/participants";
-import { PairMatchpointOverallScore } from "../../../model/leaderboard";
+import { PairMatchpointOverallScore } from "@/model/leaderboard";
+import { AssignedPair } from "@/model/participants";
 
 type Props = {
-  pairs: PairAssignment[];
+  pairs: AssignedPair[];
   leaderboard: PairMatchpointOverallScore;
 };
 

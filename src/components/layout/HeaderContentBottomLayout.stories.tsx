@@ -1,10 +1,10 @@
 import React from "react";
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { HeaderContentButtonLayout } from "./HeaderContentButtonLayout";
+import { HeaderContentBottomLayout } from "./HeaderContentBottomLayout";
 
-const meta: Meta<typeof HeaderContentButtonLayout> = {
-  title: "Components/Layout/HeaderContentButtonLayout",
-  component: HeaderContentButtonLayout,
+const meta: Meta<typeof HeaderContentBottomLayout> = {
+  title: "Components/Layout/HeaderContentBottomLayout",
+  component: HeaderContentBottomLayout,
   parameters: {
     layout: "fullscreen",
   },
@@ -13,7 +13,7 @@ const meta: Meta<typeof HeaderContentButtonLayout> = {
 
 export default meta;
 
-type Story = StoryObj<typeof HeaderContentButtonLayout>;
+type Story = StoryObj<typeof HeaderContentBottomLayout>;
 
 export const Default: Story = {
   args: {
@@ -24,7 +24,7 @@ export const Default: Story = {
         You can customize this content as needed.
       </p>
     ),
-    button: (
+    bottom: (
       <button className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
         Get Started
       </button>

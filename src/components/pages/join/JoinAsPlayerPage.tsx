@@ -20,7 +20,7 @@ const joinFlow = createFlow(
       canEnter: (s: JoinState) => !!s.seat && !!s.names,
     },
   },
-  ["seat", "names", "waiting"] as const,
+  ["seat", "waiting"] as const,
 );
 
 export default function JoinAsPlayerPage() {

@@ -6,12 +6,11 @@ import { useGame } from "@/context/GameContext";
 import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { fetcher } from "@/lib/fetcher";
-import { Seat } from "@/model/participants";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import useSWR from "swr";
 import EnterIndividualPlayerNames from "@/components/join/individual/EnterIndividualPlayerNames";
-import { IndividualSeat } from "@/model/participants";
+import { Seat } from "@/model/participants";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import { GameInfo } from "@/components/common/GameInfo";
 
@@ -23,7 +22,7 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
   const { game } = useGame();
   const gameId = game?.gameId;
 
-  const [selectedSeat, setSelectedSeat] = useState<IndividualSeat | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
 
   const key = gameId ? swrKeys.individualInitialSeats(gameId) : null;
 
@@ -42,7 +41,7 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
     return null;
   }
 
-  const handleSeatSelected = (seat: IndividualSeat) => {
+  const handleSeatSelected = (seat: Seat) => {
     setSelectedSeat(seat);
   };
 

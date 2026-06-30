@@ -37,10 +37,9 @@ export function OpeningLead({ onSave }: Props) {
   return (
     <div className="flex h-[100dvh] flex-col p-5">
       {/* HEADER */}
-      <header className="shrink-0 mb-2">
-        <h1 className="text-lg font-semibold">Opening Lead</h1>
-        <p className="text-xs text-gray-500">Optional</p>
-      </header>
+      {/*<header className="shrink-0 mb-2">*/}
+      {/*  <h1 className="text-lg font-semibold">Opening Lead</h1>*/}
+      {/*</header>*/}
 
       {/* TOP SECTION (FIXED HEIGHT — CRITICAL) */}
       <div className="shrink-0 h-[125px] flex gap-4 mb-3">
@@ -123,14 +122,14 @@ export function OpeningLead({ onSave }: Props) {
       </div>
 
       {/* FOOTER */}
-      <footer className="shrink-0 pt-3">
-        <button
-          onClick={() => onSave(lead)}
-          className="w-full rounded-xl bg-black py-4 text-white"
-        >
-          Save Lead
-        </button>
-      </footer>
+      {/*<footer className="shrink-0 pt-3">*/}
+      {/*  <button*/}
+      {/*    onClick={() => onSave(lead)}*/}
+      {/*    className="w-full rounded-xl bg-black py-4 text-white"*/}
+      {/*  >*/}
+      {/*    Save Lead*/}
+      {/*  </button>*/}
+      {/*</footer>*/}
     </div>
   );
 }

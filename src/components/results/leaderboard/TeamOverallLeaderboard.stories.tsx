@@ -19,11 +19,10 @@ export const Default: Story = {
     teams: [
       {
         type: "TEAM",
-        teamId: "1",
+        id: "1",
         pair1: {
           type: "PAIR",
-          direction: "NS",
-          tableNumber: 1,
+          initialSeat: "1NS",
           player1: {
             id: 1,
             firstName: "David",
@@ -39,8 +38,7 @@ export const Default: Story = {
         },
         pair2: {
           type: "PAIR",
-          direction: "EW",
-          tableNumber: 1,
+          initialSeat: "1EW",
           player1: {
             id: 1,
             firstName: "Peter",

@@ -26,7 +26,7 @@ export default function LeaderboardRoute() {
         participants: [
           {
             type: "TEAM",
-            teamId: "1",
+            id: "1",
             pair1: {
               type: "PAIR",
               player1: {
@@ -41,8 +41,7 @@ export default function LeaderboardRoute() {
                 lastName: "Collier",
                 nationalId: "477484",
               },
-              direction: "NS",
-              tableNumber: 1,
+              initialSeat: "1NS",
             },
             pair2: {
               type: "PAIR",
@@ -58,8 +57,7 @@ export default function LeaderboardRoute() {
                 lastName: "Collier",
                 nationalId: "654321",
               },
-              direction: "EW",
-              tableNumber: 1,
+              initialSeat: "1EW",
             },
           },
         ],

@@ -38,21 +38,7 @@ export const IndividualXIMP: Story = {
     }),
     withAssignment({
       type: "PAIR",
-      player1: {
-        id: 1,
-        firstName: "Jacqui",
-        lastName: "Collier",
-        nationalId: "477484",
-      },
-      player2: {
-        id: 2,
-        firstName: "David",
-        lastName: "Collier",
-        nationalId: "404476",
-      },
-      tableNumber: 3,
-      direction: "EW",
-      pairId: "1",
+      id: "1",
     }),
   ],
   args: {
@@ -80,15 +66,7 @@ export const IndividualMP: Story = {
     }),
     withAssignment({
       type: "INDIVIDUAL",
-      player: {
-        id: 1,
-        firstName: "Jacqui",
-        lastName: "Collier",
-        nationalId: "477484",
-      },
-      tableNumber: 3,
-      direction: "E",
-      playerId: "12",
+      id: "12",
     }),
   ],
   args: {
@@ -116,21 +94,7 @@ export const PairXIMP: Story = {
     }),
     withAssignment({
       type: "PAIR",
-      player1: {
-        id: 1,
-        firstName: "Jacqui",
-        lastName: "Collier",
-        nationalId: "477484",
-      },
-      player2: {
-        id: 2,
-        firstName: "David",
-        lastName: "Collier",
-        nationalId: "404476",
-      },
-      tableNumber: 3,
-      direction: "EW",
-      pairId: "1",
+      id: "1",
     }),
   ],
   args: {
@@ -158,21 +122,7 @@ export const PairMP: Story = {
     }),
     withAssignment({
       type: "PAIR",
-      player1: {
-        id: 1,
-        firstName: "Jacqui",
-        lastName: "Collier",
-        nationalId: "477484",
-      },
-      player2: {
-        id: 2,
-        firstName: "David",
-        lastName: "Collier",
-        nationalId: "404476",
-      },
-      tableNumber: 3,
-      direction: "EW",
-      pairId: "1",
+      id: "1",
     }),
   ],
   args: {

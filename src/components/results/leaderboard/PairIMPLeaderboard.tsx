@@ -1,17 +1,17 @@
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { PairAssignment } from "@/model/participants";
+import { AssignedPair } from "@/model/participants";
 import { PairXIMPOverallScore } from "@/model/leaderboard";
 
 interface Props {
-  pairs: PairAssignment[];
+  pairs: AssignedPair[];
   leaderboard: PairXIMPOverallScore;
 }
 
 export function PairIMPLeaderboard({ pairs, leaderboard }: Props) {
   const getPlayerNames = (playerId: string) => {
     const participant = pairs.find(
-      (pairWithPlayers) => pairWithPlayers.pairId === playerId,
+      (pairWithPlayers) => pairWithPlayers.id === playerId,
     );
     if (!participant) return playerId;
 

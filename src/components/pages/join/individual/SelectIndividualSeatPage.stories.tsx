@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { SelectIndividualSeatPage } from "@/components/pages/join/individual/SelectIndividualSeatPage";
-import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
 const meta: Meta<typeof SelectIndividualSeatPage> = {
   title: "Pages/JoinGame/SelectIndividualSeatPage",

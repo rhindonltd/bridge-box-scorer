@@ -1,9 +1,9 @@
 import {
-  IndividualAssignment,
-  PairAssignment,
-  TeamAssignment,
+  AssignedIndividual,
+  AssignedPair,
   TravellerParticipantMode,
 } from "@/model/participants";
+import { AssignedTeam } from "./participants";
 
 export type TeamMode = "TEAM";
 export type OverallScoreMode = TravellerParticipantMode | TeamMode;
@@ -122,9 +122,9 @@ export type OverallScore =
 /* ---------- participants mapping ---------- */
 
 interface ParticipantsByOverallScoreMode {
-  INDIVIDUAL: IndividualAssignment[];
-  PAIR: PairAssignment[];
-  TEAM: TeamAssignment[];
+  INDIVIDUAL: AssignedIndividual[];
+  PAIR: AssignedPair[];
+  TEAM: AssignedTeam[];
 }
 
 /* ---------- final combined type ---------- */
@@ -138,22 +138,3 @@ export type OverallScoreAndParticipant = {
     };
   }[ScoringByMode<M>];
 }[OverallScoreMode];
-
-// --------------------
-// Example
-// --------------------
-//
-// const exampleOverall: OverallScoreBase<"PAIR", "MP"> = {
-//     type: "PAIR_MP",
-//     mode: "PAIR",
-//     scoring: "MP",
-//     lines: [
-//         {
-//             rank: 1,
-//             tied: false,
-//             pairId: "P1",
-//             totalMP: 60,
-//             maxMP: 100,
-//         },
-//     ],
-// };

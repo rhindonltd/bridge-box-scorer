@@ -1,17 +1,12 @@
-import {
-  AssignmentContext,
-  AssignmentSelection,
-} from "@/context/AssignmentContext";
+import { AssignmentContext } from "@/context/AssignmentContext";
+import { Assignment } from "@/model/participants";
 
-export const withAssignment =
-  (assignmentSelection: AssignmentSelection) => (Story: any) => (
-    <AssignmentContext.Provider
-      value={{
-        assignmentSelection,
-        selectAssignment: () => {},
-        clearAssignment: () => {},
-      }}
-    >
-      <Story />
-    </AssignmentContext.Provider>
-  );
+export const withAssignment = (assignment: Assignment) => (Story: any) => (
+  <AssignmentContext.Provider
+    value={{
+      assignment,
+    }}
+  >
+    <Story />
+  </AssignmentContext.Provider>
+);

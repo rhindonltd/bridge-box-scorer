@@ -17,10 +17,6 @@ vi.mock("@/components/common/SectionInfo", () => ({
   SectionInfo: () => <div data-testid="section-info" />,
 }));
 
-vi.mock("@/components/common/TableRoundPairBoardInfo", () => ({
-  TableRoundPairBoardInfo: () => <div data-testid="table-info" />,
-}));
-
 vi.mock("@/components/pages/play/PlayableContract", () => ({
   PlayableContract: (props: any) => (
     <div data-testid="playable">

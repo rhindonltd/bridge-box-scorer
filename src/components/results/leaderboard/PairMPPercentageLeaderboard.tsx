@@ -1,16 +1,16 @@
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { PairAssignment } from "@/model/participants";
 import { PairMatchpointOverallScore } from "@/model/leaderboard";
+import { AssignedPair } from "@/model/participants";
 
 interface Props {
-  pairs: PairAssignment[];
+  pairs: AssignedPair[];
   leaderboard: PairMatchpointOverallScore;
 }
 
 export function PairMPPercentageLeaderboard({ pairs, leaderboard }: Props) {
   const getPlayerNames = (playerId: string) => {
-    const participant = pairs.find((ind) => ind.pairId === playerId);
+    const participant = pairs.find((ind) => ind.id === playerId);
     if (!participant) return playerId;
 
     return (

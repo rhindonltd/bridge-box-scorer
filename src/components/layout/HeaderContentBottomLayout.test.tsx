@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { HeaderContentButtonLayout } from "./HeaderContentButtonLayout";
+import { HeaderContentBottomLayout } from "./HeaderContentBottomLayout";
 
-describe("HeaderContentButtonLayout", () => {
+describe("HeaderContentBottomLayout", () => {
   it("renders heading, content, and button", () => {
     render(
-      <HeaderContentButtonLayout
+      <HeaderContentBottomLayout
         heading={<h1>Title</h1>}
         content={<div>Content Area</div>}
         button={<button>Click me</button>}
@@ -21,7 +21,7 @@ describe("HeaderContentButtonLayout", () => {
 
   it("applies layout structure classes", () => {
     const { container } = render(
-      <HeaderContentButtonLayout
+      <HeaderContentBottomLayout
         heading={<div>H</div>}
         content={<div>C</div>}
         button={<div>B</div>}
@@ -42,7 +42,7 @@ describe("HeaderContentButtonLayout", () => {
 
   it("wraps heading in centered container", () => {
     render(
-      <HeaderContentButtonLayout
+      <HeaderContentBottomLayout
         heading={<span>Heading</span>}
         content={<div />}
         button={<div />}
@@ -56,7 +56,7 @@ describe("HeaderContentButtonLayout", () => {
 
   it("wraps content in full-width centered container", () => {
     render(
-      <HeaderContentButtonLayout
+      <HeaderContentBottomLayout
         heading={<div />}
         content={<span>Content</span>}
         button={<div />}
@@ -75,7 +75,7 @@ describe("HeaderContentButtonLayout", () => {
 
   it("wraps button in padded footer container", () => {
     render(
-      <HeaderContentButtonLayout
+      <HeaderContentBottomLayout
         heading={<div />}
         content={<div />}
         button={<button>Action</button>}

@@ -9,20 +9,20 @@ import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { useState } from "react";
 import useSWR from "swr";
-import { PairSeat } from "@/model/participants";
+import { Seat } from "@/model/participants";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
 import { GameInfo } from "@/components/common/GameInfo";
 
 interface Props {
-  onSeatSelected: (seat: PairSeat) => void;
+  onSeatSelected: (seat: Seat) => void;
 }
 
 export function SelectPairSeatPage({ onSeatSelected }: Props) {
   const { game } = useGame();
   const gameId = game?.gameId;
 
-  const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
 
   const key = gameId ? swrKeys.pairsInitialSeats(gameId) : null;
 
@@ -41,7 +41,7 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
     [gameId],
   );
 
-  const handleSeatSelected = (seat: PairSeat) => {
+  const handleSeatSelected = (seat: Seat) => {
     setSelectedSeat(seat);
   };
 

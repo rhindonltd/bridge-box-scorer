@@ -1,16 +1,16 @@
 import { TeamOverallOverallScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { TeamAssignment } from "@/model/participants";
+import { AssignedTeam } from "@/model/participants";
 
 interface Props {
-  teams: TeamAssignment[];
+  teams: AssignedTeam[];
   leaderboard: TeamOverallOverallScore;
 }
 
 export function TeamOverallLeaderboard({ teams, leaderboard }: Props) {
   const getPlayerNames = (playerId: string) => {
-    const participant = teams.find((ind) => ind.teamId === playerId);
+    const participant = teams.find((ind) => ind.id === playerId);
     if (!participant) return playerId;
 
     return (
