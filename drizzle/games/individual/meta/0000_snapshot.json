@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "24534dc5-2f05-47f3-9bdd-74d26165654a",
+  "id": "e979873b-c2a3-40f8-86d9-1f2fe38dc3fe",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "assignment": {
@@ -28,8 +28,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "boardplays": {
-      "name": "boardplays",
+    "boards": {
+      "name": "boards",
       "columns": {
         "round_number": {
           "name": "round_number",
@@ -47,70 +47,6 @@
         },
         "board_number": {
           "name": "board_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "boardplays_round_number_table_number_board_number_pk": {
-          "columns": [
-            "round_number",
-            "table_number",
-            "board_number"
-          ],
-          "name": "boardplays_round_number_table_number_board_number_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "metadata": {
-      "name": "metadata",
-      "columns": {
-        "key": {
-          "name": "key",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "value": {
-          "name": "value",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "movements": {
-      "name": "movements",
-      "columns": {
-        "round_number": {
-          "name": "round_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "table_number": {
-          "name": "table_number",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -144,16 +80,9 @@
           "notNull": false,
           "autoincrement": false
         },
-        "board_start": {
-          "name": "board_start",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "board_end": {
-          "name": "board_end",
-          "type": "integer",
+        "status": {
+          "name": "status",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -162,14 +91,39 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "movements_round_number_table_number_pk": {
+        "boards_round_number_table_number_board_number_pk": {
           "columns": [
             "round_number",
-            "table_number"
+            "table_number",
+            "board_number"
           ],
-          "name": "movements_round_number_table_number_pk"
+          "name": "boards_round_number_table_number_board_number_pk"
         }
       },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "metadata": {
+      "name": "metadata",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
     },

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9f36176d-19a1-47ba-9112-5c1acdcd6cf8",
+  "id": "7e1af826-23d6-42c1-bbf0-67d8f918a3e4",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "assignment": {
@@ -28,8 +28,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "boardplays": {
-      "name": "boardplays",
+    "boards": {
+      "name": "boards",
       "columns": {
         "round_number": {
           "name": "round_number",
@@ -52,6 +52,20 @@
           "notNull": false,
           "autoincrement": false
         },
+        "ns": {
+          "name": "ns",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ew": {
+          "name": "ew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "status": {
           "name": "status",
           "type": "text",
@@ -63,13 +77,13 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "boardplays_round_number_table_number_board_number_pk": {
+        "boards_round_number_table_number_board_number_pk": {
           "columns": [
             "round_number",
             "table_number",
             "board_number"
           ],
-          "name": "boardplays_round_number_table_number_board_number_pk"
+          "name": "boards_round_number_table_number_board_number_pk"
         }
       },
       "uniqueConstraints": {},
@@ -96,66 +110,6 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "movements": {
-      "name": "movements",
-      "columns": {
-        "round_number": {
-          "name": "round_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "table_number": {
-          "name": "table_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ns": {
-          "name": "ns",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ew": {
-          "name": "ew",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "board_start": {
-          "name": "board_start",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "board_end": {
-          "name": "board_end",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "movements_round_number_table_number_pk": {
-          "columns": [
-            "round_number",
-            "table_number"
-          ],
-          "name": "movements_round_number_table_number_pk"
-        }
-      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },

@@ -10,52 +10,11 @@ import {
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
 
-import { createPairMovement } from "@/db/games/pairs/actions/create-movement";
-import { createIndividualMovement } from "@/db/games/individual/actions/create-movement";
-import { createBoardPlay } from "@/db/games/shared/actions/create-board-play";
-import { GameType } from "@/db/games/types/game-type";
+import { createBoard as createIndividualBoard } from "@/db/games/individual/actions/create-board";
+import { createBoard as createPairBoard } from "@/db/games/pairs/actions/create-board";
 
 import { createAssignment as createIndividualAssignment } from "@/db/games/individual/actions/create-assignment";
 import { createAssignment as createPairAssignment } from "@/db/games/pairs/actions/create-assignment";
-
-/**
- * Expand board ranges into individual board plays
- */
-async function createBoardPlaysFromRounds(
-  gameType: GameType,
-  gameId: string,
-  rounds: {
-    roundNumber: number;
-    tableNumber: number;
-    boardStart: number;
-    boardEnd: number;
-  }[],
-) {
-  for (const r of rounds) {
-    for (
-      let boardNumber = r.boardStart;
-      boardNumber <= r.boardEnd;
-      boardNumber++
-    ) {
-      await createBoardPlay(gameType, gameId, {
-        roundNumber: r.roundNumber,
-        tableNumber: r.tableNumber,
-        boardNumber,
-        status: "NOT_PLAYED",
-      });
-    }
-  }
-}
-
-/**
- * Normalize movement rounds for board play creation
- */
-type NormalizedRound = {
-  roundNumber: number;
-  tableNumber: number;
-  boardStart: number;
-  boardEnd: number;
-};
 
 /**
  * Individual movement handler
@@ -63,28 +22,25 @@ type NormalizedRound = {
 async function handleIndividualMovement(
   movement: IndividualMovement[],
   gameId: string,
-): Promise<NormalizedRound[]> {
-  const rounds: NormalizedRound[] = [];
-
+) {
   for (const m of movement) {
     for (const r of m.rounds) {
-      await createIndividualMovement(gameId, {
-        roundNumber: r.roundNumber,
-        tableNumber: m.tableNumber,
-        n: r.n,
-        s: r.s,
-        e: r.e,
-        w: r.w,
-        boardStart: r.boardStart,
-        boardEnd: r.boardEnd,
-      });
-
-      rounds.push({
-        roundNumber: r.roundNumber,
-        tableNumber: m.tableNumber,
-        boardStart: r.boardStart,
-        boardEnd: r.boardEnd,
-      });
+      for (
+        let boardNumber = r.boardStart;
+        boardNumber <= r.boardEnd;
+        boardNumber++
+      ) {
+        await createIndividualBoard(gameId, {
+          roundNumber: r.roundNumber,
+          tableNumber: m.tableNumber,
+          boardNumber,
+          n: r.n,
+          s: r.s,
+          e: r.e,
+          w: r.w,
+          status: "NOT_PLAYED",
+        });
+      }
 
       if (r.roundNumber === 1) {
         const seats = [
@@ -103,8 +59,6 @@ async function handleIndividualMovement(
       }
     }
   }
-
-  return rounds;
 }
 
 /**
@@ -113,26 +67,23 @@ async function handleIndividualMovement(
 async function handlePairLikeMovement(
   movement: PairMovement[] | TeamMovement[],
   gameId: string,
-): Promise<NormalizedRound[]> {
-  const rounds: NormalizedRound[] = [];
-
+) {
   for (const m of movement) {
     for (const r of m.rounds) {
-      await createPairMovement(gameId, {
-        roundNumber: r.roundNumber,
-        tableNumber: m.tableNumber,
-        ns: r.ns,
-        ew: r.ew,
-        boardStart: r.boardStart,
-        boardEnd: r.boardEnd,
-      });
-
-      rounds.push({
-        roundNumber: r.roundNumber,
-        tableNumber: m.tableNumber,
-        boardStart: r.boardStart,
-        boardEnd: r.boardEnd,
-      });
+      for (
+        let boardNumber = r.boardStart;
+        boardNumber <= r.boardEnd;
+        boardNumber++
+      ) {
+        await createPairBoard(gameId, {
+          roundNumber: r.roundNumber,
+          tableNumber: m.tableNumber,
+          boardNumber,
+          ns: r.ns,
+          ew: r.ew,
+          status: "NOT_PLAYED",
+        });
+      }
 
       if (r.roundNumber === 1) {
         const seats = [
@@ -149,8 +100,6 @@ async function handlePairLikeMovement(
       }
     }
   }
-
-  return rounds;
 }
 
 /**
@@ -172,20 +121,15 @@ export function registerSelectMovementHandler(socket: Socket) {
       cb,
     ) => {
       try {
-        let rounds: NormalizedRound[] = [];
-
         if (type === "INDIVIDUAL") {
-          const movement = await getIndividualMovement(id);
-          rounds = await handleIndividualMovement(movement, gameId);
-          await createBoardPlaysFromRounds("INDIVIDUAL", gameId, rounds);
+          await handleIndividualMovement(
+            await getIndividualMovement(id),
+            gameId,
+          );
         } else if (type === "PAIRS") {
-          const movement = await getPairMovement(id);
-          rounds = await handlePairLikeMovement(movement, gameId);
-          await createBoardPlaysFromRounds("PAIRS", gameId, rounds);
+          await handlePairLikeMovement(await getPairMovement(id), gameId);
         } else {
-          const movement = await getTeamMovement(id);
-          rounds = await handlePairLikeMovement(movement, gameId);
-          await createBoardPlaysFromRounds("PAIRS", gameId, rounds);
+          await handlePairLikeMovement(await getTeamMovement(id), gameId);
         }
 
         cb?.({ success: true });
