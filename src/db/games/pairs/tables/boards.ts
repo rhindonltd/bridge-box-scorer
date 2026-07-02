@@ -4,14 +4,16 @@ import {
   integer,
   primaryKey,
 } from "drizzle-orm/sqlite-core";
-import { BoardStatuses } from "../../types/board-status";
+import { BoardStatuses } from "@/db/games/types/board-status";
 
-export const boardPlays = sqliteTable(
-  "boardplays",
+export const boards = sqliteTable(
+  "boards",
   {
     roundNumber: integer("round_number"),
     tableNumber: integer("table_number"),
     boardNumber: integer("board_number"),
+    ns: text("ns"),
+    ew: text("ew"),
     status: text("status", {
       enum: BoardStatuses,
     }),
@@ -23,4 +25,4 @@ export const boardPlays = sqliteTable(
   }),
 );
 
-export type BoardPlay = typeof boardPlays.$inferSelect;
+export type Board = typeof boards.$inferSelect;
