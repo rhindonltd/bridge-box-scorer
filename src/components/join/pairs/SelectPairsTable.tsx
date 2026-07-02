@@ -1,12 +1,11 @@
-import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
-import { Seat } from "@/model/participants";
+import { Pair, PairSeat } from "@/model/participants";
 
 interface Props {
   tables: number;
-  onSeatSelected: (seat: Seat) => void;
-  startingPositions: PairInitialSeat[];
+  onSeatSelected: (seat: PairSeat) => void;
+  startingPositions: Pair[];
 }
 
 export default function SelectPairsTable({
@@ -16,7 +15,7 @@ export default function SelectPairsTable({
 }: Props) {
   const isTaken = (table: number, direction: PairDirection) => {
     return startingPositions.some(
-      (a) => a.tableNumber === table && a.direction === direction,
+      (a) => a.initialSeat === `${table}${direction}`,
     );
   };
 

@@ -8,10 +8,11 @@ import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { useState } from "react";
 import useSWR from "swr";
-import { Pair, Seat } from "@/model/participants";
+import { Pair, PairSeat, Seat } from "@/model/participants";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
 import { GameInfo } from "@/components/common/GameInfo";
+import { createParticipant } from "@/lib/game-service";
 
 interface Props {
   onSeatSelected: (seat: Seat) => void;
@@ -21,9 +22,9 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
   const { game } = useGame();
   const gameId = game?.gameId;
 
-  const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
 
-  const key = gameId ? swrKeys.pairsInitialSeats(gameId) : null;
+  const key = gameId ? swrKeys.pairs(gameId) : null;
 
   const { data } = useSWR<Pair[], Error>(key, fetcher);
 
@@ -32,21 +33,27 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
   }
 
   useSocketSWRSync(
-    SocketEvents.STARTING_POSITIONS,
+    SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.pairsInitialSeats(gameId),
-      data: p.startingPositions,
+      key: swrKeys.pairs(gameId),
+      data: p.participants,
     }),
     [gameId],
   );
 
-  const handleSeatSelected = (seat: Seat) => {
+  const handleSeatSelected = (seat: PairSeat) => {
     setSelectedSeat(seat);
   };
 
-  const handlePairSubmitted = (player1: NewPlayer, player2: NewPlayer) => {
-    // setSelectedSeat(seat);
-  };
+  async function handlePairSubmitted(player1: NewPlayer, player2: NewPlayer) {
+    await createParticipant(gameId!, {
+      type: "PAIR",
+      initialSeat: selectedSeat!,
+      player1,
+      player2,
+    });
+    // TODO: Put seat and key in local storage
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">

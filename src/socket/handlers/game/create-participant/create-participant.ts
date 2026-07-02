@@ -11,58 +11,58 @@ import { findIndividuals } from "@/db/games/individual/queries/find-individuals"
 import { createParticipant as createPair } from "@/db/games/pairs/actions/create-participant";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 
-import { Participant } from "@/model/participants";
+import { NewParticipant } from "@/model/participants";
 
-export function registerSelectSeatHandler(socket: Socket, io: Server) {
+export function registerCreateParticipantHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.CREATE_PARTICIPANT,
     async (
       {
         gameId,
-        participant,
+        newParticipant,
       }: {
         gameId: string;
-        participant: Participant;
+        newParticipant: NewParticipant;
       },
       cb,
     ) => {
       try {
         const key = crypto.randomUUID();
 
-        if (participant.type == "INDIVIDUAL") {
+        if (newParticipant.type == "INDIVIDUAL") {
           const playerId = (
-            await createPlayer("INDIVIDUAL", gameId, participant.player)
+            await createPlayer("INDIVIDUAL", gameId, newParticipant.player)
           ).id;
 
           await createIndividual(gameId, {
-            initialSeat: participant.initialSeat,
+            initialSeat: newParticipant.initialSeat,
             player: playerId,
             secretKey: key,
           });
 
-          io.to(Rooms.game(gameId)).emit(SocketEvents.STARTING_POSITIONS, {
-            startingPositions: await findIndividuals(gameId),
+          io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
+            participants: await findIndividuals(gameId),
           });
 
           cb?.({ success: true, key });
-        } else if (participant.type == "PAIR") {
+        } else {
           // PAIR
           const player1 = (
-            await createPlayer("PAIRS", gameId, participant.player1)
+            await createPlayer("PAIRS", gameId, newParticipant.player1)
           ).id;
           const player2 = (
-            await createPlayer("PAIRS", gameId, participant.player2)
+            await createPlayer("PAIRS", gameId, newParticipant.player2)
           ).id;
 
           await createPair(gameId, {
-            initialSeat: participant.initialSeat,
+            initialSeat: newParticipant.initialSeat,
             player1,
             player2,
             secretKey: key,
           });
 
-          io.to(Rooms.game(gameId)).emit(SocketEvents.STARTING_POSITIONS, {
-            startingPositions: await findPairs(gameId),
+          io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
+            participants: await findPairs(gameId),
           });
 
           cb?.({ success: true, key });

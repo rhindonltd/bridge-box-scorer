@@ -13,11 +13,10 @@ import {
 import { createPairMovement } from "@/db/games/pairs/actions/create-movement";
 import { createIndividualMovement } from "@/db/games/individual/actions/create-movement";
 import { createBoardPlay } from "@/db/games/shared/actions/create-board-play";
-import { findPlayerForStartingPosition } from "@/db/games/shared/queries/find-player-for-starting-position";
-import { createIndividualPlayerMovementMapEntry } from "@/db/games/individual/actions/create-player-movement-map-entry";
-import { findPairForPlayerId } from "@/db/games/pairs/queries/find-pair-for-player-id";
-import { createPairMovementMapEntry } from "@/db/games/pairs/actions/create-pair-movement-map-entry";
 import { GameType } from "@/db/games/types/game-type";
+
+import { createAssignment as createIndividualAssignment } from "@/db/games/individual/actions/create-assignment";
+import { createAssignment as createPairAssignment } from "@/db/games/pairs/actions/create-assignment";
 
 /**
  * Expand board ranges into individual board plays
@@ -96,19 +95,10 @@ async function handleIndividualMovement(
         ] as const;
 
         for (const { position, movementId } of seats) {
-          const player = await findPlayerForStartingPosition(
-            "INDIVIDUAL",
-            gameId,
-            m.tableNumber,
-            position,
-          );
-
-          if (player) {
-            await createIndividualPlayerMovementMapEntry(gameId, {
-              id: movementId,
-              player,
-            });
-          }
+          await createIndividualAssignment(gameId, {
+            id: movementId,
+            initialSeat: `${m.tableNumber}${position}`,
+          });
         }
       }
     }
@@ -145,40 +135,16 @@ async function handlePairLikeMovement(
       });
 
       if (r.roundNumber === 1) {
-        const nPlayer = await findPlayerForStartingPosition(
-          "PAIRS",
-          gameId,
-          m.tableNumber,
-          "N",
-        );
+        const seats = [
+          { position: "NS", movementId: r.ns },
+          { position: "EW", movementId: r.ew },
+        ] as const;
 
-        if (nPlayer) {
-          const nsPair = await findPairForPlayerId(gameId, nPlayer);
-
-          if (nsPair) {
-            await createPairMovementMapEntry(gameId, {
-              id: r.ns,
-              pair: nsPair,
-            });
-          }
-        }
-
-        const ePlayer = await findPlayerForStartingPosition(
-          "PAIRS",
-          gameId,
-          m.tableNumber,
-          "E",
-        );
-
-        if (ePlayer) {
-          const ewPair = await findPairForPlayerId(gameId, ePlayer);
-
-          if (ewPair) {
-            await createPairMovementMapEntry(gameId, {
-              id: r.ew,
-              pair: ewPair,
-            });
-          }
+        for (const { position, movementId } of seats) {
+          await createPairAssignment(gameId, {
+            id: movementId,
+            initialSeat: `${m.tableNumber}${position}`,
+          });
         }
       }
     }
@@ -190,7 +156,7 @@ async function handlePairLikeMovement(
 /**
  * Socket handler
  */
-export function registerSelectedMovementHandler(socket: Socket) {
+export function registerSelectMovementHandler(socket: Socket) {
   socket.on(
     SocketEvents.SELECT_MOVEMENT,
     async (

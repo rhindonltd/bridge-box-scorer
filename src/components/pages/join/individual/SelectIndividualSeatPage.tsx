@@ -15,24 +15,24 @@ import { createParticipant } from "@/lib/game-service";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 
 interface Props {
-    onCreateParticipant: (seat: Seat) => void;
+  onSeatSelected: (seat: Seat) => void;
 }
 
-export function SelectIndividualSeatPage({ onCreateParticipant }: Props) {
+export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
   const { game } = useGame();
   const gameId = game?.gameId;
 
   const [selectedSeat, setSelectedSeat] = useState<IndividualSeat | null>(null);
 
-  const key = gameId ? swrKeys.individualInitialSeats(gameId) : null;
+  const key = gameId ? swrKeys.individuals(gameId) : null;
 
   const { data } = useSWR<Individual[], Error>(key, fetcher);
 
   useSocketSWRSync(
-    SocketEvents.STARTING_POSITIONS,
+    SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.individualInitialSeats(gameId!),
-      data: p.startingPositions,
+      key: swrKeys.individuals(gameId!),
+      data: p.participants,
     }),
     [gameId],
   );
@@ -46,12 +46,12 @@ export function SelectIndividualSeatPage({ onCreateParticipant }: Props) {
   };
 
   async function handleSubmitPlayer(player: NewPlayer) {
-    // await createParticipant(gameId!, {
-    //     type: 'INDIVIDUAL',
-    //     initialSeat: selectedSeat!,
-    //     player: player
-    // });
-    // TODO: Put seat and key in local storage
+    const key = await createParticipant(gameId!, {
+      type: "INDIVIDUAL",
+      initialSeat: selectedSeat!,
+      player: player,
+    });
+    localStorage.setItem("assignment", `${gameId}:${selectedSeat}:${key}`);
   }
 
   return (

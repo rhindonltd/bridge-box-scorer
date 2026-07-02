@@ -1,4 +1,4 @@
-import { Player } from "@/db/games/shared/tables/players";
+import { NewPlayer, Player } from "@/db/games/shared/tables/players";
 import { Direction, PairDirection, PairDirections } from "@/model/common";
 
 export interface ParticipantsByMode {
@@ -43,12 +43,23 @@ export function parseSeat(seat: Seat) {
 
 /* ---------- participants ---------- */
 
-// Create NewIndividual, NewPair and NewParticipant
+export type NewIndividual = {
+  type: "INDIVIDUAL";
+  initialSeat: IndividualSeat;
+  player: NewPlayer;
+};
 
 export type Individual = {
   type: "INDIVIDUAL";
   initialSeat: IndividualSeat;
   player: Player;
+};
+
+export type NewPair = {
+  type: "PAIR";
+  initialSeat: PairSeat;
+  player1: NewPlayer;
+  player2: NewPlayer;
 };
 
 export type Pair = {
@@ -63,6 +74,8 @@ export type Team = {
   pair1: Pair;
   pair2: Pair;
 };
+
+export type NewParticipant = NewIndividual | NewPair;
 
 export type Participant = Individual | Pair | Team;
 

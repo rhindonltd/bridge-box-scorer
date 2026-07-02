@@ -13,7 +13,7 @@ export const SocketEvents = {
   JOINABLE_GAMES: "joinable-games",
 
   // Server initiated - Game specific
-  STARTING_POSITIONS: "game:startingPositions",
+  PARTICIPANTS: "game:participants",
 
   // Server initiated - Timer specific
   CREATE_TIMER: "timer:create",

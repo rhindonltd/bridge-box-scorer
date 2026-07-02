@@ -22,6 +22,7 @@ export const Default: Story = {
         tableNumber: 1,
         players: {
           N: {
+            id: 1,
             firstName: "xx",
             lastName: "yy",
             nationalId: null,
