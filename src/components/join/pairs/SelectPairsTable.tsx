@@ -1,13 +1,11 @@
-import { GameInfo } from "@/components/common/GameInfo";
-import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { PairDirection } from "@/model/common";
 import { PairDirections } from "@/model/common";
-import { PairSeat } from "@/model/participants";
+import { Pair, PairSeat } from "@/model/participants";
 
 interface Props {
   tables: number;
   onSeatSelected: (seat: PairSeat) => void;
-  startingPositions: PairInitialSeat[];
+  startingPositions: Pair[];
 }
 
 export default function SelectPairsTable({
@@ -17,7 +15,7 @@ export default function SelectPairsTable({
 }: Props) {
   const isTaken = (table: number, direction: PairDirection) => {
     return startingPositions.some(
-      (a) => a.tableNumber === table && a.direction === direction,
+      (a) => a.initialSeat === `${table}${direction}`,
     );
   };
 
@@ -35,27 +33,25 @@ export default function SelectPairsTable({
       {/* Scrollable Grid */}
       <div className="flex-1 overflow-auto px-4 pb-4">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
-          {tableNumbers.map((tableNumber) => (
+          {tableNumbers.map((table) => (
             <div
-              key={tableNumber}
+              key={table}
               className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden ${
-                isTableFull(tableNumber) ? "opacity-50" : ""
+                isTableFull(table) ? "opacity-50" : ""
               }`}
             >
               <div className="text-center py-3 text-lg font-semibold text-gray-700 border-b border-gray-200 bg-blue-300">
-                Table {tableNumber}
+                Table {table}
               </div>
 
               <div className="grid grid-cols-2">
                 {PairDirections.map((direction) => {
-                  const taken = isTaken(tableNumber, direction);
+                  const taken = isTaken(table, direction);
 
                   return (
                     <button
                       key={direction}
-                      onClick={() =>
-                        onSeatSelected({ type: "PAIR", tableNumber, direction })
-                      }
+                      onClick={() => onSeatSelected(`${table}${direction}`)}
                       disabled={taken}
                       className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200
                         ${

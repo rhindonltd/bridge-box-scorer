@@ -20,20 +20,12 @@ type Story = StoryObj<typeof EnterPairPlayerNames>;
 
 export const NorthSouth: Story = {
   args: {
-    seat: {
-      type: "PAIR",
-      tableNumber: 1,
-      direction: "NS",
-    },
+    seat: "1NS",
   },
 };
 
 export const EastWest: Story = {
   args: {
-    seat: {
-      type: "PAIR",
-      tableNumber: 1,
-      direction: "EW",
-    },
+    seat: "1EW",
   },
 };

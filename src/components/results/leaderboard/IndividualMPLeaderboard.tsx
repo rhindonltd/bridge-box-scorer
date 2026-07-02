@@ -1,17 +1,17 @@
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
-import { IndividualAssignment } from "@/model/participants";
+import { AssignedIndividual } from "@/model/participants";
 import { IndividualMatchpointOverallScore } from "@/model/leaderboard";
 
 type Props = {
-  individuals: IndividualAssignment[];
+  individuals: AssignedIndividual[];
   leaderboard: IndividualMatchpointOverallScore;
 };
 
 export function IndividualMPLeaderboard({ individuals, leaderboard }: Props) {
   const getPlayerNames = (playerId: string) => {
     const participant = individuals.find(
-      (individualWithPlayer) => individualWithPlayer.playerId === playerId,
+      (individualWithPlayer) => individualWithPlayer.id === playerId,
     );
     if (!participant) return playerId;
 

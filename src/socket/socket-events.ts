@@ -5,8 +5,7 @@ export const SocketEvents = {
 
   // Client initiated - Game specific
   JOIN_GAME: "game:join",
-  CREATE_PAIR: "game:createPair",
-  SELECT_SEAT: "game:selectSeat",
+  CREATE_PARTICIPANT: "game:createParticipant",
   SELECT_MOVEMENT: "game:selectMovement",
   LEAVE_GAME: "game:leave",
 
@@ -14,7 +13,7 @@ export const SocketEvents = {
   JOINABLE_GAMES: "joinable-games",
 
   // Server initiated - Game specific
-  STARTING_POSITIONS: "game:startingPositions",
+  PARTICIPANTS: "game:participants",
 
   // Server initiated - Timer specific
   CREATE_TIMER: "timer:create",

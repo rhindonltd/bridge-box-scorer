@@ -1,12 +1,10 @@
-import { GameInfo } from "@/components/common/GameInfo";
-import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { Direction, Directions } from "@/model/common";
-import { IndividualSeat } from "@/model/participants";
+import { Individual, IndividualSeat } from "@/model/participants";
 
 interface Props {
   tables: number;
   onSeatSelected: (seat: IndividualSeat) => void;
-  startingPositions: PlayerInitialSeat[];
+  startingPositions: Individual[];
 }
 
 export default function SelectIndividualTable({
@@ -16,7 +14,7 @@ export default function SelectIndividualTable({
 }: Props) {
   const isTaken = (table: number, direction: Direction) => {
     return startingPositions.some(
-      (a) => a.tableNumber === table && a.direction === direction,
+      (a) => a.initialSeat === `${table}${direction}`,
     );
   };
 
@@ -53,11 +51,7 @@ export default function SelectIndividualTable({
                     <button
                       key={direction}
                       onClick={() =>
-                        onSeatSelected({
-                          type: "INDIVIDUAL",
-                          tableNumber: table,
-                          direction: direction,
-                        })
+                        onSeatSelected(`${table}${direction}` as IndividualSeat)
                       }
                       disabled={taken}
                       className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200

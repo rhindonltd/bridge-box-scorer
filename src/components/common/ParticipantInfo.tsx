@@ -3,25 +3,21 @@
 import { useAssignment } from "@/context/AssignmentContext";
 
 export function ParticipantInfo() {
-  const { assignmentSelection } = useAssignment();
+  const { assignment } = useAssignment();
 
-  if (!assignmentSelection) return null;
+  if (!assignment) return null;
 
   let label: string;
-  let value: string;
 
-  switch (assignmentSelection.type) {
+  switch (assignment.type) {
     case "INDIVIDUAL":
       label = "Player";
-      value = assignmentSelection.playerId;
       break;
     case "PAIR":
       label = "Pair";
-      value = assignmentSelection.pairId;
       break;
     case "TEAM":
       label = "Team";
-      value = assignmentSelection.teamId;
       break;
     default:
       return null;
@@ -30,7 +26,9 @@ export function ParticipantInfo() {
   return (
     <div className="flex flex-col bg-blue-400 py-2">
       <span className="text-center font-bold px-4">{label}</span>
-      <span className="text-center font-bold px-4 text-xl">{value}</span>
+      <span className="text-center font-bold px-4 text-xl">
+        {assignment.id}
+      </span>
     </div>
   );
 }

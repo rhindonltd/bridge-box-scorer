@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import EnterPairPlayerNames from "./EnterPairPlayerNames";
-import { PairSeat } from "@/model/participants";
 
 // Mock FormCardLayout
 vi.mock("@/components/layout/FormCardLayout", () => ({
@@ -26,11 +25,7 @@ vi.mock("@/components/common/TextField", () => ({
 
 describe("EnterPlayerNames", () => {
   it("renders NS labels correctly", () => {
-    const seat = {
-      type: "PAIR",
-      direction: "NS",
-      tableNumber: 1,
-    } as PairSeat;
+    const seat = "1NS";
 
     render(<EnterPairPlayerNames seat={seat} onSubmitPair={vi.fn()} />);
 
@@ -40,11 +35,7 @@ describe("EnterPlayerNames", () => {
   });
 
   it("renders EW labels correctly", () => {
-    const seat = {
-      type: "PAIR",
-      direction: "EW",
-      tableNumber: 1,
-    } as PairSeat;
+    const seat = "1EW";
 
     render(<EnterPairPlayerNames seat={seat} onSubmitPair={vi.fn()} />);
 

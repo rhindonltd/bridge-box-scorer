@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4dc9d4d2-36c4-41af-807c-e320f3817a1d",
+  "id": "892f55f1-9938-4a6c-966d-028b495d261e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "games": {
@@ -76,8 +76,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "'CREATED'"
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",

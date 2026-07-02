@@ -1,10 +1,10 @@
 import { BridgeGame } from "@/db/game-index/schema";
-import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
+import { Participant } from "@/model/participants";
 import { SocketEvents } from "@/socket/socket-events";
 
 export type SocketEventMap = {
-  [SocketEvents.STARTING_POSITIONS]: {
-    startingPositions: PlayerInitialSeat[];
+  [SocketEvents.PARTICIPANTS]: {
+    participants: Participant[];
   };
 
   [SocketEvents.SELECT_MOVEMENT]: {

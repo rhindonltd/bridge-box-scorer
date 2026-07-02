@@ -37,9 +37,8 @@ export const IndividualIMP: Story = {
       participants: [
         {
           type: "INDIVIDUAL",
-          playerId: "1",
-          tableNumber: 1,
-          direction: "E",
+          id: "1",
+          initialSeat: "1E",
           player: {
             id: 1,
             firstName: "David",
@@ -88,9 +87,8 @@ export const IndividualMP: Story = {
       participants: [
         {
           type: "INDIVIDUAL",
-          playerId: "1",
-          tableNumber: 1,
-          direction: "E",
+          id: "1",
+          initialSeat: "1E",
           player: {
             id: 1,
             firstName: "David",
@@ -140,9 +138,8 @@ export const PairIMP: Story = {
       participants: [
         {
           type: "PAIR",
-          tableNumber: 1,
-          direction: "NS",
-          pairId: "1",
+          id: "1",
+          initialSeat: "1NS",
           player1: {
             id: 1,
             firstName: "David",
@@ -197,9 +194,8 @@ export const PairMP: Story = {
       participants: [
         {
           type: "PAIR",
-          tableNumber: 1,
-          direction: "NS",
-          pairId: "1",
+          id: "1",
+          initialSeat: "1NS",
           player1: {
             id: 1,
             firstName: "David",
@@ -255,7 +251,7 @@ export const Team: Story = {
       participants: [
         {
           type: "TEAM",
-          teamId: "1",
+          id: "1",
           pair1: {
             type: "PAIR",
             player1: {
@@ -270,8 +266,7 @@ export const Team: Story = {
               lastName: "Collier",
               nationalId: "477484",
             },
-            direction: "NS",
-            tableNumber: 1,
+            initialSeat: "1NS",
           },
           pair2: {
             type: "PAIR",
@@ -287,8 +282,7 @@ export const Team: Story = {
               lastName: "Collier",
               nationalId: "654321",
             },
-            direction: "EW",
-            tableNumber: 1,
+            initialSeat: "1EW",
           },
         },
       ],

@@ -23,51 +23,51 @@ export const Default: Story = {
     tables: 8,
     startingPositions: [
       {
-        tableNumber: 4,
-        direction: "NS",
-        pair: {
-          player1: {
-            firstName: "Jacqui",
-            lastName: "Collier",
-            nationalId: "477484",
-          },
-          player2: {
-            firstName: "David",
-            lastName: "Collier",
-            nationalId: "404476",
-          },
+        type: "PAIR",
+        initialSeat: "4NS",
+        player1: {
+          id: 1,
+          firstName: "Jacqui",
+          lastName: "Collier",
+          nationalId: "477484",
+        },
+        player2: {
+          id: 2,
+          firstName: "David",
+          lastName: "Collier",
+          nationalId: "404476",
         },
       },
       {
-        tableNumber: 6,
-        direction: "NS",
-        pair: {
-          player1: {
-            firstName: "Peter",
-            lastName: "Collier",
-            nationalId: null,
-          },
-          player2: {
-            firstName: "Nye",
-            lastName: "Collier",
-            nationalId: "123455",
-          },
+        type: "PAIR",
+        initialSeat: "6NS",
+        player1: {
+          id: 3,
+          firstName: "Peter",
+          lastName: "Collier",
+          nationalId: null,
+        },
+        player2: {
+          id: 4,
+          firstName: "Nye",
+          lastName: "Collier",
+          nationalId: "123455",
         },
       },
       {
-        tableNumber: 6,
-        direction: "EW",
-        pair: {
-          player1: {
-            firstName: "Andrew",
-            lastName: "Robson",
-            nationalId: "654321",
-          },
-          player2: {
-            firstName: "Fred",
-            lastName: "Bloggs",
-            nationalId: "454353",
-          },
+        type: "PAIR",
+        initialSeat: "6EW",
+        player1: {
+          id: 5,
+          firstName: "Andrew",
+          lastName: "Robson",
+          nationalId: "654321",
+        },
+        player2: {
+          id: 6,
+          firstName: "Fred",
+          lastName: "Bloggs",
+          nationalId: "454353",
         },
       },
     ],

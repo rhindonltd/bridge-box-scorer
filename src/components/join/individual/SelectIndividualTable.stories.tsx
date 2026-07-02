@@ -23,45 +23,50 @@ export const Default: Story = {
     tables: 8,
     startingPositions: [
       {
-        tableNumber: 4,
-        direction: "N",
+        type: "INDIVIDUAL",
+        initialSeat: "4N",
         player: {
+          id: 1,
           firstName: "Jacqui",
           lastName: "Collier",
           nationalId: "477484",
         },
       },
       {
-        tableNumber: 6,
-        direction: "N",
+        type: "INDIVIDUAL",
+        initialSeat: "6N",
         player: {
+          id: 2,
           firstName: "Jacqui",
           lastName: "Collier",
           nationalId: "477484",
         },
       },
       {
-        tableNumber: 6,
-        direction: "S",
+        type: "INDIVIDUAL",
+        initialSeat: "6S",
         player: {
+          id: 3,
           firstName: "Jacqui",
           lastName: "Collier",
           nationalId: "477484",
         },
       },
       {
-        tableNumber: 6,
-        direction: "E",
+        type: "INDIVIDUAL",
+        initialSeat: "6E",
         player: {
+          id: 4,
           firstName: "Jacqui",
           lastName: "Collier",
           nationalId: "477484",
         },
       },
       {
-        tableNumber: 6,
-        direction: "W",
+        type: "INDIVIDUAL",
+        initialSeat: "6W",
         player: {
+          id: 5,
           firstName: "Jacqui",
           lastName: "Collier",
           nationalId: "477484",

@@ -2,20 +2,20 @@
 
 import SelectPairsTable from "@/components/join/pairs/SelectPairsTable";
 import { useGame } from "@/context/GameContext";
-import { PairInitialSeat } from "@/db/games/pairs/queries/find-pair-initial-seats";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { fetcher } from "@/lib/fetcher";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { useState } from "react";
 import useSWR from "swr";
-import { PairSeat } from "@/model/participants";
+import { Pair, PairSeat, Seat } from "@/model/participants";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
 import { GameInfo } from "@/components/common/GameInfo";
+import { createParticipant } from "@/lib/game-service";
 
 interface Props {
-  onSeatSelected: (seat: PairSeat) => void;
+  onSeatSelected: (seat: Seat) => void;
 }
 
 export function SelectPairSeatPage({ onSeatSelected }: Props) {
@@ -24,19 +24,19 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
 
   const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
 
-  const key = gameId ? swrKeys.pairsInitialSeats(gameId) : null;
+  const key = gameId ? swrKeys.pairs(gameId) : null;
 
-  const { data } = useSWR<PairInitialSeat[], Error>(key, fetcher);
+  const { data } = useSWR<Pair[], Error>(key, fetcher);
 
   if (!gameId) {
     return null;
   }
 
   useSocketSWRSync(
-    SocketEvents.STARTING_POSITIONS,
+    SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.pairsInitialSeats(gameId),
-      data: p.startingPositions,
+      key: swrKeys.pairs(gameId),
+      data: p.participants,
     }),
     [gameId],
   );
@@ -45,9 +45,15 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
     setSelectedSeat(seat);
   };
 
-  const handlePairSubmitted = (player1: NewPlayer, player2: NewPlayer) => {
-    // setSelectedSeat(seat);
-  };
+  async function handlePairSubmitted(player1: NewPlayer, player2: NewPlayer) {
+    await createParticipant(gameId!, {
+      type: "PAIR",
+      initialSeat: selectedSeat!,
+      player1,
+      player2,
+    });
+    // TODO: Put seat and key in local storage
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">

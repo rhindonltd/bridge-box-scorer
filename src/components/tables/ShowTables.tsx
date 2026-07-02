@@ -3,10 +3,10 @@ import { Player } from "@/db/games/shared/tables/players";
 import React from "react";
 
 interface Players {
-  N: Omit<Player, "id"> | null;
-  S: Omit<Player, "id"> | null;
-  E: Omit<Player, "id"> | null;
-  W: Omit<Player, "id"> | null;
+  N: Player | null;
+  S: Player | null;
+  E: Player | null;
+  W: Player | null;
 }
 
 export interface Table {

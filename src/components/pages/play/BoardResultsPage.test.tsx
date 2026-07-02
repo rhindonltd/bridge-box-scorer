@@ -7,12 +7,6 @@ vi.mock("@/components/common/SectionInfo", () => ({
   SectionInfo: () => <div data-testid="section-info" />,
 }));
 
-vi.mock("@/components/common/TableRoundPairBoardInfo", () => ({
-  TableRoundPairBoardInfo: ({ board }: any) => (
-    <div data-testid="board-info">Board {board}</div>
-  ),
-}));
-
 vi.mock("@/components/results/traveller/Traveller", () => ({
   Traveller: ({ scoredTraveller }: any) => (
     <div data-testid="traveller">Traveller {scoredTraveller?.id ?? "none"}</div>

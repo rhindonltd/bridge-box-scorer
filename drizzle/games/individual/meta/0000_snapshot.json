@@ -1,9 +1,33 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d72a1a30-4c2a-4117-a8fc-3df94acc0387",
+  "id": "24534dc5-2f05-47f3-9bdd-74d26165654a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "assignment": {
+      "name": "assignment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "initial_seat": {
+          "name": "initial_seat",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "boardplays": {
       "name": "boardplays",
       "columns": {
@@ -40,54 +64,12 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "boardplays_round_number_table_number_board_number_pk": {
-          "columns": ["round_number", "table_number", "board_number"],
+          "columns": [
+            "round_number",
+            "table_number",
+            "board_number"
+          ],
           "name": "boardplays_round_number_table_number_board_number_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "initialseat": {
-      "name": "initialseat",
-      "columns": {
-        "table_number": {
-          "name": "table_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "direction": {
-          "name": "direction",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "player": {
-          "name": "player",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "initialseat_player_players_id_fk": {
-          "name": "initialseat_player_players_id_fk",
-          "tableFrom": "initialseat",
-          "tableTo": "players",
-          "columnsFrom": ["player"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "initialseat_table_number_direction_pk": {
-          "columns": ["table_number", "direction"],
-          "name": "initialseat_table_number_direction_pk"
         }
       },
       "uniqueConstraints": {},
@@ -181,18 +163,21 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "movements_round_number_table_number_pk": {
-          "columns": ["round_number", "table_number"],
+          "columns": [
+            "round_number",
+            "table_number"
+          ],
           "name": "movements_round_number_table_number_pk"
         }
       },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "playermovementmap": {
-      "name": "playermovementmap",
+    "participant": {
+      "name": "participant",
       "columns": {
-        "id": {
-          "name": "id",
+        "initial_seat": {
+          "name": "initial_seat",
           "type": "text",
           "primaryKey": true,
           "notNull": true,
@@ -202,18 +187,29 @@
           "name": "player",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "secret_key": {
+          "name": "secret_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
           "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "playermovementmap_player_players_id_fk": {
-          "name": "playermovementmap_player_players_id_fk",
-          "tableFrom": "playermovementmap",
+        "participant_player_players_id_fk": {
+          "name": "participant_player_players_id_fk",
+          "tableFrom": "participant",
           "tableTo": "players",
-          "columnsFrom": ["player"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "player"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -289,7 +285,10 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "results_round_number_table_number_pk": {
-          "columns": ["round_number", "table_number"],
+          "columns": [
+            "round_number",
+            "table_number"
+          ],
           "name": "results_round_number_table_number_pk"
         }
       },

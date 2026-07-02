@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
 import { IndividualMPLeaderboard } from "@/components/results/leaderboard/IndividualMPLeaderboard";
 import { IndividualMPPercentageLeaderboard } from "@/components/results/leaderboard/IndividualMPPercentageLeaderboard";
-import { IndividualAssignment } from "@/model/participants";
+import { AssignedIndividual } from "@/model/participants";
 import { IndividualMatchpointOverallScore } from "@/model/leaderboard";
 
 type Props = {
-  individuals: IndividualAssignment[];
+  individuals: AssignedIndividual[];
   leaderboard: IndividualMatchpointOverallScore;
 };
 

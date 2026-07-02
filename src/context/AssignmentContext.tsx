@@ -1,37 +1,32 @@
 "use client";
 
-import { Assignment } from "@/model/participants";
+import { Assignment, Seat } from "@/model/participants";
 
 import { createContext, useContext, useState, ReactNode } from "react";
 
-export type AssignmentSelection = Assignment | null;
-
 interface ContextType {
-  assignmentSelection: AssignmentSelection;
-  selectAssignment: (assignment: Assignment) => void;
-  clearAssignment: () => void;
+  assignment: Assignment | null;
 }
 
 export const AssignmentContext = createContext<ContextType | undefined>(
   undefined,
 );
 
-export function AssignmentProvider({ children }: { children: ReactNode }) {
-  const [assignmentSelection, setAssignmentSelection] =
-    useState<AssignmentSelection>(null);
-
-  const selectAssignment = (assignment: Assignment) => {
-    setAssignmentSelection(assignment);
-  };
-
-  const clearAssignment = () => setAssignmentSelection(null);
+export function AssignmentProvider({
+  gameId,
+  initialSeat,
+  children,
+}: {
+  gameId: string;
+  initialSeat: Seat;
+  children: ReactNode;
+}) {
+  const [assignment, setAssignment] = useState<Assignment | null>(null);
 
   return (
     <AssignmentContext.Provider
       value={{
-        assignmentSelection,
-        selectAssignment,
-        clearAssignment,
+        assignment,
       }}
     >
       {children}

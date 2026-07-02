@@ -3,17 +3,16 @@
 import { useState } from "react";
 import SelectIndividualTable from "@/components/join/individual/SelectIndividualTable";
 import { useGame } from "@/context/GameContext";
-import { PlayerInitialSeat } from "@/db/games/shared/queries/find-player-initial-seats";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { fetcher } from "@/lib/fetcher";
-import { Seat } from "@/model/participants";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import useSWR from "swr";
 import EnterIndividualPlayerNames from "@/components/join/individual/EnterIndividualPlayerNames";
-import { IndividualSeat } from "@/model/participants";
-import { NewPlayer } from "@/db/games/shared/tables/players";
+import { Individual, IndividualSeat, Seat } from "@/model/participants";
 import { GameInfo } from "@/components/common/GameInfo";
+import { createParticipant } from "@/lib/game-service";
+import { NewPlayer } from "@/db/games/shared/tables/players";
 
 interface Props {
   onSeatSelected: (seat: Seat) => void;
@@ -25,15 +24,15 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
 
   const [selectedSeat, setSelectedSeat] = useState<IndividualSeat | null>(null);
 
-  const key = gameId ? swrKeys.individualInitialSeats(gameId) : null;
+  const key = gameId ? swrKeys.individuals(gameId) : null;
 
-  const { data } = useSWR<PlayerInitialSeat[], Error>(key, fetcher);
+  const { data } = useSWR<Individual[], Error>(key, fetcher);
 
   useSocketSWRSync(
-    SocketEvents.STARTING_POSITIONS,
+    SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.individualInitialSeats(gameId!),
-      data: p.startingPositions,
+      key: swrKeys.individuals(gameId!),
+      data: p.participants,
     }),
     [gameId],
   );
@@ -46,9 +45,14 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
     setSelectedSeat(seat);
   };
 
-  const handlePlayerSubmitted = (player: NewPlayer) => {
-    // setSelectedSeat(seat);
-  };
+  async function handleSubmitPlayer(player: NewPlayer) {
+    const key = await createParticipant(gameId!, {
+      type: "INDIVIDUAL",
+      initialSeat: selectedSeat!,
+      player: player,
+    });
+    localStorage.setItem("assignment", `${gameId}:${selectedSeat}:${key}`);
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -87,7 +91,7 @@ export function SelectIndividualSeatPage({ onSeatSelected }: Props) {
         {selectedSeat && (
           <EnterIndividualPlayerNames
             seat={selectedSeat}
-            onSubmitPlayer={handlePlayerSubmitted}
+            onSubmitPlayer={handleSubmitPlayer}
           />
         )}
       </div>
