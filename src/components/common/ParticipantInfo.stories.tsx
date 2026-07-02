@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { GameInfo } from "@/components/common/GameInfo";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
+import { ParticipantInfo } from "./ParticipantInfo";
 
-const meta: Meta<typeof GameInfo> = {
-  title: "Components/Common/Participant",
-  component: GameInfo,
+const meta: Meta<typeof ParticipantInfo> = {
+  title: "Components/Common/ParticipantInfo",
+  component: ParticipantInfo,
   parameters: {
     layout: "fullscreen",
   },
@@ -13,7 +13,7 @@ const meta: Meta<typeof GameInfo> = {
 
 export default meta;
 
-type Story = StoryObj<typeof GameInfo>;
+type Story = StoryObj<typeof ParticipantInfo>;
 
 export const Individual: Story = {
   decorators: [
