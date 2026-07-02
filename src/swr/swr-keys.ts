@@ -2,7 +2,7 @@ export const swrKeys = {
   individuals: (gameId: string) =>
     `/api/games/individual/${gameId}/participants`,
 
-  pairs: (gameId: string) => `/api/games/pairs/${gameId}/pairs`,
+  pairs: (gameId: string) => `/api/games/pairs/${gameId}/participants`,
 
   joinableGames: () => "/api/games/joinable",
 
