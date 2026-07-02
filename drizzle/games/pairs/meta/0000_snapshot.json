@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7e1af826-23d6-42c1-bbf0-67d8f918a3e4",
+  "id": "5713da19-8fb7-4906-a5e1-921d06b49f1c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "assignment": {
@@ -35,32 +35,74 @@
           "name": "round_number",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "table_number": {
           "name": "table_number",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "board_number": {
           "name": "board_number",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "ns": {
           "name": "ns",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "ew": {
           "name": "ew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ns_result": {
+          "name": "ns_result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ew_result": {
+          "name": "ew_result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ns_lead": {
+          "name": "ns_lead",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ew_lead": {
+          "name": "ew_lead",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "director_override_result": {
+          "name": "director_override_result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "director_override_lead": {
+          "name": "director_override_lead",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -222,45 +264,6 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "results": {
-      "name": "results",
-      "columns": {
-        "round_number": {
-          "name": "round_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "table_number": {
-          "name": "table_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "result": {
-          "name": "result",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "results_round_number_table_number_pk": {
-          "columns": [
-            "round_number",
-            "table_number"
-          ],
-          "name": "results_round_number_table_number_pk"
-        }
-      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     }

@@ -4,11 +4,17 @@ CREATE TABLE `assignment` (
 );
 --> statement-breakpoint
 CREATE TABLE `boards` (
-	`round_number` integer,
-	`table_number` integer,
-	`board_number` integer,
-	`ns` text,
-	`ew` text,
+	`round_number` integer NOT NULL,
+	`table_number` integer NOT NULL,
+	`board_number` integer NOT NULL,
+	`ns` text NOT NULL,
+	`ew` text NOT NULL,
+	`ns_result` text,
+	`ew_result` text,
+	`ns_lead` text,
+	`ew_lead` text,
+	`director_override_result` text,
+	`director_override_lead` text,
 	`status` text,
 	PRIMARY KEY(`round_number`, `table_number`, `board_number`)
 );
@@ -33,11 +39,4 @@ CREATE TABLE `players` (
 	`first_name` text NOT NULL,
 	`last_name` text NOT NULL,
 	`national_id` text
-);
---> statement-breakpoint
-CREATE TABLE `results` (
-	`round_number` integer,
-	`table_number` integer,
-	`result` text,
-	PRIMARY KEY(`round_number`, `table_number`)
 );

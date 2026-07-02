@@ -5,15 +5,23 @@ import {
   primaryKey,
 } from "drizzle-orm/sqlite-core";
 import { BoardStatuses } from "@/db/games/types/board-status";
+import { BoardOutcome } from "@/model/score";
+import { Card } from "@/model/common";
 
 export const boards = sqliteTable(
   "boards",
   {
-    roundNumber: integer("round_number"),
-    tableNumber: integer("table_number"),
-    boardNumber: integer("board_number"),
-    ns: text("ns"),
-    ew: text("ew"),
+    roundNumber: integer("round_number").notNull(),
+    tableNumber: integer("table_number").notNull(),
+    boardNumber: integer("board_number").notNull(),
+    ns: text("ns").notNull(),
+    ew: text("ew").notNull(),
+    nsResult: text("ns_result").$type<BoardOutcome>(),
+    ewResult: text("ew_result").$type<BoardOutcome>(),
+    nsLead: text("ns_lead").$type<Card>(),
+    ewLead: text("ew_lead").$type<Card>(),
+    directorOverrideResult: text("director_override_result").$type<BoardOutcome>(),
+    directorOverrideLead: text("director_override_lead").$type<Card>(),
     status: text("status", {
       enum: BoardStatuses,
     }),
@@ -25,4 +33,5 @@ export const boards = sqliteTable(
   }),
 );
 
+export type NewBoard = typeof boards.$inferInsert;
 export type Board = typeof boards.$inferSelect;
