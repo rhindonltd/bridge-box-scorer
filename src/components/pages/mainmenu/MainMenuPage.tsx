@@ -53,7 +53,7 @@ export function MainMenuPage({
           onClick={onManagePastGames}
           className="w-full py-3 text-lg font-semibold bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 active:scale-[0.98] transition"
         >
-          Manage Past Games
+          Manage Existing Game
         </button>
       </div>
     </div>

@@ -1,11 +1,7 @@
-import {
-  IndividualMovementSpec,
-  PairMovementSpec,
-  TeamMovementSpec,
-} from "@/db/movements/schema";
+import { MovementSpec } from "@/db/movements/schema";
 
 type Props = {
-  movement: IndividualMovementSpec | PairMovementSpec | TeamMovementSpec;
+  movement: MovementSpec;
   onSelected: (movementId: number) => void;
 };
 

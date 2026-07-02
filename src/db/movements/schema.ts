@@ -131,3 +131,8 @@ export const teammovementroundspec = sqliteTable("teammovementroundspec", {
 export type NewTeamMovementRoundSpec =
   typeof teammovementroundspec.$inferInsert;
 export type TeamMovementRoundSpec = typeof teammovementroundspec.$inferSelect;
+
+export type MovementSpec =
+  | IndividualMovementSpec
+  | PairMovementSpec
+  | TeamMovementSpec;

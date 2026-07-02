@@ -10,7 +10,8 @@ export const swrKeys = {
     return `/api/games/${gameId}`;
   },
 
-  assignment: (gameId: string, participantId: string) => {
-    return `/api/games/${gameId}/assignment/${participantId}`;
-  },
+  individualMovements: (tables: number) =>
+    `/api/movements/individual/${tables}`,
+  pairMovements: (tables: number) => `/api/movements/pairs/${tables}`,
+  teamMovements: (tables: number) => `/api/movements/teams/${tables}`,
 };
