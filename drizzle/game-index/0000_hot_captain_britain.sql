@@ -8,7 +8,7 @@ CREATE TABLE `games` (
 	`section_name` text NOT NULL,
 	`event_date` text NOT NULL,
 	`tables` integer NOT NULL,
-	`status` text DEFAULT 'CREATED' NOT NULL,
+	`status` text NOT NULL,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
