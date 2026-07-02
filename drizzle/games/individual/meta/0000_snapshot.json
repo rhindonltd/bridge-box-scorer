@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e979873b-c2a3-40f8-86d9-1f2fe38dc3fe",
+  "id": "b853ad94-9d7a-4be3-a0e1-b53ceb879df9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "assignment": {
@@ -35,46 +35,116 @@
           "name": "round_number",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "table_number": {
           "name": "table_number",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "board_number": {
           "name": "board_number",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "n": {
           "name": "n",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "s": {
           "name": "s",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "e": {
           "name": "e",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "w": {
           "name": "w",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "n_result": {
+          "name": "n_result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "s_result": {
+          "name": "s_result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "e_result": {
+          "name": "e_result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "w_result": {
+          "name": "w_result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "n_lead": {
+          "name": "n_lead",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "s_lead": {
+          "name": "s_lead",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "e_lead": {
+          "name": "e_lead",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "w_lead": {
+          "name": "w_lead",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "director_override_result": {
+          "name": "director_override_result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "director_override_lead": {
+          "name": "director_override_lead",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -207,45 +277,6 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "results": {
-      "name": "results",
-      "columns": {
-        "round_number": {
-          "name": "round_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "table_number": {
-          "name": "table_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "result": {
-          "name": "result",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "results_round_number_table_number_pk": {
-          "columns": [
-            "round_number",
-            "table_number"
-          ],
-          "name": "results_round_number_table_number_pk"
-        }
-      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     }
