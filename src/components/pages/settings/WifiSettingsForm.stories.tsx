@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { WifiSettingsForm } from "./WifiSettingsForm";
 import { Network } from "@/model/network";
 
