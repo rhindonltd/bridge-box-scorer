@@ -34,17 +34,17 @@ describe("game-store", () => {
         totalRounds: 5,
         playDuration: 420,
         moveDuration: 60,
-        isRunning: true,
+        isRunning: false,
       });
     });
 
     it("persists the timer state to the database", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      await createEngine("PAIR", "game-2", 2, 4, 300, 45);
+      await createEngine("PAIRS", "game-2", 2, 4, 300, 45);
 
       expect(updateTimerState).toHaveBeenCalledWith(
-        "PAIR",
+        "PAIRS",
         "game-2",
         expect.objectContaining({
           version: 1,
@@ -94,7 +94,7 @@ describe("game-store", () => {
 
       vi.mocked(findTimerState).mockResolvedValue(dbState);
 
-      const engine = await getEngine("PAIR", "db-game");
+      const engine = await getEngine("PAIRS", "db-game");
 
       expect(engine).not.toBeNull();
       expect(engine!.getState()).toMatchObject({

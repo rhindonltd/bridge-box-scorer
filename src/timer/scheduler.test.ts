@@ -81,11 +81,11 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("PAIR", "g2", engine, deps);
+    scheduleGame("PAIRS", "g2", engine, deps);
 
     // Schedule again (should cancel previous)
     const engine2 = makeEngine({ playDuration: 5, isRunning: true, phaseStartedAt: Date.now() });
-    scheduleGame("PAIR", "g2", engine2, deps);
+    scheduleGame("PAIRS", "g2", engine2, deps);
 
     // Advance enough for second but not first
     await vi.advanceTimersByTimeAsync(7000);

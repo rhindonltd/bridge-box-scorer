@@ -37,16 +37,20 @@ export function useTimerDerived(state: TimerState | null, now: number) {
     const futureRounds = state.totalRounds - state.round;
 
     if (state.phase === "play") {
+      // After current play: (futureRounds) move phases + (futureRounds) play phases
       return (
         remainingCurrentPhaseMs + futureRounds * playMs + futureRounds * moveMs
       );
     }
 
     // phase === "move"
+    // After current move: the play phase for this round still needs to happen,
+    // plus all subsequent round pairs (move + play). That's:
+    // (futureRounds + 1) play phases + (futureRounds) move phases
     return (
       remainingCurrentPhaseMs +
-      futureRounds * playMs +
-      Math.max(0, futureRounds - 1) * moveMs
+      (futureRounds + 1) * playMs +
+      futureRounds * moveMs
     );
   }
 

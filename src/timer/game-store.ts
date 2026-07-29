@@ -23,7 +23,7 @@ export async function createEngine(
     totalRounds,
     playDuration,
     moveDuration,
-    isRunning: true,
+    isRunning: false,
     phaseStartedAt: null,
     remainingMs: playDuration * 1000,
   };

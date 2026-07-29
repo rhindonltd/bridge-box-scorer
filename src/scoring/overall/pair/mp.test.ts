@@ -106,10 +106,10 @@ describe("calculateOverallMPResults", () => {
     const ew = result.lines.find((x) => x.pairId === "EW");
 
     expect(ns?.totalMP).toBe(14);
-    expect(ns?.maxMP).toBe(2);
+    expect(ns?.maxMP).toBe(20);
 
     expect(ew?.totalMP).toBe(6);
-    expect(ew?.maxMP).toBe(2);
+    expect(ew?.maxMP).toBe(20);
   });
 
   it("ranks players by percentage score", () => {

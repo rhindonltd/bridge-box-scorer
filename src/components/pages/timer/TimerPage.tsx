@@ -18,11 +18,6 @@ function formatTime(totalSeconds: number) {
 
 export default function TimerPage() {
   const { game } = useGame();
-
-  if (!game) {
-    return null;
-  }
-
   const { timerState, now } = useTimerSync();
 
   const {
@@ -45,6 +40,10 @@ export default function TimerPage() {
   }, []);
 
   /* ---------------- LOADING ---------------- */
+
+  if (!game) {
+    return null;
+  }
 
   if (!timerState) {
     return (

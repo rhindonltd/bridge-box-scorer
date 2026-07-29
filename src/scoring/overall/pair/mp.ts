@@ -12,15 +12,15 @@ export function calculateOverallMPResults(
     lines: buildOverallScore({
       travellers,
       project: (line) => [
-        { id: line.nsId, value: line.nsMatchPoints },
-        { id: line.ewId, value: line.ewMatchPoints },
+        { id: line.nsId, value: line.nsMatchPoints, max: line.maxMatchPoints },
+        { id: line.ewId, value: line.ewMatchPoints, max: line.maxMatchPoints },
       ],
       toResult: (pairId, data) => ({
         pairId,
         totalMP: data.value,
-        maxMP: data.boards ? data.boards : 0,
+        maxMP: data.max,
       }),
-      sort: (x) => x.totalMP / x.maxMP,
+      sort: (x) => (x.maxMP > 0 ? x.totalMP / x.maxMP : 0),
     }),
   };
 }

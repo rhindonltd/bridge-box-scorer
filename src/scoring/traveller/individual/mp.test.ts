@@ -22,17 +22,14 @@ describe("scoreMP (individual)", () => {
     expect(scoreMP(1, lines)).toEqual([]);
   });
 
-  it("scores a single valid line — division by (n-1) yields NaN when n=1", () => {
-    // With 1 valid result, maxMP = 2*(1-1) = 0, rank computation divides by 0
+  it("scores a single valid line — returns 0 matchpoints (no comparisons available)", () => {
     const lines = [line("1NTN=")];
     const result = scoreMP(1, lines);
 
     expect(result).toHaveLength(1);
-    // max = 2*(1-1) = 0
     expect(result[0].maxMatchPoints).toBe(0);
-    // rank = 0 + (1-1)/2 = 0, ns = 0 - (0 * 0)/(1-1) = NaN due to 0/0
-    expect(result[0].nsMatchPoints).toBeNaN();
-    expect(result[0].ewMatchPoints).toBeNaN();
+    expect(result[0].nsMatchPoints).toBe(0);
+    expect(result[0].ewMatchPoints).toBe(0);
   });
 
   it("scores two different results correctly", () => {

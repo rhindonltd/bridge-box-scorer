@@ -48,6 +48,9 @@ export function scheduleGame(
     return;
   }
 
+  // Intentional 1-second buffer: ensures the phase transition fires slightly
+  // after the displayed timer hits 00:00, giving clients time to render the
+  // final tick before the state changes.
   const delay = Math.max(0, engine.getRemainingMs() + 1000);
 
   const timeout = setTimeout(async () => {
