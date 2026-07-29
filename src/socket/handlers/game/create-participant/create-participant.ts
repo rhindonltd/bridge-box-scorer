@@ -12,6 +12,7 @@ import { createParticipant as createPair } from "@/db/games/pairs/actions/create
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 
 import { NewParticipant } from "@/model/participants";
+import { assertDirector } from "@/socket/middleware/director-auth";
 
 export function registerCreateParticipantHandler(socket: Socket, io: Server) {
   socket.on(
@@ -26,6 +27,7 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
       },
       cb,
     ) => {
+      if (!assertDirector(socket, cb)) return;
       try {
         const key = crypto.randomUUID();
 

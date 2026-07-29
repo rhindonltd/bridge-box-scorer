@@ -10,19 +10,39 @@ import {
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
 
-import { createBoard as createIndividualBoard } from "@/db/games/individual/actions/create-board";
-import { createBoard as createPairBoard } from "@/db/games/pairs/actions/create-board";
+import { getDb as getIndividualDb } from "@/db/games/individual";
+import { getDb as getPairsDb } from "@/db/games/pairs";
 
-import { createAssignment as createIndividualAssignment } from "@/db/games/individual/actions/create-assignment";
-import { createAssignment as createPairAssignment } from "@/db/games/pairs/actions/create-assignment";
+import {
+  boards as individualBoards,
+  NewBoard as NewIndividualBoard,
+} from "@/db/games/individual/tables/boards";
+import {
+  assignments as individualAssignments,
+  Assignment as IndividualAssignment,
+} from "@/db/games/individual/tables/assignments";
+
+import {
+  boards as pairBoards,
+  NewBoard as NewPairBoard,
+} from "@/db/games/pairs/tables/boards";
+import {
+  assignments as pairAssignments,
+  Assignment as PairAssignment,
+} from "@/db/games/pairs/tables/assignments";
+
+import { assertDirector } from "@/socket/middleware/director-auth";
 
 /**
- * Individual movement handler
+ * Individual movement handler — bulk inserts inside a single transaction.
  */
 async function handleIndividualMovement(
   movement: IndividualMovement[],
   gameId: string,
 ) {
+  const boardRows: NewIndividualBoard[] = [];
+  const assignmentRows: IndividualAssignment[] = [];
+
   for (const m of movement) {
     for (const r of m.rounds) {
       for (
@@ -30,7 +50,7 @@ async function handleIndividualMovement(
         boardNumber <= r.boardEnd;
         boardNumber++
       ) {
-        await createIndividualBoard(gameId, {
+        boardRows.push({
           roundNumber: r.roundNumber,
           tableNumber: m.tableNumber,
           boardNumber,
@@ -51,23 +71,34 @@ async function handleIndividualMovement(
         ] as const;
 
         for (const { position, movementId } of seats) {
-          await createIndividualAssignment(gameId, {
+          assignmentRows.push({
             id: movementId,
-            initialSeat: `${m.tableNumber}${position}`,
+            initialSeat: `${m.tableNumber}${position}` as IndividualAssignment["initialSeat"],
           });
         }
       }
     }
   }
+
+  const db = await getIndividualDb(gameId);
+  await db.transaction(async (tx) => {
+    await tx.insert(individualBoards).values(boardRows);
+    if (assignmentRows.length > 0) {
+      await tx.insert(individualAssignments).values(assignmentRows);
+    }
+  });
 }
 
 /**
- * Pair + Team movement handler (same structure)
+ * Pair + Team movement handler — bulk inserts inside a single transaction.
  */
 async function handlePairLikeMovement(
   movement: PairMovement[] | TeamMovement[],
   gameId: string,
 ) {
+  const boardRows: NewPairBoard[] = [];
+  const assignmentRows: PairAssignment[] = [];
+
   for (const m of movement) {
     for (const r of m.rounds) {
       for (
@@ -75,7 +106,7 @@ async function handlePairLikeMovement(
         boardNumber <= r.boardEnd;
         boardNumber++
       ) {
-        await createPairBoard(gameId, {
+        boardRows.push({
           roundNumber: r.roundNumber,
           tableNumber: m.tableNumber,
           boardNumber,
@@ -92,14 +123,22 @@ async function handlePairLikeMovement(
         ] as const;
 
         for (const { position, movementId } of seats) {
-          await createPairAssignment(gameId, {
+          assignmentRows.push({
             id: movementId,
-            initialSeat: `${m.tableNumber}${position}`,
+            initialSeat: `${m.tableNumber}${position}` as PairAssignment["initialSeat"],
           });
         }
       }
     }
   }
+
+  const db = await getPairsDb(gameId);
+  await db.transaction(async (tx) => {
+    await tx.insert(pairBoards).values(boardRows);
+    if (assignmentRows.length > 0) {
+      await tx.insert(pairAssignments).values(assignmentRows);
+    }
+  });
 }
 
 /**
@@ -120,6 +159,8 @@ export function registerSelectMovementHandler(socket: Socket) {
       },
       cb,
     ) => {
+      if (!assertDirector(socket, cb)) return;
+
       try {
         if (type === "INDIVIDUAL") {
           await handleIndividualMovement(
