@@ -4,14 +4,12 @@ import { describe, it, expect } from "vitest";
 
 describe("PlayerCard", () => {
   it("renders label correctly", () => {
-    render(<PlayerCard label="North" player={undefined} />);
-
+    render(<PlayerCard label="North" player={null} />);
     expect(screen.getByText("North")).toBeInTheDocument();
   });
 
-  it("renders 'No Player' when player is missing", () => {
-    render(<PlayerCard label="South" player={undefined} />);
-
+  it("renders 'No Player' when player is null", () => {
+    render(<PlayerCard label="South" player={null} />);
     expect(screen.getByText("No")).toBeInTheDocument();
     expect(screen.getByText("Player")).toBeInTheDocument();
   });
@@ -20,19 +18,16 @@ describe("PlayerCard", () => {
     render(
       <PlayerCard
         label="East"
-        player={{ firstName: "Alice", lastName: "Smith" }}
+        player={{ firstName: "Alice", lastName: "Smith", nationalId: null }}
       />,
     );
-
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("Smith")).toBeInTheDocument();
   });
 
   it("applies inactive styles when no player", () => {
-    render(<PlayerCard label="West" player={undefined} />);
-
+    render(<PlayerCard label="West" player={null} />);
     const container = screen.getByText("No").parentElement;
-
     expect(container).toHaveClass("bg-gray-100");
     expect(container).toHaveClass("text-gray-400");
     expect(container).toHaveClass("opacity-50");
@@ -43,21 +38,21 @@ describe("PlayerCard", () => {
     render(
       <PlayerCard
         label="North"
-        player={{ firstName: "John", lastName: "Doe" }}
+        player={{ firstName: "John", lastName: "Doe", nationalId: "123" }}
       />,
     );
-
     const container = screen.getByText("John").parentElement;
-
     expect(container).toHaveClass("bg-white");
     expect(container).toHaveClass("text-gray-900");
   });
 
   it("renders full structure correctly", () => {
     render(
-      <PlayerCard label="Test" player={{ firstName: "A", lastName: "B" }} />,
+      <PlayerCard
+        label="Test"
+        player={{ firstName: "A", lastName: "B", nationalId: null }}
+      />,
     );
-
     expect(screen.getByText("Test")).toHaveClass("text-sm");
     expect(screen.getByText("A")).toBeInTheDocument();
     expect(screen.getByText("B")).toBeInTheDocument();

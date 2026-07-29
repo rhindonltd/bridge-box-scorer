@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/link-ts6.mjs",
     "dev": "tsx watch server.ts",
     "prebuild": "npx tsx src/scripts/migrate.ts",
     "build": "next build",
@@ -44,6 +45,16 @@
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
+  "overrides": {
+    "eslint-config-next": {
+      "typescript-eslint": {
+        "typescript": "^6"
+      }
+    },
+    "ts-api-utils": {
+      "typescript": "^6"
+    }
+  },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.2.1",
     "@playwright/test": "^1.62.0",
@@ -74,6 +85,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
     "typescript": "^7",
+    "typescript-6": "npm:typescript@^6",
     "vite": "^8.1.5",
     "vitest": "^4.1.10"
   }

@@ -1,6 +1,6 @@
-# total -> 451
+# total -> 452
 
-# MIT - 387
+# MIT - 388
 
 # MIT-0 - 1
 
@@ -1194,6 +1194,12 @@
 
 
  1. https://github.com/Raynos/for-each
+ 2. MIT
+
+# fsevents@2.3.2
+
+
+ 1. https://github.com/fsevents/fsevents
  2. MIT
 
 # function-bind@1.1.2

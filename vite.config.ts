@@ -13,4 +13,11 @@ export default defineConfig({
   css: {
     postcss: path.resolve(__dirname, "./postcss.config.mjs"),
   },
+  test: {
+    // Use a tsconfig that omits the Next.js TS plugin, which requires the
+    // TypeScript compiler API that TypeScript 7 no longer ships.
+    typecheck: {
+      tsconfig: "./tsconfig.vitest.json",
+    },
+  },
 });

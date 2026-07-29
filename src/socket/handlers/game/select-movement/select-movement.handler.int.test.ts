@@ -1,92 +1,100 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createServer } from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { io as Client } from "socket.io-client";
 
 import { SocketEvents } from "@/socket/socket-events";
 
 // ---- mock heavy DB layer only ----
+
 vi.mock("@/db/movements/queries/get-movement", () => ({
   getIndividualMovement: vi.fn(),
+  getPairMovement: vi.fn(),
+  getTeamMovement: vi.fn(),
 }));
 
-vi.mock("@/db/games/shared/actions/create-board-play", () => ({
-  createBoardPlay: vi.fn(),
+const mockTransaction = vi.fn(async (fn: (tx: any) => Promise<void>) => {
+  const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
+  await fn(tx);
+});
+
+vi.mock("@/db/games/individual", () => ({
+  getDb: vi.fn(async () => ({ transaction: mockTransaction })),
+}));
+
+vi.mock("@/db/games/pairs", () => ({
+  getDb: vi.fn(async () => ({ transaction: mockTransaction })),
+}));
+
+vi.mock("@/db/system/queries/find-login-session", () => ({
+  findLoginSession: vi.fn(),
 }));
 
 import { getIndividualMovement } from "@/db/movements/queries/get-movement";
-import { registerSelectedMovementHandler } from "./select-movement.handler";
+import { registerSelectMovementHandler } from "./select-movement.handler";
 
-describe("registerSelectedMovementHandler (integration)", () => {
-  let httpServer: any;
+describe("registerSelectMovementHandler (integration)", () => {
+  let httpServer: ReturnType<typeof createServer>;
   let io: Server;
-  let client: any;
+  let client: ReturnType<typeof Client>;
 
   beforeEach(async () => {
+    vi.clearAllMocks();
+    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<void>) => {
+      const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
+      await fn(tx);
+    });
+
     httpServer = createServer();
+    io = new Server(httpServer, { cors: { origin: "*" } });
 
-    io = new Server(httpServer, {
-      cors: { origin: "*" },
+    io.on("connection", (socket: Socket) => {
+      // Treat every test connection as a director
+      socket.data.isDirector = true;
+      registerSelectMovementHandler(socket);
     });
 
-    io.on("connection", (socket) => {
-      registerSelectedMovementHandler(socket);
-    });
+    await new Promise<void>((resolve) => httpServer.listen(() => resolve()));
 
-    await new Promise<void>((resolve) => {
-      httpServer.listen(() => resolve());
-    });
-
-    const port = (httpServer.address() as any).port;
+    const { port } = httpServer.address() as { port: number };
     client = Client(`http://localhost:${port}`);
-
-    await new Promise((r) => client.on("connect", r));
+    await new Promise<void>((resolve) => client.on("connect", () => resolve()));
   });
 
-  // it("processes INDIVIDUAL movement successfully", async () => {
-  //     (getIndividualMovement as any).mockResolvedValue([
-  //         {
-  //             tableNumber: 1,
-  //             rounds: [
-  //                 {
-  //                     roundNumber: 1,
-  //                     n: 1,
-  //                     s: 2,
-  //                     e: 3,
-  //                     w: 4,
-  //                     boardStart: 1,
-  //                     boardEnd: 1,
-  //                 },
-  //             ],
-  //         },
-  //     ]);
-  //
-  //     const result = await new Promise<any>((resolve) => {
-  //         client.emit(
-  //             SocketEvents.SELECT_MOVEMENT,
-  //             {
-  //                 gameId: "g1",
-  //                 type: "INDIVIDUAL",
-  //                 id: 1,
-  //             },
-  //             resolve,
-  //         );
-  //     });
-  //
-  //     expect(result).toEqual({ success: true });
-  // });
+  afterEach(async () => {
+    client.disconnect();
+    await new Promise<void>((resolve) => io.close(() => resolve()));
+  });
 
-  it("handles errors gracefully", async () => {
-    (getIndividualMovement as any).mockRejectedValue(new Error("boom"));
+  it("processes INDIVIDUAL movement and returns success", async () => {
+    vi.mocked(getIndividualMovement).mockResolvedValue([
+      {
+        tableNumber: 1,
+        rounds: [
+          { roundNumber: 1, n: "1", s: "2", e: "3", w: "4", boardStart: 1, boardEnd: 1 },
+        ],
+      },
+    ] as any);
 
     const result = await new Promise<any>((resolve) => {
       client.emit(
         SocketEvents.SELECT_MOVEMENT,
-        {
-          gameId: "g1",
-          type: "INDIVIDUAL",
-          id: 1,
-        },
+        { gameId: "g1", type: "INDIVIDUAL", id: 1 },
+        resolve,
+      );
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(mockTransaction).toHaveBeenCalled();
+  });
+
+  it("handles errors gracefully and returns success: false", async () => {
+    vi.mocked(getIndividualMovement).mockRejectedValue(new Error("boom"));
+
+    const result = await new Promise<any>((resolve) => {
+      client.emit(
+        SocketEvents.SELECT_MOVEMENT,
+        { gameId: "g1", type: "INDIVIDUAL", id: 1 },
         resolve,
       );
     });

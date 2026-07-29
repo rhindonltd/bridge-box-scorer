@@ -1,98 +1,67 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { testApiHandler } from "next-test-api-route-handler";
-import { Direction } from "@/model/common";
 
 import * as appHandler from "./route";
 
-vi.mock("@/db/games/shared/queries/find-player-initial-seats", () => ({
-  findPlayerInitialSeats: vi.fn(),
+vi.mock("@/db/games/individual/queries/find-individuals", () => ({
+  findIndividuals: vi.fn(),
 }));
 
-import { findPlayerInitialSeats } from "@/db/games/shared/queries/find-player-initial-seats";
+import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 
-describe("GET /api/games/[gameId]/player-initial-seats", () => {
+describe("GET /api/games/individual/[gameId]/participants", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns player initial seats for the game", async () => {
-    const mockSeats = [
+  it("returns individuals for the game", async () => {
+    const mockIndividuals = [
       {
-        tableNumber: 1,
-        direction: "N" as Direction,
-        player: {
-          firstName: "xxx",
-          lastName: "yyy",
-          nationalId: "123",
-        },
+        type: "INDIVIDUAL",
+        initialSeat: "1N",
+        player: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: "123" },
       },
       {
-        tableNumber: 2,
-        direction: "N" as Direction,
-        player: {
-          firstName: "xxx",
-          lastName: "yyy",
-          nationalId: "123",
-        },
+        type: "INDIVIDUAL",
+        initialSeat: "1S",
+        player: { id: 2, firstName: "Bob", lastName: "Jones", nationalId: "456" },
       },
     ];
 
-    vi.mocked(findPlayerInitialSeats).mockResolvedValue(mockSeats);
+    vi.mocked(findIndividuals).mockResolvedValue(mockIndividuals as any);
 
     await testApiHandler({
       appHandler,
-
-      params: {
-        gameId: "game-123",
-      },
-
+      params: { gameId: "game-123" },
       rejectOnHandlerError: true,
-
       test: async ({ fetch }) => {
-        const response = await fetch({
-          method: "GET",
-        });
-
+        const response = await fetch({ method: "GET" });
         expect(response.status).toBe(200);
-
-        expect(await response.json()).toEqual(mockSeats);
-
-        expect(findPlayerInitialSeats).toHaveBeenCalledWith("game-123");
+        expect(await response.json()).toEqual(mockIndividuals);
+        expect(findIndividuals).toHaveBeenCalledWith("game-123");
       },
     });
   });
 
-  it("returns 500 when findPlayerInitialSeats throws", async () => {
+  it("returns 500 when findIndividuals throws", async () => {
     const consoleErrorSpy = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    vi.mocked(findPlayerInitialSeats).mockRejectedValue(
-      new Error("Database error"),
-    );
+    vi.mocked(findIndividuals).mockRejectedValue(new Error("Database error"));
 
     await testApiHandler({
       appHandler,
-
-      params: {
-        gameId: "game-123",
-      },
-
+      params: { gameId: "game-123" },
       test: async ({ fetch }) => {
-        const response = await fetch({
-          method: "GET",
-        });
-
+        const response = await fetch({ method: "GET" });
         expect(response.status).toBe(500);
-
         expect(await response.json()).toEqual({
           success: false,
           error: "Internal server error",
         });
-
         expect(consoleErrorSpy).toHaveBeenCalled();
-
-        expect(findPlayerInitialSeats).toHaveBeenCalledWith("game-123");
+        expect(findIndividuals).toHaveBeenCalledWith("game-123");
       },
     });
 
