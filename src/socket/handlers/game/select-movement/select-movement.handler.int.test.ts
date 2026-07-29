@@ -40,10 +40,12 @@ describe("registerSelectMovementHandler (integration)", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<void>) => {
-      const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
-      await fn(tx);
-    });
+    mockTransaction.mockImplementation(
+      async (fn: (tx: any) => Promise<void>) => {
+        const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
+        await fn(tx);
+      },
+    );
 
     httpServer = createServer();
     io = new Server(httpServer, { cors: { origin: "*" } });
@@ -71,7 +73,15 @@ describe("registerSelectMovementHandler (integration)", () => {
       {
         tableNumber: 1,
         rounds: [
-          { roundNumber: 1, n: "1", s: "2", e: "3", w: "4", boardStart: 1, boardEnd: 1 },
+          {
+            roundNumber: 1,
+            n: "1",
+            s: "2",
+            e: "3",
+            w: "4",
+            boardStart: 1,
+            boardEnd: 1,
+          },
         ],
       },
     ] as any);

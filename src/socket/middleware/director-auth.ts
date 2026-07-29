@@ -61,9 +61,7 @@ export function assertDirector(
 ): boolean {
   if (socket.data.isDirector) return true;
 
-  console.warn(
-    `Unauthorised director event attempt from socket ${socket.id}`,
-  );
+  console.warn(`Unauthorised director event attempt from socket ${socket.id}`);
   cb?.({ success: false, error: "Unauthorized" });
   return false;
 }

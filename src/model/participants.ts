@@ -107,6 +107,4 @@ export type AssignedPair = Pair & PairAssignment;
 export type AssignedTeam = Team & TeamAssignment;
 
 export type AssignedParticipant =
-  | AssignedTeam
-  | AssignedPair
-  | AssignedIndividual;
+  AssignedTeam | AssignedPair | AssignedIndividual;

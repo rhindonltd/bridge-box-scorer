@@ -24,7 +24,8 @@ export function getDirectorSocket(directorToken: string): Socket {
   const url = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   if (socket) {
-    const currentToken = socket.auth && (socket.auth as Record<string, string>).directorToken;
+    const currentToken =
+      socket.auth && (socket.auth as Record<string, string>).directorToken;
     if (currentToken === directorToken) return socket;
 
     // Reconnect with the token attached.

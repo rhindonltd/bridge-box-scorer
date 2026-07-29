@@ -100,7 +100,11 @@ describe("registerCreateParticipantHandler (unit)", () => {
       vi.mocked(createPlayer).mockResolvedValue({ id: 42 } as any);
       vi.mocked(createIndividual).mockResolvedValue(undefined);
       vi.mocked(findIndividuals).mockResolvedValue([
-        { type: "INDIVIDUAL", initialSeat: "1N", player: { id: 42, firstName: "A", lastName: "B", nationalId: null } },
+        {
+          type: "INDIVIDUAL",
+          initialSeat: "1N",
+          player: { id: 42, firstName: "A", lastName: "B", nationalId: null },
+        },
       ]);
 
       await handler(
@@ -115,11 +119,10 @@ describe("registerCreateParticipantHandler (unit)", () => {
         cb,
       );
 
-      expect(createPlayer).toHaveBeenCalledWith(
-        "INDIVIDUAL",
-        "game-1",
-        { firstName: "A", lastName: "B" },
-      );
+      expect(createPlayer).toHaveBeenCalledWith("INDIVIDUAL", "game-1", {
+        firstName: "A",
+        lastName: "B",
+      });
 
       expect(createIndividual).toHaveBeenCalledWith(
         "game-1",
@@ -202,7 +205,11 @@ describe("registerCreateParticipantHandler (unit)", () => {
 
       expect(createPair).toHaveBeenCalledWith(
         "game-1",
-        expect.objectContaining({ initialSeat: "1NS", player1: 10, player2: 11 }),
+        expect.objectContaining({
+          initialSeat: "1NS",
+          player1: 10,
+          player2: 11,
+        }),
       );
 
       expect(emitFn).toHaveBeenCalledWith(

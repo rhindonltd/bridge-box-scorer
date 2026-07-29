@@ -20,7 +20,9 @@ export const boards = sqliteTable(
     ewResult: text("ew_result").$type<BoardOutcome>(),
     nsLead: text("ns_lead").$type<Card>(),
     ewLead: text("ew_lead").$type<Card>(),
-    directorOverrideResult: text("director_override_result").$type<BoardOutcome>(),
+    directorOverrideResult: text(
+      "director_override_result",
+    ).$type<BoardOutcome>(),
     directorOverrideLead: text("director_override_lead").$type<Card>(),
     status: text("status", {
       enum: BoardStatuses,

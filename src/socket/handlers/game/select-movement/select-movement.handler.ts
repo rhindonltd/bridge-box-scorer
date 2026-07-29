@@ -73,7 +73,8 @@ async function handleIndividualMovement(
         for (const { position, movementId } of seats) {
           assignmentRows.push({
             id: movementId,
-            initialSeat: `${m.tableNumber}${position}` as IndividualAssignment["initialSeat"],
+            initialSeat:
+              `${m.tableNumber}${position}` as IndividualAssignment["initialSeat"],
           });
         }
       }
@@ -125,7 +126,8 @@ async function handlePairLikeMovement(
         for (const { position, movementId } of seats) {
           assignmentRows.push({
             id: movementId,
-            initialSeat: `${m.tableNumber}${position}` as PairAssignment["initialSeat"],
+            initialSeat:
+              `${m.tableNumber}${position}` as PairAssignment["initialSeat"],
           });
         }
       }

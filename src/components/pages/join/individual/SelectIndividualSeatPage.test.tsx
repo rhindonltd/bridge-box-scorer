@@ -16,13 +16,21 @@ vi.mock("@/components/common/GameInfo", () => ({
 
 vi.mock("@/components/join/individual/SelectIndividualTable", () => ({
   default: vi.fn(
-    ({ tables, startingPositions, onSeatSelected }: {
+    ({
+      tables,
+      startingPositions,
+      onSeatSelected,
+    }: {
       tables: number;
       startingPositions: unknown[];
       onSeatSelected: unknown;
     }) => (
       <div data-testid="individual-table">
-        {JSON.stringify({ tables, startingPositions, hasHandler: !!onSeatSelected })}
+        {JSON.stringify({
+          tables,
+          startingPositions,
+          hasHandler: !!onSeatSelected,
+        })}
       </div>
     ),
   ),

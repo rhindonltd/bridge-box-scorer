@@ -76,7 +76,12 @@ describe("registerCreateParticipantHandler (integration)", () => {
       {
         type: "INDIVIDUAL",
         initialSeat: "1N",
-        player: { id: 99, firstName: "Alice", lastName: "Smith", nationalId: null },
+        player: {
+          id: 99,
+          firstName: "Alice",
+          lastName: "Smith",
+          nationalId: null,
+        },
       },
     ]);
 

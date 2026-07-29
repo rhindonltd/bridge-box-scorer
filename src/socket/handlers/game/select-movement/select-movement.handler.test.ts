@@ -40,7 +40,15 @@ const individualMovement = [
   {
     tableNumber: 1,
     rounds: [
-      { roundNumber: 1, n: "1", s: "2", e: "3", w: "4", boardStart: 1, boardEnd: 2 },
+      {
+        roundNumber: 1,
+        n: "1",
+        s: "2",
+        e: "3",
+        w: "4",
+        boardStart: 1,
+        boardEnd: 2,
+      },
     ],
   },
 ];
@@ -49,9 +57,7 @@ const individualMovement = [
 const pairMovement = [
   {
     tableNumber: 1,
-    rounds: [
-      { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 },
-    ],
+    rounds: [{ roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 }],
   },
 ];
 
@@ -66,10 +72,12 @@ function makeDirectorSocket() {
 describe("registerSelectMovementHandler (unit)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<void>) => {
-      const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
-      await fn(tx);
-    });
+    mockTransaction.mockImplementation(
+      async (fn: (tx: any) => Promise<void>) => {
+        const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
+        await fn(tx);
+      },
+    );
   });
 
   it("registers handler on SELECT_MOVEMENT event", () => {
@@ -101,7 +109,9 @@ describe("registerSelectMovementHandler (unit)", () => {
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    vi.mocked(getIndividualMovement).mockResolvedValue(individualMovement as any);
+    vi.mocked(getIndividualMovement).mockResolvedValue(
+      individualMovement as any,
+    );
 
     await handler({ gameId: "g1", type: "INDIVIDUAL", id: 10 }, cb);
 
@@ -162,7 +172,9 @@ describe("registerSelectMovementHandler (unit)", () => {
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    vi.mocked(getIndividualMovement).mockResolvedValue(individualMovement as any);
+    vi.mocked(getIndividualMovement).mockResolvedValue(
+      individualMovement as any,
+    );
     mockTransaction.mockRejectedValue(new Error("tx fail"));
 
     await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1 }, cb);

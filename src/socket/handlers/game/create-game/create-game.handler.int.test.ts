@@ -42,7 +42,9 @@ describe("CREATE_GAME (integration)", () => {
 
     vi.mocked(createBridgeGame).mockResolvedValue(bridgeGame as any);
     vi.mocked(createGameDb).mockResolvedValue(undefined);
-    vi.mocked(findJoinableGames).mockResolvedValue([{ gameId: "game-123" }] as any);
+    vi.mocked(findJoinableGames).mockResolvedValue([
+      { gameId: "game-123" },
+    ] as any);
 
     const { io, client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {

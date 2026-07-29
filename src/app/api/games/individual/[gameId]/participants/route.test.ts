@@ -19,12 +19,22 @@ describe("GET /api/games/individual/[gameId]/participants", () => {
       {
         type: "INDIVIDUAL",
         initialSeat: "1N",
-        player: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: "123" },
+        player: {
+          id: 1,
+          firstName: "Alice",
+          lastName: "Smith",
+          nationalId: "123",
+        },
       },
       {
         type: "INDIVIDUAL",
         initialSeat: "1S",
-        player: { id: 2, firstName: "Bob", lastName: "Jones", nationalId: "456" },
+        player: {
+          id: 2,
+          firstName: "Bob",
+          lastName: "Jones",
+          nationalId: "456",
+        },
       },
     ];
 
