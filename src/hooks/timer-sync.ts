@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TimerState } from "@/timer/timer-state";
 import { getSocket } from "@/lib/socket";
+import { SocketEvents } from "@/socket/socket-events";
 
 type SyncPayload = TimerState & {
   serverNow: number;
@@ -18,7 +19,7 @@ export function useTimerSync() {
   }
 
   useEffect(() => {
-    getSocket().on("timer:sync", (payload: SyncPayload) => {
+    getSocket().on(SocketEvents.TIMER_SYNC, (payload: SyncPayload) => {
       const { serverNow, ...state } = payload;
 
       setTimerState(state);

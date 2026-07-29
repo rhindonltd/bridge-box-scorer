@@ -55,10 +55,9 @@ describe("registerCreateTimerHandler", () => {
     );
   });
 
-  it("creates an engine, pauses it, persists state, and broadcasts", async () => {
+  it("creates an engine, persists state, and broadcasts", async () => {
     const mockState = { isRunning: false, phase: "play", round: 1 };
     const mockEngine = {
-      pause: vi.fn(),
       getState: vi.fn(() => mockState),
     };
 
@@ -72,7 +71,7 @@ describe("registerCreateTimerHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     await handler({
-      gameType: "PAIR",
+      gameType: "PAIRS",
       gameId: "game-4",
       boardsPerRound: 3,
       totalRounds: 5,
@@ -81,22 +80,21 @@ describe("registerCreateTimerHandler", () => {
     });
 
     expect(createEngine).toHaveBeenCalledWith(
-      "PAIR",
+      "PAIRS",
       "game-4",
       3,
       5,
       420,
       60,
     );
-    expect(mockEngine.pause).toHaveBeenCalled();
-    expect(updateTimerState).toHaveBeenCalledWith("PAIR", "game-4", mockState);
+    expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-4", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-4");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
     );
     expect(scheduleGame).toHaveBeenCalledWith(
-      "PAIR",
+      "PAIRS",
       "game-4",
       mockEngine,
       expect.objectContaining({ updateTimerState, broadcast: expect.any(Function) }),
@@ -112,7 +110,7 @@ describe("registerCreateTimerHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     await handler({
-      gameType: "PAIR",
+      gameType: "PAIRS",
       gameId: "game-4",
       boardsPerRound: 3,
       totalRounds: 5,

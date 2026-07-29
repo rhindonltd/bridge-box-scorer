@@ -1,35 +1,51 @@
 import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
-import { GameType } from "@/db/games/types/game-type";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
-import { scheduleGame } from "@/timer/scheduler";
+import { cancelGameSchedule } from "@/timer/scheduler";
 import { TimerState } from "@/timer/timer-state";
 import { Server, Socket } from "socket.io";
 import { assertDirector } from "@/socket/middleware/director-auth";
+import { z } from "zod";
+import { GameTypes } from "@/db/games/types/game-type";
+
+const payloadSchema = z.object({
+  gameType: z.enum(GameTypes),
+  gameId: z.string().min(1),
+});
 
 export function registerPauseTimerHandler(socket: Socket, io: Server) {
   function broadcast(gameId: string, timerState: TimerState) {
-    io.to(Rooms.game(gameId)).emit("timer:sync", {
+    io.to(Rooms.game(gameId)).emit(SocketEvents.TIMER_SYNC, {
       ...timerState,
       serverNow: Date.now(),
     });
   }
 
-  socket.on(
-    SocketEvents.PAUSE_TIMER,
-    async ({ gameType, gameId }: { gameType: GameType; gameId: string }) => {
-      if (!assertDirector(socket)) return;
+  socket.on(SocketEvents.PAUSE_TIMER, async (payload: unknown) => {
+    if (!assertDirector(socket)) return;
+
+    const parsed = payloadSchema.safeParse(payload);
+    if (!parsed.success) {
+      console.warn("Invalid PAUSE_TIMER payload:", parsed.error.message);
+      return;
+    }
+
+    const { gameType, gameId } = parsed.data;
+
+    try {
       const engine = await getEngine(gameType, gameId);
+      if (!engine) return;
 
-      if (engine) {
-        engine.pause();
+      engine.pause();
 
-        await updateTimerState(gameType, gameId, engine.getState());
-        broadcast(gameId, engine.getState());
+      // Explicitly cancel any scheduled phase transition since we're now paused
+      cancelGameSchedule(gameType, gameId);
 
-        scheduleGame(gameType, gameId, engine, { updateTimerState, broadcast });
-      }
-    },
-  );
+      await updateTimerState(gameType, gameId, engine.getState());
+      broadcast(gameId, engine.getState());
+    } catch (err) {
+      console.error(`Failed to pause timer for game ${gameId}:`, err);
+    }
+  });
 }

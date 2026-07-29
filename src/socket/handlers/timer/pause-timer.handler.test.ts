@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/timer/game-store", () => ({
   getEngine: vi.fn(),
-  createEngine: vi.fn(),
 }));
 
 vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
@@ -10,6 +9,7 @@ vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
 }));
 
 vi.mock("@/timer/scheduler", () => ({
+  cancelGameSchedule: vi.fn(),
   scheduleGame: vi.fn(),
 }));
 
@@ -19,7 +19,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 
 import { getEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
-import { scheduleGame } from "@/timer/scheduler";
+import { cancelGameSchedule } from "@/timer/scheduler";
 import { registerPauseTimerHandler } from "./pause-timer.handler";
 
 function createMockSocket() {
@@ -52,7 +52,7 @@ describe("registerPauseTimerHandler", () => {
     expect(socket.on).toHaveBeenCalledWith("timer:pause", expect.any(Function));
   });
 
-  it("pauses the engine, persists state, and broadcasts", async () => {
+  it("pauses the engine, cancels schedule, persists state, and broadcasts", async () => {
     const mockState = { isRunning: false, phase: "play", round: 1 };
     const mockEngine = {
       pause: vi.fn(),
@@ -68,18 +68,13 @@ describe("registerPauseTimerHandler", () => {
     registerPauseTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIR", gameId: "game-2" });
+    await handler({ gameType: "PAIRS", gameId: "game-2" });
 
     expect(mockEngine.pause).toHaveBeenCalled();
-    expect(updateTimerState).toHaveBeenCalledWith("PAIR", "game-2", mockState);
+    expect(cancelGameSchedule).toHaveBeenCalledWith("PAIRS", "game-2");
+    expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-2", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-2");
     expect(io._emit).toHaveBeenCalledWith("timer:sync", expect.objectContaining(mockState));
-    expect(scheduleGame).toHaveBeenCalledWith(
-      "PAIR",
-      "game-2",
-      mockEngine,
-      expect.objectContaining({ updateTimerState, broadcast: expect.any(Function) }),
-    );
   });
 
   it("does nothing if engine is not found", async () => {
@@ -91,7 +86,7 @@ describe("registerPauseTimerHandler", () => {
     registerPauseTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIR", gameId: "game-2" });
+    await handler({ gameType: "PAIRS", gameId: "game-2" });
 
     expect(updateTimerState).not.toHaveBeenCalled();
   });
@@ -104,7 +99,7 @@ describe("registerPauseTimerHandler", () => {
     registerPauseTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIR", gameId: "game-2" });
+    await handler({ gameType: "PAIRS", gameId: "game-2" });
 
     expect(getEngine).not.toHaveBeenCalled();
   });

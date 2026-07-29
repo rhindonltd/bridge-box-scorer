@@ -18,7 +18,7 @@ type ScheduledGame = {
 
 const scheduledGames = new Map<string, ScheduledGame>();
 
-function cancelGameSchedule(gameType: string, gameId: string) {
+export function cancelGameSchedule(gameType: string, gameId: string) {
   const existing = scheduledGames.get(`${gameType}_${gameId}`);
 
   if (!existing) {
