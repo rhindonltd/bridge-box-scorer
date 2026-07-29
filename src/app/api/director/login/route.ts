@@ -1,10 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyDirectorPassword } from "@/db/system/queries/login-sessions";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  password: z.string().min(1),
+});
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { password } = body;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Invalid JSON" },
+      { status: 400 },
+    );
+  }
+
+  const parsed = loginSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { success: false, error: "Password is required" },
+      { status: 400 },
+    );
+  }
+
+  const { password } = parsed.data;
 
   const valid = await verifyDirectorPassword(password);
   if (!valid) return NextResponse.json({ success: false }, { status: 401 });
@@ -16,10 +38,7 @@ export async function POST(req: NextRequest) {
   };
   await createLoginSession(loginSession);
 
-  const response = NextResponse.json({
-    success: true,
-    token: loginSession.token,
-  });
+  const response = NextResponse.json({ success: true });
   response.cookies.set("directorToken", loginSession.token, {
     httpOnly: true,
     path: "/",

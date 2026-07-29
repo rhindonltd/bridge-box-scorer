@@ -8,7 +8,9 @@ let io: Server | null = null;
 
 export function startSocketServer(server: http.Server) {
   io = new Server(server, {
-    cors: { origin: "*" },
+    cors: {
+      origin: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    },
   });
 
   io.use(directorAuthMiddleware);

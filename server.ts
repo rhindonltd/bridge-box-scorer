@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { startSocketServer } from "@/socket/websocket"; // ensures DB is initialized
 
 const port = 3000;
-const dev = false;
+const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
