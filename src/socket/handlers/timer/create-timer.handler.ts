@@ -6,6 +6,7 @@ import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
 import { Rooms } from "@/socket/rooms";
 import { scheduleGame } from "@/timer/scheduler";
 import { TimerState } from "@/timer/timer-state";
+import { assertDirector } from "@/socket/middleware/director-auth";
 
 export function registerCreateTimerHandler(socket: Socket, io: Server) {
   function broadcast(gameId: string, timerState: TimerState) {
@@ -32,6 +33,7 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
       playDuration: number;
       moveDuration: number;
     }) => {
+      if (!assertDirector(socket)) return;
       const engine = await createEngine(
         gameType,
         gameId,

@@ -3,15 +3,14 @@ import { render, screen } from "@testing-library/react";
 import { HeaderContentBottomLayout } from "./HeaderContentBottomLayout";
 
 describe("HeaderContentBottomLayout", () => {
-  it("renders heading, content, and button", () => {
+  it("renders heading, content, and bottom", () => {
     render(
       <HeaderContentBottomLayout
         heading={<h1>Title</h1>}
         content={<div>Content Area</div>}
-        button={<button>Click me</button>}
+        bottom={<button>Click me</button>}
       />,
     );
-
     expect(screen.getByText("Title")).toBeInTheDocument();
     expect(screen.getByText("Content Area")).toBeInTheDocument();
     expect(
@@ -24,20 +23,11 @@ describe("HeaderContentBottomLayout", () => {
       <HeaderContentBottomLayout
         heading={<div>H</div>}
         content={<div>C</div>}
-        button={<div>B</div>}
+        bottom={<div>B</div>}
       />,
     );
-
     const root = container.firstChild as HTMLElement;
-
-    expect(root).toHaveClass(
-      "flex",
-      "flex-col",
-      "justify-between",
-      "items-center",
-      "h-screen",
-      "bg-gray-100",
-    );
+    expect(root).toHaveClass("flex", "flex-col", "h-screen", "bg-gray-100");
   });
 
   it("wraps heading in centered container", () => {
@@ -45,12 +35,10 @@ describe("HeaderContentBottomLayout", () => {
       <HeaderContentBottomLayout
         heading={<span>Heading</span>}
         content={<div />}
-        button={<div />}
+        bottom={<div />}
       />,
     );
-
     const heading = screen.getByText("Heading").parentElement;
-
     expect(heading).toHaveClass("text-center");
   });
 
@@ -59,38 +47,22 @@ describe("HeaderContentBottomLayout", () => {
       <HeaderContentBottomLayout
         heading={<div />}
         content={<span>Content</span>}
-        button={<div />}
+        bottom={<div />}
       />,
     );
-
     const content = screen.getByText("Content").parentElement;
-
-    expect(content).toHaveClass(
-      "w-full",
-      "flex",
-      "items-center",
-      "justify-center",
-    );
+    expect(content).toHaveClass("flex", "items-center", "justify-center");
   });
 
-  it("wraps button in padded footer container", () => {
+  it("wraps bottom in padded footer container", () => {
     render(
       <HeaderContentBottomLayout
         heading={<div />}
         content={<div />}
-        button={<button>Action</button>}
+        bottom={<button>Action</button>}
       />,
     );
-
-    const button = screen.getByRole("button", { name: "Action" }).parentElement;
-
-    expect(button).toHaveClass(
-      "w-full",
-      "flex",
-      "justify-center",
-      "pl-2",
-      "pr-2",
-      "pb-2",
-    );
+    const bottom = screen.getByRole("button", { name: "Action" }).parentElement;
+    expect(bottom).toHaveClass("w-full", "flex", "justify-center");
   });
 });

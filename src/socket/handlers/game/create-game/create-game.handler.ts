@@ -5,11 +5,14 @@ import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
 import { GameType } from "@/db/games/types/game-type";
+import { assertDirector } from "@/socket/middleware/director-auth";
 
 export function registerCreateGameHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.CREATE_GAME,
     async (newBridgeGame: NewBridgeGame, cb) => {
+      if (!assertDirector(socket, cb)) return;
+
       try {
         const bridgeGame: BridgeGame = await createBridgeGame(newBridgeGame);
         await createGameDb(bridgeGame.gameId, bridgeGame.gameType as GameType);

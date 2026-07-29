@@ -1,17 +1,26 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import SelectIndividualTable from "./SelectIndividualTable";
+import { Individual } from "@/model/participants";
+
+const makeIndividual = (
+  tableNumber: number,
+  direction: "N" | "S" | "E" | "W",
+): Individual => ({
+  type: "INDIVIDUAL",
+  initialSeat: `${tableNumber}${direction}` as Individual["initialSeat"],
+  player: { id: 1, firstName: "FN", lastName: "LN", nationalId: "123" },
+});
 
 describe("SelectIndividualTable", () => {
   const baseProps = {
     tables: 2,
     onSeatSelected: vi.fn(),
-    startingPositions: [],
+    startingPositions: [] as Individual[],
   };
 
   it("renders instruction text", () => {
     render(<SelectIndividualTable {...baseProps} />);
-
     expect(
       screen.getByText(
         "Please select the table and direction you are sitting:",
@@ -21,52 +30,20 @@ describe("SelectIndividualTable", () => {
 
   it("renders correct number of tables", () => {
     render(<SelectIndividualTable {...baseProps} tables={3} />);
-
     expect(screen.getByText("Table 1")).toBeInTheDocument();
     expect(screen.getByText("Table 2")).toBeInTheDocument();
     expect(screen.getByText("Table 3")).toBeInTheDocument();
   });
-
-  // it("calls selectTable for NS click", () => {
-  //   const fn = vi.fn();
-  //
-  //   render(<SelectIndividualTable {...baseProps} onSeatSelected={fn} />);
-  //
-  //   fireEvent.click(screen.getAllByRole("button", { name: "NS" })[0]);
-  //
-  //   expect(fn).toHaveBeenCalledWith(1, "NS");
-  // });
-
-  // it("calls selectTable for EW click", () => {
-  //   const fn = vi.fn();
-  //
-  //   render(<SelectIndividualTable {...baseProps} onSeatSelected={fn} />);
-  //
-  //   fireEvent.click(screen.getAllByRole("button", { name: "EW" })[0]);
-  //
-  //   expect(fn).toHaveBeenCalledWith(1, "EW");
-  // });
 
   it("disables N button when assigned", () => {
     render(
       <SelectIndividualTable
         tables={1}
         onSeatSelected={vi.fn()}
-        startingPositions={[
-          {
-            tableNumber: 1,
-            direction: "N",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
-        ]}
+        startingPositions={[makeIndividual(1, "N")]}
       />,
     );
-
-    const nsButton = screen.getByRole("button", {
-      name: "N",
-    });
-
-    expect(nsButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "N" })).toBeDisabled();
   });
 
   it("disables S button when assigned", () => {
@@ -74,21 +51,10 @@ describe("SelectIndividualTable", () => {
       <SelectIndividualTable
         tables={1}
         onSeatSelected={vi.fn()}
-        startingPositions={[
-          {
-            tableNumber: 1,
-            direction: "S",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
-        ]}
+        startingPositions={[makeIndividual(1, "S")]}
       />,
     );
-
-    const nsButton = screen.getByRole("button", {
-      name: "S",
-    });
-
-    expect(nsButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "S" })).toBeDisabled();
   });
 
   it("disables E button when assigned", () => {
@@ -96,21 +62,10 @@ describe("SelectIndividualTable", () => {
       <SelectIndividualTable
         tables={1}
         onSeatSelected={vi.fn()}
-        startingPositions={[
-          {
-            tableNumber: 1,
-            direction: "E",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
-        ]}
+        startingPositions={[makeIndividual(1, "E")]}
       />,
     );
-
-    const ewButton = screen.getByRole("button", {
-      name: "E",
-    });
-
-    expect(ewButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "E" })).toBeDisabled();
   });
 
   it("disables W button when assigned", () => {
@@ -118,56 +73,26 @@ describe("SelectIndividualTable", () => {
       <SelectIndividualTable
         tables={1}
         onSeatSelected={vi.fn()}
-        startingPositions={[
-          {
-            tableNumber: 1,
-            direction: "W",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
-        ]}
+        startingPositions={[makeIndividual(1, "W")]}
       />,
     );
-
-    const ewButton = screen.getByRole("button", {
-      name: "W",
-    });
-
-    expect(ewButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "W" })).toBeDisabled();
   });
 
-  it("marks table as full when both directions are assigned", () => {
+  it("marks table as full when all four directions are assigned", () => {
     const { container } = render(
       <SelectIndividualTable
         tables={1}
         onSeatSelected={vi.fn()}
         startingPositions={[
-          {
-            tableNumber: 1,
-            direction: "N",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
-          {
-            tableNumber: 1,
-            direction: "S",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
-          {
-            tableNumber: 1,
-            direction: "E",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
-          {
-            tableNumber: 1,
-            direction: "W",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
+          makeIndividual(1, "N"),
+          makeIndividual(1, "S"),
+          makeIndividual(1, "E"),
+          makeIndividual(1, "W"),
         ]}
       />,
     );
-
-    const tableCard = container.querySelector(".opacity-50");
-
-    expect(tableCard).toBeInTheDocument();
+    expect(container.querySelector(".opacity-50")).toBeInTheDocument();
   });
 
   it("does not disable unrelated table buttons", () => {
@@ -175,26 +100,15 @@ describe("SelectIndividualTable", () => {
       <SelectIndividualTable
         tables={2}
         onSeatSelected={vi.fn()}
-        startingPositions={[
-          {
-            tableNumber: 1,
-            direction: "N",
-            player: { firstName: "FN", lastName: "LN", nationalId: "123" },
-          },
-        ]}
+        startingPositions={[makeIndividual(1, "N")]}
       />,
     );
-
-    const secondTableNS = screen.getAllByRole("button", {
-      name: "N",
-    })[1];
-
-    expect(secondTableNS).not.toBeDisabled();
+    const secondTableN = screen.getAllByRole("button", { name: "N" })[1];
+    expect(secondTableN).not.toBeDisabled();
   });
 
   it("renders grid structure", () => {
     const { container } = render(<SelectIndividualTable {...baseProps} />);
-
     expect(container.querySelector(".grid")).toBeInTheDocument();
   });
 });

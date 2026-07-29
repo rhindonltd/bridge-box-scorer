@@ -6,6 +6,7 @@ import { getEngine } from "@/timer/game-store";
 import { scheduleGame } from "@/timer/scheduler";
 import { TimerState } from "@/timer/timer-state";
 import { Server, Socket } from "socket.io";
+import { assertDirector } from "@/socket/middleware/director-auth";
 
 export function registerStartTimerHandler(socket: Socket, io: Server) {
   function broadcast(gameId: string, timerState: TimerState) {
@@ -18,6 +19,7 @@ export function registerStartTimerHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.START_TIMER,
     async ({ gameType, gameId }: { gameType: GameType; gameId: string }) => {
+      if (!assertDirector(socket)) return;
       const engine = await getEngine(gameType, gameId);
 
       if (engine) {
