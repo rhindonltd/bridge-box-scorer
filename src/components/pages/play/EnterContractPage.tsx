@@ -117,8 +117,9 @@ export default function EnterContractPage({
         <TableRoundPairBoardInfo round={round} table={table} />
 
         <div className="flex flex-row items-center justify-center bg-blue-300">
-          <span className="pr-2 font-bold">Board:</span>
+          <label htmlFor="board-selector" className="pr-2 font-bold">Board:</label>
           <select
+            id="board-selector"
             className="p-1 border rounded-md bg-white text-center"
             value={boardSelection!.board}
             onChange={(e) => selectBoard(Number(e.target.value))}

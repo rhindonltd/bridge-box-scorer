@@ -4,12 +4,14 @@ import { useGame } from "@/context/GameContext";
 import { useTimerDerived } from "@/hooks/timer-derived";
 import { useTimerSync } from "@/hooks/timer-sync";
 import { getSocket } from "@/lib/socket";
-import { useEffect, useState } from "react";
+import { SocketEvents } from "@/socket/socket-events";
+import { useEffect, useMemo, useState } from "react";
 
 export default function ControlsPage() {
   const { game } = useGame();
   const { timerState } = useTimerSync();
 
+  // eslint-disable-next-line react-compiler/react-compiler
   const [tick, setTick] = useState(Date.now());
 
   useEffect(() => {
@@ -32,8 +34,6 @@ export default function ControlsPage() {
     "perRound",
   );
 
-  if (!game) return null;
-
   const enteredPlaySeconds = playMinutes * 60 + playSeconds;
   const moveDuration = moveMinutes * 60 + moveSeconds;
 
@@ -46,7 +46,13 @@ export default function ControlsPage() {
     totalRounds * effectivePlayDuration +
     Math.max(0, totalRounds - 1) * moveDuration;
 
-  const previewEndDate = new Date(Date.now() + totalSessionSeconds * 1000);
+  // eslint-disable-next-line react-compiler/react-compiler
+  const previewEndDate = useMemo(
+    () => new Date(Date.now() + totalSessionSeconds * 1000),
+    [totalSessionSeconds],
+  );
+
+  if (!game) return null;
 
   function formatDuration(totalSeconds: number) {
     const hours = Math.floor(totalSeconds / 3600);
@@ -60,14 +66,14 @@ export default function ControlsPage() {
 
   const hasSession = !!timerState;
 
-  function emit(event: string) {
+  function emitSimple(event: string) {
     getSocket().emit(event, {
       gameType: game!.gameType,
       gameId: game!.gameId,
     });
   }
 
-  function emitUpdateConfig(event: string) {
+  function emitConfig(event: string) {
     getSocket().emit(event, {
       gameType: game!.gameType,
       gameId: game!.gameId,
@@ -75,7 +81,6 @@ export default function ControlsPage() {
       totalRounds,
       playDuration: effectivePlayDuration,
       moveDuration,
-      timingMode,
     });
   }
 
@@ -88,7 +93,7 @@ export default function ControlsPage() {
 
   return (
     <div className="h-screen w-screen bg-gray-950 text-white flex flex-col items-center justify-center gap-6 p-6">
-      <h1 className="text-3xl font-bold mb-2">🎛️ Director Controls</h1>
+      <h1 className="text-3xl font-bold mb-2">Director Controls</h1>
 
       {/* STATUS PANEL */}
       <div className="w-full max-w-md bg-gray-900 rounded-lg p-4 text-sm">
@@ -152,8 +157,11 @@ export default function ControlsPage() {
       {/* CONFIG */}
       <div className="grid grid-cols-2 gap-4 w-full max-w-md">
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-white/60">Boards / Round</label>
+          <label htmlFor="boards-per-round" className="text-sm text-white/60">
+            Boards / Round
+          </label>
           <input
+            id="boards-per-round"
             type="number"
             value={boardsPerRound}
             onChange={(e) => setBoardsPerRound(Number(e.target.value))}
@@ -162,8 +170,11 @@ export default function ControlsPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-white/60">Total Rounds</label>
+          <label htmlFor="total-rounds" className="text-sm text-white/60">
+            Total Rounds
+          </label>
           <input
+            id="total-rounds"
             type="number"
             value={totalRounds}
             onChange={(e) => setTotalRounds(Number(e.target.value))}
@@ -171,10 +182,12 @@ export default function ControlsPage() {
           />
         </div>
 
-        <div className="col-span-2 flex gap-6">
+        <fieldset className="col-span-2 flex gap-6">
+          <legend className="sr-only">Timing Mode</legend>
           <label className="flex items-center gap-2">
             <input
               type="radio"
+              name="timingMode"
               checked={timingMode === "perRound"}
               onChange={() => setTimingMode("perRound")}
             />
@@ -184,23 +197,26 @@ export default function ControlsPage() {
           <label className="flex items-center gap-2">
             <input
               type="radio"
+              name="timingMode"
               checked={timingMode === "perBoard"}
               onChange={() => setTimingMode("perBoard")}
             />
             Per Board
           </label>
-        </div>
+        </fieldset>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-white/60">Play Duration</label>
+          <span className="text-sm text-white/60">Play Duration</span>
           <div className="flex gap-2">
             <input
+              aria-label="Play minutes"
               type="number"
               value={playMinutes}
               onChange={(e) => setPlayMinutes(Number(e.target.value))}
               className="p-2 rounded bg-gray-800 w-20"
             />
             <input
+              aria-label="Play seconds"
               type="number"
               value={playSeconds}
               onChange={(e) => setPlaySeconds(Number(e.target.value))}
@@ -211,15 +227,17 @@ export default function ControlsPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-white/60">Move Duration</label>
+          <span className="text-sm text-white/60">Move Duration</span>
           <div className="flex gap-2">
             <input
+              aria-label="Move minutes"
               type="number"
               value={moveMinutes}
               onChange={(e) => setMoveMinutes(Number(e.target.value))}
               className="p-2 rounded bg-gray-800 w-20"
             />
             <input
+              aria-label="Move seconds"
               type="number"
               value={moveSeconds}
               onChange={(e) => setMoveSeconds(Number(e.target.value))}
@@ -234,9 +252,7 @@ export default function ControlsPage() {
       <div className="grid grid-cols-2 gap-4 w-full max-w-md">
         {!hasSession ? (
           <button
-            onClick={() => {
-              emitUpdateConfig("timer:create");
-            }}
+            onClick={() => emitConfig(SocketEvents.CREATE_TIMER)}
             className="bg-cyan-600 py-6 rounded-xl text-xl font-semibold col-span-2"
           >
             Create
@@ -244,21 +260,21 @@ export default function ControlsPage() {
         ) : (
           <>
             <button
-              onClick={() => emitUpdateConfig("timer:updateConfig")}
+              onClick={() => emitConfig(SocketEvents.UPDATE_CONFIG_TIMER)}
               className="bg-blue-600 py-6 rounded-xl text-xl font-semibold col-span-2"
             >
               Apply Changes
             </button>
 
             <button
-              onClick={() => emit("timer:start")}
+              onClick={() => emitSimple(SocketEvents.START_TIMER)}
               className="bg-green-600 py-6 rounded-xl text-xl font-semibold"
             >
               Start
             </button>
 
             <button
-              onClick={() => emit("timer:pause")}
+              onClick={() => emitSimple(SocketEvents.PAUSE_TIMER)}
               className="bg-yellow-600 py-6 rounded-xl text-xl font-semibold"
             >
               Pause

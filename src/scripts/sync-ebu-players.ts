@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { parse } from "csv-parse/sync";
 
 import { syncPlayers } from "@/db/players/actions/sync-ebu-players";

@@ -1,4 +1,4 @@
-# total -> 454
+# total -> 453
 
 # MIT - 390
 
@@ -14,7 +14,7 @@
 
 # CC-BY-4.0 - 1
 
-# BSD-2-Clause - 10
+# BSD-2-Clause - 9
 
 # BSD-3-Clause - 6
 
@@ -919,12 +919,6 @@
 
  1. https://github.com/eps1lon/dom-accessibility-api
  2. MIT
-
-# dotenv@17.4.2
-
-
- 1. https://github.com/motdotla/dotenv
- 2. BSD-2-Clause
 
 # drizzle-kit@0.31.10
 

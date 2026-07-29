@@ -1,4 +1,3 @@
-import "dotenv/config";
 
 import { runMovementsMigrations } from "@/db/movements/migrate";
 
