@@ -19,12 +19,8 @@ type Props = {
 export function ShowMovementsPage({ onShowTablesPage }: Props) {
   const { game } = useGame();
 
-  if (!game) {
-    return null;
-  }
-
-  const tables = game.tables;
-  const gameType = game.gameType;
+  const tables = game?.tables ?? 0;
+  const gameType = game?.gameType;
 
   const shouldLoadIndividual = gameType === "INDIVIDUAL";
   const shouldLoadPairs = gameType === "PAIRS";
@@ -44,6 +40,10 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     shouldLoadTeams ? `/api/movements/teams/${tables}` : null,
     fetcher,
   );
+
+  if (!game) {
+    return null;
+  }
 
   function onMovementSelected(id: number, type: string) {
     selectMovement(game!.gameId, id, type);
