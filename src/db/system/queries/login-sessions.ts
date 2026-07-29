@@ -37,10 +37,12 @@ export async function verifyDirectorPassword(
   return bcrypt.compare(password, hash);
 }
 
-export async function isDirector(token: string) {
+export async function isDirector(token: string): Promise<boolean> {
   const db = await getDb();
-  return (
-    db.select().from(loginSessions).where(eq(loginSessions.token, token)) !==
-    null
-  );
+  const result = await db
+    .select()
+    .from(loginSessions)
+    .where(eq(loginSessions.token, token));
+
+  return result.length > 0;
 }

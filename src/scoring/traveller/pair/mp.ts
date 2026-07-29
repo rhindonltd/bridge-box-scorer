@@ -14,6 +14,20 @@ export function scoreMP(board: number, lines: PairLine[]) {
 
   if (!valid.length) return [];
 
+  // With only one valid result, there are no comparisons to make.
+  // max = 0 and both NS/EW get 0 matchpoints (neutered board).
+  if (valid.length === 1) {
+    return [
+      {
+        ...valid[0].line,
+        score: valid[0].score!,
+        maxMatchPoints: 0,
+        nsMatchPoints: 0,
+        ewMatchPoints: 0,
+      },
+    ];
+  }
+
   const sorted = [...valid].sort((a, b) => b.score! - a.score!);
 
   const result: MatchpointLine[] = [];

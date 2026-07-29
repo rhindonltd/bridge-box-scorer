@@ -7,17 +7,19 @@ import { rank } from "@/scoring/overall/rank";
 type Totals = {
   value: number;
   boards: number;
+  max: number;
 };
 
 function init(): Totals {
-  return { value: 0, boards: 0 };
+  return { value: 0, boards: 0, max: 0 };
 }
 
-function add(map: Map<string, Totals>, id: string, value: number) {
+function add(map: Map<string, Totals>, id: string, value: number, max = 0) {
   const entry = map.get(id) ?? init();
 
   entry.value += value;
   entry.boards += 1;
+  entry.max += max;
 
   map.set(id, entry);
 }
@@ -29,6 +31,7 @@ function add(map: Map<string, Totals>, id: string, value: number) {
 type Projection = {
   id: string;
   value: number;
+  max?: number;
 };
 
 type OverallConfig<TLine, TResultLine> = {
@@ -51,7 +54,7 @@ export function buildOverallScore<TLine, TResultLine>({
       const projections = project(line);
 
       for (const p of projections) {
-        add(totals, p.id, p.value);
+        add(totals, p.id, p.value, p.max ?? 0);
       }
     }
   }
