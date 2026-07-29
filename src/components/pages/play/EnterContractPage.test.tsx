@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import EnterContractPage from "./EnterContractPage";
 
-// -------------------- mocks --------------------
-
 const selectBoardMock = vi.fn();
 
 vi.mock("@/context/PlayContext", () => ({
@@ -13,8 +11,20 @@ vi.mock("@/context/PlayContext", () => ({
   }),
 }));
 
-vi.mock("@/components/common/SectionInfo", () => ({
-  SectionInfo: () => <div data-testid="section-info" />,
+vi.mock("@/components/common/GameInfo", () => ({
+  GameInfo: () => <div data-testid="game-info" />,
+}));
+
+vi.mock("@/components/common/ParticipantInfo", () => ({
+  ParticipantInfo: () => <div data-testid="participant-info" />,
+}));
+
+vi.mock("@/components/common/TableRoundPairBoardInfo", () => ({
+  TableRoundPairBoardInfo: ({ round, table }: any) => (
+    <div data-testid="table-info">
+      T{table}-R{round}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/pages/play/PlayableContract", () => ({
@@ -42,8 +52,6 @@ vi.mock("@/components/contract/NotPlayedButton", () => ({
   ),
 }));
 
-// -------------------- tests --------------------
-
 describe("EnterContractPage", () => {
   const onOk = vi.fn();
 
@@ -60,66 +68,53 @@ describe("EnterContractPage", () => {
 
   it("renders layout components", () => {
     render(<EnterContractPage {...baseProps} />);
-
-    expect(screen.getByTestId("section-info")).toBeInTheDocument();
+    expect(screen.getByTestId("game-info")).toBeInTheDocument();
+    expect(screen.getByTestId("participant-info")).toBeInTheDocument();
     expect(screen.getByTestId("table-info")).toBeInTheDocument();
     expect(screen.getByTestId("playable")).toBeInTheDocument();
   });
 
   it("calls selectBoard when dropdown changes", () => {
     render(<EnterContractPage {...baseProps} />);
-
     fireEvent.change(screen.getByDisplayValue("1"), {
       target: { value: "2" },
     });
-
     expect(selectBoardMock).toHaveBeenCalledWith(2);
   });
 
   it("handles Pass Out", () => {
     render(<EnterContractPage {...baseProps} />);
-
     fireEvent.click(screen.getByText("PassOut"));
     fireEvent.click(screen.getByText("Submit"));
-
     expect(onOk).toHaveBeenCalledWith("PO");
   });
 
   it("handles Not Played", () => {
     render(<EnterContractPage {...baseProps} />);
-
     fireEvent.click(screen.getByText("NotPlayed"));
     fireEvent.click(screen.getByText("Submit"));
-
     expect(onOk).toHaveBeenCalledWith("NP");
   });
 
   it("builds contract when all fields selected", () => {
     render(<EnterContractPage {...baseProps} />);
-
     fireEvent.click(screen.getByText("level"));
     fireEvent.click(screen.getByText("suit"));
     fireEvent.click(screen.getByText("declarer"));
     fireEvent.click(screen.getByText("dbl"));
-
     fireEvent.click(screen.getByText("Submit"));
-
     expect(onOk).toHaveBeenCalledWith("1SXN");
   });
 
   it("resets state when PassOut is clicked", () => {
     render(<EnterContractPage {...baseProps} />);
-
     fireEvent.click(screen.getByText("PassOut"));
-
     fireEvent.click(screen.getByText("Submit"));
-
     expect(onOk).toHaveBeenCalledWith("PO");
   });
 
   it("renders board selector options", () => {
     render(<EnterContractPage {...baseProps} />);
-
     expect(screen.getByText("1")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();

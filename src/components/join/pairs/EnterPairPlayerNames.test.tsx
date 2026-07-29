@@ -2,108 +2,48 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import EnterPairPlayerNames from "./EnterPairPlayerNames";
 
-// Mock FormCardLayout
-vi.mock("@/components/layout/FormCardLayout", () => ({
-  default: ({ header, headerColor, primaryText, onSubmit, children }: any) => (
-    <form data-header={header} data-color={headerColor} onSubmit={onSubmit}>
-      {children}
-      <button type="submit">{primaryText}</button>
-    </form>
-  ),
-}));
-
-// Mock TextField
-vi.mock("@/components/common/TextField", () => ({
+// Mock PlayerSearch — the component renders a label heading and a search input
+vi.mock("@/components/pages/join/PlayerSearch", () => ({
   default: ({ label, value, onChange }: any) => (
-    <input
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
+    <div>
+      <span data-testid={`player-search-label-${label}`}>{label} Player</span>
+      <input
+        aria-label={`${label} Player`}
+        data-testid={`player-search-${label}`}
+        defaultValue={value?.firstName ?? ""}
+        onChange={(e) =>
+          onChange(e.target.value ? { firstName: e.target.value, lastName: "" } : null)
+        }
+      />
+    </div>
   ),
 }));
 
 describe("EnterPlayerNames", () => {
   it("renders NS labels correctly", () => {
-    const seat = "1NS";
-
-    render(<EnterPairPlayerNames seat={seat} onSubmitPair={vi.fn()} />);
-
+    render(<EnterPairPlayerNames seat="1NS" onSubmitPair={vi.fn()} />);
     expect(screen.getByLabelText("North Player")).toBeInTheDocument();
-
     expect(screen.getByLabelText("South Player")).toBeInTheDocument();
   });
 
   it("renders EW labels correctly", () => {
-    const seat = "1EW";
-
-    render(<EnterPairPlayerNames seat={seat} onSubmitPair={vi.fn()} />);
-
+    render(<EnterPairPlayerNames seat="1EW" onSubmitPair={vi.fn()} />);
     expect(screen.getByLabelText("East Player")).toBeInTheDocument();
-
     expect(screen.getByLabelText("West Player")).toBeInTheDocument();
   });
 
-  // it("applies correct header color for NS", () => {
-  //     render(
-  //         <EnterPlayerNames
-  //             direction="NS"
-  //             submitPlayerNames={vi.fn()}
-  //         />
-  //     );
-  //
-  //     expect(
-  //         screen.getByRole("form")
-  //     ).toHaveAttribute("data-color", "bg-blue-600");
-  // });
+  it("renders table number in header", () => {
+    render(<EnterPairPlayerNames seat="3NS" onSubmitPair={vi.fn()} />);
+    expect(screen.getByText("Table 3")).toBeInTheDocument();
+  });
 
-  // it("applies correct header color for EW", () => {
-  //     render(
-  //         <EnterPlayerNames
-  //             direction="EW"
-  //             submitPlayerNames={vi.fn()}
-  //         />
-  //     );
-  //
-  //     expect(
-  //         screen.getByRole("form")
-  //     ).toHaveAttribute("data-color", "bg-green-600");
-  // });
+  it("renders Enter Pair submit button", () => {
+    render(<EnterPairPlayerNames seat="1NS" onSubmitPair={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Enter Pair" })).toBeInTheDocument();
+  });
 
-  // it("submits player names", () => {
-  //   const fn = vi.fn();
-  //
-  //   render(<EnterPairPlayerNames direction="NS" onSubmitPair={fn} />);
-  //
-  //   fireEvent.change(screen.getByLabelText("North Player"), {
-  //     target: { value: "Alice" },
-  //   });
-  //
-  //   fireEvent.change(screen.getByLabelText("South Player"), {
-  //     target: { value: "Bob" },
-  //   });
-  //
-  //   fireEvent.click(screen.getByText("Continue"));
-  //
-  //   expect(fn).toHaveBeenCalledWith("Alice", "Bob");
-  // });
-
-  // it("prevents default form submit behavior", () => {
-  //   const fn = vi.fn();
-  //
-  //   render(<EnterPairPlayerNames direction="NS" onSubmitPair={fn} />);
-  //
-  //   const form = screen.getByText("Continue").closest("form")!;
-  //
-  //   const event = new Event("submit", {
-  //     bubbles: true,
-  //     cancelable: true,
-  //   });
-  //
-  //   const preventDefaultSpy = vi.spyOn(event, "preventDefault");
-  //
-  //   form.dispatchEvent(event);
-  //
-  //   expect(preventDefaultSpy).toHaveBeenCalled();
-  // });
+  it("submit button is disabled when no players selected", () => {
+    render(<EnterPairPlayerNames seat="1NS" onSubmitPair={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Enter Pair" })).toBeDisabled();
+  });
 });
