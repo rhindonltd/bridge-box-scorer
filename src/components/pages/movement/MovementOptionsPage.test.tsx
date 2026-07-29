@@ -2,9 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import MovementOptionsPage from "./MovementOptionsPage";
 
-// Mock children to isolate logic
-vi.mock("@/components/common/SectionInfo", () => ({
-  SectionInfo: () => <div data-testid="section-info" />,
+vi.mock("@/components/common/GameInfo", () => ({
+  GameInfo: () => <div data-testid="game-info" />,
 }));
 
 vi.mock("@/components/layout/FormCardLayout", () => ({
@@ -23,10 +22,11 @@ vi.mock("@/components/layout/FormCardLayout", () => ({
 }));
 
 vi.mock("@/components/common/SelectField", () => ({
+  // options is SelectOption[] — render first option's label as current value
   default: ({ value, onSelect, options }: any) => (
     <div>
       <div data-testid="select-value">{value}</div>
-      <button onClick={() => onSelect(options[1])}>Change Select</button>
+      <button onClick={() => onSelect(options[1]?.value)}>Change Select</button>
     </div>
   ),
 }));
@@ -46,48 +46,25 @@ describe("MovementOptionsPage", () => {
     onSubmit: vi.fn(),
   };
 
-  it("renders SectionInfo", () => {
+  it("renders GameInfo", () => {
     render(<MovementOptionsPage {...baseProps} />);
-
-    expect(screen.getByTestId("section-info")).toBeInTheDocument();
+    expect(screen.getByTestId("game-info")).toBeInTheDocument();
   });
 
   it("renders FormCardLayout", () => {
     render(<MovementOptionsPage {...baseProps} />);
-
     expect(screen.getByTestId("form")).toBeInTheDocument();
   });
 
-  it("generates missing pair options correctly", () => {
+  it("generates missing pair options correctly — default is 'None'", () => {
     render(<MovementOptionsPage {...baseProps} />);
-
-    // default is "None"
     expect(screen.getByTestId("select-value")).toHaveTextContent("None");
   });
 
-  // it("updates missing pair selection", () => {
-  //   render(<MovementOptionsPage {...baseProps} />);
-  //
-  //   fireEvent.click(screen.getByText("Change Select"));
-  //
-  //   expect(screen.getByTestId("select-value")).not.toHaveTextContent("None");
-  // });
-
-  // it("updates arrow switched rounds", () => {
-  //     render(<MovementOptionsPage {...baseProps} />);
-  //
-  //     fireEvent.click(screen.getByText("Change Number"));
-  //
-  //     expect(screen.getByTestId("number-value")).toHaveTextContent("3");
-  // });
-
   it("submits form with selected values", () => {
     const fn = vi.fn();
-
     render(<MovementOptionsPage {...baseProps} onSubmit={fn} />);
-
     fireEvent.submit(screen.getByTestId("form"));
-
     expect(fn).toHaveBeenCalledWith({
       missingPair: "None",
       arrowSwitchedRounds: 0,
@@ -96,9 +73,7 @@ describe("MovementOptionsPage", () => {
 
   it("applies page layout classes", () => {
     const { container } = render(<MovementOptionsPage {...baseProps} />);
-
     const root = container.firstChild as HTMLElement;
-
     expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
   });
 });

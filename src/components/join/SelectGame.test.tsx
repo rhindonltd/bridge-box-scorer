@@ -4,13 +4,12 @@ import SelectGame from "./SelectGame";
 
 describe("SelectGame", () => {
   const mockGames = [
-    { id: 1, eventName: "Game A" },
-    { id: 2, eventName: "Game B" },
+    { gameId: "id-a", eventName: "Game A" },
+    { gameId: "id-b", eventName: "Game B" },
   ] as any;
 
   it("shows empty state when no games exist", () => {
     render(<SelectGame games={[]} onGameSelected={vi.fn()} />);
-
     expect(
       screen.getByText("No games yet. Waiting for director..."),
     ).toBeInTheDocument();
@@ -18,7 +17,6 @@ describe("SelectGame", () => {
 
   it("shows selection prompt when games exist", () => {
     render(<SelectGame games={mockGames} onGameSelected={vi.fn()} />);
-
     expect(
       screen.getByText("Please select the game you wish to join:"),
     ).toBeInTheDocument();
@@ -26,44 +24,33 @@ describe("SelectGame", () => {
 
   it("renders all game buttons", () => {
     render(<SelectGame games={mockGames} onGameSelected={vi.fn()} />);
-
     expect(screen.getByText("Game A")).toBeInTheDocument();
     expect(screen.getByText("Game B")).toBeInTheDocument();
   });
 
-  it("calls onGameSelected when a game is clicked", () => {
+  it("calls onGameSelected with gameId when a game is clicked", () => {
     const fn = vi.fn();
-
     render(<SelectGame games={mockGames} onGameSelected={fn} />);
-
     fireEvent.click(screen.getByText("Game A"));
-
-    expect(fn).toHaveBeenCalledWith(mockGames[0]);
+    expect(fn).toHaveBeenCalledWith("id-a");
   });
 
   it("calls onGameSelected for second game", () => {
     const fn = vi.fn();
-
     render(<SelectGame games={mockGames} onGameSelected={fn} />);
-
     fireEvent.click(screen.getByText("Game B"));
-
-    expect(fn).toHaveBeenCalledWith(mockGames[1]);
+    expect(fn).toHaveBeenCalledWith("id-b");
   });
 
   it("renders correct number of buttons", () => {
     render(<SelectGame games={mockGames} onGameSelected={vi.fn()} />);
-
     const buttons = screen.getAllByRole("button");
-
     expect(buttons).toHaveLength(2);
   });
 
   it("applies button styling classes", () => {
     render(<SelectGame games={mockGames} onGameSelected={vi.fn()} />);
-
     const button = screen.getByText("Game A");
-
     expect(button).toHaveClass(
       "w-full",
       "py-3",

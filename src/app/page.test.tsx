@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import PlayerLobbyPage from "./page";
 
-// Mock router
 const pushMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -11,7 +10,6 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-// Mock MainMenuPage
 vi.mock("@/components/pages/mainmenu/MainMenuPage", () => ({
   MainMenuPage: ({
     onCreateNewGame,
@@ -35,39 +33,30 @@ describe("PlayerLobbyPage", () => {
 
   it("navigates to /create when create game is clicked", () => {
     render(<PlayerLobbyPage />);
-
     fireEvent.click(screen.getByText("Create Game"));
-
     expect(pushMock).toHaveBeenCalledWith("/create");
   });
 
-  it("navigates to /game/join when join game is clicked", () => {
+  it("navigates to /join when join game is clicked", () => {
     render(<PlayerLobbyPage />);
-
     fireEvent.click(screen.getByText("Join Game"));
-
-    expect(pushMock).toHaveBeenCalledWith("/game/join");
+    expect(pushMock).toHaveBeenCalledWith("/join");
   });
 
   it("navigates to /manage when manage games is clicked", () => {
     render(<PlayerLobbyPage />);
-
     fireEvent.click(screen.getByText("Manage Games"));
-
     expect(pushMock).toHaveBeenCalledWith("/manage");
   });
 
   it("navigates to /settings/wifi when settings is clicked", () => {
     render(<PlayerLobbyPage />);
-
     fireEvent.click(screen.getByText("Settings"));
-
     expect(pushMock).toHaveBeenCalledWith("/settings/wifi");
   });
 
   it("renders the main menu page", () => {
     render(<PlayerLobbyPage />);
-
     expect(screen.getByText("Create Game")).toBeInTheDocument();
     expect(screen.getByText("Join Game")).toBeInTheDocument();
     expect(screen.getByText("Manage Games")).toBeInTheDocument();

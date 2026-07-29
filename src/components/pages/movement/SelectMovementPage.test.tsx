@@ -1,10 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import SelectMovementPage from "./SelectMovementPage";
 
-// Mock dependencies
-vi.mock("@/components/common/SectionInfo", () => ({
-  SectionInfo: () => <div data-testid="section-info" />,
+vi.mock("@/components/common/GameInfo", () => ({
+  GameInfo: () => <div data-testid="game-info" />,
 }));
 
 vi.mock("@/components/layout/FormCardLayout", () => ({
@@ -24,11 +23,11 @@ vi.mock("@/components/layout/FormCardLayout", () => ({
 }));
 
 vi.mock("@/components/common/SelectField", () => ({
+  // options is SelectOption[] with {label, value} — expose first option's name
   default: ({ value, onSelect, options }: any) => (
     <div>
       <div data-testid="movement-value">{value}</div>
-      <div data-testid="options">{options.join(",")}</div>
-      <button onClick={() => onSelect(options[0])}>Select First</button>
+      <button onClick={() => onSelect(options[0]?.value)}>Select First</button>
     </div>
   ),
 }));
@@ -48,76 +47,43 @@ describe("SelectMovementPage", () => {
     onConfirm: vi.fn(),
   };
 
-  it("renders SectionInfo", () => {
+  it("renders GameInfo", () => {
     render(<SelectMovementPage {...baseProps} />);
-
-    expect(screen.getByTestId("section-info")).toBeInTheDocument();
+    expect(screen.getByTestId("game-info")).toBeInTheDocument();
   });
 
   it("renders default movement state", () => {
     render(<SelectMovementPage {...baseProps} />);
-
     expect(screen.getByTestId("movement-value")).toBeTruthy();
   });
 
   it("computes movement name based on inputs", () => {
     render(<SelectMovementPage {...baseProps} tables={4} />);
-
-    // initial rounds = 3
     expect(screen.getByTestId("movement-value")).toBeInTheDocument();
   });
 
-  // it("updates rounds", () => {
-  //     render(<SelectMovementPage {...baseProps} />);
-  //
-  //     const roundsStepper = screen.getByTestId("stepper-Number of rounds:");
-  //     fireEvent.click(within(roundsStepper).getByText("Increment"));
-  //
-  //     expect(screen.getByTestId("number-value")).not.toHaveTextContent("3");
-  // });
-
-  // it("updates boards per round", () => {
-  //     render(<SelectMovementPage {...baseProps} />);
-  //
-  //     const buttons = screen.getAllByText("Increment");
-  //
-  //     fireEvent.click(buttons[1]);
-  //
-  //     expect(
-  //         screen.getByTestId("number-value-Boards per round:")
-  //     ).toBeInTheDocument();
-  // });
-
   it("changes selected movement", () => {
     render(<SelectMovementPage {...baseProps} />);
-
     fireEvent.click(screen.getByText("Select First"));
-
     expect(screen.getByTestId("movement-value")).toBeTruthy();
   });
 
-  it("disables submit when no movement", () => {
+  it("disables submit when no movement — default has a movement so disabled=false", () => {
     render(<SelectMovementPage {...baseProps} />);
-
     expect(screen.getByTestId("disabled")).toHaveTextContent("false");
   });
 
   it("submits selected movement", () => {
     const fn = vi.fn();
-
     render(<SelectMovementPage {...baseProps} onConfirm={fn} />);
-
     fireEvent.submit(screen.getByTestId("form"));
-
     expect(fn).toHaveBeenCalledTimes(1);
     expect(fn.mock.calls[0][0]).toHaveProperty("name");
   });
 
   it("applies layout classes", () => {
     const { container } = render(<SelectMovementPage {...baseProps} />);
-
     const root = container.firstChild as HTMLElement;
-
     expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
   });
 });

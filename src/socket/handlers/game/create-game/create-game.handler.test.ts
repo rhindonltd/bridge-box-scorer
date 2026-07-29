@@ -14,6 +14,10 @@ vi.mock("@/db/game-index/queries/find-joinable-games", () => ({
   findJoinableGames: vi.fn(),
 }));
 
+vi.mock("@/db/system/queries/find-login-session", () => ({
+  findLoginSession: vi.fn(),
+}));
+
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
@@ -28,6 +32,8 @@ describe("registerCreateGameHandler", () => {
     vi.clearAllMocks();
 
     socket = {
+      data: { isDirector: true },
+      id: "test-socket",
       on: vi.fn((event, cb) => {
         handler = cb;
       }),
@@ -40,7 +46,6 @@ describe("registerCreateGameHandler", () => {
 
   it("registers CREATE_GAME handler", () => {
     registerCreateGameHandler(socket, io);
-
     expect(socket.on).toHaveBeenCalledWith(
       SocketEvents.CREATE_GAME,
       expect.any(Function),
@@ -49,51 +54,52 @@ describe("registerCreateGameHandler", () => {
 
   it("creates game successfully and emits JOINABLE_GAMES", async () => {
     const newBridgeGame = { name: "test-game" };
+    const bridgeGame = { gameId: "123", gameType: "BRIDGE" };
 
-    const bridgeGame = {
-      gameId: "123",
-      gameType: "BRIDGE",
-    };
-
-    (createBridgeGame as any).mockResolvedValue(bridgeGame);
-    (createGameDb as any).mockResolvedValue(undefined);
-    (findJoinableGames as any).mockResolvedValue([{ gameId: "123" }]);
+    vi.mocked(createBridgeGame).mockResolvedValue(bridgeGame as any);
+    vi.mocked(createGameDb).mockResolvedValue(undefined);
+    vi.mocked(findJoinableGames).mockResolvedValue([{ gameId: "123" }] as any);
 
     registerCreateGameHandler(socket, io);
-
-    await handler(newBridgeGame, vi.fn());
 
     const cb = vi.fn();
     await handler(newBridgeGame, cb);
 
     expect(createBridgeGame).toHaveBeenCalledWith(newBridgeGame);
-
     expect(createGameDb).toHaveBeenCalledWith("123", "BRIDGE");
-
     expect(cb).toHaveBeenCalledWith({
-      game: bridgeGame,
+      data: { game: bridgeGame },
       success: true,
     });
-
-    expect(io.emit).toHaveBeenCalledWith(SocketEvents.JOINABLE_GAMES, [
-      { gameId: "123" },
-    ]);
+    expect(io.emit).toHaveBeenCalledWith(SocketEvents.JOINABLE_GAMES, {
+      joinableGames: [{ gameId: "123" }],
+    });
   });
 
   it("returns failure when an error occurs", async () => {
     const newBridgeGame = { name: "bad-game" };
     const cb = vi.fn();
 
-    (createBridgeGame as any).mockRejectedValue(new Error("fail"));
+    vi.mocked(createBridgeGame).mockRejectedValue(new Error("fail"));
 
     registerCreateGameHandler(socket, io);
 
     await handler(newBridgeGame, cb);
 
-    expect(cb).toHaveBeenCalledWith({
-      success: false,
-    });
-
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false }),
+    );
     expect(io.emit).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-director sockets", async () => {
+    socket.data.isDirector = false;
+    const cb = vi.fn();
+
+    registerCreateGameHandler(socket, io);
+    await handler({ name: "game" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
+    expect(createBridgeGame).not.toHaveBeenCalled();
   });
 });
