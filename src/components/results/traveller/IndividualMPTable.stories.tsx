@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { IndividualMPTable } from "@/components/results/traveller/IndividualMPTable";
 import { individualMpTraveller } from "@/mocks/fixtures/traveller/individual-mp";
 

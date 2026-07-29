@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { fn } from "storybook/test";
 import { CreateGamePage } from "./CreateGamePage";
 
 const meta: Meta<typeof CreateGamePage> = {
