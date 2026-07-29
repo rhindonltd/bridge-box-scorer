@@ -5,8 +5,8 @@ import { SocketEventMap } from "@/socket/socket-event-map";
 
 export function useSocketSWRSync<E extends keyof SocketEventMap>(
   event: E,
-  handler: (payload: SocketEventMap[E]) => { key: string; data: any } | null,
-  deps: any[] = [],
+  handler: (payload: SocketEventMap[E]) => { key: string; data: unknown } | null,
+  deps: unknown[] = [],
 ) {
   useEffect(() => {
     const socket = getSocket();
@@ -24,5 +24,6 @@ export function useSocketSWRSync<E extends keyof SocketEventMap>(
     return () => {
       socket.off(event as string, onEvent);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

@@ -28,7 +28,7 @@ export async function createEngine(
     remainingMs: playDuration * 1000,
   };
 
-  let engine = new BridgeTimerEngine(newTimerState);
+  const engine = new BridgeTimerEngine(newTimerState);
 
   await updateTimerState(gameType, gameId, newTimerState);
 

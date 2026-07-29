@@ -20,6 +20,7 @@ export default function SelectGame({ games, onGameSelected }: Props) {
           <div className="flex flex-col gap-4 px-4 pb-6 max-w-md w-full mx-auto relative z-10">
             {games.map((game) => (
               <button
+                key={game.gameId}
                 onClick={() => onGameSelected(game.gameId)}
                 className="w-full py-3 text-lg font-semibold bg-blue-300 rounded-lg hover:bg-blue-700 active:scale-[0.98] transition"
               >

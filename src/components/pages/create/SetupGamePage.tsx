@@ -15,12 +15,11 @@ const setupGameFlow = createFlow(
 
 export function SetupGamePage() {
   const { game } = useGame();
+  const { step, goTo } = useFlow(setupGameFlow, {}, `/create/${game?.gameId}`);
 
   if (!game) {
     return null;
   }
-
-  const { step, goTo } = useFlow(setupGameFlow, {}, `/create/${game!.gameId}`);
 
   if (step === "tables") {
     return <ShowTablesPage onShowMovementsPage={() => goTo("movements")} />;

@@ -26,6 +26,21 @@ const eslintConfig = defineConfig([
       },
     },
   },
+
+  // Allow `any` in test files, mock factories, storybook decorators, and test helpers
+  // where precise typing of mock returns adds no value.
+  {
+    files: [
+      "**/*.test.{ts,tsx}",
+      "**/*.int.test.{ts,tsx}",
+      "**/*.stories.{ts,tsx}",
+      ".storybook/**/*.{ts,tsx}",
+      "src/socket/test/**/*.ts",
+    ],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

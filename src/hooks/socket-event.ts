@@ -4,7 +4,7 @@ import { getSocket } from "@/lib/socket";
 export function useSocketEvent<T>(
   event: string,
   handler: (payload: T) => void,
-  deps: any[] = [],
+  deps: unknown[] = [],
 ) {
   useEffect(() => {
     const socket = getSocket();
@@ -14,5 +14,6 @@ export function useSocketEvent<T>(
     return () => {
       socket.off(event, handler);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }

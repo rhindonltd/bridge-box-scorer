@@ -1,6 +1,6 @@
-# total -> 452
+# total -> 454
 
-# MIT - 388
+# MIT - 390
 
 # MIT-0 - 1
 
@@ -97,6 +97,12 @@
 
  1. https://github.com/drizzle-team/brocli
  2. Apache-2.0
+
+# @emnapi/core@1.9.2
+
+
+ 1. https://github.com/toyobayashi/emnapi
+ 2. MIT
 
 # @envelop/instrumentation@1.0.0
 
@@ -402,6 +408,12 @@
 
 
  1. https://github.com/tsconfig/bases
+ 2. MIT
+
+# @tybys/wasm-util@0.10.3
+
+
+ 1. https://github.com/toyobayashi/wasm-util
  2. MIT
 
 # @types/aria-query@5.0.4
