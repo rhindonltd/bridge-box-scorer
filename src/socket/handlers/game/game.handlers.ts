@@ -4,11 +4,15 @@ import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-g
 import { registerSelectMovementHandler } from "@/socket/handlers/game/select-movement/select-movement.handler";
 import { registerLeaveGameHandler } from "@/socket/handlers/game/leave-game/leave-game.handler";
 import { registerCreateParticipantHandler } from "./create-participant/create-participant";
+import { registerUpdateTablesHandler } from "./update-tables/update-tables.handler";
+import { registerEvictParticipantHandler } from "./evict-participant/evict-participant.handler";
 
 export function registerGameHandlers(socket: Socket, io: Server) {
   registerCreateGameHandler(socket, io);
   registerCreateParticipantHandler(socket, io);
+  registerEvictParticipantHandler(socket, io);
   registerJoinGameHandler(socket);
   registerLeaveGameHandler(socket);
   registerSelectMovementHandler(socket);
+  registerUpdateTablesHandler(socket, io);
 }

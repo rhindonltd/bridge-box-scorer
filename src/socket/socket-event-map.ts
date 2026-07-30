@@ -1,5 +1,5 @@
 import { BridgeGame } from "@/db/game-index/schema";
-import { Participant } from "@/model/participants";
+import { Participant, Seat } from "@/model/participants";
 import { SocketEvents } from "@/socket/socket-events";
 
 export type SocketEventMap = {
@@ -15,5 +15,9 @@ export type SocketEventMap = {
 
   [SocketEvents.JOINABLE_GAMES]: {
     joinableGames: BridgeGame[];
+  };
+
+  [SocketEvents.GAME_UPDATED]: {
+    game: BridgeGame;
   };
 };

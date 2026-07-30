@@ -39,11 +39,17 @@ export function GameProvider({
       socket.emit(SocketEvents.JOIN_GAME, { gameId });
     };
 
+    const handleGameUpdated = (payload: { game: BridgeGame }) => {
+      mutate(payload.game, false);
+    };
+
     socket.on(SocketEvents.CONNECT, handleReconnect);
+    socket.on(SocketEvents.GAME_UPDATED, handleGameUpdated);
 
     return () => {
       socket.emit(SocketEvents.LEAVE_GAME, { gameId });
       socket.off(SocketEvents.CONNECT, handleReconnect);
+      socket.off(SocketEvents.GAME_UPDATED, handleGameUpdated);
     };
   }, [gameId]);
 
