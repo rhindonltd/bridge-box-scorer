@@ -26,3 +26,14 @@ export const club = sqliteTable("club", {
 
 export type Club = typeof club.$inferSelect;
 export type NewClub = typeof club.$inferInsert;
+
+/* share_codes — short-lived codes for director handoff */
+export const shareCodes = sqliteTable("share_codes", {
+  code: text("code").primaryKey(),
+  gameId: text("game_id").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  used: integer("used").notNull().default(0),
+});
+
+export type ShareCode = typeof shareCodes.$inferSelect;
+export type NewShareCode = typeof shareCodes.$inferInsert;

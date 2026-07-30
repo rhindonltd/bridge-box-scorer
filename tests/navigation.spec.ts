@@ -24,7 +24,7 @@ test.describe("Main Menu Navigation", () => {
       page.getByRole("button", { name: "Create New Game" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Manage Past Games" }),
+      page.getByRole("button", { name: "Manage Games" }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Settings" }),
@@ -43,9 +43,9 @@ test.describe("Main Menu Navigation", () => {
     await expect(page).toHaveURL(/\/create/);
   });
 
-  test("'Manage Past Games' navigates to /manage", async ({ page }) => {
+  test("'Manage Games' navigates to /manage", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Manage Past Games" }).click();
+    await page.getByRole("button", { name: "Manage Games" }).click();
     await expect(page).toHaveURL(/\/manage/);
   });
 

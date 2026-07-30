@@ -10,6 +10,8 @@ export const SocketEvents = {
   SELECT_MOVEMENT: "game:selectMovement",
   UPDATE_TABLES: "game:updateTables",
   LEAVE_GAME: "game:leave",
+  GENERATE_SHARE_CODE: "game:generateShareCode",
+  CLAIM_DIRECTOR_CODE: "game:claimDirectorCode",
 
   // Server initiated - Global
   JOINABLE_GAMES: "joinable-games",

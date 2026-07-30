@@ -6,6 +6,7 @@ import { registerLeaveGameHandler } from "@/socket/handlers/game/leave-game/leav
 import { registerCreateParticipantHandler } from "./create-participant/create-participant";
 import { registerUpdateTablesHandler } from "./update-tables/update-tables.handler";
 import { registerEvictParticipantHandler } from "./evict-participant/evict-participant.handler";
+import { registerShareCodeHandlers } from "./share-code/share-code.handler";
 
 export function registerGameHandlers(socket: Socket, io: Server) {
   registerCreateGameHandler(socket, io);
@@ -15,4 +16,5 @@ export function registerGameHandlers(socket: Socket, io: Server) {
   registerLeaveGameHandler(socket);
   registerSelectMovementHandler(socket);
   registerUpdateTablesHandler(socket, io);
+  registerShareCodeHandlers(socket, io);
 }

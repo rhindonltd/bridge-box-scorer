@@ -53,10 +53,10 @@ describe("MainMenuPage", () => {
     expect(baseProps.onCreateNewGame).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onManagePastGames when Manage Past Games clicked", () => {
+  it("calls onManagePastGames when Manage Games clicked", () => {
     render(<MainMenuPage {...baseProps} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Manage Past Games" }));
+    fireEvent.click(screen.getByRole("button", { name: "Manage Games" }));
 
     expect(baseProps.onManagePastGames).toHaveBeenCalledTimes(1);
   });
@@ -80,6 +80,6 @@ describe("MainMenuPage", () => {
 
     expect(screen.getByText("Join Game")).toBeInTheDocument();
     expect(screen.getByText("Create New Game")).toBeInTheDocument();
-    expect(screen.getByText("Manage Past Games")).toBeInTheDocument();
+    expect(screen.getByText("Manage Games")).toBeInTheDocument();
   });
 });
