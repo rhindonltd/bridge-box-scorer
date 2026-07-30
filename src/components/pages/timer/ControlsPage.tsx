@@ -95,22 +95,22 @@ export default function ControlsPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-950 text-white flex flex-col items-center justify-center gap-6 p-6">
+    <div className="min-h-dvh bg-white text-gray-900 flex flex-col items-center justify-center gap-6 p-6">
       <h1 className="text-3xl font-bold mb-2">Director Controls</h1>
 
       {/* STATUS PANEL */}
-      <div className="w-full max-w-md bg-gray-900 rounded-lg p-4 text-sm">
+      <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
         {hasSession ? (
           <>
             <div className="flex justify-between">
-              <span className="text-white/60">Status</span>
+              <span className="text-gray-500">Status</span>
               <span className="capitalize">
                 {timer.isRunning ? timer.phase : "paused"}
               </span>
             </div>
 
             <div className="flex justify-between mt-2">
-              <span className="text-white/60">Remaining</span>
+              <span className="text-gray-500">Remaining</span>
               <span>
                 {timer.phase === "finished"
                   ? "00:00"
@@ -119,13 +119,13 @@ export default function ControlsPage() {
             </div>
 
             <div className="flex justify-between mt-2">
-              <span className="text-white/60">Round</span>
+              <span className="text-gray-500">Round</span>
               <span>{timer.round}</span>
             </div>
 
             {timer.projectedEndDate && (
               <div className="flex justify-between mt-2">
-                <span className="text-white/60">Live End</span>
+                <span className="text-gray-500">Live End</span>
                 <span>
                   {timer.projectedEndDate.toLocaleTimeString([], {
                     hour: "2-digit",
@@ -137,15 +137,15 @@ export default function ControlsPage() {
           </>
         ) : (
           <>
-            <div className="text-white/50 mb-2">No active session</div>
+            <div className="text-gray-500 mb-2">No active session</div>
 
             <div className="flex justify-between">
-              <span className="text-white/60">Session Length</span>
+              <span className="text-gray-500">Session Length</span>
               <span>{formatDuration(totalSessionSeconds)}</span>
             </div>
 
             <div className="flex justify-between mt-2">
-              <span className="text-white/60">Preview End</span>
+              <span className="text-gray-500">Preview End</span>
               <span>
                 {previewEndDate.toLocaleTimeString([], {
                   hour: "2-digit",
@@ -160,7 +160,7 @@ export default function ControlsPage() {
       {/* CONFIG */}
       <div className="grid grid-cols-2 gap-4 w-full max-w-md">
         <div className="flex flex-col gap-1">
-          <label htmlFor="boards-per-round" className="text-sm text-white/60">
+          <label htmlFor="boards-per-round" className="text-sm text-gray-600">
             Boards / Round
           </label>
           <input
@@ -168,12 +168,12 @@ export default function ControlsPage() {
             type="number"
             value={boardsPerRound}
             onChange={(e) => setBoardsPerRound(Number(e.target.value))}
-            className="p-2 rounded bg-gray-800"
+            className="p-2 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="total-rounds" className="text-sm text-white/60">
+          <label htmlFor="total-rounds" className="text-sm text-gray-600">
             Total Rounds
           </label>
           <input
@@ -181,7 +181,7 @@ export default function ControlsPage() {
             type="number"
             value={totalRounds}
             onChange={(e) => setTotalRounds(Number(e.target.value))}
-            className="p-2 rounded bg-gray-800"
+            className="p-2 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
@@ -209,42 +209,42 @@ export default function ControlsPage() {
         </fieldset>
 
         <div className="flex flex-col gap-1">
-          <span className="text-sm text-white/60">Play Duration</span>
+          <span className="text-sm text-gray-600">Play Duration</span>
           <div className="flex gap-2">
             <input
               aria-label="Play minutes"
               type="number"
               value={playMinutes}
               onChange={(e) => setPlayMinutes(Number(e.target.value))}
-              className="p-2 rounded bg-gray-800 w-20"
+              className="p-2 w-20 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <input
               aria-label="Play seconds"
               type="number"
               value={playSeconds}
               onChange={(e) => setPlaySeconds(Number(e.target.value))}
-              className="p-2 rounded bg-gray-800 w-20"
+              className="p-2 w-20 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               max={59}
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-sm text-white/60">Move Duration</span>
+          <span className="text-sm text-gray-600">Move Duration</span>
           <div className="flex gap-2">
             <input
               aria-label="Move minutes"
               type="number"
               value={moveMinutes}
               onChange={(e) => setMoveMinutes(Number(e.target.value))}
-              className="p-2 rounded bg-gray-800 w-20"
+              className="p-2 w-20 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <input
               aria-label="Move seconds"
               type="number"
               value={moveSeconds}
               onChange={(e) => setMoveSeconds(Number(e.target.value))}
-              className="p-2 rounded bg-gray-800 w-20"
+              className="p-2 w-20 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               max={59}
             />
           </div>
@@ -256,7 +256,7 @@ export default function ControlsPage() {
         {!hasSession ? (
           <button
             onClick={() => emitConfig(SocketEvents.CREATE_TIMER)}
-            className="bg-cyan-600 py-6 rounded-xl text-xl font-semibold col-span-2"
+            className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             Create
           </button>
@@ -264,21 +264,21 @@ export default function ControlsPage() {
           <>
             <button
               onClick={() => emitConfig(SocketEvents.UPDATE_CONFIG_TIMER)}
-              className="bg-blue-600 py-6 rounded-xl text-xl font-semibold col-span-2"
+              className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               Apply Changes
             </button>
 
             <button
               onClick={() => emitSimple(SocketEvents.START_TIMER)}
-              className="bg-green-600 py-6 rounded-xl text-xl font-semibold"
+              className="bg-green-600 text-white py-6 rounded-xl text-xl font-semibold hover:bg-green-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
             >
               Start
             </button>
 
             <button
               onClick={() => emitSimple(SocketEvents.PAUSE_TIMER)}
-              className="bg-yellow-600 py-6 rounded-xl text-xl font-semibold"
+              className="bg-yellow-500 text-gray-900 py-6 rounded-xl text-xl font-semibold hover:bg-yellow-600 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
             >
               Pause
             </button>
