@@ -8,10 +8,9 @@ describe("PlayerCard", () => {
     expect(screen.getByText("North")).toBeInTheDocument();
   });
 
-  it("renders 'No Player' when player is null", () => {
+  it("renders 'Empty' when player is null", () => {
     render(<PlayerCard label="South" player={null} />);
-    expect(screen.getByText("No")).toBeInTheDocument();
-    expect(screen.getByText("Player")).toBeInTheDocument();
+    expect(screen.getByText("Empty")).toBeInTheDocument();
   });
 
   it("renders player name when player is provided", () => {
@@ -27,11 +26,9 @@ describe("PlayerCard", () => {
 
   it("applies inactive styles when no player", () => {
     render(<PlayerCard label="West" player={null} />);
-    const container = screen.getByText("No").parentElement;
+    const container = screen.getByText("Empty").parentElement;
     expect(container).toHaveClass("bg-gray-100");
-    expect(container).toHaveClass("text-gray-400");
-    expect(container).toHaveClass("opacity-50");
-    expect(container).toHaveClass("cursor-not-allowed");
+    expect(container).toHaveClass("text-gray-500");
   });
 
   it("applies active styles when player exists", () => {

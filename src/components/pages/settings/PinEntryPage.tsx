@@ -22,19 +22,33 @@ export function PinEntryPage({ correctPin, onSuccess }: PinEntryProps) {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-xl shadow-md font-sans min-h-dvh">
-      <h2 className="text-2xl font-bold mb-4">Enter PIN to continue</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="password"
-          value={pinInput}
-          onChange={(e) => setPinInput(e.target.value)}
-          placeholder="PIN"
-          autoFocus
-        />
-        <Button type="submit" value="Enter" />
+    <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md min-h-dvh flex flex-col justify-center">
+      <h1 className="text-2xl font-bold mb-6 text-center">Enter PIN to continue</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="pin-input" className="text-sm font-semibold text-gray-700">
+            PIN
+          </label>
+          <input
+            id="pin-input"
+            type="password"
+            value={pinInput}
+            onChange={(e) => setPinInput(e.target.value)}
+            placeholder="Enter PIN"
+            autoFocus
+            aria-describedby={error ? "pin-error" : undefined}
+            className="p-3 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+
+        {error && (
+          <p id="pin-error" role="alert" className="text-red-600 text-sm">
+            {error}
+          </p>
+        )}
+
+        <Button type="submit" value="Enter" className="w-full" />
       </form>
-      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
 }

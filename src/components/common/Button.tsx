@@ -23,7 +23,7 @@ export default function Button({
     <button
       type={type}
       disabled={disabled}
-      className={`flex-1 border py-3 text-lg font-semibold rounded-xl active:scale-[0.98] transition disabled:opacity-50 ${textColour} ${bgColour} ${hoverColour} ${className}`}
+      className={`flex-1 border border-transparent py-3 text-lg font-semibold rounded-xl active:scale-[0.98] transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${textColour} ${bgColour} ${hoverColour} ${className}`}
       onClick={onClick}
     >
       {value}
