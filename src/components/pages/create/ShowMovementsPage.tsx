@@ -69,11 +69,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     return null;
   }
 
-  function handleMovementClicked(
-    id: number,
-    type: string,
-    name: string,
-  ) {
+  function handleMovementClicked(id: number, type: string, name: string) {
     setSelected({ id, type, name });
   }
 
@@ -111,46 +107,91 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     );
   }
 
-  // Movement list view
+  // Movement list view — grouped by type with section headings
   return (
-    <>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 p-4">
-        {shouldLoadIndividual &&
-          (individualMovements ?? []).map((movement) => (
-            <MovementCard
-              key={`${movement.type}-${movement.id}`}
-              movement={movement}
-              onSelected={(id) =>
-                handleMovementClicked(id, "INDIVIDUAL", movement.name)
-              }
-            />
-          ))}
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {shouldLoadIndividual && (
+          <MovementSection
+            title="Individual Movements"
+            movements={individualMovements ?? []}
+            type="INDIVIDUAL"
+            onSelect={handleMovementClicked}
+          />
+        )}
 
-        {shouldLoadPairs &&
-          (pairMovements ?? []).map((movement) => (
-            <MovementCard
-              key={`${movement.type}-${movement.id}`}
-              movement={movement}
-              onSelected={(id) =>
-                handleMovementClicked(id, "PAIRS", movement.name)
-              }
-            />
-          ))}
+        {shouldLoadPairs && (
+          <MovementSection
+            title="Pairs Movements"
+            movements={pairMovements ?? []}
+            type="PAIRS"
+            onSelect={handleMovementClicked}
+          />
+        )}
 
-        {shouldLoadTeams &&
-          (teamMovements ?? []).map((movement) => (
-            <MovementCard
-              key={`${movement.type}-${movement.id}`}
-              movement={movement}
-              onSelected={(id) =>
-                handleMovementClicked(id, "TEAMS", movement.name)
-              }
-            />
-          ))}
+        {shouldLoadTeams && (
+          <MovementSection
+            title="Teams Movements"
+            movements={teamMovements ?? []}
+            type="TEAMS"
+            onSelect={handleMovementClicked}
+          />
+        )}
       </div>
-      <div className="p-4">
-        <Button value={"Show Tables"} onClick={onShowTablesPage} />
+
+      <div className="p-4 border-t">
+        <Button value="Show Tables" onClick={onShowTablesPage} />
       </div>
-    </>
+    </div>
+  );
+}
+
+/* ---- Section component ---- */
+
+type MovementSpec = IndividualMovementSpec | PairMovementSpec | TeamMovementSpec;
+
+function MovementSection({
+  title,
+  movements,
+  type,
+  onSelect,
+}: {
+  title: string;
+  movements: MovementSpec[];
+  type: string;
+  onSelect: (id: number, type: string, name: string) => void;
+}) {
+  if (movements.length === 0) {
+    return (
+      <div>
+        <SectionHeading title={title} />
+        <p className="text-gray-500 text-sm italic px-1">
+          No movements available for this table count.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <SectionHeading title={title} />
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {movements.map((movement) => (
+          <MovementCard
+            key={`${movement.type}-${movement.id}`}
+            movement={movement}
+            onSelected={(id) => onSelect(id, type, movement.name)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SectionHeading({ title }: { title: string }) {
+  return (
+    <h2 className="text-lg font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1">
+      {title}
+    </h2>
   );
 }
