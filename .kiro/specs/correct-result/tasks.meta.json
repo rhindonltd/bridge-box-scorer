@@ -1,0 +1,268 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create `src/app/api/games/[gameId]/boards/route.ts`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764592
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448774882
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448922128
+      }
+    ],
+    "1.2 Create `src/app/api/games/[gameId]/boards/[boardNumber]/route.ts`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764632
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448939244
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449031910
+      }
+    ],
+    "1.3 Create `src/app/api/games/[gameId]/boards/[boardNumber]/override/route.ts`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764661
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448775642
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448922961
+      }
+    ],
+    "2.1 Create `src/components/contract/ContractEntryPanel.tsx`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764694
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448776565
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448923811
+      }
+    ],
+    "2.2 Refactor `src/components/pages/play/EnterContractPage.tsx` to wrap `ContractEntryPanel`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764735
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448940151
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449031061
+      }
+    ],
+    "2.3 Enable the footer in `src/components/play/BoardResult.tsx`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764764
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448777316
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448924834
+      }
+    ],
+    "3. Checkpoint": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764793
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449045337
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449113235
+      }
+    ],
+    "4.1 Create `src/lib/buildPlayedContractCode.ts`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764822
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448778200
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448925683
+      }
+    ],
+    "5.1 Create `src/components/pages/manage/correct-result/SelectBoardPage.tsx`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764855
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449140166
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449235519
+      }
+    ],
+    "5.2 Create `src/components/pages/manage/correct-result/SelectInstancePage.tsx`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764888
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449141102
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449236350
+      }
+    ],
+    "6.1 Create `src/app/manage/[id]/correct-result/page.tsx`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764917
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449241696
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449341696
+      }
+    ],
+    "7.1 Update `src/app/manage/[id]/menu/page.tsx`": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764949
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449342669
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449379594
+      }
+    ],
+    "8. Final checkpoint": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448764977
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449380382
+      },
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449473119
+      }
+    ],
+    "4. Build the `buildPlayedContractCode` utility": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785448925723
+      }
+    ],
+    "2. Extract ContractEntryPanel and enable BoardResult footer": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449031109
+      }
+    ],
+    "1. API endpoints for board data": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449031983
+      }
+    ],
+    "5. New page-level components": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449236387
+      }
+    ],
+    "6. Wizard page": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449341755
+      }
+    ],
+    "7. Wire to Director Menu": [
+      {
+        "executionId": "1010ffe8-dd1e-40cc-abb9-c2168dac7476",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785449379630
+      }
+    ]
+  }
+}

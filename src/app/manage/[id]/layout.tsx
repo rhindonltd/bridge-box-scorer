@@ -1,4 +1,5 @@
 import { GameProviderClient } from "@/context/GameProviderClient";
+import { DirectorGuard } from "@/components/manage/DirectorGuard";
 
 export default async function GameLayout({
   children,
@@ -9,5 +10,9 @@ export default async function GameLayout({
 }) {
   const { id } = await params;
 
-  return <GameProviderClient gameId={id}>{children}</GameProviderClient>;
+  return (
+    <GameProviderClient gameId={id}>
+      <DirectorGuard gameId={id}>{children}</DirectorGuard>
+    </GameProviderClient>
+  );
 }

@@ -1,0 +1,242 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { SelectBoardPage } from "@/components/pages/manage/correct-result/SelectBoardPage";
+import {
+  SelectInstancePage,
+  BoardInstance,
+} from "@/components/pages/manage/correct-result/SelectInstancePage";
+import ContractEntryPanel from "@/components/contract/ContractEntryPanel";
+import { BoardResult } from "@/components/play/BoardResult";
+import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
+import { getDirectorToken } from "@/lib/director-token";
+import { ContractCode, isContractCode, parseContract } from "@/model/contract";
+import { SpecialBoardOutcome } from "@/model/result";
+
+type WizardStep =
+  | { step: "selectBoard" }
+  | { step: "selectInstance"; boardNumber: number }
+  | {
+      step: "enterContract";
+      boardNumber: number;
+      roundNumber: number;
+      tableNumber: number;
+    }
+  | {
+      step: "enterResult";
+      boardNumber: number;
+      roundNumber: number;
+      tableNumber: number;
+      contract: ContractCode;
+    }
+  | { step: "saving" };
+
+export default function CorrectResultPage() {
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const gameId = params.id;
+
+  const [wizardStep, setWizardStep] = useState<WizardStep>({
+    step: "selectBoard",
+  });
+  const [boards, setBoards] = useState<number[]>([]);
+  const [boardsLoading, setBoardsLoading] = useState(true);
+  const [instances, setInstances] = useState<BoardInstance[]>([]);
+  const [instancesLoading, setInstancesLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch boards when on selectBoard step
+  useEffect(() => {
+    if (wizardStep.step === "selectBoard") {
+      setBoardsLoading(true);
+      fetch(`/api/games/${gameId}/boards`)
+        .then((r) => r.json())
+        .then((data) => {
+          setBoards(data.boards ?? []);
+          setBoardsLoading(false);
+        })
+        .catch(() => {
+          setBoards([]);
+          setBoardsLoading(false);
+        });
+    }
+  }, [wizardStep.step, gameId]);
+
+  // Fetch instances when on selectInstance step
+  useEffect(() => {
+    if (wizardStep.step === "selectInstance") {
+      setInstancesLoading(true);
+      fetch(`/api/games/${gameId}/boards/${wizardStep.boardNumber}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setInstances(data.instances ?? []);
+          setInstancesLoading(false);
+        })
+        .catch(() => {
+          setInstances([]);
+          setInstancesLoading(false);
+        });
+    }
+  }, [wizardStep, gameId]);
+
+  function handleBoardSelected(boardNumber: number) {
+    setWizardStep({ step: "selectInstance", boardNumber });
+  }
+
+  function handleInstanceSelected(instance: BoardInstance) {
+    setWizardStep({
+      step: "enterContract",
+      boardNumber: instance.boardNumber,
+      roundNumber: instance.roundNumber,
+      tableNumber: instance.tableNumber,
+    });
+  }
+
+  function handleContractEntered(contract: ContractCode | SpecialBoardOutcome) {
+    if (wizardStep.step !== "enterContract") return;
+
+    // If it's a special outcome (PO or NP), go straight to saving
+    if (contract === "PO" || contract === "NP") {
+      saveOverride(
+        wizardStep.roundNumber,
+        wizardStep.tableNumber,
+        wizardStep.boardNumber,
+        contract,
+      );
+      return;
+    }
+
+    // If it's a valid contract code, proceed to result entry
+    if (isContractCode(contract)) {
+      setWizardStep({
+        step: "enterResult",
+        boardNumber: wizardStep.boardNumber,
+        roundNumber: wizardStep.roundNumber,
+        tableNumber: wizardStep.tableNumber,
+        contract,
+      });
+    }
+  }
+
+  function handleResultEntered(trickResult: number) {
+    if (wizardStep.step !== "enterResult") return;
+
+    const parsed = parseContract(wizardStep.contract);
+    const fullResult = buildPlayedContractCode(
+      parsed.level,
+      parsed.suit,
+      parsed.doubling,
+      parsed.declarer,
+      trickResult,
+    );
+
+    saveOverride(
+      wizardStep.roundNumber,
+      wizardStep.tableNumber,
+      wizardStep.boardNumber,
+      fullResult,
+    );
+  }
+
+  async function saveOverride(
+    roundNumber: number,
+    tableNumber: number,
+    boardNumber: number,
+    result: string,
+  ) {
+    setWizardStep({ step: "saving" });
+    setError(null);
+
+    try {
+      const res = await fetch(
+        `/api/games/${gameId}/boards/${boardNumber}/override`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roundNumber,
+            tableNumber,
+            result,
+            directorToken: getDirectorToken(gameId),
+          }),
+        },
+      );
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to save override");
+        // Go back to board selection on error
+        setWizardStep({ step: "selectBoard" });
+        return;
+      }
+
+      // Success — navigate back to the director menu
+      router.push(`/manage/${gameId}/menu`);
+    } catch {
+      setError("Network error. Please try again.");
+      setWizardStep({ step: "selectBoard" });
+    }
+  }
+
+  // Render based on current step
+  switch (wizardStep.step) {
+    case "selectBoard":
+      return (
+        <>
+          {error && (
+            <div className="bg-red-100 text-red-700 px-4 py-2 text-center text-sm">
+              {error}
+            </div>
+          )}
+          <SelectBoardPage
+            boards={boards}
+            isLoading={boardsLoading}
+            onBoardSelected={handleBoardSelected}
+          />
+        </>
+      );
+
+    case "selectInstance":
+      return (
+        <SelectInstancePage
+          boardNumber={wizardStep.boardNumber}
+          instances={instances}
+          isLoading={instancesLoading}
+          onInstanceSelected={handleInstanceSelected}
+        />
+      );
+
+    case "enterContract":
+      return (
+        <ContractEntryPanel
+          headerText={`Correcting Board ${wizardStep.boardNumber}`}
+          subHeaderText={`Table ${wizardStep.tableNumber}, Round ${wizardStep.roundNumber}`}
+          onOk={handleContractEntered}
+        />
+      );
+
+    case "enterResult": {
+      const parsed = parseContract(wizardStep.contract);
+      const contractDisplay = `${parsed.level}${parsed.suit}${parsed.doubling}`;
+      return (
+        <BoardResult
+          board={wizardStep.boardNumber}
+          contract={contractDisplay}
+          declarer={parsed.declarer}
+          onSave={handleResultEntered}
+        />
+      );
+    }
+
+    case "saving":
+      return (
+        <div className="min-h-dvh flex items-center justify-center bg-white">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+            <span className="text-gray-600">Saving override...</span>
+          </div>
+        </div>
+      );
+  }
+}

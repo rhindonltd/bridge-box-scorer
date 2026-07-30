@@ -1,0 +1,104 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create `src/components/pages/manage/DirectorMenuPage.tsx`": [
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421568270
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421576937
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421706755
+      }
+    ],
+    "2.1 Create `src/app/manage/[id]/timer/page.tsx`": [
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421568304
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421577904
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421707644
+      }
+    ],
+    "2.2 Update `src/app/manage/[id]/menu/page.tsx`": [
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421568323
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421715969
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421773539
+      }
+    ],
+    "2.3 Update `src/components/pages/manage/ManageGamePage.tsx`": [
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421568346
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421716749
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421774355
+      }
+    ],
+    "3. Checkpoint": [
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421568366
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421794239
+      },
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421870237
+      }
+    ],
+    "1. Create the DirectorMenuPage presentational component": [
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421706793
+      }
+    ],
+    "2. Set up routing and wire navigation": [
+      {
+        "executionId": "0e19abad-f748-4ba6-9461-35862053559b",
+        "chatSessionId": "sess_3c7c04e0-6de4-4f2f-bd6d-503e9152a5f2",
+        "timestamp": 1785421774395
+      }
+    ]
+  }
+}

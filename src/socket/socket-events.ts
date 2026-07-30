@@ -20,6 +20,9 @@ export const SocketEvents = {
   PARTICIPANTS: "game:participants",
   GAME_UPDATED: "game:updated",
 
+  // Server initiated - Board results
+  BOARD_RESULT_UPDATED: "game:boardResultUpdated",
+
   // Server initiated - Timer specific
   TIMER_SYNC: "timer:sync",
   CREATE_TIMER: "timer:create",
