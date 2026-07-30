@@ -1,14 +1,39 @@
 "use client";
 
-import SelectGamePage from "@/components/pages/join/SelectGamePage";
+import { useState } from "react";
+import ManageSelectGamePage from "@/components/pages/manage/ManageSelectGamePage";
+import { ClaimDirectorCode } from "@/components/pages/manage/ClaimDirectorCode";
 import { useRouter } from "next/navigation";
+import { isDirectorFor } from "@/lib/director-token";
 
-export default function SelectGame() {
+export default function ManageSelectGame() {
   const router = useRouter();
+  const [claimingGame, setClaimingGame] = useState<{
+    gameId: string;
+    name: string;
+  } | null>(null);
 
-  function onGameSelected(gameId: string) {
-    router.push(`/manage/${gameId}/menu`);
+  function onGameSelected(gameId: string, gameName?: string) {
+    // If already a director for this game, go straight to manage
+    if (isDirectorFor(gameId)) {
+      router.push(`/manage/${gameId}/menu`);
+      return;
+    }
+
+    // Otherwise, show the claim code screen
+    setClaimingGame({ gameId, name: gameName ?? "this game" });
   }
 
-  return <SelectGamePage onGameSelected={onGameSelected} />;
+  if (claimingGame) {
+    return (
+      <ClaimDirectorCode
+        gameId={claimingGame.gameId}
+        gameName={claimingGame.name}
+        onSuccess={() => router.push(`/manage/${claimingGame.gameId}/menu`)}
+        onCancel={() => setClaimingGame(null)}
+      />
+    );
+  }
+
+  return <ManageSelectGamePage onGameSelected={onGameSelected} />;
 }
