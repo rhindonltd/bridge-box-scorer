@@ -2,7 +2,6 @@ import { Server } from "socket.io";
 import http from "http";
 import { registerGameHandlers } from "@/socket/handlers/game/game.handlers";
 import { registerTimerHandlers } from "./handlers/timer/timer.handlers";
-import { directorAuthMiddleware } from "@/socket/middleware/director-auth";
 
 let io: Server | null = null;
 
@@ -12,8 +11,6 @@ export function startSocketServer(server: http.Server) {
       origin: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     },
   });
-
-  io.use(directorAuthMiddleware);
 
   io.on("connection", (socket) => {
     registerGameHandlers(socket, getIO());

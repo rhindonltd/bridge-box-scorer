@@ -13,6 +13,7 @@ import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import { Individual, IndividualSeat, Seat } from "@/model/participants";
 import { getSocket } from "@/lib/socket";
+import { getDirectorToken } from "@/lib/director-token";
 
 type Props = {
   onShowMovementsPage: () => void;
@@ -75,7 +76,7 @@ export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
   function handleAddTable() {
     getSocket().emit(
       SocketEvents.UPDATE_TABLES,
-      { gameId, tables: game!.tables + 1 },
+      { gameId, tables: game!.tables + 1, directorToken: getDirectorToken(gameId!) },
       () => mutateGame(),
     );
   }
@@ -83,7 +84,7 @@ export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
   function handleRemoveTable() {
     getSocket().emit(
       SocketEvents.UPDATE_TABLES,
-      { gameId, tables: game!.tables - 1 },
+      { gameId, tables: game!.tables - 1, directorToken: getDirectorToken(gameId!) },
       (res: { success: boolean; error?: string }) => {
         if (res.success) mutateGame();
         else alert(res.error);
@@ -96,7 +97,7 @@ export function ShowIndividualTablesPage({ onShowMovementsPage }: Props) {
 
     getSocket().emit(
       SocketEvents.EVICT_PARTICIPANT,
-      { gameId, seat },
+      { gameId, seat, directorToken: getDirectorToken(gameId!) },
       (res: { success: boolean; error?: string }) => {
         if (!res.success) alert(res.error);
       },

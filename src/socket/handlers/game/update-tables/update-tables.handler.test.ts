@@ -25,10 +25,11 @@ import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerUpdateTablesHandler } from "./update-tables.handler";
 
-function makeSocket(isDirector = true) {
-  return { data: { isDirector }, id: "test", on: vi.fn() } as any;
+function makeSocket() {
+  return { data: {}, id: "test", on: vi.fn() } as any;
 }
 
 function makeIo() {
@@ -37,7 +38,15 @@ function makeIo() {
 }
 
 describe("registerUpdateTablesHandler", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default: valid director session
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "g1",
+    } as any);
+  });
 
   it("registers handler on UPDATE_TABLES event", () => {
     const socket = makeSocket();
@@ -63,7 +72,7 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 5 }, cb);
+    await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
 
     expect(updateTableCount).toHaveBeenCalledWith("g1", 5);
     expect(io._emit).toHaveBeenCalledWith(
@@ -87,7 +96,7 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 2 }, cb);
+    await handler({ gameId: "g1", tables: 2, directorToken: "test-token" }, cb);
 
     expect(updateTableCount).not.toHaveBeenCalled();
     expect(cb).toHaveBeenCalledWith(
@@ -113,20 +122,22 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 3 }, cb);
+    await handler({ gameId: "g1", tables: 3, directorToken: "test-token" }, cb);
 
     expect(updateTableCount).toHaveBeenCalledWith("g1", 3);
     expect(cb).toHaveBeenCalledWith({ success: true });
   });
 
   it("rejects non-directors", async () => {
-    const socket = makeSocket(false);
+    vi.mocked(findLoginSession).mockReturnValue(null as any);
+
+    const socket = makeSocket();
     const io = makeIo();
     registerUpdateTablesHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 5 }, cb);
+    await handler({ gameId: "g1", tables: 5, directorToken: "bad-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     expect(findGameById).not.toHaveBeenCalled();

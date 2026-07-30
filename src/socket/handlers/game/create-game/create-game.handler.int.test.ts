@@ -17,8 +17,8 @@ vi.mock("@/db/game-index/queries/find-joinable-games", () => ({
   findJoinableGames: vi.fn(),
 }));
 
-vi.mock("@/db/system/queries/find-login-session", () => ({
-  findLoginSession: vi.fn(),
+vi.mock("@/db/system/actions/create-login-session", () => ({
+  createLoginSession: vi.fn(),
 }));
 
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
@@ -37,17 +37,16 @@ describe("CREATE_GAME (integration)", () => {
     await closeServer?.();
   });
 
-  it("creates game and broadcasts joinable games", async () => {
-    const bridgeGame = { gameId: "game-123", gameType: "BRIDGE" };
+  it("creates game, returns directorToken, and broadcasts joinable games", async () => {
+    const bridgeGame = { gameId: "game-123", gameType: "PAIRS" };
 
     vi.mocked(createBridgeGame).mockResolvedValue(bridgeGame as any);
     vi.mocked(createGameDb).mockResolvedValue(undefined);
     vi.mocked(findJoinableGames).mockResolvedValue([{ gameId: "game-123" }] as any);
 
-    const { io, client, close } = await createSocketTestServer((io) => {
+    const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        // Mark as director so assertDirector passes
-        socket.data.isDirector = true;
+        // No director flag needed — anyone can create
         registerCreateGameHandler(socket, io);
       });
     });
@@ -59,9 +58,12 @@ describe("CREATE_GAME (integration)", () => {
       name: "test-game",
     });
 
-    expect(response).toEqual({
-      data: { game: bridgeGame },
+    expect(response).toMatchObject({
       success: true,
+      data: {
+        game: bridgeGame,
+        directorToken: expect.any(String),
+      },
     });
 
     const broadcastPayload = await broadcast;
@@ -75,7 +77,6 @@ describe("CREATE_GAME (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        socket.data.isDirector = true;
         registerCreateGameHandler(socket, io);
       });
     });

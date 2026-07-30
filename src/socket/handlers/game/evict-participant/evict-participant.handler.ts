@@ -13,21 +13,21 @@ import { IndividualSeat, PairSeat } from "@/model/participants";
 const payloadSchema = z.object({
   gameId: z.string().min(1),
   seat: z.string().min(1),
+  directorToken: z.string().min(1),
 });
 
 export function registerEvictParticipantHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.EVICT_PARTICIPANT,
     async (payload: unknown, cb?: (res: { success: boolean; error?: string }) => void) => {
-      if (!assertDirector(socket, cb)) return;
-
       const parsed = payloadSchema.safeParse(payload);
       if (!parsed.success) {
         cb?.({ success: false, error: "Invalid payload" });
         return;
       }
 
-      const { gameId, seat } = parsed.data;
+      const { gameId, seat, directorToken } = parsed.data;
+      if (!assertDirector(directorToken, gameId, cb)) return;
 
       try {
         const game = await findGameById(gameId);

@@ -20,11 +20,12 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { createEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
 import { scheduleGame } from "@/timer/scheduler";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateTimerHandler } from "./create-timer.handler";
 
 function createMockSocket() {
   return {
-    data: { isDirector: true },
+    data: {},
     id: "test",
     on: vi.fn(),
   } as any;
@@ -41,6 +42,12 @@ function createMockIo() {
 describe("registerCreateTimerHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: valid director session
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-4",
+    } as any);
   });
 
   it("registers a handler for timer:create event", () => {
@@ -73,6 +80,7 @@ describe("registerCreateTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-4",
+      directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 5,
       playDuration: 420,
@@ -101,9 +109,10 @@ describe("registerCreateTimerHandler", () => {
     );
   });
 
-  it("does nothing if socket is not a director", async () => {
+  it("does nothing if directorToken is invalid", async () => {
+    vi.mocked(findLoginSession).mockReturnValue(null as any);
+
     const socket = createMockSocket();
-    socket.data.isDirector = false;
     const io = createMockIo();
 
     registerCreateTimerHandler(socket, io);
@@ -112,6 +121,7 @@ describe("registerCreateTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-4",
+      directorToken: "bad-token",
       boardsPerRound: 3,
       totalRounds: 5,
       playDuration: 420,

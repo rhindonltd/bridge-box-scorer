@@ -6,111 +6,101 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import {
-  directorAuthMiddleware,
+  validateDirectorToken,
   assertDirector,
 } from "./director-auth";
 
-function createMockSocket(auth: Record<string, unknown> = {}) {
-  return {
-    id: "test-socket-id",
-    data: {} as { isDirector: boolean },
-    handshake: { auth },
-  } as any;
-}
-
-describe("directorAuthMiddleware", () => {
+describe("validateDirectorToken", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("sets isDirector=false and calls next() when no token provided", () => {
-    const socket = createMockSocket({});
-    const next = vi.fn();
-
-    directorAuthMiddleware(socket, next);
-
-    expect(socket.data.isDirector).toBe(false);
-    expect(next).toHaveBeenCalledWith();
+  it("returns false when no token provided", () => {
+    expect(validateDirectorToken(undefined, "game-1")).toBe(false);
+    expect(validateDirectorToken(null, "game-1")).toBe(false);
   });
 
-  it("sets isDirector=true when token resolves to a DIRECTOR session", () => {
+  it("returns true when token resolves to a DIRECTOR session for the correct game", () => {
     vi.mocked(findLoginSession).mockReturnValue({
       token: "valid-token",
       role: "DIRECTOR",
+      gameId: "game-1",
     } as any);
 
-    const socket = createMockSocket({ directorToken: "valid-token" });
-    const next = vi.fn();
-
-    directorAuthMiddleware(socket, next);
-
-    expect(socket.data.isDirector).toBe(true);
-    expect(next).toHaveBeenCalledWith();
+    expect(validateDirectorToken("valid-token", "game-1")).toBe(true);
   });
 
-  it("leaves isDirector=false when token resolves to a non-DIRECTOR session", () => {
+  it("returns false when token resolves to a non-DIRECTOR session", () => {
     vi.mocked(findLoginSession).mockReturnValue({
       token: "player-token",
       role: "PLAYER",
+      gameId: "game-1",
     } as any);
 
-    const socket = createMockSocket({ directorToken: "player-token" });
-    const next = vi.fn();
-
-    directorAuthMiddleware(socket, next);
-
-    expect(socket.data.isDirector).toBe(false);
-    expect(next).toHaveBeenCalledWith();
+    expect(validateDirectorToken("player-token", "game-1")).toBe(false);
   });
 
-  it("leaves isDirector=false when session is null", () => {
+  it("returns false when session is null", () => {
     vi.mocked(findLoginSession).mockReturnValue(null);
 
-    const socket = createMockSocket({ directorToken: "unknown-token" });
-    const next = vi.fn();
-
-    directorAuthMiddleware(socket, next);
-
-    expect(socket.data.isDirector).toBe(false);
-    expect(next).toHaveBeenCalledWith();
+    expect(validateDirectorToken("unknown-token", "game-1")).toBe(false);
   });
 
-  it("leaves isDirector=false and calls next() when findLoginSession throws", () => {
+  it("returns false when token is for a different game", () => {
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "valid-token",
+      role: "DIRECTOR",
+      gameId: "game-2",
+    } as any);
+
+    expect(validateDirectorToken("valid-token", "game-1")).toBe(false);
+  });
+
+  it("returns true when session gameId is null (global director)", () => {
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "valid-token",
+      role: "DIRECTOR",
+      gameId: null,
+    } as any);
+
+    expect(validateDirectorToken("valid-token", "game-1")).toBe(true);
+  });
+
+  it("returns false when findLoginSession throws", () => {
     vi.mocked(findLoginSession).mockImplementation(() => {
       throw new Error("DB failure");
     });
 
-    const socket = createMockSocket({ directorToken: "crash-token" });
-    const next = vi.fn();
-
-    directorAuthMiddleware(socket, next);
-
-    expect(socket.data.isDirector).toBe(false);
-    expect(next).toHaveBeenCalledWith();
+    expect(validateDirectorToken("crash-token", "game-1")).toBe(false);
   });
 });
 
 describe("assertDirector", () => {
-  it("returns true for a director socket", () => {
-    const socket = createMockSocket();
-    socket.data.isDirector = true;
-
-    expect(assertDirector(socket)).toBe(true);
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("returns false for a non-director socket", () => {
-    const socket = createMockSocket();
-    socket.data.isDirector = false;
+  it("returns true for a valid director token", () => {
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "valid-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
+    } as any);
 
-    expect(assertDirector(socket)).toBe(false);
+    expect(assertDirector("valid-token", "game-1")).toBe(true);
   });
 
-  it("invokes callback with error for non-director socket", () => {
-    const socket = createMockSocket();
-    socket.data.isDirector = false;
+  it("returns false for an invalid token", () => {
+    vi.mocked(findLoginSession).mockReturnValue(null);
+
+    expect(assertDirector("bad-token", "game-1")).toBe(false);
+  });
+
+  it("invokes callback with error for invalid token", () => {
+    vi.mocked(findLoginSession).mockReturnValue(null);
     const cb = vi.fn();
 
-    assertDirector(socket, cb);
+    assertDirector("bad-token", "game-1", cb);
 
     expect(cb).toHaveBeenCalledWith({
       success: false,
@@ -118,12 +108,15 @@ describe("assertDirector", () => {
     });
   });
 
-  it("does not invoke callback for director socket", () => {
-    const socket = createMockSocket();
-    socket.data.isDirector = true;
+  it("does not invoke callback for valid token", () => {
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "valid-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
+    } as any);
     const cb = vi.fn();
 
-    assertDirector(socket, cb);
+    assertDirector("valid-token", "game-1", cb);
 
     expect(cb).not.toHaveBeenCalled();
   });

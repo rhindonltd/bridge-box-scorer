@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "node scripts/link-ts6.mjs",
     "dev": "tsx watch server.ts",
-    "prebuild": "npx tsx src/scripts/migrate.ts",
+    "prebuild": "npx tsx --env-file=.env src/scripts/migrate.ts",
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",
     "lint": "eslint .",
@@ -23,8 +23,8 @@
     "run_game_index_migration": "npx drizzle-kit migrate --config=drizzle.config.game-index.ts",
     "generate_individual_migration": "npx drizzle-kit generate --config=drizzle.config.game.individual.ts",
     "generate_pairs_migration": "npx drizzle-kit generate --config=drizzle.config.game.pairs.ts",
-    "sync:ebu-players": "tsx src/scripts/sync-ebu-players.ts",
-    "seed-movements": "tsx src/scripts/seed-movements.ts"
+    "sync:ebu-players": "tsx --env-file=.env src/scripts/sync-ebu-players.ts",
+    "seed-movements": "tsx --env-file=.env src/scripts/seed-movements.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",

@@ -1,69 +1,46 @@
-import { Socket } from "socket.io";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 
-declare module "socket.io" {
-  interface SocketData {
-    isDirector: boolean;
-  }
-}
-
 /**
- * Socket.IO connection middleware.
+ * Validates a director token for a specific game.
  *
- * Reads an optional `directorToken` from the handshake auth object and validates
- * it against the login-sessions DB. Sets `socket.data.isDirector = true` when
- * the token is valid. Non-director clients (players) connect normally with
- * `isDirector = false`.
+ * Each director-only socket event includes a `directorToken` field in its
+ * payload. This function verifies the token exists in the DB and is associated
+ * with the correct gameId.
  *
- * Usage on the client (director only):
- *   const socket = io(url, { auth: { directorToken: "<token>" } });
+ * Returns true if the token is valid for the given game.
  */
-export function directorAuthMiddleware(
-  socket: Socket,
-  next: (err?: Error) => void,
-) {
-  socket.data.isDirector = false;
-
-  const token = socket.handshake.auth?.directorToken as string | undefined;
-  if (!token) {
-    return next();
-  }
+export function validateDirectorToken(
+  directorToken: string | undefined | null,
+  gameId: string,
+): boolean {
+  if (!directorToken) return false;
 
   try {
-    const session = findLoginSession(token);
-    if (session && session.role === "DIRECTOR") {
-      socket.data.isDirector = true;
-    }
-  } catch (err) {
-    console.error("Director auth middleware error:", err);
-    // Don't block the connection — just leave isDirector = false.
+    const session = findLoginSession(directorToken);
+    if (!session) return false;
+    if (session.role !== "DIRECTOR") return false;
+    // Token must be for this specific game
+    if (session.gameId !== null && session.gameId !== gameId) return false;
+    return true;
+  } catch {
+    return false;
   }
-
-  next();
 }
 
 /**
  * Guard for director-only socket event handlers.
  *
- * Call at the top of any handler that should be restricted to directors.
- * Returns true if the socket is authorised; returns false and invokes the
- * optional callback with an error so the client receives a typed response.
- *
- * Usage:
- *   socket.on(SocketEvents.CREATE_GAME, (payload, cb) => {
- *     if (!assertDirector(socket, cb)) return;
- *     ...
- *   });
+ * Validates the directorToken from the event payload against the gameId.
+ * Returns true if authorised; returns false and invokes the callback with
+ * an error if not.
  */
 export function assertDirector(
-  socket: Socket,
+  directorToken: string | undefined | null,
+  gameId: string,
   cb?: (response: { success: false; error: string }) => void,
 ): boolean {
-  if (socket.data.isDirector) return true;
+  if (validateDirectorToken(directorToken, gameId)) return true;
 
-  console.warn(
-    `Unauthorised director event attempt from socket ${socket.id}`,
-  );
   cb?.({ success: false, error: "Unauthorized" });
   return false;
 }

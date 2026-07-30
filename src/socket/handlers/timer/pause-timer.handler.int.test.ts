@@ -24,6 +24,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 
 import { getEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerPauseTimerHandler } from "./pause-timer.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
@@ -34,6 +35,12 @@ describe("registerPauseTimerHandler (integration)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: valid director session
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
+    } as any);
   });
 
   afterEach(async () => {
@@ -62,7 +69,6 @@ describe("registerPauseTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        socket.data.isDirector = true;
         registerJoinGameHandler(socket);
         registerPauseTimerHandler(socket, io);
       });
@@ -78,6 +84,7 @@ describe("registerPauseTimerHandler (integration)", () => {
     client.emit(SocketEvents.PAUSE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      directorToken: "test-token",
     });
 
     const syncPayload = await syncPromise;
@@ -93,9 +100,10 @@ describe("registerPauseTimerHandler (integration)", () => {
   });
 
   it("non-director is silently rejected (no broadcast)", async () => {
+    vi.mocked(findLoginSession).mockReturnValue(null as any);
+
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        socket.data.isDirector = false;
         registerJoinGameHandler(socket);
         registerPauseTimerHandler(socket, io);
       });
@@ -113,6 +121,7 @@ describe("registerPauseTimerHandler (integration)", () => {
     client.emit(SocketEvents.PAUSE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      directorToken: "bad-token",
     });
 
     const result = await syncPromise;
@@ -125,7 +134,6 @@ describe("registerPauseTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        socket.data.isDirector = true;
         registerJoinGameHandler(socket);
         registerPauseTimerHandler(socket, io);
       });
@@ -143,6 +151,7 @@ describe("registerPauseTimerHandler (integration)", () => {
     client.emit(SocketEvents.PAUSE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      directorToken: "test-token",
     });
 
     const result = await syncPromise;
