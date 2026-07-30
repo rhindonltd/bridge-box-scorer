@@ -2,20 +2,16 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { RoundInfoPage } from "./RoundInfoPage";
 
-vi.mock("@/components/common/GameInfo", () => ({
-  GameInfo: () => <div data-testid="game-info" />,
+vi.mock("@/context/GameContext", () => ({
+  useGame: () => ({
+    game: { eventName: "Monday Pairs", gameId: "g1", gameType: "PAIRS", tables: 5 },
+  }),
 }));
 
-vi.mock("@/components/common/ParticipantInfo", () => ({
-  ParticipantInfo: () => <div data-testid="participant-info" />,
-}));
-
-vi.mock("@/components/common/TableRoundPairBoardInfo", () => ({
-  TableRoundPairBoardInfo: ({ round, table }: any) => (
-    <div data-testid="table-info">
-      R{round}-T{table}
-    </div>
-  ),
+vi.mock("@/context/AssignmentContext", () => ({
+  useAssignment: () => ({
+    assignment: { type: "PAIR", id: "2" },
+  }),
 }));
 
 vi.mock("@/components/play/RoundInfo", () => ({
@@ -40,15 +36,15 @@ describe("RoundInfoPage", () => {
     onEnterRound: vi.fn(),
   };
 
-  it("renders GameInfo and ParticipantInfo", () => {
+  it("renders header with event name and pair info", () => {
     render(<RoundInfoPage {...baseProps} />);
-    expect(screen.getByTestId("game-info")).toBeInTheDocument();
-    expect(screen.getByTestId("participant-info")).toBeInTheDocument();
+    expect(screen.getByText("Monday Pairs")).toBeInTheDocument();
+    expect(screen.getByText("Pair 2")).toBeInTheDocument();
   });
 
-  it("renders table round info", () => {
+  it("renders table and round in header detail", () => {
     render(<RoundInfoPage {...baseProps} />);
-    expect(screen.getByText("R2-T5")).toBeInTheDocument();
+    expect(screen.getByText("Table 5, Round 2")).toBeInTheDocument();
   });
 
   it("renders RoundInfo with correct props", () => {
