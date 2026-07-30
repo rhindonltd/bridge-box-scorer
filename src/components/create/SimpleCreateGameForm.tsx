@@ -58,7 +58,7 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
             label="Event Type"
             value={gameType}
             options={[
-              { label: "Pairs/Teams", value: "PAIRS" },
+              { label: "Pairs", value: "PAIRS" },
               { label: "Individual", value: "INDIVIDUAL" },
             ]}
             onSelect={setGameType}
