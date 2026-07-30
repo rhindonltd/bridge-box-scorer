@@ -67,7 +67,7 @@ describe("MainMenuPage", () => {
     const root = container.firstChild as HTMLElement;
 
     expect(root).toHaveClass(
-      "h-screen",
+      "min-h-dvh",
       "flex",
       "flex-col",
       "overflow-y-auto",

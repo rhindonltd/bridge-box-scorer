@@ -22,7 +22,7 @@ export function PinEntryPage({ correctPin, onSuccess }: PinEntryProps) {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-xl shadow-md font-sans h-screen">
+    <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-xl shadow-md font-sans min-h-dvh">
       <h2 className="text-2xl font-bold mb-4">Enter PIN to continue</h2>
       <form onSubmit={handleSubmit}>
         <input

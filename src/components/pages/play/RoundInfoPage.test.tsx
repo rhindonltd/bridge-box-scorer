@@ -73,7 +73,7 @@ describe("RoundInfoPage", () => {
   it("applies layout classes", () => {
     const { container } = render(<RoundInfoPage {...baseProps} />);
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("h-dvh", "flex", "flex-col", "bg-gray-100");
   });
 
   it("centers RoundInfo container", () => {

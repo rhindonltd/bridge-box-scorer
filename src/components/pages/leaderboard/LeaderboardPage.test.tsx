@@ -55,7 +55,7 @@ describe("LeaderboardPage", () => {
   it("applies layout classes", () => {
     const { container } = render(<LeaderboardPage {...baseProps} />);
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("h-dvh", "flex", "flex-col", "bg-gray-100");
   });
 
   it("keeps leaderboard in flexible container", () => {

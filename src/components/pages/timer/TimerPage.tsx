@@ -47,7 +47,7 @@ export default function TimerPage() {
 
   if (!timerState) {
     return (
-      <div className="h-screen w-screen bg-black text-white flex items-center justify-center">
+      <div className="fixed inset-0 bg-black text-white flex items-center justify-center">
         Connecting…
       </div>
     );
@@ -56,7 +56,7 @@ export default function TimerPage() {
   /* ---------------- RENDER ---------------- */
 
   return (
-    <div className="h-screen w-screen bg-black text-white flex flex-col items-center justify-center">
+    <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center">
       {/* HEADER */}
       <div className="absolute top-10 text-center w-full">
         <div className="text-6xl font-bold">{title}</div>

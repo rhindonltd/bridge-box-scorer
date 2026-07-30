@@ -14,7 +14,7 @@ export function MainMenuPage({
   onOpenSettings,
 }: Props) {
   return (
-    <div className="h-screen flex flex-col overflow-y-auto relative">
+    <div className="min-h-dvh flex flex-col overflow-y-auto relative">
       {/* Settings Cog */}
       <button
         onClick={onOpenSettings}

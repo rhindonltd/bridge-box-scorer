@@ -37,7 +37,7 @@ describe("ChangePinPage", () => {
       <ChangePinPage directorPin={1234} onChangePin={vi.fn()} />,
     );
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("h-dvh", "flex", "flex-col", "bg-gray-100");
   });
 
   it("button has correct styling", () => {

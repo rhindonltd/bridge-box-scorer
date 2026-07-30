@@ -64,7 +64,7 @@ describe("BoardResultsPage", () => {
   it("applies layout classes", () => {
     const { container } = render(<BoardResultsPage {...baseProps} />);
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("h-dvh", "flex", "flex-col", "bg-gray-100");
   });
 
   it("keeps traveller in flexible scroll area", () => {

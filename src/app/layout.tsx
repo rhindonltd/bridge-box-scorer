@@ -1,16 +1,10 @@
-// import { Bebas_Neue } from "next/font/google";
 import "@/styles/globals.css";
 import type { Metadata } from "next";
 
-// const bebas = Bebas_Neue({
-//   subsets: ["latin"],
-//   weight: "400",
-//   variable: "--font-bebas",
-// });
-
 export const metadata: Metadata = {
   title: "Bridge Box",
-  description: "Bridge Box",
+  description: "Bridge Box Scorer",
+  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
 };
 
 export default function RootLayout({
@@ -20,7 +14,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="bg-gray-100">
+        <div className="mx-auto max-w-2xl min-h-dvh">
+          {children}
+        </div>
+      </body>
     </html>
   );
 }
