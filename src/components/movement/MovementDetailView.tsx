@@ -46,7 +46,7 @@ export function MovementDetailView({
   return (
     <div className="h-full flex flex-col">
       {/* Header with name and back button */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-blue-300">
+      <div className="flex items-center gap-3 px-4 py-3 bg-blue-100 text-blue-900">
         <button
           onClick={onBack}
           className="px-3 py-1 text-sm bg-white rounded-lg shadow hover:bg-gray-50 transition"
@@ -123,7 +123,7 @@ function TableView({
   isPair: boolean;
 }) {
   return (
-    <div className="border rounded-lg shadow-sm overflow-hidden">
+    <div className="border rounded-lg shadow-sm overflow-x-auto">
       <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
         Table {table.tableNumber}
       </div>
@@ -200,7 +200,7 @@ function RoundView({
   isPair: boolean;
 }) {
   return (
-    <div className="border rounded-lg shadow-sm overflow-hidden">
+    <div className="border rounded-lg shadow-sm overflow-x-auto">
       <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
         Round {round.roundNumber}
       </div>

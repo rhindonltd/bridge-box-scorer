@@ -95,7 +95,7 @@ export default function ControlsPage() {
   }
 
   return (
-    <div className="h-screen w-screen bg-gray-950 text-white flex flex-col items-center justify-center gap-6 p-6">
+    <div className="min-h-dvh bg-gray-950 text-white flex flex-col items-center justify-center gap-6 p-6">
       <h1 className="text-3xl font-bold mb-2">Director Controls</h1>
 
       {/* STATUS PANEL */}

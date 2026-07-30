@@ -6,7 +6,7 @@ type Props = {
 export default function PassOutButton({ className, onPassOut }: Props) {
   return (
     <button
-      className={`w-full mt-2 p-2 text-base bg-blue-400 rounded-xl ${className}`}
+      className={`w-full mt-2 p-2 text-base bg-gray-200 text-gray-800 rounded-xl ${className}`}
       onClick={onPassOut}
     >
       Pass Out

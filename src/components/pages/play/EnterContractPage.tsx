@@ -7,12 +7,12 @@ import PassOutButton from "@/components/contract/PassOutButton";
 import NotPlayedButton from "@/components/contract/NotPlayedButton";
 import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
 import { Direction } from "@/model/common";
-import { TableRoundPairBoardInfo } from "@/components/common/TableRoundPairBoardInfo";
 import { PlayableContract } from "@/components/pages/play/PlayableContract";
 import { usePlay } from "@/context/PlayContext";
+import { useGame } from "@/context/GameContext";
+import { useAssignment } from "@/context/AssignmentContext";
 import { SpecialBoardOutcome } from "@/model/result";
-import { ParticipantInfo } from "@/components/common/ParticipantInfo";
-import { GameInfo } from "@/components/common/GameInfo";
+import type { Assignment } from "@/model/participants";
 
 type Props = {
   round: number;
@@ -28,6 +28,8 @@ export default function EnterContractPage({
   onOk,
 }: Props) {
   const { boardSelection, selectBoard } = usePlay();
+  const { game } = useGame();
+  const { assignment } = useAssignment();
 
   const [level, setLevel] = useState<Level | null>(null);
   const [suit, setSuit] = useState<ContractSuit | null>(null);
@@ -106,21 +108,30 @@ export default function EnterContractPage({
         : "-";
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      <div className="flex flex-row w-full">
-        <GameInfo />
-        <ParticipantInfo />
+    <div className="h-dvh flex flex-col bg-gray-100">
+      {/* Context bar */}
+      <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-start justify-between text-base shrink-0">
+        <div className="truncate">
+          <div className="font-semibold">{game?.eventName}</div>
+          {(game?.sessionName || game?.sectionName) && (
+            <div className="text-sm text-gray-600">
+              {game?.sessionName}
+              {game?.sessionName && game?.sectionName && ", "}
+              {game?.sectionName}
+            </div>
+          )}
+        </div>
+        <ParticipantInfoInline assignment={assignment} />
       </div>
 
-      {/* TOP GRID */}
-      <div className="grid grid-cols-2 w-full items-stretch">
-        <TableRoundPairBoardInfo round={round} table={table} />
-
-        <div className="flex flex-row items-center justify-center bg-blue-300">
-          <label htmlFor="board-selector" className="pr-2 font-bold">Board:</label>
+      {/* Detail bar — table, round, board selector */}
+      <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
+        <span className="font-bold text-lg">Table {table}, Round {round}</span>
+        <div className="flex items-center gap-2">
+          <label htmlFor="board-selector" className="font-semibold text-base">Board:</label>
           <select
             id="board-selector"
-            className="p-1 border rounded-md bg-white text-center"
+            className="px-2 py-1 text-base border border-blue-400 rounded-md bg-white text-blue-900 text-center font-bold"
             value={boardSelection!.board}
             onChange={(e) => selectBoard(Number(e.target.value))}
           >
@@ -131,13 +142,16 @@ export default function EnterContractPage({
             ))}
           </select>
         </div>
+      </div>
 
-        <div className="flex flex-row justify-center gap-1 p-1">
+      {/* Contract display + Pass Out / Not Played */}
+      <div className="grid grid-cols-2 w-full items-stretch shrink-0">
+        <div className="flex flex-row justify-center gap-2 p-2">
           <PassOutButton onPassOut={onPassOut} />
           <NotPlayedButton onNotPlayed={onNotPlayed} />
         </div>
 
-        <div className="flex items-center justify-center bg-gray-300 text-3xl font-semibold">
+        <div className="flex items-center justify-center bg-gray-200 text-xl font-bold p-2 truncate">
           {contract}
         </div>
       </div>
@@ -161,5 +175,17 @@ export default function EnterContractPage({
         <SubmitButton onSubmit={handleOnOK} />
       </div>
     </div>
+  );
+}
+
+function ParticipantInfoInline({ assignment }: { assignment: Assignment | null }) {
+  if (!assignment) return null;
+
+  const label = assignment.type === "INDIVIDUAL" ? "Player" : assignment.type === "PAIR" ? "Pair" : "Team";
+
+  return (
+    <span className="text-base font-semibold">
+      {label} {assignment.id}
+    </span>
   );
 }

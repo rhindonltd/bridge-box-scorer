@@ -4,7 +4,7 @@ import { GameInfo } from "@/components/common/GameInfo";
 
 export function AwaitingMovementPage() {
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="min-h-dvh flex flex-col bg-gray-100">
       <div className="flex flex-row w-full">
         <GameInfo />
       </div>

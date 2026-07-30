@@ -10,13 +10,13 @@ interface Props {
 
 export function LeaderboardPage({ overallScoreAndParticipant, onNext }: Props) {
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="h-dvh flex flex-col bg-gray-100">
       <div className="flex flex-row w-full">
         <GameInfo />
       </div>
 
       <div className="w-full">
-        <div className="flex flex-col bg-blue-300 py-2">
+        <div className="flex flex-col bg-blue-100 text-blue-900 py-2">
           <div className="text-center font-bold">Results</div>
         </div>
       </div>

@@ -33,7 +33,7 @@ describe("NotPlayedButton", () => {
       "mt-2",
       "p-2",
       "text-base",
-      "bg-blue-400",
+      "bg-gray-200",
       "rounded-xl",
     );
   });

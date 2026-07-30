@@ -42,7 +42,7 @@ export default function SelectGamePage({ onGameSelected }: Props) {
   return (
     <>
       <div className="w-full">
-        <div className="bg-blue-200 py-2 text-center font-bold">
+        <div className="bg-blue-100 text-blue-900 py-2 text-center font-bold">
           <span>Select Game</span>
         </div>
       </div>

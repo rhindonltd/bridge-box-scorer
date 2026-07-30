@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+/* Dynamic viewport height for mobile — fills the visible area excluding
+   browser chrome (address bar, toolbar). Falls back to vh for older browsers. */
+@supports (height: 100dvh) {
+  .min-h-dvh {
+    min-height: 100dvh;
+  }
+  .h-dvh {
+    height: 100dvh;
+  }
+}
+
+@supports not (height: 100dvh) {
+  .min-h-dvh {
+    min-height: 100vh;
+  }
+  .h-dvh {
+    height: 100vh;
+  }
+}

@@ -15,7 +15,7 @@ export default function PlayerCard({ label, player }: Props) {
       ${
         player
           ? "bg-white text-gray-900"
-          : "bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
+          : "bg-gray-100 text-gray-500 border border-dashed border-gray-300"
       }`}
       >
         {player ? (
@@ -24,10 +24,7 @@ export default function PlayerCard({ label, player }: Props) {
             <div>{player.lastName}</div>
           </>
         ) : (
-          <>
-            <div className="italic">No</div>
-            <div>Player</div>
-          </>
+          <div className="italic text-sm py-1">Empty</div>
         )}
       </div>
     </div>

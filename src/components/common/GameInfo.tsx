@@ -8,7 +8,7 @@ export function GameInfo() {
   if (!game) return null;
 
   return (
-    <div className="flex flex-col bg-blue-200 py-2 flex-1">
+    <div className="flex flex-col bg-blue-100 text-blue-900 py-2 flex-1">
       <div className="text-center font-bold">
         <span>{game.eventName}</span>
       </div>

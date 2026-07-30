@@ -11,7 +11,7 @@ type Props = {
 
 export function MovementDetailsPage({ movementName, tables, onCreate }: Props) {
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="h-dvh flex flex-col bg-gray-100">
       {/* Header */}
       <div className="flex flex-row w-full">
         <GameInfo />
@@ -19,7 +19,7 @@ export function MovementDetailsPage({ movementName, tables, onCreate }: Props) {
 
       {/* Movement name */}
       <div className="w-full">
-        <div className="flex flex-col bg-blue-300 py-2">
+        <div className="flex flex-col bg-blue-100 text-blue-900 py-2">
           <div className="text-center font-bold">
             <span>{movementName}</span>
           </div>

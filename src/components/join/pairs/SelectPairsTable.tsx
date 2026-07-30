@@ -25,7 +25,7 @@ export default function SelectPairsTable({
   const tableNumbers = Array.from({ length: tables }, (_, i) => i + 1);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div className="min-h-dvh flex flex-col bg-gray-100">
       <div className="px-4 mt-4 mb-2">
         <span>Please select the table and direction you are sitting:</span>
       </div>
@@ -40,7 +40,7 @@ export default function SelectPairsTable({
                 isTableFull(table) ? "opacity-50" : ""
               }`}
             >
-              <div className="text-center py-3 text-lg font-semibold text-gray-700 border-b border-gray-200 bg-blue-300">
+              <div className="text-center py-3 text-lg font-semibold text-blue-900 border-b border-blue-200 bg-blue-100">
                 Table {table}
               </div>
 

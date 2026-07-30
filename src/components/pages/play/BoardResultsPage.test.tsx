@@ -2,12 +2,16 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BoardResultsPage } from "./BoardResultsPage";
 
-vi.mock("@/components/common/GameInfo", () => ({
-  GameInfo: () => <div data-testid="game-info" />,
+vi.mock("@/context/GameContext", () => ({
+  useGame: () => ({
+    game: { eventName: "Monday Pairs", gameId: "g1", gameType: "PAIRS", tables: 4 },
+  }),
 }));
 
-vi.mock("@/components/common/ParticipantInfo", () => ({
-  ParticipantInfo: () => <div data-testid="participant-info" />,
+vi.mock("@/context/AssignmentContext", () => ({
+  useAssignment: () => ({
+    assignment: { type: "PAIR", id: "3" },
+  }),
 }));
 
 vi.mock("@/components/results/traveller/Traveller", () => ({
@@ -24,13 +28,13 @@ describe("BoardResultsPage", () => {
     onNext: vi.fn(),
   };
 
-  it("renders GameInfo and ParticipantInfo", () => {
+  it("renders header with event name and pair info", () => {
     render(<BoardResultsPage {...baseProps} />);
-    expect(screen.getByTestId("game-info")).toBeInTheDocument();
-    expect(screen.getByTestId("participant-info")).toBeInTheDocument();
+    expect(screen.getByText("Monday Pairs")).toBeInTheDocument();
+    expect(screen.getByText("Pair 3")).toBeInTheDocument();
   });
 
-  it("renders board info", () => {
+  it("renders board info in header detail", () => {
     render(<BoardResultsPage {...baseProps} />);
     expect(screen.getByText("Board 5")).toBeInTheDocument();
   });
@@ -64,7 +68,7 @@ describe("BoardResultsPage", () => {
   it("applies layout classes", () => {
     const { container } = render(<BoardResultsPage {...baseProps} />);
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("h-dvh", "flex", "flex-col", "bg-gray-100");
   });
 
   it("keeps traveller in flexible scroll area", () => {

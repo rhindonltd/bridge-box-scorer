@@ -11,20 +11,16 @@ vi.mock("@/context/PlayContext", () => ({
   }),
 }));
 
-vi.mock("@/components/common/GameInfo", () => ({
-  GameInfo: () => <div data-testid="game-info" />,
+vi.mock("@/context/GameContext", () => ({
+  useGame: () => ({
+    game: { eventName: "Test Pairs", gameId: "g1", gameType: "PAIRS", tables: 4 },
+  }),
 }));
 
-vi.mock("@/components/common/ParticipantInfo", () => ({
-  ParticipantInfo: () => <div data-testid="participant-info" />,
-}));
-
-vi.mock("@/components/common/TableRoundPairBoardInfo", () => ({
-  TableRoundPairBoardInfo: ({ round, table }: any) => (
-    <div data-testid="table-info">
-      T{table}-R{round}
-    </div>
-  ),
+vi.mock("@/context/AssignmentContext", () => ({
+  useAssignment: () => ({
+    assignment: { type: "PAIR", id: "1" },
+  }),
 }));
 
 vi.mock("@/components/pages/play/PlayableContract", () => ({
@@ -68,9 +64,8 @@ describe("EnterContractPage", () => {
 
   it("renders layout components", () => {
     render(<EnterContractPage {...baseProps} />);
-    expect(screen.getByTestId("game-info")).toBeInTheDocument();
-    expect(screen.getByTestId("participant-info")).toBeInTheDocument();
-    expect(screen.getByTestId("table-info")).toBeInTheDocument();
+    expect(screen.getByText("Test Pairs")).toBeInTheDocument();
+    expect(screen.getByText(/Table 1/)).toBeInTheDocument();
     expect(screen.getByTestId("playable")).toBeInTheDocument();
   });
 

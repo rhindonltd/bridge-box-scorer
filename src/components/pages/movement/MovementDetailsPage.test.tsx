@@ -51,13 +51,13 @@ describe("MovementDetailsPage", () => {
   it("applies layout structure classes", () => {
     const { container } = render(<MovementDetailsPage {...baseProps} />);
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("h-dvh", "flex", "flex-col", "bg-gray-100");
   });
 
   it("wraps movement name in styled header", () => {
     render(<MovementDetailsPage {...baseProps} />);
     const name = screen.getByText("Mitchell Movement").parentElement;
-    expect(name?.parentElement).toHaveClass("bg-blue-300", "py-2");
+    expect(name?.parentElement).toHaveClass("bg-blue-100", "text-blue-900", "py-2");
   });
 
   it("scrollable table section exists", () => {

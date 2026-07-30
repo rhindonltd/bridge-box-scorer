@@ -30,7 +30,7 @@ export default function FormCardLayout({
   disabled = false,
 }: Props) {
   return (
-    <div className="flex items-center justify-center min-h-screen font-sans">
+    <div className="flex items-center justify-center min-h-dvh font-sans">
       <div className="w-full max-w-sm bg-white shadow-lg overflow-hidden">
         {/* Header */}
         <div

@@ -74,6 +74,6 @@ describe("MovementOptionsPage", () => {
   it("applies page layout classes", () => {
     const { container } = render(<MovementOptionsPage {...baseProps} />);
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("h-screen", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("h-dvh", "flex", "flex-col", "bg-gray-100");
   });
 });

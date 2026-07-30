@@ -27,7 +27,7 @@ describe("HeaderContentBottomLayout", () => {
       />,
     );
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("flex", "flex-col", "h-screen", "bg-gray-100");
+    expect(root).toHaveClass("flex", "flex-col", "h-dvh", "bg-gray-100");
   });
 
   it("wraps heading in centered container", () => {

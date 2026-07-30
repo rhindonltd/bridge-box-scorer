@@ -55,7 +55,7 @@ describe("SelectGamePage", () => {
     const header = screen.getByText("Select Game").parentElement;
 
     expect(header).toHaveClass(
-      "bg-blue-200",
+      "bg-blue-100",
       "py-2",
       "text-center",
       "font-bold",

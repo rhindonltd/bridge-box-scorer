@@ -56,7 +56,7 @@ describe("SelectGame", () => {
       "py-3",
       "text-lg",
       "font-semibold",
-      "bg-blue-300",
+      "bg-blue-600",
       "rounded-lg",
     );
   });

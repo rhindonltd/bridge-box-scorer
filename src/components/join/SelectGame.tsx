@@ -22,7 +22,7 @@ export default function SelectGame({ games, onGameSelected }: Props) {
               <button
                 key={game.gameId}
                 onClick={() => onGameSelected(game.gameId)}
-                className="w-full py-3 text-lg font-semibold bg-blue-300 rounded-lg hover:bg-blue-700 active:scale-[0.98] transition"
+                className="w-full py-3 text-lg font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 {game.eventName}
               </button>

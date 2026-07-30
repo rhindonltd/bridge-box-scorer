@@ -10,35 +10,35 @@ export function JoinMenuPage({
   onShowLeaderboard,
 }: Props) {
   return (
-    <div className="h-screen flex flex-col overflow-y-auto relative">
-      {/* Logo */}
-      <div className="flex flex-col items-center mt-6 mb-6 relative z-0">
+    <div className="min-h-dvh flex flex-col overflow-y-auto relative bg-white">
+      {/* Logo — scales down on small screens */}
+      <div className="flex flex-col items-center mt-8 mb-8 px-6">
         <img
           src="/bridge-box-logo.png"
           alt="Bridge Box"
-          className="w-64 h-auto mb-2 block"
+          className="w-48 sm:w-64 h-auto block"
         />
       </div>
 
       {/* Buttons */}
-      <div className="flex flex-col gap-4 px-4 pb-6 max-w-md w-full mx-auto relative z-10">
+      <div className="flex flex-col gap-3 px-6 pb-8 max-w-sm w-full mx-auto">
         <button
           onClick={onJoinAsPlayer}
-          className="w-full py-3 text-lg font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-[0.98] transition"
+          className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Join As Player
         </button>
 
         <button
           onClick={onShowTimer}
-          className="w-full py-3 text-lg font-semibold bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 active:scale-[0.98] transition"
+          className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Show Timer
         </button>
 
         <button
           onClick={onShowLeaderboard}
-          className="w-full py-3 text-lg font-semibold bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 active:scale-[0.98] transition"
+          className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Show Leaderboard
         </button>
