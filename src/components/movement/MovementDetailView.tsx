@@ -123,7 +123,7 @@ function TableView({
   isPair: boolean;
 }) {
   return (
-    <div className="border rounded-lg shadow-sm overflow-hidden">
+    <div className="border rounded-lg shadow-sm overflow-x-auto">
       <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
         Table {table.tableNumber}
       </div>
@@ -200,7 +200,7 @@ function RoundView({
   isPair: boolean;
 }) {
   return (
-    <div className="border rounded-lg shadow-sm overflow-hidden">
+    <div className="border rounded-lg shadow-sm overflow-x-auto">
       <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
         Round {round.roundNumber}
       </div>

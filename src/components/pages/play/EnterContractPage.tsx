@@ -137,7 +137,7 @@ export default function EnterContractPage({
           <NotPlayedButton onNotPlayed={onNotPlayed} />
         </div>
 
-        <div className="flex items-center justify-center bg-gray-300 text-3xl font-semibold">
+        <div className="flex items-center justify-center bg-gray-200 text-xl sm:text-3xl font-semibold p-2 truncate">
           {contract}
         </div>
       </div>

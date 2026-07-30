@@ -27,7 +27,7 @@ export default function ShowTables({ tables }: Props) {
             key={table.tableNumber}
             className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-200"
           >
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <CardTable
                 tableNumber={table.tableNumber}
                 players={table.players}
