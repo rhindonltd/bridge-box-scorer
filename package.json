@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "node scripts/link-ts6.mjs",
     "dev": "tsx watch server.ts",
-    "prebuild": "npx tsx src/scripts/migrate.ts",
+    "prebuild": "npx tsx --env-file=.env src/scripts/migrate.ts",
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts",
     "lint": "eslint .",
