@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "892f55f1-9938-4a6c-966d-028b495d261e",
+  "id": "394cb394-7aa5-4a91-ae03-b4d6b0e00c4d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "games": {
@@ -34,6 +34,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "scoring_type": {
+          "name": "scoring_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'MP'"
         },
         "game_id": {
           "name": "game_id",

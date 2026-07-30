@@ -3,6 +3,7 @@ CREATE TABLE `games` (
 	`event_name` text NOT NULL,
 	`director` text,
 	`game_type` text NOT NULL,
+	`scoring_type` text DEFAULT 'MP' NOT NULL,
 	`game_id` text DEFAULT (lower(hex(randomblob(16)))) NOT NULL,
 	`session_name` text NOT NULL,
 	`section_name` text NOT NULL,
