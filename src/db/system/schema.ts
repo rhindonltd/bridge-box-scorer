@@ -1,4 +1,4 @@
-import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
 /* loginsessions */
 export const loginSessions = sqliteTable("loginsessions", {
@@ -16,3 +16,13 @@ export const settings = sqliteTable("settings", {
 });
 
 export type Setting = typeof settings.$inferSelect;
+
+/* club */
+export const club = sqliteTable("club", {
+  id: integer("id").primaryKey().default(1),
+  name: text("name").notNull(),
+  clubNumber: text("club_number").notNull(),
+});
+
+export type Club = typeof club.$inferSelect;
+export type NewClub = typeof club.$inferInsert;

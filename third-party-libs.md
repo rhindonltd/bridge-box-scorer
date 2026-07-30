@@ -1,12 +1,14 @@
-# total -> 453
+# total -> 460
 
-# MIT - 390
+# MIT - 396
 
 # MIT-0 - 1
 
 # Apache-2.0 - 19
 
 # LGPL-3.0-or-later - 1
+
+# Python-2.0 - 1
 
 # MPL-2.0 - 2
 
@@ -284,6 +286,30 @@
  1. https://github.com/SukkaW/nolyfill
  2. MIT
 
+# @oozcitak/dom@2.0.2
+
+
+ 1. https://github.com/oozcitak/dom
+ 2. MIT
+
+# @oozcitak/infra@2.0.2
+
+
+ 1. https://github.com/oozcitak/infra
+ 2. MIT
+
+# @oozcitak/url@3.0.0
+
+
+ 1. https://github.com/oozcitak/url
+ 2. MIT
+
+# @oozcitak/util@10.0.0
+
+
+ 1. https://github.com/oozcitak/util
+ 2. MIT
+
 # @oxc-parser/binding-darwin-arm64@0.127.0
 
 
@@ -505,6 +531,12 @@
 
  1. https://github.com/zeit/arg
  2. MIT
+
+# argparse@2.0.1
+
+
+ 1. https://github.com/nodeca/argparse
+ 2. Python-2.0
 
 # aria-hidden@1.2.6
 
@@ -1616,6 +1648,12 @@
  1. https://github.com/lydell/js-tokens
  2. MIT
 
+# js-yaml@4.3.0
+
+
+ 1. https://github.com/nodeca/js-yaml
+ 2. MIT
+
 # jsdom@30.0.1
 
 
@@ -2695,6 +2733,12 @@
 
  1. https://github.com/jsdom/xml-name-validator
  2. Apache-2.0
+
+# xmlbuilder2@4.0.3
+
+
+ 1. https://github.com/oozcitak/xmlbuilder2
+ 2. MIT
 
 # xmlchars@2.2.0
 

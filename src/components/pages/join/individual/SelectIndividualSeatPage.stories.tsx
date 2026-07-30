@@ -27,6 +27,7 @@ export const Default: Story = {
       eventName: "Monday AM Pairs",
       director: null,
       gameType: "INDIVIDUAL",
+      scoringType: "MP",
       gameId: crypto.randomUUID(),
       sessionName: "",
       sectionName: "",
