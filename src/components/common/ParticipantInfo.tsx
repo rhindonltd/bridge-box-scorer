@@ -24,7 +24,7 @@ export function ParticipantInfo() {
   }
 
   return (
-    <div className="flex flex-col bg-blue-400 py-2">
+    <div className="flex flex-col bg-blue-100 text-blue-900 py-2">
       <span className="text-center font-bold px-4">{label}</span>
       <span className="text-center font-bold px-4 text-xl">
         {assignment.id}

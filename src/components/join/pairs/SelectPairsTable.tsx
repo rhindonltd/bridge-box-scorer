@@ -40,7 +40,7 @@ export default function SelectPairsTable({
                 isTableFull(table) ? "opacity-50" : ""
               }`}
             >
-              <div className="text-center py-3 text-lg font-semibold text-gray-700 border-b border-gray-200 bg-blue-300">
+              <div className="text-center py-3 text-lg font-semibold text-blue-900 border-b border-blue-200 bg-blue-100">
                 Table {table}
               </div>
 

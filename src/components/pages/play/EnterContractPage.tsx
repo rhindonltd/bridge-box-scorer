@@ -116,7 +116,7 @@ export default function EnterContractPage({
       <div className="grid grid-cols-2 w-full items-stretch">
         <TableRoundPairBoardInfo round={round} table={table} />
 
-        <div className="flex flex-row items-center justify-center bg-blue-300">
+        <div className="flex flex-row items-center justify-center bg-blue-100 text-blue-900">
           <label htmlFor="board-selector" className="pr-2 font-bold">Board:</label>
           <select
             id="board-selector"

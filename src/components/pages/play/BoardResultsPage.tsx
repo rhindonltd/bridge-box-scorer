@@ -25,7 +25,7 @@ export function BoardResultsPage({
       </div>
 
       <div className="w-full">
-        <div className="flex flex-col bg-blue-300 py-2">
+        <div className="flex flex-col bg-blue-100 text-blue-900 py-2">
           <div className="text-center font-bold">
             <span>Board {board}</span>
           </div>

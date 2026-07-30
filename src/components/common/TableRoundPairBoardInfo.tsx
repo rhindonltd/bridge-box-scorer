@@ -10,7 +10,7 @@ type Props = {
 export function TableRoundPairBoardInfo({ round, table, pair, board }: Props) {
   return (
     <>
-      <div className="flex flex-col bg-blue-300 py-2">
+      <div className="flex flex-col bg-blue-100 text-blue-900 py-2">
         <div className="text-center">{pair && <span>Pair {pair}</span>}</div>
         <div className="text-center font-bold">
           {table && <span>Table {table}</span>}
