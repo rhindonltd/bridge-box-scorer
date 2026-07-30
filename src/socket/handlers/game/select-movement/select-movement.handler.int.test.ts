@@ -31,6 +31,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 import { getIndividualMovement } from "@/db/movements/queries/get-movement";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerSelectMovementHandler } from "./select-movement.handler";
 
 describe("registerSelectMovementHandler (integration)", () => {
@@ -45,12 +46,17 @@ describe("registerSelectMovementHandler (integration)", () => {
       await fn(tx);
     });
 
+    // Mock findLoginSession to validate the test director token
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "g1",
+    } as any);
+
     httpServer = createServer();
     io = new Server(httpServer, { cors: { origin: "*" } });
 
     io.on("connection", (socket: Socket) => {
-      // Treat every test connection as a director
-      socket.data.isDirector = true;
       registerSelectMovementHandler(socket);
     });
 
@@ -79,7 +85,7 @@ describe("registerSelectMovementHandler (integration)", () => {
     const result = await new Promise<any>((resolve) => {
       client.emit(
         SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g1", type: "INDIVIDUAL", id: 1 },
+        { gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "test-token" },
         resolve,
       );
     });
@@ -94,7 +100,7 @@ describe("registerSelectMovementHandler (integration)", () => {
     const result = await new Promise<any>((resolve) => {
       client.emit(
         SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g1", type: "INDIVIDUAL", id: 1 },
+        { gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "test-token" },
         resolve,
       );
     });

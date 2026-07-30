@@ -20,11 +20,12 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { getEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
 import { scheduleGame } from "@/timer/scheduler";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerUpdateConfigHandler } from "./update-config.handler";
 
 function createMockSocket() {
   return {
-    data: { isDirector: true },
+    data: {},
     id: "test",
     on: vi.fn(),
   } as any;
@@ -41,6 +42,12 @@ function createMockIo() {
 describe("registerUpdateConfigHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: valid director session
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-5",
+    } as any);
   });
 
   it("registers a handler for timer:updateConfig event", () => {
@@ -82,6 +89,7 @@ describe("registerUpdateConfigHandler", () => {
     await handler({
       gameType: "INDIVIDUAL",
       gameId: "game-5",
+      directorToken: "test-token",
       boardsPerRound: 4,
       totalRounds: 6,
       playDuration: 480,
@@ -119,6 +127,7 @@ describe("registerUpdateConfigHandler", () => {
     await handler({
       gameType: "INDIVIDUAL",
       gameId: "game-5",
+      directorToken: "test-token",
       boardsPerRound: 4,
       totalRounds: 6,
       playDuration: 480,
@@ -128,9 +137,10 @@ describe("registerUpdateConfigHandler", () => {
     expect(updateTimerState).not.toHaveBeenCalled();
   });
 
-  it("does nothing if socket is not a director", async () => {
+  it("does nothing if directorToken is invalid", async () => {
+    vi.mocked(findLoginSession).mockReturnValue(null as any);
+
     const socket = createMockSocket();
-    socket.data.isDirector = false;
     const io = createMockIo();
 
     registerUpdateConfigHandler(socket, io);
@@ -139,6 +149,7 @@ describe("registerUpdateConfigHandler", () => {
     await handler({
       gameType: "INDIVIDUAL",
       gameId: "game-5",
+      directorToken: "bad-token",
       boardsPerRound: 4,
       totalRounds: 6,
       playDuration: 480,

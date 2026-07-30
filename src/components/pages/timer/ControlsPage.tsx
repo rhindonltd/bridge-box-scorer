@@ -5,6 +5,7 @@ import { useTimerDerived } from "@/hooks/timer-derived";
 import { useTimerSync } from "@/hooks/timer-sync";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
+import { getDirectorToken } from "@/lib/director-token";
 import { useEffect, useMemo, useState } from "react";
 
 export default function ControlsPage() {
@@ -70,6 +71,7 @@ export default function ControlsPage() {
     getSocket().emit(event, {
       gameType: game!.gameType,
       gameId: game!.gameId,
+      directorToken: getDirectorToken(game!.gameId),
     });
   }
 
@@ -77,6 +79,7 @@ export default function ControlsPage() {
     getSocket().emit(event, {
       gameType: game!.gameType,
       gameId: game!.gameId,
+      directorToken: getDirectorToken(game!.gameId),
       boardsPerRound,
       totalRounds,
       playDuration: effectivePlayDuration,

@@ -7,7 +7,15 @@ vi.mock("@/lib/socket", () => ({
   emitEvent: vi.fn(),
 }));
 
+vi.mock("@/lib/director-token", () => ({
+  setDirectorToken: vi.fn(),
+  getDirectorToken: vi.fn(() => "stored-token"),
+  clearDirectorToken: vi.fn(),
+  isDirectorFor: vi.fn(),
+}));
+
 import { emitWithAck, emitEvent } from "@/lib/socket";
+import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
 
 const mockEmitWithAck = vi.mocked(emitWithAck);
 const mockEmitEvent = vi.mocked(emitEvent);
@@ -18,9 +26,13 @@ describe("game-service", () => {
   });
 
   describe("createGame", () => {
-    it("emits CREATE_GAME and returns the game from the ack", async () => {
-      const fakeGame = { id: "g1", name: "Test Game" };
-      mockEmitWithAck.mockResolvedValue({ success: true, game: fakeGame });
+    it("emits CREATE_GAME, stores director token in localStorage, and returns the game", async () => {
+      const fakeGame = { id: "g1", gameId: "g1", name: "Test Game" };
+      mockEmitWithAck.mockResolvedValue({
+        success: true,
+        game: fakeGame,
+        directorToken: "tok-123",
+      });
 
       const newGame = { name: "Test Game" } as any;
       const result = await createGame(newGame);
@@ -30,16 +42,19 @@ describe("game-service", () => {
         newGame,
       );
       expect(result).toEqual(fakeGame);
+
+      // Should store the director token in localStorage via setDirectorToken
+      expect(setDirectorToken).toHaveBeenCalledWith("g1", "tok-123");
     });
   });
 
   describe("selectMovement", () => {
-    it("emits SELECT_MOVEMENT with gameId, type, and id", async () => {
+    it("emits SELECT_MOVEMENT with gameId, type, id, and directorToken", async () => {
       await selectMovement("g1", 42, "mitchell");
 
       expect(mockEmitEvent).toHaveBeenCalledWith(
         SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g1", type: "mitchell", id: 42 },
+        { gameId: "g1", type: "mitchell", id: 42, directorToken: "stored-token" },
       );
     });
   });
@@ -53,7 +68,7 @@ describe("game-service", () => {
 
       expect(mockEmitWithAck).toHaveBeenCalledWith(
         SocketEvents.CREATE_PARTICIPANT,
-        { gameId: "g1", newParticipant },
+        { gameId: "g1", newParticipant, directorToken: "stored-token" },
       );
       expect(result).toBe("p-key-123");
     });

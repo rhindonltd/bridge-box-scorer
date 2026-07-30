@@ -3,7 +3,6 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
-import { GameTypes } from "@/db/games/types/game-type";
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
@@ -13,21 +12,21 @@ import { parseSeat } from "@/model/participants";
 const payloadSchema = z.object({
   gameId: z.string().min(1),
   tables: z.number().int().min(1),
+  directorToken: z.string().min(1),
 });
 
 export function registerUpdateTablesHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.UPDATE_TABLES,
     async (payload: unknown, cb?: (res: { success: boolean; error?: string }) => void) => {
-      if (!assertDirector(socket, cb)) return;
-
       const parsed = payloadSchema.safeParse(payload);
       if (!parsed.success) {
         cb?.({ success: false, error: "Invalid payload" });
         return;
       }
 
-      const { gameId, tables } = parsed.data;
+      const { gameId, tables, directorToken } = parsed.data;
+      if (!assertDirector(directorToken, gameId, cb)) return;
 
       try {
         const game = await findGameById(gameId);

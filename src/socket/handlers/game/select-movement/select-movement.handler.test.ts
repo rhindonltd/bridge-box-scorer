@@ -23,7 +23,6 @@ vi.mock("@/db/games/pairs", () => ({
   getDb: vi.fn(async () => ({ transaction: mockTransaction })),
 }));
 
-// director-auth guard reads socket.data.isDirector — no real DB needed
 vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
@@ -33,6 +32,7 @@ import {
   getPairMovement,
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerSelectMovementHandler } from "./select-movement.handler";
 
 // Minimal INDIVIDUAL movement fixture
@@ -57,7 +57,7 @@ const pairMovement = [
 
 function makeDirectorSocket() {
   return {
-    data: { isDirector: true },
+    data: {},
     id: "test-socket",
     on: vi.fn(),
   };
@@ -70,6 +70,13 @@ describe("registerSelectMovementHandler (unit)", () => {
       const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
       await fn(tx);
     });
+
+    // Default: valid director session
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "g1",
+    } as any);
   });
 
   it("registers handler on SELECT_MOVEMENT event", () => {
@@ -81,14 +88,16 @@ describe("registerSelectMovementHandler (unit)", () => {
     );
   });
 
-  it("rejects non-director sockets immediately", async () => {
-    const socket = { data: { isDirector: false }, id: "x", on: vi.fn() };
+  it("rejects when directorToken is invalid", async () => {
+    vi.mocked(findLoginSession).mockReturnValue(null as any);
+
+    const socket = makeDirectorSocket();
     registerSelectMovementHandler(socket as any);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1 }, cb);
+    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "bad-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     expect(getIndividualMovement).not.toHaveBeenCalled();
@@ -103,7 +112,7 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     vi.mocked(getIndividualMovement).mockResolvedValue(individualMovement as any);
 
-    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 10 }, cb);
+    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 10, directorToken: "test-token" }, cb);
 
     expect(getIndividualMovement).toHaveBeenCalledWith(10);
     expect(mockTransaction).toHaveBeenCalled();
@@ -119,7 +128,7 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     vi.mocked(getPairMovement).mockResolvedValue(pairMovement as any);
 
-    await handler({ gameId: "g1", type: "PAIRS", id: 5 }, cb);
+    await handler({ gameId: "g1", type: "PAIRS", id: 5, directorToken: "test-token" }, cb);
 
     expect(getPairMovement).toHaveBeenCalledWith(5);
     expect(mockTransaction).toHaveBeenCalled();
@@ -135,7 +144,7 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     vi.mocked(getTeamMovement).mockResolvedValue(pairMovement as any);
 
-    await handler({ gameId: "g1", type: "TEAM", id: 3 }, cb);
+    await handler({ gameId: "g1", type: "TEAM", id: 3, directorToken: "test-token" }, cb);
 
     expect(getTeamMovement).toHaveBeenCalledWith(3);
     expect(cb).toHaveBeenCalledWith({ success: true });
@@ -150,7 +159,7 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     vi.mocked(getIndividualMovement).mockRejectedValue(new Error("db fail"));
 
-    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1 }, cb);
+    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "test-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false });
   });
@@ -165,7 +174,7 @@ describe("registerSelectMovementHandler (unit)", () => {
     vi.mocked(getIndividualMovement).mockResolvedValue(individualMovement as any);
     mockTransaction.mockRejectedValue(new Error("tx fail"));
 
-    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1 }, cb);
+    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "test-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false });
   });

@@ -21,13 +21,15 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
       {
         gameId,
         newParticipant,
+        directorToken,
       }: {
         gameId: string;
         newParticipant: NewParticipant;
+        directorToken?: string;
       },
       cb,
     ) => {
-      if (!assertDirector(socket, cb)) return;
+      if (!assertDirector(directorToken, gameId, cb)) return;
       try {
         const key = crypto.randomUUID();
 
@@ -71,10 +73,7 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
         }
       } catch (err) {
         console.error(`Failed to create participant for game ${gameId}`, err);
-
-        cb?.({
-          success: false,
-        });
+        cb?.({ success: false });
       }
     },
   );

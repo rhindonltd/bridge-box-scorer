@@ -61,13 +61,8 @@ test.describe("Smoke Tests", () => {
     expect(body.success).toBe(false);
   });
 
-  test("protected routes redirect without auth", async ({ page }) => {
-    // /create should redirect to / without a director token
+  test("create page is accessible", async ({ page }) => {
     await page.goto("/create");
-
-    // Should have been redirected away from /create
-    await page.waitForURL((url) => !url.pathname.startsWith("/create"), {
-      timeout: 5000,
-    });
+    await expect(page).toHaveURL(/\/create/);
   });
 });

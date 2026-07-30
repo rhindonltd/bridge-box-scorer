@@ -20,11 +20,12 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { getEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
 import { scheduleGame } from "@/timer/scheduler";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerStartTimerHandler } from "./start-timer.handler";
 
 function createMockSocket() {
   return {
-    data: { isDirector: true },
+    data: {},
     id: "test",
     on: vi.fn(),
   } as any;
@@ -41,6 +42,12 @@ function createMockIo() {
 describe("registerStartTimerHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: valid director session
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
+    } as any);
   });
 
   it("registers a handler for timer:start event", () => {
@@ -68,7 +75,7 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "INDIVIDUAL", gameId: "game-1" });
+    await handler({ gameType: "INDIVIDUAL", gameId: "game-1", directorToken: "test-token" });
 
     expect(mockEngine.start).toHaveBeenCalled();
     expect(updateTimerState).toHaveBeenCalledWith(
@@ -95,21 +102,22 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "INDIVIDUAL", gameId: "game-1" });
+    await handler({ gameType: "INDIVIDUAL", gameId: "game-1", directorToken: "test-token" });
 
     expect(updateTimerState).not.toHaveBeenCalled();
     expect(scheduleGame).not.toHaveBeenCalled();
   });
 
-  it("does nothing if socket is not a director", async () => {
+  it("does nothing if directorToken is invalid", async () => {
+    vi.mocked(findLoginSession).mockReturnValue(null as any);
+
     const socket = createMockSocket();
-    socket.data.isDirector = false;
     const io = createMockIo();
 
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "INDIVIDUAL", gameId: "game-1" });
+    await handler({ gameType: "INDIVIDUAL", gameId: "game-1", directorToken: "bad-token" });
 
     expect(getEngine).not.toHaveBeenCalled();
   });

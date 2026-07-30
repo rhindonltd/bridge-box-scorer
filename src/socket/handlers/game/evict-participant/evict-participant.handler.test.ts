@@ -30,10 +30,11 @@ import { deleteParticipant as deleteIndividual } from "@/db/games/individual/act
 import { deleteParticipant as deletePair } from "@/db/games/pairs/actions/delete-participant";
 import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerEvictParticipantHandler } from "./evict-participant.handler";
 
-function makeSocket(isDirector = true) {
-  return { data: { isDirector }, id: "test", on: vi.fn() } as any;
+function makeSocket() {
+  return { data: {}, id: "test", on: vi.fn() } as any;
 }
 
 function makeIo() {
@@ -42,7 +43,15 @@ function makeIo() {
 }
 
 describe("registerEvictParticipantHandler", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default: valid director session
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "g1",
+    } as any);
+  });
 
   it("registers handler on EVICT_PARTICIPANT event", () => {
     const socket = makeSocket();
@@ -67,7 +76,7 @@ describe("registerEvictParticipantHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", seat: "2NS" }, cb);
+    await handler({ gameId: "g1", seat: "2NS", directorToken: "test-token" }, cb);
 
     expect(deletePair).toHaveBeenCalledWith("g1", "2NS");
     expect(io._emit).toHaveBeenCalledWith(
@@ -91,7 +100,7 @@ describe("registerEvictParticipantHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", seat: "1N" }, cb);
+    await handler({ gameId: "g1", seat: "1N", directorToken: "test-token" }, cb);
 
     expect(deleteIndividual).toHaveBeenCalledWith("g1", "1N");
     expect(io._emit).toHaveBeenCalledWith(
@@ -102,13 +111,15 @@ describe("registerEvictParticipantHandler", () => {
   });
 
   it("rejects non-directors", async () => {
-    const socket = makeSocket(false);
+    vi.mocked(findLoginSession).mockReturnValue(null as any);
+
+    const socket = makeSocket();
     const io = makeIo();
     registerEvictParticipantHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", seat: "1N" }, cb);
+    await handler({ gameId: "g1", seat: "1N", directorToken: "bad-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     expect(findGameById).not.toHaveBeenCalled();
@@ -129,6 +140,12 @@ describe("registerEvictParticipantHandler", () => {
   });
 
   it("returns error when game not found", async () => {
+    // Mock a valid session for the "nonexistent" gameId so director auth passes
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "nonexistent",
+    } as any);
     vi.mocked(findGameById).mockResolvedValue(null);
 
     const socket = makeSocket();
@@ -137,7 +154,7 @@ describe("registerEvictParticipantHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "nonexistent", seat: "1N" }, cb);
+    await handler({ gameId: "nonexistent", seat: "1N", directorToken: "test-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith(
       expect.objectContaining({ success: false, error: "Game not found" }),

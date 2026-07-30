@@ -12,6 +12,7 @@ import { GameTypes } from "@/db/games/types/game-type";
 const payloadSchema = z.object({
   gameType: z.enum(GameTypes),
   gameId: z.string().min(1),
+  directorToken: z.string().min(1),
 });
 
 export function registerNextRoundHandler(socket: Socket, io: Server) {
@@ -23,15 +24,14 @@ export function registerNextRoundHandler(socket: Socket, io: Server) {
   }
 
   socket.on(SocketEvents.NEXT_ROUND_TIMER, async (payload: unknown) => {
-    if (!assertDirector(socket)) return;
-
     const parsed = payloadSchema.safeParse(payload);
     if (!parsed.success) {
       console.warn("Invalid NEXT_ROUND_TIMER payload:", parsed.error.message);
       return;
     }
 
-    const { gameType, gameId } = parsed.data;
+    const { gameType, gameId, directorToken } = parsed.data;
+    if (!assertDirector(directorToken, gameId)) return;
 
     try {
       const engine = await getEngine(gameType, gameId);

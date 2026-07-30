@@ -35,6 +35,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { createPlayer } from "@/db/games/shared/actions/create-player";
 import { createParticipant as createIndividual } from "@/db/games/individual/actions/create-participant";
 import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateParticipantHandler } from "./create-participant";
 
 describe("registerCreateParticipantHandler (integration)", () => {
@@ -45,15 +46,18 @@ describe("registerCreateParticipantHandler (integration)", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
 
+    // Mock findLoginSession to validate the test director token
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
+    } as any);
+
     httpServer = createServer();
     io = new Server(httpServer, { cors: { origin: "*" } });
 
     io.on("connection", (socket: Socket) => {
-      // Mark every test connection as a director so the guard passes
-      socket.data.isDirector = true;
-
       socket.on("join", (room: string) => socket.join(room));
-
       registerCreateParticipantHandler(socket, io);
     });
 
@@ -93,6 +97,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
         SocketEvents.CREATE_PARTICIPANT,
         {
           gameId: "game-1",
+          directorToken: "test-token",
           newParticipant: {
             type: "INDIVIDUAL",
             initialSeat: "1N",
@@ -119,6 +124,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
         SocketEvents.CREATE_PARTICIPANT,
         {
           gameId: "game-1",
+          directorToken: "test-token",
           newParticipant: {
             type: "INDIVIDUAL",
             initialSeat: "1N",

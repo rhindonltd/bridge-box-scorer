@@ -23,7 +23,6 @@ vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-// director-auth: assertDirector reads socket.data.isDirector — no DB needed
 vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
@@ -33,12 +32,12 @@ import { createParticipant as createIndividual } from "@/db/games/individual/act
 import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 import { createParticipant as createPair } from "@/db/games/pairs/actions/create-participant";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateParticipantHandler } from "./create-participant";
 
-// helper: build a mock socket that passes the director guard
 function makeDirectorSocket() {
   return {
-    data: { isDirector: true },
+    data: {},
     id: "test-socket",
     on: vi.fn(),
   };
@@ -53,6 +52,12 @@ function makeIo(emitFn = vi.fn()) {
 describe("registerCreateParticipantHandler (unit)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: findLoginSession returns a valid director session
+    vi.mocked(findLoginSession).mockReturnValue({
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
+    } as any);
   });
 
   it("registers handler on CREATE_PARTICIPANT event", () => {
@@ -64,8 +69,10 @@ describe("registerCreateParticipantHandler (unit)", () => {
     );
   });
 
-  it("rejects non-director sockets immediately", async () => {
-    const socket = { data: { isDirector: false }, id: "x", on: vi.fn() };
+  it("rejects when no directorToken is provided", async () => {
+    vi.mocked(findLoginSession).mockReturnValue(null as any);
+
+    const socket = makeDirectorSocket();
     registerCreateParticipantHandler(socket as any, makeIo() as any);
 
     const handler = socket.on.mock.calls[0][1];
@@ -106,6 +113,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       await handler(
         {
           gameId: "game-1",
+          directorToken: "test-token",
           newParticipant: {
             type: "INDIVIDUAL",
             initialSeat: "1N",
@@ -148,6 +156,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       await handler(
         {
           gameId: "game-1",
+          directorToken: "test-token",
           newParticipant: {
             type: "INDIVIDUAL",
             initialSeat: "1N",
@@ -180,6 +189,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       await handler(
         {
           gameId: "game-1",
+          directorToken: "test-token",
           newParticipant: {
             type: "PAIR",
             initialSeat: "1NS",
@@ -226,6 +236,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       await handler(
         {
           gameId: "game-1",
+          directorToken: "test-token",
           newParticipant: {
             type: "PAIR",
             initialSeat: "1NS",

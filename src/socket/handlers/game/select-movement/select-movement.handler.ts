@@ -1,4 +1,4 @@
-import { Socket } from "socket.io";
+import type { Socket } from "socket.io";
 import { SocketEvents } from "@/socket/socket-events";
 
 import {
@@ -152,14 +152,16 @@ export function registerSelectMovementHandler(socket: Socket) {
         gameId,
         type,
         id,
+        directorToken,
       }: {
         gameId: string;
         type: string;
         id: number;
+        directorToken: string;
       },
       cb,
     ) => {
-      if (!assertDirector(socket, cb)) return;
+      if (!assertDirector(directorToken, gameId, cb)) return;
 
       try {
         if (type === "INDIVIDUAL") {

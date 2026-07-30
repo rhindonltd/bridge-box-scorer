@@ -16,7 +16,7 @@ export async function getDb() {
   }
 
   const dataDir = process.env.DATABASE_URL ?? "/home/bridgebox/data";
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
   const dbFile = path.join(dataDir, "movements.db");
   const sqlite = new Database(dbFile);
