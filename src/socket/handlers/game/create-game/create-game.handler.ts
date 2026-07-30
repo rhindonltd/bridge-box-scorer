@@ -38,7 +38,8 @@ export function registerCreateGameHandler(socket: Socket, io: Server) {
           joinableGames: await findJoinableGames(),
         });
       } catch (error) {
-        cb({ error, success: false });
+        console.error("Failed to create game:", error);
+        cb({ error: error instanceof Error ? error.message : "Unknown error", success: false });
       }
     },
   );
