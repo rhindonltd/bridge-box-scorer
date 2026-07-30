@@ -22,7 +22,7 @@ export function BoardResult({ board, contract, declarer, onSave }: Props) {
   const [mode, setMode] = useState<"made" | "down">("made");
   const [value, setValue] = useState(0);
 
-  // const result = mode === "made" ? value : -value;
+  const result = mode === "made" ? value : -value;
 
   const values = useMemo(() => {
     return mode === "made"
@@ -97,14 +97,14 @@ export function BoardResult({ board, contract, declarer, onSave }: Props) {
       </div>
 
       {/* FOOTER */}
-      {/*<footer className="shrink-0 mt-4">*/}
-      {/*  <button*/}
-      {/*    onClick={() => onSave(result)}*/}
-      {/*    className="w-full rounded-xl bg-black py-4 text-white"*/}
-      {/*  >*/}
-      {/*    Continue*/}
-      {/*  </button>*/}
-      {/*</footer>*/}
+      <footer className="shrink-0 mt-4">
+        <button
+          onClick={() => onSave(result)}
+          className="w-full rounded-xl bg-blue-600 text-white py-4 text-lg font-semibold hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        >
+          Continue
+        </button>
+      </footer>
     </div>
   );
 }
