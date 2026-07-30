@@ -6,7 +6,9 @@ export const SocketEvents = {
   // Client initiated - Game specific
   JOIN_GAME: "game:join",
   CREATE_PARTICIPANT: "game:createParticipant",
+  EVICT_PARTICIPANT: "game:evictParticipant",
   SELECT_MOVEMENT: "game:selectMovement",
+  UPDATE_TABLES: "game:updateTables",
   LEAVE_GAME: "game:leave",
 
   // Server initiated - Global
@@ -14,6 +16,7 @@ export const SocketEvents = {
 
   // Server initiated - Game specific
   PARTICIPANTS: "game:participants",
+  GAME_UPDATED: "game:updated",
 
   // Server initiated - Timer specific
   TIMER_SYNC: "timer:sync",
