@@ -22,6 +22,9 @@ export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
     throw new Error("Skip Mitchell cannot have an odd number of tables");
   }
 
+  // Skip Mitchell always uses tables - 1 rounds (mathematical constraint)
+  const effectiveRounds = skip ? tables - 1 : rounds;
+
   // ewAdd offsets EW pair IDs to avoid collision with NS IDs during arrow switch
   const ewAdd = arrowSwitchRounds > 0 ? tables : 0;
 
@@ -34,7 +37,7 @@ export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
       createMitchellTable({
         tableNumber,
         tables,
-        rounds,
+        rounds: effectiveRounds,
         boardsPerRound,
         arrowSwitchRounds,
         skipAfter,
@@ -148,33 +151,22 @@ function computeEwDistance(
 
 /**
  * Compute board distance for a given round.
- * For standard/relay Mitchell: boards advance by 1 each round.
- * For skip Mitchell: boards use an adjusted progression that ensures
- * each EW pair encounters unique board sets across all rounds.
+ * For all Mitchell variants: boards advance by 1 each round (standard progression).
+ *
+ * For skip Mitchell, board uniqueness for both NS and EW pairs is achieved by
+ * limiting the number of rounds to tables - 1 (standard skip Mitchell practice).
+ * It is mathematically impossible to achieve both NS and EW board uniqueness
+ * with N rounds and N board sets for even N, so skip Mitchell movements
+ * must be curtailed by one round.
  */
 function computeBoardDistance(
   roundNumber: number,
-  skip: boolean,
-  skipAfter: number,
-  tables: number,
+  _skip: boolean,
+  _skipAfter: number,
+  _tables: number,
 ): number {
-  if (!skip) {
-    // Standard or relay: boards move 1 per round
-    return roundNumber - 1;
-  }
-
-  // For skip Mitchell, boards need a progression such that
-  // boardDist(R) - ewDist(R) produces N distinct values mod N.
-  // We use: boards advance by 1 each round (standard), giving
-  // boardDist - ewDist = (R-1) - ewDist(R), which for our skip formula:
-  //   R <= skipAfter: (R-1) - (R-1) = 0  (all same - bad!)
-  // Instead, we need a different board progression for skip Mitchell.
-  //
-  // The board progression that works: advance at rate (tables-1) per round.
-  // This gives boardDist = (tables-1) * (roundNumber-1) mod tables.
-  // The relative offset boardDist - ewDist gives distinct values because
-  // (tables-1) is coprime to tables for even tables (gcd(N-1, N) = 1).
-  return ((tables - 1) * (roundNumber - 1)) % tables;
+  // All variants use standard board progression: advance 1 per round
+  return roundNumber - 1;
 }
 
 function wrapValue(v: number, modulus: number): number {

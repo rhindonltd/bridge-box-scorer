@@ -304,19 +304,26 @@ describe("generateMitchell", () => {
     it("accepts even number of tables", () => {
       const result = generateMitchell({ tables: 6, rounds: 6, boardsPerRound: 2, skip: true });
       expect(result.tables).toHaveLength(6);
+      // Effective rounds = tables - 1 = 5
+      for (const table of result.tables) {
+        expect(table.rounds).toHaveLength(5);
+      }
     });
 
     it("NS pairs stay at their home table", () => {
       const result = generateMitchell({ tables: 6, rounds: 6, boardsPerRound: 2, skip: true });
       for (const table of result.tables) {
+        // Effective rounds = 5
+        expect(table.rounds).toHaveLength(5);
         for (const round of table.rounds) {
           expect(round.participants.nsId).toBe(`${table.table}`);
         }
       }
     });
 
-    it("each EW pair plays at every table exactly once", () => {
+    it("each EW pair plays at tables-1 distinct tables", () => {
       const result = generateMitchell({ tables: 6, rounds: 6, boardsPerRound: 2, skip: true });
+      // Effective rounds = 5, so EW pairs visit 5 of 6 tables
       const ewTableVisits = new Map<string, number[]>();
       for (const table of result.tables) {
         for (const round of table.rounds) {
@@ -325,13 +332,16 @@ describe("generateMitchell", () => {
           ewTableVisits.get(ew)!.push(table.table);
         }
       }
-      for (const [, tables] of ewTableVisits) {
-        expect(tables.sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6]);
+      for (const [, visitedTables] of ewTableVisits) {
+        // With 5 rounds, each EW pair visits 5 distinct tables
+        expect(visitedTables).toHaveLength(5);
+        expect(new Set(visitedTables).size).toBe(5);
       }
     });
 
     it("no NS pair meets the same EW pair twice", () => {
       const result = generateMitchell({ tables: 6, rounds: 6, boardsPerRound: 2, skip: true });
+      // Effective rounds = 5
       const pairings = getAllPairings(result);
       const encounters = new Set(pairings.map((p) => `${p.ns}-${p.ew}`));
       expect(encounters.size).toBe(pairings.length);
@@ -339,14 +349,14 @@ describe("generateMitchell", () => {
 
     it("EW pairs skip a table at the midpoint", () => {
       const result = generateMitchell({ tables: 6, rounds: 6, boardsPerRound: 2, skip: true });
-      // At table 1, track EW pair progression
+      // Effective rounds = 5, so 5 EW pairs visit table 1
       const ewAtTable1 = result.tables[0].rounds.map((r) => r.participants.ewId);
-      // All 6 EW pairs should visit table 1
-      expect(new Set(ewAtTable1).size).toBe(6);
+      expect(new Set(ewAtTable1).size).toBe(5);
     });
 
     it("no pair plays the same board twice", () => {
       const result = generateMitchell({ tables: 6, rounds: 6, boardsPerRound: 2, skip: true });
+      // Effective rounds = 5
       // Check NS pairs (NS stays at home table, always gets unique boards)
       for (let i = 1; i <= 6; i++) {
         const boards = getBoardsForNsPair(result, `${i}`);
@@ -358,18 +368,23 @@ describe("generateMitchell", () => {
 
     it("works with 4 tables", () => {
       const result = generateMitchell({ tables: 4, rounds: 4, boardsPerRound: 3, skip: true });
+      // Effective rounds = 3
       const pairings = getAllPairings(result);
       const encounters = new Set(pairings.map((p) => `${p.ns}-${p.ew}`));
       expect(encounters.size).toBe(pairings.length);
+      for (const table of result.tables) {
+        expect(table.rounds).toHaveLength(3);
+      }
     });
 
     it("works with 8 tables", () => {
       const result = generateMitchell({ tables: 8, rounds: 8, boardsPerRound: 2, skip: true });
+      // Effective rounds = 7
       const pairings = getAllPairings(result);
       const encounters = new Set(pairings.map((p) => `${p.ns}-${p.ew}`));
       expect(encounters.size).toBe(pairings.length);
 
-      // EW should visit all tables
+      // EW should visit tables - 1 = 7 distinct tables
       const ewTableVisits = new Map<string, number[]>();
       for (const table of result.tables) {
         for (const round of table.rounds) {
@@ -378,8 +393,63 @@ describe("generateMitchell", () => {
           ewTableVisits.get(ew)!.push(table.table);
         }
       }
-      for (const [, tables] of ewTableVisits) {
-        expect(tables.sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+      for (const [, visitedTables] of ewTableVisits) {
+        expect(visitedTables).toHaveLength(7);
+        expect(new Set(visitedTables).size).toBe(7);
+      }
+    });
+
+    it("no EW pair plays the same board twice (6 tables)", () => {
+      const result = generateMitchell({ tables: 6, rounds: 5, boardsPerRound: 2, skip: true });
+      const ewIds = new Set<string>();
+      for (const table of result.tables) {
+        for (const round of table.rounds) {
+          ewIds.add(round.participants.ewId);
+        }
+      }
+      for (const ewId of ewIds) {
+        const boards = getBoardsForEwPair(result, ewId);
+        const uniqueBoards = new Set(boards);
+        if (uniqueBoards.size !== boards.length) {
+          console.log(`EW pair ${ewId} has duplicate boards:`, boards);
+        }
+        expect(uniqueBoards.size).toBe(boards.length);
+      }
+    });
+
+    it("no EW pair plays the same board twice (4 tables)", () => {
+      const result = generateMitchell({ tables: 4, rounds: 3, boardsPerRound: 3, skip: true });
+      const ewIds = new Set<string>();
+      for (const table of result.tables) {
+        for (const round of table.rounds) {
+          ewIds.add(round.participants.ewId);
+        }
+      }
+      for (const ewId of ewIds) {
+        const boards = getBoardsForEwPair(result, ewId);
+        const uniqueBoards = new Set(boards);
+        if (uniqueBoards.size !== boards.length) {
+          console.log(`EW pair ${ewId} has duplicate boards:`, boards);
+        }
+        expect(uniqueBoards.size).toBe(boards.length);
+      }
+    });
+
+    it("no EW pair plays the same board twice (8 tables)", () => {
+      const result = generateMitchell({ tables: 8, rounds: 7, boardsPerRound: 2, skip: true });
+      const ewIds = new Set<string>();
+      for (const table of result.tables) {
+        for (const round of table.rounds) {
+          ewIds.add(round.participants.ewId);
+        }
+      }
+      for (const ewId of ewIds) {
+        const boards = getBoardsForEwPair(result, ewId);
+        const uniqueBoards = new Set(boards);
+        if (uniqueBoards.size !== boards.length) {
+          console.log(`EW pair ${ewId} has duplicate boards:`, boards);
+        }
+        expect(uniqueBoards.size).toBe(boards.length);
       }
     });
   });
