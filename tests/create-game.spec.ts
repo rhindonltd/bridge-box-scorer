@@ -58,4 +58,130 @@ test.describe("Game Creation Flow", () => {
       await expect(page.getByText("2")).toBeVisible();
     }
   });
+
+  test("full form submission creates game via Socket.IO and redirects to /create/[id]", async ({
+    page,
+  }) => {
+    await page.goto("/create");
+
+    const eventName = `E2E Full Create ${Date.now()}`;
+
+    // Fill the form fields
+    await page.getByLabel("Event Name").fill(eventName);
+    await page.getByLabel("Director Name").fill("E2E Director");
+
+    // Submit the form
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+
+    // Wait for redirect to /create/[gameId]
+    await page.waitForURL(/\/create\/.+/);
+
+    // Assert the URL contains /create/ followed by a game ID
+    const url = page.url();
+    expect(url).toMatch(/\/create\/[^/]+$/);
+
+    // Extract gameId and verify director token was stored in localStorage
+    const gameId = url.split("/create/")[1];
+    const directorToken = await page.evaluate(
+      (gid) => localStorage.getItem(`director:${gid}`),
+      gameId,
+    );
+    expect(directorToken).toBeTruthy();
+  });
+
+  test("Pairs game appears in /api/games/all with gameType PAIRS", async ({
+    page,
+    request,
+  }) => {
+    const marker = `E2E Pairs ${Date.now()}`;
+
+    await page.goto("/create");
+    await page.getByLabel("Event Name").fill(marker);
+    await page.getByLabel("Director Name").fill("E2E Director");
+
+    // Event Type defaults to "Pairs" so no change needed
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+
+    // Wait for successful creation redirect
+    await page.waitForURL(/\/create\/.+/);
+
+    // Verify the game appears in the API with correct game type
+    const response = await request.get("/api/games/all");
+    expect(response.ok()).toBe(true);
+
+    const games = await response.json();
+    const createdGame = games.find(
+      (g: { eventName: string }) => g.eventName === marker,
+    );
+
+    expect(createdGame).toBeDefined();
+    expect(createdGame.gameType).toBe("PAIRS");
+  });
+
+  test("Individual game appears in /api/games/all with gameType INDIVIDUAL", async ({
+    page,
+    request,
+  }) => {
+    await page.goto("/create");
+
+    const eventName = `E2E Individual ${Date.now()}`;
+
+    // Fill the form fields
+    await page.getByLabel("Event Name").fill(eventName);
+    await page.getByLabel("Director Name").fill("E2E Director");
+
+    // Select "Individual" event type
+    await page.getByLabel("Event Type").selectOption("INDIVIDUAL");
+
+    // Submit the form
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+
+    // Wait for redirect to /create/[gameId]
+    await page.waitForURL(/\/create\/.+/);
+
+    // Fetch all games from the API
+    const response = await request.get("/api/games/all");
+    expect(response.ok()).toBeTruthy();
+
+    const games = await response.json();
+
+    // Assert the newly created Individual game is in the list
+    const createdGame = games.find(
+      (g: { eventName: string }) => g.eventName === eventName,
+    );
+    expect(createdGame).toBeDefined();
+    expect(createdGame.gameType).toBe("INDIVIDUAL");
+  });
+
+  test("shows error when Socket.IO is unavailable during game creation", async ({
+    page,
+  }) => {
+    // Block all Socket.IO connections at the network level
+    await page.route("**/socket.io/**", (route) => route.abort());
+
+    // Capture the alert dialog message
+    let dialogMessage = "";
+    page.on("dialog", async (dialog) => {
+      dialogMessage = dialog.message();
+      await dialog.dismiss();
+    });
+
+    await page.goto("/create");
+    await expect(page.getByText("Event Name")).toBeVisible({ timeout: 10000 });
+
+    // Fill in the form
+    await page.getByLabel("Event Name").fill("Socket Error Test");
+    await page.getByLabel("Director Name").fill("Test Director");
+
+    // Submit the form
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+
+    // Wait for the error alert to appear
+    await expect
+      .poll(() => dialogMessage, { timeout: 10000 })
+      .toMatch(/failed|error/i);
+
+    // The page should NOT redirect — it stays on /create
+    await expect(page).toHaveURL(/\/create$/);
+  });
 });

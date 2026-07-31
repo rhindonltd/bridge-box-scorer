@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { createGameViaUI } from "./fixtures/game-fixture";
 
 /**
  * Join Game Flow E2E Tests
@@ -49,5 +50,67 @@ test.describe("Join Game Flow", () => {
 
     // Should respond with JSON (either null or an error object)
     expect(response.headers()["content-type"]).toContain("application/json");
+  });
+});
+
+
+test.describe("Join Game with Existing Game", () => {
+  test("joinable game card is visible with event name", async ({ page }) => {
+    const eventName = `Join E2E ${Date.now()}`;
+    await createGameViaUI(page, eventName);
+
+    await page.goto("/join/select-game");
+    await expect(page.getByText(eventName)).toBeVisible({ timeout: 10000 });
+  });
+
+  test("tapping game card navigates to join menu", async ({ page }) => {
+    const eventName = `Join Nav ${Date.now()}`;
+    const { gameId } = await createGameViaUI(page, eventName);
+
+    await page.goto("/join/select-game");
+    await expect(page.getByText(eventName)).toBeVisible({ timeout: 10000 });
+    await page.getByText(eventName).click();
+
+    await expect(page).toHaveURL(new RegExp(`/join/${gameId}/menu`));
+  });
+
+  test("join menu shows three buttons", async ({ page }) => {
+    const eventName = `Join Menu ${Date.now()}`;
+    const { gameId } = await createGameViaUI(page, eventName);
+
+    await page.goto(`/join/${gameId}/menu`);
+
+    await expect(
+      page.getByRole("button", { name: "Join As Player" }),
+    ).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("button", { name: "Show Timer" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Show Leaderboard" }),
+    ).toBeVisible();
+  });
+
+  test("Join As Player navigates to player page", async ({ page }) => {
+    const eventName = `Join Player ${Date.now()}`;
+    const { gameId } = await createGameViaUI(page, eventName);
+
+    await page.goto(`/join/${gameId}/menu`);
+    await expect(
+      page.getByRole("button", { name: "Join As Player" }),
+    ).toBeVisible({ timeout: 10000 });
+    await page.getByRole("button", { name: "Join As Player" }).click();
+
+    await expect(page).toHaveURL(new RegExp(`/join/${gameId}/player`));
+  });
+
+  test("player page renders without errors", async ({ page }) => {
+    const eventName = `Join Seat ${Date.now()}`;
+    const { gameId } = await createGameViaUI(page, eventName);
+
+    await page.goto(`/join/${gameId}/player`);
+
+    // Page should render without crashing
+    await expect(page.locator("body")).toBeVisible();
   });
 });

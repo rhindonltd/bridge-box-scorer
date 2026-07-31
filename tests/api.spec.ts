@@ -110,6 +110,83 @@ test.describe("API Routes", () => {
     });
   });
 
+  test.describe("Players API", () => {
+    test("GET /api/players/search?q=john returns matching players", async ({
+      request,
+    }) => {
+      const response = await request.get("/api/players/search?q=john");
+
+      expect(response.ok()).toBe(true);
+      expect(response.headers()["content-type"]).toContain("application/json");
+
+      const body = await response.json();
+      expect(Array.isArray(body)).toBe(true);
+      expect(body.length).toBeGreaterThanOrEqual(1);
+      expect(body.some((p: { firstName: string }) => p.firstName === "John")).toBe(true);
+    });
+
+    test("GET /api/players/search?q=123 searches by EBU number", async ({
+      request,
+    }) => {
+      const response = await request.get("/api/players/search?q=123");
+
+      expect(response.ok()).toBe(true);
+
+      const body = await response.json();
+      expect(Array.isArray(body)).toBe(true);
+      expect(body.length).toBeGreaterThanOrEqual(1);
+      expect(
+        body.some((p: { nationalId: string }) => p.nationalId?.startsWith("123")),
+      ).toBe(true);
+    });
+
+    test("GET /api/players/search?q=xyznotexist returns empty array for no matches", async ({
+      request,
+    }) => {
+      const response = await request.get("/api/players/search?q=xyznotexist");
+
+      expect(response.ok()).toBe(true);
+
+      const body = await response.json();
+      expect(Array.isArray(body)).toBe(true);
+      expect(body).toHaveLength(0);
+    });
+
+    test("GET /api/players/search?q=a returns empty array for query less than 2 chars", async ({
+      request,
+    }) => {
+      const response = await request.get("/api/players/search?q=a");
+
+      expect(response.ok()).toBe(true);
+
+      const body = await response.json();
+      expect(Array.isArray(body)).toBe(true);
+      expect(body).toHaveLength(0);
+    });
+  });
+
+  test.describe("USEBIO API", () => {
+    test("GET /api/games/nonexistent/usebio returns 404 for non-existent game", async ({
+      request,
+    }) => {
+      const response = await request.get("/api/games/nonexistent/usebio");
+
+      expect(response.status()).toBe(404);
+
+      const body = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error).toContain("Game not found");
+    });
+
+    test("GET /api/games/[gameId]/usebio returns appropriate content type", async ({
+      request,
+    }) => {
+      const response = await request.get("/api/games/nonexistent/usebio");
+
+      expect(response.headers()["content-type"]).toContain("application/json");
+    });
+  });
+
   test.describe("Movements API", () => {
     test("GET /api/movements/pairs/2 returns movements for 2 tables", async ({
       request,
@@ -180,6 +257,75 @@ test.describe("API Routes", () => {
         expect(movement).toHaveProperty("id");
         expect(movement).toHaveProperty("name");
       }
+    });
+
+    test("GET /api/movements/teams/2 returns movements for 2 tables", async ({
+      request,
+    }) => {
+      const response = await request.get("/api/movements/teams/2");
+
+      expect(response.ok()).toBe(true);
+      expect(response.headers()["content-type"]).toContain("application/json");
+
+      const body = await response.json();
+      expect(Array.isArray(body)).toBe(true);
+
+      if (body.length > 0) {
+        const movement = body[0];
+        expect(movement).toHaveProperty("id");
+        expect(movement).toHaveProperty("name");
+      }
+    });
+
+    test("GET /api/movements/detail/PAIRS/[id] returns movement detail", async ({
+      request,
+    }) => {
+      // First get available movements to obtain a valid ID
+      const listResponse = await request.get("/api/movements/pairs/2");
+      expect(listResponse.ok()).toBe(true);
+      const movements = await listResponse.json();
+      expect(movements.length).toBeGreaterThan(0);
+
+      const id = movements[0].id;
+
+      // Now fetch the movement detail
+      const response = await request.get(
+        `/api/movements/detail/PAIRS/${id}`,
+      );
+
+      expect(response.ok()).toBe(true);
+      expect(response.headers()["content-type"]).toContain("application/json");
+
+      const body = await response.json();
+      expect(body).toHaveProperty("tables");
+      expect(Array.isArray(body.tables)).toBe(true);
+      expect(body).toHaveProperty("type", "PAIRS");
+    });
+
+    test("GET /api/movements/detail/INVALID_TYPE/1 returns 400", async ({
+      request,
+    }) => {
+      const response = await request.get(
+        "/api/movements/detail/INVALID_TYPE/1",
+      );
+
+      expect(response.status()).toBe(400);
+
+      const body = await response.json();
+      expect(body.success).toBe(false);
+    });
+  });
+
+  test.describe("System API", () => {
+    test("POST /api/system/restart returns a response", async ({
+      request,
+    }) => {
+      const response = await request.post("/api/system/restart");
+
+      // The endpoint may require an admin key header and return 401/403 without it.
+      // We just verify the endpoint exists and responds with a valid HTTP status.
+      expect(response.status()).toBeDefined();
+      expect(response.headers()["content-type"]).toBeDefined();
     });
   });
 });

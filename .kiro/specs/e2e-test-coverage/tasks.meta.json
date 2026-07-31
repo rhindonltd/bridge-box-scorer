@@ -1,0 +1,874 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create `tests/fixtures/game-fixture.ts` — shared fixture that creates a game via the UI form, extracts gameId from URL and directorToken from localStorage, exposes `GameFixture` type with `gameId`, `eventName`, `directorToken`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187648
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516200978
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516424771
+      }
+    ],
+    "1.2 Create `tests/fixtures/director-fixture.ts` — extends game fixture to provide a `DirectorContext` with `page`, `gameId`, `eventName`, `directorToken` for director-authenticated page access": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187696
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516202011
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516425974
+      }
+    ],
+    "1.3 Create `tests/fixtures/helpers.ts` — shared utility functions: `navigateToDirectorPage(page, gameId, subPage)`, `interceptRoute(page, urlPattern, response)`, `makeGameJoinable(request, gameId, directorToken)`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187742
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516203188
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516427175
+      }
+    ],
+    "2.1 Add test: full form submission creates game via Socket.IO and redirects to `/create/[id]`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187777
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516432690
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521282308
+      }
+    ],
+    "2.2 Add test: Socket.IO unavailable shows error message": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187827
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516433598
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521283185
+      }
+    ],
+    "2.3 Add test: Pairs game appears in `/api/games/all` with `gameType: \"PAIRS\"`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187878
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516434631
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521284160
+      }
+    ],
+    "2.4 Add test: Individual game appears in `/api/games/all` with `gameType: \"INDIVIDUAL\"`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187911
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516435464
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521285168
+      }
+    ],
+    "3.1 Add test: joinable game card is visible on `/join/select-game` with event name": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187945
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521490719
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522514410
+      }
+    ],
+    "3.2 Add test: tapping game card navigates to `/join/[gameId]/menu`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516187979
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521491603
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522515349
+      }
+    ],
+    "3.3 Add test: join menu shows \"Join As Player\", \"Show Timer\", \"Show Leaderboard\" buttons": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188011
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521492445
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522516395
+      }
+    ],
+    "3.4 Add test: \"Join As Player\" navigates to `/join/[gameId]/player`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188038
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521493331
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522517091
+      }
+    ],
+    "3.5 Add test: player page renders seat selection options": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188073
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521494236
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522517999
+      }
+    ],
+    "4.1 Add test: game card is displayed with event name on `/manage/select-game`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188106
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521497421
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522518870
+      }
+    ],
+    "4.2 Add test: tapping game card without director token shows claim code screen": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188142
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521498277
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522519837
+      }
+    ],
+    "4.3 Add test: entering valid director code navigates to `/manage/[id]/menu`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188186
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521499195
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522520798
+      }
+    ],
+    "4.4 Add test: tapping \"Cancel\" on claim code returns to game list": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188230
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521500142
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522521633
+      }
+    ],
+    "5. Checkpoint": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188277
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522542081
+      }
+    ],
+    "6.1 Verify director menu renders all 6 buttons: Timer, Travellers, Change Status, Movement, Download USEBIO, Delete Game": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188319
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521495272
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522523511
+      }
+    ],
+    "6.2 Add tests for each menu button navigation: Timer → `/manage/[id]/timer`, Travellers → `/manage/[id]/correct-result`, Change Status → `/manage/[id]/change-status`, Movement → `/manage/[id]/movement`, Download USEBIO → `/manage/[id]/download-usebio`, Delete Game → `/manage/[id]/delete-game`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188361
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521496495
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522525216
+      }
+    ],
+    "7.1 Verify change-status page displays three status options for a CREATED game": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188397
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521501102
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522526440
+      }
+    ],
+    "7.2 Verify active status is visually distinguished": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188431
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521501809
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522527453
+      }
+    ],
+    "7.3 Test tapping \"Open for Players\" transitions status and navigates back to menu": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188464
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521502717
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522528747
+      }
+    ],
+    "7.4 Test tapping \"Complete\" on a JOINABLE game updates status": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188498
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521503670
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522529921
+      }
+    ],
+    "8.1 Verify delete page shows confirmation message with game event name": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188547
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521504368
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522531214
+      }
+    ],
+    "8.2 Test \"Cancel\" navigates back to `/manage/[id]/menu`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188612
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521505272
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522532293
+      }
+    ],
+    "8.3 Test \"Yes, Delete Game\" calls DELETE API and redirects to `/manage/select-game`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188652
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521506175
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522533520
+      }
+    ],
+    "8.4 Test error display when delete API fails": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188702
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521507018
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522534606
+      }
+    ],
+    "9.1 Verify correct-result page loads and shows board number buttons (or empty state)": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188762
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522547906
+      }
+    ],
+    "9.2 Test board selection loads traveller view (with route intercept to provide mock board data)": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188797
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522548770
+      }
+    ],
+    "9.3 Test selecting a traveller line shows contract entry panel with board number in header": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188848
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522549674
+      }
+    ],
+    "9.4 Test submitting override calls API with correct payload": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188909
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522550451
+      }
+    ],
+    "9.5 Test error response returns wizard to board selection": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188940
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522551209
+      }
+    ],
+    "10.1 Verify download-usebio page renders Club Name and EBU Club Number fields": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516188973
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522552148
+      }
+    ],
+    "10.2 Test filling club details and tapping \"Download USEBIO\" calls the API": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189013
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522553039
+      }
+    ],
+    "10.3 Test error display when USEBIO generation fails": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189045
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522553849
+      }
+    ],
+    "10.4 Test \"Cancel\" navigates back to `/manage/[id]/menu`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189077
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522554688
+      }
+    ],
+    "11. Checkpoint": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189114
+      }
+    ],
+    "12.1 Verify movement page shows \"No movement set up yet.\" for a game without a movement": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189153
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522555538
+      }
+    ],
+    "12.2 Test movement API endpoint returns valid JSON for an existing game": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189193
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522556393
+      }
+    ],
+    "12.3 Verify movement page renders table data when movement exists (route intercept)": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189231
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522557234
+      }
+    ],
+    "13.1 Verify director timer page renders without errors": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189270
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522558083
+      }
+    ],
+    "13.2 Verify player timer page renders without errors": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189303
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522558979
+      }
+    ],
+    "13.3 Verify timer shows appropriate initial/empty state": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189343
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522559798
+      }
+    ],
+    "14.1 Verify leaderboard page renders without errors": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189390
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522560757
+      }
+    ],
+    "14.2 Test leaderboard API returns valid JSON": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189434
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522561523
+      }
+    ],
+    "15.1 Verify play page renders round info for a valid game and seat (route intercept for schedule data)": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189475
+      }
+    ],
+    "15.2 Test \"Enter Round\" button displays contract entry panel": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189512
+      }
+    ],
+    "15.3 Test contract submission transitions to \"Waiting for Confirmation\" state (route intercept)": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189552
+      }
+    ],
+    "15.4 Test mismatch screen display (route intercept for mismatch response)": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189585
+      }
+    ],
+    "16.1 Add test: `GET /api/players/search?q=test` returns valid JSON with results array": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189617
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516436333
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521286387
+      }
+    ],
+    "16.2 Add test: `GET /api/movements/teams/2` returns valid JSON array of movement options": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189672
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521291710
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521480176
+      }
+    ],
+    "16.3 Add test: `GET /api/movements/detail/pairs/[id]` returns valid JSON with movement detail (use an ID from the pairs/2 response)": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189763
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521292776
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521481452
+      }
+    ],
+    "16.4 Add test: `GET /api/games/[gameId]/usebio` returns XML or error for non-existent game": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189847
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521293700
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521482492
+      }
+    ],
+    "16.5 Add test: `POST /api/system/restart` returns a response": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189912
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521294549
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521483304
+      }
+    ],
+    "17.1 Add test: back navigation from `/settings/wifi` to settings menu": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189956
+      }
+    ],
+    "17.2 Add test: back navigation from `/settings/club` to settings menu": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516189994
+      }
+    ],
+    "17.3 Add test: back navigation from movement page to director menu": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516190036
+      }
+    ],
+    "17.4 Add test: change-status page navigates back to director menu after status change": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516190112
+      }
+    ],
+    "18. Final checkpoint": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516190178
+      }
+    ],
+    "1. Create shared test fixtures and helpers": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785516427213
+      }
+    ],
+    "2. Expand existing `tests/create-game.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521285212
+      }
+    ],
+    "16. Expand existing `tests/api.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785521483352
+      }
+    ],
+    "3. Expand existing `tests/join-game.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522518048
+      }
+    ],
+    "4. Expand existing `tests/manage-games.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522521681
+      }
+    ],
+    "6. Create `tests/director-menu.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522525259
+      }
+    ],
+    "7. Create `tests/change-status.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522529959
+      }
+    ],
+    "8. Create `tests/delete-game.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785522534653
+      }
+    ]
+  }
+}
