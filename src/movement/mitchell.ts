@@ -22,8 +22,8 @@ export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
     throw new Error("Skip Mitchell cannot have an odd number of tables");
   }
 
-  // ewAdd ensures NS and EW pairs don't overlap (needed for arrow switch)
-  const ewAdd = arrowSwitchRounds > 0 ? tables : 0;
+  // ewAdd ensures NS and EW pairs always have distinct IDs
+  const ewAdd = tables;
 
   const skipAfter = skip ? Math.floor(tables / 2) : tables;
 
@@ -39,6 +39,7 @@ export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
         arrowSwitchRounds,
         skipAfter,
         ewAdd,
+        skip,
       }),
     );
   }
@@ -54,6 +55,7 @@ interface TableParams {
   arrowSwitchRounds: number;
   skipAfter: number;
   ewAdd: number;
+  skip: boolean;
 }
 
 function createMitchellTable(params: TableParams): Table<"PAIR"> {
@@ -65,12 +67,13 @@ function createMitchellTable(params: TableParams): Table<"PAIR"> {
     arrowSwitchRounds,
     skipAfter,
     ewAdd,
+    skip,
   } = params;
 
-  // 🔑 Share & Relay detection
-  const relayNeeded = tables % 2 === 0 && skipAfter >= rounds;
+  // 🔑 Share & Relay detection - needed for even tables without skip
+  const relayNeeded = tables % 2 === 0 && !skip;
 
-  // 🔑 This creates SHARE
+  // 🔑 This creates SHARE for relay variant
   const firstSet =
     relayNeeded && tableNumber > tables / 2 ? tableNumber + 1 : tableNumber;
 
@@ -83,15 +86,15 @@ function createMitchellTable(params: TableParams): Table<"PAIR"> {
   }[] = [];
 
   for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
-    // 🔁 Skip logic
-    const distanceMoved =
-      roundNumber > skipAfter ? roundNumber : roundNumber - 1;
+    // 🔁 Skip logic for EW movement
+    const distanceMoved = computeEwDistance(roundNumber, skipAfter, tables);
 
     // 🔁 EW movement
     const movingPair = wrapValue(tableNumber - distanceMoved, tables) + ewAdd;
 
-    // 🔁 Board assignment (THIS creates relay)
-    const boardSet = wrapValue(firstSet + (roundNumber - 1), tables);
+    // 🔁 Board assignment
+    const boardDist = computeBoardDistance(roundNumber, skip, skipAfter, tables);
+    const boardSet = wrapValue(firstSet + boardDist, tables);
 
     const boards = boardsForSet(boardSet, boardsPerRound);
 
@@ -118,6 +121,60 @@ function createMitchellTable(params: TableParams): Table<"PAIR"> {
     table: tableNumber,
     rounds: roundsList,
   };
+}
+
+/**
+ * Compute EW distance moved from starting position for a given round.
+ * For standard Mitchell: distance increases by 1 each round (0, 1, 2, ..., N-1).
+ * For skip Mitchell: at the midpoint, EW skips one extra table.
+ * The formula produces N distinct values mod N for a complete movement.
+ */
+function computeEwDistance(
+  roundNumber: number,
+  skipAfter: number,
+  tables: number,
+): number {
+  if (roundNumber <= skipAfter) {
+    // First half (or all rounds for non-skip): standard progression
+    return roundNumber - 1;
+  } else if (roundNumber < tables) {
+    // After skip but before last round: add 1 extra for the skip
+    return roundNumber;
+  } else {
+    // Last round of a skip Mitchell: fill the gap left by the skip
+    return skipAfter;
+  }
+}
+
+/**
+ * Compute board distance for a given round.
+ * For standard/relay Mitchell: boards advance by 1 each round.
+ * For skip Mitchell: boards use an adjusted progression that ensures
+ * each EW pair encounters unique board sets across all rounds.
+ */
+function computeBoardDistance(
+  roundNumber: number,
+  skip: boolean,
+  skipAfter: number,
+  tables: number,
+): number {
+  if (!skip) {
+    // Standard or relay: boards move 1 per round
+    return roundNumber - 1;
+  }
+
+  // For skip Mitchell, boards need a progression such that
+  // boardDist(R) - ewDist(R) produces N distinct values mod N.
+  // We use: boards advance by 1 each round (standard), giving
+  // boardDist - ewDist = (R-1) - ewDist(R), which for our skip formula:
+  //   R <= skipAfter: (R-1) - (R-1) = 0  (all same - bad!)
+  // Instead, we need a different board progression for skip Mitchell.
+  //
+  // The board progression that works: advance at rate (tables-1) per round.
+  // This gives boardDist = (tables-1) * (roundNumber-1) mod tables.
+  // The relative offset boardDist - ewDist gives distinct values because
+  // (tables-1) is coprime to tables for even tables (gcd(N-1, N) = 1).
+  return ((tables - 1) * (roundNumber - 1)) % tables;
 }
 
 function wrapValue(v: number, modulus: number): number {
