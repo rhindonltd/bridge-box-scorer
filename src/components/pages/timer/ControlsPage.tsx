@@ -7,6 +7,7 @@ import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { getDirectorToken } from "@/lib/director-token";
 import { useEffect, useMemo, useState } from "react";
+import { TimerControlsView } from "./TimerControlsView";
 
 export default function ControlsPage() {
   const { game } = useGame();
@@ -87,204 +88,53 @@ export default function ControlsPage() {
     });
   }
 
-  function formatTime(totalSeconds: number) {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  }
-
   return (
-    <div className="min-h-dvh bg-white text-gray-900 flex flex-col items-center justify-center gap-6 p-6">
-      <h1 className="text-3xl font-bold mb-2">Director Controls</h1>
-
-      {/* STATUS PANEL */}
-      <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
-        {hasSession ? (
-          <>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Status</span>
-              <span className="capitalize">
-                {timer.isRunning ? timer.phase : "paused"}
-              </span>
-            </div>
-
-            <div className="flex justify-between mt-2">
-              <span className="text-gray-500">Remaining</span>
-              <span>
-                {timer.phase === "finished"
-                  ? "00:00"
-                  : formatTime(timer.remaining)}
-              </span>
-            </div>
-
-            <div className="flex justify-between mt-2">
-              <span className="text-gray-500">Round</span>
-              <span>{timer.round}</span>
-            </div>
-
-            {timer.projectedEndDate && (
-              <div className="flex justify-between mt-2">
-                <span className="text-gray-500">Live End</span>
-                <span>
-                  {timer.projectedEndDate.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <div className="text-gray-500 mb-2">No active session</div>
-
-            <div className="flex justify-between">
-              <span className="text-gray-500">Session Length</span>
-              <span>{formatDuration(totalSessionSeconds)}</span>
-            </div>
-
-            <div className="flex justify-between mt-2">
-              <span className="text-gray-500">Preview End</span>
-              <span>
-                {previewEndDate.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* CONFIG */}
-      <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="boards-per-round" className="text-sm text-gray-600">
-            Boards / Round
-          </label>
-          <input
-            id="boards-per-round"
-            type="number"
-            value={boardsPerRound}
-            onChange={(e) => setBoardsPerRound(Number(e.target.value))}
-            className="p-2 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="total-rounds" className="text-sm text-gray-600">
-            Total Rounds
-          </label>
-          <input
-            id="total-rounds"
-            type="number"
-            value={totalRounds}
-            onChange={(e) => setTotalRounds(Number(e.target.value))}
-            className="p-2 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-
-        <fieldset className="col-span-2 flex gap-6">
-          <legend className="sr-only">Timing Mode</legend>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="timingMode"
-              checked={timingMode === "perRound"}
-              onChange={() => setTimingMode("perRound")}
-            />
-            Per Round
-          </label>
-
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="timingMode"
-              checked={timingMode === "perBoard"}
-              onChange={() => setTimingMode("perBoard")}
-            />
-            Per Board
-          </label>
-        </fieldset>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-gray-600">Play Duration</span>
-          <div className="flex gap-2">
-            <input
-              aria-label="Play minutes"
-              type="number"
-              value={playMinutes}
-              onChange={(e) => setPlayMinutes(Number(e.target.value))}
-              className="p-2 w-20 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <input
-              aria-label="Play seconds"
-              type="number"
-              value={playSeconds}
-              onChange={(e) => setPlaySeconds(Number(e.target.value))}
-              className="p-2 w-20 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              max={59}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-gray-600">Move Duration</span>
-          <div className="flex gap-2">
-            <input
-              aria-label="Move minutes"
-              type="number"
-              value={moveMinutes}
-              onChange={(e) => setMoveMinutes(Number(e.target.value))}
-              className="p-2 w-20 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <input
-              aria-label="Move seconds"
-              type="number"
-              value={moveSeconds}
-              onChange={(e) => setMoveSeconds(Number(e.target.value))}
-              className="p-2 w-20 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              max={59}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* CONTROLS */}
-      <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-        {!hasSession ? (
-          <button
-            onClick={() => emitConfig(SocketEvents.CREATE_TIMER)}
-            className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          >
-            Create
-          </button>
-        ) : (
-          <>
-            <button
-              onClick={() => emitConfig(SocketEvents.UPDATE_CONFIG_TIMER)}
-              className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              Apply Changes
-            </button>
-
-            <button
-              onClick={() => emitSimple(SocketEvents.START_TIMER)}
-              className="bg-green-600 text-white py-6 rounded-xl text-xl font-semibold hover:bg-green-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-            >
-              Start
-            </button>
-
-            <button
-              onClick={() => emitSimple(SocketEvents.PAUSE_TIMER)}
-              className="bg-yellow-500 text-gray-900 py-6 rounded-xl text-xl font-semibold hover:bg-yellow-600 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
-            >
-              Pause
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+    <TimerControlsView
+      hasSession={hasSession}
+      timer={hasSession ? timer : null}
+      config={{
+        boardsPerRound,
+        totalRounds,
+        playMinutes,
+        playSeconds,
+        moveMinutes,
+        moveSeconds,
+        timingMode,
+      }}
+      sessionLength={formatDuration(totalSessionSeconds)}
+      previewEnd={previewEndDate.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}
+      onConfigChange={(field, value) => {
+        switch (field) {
+          case "boardsPerRound":
+            setBoardsPerRound(value as number);
+            break;
+          case "totalRounds":
+            setTotalRounds(value as number);
+            break;
+          case "playMinutes":
+            setPlayMinutes(value as number);
+            break;
+          case "playSeconds":
+            setPlaySeconds(value as number);
+            break;
+          case "moveMinutes":
+            setMoveMinutes(value as number);
+            break;
+          case "moveSeconds":
+            setMoveSeconds(value as number);
+            break;
+          case "timingMode":
+            setTimingMode(value as "perRound" | "perBoard");
+            break;
+        }
+      }}
+      onCreate={() => emitConfig(SocketEvents.CREATE_TIMER)}
+      onApplyChanges={() => emitConfig(SocketEvents.UPDATE_CONFIG_TIMER)}
+      onStart={() => emitSimple(SocketEvents.START_TIMER)}
+      onPause={() => emitSimple(SocketEvents.PAUSE_TIMER)}
+    />
   );
 }

@@ -32,6 +32,11 @@ import {
 } from "@/db/games/pairs/tables/assignments";
 
 import { assertDirector } from "@/socket/middleware/director-auth";
+import {
+  generateMitchell,
+  MitchellMovementSpec,
+} from "@/movement/mitchell";
+import { Tables } from "@/model/movement";
 
 /**
  * Individual movement handler — bulk inserts inside a single transaction.
@@ -142,6 +147,27 @@ async function handlePairLikeMovement(
 }
 
 /**
+ * Convert the generateMitchell output into the PairMovement[] format
+ * expected by handlePairLikeMovement.
+ */
+function mitchellToPairMovement(tables: Tables<"PAIR">): PairMovement[] {
+  return tables.tables.map((table) => ({
+    id: 0,
+    movementId: 0,
+    tableNumber: table.table,
+    rounds: table.rounds.map((round) => ({
+      id: 0,
+      tableId: 0,
+      roundNumber: round.round,
+      ns: round.participants.nsId,
+      ew: round.participants.ewId,
+      boardStart: round.boards[0],
+      boardEnd: round.boards[round.boards.length - 1],
+    })),
+  }));
+}
+
+/**
  * Socket handler
  */
 export function registerSelectMovementHandler(socket: Socket) {
@@ -152,11 +178,13 @@ export function registerSelectMovementHandler(socket: Socket) {
         gameId,
         type,
         id,
+        mitchell,
         directorToken,
       }: {
         gameId: string;
         type: string;
-        id: number;
+        id?: number;
+        mitchell?: MitchellMovementSpec;
         directorToken: string;
       },
       cb,
@@ -164,15 +192,24 @@ export function registerSelectMovementHandler(socket: Socket) {
       if (!assertDirector(directorToken, gameId, cb)) return;
 
       try {
-        if (type === "INDIVIDUAL") {
-          await handleIndividualMovement(
-            await getIndividualMovement(id),
-            gameId,
-          );
-        } else if (type === "PAIRS") {
-          await handlePairLikeMovement(await getPairMovement(id), gameId);
+        if (mitchell) {
+          const generated = generateMitchell(mitchell);
+          const pairMovement = mitchellToPairMovement(generated);
+          await handlePairLikeMovement(pairMovement, gameId);
+        } else if (id != null) {
+          if (type === "INDIVIDUAL") {
+            await handleIndividualMovement(
+              await getIndividualMovement(id),
+              gameId,
+            );
+          } else if (type === "PAIRS") {
+            await handlePairLikeMovement(await getPairMovement(id), gameId);
+          } else {
+            await handlePairLikeMovement(await getTeamMovement(id), gameId);
+          }
         } else {
-          await handlePairLikeMovement(await getTeamMovement(id), gameId);
+          cb?.({ success: false, error: "No movement specified" });
+          return;
         }
 
         cb?.({ success: true });

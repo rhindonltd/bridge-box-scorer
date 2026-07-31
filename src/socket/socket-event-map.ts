@@ -9,8 +9,15 @@ export type SocketEventMap = {
 
   [SocketEvents.SELECT_MOVEMENT]: {
     gameId: string;
-    id: number;
+    id?: number;
     type: string;
+    mitchell?: {
+      tables: number;
+      rounds: number;
+      boardsPerRound: number;
+      arrowSwitchRounds?: number;
+      skip?: boolean;
+    };
   };
 
   [SocketEvents.JOINABLE_GAMES]: {
