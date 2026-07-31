@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { formatBoards } from "@/movement/shared";
 
 type ViewMode = "byRound" | "byTable";
 
@@ -21,6 +20,9 @@ export type MovementTableData = {
     w?: string;
     boardStart: number;
     boardEnd: number;
+    played?: number;
+    total?: number;
+    hasPreviousGap?: boolean;
   }[];
 };
 
@@ -29,8 +31,20 @@ type Props = {
   movementType: string;
   tables: MovementTableData[];
   onBack: () => void;
-  onSelect: () => void;
+  onSelect?: () => void;
 };
+
+function getRowClass(round: {
+  played?: number;
+  total?: number;
+  hasPreviousGap?: boolean;
+}): string {
+  if (round.played == null || round.total == null) return "even:bg-gray-50";
+  if (round.hasPreviousGap) return "bg-red-100";
+  if (round.played === round.total && round.total > 0) return "bg-green-100";
+  if (round.played > 0) return "bg-yellow-100";
+  return "";
+}
 
 export function MovementDetailView({
   movementName,
@@ -46,7 +60,7 @@ export function MovementDetailView({
   return (
     <div className="h-full flex flex-col">
       {/* Header with name and back button */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-blue-100 text-blue-900">
+      <div className="flex items-center gap-3 px-4 py-3 bg-blue-100 text-blue-900 shrink-0">
         <button
           onClick={onBack}
           className="px-3 py-1 text-sm bg-white rounded-lg shadow hover:bg-gray-50 transition"
@@ -58,7 +72,7 @@ export function MovementDetailView({
       </div>
 
       {/* Toggle */}
-      <div className="flex justify-center gap-2 p-3 bg-gray-50 border-b">
+      <div className="flex justify-center gap-2 p-3 bg-gray-50 border-b shrink-0">
         <button
           onClick={() => setViewMode("byRound")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
@@ -101,14 +115,16 @@ export function MovementDetailView({
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t">
-        <button
-          onClick={onSelect}
-          className="w-full py-3 text-lg font-bold bg-green-700 text-white rounded-xl hover:bg-green-800 transition"
-        >
-          Select Movement
-        </button>
-      </div>
+      {onSelect && (
+        <div className="p-3 border-t">
+          <button
+            onClick={onSelect}
+            className="w-full py-3 text-lg font-bold bg-green-700 text-white rounded-xl hover:bg-green-800 transition"
+          >
+            Select Movement
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -122,6 +138,9 @@ function TableView({
   table: MovementTableData;
   isPair: boolean;
 }) {
+  const hasProgress =
+    table.rounds.length > 0 && table.rounds[0].played != null;
+
   return (
     <div className="border rounded-lg shadow-sm overflow-x-auto">
       <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
@@ -145,11 +164,12 @@ function TableView({
               </>
             )}
             <th className="border px-2 py-1">Boards</th>
+            {hasProgress && <th className="border px-2 py-1">Played</th>}
           </tr>
         </thead>
         <tbody>
           {table.rounds.map((round) => (
-            <tr key={round.roundNumber} className="even:bg-gray-50">
+            <tr key={round.roundNumber} className={getRowClass(round)}>
               <td className="border px-2 py-1">{round.roundNumber}</td>
               {isPair ? (
                 <>
@@ -167,6 +187,11 @@ function TableView({
               <td className="border px-2 py-1">
                 {boardRange(round.boardStart, round.boardEnd)}
               </td>
+              {hasProgress && (
+                <td className="border px-2 py-1">
+                  {round.played}/{round.total}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -189,6 +214,9 @@ type RoundData = {
     w?: string;
     boardStart: number;
     boardEnd: number;
+    played?: number;
+    total?: number;
+    hasPreviousGap?: boolean;
   }[];
 };
 
@@ -199,6 +227,9 @@ function RoundView({
   round: RoundData;
   isPair: boolean;
 }) {
+  const hasProgress =
+    round.tables.length > 0 && round.tables[0].played != null;
+
   return (
     <div className="border rounded-lg shadow-sm overflow-x-auto">
       <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
@@ -222,11 +253,12 @@ function RoundView({
               </>
             )}
             <th className="border px-2 py-1">Boards</th>
+            {hasProgress && <th className="border px-2 py-1">Played</th>}
           </tr>
         </thead>
         <tbody>
           {round.tables.map((table) => (
-            <tr key={table.tableNumber} className="even:bg-gray-50">
+            <tr key={table.tableNumber} className={getRowClass(table)}>
               <td className="border px-2 py-1">{table.tableNumber}</td>
               {isPair ? (
                 <>
@@ -244,6 +276,11 @@ function RoundView({
               <td className="border px-2 py-1">
                 {boardRange(table.boardStart, table.boardEnd)}
               </td>
+              {hasProgress && (
+                <td className="border px-2 py-1">
+                  {table.played}/{table.total}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

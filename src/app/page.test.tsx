@@ -49,10 +49,10 @@ describe("PlayerLobbyPage", () => {
     expect(pushMock).toHaveBeenCalledWith("/manage");
   });
 
-  it("navigates to /settings/wifi when settings is clicked", () => {
+  it("navigates to /settings when settings is clicked", () => {
     render(<PlayerLobbyPage />);
     fireEvent.click(screen.getByText("Settings"));
-    expect(pushMock).toHaveBeenCalledWith("/settings/wifi");
+    expect(pushMock).toHaveBeenCalledWith("/settings");
   });
 
   it("renders the main menu page", () => {

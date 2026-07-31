@@ -29,12 +29,10 @@ const meta: Meta<typeof DirectorMenuPage> = {
   tags: ["autodocs"],
   args: {
     onTimerClick: fn(),
-    onCorrectResultClick: fn(),
+    onTravellersClick: fn(),
     onChangeStatusClick: fn(),
     onMovementClick: fn(),
-    onViewRoundStatusClick: fn(),
-    onLockUnlockRoundClick: fn(),
-    onExportResultsClick: fn(),
+    onDownloadUsebioClick: fn(),
     onDeleteGameClick: fn(),
   },
 };

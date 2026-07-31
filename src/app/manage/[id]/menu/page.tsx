@@ -11,13 +11,11 @@ export default function ManageGameMenuRoute() {
   return (
     <DirectorMenuPage
       onTimerClick={() => router.push(`/manage/${id}/timer`)}
-      onCorrectResultClick={() => router.push(`/manage/${id}/correct-result`)}
+      onTravellersClick={() => router.push(`/manage/${id}/correct-result`)}
       onChangeStatusClick={() => router.push(`/manage/${id}/change-status`)}
-      onMovementClick={() => alert("Coming soon")}
-      onViewRoundStatusClick={() => router.push(`/manage/${id}/round-status`)}
-      onLockUnlockRoundClick={() => alert("Coming soon")}
-      onExportResultsClick={() => alert("Coming soon")}
-      onDeleteGameClick={() => alert("Coming soon")}
+      onMovementClick={() => router.push(`/manage/${id}/movement`)}
+      onDownloadUsebioClick={() => router.push(`/manage/${id}/download-usebio`)}
+      onDeleteGameClick={() => router.push(`/manage/${id}/delete-game`)}
     />
   );
 }

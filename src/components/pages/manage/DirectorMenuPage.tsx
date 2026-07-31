@@ -3,34 +3,28 @@
 import { useGame } from "@/context/GameContext";
 import {
   Clock,
-  PenLine,
+  BookOpen,
   ToggleRight,
   ArrowRightLeft,
-  ClipboardList,
-  Lock,
   Download,
   Trash2,
 } from "lucide-react";
 
 export interface DirectorMenuPageProps {
   onTimerClick: () => void;
-  onCorrectResultClick: () => void;
+  onTravellersClick: () => void;
   onChangeStatusClick: () => void;
   onMovementClick: () => void;
-  onViewRoundStatusClick: () => void;
-  onLockUnlockRoundClick: () => void;
-  onExportResultsClick: () => void;
+  onDownloadUsebioClick: () => void;
   onDeleteGameClick: () => void;
 }
 
 export function DirectorMenuPage({
   onTimerClick,
-  onCorrectResultClick,
+  onTravellersClick,
   onChangeStatusClick,
   onMovementClick,
-  onViewRoundStatusClick,
-  onLockUnlockRoundClick,
-  onExportResultsClick,
+  onDownloadUsebioClick,
   onDeleteGameClick,
 }: DirectorMenuPageProps) {
   const { game } = useGame();
@@ -59,10 +53,10 @@ export function DirectorMenuPage({
           </span>
         </button>
 
-        <button onClick={onCorrectResultClick} className={standardButtonClass}>
+        <button onClick={onTravellersClick} className={standardButtonClass}>
           <span className="flex items-center gap-3">
-            <PenLine size={20} />
-            Correct Result
+            <BookOpen size={20} />
+            Travellers
           </span>
         </button>
 
@@ -80,30 +74,10 @@ export function DirectorMenuPage({
           </span>
         </button>
 
-        <button
-          onClick={onViewRoundStatusClick}
-          className={standardButtonClass}
-        >
-          <span className="flex items-center gap-3">
-            <ClipboardList size={20} />
-            View Round Status
-          </span>
-        </button>
-
-        <button
-          onClick={onLockUnlockRoundClick}
-          className={standardButtonClass}
-        >
-          <span className="flex items-center gap-3">
-            <Lock size={20} />
-            Lock/Unlock Round
-          </span>
-        </button>
-
-        <button onClick={onExportResultsClick} className={standardButtonClass}>
+        <button onClick={onDownloadUsebioClick} className={standardButtonClass}>
           <span className="flex items-center gap-3">
             <Download size={20} />
-            Export Results
+            Download USEBIO
           </span>
         </button>
 

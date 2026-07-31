@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useGame } from "@/context/GameContext";
 import { SelectBoardPage } from "@/components/pages/manage/correct-result/SelectBoardPage";
-import {
-  SelectInstancePage,
-  BoardInstance,
-} from "@/components/pages/manage/correct-result/SelectInstancePage";
+import { BoardInstance } from "@/components/pages/manage/correct-result/SelectInstancePage";
+import { TravellerView } from "@/components/pages/manage/correct-result/TravellerView";
 import ContractEntryPanel from "@/components/contract/ContractEntryPanel";
 import { BoardResult } from "@/components/play/BoardResult";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
@@ -16,7 +15,7 @@ import { SpecialBoardOutcome } from "@/model/result";
 
 type WizardStep =
   | { step: "selectBoard" }
-  | { step: "selectInstance"; boardNumber: number }
+  | { step: "viewTraveller"; boardNumber: number }
   | {
       step: "enterContract";
       boardNumber: number;
@@ -36,6 +35,7 @@ export default function CorrectResultPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const gameId = params.id;
+  const { game } = useGame();
 
   const [wizardStep, setWizardStep] = useState<WizardStep>({
     step: "selectBoard",
@@ -63,9 +63,9 @@ export default function CorrectResultPage() {
     }
   }, [wizardStep.step, gameId]);
 
-  // Fetch instances when on selectInstance step
+  // Fetch instances when viewing traveller
   useEffect(() => {
-    if (wizardStep.step === "selectInstance") {
+    if (wizardStep.step === "viewTraveller") {
       setInstancesLoading(true);
       fetch(`/api/games/${gameId}/boards/${wizardStep.boardNumber}`)
         .then((r) => r.json())
@@ -81,10 +81,10 @@ export default function CorrectResultPage() {
   }, [wizardStep, gameId]);
 
   function handleBoardSelected(boardNumber: number) {
-    setWizardStep({ step: "selectInstance", boardNumber });
+    setWizardStep({ step: "viewTraveller", boardNumber });
   }
 
-  function handleInstanceSelected(instance: BoardInstance) {
+  function handleLineSelected(instance: BoardInstance) {
     setWizardStep({
       step: "enterContract",
       boardNumber: instance.boardNumber,
@@ -96,7 +96,6 @@ export default function CorrectResultPage() {
   function handleContractEntered(contract: ContractCode | SpecialBoardOutcome) {
     if (wizardStep.step !== "enterContract") return;
 
-    // If it's a special outcome (PO or NP), go straight to saving
     if (contract === "PO" || contract === "NP") {
       saveOverride(
         wizardStep.roundNumber,
@@ -107,7 +106,6 @@ export default function CorrectResultPage() {
       return;
     }
 
-    // If it's a valid contract code, proceed to result entry
     if (isContractCode(contract)) {
       setWizardStep({
         step: "enterResult",
@@ -166,20 +164,19 @@ export default function CorrectResultPage() {
       if (!res.ok) {
         const data = await res.json();
         setError(data.error ?? "Failed to save override");
-        // Go back to board selection on error
         setWizardStep({ step: "selectBoard" });
         return;
       }
 
-      // Success — navigate back to the director menu
-      router.push(`/manage/${gameId}/menu`);
+      router.replace(`/manage/${gameId}/menu`);
     } catch {
       setError("Network error. Please try again.");
       setWizardStep({ step: "selectBoard" });
     }
   }
 
-  // Render based on current step
+  if (!game) return null;
+
   switch (wizardStep.step) {
     case "selectBoard":
       return (
@@ -197,13 +194,15 @@ export default function CorrectResultPage() {
         </>
       );
 
-    case "selectInstance":
+    case "viewTraveller":
       return (
-        <SelectInstancePage
+        <TravellerView
           boardNumber={wizardStep.boardNumber}
           instances={instances}
           isLoading={instancesLoading}
-          onInstanceSelected={handleInstanceSelected}
+          gameType={game.gameType}
+          onLineSelected={handleLineSelected}
+          onBack={() => setWizardStep({ step: "selectBoard" })}
         />
       );
 
@@ -240,3 +239,5 @@ export default function CorrectResultPage() {
       );
   }
 }
+
+

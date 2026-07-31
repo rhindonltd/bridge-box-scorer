@@ -20,7 +20,7 @@ export default function MainMenu() {
   }
 
   function openSettings() {
-    router.push("/settings/wifi");
+    router.push("/settings");
   }
 
   return (

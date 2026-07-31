@@ -37,7 +37,7 @@ export default function ChangeStatusPage() {
 
     if (res.ok) {
       mutateGame();
-      router.push(`/manage/${gameId}/menu`);
+      router.replace(`/manage/${gameId}/menu`);
     } else {
       setSaving(false);
     }

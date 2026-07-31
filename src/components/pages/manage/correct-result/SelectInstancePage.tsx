@@ -6,6 +6,8 @@ interface PairsParticipants {
   type: "PAIRS";
   ns: string;
   ew: string;
+  nsNames?: string | null;
+  ewNames?: string | null;
 }
 
 interface IndividualParticipants {
@@ -14,6 +16,10 @@ interface IndividualParticipants {
   s: string;
   e: string;
   w: string;
+  nName?: string | null;
+  sName?: string | null;
+  eName?: string | null;
+  wName?: string | null;
 }
 
 export interface BoardInstance {
