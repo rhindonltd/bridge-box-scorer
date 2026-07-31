@@ -23,7 +23,15 @@ const meta: Meta<typeof GameComplete> = {
   title: "Pages/Play/GameComplete",
   component: GameComplete,
   decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
-  parameters: { layout: "fullscreen" },
+  parameters: {
+    layout: "fullscreen",
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: "/play/abc123/1NS",
+      },
+    },
+  },
   tags: ["autodocs"],
 };
 

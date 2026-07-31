@@ -18,21 +18,19 @@ export interface TableRoundStatus {
  * Determines if a board should be considered "entered" (resolved).
  * A board is entered if any of:
  * - directorOverrideResult is non-null (director override exists)
- * - nsResult (pairs) or nResult (individual) is non-null
+ * - confirmedResult is non-null
  * - status is CONFIRMED, PENDING_CONFIRMATION, or OVERRIDDEN
  *
  * Note: NOT_PLAYED is the initial state set when boards are created and does
  * NOT indicate a result has been entered.
  */
 export function isBoardEntered(board: {
-  nsResult?: string | null;
-  nResult?: string | null;
+  confirmedResult?: string | null;
   directorOverrideResult?: string | null;
   status?: string | null;
 }): boolean {
   if (board.directorOverrideResult != null) return true;
-  if (board.nsResult != null) return true;
-  if (board.nResult != null) return true;
+  if (board.confirmedResult != null) return true;
   if (board.status === "CONFIRMED" || board.status === "PENDING_CONFIRMATION" || board.status === "OVERRIDDEN") return true;
   return false;
 }

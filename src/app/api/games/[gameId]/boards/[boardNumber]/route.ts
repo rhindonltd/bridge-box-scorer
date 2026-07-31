@@ -56,7 +56,7 @@ export async function GET(
           eName: playerNameMap.get(b.e) ?? null,
           wName: playerNameMap.get(b.w) ?? null,
         },
-        currentResult: b.directorOverrideResult ?? b.nResult ?? null,
+        currentResult: b.directorOverrideResult ?? b.confirmedResult ?? null,
         status: b.status ?? null,
       }));
 
@@ -87,7 +87,7 @@ export async function GET(
           nsNames: pairNameMap.get(b.ns) ?? null,
           ewNames: pairNameMap.get(b.ew) ?? null,
         },
-        currentResult: b.directorOverrideResult ?? b.nsResult ?? null,
+        currentResult: b.directorOverrideResult ?? b.confirmedResult ?? null,
         status: b.status ?? null,
       }));
 

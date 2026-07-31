@@ -44,7 +44,7 @@ type PlayState =
   | { state: "enterContract"; roundIndex: number; boardIndex: number }
   | { state: "enterResult"; roundIndex: number; boardIndex: number; contract: ContractCode }
   | { state: "waiting"; roundIndex: number; boardIndex: number }
-  | { state: "mismatch"; roundIndex: number; boardIndex: number; nsResult: string; ewResult: string }
+  | { state: "mismatch"; roundIndex: number; boardIndex: number; nsBoardNumber: number; nsResult: string; ewBoardNumber: number; ewResult: string }
   | { state: "boardResults"; roundIndex: number; boardIndex: number }
   | { state: "moveInfo"; nextRoundIndex: number }
   | { state: "gameComplete" };
@@ -116,7 +116,7 @@ export default function PlayPage() {
       });
     };
 
-    const onMismatch = (payload: { roundNumber: number; tableNumber: number; boardNumber: number; nsResult: string; ewResult: string }) => {
+    const onMismatch = (payload: { roundNumber: number; tableNumber: number; nsBoardNumber: number; nsResult: string; ewBoardNumber: number; ewResult: string }) => {
       if (!schedule) return;
 
       setPlayState((prev) => {
@@ -125,13 +125,14 @@ export default function PlayPage() {
         const round = schedule.rounds[prev.roundIndex];
         if (!round) return prev;
         if (payload.roundNumber !== round.roundNumber || payload.tableNumber !== round.tableNumber) return prev;
-        if (payload.boardNumber !== round.boards[prev.boardIndex]) return prev;
 
         return {
           state: "mismatch",
           roundIndex: prev.roundIndex,
           boardIndex: prev.boardIndex,
+          nsBoardNumber: payload.nsBoardNumber,
           nsResult: payload.nsResult,
+          ewBoardNumber: payload.ewBoardNumber,
           ewResult: payload.ewResult,
         };
       });
@@ -355,8 +356,9 @@ export default function PlayPage() {
     case "mismatch": {
       return (
         <ResultMismatch
-          boardNumber={schedule.rounds[playState.roundIndex].boards[playState.boardIndex]}
+          nsBoardNumber={playState.nsBoardNumber}
           nsResult={playState.nsResult}
+          ewBoardNumber={playState.ewBoardNumber}
           ewResult={playState.ewResult}
           onReenter={handleReenter}
         />

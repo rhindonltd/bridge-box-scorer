@@ -32,26 +32,29 @@ const meta: Meta<typeof ResultMismatch> = {
 export default meta;
 type Story = StoryObj<typeof ResultMismatch>;
 
-export const Default: Story = {
+export const SameBoardDifferentResult: Story = {
   args: {
-    boardNumber: 7,
+    nsBoardNumber: 7,
     nsResult: "3NTN=",
+    ewBoardNumber: 7,
     ewResult: "3NTN+1",
   },
 };
 
-export const DifferentContracts: Story = {
+export const DifferentBoards: Story = {
   args: {
-    boardNumber: 3,
-    nsResult: "4HE=",
-    ewResult: "3NTE+1",
+    nsBoardNumber: 7,
+    nsResult: "3NTN=",
+    ewBoardNumber: 8,
+    ewResult: "4HE+1",
   },
 };
 
 export const SpecialOutcomes: Story = {
   args: {
-    boardNumber: 12,
+    nsBoardNumber: 12,
     nsResult: "PO",
+    ewBoardNumber: 12,
     ewResult: "2CN=",
   },
 };

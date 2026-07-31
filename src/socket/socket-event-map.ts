@@ -50,8 +50,9 @@ export type SocketEventMap = {
     gameId: string;
     roundNumber: number;
     tableNumber: number;
-    boardNumber: number;
+    nsBoardNumber: number;
     nsResult: string;
+    ewBoardNumber: number;
     ewResult: string;
   };
 };
