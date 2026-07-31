@@ -77,7 +77,7 @@ export async function GET(
         counts.total++;
         if (
           isBoardEntered({
-            nResult: row.nResult,
+            confirmedResult: row.confirmedResult,
             directorOverrideResult: row.directorOverrideResult,
             status: row.status,
           })
@@ -173,7 +173,7 @@ export async function GET(
         counts.total++;
         if (
           isBoardEntered({
-            nsResult: row.nsResult,
+            confirmedResult: row.confirmedResult,
             directorOverrideResult: row.directorOverrideResult,
             status: row.status,
           })

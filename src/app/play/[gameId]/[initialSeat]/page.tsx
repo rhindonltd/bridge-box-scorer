@@ -14,10 +14,13 @@ import { WaitingForConfirmation } from "@/components/pages/play/WaitingForConfir
 import { ResultMismatch } from "@/components/pages/play/ResultMismatch";
 import { RoundInfoPage } from "@/components/pages/play/RoundInfoPage";
 import { GameComplete } from "@/components/pages/play/GameComplete";
+import { BoardResultsPage } from "@/components/pages/play/BoardResultsPage";
+import { score, ScoredTraveller } from "@/scoring/traveller/score-traveller";
+import { PlayHeader } from "@/components/play/PlayHeader";
 
 interface RoundSchedule {
   roundNumber: number;
-  tableNumber: number;
+  tableNumber: number | null;
   boards: number[];
   boardStatuses: { boardNumber: number; status: string | null }[];
   players: {
@@ -26,6 +29,7 @@ interface RoundSchedule {
     E: { id: number; firstName: string; lastName: string; nationalId: string | null } | null;
     W: { id: number; firstName: string; lastName: string; nationalId: string | null } | null;
   };
+  sitOut?: boolean;
 }
 
 interface Schedule {
@@ -40,7 +44,9 @@ type PlayState =
   | { state: "enterContract"; roundIndex: number; boardIndex: number }
   | { state: "enterResult"; roundIndex: number; boardIndex: number; contract: ContractCode }
   | { state: "waiting"; roundIndex: number; boardIndex: number }
-  | { state: "mismatch"; roundIndex: number; boardIndex: number; nsResult: string; ewResult: string }
+  | { state: "mismatch"; roundIndex: number; boardIndex: number; nsBoardNumber: number; nsResult: string; ewBoardNumber: number; ewResult: string }
+  | { state: "boardResults"; roundIndex: number; boardIndex: number }
+  | { state: "moveInfo"; nextRoundIndex: number }
   | { state: "gameComplete" };
 
 export default function PlayPage() {
@@ -59,14 +65,28 @@ export default function PlayPage() {
       .then((data) => {
         if (data.rounds) {
           setSchedule(data);
-          // Find the first round with unconfirmed boards
-          const firstUnconfirmedRound = data.rounds.findIndex(
-            (r: RoundSchedule) => r.boardStatuses.some((b: { status: string | null }) => b.status !== "CONFIRMED")
-          );
-          if (firstUnconfirmedRound === -1) {
+          // Find consecutive completed rounds from the start
+          let startRoundIndex = 0;
+          for (let i = 0; i < data.rounds.length; i++) {
+            const r = data.rounds[i] as RoundSchedule;
+            if (r.sitOut) {
+              // Sit-outs before the first incomplete round are considered "done"
+              startRoundIndex = i + 1;
+              continue;
+            }
+            if (r.boardStatuses.every((b: any) => b.status === "CONFIRMED")) {
+              startRoundIndex = i + 1;
+              continue;
+            }
+            // Found first incomplete round
+            startRoundIndex = i;
+            break;
+          }
+
+          if (startRoundIndex >= data.rounds.length) {
             setPlayState({ state: "gameComplete" });
           } else {
-            setPlayState({ state: "roundInfo", roundIndex: firstUnconfirmedRound });
+            setPlayState({ state: "roundInfo", roundIndex: startRoundIndex });
           }
         }
       })
@@ -91,23 +111,12 @@ export default function PlayPage() {
         if (payload.roundNumber !== round.roundNumber || payload.tableNumber !== round.tableNumber) return prev;
         if (payload.boardNumber !== round.boards[prev.boardIndex]) return prev;
 
-        // Advance to next board or next round
-        const nextBoardIndex = prev.boardIndex + 1;
-        if (nextBoardIndex < round.boards.length) {
-          return { state: "enterContract", roundIndex: prev.roundIndex, boardIndex: nextBoardIndex };
-        }
-
-        // All boards in this round done — go to next round
-        const nextRoundIndex = prev.roundIndex + 1;
-        if (nextRoundIndex < schedule.rounds.length) {
-          return { state: "roundInfo", roundIndex: nextRoundIndex };
-        }
-
-        return { state: "gameComplete" };
+        // After confirmation, show board results
+        return { state: "boardResults", roundIndex: prev.roundIndex, boardIndex: prev.boardIndex };
       });
     };
 
-    const onMismatch = (payload: { roundNumber: number; tableNumber: number; boardNumber: number; nsResult: string; ewResult: string }) => {
+    const onMismatch = (payload: { roundNumber: number; tableNumber: number; nsBoardNumber: number; nsResult: string; ewBoardNumber: number; ewResult: string }) => {
       if (!schedule) return;
 
       setPlayState((prev) => {
@@ -116,13 +125,14 @@ export default function PlayPage() {
         const round = schedule.rounds[prev.roundIndex];
         if (!round) return prev;
         if (payload.roundNumber !== round.roundNumber || payload.tableNumber !== round.tableNumber) return prev;
-        if (payload.boardNumber !== round.boards[prev.boardIndex]) return prev;
 
         return {
           state: "mismatch",
           roundIndex: prev.roundIndex,
           boardIndex: prev.boardIndex,
+          nsBoardNumber: payload.nsBoardNumber,
           nsResult: payload.nsResult,
+          ewBoardNumber: payload.ewBoardNumber,
           ewResult: payload.ewResult,
         };
       });
@@ -215,6 +225,46 @@ export default function PlayPage() {
     });
   }
 
+  function handleBoardResultsNext() {
+    if (playState.state !== "boardResults") return;
+
+    const round = schedule!.rounds[playState.roundIndex];
+    const nextBoardIndex = playState.boardIndex + 1;
+
+    if (nextBoardIndex < round.boards.length) {
+      // More boards in this round
+      setPlayState({ state: "enterContract", roundIndex: playState.roundIndex, boardIndex: nextBoardIndex });
+    } else {
+      // All boards done for this round
+      const nextRoundIndex = playState.roundIndex + 1;
+      if (nextRoundIndex < schedule!.rounds.length) {
+        // More rounds — show move info
+        setPlayState({ state: "moveInfo", nextRoundIndex });
+      } else {
+        // Last round — show leaderboard
+        setPlayState({ state: "gameComplete" });
+      }
+    }
+  }
+
+  function handleMoveInfoContinue() {
+    if (playState.state !== "moveInfo") return;
+    setPlayState({ state: "roundInfo", roundIndex: playState.nextRoundIndex });
+  }
+
+  function handleSitOutContinue() {
+    if (playState.state !== "roundInfo") return;
+
+    const nextRoundIndex = playState.roundIndex + 1;
+    if (nextRoundIndex < schedule!.rounds.length) {
+      // More rounds — show move info
+      setPlayState({ state: "moveInfo", nextRoundIndex });
+    } else {
+      // Last round was a sit-out — go to leaderboard
+      setPlayState({ state: "gameComplete" });
+    }
+  }
+
   if (!game || !schedule) {
     return (
       <div className="h-dvh flex items-center justify-center bg-gray-100">
@@ -233,10 +283,36 @@ export default function PlayPage() {
 
     case "roundInfo": {
       const round = schedule.rounds[playState.roundIndex];
+
+      // If this round is a sit-out, show the sit-out screen instead
+      if (round.sitOut) {
+        return (
+          <div className="h-dvh flex flex-col bg-gray-100">
+            <PlayHeader detail={`Round ${round.roundNumber}`} />
+
+            <div className="flex-1 flex flex-col items-center justify-center p-6">
+              <div className="text-2xl font-bold text-gray-900 mb-2">Sit Out</div>
+              <div className="text-base text-gray-500 text-center">
+                You have a sit-out this round. Please wait for the next round.
+              </div>
+            </div>
+
+            <div className="p-4 shrink-0">
+              <button
+                onClick={handleSitOutContinue}
+                className="w-full py-3.5 text-lg font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <RoundInfoPage
           round={round.roundNumber}
-          table={round.tableNumber}
+          table={round.tableNumber!}
           boards={round.boards}
           players={round.players as any}
           onEnterRound={handleEnterRound}
@@ -280,15 +356,156 @@ export default function PlayPage() {
     case "mismatch": {
       return (
         <ResultMismatch
-          boardNumber={schedule.rounds[playState.roundIndex].boards[playState.boardIndex]}
+          nsBoardNumber={playState.nsBoardNumber}
           nsResult={playState.nsResult}
+          ewBoardNumber={playState.ewBoardNumber}
           ewResult={playState.ewResult}
           onReenter={handleReenter}
         />
       );
     }
 
+    case "boardResults": {
+      const round = schedule.rounds[playState.roundIndex];
+      const boardNumber = round.boards[playState.boardIndex];
+      const lastBoardOfRound = playState.boardIndex === round.boards.length - 1;
+
+      return (
+        <BoardResultsLoader
+          gameId={gameId}
+          gameType={game.gameType}
+          scoringType={game.scoringType}
+          boardNumber={boardNumber}
+          lastBoardOfRound={lastBoardOfRound}
+          onNext={handleBoardResultsNext}
+        />
+      );
+    }
+
+    case "moveInfo": {
+      const nextRound = schedule.rounds[playState.nextRoundIndex];
+
+      // If the next round is a sit-out, skip the "move to table" screen
+      if (nextRound.sitOut) {
+        return (
+          <div className="h-dvh flex flex-col bg-gray-100">
+            <PlayHeader detail="Round Complete" />
+
+            <div className="flex-1 flex flex-col items-center justify-center p-6">
+              <div className="text-xl font-semibold text-gray-900 mb-2">Next up</div>
+              <div className="text-4xl font-bold text-blue-600 mb-4">Sit Out</div>
+              <div className="text-base text-gray-500">
+                Round {nextRound.roundNumber}
+              </div>
+            </div>
+
+            <div className="p-4 shrink-0">
+              <button
+                onClick={handleMoveInfoContinue}
+                className="w-full py-3.5 text-lg font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="h-dvh flex flex-col bg-gray-100">
+          <PlayHeader detail="Round Complete" />
+
+          <div className="flex-1 flex flex-col items-center justify-center p-6">
+            <div className="text-xl font-semibold text-gray-900 mb-2">Move to</div>
+            <div className="text-4xl font-bold text-blue-600 mb-4">Table {nextRound.tableNumber}</div>
+            <div className="text-base text-gray-500">
+              Round {nextRound.roundNumber}
+            </div>
+          </div>
+
+          <div className="p-4 shrink-0">
+            <button
+              onClick={handleMoveInfoContinue}
+              className="w-full py-3.5 text-lg font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     case "gameComplete":
       return <GameComplete />;
   }
+}
+
+function BoardResultsLoader({
+  gameId,
+  gameType,
+  scoringType,
+  boardNumber,
+  lastBoardOfRound,
+  onNext,
+}: {
+  gameId: string;
+  gameType: string;
+  scoringType: string;
+  boardNumber: number;
+  lastBoardOfRound: boolean;
+  onNext: () => void;
+}) {
+  const [scoredTraveller, setScoredTraveller] = useState<ScoredTraveller | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/games/${gameId}/boards/${boardNumber}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.instances) {
+          const mode = gameType === "INDIVIDUAL" ? "INDIVIDUAL" : "PAIR";
+          const scoringMode = scoringType === "IMP" || scoringType === "XIMP" ? "XIMP" : "MP";
+
+          const lines = data.instances
+            .filter((i: any) => i.currentResult != null)
+            .map((i: any) => {
+              if (mode === "PAIR") {
+                return { nsId: i.participants.ns, ewId: i.participants.ew, outcome: i.currentResult };
+              } else {
+                return { nId: i.participants.n, sId: i.participants.s, eId: i.participants.e, wId: i.participants.w, outcome: i.currentResult };
+              }
+            });
+
+          if (lines.length > 0) {
+            const traveller = {
+              type: mode,
+              mode,
+              board: boardNumber,
+              section: gameId,
+              lines,
+            } as any;
+
+            const scored = score(traveller, scoringMode);
+            setScoredTraveller(scored);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [gameId, gameType, scoringType, boardNumber]);
+
+  if (!scoredTraveller) {
+    return (
+      <div className="h-dvh flex items-center justify-center bg-gray-100">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <BoardResultsPage
+      board={boardNumber}
+      lastBoardOfRound={lastBoardOfRound}
+      scoredTraveller={scoredTraveller}
+      onNext={onNext}
+    />
+  );
 }

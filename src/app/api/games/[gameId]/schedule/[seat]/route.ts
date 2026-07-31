@@ -132,7 +132,32 @@ export async function GET(
           };
         });
 
-      return NextResponse.json({ assignmentId, side, rounds });
+      // Determine total rounds from ALL boards in the game (not just this player's)
+      const allIndGameBoards = await db.select({ roundNumber: individualBoards.roundNumber }).from(individualBoards);
+      const allIndRoundNumbers = new Set(allIndGameBoards.map((b) => b.roundNumber));
+      const totalIndRounds = allIndRoundNumbers.size > 0 ? Math.max(...allIndRoundNumbers) : 0;
+
+      // Build complete schedule including sit-outs
+      const activeIndRoundNumbers = new Set(rounds.map((r) => r.roundNumber));
+      const completeIndRounds: any[] = [];
+
+      for (let r = 1; r <= totalIndRounds; r++) {
+        if (activeIndRoundNumbers.has(r)) {
+          completeIndRounds.push(rounds.find((round) => round.roundNumber === r));
+        } else {
+          // Sit-out round
+          completeIndRounds.push({
+            roundNumber: r,
+            tableNumber: null,
+            boards: [],
+            boardStatuses: [],
+            players: { N: null, S: null, E: null, W: null },
+            sitOut: true,
+          });
+        }
+      }
+
+      return NextResponse.json({ assignmentId, side, rounds: completeIndRounds });
     } else {
       // PAIRS
       const db = await getPairsDb(gameId);
@@ -243,7 +268,32 @@ export async function GET(
           };
         });
 
-      return NextResponse.json({ assignmentId, side, rounds });
+      // Determine total rounds from ALL boards in the game (not just this player's)
+      const allGameBoards = await db.select({ roundNumber: pairsBoards.roundNumber }).from(pairsBoards);
+      const allRoundNumbers = new Set(allGameBoards.map((b) => b.roundNumber));
+      const totalRounds = allRoundNumbers.size > 0 ? Math.max(...allRoundNumbers) : 0;
+
+      // Build complete schedule including sit-outs
+      const activeRoundNumbers = new Set(rounds.map((r) => r.roundNumber));
+      const completeRounds: any[] = [];
+
+      for (let r = 1; r <= totalRounds; r++) {
+        if (activeRoundNumbers.has(r)) {
+          completeRounds.push(rounds.find((round) => round.roundNumber === r));
+        } else {
+          // Sit-out round
+          completeRounds.push({
+            roundNumber: r,
+            tableNumber: null,
+            boards: [],
+            boardStatuses: [],
+            players: { N: null, S: null, E: null, W: null },
+            sitOut: true,
+          });
+        }
+      }
+
+      return NextResponse.json({ assignmentId, side, rounds: completeRounds });
     }
   } catch (error) {
     console.error(error);

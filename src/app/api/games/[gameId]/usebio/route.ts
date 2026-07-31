@@ -70,15 +70,15 @@ export async function GET(
 
     // Build board results
     const boardResults: UsebioBoardResult[] = allBoards
-      .filter((b) => b.nsResult || b.status === "NOT_PLAYED")
+      .filter((b) => b.confirmedResult || b.status === "NOT_PLAYED")
       .map((b) => ({
         table: b.tableNumber,
         board: b.boardNumber,
         round: b.roundNumber,
         nsPairNumber: b.ns,
         ewPairNumber: b.ew,
-        outcome: (b.directorOverrideResult ?? b.nsResult ?? "NP") as BoardOutcome,
-        lead: (b.nsLead ?? null) as Card | null,
+        outcome: (b.directorOverrideResult ?? b.confirmedResult ?? "NP") as BoardOutcome,
+        lead: (b.confirmedLead ?? null) as Card | null,
       }));
 
     // Count total boards

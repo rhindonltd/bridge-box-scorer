@@ -16,10 +16,8 @@ export const boards = sqliteTable(
     boardNumber: integer("board_number").notNull(),
     ns: text("ns").notNull(),
     ew: text("ew").notNull(),
-    nsResult: text("ns_result").$type<BoardOutcome>(),
-    ewResult: text("ew_result").$type<BoardOutcome>(),
-    nsLead: text("ns_lead").$type<Card>(),
-    ewLead: text("ew_lead").$type<Card>(),
+    confirmedResult: text("confirmed_result").$type<BoardOutcome>(),
+    confirmedLead: text("confirmed_lead").$type<Card>(),
     directorOverrideResult: text("director_override_result").$type<BoardOutcome>(),
     directorOverrideLead: text("director_override_lead").$type<Card>(),
     status: text("status", {

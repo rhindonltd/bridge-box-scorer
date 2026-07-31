@@ -7,6 +7,33 @@ import { getDb as getIndividualDb } from "@/db/games/individual";
 import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
 import { boards as individualBoards } from "@/db/games/individual/tables/boards";
 
+/**
+ * In-memory store for pending submissions.
+ * Key: `${gameId}:${tableNumber}:${roundNumber}`
+ */
+interface PendingSubmission {
+  boardNumber: number;
+  result: string;
+}
+
+interface TablePending {
+  ns: PendingSubmission | null;
+  ew: PendingSubmission | null;
+}
+
+const pendingSubmissions = new Map<string, TablePending>();
+
+function getPendingKey(gameId: string, tableNumber: number, roundNumber: number): string {
+  return `${gameId}:${tableNumber}:${roundNumber}`;
+}
+
+function getOrCreatePending(key: string): TablePending {
+  if (!pendingSubmissions.has(key)) {
+    pendingSubmissions.set(key, { ns: null, ew: null });
+  }
+  return pendingSubmissions.get(key)!;
+}
+
 export function registerSubmitResultHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.SUBMIT_RESULT,
@@ -31,194 +58,96 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
       cb,
     ) => {
       try {
+        // Determine which side
+        let isNS: boolean;
         if (gameType === "INDIVIDUAL") {
-          await handleIndividualSubmission(
-            io, gameId, seat, roundNumber, tableNumber, boardNumber, result,
-          );
+          const direction = seat.slice(-1);
+          isNS = direction === "N" || direction === "S";
         } else {
-          await handlePairSubmission(
-            io, gameId, seat, roundNumber, tableNumber, boardNumber, result,
-          );
+          isNS = seat.endsWith("NS");
+        }
+
+        // Store pending submission
+        const key = getPendingKey(gameId, tableNumber, roundNumber);
+        const pending = getOrCreatePending(key);
+
+        if (isNS) {
+          pending.ns = { boardNumber, result };
+        } else {
+          pending.ew = { boardNumber, result };
         }
 
         cb?.({ success: true });
+
+        // Check if both sides have submitted
+        if (!pending.ns || !pending.ew) return;
+
+        // Compare board number AND result
+        if (pending.ns.boardNumber === pending.ew.boardNumber && pending.ns.result === pending.ew.result) {
+          // Match — confirm
+          const confirmedBoardNumber = pending.ns.boardNumber;
+          const confirmedResult = pending.ns.result;
+
+          // Clear pending for this board
+          pendingSubmissions.delete(key);
+
+          // Write to database
+          if (gameType === "INDIVIDUAL") {
+            const db = await getIndividualDb(gameId);
+            await db
+              .update(individualBoards)
+              .set({ confirmedResult: confirmedResult as any, status: "CONFIRMED" })
+              .where(
+                and(
+                  eq(individualBoards.roundNumber, roundNumber),
+                  eq(individualBoards.tableNumber, tableNumber),
+                  eq(individualBoards.boardNumber, confirmedBoardNumber),
+                ),
+              );
+          } else {
+            const db = await getPairsDb(gameId);
+            await db
+              .update(pairsBoards)
+              .set({ confirmedResult: confirmedResult as any, status: "CONFIRMED" })
+              .where(
+                and(
+                  eq(pairsBoards.roundNumber, roundNumber),
+                  eq(pairsBoards.tableNumber, tableNumber),
+                  eq(pairsBoards.boardNumber, confirmedBoardNumber),
+                ),
+              );
+          }
+
+          io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {
+            gameId,
+            roundNumber,
+            tableNumber,
+            boardNumber: confirmedBoardNumber,
+            result: confirmedResult,
+          });
+
+          io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
+            gameId,
+            roundNumber,
+            tableNumber,
+            boardNumber: confirmedBoardNumber,
+          });
+        } else {
+          // Mismatch — keep pending, notify both sides
+          io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_MISMATCH, {
+            gameId,
+            roundNumber,
+            tableNumber,
+            nsBoardNumber: pending.ns.boardNumber,
+            nsResult: pending.ns.result,
+            ewBoardNumber: pending.ew.boardNumber,
+            ewResult: pending.ew.result,
+          });
+        }
       } catch (err) {
         console.error("Submit result error:", err);
         cb?.({ success: false, error: "Failed to submit result" });
       }
     },
   );
-}
-
-async function handlePairSubmission(
-  io: Server,
-  gameId: string,
-  seat: string,
-  roundNumber: number,
-  tableNumber: number,
-  boardNumber: number,
-  result: string,
-) {
-  const db = await getPairsDb(gameId);
-  const isNS = seat.endsWith("NS");
-
-  // Save the result to the appropriate column
-  const updateData = isNS
-    ? { nsResult: result as any }
-    : { ewResult: result as any };
-
-  await db
-    .update(pairsBoards)
-    .set(updateData)
-    .where(
-      and(
-        eq(pairsBoards.roundNumber, roundNumber),
-        eq(pairsBoards.tableNumber, tableNumber),
-        eq(pairsBoards.boardNumber, boardNumber),
-      ),
-    );
-
-  // Check if both sides have submitted
-  const board = await db
-    .select()
-    .from(pairsBoards)
-    .where(
-      and(
-        eq(pairsBoards.roundNumber, roundNumber),
-        eq(pairsBoards.tableNumber, tableNumber),
-        eq(pairsBoards.boardNumber, boardNumber),
-      ),
-    )
-    .get();
-
-  if (!board || !board.nsResult || !board.ewResult) return;
-
-  // Both sides have submitted — compare
-  if (board.nsResult === board.ewResult) {
-    // Match — confirm the board
-    await db
-      .update(pairsBoards)
-      .set({ status: "CONFIRMED" })
-      .where(
-        and(
-          eq(pairsBoards.roundNumber, roundNumber),
-          eq(pairsBoards.tableNumber, tableNumber),
-          eq(pairsBoards.boardNumber, boardNumber),
-        ),
-      );
-
-    io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {
-      gameId,
-      roundNumber,
-      tableNumber,
-      boardNumber,
-      result: board.nsResult,
-    });
-
-    io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
-      gameId,
-      roundNumber,
-      tableNumber,
-      boardNumber,
-    });
-  } else {
-    // Mismatch — notify both sides but keep results stored
-    // When the wrong side re-enters, normal comparison will run against the other side's existing result
-    io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_MISMATCH, {
-      gameId,
-      roundNumber,
-      tableNumber,
-      boardNumber,
-      nsResult: board.nsResult,
-      ewResult: board.ewResult,
-    });
-  }
-}
-
-async function handleIndividualSubmission(
-  io: Server,
-  gameId: string,
-  seat: string,
-  roundNumber: number,
-  tableNumber: number,
-  boardNumber: number,
-  result: string,
-) {
-  const db = await getIndividualDb(gameId);
-
-  // Determine which side: N/S are one side, E/W are the other
-  const direction = seat.slice(-1);
-  const isNS = direction === "N" || direction === "S";
-
-  // Use nResult for NS-side submission, eResult for EW-side submission
-  const updateData = isNS
-    ? { nResult: result as any }
-    : { eResult: result as any };
-
-  await db
-    .update(individualBoards)
-    .set(updateData)
-    .where(
-      and(
-        eq(individualBoards.roundNumber, roundNumber),
-        eq(individualBoards.tableNumber, tableNumber),
-        eq(individualBoards.boardNumber, boardNumber),
-      ),
-    );
-
-  // Check if both sides have submitted
-  const board = await db
-    .select()
-    .from(individualBoards)
-    .where(
-      and(
-        eq(individualBoards.roundNumber, roundNumber),
-        eq(individualBoards.tableNumber, tableNumber),
-        eq(individualBoards.boardNumber, boardNumber),
-      ),
-    )
-    .get();
-
-  if (!board || !board.nResult || !board.eResult) return;
-
-  // Both sides have submitted — compare
-  if (board.nResult === board.eResult) {
-    // Match — confirm
-    await db
-      .update(individualBoards)
-      .set({ status: "CONFIRMED" })
-      .where(
-        and(
-          eq(individualBoards.roundNumber, roundNumber),
-          eq(individualBoards.tableNumber, tableNumber),
-          eq(individualBoards.boardNumber, boardNumber),
-        ),
-      );
-
-    io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {
-      gameId,
-      roundNumber,
-      tableNumber,
-      boardNumber,
-      result: board.nResult,
-    });
-
-    io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
-      gameId,
-      roundNumber,
-      tableNumber,
-      boardNumber,
-    });
-  } else {
-    // Mismatch — notify both sides but keep results stored
-    // When the wrong side re-enters, normal comparison will run against the other side's existing result
-    io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_MISMATCH, {
-      gameId,
-      roundNumber,
-      tableNumber,
-      boardNumber,
-      nsResult: board.nResult,
-      ewResult: board.eResult,
-    });
-  }
 }

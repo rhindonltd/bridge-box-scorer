@@ -52,7 +52,7 @@ export async function GET(
       for (const [boardNumber, rows] of boardMap) {
         // Only include boards that have at least one confirmed result
         const linesWithResults = rows.filter((r) => {
-          const result = r.directorOverrideResult ?? r.nsResult;
+          const result = r.directorOverrideResult ?? r.confirmedResult;
           return result != null;
         });
 
@@ -66,7 +66,7 @@ export async function GET(
           lines: linesWithResults.map((r) => ({
             nsId: r.ns,
             ewId: r.ew,
-            outcome: (r.directorOverrideResult ?? r.nsResult) as BoardOutcome,
+            outcome: (r.directorOverrideResult ?? r.confirmedResult) as BoardOutcome,
           })),
         };
 
@@ -115,7 +115,7 @@ export async function GET(
       const travellers: ScoredTraveller[] = [];
       for (const [boardNumber, rows] of boardMap) {
         const linesWithResults = rows.filter((r) => {
-          const result = r.directorOverrideResult ?? r.nResult;
+          const result = r.directorOverrideResult ?? r.confirmedResult;
           return result != null;
         });
 
@@ -131,7 +131,7 @@ export async function GET(
             sId: r.s,
             eId: r.e,
             wId: r.w,
-            outcome: (r.directorOverrideResult ?? r.nResult) as BoardOutcome,
+            outcome: (r.directorOverrideResult ?? r.confirmedResult) as BoardOutcome,
           })),
         };
 
