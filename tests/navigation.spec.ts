@@ -49,9 +49,9 @@ test.describe("Main Menu Navigation", () => {
     await expect(page).toHaveURL(/\/manage/);
   });
 
-  test("'Settings' navigates to /settings/wifi", async ({ page }) => {
+  test("'Settings' navigates to /settings", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Settings" }).click();
-    await expect(page).toHaveURL(/\/settings\/wifi/);
+    await expect(page).toHaveURL(/\/settings/);
   });
 });
