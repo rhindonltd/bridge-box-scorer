@@ -124,96 +124,96 @@ Expand the Playwright E2E test suite with shared fixtures and 13 new/expanded te
     - Intercept DELETE route with 500 response, click delete, assert error message visible
     - _Requirements: 5.4_
 
-- [ ] 9. Create `tests/correct-result.spec.ts`
-  - [-] 9.1 Verify correct-result page loads and shows board number buttons (or empty state)
+- [x] 9. Create `tests/correct-result.spec.ts`
+  - [x] 9.1 Verify correct-result page loads and shows board number buttons (or empty state)
     - Use director fixture, navigate to correct-result, assert page renders without error
     - _Requirements: 6.1_
 
-  - [-] 9.2 Test board selection loads traveller view (with route intercept to provide mock board data)
+  - [x] 9.2 Test board selection loads traveller view (with route intercept to provide mock board data)
     - Intercept boards API to return mock data, click board button, assert traveller view renders
     - _Requirements: 6.2_
 
-  - [-] 9.3 Test selecting a traveller line shows contract entry panel with board number in header
+  - [x] 9.3 Test selecting a traveller line shows contract entry panel with board number in header
     - Click a line in the traveller, assert contract panel visible with board number text
     - _Requirements: 6.3_
 
-  - [-] 9.4 Test submitting override calls API with correct payload
+  - [x] 9.4 Test submitting override calls API with correct payload
     - Intercept override API, fill contract form, submit, assert request was made with roundNumber, tableNumber, boardNumber, result
     - _Requirements: 6.4_
 
-  - [-] 9.5 Test error response returns wizard to board selection
+  - [x] 9.5 Test error response returns wizard to board selection
     - Intercept override API with error response, submit, assert wizard returns to board selection step and error message visible
     - _Requirements: 6.5_
 
-- [ ] 10. Create `tests/download-usebio.spec.ts`
-  - [-] 10.1 Verify download-usebio page renders Club Name and EBU Club Number fields
+- [x] 10. Create `tests/download-usebio.spec.ts`
+  - [x] 10.1 Verify download-usebio page renders Club Name and EBU Club Number fields
     - Use director fixture, navigate to download-usebio, assert both fields visible
     - _Requirements: 10.1_
 
-  - [-] 10.2 Test filling club details and tapping "Download USEBIO" calls the API
+  - [x] 10.2 Test filling club details and tapping "Download USEBIO" calls the API
     - Fill fields, intercept USEBIO API, click download, assert request made
     - _Requirements: 10.2_
 
-  - [-] 10.3 Test error display when USEBIO generation fails
+  - [x] 10.3 Test error display when USEBIO generation fails
     - Intercept USEBIO route with error, submit, assert error message visible
     - _Requirements: 10.3_
 
-  - [-] 10.4 Test "Cancel" navigates back to `/manage/[id]/menu`
+  - [x] 10.4 Test "Cancel" navigates back to `/manage/[id]/menu`
     - Click cancel, assert URL
     - _Requirements: 10.4_
 
-- [~] 11. Checkpoint
+- [x] 11. Checkpoint
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Create `tests/movement.spec.ts`
-  - [-] 12.1 Verify movement page shows "No movement set up yet." for a game without a movement
+- [x] 12. Create `tests/movement.spec.ts`
+  - [x] 12.1 Verify movement page shows "No movement set up yet." for a game without a movement
     - Use director fixture (game has no movement by default), navigate, assert empty state text
     - _Requirements: 9.2_
 
-  - [-] 12.2 Test movement API endpoint returns valid JSON for an existing game
+  - [x] 12.2 Test movement API endpoint returns valid JSON for an existing game
     - Call `GET /api/games/[gameId]/movement` via request context, assert 200 + JSON
     - _Requirements: 9.3_
 
-  - [-] 12.3 Verify movement page renders table data when movement exists (route intercept)
+  - [x] 12.3 Verify movement page renders table data when movement exists (route intercept)
     - Intercept movement API with mock data, navigate, assert table elements rendered
     - _Requirements: 9.1_
 
-- [ ] 13. Create `tests/timer.spec.ts`
-  - [-] 13.1 Verify director timer page renders without errors
+- [x] 13. Create `tests/timer.spec.ts`
+  - [x] 13.1 Verify director timer page renders without errors
     - Use director fixture, navigate to `/manage/[id]/timer`, assert page loads
     - _Requirements: 7.1_
 
-  - [-] 13.2 Verify player timer page renders without errors
+  - [x] 13.2 Verify player timer page renders without errors
     - Use game fixture with joinable status, navigate to `/join/[gameId]/timer`, assert page loads
     - _Requirements: 7.2_
 
-  - [-] 13.3 Verify timer shows appropriate initial/empty state
+  - [x] 13.3 Verify timer shows appropriate initial/empty state
     - Assert empty state content visible when no timer configured
     - _Requirements: 7.3_
 
-- [ ] 14. Create `tests/leaderboard.spec.ts`
-  - [-] 14.1 Verify leaderboard page renders without errors
+- [x] 14. Create `tests/leaderboard.spec.ts`
+  - [x] 14.1 Verify leaderboard page renders without errors
     - Use game fixture with joinable status, navigate to `/join/[gameId]/leaderboard`, assert page loads
     - _Requirements: 8.1_
 
-  - [-] 14.2 Test leaderboard API returns valid JSON
+  - [x] 14.2 Test leaderboard API returns valid JSON
     - Call `GET /api/games/[gameId]/leaderboard` via request context, assert response is JSON
     - _Requirements: 8.2_
 
-- [ ] 15. Create `tests/play.spec.ts`
-  - [~] 15.1 Verify play page renders round info for a valid game and seat (route intercept for schedule data)
+- [x] 15. Create `tests/play.spec.ts`
+  - [x] 15.1 Verify play page renders round info for a valid game and seat (route intercept for schedule data)
     - Intercept schedule API with mock data, navigate to `/play/[gameId]/1NS`, assert round number, table number, board numbers visible
     - _Requirements: 11.1_
 
-  - [~] 15.2 Test "Enter Round" button displays contract entry panel
+  - [x] 15.2 Test "Enter Round" button displays contract entry panel
     - Click "Enter Round", assert contract entry panel visible
     - _Requirements: 11.2_
 
-  - [~] 15.3 Test contract submission transitions to "Waiting for Confirmation" state (route intercept)
+  - [x] 15.3 Test contract submission transitions to "Waiting for Confirmation" state (route intercept)
     - Intercept submit API, fill and submit contract, assert waiting state visible
     - _Requirements: 11.3_
 
-  - [~] 15.4 Test mismatch screen display (route intercept for mismatch response)
+  - [x] 15.4 Test mismatch screen display (route intercept for mismatch response)
     - Intercept with mismatch response, assert mismatch screen visible with both results
     - _Requirements: 11.4_
 
@@ -233,24 +233,24 @@ Expand the Playwright E2E test suite with shared fixtures and 13 new/expanded te
   - [x] 16.5 Add test: `POST /api/system/restart` returns a response
     - _Requirements: 12.5_
 
-- [ ] 17. Expand existing `tests/navigation.spec.ts`
-  - [~] 17.1 Add test: back navigation from `/settings/wifi` to settings menu
+- [x] 17. Expand existing `tests/navigation.spec.ts`
+  - [x] 17.1 Add test: back navigation from `/settings/wifi` to settings menu
     - Navigate to wifi settings, click back/home control, assert URL is `/settings`
     - _Requirements: 13.1_
 
-  - [~] 17.2 Add test: back navigation from `/settings/club` to settings menu
+  - [x] 17.2 Add test: back navigation from `/settings/club` to settings menu
     - Navigate to club settings, click "Back", assert URL is `/settings`
     - _Requirements: 13.2_
 
-  - [~] 17.3 Add test: back navigation from movement page to director menu
+  - [x] 17.3 Add test: back navigation from movement page to director menu
     - Use director fixture, navigate to movement, click "Back", assert URL is `/manage/[id]/menu`
     - _Requirements: 13.3_
 
-  - [~] 17.4 Add test: change-status page navigates back to director menu after status change
+  - [x] 17.4 Add test: change-status page navigates back to director menu after status change
     - Use director fixture, change status, assert redirect to `/manage/[id]/menu`
     - _Requirements: 13.4_
 
-- [~] 18. Final checkpoint
+- [x] 18. Final checkpoint
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

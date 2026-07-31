@@ -465,6 +465,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522547906
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523338278
       }
     ],
     "9.2 Test board selection loads traveller view (with route intercept to provide mock board data)": [
@@ -477,6 +482,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522548770
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523339399
       }
     ],
     "9.3 Test selecting a traveller line shows contract entry panel with board number in header": [
@@ -489,6 +499,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522549674
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523340231
       }
     ],
     "9.4 Test submitting override calls API with correct payload": [
@@ -501,6 +516,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522550451
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523341190
       }
     ],
     "9.5 Test error response returns wizard to board selection": [
@@ -513,6 +533,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522551209
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523342068
       }
     ],
     "10.1 Verify download-usebio page renders Club Name and EBU Club Number fields": [
@@ -525,6 +550,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522552148
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523343154
       }
     ],
     "10.2 Test filling club details and tapping \"Download USEBIO\" calls the API": [
@@ -537,6 +567,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522553039
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523344303
       }
     ],
     "10.3 Test error display when USEBIO generation fails": [
@@ -549,6 +584,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522553849
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523345340
       }
     ],
     "10.4 Test \"Cancel\" navigates back to `/manage/[id]/menu`": [
@@ -561,6 +601,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522554688
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523346302
       }
     ],
     "11. Checkpoint": [
@@ -568,6 +613,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516189114
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523730951
       }
     ],
     "12.1 Verify movement page shows \"No movement set up yet.\" for a game without a movement": [
@@ -580,6 +630,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522555538
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523347354
       }
     ],
     "12.2 Test movement API endpoint returns valid JSON for an existing game": [
@@ -592,6 +647,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522556393
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523348316
       }
     ],
     "12.3 Verify movement page renders table data when movement exists (route intercept)": [
@@ -604,6 +664,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522557234
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523349521
       }
     ],
     "13.1 Verify director timer page renders without errors": [
@@ -616,6 +681,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522558083
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523350377
       }
     ],
     "13.2 Verify player timer page renders without errors": [
@@ -628,6 +698,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522558979
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523351068
       }
     ],
     "13.3 Verify timer shows appropriate initial/empty state": [
@@ -640,6 +715,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522559798
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523352042
       }
     ],
     "14.1 Verify leaderboard page renders without errors": [
@@ -652,6 +732,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522560757
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523353079
       }
     ],
     "14.2 Test leaderboard API returns valid JSON": [
@@ -664,6 +749,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522561523
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523353777
       }
     ],
     "15.1 Verify play page renders round info for a valid game and seat (route intercept for schedule data)": [
@@ -671,6 +761,16 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516189475
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523359598
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523723595
       }
     ],
     "15.2 Test \"Enter Round\" button displays contract entry panel": [
@@ -678,6 +778,16 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516189512
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523360369
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523724421
       }
     ],
     "15.3 Test contract submission transitions to \"Waiting for Confirmation\" state (route intercept)": [
@@ -685,6 +795,16 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516189552
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523361322
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523725450
       }
     ],
     "15.4 Test mismatch screen display (route intercept for mismatch response)": [
@@ -692,6 +812,16 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516189585
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523362156
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523726455
       }
     ],
     "16.1 Add test: `GET /api/players/search?q=test` returns valid JSON with results array": [
@@ -784,6 +914,16 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516189956
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523363520
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523727542
       }
     ],
     "17.2 Add test: back navigation from `/settings/club` to settings menu": [
@@ -791,6 +931,16 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516189994
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523364408
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523728395
       }
     ],
     "17.3 Add test: back navigation from movement page to director menu": [
@@ -798,6 +948,16 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516190036
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523365359
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523729202
       }
     ],
     "17.4 Add test: change-status page navigates back to director menu after status change": [
@@ -805,6 +965,16 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516190112
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523366524
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523730054
       }
     ],
     "18. Final checkpoint": [
@@ -812,6 +982,11 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785516190178
+      },
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523731696
       }
     ],
     "1. Create shared test fixtures and helpers": [
@@ -868,6 +1043,55 @@
         "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
         "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
         "timestamp": 1785522534653
+      }
+    ],
+    "9. Create `tests/correct-result.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523342133
+      }
+    ],
+    "10. Create `tests/download-usebio.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523346441
+      }
+    ],
+    "12. Create `tests/movement.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523349579
+      }
+    ],
+    "13. Create `tests/timer.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523352100
+      }
+    ],
+    "14. Create `tests/leaderboard.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523353829
+      }
+    ],
+    "15. Create `tests/play.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523726502
+      }
+    ],
+    "17. Expand existing `tests/navigation.spec.ts`": [
+      {
+        "executionId": "6d7442cf-488b-4f18-8d23-293efc849291",
+        "chatSessionId": "sess_c71012dc-0f45-4865-9c78-e1f260cbe431",
+        "timestamp": 1785523730109
       }
     ]
   }
