@@ -27,4 +27,31 @@ export type SocketEventMap = {
     tableNumber: number;
     boardNumber: number;
   };
+
+  [SocketEvents.SUBMIT_RESULT]: {
+    gameId: string;
+    gameType: string;
+    seat: string;
+    roundNumber: number;
+    tableNumber: number;
+    boardNumber: number;
+    result: string;
+  };
+
+  [SocketEvents.BOARD_CONFIRMED]: {
+    gameId: string;
+    roundNumber: number;
+    tableNumber: number;
+    boardNumber: number;
+    result: string;
+  };
+
+  [SocketEvents.BOARD_MISMATCH]: {
+    gameId: string;
+    roundNumber: number;
+    tableNumber: number;
+    boardNumber: number;
+    nsResult: string;
+    ewResult: string;
+  };
 };
