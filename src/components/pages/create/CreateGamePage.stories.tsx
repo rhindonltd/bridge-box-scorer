@@ -7,6 +7,12 @@ const meta: Meta<typeof CreateGamePage> = {
   component: CreateGamePage,
   parameters: {
     layout: "fullscreen",
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: "/create",
+      },
+    },
   },
   tags: ["autodocs"],
 };
