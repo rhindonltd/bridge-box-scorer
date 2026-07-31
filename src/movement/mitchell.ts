@@ -22,8 +22,8 @@ export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
     throw new Error("Skip Mitchell cannot have an odd number of tables");
   }
 
-  // ewAdd ensures NS and EW pairs always have distinct IDs
-  const ewAdd = tables;
+  // ewAdd offsets EW pair IDs to avoid collision with NS IDs during arrow switch
+  const ewAdd = arrowSwitchRounds > 0 ? tables : 0;
 
   const skipAfter = skip ? Math.floor(tables / 2) : tables;
 
