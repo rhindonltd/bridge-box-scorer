@@ -3,6 +3,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { emitWithAck, emitEvent } from "@/lib/socket";
 import { NewParticipant } from "@/model/participants";
 import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
+import { MitchellMovementSpec } from "@/movement/mitchell";
 
 export async function createGame(game: NewBridgeGame): Promise<BridgeGame> {
   const response = await emitWithAck<{
@@ -22,6 +23,18 @@ export async function selectMovement(gameId: string, id: number, type: string) {
     gameId,
     type,
     id,
+    directorToken: getDirectorToken(gameId),
+  });
+}
+
+export async function selectMitchellMovement(
+  gameId: string,
+  mitchell: MitchellMovementSpec,
+) {
+  emitEvent(SocketEvents.SELECT_MOVEMENT, {
+    gameId,
+    type: "PAIRS",
+    mitchell,
     directorToken: getDirectorToken(gameId),
   });
 }
