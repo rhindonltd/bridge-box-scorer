@@ -14,7 +14,7 @@ export function ResultMismatch({ nsBoardNumber, nsResult, ewBoardNumber, ewResul
   const boardMismatch = nsBoardNumber !== ewBoardNumber;
 
   return (
-    <div className="h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       <PlayHeader detail={boardMismatch ? "Mismatch" : `Board ${nsBoardNumber}`} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">

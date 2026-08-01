@@ -18,7 +18,7 @@ describe("AwaitingMovement", () => {
       "flex",
       "items-center",
       "justify-center",
-      "min-h-dvh",
+      "flex-1",
     );
   });
 });

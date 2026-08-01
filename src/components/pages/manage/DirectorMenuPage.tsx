@@ -38,7 +38,7 @@ export function DirectorMenuPage({
     "w-full py-3.5 text-lg font-semibold bg-red-100 text-red-700 rounded-xl hover:bg-red-200 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2";
 
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
+    <div className="flex-1 flex flex-col">
       {/* Header */}
       <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
         {game.eventName}

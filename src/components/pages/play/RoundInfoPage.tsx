@@ -26,7 +26,7 @@ export function RoundInfoPage({
   onEnterRound,
 }: Props) {
   return (
-    <div className="h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       <PlayHeader detail={`Table ${table}, Round ${round}`} />
 
       <div className="flex-1 flex items-center justify-center p-2 min-h-0">

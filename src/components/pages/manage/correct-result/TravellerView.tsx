@@ -29,7 +29,7 @@ export function TravellerView({
 }: TravellerViewProps) {
   if (isLoading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-white">
+      <div className="flex-1 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
       </div>
     );
@@ -38,7 +38,7 @@ export function TravellerView({
   const isPair = gameType !== "INDIVIDUAL";
 
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
+    <div className="flex-1 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-gray-200 text-gray-800 shrink-0">
         <button

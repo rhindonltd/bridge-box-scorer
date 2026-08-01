@@ -50,7 +50,7 @@ export function TimerControlsView({
   }
 
   return (
-    <div className="min-h-dvh bg-white text-gray-900 flex flex-col items-center justify-center gap-6 p-6">
+    <div className="flex-1 text-gray-900 flex flex-col items-center justify-center gap-6 p-6">
       <h1 className="text-3xl font-bold mb-2">Director Controls</h1>
 
       {/* STATUS PANEL */}

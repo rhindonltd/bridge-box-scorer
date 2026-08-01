@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-gray-100">
-        <div className="mx-auto max-w-2xl min-h-dvh">
+        <div className="mx-auto max-w-2xl min-h-dvh bg-white flex flex-col">
           {children}
         </div>
       </body>

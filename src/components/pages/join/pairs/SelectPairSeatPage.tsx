@@ -56,7 +56,7 @@ export function SelectPairSeatPage({ onSeatSelected }: Props) {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       {/* Header */}
       <div className="flex flex-row w-full">
         <GameInfo />

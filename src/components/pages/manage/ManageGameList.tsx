@@ -8,7 +8,7 @@ interface Props {
 
 export function ManageGameList({ games, isLoading, onGameSelected }: Props) {
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
+    <div className="flex-1 flex flex-col">
       {/* Header */}
       <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
         Manage Games

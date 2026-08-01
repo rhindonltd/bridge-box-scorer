@@ -10,7 +10,7 @@ interface Props {
 
 export function LeaderboardPage({ overallScoreAndParticipant, onNext }: Props) {
   return (
-    <div className="h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       <div className="flex flex-row w-full">
         <GameInfo />
       </div>

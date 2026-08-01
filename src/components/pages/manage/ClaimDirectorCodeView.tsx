@@ -20,7 +20,7 @@ export function ClaimDirectorCodeView({
   onCancel,
 }: ClaimDirectorCodeViewProps) {
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-white px-6">
+    <div className="flex-1 flex flex-col items-center justify-center px-6">
       <h1 className="text-xl font-bold text-gray-900 mb-2">Become Director</h1>
       <p className="text-base text-gray-600 mb-8 text-center">
         Enter the share code for <strong>{gameName}</strong>

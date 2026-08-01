@@ -8,7 +8,7 @@ interface Props {
 
 export function HeaderContentBottomLayout({ heading, content, bottom }: Props) {
   return (
-    <div className="flex h-dvh flex-col bg-gray-100">
+    <div className="flex flex-1 flex-col">
       <div className="text-center shrink-0">{heading}</div>
 
       <div className="flex-1 overflow-y-auto">

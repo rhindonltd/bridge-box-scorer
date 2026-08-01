@@ -29,14 +29,14 @@ export function GameComplete() {
 
   if (loading) {
     return (
-      <div className="h-dvh flex items-center justify-center bg-gray-100">
+      <div className="flex-1 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       <PlayHeader detail="Results" />
 
       <div className="flex-1 min-h-0">
