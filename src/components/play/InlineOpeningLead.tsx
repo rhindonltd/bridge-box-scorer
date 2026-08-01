@@ -1,8 +1,8 @@
 import { Rank, Ranks, Suit, SuitMap } from "@/model/common";
 
 type InlineOpeningLeadProps = {
-  suit: Suit;
-  rank: Rank;
+  suit: Suit | null;
+  rank: Rank | null;
   onSuitChange: (suit: Suit) => void;
   onRankChange: (rank: Rank) => void;
 };
@@ -36,8 +36,8 @@ export function InlineOpeningLead({
 }: InlineOpeningLeadProps) {
   return (
     <div className="flex flex-col gap-1 h-full">
-      {/* Suit selection — 2×2 grid */}
-      <div className="grid grid-cols-2 gap-1 h-[50px]">
+      {/* Suit selection — single row */}
+      <div className="grid grid-cols-4 gap-1">
         {(Object.keys(SuitMap) as Suit[]).map((s) => {
           const selected = s === suit;
 
@@ -46,7 +46,7 @@ export function InlineOpeningLead({
               key={s}
               onClick={() => onSuitChange(s)}
               className={[
-                "rounded-lg text-2xl border flex items-center justify-center",
+                "rounded-lg text-lg py-1.5 border flex items-center justify-center",
                 suitStyle(s, selected),
               ].join(" ")}
             >

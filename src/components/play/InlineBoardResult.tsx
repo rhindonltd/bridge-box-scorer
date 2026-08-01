@@ -27,7 +27,7 @@ export function InlineBoardResult({
   }, [mode, maxOver, maxDown]);
 
   return (
-    <div className="space-y-2 h-full">
+    <div className="space-y-1">
       {/* Made/Down toggle */}
       <div className="grid grid-cols-2 gap-1">
         <button

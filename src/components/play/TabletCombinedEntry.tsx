@@ -45,8 +45,8 @@ export function TabletCombinedEntry({
   const [notPlayed, setNotPlayed] = useState<boolean>(false);
 
   // Lead state
-  const [leadSuit, setLeadSuit] = useState<Suit>("S");
-  const [leadRank, setLeadRank] = useState<Rank>("A");
+  const [leadSuit, setLeadSuit] = useState<Suit | null>(null);
+  const [leadRank, setLeadRank] = useState<Rank | null>(null);
 
   // Result state
   const [resultMode, setResultMode] = useState<"made" | "down">("made");
@@ -198,13 +198,7 @@ export function TabletCombinedEntry({
       {/* Main content area — flex proportional */}
       <div className="flex-1 min-h-0 flex flex-col">
         {/* Contract section */}
-        <div
-          className={
-            leadCardRequired
-              ? "flex-[45] min-h-0 overflow-hidden"
-              : "flex-[55] min-h-0 overflow-hidden"
-          }
-        >
+        <div className="shrink-0">
           <PlayableContract
             level={level}
             suit={suit}
@@ -220,7 +214,7 @@ export function TabletCombinedEntry({
         {/* Lead section (if required, with progressive reveal) */}
         {leadCardRequired && (
           <div
-            className={`flex-[25] min-h-0 overflow-hidden flex flex-col ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
+            className={`shrink-0 flex flex-col ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
           >
             <div className="text-sm font-bold bg-blue-600 text-white px-2 py-1 shrink-0">Opening Lead</div>
             <div className="p-1 flex-1 min-h-0">
@@ -236,7 +230,7 @@ export function TabletCombinedEntry({
 
         {/* Result section (with progressive reveal) */}
         <div
-          className={`${leadCardRequired ? "flex-[30]" : "flex-[45]"} min-h-0 overflow-hidden flex flex-col ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
+          className={`shrink-0 flex flex-col ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
         >
           <div className="text-sm font-bold bg-blue-600 text-white px-2 py-1 shrink-0">Result</div>
           <div className="p-1 flex-1 min-h-0">
