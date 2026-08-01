@@ -48,4 +48,19 @@ describe("registerLeaveGameHandler (unit)", () => {
 
     expect(socket.leave).toHaveBeenCalled();
   });
+
+  it("calls cb with success: false when leave throws", async () => {
+    socket.leave = vi.fn().mockImplementation(() => {
+      throw new Error("leave failed");
+    });
+
+    registerLeaveGameHandler(socket as any);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler({ gameId: "game-1" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({ success: false });
+  });
 });

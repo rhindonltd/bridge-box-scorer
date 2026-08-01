@@ -124,4 +124,25 @@ describe("registerEvictParticipantHandler", () => {
       expect.objectContaining({ success: false, error: "Game not found" }),
     );
   });
+
+  it("returns internal server error when deleteParticipant throws", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "g1",
+      gameType: "PAIRS",
+    } as any);
+    vi.mocked(deletePair).mockRejectedValue(new Error("DB failure"));
+
+    const socket = makeSocket();
+    const io = makeIo();
+    registerEvictParticipantHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ gameId: "g1", seat: "2NS", directorToken: "test-token" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Internal server error",
+    });
+  });
 });

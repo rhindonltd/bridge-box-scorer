@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createGame, selectMovement, createParticipant } from "./game-service";
+import { createGame, selectMovement, selectMitchellMovement, createParticipant } from "./game-service";
 import { SocketEvents } from "@/socket/socket-events";
 
 vi.mock("@/lib/socket", () => ({
@@ -55,6 +55,20 @@ describe("game-service", () => {
       expect(mockEmitEvent).toHaveBeenCalledWith(
         SocketEvents.SELECT_MOVEMENT,
         { gameId: "g1", type: "mitchell", id: 42, directorToken: "stored-token" },
+      );
+    });
+  });
+
+  describe("selectMitchellMovement", () => {
+    it("emits SELECT_MOVEMENT with gameId, type PAIRS, mitchell spec, and directorToken", async () => {
+      const { selectMitchellMovement } = await import("./game-service");
+      const mitchell = { tables: 5, rounds: 5, boardsPerRound: 3 };
+
+      await selectMitchellMovement("g2", mitchell as any);
+
+      expect(mockEmitEvent).toHaveBeenCalledWith(
+        SocketEvents.SELECT_MOVEMENT,
+        { gameId: "g2", type: "PAIRS", mitchell, directorToken: "stored-token" },
       );
     });
   });

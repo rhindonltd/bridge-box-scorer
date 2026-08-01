@@ -121,4 +121,48 @@ describe("registerStartTimerHandler", () => {
 
     expect(getEngine).not.toHaveBeenCalled();
   });
+
+  it("does nothing if payload is invalid (missing gameType)", async () => {
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerStartTimerHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    await handler({ gameId: "game-1", directorToken: "test-token" });
+
+    expect(getEngine).not.toHaveBeenCalled();
+  });
+
+  it("does nothing if payload is invalid (empty gameId)", async () => {
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerStartTimerHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    await handler({ gameType: "PAIRS", gameId: "", directorToken: "test-token" });
+
+    expect(getEngine).not.toHaveBeenCalled();
+  });
+
+  it("handles engine.start() throwing gracefully", async () => {
+    const mockEngine = {
+      start: vi.fn(() => { throw new Error("engine error"); }),
+      getState: vi.fn(),
+    };
+
+    vi.mocked(getEngine).mockResolvedValue(mockEngine as any);
+
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerStartTimerHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    // Should not throw
+    await handler({ gameType: "PAIRS", gameId: "game-1", directorToken: "test-token" });
+
+    expect(updateTimerState).not.toHaveBeenCalled();
+  });
 });

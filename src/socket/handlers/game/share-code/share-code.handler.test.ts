@@ -82,6 +82,40 @@ describe("registerShareCodeHandlers", () => {
       expect(createShareCode).not.toHaveBeenCalled();
       expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     });
+
+    it("rejects invalid payload (missing gameId)", async () => {
+      const socket = makeSocket();
+      registerShareCodeHandlers(socket, makeIo());
+
+      const handler = socket.on.mock.calls.find(
+        (c: any) => c[0] === SocketEvents.GENERATE_SHARE_CODE,
+      )![1];
+
+      const cb = vi.fn();
+      await handler({ directorToken: "tok" }, cb);
+
+      expect(cb).toHaveBeenCalledWith({ success: false, error: "Invalid payload" });
+      expect(createShareCode).not.toHaveBeenCalled();
+    });
+
+    it("returns error when createShareCode throws", async () => {
+      vi.mocked(findLoginSession).mockReturnValue({
+        token: "tok", role: "DIRECTOR", gameId: "g1",
+      } as any);
+      vi.mocked(createShareCode).mockRejectedValue(new Error("DB error"));
+
+      const socket = makeSocket();
+      registerShareCodeHandlers(socket, makeIo());
+
+      const handler = socket.on.mock.calls.find(
+        (c: any) => c[0] === SocketEvents.GENERATE_SHARE_CODE,
+      )![1];
+
+      const cb = vi.fn();
+      await handler({ gameId: "g1", directorToken: "tok" }, cb);
+
+      expect(cb).toHaveBeenCalledWith({ success: false, error: "Failed to generate code" });
+    });
   });
 
   describe("CLAIM_DIRECTOR_CODE", () => {
@@ -163,6 +197,37 @@ describe("registerShareCodeHandlers", () => {
       await handler({ code: "USEDCD" }, cb);
 
       expect(cb).toHaveBeenCalledWith({ success: false, error: "Code has already been used" });
+    });
+
+    it("rejects invalid payload (missing code)", async () => {
+      const socket = makeSocket();
+      registerShareCodeHandlers(socket, makeIo());
+
+      const handler = socket.on.mock.calls.find(
+        (c: any) => c[0] === SocketEvents.CLAIM_DIRECTOR_CODE,
+      )![1];
+
+      const cb = vi.fn();
+      await handler({}, cb);
+
+      expect(cb).toHaveBeenCalledWith({ success: false, error: "Invalid payload" });
+      expect(validateAndClaimShareCode).not.toHaveBeenCalled();
+    });
+
+    it("returns error when validateAndClaimShareCode throws", async () => {
+      vi.mocked(validateAndClaimShareCode).mockRejectedValue(new Error("DB error"));
+
+      const socket = makeSocket();
+      registerShareCodeHandlers(socket, makeIo());
+
+      const handler = socket.on.mock.calls.find(
+        (c: any) => c[0] === SocketEvents.CLAIM_DIRECTOR_CODE,
+      )![1];
+
+      const cb = vi.fn();
+      await handler({ code: "ABCDEF" }, cb);
+
+      expect(cb).toHaveBeenCalledWith({ success: false, error: "Failed to claim code" });
     });
   });
 });

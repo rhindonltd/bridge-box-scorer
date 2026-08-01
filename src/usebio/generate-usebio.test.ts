@@ -276,5 +276,53 @@ describe("generateUsebioXml", () => {
       // Should still generate valid XML
       expect(xml).toContain("<USEBIO");
     });
+
+    it("falls back to MP for unknown scoring type (line 88)", () => {
+      const data = makeBasicGameData();
+      (data as any).scoringType = "UNKNOWN_TYPE";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain("<BOARD_SCORING_METHOD>MP</BOARD_SCORING_METHOD>");
+    });
+
+    it("returns raw date string for invalid date (line 171)", () => {
+      const data = makeBasicGameData();
+      data.eventDate = "not-a-valid-date";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain("<DATE>not-a-valid-date</DATE>");
+    });
+
+    it("handles NP (not-played) outcomes with null score (line 129-131)", () => {
+      const data = makeBasicGameData();
+      data.boardResults = [
+        { table: 1, board: 1, round: 1, nsPairNumber: "1NS", ewPairNumber: "1EW", outcome: "NP", lead: null },
+      ];
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain("<CONTRACT/>");
+      expect(xml).toContain("<DECLARER/>");
+      expect(xml).toContain("<RESULT_FIELD/>");
+      expect(xml).toContain("<SCORE>0</SCORE>");
+    });
+
+    it("omits NATIONAL_ID_NUMBER when player has no nationalId (line 129-131)", () => {
+      const data = makeBasicGameData();
+      data.pairs = [
+        {
+          pairNumber: "1NS",
+          direction: "N",
+          player1: { firstName: "Alice", lastName: "Smith", nationalId: null },
+          player2: { firstName: "Bob", lastName: "Jones", nationalId: null },
+        },
+      ];
+      const xml = generateUsebioXml(data);
+      expect(xml).not.toContain("<NATIONAL_ID_NUMBER>");
+    });
+
+    it("produces empty RANKING when no board results exist", () => {
+      const data = makeBasicGameData();
+      data.boardResults = [];
+      const xml = generateUsebioXml(data);
+      // With no results, ranking computation returns empty list
+      expect(xml).not.toContain("<RANKING>");
+    });
   });
 });

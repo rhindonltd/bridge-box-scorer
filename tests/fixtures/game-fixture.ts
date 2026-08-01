@@ -51,6 +51,16 @@ export const test = base.extend<{ gameFixture: GameFixture }>({
     const fixture = await createGameViaUI(page, `E2E Test ${Date.now()}`);
     // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(fixture);
+
+    // Cleanup: delete the game via UI
+    try {
+      await page.goto(`/manage/${fixture.gameId}/menu`);
+      await page.getByRole("button", { name: "Delete Game" }).click({ timeout: 5000 });
+      await page.getByRole("button", { name: "Yes, Delete Game" }).click({ timeout: 5000 });
+      await page.waitForURL(/\/manage\/select-game/, { timeout: 5000 });
+    } catch {
+      // Ignore cleanup errors (game may already be deleted by the test)
+    }
   },
 });
 

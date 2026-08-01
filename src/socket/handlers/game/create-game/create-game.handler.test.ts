@@ -126,4 +126,20 @@ describe("registerCreateGameHandler", () => {
     );
     expect(io.emit).not.toHaveBeenCalled();
   });
+
+  it("returns 'Unknown error' when thrown value is not an Error instance", async () => {
+    const cb = vi.fn();
+
+    vi.mocked(createBridgeGame).mockRejectedValue("string-error");
+
+    registerCreateGameHandler(socket, io);
+
+    await handler({ name: "bad-game" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({
+      error: "Unknown error",
+      success: false,
+    });
+    expect(io.emit).not.toHaveBeenCalled();
+  });
 });

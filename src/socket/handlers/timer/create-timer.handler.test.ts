@@ -130,4 +130,38 @@ describe("registerCreateTimerHandler", () => {
 
     expect(createEngine).not.toHaveBeenCalled();
   });
+
+  it("does nothing if payload is invalid", async () => {
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerCreateTimerHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    await handler({ invalid: true });
+
+    expect(createEngine).not.toHaveBeenCalled();
+  });
+
+  it("catches and logs errors from createEngine", async () => {
+    vi.mocked(createEngine).mockRejectedValue(new Error("create engine error"));
+
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerCreateTimerHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-4",
+      directorToken: "test-token",
+      boardsPerRound: 3,
+      totalRounds: 5,
+      playDuration: 420,
+      moveDuration: 60,
+    });
+
+    expect(updateTimerState).not.toHaveBeenCalled();
+  });
 });

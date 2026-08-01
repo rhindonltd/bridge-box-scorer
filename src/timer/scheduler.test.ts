@@ -74,6 +74,20 @@ describe("scheduleGame", () => {
     expect(deps.updateTimerState).not.toHaveBeenCalled();
   });
 
+  it("does not schedule if phase is finished even when isRunning is true", () => {
+    const engine = makeEngine({ phase: "finished", isRunning: true, phaseStartedAt: Date.now() });
+    const deps = {
+      updateTimerState: vi.fn().mockResolvedValue(undefined),
+      broadcast: vi.fn(),
+    };
+
+    scheduleGame("PAIRS", "g1", engine, deps);
+
+    vi.advanceTimersByTime(100000);
+
+    expect(deps.updateTimerState).not.toHaveBeenCalled();
+  });
+
   it("cancels a previous schedule when called again for same game", async () => {
     const engine = makeEngine({ playDuration: 10, isRunning: true, phaseStartedAt: Date.now() });
     const deps = {

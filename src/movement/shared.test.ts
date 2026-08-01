@@ -9,6 +9,8 @@ import {
   buildMovementBase,
   parseMovementType,
   MovementType,
+  groupLinesReducer,
+  splitLinesOfFile,
 } from "./shared";
 import { Tables } from "@/model/movement";
 
@@ -161,6 +163,41 @@ describe("buildMovementBase", () => {
       missingParticipant: 0,
       type: MovementType.MITCHELL,
     });
+  });
+});
+
+describe("groupLinesReducer", () => {
+  it("starts a new group when line is empty", () => {
+    const result = groupLinesReducer([["line1"]], "");
+    expect(result).toEqual([["line1"], []]);
+  });
+
+  it("appends to the last group for non-empty lines", () => {
+    const result = groupLinesReducer([["line1"]], "line2");
+    expect(result).toEqual([["line1", "line2"]]);
+  });
+
+  it("creates a new group with the line when groups array is empty", () => {
+    // This covers the defensive guard: if (!last) return [[line]]
+    const result = groupLinesReducer([] as string[][], "hello");
+    expect(result).toEqual([["hello"]]);
+  });
+
+  it("handles whitespace-only lines as empty", () => {
+    const result = groupLinesReducer([["line1"]], "   ");
+    expect(result).toEqual([["line1"], []]);
+  });
+});
+
+describe("splitLinesOfFile", () => {
+  it("reads and groups lines from a movement file", () => {
+    const groups = splitLinesOfFile("PSMovements.txt");
+    // File should contain at least one group of movement data
+    expect(groups.length).toBeGreaterThan(0);
+    // Each group should have at least one line
+    for (const group of groups) {
+      expect(group.length).toBeGreaterThan(0);
+    }
   });
 });
 

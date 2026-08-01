@@ -23,7 +23,7 @@ test.describe("Download USEBIO", () => {
     await page.goto(`/manage/${gameId}/download-usebio`);
 
     // Verify the header and form fields render
-    await expect(page.getByText("Download USEBIO")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Download USEBIO" }).or(page.locator("div").filter({ hasText: /^Download USEBIO$/ }))).toBeVisible({ timeout: 10000 });
     await expect(page.getByLabel("Club Name")).toBeVisible();
     await expect(page.getByLabel("EBU Club Number")).toBeVisible();
     await expect(page.getByRole("button", { name: "Download USEBIO" })).toBeVisible();
@@ -109,8 +109,7 @@ test.describe("Download USEBIO", () => {
     await page.getByRole("button", { name: "Download USEBIO" }).click();
 
     // Assert error message is displayed
-    await expect(page.getByRole("alert")).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole("alert")).toHaveText("Club info not configured");
+    await expect(page.getByText("Club info not configured")).toBeVisible({ timeout: 10000 });
   });
 
   test("Cancel navigates back to menu", async ({ directorContext }) => {

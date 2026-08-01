@@ -92,6 +92,40 @@ describe("formatOutcomeForUsebio", () => {
         result: "",
       });
     });
+
+    it("returns empty fields for invalid/unrecognized outcome", () => {
+      expect(formatOutcomeForUsebio("INVALID" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
+  });
+
+  describe("director override outcomes (line 51 branch)", () => {
+    it("returns empty fields for AVE (average) outcome", () => {
+      expect(formatOutcomeForUsebio("AVE" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
+
+    it("returns empty fields for AVE+ outcome", () => {
+      expect(formatOutcomeForUsebio("AVE+" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
+
+    it("returns empty fields for AVE- outcome", () => {
+      expect(formatOutcomeForUsebio("AVE-" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
   });
 });
 
@@ -109,5 +143,9 @@ describe("formatLeadForUsebio", () => {
 
   it("returns empty string for empty string", () => {
     expect(formatLeadForUsebio("")).toBe("");
+  });
+
+  it("returns empty string for a single character (too short)", () => {
+    expect(formatLeadForUsebio("S")).toBe("");
   });
 });

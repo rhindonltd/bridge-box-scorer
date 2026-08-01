@@ -25,7 +25,11 @@ test.describe("Game Creation Flow", () => {
     page,
   }) => {
     await page.goto("/create");
-    await expect(page.getByText("Pairs/Teams")).toBeVisible({ timeout: 10000 });
+    // Event Type select is rendered as a native <select> element
+    const select = page.getByLabel("Event Type");
+    await expect(select).toBeVisible({ timeout: 10000 });
+    // Verify the default value is PAIRS
+    await expect(select).toHaveValue("PAIRS");
   });
 
   test("create form has a Next button", async ({ page }) => {

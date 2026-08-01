@@ -45,22 +45,21 @@ export type Movement<M extends TravellerParticipantMode> = {
 export const parseInts = (line: string): number[] =>
   line.split(",").map((x) => parseInt(x.trim(), 10));
 
+export const groupLinesReducer = (groups: string[][], line: string): string[][] => {
+  if (line.trim() === "") return [...groups, []];
+
+  const last = groups[groups.length - 1];
+  if (!last) return [[line]];
+
+  return [...groups.slice(0, -1), [...last, line]];
+};
+
 export const splitLinesOfFile = (fileName: string): string[][] => {
   const content = fs.readFileSync(path.join(__dirname, fileName), "utf-8");
 
   return content
     .split(/\r?\n/)
-    .reduce<string[][]>(
-      (groups, line) => {
-        if (line.trim() === "") return [...groups, []];
-
-        const last = groups[groups.length - 1];
-        if (!last) return [[line]];
-
-        return [...groups.slice(0, -1), [...last, line]];
-      },
-      [[]],
-    )
+    .reduce<string[][]>(groupLinesReducer, [[]])
     .filter((group) => group.length > 0);
 };
 

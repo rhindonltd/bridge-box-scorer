@@ -73,7 +73,14 @@ test.describe("Back Navigation", () => {
   test("back from Club settings navigates to settings menu", async ({
     page,
   }) => {
-    await page.goto("/settings/club");
+    // Navigate to settings first, enter PIN, then go to club
+    await page.goto("/settings");
+    await expect(page.getByText("Enter PIN to continue")).toBeVisible({ timeout: 10000 });
+    await page.getByLabel("PIN").fill("1234");
+    await page.getByRole("button", { name: "Enter" }).click();
+    await expect(page.getByText("Settings", { exact: true })).toBeVisible({ timeout: 10000 });
+    await page.getByRole("button", { name: "Club Information" }).click();
+    await expect(page).toHaveURL(/\/settings\/club/);
 
     // Club settings page has a "Back" button that calls router.back()
     await page.getByRole("button", { name: "Back" }).click();
@@ -118,7 +125,7 @@ test.describe("Back Navigation", () => {
   test("change-status page navigates back to director menu after status change", async ({
     page,
   }) => {
-    // Create a game (starts in CREATED status)
+    // Create a game (starts in JOINABLE status)
     const { gameId } = await createGameViaUI(
       page,
       `E2E Nav Status ${Date.now()}`,
@@ -126,8 +133,8 @@ test.describe("Back Navigation", () => {
 
     await page.goto(`/manage/${gameId}/change-status`);
 
-    // Click "Open for Players" to change status — this triggers navigation back to menu
-    await page.getByRole("button", { name: "Open for Players" }).click();
-    await expect(page).toHaveURL(new RegExp(`/manage/${gameId}/menu`));
+    // Click "Complete" to change status — game is JOINABLE so this triggers a real transition
+    await page.getByRole("button", { name: "Complete" }).click();
+    await expect(page).toHaveURL(new RegExp(`/manage/${gameId}/menu`), { timeout: 10000 });
   });
 });

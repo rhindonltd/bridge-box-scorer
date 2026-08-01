@@ -164,5 +164,29 @@ describe("registerCreateParticipantHandler (unit)", () => {
 
       expect(cb).toHaveBeenCalledWith({ success: false });
     });
+
+    it("handles missing callback on error safely", async () => {
+      const socket = makeDirectorSocket();
+      registerCreateParticipantHandler(socket as any, makeIo() as any);
+      const handler = socket.on.mock.calls[0][1];
+
+      vi.mocked(createPlayer).mockRejectedValue(new Error("fail"));
+
+      await expect(
+        handler(
+          {
+            gameId: "game-1",
+            directorToken: "test-token",
+            newParticipant: {
+              type: "PAIR",
+              initialSeat: "1NS",
+              player1: { firstName: "P1", lastName: "L1" },
+              player2: { firstName: "P2", lastName: "L2" },
+            },
+          },
+          undefined,
+        ),
+      ).resolves.not.toThrow();
+    });
   });
 });
