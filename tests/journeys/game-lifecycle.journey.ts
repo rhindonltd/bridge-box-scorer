@@ -77,10 +77,11 @@ test("Complete pairs game lifecycle", async ({ browser }, testInfo) => {
 
     // Step 7: Verify confirmation state
     await test.step("Both players see result confirmation", async () => {
-      // After both submit matching results, they should see confirmation
-      // or a "waiting" state followed by confirmation
+      // After both submit matching results, they should see the board results
+      // page (traveller) with a "Next Board" or "Next Round" button,
+      // or still be on the "Waiting for confirmation" screen.
       await expect(
-        player1Page.getByText(/confirmed|waiting|pass out/i),
+        player1Page.getByRole("button", { name: /Next Board|Next Round/i }),
       ).toBeVisible({ timeout: 15000 });
       await attachScreenshot(
         player1Page,
