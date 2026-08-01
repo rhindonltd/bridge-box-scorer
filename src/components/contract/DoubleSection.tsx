@@ -14,7 +14,7 @@ export default function DoubleSection({
   onDblSelected,
 }: Props) {
   return (
-    <Section className={className} title="Double" gridClassName="grid-rows-[2fr_1fr]">
+    <Section className={className} title="Double">
       <div>
         <ToggleButton
           active={dbl === ""}

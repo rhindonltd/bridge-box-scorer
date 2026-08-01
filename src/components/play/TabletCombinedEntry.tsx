@@ -236,7 +236,7 @@ export function TabletCombinedEntry({
 
         {/* Result section (with progressive reveal) */}
         <div
-          className={`${leadCardRequired ? "flex-[30]" : "flex-[45]"} min-h-0 overflow-hidden flex flex-col ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
+          className={`${leadCardRequired ? "flex-[20]" : "flex-[30]"} min-h-0 overflow-hidden flex flex-col ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
         >
           <div className="text-sm font-bold bg-blue-600 text-white px-2 py-1 shrink-0">Result</div>
           <div className="p-1 flex-1 min-h-0">
