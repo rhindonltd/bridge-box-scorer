@@ -27,7 +27,7 @@ export function PlayableContract({
   onDblSelected,
 }: Props) {
   return (
-    <div className="grid grid-cols-2 grid-rows-2 gap-x-2 gap-y-3 h-full auto-rows-fr">
+    <div className="grid grid-cols-2 grid-rows-2 md:grid-rows-1 md:[grid-template-columns:4fr_3fr_2fr_2fr] gap-x-2 gap-y-3 md:gap-y-0 md:gap-x-2 h-full auto-rows-fr">
       <div className="h-full flex">
         <LevelSection
           className="flex-1"

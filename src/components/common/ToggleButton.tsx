@@ -18,6 +18,7 @@ export function ToggleButton({
       onClick={onClick}
       className={`
         py-3 px-2 text-base rounded-lg border
+        ${!fullWidth && !flex ? "aspect-square" : ""}
         ${active ? "bg-blue-600 text-white" : "bg-white text-black"}
       `}
       style={{

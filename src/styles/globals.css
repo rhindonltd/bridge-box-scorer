@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Base font-size: 16px on phones, 18px on tablets and larger screens.
+   Since Tailwind uses rem units, this scales everything proportionally. */
+html {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 18px;
+  }
+}
+
 /* Dynamic viewport height for mobile — fills the visible area excluding
    browser chrome (address bar, toolbar). Falls back to vh for older browsers. */
 @supports (height: 100dvh) {

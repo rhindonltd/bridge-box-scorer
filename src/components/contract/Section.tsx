@@ -3,6 +3,7 @@ type Props = {
   title: string;
   children: React.ReactNode;
   gridCols?: number;
+  gridClassName?: string;
 };
 
 export default function Section({
@@ -10,6 +11,7 @@ export default function Section({
   title,
   children,
   gridCols = 1,
+  gridClassName = "",
 }: Props) {
   return (
     <div
@@ -20,7 +22,7 @@ export default function Section({
       </div>
 
       <div
-        className="grid gap-1 p-1 flex-1 min-h-0"
+        className={`grid gap-1 p-1 ${gridClassName}`}
         style={{ gridTemplateColumns: `repeat(${gridCols},1fr)` }}
       >
         {children}

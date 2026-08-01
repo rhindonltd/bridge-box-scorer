@@ -156,7 +156,7 @@ export default function EnterContractPage({
         </div>
       </div>
 
-      {/* MIDDLE: 2x2 CONTROLS (fills ALL remaining space) */}
+      {/* MIDDLE: 2x2 CONTROLS (fills remaining space, capped on tablets) */}
       <div className="flex-1 min-h-0">
         <PlayableContract
           level={level}
