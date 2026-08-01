@@ -6,10 +6,10 @@ import { JoinMenuPage } from "@/components/pages/join/JoinMenuPage";
 import { useGame } from "@/context/GameContext";
 
 export default function JoinMenu() {
-  const { game } = useGame();
+  const { game, isLoading } = useGame();
   const router = useRouter();
 
-  if (!game) {
+  if (isLoading || !game) {
     return null;
   }
 

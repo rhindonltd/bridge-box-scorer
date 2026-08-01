@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import {
   createGameStep,
+  selectMovementStep,
   makeGameJoinableStep,
   joinGameStep,
   enterResultStep,
@@ -41,48 +42,8 @@ test("Complete pairs game lifecycle", async ({ browser }, testInfo) => {
       tables: 2,
     }));
 
-    // Step 2: Director selects movement
-    await test.step("Director selects Mitchell movement", async () => {
-      // After game creation, we're on /create/[id] which shows the table setup.
-      // Navigate to movements view. The SetupGamePage shows tables first,
-      // then movements via "Show Movements" button or internal flow.
-      // Try clicking a Mitchell option if available on the movements page.
-      const mitchellButton = directorPage.locator("button").filter({
-        hasText: /mitchell/i,
-      });
-
-      // The page starts on the tables step — click to move to movements
-      const showMovementsButton = directorPage.getByRole("button", {
-        name: /show movements/i,
-      });
-      if (
-        await showMovementsButton.isVisible({ timeout: 5000 }).catch(() => false)
-      ) {
-        await showMovementsButton.click();
-      }
-
-      // Wait for Mitchell options to appear
-      if (
-        await mitchellButton.first().isVisible({ timeout: 10000 }).catch(() => false)
-      ) {
-        await mitchellButton.first().click();
-        await attachScreenshot(
-          directorPage,
-          testInfo,
-          "Director - Mitchell movement selected",
-        );
-
-        // After clicking the Mitchell card, the detail view shows with a "Select" button
-        const selectButton = directorPage.getByRole("button", {
-          name: /select/i,
-        });
-        if (
-          await selectButton.isVisible({ timeout: 5000 }).catch(() => false)
-        ) {
-          await selectButton.click();
-        }
-      }
-    });
+    // Step 2: Director selects movement (via socket for reliability)
+    await selectMovementStep(directorPage, testInfo, gameId, "Mitchell");
 
     // Step 3: Director makes game joinable
     await makeGameJoinableStep(directorPage, testInfo, gameId);

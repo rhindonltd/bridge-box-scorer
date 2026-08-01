@@ -9,9 +9,9 @@ vi.mock("@/db/movements/queries/get-movement", () => ({
 }));
 
 // Mock the DB factories so db.transaction() is a no-op
-const mockTransaction = vi.fn(async (fn: (tx: any) => Promise<void>) => {
-  const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
-  await fn(tx);
+const mockTransaction = vi.fn((fn: (tx: any) => void) => {
+  const tx = { insert: vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) })) };
+  fn(tx);
 });
 
 vi.mock("@/db/games/pairs", () => ({
@@ -50,9 +50,9 @@ function makeDirectorSocket() {
 describe("registerSelectMovementHandler (unit)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<void>) => {
-      const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
-      await fn(tx);
+    mockTransaction.mockImplementation((fn: (tx: any) => void) => {
+      const tx = { insert: vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) })) };
+      fn(tx);
     });
 
     // Default: valid director session
@@ -140,7 +140,7 @@ describe("registerSelectMovementHandler (unit)", () => {
     const cb = vi.fn();
 
     vi.mocked(getPairMovement).mockResolvedValue(pairMovement as any);
-    mockTransaction.mockRejectedValue(new Error("tx fail"));
+    mockTransaction.mockImplementation(() => { throw new Error("tx fail"); });
 
     await handler({ gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" }, cb);
 

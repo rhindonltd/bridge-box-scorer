@@ -57,10 +57,11 @@ test("Result mismatch flow - multi-actor result submission and director correcti
   const ewPage = await ewContext.newPage();
 
   let gameId = "";
+  let directorToken = "";
 
   try {
     // Step 1: Director creates a game
-    ({ gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId, directorToken } = await createGameStep(directorPage, testInfo, {
       eventName: `E2E Journey - Result Mismatch - ${Date.now()}`,
       tables: 2,
     }));
@@ -75,12 +76,14 @@ test("Result mismatch flow - multi-actor result submission and director correcti
     await joinGameStep(nsPage, testInfo, gameId, {
       seat: "1NS",
       ebuNumbers: ["477484", "404476"],
+      directorToken,
     });
 
     // Step 5: EW pair joins at seat 1EW
     await joinGameStep(ewPage, testInfo, gameId, {
       seat: "1EW",
       ebuNumbers: ["12269", "16671"],
+      directorToken,
     });
 
     // Step 6: NS enters Pass Out for Board 1

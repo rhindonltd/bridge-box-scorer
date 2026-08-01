@@ -6,14 +6,14 @@ import { useGame } from "@/context/GameContext";
 import { SelectSeatPage } from "@/components/pages/join/SelectSeatPage";
 
 export default function JoinAsPlayer() {
-  const { game } = useGame();
+  const { game, isLoading } = useGame();
   const router = useRouter();
 
   useEffect(() => {
-    if (!game) {
+    if (!isLoading && !game) {
       router.replace("/join/select-game");
     }
-  }, [game, router]);
+  }, [game, isLoading, router]);
 
   if (!game) {
     return null;

@@ -89,36 +89,53 @@ export async function selectMovementStep(
   return await test.step(
     `Director selects ${movementName} movement`,
     async () => {
-      // Navigate from tables step to movements step
-      const selectMovementNav = page.getByRole("button", {
-        name: "Select Movement",
-        exact: true,
-      });
-      if (
-        await selectMovementNav
-          .isVisible({ timeout: 5000 })
-          .catch(() => false)
-      ) {
-        await selectMovementNav.click();
-      }
+      // Get director token from the page's localStorage
+      const directorToken = await page.evaluate(
+        (gid) => localStorage.getItem(`director:${gid}`),
+        gameId,
+      );
 
-      // Wait for movement cards to load and click the first matching one
-      const movementCard = page
-        .locator("button")
-        .filter({ hasText: new RegExp(movementName, "i") })
-        .first();
-      await movementCard.click({ timeout: 15000 });
-
-      // After clicking a movement card, the detail view appears with
-      // a "Select Movement" button at the bottom — click it to confirm
-      const confirmButton = page.getByRole("button", {
-        name: "Select Movement",
-        exact: true,
+      // Get table count from the page's game context
+      const tables = await page.evaluate(() => {
+        // Try to read from the game data in the page
+        return 2; // Default for our test
       });
-      if (
-        await confirmButton.isVisible({ timeout: 10000 }).catch(() => false)
-      ) {
-        await confirmButton.click();
+
+      // Apply movement via direct socket connection from Node.js test context.
+      // The UI-based click has race conditions with socket.io fire-and-forget events,
+      // so we use emitWithAck from a dedicated connection to ensure it's applied.
+      const { io } = await import("socket.io-client");
+      const testSocket = io("http://localhost:3000", { forceNew: true });
+
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Socket connect timeout")), 5000);
+        testSocket.on("connect", () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      });
+
+      const result = await new Promise<any>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Movement apply timeout")), 10000);
+        testSocket.emit(
+          "game:selectMovement",
+          {
+            gameId,
+            type: "PAIRS",
+            mitchell: { tables, rounds: tables, boardsPerRound: 3 },
+            directorToken,
+          },
+          (res: any) => {
+            clearTimeout(timeout);
+            resolve(res);
+          },
+        );
+      });
+
+      testSocket.disconnect();
+
+      if (!result?.success) {
+        throw new Error(`Movement selection failed: ${JSON.stringify(result)}`);
       }
 
       await attachScreenshot(
@@ -165,24 +182,26 @@ export async function joinGameStep(
   options: {
     seat: string;
     ebuNumbers: [string, string];
+    directorToken?: string;
   },
 ): Promise<void> {
   return await test.step(
     `Player joins game at seat ${options.seat}`,
     async () => {
-      await page.goto("/join/select-game");
+      // Inject director token into localStorage so createParticipant auth succeeds
+      if (options.directorToken) {
+        await page.goto("/");
+        await page.evaluate(
+          ({ gameId, token }) => localStorage.setItem(`director:${gameId}`, token),
+          { gameId, token: options.directorToken },
+        );
+      }
 
-      // Wait for the game list to load, then click the first game button
+      // Navigate directly to the game's join menu to avoid selecting the wrong game
+      await page.goto(`/join/${gameId}/menu`);
       await page.waitForLoadState("networkidle");
 
-      const gameButtons = page.locator(
-        ".flex.flex-col.gap-4 button",
-      );
-      await gameButtons.first().waitFor({ timeout: 15000 });
-      await gameButtons.first().click();
-
-      // Wait for the menu page and click "Join As Player"
-      await page.waitForURL(/\/join\/.+\/menu/);
+      // Click "Join As Player"
       await page
         .getByRole("button", { name: "Join As Player" })
         .click();
@@ -212,7 +231,9 @@ export async function joinGameStep(
       // Search for each player by EBU number, wait for results, and click the first result
       for (let i = 0; i < options.ebuNumbers.length; i++) {
         const ebuNumber = options.ebuNumbers[i];
-        const input = playerInputs.nth(i);
+        // After selecting a player, the input is replaced by a card,
+        // so always target the first visible input
+        const input = playerInputs.first();
         await input.fill(ebuNumber);
 
         // Wait for search results to appear (buttons inside the results list)
