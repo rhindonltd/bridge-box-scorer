@@ -26,12 +26,10 @@ export default function JoinMenu() {
   }
 
   return (
-    <div style={{ margin: "0 auto" }}>
-      <JoinMenuPage
-        onJoinAsPlayer={joinAsPlayer}
-        onShowTimer={showTimer}
-        onShowLeaderboard={showLeaderboard}
-      />
-    </div>
+    <JoinMenuPage
+      onJoinAsPlayer={joinAsPlayer}
+      onShowTimer={showTimer}
+      onShowLeaderboard={showLeaderboard}
+    />
   );
 }
