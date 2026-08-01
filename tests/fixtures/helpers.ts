@@ -36,3 +36,10 @@ export async function makeGameJoinable(
   });
   expect(res.ok()).toBe(true);
 }
+
+/** Enter the settings PIN to bypass the PinEntryPage gate */
+export async function enterSettingsPin(page: Page): Promise<void> {
+  await expect(page.getByText("Enter PIN to continue")).toBeVisible({ timeout: 10000 });
+  await page.getByLabel("PIN").fill("1234");
+  await page.getByRole("button", { name: "Enter" }).click();
+}

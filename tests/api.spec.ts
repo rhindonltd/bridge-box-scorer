@@ -58,14 +58,12 @@ test.describe("API Routes", () => {
       expect(body.success).toBe(false);
     });
 
-    test("GET /api/director/token without cookie returns 401", async ({
+    test("GET /api/director/token endpoint no longer exists (returns 404)", async ({
       request,
     }) => {
       const response = await request.get("/api/director/token");
 
-      expect(response.status()).toBe(401);
-      const body = await response.json();
-      expect(body.success).toBe(false);
+      expect(response.status()).toBe(404);
     });
   });
 

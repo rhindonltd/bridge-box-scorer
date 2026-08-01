@@ -1,14 +1,17 @@
 import { test, expect } from "@playwright/test";
+import { enterSettingsPin } from "./fixtures/helpers";
 
 /**
  * Settings E2E Tests
  *
  * Tests the settings page loads and renders the WiFi configuration UI.
+ * Note: The settings section is gated by a PIN entry page (PIN: 1234).
  */
 
 test.describe("Settings", () => {
   test("WiFi settings page loads at /settings/wifi", async ({ page }) => {
     await page.goto("/settings/wifi");
+    await enterSettingsPin(page);
 
     // Page should render without errors
     await expect(page.locator("body")).toBeVisible();
@@ -16,6 +19,7 @@ test.describe("Settings", () => {
 
   test("WiFi settings page shows heading", async ({ page }) => {
     await page.goto("/settings/wifi");
+    await enterSettingsPin(page);
 
     await expect(page.getByText("WiFi Settings")).toBeVisible({
       timeout: 10000,
@@ -24,6 +28,7 @@ test.describe("Settings", () => {
 
   test("WiFi settings page shows network selector", async ({ page }) => {
     await page.goto("/settings/wifi");
+    await enterSettingsPin(page);
 
     // The network dropdown should be visible
     await expect(page.getByText("Network")).toBeVisible({ timeout: 10000 });
@@ -31,6 +36,7 @@ test.describe("Settings", () => {
 
   test("WiFi settings page shows password field", async ({ page }) => {
     await page.goto("/settings/wifi");
+    await enterSettingsPin(page);
 
     await expect(page.getByPlaceholder("Enter WiFi password")).toBeVisible({
       timeout: 10000,
@@ -39,6 +45,7 @@ test.describe("Settings", () => {
 
   test("WiFi settings page shows Test Connection button", async ({ page }) => {
     await page.goto("/settings/wifi");
+    await enterSettingsPin(page);
 
     await expect(
       page.getByRole("button", { name: "Test Connection" }),
@@ -49,6 +56,7 @@ test.describe("Settings", () => {
     page,
   }) => {
     await page.goto("/settings/wifi");
+    await enterSettingsPin(page);
 
     const saveButton = page.getByRole("button", { name: "Save & Apply" });
     await expect(saveButton).toBeVisible({ timeout: 10000 });
@@ -60,6 +68,7 @@ test.describe("Settings", () => {
     page,
   }) => {
     await page.goto("/settings/wifi");
+    await enterSettingsPin(page);
 
     const testButton = page.getByRole("button", { name: "Test Connection" });
     await expect(testButton).toBeVisible({ timeout: 10000 });
@@ -71,6 +80,7 @@ test.describe("Settings", () => {
     page,
   }) => {
     await page.goto("/settings/wifi");
+    await enterSettingsPin(page);
 
     // The dropdown should show the placeholder text
     await expect(page.getByText("-- Select WiFi --")).toBeVisible({

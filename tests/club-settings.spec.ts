@@ -1,14 +1,17 @@
 import { test, expect } from "@playwright/test";
+import { enterSettingsPin } from "./fixtures/helpers";
 
 /**
  * Club Settings E2E Tests
  *
  * Tests the club information page and API endpoint.
+ * Note: The settings section is gated by a PIN entry page (PIN: 1234).
  */
 
 test.describe("Club Settings", () => {
   test("club settings page loads with heading", async ({ page }) => {
     await page.goto("/settings/club");
+    await enterSettingsPin(page);
     await expect(page.getByText("Club Information")).toBeVisible({
       timeout: 10000,
     });
@@ -16,11 +19,13 @@ test.describe("Club Settings", () => {
 
   test("club settings page shows Club Name field", async ({ page }) => {
     await page.goto("/settings/club");
+    await enterSettingsPin(page);
     await expect(page.getByLabel("Club Name")).toBeVisible({ timeout: 10000 });
   });
 
   test("club settings page shows EBU Club Number field", async ({ page }) => {
     await page.goto("/settings/club");
+    await enterSettingsPin(page);
     await expect(page.getByLabel("EBU Club Number")).toBeVisible({
       timeout: 10000,
     });
@@ -28,6 +33,7 @@ test.describe("Club Settings", () => {
 
   test("club settings page shows Save button", async ({ page }) => {
     await page.goto("/settings/club");
+    await enterSettingsPin(page);
     await expect(
       page.getByRole("button", { name: "Save" }),
     ).toBeVisible({ timeout: 10000 });
@@ -35,6 +41,7 @@ test.describe("Club Settings", () => {
 
   test("club settings page shows Back button", async ({ page }) => {
     await page.goto("/settings/club");
+    await enterSettingsPin(page);
     await expect(
       page.getByRole("button", { name: "Back" }),
     ).toBeVisible({ timeout: 10000 });
