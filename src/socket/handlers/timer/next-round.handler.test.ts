@@ -78,11 +78,11 @@ describe("registerNextRoundHandler", () => {
     registerNextRoundHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "INDIVIDUAL", gameId: "game-3", directorToken: "test-token" });
+    await handler({ gameType: "PAIRS", gameId: "game-3", directorToken: "test-token" });
 
     expect(mockEngine.nextPhase).toHaveBeenCalled();
     expect(updateTimerState).toHaveBeenCalledWith(
-      "INDIVIDUAL",
+      "PAIRS",
       "game-3",
       mockState,
     );
@@ -92,7 +92,7 @@ describe("registerNextRoundHandler", () => {
       expect.objectContaining(mockState),
     );
     expect(scheduleGame).toHaveBeenCalledWith(
-      "INDIVIDUAL",
+      "PAIRS",
       "game-3",
       mockEngine,
       expect.objectContaining({ updateTimerState, broadcast: expect.any(Function) }),
@@ -108,7 +108,7 @@ describe("registerNextRoundHandler", () => {
     registerNextRoundHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "INDIVIDUAL", gameId: "game-3", directorToken: "test-token" });
+    await handler({ gameType: "PAIRS", gameId: "game-3", directorToken: "test-token" });
 
     expect(updateTimerState).not.toHaveBeenCalled();
   });
@@ -122,7 +122,7 @@ describe("registerNextRoundHandler", () => {
     registerNextRoundHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "INDIVIDUAL", gameId: "game-3", directorToken: "bad-token" });
+    await handler({ gameType: "PAIRS", gameId: "game-3", directorToken: "bad-token" });
 
     expect(getEngine).not.toHaveBeenCalled();
   });

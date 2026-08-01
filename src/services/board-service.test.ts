@@ -5,15 +5,7 @@ vi.mock("@/db/games/pairs", () => ({
   getDb: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual", () => ({
-  getDb: vi.fn(),
-}));
-
 vi.mock("@/db/games/pairs/tables/boards", () => ({
-  boards: { boardNumber: "boardNumber" },
-}));
-
-vi.mock("@/db/games/individual/tables/boards", () => ({
   boards: { boardNumber: "boardNumber" },
 }));
 
@@ -21,18 +13,12 @@ vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual/queries/find-individuals", () => ({
-  findIndividuals: vi.fn(),
-}));
-
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: any[]) => args),
 }));
 
 import { getDb as getPairsDb } from "@/db/games/pairs";
-import { getDb as getIndividualDb } from "@/db/games/individual";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
-import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 
 describe("board-service", () => {
   beforeEach(() => {
@@ -114,59 +100,6 @@ describe("board-service", () => {
         expect(result[0].participants.nsNames).toBeNull();
         expect(result[0].participants.ewNames).toBeNull();
       }
-    });
-  });
-
-  describe("getBoardInstances (INDIVIDUAL)", () => {
-    it("returns instances with individual player names", async () => {
-      const mockDb = {
-        select: vi.fn().mockReturnValue({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([
-              { roundNumber: 1, tableNumber: 1, boardNumber: 3, n: "1N", s: "1S", e: "1E", w: "1W", confirmedResult: "4HE+1", directorOverrideResult: null, status: "CONFIRMED" },
-            ]),
-          }),
-        }),
-      };
-      vi.mocked(getIndividualDb).mockResolvedValue(mockDb as any);
-
-      vi.mocked(findIndividuals).mockResolvedValue([
-        { type: "INDIVIDUAL", initialSeat: "1N", player: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: null } },
-        { type: "INDIVIDUAL", initialSeat: "1S", player: { id: 2, firstName: "Bob", lastName: "Jones", nationalId: null } },
-        { type: "INDIVIDUAL", initialSeat: "1E", player: { id: 3, firstName: "Carol", lastName: "Brown", nationalId: null } },
-        { type: "INDIVIDUAL", initialSeat: "1W", player: { id: 4, firstName: "Dave", lastName: "Wilson", nationalId: null } },
-      ] as any);
-
-      const result = await getBoardInstances("game-1", "INDIVIDUAL", 3);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].currentResult).toBe("4HE+1");
-      expect(result[0].participants.type).toBe("INDIVIDUAL");
-      if (result[0].participants.type === "INDIVIDUAL") {
-        expect(result[0].participants.nName).toBe("Alice Smith");
-        expect(result[0].participants.sName).toBe("Bob Jones");
-        expect(result[0].participants.eName).toBe("Carol Brown");
-        expect(result[0].participants.wName).toBe("Dave Wilson");
-      }
-    });
-
-    it("returns null for currentResult when neither confirmed nor override exists", async () => {
-      const mockDb = {
-        select: vi.fn().mockReturnValue({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([
-              { roundNumber: 1, tableNumber: 1, boardNumber: 1, n: "1N", s: "1S", e: "1E", w: "1W", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            ]),
-          }),
-        }),
-      };
-      vi.mocked(getIndividualDb).mockResolvedValue(mockDb as any);
-
-      vi.mocked(findIndividuals).mockResolvedValue([]);
-
-      const result = await getBoardInstances("game-1", "INDIVIDUAL", 1);
-
-      expect(result[0].currentResult).toBeNull();
     });
   });
 });

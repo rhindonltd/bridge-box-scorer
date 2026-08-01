@@ -94,7 +94,7 @@ describe("registerCreateGameHandler", () => {
   });
 
   it("allows anyone to create a game (no director check)", async () => {
-    const bridgeGame = { gameId: "456", gameType: "INDIVIDUAL" };
+    const bridgeGame = { gameId: "456", gameType: "PAIRS" };
 
     vi.mocked(createBridgeGame).mockResolvedValue(bridgeGame as any);
     vi.mocked(createGameDb).mockResolvedValue(undefined);

@@ -40,7 +40,7 @@ export const WithGames: Story = {
         id: 2,
         eventName: "Tuesday PM Individual",
         director: "David Collier",
-        gameType: "INDIVIDUAL",
+        gameType: "PAIRS",
         scoringType: "MP",
         gameId: "def456",
         sessionName: "",

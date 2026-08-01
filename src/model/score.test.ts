@@ -12,16 +12,13 @@ describe("model/score types", () => {
     expect(modes).toHaveLength(3);
   });
 
-  it("ResultType includes all six combinations", () => {
+  it("ResultType includes all three pair combinations", () => {
     const types: ResultType[] = [
       "PAIR_IMP",
       "PAIR_XIMP",
       "PAIR_MP",
-      "INDIVIDUAL_IMP",
-      "INDIVIDUAL_XIMP",
-      "INDIVIDUAL_MP",
     ];
-    expect(types).toHaveLength(6);
+    expect(types).toHaveLength(3);
   });
 
   it("BoardOutcome accepts played contract codes and special outcomes", () => {

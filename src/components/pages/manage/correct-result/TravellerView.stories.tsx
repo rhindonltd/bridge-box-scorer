@@ -94,32 +94,6 @@ export const PairsWithoutNames: Story = {
   },
 };
 
-export const IndividualWithNames: Story = {
-  args: {
-    boardNumber: 1,
-    isLoading: false,
-    gameType: "INDIVIDUAL",
-    instances: [
-      {
-        roundNumber: 1,
-        tableNumber: 1,
-        boardNumber: 1,
-        participants: { type: "INDIVIDUAL", n: "1", s: "2", e: "3", w: "4", nName: "Alice Smith", sName: "Bob Jones", eName: "Carol Brown", wName: "Dave Wilson" },
-        currentResult: "4HN=",
-        status: "CONFIRMED",
-      },
-      {
-        roundNumber: 2,
-        tableNumber: 2,
-        boardNumber: 1,
-        participants: { type: "INDIVIDUAL", n: "5", s: "6", e: "7", w: "8", nName: "Eve Davis", sName: "Frank Miller", eName: "Grace Taylor", wName: "Henry White" },
-        currentResult: null,
-        status: null,
-      },
-    ],
-  },
-};
-
 export const NoResults: Story = {
   args: {
     boardNumber: 12,

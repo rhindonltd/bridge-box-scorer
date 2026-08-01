@@ -3,9 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { getDb as getPairsDb } from "@/db/games/pairs";
-import { getDb as getIndividualDb } from "@/db/games/individual";
 import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
-import { boards as individualBoards } from "@/db/games/individual/tables/boards";
 
 /**
  * In-memory store for pending submissions.
@@ -59,13 +57,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
     ) => {
       try {
         // Determine which side
-        let isNS: boolean;
-        if (gameType === "INDIVIDUAL") {
-          const direction = seat.slice(-1);
-          isNS = direction === "N" || direction === "S";
-        } else {
-          isNS = seat.endsWith("NS");
-        }
+        const isNS = seat.endsWith("NS");
 
         // Store pending submission
         const key = getPendingKey(gameId, tableNumber, roundNumber);
@@ -92,31 +84,17 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           pendingSubmissions.delete(key);
 
           // Write to database
-          if (gameType === "INDIVIDUAL") {
-            const db = await getIndividualDb(gameId);
-            await db
-              .update(individualBoards)
-              .set({ confirmedResult: confirmedResult as any, status: "CONFIRMED" })
-              .where(
-                and(
-                  eq(individualBoards.roundNumber, roundNumber),
-                  eq(individualBoards.tableNumber, tableNumber),
-                  eq(individualBoards.boardNumber, confirmedBoardNumber),
-                ),
-              );
-          } else {
-            const db = await getPairsDb(gameId);
-            await db
-              .update(pairsBoards)
-              .set({ confirmedResult: confirmedResult as any, status: "CONFIRMED" })
-              .where(
-                and(
-                  eq(pairsBoards.roundNumber, roundNumber),
-                  eq(pairsBoards.tableNumber, tableNumber),
-                  eq(pairsBoards.boardNumber, confirmedBoardNumber),
-                ),
-              );
-          }
+          const db = await getPairsDb(gameId);
+          await db
+            .update(pairsBoards)
+            .set({ confirmedResult: confirmedResult as any, status: "CONFIRMED" })
+            .where(
+              and(
+                eq(pairsBoards.roundNumber, roundNumber),
+                eq(pairsBoards.tableNumber, tableNumber),
+                eq(pairsBoards.boardNumber, confirmedBoardNumber),
+              ),
+            );
 
           io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {
             gameId,

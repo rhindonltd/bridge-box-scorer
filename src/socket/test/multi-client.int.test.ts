@@ -32,24 +32,12 @@ vi.mock("@/db/games/shared/actions/create-player", () => ({
   createPlayer: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual/actions/create-participant", () => ({
-  createParticipant: vi.fn(),
-}));
-
-vi.mock("@/db/games/individual/queries/find-individuals", () => ({
-  findIndividuals: vi.fn(),
-}));
-
 vi.mock("@/db/games/pairs/actions/create-participant", () => ({
   createParticipant: vi.fn(),
 }));
 
 vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
   findPairs: vi.fn(),
-}));
-
-vi.mock("@/db/games/individual/actions/delete-participant", () => ({
-  deleteParticipant: vi.fn(),
 }));
 
 vi.mock("@/db/games/pairs/actions/delete-participant", () => ({
@@ -73,13 +61,8 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 vi.mock("@/db/movements/queries/get-movement", () => ({
-  getIndividualMovement: vi.fn(),
   getPairMovement: vi.fn(),
   getTeamMovement: vi.fn(),
-}));
-
-vi.mock("@/db/games/individual", () => ({
-  getDb: vi.fn(async () => ({ transaction: vi.fn(async (fn: any) => fn({ insert: vi.fn(() => ({ values: vi.fn() })) })) })),
 }));
 
 vi.mock("@/db/games/pairs", () => ({

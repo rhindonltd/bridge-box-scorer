@@ -6,7 +6,6 @@ import { z } from "zod";
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
-import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 import { parseSeat } from "@/model/participants";
 
 const payloadSchema = z.object({
@@ -38,10 +37,7 @@ export function registerUpdateTablesHandler(socket: Socket, io: Server) {
         // When reducing tables, check that no participants are seated at
         // tables that would be removed (i.e., tables > new count)
         if (tables < game.tables) {
-          const highestOccupiedTable = await getHighestOccupiedTable(
-            gameId,
-            game.gameType,
-          );
+          const highestOccupiedTable = await getHighestOccupiedTable(gameId);
 
           if (highestOccupiedTable > tables) {
             cb?.({
@@ -68,17 +64,8 @@ export function registerUpdateTablesHandler(socket: Socket, io: Server) {
   );
 }
 
-async function getHighestOccupiedTable(
-  gameId: string,
-  gameType: string,
-): Promise<number> {
-  let seats: { initialSeat: string }[];
-
-  if (gameType === "INDIVIDUAL") {
-    seats = await findIndividuals(gameId);
-  } else {
-    seats = await findPairs(gameId);
-  }
+async function getHighestOccupiedTable(gameId: string): Promise<number> {
+  const seats = await findPairs(gameId);
 
   if (seats.length === 0) return 0;
 

@@ -4,7 +4,6 @@ import { SocketEvents } from "@/socket/socket-events";
 // ---- mocks ----
 
 vi.mock("@/db/movements/queries/get-movement", () => ({
-  getIndividualMovement: vi.fn(),
   getPairMovement: vi.fn(),
   getTeamMovement: vi.fn(),
 }));
@@ -15,10 +14,6 @@ const mockTransaction = vi.fn(async (fn: (tx: any) => Promise<void>) => {
   await fn(tx);
 });
 
-vi.mock("@/db/games/individual", () => ({
-  getDb: vi.fn(async () => ({ transaction: mockTransaction })),
-}));
-
 vi.mock("@/db/games/pairs", () => ({
   getDb: vi.fn(async () => ({ transaction: mockTransaction })),
 }));
@@ -28,22 +23,11 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 import {
-  getIndividualMovement,
   getPairMovement,
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerSelectMovementHandler } from "./select-movement.handler";
-
-// Minimal INDIVIDUAL movement fixture
-const individualMovement = [
-  {
-    tableNumber: 1,
-    rounds: [
-      { roundNumber: 1, n: "1", s: "2", e: "3", w: "4", boardStart: 1, boardEnd: 2 },
-    ],
-  },
-];
 
 // Minimal PAIRS movement fixture
 const pairMovement = [
@@ -97,26 +81,10 @@ describe("registerSelectMovementHandler (unit)", () => {
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "bad-token" }, cb);
+    await handler({ gameId: "g1", type: "PAIRS", id: 1, directorToken: "bad-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
-    expect(getIndividualMovement).not.toHaveBeenCalled();
-  });
-
-  it("processes INDIVIDUAL movement and returns success", async () => {
-    const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
-
-    const handler = socket.on.mock.calls[0][1];
-    const cb = vi.fn();
-
-    vi.mocked(getIndividualMovement).mockResolvedValue(individualMovement as any);
-
-    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 10, directorToken: "test-token" }, cb);
-
-    expect(getIndividualMovement).toHaveBeenCalledWith(10);
-    expect(mockTransaction).toHaveBeenCalled();
-    expect(cb).toHaveBeenCalledWith({ success: true });
+    expect(getPairMovement).not.toHaveBeenCalled();
   });
 
   it("processes PAIRS movement and returns success", async () => {
@@ -135,7 +103,7 @@ describe("registerSelectMovementHandler (unit)", () => {
     expect(cb).toHaveBeenCalledWith({ success: true });
   });
 
-  it("falls back to TEAM movement for unknown types and returns success", async () => {
+  it("falls back to TEAM movement for TEAMS type and returns success", async () => {
     const socket = makeDirectorSocket();
     registerSelectMovementHandler(socket as any);
 
@@ -144,7 +112,7 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     vi.mocked(getTeamMovement).mockResolvedValue(pairMovement as any);
 
-    await handler({ gameId: "g1", type: "TEAM", id: 3, directorToken: "test-token" }, cb);
+    await handler({ gameId: "g1", type: "TEAMS", id: 3, directorToken: "test-token" }, cb);
 
     expect(getTeamMovement).toHaveBeenCalledWith(3);
     expect(cb).toHaveBeenCalledWith({ success: true });
@@ -157,9 +125,9 @@ describe("registerSelectMovementHandler (unit)", () => {
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    vi.mocked(getIndividualMovement).mockRejectedValue(new Error("db fail"));
+    vi.mocked(getPairMovement).mockRejectedValue(new Error("db fail"));
 
-    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "test-token" }, cb);
+    await handler({ gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false });
   });
@@ -171,10 +139,10 @@ describe("registerSelectMovementHandler (unit)", () => {
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    vi.mocked(getIndividualMovement).mockResolvedValue(individualMovement as any);
+    vi.mocked(getPairMovement).mockResolvedValue(pairMovement as any);
     mockTransaction.mockRejectedValue(new Error("tx fail"));
 
-    await handler({ gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "test-token" }, cb);
+    await handler({ gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false });
   });

@@ -1,59 +1,33 @@
 import { NewPlayer, Player } from "@/db/games/shared/tables/players";
-import { Direction, PairDirection, PairDirections } from "@/model/common";
+import { PairDirection, PairDirections } from "@/model/common";
 
 export interface ParticipantsByMode {
-  INDIVIDUAL: {
-    nId: string;
-    sId: string;
-    eId: string;
-    wId: string;
-  };
   PAIR: {
     nsId: string;
     ewId: string;
   };
 }
 
-export type TravellerParticipantMode = "INDIVIDUAL" | "PAIR";
+export type TravellerParticipantMode = "PAIR";
 
 /* ---------- seat ---------- */
 
-export type IndividualSeat = `${number}${Direction}`;
 export type PairSeat = `${number}${PairDirection}`;
 
-export type Seat = IndividualSeat | PairSeat;
+export type Seat = PairSeat;
 
 export function isPairSeat(seat: Seat): seat is PairSeat {
   return PairDirections.some((direction) => seat.endsWith(direction));
 }
 
 export function parseSeat(seat: Seat) {
-  if (isPairSeat(seat)) {
-    return {
-      tableNumber: Number(seat.slice(0, -2)),
-      direction: seat.slice(-2) as PairDirection,
-    };
-  }
-
   return {
-    tableNumber: Number(seat.slice(0, -1)),
-    direction: seat.slice(-1) as Direction,
+    tableNumber: Number(seat.slice(0, -2)),
+    direction: seat.slice(-2) as PairDirection,
   };
 }
 
 /* ---------- participants ---------- */
-
-export type NewIndividual = {
-  type: "INDIVIDUAL";
-  initialSeat: IndividualSeat;
-  player: NewPlayer;
-};
-
-export type Individual = {
-  type: "INDIVIDUAL";
-  initialSeat: IndividualSeat;
-  player: Player;
-};
 
 export type NewPair = {
   type: "PAIR";
@@ -75,16 +49,11 @@ export type Team = {
   pair2: Pair;
 };
 
-export type NewParticipant = NewIndividual | NewPair;
+export type NewParticipant = NewPair;
 
-export type Participant = Individual | Pair | Team;
+export type Participant = Pair | Team;
 
 /* ---------- assignment ---------- */
-
-export type IndividualAssignment = {
-  type: "INDIVIDUAL";
-  id: string;
-};
 
 export type PairAssignment = {
   type: "PAIR";
@@ -96,17 +65,12 @@ export type TeamAssignment = {
   id: string;
 };
 
-export type Assignment = TeamAssignment | PairAssignment | IndividualAssignment;
+export type Assignment = TeamAssignment | PairAssignment;
 
 /* ---------- assigned participant ---------- */
-
-export type AssignedIndividual = Individual & IndividualAssignment;
 
 export type AssignedPair = Pair & PairAssignment;
 
 export type AssignedTeam = Team & TeamAssignment;
 
-export type AssignedParticipant =
-  | AssignedTeam
-  | AssignedPair
-  | AssignedIndividual;
+export type AssignedParticipant = AssignedTeam | AssignedPair;

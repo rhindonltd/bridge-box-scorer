@@ -2,25 +2,13 @@ import type { Socket } from "socket.io";
 import { SocketEvents } from "@/socket/socket-events";
 
 import {
-  getIndividualMovement,
-  IndividualMovement,
   PairMovement,
   TeamMovement,
   getPairMovement,
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
 
-import { getDb as getIndividualDb } from "@/db/games/individual";
 import { getDb as getPairsDb } from "@/db/games/pairs";
-
-import {
-  boards as individualBoards,
-  NewBoard as NewIndividualBoard,
-} from "@/db/games/individual/tables/boards";
-import {
-  assignments as individualAssignments,
-  Assignment as IndividualAssignment,
-} from "@/db/games/individual/tables/assignments";
 
 import {
   boards as pairBoards,
@@ -37,62 +25,6 @@ import {
   MitchellMovementSpec,
 } from "@/movement/mitchell";
 import { Tables } from "@/model/movement";
-
-/**
- * Individual movement handler — bulk inserts inside a single transaction.
- */
-async function handleIndividualMovement(
-  movement: IndividualMovement[],
-  gameId: string,
-) {
-  const boardRows: NewIndividualBoard[] = [];
-  const assignmentRows: IndividualAssignment[] = [];
-
-  for (const m of movement) {
-    for (const r of m.rounds) {
-      for (
-        let boardNumber = r.boardStart;
-        boardNumber <= r.boardEnd;
-        boardNumber++
-      ) {
-        boardRows.push({
-          roundNumber: r.roundNumber,
-          tableNumber: m.tableNumber,
-          boardNumber,
-          n: r.n,
-          s: r.s,
-          e: r.e,
-          w: r.w,
-          status: "NOT_PLAYED",
-        });
-      }
-
-      if (r.roundNumber === 1) {
-        const seats = [
-          { position: "N", movementId: r.n },
-          { position: "S", movementId: r.s },
-          { position: "E", movementId: r.e },
-          { position: "W", movementId: r.w },
-        ] as const;
-
-        for (const { position, movementId } of seats) {
-          assignmentRows.push({
-            id: movementId,
-            initialSeat: `${m.tableNumber}${position}` as IndividualAssignment["initialSeat"],
-          });
-        }
-      }
-    }
-  }
-
-  const db = await getIndividualDb(gameId);
-  await db.transaction(async (tx) => {
-    await tx.insert(individualBoards).values(boardRows);
-    if (assignmentRows.length > 0) {
-      await tx.insert(individualAssignments).values(assignmentRows);
-    }
-  });
-}
 
 /**
  * Pair + Team movement handler — bulk inserts inside a single transaction.
@@ -197,12 +129,7 @@ export function registerSelectMovementHandler(socket: Socket) {
           const pairMovement = mitchellToPairMovement(generated);
           await handlePairLikeMovement(pairMovement, gameId);
         } else if (id != null) {
-          if (type === "INDIVIDUAL") {
-            await handleIndividualMovement(
-              await getIndividualMovement(id),
-              gameId,
-            );
-          } else if (type === "PAIRS") {
+          if (type === "PAIRS") {
             await handlePairLikeMovement(await getPairMovement(id), gameId);
           } else {
             await handlePairLikeMovement(await getTeamMovement(id), gameId);

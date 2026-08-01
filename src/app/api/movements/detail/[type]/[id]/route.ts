@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import {
-  getIndividualMovement,
   getPairMovement,
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
@@ -13,7 +12,7 @@ import {
  *
  * Response shape:
  * {
- *   tables: [{ tableNumber, rounds: [{ roundNumber, ns/ew or n/s/e/w, boardStart, boardEnd }] }]
+ *   tables: [{ tableNumber, rounds: [{ roundNumber, ns/ew, boardStart, boardEnd }] }]
  * }
  */
 export async function GET(
@@ -34,9 +33,6 @@ export async function GET(
     let tables;
 
     switch (type) {
-      case "INDIVIDUAL":
-        tables = await getIndividualMovement(movementId);
-        break;
       case "PAIRS":
         tables = await getPairMovement(movementId);
         break;

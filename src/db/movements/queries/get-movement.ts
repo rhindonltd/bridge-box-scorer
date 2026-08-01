@@ -5,43 +5,13 @@ import { eq } from "drizzle-orm";
 import {
   pairmovementtablespec,
   pairmovementroundspec,
-  individualmovementtablespec,
-  individualmovementroundspec,
   teammovementtablespec,
   teammovementroundspec,
   TeamMovementRoundSpec,
   TeamMovementTableSpec,
   PairMovementRoundSpec,
   PairMovementTableSpec,
-  IndividualMovementRoundSpec,
-  IndividualMovementTableSpec,
 } from "@/db/movements/schema";
-
-export async function getIndividualMovement(
-  movementSpecId: number,
-): Promise<IndividualMovement[]> {
-  const tablesWithRounds: IndividualMovement[] = [];
-
-  for (const table of await getIndividualMovementTableSpecsForMovementSpecId(
-    movementSpecId,
-  )) {
-    tablesWithRounds.push({
-      ...table,
-      rounds: await getIndividualMovementRoundSpecsForMovementSpecTableId(
-        table.id,
-      ),
-    });
-  }
-
-  return tablesWithRounds;
-}
-
-export type IndividualMovement = {
-  id: number;
-  movementId: number;
-  tableNumber: number;
-  rounds: IndividualMovementRoundSpec[];
-};
 
 export async function getPairMovement(
   movementSpecId: number,
@@ -90,26 +60,6 @@ export type TeamMovement = {
   tableNumber: number;
   rounds: TeamMovementRoundSpec[];
 };
-
-async function getIndividualMovementTableSpecsForMovementSpecId(
-  movementSpecId: number,
-): Promise<IndividualMovementTableSpec[]> {
-  const db = await getDb();
-  return db
-    .select()
-    .from(individualmovementtablespec)
-    .where(eq(individualmovementtablespec.movementId, movementSpecId));
-}
-
-async function getIndividualMovementRoundSpecsForMovementSpecTableId(
-  movementTableSpecId: number,
-): Promise<IndividualMovementRoundSpec[]> {
-  const db = await getDb();
-  return db
-    .select()
-    .from(individualmovementroundspec)
-    .where(eq(individualmovementroundspec.tableId, movementTableSpecId));
-}
 
 async function getPairMovementTableSpecsForMovementSpecId(
   movementSpecId: number,

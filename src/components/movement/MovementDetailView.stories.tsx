@@ -180,28 +180,4 @@ export const AllComplete: Story = {
   },
 };
 
-// 6. Individual game (shows N/S/E/W columns instead of NS/EW)
-export const IndividualGame: Story = {
-  args: {
-    movementName: "Wednesday Individual",
-    movementType: "INDIVIDUAL",
-    tables: [
-      {
-        tableNumber: 1,
-        rounds: [
-          { roundNumber: 1, n: "1", s: "2", e: "3", w: "4", boardStart: 1, boardEnd: 3, played: 3, total: 3, hasPreviousGap: false },
-          { roundNumber: 2, n: "1", s: "3", e: "4", w: "2", boardStart: 4, boardEnd: 6, played: 1, total: 3, hasPreviousGap: false },
-          { roundNumber: 3, n: "1", s: "4", e: "2", w: "3", boardStart: 7, boardEnd: 9, played: 0, total: 3, hasPreviousGap: false },
-        ],
-      },
-      {
-        tableNumber: 2,
-        rounds: [
-          { roundNumber: 1, n: "5", s: "6", e: "7", w: "8", boardStart: 4, boardEnd: 6, played: 3, total: 3, hasPreviousGap: false },
-          { roundNumber: 2, n: "5", s: "7", e: "8", w: "6", boardStart: 7, boardEnd: 9, played: 3, total: 3, hasPreviousGap: false },
-          { roundNumber: 3, n: "5", s: "8", e: "6", w: "7", boardStart: 1, boardEnd: 3, played: 2, total: 3, hasPreviousGap: false },
-        ],
-      },
-    ],
-  },
-};
+

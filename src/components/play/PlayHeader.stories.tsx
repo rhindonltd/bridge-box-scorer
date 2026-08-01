@@ -48,8 +48,8 @@ export const NoDetail: Story = {
 
 export const IndividualPlayer: Story = {
   decorators: [
-    withGame({ ...mockGame, gameType: "INDIVIDUAL", sessionName: "", sectionName: "" }),
-    withAssignment({ type: "INDIVIDUAL", id: "3" }),
+    withGame({ ...mockGame, gameType: "PAIRS", sessionName: "", sectionName: "" }),
+    withAssignment({ type: "PAIR", id: "3" }),
   ],
   args: {
     detail: "Table 2, Round 1",

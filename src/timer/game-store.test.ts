@@ -22,7 +22,7 @@ describe("game-store", () => {
     it("creates a new engine with correct initial state", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      const engine = await createEngine("INDIVIDUAL", "game-1", 3, 5, 420, 60);
+      const engine = await createEngine("PAIRS", "game-1", 3, 5, 420, 60);
 
       expect(engine).toBeDefined();
       expect(engine.getState()).toMatchObject({
@@ -60,8 +60,8 @@ describe("game-store", () => {
     it("caches the engine so getEngine returns it", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      const created = await createEngine("INDIVIDUAL", "cached-1", 3, 5, 420, 60);
-      const fetched = await getEngine("INDIVIDUAL", "cached-1");
+      const created = await createEngine("PAIRS", "cached-1", 3, 5, 420, 60);
+      const fetched = await getEngine("PAIRS", "cached-1");
 
       expect(fetched).toBe(created);
       expect(findTimerState).not.toHaveBeenCalled();
@@ -72,7 +72,7 @@ describe("game-store", () => {
     it("returns null if no engine exists in cache and DB returns null", async () => {
       vi.mocked(findTimerState).mockResolvedValue(null);
 
-      const engine = await getEngine("INDIVIDUAL", "nonexistent");
+      const engine = await getEngine("PAIRS", "nonexistent");
 
       expect(engine).toBeNull();
     });

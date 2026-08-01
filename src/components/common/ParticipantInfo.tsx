@@ -10,9 +10,6 @@ export function ParticipantInfo() {
   let label: string;
 
   switch (assignment.type) {
-    case "INDIVIDUAL":
-      label = "Player";
-      break;
     case "PAIR":
       label = "Pair";
       break;

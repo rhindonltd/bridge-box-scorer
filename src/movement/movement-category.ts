@@ -1,2 +1,2 @@
-export const MovementCategories = ["Pairs", "Teams", "Individual"] as const;
+export const MovementCategories = ["Pairs", "Teams"] as const;
 export type MovementCategory = (typeof MovementCategories)[number];

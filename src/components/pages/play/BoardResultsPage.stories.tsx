@@ -1,7 +1,5 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { BoardResultsPage } from "@/components/pages/play/BoardResultsPage";
-import { individualIMPTraveller } from "@/mocks/fixtures/traveller/individual-imp";
-import { individualMpTraveller } from "@/mocks/fixtures/traveller/individual-mp";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";
@@ -19,64 +17,6 @@ const meta: Meta<typeof BoardResultsPage> = {
 
 export default meta;
 type Story = StoryObj<typeof BoardResultsPage>;
-
-export const IndividualXIMP: Story = {
-  decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
-    withAssignment({
-      type: "PAIR",
-      id: "1",
-    }),
-  ],
-  args: {
-    board: 5,
-    lastBoardOfRound: false,
-    scoredTraveller: individualIMPTraveller,
-  },
-};
-
-export const IndividualMP: Story = {
-  decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
-    withAssignment({
-      type: "INDIVIDUAL",
-      id: "12",
-    }),
-  ],
-  args: {
-    board: 5,
-    lastBoardOfRound: false,
-    scoredTraveller: individualMpTraveller,
-  },
-};
 
 export const PairXIMP: Story = {
   decorators: [

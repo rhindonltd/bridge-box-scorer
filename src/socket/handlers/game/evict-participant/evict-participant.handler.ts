@@ -3,12 +3,10 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
-import { deleteParticipant as deleteIndividualParticipant } from "@/db/games/individual/actions/delete-participant";
 import { deleteParticipant as deletePairParticipant } from "@/db/games/pairs/actions/delete-participant";
-import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { IndividualSeat, PairSeat } from "@/model/participants";
+import { PairSeat } from "@/model/participants";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
@@ -36,17 +34,10 @@ export function registerEvictParticipantHandler(socket: Socket, io: Server) {
           return;
         }
 
-        if (game.gameType === "INDIVIDUAL") {
-          await deleteIndividualParticipant(gameId, seat as IndividualSeat);
-          io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
-            participants: await findIndividuals(gameId),
-          });
-        } else {
-          await deletePairParticipant(gameId, seat as PairSeat);
-          io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
-            participants: await findPairs(gameId),
-          });
-        }
+        await deletePairParticipant(gameId, seat as PairSeat);
+        io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
+          participants: await findPairs(gameId),
+        });
 
         cb?.({ success: true });
       } catch (err) {
