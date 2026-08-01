@@ -7,6 +7,7 @@ import {
   enterResultStep,
   attachScreenshot,
   cleanupGames,
+  deleteGameStep,
 } from "./helpers";
 
 test.beforeAll(async () => {
@@ -55,12 +56,14 @@ test("Result mismatch flow - multi-actor result submission and director correcti
   const ewContext = await browser.newContext(deviceConfig);
   const ewPage = await ewContext.newPage();
 
+  let gameId = "";
+
   try {
     // Step 1: Director creates a game
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName: `E2E Journey - Result Mismatch - ${Date.now()}`,
       tables: 2,
-    });
+    }));
 
     // Step 2: Director selects Mitchell movement
     await selectMovementStep(directorPage, testInfo, gameId, "Mitchell");
@@ -71,19 +74,13 @@ test("Result mismatch flow - multi-actor result submission and director correcti
     // Step 4: NS pair joins at seat 1NS
     await joinGameStep(nsPage, testInfo, gameId, {
       seat: "1NS",
-      players: [
-        { firstName: "Alice", lastName: "Smith" },
-        { firstName: "Bob", lastName: "Jones" },
-      ],
+      ebuNumbers: ["477484", "404476"],
     });
 
     // Step 5: EW pair joins at seat 1EW
     await joinGameStep(ewPage, testInfo, gameId, {
       seat: "1EW",
-      players: [
-        { firstName: "Carol", lastName: "Brown" },
-        { firstName: "Dave", lastName: "Wilson" },
-      ],
+      ebuNumbers: ["12269", "16671"],
     });
 
     // Step 6: NS enters Pass Out for Board 1
@@ -167,6 +164,7 @@ test("Result mismatch flow - multi-actor result submission and director correcti
       },
     );
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await ewContext.close();
     await nsContext.close();
     await directorContext.close();

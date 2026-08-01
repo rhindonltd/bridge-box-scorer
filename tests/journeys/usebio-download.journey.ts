@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createGameStep, attachScreenshot, cleanupGames } from "./helpers";
+import { createGameStep, attachScreenshot, cleanupGames, deleteGameStep } from "./helpers";
 
 const BASE_URL = "http://localhost:3000";
 
@@ -16,6 +16,8 @@ test("USEBIO XML download with club data", async ({ browser }, testInfo) => {
 
   const directorContext = await browser.newContext(deviceConfig);
   const directorPage = await directorContext.newPage();
+
+  let gameId = "";
 
   try {
     // Step 1: Set up club info via API
@@ -35,11 +37,11 @@ test("USEBIO XML download with club data", async ({ browser }, testInfo) => {
     );
 
     // Step 2: Director creates a game
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName: `E2E Journey - USEBIO Download - ${Date.now()}`,
       directorName: "E2E Director",
       tables: 2,
-    });
+    }));
 
     // Step 3: Director navigates to the USEBIO download page
     await test.step(
@@ -121,6 +123,7 @@ test("USEBIO XML download with club data", async ({ browser }, testInfo) => {
       },
     );
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await directorContext.close();
   }
 });

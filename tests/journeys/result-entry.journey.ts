@@ -7,6 +7,7 @@ import {
   enterResultStep,
   attachScreenshot,
   cleanupGames,
+  deleteGameStep,
 } from "./helpers";
 
 test.beforeAll(async () => {
@@ -33,12 +34,14 @@ test("NS and EW enter matching results and see confirmation", async ({
   const ewContext = await browser.newContext(deviceConfig);
   const ewPage = await ewContext.newPage();
 
+  let gameId = "";
+
   try {
     // Step 1: Director creates game
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName: `E2E Journey - Result Entry - ${Date.now()}`,
       tables: 2,
-    });
+    }));
 
     // Step 2: Director selects Mitchell movement
     await selectMovementStep(directorPage, testInfo, gameId, "Mitchell");
@@ -49,19 +52,13 @@ test("NS and EW enter matching results and see confirmation", async ({
     // Step 4: NS player joins at Table 1 NS
     await joinGameStep(nsPage, testInfo, gameId, {
       seat: "1NS",
-      players: [
-        { firstName: "Alice", lastName: "Smith" },
-        { firstName: "Bob", lastName: "Jones" },
-      ],
+      ebuNumbers: ["477484", "404476"],
     });
 
     // Step 5: EW player joins at Table 1 EW
     await joinGameStep(ewPage, testInfo, gameId, {
       seat: "1EW",
-      players: [
-        { firstName: "Carol", lastName: "Brown" },
-        { firstName: "Dave", lastName: "Wilson" },
-      ],
+      ebuNumbers: ["12269", "16671"],
     });
 
     // Step 6: NS enters result — Pass Out for Board 1
@@ -104,6 +101,7 @@ test("NS and EW enter matching results and see confirmation", async ({
       await attachScreenshot(ewPage, testInfo, "EW - Result confirmed Board 1");
     });
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await ewContext.close();
     await nsContext.close();
     await directorContext.close();

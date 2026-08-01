@@ -36,7 +36,7 @@ test("Settings PIN gate, WiFi config, and club info", async (
     ).toBeVisible();
     // Verify network selector is present (the dropdown button with placeholder text)
     await expect(
-      page.getByRole("button", { name: /select wifi/i }),
+      page.getByRole("button", { name: /Select WiFi/i }),
     ).toBeVisible();
     await attachScreenshot(page, testInfo, "Settings - WiFi settings page");
   });
@@ -55,8 +55,9 @@ test("Settings PIN gate, WiFi config, and club info", async (
   // Step 5: Click "Club Information" — verify club info page loads
   await test.step("Navigate to Club Information", async () => {
     await page.getByRole("button", { name: "Club Information" }).click();
+    // The club page header is a styled div, not a semantic heading
     await expect(
-      page.getByRole("heading", { name: "Club Information" }),
+      page.getByText("Club Information", { exact: true }),
     ).toBeVisible();
     await expect(page.getByLabel("Club Name")).toBeVisible();
     await expect(page.getByLabel("EBU Club Number")).toBeVisible();
@@ -80,7 +81,7 @@ test("Settings PIN gate, WiFi config, and club info", async (
   // Step 7: Click "Save" — verify success message
   await test.step("Save club information", async () => {
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Club info saved")).toBeVisible();
+    await expect(page.getByText(/Club info saved/)).toBeVisible();
     await attachScreenshot(
       page,
       testInfo,
@@ -91,13 +92,12 @@ test("Settings PIN gate, WiFi config, and club info", async (
   // Step 8: Reload the page — verify the values persist
   await test.step("Reload and verify persistence", async () => {
     await page.reload();
-    // After reload, PIN entry appears again
+    // After reload at /settings/club, PIN entry appears again
     await page.getByLabel("PIN").fill("1234");
     await page.getByRole("button", { name: "Enter" }).click();
-    // Navigate to club page again
-    await page.getByRole("button", { name: "Club Information" }).click();
+    // We're still on the club page after PIN re-entry (URL is /settings/club)
     await expect(
-      page.getByRole("heading", { name: "Club Information" }),
+      page.getByText("Club Information", { exact: true }),
     ).toBeVisible();
     // Verify the saved values persist
     await expect(page.getByLabel("Club Name")).toHaveValue(clubName);

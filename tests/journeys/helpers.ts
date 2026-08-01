@@ -1,6 +1,21 @@
 import { test, Page, TestInfo } from "@playwright/test";
 
 /**
+ * Delete a game via the UI by navigating to the delete page and confirming.
+ * Wrapped in try/catch so cleanup errors don't fail the test.
+ */
+export async function deleteGameStep(page: Page, gameId: string): Promise<void> {
+  try {
+    await page.goto(`/manage/${gameId}/menu`);
+    await page.getByRole("button", { name: "Delete Game" }).click({ timeout: 5000 });
+    await page.getByRole("button", { name: "Yes, Delete Game" }).click({ timeout: 5000 });
+    await page.waitForURL(/\/manage\/select-game/, { timeout: 5000 });
+  } catch {
+    // Ignore errors — game may already be deleted
+  }
+}
+
+/**
  * Attach a screenshot to the test report with a descriptive name.
  */
 export async function attachScreenshot(
@@ -61,6 +76,9 @@ export async function createGameStep(
 
 /**
  * Director selects a movement on the /create/[id] page.
+ * After game creation the page is on the tables step, so we first
+ * click "Select Movement" to navigate to the movements list, then
+ * click the first matching movement card.
  */
 export async function selectMovementStep(
   page: Page,
@@ -71,9 +89,38 @@ export async function selectMovementStep(
   return await test.step(
     `Director selects ${movementName} movement`,
     async () => {
-      await page
-        .getByRole("button", { name: new RegExp(movementName, "i") })
-        .click();
+      // Navigate from tables step to movements step
+      const selectMovementNav = page.getByRole("button", {
+        name: "Select Movement",
+        exact: true,
+      });
+      if (
+        await selectMovementNav
+          .isVisible({ timeout: 5000 })
+          .catch(() => false)
+      ) {
+        await selectMovementNav.click();
+      }
+
+      // Wait for movement cards to load and click the first matching one
+      const movementCard = page
+        .locator("button")
+        .filter({ hasText: new RegExp(movementName, "i") })
+        .first();
+      await movementCard.click({ timeout: 15000 });
+
+      // After clicking a movement card, the detail view appears with
+      // a "Select Movement" button at the bottom — click it to confirm
+      const confirmButton = page.getByRole("button", {
+        name: "Select Movement",
+        exact: true,
+      });
+      if (
+        await confirmButton.isVisible({ timeout: 10000 }).catch(() => false)
+      ) {
+        await confirmButton.click();
+      }
+
       await attachScreenshot(
         page,
         testInfo,
@@ -108,8 +155,8 @@ export async function makeGameJoinableStep(
 
 /**
  * Player joins a game by navigating to the select-game list, selecting
- * the game, clicking "Join As Player", choosing a seat, and entering
- * player names.
+ * the game, clicking "Join As Player", choosing a seat, and searching
+ * for players by EBU number.
  */
 export async function joinGameStep(
   page: Page,
@@ -117,7 +164,7 @@ export async function joinGameStep(
   gameId: string,
   options: {
     seat: string;
-    players: { firstName: string; lastName: string }[];
+    ebuNumbers: [string, string];
   },
 ): Promise<void> {
   return await test.step(
@@ -125,71 +172,64 @@ export async function joinGameStep(
     async () => {
       await page.goto("/join/select-game");
 
-      // Wait for the game list to load, then click on the game
-      // Games are displayed with their event name — find and click the game link
+      // Wait for the game list to load, then click the first game button
       await page.waitForLoadState("networkidle");
 
-      // The game cards link to /join/{gameId}/menu
-      const gameLink = page.locator(`a[href*="/join/${gameId}"]`).first();
-      await gameLink.click();
+      const gameButtons = page.locator(
+        ".flex.flex-col.gap-4 button",
+      );
+      await gameButtons.first().waitFor({ timeout: 15000 });
+      await gameButtons.first().click();
 
-      // Wait for the menu page
-      await page.waitForURL(new RegExp(`/join/${gameId}/menu`));
+      // Wait for the menu page and click "Join As Player"
+      await page.waitForURL(/\/join\/.+\/menu/);
       await page
         .getByRole("button", { name: "Join As Player" })
         .click();
 
       // Wait for the player/seat selection page
-      await page.waitForURL(new RegExp(`/join/${gameId}/player`));
+      await page.waitForURL(/\/join\/.+\/player/);
 
       // Parse the seat to get table number and direction
       // Seat format is like "1NS", "2EW", etc.
       const tableNumber = options.seat.replace(/[A-Z]+$/, "");
       const direction = options.seat.replace(/^\d+/, "");
 
-      // Click the direction button within the correct table card
-      // The table cards have a header "Table {n}" and direction buttons (NS/EW)
-      const tableCard = page.locator(
-        `text=Table ${tableNumber}`,
-      ).locator("..");
-      // The direction buttons are siblings in the grid below the table header
+      // Find the table card by its header text "Table N" and click
+      // the direction button within it
+      const tableCard = page
+        .locator("div")
+        .filter({ hasText: new RegExp(`^Table ${tableNumber}$`) })
+        .locator("..");
       await tableCard
-        .locator("..")
         .getByRole("button", { name: direction, exact: true })
         .click();
 
-      // Bottom sheet appears with player name entry fields
-      // The form uses PlayerSearch components with labels like "North", "South", "East", "West"
-      // For NS seat: player1 = North, player2 = South
-      // For EW seat: player1 = East, player2 = West
-      const playerInputs = page.locator("input[placeholder*='EBU No']");
+      // Bottom sheet appears with player search fields
+      // The PlayerSearch inputs use placeholder "EBU No, Club ID or Name"
+      const playerInputs = page.getByPlaceholder("EBU No, Club ID or Name");
 
-      for (let i = 0; i < options.players.length; i++) {
-        const player = options.players[i];
+      // Search for each player by EBU number, wait for results, and click the first result
+      for (let i = 0; i < options.ebuNumbers.length; i++) {
+        const ebuNumber = options.ebuNumbers[i];
         const input = playerInputs.nth(i);
-        // Type the player name to trigger search, then use the name directly
-        await input.fill(`${player.firstName} ${player.lastName}`);
-        // Wait for search results and select the first match, or if no results
-        // the player will be entered as-is via the search input
-        // Since E2E tests may not have players in the DB, we handle both cases
+        await input.fill(ebuNumber);
+
+        // Wait for search results to appear (buttons inside the results list)
+        // The results appear as buttons with player name text
         const resultButton = page
           .locator("button")
-          .filter({ hasText: player.firstName })
+          .filter({ has: page.locator(`text=EBU ${ebuNumber}`) })
           .first();
-        if (
-          await resultButton.isVisible({ timeout: 2000 }).catch(() => false)
-        ) {
-          await resultButton.click();
-        }
+        await resultButton.waitFor({ timeout: 10000 });
+        await resultButton.click();
       }
 
       // Click "Enter Pair" to confirm the seat selection
       const enterPairButton = page.getByRole("button", {
         name: "Enter Pair",
       });
-      if (await enterPairButton.isEnabled({ timeout: 5000 }).catch(() => false)) {
-        await enterPairButton.click();
-      }
+      await enterPairButton.click({ timeout: 5000 });
 
       await attachScreenshot(
         page,

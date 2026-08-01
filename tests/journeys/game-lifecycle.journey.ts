@@ -6,6 +6,7 @@ import {
   enterResultStep,
   attachScreenshot,
   cleanupGames,
+  deleteGameStep,
 } from "./helpers";
 
 const BASE_URL = "http://localhost:3000";
@@ -30,13 +31,15 @@ test("Complete pairs game lifecycle", async ({ browser }, testInfo) => {
   const player2Context = await browser.newContext(deviceConfig);
   const player2Page = await player2Context.newPage();
 
+  let gameId = "";
+
   try {
     // Step 1: Director creates game
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName: `E2E Journey - Game Lifecycle - ${Date.now()}`,
       directorName: "E2E Director",
       tables: 2,
-    });
+    }));
 
     // Step 2: Director selects movement
     await test.step("Director selects Mitchell movement", async () => {
@@ -87,19 +90,13 @@ test("Complete pairs game lifecycle", async ({ browser }, testInfo) => {
     // Step 4: Player 1 joins at seat 1NS
     await joinGameStep(player1Page, testInfo, gameId, {
       seat: "1NS",
-      players: [
-        { firstName: "Alice", lastName: "Smith" },
-        { firstName: "Bob", lastName: "Jones" },
-      ],
+      ebuNumbers: ["477484", "404476"],
     });
 
     // Step 5: Player 2 joins at seat 1EW
     await joinGameStep(player2Page, testInfo, gameId, {
       seat: "1EW",
-      players: [
-        { firstName: "Carol", lastName: "Brown" },
-        { firstName: "Dave", lastName: "Wilson" },
-      ],
+      ebuNumbers: ["12269", "16671"],
     });
 
     // Step 6: Both players enter matching results (Pass Out for simplicity)
@@ -169,6 +166,7 @@ test("Complete pairs game lifecycle", async ({ browser }, testInfo) => {
       );
     });
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await player2Context.close();
     await player1Context.close();
     await directorContext.close();

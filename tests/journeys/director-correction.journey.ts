@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { createGameStep, attachScreenshot, cleanupGames } from "./helpers";
+import { createGameStep, attachScreenshot, cleanupGames, deleteGameStep } from "./helpers";
 
 const BASE_URL = "http://localhost:3000";
 
@@ -17,13 +17,15 @@ test("Director corrects a result via traveller view", async ({ browser }, testIn
   const directorContext = await browser.newContext(deviceConfig);
   const directorPage = await directorContext.newPage();
 
+  let gameId = "";
+
   try {
     // Step 1: Director creates a game
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName: `E2E Journey - Director Correction - ${Date.now()}`,
       directorName: "E2E Director",
       tables: 2,
-    });
+    }));
 
     // Step 2: Navigate to the correct-result page
     await test.step("Director navigates to correct-result page", async () => {
@@ -125,6 +127,7 @@ test("Director corrects a result via traveller view", async ({ browser }, testIn
       await attachScreenshot(directorPage, testInfo, "Director - Contract entry panel shown");
     });
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await directorContext.close();
   }
 });

@@ -5,6 +5,7 @@ import {
   makeGameJoinableStep,
   attachScreenshot,
   cleanupGames,
+  deleteGameStep,
 } from "./helpers";
 
 const BASE_URL = "http://localhost:3000";
@@ -28,14 +29,16 @@ test("Game status transitions affect joinable list", async ({ browser }, testInf
   const playerContext = await browser.newContext(deviceConfig);
   const playerPage = await playerContext.newPage();
 
+  let gameId = "";
+
   try {
     // Step 1: Director creates a game (starts as JOINABLE)
     const eventName = `E2E Journey - Game Status - ${Date.now()}`;
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName,
       directorName: "E2E Director",
       tables: 2,
-    });
+    }));
 
     // Step 2: Director selects a movement
     await selectMovementStep(directorPage, testInfo, gameId, "Mitchell");
@@ -85,6 +88,7 @@ test("Game status transitions affect joinable list", async ({ browser }, testInf
       await attachScreenshot(playerPage, testInfo, "Player - Game removed from joinable list");
     });
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await playerContext.close();
     await directorContext.close();
   }

@@ -4,6 +4,7 @@ import {
   makeGameJoinableStep,
   attachScreenshot,
   cleanupGames,
+  deleteGameStep,
 } from "./helpers";
 
 const BASE_URL = "http://localhost:3000";
@@ -27,13 +28,15 @@ test("Game deletion with confirmation and verification", async ({
   const playerContext = await browser.newContext(deviceConfig);
   const playerPage = await playerContext.newPage();
 
+  let gameId = "";
+
   try {
     // Step 1: Director creates a game
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName: `E2E Journey - Game Deletion - ${Date.now()}`,
       directorName: "E2E Director",
       tables: 2,
-    });
+    }));
 
     // Step 2: Make game joinable so it appears in the joinable list
     await makeGameJoinableStep(directorPage, testInfo, gameId);
@@ -45,10 +48,11 @@ test("Game deletion with confirmation and verification", async ({
         await playerPage.goto("/join/select-game");
         await playerPage.waitForLoadState("networkidle");
 
-        const gameLink = playerPage
-          .locator(`a[href*="/join/${gameId}"]`)
-          .first();
-        await expect(gameLink).toBeVisible({ timeout: 10000 });
+        // Games are rendered as buttons with the event name
+        const gameButton = playerPage.getByRole("button", {
+          name: /E2E Journey - Game Deletion/,
+        });
+        await expect(gameButton).toBeVisible({ timeout: 10000 });
         await attachScreenshot(
           playerPage,
           testInfo,
@@ -117,10 +121,11 @@ test("Game deletion with confirmation and verification", async ({
         await playerPage.goto("/join/select-game");
         await playerPage.waitForLoadState("networkidle");
 
-        const gameLink = playerPage
-          .locator(`a[href*="/join/${gameId}"]`)
-          .first();
-        await expect(gameLink).not.toBeVisible({ timeout: 10000 });
+        // Games are rendered as buttons with the event name
+        const gameButton = playerPage.getByRole("button", {
+          name: /E2E Journey - Game Deletion/,
+        });
+        await expect(gameButton).not.toBeVisible({ timeout: 10000 });
         await attachScreenshot(
           playerPage,
           testInfo,
@@ -149,6 +154,7 @@ test("Game deletion with confirmation and verification", async ({
       },
     );
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await playerContext.close();
     await directorContext.close();
   }

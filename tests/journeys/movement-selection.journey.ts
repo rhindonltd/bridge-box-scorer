@@ -5,6 +5,7 @@ import {
   joinGameStep,
   attachScreenshot,
   cleanupGames,
+  deleteGameStep,
 } from "./helpers";
 
 const BASE_URL = "http://localhost:3000";
@@ -28,21 +29,24 @@ test("Movement selection and player schedule display", async ({ browser }, testI
   const playerContext = await browser.newContext(deviceConfig);
   const playerPage = await playerContext.newPage();
 
+  let gameId = "";
+
   try {
     // Step 1: Director creates a game with 3 tables
     const eventName = `E2E Journey - Movement Selection - ${Date.now()}`;
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName,
       directorName: "E2E Director",
       tables: 3,
-    });
+    }));
 
     // Step 2: After game creation, the page shows table view on /create/[id]
     // Navigate to the movements step by clicking "Select Movement"
     await test.step("Director navigates to movement selection on /create/[id]", async () => {
       // After game creation we're on /create/[id] which shows the tables step first
       const selectMovementButton = directorPage.getByRole("button", {
-        name: /select movement/i,
+        name: "Select Movement",
+        exact: true,
       });
       await expect(selectMovementButton).toBeVisible({ timeout: 10000 });
       await selectMovementButton.click();
@@ -60,12 +64,13 @@ test("Movement selection and player schedule display", async ({ browser }, testI
       const mitchellCard = directorPage.locator("button").filter({
         hasText: /standard mitchell/i,
       });
-      await expect(mitchellCard).toBeVisible({ timeout: 10000 });
+      await expect(mitchellCard.first()).toBeVisible({ timeout: 10000 });
 
-      // Verify movement stats are displayed (Rounds, Boards/Round, Total Boards)
-      await expect(directorPage.getByText("Rounds")).toBeVisible();
-      await expect(directorPage.getByText("Boards/Round")).toBeVisible();
-      await expect(directorPage.getByText("Total Boards")).toBeVisible();
+      // Verify movement stats are displayed within the first movement card
+      // Use .first() to avoid strict mode violations when multiple cards have the same labels
+      await expect(directorPage.getByText("Rounds").first()).toBeVisible();
+      await expect(directorPage.getByText("Boards/Round").first()).toBeVisible();
+      await expect(directorPage.getByText("Total Boards").first()).toBeVisible();
 
       await attachScreenshot(
         directorPage,
@@ -79,7 +84,7 @@ test("Movement selection and player schedule display", async ({ browser }, testI
       const mitchellCard = directorPage.locator("button").filter({
         hasText: /standard mitchell/i,
       });
-      await mitchellCard.click();
+      await mitchellCard.first().click();
 
       // After clicking, the MovementDetailView should appear with the movement name
       // and round-by-round assignment data
@@ -96,16 +101,17 @@ test("Movement selection and player schedule display", async ({ browser }, testI
 
     // Step 5: Verify the movement detail shows round-by-round assignments
     await test.step("Movement detail shows round-by-round assignments", async () => {
-      // The MovementDetailView shows tables with Round, NS, EW, Boards columns
-      // Check for table headers and round data
-      await expect(directorPage.getByText("Round")).toBeVisible();
-      await expect(directorPage.getByText("NS")).toBeVisible();
-      await expect(directorPage.getByText("EW")).toBeVisible();
-      await expect(directorPage.getByText("Boards")).toBeVisible();
+      // The MovementDetailView shows tables with Round/Table, NS, EW, Boards columns
+      // These are table header cells (th) — scope to the first table header row
+      const detailTable = directorPage.locator("table").first();
+      await expect(detailTable.getByRole("columnheader", { name: "NS" })).toBeVisible();
+      await expect(detailTable.getByRole("columnheader", { name: "EW" })).toBeVisible();
+      await expect(detailTable.getByRole("columnheader", { name: "Boards" })).toBeVisible();
 
       // There should be a "Select Movement" button at the bottom
       const selectButton = directorPage.getByRole("button", {
-        name: /select movement/i,
+        name: "Select Movement",
+        exact: true,
       });
       await expect(selectButton).toBeVisible();
 
@@ -148,10 +154,7 @@ test("Movement selection and player schedule display", async ({ browser }, testI
 
     await joinGameStep(playerPage, testInfo, gameId, {
       seat: "1NS",
-      players: [
-        { firstName: "Alice", lastName: "Smith" },
-        { firstName: "Bob", lastName: "Jones" },
-      ],
+      ebuNumbers: ["477484", "404476"],
     });
 
     // Step 8: Verify the player can navigate to their play page and see round info
@@ -187,6 +190,7 @@ test("Movement selection and player schedule display", async ({ browser }, testI
       );
     });
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await playerContext.close();
     await directorContext.close();
   }

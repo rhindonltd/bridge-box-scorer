@@ -3,6 +3,7 @@ import {
   createGameStep,
   attachScreenshot,
   cleanupGames,
+  deleteGameStep,
 } from "./helpers";
 
 const BASE_URL = "http://localhost:3000";
@@ -24,13 +25,15 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
   const playerContext = await browser.newContext(deviceConfig);
   const playerPage = await playerContext.newPage();
 
+  let gameId = "";
+
   try {
     // Step 1: Director creates a game
-    const { gameId } = await createGameStep(directorPage, testInfo, {
+    ({ gameId } = await createGameStep(directorPage, testInfo, {
       eventName: `E2E Journey - Timer Management - ${Date.now()}`,
       directorName: "E2E Director",
       tables: 2,
-    });
+    }));
 
     // Step 2: Director navigates to timer controls page
     await test.step("Director navigates to timer controls", async () => {
@@ -124,19 +127,16 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
       await playerPage.goto(`/join/${gameId}/timer`);
       await playerPage.waitForLoadState("networkidle");
 
-      // The player timer page shows either "Connecting..." or the countdown display
-      // Wait for the page to load — it should show either the countdown or "Connecting…"
-      await expect(
-        playerPage.locator("body"),
-      ).not.toBeEmpty({ timeout: 15000 });
-
-      // Wait for the timer to sync — look for formatted time (MM:SS pattern) or "Connecting…"
-      const timerDisplay = playerPage.locator(".text-\\[30vw\\]");
-      const connectingText = playerPage.getByText("Connecting…");
+      // The player timer page shows either "Connecting…" (while waiting for socket)
+      // or the countdown display once synced. It may also redirect if game context
+      // isn't loaded yet — wait a moment for data to arrive.
+      // Look for the timer text (MM:SS format) or the connecting message
+      const timerDisplay = playerPage.getByText(/\d{2}:\d{2}/);
+      const connectingText = playerPage.getByText("Connecting");
 
       // Either the timer is showing a countdown or it's still connecting
       await expect(
-        timerDisplay.or(connectingText),
+        timerDisplay.first().or(connectingText),
       ).toBeVisible({ timeout: 15000 });
 
       await attachScreenshot(
@@ -149,14 +149,11 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
     // Step 7: Verify player sees countdown (if connected)
     await test.step("Player timer shows countdown or connecting state", async () => {
       // Give the socket a moment to sync
-      const pausedText = playerPage.getByText("PAUSED");
-      const connectingText = playerPage.getByText("Connecting…");
-      const timerDisplay = playerPage.locator(".text-\\[30vw\\]");
+      const timerDisplay = playerPage.getByText(/^\d{2}:\d{2}$/);
 
       // The player should see either the timer counting down or still connecting
-      // If connected, the large timer text should contain a time format like "01:30"
-      if (await timerDisplay.isVisible({ timeout: 5000 }).catch(() => false)) {
-        const timeText = await timerDisplay.textContent();
+      if (await timerDisplay.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+        const timeText = await timerDisplay.first().textContent();
         // Verify it looks like a time format (MM:SS)
         expect(timeText).toMatch(/^\d{2}:\d{2}$/);
       }
@@ -221,6 +218,7 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
       );
     });
   } finally {
+    await deleteGameStep(directorPage, gameId);
     await playerContext.close();
     await directorContext.close();
   }
