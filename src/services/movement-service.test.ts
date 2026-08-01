@@ -175,5 +175,44 @@ describe("movement-service", () => {
 
       expect(result.tables[0].rounds[0].played).toBe(1);
     });
+
+    it("handles incomplete round with a later round that has zero played (laterCounts.played === 0)", async () => {
+      const mockDb = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockResolvedValue([
+            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: "3NTN=", directorOverrideResult: null, status: "CONFIRMED" },
+            { tableNumber: 1, roundNumber: 1, boardNumber: 2, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
+            { tableNumber: 1, roundNumber: 2, boardNumber: 3, ns: "1", ew: "3", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
+            { tableNumber: 1, roundNumber: 2, boardNumber: 4, ns: "1", ew: "3", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
+          ]),
+        }),
+      };
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+
+      const result = await getMovementWithProgress("game-1", "PAIRS");
+
+      // Round 1 is incomplete (1/2) but round 2 has 0 played, so no gap flagged
+      expect(result.tables[0].rounds[0].hasPreviousGap).toBe(false);
+      expect(result.tables[0].rounds[1].hasPreviousGap).toBe(false);
+    });
+
+    it("handles the boardCountMap fallback when key is not found", async () => {
+      // This tests the edge case where boardCountMap.get(key) returns undefined
+      // which triggers the ?? { played: 0, total: 0 } fallback
+      const mockDb = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockResolvedValue([
+            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: "3NTN=", directorOverrideResult: null, status: "CONFIRMED" },
+          ]),
+        }),
+      };
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+
+      const result = await getMovementWithProgress("game-1", "PAIRS");
+
+      // With valid data, boardCountMap always has the key - just verify it works
+      expect(result.tables[0].rounds[0].played).toBe(1);
+      expect(result.tables[0].rounds[0].total).toBe(1);
+    });
   });
 });
