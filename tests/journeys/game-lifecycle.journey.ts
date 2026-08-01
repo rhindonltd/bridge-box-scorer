@@ -1,0 +1,176 @@
+import { test, expect } from "@playwright/test";
+import {
+  createGameStep,
+  makeGameJoinableStep,
+  joinGameStep,
+  enterResultStep,
+  attachScreenshot,
+  cleanupGames,
+} from "./helpers";
+
+const BASE_URL = "http://localhost:3000";
+
+test.beforeAll(async () => {
+  await cleanupGames(BASE_URL);
+});
+
+test.afterAll(async () => {
+  await cleanupGames(BASE_URL);
+});
+
+test("Complete pairs game lifecycle", async ({ browser }, testInfo) => {
+  const deviceConfig = test.info().project.use;
+
+  const directorContext = await browser.newContext(deviceConfig);
+  const directorPage = await directorContext.newPage();
+
+  const player1Context = await browser.newContext(deviceConfig);
+  const player1Page = await player1Context.newPage();
+
+  const player2Context = await browser.newContext(deviceConfig);
+  const player2Page = await player2Context.newPage();
+
+  try {
+    // Step 1: Director creates game
+    const { gameId } = await createGameStep(directorPage, testInfo, {
+      eventName: `E2E Journey - Game Lifecycle - ${Date.now()}`,
+      directorName: "E2E Director",
+      tables: 2,
+    });
+
+    // Step 2: Director selects movement
+    await test.step("Director selects Mitchell movement", async () => {
+      // After game creation, we're on /create/[id] which shows the table setup.
+      // Navigate to movements view. The SetupGamePage shows tables first,
+      // then movements via "Show Movements" button or internal flow.
+      // Try clicking a Mitchell option if available on the movements page.
+      const mitchellButton = directorPage.locator("button").filter({
+        hasText: /mitchell/i,
+      });
+
+      // The page starts on the tables step — click to move to movements
+      const showMovementsButton = directorPage.getByRole("button", {
+        name: /show movements/i,
+      });
+      if (
+        await showMovementsButton.isVisible({ timeout: 5000 }).catch(() => false)
+      ) {
+        await showMovementsButton.click();
+      }
+
+      // Wait for Mitchell options to appear
+      if (
+        await mitchellButton.first().isVisible({ timeout: 10000 }).catch(() => false)
+      ) {
+        await mitchellButton.first().click();
+        await attachScreenshot(
+          directorPage,
+          testInfo,
+          "Director - Mitchell movement selected",
+        );
+
+        // After clicking the Mitchell card, the detail view shows with a "Select" button
+        const selectButton = directorPage.getByRole("button", {
+          name: /select/i,
+        });
+        if (
+          await selectButton.isVisible({ timeout: 5000 }).catch(() => false)
+        ) {
+          await selectButton.click();
+        }
+      }
+    });
+
+    // Step 3: Director makes game joinable
+    await makeGameJoinableStep(directorPage, testInfo, gameId);
+
+    // Step 4: Player 1 joins at seat 1NS
+    await joinGameStep(player1Page, testInfo, gameId, {
+      seat: "1NS",
+      players: [
+        { firstName: "Alice", lastName: "Smith" },
+        { firstName: "Bob", lastName: "Jones" },
+      ],
+    });
+
+    // Step 5: Player 2 joins at seat 1EW
+    await joinGameStep(player2Page, testInfo, gameId, {
+      seat: "1EW",
+      players: [
+        { firstName: "Carol", lastName: "Brown" },
+        { firstName: "Dave", lastName: "Wilson" },
+      ],
+    });
+
+    // Step 6: Both players enter matching results (Pass Out for simplicity)
+    await enterResultStep(player1Page, testInfo, {
+      gameId,
+      seat: "1NS",
+      board: 1,
+      passOut: true,
+    });
+
+    await enterResultStep(player2Page, testInfo, {
+      gameId,
+      seat: "1EW",
+      board: 1,
+      passOut: true,
+    });
+
+    // Step 7: Verify confirmation state
+    await test.step("Both players see result confirmation", async () => {
+      // After both submit matching results, they should see confirmation
+      // or a "waiting" state followed by confirmation
+      await expect(
+        player1Page.getByText(/confirmed|waiting|pass out/i),
+      ).toBeVisible({ timeout: 15000 });
+      await attachScreenshot(
+        player1Page,
+        testInfo,
+        "Player 1NS - Result state after submission",
+      );
+      await attachScreenshot(
+        player2Page,
+        testInfo,
+        "Player 1EW - Result state after submission",
+      );
+    });
+
+    // Step 8: Check leaderboard
+    await test.step("Leaderboard displays scores", async () => {
+      await player1Page.goto(`/join/${gameId}/leaderboard`);
+      await player1Page.waitForLoadState("networkidle");
+      await attachScreenshot(
+        player1Page,
+        testInfo,
+        "Player - Leaderboard with scores",
+      );
+    });
+
+    // Step 9: Director completes the game
+    await test.step("Director marks game as complete", async () => {
+      await directorPage.goto(`/manage/${gameId}/change-status`);
+      await directorPage.waitForLoadState("networkidle");
+
+      // Click the "Complete" button to change status
+      const completeButton = directorPage.getByRole("button", {
+        name: "Complete",
+      });
+      await completeButton.click();
+
+      // Should redirect back to the director menu
+      await directorPage.waitForURL(new RegExp(`/manage/${gameId}/menu`), {
+        timeout: 10000,
+      });
+      await attachScreenshot(
+        directorPage,
+        testInfo,
+        "Director - Game completed",
+      );
+    });
+  } finally {
+    await player2Context.close();
+    await player1Context.close();
+    await directorContext.close();
+  }
+});

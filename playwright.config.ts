@@ -68,6 +68,41 @@ export default defineConfig({
     //   name: 'Google Chrome',
     //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
     // },
+
+    /* User journey tests — mobile device emulation */
+    {
+      name: "journeys-phone",
+      testDir: "./tests/journeys",
+      testMatch: "*.journey.ts",
+      use: {
+        ...devices["iPhone 12"],
+        baseURL: "http://localhost:3000",
+        trace: "on-first-retry",
+        screenshot: "only-on-failure",
+      },
+      timeout: 120_000,
+      expect: { timeout: 15_000 },
+      fullyParallel: false,
+    },
+    {
+      name: "journeys-tablet",
+      testDir: "./tests/journeys",
+      testMatch: "*.journey.ts",
+      use: {
+        viewport: { width: 800, height: 1280 },
+        deviceScaleFactor: 1.5,
+        hasTouch: true,
+        isMobile: true,
+        userAgent:
+          "Mozilla/5.0 (Linux; Android 11; KFTRWI) AppleWebKit/537.36 (KHTML, like Gecko) Silk/98.4.1 like Chrome/98.0.4758.136 Mobile Safari/537.36",
+        baseURL: "http://localhost:3000",
+        trace: "on-first-retry",
+        screenshot: "only-on-failure",
+      },
+      timeout: 120_000,
+      expect: { timeout: 15_000 },
+      fullyParallel: false,
+    },
   ],
 
   /* Run your local dev server before starting the tests */
