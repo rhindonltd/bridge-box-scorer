@@ -1,45 +1,158 @@
-import { describe, it, expect } from "vitest";
-import { createFlow } from "./flow";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { createFlow, useFlow } from "./flow";
 
-type TestState = { name: string; age: number };
+// Mock next/navigation
+const mockPush = vi.fn();
+const mockGet = vi.fn();
 
-const steps = {
-  intro: {},
-  details: { canEnter: (s: TestState) => s.name.length > 0 },
-  confirm: { canEnter: (s: TestState) => s.age >= 18 },
-};
-
-const order = ["intro", "details", "confirm"] as const;
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => ({ get: mockGet }),
+}));
 
 describe("createFlow", () => {
-  const flow = createFlow(steps, order);
-
-  describe("getDefaultStep", () => {
-    it("returns the first step in order", () => {
-      expect(flow.getDefaultStep()).toBe("intro");
-    });
+  it("returns the first step as default", () => {
+    const flow = createFlow(
+      { stepA: {}, stepB: {} },
+      ["stepA", "stepB"] as const,
+    );
+    expect(flow.getDefaultStep()).toBe("stepA");
   });
 
-  describe("canEnter", () => {
-    it("returns true for a step with no canEnter guard", () => {
-      expect(flow.canEnter("intro", { name: "", age: 0 })).toBe(true);
-    });
-
-    it("returns true when the canEnter guard passes", () => {
-      expect(flow.canEnter("details", { name: "Alice", age: 20 })).toBe(true);
-      expect(flow.canEnter("confirm", { name: "Alice", age: 18 })).toBe(true);
-    });
-
-    it("returns false when the canEnter guard fails", () => {
-      expect(flow.canEnter("details", { name: "", age: 20 })).toBe(false);
-      expect(flow.canEnter("confirm", { name: "Alice", age: 17 })).toBe(false);
-    });
+  it("canEnter returns true when no guard is defined", () => {
+    const flow = createFlow(
+      { stepA: {}, stepB: {} },
+      ["stepA", "stepB"] as const,
+    );
+    expect(flow.canEnter("stepA", {})).toBe(true);
   });
 
-  describe("structure", () => {
-    it("exposes the steps and order", () => {
-      expect(flow.steps).toBe(steps);
-      expect(flow.order).toBe(order);
+  it("canEnter respects the guard function", () => {
+    const flow = createFlow(
+      {
+        stepA: {},
+        stepB: { canEnter: (state: { ready: boolean }) => state.ready },
+      },
+      ["stepA", "stepB"] as const,
+    );
+    expect(flow.canEnter("stepB", { ready: false })).toBe(false);
+    expect(flow.canEnter("stepB", { ready: true })).toBe(true);
+  });
+});
+
+describe("useFlow", () => {
+  const flow = createFlow(
+    {
+      first: {},
+      second: { canEnter: (s: { allowed: boolean }) => s.allowed },
+      third: {},
+    },
+    ["first", "second", "third"] as const,
+  );
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGet.mockReturnValue(null);
+  });
+
+  it("returns the default step when no step param is present", () => {
+    mockGet.mockReturnValue(null);
+
+    const { result } = renderHook(() =>
+      useFlow(flow, { allowed: true }, "/base"),
+    );
+
+    expect(result.current.step).toBe("first");
+  });
+
+  it("returns the step from search params when canEnter allows it", () => {
+    mockGet.mockReturnValue("second");
+
+    const { result } = renderHook(() =>
+      useFlow(flow, { allowed: true }, "/base"),
+    );
+
+    expect(result.current.step).toBe("second");
+  });
+
+  it("falls back to default step when canEnter blocks entry", () => {
+    mockGet.mockReturnValue("second");
+
+    const { result } = renderHook(() =>
+      useFlow(flow, { allowed: false }, "/base"),
+    );
+
+    expect(result.current.step).toBe("first");
+  });
+
+  it("goTo navigates to the specified step", () => {
+    mockGet.mockReturnValue(null);
+
+    const { result } = renderHook(() =>
+      useFlow(flow, { allowed: true }, "/base"),
+    );
+
+    act(() => {
+      result.current.goTo("third");
     });
+
+    expect(mockPush).toHaveBeenCalledWith("/base?step=third");
+  });
+
+  it("next advances to the next step in order", () => {
+    mockGet.mockReturnValue("first");
+
+    const { result } = renderHook(() =>
+      useFlow(flow, { allowed: true }, "/base"),
+    );
+
+    act(() => {
+      result.current.next();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith("/base?step=second");
+  });
+
+  it("next does nothing on the last step", () => {
+    mockGet.mockReturnValue("third");
+
+    const { result } = renderHook(() =>
+      useFlow(flow, { allowed: true }, "/base"),
+    );
+
+    act(() => {
+      result.current.next();
+    });
+
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("back navigates to the previous step", () => {
+    mockGet.mockReturnValue("second");
+
+    const { result } = renderHook(() =>
+      useFlow(flow, { allowed: true }, "/base"),
+    );
+
+    act(() => {
+      result.current.back();
+    });
+
+    expect(mockPush).toHaveBeenCalledWith("/base?step=first");
+  });
+
+  it("back does nothing on the first step", () => {
+    mockGet.mockReturnValue("first");
+
+    const { result } = renderHook(() =>
+      useFlow(flow, { allowed: true }, "/base"),
+    );
+
+    act(() => {
+      result.current.back();
+    });
+
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

@@ -101,6 +101,32 @@ describe("formatOutcomeForUsebio", () => {
       });
     });
   });
+
+  describe("director override outcomes (line 51 branch)", () => {
+    it("returns empty fields for AVE (average) outcome", () => {
+      expect(formatOutcomeForUsebio("AVE" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
+
+    it("returns empty fields for AVE+ outcome", () => {
+      expect(formatOutcomeForUsebio("AVE+" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
+
+    it("returns empty fields for AVE- outcome", () => {
+      expect(formatOutcomeForUsebio("AVE-" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
+  });
 });
 
 describe("formatLeadForUsebio", () => {

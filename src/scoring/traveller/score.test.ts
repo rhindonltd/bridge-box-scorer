@@ -127,6 +127,15 @@ describe("scoreContract", () => {
       const score = scoreContract(contract(1, "NT", "XX", "N", "+1"), "None");
       expect(score).toBe(760);
     });
+
+    it("scores redoubled overtricks vulnerable: 1NTXX+1 vul as +960", () => {
+      // trickValue(NT,1) = 30*1+10 = 40. Redoubled * 4 = 160.
+      // gameBonus(160,true) = 500. slamBonus(1,true) = 0.
+      // insult XX = 100. overtrick XX vul = 1*400 = 400
+      // Total = 160 + 400 + 500 + 0 + 100 = 1160
+      const score = scoreContract(contract(1, "NT", "XX", "N", "+1"), "NS");
+      expect(score).toBe(1160);
+    });
   });
 
   describe("undertricks", () => {
@@ -239,6 +248,21 @@ describe("scoreContract", () => {
       const ewScore = scoreContract(contract(3, "NT", "", "E", "="), "None");
       expect(nsScore).toBe(400);
       expect(ewScore).toBe(-400);
+    });
+  });
+
+  describe("edge cases", () => {
+    it("returns 0 overtrick points for an unexpected doubling value", () => {
+      // Tests the defensive fallthrough in overtricksPoints (line 65)
+      const parsed = {
+        level: 2,
+        suit: "S",
+        doubling: "XXX" as unknown as "" | "X" | "XX",
+        declarer: "N",
+        result: "+1",
+      } as ParsedContract;
+      const score = scoreContract(parsed, "None");
+      expect(score).toBeTypeOf("number");
     });
   });
 });

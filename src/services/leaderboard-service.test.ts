@@ -204,5 +204,51 @@ describe("leaderboard-service", () => {
       expect(score).toHaveBeenCalledWith(expect.anything(), "XIMP");
       expect(calculatePairXIMPResults).toHaveBeenCalled();
     });
+
+    it("uses XIMP scoring mode for XIMP-type games (line 63, 72)", async () => {
+      const mockDb = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockResolvedValue([
+            { boardNumber: 1, ns: "1", ew: "2", confirmedResult: "4HS+1", directorOverrideResult: null },
+            { boardNumber: 1, ns: "3", ew: "4", confirmedResult: "3NTN=", directorOverrideResult: null },
+          ]),
+        }),
+      };
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+
+      vi.mocked(score).mockReturnValue({
+        type: "PAIR_XIMP",
+        board: 1,
+        lines: [
+          { nsId: "1", ewId: "2", nsXimps: 5, ewXimps: -5 },
+          { nsId: "3", ewId: "4", nsXimps: -5, ewXimps: 5 },
+        ],
+      } as any);
+
+      vi.mocked(calculatePairXIMPResults).mockReturnValue({
+        type: "PAIR_XIMP",
+        mode: "PAIR",
+        scoring: "XIMP",
+        lines: [
+          { pairId: "1", totalXimps: 5 },
+          { pairId: "3", totalXimps: -5 },
+        ],
+      } as any);
+
+      vi.mocked(findPairs).mockResolvedValue([]);
+
+      const game = {
+        gameId: "game-1",
+        gameType: "PAIRS",
+        scoringType: "XIMP",
+      } as BridgeGame;
+
+      const result = await computeLeaderboard(game);
+
+      expect(result.type).toBe("PAIR_XIMP");
+      expect(score).toHaveBeenCalledWith(expect.anything(), "XIMP");
+      expect(calculatePairXIMPResults).toHaveBeenCalledTimes(1);
+      expect(calculateOverallMPResults).not.toHaveBeenCalled();
+    });
   });
 });

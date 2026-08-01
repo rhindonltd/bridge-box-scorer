@@ -132,7 +132,7 @@ function createMitchellTable(params: TableParams): Table<"PAIR"> {
  * For skip Mitchell: at the midpoint, EW skips one extra table.
  * The formula produces N distinct values mod N for a complete movement.
  */
-function computeEwDistance(
+export function computeEwDistance(
   roundNumber: number,
   skipAfter: number,
   tables: number,

@@ -77,6 +77,13 @@ describe("BridgeTimerEngine", () => {
       const engine = new BridgeTimerEngine(makeState({ phase: "move" }));
       expect(engine.getRemainingMs()).toBe(60_000);
     });
+
+    it("returns full phase duration when running but phaseStartedAt is null", () => {
+      const engine = new BridgeTimerEngine(
+        makeState({ isRunning: true, phaseStartedAt: null }),
+      );
+      expect(engine.getRemainingMs()).toBe(420_000);
+    });
   });
 
   describe("start", () => {

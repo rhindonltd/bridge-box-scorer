@@ -10,7 +10,7 @@ vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
 
 import { findTimerState } from "@/db/games/shared/queries/find-timer-state";
 import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
-import { createEngine, getEngine } from "./game-store";
+import { createEngine, getEngine, getAllEngines } from "./game-store";
 import type { TimerState } from "./timer-state";
 
 describe("game-store", () => {
@@ -102,6 +102,19 @@ describe("game-store", () => {
         round: 2,
         isRunning: false,
       });
+    });
+  });
+
+  describe("getAllEngines", () => {
+    it("returns the map of all created engines", async () => {
+      vi.mocked(updateTimerState).mockResolvedValue(undefined);
+
+      await createEngine("PAIRS", "all-engines-1", 3, 5, 420, 60);
+
+      const allEngines = getAllEngines();
+
+      expect(allEngines).toBeInstanceOf(Map);
+      expect(allEngines.has("PAIRS_all-engines-1")).toBe(true);
     });
   });
 });

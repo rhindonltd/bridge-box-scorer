@@ -179,4 +179,19 @@ describe("registerUpdateTablesHandler", () => {
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal server error" });
   });
+
+  it("does not throw when cb is undefined and an internal error occurs", async () => {
+    vi.mocked(findGameById).mockRejectedValue(new Error("DB error"));
+
+    const socket = makeSocket();
+    const io = makeIo();
+    registerUpdateTablesHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+
+    // Should not throw when cb is not provided
+    await expect(
+      handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, undefined),
+    ).resolves.not.toThrow();
+  });
 });

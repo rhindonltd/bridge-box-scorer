@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateMitchell, MitchellMovementSpec } from "./mitchell";
+import { generateMitchell, MitchellMovementSpec, computeEwDistance } from "./mitchell";
 
 // Helper: collect all (nsId, ewId) pairings across the movement
 function getAllPairings(result: ReturnType<typeof generateMitchell>) {
@@ -511,6 +511,31 @@ describe("generateMitchell", () => {
       const pairings = getAllPairings(result);
       const encounters = new Set(pairings.map((p) => `${p.ns}-${p.ew}`));
       expect(encounters.size).toBe(pairings.length);
+    });
+  });
+
+  describe("computeEwDistance", () => {
+    it("returns roundNumber - 1 when roundNumber <= skipAfter (standard progression)", () => {
+      // 6 tables, skipAfter = 3
+      expect(computeEwDistance(1, 3, 6)).toBe(0);
+      expect(computeEwDistance(2, 3, 6)).toBe(1);
+      expect(computeEwDistance(3, 3, 6)).toBe(2);
+    });
+
+    it("returns roundNumber when after skip but before last round", () => {
+      // 6 tables, skipAfter = 3, roundNumber between skipAfter+1 and tables-1
+      expect(computeEwDistance(4, 3, 6)).toBe(4);
+      expect(computeEwDistance(5, 3, 6)).toBe(5);
+    });
+
+    it("returns skipAfter for the last round of a skip Mitchell", () => {
+      // 6 tables, skipAfter = 3, roundNumber = tables = 6
+      expect(computeEwDistance(6, 3, 6)).toBe(3);
+    });
+
+    it("returns skipAfter when roundNumber equals tables (8 tables)", () => {
+      // 8 tables, skipAfter = 4, roundNumber = 8
+      expect(computeEwDistance(8, 4, 8)).toBe(4);
     });
   });
 });

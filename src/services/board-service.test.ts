@@ -101,5 +101,28 @@ describe("board-service", () => {
         expect(result[0].participants.ewNames).toBeNull();
       }
     });
+
+    it("returns null status when board status is null (line 38)", async () => {
+      const mockDb = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([
+              { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "2EW", confirmedResult: null, directorOverrideResult: null, status: null },
+            ]),
+          }),
+        }),
+      };
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+
+      vi.mocked(findPairs).mockResolvedValue([
+        { initialSeat: "1NS", type: "PAIR", player1: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: null }, player2: { id: 2, firstName: "Bob", lastName: "Jones", nationalId: null } },
+        { initialSeat: "2EW", type: "PAIR", player1: { id: 3, firstName: "Carol", lastName: "Brown", nationalId: null }, player2: { id: 4, firstName: "Dave", lastName: "Wilson", nationalId: null } },
+      ] as any);
+
+      const result = await getBoardInstances("game-1", "PAIRS", 1);
+
+      expect(result[0].currentResult).toBeNull();
+      expect(result[0].status).toBeNull();
+    });
   });
 });

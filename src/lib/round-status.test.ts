@@ -187,4 +187,22 @@ describe("computeRoundStatus", () => {
     expect(result[0].missingRounds).toEqual([1, 2]);
     expect(result[0].hasMissingPreviousRounds).toBe(true);
   });
+
+  it("does not report a round as missing when there are no boards for that round number", () => {
+    // Table has boards for rounds 1 and 3, but no boards at all for round 2
+    // (gap in round numbering). Round 2 should NOT appear in missingRounds
+    // because there are simply no boards to check.
+    const boards: BoardEntry[] = [
+      { tableNumber: 1, roundNumber: 1, boardNumber: 1, hasResult: true },
+      { tableNumber: 1, roundNumber: 1, boardNumber: 2, hasResult: true },
+      // No boards for round 2 at all
+      { tableNumber: 1, roundNumber: 3, boardNumber: 5, hasResult: true },
+      { tableNumber: 1, roundNumber: 3, boardNumber: 6, hasResult: false },
+    ];
+    const result = computeRoundStatus(boards);
+    expect(result[0].currentRound).toBe(3);
+    // Round 2 has no boards, so it is NOT missing (nothing to be unentered)
+    expect(result[0].missingRounds).toEqual([]);
+    expect(result[0].hasMissingPreviousRounds).toBe(false);
+  });
 });
