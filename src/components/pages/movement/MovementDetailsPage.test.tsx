@@ -51,7 +51,7 @@ describe("MovementDetailsPage", () => {
   it("applies layout structure classes", () => {
     const { container } = render(<MovementDetailsPage {...baseProps} />);
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("h-dvh", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("flex-1", "flex", "flex-col");
   });
 
   it("wraps movement name in styled header", () => {

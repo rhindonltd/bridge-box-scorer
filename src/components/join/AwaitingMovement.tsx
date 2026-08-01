@@ -1,6 +1,6 @@
 export function AwaitingMovement() {
   return (
-    <div className="flex items-center justify-center min-h-dvh">
+    <div className="flex items-center justify-center flex-1">
       Awaiting movement...
     </div>
   );

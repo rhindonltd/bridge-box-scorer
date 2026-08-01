@@ -24,13 +24,11 @@ export default function MainMenu() {
   }
 
   return (
-    <div style={{ margin: "0 auto" }}>
-      <MainMenuPage
-        onCreateNewGame={createNewGame}
-        onJoinGame={joinGame}
-        onManagePastGames={managePastGames}
-        onOpenSettings={openSettings}
-      />
-    </div>
+    <MainMenuPage
+      onCreateNewGame={createNewGame}
+      onJoinGame={joinGame}
+      onManagePastGames={managePastGames}
+      onOpenSettings={openSettings}
+    />
   );
 }

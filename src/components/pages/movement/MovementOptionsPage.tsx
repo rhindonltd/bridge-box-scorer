@@ -36,7 +36,7 @@ export default function MovementOptionsPage({ tables, onSubmit }: Props) {
   const options = generateMissingPairs(tables);
 
   return (
-    <div className="h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       <div className="flex flex-row w-full">
         <GameInfo />
       </div>

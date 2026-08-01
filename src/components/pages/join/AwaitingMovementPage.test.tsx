@@ -24,6 +24,6 @@ describe("AwaitingMovementPage", () => {
   it("applies page layout classes", () => {
     const { container } = render(<AwaitingMovementPage />);
     const root = container.firstChild as HTMLElement;
-    expect(root).toHaveClass("min-h-dvh", "flex", "flex-col", "bg-gray-100");
+    expect(root).toHaveClass("flex-1", "flex", "flex-col");
   });
 });

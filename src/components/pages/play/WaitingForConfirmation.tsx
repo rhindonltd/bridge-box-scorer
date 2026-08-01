@@ -6,7 +6,7 @@ interface Props {
 
 export function WaitingForConfirmation({ boardNumber }: Props) {
   return (
-    <div className="h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       <PlayHeader detail={`Board ${boardNumber}`} />
 
       <div className="flex-1 flex flex-col items-center justify-center p-6">

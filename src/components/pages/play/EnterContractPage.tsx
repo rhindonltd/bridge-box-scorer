@@ -108,7 +108,7 @@ export default function EnterContractPage({
         : "-";
 
   return (
-    <div className="h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       {/* Context bar */}
       <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-start justify-between text-base shrink-0">
         <div className="truncate">

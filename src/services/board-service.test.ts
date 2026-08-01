@@ -64,10 +64,14 @@ describe("board-service", () => {
       expect(result).toHaveLength(2);
       expect(result[0].currentResult).toBe("3NTN=");
       expect(result[0].participants.type).toBe("PAIRS");
-      expect(result[0].participants.nsNames).toBe("Alice Smith & Bob Jones");
-      expect(result[0].participants.ewNames).toBe("Carol Brown & Dave Wilson");
+      if (result[0].participants.type === "PAIRS") {
+        expect(result[0].participants.nsNames).toBe("Alice Smith & Bob Jones");
+        expect(result[0].participants.ewNames).toBe("Carol Brown & Dave Wilson");
+      }
       expect(result[1].currentResult).toBeNull();
-      expect(result[1].participants.nsNames).toBe("Eve Green & Frank White");
+      if (result[1].participants.type === "PAIRS") {
+        expect(result[1].participants.nsNames).toBe("Eve Green & Frank White");
+      }
     });
 
     it("uses director override when available", async () => {
@@ -105,8 +109,11 @@ describe("board-service", () => {
 
       const result = await getBoardInstances("game-1", "PAIRS", 1);
 
-      expect(result[0].participants.nsNames).toBeNull();
-      expect(result[0].participants.ewNames).toBeNull();
+      expect(result[0].participants.type).toBe("PAIRS");
+      if (result[0].participants.type === "PAIRS") {
+        expect(result[0].participants.nsNames).toBeNull();
+        expect(result[0].participants.ewNames).toBeNull();
+      }
     });
   });
 
@@ -135,10 +142,12 @@ describe("board-service", () => {
       expect(result).toHaveLength(1);
       expect(result[0].currentResult).toBe("4HE+1");
       expect(result[0].participants.type).toBe("INDIVIDUAL");
-      expect(result[0].participants.nName).toBe("Alice Smith");
-      expect(result[0].participants.sName).toBe("Bob Jones");
-      expect(result[0].participants.eName).toBe("Carol Brown");
-      expect(result[0].participants.wName).toBe("Dave Wilson");
+      if (result[0].participants.type === "INDIVIDUAL") {
+        expect(result[0].participants.nName).toBe("Alice Smith");
+        expect(result[0].participants.sName).toBe("Bob Jones");
+        expect(result[0].participants.eName).toBe("Carol Brown");
+        expect(result[0].participants.wName).toBe("Dave Wilson");
+      }
     });
 
     it("returns null for currentResult when neither confirmed nor override exists", async () => {

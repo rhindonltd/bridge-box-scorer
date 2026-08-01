@@ -133,7 +133,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       boardNumber: 7,
       result: "3NTN=",
     });
-    expect(event2).toMatchObject(event1);
+    expect(event2).toMatchObject(event1 as Record<string, unknown>);
 
     client2.disconnect();
   });

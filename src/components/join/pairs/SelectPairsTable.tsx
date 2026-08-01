@@ -25,7 +25,7 @@ export default function SelectPairsTable({
   const tableNumbers = Array.from({ length: tables }, (_, i) => i + 1);
 
   return (
-    <div className="min-h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       <div className="px-4 mt-4 mb-2">
         <span>Please select the table and direction you are sitting:</span>
       </div>

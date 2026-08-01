@@ -10,7 +10,7 @@ export function JoinMenuPage({
   onShowLeaderboard,
 }: Props) {
   return (
-    <div className="min-h-dvh flex flex-col overflow-y-auto relative bg-white">
+    <div className="flex-1 flex flex-col overflow-y-auto relative">
       {/* Logo — scales down on small screens */}
       <div className="flex flex-col items-center mt-8 mb-8 px-6">
         <img
