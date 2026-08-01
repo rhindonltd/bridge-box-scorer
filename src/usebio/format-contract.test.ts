@@ -92,6 +92,14 @@ describe("formatOutcomeForUsebio", () => {
         result: "",
       });
     });
+
+    it("returns empty fields for invalid/unrecognized outcome", () => {
+      expect(formatOutcomeForUsebio("INVALID" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
   });
 });
 
@@ -109,5 +117,9 @@ describe("formatLeadForUsebio", () => {
 
   it("returns empty string for empty string", () => {
     expect(formatLeadForUsebio("")).toBe("");
+  });
+
+  it("returns empty string for a single character (too short)", () => {
+    expect(formatLeadForUsebio("S")).toBe("");
   });
 });

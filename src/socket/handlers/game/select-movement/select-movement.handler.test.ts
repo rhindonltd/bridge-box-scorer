@@ -146,4 +146,38 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     expect(cb).toHaveBeenCalledWith({ success: false });
   });
+
+  it("processes a mitchell movement spec", async () => {
+    const socket = makeDirectorSocket();
+    registerSelectMovementHandler(socket as any);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler(
+      {
+        gameId: "g1",
+        type: "PAIRS",
+        mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
+        directorToken: "test-token",
+      },
+      cb,
+    );
+
+    expect(mockTransaction).toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({ success: true });
+  });
+
+  it("returns error when no movement specified (no id and no mitchell)", async () => {
+    const socket = makeDirectorSocket();
+    registerSelectMovementHandler(socket as any);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler({ gameId: "g1", type: "PAIRS", directorToken: "test-token" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "No movement specified" });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
 });

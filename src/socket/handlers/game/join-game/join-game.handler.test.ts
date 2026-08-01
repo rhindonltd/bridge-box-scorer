@@ -49,4 +49,19 @@ describe("registerJoinGameHandler (unit)", () => {
 
     expect(socket.join).toHaveBeenCalled();
   });
+
+  it("calls cb with success: false when join throws", async () => {
+    socket.join = vi.fn().mockImplementation(() => {
+      throw new Error("join failed");
+    });
+
+    registerJoinGameHandler(socket as any);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler({ gameId: "game-1" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({ success: false });
+  });
 });

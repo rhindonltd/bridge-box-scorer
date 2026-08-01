@@ -1,6 +1,6 @@
 import { BridgeTimerEngine } from "./bridge-timer-engine";
 
-class BridgeTimerService {
+export class BridgeTimerService {
   private interval: NodeJS.Timeout | null = null;
 
   constructor(

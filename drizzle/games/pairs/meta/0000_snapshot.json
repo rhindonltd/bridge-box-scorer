@@ -66,29 +66,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "ns_result": {
-          "name": "ns_result",
+        "confirmed_result": {
+          "name": "confirmed_result",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "ew_result": {
-          "name": "ew_result",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ns_lead": {
-          "name": "ns_lead",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ew_lead": {
-          "name": "ew_lead",
+        "confirmed_lead": {
+          "name": "confirmed_lead",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

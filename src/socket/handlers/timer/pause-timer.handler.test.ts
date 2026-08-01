@@ -111,4 +111,35 @@ describe("registerPauseTimerHandler", () => {
 
     expect(getEngine).not.toHaveBeenCalled();
   });
+
+  it("does nothing if payload is invalid", async () => {
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerPauseTimerHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    await handler({ invalid: true });
+
+    expect(getEngine).not.toHaveBeenCalled();
+  });
+
+  it("catches and logs errors from engine.pause()", async () => {
+    const mockEngine = {
+      pause: vi.fn().mockImplementation(() => { throw new Error("pause error"); }),
+      getState: vi.fn(),
+    };
+
+    vi.mocked(getEngine).mockResolvedValue(mockEngine as any);
+
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerPauseTimerHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    await handler({ gameType: "PAIRS", gameId: "game-2", directorToken: "test-token" });
+
+    expect(updateTimerState).not.toHaveBeenCalled();
+  });
 });

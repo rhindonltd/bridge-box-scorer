@@ -137,4 +137,46 @@ describe("registerUpdateTablesHandler", () => {
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     expect(findGameById).not.toHaveBeenCalled();
   });
+
+  it("rejects invalid payload (missing tables)", async () => {
+    const socket = makeSocket();
+    const io = makeIo();
+    registerUpdateTablesHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ gameId: "g1", directorToken: "test-token" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Invalid payload" });
+    expect(findGameById).not.toHaveBeenCalled();
+  });
+
+  it("returns error when game is not found", async () => {
+    vi.mocked(findGameById).mockResolvedValue(null as any);
+
+    const socket = makeSocket();
+    const io = makeIo();
+    registerUpdateTablesHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Game not found" });
+    expect(updateTableCount).not.toHaveBeenCalled();
+  });
+
+  it("returns error on internal failure", async () => {
+    vi.mocked(findGameById).mockRejectedValue(new Error("DB error"));
+
+    const socket = makeSocket();
+    const io = makeIo();
+    registerUpdateTablesHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
+
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal server error" });
+  });
 });

@@ -136,4 +136,33 @@ describe("calculateOverallMPResults", () => {
     expect(result.lines[0].pairId).toBe("NS");
     expect(result.lines[1].pairId).toBe("EW");
   });
+
+  it("handles maxMP of 0 gracefully (returns 0 sort value)", () => {
+    const travellers: ScoredTravellerOfType<"PAIR_MP">[] = [
+      {
+        type: "PAIR_MP",
+        board: 1,
+        lines: [
+          {
+            outcome: "PO",
+            score: 0,
+            nsId: "NS",
+            ewId: "EW",
+            nsMatchPoints: 0,
+            ewMatchPoints: 0,
+            maxMatchPoints: 0,
+          },
+        ],
+      },
+    ];
+
+    const result = calculateOverallMPResults(travellers);
+
+    // Both pairs have 0/0 so they should be tied
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0].totalMP).toBe(0);
+    expect(result.lines[0].maxMP).toBe(0);
+    expect(result.lines[1].totalMP).toBe(0);
+    expect(result.lines[1].maxMP).toBe(0);
+  });
 });

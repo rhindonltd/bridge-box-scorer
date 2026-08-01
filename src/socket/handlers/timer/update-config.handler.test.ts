@@ -158,4 +158,43 @@ describe("registerUpdateConfigHandler", () => {
 
     expect(getEngine).not.toHaveBeenCalled();
   });
+
+  it("does nothing if payload is invalid", async () => {
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerUpdateConfigHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    await handler({ invalid: true });
+
+    expect(getEngine).not.toHaveBeenCalled();
+  });
+
+  it("catches and logs errors from engine.updateConfig()", async () => {
+    const mockEngine = {
+      updateConfig: vi.fn().mockImplementation(() => { throw new Error("update error"); }),
+      getState: vi.fn(),
+    };
+
+    vi.mocked(getEngine).mockResolvedValue(mockEngine as any);
+
+    const socket = createMockSocket();
+    const io = createMockIo();
+
+    registerUpdateConfigHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-5",
+      directorToken: "test-token",
+      boardsPerRound: 4,
+      totalRounds: 6,
+      playDuration: 480,
+      moveDuration: 90,
+    });
+
+    expect(updateTimerState).not.toHaveBeenCalled();
+  });
 });
