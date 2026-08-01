@@ -37,7 +37,7 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("INDIVIDUAL", "g1", engine, deps);
+    scheduleGame("PAIRS", "g1", engine, deps);
 
     // Advance past the delay (remaining + 1000ms)
     await vi.advanceTimersByTimeAsync(4000);
@@ -53,7 +53,7 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("INDIVIDUAL", "g1", engine, deps);
+    scheduleGame("PAIRS", "g1", engine, deps);
 
     vi.advanceTimersByTime(10000);
 
@@ -67,7 +67,7 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("INDIVIDUAL", "g1", engine, deps);
+    scheduleGame("PAIRS", "g1", engine, deps);
 
     vi.advanceTimersByTime(100000);
 

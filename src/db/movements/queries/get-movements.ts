@@ -1,23 +1,11 @@
 import { getDb } from "@/db/movements";
 import {
-  individualmovementspec,
   PairMovementSpec,
   pairmovementspec,
   TeamMovementSpec,
   teammovementspec,
 } from "@/db/movements/schema";
 import { eq } from "drizzle-orm";
-import { IndividualMovementSpec } from "../schema";
-
-export async function getIndividualMovementSpecsForTables(
-  tables: number,
-): Promise<IndividualMovementSpec[]> {
-  const db = await getDb();
-  return db
-    .select()
-    .from(individualmovementspec)
-    .where(eq(individualmovementspec.tables, tables));
-}
 
 export async function getPairMovementSpecsForTables(
   tables: number,

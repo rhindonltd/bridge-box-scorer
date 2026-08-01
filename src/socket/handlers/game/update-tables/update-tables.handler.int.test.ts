@@ -22,10 +22,6 @@ vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual/queries/find-individuals", () => ({
-  findIndividuals: vi.fn(),
-}));
-
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";

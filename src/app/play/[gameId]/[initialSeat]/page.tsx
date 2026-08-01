@@ -462,7 +462,7 @@ function BoardResultsLoader({
       .then((r) => r.json())
       .then((data) => {
         if (data.instances) {
-          const mode = gameType === "INDIVIDUAL" ? "INDIVIDUAL" : "PAIR";
+          const mode = "PAIR";
           const scoringMode = scoringType === "IMP" || scoringType === "XIMP" ? "XIMP" : "MP";
 
           const lines = data.instances

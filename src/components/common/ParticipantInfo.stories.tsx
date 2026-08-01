@@ -18,7 +18,7 @@ type Story = StoryObj<typeof ParticipantInfo>;
 export const Individual: Story = {
   decorators: [
     withAssignment({
-      type: "INDIVIDUAL",
+      type: "PAIR",
       id: "12E",
     }),
   ],

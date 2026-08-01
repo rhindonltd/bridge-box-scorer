@@ -1,2 +1,2 @@
-export const GameTypes = ["INDIVIDUAL", "PAIRS"] as const;
+export const GameTypes = ["PAIRS", "TEAMS"] as const;
 export type GameType = (typeof GameTypes)[number];

@@ -14,16 +14,8 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual/actions/delete-participant", () => ({
-  deleteParticipant: vi.fn(),
-}));
-
 vi.mock("@/db/games/pairs/actions/delete-participant", () => ({
   deleteParticipant: vi.fn(),
-}));
-
-vi.mock("@/db/games/individual/queries/find-individuals", () => ({
-  findIndividuals: vi.fn(),
 }));
 
 vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
@@ -33,9 +25,7 @@ vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { deleteParticipant as deletePairParticipant } from "@/db/games/pairs/actions/delete-participant";
-import { deleteParticipant as deleteIndividualParticipant } from "@/db/games/individual/actions/delete-participant";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
-import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 
 describe("registerEvictParticipantHandler (integration)", () => {
   let closeServer: () => Promise<void>;
@@ -107,35 +97,6 @@ describe("registerEvictParticipantHandler (integration)", () => {
     });
 
     expect(result).toMatchObject({ success: false });
-  });
-
-  it("handles INDIVIDUAL game type", async () => {
-    vi.mocked(findGameById).mockResolvedValue({
-      gameId: "game-1", gameType: "INDIVIDUAL",
-    } as any);
-    vi.mocked(deleteIndividualParticipant).mockResolvedValue(undefined as any);
-    vi.mocked(findIndividuals).mockResolvedValue([]);
-
-    const { client, close } = await createSocketTestServer((io) => {
-      io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
-        registerEvictParticipantHandler(socket, io);
-      });
-    });
-    closeServer = close;
-
-    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "game-1" });
-
-    const participantsPromise = waitForEvent(client, SocketEvents.PARTICIPANTS);
-
-    const result = await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
-      gameId: "game-1", seat: "1N", directorToken: "test-token",
-    });
-
-    expect(result).toEqual({ success: true });
-    const event = await participantsPromise;
-    expect(event).toHaveProperty("participants");
-    expect(deleteIndividualParticipant).toHaveBeenCalledWith("game-1", "1N");
   });
 
   it("returns error when game not found", async () => {

@@ -7,14 +7,6 @@ vi.mock("@/db/games/shared/actions/create-player", () => ({
   createPlayer: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual/actions/create-participant", () => ({
-  createParticipant: vi.fn(),
-}));
-
-vi.mock("@/db/games/individual/queries/find-individuals", () => ({
-  findIndividuals: vi.fn(),
-}));
-
 vi.mock("@/db/games/pairs/actions/create-participant", () => ({
   createParticipant: vi.fn(),
 }));
@@ -28,8 +20,6 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 import { createPlayer } from "@/db/games/shared/actions/create-player";
-import { createParticipant as createIndividual } from "@/db/games/individual/actions/create-participant";
-import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 import { createParticipant as createPair } from "@/db/games/pairs/actions/create-participant";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
@@ -82,9 +72,10 @@ describe("registerCreateParticipantHandler (unit)", () => {
       {
         gameId: "g1",
         newParticipant: {
-          type: "INDIVIDUAL",
-          initialSeat: "1N",
-          player: { firstName: "A", lastName: "B" },
+          type: "PAIR",
+          initialSeat: "1NS",
+          player1: { firstName: "A", lastName: "B" },
+          player2: { firstName: "C", lastName: "D" },
         },
       },
       cb,
@@ -92,82 +83,6 @@ describe("registerCreateParticipantHandler (unit)", () => {
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     expect(createPlayer).not.toHaveBeenCalled();
-  });
-
-  describe("INDIVIDUAL participant", () => {
-    it("creates player + participant, emits PARTICIPANTS, returns key", async () => {
-      const socket = makeDirectorSocket();
-      const emitFn = vi.fn();
-      const io = makeIo(emitFn);
-
-      registerCreateParticipantHandler(socket as any, io as any);
-      const handler = socket.on.mock.calls[0][1];
-      const cb = vi.fn();
-
-      vi.mocked(createPlayer).mockResolvedValue({ id: 42 } as any);
-      vi.mocked(createIndividual).mockResolvedValue(undefined);
-      vi.mocked(findIndividuals).mockResolvedValue([
-        { type: "INDIVIDUAL", initialSeat: "1N", player: { id: 42, firstName: "A", lastName: "B", nationalId: null } },
-      ]);
-
-      await handler(
-        {
-          gameId: "game-1",
-          directorToken: "test-token",
-          newParticipant: {
-            type: "INDIVIDUAL",
-            initialSeat: "1N",
-            player: { firstName: "A", lastName: "B" },
-          },
-        },
-        cb,
-      );
-
-      expect(createPlayer).toHaveBeenCalledWith(
-        "INDIVIDUAL",
-        "game-1",
-        { firstName: "A", lastName: "B" },
-      );
-
-      expect(createIndividual).toHaveBeenCalledWith(
-        "game-1",
-        expect.objectContaining({ initialSeat: "1N", player: 42 }),
-      );
-
-      expect(io.to).toHaveBeenCalled();
-      expect(emitFn).toHaveBeenCalledWith(
-        SocketEvents.PARTICIPANTS,
-        expect.objectContaining({ participants: expect.any(Array) }),
-      );
-
-      expect(cb).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, key: expect.any(String) }),
-      );
-    });
-
-    it("calls cb with success: false on error", async () => {
-      const socket = makeDirectorSocket();
-      registerCreateParticipantHandler(socket as any, makeIo() as any);
-      const handler = socket.on.mock.calls[0][1];
-      const cb = vi.fn();
-
-      vi.mocked(createPlayer).mockRejectedValue(new Error("db fail"));
-
-      await handler(
-        {
-          gameId: "game-1",
-          directorToken: "test-token",
-          newParticipant: {
-            type: "INDIVIDUAL",
-            initialSeat: "1N",
-            player: { firstName: "A", lastName: "B" },
-          },
-        },
-        cb,
-      );
-
-      expect(cb).toHaveBeenCalledWith({ success: false });
-    });
   });
 
   describe("PAIR participant", () => {

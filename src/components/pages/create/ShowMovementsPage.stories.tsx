@@ -33,14 +33,6 @@ const pairsGame8Tables = {
   tables: 8,
 };
 
-const individualGame = {
-  ...pairsGame4Tables,
-  id: 4,
-  eventName: "Thursday Individual",
-  gameType: "INDIVIDUAL" as const,
-  tables: 5,
-};
-
 const meta: Meta<typeof ShowMovementsPage> = {
   title: "Pages/Create/ShowMovementsPage",
   component: ShowMovementsPage,
@@ -66,8 +58,4 @@ export const PairsOddTables: Story = {
 
 export const PairsEightTables: Story = {
   decorators: [withGame(pairsGame8Tables)],
-};
-
-export const Individual: Story = {
-  decorators: [withGame(individualGame)],
 };

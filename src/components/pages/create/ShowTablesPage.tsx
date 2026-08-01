@@ -1,7 +1,6 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import { ShowIndividualTablesPage } from "@/components/pages/create/individual/ShowIndividualTablesPage";
 import { ShowPairsTablesPage } from "@/components/pages/create/pairs/ShowPairsTablesPage";
 
 type Props = {
@@ -15,9 +14,5 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
     return null;
   }
 
-  return game.gameType == "INDIVIDUAL" ? (
-    <ShowIndividualTablesPage onShowMovementsPage={onShowMovementsPage} />
-  ) : (
-    <ShowPairsTablesPage onShowMovementsPage={onShowMovementsPage} />
-  );
+  return <ShowPairsTablesPage onShowMovementsPage={onShowMovementsPage} />;
 }

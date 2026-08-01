@@ -1,7 +1,6 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import { SelectIndividualSeatPage } from "@/components/pages/join/individual/SelectIndividualSeatPage";
 import { SelectPairSeatPage } from "@/components/pages/join/pairs/SelectPairSeatPage";
 import { Participant, Seat } from "@/model/participants";
 import { useState } from "react";
@@ -20,9 +19,5 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
     return null;
   }
 
-  return game.gameType == "INDIVIDUAL" ? (
-    <SelectIndividualSeatPage onSeatSelected={setSeat} />
-  ) : (
-    <SelectPairSeatPage onSeatSelected={setSeat} />
-  );
+  return <SelectPairSeatPage onSeatSelected={setSeat} />;
 }

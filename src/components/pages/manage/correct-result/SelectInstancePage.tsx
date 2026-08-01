@@ -10,23 +10,11 @@ interface PairsParticipants {
   ewNames?: string | null;
 }
 
-interface IndividualParticipants {
-  type: "INDIVIDUAL";
-  n: string;
-  s: string;
-  e: string;
-  w: string;
-  nName?: string | null;
-  sName?: string | null;
-  eName?: string | null;
-  wName?: string | null;
-}
-
 export interface BoardInstance {
   roundNumber: number;
   tableNumber: number;
   boardNumber: number;
-  participants: PairsParticipants | IndividualParticipants;
+  participants: PairsParticipants;
   currentResult: string | null;
   status: string | null;
 }
@@ -86,17 +74,8 @@ export function SelectInstancePage({
                   Table {instance.tableNumber}, Round {instance.roundNumber}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {instance.participants.type === "PAIRS" ? (
-                    <>
-                      NS: {instance.participants.ns} vs EW:{" "}
-                      {instance.participants.ew}
-                    </>
-                  ) : (
-                    <>
-                      N: {instance.participants.n}, S: {instance.participants.s},
-                      E: {instance.participants.e}, W: {instance.participants.w}
-                    </>
-                  )}
+                  NS: {instance.participants.ns} vs EW:{" "}
+                  {instance.participants.ew}
                 </div>
                 {instance.currentResult && (
                   <div className="text-sm flex items-center gap-2 mt-1">

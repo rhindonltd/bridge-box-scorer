@@ -1,5 +1,4 @@
 import {
-  AssignedIndividual,
   AssignedPair,
   TravellerParticipantMode,
 } from "@/model/participants";
@@ -44,7 +43,6 @@ export interface OverallTeamResult {
 /* ---------- mode -> id mapping ---------- */
 
 interface IdFieldByMode {
-  INDIVIDUAL: { playerId: string };
   PAIR: { pairId: string };
   TEAM: { teamId: string };
 }
@@ -52,10 +50,6 @@ interface IdFieldByMode {
 /* ---------- scoring mapping ---------- */
 
 interface ScoreByModeAndScoring {
-  INDIVIDUAL: {
-    MP: MatchpointOverallScore;
-    XIMP: CrossImpOverallScore;
-  };
   PAIR: {
     MP: MatchpointOverallScore;
     XIMP: CrossImpOverallScore;
@@ -101,19 +95,12 @@ export interface OverallScoreBase<
 
 /* ---------- unions ---------- */
 
-export type IndividualMatchpointOverallScore = OverallScoreBase<
-  "INDIVIDUAL",
-  "MP"
->;
-export type IndividualXIMPOverallScore = OverallScoreBase<"INDIVIDUAL", "XIMP">;
 export type PairMatchpointOverallScore = OverallScoreBase<"PAIR", "MP">;
 export type PairXIMPOverallScore = OverallScoreBase<"PAIR", "XIMP">;
 export type TeamMatchOverallScore = OverallScoreBase<"TEAM", "MATCH">;
 export type TeamOverallOverallScore = OverallScoreBase<"TEAM", "OVERALL">;
 
 export type OverallScore =
-  | IndividualMatchpointOverallScore
-  | IndividualXIMPOverallScore
   | PairMatchpointOverallScore
   | PairXIMPOverallScore
   | TeamMatchOverallScore
@@ -122,7 +109,6 @@ export type OverallScore =
 /* ---------- participants mapping ---------- */
 
 interface ParticipantsByOverallScoreMode {
-  INDIVIDUAL: AssignedIndividual[];
   PAIR: AssignedPair[];
   TEAM: AssignedTeam[];
 }

@@ -13,10 +13,6 @@ vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual/queries/find-individuals", () => ({
-  findIndividuals: vi.fn(),
-}));
-
 vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
@@ -24,7 +20,6 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
-import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerUpdateTablesHandler } from "./update-tables.handler";
 
@@ -105,14 +100,14 @@ describe("registerUpdateTablesHandler", () => {
   });
 
   it("allows reduction when no participants at removed tables", async () => {
-    const game = { gameId: "g1", tables: 4, gameType: "INDIVIDUAL" };
+    const game = { gameId: "g1", tables: 4, gameType: "PAIRS" };
     const updatedGame = { ...game, tables: 3 };
 
     vi.mocked(findGameById)
       .mockResolvedValueOnce(game as any)
       .mockResolvedValueOnce(updatedGame as any);
-    vi.mocked(findIndividuals).mockResolvedValue([
-      { initialSeat: "1N", type: "INDIVIDUAL", player: {} },
+    vi.mocked(findPairs).mockResolvedValue([
+      { initialSeat: "1NS", type: "PAIR", player1: {}, player2: {} },
     ] as any);
     vi.mocked(updateTableCount).mockResolvedValue(undefined);
 

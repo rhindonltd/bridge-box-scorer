@@ -61,7 +61,7 @@ export default function CreateEventForm({ onNext }: Props) {
             value={eventType}
             options={[
               { label: "Pairs/Teams", value: "PAIRS" },
-              { label: "Individual", value: "INDIVIDUAL" },
+              { label: "Teams", value: "TEAMS" },
             ]}
             onSelect={setEventType}
           />

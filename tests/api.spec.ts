@@ -211,32 +211,10 @@ test.describe("API Routes", () => {
       expect(Array.isArray(body)).toBe(true);
     });
 
-    test("GET /api/movements/individual/3 returns movements for 3 tables", async ({
-      request,
-    }) => {
-      const response = await request.get("/api/movements/individual/3");
-
-      expect(response.ok()).toBe(true);
-      expect(response.headers()["content-type"]).toContain("application/json");
-
-      const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
-    });
-
     test("GET /api/movements/pairs/1 returns movements for 1 table", async ({
       request,
     }) => {
       const response = await request.get("/api/movements/pairs/1");
-
-      expect(response.ok()).toBe(true);
-      const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
-    });
-
-    test("GET /api/movements/individual/1 returns movements for 1 table", async ({
-      request,
-    }) => {
-      const response = await request.get("/api/movements/individual/1");
 
       expect(response.ok()).toBe(true);
       const body = await response.json();

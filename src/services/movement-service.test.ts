@@ -5,20 +5,11 @@ vi.mock("@/db/games/pairs", () => ({
   getDb: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual", () => ({
-  getDb: vi.fn(),
-}));
-
 vi.mock("@/db/games/pairs/tables/boards", () => ({
   boards: "pairsBoards",
 }));
 
-vi.mock("@/db/games/individual/tables/boards", () => ({
-  boards: "individualBoards",
-}));
-
 import { getDb as getPairsDb } from "@/db/games/pairs";
-import { getDb as getIndividualDb } from "@/db/games/individual";
 
 describe("movement-service", () => {
   beforeEach(() => {
@@ -128,32 +119,6 @@ describe("movement-service", () => {
       const result = await getMovementWithProgress("game-1", "PAIRS");
 
       expect(result.tables[0].rounds[0].played).toBe(1);
-    });
-  });
-
-  describe("getMovementWithProgress (INDIVIDUAL)", () => {
-    it("groups individual boards by table and round", async () => {
-      const mockDb = {
-        select: vi.fn().mockReturnValue({
-          from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, n: "A", s: "B", e: "C", w: "D", confirmedResult: "3NTN=", directorOverrideResult: null, status: "CONFIRMED" },
-            { tableNumber: 1, roundNumber: 1, boardNumber: 2, n: "A", s: "B", e: "C", w: "D", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-          ]),
-        }),
-      };
-      vi.mocked(getIndividualDb).mockResolvedValue(mockDb as any);
-
-      const result = await getMovementWithProgress("game-1", "INDIVIDUAL");
-
-      expect(result.type).toBe("INDIVIDUAL");
-      expect(result.tables).toHaveLength(1);
-      expect(result.tables[0].rounds[0]).toMatchObject({
-        roundNumber: 1,
-        boardStart: 1,
-        boardEnd: 2,
-        played: 1,
-        total: 2,
-      });
     });
   });
 });

@@ -87,7 +87,7 @@ describe("registerUpdateConfigHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     await handler({
-      gameType: "INDIVIDUAL",
+      gameType: "PAIRS",
       gameId: "game-5",
       directorToken: "test-token",
       boardsPerRound: 4,
@@ -98,7 +98,7 @@ describe("registerUpdateConfigHandler", () => {
 
     expect(mockEngine.updateConfig).toHaveBeenCalledWith(4, 6, 480, 90);
     expect(updateTimerState).toHaveBeenCalledWith(
-      "INDIVIDUAL",
+      "PAIRS",
       "game-5",
       mockState,
     );
@@ -108,7 +108,7 @@ describe("registerUpdateConfigHandler", () => {
       expect.objectContaining(mockState),
     );
     expect(scheduleGame).toHaveBeenCalledWith(
-      "INDIVIDUAL",
+      "PAIRS",
       "game-5",
       mockEngine,
       expect.objectContaining({ updateTimerState, broadcast: expect.any(Function) }),
@@ -125,7 +125,7 @@ describe("registerUpdateConfigHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     await handler({
-      gameType: "INDIVIDUAL",
+      gameType: "PAIRS",
       gameId: "game-5",
       directorToken: "test-token",
       boardsPerRound: 4,
@@ -147,7 +147,7 @@ describe("registerUpdateConfigHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     await handler({
-      gameType: "INDIVIDUAL",
+      gameType: "PAIRS",
       gameId: "game-5",
       directorToken: "bad-token",
       boardsPerRound: 4,

@@ -118,41 +118,6 @@ test.describe("Game Creation Flow", () => {
     expect(createdGame.gameType).toBe("PAIRS");
   });
 
-  test("Individual game appears in /api/games/all with gameType INDIVIDUAL", async ({
-    page,
-    request,
-  }) => {
-    await page.goto("/create");
-
-    const eventName = `E2E Individual ${Date.now()}`;
-
-    // Fill the form fields
-    await page.getByLabel("Event Name").fill(eventName);
-    await page.getByLabel("Director Name").fill("E2E Director");
-
-    // Select "Individual" event type
-    await page.getByLabel("Event Type").selectOption("INDIVIDUAL");
-
-    // Submit the form
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-
-    // Wait for redirect to /create/[gameId]
-    await page.waitForURL(/\/create\/.+/);
-
-    // Fetch all games from the API
-    const response = await request.get("/api/games/all");
-    expect(response.ok()).toBeTruthy();
-
-    const games = await response.json();
-
-    // Assert the newly created Individual game is in the list
-    const createdGame = games.find(
-      (g: { eventName: string }) => g.eventName === eventName,
-    );
-    expect(createdGame).toBeDefined();
-    expect(createdGame.gameType).toBe("INDIVIDUAL");
-  });
-
   test("shows error when Socket.IO is unavailable during game creation", async ({
     page,
   }) => {

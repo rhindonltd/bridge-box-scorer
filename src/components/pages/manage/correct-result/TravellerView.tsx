@@ -15,7 +15,7 @@ interface TravellerViewProps {
 
 /**
  * TravellerView — shows a board's traveller as a tappable table.
- * Columns: NS, EW, Contract (for pairs) or N, S, E, W, Contract (for individual).
+ * Columns: NS, EW, Contract (for pairs).
  * No "Table" column. Player names are shown below pair numbers.
  * Tapping a row selects that line for correction.
  */
@@ -35,7 +35,7 @@ export function TravellerView({
     );
   }
 
-  const isPair = gameType !== "INDIVIDUAL";
+  const isPair = true;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -105,33 +105,6 @@ export function TravellerView({
                           <div className="font-medium">{instance.participants.ew}</div>
                           {instance.participants.ewNames && (
                             <div className="text-xs text-gray-500">{instance.participants.ewNames}</div>
-                          )}
-                        </td>
-                      </>
-                    ) : instance.participants.type === "INDIVIDUAL" ? (
-                      <>
-                        <td className="border px-2 py-2">
-                          <div className="font-medium">{instance.participants.n}</div>
-                          {instance.participants.nName && (
-                            <div className="text-xs text-gray-500">{instance.participants.nName}</div>
-                          )}
-                        </td>
-                        <td className="border px-2 py-2">
-                          <div className="font-medium">{instance.participants.s}</div>
-                          {instance.participants.sName && (
-                            <div className="text-xs text-gray-500">{instance.participants.sName}</div>
-                          )}
-                        </td>
-                        <td className="border px-2 py-2">
-                          <div className="font-medium">{instance.participants.e}</div>
-                          {instance.participants.eName && (
-                            <div className="text-xs text-gray-500">{instance.participants.eName}</div>
-                          )}
-                        </td>
-                        <td className="border px-2 py-2">
-                          <div className="font-medium">{instance.participants.w}</div>
-                          {instance.participants.wName && (
-                            <div className="text-xs text-gray-500">{instance.participants.wName}</div>
                           )}
                         </td>
                       </>

@@ -68,31 +68,6 @@ export const PairsInstances: Story = {
   },
 };
 
-export const IndividualInstances: Story = {
-  args: {
-    boardNumber: 3,
-    isLoading: false,
-    instances: [
-      {
-        roundNumber: 1,
-        tableNumber: 1,
-        boardNumber: 3,
-        participants: { type: "INDIVIDUAL", n: "1", s: "2", e: "3", w: "4" },
-        currentResult: "2SN-1",
-        status: "CONFIRMED",
-      },
-      {
-        roundNumber: 2,
-        tableNumber: 2,
-        boardNumber: 3,
-        participants: { type: "INDIVIDUAL", n: "5", s: "6", e: "7", w: "8" },
-        currentResult: null,
-        status: null,
-      },
-    ],
-  },
-};
-
 export const Empty: Story = {
   args: {
     boardNumber: 12,

@@ -1,20 +1,10 @@
 import {
-  individualmovementtablespec,
-  NewIndividualMovementTableSpec,
   pairmovementtablespec,
   NewPairMovementTableSpec,
   teammovementtablespec,
   NewTeamMovementTableSpec,
 } from "@/db/movements/schema";
 import { getDb } from "@/db/movements";
-
-export async function createIndividualMovementTableSpec(
-  data: NewIndividualMovementTableSpec,
-) {
-  const db = await getDb();
-  const result = await db.insert(individualmovementtablespec).values(data);
-  return Number(result.lastInsertRowid);
-}
 
 export async function createPairMovementTableSpec(
   data: NewPairMovementTableSpec,

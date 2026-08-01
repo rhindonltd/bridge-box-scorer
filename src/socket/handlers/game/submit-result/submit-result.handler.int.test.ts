@@ -285,43 +285,6 @@ describe("registerSubmitResultHandler (integration)", () => {
     client2.disconnect();
   });
 
-  it("INDIVIDUAL seat detection: N/S → NS side, E/W → EW side", async () => {
-    const { client, close, addClient } = await createSocketTestServer((io) => {
-      io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
-        registerSubmitResultHandler(socket, io);
-      });
-    });
-    closeServer = close;
-
-    const client2 = await addClient();
-
-    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "game-5" });
-    await emitWithAck(client2, SocketEvents.JOIN_GAME, { gameId: "game-5" });
-
-    const confirmPromise = waitForEvent(client, SocketEvents.BOARD_CONFIRMED);
-
-    // Player at seat 1N (NS side) submits
-    await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-5", gameType: "INDIVIDUAL", seat: "1N",
-      roundNumber: 1, tableNumber: 1, boardNumber: 1, result: "4HE+1",
-    });
-
-    // Player at seat 1E (EW side) submits same
-    await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-5", gameType: "INDIVIDUAL", seat: "1E",
-      roundNumber: 1, tableNumber: 1, boardNumber: 1, result: "4HE+1",
-    });
-
-    const confirmed = await confirmPromise;
-    expect(confirmed).toMatchObject({
-      boardNumber: 1,
-      result: "4HE+1",
-    });
-
-    client2.disconnect();
-  });
-
   it("BOARD_RESULT_UPDATED is also emitted on confirmation", async () => {
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {

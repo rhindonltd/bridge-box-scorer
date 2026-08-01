@@ -21,26 +21,6 @@ export default meta;
 
 type Story = StoryObj<typeof SelectSeatPage>;
 
-export const Individual: Story = {
-  decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "INDIVIDUAL",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
-  ],
-};
-
 export const Pairs: Story = {
   decorators: [
     withGame({

@@ -1,58 +1,5 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
-export const individualmovementspec = sqliteTable("individualmovementspec", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  type: text("type").notNull(),
-  tables: integer("tables").notNull(),
-  boards: integer("boards").notNull(),
-  boardsPerRound: integer("boards_per_round").notNull(),
-  rounds: integer("rounds").notNull(),
-  missingPlayer: integer("missing_player"),
-});
-
-export type NewIndividualMovementSpec =
-  typeof individualmovementspec.$inferInsert;
-export type IndividualMovementSpec = typeof individualmovementspec.$inferSelect;
-
-export const individualmovementtablespec = sqliteTable(
-  "individualmovementtablespec",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    movementId: integer("movement_id")
-      .references(() => individualmovementspec.id)
-      .notNull(),
-    tableNumber: integer("table_number").notNull(),
-  },
-);
-
-export type NewIndividualMovementTableSpec =
-  typeof individualmovementtablespec.$inferInsert;
-export type IndividualMovementTableSpec =
-  typeof individualmovementtablespec.$inferSelect;
-
-export const individualmovementroundspec = sqliteTable(
-  "individualmovementroundspec",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    tableId: integer("table_id").references(
-      () => individualmovementtablespec.id,
-    ),
-    roundNumber: integer("round_number").notNull(),
-    n: text("n").notNull(),
-    s: text("s").notNull(),
-    e: text("e").notNull(),
-    w: text("w").notNull(),
-    boardStart: integer("board_start").notNull(),
-    boardEnd: integer("board_end").notNull(),
-  },
-);
-
-export type NewIndividualMovementRoundSpec =
-  typeof individualmovementroundspec.$inferInsert;
-export type IndividualMovementRoundSpec =
-  typeof individualmovementroundspec.$inferSelect;
-
 export const pairmovementspec = sqliteTable("pairmovementspec", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),

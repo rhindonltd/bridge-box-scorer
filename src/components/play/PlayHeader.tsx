@@ -22,7 +22,7 @@ export function PlayHeader({ detail }: Props) {
   if (!game) return null;
 
   const participantLabel = assignment
-    ? `${assignment.type === "INDIVIDUAL" ? "Player" : assignment.type === "PAIR" ? "Pair" : "Team"} ${assignment.id}`
+    ? `${assignment.type === "PAIR" ? "Pair" : "Team"} ${assignment.id}`
     : null;
 
   return (

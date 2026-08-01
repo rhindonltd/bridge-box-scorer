@@ -6,7 +6,7 @@ type ViewMode = "byRound" | "byTable";
 
 /**
  * Raw movement table data as returned from the API.
- * Works for both PAIRS (ns/ew) and INDIVIDUAL (n/s/e/w) movements.
+ * Works for PAIRS (ns/ew) movements.
  */
 export type MovementTableData = {
   tableNumber: number;
@@ -55,7 +55,7 @@ export function MovementDetailView({
 }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("byRound");
 
-  const isPair = movementType !== "INDIVIDUAL";
+  const isPair = true;
 
   return (
     <div className="h-full flex flex-col">

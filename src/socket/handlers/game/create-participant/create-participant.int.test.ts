@@ -12,14 +12,6 @@ vi.mock("@/db/games/shared/actions/create-player", () => ({
   createPlayer: vi.fn(),
 }));
 
-vi.mock("@/db/games/individual/actions/create-participant", () => ({
-  createParticipant: vi.fn(),
-}));
-
-vi.mock("@/db/games/individual/queries/find-individuals", () => ({
-  findIndividuals: vi.fn(),
-}));
-
 vi.mock("@/db/games/pairs/actions/create-participant", () => ({
   createParticipant: vi.fn(),
 }));
@@ -33,8 +25,8 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 import { createPlayer } from "@/db/games/shared/actions/create-player";
-import { createParticipant as createIndividual } from "@/db/games/individual/actions/create-participant";
-import { findIndividuals } from "@/db/games/individual/queries/find-individuals";
+import { createParticipant as createPair } from "@/db/games/pairs/actions/create-participant";
+import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateParticipantHandler } from "./create-participant";
 
@@ -73,16 +65,19 @@ describe("registerCreateParticipantHandler (integration)", () => {
     await new Promise<void>((resolve) => io.close(() => resolve()));
   });
 
-  it("creates an INDIVIDUAL participant and emits PARTICIPANTS", async () => {
-    vi.mocked(createPlayer).mockResolvedValue({ id: 99 } as any);
-    vi.mocked(createIndividual).mockResolvedValue(undefined);
-    vi.mocked(findIndividuals).mockResolvedValue([
+  it("creates a PAIR participant and emits PARTICIPANTS", async () => {
+    vi.mocked(createPlayer)
+      .mockResolvedValueOnce({ id: 10 } as any)
+      .mockResolvedValueOnce({ id: 11 } as any);
+    vi.mocked(createPair).mockResolvedValue(undefined);
+    vi.mocked(findPairs).mockResolvedValue([
       {
-        type: "INDIVIDUAL",
-        initialSeat: "1N",
-        player: { id: 99, firstName: "Alice", lastName: "Smith", nationalId: null },
+        type: "PAIR",
+        initialSeat: "1NS",
+        player1: { id: 10, firstName: "Alice", lastName: "Smith", nationalId: null },
+        player2: { id: 11, firstName: "Bob", lastName: "Jones", nationalId: null },
       },
-    ]);
+    ] as any);
 
     // Subscribe to the room so the broadcast reaches this client
     client.emit("join", Rooms.game("game-1"));
@@ -99,9 +94,10 @@ describe("registerCreateParticipantHandler (integration)", () => {
           gameId: "game-1",
           directorToken: "test-token",
           newParticipant: {
-            type: "INDIVIDUAL",
-            initialSeat: "1N",
-            player: { firstName: "Alice", lastName: "Smith" },
+            type: "PAIR",
+            initialSeat: "1NS",
+            player1: { firstName: "Alice", lastName: "Smith" },
+            player2: { firstName: "Bob", lastName: "Jones" },
           },
         },
         resolve,
@@ -112,7 +108,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
 
     const event = await participantsEvent;
     expect(event.participants).toEqual([
-      expect.objectContaining({ type: "INDIVIDUAL" }),
+      expect.objectContaining({ type: "PAIR" }),
     ]);
   });
 
@@ -126,9 +122,10 @@ describe("registerCreateParticipantHandler (integration)", () => {
           gameId: "game-1",
           directorToken: "test-token",
           newParticipant: {
-            type: "INDIVIDUAL",
-            initialSeat: "1N",
-            player: { firstName: "X", lastName: "Y" },
+            type: "PAIR",
+            initialSeat: "1NS",
+            player1: { firstName: "X", lastName: "Y" },
+            player2: { firstName: "A", lastName: "B" },
           },
         },
         resolve,

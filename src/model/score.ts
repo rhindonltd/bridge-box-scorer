@@ -7,7 +7,4 @@ export type ScoringMode = "IMP" | "XIMP" | "MP";
 export type ResultType =
   | "PAIR_IMP"
   | "PAIR_XIMP"
-  | "PAIR_MP"
-  | "INDIVIDUAL_IMP"
-  | "INDIVIDUAL_XIMP"
-  | "INDIVIDUAL_MP";
+  | "PAIR_MP";

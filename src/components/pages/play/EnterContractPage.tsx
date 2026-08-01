@@ -181,7 +181,7 @@ export default function EnterContractPage({
 function ParticipantInfoInline({ assignment }: { assignment: Assignment | null }) {
   if (!assignment) return null;
 
-  const label = assignment.type === "INDIVIDUAL" ? "Player" : assignment.type === "PAIR" ? "Pair" : "Team";
+  const label = assignment.type === "PAIR" ? "Pair" : "Team";
 
   return (
     <span className="text-base font-semibold">

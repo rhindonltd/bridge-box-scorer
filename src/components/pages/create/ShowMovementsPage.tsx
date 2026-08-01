@@ -5,7 +5,6 @@ import { useGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import {
-  IndividualMovementSpec,
   PairMovementSpec,
   TeamMovementSpec,
 } from "@/db/movements/schema";
@@ -44,14 +43,8 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
   const tables = game?.tables ?? 0;
   const gameType = game?.gameType;
 
-  const shouldLoadIndividual = gameType === "INDIVIDUAL";
   const shouldLoadPairs = gameType === "PAIRS";
   const shouldLoadTeams = gameType === "PAIRS";
-
-  const { data: individualMovements } = useSWR<IndividualMovementSpec[]>(
-    shouldLoadIndividual ? `/api/movements/individual/${tables}` : null,
-    fetcher,
-  );
 
   const { data: pairMovements } = useSWR<PairMovementSpec[]>(
     shouldLoadPairs ? `/api/movements/pairs/${tables}` : null,
@@ -224,15 +217,6 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
           </div>
         )}
 
-        {shouldLoadIndividual && (
-          <MovementSection
-            title="Individual Movements"
-            movements={individualMovements ?? []}
-            type="INDIVIDUAL"
-            onSelect={handleMovementClicked}
-          />
-        )}
-
         {shouldLoadPairs && (
           <MovementSection
             title="Pairs Movements"
@@ -304,7 +288,7 @@ function MitchellCard({
 
 /* ---- Section component ---- */
 
-type MovementSpec = IndividualMovementSpec | PairMovementSpec | TeamMovementSpec;
+type MovementSpec = PairMovementSpec | TeamMovementSpec;
 
 function MovementSection({
   title,

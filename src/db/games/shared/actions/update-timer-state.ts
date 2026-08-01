@@ -1,6 +1,5 @@
 "use server";
 
-import { getDb as individualDb } from "@/db/games/individual";
 import { getDb as pairDb } from "@/db/games/pairs";
 import { GameType } from "@/db/games/types/game-type";
 import { TimerState } from "@/timer/timer-state";
@@ -11,9 +10,7 @@ export async function updateTimerState(
   gameId: string,
   timerState: TimerState,
 ) {
-  const db = await (gameType == "INDIVIDUAL"
-    ? individualDb(gameId)
-    : pairDb(gameId));
+  const db = await pairDb(gameId);
 
   await db
     .insert(metadata)

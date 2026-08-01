@@ -30,13 +30,12 @@ export interface TravellerBase<M extends TravellerParticipantMode> {
   lines: TravellerLine<M>[];
 }
 
-/* ---------- concrete helpers (optional) ---------- */
+/* ---------- concrete helpers ---------- */
 
 export type PairTraveller = TravellerBase<"PAIR">;
-export type IndividualTraveller = TravellerBase<"INDIVIDUAL">;
 
 /* ---------- unions ---------- */
 
-export type Traveller = PairTraveller | IndividualTraveller;
+export type Traveller = PairTraveller;
 
 export type AnyTravellerType = TravellerType<TravellerParticipantMode>;

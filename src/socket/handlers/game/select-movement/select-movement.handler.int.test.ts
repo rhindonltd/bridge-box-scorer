@@ -8,7 +8,6 @@ import { SocketEvents } from "@/socket/socket-events";
 // ---- mock heavy DB layer only ----
 
 vi.mock("@/db/movements/queries/get-movement", () => ({
-  getIndividualMovement: vi.fn(),
   getPairMovement: vi.fn(),
   getTeamMovement: vi.fn(),
 }));
@@ -18,10 +17,6 @@ const mockTransaction = vi.fn(async (fn: (tx: any) => Promise<void>) => {
   await fn(tx);
 });
 
-vi.mock("@/db/games/individual", () => ({
-  getDb: vi.fn(async () => ({ transaction: mockTransaction })),
-}));
-
 vi.mock("@/db/games/pairs", () => ({
   getDb: vi.fn(async () => ({ transaction: mockTransaction })),
 }));
@@ -30,7 +25,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import { getIndividualMovement } from "@/db/movements/queries/get-movement";
+import { getPairMovement } from "@/db/movements/queries/get-movement";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerSelectMovementHandler } from "./select-movement.handler";
 
@@ -72,12 +67,12 @@ describe("registerSelectMovementHandler (integration)", () => {
     await new Promise<void>((resolve) => io.close(() => resolve()));
   });
 
-  it("processes INDIVIDUAL movement and returns success", async () => {
-    vi.mocked(getIndividualMovement).mockResolvedValue([
+  it("processes PAIRS movement and returns success", async () => {
+    vi.mocked(getPairMovement).mockResolvedValue([
       {
         tableNumber: 1,
         rounds: [
-          { roundNumber: 1, n: "1", s: "2", e: "3", w: "4", boardStart: 1, boardEnd: 1 },
+          { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 },
         ],
       },
     ] as any);
@@ -85,7 +80,7 @@ describe("registerSelectMovementHandler (integration)", () => {
     const result = await new Promise<any>((resolve) => {
       client.emit(
         SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "test-token" },
+        { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
         resolve,
       );
     });
@@ -95,12 +90,12 @@ describe("registerSelectMovementHandler (integration)", () => {
   });
 
   it("handles errors gracefully and returns success: false", async () => {
-    vi.mocked(getIndividualMovement).mockRejectedValue(new Error("boom"));
+    vi.mocked(getPairMovement).mockRejectedValue(new Error("boom"));
 
     const result = await new Promise<any>((resolve) => {
       client.emit(
         SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g1", type: "INDIVIDUAL", id: 1, directorToken: "test-token" },
+        { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
         resolve,
       );
     });
