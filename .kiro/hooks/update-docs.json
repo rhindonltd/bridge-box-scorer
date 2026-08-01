@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Update Documentation",
+      "trigger": "Stop",
+      "action": {
+        "type": "agent",
+        "prompt": "The agent execution just completed. Review all source files that were created or modified during this session and determine if the user documentation needs updating.\n\nDocumentation lives in the `docs/` directory:\n- `docs/README.md` — overview and quick start\n- `docs/player-guide.md` — player-facing instructions\n- `docs/director-guide.md` — director-facing instructions\n\nRules:\n1. If the ONLY changes were to test files, documentation files, storybook files, or non-user-facing code (API internals, database schemas, utilities), do nothing.\n2. If changes affect user-visible behaviour, update the relevant documentation:\n   - New features: add a section describing the feature in plain language\n   - Changed flows: update the step-by-step instructions\n   - Removed features: remove references to them\n   - UI changes: note if screenshot placeholders need updating (add a comment like `<!-- SCREENSHOT NEEDED: description -->`)\n3. Keep the language non-technical, suitable for bridge players aged 70+ who may not be familiar with technology.\n4. Keep the same structure and style as existing documentation.\n5. If a new major feature is added that doesn't fit in either guide, consider whether a new doc file is needed.\n6. Do NOT update docs for purely internal refactors, code style changes, or dependency updates that don't change user-facing behaviour."
+      }
+    }
+  ]
+}
