@@ -287,6 +287,9 @@ describe("registerSubmitResultHandler", () => {
       cb,
     );
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Failed to submit result" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Failed to submit result",
+    });
   });
 });

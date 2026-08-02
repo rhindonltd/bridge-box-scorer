@@ -34,17 +34,17 @@ test.describe("Club Settings", () => {
   test("club settings page shows Save button", async ({ page }) => {
     await page.goto("/settings/club");
     await enterSettingsPin(page);
-    await expect(
-      page.getByRole("button", { name: "Save" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Save" })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("club settings page shows Back button", async ({ page }) => {
     await page.goto("/settings/club");
     await enterSettingsPin(page);
-    await expect(
-      page.getByRole("button", { name: "Back" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Back" })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("GET /api/system/club returns club data", async ({ request }) => {

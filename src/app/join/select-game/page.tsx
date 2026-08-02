@@ -7,7 +7,7 @@ export default function SelectGame() {
   const router = useRouter();
 
   function onGameSelected(gameId: string) {
-    router.push(`/join/${gameId}/menu`);
+    router.push(`/join/${gameId}/player`);
   }
 
   return <SelectGamePage onGameSelected={onGameSelected} />;

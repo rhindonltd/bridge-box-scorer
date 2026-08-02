@@ -70,10 +70,9 @@ describe("registerUpdateTablesHandler", () => {
     await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
 
     expect(updateTableCount).toHaveBeenCalledWith("g1", 5);
-    expect(io._emit).toHaveBeenCalledWith(
-      SocketEvents.GAME_UPDATED,
-      { game: updatedGame },
-    );
+    expect(io._emit).toHaveBeenCalledWith(SocketEvents.GAME_UPDATED, {
+      game: updatedGame,
+    });
     expect(cb).toHaveBeenCalledWith({ success: true });
   });
 
@@ -95,7 +94,10 @@ describe("registerUpdateTablesHandler", () => {
 
     expect(updateTableCount).not.toHaveBeenCalled();
     expect(cb).toHaveBeenCalledWith(
-      expect.objectContaining({ success: false, error: expect.stringContaining("table 3") }),
+      expect.objectContaining({
+        success: false,
+        error: expect.stringContaining("table 3"),
+      }),
     );
   });
 
@@ -147,7 +149,10 @@ describe("registerUpdateTablesHandler", () => {
     const cb = vi.fn();
     await handler({ gameId: "g1", directorToken: "test-token" }, cb);
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Invalid payload" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Invalid payload",
+    });
     expect(findGameById).not.toHaveBeenCalled();
   });
 
@@ -162,7 +167,10 @@ describe("registerUpdateTablesHandler", () => {
     const cb = vi.fn();
     await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Game not found" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Game not found",
+    });
     expect(updateTableCount).not.toHaveBeenCalled();
   });
 
@@ -177,7 +185,10 @@ describe("registerUpdateTablesHandler", () => {
     const cb = vi.fn();
     await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal server error" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Internal server error",
+    });
   });
 
   it("does not throw when cb is undefined and an internal error occurs", async () => {
@@ -191,7 +202,10 @@ describe("registerUpdateTablesHandler", () => {
 
     // Should not throw when cb is not provided
     await expect(
-      handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, undefined),
+      handler(
+        { gameId: "g1", tables: 5, directorToken: "test-token" },
+        undefined,
+      ),
     ).resolves.not.toThrow();
   });
 });

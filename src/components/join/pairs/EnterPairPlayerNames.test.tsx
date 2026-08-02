@@ -12,7 +12,9 @@ vi.mock("@/components/pages/join/PlayerSearch", () => ({
         data-testid={`player-search-${label}`}
         defaultValue={value?.firstName ?? ""}
         onChange={(e) =>
-          onChange(e.target.value ? { firstName: e.target.value, lastName: "" } : null)
+          onChange(
+            e.target.value ? { firstName: e.target.value, lastName: "" } : null,
+          )
         }
       />
     </div>
@@ -39,7 +41,9 @@ describe("EnterPlayerNames", () => {
 
   it("renders Enter Pair submit button", () => {
     render(<EnterPairPlayerNames seat="1NS" onSubmitPair={vi.fn()} />);
-    expect(screen.getByRole("button", { name: "Enter Pair" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Enter Pair" }),
+    ).toBeInTheDocument();
   });
 
   it("submit button is disabled when no players selected", () => {

@@ -13,11 +13,7 @@ describe("model/score types", () => {
   });
 
   it("ResultType includes all three pair combinations", () => {
-    const types: ResultType[] = [
-      "PAIR_IMP",
-      "PAIR_XIMP",
-      "PAIR_MP",
-    ];
+    const types: ResultType[] = ["PAIR_IMP", "PAIR_XIMP", "PAIR_MP"];
     expect(types).toHaveLength(3);
   });
 

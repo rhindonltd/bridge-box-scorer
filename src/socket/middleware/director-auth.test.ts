@@ -5,10 +5,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 import { findLoginSession } from "@/db/system/queries/find-login-session";
-import {
-  validateDirectorToken,
-  assertDirector,
-} from "./director-auth";
+import { validateDirectorToken, assertDirector } from "./director-auth";
 
 describe("validateDirectorToken", () => {
   beforeEach(() => {

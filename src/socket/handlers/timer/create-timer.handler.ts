@@ -34,7 +34,15 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
       return;
     }
 
-    const { gameType, gameId, directorToken, boardsPerRound, totalRounds, playDuration, moveDuration } = parsed.data;
+    const {
+      gameType,
+      gameId,
+      directorToken,
+      boardsPerRound,
+      totalRounds,
+      playDuration,
+      moveDuration,
+    } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
     try {

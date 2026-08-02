@@ -4,10 +4,7 @@ import { useState, useMemo } from "react";
 import { useGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import {
-  PairMovementSpec,
-  TeamMovementSpec,
-} from "@/db/movements/schema";
+import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
 import { MovementCard } from "@/components/pages/create/MovementCard";
 import Button from "@/components/common/Button";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
@@ -16,10 +13,7 @@ import {
   MovementTableData,
 } from "@/components/movement/MovementDetailView";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
-import {
-  MitchellMovementSpec,
-  generateMitchell,
-} from "@/movement/mitchell";
+import { MitchellMovementSpec, generateMitchell } from "@/movement/mitchell";
 
 type Props = {
   onShowTablesPage: () => void;
@@ -183,8 +177,15 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
   // Show loading state while detail is being fetched (DB-based only)
   if (selected && selected.type !== "MITCHELL" && !movementDetail) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <div>
+            <SectionHeading title="Generated Movements" />
+          </div>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -204,7 +205,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
                 min={2}
               />
             </div>
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-2">
               {mitchellOptions.map((option) => (
                 <MitchellCard
                   key={option.name}
@@ -315,7 +316,7 @@ function MovementSection({
   return (
     <div>
       <SectionHeading title={title} />
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {movements.map((movement) => (
           <MovementCard
             key={`${movement.type}-${movement.id}`}

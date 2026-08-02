@@ -20,10 +20,7 @@ import {
 } from "@/db/games/pairs/tables/assignments";
 
 import { assertDirector } from "@/socket/middleware/director-auth";
-import {
-  generateMitchell,
-  MitchellMovementSpec,
-} from "@/movement/mitchell";
+import { generateMitchell, MitchellMovementSpec } from "@/movement/mitchell";
 import { Tables } from "@/model/movement";
 
 /**
@@ -62,7 +59,8 @@ async function handlePairLikeMovement(
         for (const { position, movementId } of seats) {
           assignmentRows.push({
             id: movementId,
-            initialSeat: `${m.tableNumber}${position}` as PairAssignment["initialSeat"],
+            initialSeat:
+              `${m.tableNumber}${position}` as PairAssignment["initialSeat"],
           });
         }
       }

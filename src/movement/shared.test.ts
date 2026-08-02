@@ -214,15 +214,31 @@ describe("groupByRound", () => {
         {
           table: 1,
           rounds: [
-            { round: 1, boards: [1, 2], participants: { nsId: "1", ewId: "2" } },
-            { round: 2, boards: [3, 4], participants: { nsId: "3", ewId: "4" } },
+            {
+              round: 1,
+              boards: [1, 2],
+              participants: { nsId: "1", ewId: "2" },
+            },
+            {
+              round: 2,
+              boards: [3, 4],
+              participants: { nsId: "3", ewId: "4" },
+            },
           ],
         },
         {
           table: 2,
           rounds: [
-            { round: 1, boards: [3, 4], participants: { nsId: "3", ewId: "4" } },
-            { round: 2, boards: [1, 2], participants: { nsId: "1", ewId: "2" } },
+            {
+              round: 1,
+              boards: [3, 4],
+              participants: { nsId: "3", ewId: "4" },
+            },
+            {
+              round: 2,
+              boards: [1, 2],
+              participants: { nsId: "1", ewId: "2" },
+            },
           ],
         },
       ],

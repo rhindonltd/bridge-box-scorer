@@ -17,7 +17,10 @@ const payloadSchema = z.object({
 export function registerEvictParticipantHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.EVICT_PARTICIPANT,
-    async (payload: unknown, cb?: (res: { success: boolean; error?: string }) => void) => {
+    async (
+      payload: unknown,
+      cb?: (res: { success: boolean; error?: string }) => void,
+    ) => {
       const parsed = payloadSchema.safeParse(payload);
       if (!parsed.success) {
         cb?.({ success: false, error: "Invalid payload" });

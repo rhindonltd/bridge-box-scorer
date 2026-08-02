@@ -21,7 +21,11 @@ interface TablePending {
 
 const pendingSubmissions = new Map<string, TablePending>();
 
-function getPendingKey(gameId: string, tableNumber: number, roundNumber: number): string {
+function getPendingKey(
+  gameId: string,
+  tableNumber: number,
+  roundNumber: number,
+): string {
   return `${gameId}:${tableNumber}:${roundNumber}`;
 }
 
@@ -75,7 +79,10 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         if (!pending.ns || !pending.ew) return;
 
         // Compare board number AND result
-        if (pending.ns.boardNumber === pending.ew.boardNumber && pending.ns.result === pending.ew.result) {
+        if (
+          pending.ns.boardNumber === pending.ew.boardNumber &&
+          pending.ns.result === pending.ew.result
+        ) {
           // Match — confirm
           const confirmedBoardNumber = pending.ns.boardNumber;
           const confirmedResult = pending.ns.result;
@@ -87,7 +94,10 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           const db = await getPairsDb(gameId);
           await db
             .update(pairsBoards)
-            .set({ confirmedResult: confirmedResult as any, status: "CONFIRMED" })
+            .set({
+              confirmedResult: confirmedResult as any,
+              status: "CONFIRMED",
+            })
             .where(
               and(
                 eq(pairsBoards.roundNumber, roundNumber),

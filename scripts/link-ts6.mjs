@@ -30,7 +30,13 @@ if (!existsSync(ts6Target)) {
 const links = [
   // typescript-eslint (bundled inside eslint-config-next) resolves typescript
   // via the eslint-config-next/node_modules scope.
-  resolve(root, "node_modules", "eslint-config-next", "node_modules", "typescript"),
+  resolve(
+    root,
+    "node_modules",
+    "eslint-config-next",
+    "node_modules",
+    "typescript",
+  ),
 
   // ts-api-utils is hoisted to the top-level but also needs TypeScript <6.
   resolve(root, "node_modules", "ts-api-utils", "node_modules", "typescript"),

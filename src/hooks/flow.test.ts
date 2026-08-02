@@ -13,18 +13,18 @@ vi.mock("next/navigation", () => ({
 
 describe("createFlow", () => {
   it("returns the first step as default", () => {
-    const flow = createFlow(
-      { stepA: {}, stepB: {} },
-      ["stepA", "stepB"] as const,
-    );
+    const flow = createFlow({ stepA: {}, stepB: {} }, [
+      "stepA",
+      "stepB",
+    ] as const);
     expect(flow.getDefaultStep()).toBe("stepA");
   });
 
   it("canEnter returns true when no guard is defined", () => {
-    const flow = createFlow(
-      { stepA: {}, stepB: {} },
-      ["stepA", "stepB"] as const,
-    );
+    const flow = createFlow({ stepA: {}, stepB: {} }, [
+      "stepA",
+      "stepB",
+    ] as const);
     expect(flow.canEnter("stepA", {})).toBe(true);
   });
 

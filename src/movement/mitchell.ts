@@ -99,7 +99,12 @@ function createMitchellTable(params: TableParams): Table<"PAIR"> {
     const movingPair = wrapValue(tableNumber - distanceMoved, tables) + ewAdd;
 
     // 🔁 Board assignment
-    const boardDist = computeBoardDistance(roundNumber, skip, skipAfter, tables);
+    const boardDist = computeBoardDistance(
+      roundNumber,
+      skip,
+      skipAfter,
+      tables,
+    );
     const boardSet = wrapValue(firstSet + boardDist, tables);
 
     const boards = boardsForSet(boardSet, boardsPerRound);

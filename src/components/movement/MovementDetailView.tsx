@@ -138,8 +138,7 @@ function TableView({
   table: MovementTableData;
   isPair: boolean;
 }) {
-  const hasProgress =
-    table.rounds.length > 0 && table.rounds[0].played != null;
+  const hasProgress = table.rounds.length > 0 && table.rounds[0].played != null;
 
   return (
     <div className="border rounded-lg shadow-sm overflow-x-auto">
@@ -220,15 +219,8 @@ type RoundData = {
   }[];
 };
 
-function RoundView({
-  round,
-  isPair,
-}: {
-  round: RoundData;
-  isPair: boolean;
-}) {
-  const hasProgress =
-    round.tables.length > 0 && round.tables[0].played != null;
+function RoundView({ round, isPair }: { round: RoundData; isPair: boolean }) {
+  const hasProgress = round.tables.length > 0 && round.tables[0].played != null;
 
   return (
     <div className="border rounded-lg shadow-sm overflow-x-auto">

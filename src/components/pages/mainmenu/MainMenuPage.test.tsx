@@ -12,6 +12,7 @@ describe("MainMenuPage", () => {
     onCreateNewGame: vi.fn(),
     onJoinGame: vi.fn(),
     onManagePastGames: vi.fn(),
+    onRoomDisplay: vi.fn(),
     onOpenSettings: vi.fn(),
   };
 
@@ -75,11 +76,20 @@ describe("MainMenuPage", () => {
     );
   });
 
+  it("calls onRoomDisplay when Room Display clicked", () => {
+    render(<MainMenuPage {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Room Display" }));
+
+    expect(baseProps.onRoomDisplay).toHaveBeenCalledTimes(1);
+  });
+
   it("renders all main menu buttons", () => {
     render(<MainMenuPage {...baseProps} />);
 
     expect(screen.getByText("Join Game")).toBeInTheDocument();
     expect(screen.getByText("Create New Game")).toBeInTheDocument();
     expect(screen.getByText("Manage Games")).toBeInTheDocument();
+    expect(screen.getByText("Room Display")).toBeInTheDocument();
   });
 });

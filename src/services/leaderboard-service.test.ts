@@ -42,8 +42,20 @@ describe("leaderboard-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { boardNumber: 1, ns: "1", ew: "2", confirmedResult: "3NTN=", directorOverrideResult: null },
-            { boardNumber: 1, ns: "3", ew: "4", confirmedResult: "3NTN+1", directorOverrideResult: null },
+            {
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "3NTN=",
+              directorOverrideResult: null,
+            },
+            {
+              boardNumber: 1,
+              ns: "3",
+              ew: "4",
+              confirmedResult: "3NTN+1",
+              directorOverrideResult: null,
+            },
           ]),
         }),
       };
@@ -53,8 +65,20 @@ describe("leaderboard-service", () => {
         type: "PAIR_MP",
         board: 1,
         lines: [
-          { nsId: "1", ewId: "2", nsMatchPoints: 0, ewMatchPoints: 2, maxMatchPoints: 2 },
-          { nsId: "3", ewId: "4", nsMatchPoints: 2, ewMatchPoints: 0, maxMatchPoints: 2 },
+          {
+            nsId: "1",
+            ewId: "2",
+            nsMatchPoints: 0,
+            ewMatchPoints: 2,
+            maxMatchPoints: 2,
+          },
+          {
+            nsId: "3",
+            ewId: "4",
+            nsMatchPoints: 2,
+            ewMatchPoints: 0,
+            maxMatchPoints: 2,
+          },
         ],
       } as any);
 
@@ -69,7 +93,12 @@ describe("leaderboard-service", () => {
       } as any);
 
       vi.mocked(findPairs).mockResolvedValue([
-        { initialSeat: "1NS", type: "PAIR", player1: { id: 1, firstName: "A", lastName: "B", nationalId: null }, player2: { id: 2, firstName: "C", lastName: "D", nationalId: null } },
+        {
+          initialSeat: "1NS",
+          type: "PAIR",
+          player1: { id: 1, firstName: "A", lastName: "B", nationalId: null },
+          player2: { id: 2, firstName: "C", lastName: "D", nationalId: null },
+        },
       ] as any);
 
       const game = {
@@ -92,8 +121,20 @@ describe("leaderboard-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { boardNumber: 1, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null },
-            { boardNumber: 2, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null },
+            {
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+            },
+            {
+              boardNumber: 2,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+            },
           ]),
         }),
       };
@@ -124,8 +165,20 @@ describe("leaderboard-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { boardNumber: 1, ns: "1", ew: "2", confirmedResult: "3NTN=", directorOverrideResult: "3NTN+1" },
-            { boardNumber: 1, ns: "3", ew: "4", confirmedResult: "2HE-1", directorOverrideResult: null },
+            {
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "3NTN=",
+              directorOverrideResult: "3NTN+1",
+            },
+            {
+              boardNumber: 1,
+              ns: "3",
+              ew: "4",
+              confirmedResult: "2HE-1",
+              directorOverrideResult: null,
+            },
           ]),
         }),
       };
@@ -158,7 +211,11 @@ describe("leaderboard-service", () => {
       expect(score).toHaveBeenCalledWith(
         expect.objectContaining({
           lines: expect.arrayContaining([
-            expect.objectContaining({ nsId: "1", ewId: "2", outcome: "3NTN+1" }),
+            expect.objectContaining({
+              nsId: "1",
+              ewId: "2",
+              outcome: "3NTN+1",
+            }),
             expect.objectContaining({ nsId: "3", ewId: "4", outcome: "2HE-1" }),
           ]),
         }),
@@ -172,7 +229,13 @@ describe("leaderboard-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { boardNumber: 1, ns: "1", ew: "2", confirmedResult: "3NTN=", directorOverrideResult: null },
+            {
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "3NTN=",
+              directorOverrideResult: null,
+            },
           ]),
         }),
       };
@@ -209,8 +272,20 @@ describe("leaderboard-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { boardNumber: 1, ns: "1", ew: "2", confirmedResult: "4HS+1", directorOverrideResult: null },
-            { boardNumber: 1, ns: "3", ew: "4", confirmedResult: "3NTN=", directorOverrideResult: null },
+            {
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "4HS+1",
+              directorOverrideResult: null,
+            },
+            {
+              boardNumber: 1,
+              ns: "3",
+              ew: "4",
+              confirmedResult: "3NTN=",
+              directorOverrideResult: null,
+            },
           ]),
         }),
       };

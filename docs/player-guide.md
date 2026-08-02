@@ -11,6 +11,7 @@ When you open the app, tap **Join Game** on the main menu.
 ![Main menu](screenshots/main-menu.png)
 
 You will see a menu with three options:
+
 - **Join As Player** — tap this to enter scores
 - **Show Timer** — displays the round timer on your screen
 - **Show Leaderboard** — shows current rankings
@@ -44,6 +45,7 @@ Tap **Submit** when done.
 ### Round Information
 
 At the start of each round, you will see a summary showing:
+
 - Your table number and round number
 - The boards you will play
 - The names of all four players at the table
@@ -62,12 +64,12 @@ For each board, you will enter the contract that was played. The screen shows:
 
 Below these controls are four sections:
 
-| Section | What to enter |
-|---------|--------------|
-| **Level** | The number of the contract (1–7) |
-| **Suit** | The suit (Spades, Hearts, Diamonds, Clubs, or No Trumps) |
-| **Declarer** | Who played the hand (N, S, E, or W) |
-| **Double** | Whether it was doubled (X), redoubled (XX), or neither (None) |
+| Section      | What to enter                                                 |
+| ------------ | ------------------------------------------------------------- |
+| **Level**    | The number of the contract (1–7)                              |
+| **Suit**     | The suit (Spades, Hearts, Diamonds, Clubs, or No Trumps)      |
+| **Declarer** | Who played the hand (N, S, E, or W)                           |
+| **Double**   | Whether it was doubled (X), redoubled (XX), or neither (None) |
 
 Tap one button in each section to build the contract.
 
@@ -80,6 +82,7 @@ If your director has set the game to record opening leads, you will also see an 
 ### Entering the Result
 
 The **Result** section has two parts:
+
 1. **Made / Down** — tap whether the contract was made or went down
 2. **Number** — tap how many tricks over or under:
    - If **Made**: +0 means exactly made, +1 means made with one overtrick, etc.

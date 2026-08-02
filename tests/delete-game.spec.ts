@@ -18,9 +18,7 @@ test.describe("Delete Game", () => {
     await expect(
       page.getByText("Are you sure you want to delete"),
     ).toBeVisible();
-    await expect(
-      page.locator("strong", { hasText: eventName }),
-    ).toBeVisible();
+    await expect(page.locator("strong", { hasText: eventName })).toBeVisible();
     await expect(
       page.getByText("This will permanently remove all results"),
     ).toBeVisible();

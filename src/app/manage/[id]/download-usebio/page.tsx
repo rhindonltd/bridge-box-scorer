@@ -44,7 +44,10 @@ export default function DownloadUsebioPage() {
       const saveRes = await fetch("/api/system/club", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), clubNumber: clubNumber.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          clubNumber: clubNumber.trim(),
+        }),
       });
 
       if (!saveRes.ok) {
@@ -64,7 +67,10 @@ export default function DownloadUsebioPage() {
 
       const blob = await usebioRes.blob();
       const url = URL.createObjectURL(blob);
-      const filename = usebioRes.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] ?? "results.xml";
+      const filename =
+        usebioRes.headers
+          .get("Content-Disposition")
+          ?.match(/filename="(.+)"/)?.[1] ?? "results.xml";
 
       const a = document.createElement("a");
       a.href = url;
@@ -104,14 +110,21 @@ export default function DownloadUsebioPage() {
         Download USEBIO
       </div>
 
-      <form onSubmit={handleDownload} className="flex-1 flex flex-col px-6 pt-6 pb-8 max-w-sm w-full mx-auto">
+      <form
+        onSubmit={handleDownload}
+        className="flex-1 flex flex-col px-6 pt-6 pb-8 max-w-sm w-full mx-auto"
+      >
         <p className="text-sm text-gray-600 mb-4">
-          Confirm your club details before downloading. These will be included in the USEBIO file.
+          Confirm your club details before downloading. These will be included
+          in the USEBIO file.
         </p>
 
         <div className="space-y-4 flex-1">
           <div>
-            <label htmlFor="club-name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="club-name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Club Name
             </label>
             <input
@@ -125,7 +138,10 @@ export default function DownloadUsebioPage() {
           </div>
 
           <div>
-            <label htmlFor="club-number" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="club-number"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               EBU Club Number
             </label>
             <input

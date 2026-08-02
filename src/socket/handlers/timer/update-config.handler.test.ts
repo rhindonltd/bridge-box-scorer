@@ -97,11 +97,7 @@ describe("registerUpdateConfigHandler", () => {
     });
 
     expect(mockEngine.updateConfig).toHaveBeenCalledWith(4, 6, 480, 90);
-    expect(updateTimerState).toHaveBeenCalledWith(
-      "PAIRS",
-      "game-5",
-      mockState,
-    );
+    expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-5", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-5");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
@@ -111,7 +107,10 @@ describe("registerUpdateConfigHandler", () => {
       "PAIRS",
       "game-5",
       mockEngine,
-      expect.objectContaining({ updateTimerState, broadcast: expect.any(Function) }),
+      expect.objectContaining({
+        updateTimerState,
+        broadcast: expect.any(Function),
+      }),
     );
   });
 
@@ -173,7 +172,9 @@ describe("registerUpdateConfigHandler", () => {
 
   it("catches and logs errors from engine.updateConfig()", async () => {
     const mockEngine = {
-      updateConfig: vi.fn().mockImplementation(() => { throw new Error("update error"); }),
+      updateConfig: vi.fn().mockImplementation(() => {
+        throw new Error("update error");
+      }),
       getState: vi.fn(),
     };
 

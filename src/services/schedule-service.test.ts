@@ -6,7 +6,12 @@ vi.mock("@/db/games/pairs", () => ({
 }));
 
 vi.mock("@/db/games/pairs/tables/boards", () => ({
-  boards: { ns: "ns", ew: "ew", roundNumber: "roundNumber", boardNumber: "boardNumber" },
+  boards: {
+    ns: "ns",
+    ew: "ew",
+    roundNumber: "roundNumber",
+    boardNumber: "boardNumber",
+  },
 }));
 
 vi.mock("@/db/games/pairs/tables/assignments", () => ({
@@ -61,7 +66,9 @@ describe("schedule-service", () => {
             return {
               from: vi.fn().mockReturnValue({
                 where: vi.fn().mockReturnValue({
-                  get: vi.fn().mockResolvedValue({ id: "assign-1", initialSeat: "1NS" }),
+                  get: vi
+                    .fn()
+                    .mockResolvedValue({ id: "assign-1", initialSeat: "1NS" }),
                 }),
               }),
             };
@@ -69,9 +76,30 @@ describe("schedule-service", () => {
             return {
               from: vi.fn().mockReturnValue({
                 where: vi.fn().mockResolvedValue([
-                  { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "assign-1", ew: "assign-2", status: "CONFIRMED" },
-                  { roundNumber: 1, tableNumber: 1, boardNumber: 2, ns: "assign-1", ew: "assign-2", status: "NOT_PLAYED" },
-                  { roundNumber: 2, tableNumber: 2, boardNumber: 3, ns: "assign-1", ew: "assign-3", status: "NOT_PLAYED" },
+                  {
+                    roundNumber: 1,
+                    tableNumber: 1,
+                    boardNumber: 1,
+                    ns: "assign-1",
+                    ew: "assign-2",
+                    status: "CONFIRMED",
+                  },
+                  {
+                    roundNumber: 1,
+                    tableNumber: 1,
+                    boardNumber: 2,
+                    ns: "assign-1",
+                    ew: "assign-2",
+                    status: "NOT_PLAYED",
+                  },
+                  {
+                    roundNumber: 2,
+                    tableNumber: 2,
+                    boardNumber: 3,
+                    ns: "assign-1",
+                    ew: "assign-3",
+                    status: "NOT_PLAYED",
+                  },
                 ]),
               }),
             };
@@ -101,13 +129,15 @@ describe("schedule-service", () => {
             };
           } else {
             return {
-              from: vi.fn().mockResolvedValue([
-                { roundNumber: 1 },
-                { roundNumber: 1 },
-                { roundNumber: 2 },
-                { roundNumber: 2 },
-                { roundNumber: 3 },
-              ]),
+              from: vi
+                .fn()
+                .mockResolvedValue([
+                  { roundNumber: 1 },
+                  { roundNumber: 1 },
+                  { roundNumber: 2 },
+                  { roundNumber: 2 },
+                  { roundNumber: 3 },
+                ]),
             };
           }
         }),
@@ -139,7 +169,9 @@ describe("schedule-service", () => {
             return {
               from: vi.fn().mockReturnValue({
                 where: vi.fn().mockReturnValue({
-                  get: vi.fn().mockResolvedValue({ id: "assign-2", initialSeat: "1EW" }),
+                  get: vi
+                    .fn()
+                    .mockResolvedValue({ id: "assign-2", initialSeat: "1EW" }),
                 }),
               }),
             };
@@ -147,12 +179,24 @@ describe("schedule-service", () => {
             return {
               from: vi.fn().mockReturnValue({
                 where: vi.fn().mockResolvedValue([
-                  { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "assign-1", ew: "assign-2", status: "NOT_PLAYED" },
+                  {
+                    roundNumber: 1,
+                    tableNumber: 1,
+                    boardNumber: 1,
+                    ns: "assign-1",
+                    ew: "assign-2",
+                    status: "NOT_PLAYED",
+                  },
                 ]),
               }),
             };
           } else if (selectCallCount === 3) {
-            return { from: vi.fn().mockResolvedValue([{ id: "assign-1", initialSeat: "1NS" }, { id: "assign-2", initialSeat: "1EW" }]) };
+            return {
+              from: vi.fn().mockResolvedValue([
+                { id: "assign-1", initialSeat: "1NS" },
+                { id: "assign-2", initialSeat: "1EW" },
+              ]),
+            };
           } else if (selectCallCount === 4) {
             return { from: vi.fn().mockResolvedValue([]) };
           } else if (selectCallCount === 5) {

@@ -14,12 +14,12 @@ From the main menu, tap **Create New Game**.
 
 You will see a form with the following fields:
 
-| Field | Description |
-|-------|-------------|
-| **Event Name** | The name of your event (e.g. "Monday Pairs", "Club Championship") |
-| **Director Name** | Your name |
-| **Event Type** | Choose "Pairs" or "Teams" |
-| **Tables** | How many tables you expect (you can add or remove tables later) |
+| Field             | Description                                                       |
+| ----------------- | ----------------------------------------------------------------- |
+| **Event Name**    | The name of your event (e.g. "Monday Pairs", "Club Championship") |
+| **Director Name** | Your name                                                         |
+| **Event Type**    | Choose "Pairs" or "Teams"                                         |
+| **Tables**        | How many tables you expect (you can add or remove tables later)   |
 
 Tap **Next** when done.
 
@@ -30,6 +30,7 @@ Tap **Next** when done.
 You will now see the **tables view**. This shows each table with the four seats. As players join and sit down, their names will appear here.
 
 From this screen you can:
+
 - **Add a table** — if more players arrive
 - **Remove a table** — if a table is no longer needed (only possible if the last table is empty)
 - **Evict a pair** — if someone sat in the wrong seat (tap on them and confirm)
@@ -53,6 +54,7 @@ At the top you will see automatically generated Mitchell movements. You can adju
 Below the generated movements, you will see other movement options stored in the database, such as Howell movements.
 
 Each movement card shows:
+
 - The movement name
 - Number of rounds
 - Boards per round
@@ -81,14 +83,14 @@ To manage a game that is already running:
 
 ### Director Menu Options
 
-| Option | What it does |
-|--------|-------------|
-| **Create/Amend Timer** | Set up and control the round timer |
-| **Travellers** | View all results entered so far (by board) |
-| **Change Game Status** | Change the game status (e.g. mark as complete) |
-| **Movement** | View or change the movement |
-| **Download USEBIO** | Export results in USEBIO format for uploading to the EBU |
-| **Delete Game** | Permanently delete the game (cannot be undone) |
+| Option                 | What it does                                             |
+| ---------------------- | -------------------------------------------------------- |
+| **Create/Amend Timer** | Set up and control the round timer                       |
+| **Travellers**         | View all results entered so far (by board)               |
+| **Change Game Status** | Change the game status (e.g. mark as complete)           |
+| **Movement**           | View or change the movement                              |
+| **Download USEBIO**    | Export results in USEBIO format for uploading to the EBU |
+| **Delete Game**        | Permanently delete the game (cannot be undone)           |
 
 ---
 
@@ -107,6 +109,7 @@ From the Director Menu, tap **Create/Amend Timer**. You will see:
 - **Move Duration** — minutes and seconds for the changeover period
 
 The app shows you:
+
 - **Session Length** — total estimated time for the whole session
 - **Preview End** — estimated finish time based on current time
 
@@ -115,6 +118,7 @@ Tap **Create** to start the timer session.
 ### Controlling the Timer
 
 Once created, you can:
+
 - **Start** — begins the countdown
 - **Pause** — pauses the timer (e.g. for a director ruling)
 - **Apply Changes** — updates the timer settings without resetting
@@ -122,6 +126,7 @@ Once created, you can:
 ### The Timer Display
 
 Players can view the timer by going to Join Game → Show Timer. The display shows:
+
 - A large countdown clock
 - The current round number
 - Whether it is playing time or changeover time

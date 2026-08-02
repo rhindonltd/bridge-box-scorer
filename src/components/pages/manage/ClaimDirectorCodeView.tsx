@@ -34,7 +34,9 @@ export function ClaimDirectorCodeView({
         className="w-full max-w-xs space-y-4"
       >
         <div>
-          <label htmlFor="share-code" className="sr-only">Share Code</label>
+          <label htmlFor="share-code" className="sr-only">
+            Share Code
+          </label>
           <input
             id="share-code"
             type="text"
@@ -49,7 +51,9 @@ export function ClaimDirectorCodeView({
         </div>
 
         {error && (
-          <p role="alert" className="text-red-600 text-base text-center">{error}</p>
+          <p role="alert" className="text-red-600 text-base text-center">
+            {error}
+          </p>
         )}
 
         <button

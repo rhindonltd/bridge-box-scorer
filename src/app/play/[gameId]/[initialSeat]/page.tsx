@@ -24,10 +24,30 @@ interface RoundSchedule {
   boards: number[];
   boardStatuses: { boardNumber: number; status: string | null }[];
   players: {
-    N: { id: number; firstName: string; lastName: string; nationalId: string | null } | null;
-    S: { id: number; firstName: string; lastName: string; nationalId: string | null } | null;
-    E: { id: number; firstName: string; lastName: string; nationalId: string | null } | null;
-    W: { id: number; firstName: string; lastName: string; nationalId: string | null } | null;
+    N: {
+      id: number;
+      firstName: string;
+      lastName: string;
+      nationalId: string | null;
+    } | null;
+    S: {
+      id: number;
+      firstName: string;
+      lastName: string;
+      nationalId: string | null;
+    } | null;
+    E: {
+      id: number;
+      firstName: string;
+      lastName: string;
+      nationalId: string | null;
+    } | null;
+    W: {
+      id: number;
+      firstName: string;
+      lastName: string;
+      nationalId: string | null;
+    } | null;
   };
   sitOut?: boolean;
 }
@@ -42,9 +62,22 @@ type PlayState =
   | { state: "loading" }
   | { state: "roundInfo"; roundIndex: number }
   | { state: "enterContract"; roundIndex: number; boardIndex: number }
-  | { state: "enterResult"; roundIndex: number; boardIndex: number; contract: ContractCode }
+  | {
+      state: "enterResult";
+      roundIndex: number;
+      boardIndex: number;
+      contract: ContractCode;
+    }
   | { state: "waiting"; roundIndex: number; boardIndex: number }
-  | { state: "mismatch"; roundIndex: number; boardIndex: number; nsBoardNumber: number; nsResult: string; ewBoardNumber: number; ewResult: string }
+  | {
+      state: "mismatch";
+      roundIndex: number;
+      boardIndex: number;
+      nsBoardNumber: number;
+      nsResult: string;
+      ewBoardNumber: number;
+      ewResult: string;
+    }
   | { state: "boardResults"; roundIndex: number; boardIndex: number }
   | { state: "moveInfo"; nextRoundIndex: number }
   | { state: "gameComplete" };
@@ -99,7 +132,11 @@ export default function PlayPage() {
   useEffect(() => {
     const socket = getSocket();
 
-    const onConfirmed = (payload: { roundNumber: number; tableNumber: number; boardNumber: number }) => {
+    const onConfirmed = (payload: {
+      roundNumber: number;
+      tableNumber: number;
+      boardNumber: number;
+    }) => {
       if (!schedule) return;
 
       setPlayState((prev) => {
@@ -108,15 +145,30 @@ export default function PlayPage() {
 
         const round = schedule.rounds[prev.roundIndex];
         if (!round) return prev;
-        if (payload.roundNumber !== round.roundNumber || payload.tableNumber !== round.tableNumber) return prev;
+        if (
+          payload.roundNumber !== round.roundNumber ||
+          payload.tableNumber !== round.tableNumber
+        )
+          return prev;
         if (payload.boardNumber !== round.boards[prev.boardIndex]) return prev;
 
         // After confirmation, show board results
-        return { state: "boardResults", roundIndex: prev.roundIndex, boardIndex: prev.boardIndex };
+        return {
+          state: "boardResults",
+          roundIndex: prev.roundIndex,
+          boardIndex: prev.boardIndex,
+        };
       });
     };
 
-    const onMismatch = (payload: { roundNumber: number; tableNumber: number; nsBoardNumber: number; nsResult: string; ewBoardNumber: number; ewResult: string }) => {
+    const onMismatch = (payload: {
+      roundNumber: number;
+      tableNumber: number;
+      nsBoardNumber: number;
+      nsResult: string;
+      ewBoardNumber: number;
+      ewResult: string;
+    }) => {
       if (!schedule) return;
 
       setPlayState((prev) => {
@@ -124,7 +176,11 @@ export default function PlayPage() {
 
         const round = schedule.rounds[prev.roundIndex];
         if (!round) return prev;
-        if (payload.roundNumber !== round.roundNumber || payload.tableNumber !== round.tableNumber) return prev;
+        if (
+          payload.roundNumber !== round.roundNumber ||
+          payload.tableNumber !== round.tableNumber
+        )
+          return prev;
 
         return {
           state: "mismatch",
@@ -151,7 +207,11 @@ export default function PlayPage() {
   const submitResult = useCallback(
     (result: string) => {
       if (!schedule || !game) return;
-      if (playState.state !== "enterContract" && playState.state !== "enterResult") return;
+      if (
+        playState.state !== "enterContract" &&
+        playState.state !== "enterResult"
+      )
+        return;
 
       const round = schedule.rounds[playState.roundIndex];
       const boardNumber = round.boards[playState.boardIndex];
@@ -213,7 +273,11 @@ export default function PlayPage() {
 
   function handleEnterRound() {
     if (playState.state !== "roundInfo") return;
-    setPlayState({ state: "enterContract", roundIndex: playState.roundIndex, boardIndex: 0 });
+    setPlayState({
+      state: "enterContract",
+      roundIndex: playState.roundIndex,
+      boardIndex: 0,
+    });
   }
 
   function handleReenter() {
@@ -233,7 +297,11 @@ export default function PlayPage() {
 
     if (nextBoardIndex < round.boards.length) {
       // More boards in this round
-      setPlayState({ state: "enterContract", roundIndex: playState.roundIndex, boardIndex: nextBoardIndex });
+      setPlayState({
+        state: "enterContract",
+        roundIndex: playState.roundIndex,
+        boardIndex: nextBoardIndex,
+      });
     } else {
       // All boards done for this round
       const nextRoundIndex = playState.roundIndex + 1;
@@ -291,7 +359,9 @@ export default function PlayPage() {
             <PlayHeader detail={`Round ${round.roundNumber}`} />
 
             <div className="flex-1 flex flex-col items-center justify-center p-6">
-              <div className="text-2xl font-bold text-gray-900 mb-2">Sit Out</div>
+              <div className="text-2xl font-bold text-gray-900 mb-2">
+                Sit Out
+              </div>
               <div className="text-base text-gray-500 text-center">
                 You have a sit-out this round. Please wait for the next round.
               </div>
@@ -392,8 +462,12 @@ export default function PlayPage() {
             <PlayHeader detail="Round Complete" />
 
             <div className="flex-1 flex flex-col items-center justify-center p-6">
-              <div className="text-xl font-semibold text-gray-900 mb-2">Next up</div>
-              <div className="text-4xl font-bold text-blue-600 mb-4">Sit Out</div>
+              <div className="text-xl font-semibold text-gray-900 mb-2">
+                Next up
+              </div>
+              <div className="text-4xl font-bold text-blue-600 mb-4">
+                Sit Out
+              </div>
               <div className="text-base text-gray-500">
                 Round {nextRound.roundNumber}
               </div>
@@ -416,8 +490,12 @@ export default function PlayPage() {
           <PlayHeader detail="Round Complete" />
 
           <div className="flex-1 flex flex-col items-center justify-center p-6">
-            <div className="text-xl font-semibold text-gray-900 mb-2">Move to</div>
-            <div className="text-4xl font-bold text-blue-600 mb-4">Table {nextRound.tableNumber}</div>
+            <div className="text-xl font-semibold text-gray-900 mb-2">
+              Move to
+            </div>
+            <div className="text-4xl font-bold text-blue-600 mb-4">
+              Table {nextRound.tableNumber}
+            </div>
             <div className="text-base text-gray-500">
               Round {nextRound.roundNumber}
             </div>
@@ -455,7 +533,8 @@ function BoardResultsLoader({
   lastBoardOfRound: boolean;
   onNext: () => void;
 }) {
-  const [scoredTraveller, setScoredTraveller] = useState<ScoredTraveller | null>(null);
+  const [scoredTraveller, setScoredTraveller] =
+    useState<ScoredTraveller | null>(null);
 
   useEffect(() => {
     fetch(`/api/games/${gameId}/boards/${boardNumber}`)
@@ -463,15 +542,26 @@ function BoardResultsLoader({
       .then((data) => {
         if (data.instances) {
           const mode = "PAIR";
-          const scoringMode = scoringType === "IMP" || scoringType === "XIMP" ? "XIMP" : "MP";
+          const scoringMode =
+            scoringType === "IMP" || scoringType === "XIMP" ? "XIMP" : "MP";
 
           const lines = data.instances
             .filter((i: any) => i.currentResult != null)
             .map((i: any) => {
               if (mode === "PAIR") {
-                return { nsId: i.participants.ns, ewId: i.participants.ew, outcome: i.currentResult };
+                return {
+                  nsId: i.participants.ns,
+                  ewId: i.participants.ew,
+                  outcome: i.currentResult,
+                };
               } else {
-                return { nId: i.participants.n, sId: i.participants.s, eId: i.participants.e, wId: i.participants.w, outcome: i.currentResult };
+                return {
+                  nId: i.participants.n,
+                  sId: i.participants.s,
+                  eId: i.participants.e,
+                  wId: i.participants.w,
+                  outcome: i.currentResult,
+                };
               }
             });
 

@@ -5,6 +5,7 @@
 The tablet combined entry feature adds a responsive layout branch to the board-entry flow. On viewports ≥ 768px (Tailwind `md:` breakpoint), the existing multi-step flow is replaced with a single-screen `TabletCombinedEntry` component that stacks contract, opening lead, and board result sections vertically. The mobile flow remains completely unchanged.
 
 The architecture follows these principles:
+
 - **CSS-only switching** — Both layouts render in the DOM; Tailwind visibility classes (`md:hidden` / `hidden md:block`) control which is shown. No JavaScript viewport detection needed.
 - **Inline component variants** — New `InlineOpeningLead` and `InlineBoardResult` components strip away viewport-height styling, headers, and footers from their full-screen counterparts. They expose controlled state via callbacks.
 - **Single submission** — The tablet layout collects all data (contract + lead + result) and submits in one action, unlike the mobile flow which saves incrementally per step.
@@ -50,16 +51,19 @@ type TabletCombinedEntryProps = {
 ```
 
 **State management:**
+
 - Contract state: `level`, `suit`, `declarer`, `dbl`, `passOut`, `notPlayed` (local useState)
 - Lead state: `leadSuit`, `leadRank` (lifted from InlineOpeningLead via callbacks)
 - Result state: `mode`, `resultValue` (lifted from InlineBoardResult via callbacks)
 
 **Derived state:**
+
 - `hasValidContract`: `level !== null && suit !== null && declarer !== null`
 - `isSpecialOutcome`: `passOut || notPlayed`
 - `isSubmitEnabled`: computed from business rules (see Submit Enablement Logic below)
 
 **Layout structure (JSX):**
+
 ```tsx
 <div className="h-dvh flex flex-col">
   {/* Header bars */}
@@ -75,13 +79,17 @@ type TabletCombinedEntryProps = {
 
     {/* Lead section — ~25% (only if leadCardRequired) */}
     {leadCardRequired && (
-      <div className={`flex-[25] ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}>
+      <div
+        className={`flex-[25] ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
+      >
         <InlineOpeningLead />
       </div>
     )}
 
     {/* Result section — ~30%/45% depending on leadCardRequired */}
-    <div className={`${leadCardRequired ? "flex-[30]" : "flex-[45]"} ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}>
+    <div
+      className={`${leadCardRequired ? "flex-[30]" : "flex-[45]"} ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
+    >
       <InlineBoardResult />
     </div>
   </div>
@@ -109,6 +117,7 @@ type InlineOpeningLeadProps = {
 ```
 
 **Differences from full-screen OpeningLead:**
+
 - No `h-[100dvh]` or `flex h-[100dvh]` wrapper
 - No card preview element (the large card with corner markings)
 - No header or footer
@@ -132,6 +141,7 @@ type InlineBoardResultProps = {
 ```
 
 **Differences from full-screen BoardResult:**
+
 - No `h-[100dvh]` wrapper
 - No header (`<header>` with board number and contract info)
 - No footer (`<footer>` with Continue button)
@@ -163,6 +173,7 @@ type Props = {
 ```
 
 **Rendering:**
+
 ```tsx
 <>
   {/* Mobile: existing multi-step flow */}
@@ -240,8 +251,8 @@ Note: Since `InlineOpeningLead` defaults suit to "S" and rank to "A" (matching t
 ```typescript
 function calculateResultRange(contractLevel: number) {
   const requiredTricks = 6 + contractLevel;
-  const maxOver = 13 - requiredTricks;  // max overtricks possible
-  const maxDown = requiredTricks;       // max down tricks possible (was 13 in legacy, now capped)
+  const maxOver = 13 - requiredTricks; // max overtricks possible
+  const maxDown = requiredTricks; // max down tricks possible (was 13 in legacy, now capped)
 
   return { maxOver, maxDown };
 }
@@ -252,6 +263,7 @@ For a 4-level contract: requiredTricks = 10, maxOver = 3, maxDown = 10.
 ## Special Outcome Handling
 
 When Pass Out or Not Played is selected:
+
 1. Contract state resets (level, suit, declarer, dbl all null)
 2. The `passOut` or `notPlayed` flag is set to true
 3. Lead and result sections remain in their disabled state (since hasValidContract becomes false)
@@ -309,6 +321,7 @@ Sections below contract use a wrapper div with conditional classes:
 ```
 
 This approach:
+
 - Keeps the section rendered in the DOM (no layout shift)
 - Visually communicates the section is not yet interactive
 - Prevents all pointer interactions without JavaScript event blocking
@@ -351,34 +364,38 @@ Both layouts are in the DOM; CSS controls visibility:
 ## Files to Create/Modify
 
 ### New Files
-| File | Purpose |
-|------|---------|
-| `src/components/play/TabletCombinedEntry.tsx` | Main combined layout component |
-| `src/components/play/TabletCombinedEntry.stories.tsx` | Storybook stories |
-| `src/components/play/InlineOpeningLead.tsx` | Compact lead card component |
-| `src/components/play/InlineOpeningLead.stories.tsx` | Storybook stories |
-| `src/components/play/InlineBoardResult.tsx` | Compact result component |
-| `src/components/play/InlineBoardResult.stories.tsx` | Storybook stories |
+
+| File                                                  | Purpose                        |
+| ----------------------------------------------------- | ------------------------------ |
+| `src/components/play/TabletCombinedEntry.tsx`         | Main combined layout component |
+| `src/components/play/TabletCombinedEntry.stories.tsx` | Storybook stories              |
+| `src/components/play/InlineOpeningLead.tsx`           | Compact lead card component    |
+| `src/components/play/InlineOpeningLead.stories.tsx`   | Storybook stories              |
+| `src/components/play/InlineBoardResult.tsx`           | Compact result component       |
+| `src/components/play/InlineBoardResult.stories.tsx`   | Storybook stories              |
 
 ### Modified Files
-| File | Change |
-|------|--------|
-| `src/components/play/BoardFlow.tsx` | Add responsive wrapper with both layouts |
-| `src/components/play/BoardFlow.stories.tsx` | Add tablet viewport story |
+
+| File                                        | Change                                   |
+| ------------------------------------------- | ---------------------------------------- |
+| `src/components/play/BoardFlow.tsx`         | Add responsive wrapper with both layouts |
+| `src/components/play/BoardFlow.stories.tsx` | Add tablet viewport story                |
 
 ### Unchanged Files
-| File | Reason |
-|------|--------|
-| `src/components/contract/ContractEntryPanel.tsx` | Director component — not part of this feature |
-| `src/components/pages/play/PlayableContract.tsx` | Reused as-is in tablet layout |
-| `src/components/play/OpeningLead.tsx` | Full-screen version used by mobile flow unchanged |
-| `src/components/play/BoardResult.tsx` | Full-screen version used by mobile flow unchanged |
+
+| File                                             | Reason                                            |
+| ------------------------------------------------ | ------------------------------------------------- |
+| `src/components/contract/ContractEntryPanel.tsx` | Director component — not part of this feature     |
+| `src/components/pages/play/PlayableContract.tsx` | Reused as-is in tablet layout                     |
+| `src/components/play/OpeningLead.tsx`            | Full-screen version used by mobile flow unchanged |
+| `src/components/play/BoardResult.tsx`            | Full-screen version used by mobile flow unchanged |
 
 ## Storybook Stories
 
 ### TabletCombinedEntry.stories.tsx
 
 Stories covering:
+
 - **Empty** — No selections, all sections visible but lead/result disabled
 - **ContractSelected** — Valid contract selected, lead/result enabled
 - **ContractAndLeadSelected** — Contract + lead chosen, result interactive
@@ -391,6 +408,7 @@ Stories covering:
 ### InlineOpeningLead.stories.tsx
 
 Stories covering:
+
 - **Default** — Suit S, Rank A (initial state)
 - **Enabled** — Full opacity, interactive
 - **Disabled** — Wrapped in opacity-50 pointer-events-none container
@@ -398,6 +416,7 @@ Stories covering:
 ### InlineBoardResult.stories.tsx
 
 Stories covering:
+
 - **MadeMode** — Mode set to "made", showing overtrick grid
 - **DownMode** — Mode set to "down", showing undertrick grid
 - **Enabled** — Full opacity, interactive
@@ -407,7 +426,7 @@ Stories covering:
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Progressive Reveal Follows Contract Validity
 

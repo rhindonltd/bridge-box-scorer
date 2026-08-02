@@ -16,7 +16,9 @@ test.afterAll(async () => {
   await cleanupGames(BASE_URL);
 });
 
-test("Timer creation, control, and player display", async ({ browser }, testInfo) => {
+test("Timer creation, control, and player display", async ({
+  browser,
+}, testInfo) => {
   const deviceConfig = test.info().project.use;
 
   const directorContext = await browser.newContext(deviceConfig);
@@ -84,9 +86,7 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
 
     // Step 4: Director clicks "Create" to create the timer session
     await test.step("Director creates timer session", async () => {
-      await directorPage
-        .getByRole("button", { name: "Create" })
-        .click();
+      await directorPage.getByRole("button", { name: "Create" }).click();
 
       // After creation, the "Create" button is replaced with "Apply Changes", "Start", and "Pause"
       await expect(
@@ -106,14 +106,12 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
 
     // Step 5: Director clicks "Start" to start the timer
     await test.step("Director starts the timer", async () => {
-      await directorPage
-        .getByRole("button", { name: "Start" })
-        .click();
+      await directorPage.getByRole("button", { name: "Start" }).click();
 
       // Verify the timer shows a countdown (the status panel shows "Remaining" with a value)
-      await expect(
-        directorPage.getByText("Remaining"),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(directorPage.getByText("Remaining")).toBeVisible({
+        timeout: 15000,
+      });
 
       await attachScreenshot(
         directorPage,
@@ -135,15 +133,11 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
       const connectingText = playerPage.getByText("Connecting");
 
       // Either the timer is showing a countdown or it's still connecting
-      await expect(
-        timerDisplay.first().or(connectingText),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(timerDisplay.first().or(connectingText)).toBeVisible({
+        timeout: 15000,
+      });
 
-      await attachScreenshot(
-        playerPage,
-        testInfo,
-        "Player - Timer display",
-      );
+      await attachScreenshot(playerPage, testInfo, "Player - Timer display");
     });
 
     // Step 7: Verify player sees countdown (if connected)
@@ -152,7 +146,12 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
       const timerDisplay = playerPage.getByText(/^\d{2}:\d{2}$/);
 
       // The player should see either the timer counting down or still connecting
-      if (await timerDisplay.first().isVisible({ timeout: 5000 }).catch(() => false)) {
+      if (
+        await timerDisplay
+          .first()
+          .isVisible({ timeout: 5000 })
+          .catch(() => false)
+      ) {
         const timeText = await timerDisplay.first().textContent();
         // Verify it looks like a time format (MM:SS)
         expect(timeText).toMatch(/^\d{2}:\d{2}$/);
@@ -167,20 +166,14 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
 
     // Step 8: Director clicks "Pause"
     await test.step("Director pauses the timer", async () => {
-      await directorPage
-        .getByRole("button", { name: "Pause" })
-        .click();
+      await directorPage.getByRole("button", { name: "Pause" }).click();
 
       // The status panel should now show "paused"
-      await expect(
-        directorPage.getByText("paused"),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(directorPage.getByText("paused")).toBeVisible({
+        timeout: 15000,
+      });
 
-      await attachScreenshot(
-        directorPage,
-        testInfo,
-        "Director - Timer paused",
-      );
+      await attachScreenshot(directorPage, testInfo, "Director - Timer paused");
     });
 
     // Step 9: Verify player sees paused state
@@ -189,7 +182,9 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
       const pausedIndicator = playerPage.getByText("PAUSED");
 
       // Wait for the paused state to propagate via Socket.IO
-      if (await pausedIndicator.isVisible({ timeout: 10000 }).catch(() => false)) {
+      if (
+        await pausedIndicator.isVisible({ timeout: 10000 }).catch(() => false)
+      ) {
         await expect(pausedIndicator).toBeVisible();
       }
 
@@ -202,14 +197,12 @@ test("Timer creation, control, and player display", async ({ browser }, testInfo
 
     // Step 10: Director resumes the timer
     await test.step("Director resumes the timer", async () => {
-      await directorPage
-        .getByRole("button", { name: "Start" })
-        .click();
+      await directorPage.getByRole("button", { name: "Start" }).click();
 
       // The status should change back from "paused" to an active phase (e.g., "play" or "move")
-      await expect(
-        directorPage.getByText("paused"),
-      ).not.toBeVisible({ timeout: 15000 });
+      await expect(directorPage.getByText("paused")).not.toBeVisible({
+        timeout: 15000,
+      });
 
       await attachScreenshot(
         directorPage,

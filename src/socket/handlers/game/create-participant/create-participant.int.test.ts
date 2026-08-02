@@ -74,8 +74,18 @@ describe("registerCreateParticipantHandler (integration)", () => {
       {
         type: "PAIR",
         initialSeat: "1NS",
-        player1: { id: 10, firstName: "Alice", lastName: "Smith", nationalId: null },
-        player2: { id: 11, firstName: "Bob", lastName: "Jones", nationalId: null },
+        player1: {
+          id: 10,
+          firstName: "Alice",
+          lastName: "Smith",
+          nationalId: null,
+        },
+        player2: {
+          id: 11,
+          firstName: "Bob",
+          lastName: "Jones",
+          nationalId: null,
+        },
       },
     ] as any);
 

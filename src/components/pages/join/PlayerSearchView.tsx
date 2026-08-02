@@ -52,7 +52,10 @@ export function PlayerSearchView({
       <label className="mb-2 block text-sm font-medium">{label}</label>
 
       <div className="relative">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+        />
         <input
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -75,9 +78,13 @@ export function PlayerSearchView({
             >
               <User size={18} className="text-slate-400" />
               <div>
-                <div className="font-medium">{player.firstName} {player.lastName}</div>
+                <div className="font-medium">
+                  {player.firstName} {player.lastName}
+                </div>
                 {player.nationalId && (
-                  <div className="text-xs text-slate-500">EBU {player.nationalId}</div>
+                  <div className="text-xs text-slate-500">
+                    EBU {player.nationalId}
+                  </div>
                 )}
               </div>
             </button>

@@ -71,10 +71,14 @@ test("NS and EW enter matching results and see confirmation", async ({
 
     // Step 7: NS should be waiting for EW confirmation
     await test.step("NS sees waiting state", async () => {
-      await expect(
-        nsPage.getByText("Waiting for confirmation"),
-      ).toBeVisible({ timeout: 15000 });
-      await attachScreenshot(nsPage, testInfo, "NS - Waiting for EW confirmation");
+      await expect(nsPage.getByText("Waiting for confirmation")).toBeVisible({
+        timeout: 15000,
+      });
+      await attachScreenshot(
+        nsPage,
+        testInfo,
+        "NS - Waiting for EW confirmation",
+      );
     });
 
     // Step 8: EW enters same result — Pass Out for Board 1
@@ -89,15 +93,15 @@ test("NS and EW enter matching results and see confirmation", async ({
     await test.step("Both players see confirmation after matching results", async () => {
       // After both submit matching results, the board is confirmed via Socket.IO
       // NS transitions from waiting to boardResults state
-      await expect(
-        nsPage.getByText(/Board 1/i),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(nsPage.getByText(/Board 1/i)).toBeVisible({
+        timeout: 15000,
+      });
       await attachScreenshot(nsPage, testInfo, "NS - Result confirmed Board 1");
 
       // EW also transitions from waiting to boardResults state
-      await expect(
-        ewPage.getByText(/Board 1/i),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(ewPage.getByText(/Board 1/i)).toBeVisible({
+        timeout: 15000,
+      });
       await attachScreenshot(ewPage, testInfo, "EW - Result confirmed Board 1");
     });
   } finally {

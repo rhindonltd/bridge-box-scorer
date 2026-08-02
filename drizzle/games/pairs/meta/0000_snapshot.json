@@ -106,11 +106,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "boards_round_number_table_number_board_number_pk": {
-          "columns": [
-            "round_number",
-            "table_number",
-            "board_number"
-          ],
+          "columns": ["round_number", "table_number", "board_number"],
           "name": "boards_round_number_table_number_board_number_pk"
         }
       },
@@ -176,10 +172,7 @@
       "indexes": {
         "participant_player1_player2_unique": {
           "name": "participant_player1_player2_unique",
-          "columns": [
-            "player1",
-            "player2"
-          ],
+          "columns": ["player1", "player2"],
           "isUnique": true
         }
       },
@@ -188,12 +181,8 @@
           "name": "participant_player1_players_id_fk",
           "tableFrom": "participant",
           "tableTo": "players",
-          "columnsFrom": [
-            "player1"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player1"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -201,12 +190,8 @@
           "name": "participant_player2_players_id_fk",
           "tableFrom": "participant",
           "tableTo": "players",
-          "columnsFrom": [
-            "player2"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player2"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

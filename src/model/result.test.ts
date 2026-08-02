@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  isPlayedContractCode,
-  parsePlayedContract,
-} from "./result";
+import { isPlayedContractCode, parsePlayedContract } from "./result";
 import type { PlayedContractCode } from "./result";
 
 describe("isPlayedContractCode", () => {

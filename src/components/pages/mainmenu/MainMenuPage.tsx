@@ -4,6 +4,7 @@ interface Props {
   onCreateNewGame: () => void;
   onJoinGame: () => void;
   onManagePastGames: () => void;
+  onRoomDisplay: () => void;
   onOpenSettings: () => void;
 }
 
@@ -11,6 +12,7 @@ export function MainMenuPage({
   onCreateNewGame,
   onJoinGame,
   onManagePastGames,
+  onRoomDisplay,
   onOpenSettings,
 }: Props) {
   return (
@@ -54,6 +56,13 @@ export function MainMenuPage({
           className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Manage Games
+        </button>
+
+        <button
+          onClick={onRoomDisplay}
+          className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        >
+          Room Display
         </button>
       </div>
     </div>

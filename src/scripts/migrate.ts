@@ -1,4 +1,3 @@
-
 import { runMovementsMigrations } from "@/db/movements/migrate";
 
 runMovementsMigrations()

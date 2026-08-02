@@ -19,6 +19,10 @@ export default function MainMenu() {
     router.push("/manage");
   }
 
+  function roomDisplay() {
+    router.push("/display");
+  }
+
   function openSettings() {
     router.push("/settings");
   }
@@ -28,6 +32,7 @@ export default function MainMenu() {
       onCreateNewGame={createNewGame}
       onJoinGame={joinGame}
       onManagePastGames={managePastGames}
+      onRoomDisplay={roomDisplay}
       onOpenSettings={openSettings}
     />
   );

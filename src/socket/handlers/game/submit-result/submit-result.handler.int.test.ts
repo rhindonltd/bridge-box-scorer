@@ -24,11 +24,19 @@ vi.mock("@/db/games/individual", () => ({
 }));
 
 vi.mock("@/db/games/pairs/tables/boards", () => ({
-  boards: { roundNumber: "roundNumber", tableNumber: "tableNumber", boardNumber: "boardNumber" },
+  boards: {
+    roundNumber: "roundNumber",
+    tableNumber: "tableNumber",
+    boardNumber: "boardNumber",
+  },
 }));
 
 vi.mock("@/db/games/individual/tables/boards", () => ({
-  boards: { roundNumber: "roundNumber", tableNumber: "tableNumber", boardNumber: "boardNumber" },
+  boards: {
+    roundNumber: "roundNumber",
+    tableNumber: "tableNumber",
+    boardNumber: "boardNumber",
+  },
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -61,8 +69,12 @@ describe("registerSubmitResultHandler (integration)", () => {
     // Set up listeners for events that should NOT fire
     let confirmed = false;
     let mismatched = false;
-    client.on(SocketEvents.BOARD_CONFIRMED, () => { confirmed = true; });
-    client.on(SocketEvents.BOARD_MISMATCH, () => { mismatched = true; });
+    client.on(SocketEvents.BOARD_CONFIRMED, () => {
+      confirmed = true;
+    });
+    client.on(SocketEvents.BOARD_MISMATCH, () => {
+      mismatched = true;
+    });
 
     const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-1",
@@ -258,22 +270,37 @@ describe("registerSubmitResultHandler (integration)", () => {
 
     // First attempt: mismatch
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-4", gameType: "PAIRS", seat: "1NS",
-      roundNumber: 2, tableNumber: 1, boardNumber: 5, result: "3NTN=",
+      gameId: "game-4",
+      gameType: "PAIRS",
+      seat: "1NS",
+      roundNumber: 2,
+      tableNumber: 1,
+      boardNumber: 5,
+      result: "3NTN=",
     });
 
     const mismatchPromise = waitForEvent(client, SocketEvents.BOARD_MISMATCH);
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-4", gameType: "PAIRS", seat: "1EW",
-      roundNumber: 2, tableNumber: 1, boardNumber: 5, result: "3NTN+1",
+      gameId: "game-4",
+      gameType: "PAIRS",
+      seat: "1EW",
+      roundNumber: 2,
+      tableNumber: 1,
+      boardNumber: 5,
+      result: "3NTN+1",
     });
     await mismatchPromise;
 
     // EW re-submits with correct result (overwrites their pending)
     const confirmPromise = waitForEvent(client, SocketEvents.BOARD_CONFIRMED);
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-4", gameType: "PAIRS", seat: "1EW",
-      roundNumber: 2, tableNumber: 1, boardNumber: 5, result: "3NTN=",
+      gameId: "game-4",
+      gameType: "PAIRS",
+      seat: "1EW",
+      roundNumber: 2,
+      tableNumber: 1,
+      boardNumber: 5,
+      result: "3NTN=",
     });
 
     const confirmed = await confirmPromise;
@@ -299,16 +326,29 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "game-6" });
     await emitWithAck(client2, SocketEvents.JOIN_GAME, { gameId: "game-6" });
 
-    const updatedPromise = waitForEvent(client, SocketEvents.BOARD_RESULT_UPDATED);
+    const updatedPromise = waitForEvent(
+      client,
+      SocketEvents.BOARD_RESULT_UPDATED,
+    );
 
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-6", gameType: "PAIRS", seat: "3NS",
-      roundNumber: 1, tableNumber: 3, boardNumber: 9, result: "PO",
+      gameId: "game-6",
+      gameType: "PAIRS",
+      seat: "3NS",
+      roundNumber: 1,
+      tableNumber: 3,
+      boardNumber: 9,
+      result: "PO",
     });
 
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-6", gameType: "PAIRS", seat: "3EW",
-      roundNumber: 1, tableNumber: 3, boardNumber: 9, result: "PO",
+      gameId: "game-6",
+      gameType: "PAIRS",
+      seat: "3EW",
+      roundNumber: 1,
+      tableNumber: 3,
+      boardNumber: 9,
+      result: "PO",
     });
 
     const updated = await updatedPromise;
@@ -339,13 +379,23 @@ describe("registerSubmitResultHandler (integration)", () => {
     const confirmPromise = waitForEvent(client, SocketEvents.BOARD_CONFIRMED);
 
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-7", gameType: "PAIRS", seat: "1NS",
-      roundNumber: 3, tableNumber: 1, boardNumber: 10, result: "2SXE-2",
+      gameId: "game-7",
+      gameType: "PAIRS",
+      seat: "1NS",
+      roundNumber: 3,
+      tableNumber: 1,
+      boardNumber: 10,
+      result: "2SXE-2",
     });
 
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
-      gameId: "game-7", gameType: "PAIRS", seat: "1EW",
-      roundNumber: 3, tableNumber: 1, boardNumber: 10, result: "2SXE-2",
+      gameId: "game-7",
+      gameType: "PAIRS",
+      seat: "1EW",
+      roundNumber: 3,
+      tableNumber: 1,
+      boardNumber: 10,
+      result: "2SXE-2",
     });
 
     await confirmPromise;

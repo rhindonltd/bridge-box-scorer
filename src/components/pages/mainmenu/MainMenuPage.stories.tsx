@@ -13,6 +13,7 @@ const meta: Meta<typeof MainMenuPage> = {
     onCreateNewGame: fn(),
     onJoinGame: fn(),
     onManagePastGames: fn(),
+    onRoomDisplay: fn(),
   },
 };
 

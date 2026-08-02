@@ -18,7 +18,9 @@ test.afterAll(async () => {
   await cleanupGames(BASE_URL);
 });
 
-test("Movement selection and player schedule display", async ({ browser }, testInfo) => {
+test("Movement selection and player schedule display", async ({
+  browser,
+}, testInfo) => {
   const deviceConfig = test.info().project.use;
 
   // Director context
@@ -69,8 +71,12 @@ test("Movement selection and player schedule display", async ({ browser }, testI
       // Verify movement stats are displayed within the first movement card
       // Use .first() to avoid strict mode violations when multiple cards have the same labels
       await expect(directorPage.getByText("Rounds").first()).toBeVisible();
-      await expect(directorPage.getByText("Boards/Round").first()).toBeVisible();
-      await expect(directorPage.getByText("Total Boards").first()).toBeVisible();
+      await expect(
+        directorPage.getByText("Boards/Round").first(),
+      ).toBeVisible();
+      await expect(
+        directorPage.getByText("Total Boards").first(),
+      ).toBeVisible();
 
       await attachScreenshot(
         directorPage,
@@ -88,9 +94,9 @@ test("Movement selection and player schedule display", async ({ browser }, testI
 
       // After clicking, the MovementDetailView should appear with the movement name
       // and round-by-round assignment data
-      await expect(
-        directorPage.getByText("Standard Mitchell"),
-      ).toBeVisible({ timeout: 10000 });
+      await expect(directorPage.getByText("Standard Mitchell")).toBeVisible({
+        timeout: 10000,
+      });
 
       await attachScreenshot(
         directorPage,
@@ -104,9 +110,15 @@ test("Movement selection and player schedule display", async ({ browser }, testI
       // The MovementDetailView shows tables with Round/Table, NS, EW, Boards columns
       // These are table header cells (th) — scope to the first table header row
       const detailTable = directorPage.locator("table").first();
-      await expect(detailTable.getByRole("columnheader", { name: "NS" })).toBeVisible();
-      await expect(detailTable.getByRole("columnheader", { name: "EW" })).toBeVisible();
-      await expect(detailTable.getByRole("columnheader", { name: "Boards" })).toBeVisible();
+      await expect(
+        detailTable.getByRole("columnheader", { name: "NS" }),
+      ).toBeVisible();
+      await expect(
+        detailTable.getByRole("columnheader", { name: "EW" }),
+      ).toBeVisible();
+      await expect(
+        detailTable.getByRole("columnheader", { name: "Boards" }),
+      ).toBeVisible();
 
       // There should be a "Select Movement" button at the bottom
       const selectButton = directorPage.getByRole("button", {
@@ -135,12 +147,14 @@ test("Movement selection and player schedule display", async ({ browser }, testI
       // the full assignment grid. If not applied (socket-dependent), we may see
       // "No movement set up yet." — either state is valid for this test.
       const movementHeader = directorPage.getByText(eventName);
-      const noMovementMessage = directorPage.getByText(/no movement set up yet/i);
+      const noMovementMessage = directorPage.getByText(
+        /no movement set up yet/i,
+      );
 
       // Wait for either the movement data or the "no movement" message
-      await expect(
-        movementHeader.or(noMovementMessage),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(movementHeader.or(noMovementMessage)).toBeVisible({
+        timeout: 15000,
+      });
 
       await attachScreenshot(
         directorPage,
@@ -174,9 +188,9 @@ test("Movement selection and player schedule display", async ({ browser }, testI
       const loadingSpinner = playerPage.locator(".animate-spin");
 
       // Wait for either the round info or the loading state
-      await expect(
-        roundInfo.or(loadingSpinner),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(roundInfo.or(loadingSpinner)).toBeVisible({
+        timeout: 15000,
+      });
 
       // If the round info is visible, verify the "Enter Round" button is present
       if (await roundInfo.isVisible().catch(() => false)) {

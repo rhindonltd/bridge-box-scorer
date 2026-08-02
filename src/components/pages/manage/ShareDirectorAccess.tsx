@@ -65,9 +65,7 @@ export function ShareDirectorAccess({ gameId, onClose }: Props) {
         Share Director Access
       </h1>
 
-      {error && (
-        <p className="text-red-600 text-base mb-4">{error}</p>
-      )}
+      {error && <p className="text-red-600 text-base mb-4">{error}</p>}
 
       {code ? (
         <>

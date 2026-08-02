@@ -33,8 +33,12 @@ export const test = base.extend<{ directorContext: DirectorContext }>({
     // Cleanup: delete the game via UI
     try {
       await page.goto(`/manage/${gameId}/menu`);
-      await page.getByRole("button", { name: "Delete Game" }).click({ timeout: 5000 });
-      await page.getByRole("button", { name: "Yes, Delete Game" }).click({ timeout: 5000 });
+      await page
+        .getByRole("button", { name: "Delete Game" })
+        .click({ timeout: 5000 });
+      await page
+        .getByRole("button", { name: "Yes, Delete Game" })
+        .click({ timeout: 5000 });
       await page.waitForURL(/\/manage\/select-game/, { timeout: 5000 });
     } catch {
       // Ignore cleanup errors (game may already be deleted by the test)

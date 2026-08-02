@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { createGameStep, attachScreenshot, cleanupGames, deleteGameStep } from "./helpers";
+import {
+  createGameStep,
+  attachScreenshot,
+  cleanupGames,
+  deleteGameStep,
+} from "./helpers";
 
 const BASE_URL = "http://localhost:3000";
 
@@ -11,7 +16,9 @@ test.afterAll(async () => {
   await cleanupGames(BASE_URL);
 });
 
-test("Director corrects a result via traveller view", async ({ browser }, testInfo) => {
+test("Director corrects a result via traveller view", async ({
+  browser,
+}, testInfo) => {
   const deviceConfig = test.info().project.use;
 
   const directorContext = await browser.newContext(deviceConfig);
@@ -42,7 +49,11 @@ test("Director corrects a result via traveller view", async ({ browser }, testIn
       await directorPage.waitForLoadState("networkidle");
 
       await expect(directorPage.getByText("Select Board")).toBeVisible();
-      await attachScreenshot(directorPage, testInfo, "Director - Correct result page loaded");
+      await attachScreenshot(
+        directorPage,
+        testInfo,
+        "Director - Correct result page loaded",
+      );
     });
 
     // Step 3: Select a board number
@@ -88,30 +99,48 @@ test("Director corrects a result via traveller view", async ({ browser }, testIn
       });
 
       // Click board number 1
-      await directorPage.getByRole("button", { name: "1", exact: true }).click();
-      await attachScreenshot(directorPage, testInfo, "Director - Board 1 selected");
+      await directorPage
+        .getByRole("button", { name: "1", exact: true })
+        .click();
+      await attachScreenshot(
+        directorPage,
+        testInfo,
+        "Director - Board 1 selected",
+      );
     });
 
     // Step 4: View the traveller with instances
     await test.step("Director views traveller with board instances", async () => {
       // Verify the traveller view heading
       await expect(directorPage.getByText("Board 1")).toBeVisible();
-      await expect(directorPage.getByText("Tap a row to adjust the result")).toBeVisible();
+      await expect(
+        directorPage.getByText("Tap a row to adjust the result"),
+      ).toBeVisible();
 
       // Verify participant data is displayed
       await expect(directorPage.getByText("Alice & Bob")).toBeVisible();
       await expect(directorPage.getByText("Carol & Dave")).toBeVisible();
 
-      await attachScreenshot(directorPage, testInfo, "Director - Traveller view for Board 1");
+      await attachScreenshot(
+        directorPage,
+        testInfo,
+        "Director - Traveller view for Board 1",
+      );
     });
 
     // Step 5: Select an instance to open the contract entry panel
     await test.step("Director selects instance to correct", async () => {
       // Click the first row (Table 1, Round 1) in the traveller table
-      const firstRow = directorPage.locator("tr").filter({ hasText: "Alice & Bob" });
+      const firstRow = directorPage
+        .locator("tr")
+        .filter({ hasText: "Alice & Bob" });
       await firstRow.click();
 
-      await attachScreenshot(directorPage, testInfo, "Director - Instance selected");
+      await attachScreenshot(
+        directorPage,
+        testInfo,
+        "Director - Instance selected",
+      );
     });
 
     // Step 6: Verify the contract entry panel shows with correct info
@@ -124,7 +153,11 @@ test("Director corrects a result via traveller view", async ({ browser }, testIn
       // Verify the contract entry UI elements are present
       await expect(directorPage.getByText("Pass Out")).toBeVisible();
 
-      await attachScreenshot(directorPage, testInfo, "Director - Contract entry panel shown");
+      await attachScreenshot(
+        directorPage,
+        testInfo,
+        "Director - Contract entry panel shown",
+      );
     });
   } finally {
     await deleteGameStep(directorPage, gameId);

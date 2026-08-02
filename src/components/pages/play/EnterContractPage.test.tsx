@@ -13,7 +13,12 @@ vi.mock("@/context/PlayContext", () => ({
 
 vi.mock("@/context/GameContext", () => ({
   useGame: () => ({
-    game: { eventName: "Test Pairs", gameId: "g1", gameType: "PAIRS", tables: 4 },
+    game: {
+      eventName: "Test Pairs",
+      gameId: "g1",
+      gameType: "PAIRS",
+      tables: 4,
+    },
   }),
 }));
 

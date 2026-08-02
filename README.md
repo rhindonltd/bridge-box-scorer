@@ -15,15 +15,15 @@ A real-time scoring application for duplicate bridge clubs. Designed to run on a
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| UI | React 19, Tailwind CSS 4 |
-| Language | TypeScript 7 |
-| Real-time | Socket.IO 4 |
-| Database | SQLite (better-sqlite3) + Drizzle ORM |
-| State | SWR + Socket.IO push sync |
-| Testing | Vitest, Playwright, Storybook 10 |
+| Layer     | Technology                            |
+| --------- | ------------------------------------- |
+| Framework | Next.js 16 (App Router)               |
+| UI        | React 19, Tailwind CSS 4              |
+| Language  | TypeScript 7                          |
+| Real-time | Socket.IO 4                           |
+| Database  | SQLite (better-sqlite3) + Drizzle ORM |
+| State     | SWR + Socket.IO push sync             |
+| Testing   | Vitest, Playwright, Storybook 10      |
 
 ## Prerequisites
 
@@ -47,17 +47,17 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server (Next.js + Socket.IO, hot reload) |
-| `npm run build` | Production build (runs migrations first) |
-| `npm start` | Start production server |
-| `npm test` | Run unit tests (Vitest) |
-| `npm run coverage` | Run tests with coverage report |
-| `npm run e2e` | Run Playwright E2E tests |
-| `npm run lint` | ESLint check |
-| `npm run format` | Prettier format |
-| `npm run storybook` | Launch Storybook on port 6006 |
+| Command             | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| `npm run dev`       | Start dev server (Next.js + Socket.IO, hot reload) |
+| `npm run build`     | Production build (runs migrations first)           |
+| `npm start`         | Start production server                            |
+| `npm test`          | Run unit tests (Vitest)                            |
+| `npm run coverage`  | Run tests with coverage report                     |
+| `npm run e2e`       | Run Playwright E2E tests                           |
+| `npm run lint`      | ESLint check                                       |
+| `npm run format`    | Prettier format                                    |
+| `npm run storybook` | Launch Storybook on port 6006                      |
 
 ## Project Structure
 
@@ -136,10 +136,10 @@ npm run storybook
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `./data` | Directory for system databases |
-| `DATABASE_GAMES_URL` | `./data/games` | Directory for per-game databases |
+| Variable              | Default                 | Description                            |
+| --------------------- | ----------------------- | -------------------------------------- |
+| `DATABASE_URL`        | `./data`                | Directory for system databases         |
+| `DATABASE_GAMES_URL`  | `./data/games`          | Directory for per-game databases       |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | App URL (used by socket client + CORS) |
 
 ## Deployment

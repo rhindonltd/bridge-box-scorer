@@ -106,9 +106,7 @@ describe("registerCreateGameHandler", () => {
     const cb = vi.fn();
     await handler({ name: "open-game" }, cb);
 
-    expect(cb).toHaveBeenCalledWith(
-      expect.objectContaining({ success: true }),
-    );
+    expect(cb).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
     expect(createBridgeGame).toHaveBeenCalled();
   });
 

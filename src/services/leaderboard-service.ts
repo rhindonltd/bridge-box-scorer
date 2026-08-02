@@ -3,7 +3,11 @@
 import { getDb as getPairsDb } from "@/db/games/pairs";
 import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
-import { score, ScoredTraveller, ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
+import {
+  score,
+  ScoredTraveller,
+  ScoredTravellerOfType,
+} from "@/scoring/traveller/score-traveller";
 import { PairTraveller } from "@/model/traveller";
 import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
 import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";
@@ -17,7 +21,10 @@ export async function computeLeaderboard(game: BridgeGame) {
   return computePairsLeaderboard(game.gameId, scoringMode);
 }
 
-async function computePairsLeaderboard(gameId: string, scoringMode: ScoringMode) {
+async function computePairsLeaderboard(
+  gameId: string,
+  scoringMode: ScoringMode,
+) {
   const db = await getPairsDb(gameId);
   const allBoardRows = await db.select().from(pairsBoards);
 
@@ -45,19 +52,29 @@ async function computePairsLeaderboard(gameId: string, scoringMode: ScoringMode)
       lines: linesWithResults.map((r) => ({
         nsId: r.ns,
         ewId: r.ew,
-        outcome: (r.directorOverrideResult ?? r.confirmedResult) as BoardOutcome,
+        outcome: (r.directorOverrideResult ??
+          r.confirmedResult) as BoardOutcome,
       })),
     };
 
     travellers.push(score(pairTraveller, scoringMode));
   }
 
-  const overallScore = scoringMode === "MP"
-    ? calculateOverallMPResults(travellers as ScoredTravellerOfType<"PAIR_MP">[])
-    : calculatePairXIMPResults(travellers as ScoredTravellerOfType<"PAIR_XIMP">[]);
+  const overallScore =
+    scoringMode === "MP"
+      ? calculateOverallMPResults(
+          travellers as ScoredTravellerOfType<"PAIR_MP">[],
+        )
+      : calculatePairXIMPResults(
+          travellers as ScoredTravellerOfType<"PAIR_XIMP">[],
+        );
 
   const pairs = await findPairs(gameId);
-  const participants = pairs.map((p) => ({ ...p, type: "PAIR" as const, id: p.initialSeat }));
+  const participants = pairs.map((p) => ({
+    ...p,
+    type: "PAIR" as const,
+    id: p.initialSeat,
+  }));
 
   return { type: overallScore.type, overallScore, participants };
 }

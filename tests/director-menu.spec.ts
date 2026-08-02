@@ -15,21 +15,21 @@ test.describe("Director Menu", () => {
     await expect(
       page.getByRole("button", { name: "Create/Amend Timer" }),
     ).toBeVisible({ timeout: 10000 });
-    await expect(
-      page.getByRole("button", { name: "Travellers" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Travellers" })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(
       page.getByRole("button", { name: "Change Game Status" }),
     ).toBeVisible({ timeout: 10000 });
-    await expect(
-      page.getByRole("button", { name: "Movement" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Movement" })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(
       page.getByRole("button", { name: "Download USEBIO" }),
     ).toBeVisible({ timeout: 10000 });
-    await expect(
-      page.getByRole("button", { name: "Delete Game" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Delete Game" })).toBeVisible(
+      { timeout: 10000 },
+    );
   });
 
   test("Timer button navigates to /manage/[id]/timer", async ({

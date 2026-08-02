@@ -18,7 +18,9 @@ export const boards = sqliteTable(
     ew: text("ew").notNull(),
     confirmedResult: text("confirmed_result").$type<BoardOutcome>(),
     confirmedLead: text("confirmed_lead").$type<Card>(),
-    directorOverrideResult: text("director_override_result").$type<BoardOutcome>(),
+    directorOverrideResult: text(
+      "director_override_result",
+    ).$type<BoardOutcome>(),
     directorOverrideLead: text("director_override_lead").$type<Card>(),
     status: text("status", {
       enum: BoardStatuses,

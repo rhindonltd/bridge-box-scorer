@@ -22,9 +22,9 @@ test.describe("Movement", () => {
 
     await page.goto(`/manage/${gameId}/movement`);
 
-    await expect(
-      page.getByText("No movement set up yet."),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("No movement set up yet.")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("movement API returns JSON for existing game", async ({

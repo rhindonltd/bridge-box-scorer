@@ -61,9 +61,9 @@ describe("socket", () => {
         },
       );
 
-      await expect(
-        emitWithAck("test:event", { foo: "bar" }),
-      ).rejects.toThrow("Something went wrong");
+      await expect(emitWithAck("test:event", { foo: "bar" })).rejects.toThrow(
+        "Something went wrong",
+      );
     });
 
     it("rejects with timeout error when no response within timeout", async () => {

@@ -66,7 +66,11 @@ vi.mock("@/db/movements/queries/get-movement", () => ({
 }));
 
 vi.mock("@/db/games/pairs", () => ({
-  getDb: vi.fn(async () => ({ transaction: vi.fn(async (fn: any) => fn({ insert: vi.fn(() => ({ values: vi.fn() })) })) })),
+  getDb: vi.fn(async () => ({
+    transaction: vi.fn(async (fn: any) =>
+      fn({ insert: vi.fn(() => ({ values: vi.fn() })) }),
+    ),
+  })),
 }));
 
 vi.mock("@/timer/game-store", () => ({
@@ -167,11 +171,15 @@ describe("Multi-client Socket.IO scenarios", () => {
   describe("Room-scoped participant broadcasts", () => {
     it("only clients in the game room receive PARTICIPANTS updates", async () => {
       vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok", role: "DIRECTOR", gameId: "g1",
+        token: "tok",
+        role: "DIRECTOR",
+        gameId: "g1",
       } as any);
       vi.mocked(createPlayer).mockResolvedValue({ id: 1 } as any);
       vi.mocked(createPairParticipant).mockResolvedValue(undefined);
-      vi.mocked(findPairs).mockResolvedValue([{ type: "PAIR", initialSeat: "1NS" }] as any);
+      vi.mocked(findPairs).mockResolvedValue([
+        { type: "PAIR", initialSeat: "1NS" },
+      ] as any);
 
       const { client, close, addClient } = await createFullServer();
       closeServer = close;
@@ -184,10 +192,16 @@ describe("Multi-client Socket.IO scenarios", () => {
       await emitWithAck(playerInRoom, SocketEvents.JOIN_GAME, { gameId: "g1" });
 
       // Set up listeners
-      const inRoomReceived = waitForEvent(playerInRoom, SocketEvents.PARTICIPANTS, 2000)
-        .catch(() => "timeout");
-      const outsideReceived = waitForEvent(playerOutsideRoom, SocketEvents.PARTICIPANTS, 500)
-        .catch(() => "timeout");
+      const inRoomReceived = waitForEvent(
+        playerInRoom,
+        SocketEvents.PARTICIPANTS,
+        2000,
+      ).catch(() => "timeout");
+      const outsideReceived = waitForEvent(
+        playerOutsideRoom,
+        SocketEvents.PARTICIPANTS,
+        500,
+      ).catch(() => "timeout");
 
       // Director (also needs to be in the room for the broadcast target)
       await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "g1" });
@@ -230,7 +244,9 @@ describe("Multi-client Socket.IO scenarios", () => {
       const updatedGame = { ...game, tables: 5 };
 
       vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok", role: "DIRECTOR", gameId: "g1",
+        token: "tok",
+        role: "DIRECTOR",
+        gameId: "g1",
       } as any);
       vi.mocked(findGameById)
         .mockResolvedValueOnce(game as any)
@@ -267,10 +283,13 @@ describe("Multi-client Socket.IO scenarios", () => {
   describe("Eviction broadcasts", () => {
     it("all players in room see updated PARTICIPANTS after eviction", async () => {
       vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok", role: "DIRECTOR", gameId: "g1",
+        token: "tok",
+        role: "DIRECTOR",
+        gameId: "g1",
       } as any);
       vi.mocked(findGameById).mockResolvedValue({
-        gameId: "g1", gameType: "PAIRS",
+        gameId: "g1",
+        gameType: "PAIRS",
       } as any);
       vi.mocked(deletePairParticipant).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]); // empty after eviction
@@ -303,11 +322,14 @@ describe("Multi-client Socket.IO scenarios", () => {
   describe("Director handoff flow", () => {
     it("director generates code, second user claims it and becomes director", async () => {
       vi.mocked(findLoginSession).mockReturnValue({
-        token: "dir-tok", role: "DIRECTOR", gameId: "g1",
+        token: "dir-tok",
+        role: "DIRECTOR",
+        gameId: "g1",
       } as any);
       vi.mocked(createShareCode).mockResolvedValue("X9K4MP");
       vi.mocked(validateAndClaimShareCode).mockResolvedValue({
-        valid: true, gameId: "g1",
+        valid: true,
+        gameId: "g1",
       });
       vi.mocked(createLoginSession).mockResolvedValue(undefined);
 
@@ -346,8 +368,16 @@ describe("Multi-client Socket.IO scenarios", () => {
         gameId: "g1",
       } as any);
       vi.mocked(findGameById)
-        .mockResolvedValueOnce({ gameId: "g1", gameType: "PAIRS", tables: 3 } as any)
-        .mockResolvedValueOnce({ gameId: "g1", gameType: "PAIRS", tables: 4 } as any);
+        .mockResolvedValueOnce({
+          gameId: "g1",
+          gameType: "PAIRS",
+          tables: 3,
+        } as any)
+        .mockResolvedValueOnce({
+          gameId: "g1",
+          gameType: "PAIRS",
+          tables: 4,
+        } as any);
       vi.mocked(updateTableCount).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
 
@@ -369,9 +399,16 @@ describe("Multi-client Socket.IO scenarios", () => {
   describe("Timer broadcasts to room", () => {
     it("players in room receive timer:sync when director starts timer", async () => {
       const timerState = {
-        version: 1, phase: "play", board: 1, round: 1,
-        boardsPerRound: 3, totalRounds: 5, playDuration: 420,
-        moveDuration: 60, isRunning: true, phaseStartedAt: Date.now(),
+        version: 1,
+        phase: "play",
+        board: 1,
+        round: 1,
+        boardsPerRound: 3,
+        totalRounds: 5,
+        playDuration: 420,
+        moveDuration: 60,
+        isRunning: true,
+        phaseStartedAt: Date.now(),
         remainingMs: null,
       };
 
@@ -382,7 +419,9 @@ describe("Multi-client Socket.IO scenarios", () => {
       };
 
       vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok", role: "DIRECTOR", gameId: "g1",
+        token: "tok",
+        role: "DIRECTOR",
+        gameId: "g1",
       } as any);
       vi.mocked(getEngine).mockResolvedValue(mockEngine as any);
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
@@ -420,10 +459,13 @@ describe("Multi-client Socket.IO scenarios", () => {
   describe("Join and leave room mechanics", () => {
     it("client receives room events after joining, stops after leaving", async () => {
       vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok", role: "DIRECTOR", gameId: "g1",
+        token: "tok",
+        role: "DIRECTOR",
+        gameId: "g1",
       } as any);
       vi.mocked(findGameById).mockResolvedValue({
-        gameId: "g1", gameType: "PAIRS",
+        gameId: "g1",
+        gameType: "PAIRS",
       } as any);
       vi.mocked(deletePairParticipant).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
@@ -440,10 +482,16 @@ describe("Multi-client Socket.IO scenarios", () => {
       // Player joins → should receive broadcasts
       await emitWithAck(player, SocketEvents.JOIN_GAME, { gameId: "g1" });
 
-      const firstBroadcast = waitForEvent(player, SocketEvents.PARTICIPANTS, 1000);
+      const firstBroadcast = waitForEvent(
+        player,
+        SocketEvents.PARTICIPANTS,
+        1000,
+      );
 
       await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
-        gameId: "g1", seat: "1NS", directorToken: "tok",
+        gameId: "g1",
+        seat: "1NS",
+        directorToken: "tok",
       });
 
       expect(await firstBroadcast).toMatchObject({ participants: [] });
@@ -451,13 +499,18 @@ describe("Multi-client Socket.IO scenarios", () => {
       // Player leaves → should NOT receive further broadcasts
       await emitWithAck(player, SocketEvents.LEAVE_GAME, { gameId: "g1" });
 
-      const secondBroadcast = waitForEvent(player, SocketEvents.PARTICIPANTS, 500)
-        .catch(() => "timeout");
+      const secondBroadcast = waitForEvent(
+        player,
+        SocketEvents.PARTICIPANTS,
+        500,
+      ).catch(() => "timeout");
 
       vi.mocked(findPairs).mockResolvedValue([{ type: "PAIR" }] as any);
 
       await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
-        gameId: "g1", seat: "2NS", directorToken: "tok",
+        gameId: "g1",
+        seat: "2NS",
+        directorToken: "tok",
       });
 
       expect(await secondBroadcast).toBe("timeout");

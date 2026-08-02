@@ -75,21 +75,27 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-1", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-1",
+      directorToken: "test-token",
+    });
 
     expect(mockEngine.start).toHaveBeenCalled();
-    expect(updateTimerState).toHaveBeenCalledWith(
-      "PAIRS",
-      "game-1",
-      mockState,
-    );
+    expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-1", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-1");
-    expect(io._emit).toHaveBeenCalledWith("timer:sync", expect.objectContaining(mockState));
+    expect(io._emit).toHaveBeenCalledWith(
+      "timer:sync",
+      expect.objectContaining(mockState),
+    );
     expect(scheduleGame).toHaveBeenCalledWith(
       "PAIRS",
       "game-1",
       mockEngine,
-      expect.objectContaining({ updateTimerState, broadcast: expect.any(Function) }),
+      expect.objectContaining({
+        updateTimerState,
+        broadcast: expect.any(Function),
+      }),
     );
   });
 
@@ -102,7 +108,11 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-1", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-1",
+      directorToken: "test-token",
+    });
 
     expect(updateTimerState).not.toHaveBeenCalled();
     expect(scheduleGame).not.toHaveBeenCalled();
@@ -117,7 +127,11 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-1", directorToken: "bad-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-1",
+      directorToken: "bad-token",
+    });
 
     expect(getEngine).not.toHaveBeenCalled();
   });
@@ -141,14 +155,20 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "",
+      directorToken: "test-token",
+    });
 
     expect(getEngine).not.toHaveBeenCalled();
   });
 
   it("handles engine.start() throwing gracefully", async () => {
     const mockEngine = {
-      start: vi.fn(() => { throw new Error("engine error"); }),
+      start: vi.fn(() => {
+        throw new Error("engine error");
+      }),
       getState: vi.fn(),
     };
 
@@ -161,7 +181,11 @@ describe("registerStartTimerHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     // Should not throw
-    await handler({ gameType: "PAIRS", gameId: "game-1", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-1",
+      directorToken: "test-token",
+    });
 
     expect(updateTimerState).not.toHaveBeenCalled();
   });

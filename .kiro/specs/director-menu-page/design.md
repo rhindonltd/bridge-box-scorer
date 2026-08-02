@@ -34,6 +34,7 @@ interface DirectorMenuPageProps {
 ```
 
 **Responsibilities:**
+
 - Renders a full-page menu with the game/event name in a header bar
 - Displays 8 menu items as stacked buttons with icons
 - Uses `useGame()` to read the event name for the header
@@ -42,16 +43,16 @@ interface DirectorMenuPageProps {
 
 **Menu Items (in order):**
 
-| Label | Icon | Callback |
-|-------|------|----------|
-| Create/Amend Timer | `Clock` | `onTimerClick` |
-| Correct Result | `PenLine` | `onCorrectResultClick` |
-| Change Game Status | `ToggleRight` | `onChangeStatusClick` |
-| Movement | `ArrowRightLeft` | `onMovementClick` |
-| View Round Status | `ClipboardList` | `onViewRoundStatusClick` |
-| Lock/Unlock Round | `Lock` | `onLockUnlockRoundClick` |
-| Export Results | `Download` | `onExportResultsClick` |
-| Delete Game | `Trash2` | `onDeleteGameClick` |
+| Label              | Icon             | Callback                 |
+| ------------------ | ---------------- | ------------------------ |
+| Create/Amend Timer | `Clock`          | `onTimerClick`           |
+| Correct Result     | `PenLine`        | `onCorrectResultClick`   |
+| Change Game Status | `ToggleRight`    | `onChangeStatusClick`    |
+| Movement           | `ArrowRightLeft` | `onMovementClick`        |
+| View Round Status  | `ClipboardList`  | `onViewRoundStatusClick` |
+| Lock/Unlock Round  | `Lock`           | `onLockUnlockRoundClick` |
+| Export Results     | `Download`       | `onExportResultsClick`   |
+| Delete Game        | `Trash2`         | `onDeleteGameClick`      |
 
 ### Styling Conventions
 
@@ -67,14 +68,15 @@ Following existing codebase patterns:
 
 ## Routing
 
-| Route | Component | Purpose |
-|-------|-----------|---------|
-| `/manage/[id]/menu` | `DirectorMenuPage` (wired) | Director operations menu |
-| `/manage/[id]/timer` | `ControlsPage` | Timer creation/amendment |
+| Route                | Component                  | Purpose                  |
+| -------------------- | -------------------------- | ------------------------ |
+| `/manage/[id]/menu`  | `DirectorMenuPage` (wired) | Director operations menu |
+| `/manage/[id]/timer` | `ControlsPage`             | Timer creation/amendment |
 
 ### Route: `/manage/[id]/menu/page.tsx`
 
 Updates the existing file to wire `DirectorMenuPage` with `useRouter()` navigation:
+
 - `onTimerClick` → `router.push(\`/manage/${id}/timer\`)`
 - All other callbacks → `alert("Coming soon")` placeholder
 
@@ -99,16 +101,16 @@ manage/[id]/layout.tsx (provides GameContext)
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Menu item completeness and ordering
 
-*For any* rendered instance of DirectorMenuPage, the component SHALL display exactly 8 menu items in the specified order: Create/Amend Timer, Correct Result, Change Game Status, Movement, View Round Status, Lock/Unlock Round, Export Results, Delete Game.
+_For any_ rendered instance of DirectorMenuPage, the component SHALL display exactly 8 menu items in the specified order: Create/Amend Timer, Correct Result, Change Game Status, Movement, View Round Status, Lock/Unlock Round, Export Results, Delete Game.
 
 **Validates: Requirements 1.1**
 
 ### Property 2: Callback isolation
 
-*For any* menu item click, the component SHALL invoke exactly the corresponding callback prop and no other callback prop.
+_For any_ menu item click, the component SHALL invoke exactly the corresponding callback prop and no other callback prop.
 
 **Validates: Requirements 1.3**

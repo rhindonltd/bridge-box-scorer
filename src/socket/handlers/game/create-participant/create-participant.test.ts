@@ -127,7 +127,11 @@ describe("registerCreateParticipantHandler (unit)", () => {
 
       expect(createPair).toHaveBeenCalledWith(
         "game-1",
-        expect.objectContaining({ initialSeat: "1NS", player1: 10, player2: 11 }),
+        expect.objectContaining({
+          initialSeat: "1NS",
+          player1: 10,
+          player2: 11,
+        }),
       );
 
       expect(emitFn).toHaveBeenCalledWith(

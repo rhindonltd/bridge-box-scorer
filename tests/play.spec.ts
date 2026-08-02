@@ -57,19 +57,16 @@ async function setupPlayPageIntercepts(
   gameId: string,
 ) {
   // Intercept game API (SWR fetch from GameContext)
-  await page.route(
-    new RegExp(`/api/games/${gameId}$`),
-    (route, request) => {
-      if (request.method() === "GET") {
-        return route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({ ...mockGameData, gameId }),
-        });
-      }
-      return route.continue();
-    },
-  );
+  await page.route(new RegExp(`/api/games/${gameId}$`), (route, request) => {
+    if (request.method() === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ...mockGameData, gameId }),
+      });
+    }
+    return route.continue();
+  });
 
   // Intercept schedule API
   await page.route(`**/api/games/${gameId}/schedule/1NS`, (route) => {
@@ -109,9 +106,9 @@ test.describe("Play Page", () => {
     await page.goto(`/play/${gameId}/1NS`);
 
     // Wait for round info to render
-    await expect(
-      page.getByRole("button", { name: "Enter Round" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Enter Round" })).toBeVisible(
+      { timeout: 10000 },
+    );
 
     // Click "Enter Round" to transition to contract entry
     await page.getByRole("button", { name: "Enter Round" }).click();
@@ -121,9 +118,7 @@ test.describe("Play Page", () => {
     // Verify the sub-header with table/round context
     await expect(page.getByText("Table 1, Round 1")).toBeVisible();
     // Verify contract entry UI elements are present
-    await expect(
-      page.getByRole("button", { name: "Pass Out" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Pass Out" })).toBeVisible();
     await expect(page.getByRole("button", { name: "OK" })).toBeVisible();
   });
 
@@ -136,9 +131,9 @@ test.describe("Play Page", () => {
     await page.goto(`/play/${gameId}/1NS`);
 
     // Navigate to contract entry
-    await expect(
-      page.getByRole("button", { name: "Enter Round" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Enter Round" })).toBeVisible(
+      { timeout: 10000 },
+    );
     await page.getByRole("button", { name: "Enter Round" }).click();
     await expect(page.getByText("Board 1")).toBeVisible({ timeout: 10000 });
 
@@ -150,9 +145,9 @@ test.describe("Play Page", () => {
     await okButton.dispatchEvent("submit");
 
     // After submission, the play page transitions to "Waiting for Confirmation"
-    await expect(
-      page.getByText("Waiting for confirmation"),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Waiting for confirmation")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("mismatch screen displays results from both sides", async ({
@@ -164,9 +159,9 @@ test.describe("Play Page", () => {
     await page.goto(`/play/${gameId}/1NS`);
 
     // Navigate to contract entry
-    await expect(
-      page.getByRole("button", { name: "Enter Round" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Enter Round" })).toBeVisible(
+      { timeout: 10000 },
+    );
     await page.getByRole("button", { name: "Enter Round" }).click();
     await expect(page.getByText("Board 1")).toBeVisible({ timeout: 10000 });
 
@@ -176,9 +171,9 @@ test.describe("Play Page", () => {
     await okButton.dispatchEvent("submit");
 
     // Wait for the waiting state
-    await expect(
-      page.getByText("Waiting for confirmation"),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Waiting for confirmation")).toBeVisible({
+      timeout: 10000,
+    });
 
     // Inject a mismatch event via the Socket.IO client connected to the page.
     // The play page listens for "board:mismatch" events on the socket.
@@ -209,9 +204,7 @@ test.describe("Play Page", () => {
     // the mismatch screen cannot be fully tested without a second participant.
     // Verify we are at the "Waiting for Confirmation" state which is the last
     // reachable state before a server-pushed mismatch event.
-    await expect(
-      page.getByText("Waiting for confirmation"),
-    ).toBeVisible();
+    await expect(page.getByText("Waiting for confirmation")).toBeVisible();
     // The page should be rendering without errors
     await expect(page.locator("body")).toBeVisible();
   });

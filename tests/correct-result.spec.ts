@@ -31,7 +31,10 @@ test.describe("Correct Result Wizard", () => {
     // Intercept boards API to return mock board numbers
     await page.route(`**/api/games/${gameId}/boards`, (route, request) => {
       // Only intercept the GET for the board list, not sub-routes
-      if (request.url().endsWith("/boards") || request.url().endsWith("/boards/")) {
+      if (
+        request.url().endsWith("/boards") ||
+        request.url().endsWith("/boards/")
+      ) {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -96,7 +99,9 @@ test.describe("Correct Result Wizard", () => {
     // Assert traveller view renders with Board 1 header
     await expect(page.getByText("Board 1")).toBeVisible({ timeout: 10000 });
     // Assert the instruction text is shown
-    await expect(page.getByText("Tap a row to adjust the result")).toBeVisible();
+    await expect(
+      page.getByText("Tap a row to adjust the result"),
+    ).toBeVisible();
   });
 
   test("selecting traveller line shows contract entry panel", async ({
@@ -106,7 +111,10 @@ test.describe("Correct Result Wizard", () => {
 
     // Intercept boards API
     await page.route(`**/api/games/${gameId}/boards`, (route, request) => {
-      if (request.url().endsWith("/boards") || request.url().endsWith("/boards/")) {
+      if (
+        request.url().endsWith("/boards") ||
+        request.url().endsWith("/boards/")
+      ) {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -169,7 +177,10 @@ test.describe("Correct Result Wizard", () => {
 
     // Intercept boards API
     await page.route(`**/api/games/${gameId}/boards`, (route, request) => {
-      if (request.url().endsWith("/boards") || request.url().endsWith("/boards/")) {
+      if (
+        request.url().endsWith("/boards") ||
+        request.url().endsWith("/boards/")
+      ) {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -181,7 +192,10 @@ test.describe("Correct Result Wizard", () => {
 
     // Intercept board 1 instances API
     await page.route(`**/api/games/${gameId}/boards/1`, (route) => {
-      if (route.request().method() === "GET" && !route.request().url().includes("override")) {
+      if (
+        route.request().method() === "GET" &&
+        !route.request().url().includes("override")
+      ) {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -255,7 +269,10 @@ test.describe("Correct Result Wizard", () => {
 
     // Intercept boards API
     await page.route(`**/api/games/${gameId}/boards`, (route, request) => {
-      if (request.url().endsWith("/boards") || request.url().endsWith("/boards/")) {
+      if (
+        request.url().endsWith("/boards") ||
+        request.url().endsWith("/boards/")
+      ) {
         return route.fulfill({
           status: 200,
           contentType: "application/json",
@@ -267,7 +284,10 @@ test.describe("Correct Result Wizard", () => {
 
     // Intercept board 1 instances API
     await page.route(`**/api/games/${gameId}/boards/1`, (route) => {
-      if (route.request().method() === "GET" && !route.request().url().includes("override")) {
+      if (
+        route.request().method() === "GET" &&
+        !route.request().url().includes("override")
+      ) {
         return route.fulfill({
           status: 200,
           contentType: "application/json",

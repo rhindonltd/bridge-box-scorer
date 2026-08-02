@@ -78,14 +78,14 @@ describe("registerNextRoundHandler", () => {
     registerNextRoundHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-3", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-3",
+      directorToken: "test-token",
+    });
 
     expect(mockEngine.nextPhase).toHaveBeenCalled();
-    expect(updateTimerState).toHaveBeenCalledWith(
-      "PAIRS",
-      "game-3",
-      mockState,
-    );
+    expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-3", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-3");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
@@ -95,7 +95,10 @@ describe("registerNextRoundHandler", () => {
       "PAIRS",
       "game-3",
       mockEngine,
-      expect.objectContaining({ updateTimerState, broadcast: expect.any(Function) }),
+      expect.objectContaining({
+        updateTimerState,
+        broadcast: expect.any(Function),
+      }),
     );
   });
 
@@ -108,7 +111,11 @@ describe("registerNextRoundHandler", () => {
     registerNextRoundHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-3", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-3",
+      directorToken: "test-token",
+    });
 
     expect(updateTimerState).not.toHaveBeenCalled();
   });
@@ -122,7 +129,11 @@ describe("registerNextRoundHandler", () => {
     registerNextRoundHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-3", directorToken: "bad-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-3",
+      directorToken: "bad-token",
+    });
 
     expect(getEngine).not.toHaveBeenCalled();
   });
@@ -141,7 +152,9 @@ describe("registerNextRoundHandler", () => {
 
   it("catches and logs errors from engine operations", async () => {
     const mockEngine = {
-      nextPhase: vi.fn().mockImplementation(() => { throw new Error("next phase error"); }),
+      nextPhase: vi.fn().mockImplementation(() => {
+        throw new Error("next phase error");
+      }),
       getState: vi.fn(),
     };
 
@@ -153,7 +166,11 @@ describe("registerNextRoundHandler", () => {
     registerNextRoundHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-3", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-3",
+      directorToken: "test-token",
+    });
 
     expect(updateTimerState).not.toHaveBeenCalled();
   });

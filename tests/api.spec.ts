@@ -120,7 +120,9 @@ test.describe("API Routes", () => {
       const body = await response.json();
       expect(Array.isArray(body)).toBe(true);
       expect(body.length).toBeGreaterThanOrEqual(1);
-      expect(body.some((p: { firstName: string }) => p.firstName === "John")).toBe(true);
+      expect(
+        body.some((p: { firstName: string }) => p.firstName === "John"),
+      ).toBe(true);
     });
 
     test("GET /api/players/search?q=123 searches by EBU number", async ({
@@ -134,7 +136,9 @@ test.describe("API Routes", () => {
       expect(Array.isArray(body)).toBe(true);
       expect(body.length).toBeGreaterThanOrEqual(1);
       expect(
-        body.some((p: { nationalId: string }) => p.nationalId?.startsWith("123")),
+        body.some((p: { nationalId: string }) =>
+          p.nationalId?.startsWith("123"),
+        ),
       ).toBe(true);
     });
 
@@ -265,9 +269,7 @@ test.describe("API Routes", () => {
       const id = movements[0].id;
 
       // Now fetch the movement detail
-      const response = await request.get(
-        `/api/movements/detail/PAIRS/${id}`,
-      );
+      const response = await request.get(`/api/movements/detail/PAIRS/${id}`);
 
       expect(response.ok()).toBe(true);
       expect(response.headers()["content-type"]).toContain("application/json");
@@ -293,9 +295,7 @@ test.describe("API Routes", () => {
   });
 
   test.describe("System API", () => {
-    test("POST /api/system/restart returns a response", async ({
-      request,
-    }) => {
+    test("POST /api/system/restart returns a response", async ({ request }) => {
       const response = await request.post("/api/system/restart");
 
       // The endpoint may require an admin key header and return 401/403 without it.

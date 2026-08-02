@@ -22,7 +22,10 @@ export function registerShareCodeHandlers(socket: Socket, io: Server) {
    */
   socket.on(
     SocketEvents.GENERATE_SHARE_CODE,
-    async (payload: unknown, cb?: (res: { success: boolean; code?: string; error?: string }) => void) => {
+    async (
+      payload: unknown,
+      cb?: (res: { success: boolean; code?: string; error?: string }) => void,
+    ) => {
       const parsed = generateSchema.safeParse(payload);
       if (!parsed.success) {
         cb?.({ success: false, error: "Invalid payload" });
@@ -48,7 +51,15 @@ export function registerShareCodeHandlers(socket: Socket, io: Server) {
    */
   socket.on(
     SocketEvents.CLAIM_DIRECTOR_CODE,
-    async (payload: unknown, cb?: (res: { success: boolean; directorToken?: string; gameId?: string; error?: string }) => void) => {
+    async (
+      payload: unknown,
+      cb?: (res: {
+        success: boolean;
+        directorToken?: string;
+        gameId?: string;
+        error?: string;
+      }) => void,
+    ) => {
       const parsed = claimSchema.safeParse(payload);
       if (!parsed.success) {
         cb?.({ success: false, error: "Invalid payload" });

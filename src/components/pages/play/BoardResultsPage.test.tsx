@@ -4,7 +4,12 @@ import { BoardResultsPage } from "./BoardResultsPage";
 
 vi.mock("@/context/GameContext", () => ({
   useGame: () => ({
-    game: { eventName: "Monday Pairs", gameId: "g1", gameType: "PAIRS", tables: 4 },
+    game: {
+      eventName: "Monday Pairs",
+      gameId: "g1",
+      gameType: "PAIRS",
+      tables: 4,
+    },
   }),
 }));
 

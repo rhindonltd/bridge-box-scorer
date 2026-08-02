@@ -39,7 +39,10 @@ export function registerCreateGameHandler(socket: Socket, io: Server) {
         });
       } catch (error) {
         console.error("Failed to create game:", error);
-        cb({ error: error instanceof Error ? error.message : "Unknown error", success: false });
+        cb({
+          error: error instanceof Error ? error.message : "Unknown error",
+          success: false,
+        });
       }
     },
   );

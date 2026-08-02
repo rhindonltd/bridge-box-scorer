@@ -1,7 +1,4 @@
-import {
-  AssignedPair,
-  TravellerParticipantMode,
-} from "@/model/participants";
+import { AssignedPair, TravellerParticipantMode } from "@/model/participants";
 import { AssignedTeam } from "./participants";
 
 export type TeamMode = "TEAM";

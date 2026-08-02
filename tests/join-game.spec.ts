@@ -53,7 +53,6 @@ test.describe("Join Game Flow", () => {
   });
 });
 
-
 test.describe("Join Game with Existing Game", () => {
   test("joinable game card is visible with event name", async ({ page }) => {
     const eventName = `Join E2E ${Date.now()}`;

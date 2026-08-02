@@ -15,12 +15,14 @@ vi.mock("@/components/pages/mainmenu/MainMenuPage", () => ({
     onCreateNewGame,
     onJoinGame,
     onManagePastGames,
+    onRoomDisplay,
     onOpenSettings,
   }: any) => (
     <div>
       <button onClick={onCreateNewGame}>Create Game</button>
       <button onClick={onJoinGame}>Join Game</button>
       <button onClick={onManagePastGames}>Manage Games</button>
+      <button onClick={onRoomDisplay}>Room Display</button>
       <button onClick={onOpenSettings}>Settings</button>
     </div>
   ),
@@ -49,6 +51,12 @@ describe("PlayerLobbyPage", () => {
     expect(pushMock).toHaveBeenCalledWith("/manage");
   });
 
+  it("navigates to /display when room display is clicked", () => {
+    render(<PlayerLobbyPage />);
+    fireEvent.click(screen.getByText("Room Display"));
+    expect(pushMock).toHaveBeenCalledWith("/display");
+  });
+
   it("navigates to /settings when settings is clicked", () => {
     render(<PlayerLobbyPage />);
     fireEvent.click(screen.getByText("Settings"));
@@ -60,6 +68,7 @@ describe("PlayerLobbyPage", () => {
     expect(screen.getByText("Create Game")).toBeInTheDocument();
     expect(screen.getByText("Join Game")).toBeInTheDocument();
     expect(screen.getByText("Manage Games")).toBeInTheDocument();
+    expect(screen.getByText("Room Display")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
   });
 });

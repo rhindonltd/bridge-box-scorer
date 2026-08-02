@@ -28,9 +28,7 @@ describe("useSocketEvent", () => {
   it("unsubscribes from the socket event on unmount", () => {
     const handler = vi.fn();
 
-    const { unmount } = renderHook(() =>
-      useSocketEvent("test-event", handler),
-    );
+    const { unmount } = renderHook(() => useSocketEvent("test-event", handler));
 
     unmount();
 

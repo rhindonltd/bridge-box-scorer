@@ -59,7 +59,11 @@ interface GameFixture {
   directorToken: string;
 }
 
-async function createGameViaUI(page: Page, eventName: string, tables: number = 2): Promise<GameFixture> {
+async function createGameViaUI(
+  page: Page,
+  eventName: string,
+  tables: number = 2,
+): Promise<GameFixture> {
   await page.goto("/create");
   await page.getByLabel("Event Name").fill(eventName);
   await page.getByLabel("Director Name").fill("E2E Director");
@@ -81,7 +85,7 @@ async function createGameViaUI(page: Page, eventName: string, tables: number = 2
   // Extract director token from localStorage
   const directorToken = await page.evaluate(
     (gid) => localStorage.getItem(`director:${gid}`),
-    gameId
+    gameId,
   );
 
   return { gameId, eventName, directorToken: directorToken! };
@@ -124,7 +128,7 @@ export const test = base.extend<{ directorContext: DirectorContext }>({
     const gameId = page.url().split("/create/")[1];
     const directorToken = await page.evaluate(
       (gid) => localStorage.getItem(`director:${gid}`),
-      gameId
+      gameId,
     );
 
     await use({ page, gameId, eventName, directorToken: directorToken! });
@@ -139,7 +143,11 @@ export { expect };
 Several tests require a game in `JOINABLE` status. After creating a game via the UI fixture (which produces a `CREATED` game), we use the REST API to transition the status:
 
 ```typescript
-async function makeGameJoinable(request: APIRequestContext, gameId: string, directorToken: string) {
+async function makeGameJoinable(
+  request: APIRequestContext,
+  gameId: string,
+  directorToken: string,
+) {
   const res = await request.post(`/api/games/${gameId}/status`, {
     data: { status: "JOINABLE", directorToken },
   });
@@ -162,7 +170,7 @@ This is possible because the `/api/games/[gameId]/status` endpoint accepts the d
 export async function navigateToDirectorPage(
   page: Page,
   gameId: string,
-  subPage: string
+  subPage: string,
 ): Promise<void> {
   await page.goto(`/manage/${gameId}/${subPage}`);
   await page.waitForLoadState("networkidle");
@@ -172,14 +180,14 @@ export async function navigateToDirectorPage(
 export async function interceptRoute(
   page: Page,
   urlPattern: string | RegExp,
-  response: { status: number; body: object }
+  response: { status: number; body: object },
 ): Promise<void> {
   await page.route(urlPattern, (route) =>
     route.fulfill({
       status: response.status,
       contentType: "application/json",
       body: JSON.stringify(response.body),
-    })
+    }),
   );
 }
 ```
@@ -229,7 +237,10 @@ For tests that verify error display (Req 5.4, 6.5, 10.3), use Playwright's `page
 ```typescript
 test("shows error when delete API fails", async ({ page }) => {
   await page.route("**/api/games/*/delete", (route) =>
-    route.fulfill({ status: 500, body: JSON.stringify({ error: "Server error" }) })
+    route.fulfill({
+      status: 500,
+      body: JSON.stringify({ error: "Server error" }),
+    }),
   );
   // Navigate and trigger delete...
   await expect(page.getByRole("alert")).toHaveText(/error/i);
@@ -255,35 +266,37 @@ test("shows error when Socket.IO is unavailable", async ({ page }) => {
 
 ### Fully Testable via UI + REST
 
-| Feature | Strategy |
-|---------|----------|
-| Game Creation | Submit form → Socket.IO works in browser |
-| Director Menu | Use fixture with localStorage token |
-| Change Status | Director fixture + REST POST status |
-| Delete Game | Director fixture + REST DELETE |
+| Feature         | Strategy                                       |
+| --------------- | ---------------------------------------------- |
+| Game Creation   | Submit form → Socket.IO works in browser       |
+| Director Menu   | Use fixture with localStorage token            |
+| Change Status   | Director fixture + REST POST status            |
+| Delete Game     | Director fixture + REST DELETE                 |
 | Download USEBIO | Director fixture + form fill + route intercept |
-| Navigation | Standard page navigation assertions |
-| API Endpoints | Direct `request` context calls |
+| Navigation      | Standard page navigation assertions            |
+| API Endpoints   | Direct `request` context calls                 |
 
 ### Partially Testable (Socket.IO Dependencies)
 
-| Feature | What's Testable | What's Not |
-|---------|----------------|------------|
-| Correct Result | Board selection + wizard steps (with pre-seeded data via override API) | Cannot create board data without game having a movement |
-| Movement View | Empty state rendering | Populated movement (requires Socket.IO to select movement) |
-| Play Flow | Page rendering for a given URL | Full round progression (requires participants + movement via Socket.IO) |
-| Timer | Page rendering (empty state) | Active timer (requires Socket.IO timer:create) |
-| Leaderboard | Page rendering + API endpoint | Real scores (requires Socket.IO result submission) |
-| Join → Player | Seat display page | Actual seat assignment (Socket.IO createParticipant) |
+| Feature        | What's Testable                                                        | What's Not                                                              |
+| -------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Correct Result | Board selection + wizard steps (with pre-seeded data via override API) | Cannot create board data without game having a movement                 |
+| Movement View  | Empty state rendering                                                  | Populated movement (requires Socket.IO to select movement)              |
+| Play Flow      | Page rendering for a given URL                                         | Full round progression (requires participants + movement via Socket.IO) |
+| Timer          | Page rendering (empty state)                                           | Active timer (requires Socket.IO timer:create)                          |
+| Leaderboard    | Page rendering + API endpoint                                          | Real scores (requires Socket.IO result submission)                      |
+| Join → Player  | Seat display page                                                      | Actual seat assignment (Socket.IO createParticipant)                    |
 
 ### Recommended Test Flow per Feature
 
 **Director Menu Navigation Tests** — serial flow reusing one game:
+
 1. Create game via fixture
 2. Navigate to `/manage/[id]/menu`
 3. Click each of 6 buttons, verify URL, navigate back
 
 **Change Status Tests** — requires status transitions:
+
 1. Create game (CREATED status)
 2. Navigate to change-status page
 3. Verify all 3 buttons visible, active one distinguished
@@ -291,6 +304,7 @@ test("shows error when Socket.IO is unavailable", async ({ page }) => {
 5. Navigate back to change-status, click "Complete" → verify
 
 **Delete Game Tests** — destructive, run last:
+
 1. Create game via fixture
 2. Navigate to delete-game page
 3. Verify confirmation message with event name
@@ -301,7 +315,7 @@ test("shows error when Socket.IO is unavailable", async ({ page }) => {
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 After analyzing all 14 requirements, the acceptance criteria are overwhelmingly **example-based** or **integration** tests. E2E Playwright tests by nature verify specific user flows through a running application — they are scenario-driven, not property-driven. The criteria test specific page renderings, specific navigation paths, and specific API responses rather than universal properties across randomly generated inputs.
 
@@ -309,19 +323,19 @@ However, there are two structural properties about the test infrastructure itsel
 
 ### Property 1: Director token gate consistency
 
-*For any* director management page (`/manage/[id]/timer`, `/manage/[id]/correct-result`, `/manage/[id]/change-status`, `/manage/[id]/movement`, `/manage/[id]/download-usebio`, `/manage/[id]/delete-game`), navigating to that page without a valid director token in localStorage SHALL result in a redirect to `/manage/select-game`.
+_For any_ director management page (`/manage/[id]/timer`, `/manage/[id]/correct-result`, `/manage/[id]/change-status`, `/manage/[id]/movement`, `/manage/[id]/download-usebio`, `/manage/[id]/delete-game`), navigating to that page without a valid director token in localStorage SHALL result in a redirect to `/manage/select-game`.
 
 **Validates: Requirements 3.1**
 
 ### Property 2: Game API 404 consistency
 
-*For any* game-specific API endpoint (`/api/games/[gameId]/boards`, `/api/games/[gameId]/movement`, `/api/games/[gameId]/leaderboard`, `/api/games/[gameId]/schedule/[seat]`) called with a non-existent gameId, the API SHALL return HTTP 404 with `{ success: false }` in the response body.
+_For any_ game-specific API endpoint (`/api/games/[gameId]/boards`, `/api/games/[gameId]/movement`, `/api/games/[gameId]/leaderboard`, `/api/games/[gameId]/schedule/[seat]`) called with a non-existent gameId, the API SHALL return HTTP 404 with `{ success: false }` in the response body.
 
 **Validates: Requirements 8.2, 9.3, 12.4**
 
 ### Property 3: Navigation back-button consistency
 
-*For any* sub-page reachable from a parent menu (director menu sub-pages, settings sub-pages), activating the back/cancel control SHALL navigate the user to the immediate parent menu page, never to an unrelated page.
+_For any_ sub-page reachable from a parent menu (director menu sub-pages, settings sub-pages), activating the back/cancel control SHALL navigate the user to the immediate parent menu page, never to an unrelated page.
 
 **Validates: Requirements 13.1, 13.2, 13.3, 13.4**
 
@@ -338,6 +352,7 @@ However, there are two structural properties about the test infrastructure itsel
 ### Mobile Viewport Handling
 
 All tests run across webkit, Mobile Chrome, and Mobile Safari. The app is mobile-first, so tests should:
+
 - Use role-based locators that work regardless of viewport
 - Avoid assumptions about element positions
 - Account for mobile navigation patterns (no hover states)

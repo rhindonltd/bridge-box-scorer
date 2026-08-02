@@ -4,8 +4,18 @@ import { buildOverallScore } from "./common";
 describe("buildOverallScore", () => {
   it("aggregates values across travellers for same id", () => {
     const travellers = [
-      { lines: [{ id: "A", value: 10 }, { id: "B", value: 5 }] },
-      { lines: [{ id: "A", value: 8 }, { id: "B", value: 12 }] },
+      {
+        lines: [
+          { id: "A", value: 10 },
+          { id: "B", value: 5 },
+        ],
+      },
+      {
+        lines: [
+          { id: "A", value: 8 },
+          { id: "B", value: 12 },
+        ],
+      },
     ];
 
     const result = buildOverallScore({
@@ -30,7 +40,12 @@ describe("buildOverallScore", () => {
 
   it("ranks results by sort value descending by default", () => {
     const travellers = [
-      { lines: [{ id: "A", value: 5 }, { id: "B", value: 10 }] },
+      {
+        lines: [
+          { id: "A", value: 5 },
+          { id: "B", value: 10 },
+        ],
+      },
     ];
 
     const result = buildOverallScore({
@@ -84,7 +99,12 @@ describe("buildOverallScore", () => {
 
   it("handles tied results", () => {
     const travellers = [
-      { lines: [{ id: "A", value: 10 }, { id: "B", value: 10 }] },
+      {
+        lines: [
+          { id: "A", value: 10 },
+          { id: "B", value: 10 },
+        ],
+      },
     ];
 
     const result = buildOverallScore({

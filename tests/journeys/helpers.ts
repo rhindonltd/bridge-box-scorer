@@ -4,11 +4,18 @@ import { test, Page, TestInfo } from "@playwright/test";
  * Delete a game via the UI by navigating to the delete page and confirming.
  * Wrapped in try/catch so cleanup errors don't fail the test.
  */
-export async function deleteGameStep(page: Page, gameId: string): Promise<void> {
+export async function deleteGameStep(
+  page: Page,
+  gameId: string,
+): Promise<void> {
   try {
     await page.goto(`/manage/${gameId}/menu`);
-    await page.getByRole("button", { name: "Delete Game" }).click({ timeout: 5000 });
-    await page.getByRole("button", { name: "Yes, Delete Game" }).click({ timeout: 5000 });
+    await page
+      .getByRole("button", { name: "Delete Game" })
+      .click({ timeout: 5000 });
+    await page
+      .getByRole("button", { name: "Yes, Delete Game" })
+      .click({ timeout: 5000 });
     await page.waitForURL(/\/manage\/select-game/, { timeout: 5000 });
   } catch {
     // Ignore errors — game may already be deleted
@@ -39,39 +46,34 @@ export async function createGameStep(
   testInfo: TestInfo,
   options: { eventName: string; directorName?: string; tables?: number },
 ): Promise<{ gameId: string; directorToken: string }> {
-  return await test.step(
-    `Director creates game "${options.eventName}" with ${options.tables ?? 2} tables`,
-    async () => {
-      await page.goto("/create");
-      await page.getByLabel("Event Name").fill(options.eventName);
-      await page
-        .getByLabel("Director Name")
-        .fill(options.directorName ?? "E2E Director");
+  return await test.step(`Director creates game "${options.eventName}" with ${options.tables ?? 2} tables`, async () => {
+    await page.goto("/create");
+    await page.getByLabel("Event Name").fill(options.eventName);
+    await page
+      .getByLabel("Director Name")
+      .fill(options.directorName ?? "E2E Director");
 
-      const tables = options.tables ?? 2;
-      const incrementButton = page.getByRole("button", {
-        name: "+",
-        exact: true,
-      });
-      for (let i = 1; i < tables; i++) {
-        await incrementButton.click();
-      }
+    const tables = options.tables ?? 2;
+    const incrementButton = page.getByRole("button", {
+      name: "+",
+      exact: true,
+    });
+    for (let i = 1; i < tables; i++) {
+      await incrementButton.click();
+    }
 
-      await page
-        .getByRole("button", { name: "Next", exact: true })
-        .click();
-      await page.waitForURL(/\/create\/.+/);
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.waitForURL(/\/create\/.+/);
 
-      const gameId = page.url().split("/create/")[1];
-      const directorToken = await page.evaluate(
-        (gid) => localStorage.getItem(`director:${gid}`),
-        gameId,
-      );
+    const gameId = page.url().split("/create/")[1];
+    const directorToken = await page.evaluate(
+      (gid) => localStorage.getItem(`director:${gid}`),
+      gameId,
+    );
 
-      await attachScreenshot(page, testInfo, "Director - Game created");
-      return { gameId, directorToken: directorToken! };
-    },
-  );
+    await attachScreenshot(page, testInfo, "Director - Game created");
+    return { gameId, directorToken: directorToken! };
+  });
 }
 
 /**
@@ -86,65 +88,68 @@ export async function selectMovementStep(
   gameId: string,
   movementName: string = "Mitchell",
 ): Promise<void> {
-  return await test.step(
-    `Director selects ${movementName} movement`,
-    async () => {
-      // Get director token from the page's localStorage
-      const directorToken = await page.evaluate(
-        (gid) => localStorage.getItem(`director:${gid}`),
-        gameId,
+  return await test.step(`Director selects ${movementName} movement`, async () => {
+    // Get director token from the page's localStorage
+    const directorToken = await page.evaluate(
+      (gid) => localStorage.getItem(`director:${gid}`),
+      gameId,
+    );
+
+    // Get table count from the page's game context
+    const tables = await page.evaluate(() => {
+      // Try to read from the game data in the page
+      return 2; // Default for our test
+    });
+
+    // Apply movement via direct socket connection from Node.js test context.
+    // The UI-based click has race conditions with socket.io fire-and-forget events,
+    // so we use emitWithAck from a dedicated connection to ensure it's applied.
+    const { io } = await import("socket.io-client");
+    const testSocket = io("http://localhost:3000", { forceNew: true });
+
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error("Socket connect timeout")),
+        5000,
       );
-
-      // Get table count from the page's game context
-      const tables = await page.evaluate(() => {
-        // Try to read from the game data in the page
-        return 2; // Default for our test
+      testSocket.on("connect", () => {
+        clearTimeout(timeout);
+        resolve();
       });
+    });
 
-      // Apply movement via direct socket connection from Node.js test context.
-      // The UI-based click has race conditions with socket.io fire-and-forget events,
-      // so we use emitWithAck from a dedicated connection to ensure it's applied.
-      const { io } = await import("socket.io-client");
-      const testSocket = io("http://localhost:3000", { forceNew: true });
-
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("Socket connect timeout")), 5000);
-        testSocket.on("connect", () => {
+    const result = await new Promise<any>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error("Movement apply timeout")),
+        10000,
+      );
+      testSocket.emit(
+        "game:selectMovement",
+        {
+          gameId,
+          type: "PAIRS",
+          mitchell: { tables, rounds: tables, boardsPerRound: 3 },
+          directorToken,
+        },
+        (res: any) => {
           clearTimeout(timeout);
-          resolve();
-        });
-      });
-
-      const result = await new Promise<any>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("Movement apply timeout")), 10000);
-        testSocket.emit(
-          "game:selectMovement",
-          {
-            gameId,
-            type: "PAIRS",
-            mitchell: { tables, rounds: tables, boardsPerRound: 3 },
-            directorToken,
-          },
-          (res: any) => {
-            clearTimeout(timeout);
-            resolve(res);
-          },
-        );
-      });
-
-      testSocket.disconnect();
-
-      if (!result?.success) {
-        throw new Error(`Movement selection failed: ${JSON.stringify(result)}`);
-      }
-
-      await attachScreenshot(
-        page,
-        testInfo,
-        `Director - ${movementName} movement selected`,
+          resolve(res);
+        },
       );
-    },
-  );
+    });
+
+    testSocket.disconnect();
+
+    if (!result?.success) {
+      throw new Error(`Movement selection failed: ${JSON.stringify(result)}`);
+    }
+
+    await attachScreenshot(
+      page,
+      testInfo,
+      `Director - ${movementName} movement selected`,
+    );
+  });
 }
 
 /**
@@ -185,80 +190,76 @@ export async function joinGameStep(
     directorToken?: string;
   },
 ): Promise<void> {
-  return await test.step(
-    `Player joins game at seat ${options.seat}`,
-    async () => {
-      // Inject director token into localStorage so createParticipant auth succeeds
-      if (options.directorToken) {
-        await page.goto("/");
-        await page.evaluate(
-          ({ gameId, token }) => localStorage.setItem(`director:${gameId}`, token),
-          { gameId, token: options.directorToken },
-        );
-      }
-
-      // Navigate directly to the game's join menu to avoid selecting the wrong game
-      await page.goto(`/join/${gameId}/menu`);
-      await page.waitForLoadState("networkidle");
-
-      // Click "Join As Player"
-      await page
-        .getByRole("button", { name: "Join As Player" })
-        .click();
-
-      // Wait for the player/seat selection page
-      await page.waitForURL(/\/join\/.+\/player/);
-
-      // Parse the seat to get table number and direction
-      // Seat format is like "1NS", "2EW", etc.
-      const tableNumber = options.seat.replace(/[A-Z]+$/, "");
-      const direction = options.seat.replace(/^\d+/, "");
-
-      // Find the table card by its header text "Table N" and click
-      // the direction button within it
-      const tableCard = page
-        .locator("div")
-        .filter({ hasText: new RegExp(`^Table ${tableNumber}$`) })
-        .locator("..");
-      await tableCard
-        .getByRole("button", { name: direction, exact: true })
-        .click();
-
-      // Bottom sheet appears with player search fields
-      // The PlayerSearch inputs use placeholder "EBU No, Club ID or Name"
-      const playerInputs = page.getByPlaceholder("EBU No, Club ID or Name");
-
-      // Search for each player by EBU number, wait for results, and click the first result
-      for (let i = 0; i < options.ebuNumbers.length; i++) {
-        const ebuNumber = options.ebuNumbers[i];
-        // After selecting a player, the input is replaced by a card,
-        // so always target the first visible input
-        const input = playerInputs.first();
-        await input.fill(ebuNumber);
-
-        // Wait for search results to appear (buttons inside the results list)
-        // The results appear as buttons with player name text
-        const resultButton = page
-          .locator("button")
-          .filter({ has: page.locator(`text=EBU ${ebuNumber}`) })
-          .first();
-        await resultButton.waitFor({ timeout: 10000 });
-        await resultButton.click();
-      }
-
-      // Click "Enter Pair" to confirm the seat selection
-      const enterPairButton = page.getByRole("button", {
-        name: "Enter Pair",
-      });
-      await enterPairButton.click({ timeout: 5000 });
-
-      await attachScreenshot(
-        page,
-        testInfo,
-        `Player - Seated at ${options.seat}`,
+  return await test.step(`Player joins game at seat ${options.seat}`, async () => {
+    // Inject director token into localStorage so createParticipant auth succeeds
+    if (options.directorToken) {
+      await page.goto("/");
+      await page.evaluate(
+        ({ gameId, token }) =>
+          localStorage.setItem(`director:${gameId}`, token),
+        { gameId, token: options.directorToken },
       );
-    },
-  );
+    }
+
+    // Navigate directly to the game's join menu to avoid selecting the wrong game
+    await page.goto(`/join/${gameId}/menu`);
+    await page.waitForLoadState("networkidle");
+
+    // Click "Join As Player"
+    await page.getByRole("button", { name: "Join As Player" }).click();
+
+    // Wait for the player/seat selection page
+    await page.waitForURL(/\/join\/.+\/player/);
+
+    // Parse the seat to get table number and direction
+    // Seat format is like "1NS", "2EW", etc.
+    const tableNumber = options.seat.replace(/[A-Z]+$/, "");
+    const direction = options.seat.replace(/^\d+/, "");
+
+    // Find the table card by its header text "Table N" and click
+    // the direction button within it
+    const tableCard = page
+      .locator("div")
+      .filter({ hasText: new RegExp(`^Table ${tableNumber}$`) })
+      .locator("..");
+    await tableCard
+      .getByRole("button", { name: direction, exact: true })
+      .click();
+
+    // Bottom sheet appears with player search fields
+    // The PlayerSearch inputs use placeholder "EBU No, Club ID or Name"
+    const playerInputs = page.getByPlaceholder("EBU No, Club ID or Name");
+
+    // Search for each player by EBU number, wait for results, and click the first result
+    for (let i = 0; i < options.ebuNumbers.length; i++) {
+      const ebuNumber = options.ebuNumbers[i];
+      // After selecting a player, the input is replaced by a card,
+      // so always target the first visible input
+      const input = playerInputs.first();
+      await input.fill(ebuNumber);
+
+      // Wait for search results to appear (buttons inside the results list)
+      // The results appear as buttons with player name text
+      const resultButton = page
+        .locator("button")
+        .filter({ has: page.locator(`text=EBU ${ebuNumber}`) })
+        .first();
+      await resultButton.waitFor({ timeout: 10000 });
+      await resultButton.click();
+    }
+
+    // Click "Enter Pair" to confirm the seat selection
+    const enterPairButton = page.getByRole("button", {
+      name: "Enter Pair",
+    });
+    await enterPairButton.click({ timeout: 5000 });
+
+    await attachScreenshot(
+      page,
+      testInfo,
+      `Player - Seated at ${options.seat}`,
+    );
+  });
 }
 
 /**
@@ -274,36 +275,33 @@ export async function enterResultStep(
     passOut?: boolean;
   },
 ): Promise<void> {
-  return await test.step(
-    `Player at ${options.seat} enters result for Board ${options.board}`,
-    async () => {
-      await page.goto(`/play/${options.gameId}/${options.seat}`);
+  return await test.step(`Player at ${options.seat} enters result for Board ${options.board}`, async () => {
+    await page.goto(`/play/${options.gameId}/${options.seat}`);
 
-      // Wait for the round info to load and click "Enter Round"
-      await page
-        .getByRole("button", { name: "Enter Round" })
-        .click({ timeout: 15000 });
+    // Wait for the round info to load and click "Enter Round"
+    await page
+      .getByRole("button", { name: "Enter Round" })
+      .click({ timeout: 15000 });
 
-      // Wait for the board entry UI to appear
-      await page.waitForSelector(`text=Board ${options.board}`, {
-        timeout: 10000,
-      });
+    // Wait for the board entry UI to appear
+    await page.waitForSelector(`text=Board ${options.board}`, {
+      timeout: 10000,
+    });
 
-      if (options.passOut) {
-        await page.getByRole("button", { name: "Pass Out" }).click();
-      }
+    if (options.passOut) {
+      await page.getByRole("button", { name: "Pass Out" }).click();
+    }
 
-      // Submit using the OK button (uses onSubmit event handler)
-      const okButton = page.getByRole("button", { name: "OK" });
-      await okButton.dispatchEvent("submit");
+    // Submit using the OK button (uses onSubmit event handler)
+    const okButton = page.getByRole("button", { name: "OK" });
+    await okButton.dispatchEvent("submit");
 
-      await attachScreenshot(
-        page,
-        testInfo,
-        `Player ${options.seat} - Result entered Board ${options.board}`,
-      );
-    },
-  );
+    await attachScreenshot(
+      page,
+      testInfo,
+      `Player ${options.seat} - Result entered Board ${options.board}`,
+    );
+  });
 }
 
 /**
@@ -335,9 +333,7 @@ export async function cleanupGames(baseURL: string): Promise<void> {
             body: JSON.stringify({ directorToken: game.gameId }),
           });
         } catch {
-          console.warn(
-            `Failed to delete game ${game.gameId} during cleanup`,
-          );
+          console.warn(`Failed to delete game ${game.gameId} during cleanup`);
         }
       }
     }
