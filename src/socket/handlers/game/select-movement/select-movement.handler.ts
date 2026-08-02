@@ -70,10 +70,10 @@ async function handlePairLikeMovement(
   }
 
   const db = await getPairsDb(gameId);
-  await db.transaction(async (tx) => {
-    await tx.insert(pairBoards).values(boardRows);
+  db.transaction((tx) => {
+    tx.insert(pairBoards).values(boardRows).run();
     if (assignmentRows.length > 0) {
-      await tx.insert(pairAssignments).values(assignmentRows);
+      tx.insert(pairAssignments).values(assignmentRows).run();
     }
   });
 }

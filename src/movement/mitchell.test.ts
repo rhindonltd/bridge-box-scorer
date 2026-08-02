@@ -82,11 +82,20 @@ describe("generateMitchell", () => {
   describe("standard Mitchell (odd tables)", () => {
     const spec: MitchellMovementSpec = { tables: 5, rounds: 5, boardsPerRound: 3 };
 
-    it("NS pairs stay at their home table", () => {
+    it("NS pairs stay at their home table with direction suffix", () => {
       const result = generateMitchell(spec);
       for (const table of result.tables) {
         for (const round of table.rounds) {
-          expect(round.participants.nsId).toBe(`${table.table}`);
+          expect(round.participants.nsId).toBe(`${table.table}NS`);
+        }
+      }
+    });
+
+    it("EW pair IDs use direction suffix", () => {
+      const result = generateMitchell(spec);
+      for (const table of result.tables) {
+        for (const round of table.rounds) {
+          expect(round.participants.ewId).toMatch(/^\d+EW$/);
         }
       }
     });
@@ -118,7 +127,7 @@ describe("generateMitchell", () => {
       const result = generateMitchell(spec);
       // Check NS pairs
       for (let i = 1; i <= spec.tables; i++) {
-        const boards = getBoardsForNsPair(result, `${i}`);
+        const boards = getBoardsForNsPair(result, `${i}NS`);
         expect(new Set(boards).size).toBe(boards.length);
       }
       // Check EW pairs
@@ -175,11 +184,11 @@ describe("generateMitchell", () => {
   describe("share and relay Mitchell (even tables)", () => {
     const spec: MitchellMovementSpec = { tables: 4, rounds: 4, boardsPerRound: 2 };
 
-    it("NS pairs stay at their home table", () => {
+    it("NS pairs stay at their home table with direction suffix", () => {
       const result = generateMitchell(spec);
       for (const table of result.tables) {
         for (const round of table.rounds) {
-          expect(round.participants.nsId).toBe(`${table.table}`);
+          expect(round.participants.nsId).toBe(`${table.table}NS`);
         }
       }
     });
@@ -241,7 +250,7 @@ describe("generateMitchell", () => {
       const result = generateMitchell(spec);
       // Check NS pairs
       for (let i = 1; i <= spec.tables; i++) {
-        const boards = getBoardsForNsPair(result, `${i}`);
+        const boards = getBoardsForNsPair(result, `${i}NS`);
         expect(new Set(boards).size).toBe(boards.length);
       }
       // Check EW pairs
@@ -263,7 +272,7 @@ describe("generateMitchell", () => {
 
       // Verify no NS pair plays same boards twice
       for (let i = 1; i <= 6; i++) {
-        const boards = getBoardsForNsPair(result, `${i}`);
+        const boards = getBoardsForNsPair(result, `${i}NS`);
         expect(new Set(boards).size).toBe(boards.length);
       }
       // Verify no EW pair plays same boards twice
@@ -310,13 +319,13 @@ describe("generateMitchell", () => {
       }
     });
 
-    it("NS pairs stay at their home table", () => {
+    it("NS pairs stay at their home table with direction suffix", () => {
       const result = generateMitchell({ tables: 6, rounds: 6, boardsPerRound: 2, skip: true });
       for (const table of result.tables) {
         // Effective rounds = 5
         expect(table.rounds).toHaveLength(5);
         for (const round of table.rounds) {
-          expect(round.participants.nsId).toBe(`${table.table}`);
+          expect(round.participants.nsId).toBe(`${table.table}NS`);
         }
       }
     });
@@ -359,7 +368,7 @@ describe("generateMitchell", () => {
       // Effective rounds = 5
       // Check NS pairs (NS stays at home table, always gets unique boards)
       for (let i = 1; i <= 6; i++) {
-        const boards = getBoardsForNsPair(result, `${i}`);
+        const boards = getBoardsForNsPair(result, `${i}NS`);
         expect(new Set(boards).size).toBe(boards.length);
       }
       // Note: EW board uniqueness in skip Mitchell requires a separate fix
@@ -500,10 +509,10 @@ describe("generateMitchell", () => {
         expect(table.rounds).toHaveLength(5);
       }
 
-      // NS still fixed
+      // NS still fixed with direction suffix
       for (const table of result.tables) {
         for (const round of table.rounds) {
-          expect(round.participants.nsId).toBe(`${table.table}`);
+          expect(round.participants.nsId).toBe(`${table.table}NS`);
         }
       }
 

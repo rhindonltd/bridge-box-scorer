@@ -3,22 +3,24 @@ import { NextRequest, NextResponse } from "next/server";
 
 const players = [
   {
+    firstName: "Jacqui",
+    lastName: "Collier",
+    nationalId: "477484",
+  },
+  {
+    firstName: "David",
+    lastName: "Collier",
+    nationalId: "404476",
+  },
+  {
     firstName: "John",
     lastName: "Smith",
-    nationalId: "123456",
-    // clubId: "BR001",
+    nationalId: "12269",
   },
   {
     firstName: "Jane",
     lastName: "Jones",
-    nationalId: "654321",
-    // clubId: "BR002",
-  },
-  {
-    firstName: "David",
-    lastName: "Brown",
-    nationalId: "111111",
-    // clubId: "DB001",
+    nationalId: "16671",
   },
 ] as NewPlayer[];
 

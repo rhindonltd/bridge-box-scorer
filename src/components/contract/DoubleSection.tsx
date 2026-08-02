@@ -14,8 +14,8 @@ export default function DoubleSection({
   onDblSelected,
 }: Props) {
   return (
-    <Section className={className} title="Double">
-      <div>
+    <Section className={className} title="Double" gridCols={2}>
+      <div className="col-span-2">
         <ToggleButton
           active={dbl === ""}
           onClick={() => onDblSelected("")}
@@ -24,23 +24,20 @@ export default function DoubleSection({
           None
         </ToggleButton>
       </div>
-
-      <div className="flex gap-1">
-        <ToggleButton
-          active={dbl === "X"}
-          onClick={() => onDblSelected("X")}
-          flex={1}
-        >
-          X
-        </ToggleButton>
-        <ToggleButton
-          active={dbl === "XX"}
-          onClick={() => onDblSelected("XX")}
-          flex={1}
-        >
-          XX
-        </ToggleButton>
-      </div>
+      <ToggleButton
+        active={dbl === "X"}
+        onClick={() => onDblSelected("X")}
+        fullWidth
+      >
+        X
+      </ToggleButton>
+      <ToggleButton
+        active={dbl === "XX"}
+        onClick={() => onDblSelected("XX")}
+        fullWidth
+      >
+        XX
+      </ToggleButton>
     </Section>
   );
 }

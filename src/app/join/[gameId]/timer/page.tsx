@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function TimerRoute() {
-  const { game } = useGame();
+  const { game, isLoading } = useGame();
   const router = useRouter();
 
   useEffect(() => {
-    if (!game) {
+    if (!isLoading && !game) {
       router.replace("/join/select-game");
     }
-  }, [game, router]);
+  }, [game, isLoading, router]);
 
   if (!game) {
     return null;

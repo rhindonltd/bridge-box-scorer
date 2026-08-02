@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Auto Update Tests",
+      "trigger": "Stop",
+      "action": {
+        "type": "agent",
+        "prompt": "The agent execution just completed. Review all source files that were created or modified during this session and determine if any tests need to be updated or created.\n\nRules:\n1. If the ONLY changes were to test files (*.test.ts, *.test.tsx, *.spec.ts, *.spec.tsx, *.stories.tsx), do nothing.\n2. For files in `src/components/` that are React components:\n   - Check if a corresponding Storybook story exists (*.stories.tsx). If not, consider if one is warranted.\n   - Check if a unit test exists (*.test.tsx). If the component has testable logic, update or create the test.\n3. For files in `src/services/`, `src/lib/`, `src/movement/`, `src/scoring/`, `src/timer/`, `src/usebio/`, or `src/socket/handlers/`:\n   - Check if a corresponding *.test.ts file exists. If not, create one.\n   - If a test file exists, check if the changes introduce new functions, branches, or edge cases that aren't covered, and add test cases.\n4. For files in `src/app/api/`:\n   - Check if the E2E tests in `tests/api.spec.ts` or `tests/game-api.spec.ts` cover this endpoint. If a new endpoint was added or behavior changed significantly, add E2E test cases.\n5. For page routes (`src/app/**/page.tsx`):\n   - Check if the corresponding E2E test in `tests/` covers the page. If behavior changed significantly, update the E2E test.\n\nTesting conventions:\n- Unit tests use Vitest, placed next to source files as `*.test.ts` or `*.test.tsx`\n- E2E tests use Playwright in the `tests/` directory as `*.spec.ts`\n- Storybook stories are placed next to components as `*.stories.tsx`\n- Use getByRole/getByLabel/getByText locators for Playwright\n- Use vi.mock for mocking in Vitest\n- Follow existing patterns in the project\n\nAfter writing tests, run them to verify they pass. Only create/update tests if code changes are substantive (not just formatting, comments, or import reordering)."
+      }
+    }
+  ]
+}

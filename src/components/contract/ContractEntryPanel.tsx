@@ -93,7 +93,7 @@ export default function ContractEntryPanel({
         : "-";
 
   return (
-    <div className="h-dvh flex flex-col bg-gray-100">
+    <div className="flex-1 flex flex-col">
       {/* Context bar */}
       <div className="bg-gray-200 text-gray-800 px-3 py-2 text-base font-semibold shrink-0">
         <div className="truncate">{headerText}</div>
@@ -114,7 +114,7 @@ export default function ContractEntryPanel({
         </div>
       </div>
 
-      {/* MIDDLE: 2x2 CONTROLS (fills ALL remaining space) */}
+      {/* MIDDLE: 2x2 CONTROLS (fills remaining space, capped on tablets) */}
       <div className="flex-1 min-h-0">
         <PlayableContract
           level={level}

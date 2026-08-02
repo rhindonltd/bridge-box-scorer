@@ -25,7 +25,10 @@ export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
   // Skip Mitchell always uses tables - 1 rounds (mathematical constraint)
   const effectiveRounds = skip ? tables - 1 : rounds;
 
-  // ewAdd offsets EW pair IDs to avoid collision with NS IDs during arrow switch
+  // When arrow switch is active, EW pair IDs use a numeric offset (N+1..2N)
+  // to avoid collision with NS IDs, since pairs may swap direction.
+  // When there's no arrow switch, pairs stay in their direction all game,
+  // so we use direction suffixes ("NS"/"EW") instead of numeric offset.
   const ewAdd = arrowSwitchRounds > 0 ? tables : 0;
 
   const skipAfter = skip ? Math.floor(tables / 2) : tables;
@@ -101,16 +104,23 @@ function createMitchellTable(params: TableParams): Table<"PAIR"> {
 
     const boards = boardsForSet(boardSet, boardsPerRound);
 
-    // 🔀 Arrow switch handling
+    // 🔀 Pair ID generation
     let nsId: string;
     let ewId: string;
 
-    if (roundNumber < arrowSwitchFrom) {
-      nsId = `${tableNumber}`;
-      ewId = `${movingPair}`;
+    if (arrowSwitchRounds === 0) {
+      // No arrow switch — pairs stay in their direction all game
+      nsId = `${tableNumber}NS`;
+      ewId = `${movingPair}EW`;
     } else {
-      nsId = `${movingPair}`;
-      ewId = `${tableNumber}`;
+      // Arrow switch — pairs may swap direction, use numeric IDs
+      if (roundNumber < arrowSwitchFrom) {
+        nsId = `${tableNumber}`;
+        ewId = `${movingPair}`;
+      } else {
+        nsId = `${movingPair}`;
+        ewId = `${tableNumber}`;
+      }
     }
 
     roundsList.push({
