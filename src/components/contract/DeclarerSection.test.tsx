@@ -3,16 +3,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import DeclarerSection from "./DeclarerSection";
 import { Directions } from "@/model/common";
 
-// Mock Section
-vi.mock("@/components/contract/Section", () => ({
-  default: ({ children, title }: any) => (
-    <div data-testid="section">
-      <div>{title}</div>
-      {children}
-    </div>
-  ),
-}));
-
 // Mock ToggleButton
 vi.mock("@/components/common/ToggleButton", () => ({
   ToggleButton: ({ children, active, onClick }: any) => (
@@ -23,24 +13,22 @@ vi.mock("@/components/common/ToggleButton", () => ({
 }));
 
 describe("DeclarerSection", () => {
-  it("renders all directions", () => {
+  it("renders all directions in NSEW order", () => {
     render(<DeclarerSection declarer={null} onDeclarerSelected={vi.fn()} />);
 
-    Directions.forEach((d) => {
-      expect(screen.getByText(d)).toBeInTheDocument();
-    });
+    expect(screen.getByText("N")).toBeInTheDocument();
+    expect(screen.getByText("S")).toBeInTheDocument();
+    expect(screen.getByText("E")).toBeInTheDocument();
+    expect(screen.getByText("W")).toBeInTheDocument();
   });
 
   it("marks selected declarer as active", () => {
-    const selected = Directions[0];
-
     render(
-      <DeclarerSection declarer={selected} onDeclarerSelected={vi.fn()} />,
+      <DeclarerSection declarer="N" onDeclarerSelected={vi.fn()} />,
     );
 
-    const activeButton = screen.getByText(selected);
-
-    expect(activeButton).toHaveAttribute("data-active", "true");
+    expect(screen.getByText("N")).toHaveAttribute("data-active", "true");
+    expect(screen.getByText("S")).toHaveAttribute("data-active", "false");
   });
 
   it("calls onDeclarerSelected when clicked", () => {
@@ -48,15 +36,13 @@ describe("DeclarerSection", () => {
 
     render(<DeclarerSection declarer={null} onDeclarerSelected={fn} />);
 
-    const first = Directions[0];
+    fireEvent.click(screen.getByText("E"));
 
-    fireEvent.click(screen.getByText(first));
-
-    expect(fn).toHaveBeenCalledWith(first);
+    expect(fn).toHaveBeenCalledWith("E");
   });
 
-  it("passes className to Section wrapper", () => {
-    render(
+  it("passes className to wrapper", () => {
+    const { container } = render(
       <DeclarerSection
         className="test-class"
         declarer={null}
@@ -64,6 +50,6 @@ describe("DeclarerSection", () => {
       />,
     );
 
-    expect(screen.getByTestId("section")).toBeInTheDocument();
+    expect(container.firstChild).toHaveClass("test-class");
   });
 });

@@ -101,11 +101,11 @@ describe("DoubleSection", () => {
     expect(screen.getByText("None")).toHaveAttribute("data-full-width", "true");
   });
 
-  it("passes flex prop to X and XX buttons", () => {
+  it("passes fullWidth prop to X and XX buttons", () => {
     render(<DoubleSection dbl={null} onDblSelected={vi.fn()} />);
 
-    expect(screen.getByText("X")).toHaveAttribute("data-flex", "1");
+    expect(screen.getByText("X")).toHaveAttribute("data-full-width", "true");
 
-    expect(screen.getByText("XX")).toHaveAttribute("data-flex", "1");
+    expect(screen.getByText("XX")).toHaveAttribute("data-full-width", "true");
   });
 });
