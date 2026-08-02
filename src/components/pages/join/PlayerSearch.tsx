@@ -23,7 +23,9 @@ export default function PlayerSearch({ label, value, onChange }: Props) {
 
     const timer = setTimeout(async () => {
       setLoading(true);
-      const response = await fetch(`/api/players/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(
+        `/api/players/search?q=${encodeURIComponent(query)}`,
+      );
       const players = await response.json();
       setResults(players);
       setLoading(false);

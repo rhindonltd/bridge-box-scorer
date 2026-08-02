@@ -45,9 +45,7 @@ describe("BridgeTimerEngine", () => {
     });
 
     it("returns remainingMs when paused", () => {
-      const engine = new BridgeTimerEngine(
-        makeState({ remainingMs: 200_000 }),
-      );
+      const engine = new BridgeTimerEngine(makeState({ remainingMs: 200_000 }));
       expect(engine.getRemainingMs()).toBe(200_000);
     });
 
@@ -109,9 +107,7 @@ describe("BridgeTimerEngine", () => {
     });
 
     it("resumes from remainingMs correctly", () => {
-      const engine = new BridgeTimerEngine(
-        makeState({ remainingMs: 100_000 }),
-      );
+      const engine = new BridgeTimerEngine(makeState({ remainingMs: 100_000 }));
       engine.start();
       const state = engine.getState();
       expect(state.isRunning).toBe(true);
@@ -196,7 +192,11 @@ describe("BridgeTimerEngine", () => {
 
     it("auto-starts next phase if was running", () => {
       const engine = new BridgeTimerEngine(
-        makeState({ phase: "move", isRunning: true, phaseStartedAt: Date.now() }),
+        makeState({
+          phase: "move",
+          isRunning: true,
+          phaseStartedAt: Date.now(),
+        }),
       );
       engine.nextPhase();
       expect(engine.getState().phase).toBe("play");

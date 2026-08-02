@@ -176,27 +176,27 @@ onChangeStatusClick={() => router.push(`/manage/${id}/change-status`)}
 
 ## Error Handling
 
-| Scenario | Response |
-|----------|----------|
-| Invalid/missing director token | 401 Unauthorized |
-| Invalid status value | 400 Bad Request |
-| Game not found | 404 Not Found |
-| Database error | 500 Internal Server Error |
+| Scenario                       | Response                  |
+| ------------------------------ | ------------------------- |
+| Invalid/missing director token | 401 Unauthorized          |
+| Invalid status value           | 400 Bad Request           |
+| Game not found                 | 404 Not Found             |
+| Database error                 | 500 Internal Server Error |
 
 On the client side, if the API returns an error the page stays on the current screen (the `saving` state resets). Since this is a low-risk action (easily reversible), no confirmation dialog is needed.
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Invalid tokens are always rejected
 
-*For any* string that is not a valid director token for the given game, the POST endpoint SHALL return a 401 Unauthorized response and SHALL NOT modify the game status.
+_For any_ string that is not a valid director token for the given game, the POST endpoint SHALL return a 401 Unauthorized response and SHALL NOT modify the game status.
 
 **Validates: Requirements 1.2**
 
 ### Property 2: Invalid status values are always rejected
 
-*For any* string that is not one of "CREATED", "JOINABLE", or "COMPLETE", the POST endpoint SHALL return a 400 Bad Request response and SHALL NOT modify the game status.
+_For any_ string that is not one of "CREATED", "JOINABLE", or "COMPLETE", the POST endpoint SHALL return a 400 Bad Request response and SHALL NOT modify the game status.
 
 **Validates: Requirements 1.3**

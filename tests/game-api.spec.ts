@@ -9,9 +9,7 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Game API Endpoints", () => {
-  test("GET /api/games/nonexistent/boards returns 404", async ({
-    request,
-  }) => {
+  test("GET /api/games/nonexistent/boards returns 404", async ({ request }) => {
     const response = await request.get("/api/games/nonexistent/boards");
     expect(response.status()).toBe(404);
     const body = await response.json();

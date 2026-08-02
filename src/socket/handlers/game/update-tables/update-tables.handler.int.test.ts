@@ -33,7 +33,9 @@ describe("registerUpdateTablesHandler (integration)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(findLoginSession).mockReturnValue({
-      token: "test-token", role: "DIRECTOR", gameId: "game-1",
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
     } as any);
     vi.mocked(updateTableCount).mockResolvedValue(undefined as any);
     vi.mocked(findPairs).mockResolvedValue([]);
@@ -45,8 +47,16 @@ describe("registerUpdateTablesHandler (integration)", () => {
 
   it("updates table count and broadcasts GAME_UPDATED", async () => {
     vi.mocked(findGameById)
-      .mockResolvedValueOnce({ gameId: "game-1", gameType: "PAIRS", tables: 4 } as any)
-      .mockResolvedValueOnce({ gameId: "game-1", gameType: "PAIRS", tables: 5 } as any);
+      .mockResolvedValueOnce({
+        gameId: "game-1",
+        gameType: "PAIRS",
+        tables: 4,
+      } as any)
+      .mockResolvedValueOnce({
+        gameId: "game-1",
+        gameType: "PAIRS",
+        tables: 5,
+      } as any);
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
@@ -61,7 +71,9 @@ describe("registerUpdateTablesHandler (integration)", () => {
     const updatedPromise = waitForEvent(client, SocketEvents.GAME_UPDATED);
 
     const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
-      gameId: "game-1", tables: 5, directorToken: "test-token",
+      gameId: "game-1",
+      tables: 5,
+      directorToken: "test-token",
     });
 
     expect(result).toEqual({ success: true });
@@ -73,11 +85,11 @@ describe("registerUpdateTablesHandler (integration)", () => {
 
   it("rejects reducing tables when participants seated at higher tables", async () => {
     vi.mocked(findGameById).mockResolvedValue({
-      gameId: "game-1", gameType: "PAIRS", tables: 4,
+      gameId: "game-1",
+      gameType: "PAIRS",
+      tables: 4,
     } as any);
-    vi.mocked(findPairs).mockResolvedValue([
-      { initialSeat: "3NS" },
-    ] as any);
+    vi.mocked(findPairs).mockResolvedValue([{ initialSeat: "3NS" }] as any);
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
@@ -87,7 +99,9 @@ describe("registerUpdateTablesHandler (integration)", () => {
     closeServer = close;
 
     const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
-      gameId: "game-1", tables: 2, directorToken: "test-token",
+      gameId: "game-1",
+      tables: 2,
+      directorToken: "test-token",
     });
 
     expect(result).toMatchObject({ success: false });
@@ -106,7 +120,9 @@ describe("registerUpdateTablesHandler (integration)", () => {
     closeServer = close;
 
     const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
-      gameId: "game-1", tables: 5, directorToken: "bad-token",
+      gameId: "game-1",
+      tables: 5,
+      directorToken: "bad-token",
     });
 
     expect(result).toMatchObject({ success: false });

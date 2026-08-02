@@ -18,7 +18,9 @@ test.afterAll(async () => {
   await cleanupGames(BASE_URL);
 });
 
-test("Game status transitions affect joinable list", async ({ browser }, testInfo) => {
+test("Game status transitions affect joinable list", async ({
+  browser,
+}, testInfo) => {
   const deviceConfig = test.info().project.use;
 
   // Director context
@@ -55,7 +57,11 @@ test("Game status transitions affect joinable list", async ({ browser }, testInf
       const gameButton = playerPage.getByRole("button", { name: eventName });
       await expect(gameButton).toBeVisible({ timeout: 15000 });
 
-      await attachScreenshot(playerPage, testInfo, "Player - Game visible in joinable list");
+      await attachScreenshot(
+        playerPage,
+        testInfo,
+        "Player - Game visible in joinable list",
+      );
     });
 
     // Step 5: Director navigates to change-status and marks game as Complete
@@ -73,7 +79,11 @@ test("Game status transitions affect joinable list", async ({ browser }, testInf
         timeout: 10000,
       });
 
-      await attachScreenshot(directorPage, testInfo, "Director - Game marked Complete");
+      await attachScreenshot(
+        directorPage,
+        testInfo,
+        "Director - Game marked Complete",
+      );
     });
 
     // Step 7: Player refreshes the joinable game list
@@ -85,7 +95,11 @@ test("Game status transitions affect joinable list", async ({ browser }, testInf
       const gameButton = playerPage.getByRole("button", { name: eventName });
       await expect(gameButton).not.toBeVisible({ timeout: 15000 });
 
-      await attachScreenshot(playerPage, testInfo, "Player - Game removed from joinable list");
+      await attachScreenshot(
+        playerPage,
+        testInfo,
+        "Player - Game removed from joinable list",
+      );
     });
   } finally {
     await deleteGameStep(directorPage, gameId);

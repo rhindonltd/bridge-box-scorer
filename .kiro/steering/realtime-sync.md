@@ -22,9 +22,11 @@ This project uses a three-layer real-time data architecture:
 ```
 
 ### Initial Load
+
 Components use `useSWR(key, fetcher)` to fetch data from API routes on mount.
 
 ### Real-Time Updates
+
 The `useSocketSWRSync` hook subscribes to a Socket.IO event and, when fired, directly mutates the SWR cache with the new data — bypassing the HTTP layer entirely.
 
 ### Key Files

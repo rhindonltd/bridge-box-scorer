@@ -19,8 +19,12 @@ type Story = StoryObj<typeof InlineBoardResult>;
 
 export const MadeMode: Story = {};
 export const DownMode: Story = { args: { mode: "down", value: 1 } };
-export const HighLevel: Story = { args: { contract: "7NT", mode: "made", value: 0 } };
-export const LowLevel: Story = { args: { contract: "1C", mode: "made", value: 0 } };
+export const HighLevel: Story = {
+  args: { contract: "7NT", mode: "made", value: 0 },
+};
+export const LowLevel: Story = {
+  args: { contract: "1C", mode: "made", value: 0 },
+};
 export const Disabled: Story = {
   decorators: [
     (Story) => (

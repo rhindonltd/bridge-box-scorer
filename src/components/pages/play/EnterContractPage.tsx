@@ -126,9 +126,13 @@ export default function EnterContractPage({
 
       {/* Detail bar — table, round, board selector */}
       <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
-        <span className="font-bold text-lg">Table {table}, Round {round}</span>
+        <span className="font-bold text-lg">
+          Table {table}, Round {round}
+        </span>
         <div className="flex items-center gap-2">
-          <label htmlFor="board-selector" className="font-semibold text-base">Board:</label>
+          <label htmlFor="board-selector" className="font-semibold text-base">
+            Board:
+          </label>
           <select
             id="board-selector"
             className="px-2 py-1 text-base border border-blue-400 rounded-md bg-white text-blue-900 text-center font-bold"
@@ -178,7 +182,11 @@ export default function EnterContractPage({
   );
 }
 
-function ParticipantInfoInline({ assignment }: { assignment: Assignment | null }) {
+function ParticipantInfoInline({
+  assignment,
+}: {
+  assignment: Assignment | null;
+}) {
   if (!assignment) return null;
 
   const label = assignment.type === "PAIR" ? "Pair" : "Team";

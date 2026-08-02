@@ -15,8 +15,6 @@ describe("swrKeys", () => {
   });
 
   it("assignment returns correct API path", () => {
-    expect(swrKeys.assignment("g1", "p1")).toBe(
-      "/api/games/g1/assignment/p1",
-    );
+    expect(swrKeys.assignment("g1", "p1")).toBe("/api/games/g1/assignment/p1");
   });
 });

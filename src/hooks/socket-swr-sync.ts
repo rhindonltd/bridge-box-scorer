@@ -5,7 +5,9 @@ import { SocketEventMap } from "@/socket/socket-event-map";
 
 export function useSocketSWRSync<E extends keyof SocketEventMap>(
   event: E,
-  handler: (payload: SocketEventMap[E]) => { key: string; data: unknown } | null,
+  handler: (
+    payload: SocketEventMap[E],
+  ) => { key: string; data: unknown } | null,
   deps: unknown[] = [],
 ) {
   useEffect(() => {

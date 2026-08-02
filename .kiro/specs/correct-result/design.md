@@ -5,6 +5,7 @@
 The Correct Result feature is a multi-step wizard within the director management area. It allows a director to override player-entered board results or void boards. The flow is implemented as a single client-side page (`/manage/[id]/correct-result`) with state-machine navigation between steps.
 
 The architecture consists of:
+
 - **Two new API endpoints** for fetching board data and saving overrides
 - **A wizard page component** orchestrating the multi-step flow
 - **Two new page-level components** (SelectBoardPage, SelectInstancePage)
@@ -13,8 +14,8 @@ The architecture consists of:
 
 ## Routing
 
-| Route | Purpose |
-|-------|---------|
+| Route                         | Purpose                                              |
+| ----------------------------- | ---------------------------------------------------- |
 | `/manage/[id]/correct-result` | Client-side multi-step wizard for correcting results |
 
 The page lives under the existing `/manage/[id]` layout which provides `GameProviderClient` context.
@@ -36,8 +37,19 @@ selectBoard → selectInstance → enterContract → enterResult → saving → 
 type WizardStep =
   | { step: "selectBoard" }
   | { step: "selectInstance"; boardNumber: number }
-  | { step: "enterContract"; boardNumber: number; roundNumber: number; tableNumber: number }
-  | { step: "enterResult"; boardNumber: number; roundNumber: number; tableNumber: number; contract: ContractCode }
+  | {
+      step: "enterContract";
+      boardNumber: number;
+      roundNumber: number;
+      tableNumber: number;
+    }
+  | {
+      step: "enterResult";
+      boardNumber: number;
+      roundNumber: number;
+      tableNumber: number;
+      contract: ContractCode;
+    }
   | { step: "saving" };
 ```
 
@@ -121,6 +133,7 @@ interface ContractEntryPanelProps {
 ```
 
 Internally manages `level`, `suit`, `declarer`, `dbl`, `passOut`, `notPlayed` state. Renders:
+
 - A context bar with the provided `headerText`
 - Pass Out / Not Played buttons
 - The `PlayableContract` 2x2 grid
@@ -140,6 +153,7 @@ Returns distinct board numbers for the game.
 ```
 
 Implementation:
+
 1. Look up the game from the game index to determine `gameType`
 2. Open the appropriate game database (pairs or individual)
 3. Query `SELECT DISTINCT board_number FROM boards ORDER BY board_number`
@@ -157,6 +171,7 @@ Returns all instances of a specific board with participant information.
 ```
 
 Implementation:
+
 1. Determine game type from game index
 2. Query all board records for the given `boardNumber`
 3. For PAIRS: join with pairs/participants tables to get player names, format as "Player1 & Player2"
@@ -178,10 +193,13 @@ Saves the director's override result.
 }
 
 // Response
-{ success: true }
+{
+  success: true;
+}
 ```
 
 Implementation:
+
 1. Validate `directorToken` using `validateDirectorToken(token, gameId)`
 2. Determine game type from game index
 3. Open the appropriate game database
@@ -205,12 +223,18 @@ function buildPlayedContractCode(
   trickResult: number, // 0 = exact, positive = overtricks, negative = down
 ): PlayedContractCode {
   const contractPart = `${level}${suit}${doubling}${declarer}`;
-  const resultPart = trickResult === 0 ? "=" : trickResult > 0 ? `+${trickResult}` : `${trickResult}`;
+  const resultPart =
+    trickResult === 0
+      ? "="
+      : trickResult > 0
+        ? `+${trickResult}`
+        : `${trickResult}`;
   return `${contractPart}${resultPart}` as PlayedContractCode;
 }
 ```
 
 The `BoardResult` component's `onSave` callback provides the trick result as a number:
+
 - `0` = made exactly
 - `+N` = N overtricks
 - `-N` = N down
@@ -218,8 +242,9 @@ The `BoardResult` component's `onSave` callback provides the trick result as a n
 ### Override Precedence
 
 The scoring system already handles the override precedence in the USEBIO export:
+
 ```typescript
-b.directorOverrideResult ?? b.nsResult
+b.directorOverrideResult ?? b.nsResult;
 ```
 
 No changes needed to the scoring pipeline.
@@ -243,17 +268,18 @@ onCorrectResultClick={() => router.push(`/manage/${id}/correct-result`)}
 
 ## Error Handling
 
-| Scenario | Handling |
-|----------|----------|
-| Boards API returns empty | Show "No boards found" message |
+| Scenario                    | Handling                                         |
+| --------------------------- | ------------------------------------------------ |
+| Boards API returns empty    | Show "No boards found" message                   |
 | Instances API returns empty | Show "No instances found for this board" message |
-| Director token invalid | Show error toast, remain on page |
-| Save API fails | Show error toast, allow retry |
-| Network error during fetch | Show error state with retry button |
+| Director token invalid      | Show error toast, remain on page                 |
+| Save API fails              | Show error toast, allow retry                    |
+| Network error during fetch  | Show error state with retry button               |
 
 ## UI Conventions
 
 All new components follow existing app patterns:
+
 - Page background: `bg-white`
 - Headers: `bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0`
 - Cards: `bg-gray-50 border border-gray-200 rounded-xl`
@@ -266,22 +292,22 @@ All new components follow existing app patterns:
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Override result takes precedence
 
-*For any* board instance that has both a player-entered result (`nsResult` / `nResult`) and a `directorOverrideResult`, the `currentResult` displayed to the director SHALL always equal the `directorOverrideResult`, regardless of what the player-entered result contains.
+_For any_ board instance that has both a player-entered result (`nsResult` / `nResult`) and a `directorOverrideResult`, the `currentResult` displayed to the director SHALL always equal the `directorOverrideResult`, regardless of what the player-entered result contains.
 
 **Validates: Requirements 2.4**
 
 ### Property 2: PlayedContractCode construction validity
 
-*For any* valid combination of level (1-7), suit (S/H/D/C/NT), doubling (""/X/XX), declarer (N/E/S/W), and trick result (0 for exact, +1 to +6 for overtricks, -1 to -7 for undertricks), the `buildPlayedContractCode` function SHALL produce a string that matches the PlayedContractCode regex pattern `^[1-7](S|H|D|C|NT)(X|XX)?[NESW](=|\+[1-6]|-[1-7])$`.
+_For any_ valid combination of level (1-7), suit (S/H/D/C/NT), doubling (""/X/XX), declarer (N/E/S/W), and trick result (0 for exact, +1 to +6 for overtricks, -1 to -7 for undertricks), the `buildPlayedContractCode` function SHALL produce a string that matches the PlayedContractCode regex pattern `^[1-7](S|H|D|C|NT)(X|XX)?[NESW](=|\+[1-6]|-[1-7])$`.
 
 **Validates: Requirements 4.2, 4.3, 4.4**
 
 ### Property 3: Board instance completeness
 
-*For any* game with N board records sharing the same board number, the instances API endpoint SHALL return exactly N instances, each containing non-null participant information and a `currentResult` value (which may be null only if no result has been entered and no override exists).
+_For any_ game with N board records sharing the same board number, the instances API endpoint SHALL return exactly N instances, each containing non-null participant information and a `currentResult` value (which may be null only if no result has been entered and no override exists).
 
 **Validates: Requirements 2.1**

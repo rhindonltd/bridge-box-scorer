@@ -32,7 +32,9 @@ describe("registerShareCodeHandlers (integration)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(findLoginSession).mockReturnValue({
-      token: "test-token", role: "DIRECTOR", gameId: "game-1",
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
     } as any);
   });
 
@@ -51,9 +53,14 @@ describe("registerShareCodeHandlers (integration)", () => {
       });
       closeServer = close;
 
-      const result = await emitWithAck(client, SocketEvents.GENERATE_SHARE_CODE, {
-        gameId: "game-1", directorToken: "test-token",
-      });
+      const result = await emitWithAck(
+        client,
+        SocketEvents.GENERATE_SHARE_CODE,
+        {
+          gameId: "game-1",
+          directorToken: "test-token",
+        },
+      );
 
       expect(result).toEqual({ success: true, code: "ABC123" });
     });
@@ -68,9 +75,14 @@ describe("registerShareCodeHandlers (integration)", () => {
       });
       closeServer = close;
 
-      const result = await emitWithAck(client, SocketEvents.GENERATE_SHARE_CODE, {
-        gameId: "game-1", directorToken: "bad-token",
-      });
+      const result = await emitWithAck(
+        client,
+        SocketEvents.GENERATE_SHARE_CODE,
+        {
+          gameId: "game-1",
+          directorToken: "bad-token",
+        },
+      );
 
       expect(result).toMatchObject({ success: false });
     });
@@ -79,7 +91,8 @@ describe("registerShareCodeHandlers (integration)", () => {
   describe("CLAIM_DIRECTOR_CODE", () => {
     it("returns directorToken and gameId on valid code", async () => {
       vi.mocked(validateAndClaimShareCode).mockResolvedValue({
-        valid: true, gameId: "game-1",
+        valid: true,
+        gameId: "game-1",
       } as any);
       vi.mocked(createLoginSession).mockResolvedValue(undefined as any);
 
@@ -90,9 +103,13 @@ describe("registerShareCodeHandlers (integration)", () => {
       });
       closeServer = close;
 
-      const result = await emitWithAck(client, SocketEvents.CLAIM_DIRECTOR_CODE, {
-        code: "ABC123",
-      });
+      const result = await emitWithAck(
+        client,
+        SocketEvents.CLAIM_DIRECTOR_CODE,
+        {
+          code: "ABC123",
+        },
+      );
 
       expect(result.success).toBe(true);
       expect(result.directorToken).toBeDefined();
@@ -102,7 +119,8 @@ describe("registerShareCodeHandlers (integration)", () => {
 
     it("rejects invalid code", async () => {
       vi.mocked(validateAndClaimShareCode).mockResolvedValue({
-        valid: false, error: "Invalid or expired code",
+        valid: false,
+        error: "Invalid or expired code",
       } as any);
 
       const { client, close } = await createSocketTestServer((io) => {
@@ -112,9 +130,13 @@ describe("registerShareCodeHandlers (integration)", () => {
       });
       closeServer = close;
 
-      const result = await emitWithAck(client, SocketEvents.CLAIM_DIRECTOR_CODE, {
-        code: "WRONG1",
-      });
+      const result = await emitWithAck(
+        client,
+        SocketEvents.CLAIM_DIRECTOR_CODE,
+        {
+          code: "WRONG1",
+        },
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Invalid or expired");
@@ -128,9 +150,16 @@ describe("registerShareCodeHandlers (integration)", () => {
       });
       closeServer = close;
 
-      const result = await emitWithAck(client, SocketEvents.CLAIM_DIRECTOR_CODE, {});
+      const result = await emitWithAck(
+        client,
+        SocketEvents.CLAIM_DIRECTOR_CODE,
+        {},
+      );
 
-      expect(result).toMatchObject({ success: false, error: "Invalid payload" });
+      expect(result).toMatchObject({
+        success: false,
+        error: "Invalid payload",
+      });
     });
   });
 });

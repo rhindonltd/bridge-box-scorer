@@ -17,7 +17,11 @@ export async function GET(
       );
     }
 
-    const instances = await getBoardInstances(gameId, game.gameType, Number(boardNumber));
+    const instances = await getBoardInstances(
+      gameId,
+      game.gameType,
+      Number(boardNumber),
+    );
     return NextResponse.json({ instances });
   } catch (error) {
     console.error(error);

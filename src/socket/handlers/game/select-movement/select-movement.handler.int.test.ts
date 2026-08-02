@@ -36,10 +36,12 @@ describe("registerSelectMovementHandler (integration)", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<void>) => {
-      const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
-      await fn(tx);
-    });
+    mockTransaction.mockImplementation(
+      async (fn: (tx: any) => Promise<void>) => {
+        const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
+        await fn(tx);
+      },
+    );
 
     // Mock findLoginSession to validate the test director token
     vi.mocked(findLoginSession).mockReturnValue({

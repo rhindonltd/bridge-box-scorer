@@ -45,7 +45,10 @@ export type Movement<M extends TravellerParticipantMode> = {
 export const parseInts = (line: string): number[] =>
   line.split(",").map((x) => parseInt(x.trim(), 10));
 
-export const groupLinesReducer = (groups: string[][], line: string): string[][] => {
+export const groupLinesReducer = (
+  groups: string[][],
+  line: string,
+): string[][] => {
   if (line.trim() === "") return [...groups, []];
 
   const last = groups[groups.length - 1];

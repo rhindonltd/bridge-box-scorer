@@ -17,7 +17,11 @@ function makeBasicGameData(): UsebioGameData {
       {
         pairNumber: "1NS",
         direction: "N",
-        player1: { firstName: "Alice", lastName: "Smith", nationalId: "111111" },
+        player1: {
+          firstName: "Alice",
+          lastName: "Smith",
+          nationalId: "111111",
+        },
         player2: { firstName: "Bob", lastName: "Jones", nationalId: "222222" },
       },
       {
@@ -30,7 +34,11 @@ function makeBasicGameData(): UsebioGameData {
         pairNumber: "1EW",
         direction: "E",
         player1: { firstName: "Eve", lastName: "Green", nationalId: "555555" },
-        player2: { firstName: "Frank", lastName: "Black", nationalId: "666666" },
+        player2: {
+          firstName: "Frank",
+          lastName: "Black",
+          nationalId: "666666",
+        },
       },
       {
         pairNumber: "2EW",
@@ -40,10 +48,42 @@ function makeBasicGameData(): UsebioGameData {
       },
     ],
     boardResults: [
-      { table: 1, board: 1, round: 1, nsPairNumber: "1NS", ewPairNumber: "1EW", outcome: "3NTN+1", lead: "HK" },
-      { table: 2, board: 1, round: 1, nsPairNumber: "2NS", ewPairNumber: "2EW", outcome: "2NTN=", lead: "D5" },
-      { table: 1, board: 2, round: 1, nsPairNumber: "1NS", ewPairNumber: "1EW", outcome: "4SE-1", lead: "SA" },
-      { table: 2, board: 2, round: 1, nsPairNumber: "2NS", ewPairNumber: "2EW", outcome: "PO", lead: null },
+      {
+        table: 1,
+        board: 1,
+        round: 1,
+        nsPairNumber: "1NS",
+        ewPairNumber: "1EW",
+        outcome: "3NTN+1",
+        lead: "HK",
+      },
+      {
+        table: 2,
+        board: 1,
+        round: 1,
+        nsPairNumber: "2NS",
+        ewPairNumber: "2EW",
+        outcome: "2NTN=",
+        lead: "D5",
+      },
+      {
+        table: 1,
+        board: 2,
+        round: 1,
+        nsPairNumber: "1NS",
+        ewPairNumber: "1EW",
+        outcome: "4SE-1",
+        lead: "SA",
+      },
+      {
+        table: 2,
+        board: 2,
+        round: 1,
+        nsPairNumber: "2NS",
+        ewPairNumber: "2EW",
+        outcome: "PO",
+        lead: null,
+      },
     ],
   };
 }
@@ -68,7 +108,9 @@ describe("generateUsebioXml", () => {
     it("includes EVENT element", () => {
       const xml = generateUsebioXml(makeBasicGameData());
       expect(xml).toContain('<EVENT EVENT_TYPE="MP_PAIRS">');
-      expect(xml).toContain("<EVENT_DESCRIPTION>Monday Pairs</EVENT_DESCRIPTION>");
+      expect(xml).toContain(
+        "<EVENT_DESCRIPTION>Monday Pairs</EVENT_DESCRIPTION>",
+      );
       expect(xml).toContain("</EVENT>");
     });
 
@@ -214,14 +256,18 @@ describe("generateUsebioXml", () => {
       const data = makeBasicGameData();
       data.scoringType = "IMP";
       const xml = generateUsebioXml(data);
-      expect(xml).toContain("<BOARD_SCORING_METHOD>BUTLER</BOARD_SCORING_METHOD>");
+      expect(xml).toContain(
+        "<BOARD_SCORING_METHOD>BUTLER</BOARD_SCORING_METHOD>",
+      );
     });
 
     it("maps XIMP to XIMP", () => {
       const data = makeBasicGameData();
       data.scoringType = "XIMP";
       const xml = generateUsebioXml(data);
-      expect(xml).toContain("<BOARD_SCORING_METHOD>XIMP</BOARD_SCORING_METHOD>");
+      expect(xml).toContain(
+        "<BOARD_SCORING_METHOD>XIMP</BOARD_SCORING_METHOD>",
+      );
     });
   });
 
@@ -262,7 +308,15 @@ describe("generateUsebioXml", () => {
     it("handles single board result", () => {
       const data = makeBasicGameData();
       data.boardResults = [
-        { table: 1, board: 1, round: 1, nsPairNumber: "1", ewPairNumber: "2", outcome: "1NTN=", lead: null },
+        {
+          table: 1,
+          board: 1,
+          round: 1,
+          nsPairNumber: "1",
+          ewPairNumber: "2",
+          outcome: "1NTN=",
+          lead: null,
+        },
       ];
       const xml = generateUsebioXml(data);
       expect(xml).toContain('<BOARD BOARD_NUMBER="1">');
@@ -294,7 +348,15 @@ describe("generateUsebioXml", () => {
     it("handles NP (not-played) outcomes with null score (line 129-131)", () => {
       const data = makeBasicGameData();
       data.boardResults = [
-        { table: 1, board: 1, round: 1, nsPairNumber: "1NS", ewPairNumber: "1EW", outcome: "NP", lead: null },
+        {
+          table: 1,
+          board: 1,
+          round: 1,
+          nsPairNumber: "1NS",
+          ewPairNumber: "1EW",
+          outcome: "NP",
+          lead: null,
+        },
       ];
       const xml = generateUsebioXml(data);
       expect(xml).toContain("<CONTRACT/>");

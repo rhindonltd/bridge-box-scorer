@@ -40,7 +40,9 @@ export function PlayHeader({ detail }: Props) {
           )}
         </div>
         {participantLabel && (
-          <span className="font-semibold whitespace-nowrap ml-2">{participantLabel}</span>
+          <span className="font-semibold whitespace-nowrap ml-2">
+            {participantLabel}
+          </span>
         )}
       </div>
 

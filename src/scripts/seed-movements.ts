@@ -1,4 +1,3 @@
-
 import {
   createPairMovementRoundSpec,
   createTeamMovementRoundSpec,

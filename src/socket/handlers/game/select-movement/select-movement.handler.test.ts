@@ -10,7 +10,9 @@ vi.mock("@/db/movements/queries/get-movement", () => ({
 
 // Mock the DB factories so db.transaction() is a no-op
 const mockTransaction = vi.fn((fn: (tx: any) => void) => {
-  const tx = { insert: vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) })) };
+  const tx = {
+    insert: vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) })),
+  };
   fn(tx);
 });
 
@@ -33,9 +35,7 @@ import { registerSelectMovementHandler } from "./select-movement.handler";
 const pairMovement = [
   {
     tableNumber: 1,
-    rounds: [
-      { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 },
-    ],
+    rounds: [{ roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 }],
   },
 ];
 
@@ -51,7 +51,9 @@ describe("registerSelectMovementHandler (unit)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTransaction.mockImplementation((fn: (tx: any) => void) => {
-      const tx = { insert: vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) })) };
+      const tx = {
+        insert: vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) })),
+      };
       fn(tx);
     });
 
@@ -81,7 +83,10 @@ describe("registerSelectMovementHandler (unit)", () => {
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    await handler({ gameId: "g1", type: "PAIRS", id: 1, directorToken: "bad-token" }, cb);
+    await handler(
+      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "bad-token" },
+      cb,
+    );
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     expect(getPairMovement).not.toHaveBeenCalled();
@@ -96,7 +101,10 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     vi.mocked(getPairMovement).mockResolvedValue(pairMovement as any);
 
-    await handler({ gameId: "g1", type: "PAIRS", id: 5, directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", type: "PAIRS", id: 5, directorToken: "test-token" },
+      cb,
+    );
 
     expect(getPairMovement).toHaveBeenCalledWith(5);
     expect(mockTransaction).toHaveBeenCalled();
@@ -112,7 +120,10 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     vi.mocked(getTeamMovement).mockResolvedValue(pairMovement as any);
 
-    await handler({ gameId: "g1", type: "TEAMS", id: 3, directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", type: "TEAMS", id: 3, directorToken: "test-token" },
+      cb,
+    );
 
     expect(getTeamMovement).toHaveBeenCalledWith(3);
     expect(cb).toHaveBeenCalledWith({ success: true });
@@ -127,7 +138,10 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     vi.mocked(getPairMovement).mockRejectedValue(new Error("db fail"));
 
-    await handler({ gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+      cb,
+    );
 
     expect(cb).toHaveBeenCalledWith({ success: false });
   });
@@ -140,9 +154,14 @@ describe("registerSelectMovementHandler (unit)", () => {
     const cb = vi.fn();
 
     vi.mocked(getPairMovement).mockResolvedValue(pairMovement as any);
-    mockTransaction.mockImplementation(() => { throw new Error("tx fail"); });
+    mockTransaction.mockImplementation(() => {
+      throw new Error("tx fail");
+    });
 
-    await handler({ gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+      cb,
+    );
 
     expect(cb).toHaveBeenCalledWith({ success: false });
   });
@@ -175,9 +194,15 @@ describe("registerSelectMovementHandler (unit)", () => {
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    await handler({ gameId: "g1", type: "PAIRS", directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", type: "PAIRS", directorToken: "test-token" },
+      cb,
+    );
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "No movement specified" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "No movement specified",
+    });
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
@@ -189,7 +214,10 @@ describe("registerSelectMovementHandler (unit)", () => {
 
     // Should not throw when cb is not provided
     await expect(
-      handler({ gameId: "g1", type: "PAIRS", directorToken: "test-token" }, undefined),
+      handler(
+        { gameId: "g1", type: "PAIRS", directorToken: "test-token" },
+        undefined,
+      ),
     ).resolves.not.toThrow();
 
     expect(mockTransaction).not.toHaveBeenCalled();

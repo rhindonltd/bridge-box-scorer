@@ -16,15 +16,13 @@ test.describe("Change Status", () => {
 
     await page.goto(`/manage/${gameId}/change-status`);
 
-    await expect(
-      page.getByRole("button", { name: "Created" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Created" })).toBeVisible({
+      timeout: 10000,
+    });
     await expect(
       page.getByRole("button", { name: "Open for Players" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Complete" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Complete" })).toBeVisible();
   });
 
   test("active status is visually distinguished", async ({
@@ -60,9 +58,9 @@ test.describe("Change Status", () => {
     await page.goto(`/manage/${gameId}/change-status`);
 
     // Game starts as JOINABLE, so clicking "Complete" is a valid transition
-    await expect(
-      page.getByRole("button", { name: "Complete" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Complete" })).toBeVisible({
+      timeout: 10000,
+    });
 
     await page.getByRole("button", { name: "Complete" }).click();
 
@@ -78,9 +76,9 @@ test.describe("Change Status", () => {
     // Game starts as JOINABLE from creation
     await page.goto(`/manage/${gameId}/change-status`);
 
-    await expect(
-      page.getByRole("button", { name: "Created" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Created" })).toBeVisible({
+      timeout: 10000,
+    });
 
     await page.getByRole("button", { name: "Created" }).click();
 

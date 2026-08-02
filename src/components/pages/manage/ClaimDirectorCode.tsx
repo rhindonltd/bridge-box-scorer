@@ -13,7 +13,12 @@ interface Props {
   onCancel: () => void;
 }
 
-export function ClaimDirectorCode({ gameId, gameName, onSuccess, onCancel }: Props) {
+export function ClaimDirectorCode({
+  gameId,
+  gameName,
+  onSuccess,
+  onCancel,
+}: Props) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,7 +32,12 @@ export function ClaimDirectorCode({ gameId, gameName, onSuccess, onCancel }: Pro
     getSocket().emit(
       SocketEvents.CLAIM_DIRECTOR_CODE,
       { code: code.trim().toUpperCase() },
-      (res: { success: boolean; directorToken?: string; gameId?: string; error?: string }) => {
+      (res: {
+        success: boolean;
+        directorToken?: string;
+        gameId?: string;
+        error?: string;
+      }) => {
         setLoading(false);
 
         if (res.success && res.directorToken && res.gameId) {

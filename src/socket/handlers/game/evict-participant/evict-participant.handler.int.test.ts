@@ -33,10 +33,13 @@ describe("registerEvictParticipantHandler (integration)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(findLoginSession).mockReturnValue({
-      token: "test-token", role: "DIRECTOR", gameId: "game-1",
+      token: "test-token",
+      role: "DIRECTOR",
+      gameId: "game-1",
     } as any);
     vi.mocked(findGameById).mockResolvedValue({
-      gameId: "game-1", gameType: "PAIRS",
+      gameId: "game-1",
+      gameType: "PAIRS",
     } as any);
     vi.mocked(deletePairParticipant).mockResolvedValue(undefined as any);
     vi.mocked(findPairs).mockResolvedValue([]);
@@ -60,7 +63,9 @@ describe("registerEvictParticipantHandler (integration)", () => {
     const participantsPromise = waitForEvent(client, SocketEvents.PARTICIPANTS);
 
     const result = await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
-      gameId: "game-1", seat: "1NS", directorToken: "test-token",
+      gameId: "game-1",
+      seat: "1NS",
+      directorToken: "test-token",
     });
 
     expect(result).toEqual({ success: true });
@@ -77,7 +82,11 @@ describe("registerEvictParticipantHandler (integration)", () => {
     });
     closeServer = close;
 
-    const result = await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {});
+    const result = await emitWithAck(
+      client,
+      SocketEvents.EVICT_PARTICIPANT,
+      {},
+    );
 
     expect(result).toMatchObject({ success: false, error: "Invalid payload" });
   });
@@ -93,7 +102,9 @@ describe("registerEvictParticipantHandler (integration)", () => {
     closeServer = close;
 
     const result = await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
-      gameId: "game-1", seat: "1NS", directorToken: "bad-token",
+      gameId: "game-1",
+      seat: "1NS",
+      directorToken: "bad-token",
     });
 
     expect(result).toMatchObject({ success: false });
@@ -110,7 +121,9 @@ describe("registerEvictParticipantHandler (integration)", () => {
     closeServer = close;
 
     const result = await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
-      gameId: "game-1", seat: "1NS", directorToken: "test-token",
+      gameId: "game-1",
+      seat: "1NS",
+      directorToken: "test-token",
     });
 
     expect(result).toMatchObject({ success: false, error: "Game not found" });

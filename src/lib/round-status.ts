@@ -31,7 +31,12 @@ export function isBoardEntered(board: {
 }): boolean {
   if (board.directorOverrideResult != null) return true;
   if (board.confirmedResult != null) return true;
-  if (board.status === "CONFIRMED" || board.status === "PENDING_CONFIRMATION" || board.status === "OVERRIDDEN") return true;
+  if (
+    board.status === "CONFIRMED" ||
+    board.status === "PENDING_CONFIRMATION" ||
+    board.status === "OVERRIDDEN"
+  )
+    return true;
   return false;
 }
 

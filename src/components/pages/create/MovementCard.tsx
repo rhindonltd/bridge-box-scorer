@@ -1,7 +1,4 @@
-import {
-  PairMovementSpec,
-  TeamMovementSpec,
-} from "@/db/movements/schema";
+import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
 
 type Props = {
   movement: PairMovementSpec | TeamMovementSpec;

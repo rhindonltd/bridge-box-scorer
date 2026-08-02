@@ -76,7 +76,9 @@ describe("registerCreateTimerHandler (integration)", () => {
 
     // Join the game room first so we receive the broadcast
     await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () => resolve());
+      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
+        resolve(),
+      );
     });
 
     const syncPromise = waitForEvent(client, "timer:sync");
@@ -117,7 +119,9 @@ describe("registerCreateTimerHandler (integration)", () => {
     closeServer = close;
 
     await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () => resolve());
+      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
+        resolve(),
+      );
     });
 
     const syncPromise = waitForEvent(client, "timer:sync", 500).catch(

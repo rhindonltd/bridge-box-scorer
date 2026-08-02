@@ -1,15 +1,9 @@
 import { describe, it, expect } from "vitest";
-import {
-  isBoardEntered,
-  computeRoundStatus,
-  BoardEntry,
-} from "./round-status";
+import { isBoardEntered, computeRoundStatus, BoardEntry } from "./round-status";
 
 describe("isBoardEntered", () => {
   it("returns true when directorOverrideResult is non-null", () => {
-    expect(
-      isBoardEntered({ directorOverrideResult: "3NTN=" }),
-    ).toBe(true);
+    expect(isBoardEntered({ directorOverrideResult: "3NTN=" })).toBe(true);
   });
 
   it("returns true when confirmedResult is non-null", () => {

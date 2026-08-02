@@ -7,5 +7,5 @@ export default async function JoinPage({
 }) {
   const { gameId } = await params;
 
-  redirect(`/join/${gameId}/menu`);
+  redirect(`/join/${gameId}/player`);
 }

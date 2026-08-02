@@ -82,6 +82,7 @@ Convenience scripts are added to `package.json`:
 ```
 
 Key decisions:
+
 - **Two device profiles** — `journeys-phone` uses iPhone 12 (390×844) for phone-sized validation; `journeys-tablet` uses a custom Amazon Fire HD 8 config (800×1280) for tablet layout validation. Both use Chromium under the hood.
 - **Sequential within file** — journey tests within a single file share database state (game created in step 1 is used in later steps), so parallel execution within a file is disabled.
 - **Parallel across files** — different journey files are independent and can run in parallel.
@@ -90,6 +91,7 @@ Key decisions:
 ### 2. Shared Helpers Module
 
 `tests/journeys/helpers.ts` provides reusable step functions that encapsulate common multi-step operations. Each helper:
+
 - Wraps its logic in `test.step()` for report readability
 - Accepts `testInfo` to attach screenshots at key moments
 - Returns extracted state (gameId, tokens) for downstream steps
@@ -100,7 +102,7 @@ import { test, Page, TestInfo, devices } from "@playwright/test";
 export async function attachScreenshot(
   page: Page,
   testInfo: TestInfo,
-  name: string
+  name: string,
 ): Promise<void> {
   await testInfo.attach(name, {
     body: await page.screenshot(),
@@ -111,56 +113,58 @@ export async function attachScreenshot(
 export async function createGameStep(
   page: Page,
   testInfo: TestInfo,
-  options: { eventName: string; directorName?: string; tables?: number }
+  options: { eventName: string; directorName?: string; tables?: number },
 ): Promise<{ gameId: string; directorToken: string }> {
-  return await test.step(
-    `Director creates game "${options.eventName}" with ${options.tables ?? 2} tables`,
-    async () => {
-      await page.goto("/create");
-      await page.getByLabel("Event Name").fill(options.eventName);
-      await page.getByLabel("Director Name").fill(options.directorName ?? "E2E Director");
+  return await test.step(`Director creates game "${options.eventName}" with ${options.tables ?? 2} tables`, async () => {
+    await page.goto("/create");
+    await page.getByLabel("Event Name").fill(options.eventName);
+    await page
+      .getByLabel("Director Name")
+      .fill(options.directorName ?? "E2E Director");
 
-      const tables = options.tables ?? 2;
-      const incrementButton = page.getByRole("button", { name: "+" });
-      for (let i = 1; i < tables; i++) {
-        await incrementButton.click();
-      }
-
-      await page.getByRole("button", { name: "Next", exact: true }).click();
-      await page.waitForURL(/\/create\/.+/);
-
-      const gameId = page.url().split("/create/")[1];
-      const directorToken = await page.evaluate(
-        (gid) => localStorage.getItem(`director:${gid}`),
-        gameId
-      );
-
-      await attachScreenshot(page, testInfo, "Director - Game created");
-      return { gameId, directorToken: directorToken! };
+    const tables = options.tables ?? 2;
+    const incrementButton = page.getByRole("button", { name: "+" });
+    for (let i = 1; i < tables; i++) {
+      await incrementButton.click();
     }
-  );
+
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.waitForURL(/\/create\/.+/);
+
+    const gameId = page.url().split("/create/")[1];
+    const directorToken = await page.evaluate(
+      (gid) => localStorage.getItem(`director:${gid}`),
+      gameId,
+    );
+
+    await attachScreenshot(page, testInfo, "Director - Game created");
+    return { gameId, directorToken: directorToken! };
+  });
 }
 
 export async function selectMovementStep(
   page: Page,
   testInfo: TestInfo,
   gameId: string,
-  movementName: string = "Mitchell"
+  movementName: string = "Mitchell",
 ): Promise<void> {
-  return await test.step(
-    `Director selects ${movementName} movement`,
-    async () => {
-      // Already on /create/[id] after game creation
-      await page.getByRole("button", { name: new RegExp(movementName, "i") }).click();
-      await attachScreenshot(page, testInfo, `Director - ${movementName} movement selected`);
-    }
-  );
+  return await test.step(`Director selects ${movementName} movement`, async () => {
+    // Already on /create/[id] after game creation
+    await page
+      .getByRole("button", { name: new RegExp(movementName, "i") })
+      .click();
+    await attachScreenshot(
+      page,
+      testInfo,
+      `Director - ${movementName} movement selected`,
+    );
+  });
 }
 
 export async function makeGameJoinableStep(
   page: Page,
   testInfo: TestInfo,
-  gameId: string
+  gameId: string,
 ): Promise<void> {
   return await test.step("Director makes game joinable", async () => {
     await page.goto(`/manage/${gameId}/change-status`);
@@ -173,54 +177,60 @@ export async function joinGameStep(
   page: Page,
   testInfo: TestInfo,
   gameId: string,
-  options: { seat: string; players: { firstName: string; lastName: string }[] }
+  options: { seat: string; players: { firstName: string; lastName: string }[] },
 ): Promise<void> {
-  return await test.step(
-    `Player joins game at seat ${options.seat}`,
-    async () => {
-      await page.goto(`/join/select-game`);
-      // Select the game from the list
-      await page.getByRole("link", { name: new RegExp(gameId.slice(0, 8)) }).click();
-      await page.waitForURL(/\/join\/.+\/player/);
+  return await test.step(`Player joins game at seat ${options.seat}`, async () => {
+    await page.goto(`/join/select-game`);
+    // Select the game from the list
+    await page
+      .getByRole("link", { name: new RegExp(gameId.slice(0, 8)) })
+      .click();
+    await page.waitForURL(/\/join\/.+\/player/);
 
-      // Select seat and enter player names
-      await page.getByRole("button", { name: new RegExp(options.seat, "i") }).click();
+    // Select seat and enter player names
+    await page
+      .getByRole("button", { name: new RegExp(options.seat, "i") })
+      .click();
 
-      for (const player of options.players) {
-        // Fill player name fields as they appear
-        const firstNameInput = page.getByLabel(/first/i).first();
-        const lastNameInput = page.getByLabel(/last/i).first();
-        await firstNameInput.fill(player.firstName);
-        await lastNameInput.fill(player.lastName);
-      }
-
-      await page.getByRole("button", { name: /confirm|join/i }).click();
-      await attachScreenshot(page, testInfo, `Player - Seated at ${options.seat}`);
+    for (const player of options.players) {
+      // Fill player name fields as they appear
+      const firstNameInput = page.getByLabel(/first/i).first();
+      const lastNameInput = page.getByLabel(/last/i).first();
+      await firstNameInput.fill(player.firstName);
+      await lastNameInput.fill(player.lastName);
     }
-  );
+
+    await page.getByRole("button", { name: /confirm|join/i }).click();
+    await attachScreenshot(
+      page,
+      testInfo,
+      `Player - Seated at ${options.seat}`,
+    );
+  });
 }
 
 export async function enterResultStep(
   page: Page,
   testInfo: TestInfo,
-  options: { gameId: string; seat: string; board: number; passOut?: boolean }
+  options: { gameId: string; seat: string; board: number; passOut?: boolean },
 ): Promise<void> {
-  return await test.step(
-    `Player at ${options.seat} enters result for Board ${options.board}`,
-    async () => {
-      await page.goto(`/play/${options.gameId}/${options.seat}`);
-      await page.getByRole("button", { name: "Enter Round" }).click();
-      await page.waitForSelector(`text=Board ${options.board}`);
+  return await test.step(`Player at ${options.seat} enters result for Board ${options.board}`, async () => {
+    await page.goto(`/play/${options.gameId}/${options.seat}`);
+    await page.getByRole("button", { name: "Enter Round" }).click();
+    await page.waitForSelector(`text=Board ${options.board}`);
 
-      if (options.passOut) {
-        await page.getByRole("button", { name: "Pass Out" }).click();
-      }
-
-      await attachScreenshot(page, testInfo, `Player ${options.seat} - Result entered Board ${options.board}`);
-      const okButton = page.getByRole("button", { name: "OK" });
-      await okButton.dispatchEvent("submit");
+    if (options.passOut) {
+      await page.getByRole("button", { name: "Pass Out" }).click();
     }
-  );
+
+    await attachScreenshot(
+      page,
+      testInfo,
+      `Player ${options.seat} - Result entered Board ${options.board}`,
+    );
+    const okButton = page.getByRole("button", { name: "OK" });
+    await okButton.dispatchEvent("submit");
+  });
 }
 
 export async function cleanupGames(baseURL: string): Promise<void> {
@@ -288,6 +298,7 @@ test("Complete pairs game lifecycle", async ({ browser }, testInfo) => {
 ```
 
 Key design decisions:
+
 - **`test.info().project.use` for device settings** — this is the correct way to inherit the project's device configuration in `browser.newContext()`. The same test code runs identically under `journeys-phone` (iPhone 12) and `journeys-tablet` (Fire HD 8) without any code changes.
 - **`browser` fixture** — tests destructure `{ browser }` (not `{ page }`) to get access to `browser.newContext()` for multi-actor scenarios.
 - **No manual device spreading** — do NOT use `...devices["iPhone 12"]` directly in tests. The project-level config controls the device; tests just pass `test.info().project.use` to `newContext()`.
@@ -298,19 +309,19 @@ Key design decisions:
 
 Screenshots are attached to the HTML report using `testInfo.attach()` at key validation moments:
 
-| Moment | Screenshot Name Pattern |
-|--------|------------------------|
-| After game creation | `"Director - Game created"` |
-| After movement selection | `"Director - Mitchell movement selected"` |
-| After game made joinable | `"Director - Game made joinable"` |
-| After player seated | `"Player - Seated at 1NS"` |
-| Before result submission | `"Player 1NS - Result entered Board 1"` |
-| Confirmation state | `"Player 1NS - Result confirmed Board 1"` |
-| Mismatch state | `"Player 1NS - Mismatch detected Board 1"` |
-| Director correction | `"Director - Correction submitted Board 1"` |
-| Leaderboard | `"Player - Leaderboard with scores"` |
-| Timer running | `"Director - Timer running"` |
-| Timer player view | `"Player - Timer display"` |
+| Moment                   | Screenshot Name Pattern                     |
+| ------------------------ | ------------------------------------------- |
+| After game creation      | `"Director - Game created"`                 |
+| After movement selection | `"Director - Mitchell movement selected"`   |
+| After game made joinable | `"Director - Game made joinable"`           |
+| After player seated      | `"Player - Seated at 1NS"`                  |
+| Before result submission | `"Player 1NS - Result entered Board 1"`     |
+| Confirmation state       | `"Player 1NS - Result confirmed Board 1"`   |
+| Mismatch state           | `"Player 1NS - Mismatch detected Board 1"`  |
+| Director correction      | `"Director - Correction submitted Board 1"` |
+| Leaderboard              | `"Player - Leaderboard with scores"`        |
+| Timer running            | `"Director - Timer running"`                |
+| Timer player view        | `"Player - Timer display"`                  |
 
 Each screenshot is named with the actor prefix and the action description, making the HTML report navigable without reading code.
 
@@ -328,6 +339,7 @@ test.afterAll(async () => {
 ```
 
 The cleanup function:
+
 1. Fetches all games via `GET /api/games/all`
 2. Filters for games with event names starting with `"E2E Journey"` (the naming convention for journey test games)
 3. Deletes each matching game via `DELETE /api/games/[id]/delete`
@@ -341,13 +353,17 @@ This approach avoids direct database manipulation and exercises the same API end
 
 ```typescript
 // Screenshot attachment
-function attachScreenshot(page: Page, testInfo: TestInfo, name: string): Promise<void>;
+function attachScreenshot(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+): Promise<void>;
 
 // Game creation — returns gameId and directorToken
 function createGameStep(
   page: Page,
   testInfo: TestInfo,
-  options: { eventName: string; directorName?: string; tables?: number }
+  options: { eventName: string; directorName?: string; tables?: number },
 ): Promise<{ gameId: string; directorToken: string }>;
 
 // Movement selection on the create/[id] page
@@ -355,14 +371,14 @@ function selectMovementStep(
   page: Page,
   testInfo: TestInfo,
   gameId: string,
-  movementName?: string
+  movementName?: string,
 ): Promise<void>;
 
 // Transition game to JOINABLE
 function makeGameJoinableStep(
   page: Page,
   testInfo: TestInfo,
-  gameId: string
+  gameId: string,
 ): Promise<void>;
 
 // Player joins a game and selects a seat
@@ -370,14 +386,14 @@ function joinGameStep(
   page: Page,
   testInfo: TestInfo,
   gameId: string,
-  options: { seat: string; players: { firstName: string; lastName: string }[] }
+  options: { seat: string; players: { firstName: string; lastName: string }[] },
 ): Promise<void>;
 
 // Player enters a contract result for a board
 function enterResultStep(
   page: Page,
   testInfo: TestInfo,
-  options: { gameId: string; seat: string; board: number; passOut?: boolean }
+  options: { gameId: string; seat: string; board: number; passOut?: boolean },
 ): Promise<void>;
 
 // Delete all E2E journey games from the database
@@ -474,12 +490,12 @@ for (const game of games) {
 
 ### Timeout Strategy
 
-| Level | Timeout | Purpose |
-|-------|---------|---------|
-| Test | 120s | Allows multi-actor journeys with Socket.IO waits |
-| Action | 30s | Individual page interactions (fills, clicks, navigations) |
-| Expect | 15s | Assertions that wait for Socket.IO-driven UI updates |
-| Navigation | inherited | Uses Playwright's default navigation timeout |
+| Level      | Timeout   | Purpose                                                   |
+| ---------- | --------- | --------------------------------------------------------- |
+| Test       | 120s      | Allows multi-actor journeys with Socket.IO waits          |
+| Action     | 30s       | Individual page interactions (fills, clicks, navigations) |
+| Expect     | 15s       | Assertions that wait for Socket.IO-driven UI updates      |
+| Navigation | inherited | Uses Playwright's default navigation timeout              |
 
 ### Socket.IO Event Synchronisation
 
@@ -510,6 +526,7 @@ tests/journeys/
 ```
 
 Each file follows the pattern:
+
 1. Import helpers and devices
 2. `test.beforeAll` — cleanup
 3. One or more `test()` blocks using `{ browser }` fixture and `testInfo`
@@ -517,17 +534,19 @@ Each file follows the pattern:
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 This feature is an E2E test infrastructure specification. The acceptance criteria describe integration-level test scenarios (specific user flows), configuration checks (smoke tests), and code structure requirements (examples). None of the criteria exhibit meaningful input variation suitable for property-based testing.
 
 **Reasoning:**
+
 - Requirements 1, 2, 3, 14, 15 are about test infrastructure configuration and code structure — they are either SMOKE or EXAMPLE tests
 - Requirements 4–13 describe specific journey scenarios that execute a fixed sequence of user actions — these are INTEGRATION tests by nature
 - There are no pure functions, serializers, parsers, or algorithmic logic being specified that would benefit from randomized input generation
 - Running 100 iterations of "Director creates a game" does not reveal more bugs than running it once — the behavior is deterministic for a given input
 
 **Classification summary:**
+
 - SMOKE: Requirements 1.1–1.5, 1.7, 3.4
 - EXAMPLE: Requirements 1.6, 2.1–2.4, 3.1–3.3, 14.1–14.6, 15.1–15.4
 - INTEGRATION: Requirements 4.1–4.10, 5.1–5.5, 6.1–6.6, 7.1–7.7, 8.1–8.7, 9.1–9.4, 10.1–10.5, 11.1–11.5, 12.1–12.5, 13.1–13.5

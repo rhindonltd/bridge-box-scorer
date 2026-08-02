@@ -13,7 +13,9 @@ test.describe("Settings Menu", () => {
   test("settings page loads with heading", async ({ page }) => {
     await page.goto("/settings");
     await enterSettingsPin(page);
-    await expect(page.getByText("Settings", { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Settings", { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("shows WiFi Settings button", async ({ page }) => {

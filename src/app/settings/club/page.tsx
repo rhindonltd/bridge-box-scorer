@@ -38,7 +38,10 @@ export default function ClubSettingsPage() {
       const res = await fetch("/api/system/club", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), clubNumber: clubNumber.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          clubNumber: clubNumber.trim(),
+        }),
       });
 
       if (res.ok) {
@@ -68,10 +71,16 @@ export default function ClubSettingsPage() {
         Club Information
       </div>
 
-      <form onSubmit={handleSave} className="flex-1 flex flex-col px-6 pt-6 pb-8 max-w-sm w-full mx-auto">
+      <form
+        onSubmit={handleSave}
+        className="flex-1 flex flex-col px-6 pt-6 pb-8 max-w-sm w-full mx-auto"
+      >
         <div className="space-y-4 flex-1">
           <div>
-            <label htmlFor="club-name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="club-name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Club Name
             </label>
             <input
@@ -85,7 +94,10 @@ export default function ClubSettingsPage() {
           </div>
 
           <div>
-            <label htmlFor="club-number" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="club-number"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               EBU Club Number
             </label>
             <input
@@ -99,7 +111,9 @@ export default function ClubSettingsPage() {
           </div>
 
           {message && (
-            <p className={`text-base text-center ${message.startsWith("✅") ? "text-green-700" : "text-red-600"}`}>
+            <p
+              className={`text-base text-center ${message.startsWith("✅") ? "text-green-700" : "text-red-600"}`}
+            >
               {message}
             </p>
           )}

@@ -27,7 +27,10 @@ describe("useSocketSWRSync", () => {
 
     renderHook(() => useSocketSWRSync("game:participants", handler));
 
-    expect(mockOn).toHaveBeenCalledWith("game:participants", expect.any(Function));
+    expect(mockOn).toHaveBeenCalledWith(
+      "game:participants",
+      expect.any(Function),
+    );
   });
 
   it("unsubscribes from the socket event on unmount", () => {
@@ -39,7 +42,10 @@ describe("useSocketSWRSync", () => {
 
     unmount();
 
-    expect(mockOff).toHaveBeenCalledWith("game:participants", expect.any(Function));
+    expect(mockOff).toHaveBeenCalledWith(
+      "game:participants",
+      expect.any(Function),
+    );
   });
 
   it("calls SWR mutate when handler returns key and data", () => {
@@ -58,7 +64,11 @@ describe("useSocketSWRSync", () => {
     internalHandler(payload);
 
     expect(handler).toHaveBeenCalledWith(payload);
-    expect(mockMutate).toHaveBeenCalledWith("/api/games/123", { updated: true }, false);
+    expect(mockMutate).toHaveBeenCalledWith(
+      "/api/games/123",
+      { updated: true },
+      false,
+    );
   });
 
   it("does not call SWR mutate when handler returns null", () => {

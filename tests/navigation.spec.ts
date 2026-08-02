@@ -9,9 +9,7 @@ import { createGameViaUI } from "./fixtures/game-fixture";
  */
 
 test.describe("Main Menu Navigation", () => {
-  test("home page loads with logo and navigation buttons", async ({
-    page,
-  }) => {
+  test("home page loads with logo and navigation buttons", async ({ page }) => {
     await page.goto("/");
 
     // Logo should be visible
@@ -27,9 +25,7 @@ test.describe("Main Menu Navigation", () => {
     await expect(
       page.getByRole("button", { name: "Manage Games" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Settings" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
   });
 
   test("'Join Game' navigates to /join/select-game", async ({ page }) => {
@@ -75,10 +71,14 @@ test.describe("Back Navigation", () => {
   }) => {
     // Navigate to settings first, enter PIN, then go to club
     await page.goto("/settings");
-    await expect(page.getByText("Enter PIN to continue")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Enter PIN to continue")).toBeVisible({
+      timeout: 10000,
+    });
     await page.getByLabel("PIN").fill("1234");
     await page.getByRole("button", { name: "Enter" }).click();
-    await expect(page.getByText("Settings", { exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Settings", { exact: true })).toBeVisible({
+      timeout: 10000,
+    });
     await page.getByRole("button", { name: "Club Information" }).click();
     await expect(page).toHaveURL(/\/settings\/club/);
 
@@ -107,7 +107,13 @@ test.describe("Back Navigation", () => {
             {
               tableNumber: 1,
               rounds: [
-                { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 3 },
+                {
+                  roundNumber: 1,
+                  ns: "1",
+                  ew: "2",
+                  boardStart: 1,
+                  boardEnd: 3,
+                },
               ],
             },
           ],
@@ -135,6 +141,8 @@ test.describe("Back Navigation", () => {
 
     // Click "Complete" to change status — game is JOINABLE so this triggers a real transition
     await page.getByRole("button", { name: "Complete" }).click();
-    await expect(page).toHaveURL(new RegExp(`/manage/${gameId}/menu`), { timeout: 10000 });
+    await expect(page).toHaveURL(new RegExp(`/manage/${gameId}/menu`), {
+      timeout: 10000,
+    });
   });
 });

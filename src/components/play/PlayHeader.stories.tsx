@@ -26,10 +26,7 @@ const meta: Meta<typeof PlayHeader> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
-  decorators: [
-    withGame(mockGame),
-    withAssignment({ type: "PAIR", id: "1NS" }),
-  ],
+  decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
 };
 
 export default meta;
@@ -48,7 +45,12 @@ export const NoDetail: Story = {
 
 export const IndividualPlayer: Story = {
   decorators: [
-    withGame({ ...mockGame, gameType: "PAIRS", sessionName: "", sectionName: "" }),
+    withGame({
+      ...mockGame,
+      gameType: "PAIRS",
+      sessionName: "",
+      sectionName: "",
+    }),
     withAssignment({ type: "PAIR", id: "3" }),
   ],
   args: {

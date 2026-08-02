@@ -184,6 +184,7 @@ The following gaps have been identified where the current UI does not provide ad
 ### Gap 1: Game Creation Requires Socket.IO
 
 The game creation form submits via Socket.IO (`emitWithAck` on the `create-game` event), not a REST API call. Playwright cannot natively interact with Socket.IO. Tests must either:
+
 - Execute the form submission and rely on the client-side Socket.IO connection working in the test browser
 - Use a REST API endpoint for game creation (none currently exists)
 - Seed the database directly
@@ -223,6 +224,7 @@ Timer creation and management (`timer:create`, `timer:start`, `timer:pause`, `ti
 ### Recommended Test Strategy
 
 Given these gaps, the recommended approach for E2E tests is:
+
 1. **Create games via the UI form** — the Socket.IO connection works in the browser during E2E tests, and the director token is stored in localStorage automatically
 2. **Use the director override API** (REST) for seeding board results where needed, using the director token from localStorage
 3. **Use the change-status API** (REST) for setting game status to JOINABLE

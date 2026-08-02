@@ -48,7 +48,9 @@ describe("registerShareCodeHandlers", () => {
   describe("GENERATE_SHARE_CODE", () => {
     it("generates a code for an authorized director", async () => {
       vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok", role: "DIRECTOR", gameId: "g1",
+        token: "tok",
+        role: "DIRECTOR",
+        gameId: "g1",
       } as any);
       vi.mocked(createShareCode).mockResolvedValue("K7M2PX");
 
@@ -80,7 +82,10 @@ describe("registerShareCodeHandlers", () => {
       await handler({ gameId: "g1", directorToken: "bad" }, cb);
 
       expect(createShareCode).not.toHaveBeenCalled();
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Unauthorized",
+      });
     });
 
     it("rejects invalid payload (missing gameId)", async () => {
@@ -94,13 +99,18 @@ describe("registerShareCodeHandlers", () => {
       const cb = vi.fn();
       await handler({ directorToken: "tok" }, cb);
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "Invalid payload" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Invalid payload",
+      });
       expect(createShareCode).not.toHaveBeenCalled();
     });
 
     it("returns error when createShareCode throws", async () => {
       vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok", role: "DIRECTOR", gameId: "g1",
+        token: "tok",
+        role: "DIRECTOR",
+        gameId: "g1",
       } as any);
       vi.mocked(createShareCode).mockRejectedValue(new Error("DB error"));
 
@@ -114,14 +124,18 @@ describe("registerShareCodeHandlers", () => {
       const cb = vi.fn();
       await handler({ gameId: "g1", directorToken: "tok" }, cb);
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "Failed to generate code" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Failed to generate code",
+      });
     });
   });
 
   describe("CLAIM_DIRECTOR_CODE", () => {
     it("claims a valid code and returns a director token", async () => {
       vi.mocked(validateAndClaimShareCode).mockResolvedValue({
-        valid: true, gameId: "g1",
+        valid: true,
+        gameId: "g1",
       });
       vi.mocked(createLoginSession).mockResolvedValue(undefined);
 
@@ -140,13 +154,18 @@ describe("registerShareCodeHandlers", () => {
         expect.objectContaining({ gameId: "g1", role: "DIRECTOR" }),
       );
       expect(cb).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, gameId: "g1", directorToken: expect.any(String) }),
+        expect.objectContaining({
+          success: true,
+          gameId: "g1",
+          directorToken: expect.any(String),
+        }),
       );
     });
 
     it("rejects an invalid code", async () => {
       vi.mocked(validateAndClaimShareCode).mockResolvedValue({
-        valid: false, error: "Invalid code",
+        valid: false,
+        error: "Invalid code",
       });
 
       const socket = makeSocket();
@@ -159,13 +178,17 @@ describe("registerShareCodeHandlers", () => {
       const cb = vi.fn();
       await handler({ code: "BADCODE" }, cb);
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "Invalid code" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Invalid code",
+      });
       expect(createLoginSession).not.toHaveBeenCalled();
     });
 
     it("rejects an expired code", async () => {
       vi.mocked(validateAndClaimShareCode).mockResolvedValue({
-        valid: false, error: "Code has expired",
+        valid: false,
+        error: "Code has expired",
       });
 
       const socket = makeSocket();
@@ -178,12 +201,16 @@ describe("registerShareCodeHandlers", () => {
       const cb = vi.fn();
       await handler({ code: "OLDCODE" }, cb);
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "Code has expired" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Code has expired",
+      });
     });
 
     it("rejects an already-used code", async () => {
       vi.mocked(validateAndClaimShareCode).mockResolvedValue({
-        valid: false, error: "Code has already been used",
+        valid: false,
+        error: "Code has already been used",
       });
 
       const socket = makeSocket();
@@ -196,7 +223,10 @@ describe("registerShareCodeHandlers", () => {
       const cb = vi.fn();
       await handler({ code: "USEDCD" }, cb);
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "Code has already been used" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Code has already been used",
+      });
     });
 
     it("rejects invalid payload (missing code)", async () => {
@@ -210,12 +240,17 @@ describe("registerShareCodeHandlers", () => {
       const cb = vi.fn();
       await handler({}, cb);
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "Invalid payload" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Invalid payload",
+      });
       expect(validateAndClaimShareCode).not.toHaveBeenCalled();
     });
 
     it("returns error when validateAndClaimShareCode throws", async () => {
-      vi.mocked(validateAndClaimShareCode).mockRejectedValue(new Error("DB error"));
+      vi.mocked(validateAndClaimShareCode).mockRejectedValue(
+        new Error("DB error"),
+      );
 
       const socket = makeSocket();
       registerShareCodeHandlers(socket, makeIo());
@@ -227,7 +262,10 @@ describe("registerShareCodeHandlers", () => {
       const cb = vi.fn();
       await handler({ code: "ABCDEF" }, cb);
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "Failed to claim code" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Failed to claim code",
+      });
     });
   });
 });

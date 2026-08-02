@@ -5,8 +5,7 @@ import { shareCodes } from "@/db/system/schema";
 import { eq } from "drizzle-orm";
 
 export type ValidateResult =
-  | { valid: true; gameId: string }
-  | { valid: false; error: string };
+  { valid: true; gameId: string } | { valid: false; error: string };
 
 /**
  * Validates a share code and marks it as used if valid.

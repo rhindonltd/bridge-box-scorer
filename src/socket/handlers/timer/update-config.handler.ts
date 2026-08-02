@@ -30,18 +30,34 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
   socket.on(SocketEvents.UPDATE_CONFIG_TIMER, async (payload: unknown) => {
     const parsed = payloadSchema.safeParse(payload);
     if (!parsed.success) {
-      console.warn("Invalid UPDATE_CONFIG_TIMER payload:", parsed.error.message);
+      console.warn(
+        "Invalid UPDATE_CONFIG_TIMER payload:",
+        parsed.error.message,
+      );
       return;
     }
 
-    const { gameType, gameId, directorToken, boardsPerRound, totalRounds, playDuration, moveDuration } = parsed.data;
+    const {
+      gameType,
+      gameId,
+      directorToken,
+      boardsPerRound,
+      totalRounds,
+      playDuration,
+      moveDuration,
+    } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
     try {
       const engine = await getEngine(gameType, gameId);
       if (!engine) return;
 
-      engine.updateConfig(boardsPerRound, totalRounds, playDuration, moveDuration);
+      engine.updateConfig(
+        boardsPerRound,
+        totalRounds,
+        playDuration,
+        moveDuration,
+      );
 
       await updateTimerState(gameType, gameId, engine.getState());
       broadcast(gameId, engine.getState());

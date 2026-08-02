@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createGame, selectMovement, selectMitchellMovement, createParticipant } from "./game-service";
+import {
+  createGame,
+  selectMovement,
+  selectMitchellMovement,
+  createParticipant,
+} from "./game-service";
 import { SocketEvents } from "@/socket/socket-events";
 
 vi.mock("@/lib/socket", () => ({
@@ -52,10 +57,12 @@ describe("game-service", () => {
     it("emits SELECT_MOVEMENT with gameId, type, id, and directorToken", async () => {
       await selectMovement("g1", 42, "mitchell");
 
-      expect(mockEmitEvent).toHaveBeenCalledWith(
-        SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g1", type: "mitchell", id: 42, directorToken: "stored-token" },
-      );
+      expect(mockEmitEvent).toHaveBeenCalledWith(SocketEvents.SELECT_MOVEMENT, {
+        gameId: "g1",
+        type: "mitchell",
+        id: 42,
+        directorToken: "stored-token",
+      });
     });
   });
 
@@ -66,10 +73,12 @@ describe("game-service", () => {
 
       await selectMitchellMovement("g2", mitchell as any);
 
-      expect(mockEmitEvent).toHaveBeenCalledWith(
-        SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g2", type: "PAIRS", mitchell, directorToken: "stored-token" },
-      );
+      expect(mockEmitEvent).toHaveBeenCalledWith(SocketEvents.SELECT_MOVEMENT, {
+        gameId: "g2",
+        type: "PAIRS",
+        mitchell,
+        directorToken: "stored-token",
+      });
     });
   });
 

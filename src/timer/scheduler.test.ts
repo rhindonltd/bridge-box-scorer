@@ -31,7 +31,11 @@ describe("scheduleGame", () => {
   }
 
   it("sets a timeout that calls nextPhase when it fires", async () => {
-    const engine = makeEngine({ playDuration: 2, isRunning: true, phaseStartedAt: Date.now() });
+    const engine = makeEngine({
+      playDuration: 2,
+      isRunning: true,
+      phaseStartedAt: Date.now(),
+    });
     const deps = {
       updateTimerState: vi.fn().mockResolvedValue(undefined),
       broadcast: vi.fn(),
@@ -47,7 +51,11 @@ describe("scheduleGame", () => {
   });
 
   it("does not schedule if engine is not running", () => {
-    const engine = makeEngine({ isRunning: false, phaseStartedAt: null, remainingMs: 5000 });
+    const engine = makeEngine({
+      isRunning: false,
+      phaseStartedAt: null,
+      remainingMs: 5000,
+    });
     const deps = {
       updateTimerState: vi.fn().mockResolvedValue(undefined),
       broadcast: vi.fn(),
@@ -75,7 +83,11 @@ describe("scheduleGame", () => {
   });
 
   it("does not schedule if phase is finished even when isRunning is true", () => {
-    const engine = makeEngine({ phase: "finished", isRunning: true, phaseStartedAt: Date.now() });
+    const engine = makeEngine({
+      phase: "finished",
+      isRunning: true,
+      phaseStartedAt: Date.now(),
+    });
     const deps = {
       updateTimerState: vi.fn().mockResolvedValue(undefined),
       broadcast: vi.fn(),
@@ -89,7 +101,11 @@ describe("scheduleGame", () => {
   });
 
   it("cancels a previous schedule when called again for same game", async () => {
-    const engine = makeEngine({ playDuration: 10, isRunning: true, phaseStartedAt: Date.now() });
+    const engine = makeEngine({
+      playDuration: 10,
+      isRunning: true,
+      phaseStartedAt: Date.now(),
+    });
     const deps = {
       updateTimerState: vi.fn().mockResolvedValue(undefined),
       broadcast: vi.fn(),
@@ -98,7 +114,11 @@ describe("scheduleGame", () => {
     scheduleGame("PAIRS", "g2", engine, deps);
 
     // Schedule again (should cancel previous)
-    const engine2 = makeEngine({ playDuration: 5, isRunning: true, phaseStartedAt: Date.now() });
+    const engine2 = makeEngine({
+      playDuration: 5,
+      isRunning: true,
+      phaseStartedAt: Date.now(),
+    });
     scheduleGame("PAIRS", "g2", engine2, deps);
 
     // Advance enough for second but not first

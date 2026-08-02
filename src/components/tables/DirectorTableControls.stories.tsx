@@ -27,7 +27,12 @@ export const Default: Story = {
       {
         tableNumber: 1,
         players: {
-          N: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: "123456" },
+          N: {
+            id: 1,
+            firstName: "Alice",
+            lastName: "Smith",
+            nationalId: "123456",
+          },
           S: { id: 2, firstName: "Bob", lastName: "Jones", nationalId: null },
           E: null,
           W: null,
@@ -65,9 +70,19 @@ export const FullTables: Story = {
       {
         tableNumber: 1,
         players: {
-          N: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: "123456" },
+          N: {
+            id: 1,
+            firstName: "Alice",
+            lastName: "Smith",
+            nationalId: "123456",
+          },
           S: { id: 2, firstName: "Bob", lastName: "Jones", nationalId: null },
-          E: { id: 3, firstName: "Carol", lastName: "Williams", nationalId: "654321" },
+          E: {
+            id: 3,
+            firstName: "Carol",
+            lastName: "Williams",
+            nationalId: "654321",
+          },
           W: { id: 4, firstName: "David", lastName: "Brown", nationalId: null },
         },
         seats: {
@@ -81,9 +96,24 @@ export const FullTables: Story = {
         tableNumber: 2,
         players: {
           N: { id: 5, firstName: "Eve", lastName: "Davis", nationalId: null },
-          S: { id: 6, firstName: "Frank", lastName: "Miller", nationalId: null },
-          E: { id: 7, firstName: "Grace", lastName: "Wilson", nationalId: null },
-          W: { id: 8, firstName: "Henry", lastName: "Taylor", nationalId: null },
+          S: {
+            id: 6,
+            firstName: "Frank",
+            lastName: "Miller",
+            nationalId: null,
+          },
+          E: {
+            id: 7,
+            firstName: "Grace",
+            lastName: "Wilson",
+            nationalId: null,
+          },
+          W: {
+            id: 8,
+            firstName: "Henry",
+            lastName: "Taylor",
+            nationalId: null,
+          },
         },
         seats: {
           N: "2NS",

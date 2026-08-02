@@ -17,7 +17,9 @@ export default function RoundInfo({ table, boards, players }: Props) {
   return (
     <div className="flex flex-col items-center justify-center flex-1 w-full">
       <header className="flex flex-col items-center text-lg font-bold mb-6 gap-1">
-        <div>{boards.length === 1 ? "Board" : "Boards"} {formatBoardRange(boards)}</div>
+        <div>
+          {boards.length === 1 ? "Board" : "Boards"} {formatBoardRange(boards)}
+        </div>
       </header>
       <CardTable tableNumber={table} players={players} />
     </div>

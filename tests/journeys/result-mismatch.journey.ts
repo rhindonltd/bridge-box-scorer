@@ -117,55 +117,36 @@ test("Result mismatch flow - multi-actor result submission and director correcti
     });
 
     // Step 9: Verify post-submission state on both sides
-    await test.step(
-      "Both sides see result state after submission",
-      async () => {
-        await attachScreenshot(
-          nsPage,
-          testInfo,
-          "NS - Post-submission state",
-        );
-        await attachScreenshot(
-          ewPage,
-          testInfo,
-          "EW - Post-submission state",
-        );
-      },
-    );
+    await test.step("Both sides see result state after submission", async () => {
+      await attachScreenshot(nsPage, testInfo, "NS - Post-submission state");
+      await attachScreenshot(ewPage, testInfo, "EW - Post-submission state");
+    });
 
     // Step 10: Director views the correct-result wizard to verify board data
-    await test.step(
-      "Director navigates to correct-result page",
-      async () => {
-        await directorPage.goto(`/manage/${gameId}/correct-result`);
-        await directorPage.waitForLoadState("networkidle");
+    await test.step("Director navigates to correct-result page", async () => {
+      await directorPage.goto(`/manage/${gameId}/correct-result`);
+      await directorPage.waitForLoadState("networkidle");
+      await attachScreenshot(
+        directorPage,
+        testInfo,
+        "Director - Correct result page",
+      );
+    });
+
+    // Step 11: Director selects Board 1 to view traveller
+    await test.step("Director selects board to view traveller", async () => {
+      const boardButton = directorPage.getByRole("button", {
+        name: /board 1|1/i,
+      });
+      if (await boardButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await boardButton.click();
         await attachScreenshot(
           directorPage,
           testInfo,
-          "Director - Correct result page",
+          "Director - Board 1 traveller view",
         );
-      },
-    );
-
-    // Step 11: Director selects Board 1 to view traveller
-    await test.step(
-      "Director selects board to view traveller",
-      async () => {
-        const boardButton = directorPage.getByRole("button", {
-          name: /board 1|1/i,
-        });
-        if (
-          await boardButton.isVisible({ timeout: 5000 }).catch(() => false)
-        ) {
-          await boardButton.click();
-          await attachScreenshot(
-            directorPage,
-            testInfo,
-            "Director - Board 1 traveller view",
-          );
-        }
-      },
-    );
+      }
+    });
   } finally {
     await deleteGameStep(directorPage, gameId);
     await ewContext.close();

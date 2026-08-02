@@ -21,11 +21,56 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            { tableNumber: 1, roundNumber: 1, boardNumber: 2, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            { tableNumber: 1, roundNumber: 1, boardNumber: 3, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            { tableNumber: 1, roundNumber: 2, boardNumber: 4, ns: "1", ew: "3", confirmedResult: "3NTN=", directorOverrideResult: null, status: "CONFIRMED" },
-            { tableNumber: 1, roundNumber: 2, boardNumber: 5, ns: "1", ew: "3", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 2,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 3,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 2,
+              boardNumber: 4,
+              ns: "1",
+              ew: "3",
+              confirmedResult: "3NTN=",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 2,
+              boardNumber: 5,
+              ns: "1",
+              ew: "3",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
           ]),
         }),
       };
@@ -59,8 +104,26 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            { tableNumber: 1, roundNumber: 2, boardNumber: 2, ns: "1", ew: "3", confirmedResult: "4HE+1", directorOverrideResult: null, status: "CONFIRMED" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 2,
+              boardNumber: 2,
+              ns: "1",
+              ew: "3",
+              confirmedResult: "4HE+1",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
           ]),
         }),
       };
@@ -90,8 +153,26 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: "2SN=", directorOverrideResult: null, status: "CONFIRMED" },
-            { tableNumber: 2, roundNumber: 1, boardNumber: 1, ns: "3", ew: "4", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "2SN=",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
+            {
+              tableNumber: 2,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "3",
+              ew: "4",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
           ]),
         }),
       };
@@ -110,7 +191,16 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: "AVE", status: "OVERRIDDEN" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: "AVE",
+              status: "OVERRIDDEN",
+            },
           ]),
         }),
       };
@@ -125,10 +215,46 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: "3NTN=", directorOverrideResult: null, status: "CONFIRMED" },
-            { tableNumber: 1, roundNumber: 1, boardNumber: 2, ns: "1", ew: "2", confirmedResult: "4HE+1", directorOverrideResult: null, status: "CONFIRMED" },
-            { tableNumber: 1, roundNumber: 2, boardNumber: 3, ns: "1", ew: "3", confirmedResult: "2SN=", directorOverrideResult: null, status: "CONFIRMED" },
-            { tableNumber: 1, roundNumber: 2, boardNumber: 4, ns: "1", ew: "3", confirmedResult: "1NTN=", directorOverrideResult: null, status: "CONFIRMED" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "3NTN=",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 2,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "4HE+1",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 2,
+              boardNumber: 3,
+              ns: "1",
+              ew: "3",
+              confirmedResult: "2SN=",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 2,
+              boardNumber: 4,
+              ns: "1",
+              ew: "3",
+              confirmedResult: "1NTN=",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
           ]),
         }),
       };
@@ -145,9 +271,36 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            { tableNumber: 1, roundNumber: 2, boardNumber: 2, ns: "1", ew: "3", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            { tableNumber: 1, roundNumber: 3, boardNumber: 3, ns: "1", ew: "4", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 2,
+              boardNumber: 2,
+              ns: "1",
+              ew: "3",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 3,
+              boardNumber: 3,
+              ns: "1",
+              ew: "4",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
           ]),
         }),
       };
@@ -165,7 +318,16 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null, status: "PENDING_CONFIRMATION" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "PENDING_CONFIRMATION",
+            },
           ]),
         }),
       };
@@ -180,10 +342,46 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: "3NTN=", directorOverrideResult: null, status: "CONFIRMED" },
-            { tableNumber: 1, roundNumber: 1, boardNumber: 2, ns: "1", ew: "2", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            { tableNumber: 1, roundNumber: 2, boardNumber: 3, ns: "1", ew: "3", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
-            { tableNumber: 1, roundNumber: 2, boardNumber: 4, ns: "1", ew: "3", confirmedResult: null, directorOverrideResult: null, status: "NOT_PLAYED" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "3NTN=",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 2,
+              ns: "1",
+              ew: "2",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 2,
+              boardNumber: 3,
+              ns: "1",
+              ew: "3",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
+            {
+              tableNumber: 1,
+              roundNumber: 2,
+              boardNumber: 4,
+              ns: "1",
+              ew: "3",
+              confirmedResult: null,
+              directorOverrideResult: null,
+              status: "NOT_PLAYED",
+            },
           ]),
         }),
       };
@@ -202,7 +400,16 @@ describe("movement-service", () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
-            { tableNumber: 1, roundNumber: 1, boardNumber: 1, ns: "1", ew: "2", confirmedResult: "3NTN=", directorOverrideResult: null, status: "CONFIRMED" },
+            {
+              tableNumber: 1,
+              roundNumber: 1,
+              boardNumber: 1,
+              ns: "1",
+              ew: "2",
+              confirmedResult: "3NTN=",
+              directorOverrideResult: null,
+              status: "CONFIRMED",
+            },
           ]),
         }),
       };

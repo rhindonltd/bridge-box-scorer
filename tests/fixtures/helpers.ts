@@ -4,7 +4,7 @@ import { expect, Page, APIRequestContext } from "@playwright/test";
 export async function navigateToDirectorPage(
   page: Page,
   gameId: string,
-  subPage: string
+  subPage: string,
 ): Promise<void> {
   await page.goto(`/manage/${gameId}/${subPage}`);
   await page.waitForLoadState("networkidle");
@@ -14,14 +14,14 @@ export async function navigateToDirectorPage(
 export async function interceptRoute(
   page: Page,
   urlPattern: string | RegExp,
-  response: { status: number; body: object }
+  response: { status: number; body: object },
 ): Promise<void> {
   await page.route(urlPattern, (route) =>
     route.fulfill({
       status: response.status,
       contentType: "application/json",
       body: JSON.stringify(response.body),
-    })
+    }),
   );
 }
 
@@ -29,7 +29,7 @@ export async function interceptRoute(
 export async function makeGameJoinable(
   request: APIRequestContext,
   gameId: string,
-  directorToken: string
+  directorToken: string,
 ): Promise<void> {
   const res = await request.post(`/api/games/${gameId}/status`, {
     data: { status: "JOINABLE", directorToken },
@@ -39,7 +39,9 @@ export async function makeGameJoinable(
 
 /** Enter the settings PIN to bypass the PinEntryPage gate */
 export async function enterSettingsPin(page: Page): Promise<void> {
-  await expect(page.getByText("Enter PIN to continue")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText("Enter PIN to continue")).toBeVisible({
+    timeout: 10000,
+  });
   await page.getByLabel("PIN").fill("1234");
   await page.getByRole("button", { name: "Enter" }).click();
 }

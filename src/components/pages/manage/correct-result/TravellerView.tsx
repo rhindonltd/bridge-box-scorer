@@ -96,22 +96,32 @@ export function TravellerView({
                     {isPair && instance.participants.type === "PAIRS" ? (
                       <>
                         <td className="border px-2 py-2">
-                          <div className="font-medium">{instance.participants.ns}</div>
+                          <div className="font-medium">
+                            {instance.participants.ns}
+                          </div>
                           {instance.participants.nsNames && (
-                            <div className="text-xs text-gray-500">{instance.participants.nsNames}</div>
+                            <div className="text-xs text-gray-500">
+                              {instance.participants.nsNames}
+                            </div>
                           )}
                         </td>
                         <td className="border px-2 py-2">
-                          <div className="font-medium">{instance.participants.ew}</div>
+                          <div className="font-medium">
+                            {instance.participants.ew}
+                          </div>
                           {instance.participants.ewNames && (
-                            <div className="text-xs text-gray-500">{instance.participants.ewNames}</div>
+                            <div className="text-xs text-gray-500">
+                              {instance.participants.ewNames}
+                            </div>
                           )}
                         </td>
                       </>
                     ) : null}
                     <td className="border px-2 py-2 font-medium">
                       {instance.currentResult ? (
-                        <ContractDisplay boardOutcome={instance.currentResult as BoardOutcome} />
+                        <ContractDisplay
+                          boardOutcome={instance.currentResult as BoardOutcome}
+                        />
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}

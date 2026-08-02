@@ -85,7 +85,9 @@ export function generateUsebioXml(data: UsebioGameData): string {
   const event = root.ele("EVENT", { EVENT_TYPE: "MP_PAIRS" });
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
-  event.ele("BOARD_SCORING_METHOD").txt(SCORING_TYPE_MAP[data.scoringType] ?? "MP");
+  event
+    .ele("BOARD_SCORING_METHOD")
+    .txt(SCORING_TYPE_MAP[data.scoringType] ?? "MP");
   event.ele("BOARDS").txt(String(data.boards));
 
   // PARTICIPANTS
@@ -111,7 +113,9 @@ export function generateUsebioXml(data: UsebioGameData): string {
     const results = boardGroups.get(boardNum)!;
     const mpLines = computeBoardMatchpoints(boardNum, results);
 
-    const boardEl = boardResultsEl.ele("BOARD", { BOARD_NUMBER: String(boardNum) });
+    const boardEl = boardResultsEl.ele("BOARD", {
+      BOARD_NUMBER: String(boardNum),
+    });
 
     for (const result of results) {
       const formatted = formatOutcomeForUsebio(result.outcome);
@@ -227,7 +231,10 @@ type RankEntry = {
 };
 
 function computeOverallRanking(data: UsebioGameData): RankEntry[] {
-  const totals = new Map<string, { total: number; max: number; direction: string }>();
+  const totals = new Map<
+    string,
+    { total: number; max: number; direction: string }
+  >();
 
   const boardGroups = groupBy(data.boardResults, (r) => r.board);
 
@@ -254,9 +261,10 @@ function computeOverallRanking(data: UsebioGameData): RankEntry[] {
 
   const entries: RankEntry[] = [];
   for (const [pairNumber, pairData] of totals) {
-    const percentage = pairData.max > 0
-      ? ((pairData.total / pairData.max) * 100).toFixed(2)
-      : "0.00";
+    const percentage =
+      pairData.max > 0
+        ? ((pairData.total / pairData.max) * 100).toFixed(2)
+        : "0.00";
     entries.push({
       pairNumber,
       direction: pairData.direction,

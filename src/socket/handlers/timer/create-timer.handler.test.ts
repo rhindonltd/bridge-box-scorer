@@ -87,14 +87,7 @@ describe("registerCreateTimerHandler", () => {
       moveDuration: 60,
     });
 
-    expect(createEngine).toHaveBeenCalledWith(
-      "PAIRS",
-      "game-4",
-      3,
-      5,
-      420,
-      60,
-    );
+    expect(createEngine).toHaveBeenCalledWith("PAIRS", "game-4", 3, 5, 420, 60);
     expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-4", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-4");
     expect(io._emit).toHaveBeenCalledWith(
@@ -105,7 +98,10 @@ describe("registerCreateTimerHandler", () => {
       "PAIRS",
       "game-4",
       mockEngine,
-      expect.objectContaining({ updateTimerState, broadcast: expect.any(Function) }),
+      expect.objectContaining({
+        updateTimerState,
+        broadcast: expect.any(Function),
+      }),
     );
   });
 

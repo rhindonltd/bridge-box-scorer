@@ -56,8 +56,7 @@ export function TabletCombinedEntry({
   const [selectedBoard, setSelectedBoard] = useState<number>(roundBoards[0]);
 
   // Derived state
-  const hasValidContract =
-    level !== null && suit !== null && declarer !== null;
+  const hasValidContract = level !== null && suit !== null && declarer !== null;
   const isSpecialOutcome = passOut || notPlayed;
 
   const contractCode = hasValidContract ? `${level}${suit}` : "1S";
@@ -131,12 +130,9 @@ export function TabletCombinedEntry({
       return;
     }
 
-    const contractString =
-      `${level}${suit}${dbl}${declarer}` as ContractCode;
+    const contractString = `${level}${suit}${dbl}${declarer}` as ContractCode;
     const result = resultMode === "made" ? resultValue : -resultValue;
-    const lead = leadCardRequired
-      ? (`${leadSuit}${leadRank}` as Card)
-      : null;
+    const lead = leadCardRequired ? (`${leadSuit}${leadRank}` as Card) : null;
     onComplete({ contract: contractString, result, lead });
   }
 
@@ -216,7 +212,9 @@ export function TabletCombinedEntry({
           <div
             className={`shrink-0 flex flex-col ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
           >
-            <div className="text-sm font-bold bg-blue-600 text-white px-2 py-1 shrink-0">Opening Lead</div>
+            <div className="text-sm font-bold bg-blue-600 text-white px-2 py-1 shrink-0">
+              Opening Lead
+            </div>
             <div className="p-1 flex-1 min-h-0">
               <InlineOpeningLead
                 suit={leadSuit}
@@ -232,7 +230,9 @@ export function TabletCombinedEntry({
         <div
           className={`shrink-0 flex flex-col ${!hasValidContract ? "opacity-50 pointer-events-none" : ""}`}
         >
-          <div className="text-sm font-bold bg-blue-600 text-white px-2 py-1 shrink-0">Result</div>
+          <div className="text-sm font-bold bg-blue-600 text-white px-2 py-1 shrink-0">
+            Result
+          </div>
           <div className="p-1 flex-1 min-h-0">
             <InlineBoardResult
               contract={contractCode}

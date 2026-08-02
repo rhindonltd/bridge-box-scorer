@@ -4,7 +4,12 @@ import { findClub } from "@/db/system/queries/find-club";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 import { getDb as getPairsDb } from "@/db/games/pairs";
 import { boards } from "@/db/games/pairs/tables/boards";
-import { generateUsebioXml, UsebioGameData, UsebioBoardResult, UsebioPair } from "@/usebio/generate-usebio";
+import {
+  generateUsebioXml,
+  UsebioGameData,
+  UsebioBoardResult,
+  UsebioPair,
+} from "@/usebio/generate-usebio";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 
@@ -32,7 +37,11 @@ export async function GET(
     const club = await findClub();
     if (!club) {
       return NextResponse.json(
-        { success: false, error: "Club info not configured. Set club name and number in settings." },
+        {
+          success: false,
+          error:
+            "Club info not configured. Set club name and number in settings.",
+        },
         { status: 400 },
       );
     }
@@ -40,7 +49,10 @@ export async function GET(
     // Currently only supports PAIRS games
     if (game.gameType !== "PAIRS") {
       return NextResponse.json(
-        { success: false, error: "USEBIO export is currently only supported for Pairs games" },
+        {
+          success: false,
+          error: "USEBIO export is currently only supported for Pairs games",
+        },
         { status: 400 },
       );
     }
@@ -77,7 +89,9 @@ export async function GET(
         round: b.roundNumber,
         nsPairNumber: b.ns,
         ewPairNumber: b.ew,
-        outcome: (b.directorOverrideResult ?? b.confirmedResult ?? "NP") as BoardOutcome,
+        outcome: (b.directorOverrideResult ??
+          b.confirmedResult ??
+          "NP") as BoardOutcome,
         lead: (b.confirmedLead ?? null) as Card | null,
       }));
 

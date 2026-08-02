@@ -81,8 +81,8 @@ Helper that encapsulates the "entered" definition:
 
 ```typescript
 export function isBoardEntered(board: {
-  nsResult?: string | null;       // pairs
-  nResult?: string | null;        // individual
+  nsResult?: string | null; // pairs
+  nResult?: string | null; // individual
   directorOverrideResult?: string | null;
   status?: string | null;
 }): boolean {
@@ -105,7 +105,11 @@ import { getDb as getPairsDb } from "@/db/games/pairs";
 import { getDb as getIndividualDb } from "@/db/games/individual";
 import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
 import { boards as individualBoards } from "@/db/games/individual/tables/boards";
-import { computeRoundStatus, isBoardEntered, BoardEntry } from "@/lib/round-status";
+import {
+  computeRoundStatus,
+  isBoardEntered,
+  BoardEntry,
+} from "@/lib/round-status";
 
 export async function GET(
   _req: Request,
@@ -238,12 +242,12 @@ interface BoardEntry {
 
 ## Error Handling
 
-| Scenario | Behaviour |
-|----------|-----------|
-| Game not found | 404 with `{ success: false, error: "Game not found" }` |
-| Database error | 500 with `{ success: false, error: "Internal server error" }` |
-| No boards in game | Return `{ tables: [] }` |
-| Table with no entered boards in any round | `currentRound: 0`, `boardsEntered: 0`, `boardsTotal: 0` |
+| Scenario                                  | Behaviour                                                     |
+| ----------------------------------------- | ------------------------------------------------------------- |
+| Game not found                            | 404 with `{ success: false, error: "Game not found" }`        |
+| Database error                            | 500 with `{ success: false, error: "Internal server error" }` |
+| No boards in game                         | Return `{ tables: [] }`                                       |
+| Table with no entered boards in any round | `currentRound: 0`, `boardsEntered: 0`, `boardsTotal: 0`       |
 
 ## UI Design
 
@@ -259,34 +263,34 @@ interface BoardEntry {
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Current round is the highest round with any entered board
 
-*For any* set of boards across multiple rounds and tables, the computed `currentRound` for each table SHALL equal the highest round number where at least one board has `hasResult === true`. If no board at a table has a result, `currentRound` SHALL be 0.
+_For any_ set of boards across multiple rounds and tables, the computed `currentRound` for each table SHALL equal the highest round number where at least one board has `hasResult === true`. If no board at a table has a result, `currentRound` SHALL be 0.
 
 **Validates: Requirements 1.1**
 
 ### Property 2: Board counts are accurate for the current round
 
-*For any* set of boards, the computed `boardsEntered` for each table SHALL equal the count of boards in `currentRound` where `hasResult === true`, and `boardsTotal` SHALL equal the total number of boards in `currentRound` at that table.
+_For any_ set of boards, the computed `boardsEntered` for each table SHALL equal the count of boards in `currentRound` where `hasResult === true`, and `boardsTotal` SHALL equal the total number of boards in `currentRound` at that table.
 
 **Validates: Requirements 1.2**
 
 ### Property 3: Missing rounds detection is correct
 
-*For any* set of boards where a table's `currentRound` > 1, `hasMissingPreviousRounds` SHALL be true if and only if there exists at least one round R < `currentRound` where at least one board at that table has `hasResult === false`. The `missingRounds` array SHALL contain exactly those round numbers.
+_For any_ set of boards where a table's `currentRound` > 1, `hasMissingPreviousRounds` SHALL be true if and only if there exists at least one round R < `currentRound` where at least one board at that table has `hasResult === false`. The `missingRounds` array SHALL contain exactly those round numbers.
 
 **Validates: Requirements 1.3**
 
 ### Property 4: Board entered classification is exhaustive
 
-*For any* board, `isBoardEntered` SHALL return true if and only if at least one of the following holds: (a) `status === "NOT_PLAYED"`, (b) `directorOverrideResult` is non-null, (c) `nsResult` is non-null (pairs), or (d) `nResult` is non-null (individual). Otherwise it SHALL return false.
+_For any_ board, `isBoardEntered` SHALL return true if and only if at least one of the following holds: (a) `status === "NOT_PLAYED"`, (b) `directorOverrideResult` is non-null, (c) `nsResult` is non-null (pairs), or (d) `nResult` is non-null (individual). Otherwise it SHALL return false.
 
 **Validates: Requirements 2.1, 2.2, 2.3, 2.4**
 
 ### Property 5: Rendered output contains all required information
 
-*For any* array of `TableRoundStatus` objects, the rendered page SHALL display a card for each table containing: the table number, the round and board progress text, and (if `hasMissingPreviousRounds` is true) a warning indicator listing the missing rounds.
+_For any_ array of `TableRoundStatus` objects, the rendered page SHALL display a card for each table containing: the table number, the round and board progress text, and (if `hasMissingPreviousRounds` is true) a warning indicator listing the missing rounds.
 
 **Validates: Requirements 3.3**

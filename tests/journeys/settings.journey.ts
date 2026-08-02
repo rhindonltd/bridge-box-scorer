@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { attachScreenshot } from "./helpers";
 
-test("Settings PIN gate, WiFi config, and club info", async (
-  { page },
-  testInfo,
-) => {
+test("Settings PIN gate, WiFi config, and club info", async ({
+  page,
+}, testInfo) => {
   // Step 1: Navigate to /settings — see the PIN entry page
   await test.step("Navigate to settings and see PIN entry", async () => {
     await page.goto("/settings");
@@ -71,11 +70,7 @@ test("Settings PIN gate, WiFi config, and club info", async (
   await test.step("Fill in club details", async () => {
     await page.getByLabel("Club Name").fill(clubName);
     await page.getByLabel("EBU Club Number").fill(ebuNumber);
-    await attachScreenshot(
-      page,
-      testInfo,
-      "Settings - Club details filled",
-    );
+    await attachScreenshot(page, testInfo, "Settings - Club details filled");
   });
 
   // Step 7: Click "Save" — verify success message

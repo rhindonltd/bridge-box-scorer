@@ -21,9 +21,7 @@ test.describe("Game Creation Flow", () => {
     await expect(page.getByText("Tables")).toBeVisible();
   });
 
-  test("create form has Event Type selector with options", async ({
-    page,
-  }) => {
+  test("create form has Event Type selector with options", async ({ page }) => {
     await page.goto("/create");
     // Event Type select is rendered as a native <select> element
     const select = page.getByLabel("Event Type");
@@ -34,9 +32,9 @@ test.describe("Game Creation Flow", () => {
 
   test("create form has a Next button", async ({ page }) => {
     await page.goto("/create");
-    await expect(
-      page.getByRole("button", { name: "Next" }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: "Next" })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("create form allows filling in event details", async ({ page }) => {

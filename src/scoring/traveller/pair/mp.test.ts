@@ -9,10 +9,7 @@ function line(outcome: string, nsId: string, ewId: string): PairLine {
 
 describe("scoreMP", () => {
   it("returns empty array when no valid results", () => {
-    const lines: PairLine[] = [
-      line("NP", "1", "4"),
-      line("NP", "2", "5"),
-    ];
+    const lines: PairLine[] = [line("NP", "1", "4"), line("NP", "2", "5")];
     const result = scoreMP(1, lines);
     expect(result).toEqual([]);
   });

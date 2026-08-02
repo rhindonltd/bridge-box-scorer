@@ -5,7 +5,11 @@ import { getDb as getPairsDb } from "@/db/games/pairs";
 import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 
-export async function getBoardInstances(gameId: string, gameType: string, boardNumber: number) {
+export async function getBoardInstances(
+  gameId: string,
+  gameType: string,
+  boardNumber: number,
+) {
   return getPairsBoardInstances(gameId, boardNumber);
 }
 

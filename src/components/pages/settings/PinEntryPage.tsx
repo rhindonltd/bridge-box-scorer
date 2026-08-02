@@ -23,10 +23,15 @@ export function PinEntryPage({ correctPin, onSuccess }: PinEntryProps) {
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md flex-1 flex flex-col justify-center">
-      <h1 className="text-2xl font-bold mb-6 text-center">Enter PIN to continue</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        Enter PIN to continue
+      </h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-1">
-          <label htmlFor="pin-input" className="text-sm font-semibold text-gray-700">
+          <label
+            htmlFor="pin-input"
+            className="text-sm font-semibold text-gray-700"
+          >
             PIN
           </label>
           <input

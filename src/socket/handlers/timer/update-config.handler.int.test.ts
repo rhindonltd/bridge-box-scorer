@@ -75,7 +75,9 @@ describe("registerUpdateConfigHandler (integration)", () => {
     closeServer = close;
 
     await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () => resolve());
+      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
+        resolve(),
+      );
     });
 
     const syncPromise = waitForEvent(client, "timer:sync");
@@ -113,7 +115,9 @@ describe("registerUpdateConfigHandler (integration)", () => {
     closeServer = close;
 
     await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () => resolve());
+      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
+        resolve(),
+      );
     });
 
     const syncPromise = waitForEvent(client, "timer:sync", 500).catch(
@@ -147,7 +151,9 @@ describe("registerUpdateConfigHandler (integration)", () => {
     closeServer = close;
 
     await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () => resolve());
+      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
+        resolve(),
+      );
     });
 
     const syncPromise = waitForEvent(client, "timer:sync", 500).catch(

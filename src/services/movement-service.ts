@@ -4,7 +4,10 @@ import { getDb as getPairsDb } from "@/db/games/pairs";
 import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
 import { isBoardEntered } from "@/lib/round-status";
 
-export async function getMovementWithProgress(gameId: string, gameType: string) {
+export async function getMovementWithProgress(
+  gameId: string,
+  gameType: string,
+) {
   return getPairsMovementWithProgress(gameId);
 }
 
@@ -14,11 +17,15 @@ async function getPairsMovementWithProgress(gameId: string) {
 
   const tableMap = new Map<
     number,
-    Map<number, { ns: string; ew: string; boardStart: number; boardEnd: number }>
+    Map<
+      number,
+      { ns: string; ew: string; boardStart: number; boardEnd: number }
+    >
   >();
 
   for (const row of rows) {
-    if (!tableMap.has(row.tableNumber)) tableMap.set(row.tableNumber, new Map());
+    if (!tableMap.has(row.tableNumber))
+      tableMap.set(row.tableNumber, new Map());
     const roundMap = tableMap.get(row.tableNumber)!;
 
     if (!roundMap.has(row.roundNumber)) {
@@ -38,7 +45,8 @@ async function getPairsMovementWithProgress(gameId: string) {
   const boardCountMap = new Map<string, { played: number; total: number }>();
   for (const row of rows) {
     const key = `${row.tableNumber}-${row.roundNumber}`;
-    if (!boardCountMap.has(key)) boardCountMap.set(key, { played: 0, total: 0 });
+    if (!boardCountMap.has(key))
+      boardCountMap.set(key, { played: 0, total: 0 });
     const counts = boardCountMap.get(key)!;
     counts.total++;
     if (
@@ -64,7 +72,9 @@ async function getPairsMovementWithProgress(gameId: string) {
 
           let hasPreviousGap = false;
           if (counts.played < counts.total) {
-            const allRoundNumbers = Array.from(roundMap.keys()).sort((a, b) => a - b);
+            const allRoundNumbers = Array.from(roundMap.keys()).sort(
+              (a, b) => a - b,
+            );
             for (const laterRound of allRoundNumbers) {
               if (laterRound > roundNumber) {
                 const laterKey = `${tableNumber}-${laterRound}`;
@@ -77,7 +87,13 @@ async function getPairsMovementWithProgress(gameId: string) {
             }
           }
 
-          return { roundNumber, ...data, played: counts.played, total: counts.total, hasPreviousGap };
+          return {
+            roundNumber,
+            ...data,
+            played: counts.played,
+            total: counts.total,
+            hasPreviousGap,
+          };
         }),
     }));
 

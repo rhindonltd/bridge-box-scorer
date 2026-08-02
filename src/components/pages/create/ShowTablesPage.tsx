@@ -42,9 +42,7 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
   }
 
   function createTables(): DirectorTable[] {
-    return Array.from({ length: game!.tables }, (_, i) =>
-      createTable(i + 1),
-    );
+    return Array.from({ length: game!.tables }, (_, i) => createTable(i + 1));
   }
 
   function createTable(tableNumber: number): DirectorTable {
@@ -75,7 +73,11 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
   function handleAddTable() {
     getSocket().emit(
       SocketEvents.UPDATE_TABLES,
-      { gameId, tables: game!.tables + 1, directorToken: getDirectorToken(gameId!) },
+      {
+        gameId,
+        tables: game!.tables + 1,
+        directorToken: getDirectorToken(gameId!),
+      },
       () => mutateGame(),
     );
   }
@@ -83,7 +85,11 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
   function handleRemoveTable() {
     getSocket().emit(
       SocketEvents.UPDATE_TABLES,
-      { gameId, tables: game!.tables - 1, directorToken: getDirectorToken(gameId!) },
+      {
+        gameId,
+        tables: game!.tables - 1,
+        directorToken: getDirectorToken(gameId!),
+      },
       (res: { success: boolean; error?: string }) => {
         if (res.success) mutateGame();
         else alert(res.error);

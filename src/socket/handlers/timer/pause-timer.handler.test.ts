@@ -75,13 +75,20 @@ describe("registerPauseTimerHandler", () => {
     registerPauseTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-2", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-2",
+      directorToken: "test-token",
+    });
 
     expect(mockEngine.pause).toHaveBeenCalled();
     expect(cancelGameSchedule).toHaveBeenCalledWith("PAIRS", "game-2");
     expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-2", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-2");
-    expect(io._emit).toHaveBeenCalledWith("timer:sync", expect.objectContaining(mockState));
+    expect(io._emit).toHaveBeenCalledWith(
+      "timer:sync",
+      expect.objectContaining(mockState),
+    );
   });
 
   it("does nothing if engine is not found", async () => {
@@ -93,7 +100,11 @@ describe("registerPauseTimerHandler", () => {
     registerPauseTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-2", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-2",
+      directorToken: "test-token",
+    });
 
     expect(updateTimerState).not.toHaveBeenCalled();
   });
@@ -107,7 +118,11 @@ describe("registerPauseTimerHandler", () => {
     registerPauseTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-2", directorToken: "bad-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-2",
+      directorToken: "bad-token",
+    });
 
     expect(getEngine).not.toHaveBeenCalled();
   });
@@ -126,7 +141,9 @@ describe("registerPauseTimerHandler", () => {
 
   it("catches and logs errors from engine.pause()", async () => {
     const mockEngine = {
-      pause: vi.fn().mockImplementation(() => { throw new Error("pause error"); }),
+      pause: vi.fn().mockImplementation(() => {
+        throw new Error("pause error");
+      }),
       getState: vi.fn(),
     };
 
@@ -138,7 +155,11 @@ describe("registerPauseTimerHandler", () => {
     registerPauseTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameType: "PAIRS", gameId: "game-2", directorToken: "test-token" });
+    await handler({
+      gameType: "PAIRS",
+      gameId: "game-2",
+      directorToken: "test-token",
+    });
 
     expect(updateTimerState).not.toHaveBeenCalled();
   });

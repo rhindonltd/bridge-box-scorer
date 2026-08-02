@@ -57,17 +57,17 @@ prod:  NODE_ENV=production tsx server.ts
 
 ## Common Commands
 
-| Task | Command |
-|---|---|
-| Dev server | `npm run dev` |
-| Production build | `npm run build` |
-| Production start | `npm start` |
-| Unit tests | `npm test` |
-| Unit tests with coverage | `npm run coverage` |
-| E2E tests | `npm run e2e` |
-| Storybook | `npm run storybook` |
-| Lint | `npm run lint` |
-| Format | `npm run format` |
+| Task                     | Command             |
+| ------------------------ | ------------------- |
+| Dev server               | `npm run dev`       |
+| Production build         | `npm run build`     |
+| Production start         | `npm start`         |
+| Unit tests               | `npm test`          |
+| Unit tests with coverage | `npm run coverage`  |
+| E2E tests                | `npm run e2e`       |
+| Storybook                | `npm run storybook` |
+| Lint                     | `npm run lint`      |
+| Format                   | `npm run format`    |
 
 ## Database Migrations
 

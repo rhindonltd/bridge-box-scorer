@@ -7,7 +7,11 @@ import { assignments as pairAssignments } from "@/db/games/pairs/tables/assignme
 import { participants as pairParticipants } from "@/db/games/pairs/tables/participants";
 import { players } from "@/db/games/shared/tables/players";
 
-export async function getPlayerSchedule(gameId: string, gameType: string, seat: string) {
+export async function getPlayerSchedule(
+  gameId: string,
+  gameType: string,
+  seat: string,
+) {
   return getPairsSchedule(gameId, seat);
 }
 
@@ -35,10 +39,7 @@ async function getPairsSchedule(gameId: string, seat: string) {
     .select()
     .from(pairsBoards)
     .where(
-      or(
-        eq(pairsBoards.ns, assignmentId),
-        eq(pairsBoards.ew, assignmentId),
-      ),
+      or(eq(pairsBoards.ns, assignmentId), eq(pairsBoards.ew, assignmentId)),
     );
 
   // Group by round
@@ -67,10 +68,15 @@ async function getPairsSchedule(gameId: string, seat: string) {
   const playerById = new Map(allPlayerRows.map((p) => [p.id, p]));
 
   // Map: assignment ID -> initialSeat
-  const assignmentSeatMap = new Map(allAssignmentRows.map((a) => [a.id, a.initialSeat]));
+  const assignmentSeatMap = new Map(
+    allAssignmentRows.map((a) => [a.id, a.initialSeat]),
+  );
 
   // Map: initialSeat -> { player1: Player, player2: Player }
-  const seatToPlayers = new Map<string, { player1: typeof allPlayerRows[0]; player2: typeof allPlayerRows[0] }>();
+  const seatToPlayers = new Map<
+    string,
+    { player1: (typeof allPlayerRows)[0]; player2: (typeof allPlayerRows)[0] }
+  >();
   for (const p of allParticipantRows) {
     const p1 = playerById.get(p.player1);
     const p2 = playerById.get(p.player2);
@@ -80,9 +86,14 @@ async function getPairsSchedule(gameId: string, seat: string) {
   }
 
   // Map: assignment ID -> { player1, player2 }
-  const assignmentToPlayers = new Map<string, { player1: typeof allPlayerRows[0]; player2: typeof allPlayerRows[0] }>();
+  const assignmentToPlayers = new Map<
+    string,
+    { player1: (typeof allPlayerRows)[0]; player2: (typeof allPlayerRows)[0] }
+  >();
   for (const [id, initialSeat] of assignmentSeatMap) {
-    const playersForSeat = initialSeat ? seatToPlayers.get(initialSeat) : undefined;
+    const playersForSeat = initialSeat
+      ? seatToPlayers.get(initialSeat)
+      : undefined;
     if (playersForSeat) {
       assignmentToPlayers.set(id, playersForSeat);
     }
@@ -107,7 +118,9 @@ async function getPairsSchedule(gameId: string, seat: string) {
         roundNumber,
         tableNumber: data.tableNumber,
         boards: data.boards.map((b) => b.boardNumber).sort((a, b) => a - b),
-        boardStatuses: data.boards.sort((a, b) => a.boardNumber - b.boardNumber),
+        boardStatuses: data.boards.sort(
+          (a, b) => a.boardNumber - b.boardNumber,
+        ),
         players: {
           N: nsPlayers?.player1 ?? null,
           S: nsPlayers?.player2 ?? null,
@@ -118,9 +131,12 @@ async function getPairsSchedule(gameId: string, seat: string) {
     });
 
   // Determine total rounds from ALL boards in the game (not just this player's)
-  const allGameBoards = await db.select({ roundNumber: pairsBoards.roundNumber }).from(pairsBoards);
+  const allGameBoards = await db
+    .select({ roundNumber: pairsBoards.roundNumber })
+    .from(pairsBoards);
   const allRoundNumbers = new Set(allGameBoards.map((b) => b.roundNumber));
-  const totalRounds = allRoundNumbers.size > 0 ? Math.max(...allRoundNumbers) : 0;
+  const totalRounds =
+    allRoundNumbers.size > 0 ? Math.max(...allRoundNumbers) : 0;
 
   // Build complete schedule including sit-outs
   const activeRoundNumbers = new Set(rounds.map((r) => r.roundNumber));
