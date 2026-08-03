@@ -5,11 +5,9 @@ import { useParams } from "next/navigation";
 import { useGame } from "@/context/GameContext";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
-import ContractEntryPanel from "@/components/contract/ContractEntryPanel";
-import { BoardResult } from "@/components/play/BoardResult";
+import { ContractWizard } from "@/components/play/contract-wizard/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
-import { ContractCode, isContractCode, parseContract } from "@/model/contract";
-import { SpecialBoardOutcome } from "@/model/result";
+import { parseContract } from "@/model/contract";
 import { WaitingForConfirmation } from "@/components/pages/play/WaitingForConfirmation";
 import { ResultMismatch } from "@/components/pages/play/ResultMismatch";
 import { RoundInfoPage } from "@/components/pages/play/RoundInfoPage";
@@ -62,12 +60,6 @@ type PlayState =
   | { state: "loading" }
   | { state: "roundInfo"; roundIndex: number }
   | { state: "enterContract"; roundIndex: number; boardIndex: number }
-  | {
-      state: "enterResult";
-      roundIndex: number;
-      boardIndex: number;
-      contract: ContractCode;
-    }
   | { state: "waiting"; roundIndex: number; boardIndex: number }
   | {
       state: "mismatch";
@@ -207,11 +199,7 @@ export default function PlayPage() {
   const submitResult = useCallback(
     (result: string) => {
       if (!schedule || !game) return;
-      if (
-        playState.state !== "enterContract" &&
-        playState.state !== "enterResult"
-      )
-        return;
+      if (playState.state !== "enterContract") return;
 
       const round = schedule.rounds[playState.roundIndex];
       const boardNumber = round.boards[playState.boardIndex];
@@ -235,41 +223,6 @@ export default function PlayPage() {
     },
     [schedule, game, playState, gameId, seat],
   );
-
-  function handleContractEntered(contract: ContractCode | SpecialBoardOutcome) {
-    if (playState.state !== "enterContract") return;
-
-    // Special outcomes (PO, NP) don't need a result step
-    if (contract === "PO" || contract === "NP") {
-      submitResult(contract);
-      return;
-    }
-
-    // Regular contract — go to result entry
-    if (isContractCode(contract)) {
-      setPlayState({
-        state: "enterResult",
-        roundIndex: playState.roundIndex,
-        boardIndex: playState.boardIndex,
-        contract,
-      });
-    }
-  }
-
-  function handleResultEntered(trickResult: number) {
-    if (playState.state !== "enterResult") return;
-
-    const parsed = parseContract(playState.contract);
-    const fullResult = buildPlayedContractCode(
-      parsed.level,
-      parsed.suit,
-      parsed.doubling,
-      parsed.declarer,
-      trickResult,
-    );
-
-    submitResult(fullResult);
-  }
 
   function handleEnterRound() {
     if (playState.state !== "roundInfo") return;
@@ -392,27 +345,31 @@ export default function PlayPage() {
 
     case "enterContract": {
       const round = schedule.rounds[playState.roundIndex];
-      const boardNumber = round.boards[playState.boardIndex];
+      const playedBoards = round.boardStatuses
+        .filter((b: any) => b.status === "CONFIRMED")
+        .map((b: any) => b.boardNumber);
       return (
-        <ContractEntryPanel
-          headerText={`Board ${boardNumber}`}
-          subHeaderText={`Table ${round.tableNumber}, Round ${round.roundNumber}`}
-          onOk={handleContractEntered}
-        />
-      );
-    }
-
-    case "enterResult": {
-      const round = schedule.rounds[playState.roundIndex];
-      const boardNumber = round.boards[playState.boardIndex];
-      const parsed = parseContract(playState.contract);
-      const contractDisplay = `${parsed.level}${parsed.suit}${parsed.doubling}`;
-      return (
-        <BoardResult
-          board={boardNumber}
-          contract={contractDisplay}
-          declarer={parsed.declarer}
-          onSave={handleResultEntered}
+        <ContractWizard
+          round={round.roundNumber}
+          table={round.tableNumber!}
+          roundBoards={round.boards}
+          playedBoards={playedBoards}
+          leadCardRequired={false}
+          onComplete={(data) => {
+            if (data.contract === "PO" || data.contract === "NP") {
+              submitResult(data.contract);
+            } else {
+              const parsed = parseContract(data.contract);
+              const fullResult = buildPlayedContractCode(
+                parsed.level,
+                parsed.suit,
+                parsed.doubling,
+                parsed.declarer,
+                data.result,
+              );
+              submitResult(fullResult);
+            }
+          }}
         />
       );
     }
