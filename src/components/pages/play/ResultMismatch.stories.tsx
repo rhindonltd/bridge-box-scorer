@@ -15,6 +15,7 @@ const mockGame = {
   sectionName: "Section A",
   eventDate: new Date().toISOString(),
   tables: 8,
+  leadCardRequired: true,
   status: "JOINABLE" as const,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

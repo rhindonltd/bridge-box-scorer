@@ -70,27 +70,40 @@ export function StepConfirm({
 
   const suitSymbolColor = suit === "H" || suit === "D" ? "text-red-600" : "";
 
-  const contractDisplay = level && suit && declarer ? (
-    <>
-      {level}
-      <span className={suitSymbolColor}>{ContractSuitDisplay[suit]}</span>
-      {dbl ? ` ${dbl === "X" ? "X" : "XX"}` : ""}
-      {" by "}
-      {DirectionNames[declarer]}
-    </>
-  ) : null;
+  const contractDisplay =
+    level && suit && declarer ? (
+      <>
+        {level}
+        <span className={suitSymbolColor}>{ContractSuitDisplay[suit]}</span>
+        {dbl ? ` ${dbl === "X" ? "X" : "XX"}` : ""}
+        {" by "}
+        {DirectionNames[declarer]}
+      </>
+    ) : null;
 
-  const leadDisplay = leadSuit && leadRank ? (
-    <>
-      Lead: <span className={leadSuit === "H" || leadSuit === "D" ? "text-red-600" : ""}>{SuitMap[leadSuit]}</span>{leadRank}
-    </>
-  ) : null;
+  const leadDisplay =
+    leadSuit && leadRank ? (
+      <>
+        Lead:{" "}
+        <span
+          className={leadSuit === "H" || leadSuit === "D" ? "text-red-600" : ""}
+        >
+          {SuitMap[leadSuit]}
+        </span>
+        {leadRank}
+      </>
+    ) : null;
 
-  const resultDisplay = resultMode === "made" && resultValue === 0
-    ? <span>Made <span className="text-green-600">✓</span></span>
-    : resultMode === "made"
-      ? <span>Made +{resultValue}</span>
-      : <span>Down {resultValue}</span>;
+  const resultDisplay =
+    resultMode === "made" && resultValue === 0 ? (
+      <span>
+        Made <span className="text-green-600">✓</span>
+      </span>
+    ) : resultMode === "made" ? (
+      <span>Made +{resultValue}</span>
+    ) : (
+      <span>Down {resultValue}</span>
+    );
 
   return (
     <div className="flex-1 flex flex-col p-6 min-h-0">

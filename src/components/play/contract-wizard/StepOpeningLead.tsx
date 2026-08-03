@@ -11,7 +11,13 @@ type Props = {
   onRankChange?: (rank: Rank) => void;
 };
 
-export function StepOpeningLead({ onLeadComplete, initialSuit, initialRank, onSuitChange, onRankChange }: Props) {
+export function StepOpeningLead({
+  onLeadComplete,
+  initialSuit,
+  initialRank,
+  onSuitChange,
+  onRankChange,
+}: Props) {
   function handleSave(lead: Card) {
     const suit = lead[0] as Suit;
     const rank = lead[1] as Rank;

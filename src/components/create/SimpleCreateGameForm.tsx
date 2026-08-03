@@ -5,6 +5,7 @@ import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import Button from "@/components/common/Button";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
+import { ToggleField } from "@/components/common/ToggleField";
 import { NewBridgeGame } from "@/db/game-index/schema";
 import { GameType } from "../../db/games/types/game-type";
 
@@ -17,6 +18,7 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
   const [director, setDirector] = useState("");
   const [gameType, setGameType] = useState<GameType>("PAIRS");
   const [tables, setTables] = useState(1);
+  const [leadCardRequired, setLeadCardRequired] = useState(true);
 
   async function handleCreate() {
     onCreateGame({
@@ -28,6 +30,7 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
       status: "JOINABLE",
       sectionName: "",
       tables: tables,
+      leadCardRequired,
     });
   }
 
@@ -69,6 +72,14 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
             value={tables}
             onChange={setTables}
             min={1}
+          />
+
+          <ToggleField
+            label="Record Opening Lead"
+            value={leadCardRequired}
+            offLabel="No"
+            onLabel="Yes"
+            onSwitch={() => setLeadCardRequired((v) => !v)}
           />
         </div>
 

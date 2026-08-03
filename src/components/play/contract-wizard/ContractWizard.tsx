@@ -129,8 +129,7 @@ export function ContractWizard({
       // Convert resultMode + resultValue to a numeric result
       // "made" with value 0 means exactly made (=), value > 0 means overtricks
       // "down" means undertricks (negative)
-      const numericResult =
-        resultMode === "down" ? -resultValue : resultValue;
+      const numericResult = resultMode === "down" ? -resultValue : resultValue;
 
       onComplete({ contract, result: numericResult, lead });
     }
@@ -144,12 +143,24 @@ export function ContractWizard({
       return;
     }
     switch (step) {
-      case 1: setStep(0); break;
-      case 2: setStep(1); break;
-      case 3: setStep(2); break;
-      case 4: setStep(3); break;
-      case 5: setStep(leadCardRequired ? 4 : 3); break;
-      case 6: setStep(specialOutcome ? 1 : 5); break;
+      case 1:
+        setStep(0);
+        break;
+      case 2:
+        setStep(1);
+        break;
+      case 3:
+        setStep(2);
+        break;
+      case 4:
+        setStep(3);
+        break;
+      case 5:
+        setStep(leadCardRequired ? 4 : 3);
+        break;
+      case 6:
+        setStep(specialOutcome ? 1 : 5);
+        break;
     }
   };
 
@@ -230,12 +241,7 @@ export function ContractWizard({
           />
         );
       case 2:
-        return (
-          <StepSuit
-            level={level!}
-            onSuitSelected={onSuitSelected}
-          />
-        );
+        return <StepSuit level={level!} onSuitSelected={onSuitSelected} />;
       case 3:
         return (
           <StepDeclarer
@@ -256,10 +262,7 @@ export function ContractWizard({
         );
       case 5:
         return (
-          <StepResult
-            level={level!}
-            onResultComplete={onResultComplete}
-          />
+          <StepResult level={level!} onResultComplete={onResultComplete} />
         );
       case 6:
         return (
