@@ -10,37 +10,37 @@ type Props = {
 
 export function StepLevel({ onLevelSelected, onSpecialOutcome }: Props) {
   return (
-    <div className="flex-1 flex items-center justify-center p-4">
-      <div className="max-w-sm mx-auto w-full flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            className="bg-gray-200 text-gray-800 hover:bg-gray-300 py-4 text-xl font-bold rounded-xl"
-            onClick={() => onSpecialOutcome("NP")}
-          >
-            Not Played
-          </button>
-          <button
-            type="button"
-            className="bg-gray-200 text-gray-800 hover:bg-gray-300 py-4 text-xl font-bold rounded-xl"
-            onClick={() => onSpecialOutcome("PO")}
-          >
-            Pass Out
-          </button>
-        </div>
+    <div className="flex-1 flex flex-col p-4 min-h-0">
+      {/* Special outcomes — fixed height at top */}
+      <div className="grid grid-cols-2 gap-3 shrink-0 mb-3">
+        <button
+          type="button"
+          className="py-3 rounded-xl text-center border-2 border-gray-300 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition text-lg font-semibold text-gray-700"
+          onClick={() => onSpecialOutcome("NP")}
+        >
+          Not Played
+        </button>
+        <button
+          type="button"
+          className="py-3 rounded-xl text-center border-2 border-gray-300 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition text-lg font-semibold text-gray-700"
+          onClick={() => onSpecialOutcome("PO")}
+        >
+          Pass Out
+        </button>
+      </div>
 
-        <div className="grid grid-cols-4 gap-3">
-          {Levels.map((level) => (
-            <button
-              key={level}
-              type="button"
-              className="bg-blue-600 text-white hover:bg-blue-700 py-4 text-xl font-bold rounded-xl"
-              onClick={() => onLevelSelected(level)}
-            >
-              {level}
-            </button>
-          ))}
-        </div>
+      {/* Level buttons — grow to fill remaining space */}
+      <div className="flex-1 grid grid-cols-2 gap-3 min-h-0 auto-rows-fr">
+        {Levels.map((level) => (
+          <button
+            key={level}
+            type="button"
+            className="rounded-xl text-center border-2 border-gray-200 bg-white hover:bg-gray-50 active:scale-[0.98] transition text-2xl font-bold text-gray-900 flex items-center justify-center"
+            onClick={() => onLevelSelected(level)}
+          >
+            {level}
+          </button>
+        ))}
       </div>
     </div>
   );

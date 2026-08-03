@@ -3,6 +3,10 @@ import { Card, Rank, Ranks, Suit, SuitMap } from "@/model/common";
 
 type Props = {
   onSave: (lead: Card) => void;
+  initialSuit?: Suit;
+  initialRank?: Rank;
+  onSuitChange?: (suit: Suit) => void;
+  onRankChange?: (rank: Rank) => void;
 };
 
 function suitStyle(s: Suit, selected: boolean) {
@@ -26,72 +30,77 @@ function suitStyle(s: Suit, selected: boolean) {
   }
 }
 
-export function OpeningLead({ onSave }: Props) {
-  const [suit, setSuit] = useState<Suit>("S");
-  const [rank, setRank] = useState<Rank>("A");
+export function OpeningLead({ onSave, initialSuit, initialRank, onSuitChange, onRankChange }: Props) {
+  const [suit, setSuit] = useState<Suit>(initialSuit ?? "S");
+  const [rank, setRank] = useState<Rank>(initialRank ?? "A");
+
+  const handleSuitChange = (s: Suit) => {
+    setSuit(s);
+    onSuitChange?.(s);
+  };
+
+  const handleRankChange = (r: Rank) => {
+    setRank(r);
+    onRankChange?.(r);
+  };
 
   const lead = useMemo<Card>(() => `${suit}${rank}` as Card, [suit, rank]);
 
   const isRed = suit === "H" || suit === "D";
 
   return (
-    <div className="flex flex-1 flex-col p-5">
-      {/* HEADER */}
-      {/*<header className="shrink-0 mb-2">*/}
-      {/*  <h1 className="text-lg font-semibold">Opening Lead</h1>*/}
-      {/*</header>*/}
+    <div className="flex flex-1 flex-col p-4 min-h-0">
+      {/* Main content — fills available space */}
+      <div className="flex-1 flex flex-col min-h-0 gap-3">
+        {/* TOP SECTION — suits + card preview (takes ~30% of space) */}
+        <div className="flex-[3] flex gap-3 min-h-0">
+          {/* SUITS — 2x2 grid, expands to fill space next to card */}
+          <div className="grid grid-cols-2 gap-1.5 flex-1">
+            {(Object.keys(SuitMap) as Suit[]).map((s) => {
+              const selected = s === suit;
+              return (
+                <button
+                  key={s}
+                  onClick={() => handleSuitChange(s)}
+                  className={[
+                    "rounded-lg text-2xl border flex items-center justify-center",
+                    suitStyle(s, selected),
+                  ].join(" ")}
+                >
+                  {SuitMap[s]}
+                </button>
+              );
+            })}
+          </div>
 
-      {/* TOP SECTION (FIXED HEIGHT — CRITICAL) */}
-      <div className="shrink-0 h-[125px] flex gap-4 mb-3">
-        {/* SUITS */}
-        <div className="grid grid-cols-2 gap-2 flex-[0.45]">
-          {(Object.keys(SuitMap) as Suit[]).map((s) => {
-            const selected = s === suit;
-
-            return (
-              <button
-                key={s}
-                onClick={() => setSuit(s)}
-                className={[
-                  "rounded-lg text-2xl border flex items-center justify-center",
-                  suitStyle(s, selected),
-                ].join(" ")}
-              >
-                {SuitMap[s]}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* PREVIEW CARD */}
-        <div className="flex flex-[0.55] justify-end">
-          <div className="relative h-full w-28 rounded-2xl border bg-white shadow-md">
+          {/* PREVIEW CARD — 7:5 aspect ratio, fills height */}
+          <div className="h-full aspect-[5/7] rounded-xl border bg-white shadow-md relative">
             {/* TOP LEFT */}
             <div
               className={[
-                "absolute left-3 top-2 text-base font-bold",
+                "absolute left-2 top-1.5 font-bold",
                 isRed ? "text-red-600" : "text-gray-900",
               ].join(" ")}
             >
-              <div className="text-lg">{rank}</div>
-              <div className="text-xl leading-none">{SuitMap[suit]}</div>
+              <div className="text-base md:text-lg">{rank}</div>
+              <div className="text-lg md:text-xl leading-none">{SuitMap[suit]}</div>
             </div>
 
             {/* BOTTOM RIGHT */}
             <div
               className={[
-                "absolute bottom-2 right-3 rotate-180 text-base font-bold",
+                "absolute bottom-1.5 right-2 rotate-180 font-bold",
                 isRed ? "text-red-600" : "text-gray-900",
               ].join(" ")}
             >
-              <div className="text-lg">{rank}</div>
-              <div className="text-xl leading-none">{SuitMap[suit]}</div>
+              <div className="text-base md:text-lg">{rank}</div>
+              <div className="text-lg md:text-xl leading-none">{SuitMap[suit]}</div>
             </div>
 
             {/* CENTER */}
             <div
               className={[
-                "flex h-full items-center justify-center text-6xl font-bold",
+                "flex h-full items-center justify-center text-2xl md:text-7xl font-bold",
                 isRed ? "text-red-600" : "text-gray-900",
               ].join(" ")}
             >
@@ -99,19 +108,15 @@ export function OpeningLead({ onSave }: Props) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* GRID SECTION (NOW GUARANTEED TO FIT) */}
-      <div className="flex-1 min-h-0">
-        <div className="mb-2 text-xs text-gray-500">Rank</div>
-
-        <div className="grid grid-cols-4 gap-2">
+        {/* RANK GRID — takes ~70% of space, buttons grow to fill */}
+        <div className="flex-[7] grid grid-cols-4 gap-2 min-h-0 auto-rows-fr">
           {Ranks.map((r) => (
             <button
               key={r}
-              onClick={() => setRank(r)}
+              onClick={() => handleRankChange(r)}
               className={[
-                "rounded-xl py-3 text-lg border transition",
+                "rounded-xl text-lg font-medium border transition flex items-center justify-center",
                 r === rank ? "bg-black text-white" : "hover:bg-gray-50",
               ].join(" ")}
             >
@@ -121,15 +126,15 @@ export function OpeningLead({ onSave }: Props) {
         </div>
       </div>
 
-      {/* FOOTER */}
-      <footer className="shrink-0 pt-3">
+      {/* FOOTER — pinned to bottom */}
+      <div className="shrink-0 pt-3">
         <button
           onClick={() => onSave(lead)}
           className="w-full rounded-xl bg-blue-600 py-3 text-lg font-bold text-white"
         >
           Next
         </button>
-      </footer>
+      </div>
     </div>
   );
 }

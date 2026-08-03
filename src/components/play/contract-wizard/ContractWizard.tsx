@@ -248,6 +248,10 @@ export function ContractWizard({
         return (
           <StepOpeningLead
             onLeadComplete={onLeadComplete}
+            initialSuit={leadSuit}
+            initialRank={leadRank}
+            onSuitChange={setLeadSuit}
+            onRankChange={setLeadRank}
           />
         );
       case 5:

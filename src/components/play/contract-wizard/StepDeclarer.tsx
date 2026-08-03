@@ -16,27 +16,13 @@ const doublingLabels: Record<Doubling, string> = {
   XX: "XX",
 };
 
-const suitTextColor: Record<ContractSuit, string> = {
+const suitSymbolColor: Record<ContractSuit, string> = {
   C: "text-gray-900",
   D: "text-red-600",
   H: "text-red-600",
   S: "text-gray-900",
-  NT: "text-gray-600",
+  NT: "text-gray-900",
 };
-
-function suitDisplay(level: Level, suit: ContractSuit): string {
-  if (suit === "NT") return `${level}NT`;
-  return `${level}${SuitMap[suit]}`;
-}
-
-function buttonLabel(
-  level: Level,
-  suit: ContractSuit,
-  direction: Direction,
-  doubling: Doubling,
-): string {
-  return `${suitDisplay(level, suit)}${direction}${doubling}`;
-}
 
 export function StepDeclarer({
   level,
@@ -46,39 +32,43 @@ export function StepDeclarer({
   const [doubling, setDoubling] = useState<Doubling>("");
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4">
-      <div className="max-w-sm w-full">
-        {/* Doubling toggle */}
-        <div className="flex gap-2 mb-6">
-          {Doublings.map((dbl) => (
-            <button
-              key={dbl}
-              type="button"
-              className={`flex-1 py-2 rounded-lg font-semibold text-sm ${
-                doubling === dbl
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800"
-              }`}
-              onClick={() => setDoubling(dbl)}
-            >
-              {doublingLabels[dbl]}
-            </button>
-          ))}
-        </div>
+    <div className="flex-1 flex flex-col p-4 min-h-0">
+      {/* Doubling toggle — fixed height at top */}
+      <div className="flex gap-2 mb-3 shrink-0">
+        {Doublings.map((dbl) => (
+          <button
+            key={dbl}
+            type="button"
+            className={`flex-1 py-3 rounded-xl text-center border-2 active:scale-[0.98] transition text-lg font-semibold ${
+              doubling === dbl
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700"
+            }`}
+            onClick={() => setDoubling(dbl)}
+          >
+            {doublingLabels[dbl]}
+          </button>
+        ))}
+      </div>
 
-        {/* Direction buttons - single column */}
-        <div className="flex flex-col gap-3">
-          {Directions.map((dir) => (
-            <button
-              key={dir}
-              type="button"
-              className={`w-full py-4 rounded-xl text-center border-2 border-gray-200 bg-white hover:bg-gray-50 active:scale-[0.98] transition text-3xl font-bold ${suitTextColor[suit]}`}
-              onClick={() => onDeclarerSelected(dir, doubling)}
-            >
-              {buttonLabel(level, suit, dir, doubling)}
-            </button>
-          ))}
-        </div>
+      {/* Direction buttons — grow to fill remaining space */}
+      <div className="flex-1 flex flex-col gap-3 min-h-0">
+        {Directions.map((dir) => (
+          <button
+            key={dir}
+            type="button"
+            className="flex-1 w-full rounded-xl text-center border-2 border-gray-200 bg-white hover:bg-gray-50 active:scale-[0.98] transition text-3xl font-bold text-gray-900 flex items-center justify-center"
+            onClick={() => onDeclarerSelected(dir, doubling)}
+          >
+            {suit === "NT" ? (
+              <>{level}NT{dir}{doubling}</>
+            ) : (
+              <>
+                {level}<span className={suitSymbolColor[suit]}>{SuitMap[suit]}</span>{dir}{doubling}
+              </>
+            )}
+          </button>
+        ))}
       </div>
     </div>
   );

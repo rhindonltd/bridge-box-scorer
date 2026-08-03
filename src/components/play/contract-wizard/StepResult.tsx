@@ -10,7 +10,6 @@ type Props = {
 
 export function StepResult({ level, onResultComplete }: Props) {
   const [mode, setMode] = useState<"made" | "down">("made");
-  const [value, setValue] = useState(0);
 
   const requiredTricks = 6 + level;
   const maxOver = 13 - requiredTricks;
@@ -22,67 +21,57 @@ export function StepResult({ level, onResultComplete }: Props) {
       : Array.from({ length: maxDown }, (_, i) => i + 1);
   }, [mode, maxOver, maxDown]);
 
+  // Calculate max rows across both modes to keep button height consistent
+  const maxRowsMade = Math.ceil((maxOver + 1) / 3);
+  const maxRowsDown = Math.ceil(maxDown / 3);
+  const maxRows = Math.max(maxRowsMade, maxRowsDown);
+
   return (
-    <div className="flex-1 flex flex-col p-4">
-      <div className="max-w-sm mx-auto w-full flex-1 flex flex-col">
-        {/* Made/Down toggle — same style as doubling toggle */}
-        <div className="flex gap-2 mb-6">
-          <button
-            type="button"
-            className={`flex-1 py-2 rounded-lg font-semibold text-sm ${
-              mode === "made"
-                ? "bg-green-600 text-white"
-                : "bg-gray-200 text-gray-800"
-            }`}
-            onClick={() => { setMode("made"); setValue(0); }}
-          >
-            Made
-          </button>
-          <button
-            type="button"
-            className={`flex-1 py-2 rounded-lg font-semibold text-sm ${
-              mode === "down"
-                ? "bg-red-600 text-white"
-                : "bg-gray-200 text-gray-800"
-            }`}
-            onClick={() => { setMode("down"); setValue(1); }}
-          >
-            Down
-          </button>
-        </div>
-
-        {/* Number grid — consistent with suit/declarer button style */}
-        <div className="grid grid-cols-3 gap-3">
-          {values.map((v) => {
-            const isSelected = v === value;
-            const label = mode === "made" ? `+${v}` : `${v}`;
-            return (
-              <button
-                key={v}
-                type="button"
-                className={`py-4 rounded-xl text-center text-3xl font-bold transition active:scale-[0.98] ${
-                  isSelected
-                    ? "bg-blue-600 text-white border-2 border-blue-600"
-                    : "border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-900"
-                }`}
-                onClick={() => setValue(v)}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Next button pinned to bottom */}
-      <div className="max-w-sm mx-auto w-full pt-4">
+    <div className="flex-1 flex flex-col p-4 min-h-0">
+      {/* Made/Down toggle — fixed at top */}
+      <div className="flex gap-2 mb-3 shrink-0">
         <button
           type="button"
-          onClick={() => onResultComplete(mode, value)}
-          className="w-full py-3 text-lg font-bold rounded-xl bg-blue-600 text-white"
+          className={`flex-1 py-3 rounded-xl text-center border-2 active:scale-[0.98] transition text-lg font-semibold ${
+            mode === "made"
+              ? "bg-green-600 text-white border-green-600"
+              : "border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700"
+          }`}
+          onClick={() => setMode("made")}
         >
-          Next
+          Made
         </button>
+        <button
+          type="button"
+          className={`flex-1 py-3 rounded-xl text-center border-2 active:scale-[0.98] transition text-lg font-semibold ${
+            mode === "down"
+              ? "bg-red-600 text-white border-red-600"
+              : "border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700"
+          }`}
+          onClick={() => setMode("down")}
+        >
+          Down
+        </button>
+      </div>
+
+      {/* Number grid — fixed row count based on the larger mode */}
+      <div
+        className="flex-1 grid grid-cols-3 gap-2 min-h-0"
+        style={{ gridTemplateRows: `repeat(${maxRows}, 1fr)` }}
+      >
+        {values.map((v) => {
+          const label = mode === "made" ? `+${v}` : `-${v}`;
+          return (
+            <button
+              key={v}
+              type="button"
+              className="rounded-xl text-center text-2xl font-bold transition active:scale-[0.98] border-2 border-gray-200 bg-white hover:bg-gray-50 text-gray-900 flex items-center justify-center"
+              onClick={() => onResultComplete(mode, v)}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
