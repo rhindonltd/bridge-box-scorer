@@ -32,13 +32,6 @@ type Props = {
   onSubmit: () => void;
 };
 
-function formatResult(mode: "made" | "down", value: number): string {
-  if (mode === "made") {
-    return value === 0 ? "Made exactly" : `Made +${value}`;
-  }
-  return `Down ${value}`;
-}
-
 function formatSpecialOutcome(outcome: SpecialBoardOutcome): string {
   return outcome === "PO" ? "Pass Out" : "Not Played";
 }
@@ -57,11 +50,13 @@ export function StepConfirm({
 }: Props) {
   if (specialOutcome) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <p className="text-3xl font-bold">
-          {formatSpecialOutcome(specialOutcome)}
-        </p>
-        <div className="mt-auto w-full pt-6">
+      <div className="flex-1 flex flex-col p-6 min-h-0">
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-3xl font-bold text-center">
+            {formatSpecialOutcome(specialOutcome)}
+          </p>
+        </div>
+        <div className="shrink-0 pt-4">
           <button
             onClick={onSubmit}
             className="bg-green-700 text-white py-3 text-lg font-bold rounded-xl w-full"
@@ -80,18 +75,22 @@ export function StepConfirm({
   const leadText =
     leadSuit && leadRank ? `Lead: ${SuitMap[leadSuit]}${leadRank}` : null;
 
-  const resultText = formatResult(resultMode, resultValue);
+  const resultDisplay = resultMode === "made" && resultValue === 0
+    ? <span>Made <span className="text-green-600">✓</span></span>
+    : resultMode === "made"
+      ? <span>Made +{resultValue}</span>
+      : <span>Down {resultValue}</span>;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6">
-      <div className="flex flex-col items-center">
-        <p className="text-3xl font-bold">{contractText}</p>
+    <div className="flex-1 flex flex-col p-6 min-h-0">
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <p className="text-3xl font-bold text-center">{contractText}</p>
         {leadText && (
-          <p className="text-xl text-gray-700 mt-4">{leadText}</p>
+          <p className="text-3xl font-bold mt-4 text-center">{leadText}</p>
         )}
-        <p className="text-xl text-gray-700 mt-4">{resultText}</p>
+        <p className="text-3xl font-bold mt-4 text-center">{resultDisplay}</p>
       </div>
-      <div className="mt-auto w-full pt-6">
+      <div className="shrink-0 pt-4">
         <button
           onClick={onSubmit}
           className="bg-green-700 text-white py-3 text-lg font-bold rounded-xl w-full"
