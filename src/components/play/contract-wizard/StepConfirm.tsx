@@ -68,12 +68,23 @@ export function StepConfirm({
     );
   }
 
-  const contractText = level && suit && declarer
-    ? `${level}${ContractSuitDisplay[suit]} by ${DirectionNames[declarer]}${dbl ? `, ${dbl === "X" ? "Doubled" : "Redoubled"}` : ""}`
-    : "";
+  const suitSymbolColor = suit === "H" || suit === "D" ? "text-red-600" : "";
 
-  const leadText =
-    leadSuit && leadRank ? `Lead: ${SuitMap[leadSuit]}${leadRank}` : null;
+  const contractDisplay = level && suit && declarer ? (
+    <>
+      {level}
+      <span className={suitSymbolColor}>{ContractSuitDisplay[suit]}</span>
+      {dbl ? ` ${dbl === "X" ? "X" : "XX"}` : ""}
+      {" by "}
+      {DirectionNames[declarer]}
+    </>
+  ) : null;
+
+  const leadDisplay = leadSuit && leadRank ? (
+    <>
+      Lead: <span className={leadSuit === "H" || leadSuit === "D" ? "text-red-600" : ""}>{SuitMap[leadSuit]}</span>{leadRank}
+    </>
+  ) : null;
 
   const resultDisplay = resultMode === "made" && resultValue === 0
     ? <span>Made <span className="text-green-600">✓</span></span>
@@ -84,9 +95,9 @@ export function StepConfirm({
   return (
     <div className="flex-1 flex flex-col p-6 min-h-0">
       <div className="flex-1 flex flex-col items-center justify-center">
-        <p className="text-3xl font-bold text-center">{contractText}</p>
-        {leadText && (
-          <p className="text-3xl font-bold mt-4 text-center">{leadText}</p>
+        <p className="text-3xl font-bold text-center">{contractDisplay}</p>
+        {leadDisplay && (
+          <p className="text-3xl font-bold mt-4 text-center">{leadDisplay}</p>
         )}
         <p className="text-3xl font-bold mt-4 text-center">{resultDisplay}</p>
       </div>
