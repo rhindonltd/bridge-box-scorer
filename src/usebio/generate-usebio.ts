@@ -1,5 +1,10 @@
 import { create } from "xmlbuilder2";
-import { formatOutcomeForUsebio, formatLeadForUsebio, isAdjustedScore, parseAdjustedScore } from "./format-contract";
+import {
+  formatOutcomeForUsebio,
+  formatLeadForUsebio,
+  isAdjustedScore,
+  parseAdjustedScore,
+} from "./format-contract";
 import { outcomeToScore } from "@/scoring/traveller/common";
 import { scoreMP as scorePairMP } from "@/scoring/traveller/pair/mp";
 import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
@@ -326,22 +331,38 @@ function computeOverallRanking(data: UsebioGameData): RankEntry[] {
       if (data.scoringType === "MP") {
         const maxForBoard = lineScore.ns + lineScore.ew;
 
-        const nsEntry = totals.get(nsId) ?? { total: 0, max: 0, direction: "NS" };
+        const nsEntry = totals.get(nsId) ?? {
+          total: 0,
+          max: 0,
+          direction: "NS",
+        };
         nsEntry.total += lineScore.ns;
         nsEntry.max += maxForBoard > 0 ? maxForBoard : 0;
         totals.set(nsId, nsEntry);
 
-        const ewEntry = totals.get(ewId) ?? { total: 0, max: 0, direction: "EW" };
+        const ewEntry = totals.get(ewId) ?? {
+          total: 0,
+          max: 0,
+          direction: "EW",
+        };
         ewEntry.total += lineScore.ew;
         ewEntry.max += maxForBoard > 0 ? maxForBoard : 0;
         totals.set(ewId, ewEntry);
       } else {
         // IMP/XIMP — accumulate IMPs
-        const nsEntry = totals.get(nsId) ?? { total: 0, max: 0, direction: "NS" };
+        const nsEntry = totals.get(nsId) ?? {
+          total: 0,
+          max: 0,
+          direction: "NS",
+        };
         nsEntry.total += lineScore.ns;
         totals.set(nsId, nsEntry);
 
-        const ewEntry = totals.get(ewId) ?? { total: 0, max: 0, direction: "EW" };
+        const ewEntry = totals.get(ewId) ?? {
+          total: 0,
+          max: 0,
+          direction: "EW",
+        };
         ewEntry.total += lineScore.ew;
         totals.set(ewId, ewEntry);
       }
@@ -358,12 +379,20 @@ function computeOverallRanking(data: UsebioGameData): RankEntry[] {
         const nsMp = Math.round((adj.ns / 100) * maxMp);
         const ewMp = Math.round((adj.ew / 100) * maxMp);
 
-        const nsEntry = totals.get(result.nsPairNumber) ?? { total: 0, max: 0, direction: "NS" };
+        const nsEntry = totals.get(result.nsPairNumber) ?? {
+          total: 0,
+          max: 0,
+          direction: "NS",
+        };
         nsEntry.total += nsMp;
         nsEntry.max += maxMp > 0 ? maxMp : 0;
         totals.set(result.nsPairNumber, nsEntry);
 
-        const ewEntry = totals.get(result.ewPairNumber) ?? { total: 0, max: 0, direction: "EW" };
+        const ewEntry = totals.get(result.ewPairNumber) ?? {
+          total: 0,
+          max: 0,
+          direction: "EW",
+        };
         ewEntry.total += ewMp;
         ewEntry.max += maxMp > 0 ? maxMp : 0;
         totals.set(result.ewPairNumber, ewEntry);
@@ -372,11 +401,19 @@ function computeOverallRanking(data: UsebioGameData): RankEntry[] {
         const nsImps = adjustedImps(adj.ns);
         const ewImps = adjustedImps(adj.ew);
 
-        const nsEntry = totals.get(result.nsPairNumber) ?? { total: 0, max: 0, direction: "NS" };
+        const nsEntry = totals.get(result.nsPairNumber) ?? {
+          total: 0,
+          max: 0,
+          direction: "NS",
+        };
         nsEntry.total += nsImps;
         totals.set(result.nsPairNumber, nsEntry);
 
-        const ewEntry = totals.get(result.ewPairNumber) ?? { total: 0, max: 0, direction: "EW" };
+        const ewEntry = totals.get(result.ewPairNumber) ?? {
+          total: 0,
+          max: 0,
+          direction: "EW",
+        };
         ewEntry.total += ewImps;
         totals.set(result.ewPairNumber, ewEntry);
       }

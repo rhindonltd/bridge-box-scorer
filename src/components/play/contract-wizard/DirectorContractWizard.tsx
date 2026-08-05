@@ -117,7 +117,12 @@ export function DirectorContractWizard({
 
   const onSubmit = () => {
     if (specialOutcome) {
-      onComplete({ type: "contract", contract: specialOutcome, result: 0, lead: null });
+      onComplete({
+        type: "contract",
+        contract: specialOutcome,
+        result: 0,
+        lead: null,
+      });
       return;
     }
 

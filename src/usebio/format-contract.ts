@@ -35,7 +35,9 @@ export function isAdjustedScore(outcome: string): boolean {
 /**
  * Parses an adjusted score string (e.g., "A60/40") into NS and EW percentages.
  */
-export function parseAdjustedScore(outcome: string): { ns: number; ew: number } | null {
+export function parseAdjustedScore(
+  outcome: string,
+): { ns: number; ew: number } | null {
   const match = outcome.match(ADJUSTED_REGEX);
   if (!match) return null;
   return { ns: Number(match[1]), ew: Number(match[2]) };

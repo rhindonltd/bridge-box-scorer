@@ -6,7 +6,10 @@ import { useGame } from "@/context/GameContext";
 import { SelectBoardPage } from "@/components/pages/manage/correct-result/SelectBoardPage";
 import { BoardInstance } from "@/components/pages/manage/correct-result/SelectInstancePage";
 import { TravellerView } from "@/components/pages/manage/correct-result/TravellerView";
-import { DirectorContractWizard, DirectorWizardResult } from "@/components/play/contract-wizard/DirectorContractWizard";
+import {
+  DirectorContractWizard,
+  DirectorWizardResult,
+} from "@/components/play/contract-wizard/DirectorContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { getDirectorToken } from "@/lib/director-token";
 import { parseContract } from "@/model/contract";
