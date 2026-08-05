@@ -30,7 +30,13 @@ function suitStyle(s: Suit, selected: boolean) {
   }
 }
 
-export function OpeningLead({ onSave, initialSuit, initialRank, onSuitChange, onRankChange }: Props) {
+export function OpeningLead({
+  onSave,
+  initialSuit,
+  initialRank,
+  onSuitChange,
+  onRankChange,
+}: Props) {
   const [suit, setSuit] = useState<Suit>(initialSuit ?? "S");
   const [rank, setRank] = useState<Rank>(initialRank ?? "A");
 
@@ -83,7 +89,9 @@ export function OpeningLead({ onSave, initialSuit, initialRank, onSuitChange, on
               ].join(" ")}
             >
               <div className="text-base md:text-lg">{rank}</div>
-              <div className="text-lg md:text-xl leading-none">{SuitMap[suit]}</div>
+              <div className="text-lg md:text-xl leading-none">
+                {SuitMap[suit]}
+              </div>
             </div>
 
             {/* BOTTOM RIGHT */}
@@ -94,7 +102,9 @@ export function OpeningLead({ onSave, initialSuit, initialRank, onSuitChange, on
               ].join(" ")}
             >
               <div className="text-base md:text-lg">{rank}</div>
-              <div className="text-lg md:text-xl leading-none">{SuitMap[suit]}</div>
+              <div className="text-lg md:text-xl leading-none">
+                {SuitMap[suit]}
+              </div>
             </div>
 
             {/* CENTER */}

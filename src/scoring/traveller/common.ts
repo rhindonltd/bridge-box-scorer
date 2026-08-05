@@ -1,5 +1,5 @@
 import { getVulnerability } from "@/model/vulnerability";
-import { parsePlayedContract } from "@/model/result";
+import { isPlayedContractCode, parsePlayedContract } from "@/model/result";
 import { ImpTable } from "./imp-table";
 import { BoardOutcome } from "@/model/score";
 import { scoreContract } from "./score";
@@ -14,6 +14,7 @@ export function outcomeToScore(
 ): number | null {
   if (outcome === "PO") return 0;
   if (outcome === "NP") return null;
+  if (!isPlayedContractCode(outcome)) return null;
 
   return scoreContract(parsePlayedContract(outcome), getVulnerability(board));
 }

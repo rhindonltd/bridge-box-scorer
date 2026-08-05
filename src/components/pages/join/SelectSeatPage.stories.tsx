@@ -35,6 +35,7 @@ export const Pairs: Story = {
       eventDate: new Date().toISOString(),
       status: "CREATED",
       tables: 10,
+      leadCardRequired: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),

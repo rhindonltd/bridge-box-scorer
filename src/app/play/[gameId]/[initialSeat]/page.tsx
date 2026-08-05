@@ -354,7 +354,7 @@ export default function PlayPage() {
           table={round.tableNumber!}
           roundBoards={round.boards}
           playedBoards={playedBoards}
-          leadCardRequired={false}
+          leadCardRequired={game?.leadCardRequired ?? true}
           onComplete={(data) => {
             if (data.contract === "PO" || data.contract === "NP") {
               submitResult(data.contract);

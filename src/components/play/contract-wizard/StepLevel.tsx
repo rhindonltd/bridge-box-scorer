@@ -6,9 +6,14 @@ import { SpecialBoardOutcome } from "@/model/result";
 type Props = {
   onLevelSelected: (level: Level) => void;
   onSpecialOutcome: (outcome: SpecialBoardOutcome) => void;
+  onAdjustedScore?: () => void;
 };
 
-export function StepLevel({ onLevelSelected, onSpecialOutcome }: Props) {
+export function StepLevel({
+  onLevelSelected,
+  onSpecialOutcome,
+  onAdjustedScore,
+}: Props) {
   return (
     <div className="flex-1 flex flex-col p-4 min-h-0">
       {/* Special outcomes — fixed height at top */}
@@ -28,6 +33,19 @@ export function StepLevel({ onLevelSelected, onSpecialOutcome }: Props) {
           Pass Out
         </button>
       </div>
+
+      {/* Adjusted score — director only */}
+      {onAdjustedScore && (
+        <div className="shrink-0 mb-3">
+          <button
+            type="button"
+            className="w-full py-3 rounded-xl text-center border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 active:scale-[0.98] transition text-lg font-semibold text-amber-800"
+            onClick={onAdjustedScore}
+          >
+            Adjusted Score
+          </button>
+        </div>
+      )}
 
       {/* Level buttons — grow to fill remaining space */}
       <div className="flex-1 grid grid-cols-2 gap-3 min-h-0 auto-rows-fr">

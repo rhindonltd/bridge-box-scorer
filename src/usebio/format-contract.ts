@@ -19,9 +19,29 @@ export type UsebioResult = {
   contract: string;
   /** Declarer: "N", "S", "E", "W" or "" for pass-out */
   declarer: string;
-  /** Result: "=", "+2", "-1", or "" for pass-out/not-played */
+  /** Result: "=", "+2", "-1", or "" for pass-out/not-played/adjusted */
   result: string;
 };
+
+const ADJUSTED_REGEX = /^A(\d+)\/(\d+)$/;
+
+/**
+ * Returns true if the outcome is an adjusted score in A<ns>/<ew> format.
+ */
+export function isAdjustedScore(outcome: string): boolean {
+  return ADJUSTED_REGEX.test(outcome);
+}
+
+/**
+ * Parses an adjusted score string (e.g., "A60/40") into NS and EW percentages.
+ */
+export function parseAdjustedScore(
+  outcome: string,
+): { ns: number; ew: number } | null {
+  const match = outcome.match(ADJUSTED_REGEX);
+  if (!match) return null;
+  return { ns: Number(match[1]), ew: Number(match[2]) };
+}
 
 /**
  * Converts our internal BoardOutcome format to USEBIO result fields.
@@ -32,6 +52,7 @@ export type UsebioResult = {
  *   "3HXXE-1"  → { contract: "3 H xx", declarer: "E", result: "-1" }
  *   "PO"       → { contract: "PASS", declarer: "", result: "" }
  *   "NP"       → { contract: "", declarer: "", result: "" }
+ *   "A60/40"   → { contract: "", declarer: "", result: "" }  (adjusted score)
  */
 export function formatOutcomeForUsebio(outcome: BoardOutcome): UsebioResult {
   if (outcome === "PO") {
@@ -39,6 +60,10 @@ export function formatOutcomeForUsebio(outcome: BoardOutcome): UsebioResult {
   }
 
   if (outcome === "NP") {
+    return { contract: "", declarer: "", result: "" };
+  }
+
+  if (isAdjustedScore(outcome)) {
     return { contract: "", declarer: "", result: "" };
   }
 

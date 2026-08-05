@@ -17,6 +17,7 @@ const mockGame: BridgeGame = {
   sectionName: "A",
   eventDate: "2024-06-01",
   tables: 6,
+  leadCardRequired: true,
   status: "JOINABLE",
   createdAt: "2024-06-01T18:00:00Z",
   updatedAt: "2024-06-01T18:00:00Z",

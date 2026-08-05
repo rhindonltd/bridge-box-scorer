@@ -24,11 +24,7 @@ const suitSymbolColor: Record<ContractSuit, string> = {
   NT: "text-gray-900",
 };
 
-export function StepDeclarer({
-  level,
-  suit,
-  onDeclarerSelected,
-}: Props) {
+export function StepDeclarer({ level, suit, onDeclarerSelected }: Props) {
   const [doubling, setDoubling] = useState<Doubling>("");
 
   return (
@@ -61,10 +57,16 @@ export function StepDeclarer({
             onClick={() => onDeclarerSelected(dir, doubling)}
           >
             {suit === "NT" ? (
-              <>{level}NT{dir}{doubling}</>
+              <>
+                {level}NT{dir}
+                {doubling}
+              </>
             ) : (
               <>
-                {level}<span className={suitSymbolColor[suit]}>{SuitMap[suit]}</span>{dir}{doubling}
+                {level}
+                <span className={suitSymbolColor[suit]}>{SuitMap[suit]}</span>
+                {dir}
+                {doubling}
               </>
             )}
           </button>

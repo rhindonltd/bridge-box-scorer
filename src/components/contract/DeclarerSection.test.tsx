@@ -23,9 +23,7 @@ describe("DeclarerSection", () => {
   });
 
   it("marks selected declarer as active", () => {
-    render(
-      <DeclarerSection declarer="N" onDeclarerSelected={vi.fn()} />,
-    );
+    render(<DeclarerSection declarer="N" onDeclarerSelected={vi.fn()} />);
 
     expect(screen.getByText("N")).toHaveAttribute("data-active", "true");
     expect(screen.getByText("S")).toHaveAttribute("data-active", "false");

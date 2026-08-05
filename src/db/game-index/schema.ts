@@ -23,6 +23,9 @@ export const games = sqliteTable("games", {
   sectionName: text("section_name").notNull(),
   eventDate: text("event_date").notNull(),
   tables: integer("tables").notNull(),
+  leadCardRequired: integer("lead_card_required", { mode: "boolean" })
+    .notNull()
+    .default(true),
   status: text("status", {
     enum: GameStatuses,
   }).notNull(),

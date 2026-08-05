@@ -7,44 +7,54 @@ import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
 import { Card, Direction, Rank, Suit } from "@/model/common";
 import { SpecialBoardOutcome } from "@/model/result";
 import { useGame } from "@/context/GameContext";
-import { useAssignment } from "@/context/AssignmentContext";
 
-import { StepBoard } from "./StepBoard";
 import { StepLevel } from "./StepLevel";
 import { StepSuit } from "./StepSuit";
 import { StepDeclarer } from "./StepDeclarer";
 import { StepOpeningLead } from "./StepOpeningLead";
 import { StepResult } from "./StepResult";
 import { StepConfirm } from "./StepConfirm";
+import { StepAdjustedScore } from "./StepAdjustedScore";
 
-interface ContractWizardProps {
+export type DirectorWizardResult =
+  | {
+      type: "contract";
+      contract: ContractCode | SpecialBoardOutcome;
+      result: number;
+      lead: Card | null;
+    }
+  | {
+      type: "adjusted";
+      nsPercent: number;
+      ewPercent: number;
+    };
+
+interface DirectorContractWizardProps {
+  boardNumber: number;
   round: number;
   table: number;
-  roundBoards: number[];
-  playedBoards: number[];
   leadCardRequired: boolean;
-  onComplete: (data: {
-    contract: ContractCode | SpecialBoardOutcome;
-    result: number;
-    lead: Card | null;
-  }) => void;
+  onComplete: (data: DirectorWizardResult) => void;
+  onBack: () => void;
 }
 
-export function ContractWizard({
+/**
+ * A variant of ContractWizard for director use.
+ * Skips the board selection step (board is pre-selected from the traveller).
+ * Does not require AssignmentContext.
+ */
+export function DirectorContractWizard({
+  boardNumber,
   round,
   table,
-  roundBoards,
-  playedBoards,
   leadCardRequired,
   onComplete,
-}: ContractWizardProps) {
+  onBack,
+}: DirectorContractWizardProps) {
   const { game } = useGame();
-  const { assignment } = useAssignment();
 
-  // Step state
-  const [step, setStep] = useState(0);
-  const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
-  const [pickingBoard, setPickingBoard] = useState(false);
+  // Steps: 1=Level, 2=Suit, 3=Declarer, 4=OpeningLead, 5=Result, 6=Confirm, 7=AdjustedScore
+  const [step, setStep] = useState(1);
 
   // Contract state
   const [level, setLevel] = useState<Level | null>(null);
@@ -61,16 +71,6 @@ export function ContractWizard({
   // Result state
   const [resultMode, setResultMode] = useState<"made" | "down">("made");
   const [resultValue, setResultValue] = useState(0);
-
-  // --- Board selection handler ---
-
-  const handleBoardSelected = (board: number) => {
-    setSelectedBoard(board);
-    if (step === 0) {
-      setStep(1);
-    }
-    setPickingBoard(false);
-  };
 
   // --- Step transition handlers ---
 
@@ -117,7 +117,12 @@ export function ContractWizard({
 
   const onSubmit = () => {
     if (specialOutcome) {
-      onComplete({ contract: specialOutcome, result: 0, lead: null });
+      onComplete({
+        type: "contract",
+        contract: specialOutcome,
+        result: 0,
+        lead: null,
+      });
       return;
     }
 
@@ -126,25 +131,21 @@ export function ContractWizard({
       const lead: Card | null =
         leadSuit && leadRank ? (`${leadSuit}${leadRank}` as Card) : null;
 
-      // Convert resultMode + resultValue to a numeric result
-      // "made" with value 0 means exactly made (=), value > 0 means overtricks
-      // "down" means undertricks (negative)
       const numericResult = resultMode === "down" ? -resultValue : resultValue;
-
-      onComplete({ contract, result: numericResult, lead });
+      onComplete({ type: "contract", contract, result: numericResult, lead });
     }
+  };
+
+  const onAdjustedScoreSubmit = (nsPercent: number, ewPercent: number) => {
+    onComplete({ type: "adjusted", nsPercent, ewPercent });
   };
 
   // --- Back arrow logic ---
 
   const handleBack = () => {
-    if (pickingBoard) {
-      setPickingBoard(false);
-      return;
-    }
     switch (step) {
       case 1:
-        setStep(0);
+        onBack();
         break;
       case 2:
         setStep(1);
@@ -161,28 +162,22 @@ export function ContractWizard({
       case 6:
         setStep(specialOutcome ? 1 : 5);
         break;
+      case 7:
+        setStep(1);
+        break;
     }
   };
 
-  const showBackArrow = pickingBoard || step > 0;
-
   // --- Sub-header (blue bar) ---
-
-  const showBoardButton = selectedBoard !== null && step !== 0 && !pickingBoard;
 
   const subHeader = (
     <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
       <span className="font-bold text-lg">
         Table {table}, Round {round}
       </span>
-      {showBoardButton && (
-        <button
-          onClick={() => setPickingBoard(true)}
-          className="px-4 py-2 text-lg font-bold bg-white text-blue-900 rounded-lg border-2 border-blue-300 shadow-sm"
-        >
-          Board {selectedBoard}
-        </button>
-      )}
+      <span className="px-4 py-2 text-lg font-bold bg-white text-blue-900 rounded-lg border-2 border-blue-300 shadow-sm">
+        Board {boardNumber}
+      </span>
     </div>
   );
 
@@ -190,15 +185,13 @@ export function ContractWizard({
 
   const header = (
     <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-center gap-2 shrink-0">
-      {showBackArrow && (
-        <button
-          onClick={handleBack}
-          className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
-          aria-label="Go back"
-        >
-          <ArrowLeft size={20} />
-        </button>
-      )}
+      <button
+        onClick={handleBack}
+        className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
+        aria-label="Go back"
+      >
+        <ArrowLeft size={20} />
+      </button>
       <div className="flex-1 flex items-start justify-between min-w-0">
         <div className="truncate">
           <div className="font-semibold">{game?.eventName}</div>
@@ -210,11 +203,7 @@ export function ContractWizard({
             </div>
           )}
         </div>
-        {assignment && (
-          <span className="text-base font-semibold">
-            {assignment.type === "PAIR" ? "Pair" : "Team"} {assignment.id}
-          </span>
-        )}
+        <span className="text-base font-semibold text-gray-600">Director</span>
       </div>
     </div>
   );
@@ -222,22 +211,13 @@ export function ContractWizard({
   // --- Step rendering ---
 
   const renderStep = () => {
-    if (pickingBoard || step === 0) {
-      return (
-        <StepBoard
-          boards={roundBoards}
-          playedBoards={playedBoards}
-          onBoardSelected={handleBoardSelected}
-        />
-      );
-    }
-
     switch (step) {
       case 1:
         return (
           <StepLevel
             onLevelSelected={onLevelSelected}
             onSpecialOutcome={onSpecialOutcome}
+            onAdjustedScore={() => setStep(7)}
           />
         );
       case 2:
@@ -279,6 +259,8 @@ export function ContractWizard({
             onSubmit={onSubmit}
           />
         );
+      case 7:
+        return <StepAdjustedScore onSubmit={onAdjustedScoreSubmit} />;
       default:
         return null;
     }

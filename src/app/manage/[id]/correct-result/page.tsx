@@ -6,12 +6,13 @@ import { useGame } from "@/context/GameContext";
 import { SelectBoardPage } from "@/components/pages/manage/correct-result/SelectBoardPage";
 import { BoardInstance } from "@/components/pages/manage/correct-result/SelectInstancePage";
 import { TravellerView } from "@/components/pages/manage/correct-result/TravellerView";
-import ContractEntryPanel from "@/components/contract/ContractEntryPanel";
-import { BoardResult } from "@/components/play/BoardResult";
+import {
+  DirectorContractWizard,
+  DirectorWizardResult,
+} from "@/components/play/contract-wizard/DirectorContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { getDirectorToken } from "@/lib/director-token";
-import { ContractCode, isContractCode, parseContract } from "@/model/contract";
-import { SpecialBoardOutcome } from "@/model/result";
+import { parseContract } from "@/model/contract";
 
 type WizardStep =
   | { step: "selectBoard" }
@@ -21,13 +22,6 @@ type WizardStep =
       boardNumber: number;
       roundNumber: number;
       tableNumber: number;
-    }
-  | {
-      step: "enterResult";
-      boardNumber: number;
-      roundNumber: number;
-      tableNumber: number;
-      contract: ContractCode;
     }
   | { step: "saving" };
 
@@ -93,8 +87,20 @@ export default function CorrectResultPage() {
     });
   }
 
-  function handleContractEntered(contract: ContractCode | SpecialBoardOutcome) {
+  function handleWizardComplete(data: DirectorWizardResult) {
     if (wizardStep.step !== "enterContract") return;
+
+    if (data.type === "adjusted") {
+      saveOverride(
+        wizardStep.roundNumber,
+        wizardStep.tableNumber,
+        wizardStep.boardNumber,
+        `A${data.nsPercent}/${data.ewPercent}`,
+      );
+      return;
+    }
+
+    const { contract, result } = data;
 
     if (contract === "PO" || contract === "NP") {
       saveOverride(
@@ -106,27 +112,13 @@ export default function CorrectResultPage() {
       return;
     }
 
-    if (isContractCode(contract)) {
-      setWizardStep({
-        step: "enterResult",
-        boardNumber: wizardStep.boardNumber,
-        roundNumber: wizardStep.roundNumber,
-        tableNumber: wizardStep.tableNumber,
-        contract,
-      });
-    }
-  }
-
-  function handleResultEntered(trickResult: number) {
-    if (wizardStep.step !== "enterResult") return;
-
-    const parsed = parseContract(wizardStep.contract);
+    const parsed = parseContract(contract);
     const fullResult = buildPlayedContractCode(
       parsed.level,
       parsed.suit,
       parsed.doubling,
       parsed.declarer,
-      trickResult,
+      result,
     );
 
     saveOverride(
@@ -208,25 +200,20 @@ export default function CorrectResultPage() {
 
     case "enterContract":
       return (
-        <ContractEntryPanel
-          headerText={`Correcting Board ${wizardStep.boardNumber}`}
-          subHeaderText={`Table ${wizardStep.tableNumber}, Round ${wizardStep.roundNumber}`}
-          onOk={handleContractEntered}
+        <DirectorContractWizard
+          boardNumber={wizardStep.boardNumber}
+          round={wizardStep.roundNumber}
+          table={wizardStep.tableNumber}
+          leadCardRequired={game.leadCardRequired}
+          onComplete={handleWizardComplete}
+          onBack={() =>
+            setWizardStep({
+              step: "viewTraveller",
+              boardNumber: wizardStep.boardNumber,
+            })
+          }
         />
       );
-
-    case "enterResult": {
-      const parsed = parseContract(wizardStep.contract);
-      const contractDisplay = `${parsed.level}${parsed.suit}${parsed.doubling}`;
-      return (
-        <BoardResult
-          board={wizardStep.boardNumber}
-          contract={contractDisplay}
-          declarer={parsed.declarer}
-          onSave={handleResultEntered}
-        />
-      );
-    }
 
     case "saving":
       return (
