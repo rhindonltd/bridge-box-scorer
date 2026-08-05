@@ -28,8 +28,10 @@ vi.mock("@/components/results/traveller/Traveller", () => ({
 describe("BoardResultsPage", () => {
   const baseProps = {
     board: 5,
+    playedBoards: [5],
     lastBoardOfRound: false,
     scoredTraveller: { id: 123 } as any,
+    onBoardSelected: vi.fn(),
     onNext: vi.fn(),
   };
 

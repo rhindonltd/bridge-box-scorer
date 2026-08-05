@@ -5,20 +5,44 @@ import { PlayHeader } from "@/components/play/PlayHeader";
 
 interface Props {
   board: number;
+  playedBoards: number[];
   lastBoardOfRound: boolean;
   scoredTraveller: ScoredTraveller;
+  onBoardSelected: (board: number) => void;
   onNext: () => void;
 }
 
 export function BoardResultsPage({
   board,
+  playedBoards,
   lastBoardOfRound,
   scoredTraveller,
+  onBoardSelected,
   onNext,
 }: Props) {
   return (
     <div className="flex-1 flex flex-col">
       <PlayHeader detail={`Board ${board}`} />
+
+      {/* Board selector tabs */}
+      {playedBoards.length > 1 && (
+        <div className="flex gap-2 px-3 py-2 bg-gray-100 overflow-x-auto shrink-0">
+          {playedBoards.map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => onBoardSelected(b)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition shrink-0 ${
+                b === board
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              {b}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-y-auto">
         <Traveller scoredTraveller={scoredTraveller} />
