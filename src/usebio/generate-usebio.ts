@@ -1,7 +1,9 @@
 import { create } from "xmlbuilder2";
-import { formatOutcomeForUsebio, formatLeadForUsebio } from "./format-contract";
+import { formatOutcomeForUsebio, formatLeadForUsebio, isAdjustedScore, parseAdjustedScore } from "./format-contract";
 import { outcomeToScore } from "@/scoring/traveller/common";
 import { scoreMP as scorePairMP } from "@/scoring/traveller/pair/mp";
+import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
+import { scoreXIMP as scorePairXIMP } from "@/scoring/traveller/pair/x-imp";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import { ScoringType } from "@/db/games/types/scoring-type";
@@ -68,6 +70,21 @@ const SCORING_TYPE_MAP: Record<ScoringType, string> = {
 };
 
 /* ============================================================
+   ADJUSTED SCORE IMP VALUES
+
+   For IMP/XIMP scoring, adjusted scores are assigned fixed IMP values:
+     AVE+ (>50%) → +3 IMPs for that side
+     AVE  (50%)  →  0 IMPs
+     AVE- (<50%) → -3 IMPs for that side
+============================================================ */
+
+function adjustedImps(percent: number): number {
+  if (percent > 50) return 3;
+  if (percent < 50) return -3;
+  return 0;
+}
+
+/* ============================================================
    GENERATOR
 ============================================================ */
 
@@ -111,30 +128,62 @@ export function generateUsebioXml(data: UsebioGameData): string {
 
   for (const boardNum of boardNumbers) {
     const results = boardGroups.get(boardNum)!;
-    const mpLines = computeBoardMatchpoints(boardNum, results);
+    const scoredLines = computeBoardScores(boardNum, results, data.scoringType);
 
     const boardEl = boardResultsEl.ele("BOARD", {
       BOARD_NUMBER: String(boardNum),
     });
 
     for (const result of results) {
-      const formatted = formatOutcomeForUsebio(result.outcome);
-      const score = outcomeToScore(boardNum, result.outcome);
-      const lead = formatLeadForUsebio(result.lead);
-      const mp = mpLines.get(resultKey(result));
-
+      const key = resultKey(result);
       const resultEl = boardEl.ele("RESULT");
       resultEl.ele("NS_PAIR_NUMBER").txt(result.nsPairNumber);
       resultEl.ele("EW_PAIR_NUMBER").txt(result.ewPairNumber);
-      resultEl.ele("CONTRACT").txt(formatted.contract);
-      resultEl.ele("DECLARER").txt(formatted.declarer);
-      resultEl.ele("LEAD").txt(lead);
-      resultEl.ele("RESULT_FIELD").txt(formatted.result);
-      resultEl.ele("SCORE").txt(String(score ?? 0));
 
-      if (mp) {
-        resultEl.ele("NS_MATCH_POINTS").txt(String(mp.ns));
-        resultEl.ele("EW_MATCH_POINTS").txt(String(mp.ew));
+      if (isAdjustedScore(result.outcome)) {
+        const adj = parseAdjustedScore(result.outcome);
+        resultEl.ele("CONTRACT").txt("");
+        resultEl.ele("DECLARER").txt("");
+        resultEl.ele("LEAD").txt("");
+        resultEl.ele("RESULT_FIELD").txt("");
+        resultEl.ele("SCORE").txt("0");
+
+        if (data.scoringType === "MP") {
+          // For MP: assign matchpoints as percentage of maximum
+          const maxMp = 2 * (results.length - 1);
+          const nsMp = adj ? Math.round((adj.ns / 100) * maxMp) : 0;
+          const ewMp = adj ? Math.round((adj.ew / 100) * maxMp) : 0;
+          resultEl.ele("NS_MATCH_POINTS").txt(String(nsMp));
+          resultEl.ele("EW_MATCH_POINTS").txt(String(ewMp));
+        } else {
+          // For IMP/XIMP: AVE+ = +3, AVE = 0, AVE- = -3
+          const nsImps = adj ? adjustedImps(adj.ns) : 0;
+          const ewImps = adj ? adjustedImps(adj.ew) : 0;
+          resultEl.ele("NS_IMPS").txt(String(nsImps));
+          resultEl.ele("EW_IMPS").txt(String(ewImps));
+        }
+        resultEl.ele("ARTIFICIAL_SCORE").txt("Adjusted");
+      } else {
+        const formatted = formatOutcomeForUsebio(result.outcome);
+        const score = outcomeToScore(boardNum, result.outcome);
+        const lead = formatLeadForUsebio(result.lead);
+        const lineScore = scoredLines.get(key);
+
+        resultEl.ele("CONTRACT").txt(formatted.contract);
+        resultEl.ele("DECLARER").txt(formatted.declarer);
+        resultEl.ele("LEAD").txt(lead);
+        resultEl.ele("RESULT_FIELD").txt(formatted.result);
+        resultEl.ele("SCORE").txt(String(score ?? 0));
+
+        if (lineScore) {
+          if (data.scoringType === "MP") {
+            resultEl.ele("NS_MATCH_POINTS").txt(String(lineScore.ns));
+            resultEl.ele("EW_MATCH_POINTS").txt(String(lineScore.ew));
+          } else {
+            resultEl.ele("NS_IMPS").txt(String(lineScore.ns));
+            resultEl.ele("EW_IMPS").txt(String(lineScore.ew));
+          }
+        }
       }
     }
   }
@@ -147,8 +196,8 @@ export function generateUsebioXml(data: UsebioGameData): string {
       rankingEl.ele("RANK", {
         PAIR_NUMBER: entry.pairNumber,
         DIRECTION: entry.direction,
-        TOTAL_SCORE: String(entry.totalMp),
-        MAX_SCORE: String(entry.maxMp),
+        TOTAL_SCORE: String(entry.totalScore),
+        MAX_SCORE: String(entry.maxScore),
         PERCENTAGE: entry.percentage,
         PLACE: String(entry.place),
       });
@@ -196,26 +245,53 @@ function resultKey(r: UsebioBoardResult): string {
   return `${r.board}-${r.nsPairNumber}-${r.ewPairNumber}`;
 }
 
-type MatchpointResult = { ns: number; ew: number };
+type ScoreResult = { ns: number; ew: number };
 
-function computeBoardMatchpoints(
+/**
+ * Computes per-line scores for a board, excluding adjusted scores from the computation.
+ * Returns MP for MP scoring, or IMPs for IMP/XIMP scoring.
+ */
+function computeBoardScores(
   board: number,
   results: UsebioBoardResult[],
-): Map<string, MatchpointResult> {
-  const lines = results.map((r) => ({
+  scoringType: ScoringType,
+): Map<string, ScoreResult> {
+  // Filter out adjusted scores — they don't participate in normal scoring
+  const scorableResults = results.filter((r) => !isAdjustedScore(r.outcome));
+
+  const lines = scorableResults.map((r) => ({
     outcome: r.outcome,
     nsId: r.nsPairNumber,
     ewId: r.ewPairNumber,
   }));
 
-  const scored = scorePairMP(board, lines);
-  const map = new Map<string, MatchpointResult>();
+  const map = new Map<string, ScoreResult>();
 
-  for (const line of scored) {
-    map.set(`${board}-${line.nsId}-${line.ewId}`, {
-      ns: line.nsMatchPoints,
-      ew: line.ewMatchPoints,
-    });
+  if (scoringType === "MP") {
+    const scored = scorePairMP(board, lines);
+    for (const line of scored) {
+      map.set(`${board}-${line.nsId}-${line.ewId}`, {
+        ns: line.nsMatchPoints,
+        ew: line.ewMatchPoints,
+      });
+    }
+  } else if (scoringType === "IMP") {
+    const scored = scorePairIMP(board, lines);
+    for (const line of scored) {
+      map.set(`${board}-${line.nsId}-${line.ewId}`, {
+        ns: line.nsImps,
+        ew: line.ewImps,
+      });
+    }
+  } else {
+    // XIMP
+    const scored = scorePairXIMP(board, lines);
+    for (const line of scored) {
+      map.set(`${board}-${line.nsId}-${line.ewId}`, {
+        ns: line.nsCrossImps,
+        ew: line.ewCrossImps,
+      });
+    }
   }
 
   return map;
@@ -224,8 +300,8 @@ function computeBoardMatchpoints(
 type RankEntry = {
   pairNumber: string;
   direction: string;
-  totalMp: number;
-  maxMp: number;
+  totalScore: number;
+  maxScore: number;
   percentage: string;
   place: number;
 };
@@ -239,23 +315,71 @@ function computeOverallRanking(data: UsebioGameData): RankEntry[] {
   const boardGroups = groupBy(data.boardResults, (r) => r.board);
 
   for (const [boardNum, results] of boardGroups) {
-    const mpLines = computeBoardMatchpoints(boardNum, results);
+    const scoredLines = computeBoardScores(boardNum, results, data.scoringType);
 
-    for (const [key, mp] of mpLines) {
+    // Handle normally scored lines
+    for (const [key, lineScore] of scoredLines) {
       const parts = key.split("-");
       const nsId = parts[1];
       const ewId = parts[2];
-      const maxForBoard = mp.ns + mp.ew;
 
-      const nsEntry = totals.get(nsId) ?? { total: 0, max: 0, direction: "NS" };
-      nsEntry.total += mp.ns;
-      nsEntry.max += maxForBoard > 0 ? maxForBoard : 0;
-      totals.set(nsId, nsEntry);
+      if (data.scoringType === "MP") {
+        const maxForBoard = lineScore.ns + lineScore.ew;
 
-      const ewEntry = totals.get(ewId) ?? { total: 0, max: 0, direction: "EW" };
-      ewEntry.total += mp.ew;
-      ewEntry.max += maxForBoard > 0 ? maxForBoard : 0;
-      totals.set(ewId, ewEntry);
+        const nsEntry = totals.get(nsId) ?? { total: 0, max: 0, direction: "NS" };
+        nsEntry.total += lineScore.ns;
+        nsEntry.max += maxForBoard > 0 ? maxForBoard : 0;
+        totals.set(nsId, nsEntry);
+
+        const ewEntry = totals.get(ewId) ?? { total: 0, max: 0, direction: "EW" };
+        ewEntry.total += lineScore.ew;
+        ewEntry.max += maxForBoard > 0 ? maxForBoard : 0;
+        totals.set(ewId, ewEntry);
+      } else {
+        // IMP/XIMP — accumulate IMPs
+        const nsEntry = totals.get(nsId) ?? { total: 0, max: 0, direction: "NS" };
+        nsEntry.total += lineScore.ns;
+        totals.set(nsId, nsEntry);
+
+        const ewEntry = totals.get(ewId) ?? { total: 0, max: 0, direction: "EW" };
+        ewEntry.total += lineScore.ew;
+        totals.set(ewId, ewEntry);
+      }
+    }
+
+    // Handle adjusted scores
+    for (const result of results) {
+      if (!isAdjustedScore(result.outcome)) continue;
+      const adj = parseAdjustedScore(result.outcome);
+      if (!adj) continue;
+
+      if (data.scoringType === "MP") {
+        const maxMp = 2 * (results.length - 1);
+        const nsMp = Math.round((adj.ns / 100) * maxMp);
+        const ewMp = Math.round((adj.ew / 100) * maxMp);
+
+        const nsEntry = totals.get(result.nsPairNumber) ?? { total: 0, max: 0, direction: "NS" };
+        nsEntry.total += nsMp;
+        nsEntry.max += maxMp > 0 ? maxMp : 0;
+        totals.set(result.nsPairNumber, nsEntry);
+
+        const ewEntry = totals.get(result.ewPairNumber) ?? { total: 0, max: 0, direction: "EW" };
+        ewEntry.total += ewMp;
+        ewEntry.max += maxMp > 0 ? maxMp : 0;
+        totals.set(result.ewPairNumber, ewEntry);
+      } else {
+        // IMP/XIMP: AVE+ = +3, AVE = 0, AVE- = -3
+        const nsImps = adjustedImps(adj.ns);
+        const ewImps = adjustedImps(adj.ew);
+
+        const nsEntry = totals.get(result.nsPairNumber) ?? { total: 0, max: 0, direction: "NS" };
+        nsEntry.total += nsImps;
+        totals.set(result.nsPairNumber, nsEntry);
+
+        const ewEntry = totals.get(result.ewPairNumber) ?? { total: 0, max: 0, direction: "EW" };
+        ewEntry.total += ewImps;
+        totals.set(result.ewPairNumber, ewEntry);
+      }
     }
   }
 
@@ -268,8 +392,8 @@ function computeOverallRanking(data: UsebioGameData): RankEntry[] {
     entries.push({
       pairNumber,
       direction: pairData.direction,
-      totalMp: pairData.total,
-      maxMp: pairData.max,
+      totalScore: pairData.total,
+      maxScore: pairData.max,
       percentage,
       place: 0,
     });
