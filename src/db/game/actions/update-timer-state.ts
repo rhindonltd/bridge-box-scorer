@@ -1,9 +1,9 @@
 "use server";
 
-import { getDb as pairDb } from "@/db/games/pairs";
-import { GameType } from "@/db/games/types/game-type";
+import { getDb as pairDb } from "@/db/game";
+import { GameType } from "@/db/game/types/game-type";
 import { TimerState } from "@/timer/timer-state";
-import { metadata } from "@/db/games/shared/tables/metadata";
+import { metadata } from "@/db/game/tables/metadata";
 
 export async function updateTimerState(
   gameType: GameType,

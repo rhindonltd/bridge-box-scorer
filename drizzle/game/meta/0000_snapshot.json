@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b853ad94-9d7a-4be3-a0e1-b53ceb879df9",
+  "id": "b8c2073a-6591-4338-86cc-6f9b3d838d8f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "assignment": {
@@ -52,85 +52,29 @@
           "notNull": true,
           "autoincrement": false
         },
-        "n": {
-          "name": "n",
+        "ns": {
+          "name": "ns",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "s": {
-          "name": "s",
+        "ew": {
+          "name": "ew",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "e": {
-          "name": "e",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "w": {
-          "name": "w",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "n_result": {
-          "name": "n_result",
+        "confirmed_result": {
+          "name": "confirmed_result",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "s_result": {
-          "name": "s_result",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "e_result": {
-          "name": "e_result",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "w_result": {
-          "name": "w_result",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "n_lead": {
-          "name": "n_lead",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "s_lead": {
-          "name": "s_lead",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "e_lead": {
-          "name": "e_lead",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "w_lead": {
-          "name": "w_lead",
+        "confirmed_lead": {
+          "name": "confirmed_lead",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -162,7 +106,11 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "boards_round_number_table_number_board_number_pk": {
-          "columns": ["round_number", "table_number", "board_number"],
+          "columns": [
+            "round_number",
+            "table_number",
+            "board_number"
+          ],
           "name": "boards_round_number_table_number_board_number_pk"
         }
       },
@@ -203,8 +151,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "player": {
-          "name": "player",
+        "player1": {
+          "name": "player1",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "player2": {
+          "name": "player2",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -218,14 +173,40 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "participant_player1_player2_unique": {
+          "name": "participant_player1_player2_unique",
+          "columns": [
+            "player1",
+            "player2"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {
-        "participant_player_players_id_fk": {
-          "name": "participant_player_players_id_fk",
+        "participant_player1_players_id_fk": {
+          "name": "participant_player1_players_id_fk",
           "tableFrom": "participant",
           "tableTo": "players",
-          "columnsFrom": ["player"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "player1"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "participant_player2_players_id_fk": {
+          "name": "participant_player2_players_id_fk",
+          "tableFrom": "participant",
+          "tableTo": "players",
+          "columnsFrom": [
+            "player2"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

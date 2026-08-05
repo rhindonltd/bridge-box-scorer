@@ -11,7 +11,7 @@ import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
 import { scoreXIMP as scorePairXIMP } from "@/scoring/traveller/pair/x-imp";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { ScoringType } from "@/db/game/types/scoring-type";
 
 /**
  * USEBIO 1.2 XML Generator

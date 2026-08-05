@@ -1,8 +1,8 @@
 "use server";
 
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { getDb as getPairsDb } from "@/db/game";
+import { boards as pairsBoards } from "@/db/game/tables/boards";
+import { findPairs } from "@/db/game/queries/find-pairs";
 import {
   score,
   ScoredTraveller,

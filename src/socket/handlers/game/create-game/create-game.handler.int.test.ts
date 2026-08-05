@@ -22,7 +22,7 @@ vi.mock("@/db/system/actions/create-login-session", () => ({
 }));
 
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
-import { createGameDb } from "@/db/games/actions/create-game";
+import { createGameDb } from "@/db/game/actions/create-game";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
 import { registerCreateGameHandler } from "./create-game.handler";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Player } from "@/db/games/shared/tables/players";
+import { Player } from "@/db/game/tables/players";
 import { Seat } from "@/model/participants";
 import PlayerCard from "@/components/common/PlayerCard";
 import TableCompassLayout from "@/components/layout/TableCompassLayout";

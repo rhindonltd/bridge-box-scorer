@@ -3,10 +3,10 @@ import { Server, Socket } from "socket.io";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 
-import { createPlayer } from "@/db/games/shared/actions/create-player";
+import { createPlayer } from "@/db/game/actions/create-player";
 
-import { createParticipant as createPair } from "@/db/games/pairs/actions/create-participant";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { createParticipant as createPair } from "@/db/game/actions/create-participant";
+import { findPairs } from "@/db/game/queries/find-pairs";
 
 import { NewParticipant } from "@/model/participants";
 import { assertDirector } from "@/socket/middleware/director-auth";

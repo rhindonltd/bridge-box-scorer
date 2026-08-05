@@ -1,4 +1,4 @@
-import { Player } from "@/db/games/shared/tables/players";
+import { Player } from "@/db/game/tables/players";
 import React from "react";
 
 interface Props {

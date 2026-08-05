@@ -24,9 +24,9 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import { createPlayer } from "@/db/games/shared/actions/create-player";
-import { createParticipant as createPair } from "@/db/games/pairs/actions/create-participant";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { createPlayer } from "@/db/game/actions/create-player";
+import { createParticipant as createPair } from "@/db/game/actions/create-participant";
+import { findPairs } from "@/db/game/queries/find-pairs";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateParticipantHandler } from "./create-participant";
 

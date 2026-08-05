@@ -1,11 +1,11 @@
 "use server";
 
 import { eq, or } from "drizzle-orm";
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
-import { assignments as pairAssignments } from "@/db/games/pairs/tables/assignments";
-import { participants as pairParticipants } from "@/db/games/pairs/tables/participants";
-import { players } from "@/db/games/shared/tables/players";
+import { getDb as getPairsDb } from "@/db/game";
+import { boards as pairsBoards } from "@/db/game/tables/boards";
+import { assignments as pairAssignments } from "@/db/game/tables/assignments";
+import { participants as pairParticipants } from "@/db/game/tables/participants";
+import { players } from "@/db/game/tables/players";
 
 export async function getPlayerSchedule(
   gameId: string,

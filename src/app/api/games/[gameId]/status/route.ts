@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { updateGameStatus } from "@/db/game-index/actions/update-game-status";
-import { GameStatuses, GameStatus } from "@/db/games/types/game-status";
+import { GameStatuses, GameStatus } from "@/db/game/types/game-status";
 
 export async function POST(
   req: Request,

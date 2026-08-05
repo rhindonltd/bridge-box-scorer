@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useGame } from "@/context/GameContext";
 import { getDirectorToken } from "@/lib/director-token";
-import { GameStatus } from "@/db/games/types/game-status";
+import { GameStatus } from "@/db/game/types/game-status";
 
 const STATUS_OPTIONS: { value: GameStatus; label: string }[] = [
   { value: "CREATED", label: "Created" },

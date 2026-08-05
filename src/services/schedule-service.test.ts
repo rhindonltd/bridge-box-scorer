@@ -31,7 +31,7 @@ vi.mock("drizzle-orm", () => ({
   or: vi.fn((...args: any[]) => args),
 }));
 
-import { getDb as getPairsDb } from "@/db/games/pairs";
+import { getDb as getPairsDb } from "@/db/game";
 
 describe("schedule-service", () => {
   beforeEach(() => {

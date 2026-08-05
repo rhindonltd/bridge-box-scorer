@@ -8,8 +8,8 @@ vi.mock("@/db/game-index/queries", () => ({
 }));
 
 import { findJoinableGames } from "@/db/game-index/queries";
-import { GameType } from "@/db/games/types/game-type";
-import { GameStatus } from "@/db/games/types/game-status";
+import { GameType } from "@/db/game/types/game-type";
+import { GameStatus } from "@/db/game/types/game-status";
 
 describe("GET /api/games/joinable", () => {
   beforeEach(() => {

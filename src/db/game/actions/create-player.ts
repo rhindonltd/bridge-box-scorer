@@ -1,8 +1,8 @@
 "use server";
 
-import { getDb as pairDb } from "@/db/games/pairs";
-import { NewPlayer, Player, players } from "@/db/games/shared/tables/players";
-import { GameType } from "@/db/games/types/game-type";
+import { getDb as pairDb } from "@/db/game";
+import { NewPlayer, Player, players } from "@/db/game/tables/players";
+import { GameType } from "@/db/game/types/game-type";
 
 export async function createPlayer(
   gameType: GameType,

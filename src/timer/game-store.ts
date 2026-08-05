@@ -1,7 +1,7 @@
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
-import { findTimerState } from "@/db/games/shared/queries/find-timer-state";
-import { GameType } from "@/db/games/types/game-type";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { findTimerState } from "@/db/game/queries/find-timer-state";
+import { GameType } from "@/db/game/types/game-type";
+import { updateTimerState } from "@/db/game/actions/update-timer-state";
 import { TimerState } from "@/timer/timer-state";
 
 const gameMap = new Map<string, BridgeTimerEngine>();

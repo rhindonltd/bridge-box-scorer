@@ -2,9 +2,9 @@ import { Server, Socket } from "socket.io";
 import { SocketEvents } from "@/socket/socket-events";
 import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
-import { createGameDb } from "@/db/games/actions/create-game";
+import { createGameDb } from "@/db/game/actions/create-game";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
-import { GameType } from "@/db/games/types/game-type";
+import { GameType } from "@/db/game/types/game-type";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
 
 /**

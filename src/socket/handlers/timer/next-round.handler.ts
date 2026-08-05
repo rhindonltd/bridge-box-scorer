@@ -1,13 +1,13 @@
 import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
 import { Server, Socket } from "socket.io";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { updateTimerState } from "@/db/game/actions/update-timer-state";
 import { Rooms } from "@/socket/rooms";
 import { scheduleGame } from "@/timer/scheduler";
 import { TimerState } from "@/timer/timer-state";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
-import { GameTypes } from "@/db/games/types/game-type";
+import { GameTypes } from "@/db/game/types/game-type";
 
 const payloadSchema = z.object({
   gameType: z.enum(GameTypes),

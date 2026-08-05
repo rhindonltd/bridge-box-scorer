@@ -1,4 +1,4 @@
-import { NewPlayer } from "@/db/games/shared/tables/players";
+import { NewPlayer } from "@/db/game/tables/players";
 import { NextRequest, NextResponse } from "next/server";
 
 const players = [

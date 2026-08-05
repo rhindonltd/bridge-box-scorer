@@ -19,7 +19,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { findPairs } from "@/db/game/queries/find-pairs";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerUpdateTablesHandler } from "./update-tables.handler";
 

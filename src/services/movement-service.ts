@@ -1,7 +1,7 @@
 "use server";
 
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
+import { getDb as getPairsDb } from "@/db/game";
+import { boards as pairsBoards } from "@/db/game/tables/boards";
 import { isBoardEntered } from "@/lib/round-status";
 
 export async function getMovementWithProgress(

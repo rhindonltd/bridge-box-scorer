@@ -5,7 +5,7 @@ import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import Button from "@/components/common/Button";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
-import { GameType } from "@/db/games/types/game-type";
+import { GameType } from "@/db/game/types/game-type";
 
 export type EventDetails = {
   eventName: string;

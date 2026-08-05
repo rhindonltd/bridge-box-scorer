@@ -1,7 +1,7 @@
 import type { Config } from "drizzle-kit";
 
 export default {
-  schema: "./src/db/games/pairs/schema.ts",
-  out: "./drizzle/games/pairs",
+  schema: "./src/db/game/schema.ts",
+  out: "./drizzle/game",
   dialect: "sqlite",
 } satisfies Config;

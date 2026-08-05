@@ -1,7 +1,7 @@
-import { getDb } from "@/db/games/pairs";
-import { players } from "@/db/games/shared/tables/players";
+import { getDb } from "@/db/game";
+import { players } from "@/db/game/tables/players";
 import { eq, sql } from "drizzle-orm";
-import { participants } from "@/db/games/pairs/tables/participants";
+import { participants } from "@/db/game/tables/participants";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Pair } from "@/model/participants";
 

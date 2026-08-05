@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NewPlayer } from "@/db/games/shared/tables/players";
+import { NewPlayer } from "@/db/game/tables/players";
 import PlayerSearch from "@/components/pages/join/PlayerSearch";
 import { parseSeat, Seat } from "@/model/participants";
 

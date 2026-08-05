@@ -1,4 +1,4 @@
-import { NewPlayer, Player } from "@/db/games/shared/tables/players";
+import { NewPlayer, Player } from "@/db/game/tables/players";
 import { PairDirection, PairDirections } from "@/model/common";
 
 export interface ParticipantsByMode {

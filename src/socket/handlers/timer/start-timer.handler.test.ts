@@ -18,7 +18,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 import { getEngine } from "@/timer/game-store";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { updateTimerState } from "@/db/game/actions/update-timer-state";
 import { scheduleGame } from "@/timer/scheduler";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerStartTimerHandler } from "./start-timer.handler";

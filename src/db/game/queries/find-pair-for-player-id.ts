@@ -1,9 +1,9 @@
-import { getDb } from "@/db/games/pairs";
+import { getDb } from "@/db/game";
 import { or, eq } from "drizzle-orm";
 import {
   Participant,
   participants,
-} from "@/db/games/pairs/tables/participants";
+} from "@/db/game/tables/participants";
 
 export async function findPairForPlayerId(
   gameId: string,

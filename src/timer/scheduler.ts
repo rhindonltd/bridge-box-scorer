@@ -1,4 +1,4 @@
-import { GameType } from "@/db/games/types/game-type";
+import { GameType } from "@/db/game/types/game-type";
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
 import { TimerState } from "@/timer/timer-state";
 

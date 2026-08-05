@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findClub } from "@/db/system/queries/find-club";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards } from "@/db/games/pairs/tables/boards";
+import { findPairs } from "@/db/game/queries/find-pairs";
+import { getDb as getPairsDb } from "@/db/game";
+import { boards } from "@/db/game/tables/boards";
 import {
   generateUsebioXml,
   UsebioGameData,
@@ -68,9 +68,6 @@ export async function GET(
     const usebioPairs: UsebioPair[] = pairs.map((pair) => {
       // Parse direction from initialSeat (e.g., "1NS" → table 1, direction NS)
       const direction = pair.initialSeat.endsWith("NS") ? "N" : "E";
-      // Pair number is the table number + direction identifier
-      const tableNumber = pair.initialSeat.slice(0, -2);
-      const pairNumber = `${tableNumber}${direction === "N" ? "" : "E"}`;
 
       return {
         pairNumber: pair.initialSeat, // Use initialSeat as pair ID

@@ -1,4 +1,4 @@
-import { Player } from "@/db/games/shared/tables/players";
+import { Player } from "@/db/game/tables/players";
 import { PairTraveller } from "@/model/traveller";
 
 export const players: Map<string, Player[]> = new Map([

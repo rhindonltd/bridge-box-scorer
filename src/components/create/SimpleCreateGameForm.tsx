@@ -7,7 +7,7 @@ import Button from "@/components/common/Button";
 import { NumberStepperField } from "@/components/common/NumberStepperField";
 import { ToggleField } from "@/components/common/ToggleField";
 import { NewBridgeGame } from "@/db/game-index/schema";
-import { GameType } from "../../db/games/types/game-type";
+import { GameType } from "@/db/game/types/game-type";
 
 type Props = {
   onCreateGame: (game: NewBridgeGame) => void;

@@ -9,7 +9,7 @@ import { swrKeys } from "@/swr/swr-keys";
 import { useState } from "react";
 import useSWR from "swr";
 import { Pair, PairSeat, Seat } from "@/model/participants";
-import { NewPlayer } from "@/db/games/shared/tables/players";
+import { NewPlayer } from "@/db/game/tables/players";
 import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
 import { GameInfo } from "@/components/common/GameInfo";
 import { createParticipant } from "@/lib/game-service";

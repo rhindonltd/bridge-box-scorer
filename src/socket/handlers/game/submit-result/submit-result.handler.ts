@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io";
 import { eq, and } from "drizzle-orm";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
+import { getDb as getPairsDb } from "@/db/game";
+import { boards as pairsBoards } from "@/db/game/tables/boards";
 
 /**
  * In-memory store for pending submissions.

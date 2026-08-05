@@ -249,7 +249,7 @@ describe("registerSubmitResultHandler", () => {
 
   it("returns error on internal failure", async () => {
     // Make getDb throw
-    const { getDb } = await import("@/db/games/pairs");
+    const { getDb } = await import("@/db/game");
     vi.mocked(getDb).mockRejectedValueOnce(new Error("DB fail"));
 
     const socket = makeSocket();

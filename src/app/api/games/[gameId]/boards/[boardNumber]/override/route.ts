@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
+import { getDb as getPairsDb } from "@/db/game";
+import { boards as pairsBoards } from "@/db/game/tables/boards";
 
 export async function POST(
   req: Request,

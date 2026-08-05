@@ -26,8 +26,8 @@ vi.mock("@/scoring/overall/pair/x-imp", () => ({
   calculateOverallXIMPResults: vi.fn(),
 }));
 
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { getDb as getPairsDb } from "@/db/game";
+import { findPairs } from "@/db/game/queries/find-pairs";
 import { score } from "@/scoring/traveller/score-traveller";
 import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
 import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";

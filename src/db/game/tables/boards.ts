@@ -4,7 +4,7 @@ import {
   integer,
   primaryKey,
 } from "drizzle-orm/sqlite-core";
-import { BoardStatuses } from "@/db/games/types/board-status";
+import { BoardStatuses } from "@/db/game/types/board-status";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 

@@ -26,8 +26,7 @@
     "run_game_index_migration": "npx drizzle-kit migrate --config=drizzle.config.game-index.ts",
     "generate_system_migration": "npx drizzle-kit generate --config=drizzle.config.system.ts",
     "run_system_migration": "npx drizzle-kit migrate --config=drizzle.config.system.ts",
-    "generate_individual_migration": "npx drizzle-kit generate --config=drizzle.config.game.individual.ts",
-    "generate_pairs_migration": "npx drizzle-kit generate --config=drizzle.config.game.pairs.ts",
+    "generate_game_migration": "npx drizzle-kit generate --config=drizzle.config.game.ts",
     "sync:ebu-players": "tsx --env-file=.env src/scripts/sync-ebu-players.ts",
     "seed-movements": "tsx --env-file=.env src/scripts/seed-movements.ts"
   },

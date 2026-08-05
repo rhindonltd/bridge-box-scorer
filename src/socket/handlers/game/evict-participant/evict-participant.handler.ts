@@ -3,8 +3,8 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
-import { deleteParticipant as deletePairParticipant } from "@/db/games/pairs/actions/delete-participant";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { deleteParticipant as deletePairParticipant } from "@/db/game/actions/delete-participant";
+import { findPairs } from "@/db/game/queries/find-pairs";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { PairSeat } from "@/model/participants";
 

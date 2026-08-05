@@ -8,8 +8,8 @@ vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
-import { findTimerState } from "@/db/games/shared/queries/find-timer-state";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { findTimerState } from "@/db/game/queries/find-timer-state";
+import { updateTimerState } from "@/db/game/actions/update-timer-state";
 import { createEngine, getEngine, getAllEngines } from "./game-store";
 import type { TimerState } from "./timer-state";
 
