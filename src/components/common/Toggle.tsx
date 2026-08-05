@@ -9,6 +9,7 @@ export function Toggle({ value, onSwitch, offLabel, onLabel }: Props) {
   return (
     <div className="inline-flex rounded-xl bg-gray-100 p-1">
       <button
+        type="button"
         onClick={onSwitch}
         className={`px-4 py-2 text-sm font-medium rounded-lg transition
           ${
@@ -21,6 +22,7 @@ export function Toggle({ value, onSwitch, offLabel, onLabel }: Props) {
       </button>
 
       <button
+        type="button"
         onClick={onSwitch}
         className={`px-4 py-2 text-sm font-medium rounded-lg transition
           ${
