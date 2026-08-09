@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function JoinPage() {
+export default function JoinRoute() {
   redirect("/join/select-game");
 }

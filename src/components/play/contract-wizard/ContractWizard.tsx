@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 
 import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
 import { Card, Direction, Rank, Suit } from "@/model/common";
@@ -44,7 +44,8 @@ export function ContractWizard({
   // Step state
   const [step, setStep] = useState(0);
   const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
-  const [pickingBoard, setPickingBoard] = useState(false);
+  const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Contract state
   const [level, setLevel] = useState<Level | null>(null);
@@ -62,14 +63,31 @@ export function ContractWizard({
   const [resultMode, setResultMode] = useState<"made" | "down">("made");
   const [resultValue, setResultValue] = useState(0);
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!boardDropdownOpen) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setBoardDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [boardDropdownOpen]);
+
   // --- Board selection handler ---
 
   const handleBoardSelected = (board: number) => {
     setSelectedBoard(board);
+    setBoardDropdownOpen(false);
     if (step === 0) {
       setStep(1);
     }
-    setPickingBoard(false);
   };
 
   // --- Step transition handlers ---
@@ -126,9 +144,6 @@ export function ContractWizard({
       const lead: Card | null =
         leadSuit && leadRank ? (`${leadSuit}${leadRank}` as Card) : null;
 
-      // Convert resultMode + resultValue to a numeric result
-      // "made" with value 0 means exactly made (=), value > 0 means overtricks
-      // "down" means undertricks (negative)
       const numericResult = resultMode === "down" ? -resultValue : resultValue;
 
       onComplete({ contract, result: numericResult, lead });
@@ -138,10 +153,6 @@ export function ContractWizard({
   // --- Back arrow logic ---
 
   const handleBack = () => {
-    if (pickingBoard) {
-      setPickingBoard(false);
-      return;
-    }
     switch (step) {
       case 1:
         setStep(0);
@@ -164,11 +175,11 @@ export function ContractWizard({
     }
   };
 
-  const showBackArrow = pickingBoard || step > 0;
+  const showBackArrow = step > 0;
 
   // --- Sub-header (blue bar) ---
 
-  const showBoardButton = selectedBoard !== null && step !== 0 && !pickingBoard;
+  const showBoardButton = selectedBoard !== null && step !== 0;
 
   const subHeader = (
     <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
@@ -176,12 +187,39 @@ export function ContractWizard({
         Table {table}, Round {round}
       </span>
       {showBoardButton && (
-        <button
-          onClick={() => setPickingBoard(true)}
-          className="px-4 py-2 text-lg font-bold bg-white text-blue-900 rounded-lg border-2 border-blue-300 shadow-sm"
-        >
-          Board {selectedBoard}
-        </button>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            type="button"
+            onClick={() => setBoardDropdownOpen((v) => !v)}
+            className="px-4 py-2 text-lg font-bold bg-white text-blue-900 rounded-lg border-2 border-blue-300 shadow-sm flex items-center gap-1"
+          >
+            Board {selectedBoard}
+            <ChevronDown size={18} />
+          </button>
+
+          {boardDropdownOpen && (
+            <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 min-w-[140px] overflow-hidden">
+              {roundBoards.map((board) => {
+                const isPlayed = playedBoards.includes(board);
+                const isCurrent = board === selectedBoard;
+                return (
+                  <button
+                    key={board}
+                    type="button"
+                    disabled={isPlayed}
+                    onClick={() => handleBoardSelected(board)}
+                    className={`w-full px-4 py-2.5 text-left text-base font-semibold transition
+                      ${isCurrent ? "bg-blue-50 text-blue-900" : "text-gray-800 hover:bg-gray-50"}
+                      ${isPlayed ? "opacity-40 cursor-not-allowed line-through" : ""}
+                    `}
+                  >
+                    Board {board}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -222,7 +260,7 @@ export function ContractWizard({
   // --- Step rendering ---
 
   const renderStep = () => {
-    if (pickingBoard || step === 0) {
+    if (step === 0) {
       return (
         <StepBoard
           boards={roundBoards}
