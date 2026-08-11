@@ -2,7 +2,7 @@ import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import SelectGamePage from "./SelectGamePage";
 
 const meta: Meta<typeof SelectGamePage> = {
-  title: "Pages/JoinGame/SelectGamePage",
+  title: "Pages/Common/SelectGamePage",
   component: SelectGamePage,
   parameters: {
     layout: "fullscreen",

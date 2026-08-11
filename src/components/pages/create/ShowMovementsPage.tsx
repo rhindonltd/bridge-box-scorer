@@ -5,7 +5,7 @@ import { useGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
-import { MovementCard } from "@/components/pages/create/MovementCard";
+import { MovementCard } from "@/components/create/MovementCard";
 import Button from "@/components/common/Button";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
 import {

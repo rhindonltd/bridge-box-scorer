@@ -27,28 +27,6 @@ describe("SelectGamePage", () => {
     expect(screen.getByText("Select Game")).toBeInTheDocument();
   });
 
-  // it("renders SelectGame component", () => {
-  //   render(<SelectGamePage {...baseProps} />);
-  //
-  //   expect(screen.getByTestId("select-game")).toBeInTheDocument();
-  // });
-
-  // it("passes games to SelectGame", () => {
-  //   render(<SelectGamePage {...baseProps} />);
-  //
-  //   expect(screen.getByText("2 games")).toBeInTheDocument();
-  // });
-
-  // it("calls onGameSelected from child", () => {
-  //   const fn = vi.fn();
-  //
-  //   render(<SelectGamePage {...baseProps} onGameSelected={fn} />);
-  //
-  //   screen.getByText("Select").click();
-  //
-  //   expect(fn).toHaveBeenCalled();
-  // });
-
   it("renders correct header styling", () => {
     const { container } = render(<SelectGamePage {...baseProps} />);
 

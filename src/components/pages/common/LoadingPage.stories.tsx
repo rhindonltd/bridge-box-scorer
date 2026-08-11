@@ -2,7 +2,7 @@ import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { LoadingPage } from "./LoadingPage";
 
 const meta: Meta<typeof LoadingPage> = {
-  title: "Pages/Create/LoadingPage",
+  title: "Pages/Common/LoadingPage",
   component: LoadingPage,
   parameters: {
     layout: "fullscreen",

@@ -6,7 +6,7 @@ import { withGame } from "@storybook/decorators/GameDecorator";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
 const meta: Meta<typeof SelectSeatPage> = {
-  title: "Pages/JoinGame/SelectSeatPage",
+  title: "Pages/Join/SelectSeatPage",
   component: SelectSeatPage,
   parameters: {
     layout: "fullscreen",

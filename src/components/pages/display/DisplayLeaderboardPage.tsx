@@ -2,8 +2,8 @@
 
 import { useGame } from "@/context/GameContext";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { GameInfo } from "../../common/GameInfo";
-import { Leaderboard } from "../../results/leaderboard/Leaderboard";
+import { GameInfo } from "@/components/common/GameInfo";
+import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 

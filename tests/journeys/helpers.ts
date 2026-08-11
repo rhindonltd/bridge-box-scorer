@@ -77,7 +77,7 @@ export async function createGameStep(
 }
 
 /**
- * Director selects a movement on the /create/[id] page.
+ * Director selects a movement on the /create/[gameId] page.
  * After game creation the page is on the tables step, so we first
  * click "Select Movement" to navigate to the movements list, then
  * click the first matching movement card.

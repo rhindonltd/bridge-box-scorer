@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { ErrorPage } from "./ErrorPage";
 
 const meta: Meta<typeof ErrorPage> = {
-  title: "Pages/Create/ErrorPage",
+  title: "Pages/Common/ErrorPage",
   component: ErrorPage,
   parameters: {
     layout: "fullscreen",

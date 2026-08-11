@@ -44,7 +44,7 @@ test("Movement selection and player schedule display", async ({
 
     // Step 2: After game creation, the page shows table view on /create/[id]
     // Navigate to the movements step by clicking "Select Movement"
-    await test.step("Director navigates to movement selection on /create/[id]", async () => {
+    await test.step("Director navigates to movement selection on /create/[gameId]", async () => {
       // After game creation we're on /create/[id] which shows the tables step first
       const selectMovementButton = directorPage.getByRole("button", {
         name: "Select Movement",
