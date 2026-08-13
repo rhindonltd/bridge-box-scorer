@@ -3,7 +3,7 @@
 import { useGame } from "@/context/GameContext";
 import { Pair, PairSeat, Participant, Seat } from "@/model/participants";
 import { useState } from "react";
-import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
+import EnterPlayerNames from "@/components/join/EnterPlayerNames";
 import { swrKeys } from "@/swr/swr-keys";
 import { fetcher } from "@/lib/fetcher";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
@@ -12,7 +12,7 @@ import useSWR from "swr";
 import { NewPlayer } from "@/db/games/shared/tables/players";
 import { createParticipant } from "@/lib/game-service";
 import { GameInfo } from "@/components/common/GameInfo";
-import SelectPairsTable from "@/components/join/pairs/SelectPairsTable";
+import SelectPairsTable from "@/components/join/SelectTable";
 
 interface Props {
   onSeatSelected: (seat: Seat) => void;
@@ -98,7 +98,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
         `}
       >
         {selectedSeat && (
-          <EnterPairPlayerNames
+          <EnterPlayerNames
             seat={selectedSeat}
             onSubmitPair={handlePairSubmitted}
           />

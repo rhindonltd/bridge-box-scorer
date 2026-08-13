@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import SelectPairsTable from "./SelectPairsTable";
+import SelectTable from "./SelectTable";
 import { vi } from "vitest";
 
-const meta: Meta<typeof SelectPairsTable> = {
-  title: "Components/JoinGame/SelectPairsTable",
-  component: SelectPairsTable,
+const meta: Meta<typeof SelectTable> = {
+  title: "Components/Join/SelectPairsTable",
+  component: SelectTable,
   parameters: {
     layout: "fullscreen",
   },
@@ -16,7 +16,7 @@ const meta: Meta<typeof SelectPairsTable> = {
 
 export default meta;
 
-type Story = StoryObj<typeof SelectPairsTable>;
+type Story = StoryObj<typeof SelectTable>;
 
 export const Default: Story = {
   args: {

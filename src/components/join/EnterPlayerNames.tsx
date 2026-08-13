@@ -8,7 +8,7 @@ interface Props {
   onSubmitPair: (player1: NewPlayer, player2: NewPlayer) => void;
 }
 
-export default function EnterPairPlayerNames({ seat, onSubmitPair }: Props) {
+export default function EnterPlayerNames({ seat, onSubmitPair }: Props) {
   const [player1, setPlayer1] = useState<NewPlayer | null>(null);
   const [player2, setPlayer2] = useState<NewPlayer | null>(null);
 

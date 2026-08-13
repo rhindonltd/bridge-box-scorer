@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import SelectPairsTable from "./SelectPairsTable";
+import SelectTable from "./SelectTable";
 import { Pair } from "@/model/participants";
 
 const makePlayer = (id: number) => ({
@@ -25,7 +25,7 @@ describe("SelectPairsTable", () => {
   };
 
   it("renders instruction text", () => {
-    render(<SelectPairsTable {...baseProps} />);
+    render(<SelectTable {...baseProps} />);
     expect(
       screen.getByText(
         "Please select the table and direction you are sitting:",
@@ -34,7 +34,7 @@ describe("SelectPairsTable", () => {
   });
 
   it("renders correct number of tables", () => {
-    render(<SelectPairsTable {...baseProps} tables={3} />);
+    render(<SelectTable {...baseProps} tables={3} />);
     expect(screen.getByText("Table 1")).toBeInTheDocument();
     expect(screen.getByText("Table 2")).toBeInTheDocument();
     expect(screen.getByText("Table 3")).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe("SelectPairsTable", () => {
 
   it("disables NS button when assigned", () => {
     render(
-      <SelectPairsTable
+      <SelectTable
         tables={1}
         onSeatSelected={vi.fn()}
         startingPositions={[makePair(1, "NS")]}
@@ -53,7 +53,7 @@ describe("SelectPairsTable", () => {
 
   it("disables EW button when assigned", () => {
     render(
-      <SelectPairsTable
+      <SelectTable
         tables={1}
         onSeatSelected={vi.fn()}
         startingPositions={[makePair(1, "EW")]}
@@ -64,7 +64,7 @@ describe("SelectPairsTable", () => {
 
   it("marks table as full when both directions are assigned", () => {
     const { container } = render(
-      <SelectPairsTable
+      <SelectTable
         tables={1}
         onSeatSelected={vi.fn()}
         startingPositions={[makePair(1, "NS"), makePair(1, "EW")]}
@@ -75,7 +75,7 @@ describe("SelectPairsTable", () => {
 
   it("does not disable unrelated table buttons", () => {
     render(
-      <SelectPairsTable
+      <SelectTable
         tables={2}
         onSeatSelected={vi.fn()}
         startingPositions={[makePair(1, "NS")]}
@@ -86,7 +86,7 @@ describe("SelectPairsTable", () => {
   });
 
   it("renders grid structure", () => {
-    const { container } = render(<SelectPairsTable {...baseProps} />);
+    const { container } = render(<SelectTable {...baseProps} />);
     expect(container.querySelector(".grid")).toBeInTheDocument();
   });
 });

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { AwaitingMovement } from "@/components/join/AwaitingMovement";
 
 const meta: Meta<typeof AwaitingMovement> = {
-  title: "Components/JoinGame/AwaitingMovement",
+  title: "Components/Join/AwaitingMovement",
   component: AwaitingMovement,
   parameters: {
     layout: "fullscreen",

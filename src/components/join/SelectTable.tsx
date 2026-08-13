@@ -8,7 +8,7 @@ interface Props {
   startingPositions: Pair[];
 }
 
-export default function SelectPairsTable({
+export default function SelectTable({
   tables,
   onSeatSelected,
   startingPositions,
