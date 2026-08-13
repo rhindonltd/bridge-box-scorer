@@ -1,6 +1,6 @@
 "use client";
 
-import { OpeningLead } from "@/components/play/OpeningLead";
+import { OpeningLead } from "@/components/play/contract-wizard/OpeningLead";
 import { Card, Rank, Suit } from "@/model/common";
 
 type Props = {
