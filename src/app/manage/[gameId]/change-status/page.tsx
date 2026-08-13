@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useGame } from "@/context/GameContext";
-import { ChangeStatusPage } from "@/components/pages/manage/change-status/ChangeStatusPage";
+import { ChangeStatusPage } from "@/components/pages/manage/ChangeStatusPage";
 
 export default function ChangeStatusRoute() {
   const router = useRouter();

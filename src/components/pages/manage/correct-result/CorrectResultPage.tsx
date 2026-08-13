@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useGame } from "@/context/GameContext";
-import { BoardInstance } from "./SelectInstancePage";
 import {
   DirectorContractWizard,
   DirectorWizardResult,
@@ -11,7 +10,7 @@ import { parseContract } from "@/model/contract";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { getDirectorToken } from "@/lib/director-token";
 import { SelectBoardPage } from "./SelectBoardPage";
-import { TravellerView } from "./TravellerView";
+import {BoardInstance, TravellerView } from "./TravellerView";
 
 interface CorrectResultPageProps {
   onResultCorrected: () => void;

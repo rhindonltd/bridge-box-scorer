@@ -1,22 +1,22 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { CorrectResultPage } from "./CorrectResultPage";
+import { ChangeStatusPage } from "./ChangeStatusPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
-const meta: Meta<typeof CorrectResultPage> = {
-  title: "Pages/Manage/CorrectResult/CorrectResultPage",
-  component: CorrectResultPage,
+const meta: Meta<typeof ChangeStatusPage> = {
+  title: "Pages/Manage/ChangeStatusPage",
+  component: ChangeStatusPage,
   parameters: {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
   args: {
-    onResultCorrected: fn(),
+    onStatusChanged: fn(),
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof CorrectResultPage>;
+type Story = StoryObj<typeof ChangeStatusPage>;
 
 export const Default: Story = {
     decorators: [

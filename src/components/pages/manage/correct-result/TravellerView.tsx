@@ -1,8 +1,24 @@
 "use client";
 
-import { BoardInstance } from "@/components/pages/manage/correct-result/SelectInstancePage";
 import { BoardResult as ContractDisplay } from "@/components/results/traveller/BoardResult";
 import { BoardOutcome } from "@/model/score";
+
+interface PairsParticipants {
+    type: "PAIRS";
+    ns: string;
+    ew: string;
+    nsNames?: string | null;
+    ewNames?: string | null;
+}
+
+export interface BoardInstance {
+    roundNumber: number;
+    tableNumber: number;
+    boardNumber: number;
+    participants: PairsParticipants;
+    currentResult: string | null;
+    status: string | null;
+}
 
 interface TravellerViewProps {
   boardNumber: number;
