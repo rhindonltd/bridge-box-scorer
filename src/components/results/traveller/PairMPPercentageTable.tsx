@@ -13,28 +13,31 @@ export function PairMPPercentageTable({ scoredTraveller }: Props) {
     return (mp / maxMP) * 100;
   }
 
+  const rows = scoredTraveller.lines
+    .filter((x) => x.score !== null)
+    .sort((a, b) => b.nsMatchPoints - a.nsMatchPoints);
+
   return (
     <Table
       columns={["NS", "EW", "Contract", "NS Score", "NS %", "EW %"]}
-      body={scoredTraveller.lines
-        .filter((x) => x.score !== null)
-        .map((row, index, arr) => {
-          const isLast = index === arr.length - 1;
-          return (
-            <TableRow
-              key={index}
-              cells={[
-                `${row.nsId}`,
-                `${row.ewId}`,
-                <BoardResult key={index} boardOutcome={row.outcome} />,
-                row.score,
-                mpToPercent(row.nsMatchPoints).toFixed(2),
-                mpToPercent(row.ewMatchPoints).toFixed(2),
-              ]}
-              className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
-            />
-          );
-        })}
+      body={rows.map((row, index) => {
+        const isLast = index === rows.length - 1;
+
+        return (
+          <TableRow
+            key={index}
+            cells={[
+              `${row.nsId}`,
+              `${row.ewId}`,
+              <BoardResult key={index} boardOutcome={row.outcome} />,
+              row.score,
+              mpToPercent(row.nsMatchPoints).toFixed(2),
+              mpToPercent(row.ewMatchPoints).toFixed(2),
+            ]}
+            className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
+          />
+        );
+      })}
     />
   );
 }

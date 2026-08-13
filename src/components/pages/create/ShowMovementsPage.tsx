@@ -279,7 +279,7 @@ function MitchellCard({
           <div className="font-medium text-gray-900">{effectiveRounds}</div>
         </div>
         <div className="rounded-lg bg-white p-2 text-center">
-          <div className="text-xs text-gray-500">Boards/Round</div>
+          <div className="text-xs text-gray-500">Boards per Round</div>
           <div className="font-medium text-gray-900">{spec.boardsPerRound}</div>
         </div>
         <div className="rounded-lg bg-white p-2 text-center">

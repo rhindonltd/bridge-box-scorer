@@ -28,7 +28,7 @@ export const RedSuitContract: Story = {
 
 export const NoTrumpsContract: Story = {
   args: {
-    boardOutcome: "3NTN+1",
+    boardOutcome: "3NTN=",
   },
 };
 

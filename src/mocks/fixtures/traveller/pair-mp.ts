@@ -10,8 +10,8 @@ export const pairMpTraveller: ScoredTravellerOfType<"PAIR_MP"> = {
       ewId: "2",
       score: 420,
       maxMatchPoints: 4,
-      nsMatchPoints: 4,
-      ewMatchPoints: 0,
+      nsMatchPoints: 2,
+      ewMatchPoints: 2,
     },
     {
       outcome: "3NTW+1",
@@ -28,8 +28,8 @@ export const pairMpTraveller: ScoredTravellerOfType<"PAIR_MP"> = {
       ewId: "6",
       score: 450,
       maxMatchPoints: 4,
-      nsMatchPoints: 2,
-      ewMatchPoints: 2,
+      nsMatchPoints: 4,
+      ewMatchPoints: 0,
     },
   ],
 };
