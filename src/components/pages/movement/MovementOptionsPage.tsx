@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import SelectField, { SelectOption } from "@/components/common/SelectField";
-import { NumberStepperField } from "@/components/common/NumberStepperField";
 import FormCardLayout from "@/components/layout/FormCardLayout";
 import { GameInfo } from "@/components/common/GameInfo";
+import NumberStepper from "@/components/common/NumberStepper";
 
 type Props = {
   tables: number;
@@ -54,12 +54,16 @@ export default function MovementOptionsPage({ tables, onSubmit }: Props) {
             });
           }}
         >
-          <NumberStepperField
-            label="Number of arrow switched rounds:"
-            value={tables}
-            onChange={setArrowSwitchedRounds}
-            min={0}
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-600">
+              Number of arrow switched rounds:
+            </label>
+            <NumberStepper
+              value={tables}
+              onChange={setArrowSwitchedRounds}
+              min={0}
+            />
+          </div>
 
           <SelectField
             label="Missing Pair:"

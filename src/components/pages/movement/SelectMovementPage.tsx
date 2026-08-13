@@ -2,9 +2,9 @@
 
 import React, { useMemo, useState } from "react";
 import SelectField from "@/components/common/SelectField";
-import { NumberStepperField } from "@/components/common/NumberStepperField";
 import FormCardLayout from "@/components/layout/FormCardLayout";
 import { GameInfo } from "@/components/common/GameInfo";
+import NumberStepper from "@/components/common/NumberStepper";
 
 type Props = {
   tables: number;
@@ -70,19 +70,23 @@ export default function SelectMovementPage({ tables, onConfirm }: Props) {
             onConfirm(movement!);
           }}
         >
-          <NumberStepperField
-            label="Number of rounds:"
-            value={rounds}
-            onChange={setRounds}
-            min={2}
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-600">
+              Number of rounds:
+            </label>
+            <NumberStepper value={rounds} onChange={setRounds} min={2} />
+          </div>
 
-          <NumberStepperField
-            label="Boards per round:"
-            value={boardsPerRound}
-            onChange={setBoardsPerRound}
-            min={2}
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-600">
+              Boards per round:
+            </label>
+            <NumberStepper
+              value={boardsPerRound}
+              onChange={setBoardsPerRound}
+              min={2}
+            />
+          </div>
 
           <SelectField
             label="Movement"

@@ -4,10 +4,10 @@ import { useState } from "react";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import Button from "@/components/common/Button";
-import { NumberStepperField } from "@/components/common/NumberStepperField";
 import { ToggleField } from "@/components/common/ToggleField";
 import { NewBridgeGame } from "@/db/game-index/schema";
-import { GameType } from "../../db/games/types/game-type";
+import { GameType } from "@/db/games/types/game-type";
+import NumberStepper from "@/components/common/NumberStepper";
 
 type Props = {
   onCreateGame: (game: NewBridgeGame) => void;
@@ -67,12 +67,10 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
             onSelect={setGameType}
           />
 
-          <NumberStepperField
-            label="Tables"
-            value={tables}
-            onChange={setTables}
-            min={1}
-          />
+            <div className="flex flex-col gap-1">
+                <label className="text-sm font-semibold text-gray-600">Tables</label>
+                <NumberStepper value={tables} onChange={setTables} min={1} />
+            </div>
 
           <ToggleField
             label="Record Opening Lead"

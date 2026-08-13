@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useGame } from "@/context/GameContext";
-import ChangeStatusPage from "@/components/pages/manage/change-status/ChangeStatusPage";
+import { ChangeStatusPage } from "@/components/pages/manage/change-status/ChangeStatusPage";
 
 export default function ChangeStatusRoute() {
   const router = useRouter();
@@ -10,5 +10,9 @@ export default function ChangeStatusRoute() {
 
   if (!game) return null;
 
-  return (<ChangeStatusPage onStatusChanged={() => router.replace(`/manage/${game.gameId}/menu`)} />);
+  return (
+    <ChangeStatusPage
+      onStatusChanged={() => router.replace(`/manage/${game.gameId}/menu`)}
+    />
+  );
 }

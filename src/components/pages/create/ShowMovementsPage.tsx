@@ -12,8 +12,8 @@ import {
   MovementDetailView,
   MovementTableData,
 } from "@/components/movement/MovementDetailView";
-import { NumberStepperField } from "@/components/common/NumberStepperField";
 import { MitchellMovementSpec, generateMitchell } from "@/movement/mitchell";
+import NumberStepper from "@/components/common/NumberStepper";
 
 type Props = {
   onShowTablesPage: () => void;
@@ -198,12 +198,10 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
           <div>
             <SectionHeading title="Generated Movements" />
             <div className="mb-4">
-              <NumberStepperField
-                label="Boards per round:"
-                value={mitchellBoardsPerRound}
-                onChange={setMitchellBoardsPerRound}
-                min={2}
-              />
+                <div className="flex flex-col gap-1">
+                    <label className="text-sm font-semibold text-gray-600">Boards per round:</label>
+                    <NumberStepper value={mitchellBoardsPerRound} onChange={setMitchellBoardsPerRound} min={2} />
+                </div>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {mitchellOptions.map((option) => (

@@ -10,7 +10,7 @@ const meta: Meta<typeof JoinMenuPage> = {
   },
   tags: ["autodocs"],
   args: {
-    onJoinAsPlayer: fn()
+    onJoinAsPlayer: fn(),
   },
 };
 

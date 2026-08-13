@@ -2,9 +2,7 @@ interface Props {
   onJoinAsPlayer: () => void;
 }
 
-export function JoinMenuPage({
-  onJoinAsPlayer
-}: Props) {
+export function JoinMenuPage({ onJoinAsPlayer }: Props) {
   return (
     <div className="flex-1 flex flex-col overflow-y-auto relative">
       {/* Logo — scales down on small screens */}

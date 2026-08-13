@@ -32,15 +32,6 @@ vi.mock("@/components/common/SelectField", () => ({
   ),
 }));
 
-vi.mock("@/components/common/NumberStepperField", () => ({
-  NumberStepperField: ({ value, onChange, label }: any) => (
-    <div>
-      <div data-testid={`stepper-${label}`}>{value}</div>
-      <button onClick={() => onChange(value + 1)}>Increment</button>
-    </div>
-  ),
-}));
-
 describe("SelectMovementPage", () => {
   const baseProps = {
     tables: 4,

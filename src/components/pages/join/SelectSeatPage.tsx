@@ -1,17 +1,17 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import {Pair, PairSeat, Participant, Seat } from "@/model/participants";
+import { Pair, PairSeat, Participant, Seat } from "@/model/participants";
 import { useState } from "react";
 import EnterPairPlayerNames from "@/components/join/pairs/EnterPairPlayerNames";
-import {swrKeys} from "@/swr/swr-keys";
-import {fetcher} from "@/lib/fetcher";
-import {useSocketSWRSync} from "@/hooks/socket-swr-sync";
-import {SocketEvents} from "@/socket/socket-events";
+import { swrKeys } from "@/swr/swr-keys";
+import { fetcher } from "@/lib/fetcher";
+import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
+import { SocketEvents } from "@/socket/socket-events";
 import useSWR from "swr";
 import { NewPlayer } from "@/db/games/shared/tables/players";
-import {createParticipant} from "@/lib/game-service";
-import {GameInfo} from "@/components/common/GameInfo";
+import { createParticipant } from "@/lib/game-service";
+import { GameInfo } from "@/components/common/GameInfo";
 import SelectPairsTable from "@/components/join/pairs/SelectPairsTable";
 
 interface Props {
@@ -28,66 +28,66 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
     return null;
   }
 
-    const gameId = game?.gameId;
+  const gameId = game?.gameId;
 
-    const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
 
-    const key = gameId ? swrKeys.pairs(gameId) : null;
+  const key = gameId ? swrKeys.pairs(gameId) : null;
 
-    const { data } = useSWR<Pair[], Error>(key, fetcher);
+  const { data } = useSWR<Pair[], Error>(key, fetcher);
 
-    if (!gameId) {
-        return null;
-    }
+  if (!gameId) {
+    return null;
+  }
 
-    useSocketSWRSync(
-        SocketEvents.PARTICIPANTS,
-        (p) => ({
-            key: swrKeys.pairs(gameId),
-            data: p.participants,
-        }),
-        [gameId],
-    );
+  useSocketSWRSync(
+    SocketEvents.PARTICIPANTS,
+    (p) => ({
+      key: swrKeys.pairs(gameId),
+      data: p.participants,
+    }),
+    [gameId],
+  );
 
-    const handleSeatSelected = (seat: PairSeat) => {
-        setSelectedSeat(seat);
-    };
+  const handleSeatSelected = (seat: PairSeat) => {
+    setSelectedSeat(seat);
+  };
 
-    async function handlePairSubmitted(player1: NewPlayer, player2: NewPlayer) {
-        await createParticipant(gameId!, {
-            type: "PAIR",
-            initialSeat: selectedSeat!,
-            player1,
-            player2,
-        });
-        // TODO: Put seat and key in local storage
-    }
+  async function handlePairSubmitted(player1: NewPlayer, player2: NewPlayer) {
+    await createParticipant(gameId!, {
+      type: "PAIR",
+      initialSeat: selectedSeat!,
+      player1,
+      player2,
+    });
+    // TODO: Put seat and key in local storage
+  }
 
-    return (
-        <div className="flex-1 flex flex-col">
-            {/* Header */}
-            <div className="flex flex-row w-full">
-                <GameInfo />
-            </div>
+  return (
+    <div className="flex-1 flex flex-col">
+      {/* Header */}
+      <div className="flex flex-row w-full">
+        <GameInfo />
+      </div>
 
-            {/* Main table selection */}
-            <SelectPairsTable
-                onSeatSelected={handleSeatSelected}
-                tables={game.tables}
-                startingPositions={data ?? []}
-            />
+      {/* Main table selection */}
+      <SelectPairsTable
+        onSeatSelected={handleSeatSelected}
+        tables={game.tables}
+        startingPositions={data ?? []}
+      />
 
-            {/* Backdrop */}
-            {selectedSeat && (
-                <div
-                    className="fixed inset-0 bg-black/30"
-                    onClick={() => setSelectedSeat(null)}
-                />
-            )}
+      {/* Backdrop */}
+      {selectedSeat && (
+        <div
+          className="fixed inset-0 bg-black/30"
+          onClick={() => setSelectedSeat(null)}
+        />
+      )}
 
-            {/* Bottom sheet */}
-            <div
-                className={`
+      {/* Bottom sheet */}
+      <div
+        className={`
           fixed bottom-0 left-0 right-0
           bg-white
           shadow-2xl
@@ -96,14 +96,14 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
           transition-transform duration-300 ease-out
           ${selectedSeat ? "translate-y-0" : "translate-y-full"}
         `}
-            >
-                {selectedSeat && (
-                    <EnterPairPlayerNames
-                        seat={selectedSeat}
-                        onSubmitPair={handlePairSubmitted}
-                    />
-                )}
-            </div>
-        </div>
-    );
+      >
+        {selectedSeat && (
+          <EnterPairPlayerNames
+            seat={selectedSeat}
+            onSubmitPair={handlePairSubmitted}
+          />
+        )}
+      </div>
+    </div>
+  );
 }

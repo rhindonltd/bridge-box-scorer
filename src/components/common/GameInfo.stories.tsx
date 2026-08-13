@@ -45,7 +45,7 @@ export const EventAndSection: Story = {
       gameType: "PAIRS",
       scoringType: "MP",
       gameId: crypto.randomUUID(),
-      sessionName: "Session 1",
+      sessionName: "",
       sectionName: "Section A",
       eventDate: new Date().toISOString(),
       status: "CREATED",

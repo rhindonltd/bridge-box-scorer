@@ -1,102 +1,104 @@
 "use client";
 
 import { useState } from "react";
-import {useGame} from "@/context/GameContext";
-import {clearDirectorToken, getDirectorToken} from "@/lib/director-token";
+import { useGame } from "@/context/GameContext";
+import { clearDirectorToken, getDirectorToken } from "@/lib/director-token";
 
 interface DeleteGamePageProps {
-    onGameDeleted: () => void;
-    onCancel: () => void;
+  onGameDeleted: () => void;
+  onCancel: () => void;
 }
 
-export default function DeleteGameRoute({ onGameDeleted, onCancel }: DeleteGamePageProps) {
+export function DeleteGamePage({
+  onGameDeleted,
+  onCancel,
+}: DeleteGamePageProps) {
+  const { game } = useGame();
 
-    const { game } = useGame();
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const [deleting, setDeleting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  if (!game) return null;
 
-    if (!game) return null;
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
 
-    async function handleDelete() {
-        setDeleting(true);
-        setError(null);
+    try {
+      const res = await fetch(`/api/games/${game!.gameId}/delete`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          directorToken: getDirectorToken(game!.gameId),
+        }),
+      });
 
-        try {
-            const res = await fetch(`/api/games/${game!.gameId}/delete`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    directorToken: getDirectorToken(game!.gameId),
-                }),
-            });
-
-            if (res.ok) {
-                clearDirectorToken(game!.gameId);
-                onGameDeleted();
-            } else {
-                const data = await res.json();
-                setError(data.error ?? "Failed to delete game");
-                setDeleting(false);
-            }
-        } catch {
-            setError("Network error. Please try again.");
-            setDeleting(false);
-        }
+      if (res.ok) {
+        clearDirectorToken(game!.gameId);
+        onGameDeleted();
+      } else {
+        const data = await res.json();
+        setError(data.error ?? "Failed to delete game");
+        setDeleting(false);
+      }
+    } catch {
+      setError("Network error. Please try again.");
+      setDeleting(false);
     }
+  }
 
-    function handleCancel() {
-        onCancel();
-    }
+  function handleCancel() {
+    onCancel();
+  }
 
-    return (
-        <div className="min-h-dvh flex flex-col bg-white">
-            {/* Header */}
-            <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
-                {game.eventName}
-            </div>
+  return (
+    <div className="min-h-dvh flex flex-col bg-white">
+      {/* Header */}
+      <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
+        {game.eventName}
+      </div>
 
-            {/* Sub-header */}
-            <div className="bg-red-600 text-white px-3 py-2.5 text-center font-bold text-lg">
-                Delete Game
-            </div>
+      {/* Sub-header */}
+      <div className="bg-red-600 text-white px-3 py-2.5 text-center font-bold text-lg">
+        Delete Game
+      </div>
 
-            {/* Confirmation content */}
-            <div className="flex-1 flex flex-col items-center justify-center px-6">
-                <div className="max-w-sm w-full text-center space-y-6">
-                    <p className="text-lg text-gray-900">
-                        Are you sure you want to delete <strong>{game.eventName}</strong>?
-                    </p>
-                    <p className="text-base text-gray-600">
-                        This will permanently remove all results, scores, and game data.
-                        This action cannot be undone.
-                    </p>
+      {/* Confirmation content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <p className="text-lg text-gray-900">
+            Are you sure you want to delete <strong>{game.eventName}</strong>?
+          </p>
+          <p className="text-base text-gray-600">
+            This will permanently remove all results, scores, and game data.
+            This action cannot be undone.
+          </p>
 
-                    {error && (
-                        <p role="alert" className="text-red-600 text-base">
-                            {error}
-                        </p>
-                    )}
+          {error && (
+            <p role="alert" className="text-red-600 text-base">
+              {error}
+            </p>
+          )}
 
-                    <div className="flex flex-col gap-3 pt-4">
-                        <button
-                            onClick={handleDelete}
-                            disabled={deleting}
-                            className="w-full py-3.5 text-lg font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {deleting ? "Deleting..." : "Yes, Delete Game"}
-                        </button>
+          <div className="flex flex-col gap-3 pt-4">
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="w-full py-3.5 text-lg font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {deleting ? "Deleting..." : "Yes, Delete Game"}
+            </button>
 
-                        <button
-                            onClick={handleCancel}
-                            disabled={deleting}
-                            className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <button
+              onClick={handleCancel}
+              disabled={deleting}
+              className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

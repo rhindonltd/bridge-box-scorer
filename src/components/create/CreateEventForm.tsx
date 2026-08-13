@@ -4,8 +4,8 @@ import { useState } from "react";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import Button from "@/components/common/Button";
-import { NumberStepperField } from "@/components/common/NumberStepperField";
 import { GameType } from "@/db/games/types/game-type";
+import NumberStepper from "@/components/common/NumberStepper";
 
 export type EventDetails = {
   eventName: string;
@@ -66,12 +66,10 @@ export default function CreateEventForm({ onNext }: Props) {
             onSelect={setEventType}
           />
 
-          <NumberStepperField
-            label="Sessions"
-            value={sessions}
-            onChange={setSessions}
-            min={1}
-          />
+            <div className="flex flex-col gap-1">
+                <label className="text-sm font-semibold text-gray-600">Sessions</label>
+                <NumberStepper value={sessions} onChange={setSessions} min={1} />
+            </div>
         </div>
 
         {/* Button (bottom) */}
