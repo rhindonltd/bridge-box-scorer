@@ -8,13 +8,13 @@ import { Card, Direction, Rank, Suit } from "@/model/common";
 import { SpecialBoardOutcome } from "@/model/result";
 import { useGame } from "@/context/GameContext";
 
-import { StepLevel } from "./StepLevel";
-import { StepSuit } from "./StepSuit";
-import { StepDeclarer } from "./StepDeclarer";
-import { StepOpeningLead } from "./StepOpeningLead";
-import { StepResult } from "./StepResult";
-import { StepConfirm } from "./StepConfirm";
-import { StepAdjustedScore } from "./StepAdjustedScore";
+import { StepLevel } from "@/components/play/contract-wizard/StepLevel";
+import { StepSuit } from "@/components/play/contract-wizard/StepSuit";
+import { StepDeclarer } from "@/components/play/contract-wizard/StepDeclarer";
+import { StepOpeningLead } from "@/components/play/contract-wizard/StepOpeningLead";
+import { StepResult } from "@/components/play/contract-wizard/StepResult";
+import { StepConfirm } from "@/components/play/contract-wizard/StepConfirm";
+import { StepAdjustedScore } from "@/components/play/contract-wizard/StepAdjustedScore";
 
 export type DirectorWizardResult =
   | {

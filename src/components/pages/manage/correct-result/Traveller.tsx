@@ -4,49 +4,66 @@ import { BoardResult as ContractDisplay } from "@/components/results/traveller/B
 import { BoardOutcome } from "@/model/score";
 
 interface PairsParticipants {
-    type: "PAIRS";
-    ns: string;
-    ew: string;
-    nsNames?: string | null;
-    ewNames?: string | null;
+  type: "PAIRS";
+  ns: string;
+  ew: string;
+  nsNames?: string | null;
+  ewNames?: string | null;
 }
 
 export interface BoardInstance {
-    roundNumber: number;
-    tableNumber: number;
-    boardNumber: number;
-    participants: PairsParticipants;
-    currentResult: string | null;
-    status: string | null;
+  roundNumber: number;
+  tableNumber: number;
+  boardNumber: number;
+  participants: PairsParticipants;
+  currentResult: string | null;
+  status: string | null;
 }
 
 interface TravellerViewProps {
   boardNumber: number;
   instances: BoardInstance[];
   isLoading: boolean;
-  gameType: string;
   onLineSelected: (instance: BoardInstance) => void;
   onBack: () => void;
 }
 
 /**
- * TravellerView — shows a board's traveller as a tappable table.
+ * Traveller — shows a board's traveller as a tappable table.
  * Columns: NS, EW, Contract (for pairs).
  * No "Table" column. Player names are shown below pair numbers.
  * Tapping a row selects that line for correction.
  */
-export function TravellerView({
+export function Traveller({
   boardNumber,
   instances,
   isLoading,
-  gameType,
   onLineSelected,
   onBack,
 }: TravellerViewProps) {
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-gray-200 text-gray-800 shrink-0">
+          <button
+            onClick={onBack}
+            className="px-3 py-1 text-sm bg-white rounded-lg shadow hover:bg-gray-50 transition"
+            aria-label="Back to board list"
+          >
+            &larr; Back
+          </button>
+          <h2 className="flex-1 text-center font-bold text-lg">
+            Board {boardNumber}
+          </h2>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto" />
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
+        </div>
       </div>
     );
   }

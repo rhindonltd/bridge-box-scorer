@@ -1,6 +1,6 @@
 "use client";
 
-import { ManageMovementPage } from "@/components/pages/manage/movement/ManageMovementPage";
+import { ManageMovementPage } from "@/components/pages/manage/ManageMovementPage";
 import { useParams, useRouter } from "next/navigation";
 
 export default function ManageMovementRoute() {

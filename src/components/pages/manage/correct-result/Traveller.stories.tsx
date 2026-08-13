@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { TravellerView } from "./TravellerView";
+import { Traveller } from "./Traveller";
 
-const meta: Meta<typeof TravellerView> = {
-  title: "Pages/Manage/Travellers/TravellerView",
-  component: TravellerView,
+const meta: Meta<typeof Traveller> = {
+  title: "Pages/Manage/Traveller",
+  component: Traveller,
   parameters: {
     layout: "fullscreen",
   },
@@ -16,13 +16,12 @@ const meta: Meta<typeof TravellerView> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof TravellerView>;
+type Story = StoryObj<typeof Traveller>;
 
 export const PairsWithNames: Story = {
   args: {
     boardNumber: 7,
     isLoading: false,
-    gameType: "PAIRS",
     instances: [
       {
         roundNumber: 1,
@@ -88,7 +87,6 @@ export const PairsWithoutNames: Story = {
   args: {
     boardNumber: 3,
     isLoading: false,
-    gameType: "PAIRS",
     instances: [
       {
         roundNumber: 1,
@@ -140,7 +138,6 @@ export const NoResults: Story = {
   args: {
     boardNumber: 12,
     isLoading: false,
-    gameType: "PAIRS",
     instances: [],
   },
 };
@@ -149,7 +146,6 @@ export const Loading: Story = {
   args: {
     boardNumber: 5,
     isLoading: true,
-    gameType: "PAIRS",
     instances: [],
   },
 };

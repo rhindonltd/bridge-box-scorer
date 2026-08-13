@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useGame } from "@/context/GameContext";
-import {
-  DirectorContractWizard,
-  DirectorWizardResult,
-} from "@/components/play/contract-wizard/DirectorContractWizard";
 import { parseContract } from "@/model/contract";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { getDirectorToken } from "@/lib/director-token";
 import { SelectBoardPage } from "./SelectBoardPage";
-import {BoardInstance, TravellerView } from "./TravellerView";
+import { BoardInstance, Traveller } from "./Traveller";
+import {
+  DirectorContractWizard,
+  DirectorWizardResult,
+} from "./DirectorContractWizard";
 
 interface CorrectResultPageProps {
   onResultCorrected: () => void;
@@ -189,11 +189,10 @@ export function CorrectResultPage({
 
     case "viewTraveller":
       return (
-        <TravellerView
+        <Traveller
           boardNumber={wizardStep.boardNumber}
           instances={instances}
           isLoading={instancesLoading}
-          gameType={game.gameType}
           onLineSelected={handleLineSelected}
           onBack={() => setWizardStep({ step: "selectBoard" })}
         />
