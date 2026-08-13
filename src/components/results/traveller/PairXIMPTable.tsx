@@ -8,10 +8,14 @@ type Props = {
 };
 
 export function PairXIMPTable({ scoredTraveller }: Props) {
+  const rows = scoredTraveller.lines
+    .filter((x) => x.score !== null)
+    .sort((a, b) => b.nsCrossImps - a.nsCrossImps);
+
   return (
     <Table
       columns={["NS", "EW", "Contract", "NS Score", "NS IMP", "EW IMP"]}
-      body={scoredTraveller.lines
+      body={rows
         .filter((x) => x.score !== null)
         .map((row, index, arr) => {
           const isLast = index === arr.length - 1;

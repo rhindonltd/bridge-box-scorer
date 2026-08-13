@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useGame } from "@/context/GameContext";
 import { SelectSeatPage } from "@/components/pages/join/SelectSeatPage";
 
-export default function JoinAsPlayer() {
+export default function JoinGameAsPlayerRoute() {
   const { game, isLoading } = useGame();
   const router = useRouter();
 

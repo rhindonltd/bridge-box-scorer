@@ -4,7 +4,7 @@ import { withGame } from "@storybook/decorators/GameDecorator";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
 const meta: Meta<typeof AwaitingMovementPage> = {
-  title: "Pages/JoinGame/AwaitingMovement",
+  title: "Pages/Join/AwaitingMovement",
   component: AwaitingMovementPage,
   parameters: {
     layout: "fullscreen",

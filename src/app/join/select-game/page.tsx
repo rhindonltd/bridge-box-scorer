@@ -1,9 +1,9 @@
 "use client";
 
-import SelectGamePage from "@/components/pages/join/SelectGamePage";
+import SelectGamePage from "@/components/pages/common/SelectGamePage";
 import { useRouter } from "next/navigation";
 
-export default function SelectGame() {
+export default function SelectGameRoute() {
   const router = useRouter();
 
   function onGameSelected(gameId: string) {

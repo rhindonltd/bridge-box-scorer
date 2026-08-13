@@ -1,11 +1,14 @@
 "use client";
 
+import { ReactNode } from "react";
 import { useGame } from "@/context/GameContext";
 import { useAssignment } from "@/context/AssignmentContext";
 
 interface Props {
-  /** Key context info displayed prominently centred (e.g., "Board 5", "Table 2, Round 1") */
+  /** Key context info displayed as plain text (e.g., "Board 5", "Table 2, Round 1") */
   detail?: string;
+  /** Custom content for the detail bar (takes precedence over `detail` string) */
+  detailContent?: ReactNode;
 }
 
 /**
@@ -15,7 +18,7 @@ interface Props {
  *
  * Font sizes are larger than typical to accommodate older users with reduced vision.
  */
-export function PlayHeader({ detail }: Props) {
+export function PlayHeader({ detail, detailContent }: Props) {
   const { game } = useGame();
   const { assignment } = useAssignment();
 
@@ -47,9 +50,9 @@ export function PlayHeader({ detail }: Props) {
       </div>
 
       {/* Detail bar — prominent, centred */}
-      {detail && (
+      {(detail || detailContent) && (
         <div className="bg-blue-600 text-white px-3 py-2.5 text-center font-bold text-lg">
-          {detail}
+          {detailContent ?? detail}
         </div>
       )}
     </div>

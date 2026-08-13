@@ -11,8 +11,6 @@ const meta: Meta<typeof JoinMenuPage> = {
   tags: ["autodocs"],
   args: {
     onJoinAsPlayer: fn(),
-    onShowTimer: fn(),
-    onShowLeaderboard: fn(),
   },
 };
 

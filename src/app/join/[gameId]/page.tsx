@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-export default async function JoinPage({
+export default async function JoinGameRoute({
   params,
 }: {
   params: Promise<{ gameId: string }>;

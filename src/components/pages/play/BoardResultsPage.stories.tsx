@@ -45,6 +45,7 @@ export const PairXIMP: Story = {
     board: 5,
     lastBoardOfRound: false,
     scoredTraveller: score(impBoard1, "XIMP"),
+    playedBoards: [5],
   },
 };
 
@@ -75,5 +76,6 @@ export const PairMP: Story = {
     board: 5,
     lastBoardOfRound: false,
     scoredTraveller: score(mpBoard1, "MP"),
+    playedBoards: [4, 5, 6],
   },
 };

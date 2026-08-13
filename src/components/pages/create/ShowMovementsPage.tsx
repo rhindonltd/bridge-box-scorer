@@ -5,15 +5,15 @@ import { useGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
-import { MovementCard } from "@/components/pages/create/MovementCard";
+import { MovementCard } from "@/components/create/MovementCard";
 import Button from "@/components/common/Button";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
 import {
   MovementDetailView,
   MovementTableData,
 } from "@/components/movement/MovementDetailView";
-import { NumberStepperField } from "@/components/common/NumberStepperField";
 import { MitchellMovementSpec, generateMitchell } from "@/movement/mitchell";
+import NumberStepper from "@/components/common/NumberStepper";
 
 type Props = {
   onShowTablesPage: () => void;
@@ -198,12 +198,16 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
           <div>
             <SectionHeading title="Generated Movements" />
             <div className="mb-4">
-              <NumberStepperField
-                label="Boards per round:"
-                value={mitchellBoardsPerRound}
-                onChange={setMitchellBoardsPerRound}
-                min={2}
-              />
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-semibold text-gray-600">
+                  Boards per round:
+                </label>
+                <NumberStepper
+                  value={mitchellBoardsPerRound}
+                  onChange={setMitchellBoardsPerRound}
+                  min={2}
+                />
+              </div>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {mitchellOptions.map((option) => (
@@ -275,7 +279,7 @@ function MitchellCard({
           <div className="font-medium text-gray-900">{effectiveRounds}</div>
         </div>
         <div className="rounded-lg bg-white p-2 text-center">
-          <div className="text-xs text-gray-500">Boards/Round</div>
+          <div className="text-xs text-gray-500">Boards per Round</div>
           <div className="font-medium text-gray-900">{spec.boardsPerRound}</div>
         </div>
         <div className="rounded-lg bg-white p-2 text-center">

@@ -397,12 +397,16 @@ export default function PlayPage() {
       const boardNumber = round.boards[playState.boardIndex];
       const lastBoardOfRound = playState.boardIndex === round.boards.length - 1;
 
+      // All boards played so far in this round (up to and including current)
+      const playedBoards = round.boards.slice(0, playState.boardIndex + 1);
+
       return (
         <BoardResultsLoader
           gameId={gameId}
           gameType={game.gameType}
           scoringType={game.scoringType}
           boardNumber={boardNumber}
+          playedBoards={playedBoards}
           lastBoardOfRound={lastBoardOfRound}
           onNext={handleBoardResultsNext}
         />
@@ -480,6 +484,7 @@ function BoardResultsLoader({
   gameType,
   scoringType,
   boardNumber,
+  playedBoards,
   lastBoardOfRound,
   onNext,
 }: {
@@ -487,14 +492,17 @@ function BoardResultsLoader({
   gameType: string;
   scoringType: string;
   boardNumber: number;
+  playedBoards: number[];
   lastBoardOfRound: boolean;
   onNext: () => void;
 }) {
+  const [viewingBoard, setViewingBoard] = useState(boardNumber);
   const [scoredTraveller, setScoredTraveller] =
     useState<ScoredTraveller | null>(null);
 
   useEffect(() => {
-    fetch(`/api/games/${gameId}/boards/${boardNumber}`)
+    setScoredTraveller(null);
+    fetch(`/api/games/${gameId}/boards/${viewingBoard}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.instances) {
@@ -526,7 +534,7 @@ function BoardResultsLoader({
             const traveller = {
               type: mode,
               mode,
-              board: boardNumber,
+              board: viewingBoard,
               section: gameId,
               lines,
             } as any;
@@ -537,7 +545,7 @@ function BoardResultsLoader({
         }
       })
       .catch(() => {});
-  }, [gameId, gameType, scoringType, boardNumber]);
+  }, [gameId, gameType, scoringType, viewingBoard]);
 
   if (!scoredTraveller) {
     return (
@@ -549,9 +557,11 @@ function BoardResultsLoader({
 
   return (
     <BoardResultsPage
-      board={boardNumber}
+      board={viewingBoard}
+      playedBoards={playedBoards}
       lastBoardOfRound={lastBoardOfRound}
       scoredTraveller={scoredTraveller}
+      onBoardSelected={setViewingBoard}
       onNext={onNext}
     />
   );

@@ -61,7 +61,7 @@ test.describe("Game Creation Flow", () => {
     }
   });
 
-  test("full form submission creates game via Socket.IO and redirects to /create/[id]", async ({
+  test("full form submission creates game via Socket.IO and redirects to /create/[gameId]", async ({
     page,
   }) => {
     await page.goto("/create");
