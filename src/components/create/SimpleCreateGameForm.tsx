@@ -1,13 +1,13 @@
 "use client";
 
-import {useId, useState } from "react";
+import { useId, useState } from "react";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import Button from "@/components/common/Button";
 import { NewBridgeGame } from "@/db/game-index/schema";
 import { GameType } from "@/db/games/types/game-type";
 import NumberStepper from "@/components/common/NumberStepper";
-import {Toggle} from "@/components/common/Toggle";
+import { Toggle } from "@/components/common/Toggle";
 
 type Props = {
   onCreateGame: (game: NewBridgeGame) => void;
@@ -67,22 +67,24 @@ export default function SimpleCreateGameForm({ onCreateGame }: Props) {
             onSelect={setGameType}
           />
 
-            <div className="flex flex-col gap-1">
-                <label className="text-sm font-semibold text-gray-600">Tables</label>
-                <NumberStepper value={tables} onChange={setTables} min={1} />
-            </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-600">
+              Tables
+            </label>
+            <NumberStepper value={tables} onChange={setTables} min={1} />
+          </div>
 
-            <div className="flex flex-col gap-1">
-                <label id={useId()} className="text-sm font-semibold text-gray-700">
-                    Record Opening Lead
-                </label>
-                <Toggle
-                    value={leadCardRequired}
-                    offLabel='No'
-                    onLabel='Yes'
-                    onSwitch={() => setLeadCardRequired((v) => !v)}
-                />
-            </div>
+          <div className="flex flex-col gap-1">
+            <label id={useId()} className="text-sm font-semibold text-gray-700">
+              Record Opening Lead
+            </label>
+            <Toggle
+              value={leadCardRequired}
+              offLabel="No"
+              onLabel="Yes"
+              onSwitch={() => setLeadCardRequired((v) => !v)}
+            />
+          </div>
         </div>
 
         {/* Button (bottom) */}

@@ -198,10 +198,16 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
           <div>
             <SectionHeading title="Generated Movements" />
             <div className="mb-4">
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-600">Boards per round:</label>
-                    <NumberStepper value={mitchellBoardsPerRound} onChange={setMitchellBoardsPerRound} min={2} />
-                </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-semibold text-gray-600">
+                  Boards per round:
+                </label>
+                <NumberStepper
+                  value={mitchellBoardsPerRound}
+                  onChange={setMitchellBoardsPerRound}
+                  min={2}
+                />
+              </div>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {mitchellOptions.map((option) => (

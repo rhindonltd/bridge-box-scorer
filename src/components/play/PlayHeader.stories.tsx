@@ -43,18 +43,3 @@ export const WithDetail: Story = {
 export const NoDetail: Story = {
   args: {},
 };
-
-export const IndividualPlayer: Story = {
-  decorators: [
-    withGame({
-      ...mockGame,
-      gameType: "PAIRS",
-      sessionName: "",
-      sectionName: "",
-    }),
-    withAssignment({ type: "PAIR", id: "3" }),
-  ],
-  args: {
-    detail: "Table 2, Round 1",
-  },
-};

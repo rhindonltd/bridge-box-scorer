@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { fn } from "storybook/test";
 import SelectTable from "./SelectTable";
-import { vi } from "vitest";
 
 const meta: Meta<typeof SelectTable> = {
   title: "Components/Join/SelectPairsTable",
@@ -10,7 +10,7 @@ const meta: Meta<typeof SelectTable> = {
   },
   tags: ["autodocs"],
   args: {
-    onSeatSelected: vi.fn(),
+    onSeatSelected: fn(),
   },
 };
 

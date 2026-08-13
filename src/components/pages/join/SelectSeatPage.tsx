@@ -21,9 +21,6 @@ interface Props {
 export function SelectSeatPage({ onSeatSelected }: Props) {
   const { game } = useGame();
 
-  const [seat, setSeat] = useState<Seat | null>(null);
-  const [participant, setParticipant] = useState<Participant | null>(null);
-
   if (!game) {
     return null;
   }

@@ -60,7 +60,7 @@ export function StepResult({ level, onResultComplete }: Props) {
         style={{ gridTemplateRows: `repeat(${maxRows}, 1fr)` }}
       >
         {values.map((v) => {
-          const label = mode === "made" ? `+${v}` : `-${v}`;
+          const label = mode === "made" ? (v == 0 ? `=` : `+${v}`) : `-${v}`;
           return (
             <button
               key={v}
