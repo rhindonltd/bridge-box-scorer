@@ -21,10 +21,6 @@ interface Props {
 export function SelectSeatPage({ onSeatSelected }: Props) {
   const { game } = useGame();
 
-  if (!game) {
-    return null;
-  }
-
   const gameId = game?.gameId;
 
   const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
@@ -33,18 +29,18 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
 
   const { data } = useSWR<Pair[], Error>(key, fetcher);
 
-  if (!gameId) {
-    return null;
-  }
-
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.pairs(gameId),
+      key: swrKeys.pairs(gameId!),
       data: p.participants,
     }),
     [gameId],
   );
+
+  if (!game || !gameId) {
+    return null;
+  }
 
   const handleSeatSelected = (seat: PairSeat) => {
     setSelectedSeat(seat);

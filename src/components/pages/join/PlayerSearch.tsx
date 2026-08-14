@@ -1,7 +1,7 @@
 "use client";
 
 import { NewPlayer } from "@/db/games/shared/tables/players";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PlayerSearchView } from "./PlayerSearchView";
 
 interface Props {
@@ -13,11 +13,16 @@ interface Props {
 export default function PlayerSearch({ label, value, onChange }: Props) {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<NewPlayer[]>([]);
+  const [rawResults, setRawResults] = useState<NewPlayer[]>([]);
+
+  // Derive displayed results: only show when query is long enough
+  const results = useMemo(
+    () => (query.length < 2 ? [] : rawResults),
+    [query, rawResults],
+  );
 
   useEffect(() => {
     if (query.length < 2) {
-      setResults([]);
       return;
     }
 
@@ -27,7 +32,7 @@ export default function PlayerSearch({ label, value, onChange }: Props) {
         `/api/players/search?q=${encodeURIComponent(query)}`,
       );
       const players = await response.json();
-      setResults(players);
+      setRawResults(players);
       setLoading(false);
     }, 250);
 
@@ -45,7 +50,7 @@ export default function PlayerSearch({ label, value, onChange }: Props) {
       onPlayerSelected={(player) => {
         onChange(player);
         setQuery("");
-        setResults([]);
+        setRawResults([]);
       }}
       onClear={() => onChange(null)}
     />

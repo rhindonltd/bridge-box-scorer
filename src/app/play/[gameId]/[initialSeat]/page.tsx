@@ -15,6 +15,21 @@ import { GameComplete } from "@/components/pages/play/GameComplete";
 import { BoardResultsPage } from "@/components/pages/play/BoardResultsPage";
 import { score, ScoredTraveller } from "@/scoring/traveller/score-traveller";
 import { PlayHeader } from "@/components/play/PlayHeader";
+import { Traveller } from "@/model/traveller";
+import { Player } from "@/db/games/shared/tables/players";
+import { BoardOutcome } from "@/model/score";
+
+interface BoardInstance {
+  currentResult: BoardOutcome | null;
+  participants: {
+    ns: string;
+    ew: string;
+    n?: string;
+    s?: string;
+    e?: string;
+    w?: string;
+  };
+}
 
 interface RoundSchedule {
   roundNumber: number;
@@ -99,7 +114,7 @@ export default function PlayPage() {
               startRoundIndex = i + 1;
               continue;
             }
-            if (r.boardStatuses.every((b: any) => b.status === "CONFIRMED")) {
+            if (r.boardStatuses.every((b) => b.status === "CONFIRMED")) {
               startRoundIndex = i + 1;
               continue;
             }
@@ -337,7 +352,7 @@ export default function PlayPage() {
           round={round.roundNumber}
           table={round.tableNumber!}
           boards={round.boards}
-          players={round.players as any}
+          players={round.players as { N: Player; S: Player; E: Player; W: Player }}
           onEnterRound={handleEnterRound}
         />
       );
@@ -346,8 +361,8 @@ export default function PlayPage() {
     case "enterContract": {
       const round = schedule.rounds[playState.roundIndex];
       const playedBoards = round.boardStatuses
-        .filter((b: any) => b.status === "CONFIRMED")
-        .map((b: any) => b.boardNumber);
+        .filter((b) => b.status === "CONFIRMED")
+        .map((b) => b.boardNumber);
       return (
         <ContractWizard
           round={round.roundNumber}
@@ -501,18 +516,21 @@ function BoardResultsLoader({
     useState<ScoredTraveller | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting before async fetch
     setScoredTraveller(null);
+    let cancelled = false;
     fetch(`/api/games/${gameId}/boards/${viewingBoard}`)
       .then((r) => r.json())
-      .then((data) => {
+      .then((data: { instances?: BoardInstance[] }) => {
+        if (cancelled) return;
         if (data.instances) {
           const mode = "PAIR";
           const scoringMode =
             scoringType === "IMP" || scoringType === "XIMP" ? "XIMP" : "MP";
 
           const lines = data.instances
-            .filter((i: any) => i.currentResult != null)
-            .map((i: any) => {
+            .filter((i) => i.currentResult != null)
+            .map((i) => {
               if (mode === "PAIR") {
                 return {
                   nsId: i.participants.ns,
@@ -531,13 +549,13 @@ function BoardResultsLoader({
             });
 
           if (lines.length > 0) {
-            const traveller = {
+            const traveller: Traveller = {
               type: mode,
               mode,
               board: viewingBoard,
               section: gameId,
-              lines,
-            } as any;
+              lines: lines as Traveller["lines"],
+            };
 
             const scored = score(traveller, scoringMode);
             setScoredTraveller(scored);
@@ -545,6 +563,7 @@ function BoardResultsLoader({
         }
       })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, [gameId, gameType, scoringType, viewingBoard]);
 
   if (!scoredTraveller) {

@@ -4,6 +4,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { getDb as getPairsDb } from "@/db/games/pairs";
 import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
+import { BoardOutcome } from "@/model/score";
 
 /**
  * In-memory store for pending submissions.
@@ -95,7 +96,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           await db
             .update(pairsBoards)
             .set({
-              confirmedResult: confirmedResult as any,
+              confirmedResult: confirmedResult as BoardOutcome,
               status: "CONFIRMED",
             })
             .where(

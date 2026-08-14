@@ -6,6 +6,7 @@ import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
 import { assignments as pairAssignments } from "@/db/games/pairs/tables/assignments";
 import { participants as pairParticipants } from "@/db/games/pairs/tables/participants";
 import { players } from "@/db/games/shared/tables/players";
+import { PairSeat } from "@/model/participants";
 
 export async function getPlayerSchedule(
   gameId: string,
@@ -22,7 +23,7 @@ async function getPairsSchedule(gameId: string, seat: string) {
   const assignment = await db
     .select()
     .from(pairAssignments)
-    .where(eq(pairAssignments.initialSeat, seat as any))
+    .where(eq(pairAssignments.initialSeat, seat as PairSeat))
     .get();
 
   if (!assignment) {
@@ -140,7 +141,7 @@ async function getPairsSchedule(gameId: string, seat: string) {
 
   // Build complete schedule including sit-outs
   const activeRoundNumbers = new Set(rounds.map((r) => r.roundNumber));
-  const completeRounds: any[] = [];
+  const completeRounds: (typeof rounds)[number][] = [];
 
   for (let r = 1; r <= totalRounds; r++) {
     if (activeRoundNumbers.has(r)) {

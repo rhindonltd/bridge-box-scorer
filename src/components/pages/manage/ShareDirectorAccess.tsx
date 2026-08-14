@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { getDirectorToken } from "@/lib/director-token";
@@ -14,8 +14,9 @@ export function ShareDirectorAccess({ gameId, onClose }: Props) {
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState(300); // 5 minutes in seconds
+  const hasMounted = useRef(false);
 
-  function generateCode() {
+  const generateCode = useCallback(() => {
     setError(null);
     setCode(null);
     setExpiresIn(300);
@@ -31,12 +32,15 @@ export function ShareDirectorAccess({ gameId, onClose }: Props) {
         }
       },
     );
-  }
+  }, [gameId]);
 
   // Generate on mount
   useEffect(() => {
-    generateCode();
-  }, []);
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      generateCode();
+    }
+  }, [generateCode]);
 
   // Countdown timer
   useEffect(() => {

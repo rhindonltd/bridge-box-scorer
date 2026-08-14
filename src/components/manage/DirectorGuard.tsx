@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { isDirectorFor } from "@/lib/director-token";
 
@@ -15,17 +15,16 @@ interface Props {
  */
 export function DirectorGuard({ gameId, children }: Props) {
   const router = useRouter();
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+
+  const authorized = useMemo(() => isDirectorFor(gameId), [gameId]);
 
   useEffect(() => {
-    if (isDirectorFor(gameId)) {
-      setAuthorized(true);
-    } else {
+    if (!authorized) {
       router.replace("/manage/select-game");
     }
-  }, [gameId, router]);
+  }, [authorized, router]);
 
-  if (authorized === null) return null; // Still checking
+  if (!authorized) return null;
 
   return <>{children}</>;
 }
