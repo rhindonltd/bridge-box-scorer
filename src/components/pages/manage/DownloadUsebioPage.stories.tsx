@@ -20,22 +20,22 @@ export default meta;
 type Story = StoryObj<typeof DownloadUsebioPage>;
 
 export const Default: Story = {
-    decorators: [
-        withGame({
-            id: 1,
-            eventName: "Monday AM Pairs",
-            director: null,
-            gameType: "PAIRS",
-            scoringType: "MP",
-            gameId: crypto.randomUUID(),
-            sessionName: "",
-            sectionName: "",
-            eventDate: new Date().toISOString(),
-            status: "CREATED",
-            tables: 10,
-            leadCardRequired: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        }),
-    ],
+  decorators: [
+    withGame({
+      id: 1,
+      eventName: "Monday AM Pairs",
+      director: null,
+      gameType: "PAIRS",
+      scoringType: "MP",
+      gameId: crypto.randomUUID(),
+      sessionName: "",
+      sectionName: "",
+      eventDate: new Date().toISOString(),
+      status: "CREATED",
+      tables: 10,
+      leadCardRequired: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }),
+  ],
 };

@@ -5,7 +5,6 @@ export function useTimerDerived(state: TimerState | null, now: number) {
     return {
       remaining: 0,
       phase: null,
-      round: 0,
       boardLabel: null,
       title: "Connecting…",
       isRunning: false,
@@ -83,9 +82,11 @@ export function useTimerDerived(state: TimerState | null, now: number) {
   const title =
     state.phase === "finished"
       ? "Session Complete"
-      : state.phase === "play"
-        ? `Round ${state.round} of ${state.totalRounds}`
-        : `Move for Round ${state.round}`;
+      : state.phase === "break"
+        ? "Break"
+        : state.phase === "play"
+          ? `Round ${state.round} of ${state.totalRounds}`
+          : `Move for Round ${state.round}`;
 
   const boardLabel =
     state.phase === "play"

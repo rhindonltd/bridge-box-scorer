@@ -1,6 +1,6 @@
 "use client";
 
-import TimerPage from "@/components/pages/timer/TimerPage";
+import TimerPage from "@/components/pages/display/TimerPage";
 import { useGame } from "@/context/GameContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
