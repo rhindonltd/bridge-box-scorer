@@ -5,37 +5,10 @@ import { Rooms } from "@/socket/rooms";
 import { getDb as getPairsDb } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { BoardOutcome } from "@/model/score";
-
-/**
- * In-memory store for pending submissions.
- * Key: `${gameId}:${tableNumber}:${roundNumber}`
- */
-interface PendingSubmission {
-  boardNumber: number;
-  result: string;
-}
-
-interface TablePending {
-  ns: PendingSubmission | null;
-  ew: PendingSubmission | null;
-}
-
-const pendingSubmissions = new Map<string, TablePending>();
-
-function getPendingKey(
-  gameId: string,
-  tableNumber: number,
-  roundNumber: number,
-): string {
-  return `${gameId}:${tableNumber}:${roundNumber}`;
-}
-
-function getOrCreatePending(key: string): TablePending {
-  if (!pendingSubmissions.has(key)) {
-    pendingSubmissions.set(key, { ns: null, ew: null });
-  }
-  return pendingSubmissions.get(key)!;
-}
+import { createBoardSubmission } from "@/db/games/actions/create-submission";
+import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
+import { BoardSubmission } from "@/db/games/tables/submissions";
+import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
 
 export function registerSubmitResultHandler(socket: Socket, io: Server) {
   socket.on(
@@ -54,7 +27,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         roundNumber: number;
         tableNumber: number;
         boardNumber: number;
-        result: string;
+        result: BoardOutcome;
       },
       cb,
     ) => {
@@ -62,32 +35,42 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         // Determine which side
         const isNS = seat.endsWith("NS");
 
-        // Store pending submission
-        const key = getPendingKey(gameId, tableNumber, roundNumber);
-        const pending = getOrCreatePending(key);
-
-        if (isNS) {
-          pending.ns = { boardNumber, result };
-        } else {
-          pending.ew = { boardNumber, result };
-        }
+        // Store board submission
+        await createBoardSubmission(gameId, {
+          roundNumber,
+          tableNumber,
+          boardNumber,
+          side: isNS ? "NS" : "EW",
+          result
+        });
 
         cb?.({ success: true });
 
         // Check if both sides have submitted
-        if (!pending.ns || !pending.ew) return;
+        const boardSubmissions: BoardSubmission[] = await findBoardSubmissions(
+          gameId,
+          tableNumber,
+          roundNumber,
+        );
 
-        // Compare board number AND result
-        if (
-          pending.ns.boardNumber === pending.ew.boardNumber &&
-          pending.ns.result === pending.ew.result
-        ) {
+        if (boardSubmissions.length != 2) {
+          return;
+        }
+
+        const ns = boardSubmissions.find((s) => s.side === "NS");
+        const ew = boardSubmissions.find((s) => s.side === "EW");
+
+        if (!ns || !ew) {
+          return;
+        }
+
+        const matches =
+          ns.boardNumber === ew.boardNumber && ns.result === ew.result;
+
+        if (matches) {
           // Match — confirm
-          const confirmedBoardNumber = pending.ns.boardNumber;
-          const confirmedResult = pending.ns.result;
-
-          // Clear pending for this board
-          pendingSubmissions.delete(key);
+          const confirmedBoardNumber = boardSubmissions[0].boardNumber;
+          const confirmedResult = boardSubmissions[0].result;
 
           // Write to database
           const db = await getPairsDb(gameId);
@@ -113,6 +96,9 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             result: confirmedResult,
           });
 
+          // Clear pending for this board
+          await deleteBoardSubmissions(gameId, tableNumber, roundNumber);
+
           io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
             gameId,
             roundNumber,
@@ -125,10 +111,10 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             gameId,
             roundNumber,
             tableNumber,
-            nsBoardNumber: pending.ns.boardNumber,
-            nsResult: pending.ns.result,
-            ewBoardNumber: pending.ew.boardNumber,
-            ewResult: pending.ew.result,
+            nsBoardNumber: ns.boardNumber,
+            nsResult: ns.result,
+            ewBoardNumber: ew.boardNumber,
+            ewResult: ew.result,
           });
         }
       } catch (err) {

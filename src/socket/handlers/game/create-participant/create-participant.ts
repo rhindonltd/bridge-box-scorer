@@ -27,12 +27,8 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
         const key = crypto.randomUUID();
 
         // PAIR
-        const player1 = (
-          await createPlayer(gameId, newParticipant.player1)
-        ).id;
-        const player2 = (
-          await createPlayer(gameId, newParticipant.player2)
-        ).id;
+        const player1 = (await createPlayer(gameId, newParticipant.player1)).id;
+        const player2 = (await createPlayer(gameId, newParticipant.player2)).id;
 
         await createPair(gameId, {
           initialSeat: newParticipant.initialSeat,

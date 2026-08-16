@@ -4,10 +4,7 @@ import { getDb } from "@/db/games";
 import { TimerState } from "@/timer/timer-state";
 import { metadata } from "@/db/games/tables/metadata";
 
-export async function updateTimerState(
-  gameId: string,
-  timerState: TimerState,
-) {
+export async function updateTimerState(gameId: string, timerState: TimerState) {
   const db = await getDb(gameId);
 
   await db

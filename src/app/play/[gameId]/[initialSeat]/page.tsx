@@ -33,7 +33,7 @@ export default function PlayPage() {
     handleBoardResultsNext,
     handleReenter,
     handleEnterRound,
-    submitResult
+    submitResult,
   } = usePlayFlow(gameId, seat);
 
   if (!game || !schedule) {
