@@ -53,7 +53,8 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
       player1,
       player2,
     });
-    // TODO: Put seat and key in local storage
+
+    // go to waiting for movement page
   }
 
   return (

@@ -25,7 +25,9 @@ export default function WifiSettings() {
       .catch(() => {
         if (!cancelled) setMessage("Failed to load WiFi networks");
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleTest = async (

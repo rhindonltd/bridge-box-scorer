@@ -72,7 +72,5 @@ async function getHighestOccupiedTable(gameId: string): Promise<number> {
 
   if (seats.length === 0) return 0;
 
-  return Math.max(
-    ...seats.map((s) => parseSeat(s.initialSeat).tableNumber),
-  );
+  return Math.max(...seats.map((s) => parseSeat(s.initialSeat).tableNumber));
 }

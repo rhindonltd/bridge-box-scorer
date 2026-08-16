@@ -2,7 +2,7 @@ import { TeaCupIcon } from "./TeaCupIcon";
 
 type TimerDisplayProps = {
   title: string;
-  boardLabel?: string;
+  boardLabel: string | null;
   remaining: number;
   phase: "play" | "move" | "break" | "finished" | null;
   isRunning: boolean;

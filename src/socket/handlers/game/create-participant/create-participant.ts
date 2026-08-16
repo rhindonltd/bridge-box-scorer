@@ -9,7 +9,6 @@ import { createParticipant as createPair } from "@/db/games/pairs/actions/create
 import { findPairs } from "@/db/games/pairs/queries/find-pairs";
 
 import { NewParticipant } from "@/model/participants";
-import { assertDirector } from "@/socket/middleware/director-auth";
 
 export function registerCreateParticipantHandler(socket: Socket, io: Server) {
   socket.on(
@@ -18,15 +17,12 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
       {
         gameId,
         newParticipant,
-        directorToken,
       }: {
         gameId: string;
         newParticipant: NewParticipant;
-        directorToken?: string;
       },
       cb,
     ) => {
-      if (!assertDirector(directorToken, gameId, cb)) return;
       try {
         const key = crypto.randomUUID();
 
@@ -48,11 +44,16 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
         io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
           participants: await findPairs(gameId),
         });
-
-        cb?.({ success: true, key });
+        cb({
+          data: { key },
+          success: true,
+        });
       } catch (err) {
         console.error(`Failed to create participant for game ${gameId}`, err);
-        cb?.({ success: false });
+        cb({
+          error: err instanceof Error ? err.message : "Unknown error",
+          success: false,
+        });
       }
     },
   );

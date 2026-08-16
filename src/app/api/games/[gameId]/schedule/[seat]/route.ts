@@ -17,7 +17,7 @@ export async function GET(
       );
     }
 
-    const result = await getPlayerSchedule(gameId, game.gameType, seat);
+    const result = await getPlayerSchedule(gameId, seat);
     if (!result) {
       return NextResponse.json(
         { success: false, error: "Assignment not found" },

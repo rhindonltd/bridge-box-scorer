@@ -7,10 +7,10 @@ import { getDirectorToken } from "@/lib/director-token";
 
 interface Props {
   gameId: string;
-  onClose: () => void;
+  onBack: () => void;
 }
 
-export function ShareDirectorAccess({ gameId, onClose }: Props) {
+export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState(300); // 5 minutes in seconds
@@ -109,7 +109,7 @@ export function ShareDirectorAccess({ gameId, onClose }: Props) {
       )}
 
       <button
-        onClick={onClose}
+        onClick={onBack}
         className="mt-4 px-6 py-3 text-base font-semibold text-gray-600 hover:text-gray-800 transition"
       >
         Close

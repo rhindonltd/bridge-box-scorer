@@ -352,7 +352,9 @@ export default function PlayPage() {
           round={round.roundNumber}
           table={round.tableNumber!}
           boards={round.boards}
-          players={round.players as { N: Player; S: Player; E: Player; W: Player }}
+          players={
+            round.players as { N: Player; S: Player; E: Player; W: Player }
+          }
           onEnterRound={handleEnterRound}
         />
       );
@@ -563,7 +565,9 @@ function BoardResultsLoader({
         }
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [gameId, gameType, scoringType, viewingBoard]);
 
   if (!scoredTraveller) {

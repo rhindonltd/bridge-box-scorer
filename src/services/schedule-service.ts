@@ -8,11 +8,7 @@ import { participants as pairParticipants } from "@/db/games/pairs/tables/partic
 import { players } from "@/db/games/shared/tables/players";
 import { PairSeat } from "@/model/participants";
 
-export async function getPlayerSchedule(
-  gameId: string,
-  gameType: string,
-  seat: string,
-) {
+export async function getPlayerSchedule(gameId: string, seat: string) {
   return getPairsSchedule(gameId, seat);
 }
 
@@ -141,7 +137,7 @@ async function getPairsSchedule(gameId: string, seat: string) {
 
   // Build complete schedule including sit-outs
   const activeRoundNumbers = new Set(rounds.map((r) => r.roundNumber));
-  const completeRounds: (typeof rounds)[number][] = [];
+  const completeRounds: any[] = [];
 
   for (let r = 1; r <= totalRounds; r++) {
     if (activeRoundNumbers.has(r)) {

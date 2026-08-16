@@ -62,7 +62,9 @@ export function CorrectResultPage({
           setBoardsLoading(false);
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [wizardStep.step, game]);
 
   // Fetch instances when viewing traveller
@@ -86,7 +88,9 @@ export function CorrectResultPage({
           setInstancesLoading(false);
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [wizardStep, game]);
 
   function handleBoardSelected(boardNumber: number) {
