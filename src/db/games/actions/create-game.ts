@@ -1,11 +1,11 @@
 "use server";
 
-import { getDb as pairsDb } from "@/db/games/pairs";
+import { getDb } from "@/db/games";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { GameType } from "@/db/games/types/game-type";
 
 export async function createGameDb(gameId: string, gameType: GameType) {
-  migrate(await pairsDb(gameId), {
+  migrate(await getDb(gameId), {
     migrationsFolder: "./drizzle/games/pairs",
   });
 }

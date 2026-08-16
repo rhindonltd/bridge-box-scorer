@@ -1,20 +1,13 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import {
-  Clock,
-  BookOpen,
-  ToggleRight,
-  ArrowRightLeft,
-  Download,
-  Trash2,
-} from "lucide-react";
 
 export interface DirectorMenuPageProps {
   onTimerClick: () => void;
   onTravellersClick: () => void;
   onChangeStatusClick: () => void;
   onMovementClick: () => void;
+  onShareDirectorAccessClick: () => void;
   onDownloadUsebioClick: () => void;
   onDeleteGameClick: () => void;
 }
@@ -24,6 +17,7 @@ export function ManageGameMenuPage({
   onTravellersClick,
   onChangeStatusClick,
   onMovementClick,
+  onShareDirectorAccessClick,
   onDownloadUsebioClick,
   onDeleteGameClick,
 }: DirectorMenuPageProps) {
@@ -47,46 +41,35 @@ export function ManageGameMenuPage({
       {/* Menu buttons */}
       <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
         <button onClick={onTimerClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">
-            <Clock size={20} />
-            Create/Amend Timer
-          </span>
+          <span className="flex items-center gap-3">Create/Amend Timer</span>
         </button>
 
         <button onClick={onTravellersClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">
-            <BookOpen size={20} />
-            Travellers
-          </span>
+          <span className="flex items-center gap-3">Travellers</span>
         </button>
 
         <button onClick={onChangeStatusClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">
-            <ToggleRight size={20} />
-            Change Game Status
-          </span>
+          <span className="flex items-center gap-3">Change Game Status</span>
         </button>
 
         <button onClick={onMovementClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">
-            <ArrowRightLeft size={20} />
-            Movement
-          </span>
+          <span className="flex items-center gap-3">Movement</span>
+        </button>
+
+        <button
+          onClick={onShareDirectorAccessClick}
+          className={standardButtonClass}
+        >
+          <span className="flex items-center gap-3">Share Director Access</span>
         </button>
 
         <button onClick={onDownloadUsebioClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">
-            <Download size={20} />
-            Download USEBIO
-          </span>
+          <span className="flex items-center gap-3">Download USEBIO</span>
         </button>
 
         <div className="mt-6">
           <button onClick={onDeleteGameClick} className={deleteButtonClass}>
-            <span className="flex items-center gap-3">
-              <Trash2 size={20} />
-              Delete Game
-            </span>
+            <span className="flex items-center gap-3">Delete Game</span>
           </button>
         </div>
       </div>

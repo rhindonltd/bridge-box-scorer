@@ -1,10 +1,8 @@
-import { GameType } from "@/db/games/types/game-type";
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
 import { TimerState } from "@/timer/timer-state";
 
 type SchedulerDeps = {
   updateTimerState: (
-    gameType: GameType,
     gameId: string,
     timerState: TimerState,
   ) => Promise<void>;
@@ -18,8 +16,8 @@ type ScheduledGame = {
 
 const scheduledGames = new Map<string, ScheduledGame>();
 
-export function cancelGameSchedule(gameType: string, gameId: string) {
-  const existing = scheduledGames.get(`${gameType}_${gameId}`);
+export function cancelGameSchedule(gameId: string) {
+  const existing = scheduledGames.get(gameId);
 
   if (!existing) {
     return;
@@ -27,16 +25,15 @@ export function cancelGameSchedule(gameType: string, gameId: string) {
 
   clearTimeout(existing.timeout);
 
-  scheduledGames.delete(`${gameType}_${gameId}`);
+  scheduledGames.delete(gameId);
 }
 
 export function scheduleGame(
-  gameType: GameType,
   gameId: string,
   engine: BridgeTimerEngine,
   deps: SchedulerDeps,
 ) {
-  cancelGameSchedule(gameType, gameId);
+  cancelGameSchedule(gameId);
 
   const state = engine.getState();
 
@@ -56,7 +53,7 @@ export function scheduleGame(
   const timeout = setTimeout(async () => {
     engine.nextPhase();
 
-    await deps.updateTimerState(gameType, gameId, engine.getState());
+    await deps.updateTimerState(gameId, engine.getState());
 
     deps.broadcast(gameId, engine.getState());
 
@@ -65,10 +62,10 @@ export function scheduleGame(
      * into the next phase,
      * schedule the next transition.
      */
-    scheduleGame(gameType, gameId, engine, deps);
+    scheduleGame(gameId, engine, deps);
   }, delay);
 
-  scheduledGames.set(`${gameType}_${gameId}`, {
+  scheduledGames.set(gameId, {
     timeout,
   });
 }

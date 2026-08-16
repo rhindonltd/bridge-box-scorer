@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useGame } from "@/context/GameContext";
-import {
-  DirectorContractWizard,
-  DirectorWizardResult,
-} from "@/components/play/contract-wizard/DirectorContractWizard";
 import { parseContract } from "@/model/contract";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { getDirectorToken } from "@/lib/director-token";
 import { SelectBoardPage } from "./SelectBoardPage";
-import {BoardInstance, TravellerView } from "./TravellerView";
+import { BoardInstance, Traveller } from "./Traveller";
+import {
+  DirectorContractWizard,
+  DirectorWizardResult,
+} from "./DirectorContractWizard";
 
 interface CorrectResultPageProps {
   onResultCorrected: () => void;
@@ -43,37 +43,55 @@ export function CorrectResultPage({
 
   // Fetch boards when on selectBoard step
   useEffect(() => {
-    if (wizardStep.step === "selectBoard") {
-      setBoardsLoading(true);
-      fetch(`/api/games/${game!.gameId}/boards`)
-        .then((r) => r.json())
-        .then((data) => {
+    if (wizardStep.step !== "selectBoard") return;
+
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag before async fetch
+    setBoardsLoading(true);
+    fetch(`/api/games/${game!.gameId}/boards`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) {
           setBoards(data.boards ?? []);
           setBoardsLoading(false);
-        })
-        .catch(() => {
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
           setBoards([]);
           setBoardsLoading(false);
-        });
-    }
-  }, [wizardStep.step, game!.gameId]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wizardStep.step, game]);
 
   // Fetch instances when viewing traveller
   useEffect(() => {
-    if (wizardStep.step === "viewTraveller") {
-      setInstancesLoading(true);
-      fetch(`/api/games/${game!.gameId}/boards/${wizardStep.boardNumber}`)
-        .then((r) => r.json())
-        .then((data) => {
+    if (wizardStep.step !== "viewTraveller") return;
+
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag before async fetch
+    setInstancesLoading(true);
+    fetch(`/api/games/${game!.gameId}/boards/${wizardStep.boardNumber}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) {
           setInstances(data.instances ?? []);
           setInstancesLoading(false);
-        })
-        .catch(() => {
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
           setInstances([]);
           setInstancesLoading(false);
-        });
-    }
-  }, [wizardStep, game!.gameId]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wizardStep, game]);
 
   function handleBoardSelected(boardNumber: number) {
     setWizardStep({ step: "viewTraveller", boardNumber });
@@ -189,11 +207,10 @@ export function CorrectResultPage({
 
     case "viewTraveller":
       return (
-        <TravellerView
+        <Traveller
           boardNumber={wizardStep.boardNumber}
           instances={instances}
           isLoading={instancesLoading}
-          gameType={game.gameType}
           onLineSelected={handleLineSelected}
           onBack={() => setWizardStep({ step: "selectBoard" })}
         />

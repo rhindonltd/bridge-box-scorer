@@ -14,6 +14,9 @@ export default function ManageGameMenuRoute() {
       onTravellersClick={() => router.push(`/manage/${id}/correct-result`)}
       onChangeStatusClick={() => router.push(`/manage/${id}/change-status`)}
       onMovementClick={() => router.push(`/manage/${id}/movement`)}
+      onShareDirectorAccessClick={() =>
+        router.push(`/manage/${id}/share-access`)
+      }
       onDownloadUsebioClick={() => router.push(`/manage/${id}/download-usebio`)}
       onDeleteGameClick={() => router.push(`/manage/${id}/delete-game`)}
     />

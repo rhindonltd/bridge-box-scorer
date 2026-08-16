@@ -1,16 +1,14 @@
 import { SocketEvents } from "@/socket/socket-events";
 import { createEngine } from "@/timer/game-store";
 import { Server, Socket } from "socket.io";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { Rooms } from "@/socket/rooms";
 import { scheduleGame } from "@/timer/scheduler";
 import { TimerState } from "@/timer/timer-state";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
-import { GameTypes } from "@/db/games/types/game-type";
 
 const payloadSchema = z.object({
-  gameType: z.enum(GameTypes),
   gameId: z.string().min(1),
   directorToken: z.string().min(1),
   boardsPerRound: z.number().int().positive(),
@@ -35,7 +33,6 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
     }
 
     const {
-      gameType,
       gameId,
       directorToken,
       boardsPerRound,
@@ -47,7 +44,6 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
 
     try {
       const engine = await createEngine(
-        gameType,
         gameId,
         boardsPerRound,
         totalRounds,
@@ -55,10 +51,10 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
         moveDuration,
       );
 
-      await updateTimerState(gameType, gameId, engine.getState());
+      await updateTimerState(gameId, engine.getState());
       broadcast(gameId, engine.getState());
 
-      scheduleGame(gameType, gameId, engine, { updateTimerState, broadcast });
+      scheduleGame(gameId, engine, { updateTimerState, broadcast });
     } catch (err) {
       console.error(`Failed to create timer for game ${gameId}:`, err);
     }

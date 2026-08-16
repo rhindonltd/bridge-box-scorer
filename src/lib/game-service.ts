@@ -4,6 +4,7 @@ import { emitWithAck, emitEvent } from "@/lib/socket";
 import { NewParticipant } from "@/model/participants";
 import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
 import { MitchellMovementSpec } from "@/movement/mitchell";
+import { setPlayerToken } from "./player-token";
 
 export async function createGame(game: NewBridgeGame): Promise<BridgeGame> {
   const response = await emitWithAck<{
@@ -42,11 +43,14 @@ export async function selectMitchellMovement(
 export async function createParticipant(
   gameId: string,
   newParticipant: NewParticipant,
-): Promise<string> {
-  return (
-    await emitWithAck<{ success: boolean; key: string }>(
-      SocketEvents.CREATE_PARTICIPANT,
-      { gameId, newParticipant, directorToken: getDirectorToken(gameId) },
-    )
-  ).key;
+) {
+  const response = await emitWithAck<{ success: boolean; key: string }>(
+    SocketEvents.CREATE_PARTICIPANT,
+    { gameId, newParticipant },
+  );
+
+  setPlayerToken(gameId, {
+    startingPosition: newParticipant.initialSeat,
+    token: response.key,
+  });
 }

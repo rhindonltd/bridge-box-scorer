@@ -5,7 +5,7 @@ import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { findPairs } from "@/db/games/queries/find-pairs";
 import { parseSeat } from "@/model/participants";
 
 const payloadSchema = z.object({
@@ -72,7 +72,5 @@ async function getHighestOccupiedTable(gameId: string): Promise<number> {
 
   if (seats.length === 0) return 0;
 
-  return Math.max(
-    ...seats.map((s) => parseSeat(s.initialSeat as any).tableNumber),
-  );
+  return Math.max(...seats.map((s) => parseSeat(s.initialSeat).tableNumber));
 }

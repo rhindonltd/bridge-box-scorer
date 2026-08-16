@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Socket as ServerSocket, Server } from "socket.io";
+import { Socket as ServerSocket } from "socket.io";
 import { Socket as ClientSocket } from "socket.io-client";
 import { createSocketTestServer } from "./socket-test-harness";
 import { emitWithAck, waitForEvent } from "./socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";
-import { Rooms } from "@/socket/rooms";
 
 // ---- Mock all DB layers ----
 
@@ -92,16 +91,16 @@ import { createGameDb } from "@/db/games/actions/create-game";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";
-import { createPlayer } from "@/db/games/shared/actions/create-player";
-import { createParticipant as createPairParticipant } from "@/db/games/pairs/actions/create-participant";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
-import { deleteParticipant as deletePairParticipant } from "@/db/games/pairs/actions/delete-participant";
+import { createPlayer } from "@/db/games/actions/create-player";
+import { createParticipant as createPairParticipant } from "@/db/games/actions/create-participant";
+import { findPairs } from "@/db/games/queries/find-pairs";
+import { deleteParticipant as deletePairParticipant } from "@/db/games/actions/delete-participant";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
 import { createShareCode } from "@/db/system/actions/create-share-code";
 import { validateAndClaimShareCode } from "@/db/system/queries/validate-share-code";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
-import { getEngine, createEngine } from "@/timer/game-store";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { getEngine } from "@/timer/game-store";
+import { updateTimerState } from "@/db/games/actions/update-timer-state";
 
 import { registerGameHandlers } from "@/socket/handlers/game/game.handlers";
 import { registerTimerHandlers } from "@/socket/handlers/timer/timer.handlers";

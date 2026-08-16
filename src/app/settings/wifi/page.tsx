@@ -12,19 +12,22 @@ export default function WifiSettings() {
   const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const fetchNetworks = async () => {
-    try {
-      const res = await fetch("/api/system/wifi/scan");
-      const data = await res.json();
-      data.sort((a: Network, b: Network) => b.signal - a.signal);
-      setNetworks(data);
-    } catch {
-      setMessage("Failed to load WiFi networks");
-    }
-  };
-
   useEffect(() => {
-    fetchNetworks();
+    let cancelled = false;
+    fetch("/api/system/wifi/scan")
+      .then((res) => res.json())
+      .then((data: Network[]) => {
+        if (!cancelled) {
+          data.sort((a, b) => b.signal - a.signal);
+          setNetworks(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMessage("Failed to load WiFi networks");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleTest = async (

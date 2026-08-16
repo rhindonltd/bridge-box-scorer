@@ -18,8 +18,8 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { deleteParticipant as deletePair } from "@/db/games/pairs/actions/delete-participant";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { deleteParticipant as deletePair } from "@/db/games/actions/delete-participant";
+import { findPairs } from "@/db/games/queries/find-pairs";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerEvictParticipantHandler } from "./evict-participant.handler";
 

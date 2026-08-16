@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
+import { getDb as getPairsDb } from "@/db/games";
+import { boards as pairsBoards } from "@/db/games/tables/boards";
 
 export async function GET(
   _req: Request,

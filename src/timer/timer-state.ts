@@ -1,4 +1,4 @@
-export type Phase = "move" | "play" | "finished";
+export type Phase = "move" | "play" | "break" | "finished" | null;
 
 export type TimerState = {
   version: number;

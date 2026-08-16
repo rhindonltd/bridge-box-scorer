@@ -1,4 +1,4 @@
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
@@ -34,15 +34,15 @@ export function registerPauseTimerHandler(socket: Socket, io: Server) {
     if (!assertDirector(directorToken, gameId)) return;
 
     try {
-      const engine = await getEngine(gameType, gameId);
+      const engine = await getEngine(gameId);
       if (!engine) return;
 
       engine.pause();
 
       // Explicitly cancel any scheduled phase transition since we're now paused
-      cancelGameSchedule(gameType, gameId);
+      cancelGameSchedule(gameId);
 
-      await updateTimerState(gameType, gameId, engine.getState());
+      await updateTimerState(gameId, engine.getState());
       broadcast(gameId, engine.getState());
     } catch (err) {
       console.error(`Failed to pause timer for game ${gameId}:`, err);

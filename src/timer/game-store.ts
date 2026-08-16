@@ -1,13 +1,11 @@
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
-import { findTimerState } from "@/db/games/shared/queries/find-timer-state";
-import { GameType } from "@/db/games/types/game-type";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { findTimerState } from "@/db/games/queries/find-timer-state";
+import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { TimerState } from "@/timer/timer-state";
 
 const gameMap = new Map<string, BridgeTimerEngine>();
 
 export async function createEngine(
-  gameType: GameType,
   gameId: string,
   boardsPerRound: number,
   totalRounds: number,
@@ -30,21 +28,21 @@ export async function createEngine(
 
   const engine = new BridgeTimerEngine(newTimerState);
 
-  await updateTimerState(gameType, gameId, newTimerState);
+  await updateTimerState(gameId, newTimerState);
 
-  gameMap.set(`${gameType}_${gameId}`, engine);
+  gameMap.set(gameId, engine);
   return engine;
 }
 
-export async function getEngine(gameType: GameType, gameId: string) {
-  let engine = gameMap.get(`${gameType}_${gameId}`);
+export async function getEngine(gameId: string) {
+  let engine = gameMap.get(gameId);
   if (engine) return engine;
 
-  const timerState = await findTimerState(gameType, gameId);
+  const timerState = await findTimerState(gameId);
 
   if (timerState) {
     engine = new BridgeTimerEngine(timerState);
-    gameMap.set(`${gameType}_${gameId}`, engine);
+    gameMap.set(gameId, engine);
     return engine;
   }
 

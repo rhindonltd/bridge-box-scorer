@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findClub } from "@/db/system/queries/find-club";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards } from "@/db/games/pairs/tables/boards";
+import { findPairs } from "@/db/games/queries/find-pairs";
+import { getDb as getPairsDb } from "@/db/games";
+import { boards } from "@/db/games/tables/boards";
 import {
   generateUsebioXml,
   UsebioGameData,

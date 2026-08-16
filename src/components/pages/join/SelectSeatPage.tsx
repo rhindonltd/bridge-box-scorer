@@ -1,7 +1,7 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import { Pair, PairSeat, Participant, Seat } from "@/model/participants";
+import { Pair, PairSeat, Seat } from "@/model/participants";
 import { useState } from "react";
 import EnterPlayerNames from "@/components/join/EnterPlayerNames";
 import { swrKeys } from "@/swr/swr-keys";
@@ -9,7 +9,7 @@ import { fetcher } from "@/lib/fetcher";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { SocketEvents } from "@/socket/socket-events";
 import useSWR from "swr";
-import { NewPlayer } from "@/db/games/shared/tables/players";
+import { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
 import { GameInfo } from "@/components/common/GameInfo";
 import SelectPairsTable from "@/components/join/SelectTable";
@@ -21,10 +21,6 @@ interface Props {
 export function SelectSeatPage({ onSeatSelected }: Props) {
   const { game } = useGame();
 
-  if (!game) {
-    return null;
-  }
-
   const gameId = game?.gameId;
 
   const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
@@ -33,18 +29,18 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
 
   const { data } = useSWR<Pair[], Error>(key, fetcher);
 
-  if (!gameId) {
-    return null;
-  }
-
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.pairs(gameId),
+      key: swrKeys.pairs(gameId!),
       data: p.participants,
     }),
     [gameId],
   );
+
+  if (!game || !gameId) {
+    return null;
+  }
 
   const handleSeatSelected = (seat: PairSeat) => {
     setSelectedSeat(seat);
@@ -56,8 +52,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
       initialSeat: selectedSeat!,
       player1,
       player2,
-    });
-    // TODO: Put seat and key in local storage
+    }).then(() => onSeatSelected(selectedSeat!));
   }
 
   return (

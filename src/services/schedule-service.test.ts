@@ -31,7 +31,7 @@ vi.mock("drizzle-orm", () => ({
   or: vi.fn((...args: any[]) => args),
 }));
 
-import { getDb as getPairsDb } from "@/db/games/pairs";
+import { getDb as getPairsDb } from "@/db/games";
 
 describe("schedule-service", () => {
   beforeEach(() => {
@@ -51,7 +51,7 @@ describe("schedule-service", () => {
       };
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getPlayerSchedule("game-1", "PAIRS", "99NS");
+      const result = await getPlayerSchedule("game-1", "99NS");
 
       expect(result).toBeNull();
     });
@@ -145,7 +145,7 @@ describe("schedule-service", () => {
 
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getPlayerSchedule("game-1", "PAIRS", "1NS");
+      const result = await getPlayerSchedule("game-1", "1NS");
 
       expect(result).not.toBeNull();
       expect(result!.side).toBe("NS");
@@ -209,7 +209,7 @@ describe("schedule-service", () => {
 
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getPlayerSchedule("game-1", "PAIRS", "1EW");
+      const result = await getPlayerSchedule("game-1", "1EW");
 
       expect(result).not.toBeNull();
       expect(result!.side).toBe("EW");

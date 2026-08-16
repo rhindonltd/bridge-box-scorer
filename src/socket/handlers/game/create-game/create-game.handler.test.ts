@@ -27,7 +27,7 @@ import { registerCreateGameHandler } from "./create-game.handler";
 describe("registerCreateGameHandler", () => {
   let socket: any;
   let io: any;
-  let handler: Function;
+  let handler: (...args: unknown[]) => Promise<void>;
 
   beforeEach(() => {
     vi.clearAllMocks();

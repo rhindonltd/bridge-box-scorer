@@ -4,4 +4,5 @@ export const BoardStatuses = [
   "CONFIRMED",
   "OVERRIDDEN",
 ] as const;
+
 export type BoardStatus = (typeof BoardStatuses)[number];

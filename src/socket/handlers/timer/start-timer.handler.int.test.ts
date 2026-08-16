@@ -22,7 +22,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 }));
 
 import { getEngine } from "@/timer/game-store";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerStartTimerHandler } from "./start-timer.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
