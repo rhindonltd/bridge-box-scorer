@@ -17,12 +17,11 @@ export async function createBoardSubmission(
       target: [
         boardSubmissions.roundNumber,
         boardSubmissions.tableNumber,
-        boardSubmissions.boardNumber,
         boardSubmissions.side,
       ],
       set: {
-        result: boardSubmission.result,
-        submittedAt: new Date(),
+        boardNumber: boardSubmission.boardNumber,
+        result: boardSubmission.result
       },
     });
 }

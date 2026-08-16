@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "../lib/socket";
 import { SocketEvents } from "../socket/socket-events";
 
-interface RoundSchedule {
+export interface RoundSchedule {
   roundNumber: number;
-  tableNumber: number | null;
+  tableNumber: number;
   boards: number[];
   boardStatuses: {
     boardNumber: number;
-    status: string | null;
+    status: string;
   }[];
   players: {
     N: {

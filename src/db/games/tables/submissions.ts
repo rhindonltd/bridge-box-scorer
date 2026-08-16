@@ -26,7 +26,6 @@ export const boardSubmissions = sqliteTable(
       columns: [
         table.roundNumber,
         table.tableNumber,
-        table.boardNumber,
         table.side,
       ],
     }),
