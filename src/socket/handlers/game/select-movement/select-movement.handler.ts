@@ -8,16 +8,16 @@ import {
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
 
-import { getDb as getPairsDb } from "@/db/games/pairs";
+import { getDb as getPairsDb } from "@/db/games";
 
 import {
   boards as pairBoards,
   NewBoard as NewPairBoard,
-} from "@/db/games/pairs/tables/boards";
+} from "@/db/games/tables/boards";
 import {
   assignments as pairAssignments,
   Assignment as PairAssignment,
-} from "@/db/games/pairs/tables/assignments";
+} from "@/db/games/tables/assignments";
 
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { generateMitchell, MitchellMovementSpec } from "@/movement/mitchell";

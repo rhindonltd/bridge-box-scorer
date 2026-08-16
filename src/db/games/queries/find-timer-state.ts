@@ -1,14 +1,12 @@
-import { GameType } from "@/db/games/types/game-type";
 import { TimerState } from "@/timer/timer-state";
-import { getDb as pairDb } from "@/db/games/pairs";
-import { metadata } from "../tables/metadata";
+import { getDb } from "@/db/games";
+import { metadata } from "@/db/games/tables/metadata";
 import { eq } from "drizzle-orm";
 
 export async function findTimerState(
-  gameType: GameType,
   gameId: string,
 ): Promise<TimerState | null> {
-  const db = await pairDb(gameId);
+  const db = await getDb(gameId);
 
   const timers = await db
     .select()

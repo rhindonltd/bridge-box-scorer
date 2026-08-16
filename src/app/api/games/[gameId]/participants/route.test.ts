@@ -7,7 +7,7 @@ vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { findPairs } from "@/db/games/queries/find-pairs";
 
 describe("GET /api/games/pairs/[gameId]/participants", () => {
   beforeEach(() => {

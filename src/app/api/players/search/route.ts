@@ -1,4 +1,4 @@
-import { NewPlayer } from "@/db/games/shared/tables/players";
+import { NewPlayer } from "@/db/games/tables/players";
 import { findPlayer } from "@/db/players/queries/find-player";
 import { NextRequest, NextResponse } from "next/server";
 

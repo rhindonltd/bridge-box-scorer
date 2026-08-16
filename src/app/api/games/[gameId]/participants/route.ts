@@ -1,4 +1,4 @@
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { findPairs } from "@/db/games/queries/find-pairs";
 import { NextResponse } from "next/server";
 
 export async function GET(

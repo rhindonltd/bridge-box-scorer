@@ -9,7 +9,7 @@ vi.mock("@/db/games/pairs/tables/boards", () => ({
   boards: "pairsBoards",
 }));
 
-import { getDb as getPairsDb } from "@/db/games/pairs";
+import { getDb as getPairsDb } from "@/db/games";
 
 describe("movement-service", () => {
   beforeEach(() => {

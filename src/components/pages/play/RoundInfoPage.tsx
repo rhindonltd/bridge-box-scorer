@@ -2,7 +2,7 @@
 
 import RoundInfo from "@/components/play/RoundInfo";
 import React from "react";
-import { Player } from "@/db/games/shared/tables/players";
+import { Player } from "@/db/games/tables/players";
 import { PlayHeader } from "@/components/play/PlayHeader";
 
 interface Props {

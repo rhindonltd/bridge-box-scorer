@@ -1,16 +1,14 @@
 "use server";
 
-import { getDb as pairDb } from "@/db/games/pairs";
-import { GameType } from "@/db/games/types/game-type";
+import { getDb } from "@/db/games";
 import { TimerState } from "@/timer/timer-state";
-import { metadata } from "@/db/games/shared/tables/metadata";
+import { metadata } from "@/db/games/tables/metadata";
 
 export async function updateTimerState(
-  gameType: GameType,
   gameId: string,
   timerState: TimerState,
 ) {
-  const db = await pairDb(gameId);
+  const db = await getDb(gameId);
 
   await db
     .insert(metadata)

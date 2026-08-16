@@ -1,8 +1,8 @@
 "use server";
 
-import { getDb } from "@/db/games/pairs";
-import { participants } from "@/db/games/pairs/tables/participants";
-import { players } from "@/db/games/shared/tables/players";
+import { getDb } from "@/db/games";
+import { participants } from "@/db/games/tables/participants";
+import { players } from "@/db/games/tables/players";
 import { eq } from "drizzle-orm";
 import { PairSeat } from "@/model/participants";
 

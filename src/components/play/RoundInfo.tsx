@@ -1,6 +1,6 @@
 import React from "react";
 import CardTable from "@/components/common/CardTable";
-import { Player } from "@/db/games/shared/tables/players";
+import { Player } from "@/db/games/tables/players";
 
 interface Props {
   table: number;

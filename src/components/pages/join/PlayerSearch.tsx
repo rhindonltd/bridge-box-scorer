@@ -1,6 +1,6 @@
 "use client";
 
-import { NewPlayer } from "@/db/games/shared/tables/players";
+import { NewPlayer } from "@/db/games/tables/players";
 import { useEffect, useMemo, useState } from "react";
 import { PlayerSearchView } from "./PlayerSearchView";
 

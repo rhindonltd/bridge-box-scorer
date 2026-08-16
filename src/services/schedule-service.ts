@@ -1,11 +1,11 @@
 "use server";
 
 import { eq, or } from "drizzle-orm";
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
-import { assignments as pairAssignments } from "@/db/games/pairs/tables/assignments";
-import { participants as pairParticipants } from "@/db/games/pairs/tables/participants";
-import { players } from "@/db/games/shared/tables/players";
+import { getDb } from "@/db/games";
+import { boards as pairsBoards } from "@/db/games/tables/boards";
+import { assignments as pairAssignments } from "@/db/games/tables/assignments";
+import { participants as pairParticipants } from "@/db/games/tables/participants";
+import { players } from "@/db/games/tables/players";
 import { PairSeat } from "@/model/participants";
 
 export async function getPlayerSchedule(gameId: string, seat: string) {
@@ -13,7 +13,7 @@ export async function getPlayerSchedule(gameId: string, seat: string) {
 }
 
 async function getPairsSchedule(gameId: string, seat: string) {
-  const db = await getPairsDb(gameId);
+  const db = await getDb(gameId);
 
   // Look up assignment ID for this seat
   const assignment = await db

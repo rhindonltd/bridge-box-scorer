@@ -1,5 +1,5 @@
 import CardTable from "@/components/common/CardTable";
-import { Player } from "@/db/games/shared/tables/players";
+import { Player } from "@/db/games/tables/players";
 import React from "react";
 
 interface Players {

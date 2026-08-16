@@ -1,5 +1,5 @@
 import { sqliteTable, integer, unique, text } from "drizzle-orm/sqlite-core";
-import { players } from "@/db/games/shared/tables/players";
+import { players } from "@/db/games/tables/players";
 import { PairSeat } from "@/model/participants";
 
 export const participants = sqliteTable(

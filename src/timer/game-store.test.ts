@@ -8,8 +8,8 @@ vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
-import { findTimerState } from "@/db/games/shared/queries/find-timer-state";
-import { updateTimerState } from "@/db/games/shared/actions/update-timer-state";
+import { findTimerState } from "@/db/games/queries/find-timer-state";
+import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { createEngine, getEngine, getAllEngines } from "./game-store";
 import type { TimerState } from "./timer-state";
 
@@ -22,7 +22,7 @@ describe("game-store", () => {
     it("creates a new engine with correct initial state", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      const engine = await createEngine("PAIRS", "game-1", 3, 5, 420, 60);
+      const engine = await createEngine("game-1", 3, 5, 420, 60);
 
       expect(engine).toBeDefined();
       expect(engine.getState()).toMatchObject({
@@ -41,7 +41,7 @@ describe("game-store", () => {
     it("persists the timer state to the database", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      await createEngine("PAIRS", "game-2", 2, 4, 300, 45);
+      await createEngine("game-2", 2, 4, 300, 45);
 
       expect(updateTimerState).toHaveBeenCalledWith(
         "PAIRS",
@@ -60,8 +60,8 @@ describe("game-store", () => {
     it("caches the engine so getEngine returns it", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      const created = await createEngine("PAIRS", "cached-1", 3, 5, 420, 60);
-      const fetched = await getEngine("PAIRS", "cached-1");
+      const created = await createEngine("cached-1", 3, 5, 420, 60);
+      const fetched = await getEngine("cached-1");
 
       expect(fetched).toBe(created);
       expect(findTimerState).not.toHaveBeenCalled();
@@ -72,7 +72,7 @@ describe("game-store", () => {
     it("returns null if no engine exists in cache and DB returns null", async () => {
       vi.mocked(findTimerState).mockResolvedValue(null);
 
-      const engine = await getEngine("PAIRS", "nonexistent");
+      const engine = await getEngine("nonexistent");
 
       expect(engine).toBeNull();
     });
@@ -94,7 +94,7 @@ describe("game-store", () => {
 
       vi.mocked(findTimerState).mockResolvedValue(dbState);
 
-      const engine = await getEngine("PAIRS", "db-game");
+      const engine = await getEngine("db-game");
 
       expect(engine).not.toBeNull();
       expect(engine!.getState()).toMatchObject({
@@ -109,7 +109,7 @@ describe("game-store", () => {
     it("returns the map of all created engines", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      await createEngine("PAIRS", "all-engines-1", 3, 5, 420, 60);
+      await createEngine("all-engines-1", 3, 5, 420, 60);
 
       const allEngines = getAllEngines();
 

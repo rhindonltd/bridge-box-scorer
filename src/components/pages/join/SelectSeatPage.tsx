@@ -1,7 +1,7 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import { Pair, PairSeat, Participant, Seat } from "@/model/participants";
+import { Pair, PairSeat, Seat } from "@/model/participants";
 import { useState } from "react";
 import EnterPlayerNames from "@/components/join/EnterPlayerNames";
 import { swrKeys } from "@/swr/swr-keys";
@@ -9,7 +9,7 @@ import { fetcher } from "@/lib/fetcher";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { SocketEvents } from "@/socket/socket-events";
 import useSWR from "swr";
-import { NewPlayer } from "@/db/games/shared/tables/players";
+import { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
 import { GameInfo } from "@/components/common/GameInfo";
 import SelectPairsTable from "@/components/join/SelectTable";
@@ -52,9 +52,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
       initialSeat: selectedSeat!,
       player1,
       player2,
-    });
-
-    // go to waiting for movement page
+    }).then(() => onSeatSelected(selectedSeat!));
   }
 
   return (

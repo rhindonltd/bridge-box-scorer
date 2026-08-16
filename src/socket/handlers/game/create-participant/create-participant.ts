@@ -3,10 +3,10 @@ import { Server, Socket } from "socket.io";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 
-import { createPlayer } from "@/db/games/shared/actions/create-player";
+import { createPlayer } from "@/db/games/actions/create-player";
 
-import { createParticipant as createPair } from "@/db/games/pairs/actions/create-participant";
-import { findPairs } from "@/db/games/pairs/queries/find-pairs";
+import { createParticipant as createPair } from "@/db/games/actions/create-participant";
+import { findPairs } from "@/db/games/queries/find-pairs";
 
 import { NewParticipant } from "@/model/participants";
 
@@ -28,10 +28,10 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
 
         // PAIR
         const player1 = (
-          await createPlayer("PAIRS", gameId, newParticipant.player1)
+          await createPlayer(gameId, newParticipant.player1)
         ).id;
         const player2 = (
-          await createPlayer("PAIRS", gameId, newParticipant.player2)
+          await createPlayer(gameId, newParticipant.player2)
         ).id;
 
         await createPair(gameId, {

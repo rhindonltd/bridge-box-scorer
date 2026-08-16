@@ -2,8 +2,8 @@ import { Server, Socket } from "socket.io";
 import { eq, and } from "drizzle-orm";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
-import { getDb as getPairsDb } from "@/db/games/pairs";
-import { boards as pairsBoards } from "@/db/games/pairs/tables/boards";
+import { getDb as getPairsDb } from "@/db/games";
+import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { BoardOutcome } from "@/model/score";
 
 /**
@@ -43,7 +43,6 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
     async (
       {
         gameId,
-        gameType,
         seat,
         roundNumber,
         tableNumber,
@@ -51,7 +50,6 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         result,
       }: {
         gameId: string;
-        gameType: string;
         seat: string;
         roundNumber: number;
         tableNumber: number;
