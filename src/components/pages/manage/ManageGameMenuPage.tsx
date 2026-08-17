@@ -1,5 +1,6 @@
 "use client";
 
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useGame } from "@/context/GameContext";
 
 export interface DirectorMenuPageProps {
@@ -30,43 +31,45 @@ export function ManageGameMenuPage({
     "w-full py-3.5 text-lg font-semibold bg-red-100 text-red-700 rounded-xl hover:bg-red-200 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 pl-4";
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
-        {game.eventName}
-      </div>
-
-      {/* Menu buttons */}
-      <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
-        <button onClick={onTimerClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">Create/Amend Timer</span>
-        </button>
-
-        <button onClick={onTravellersClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">Travellers</span>
-        </button>
-
-        <button onClick={onMovementClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">Movement</span>
-        </button>
-
-        <button
-          onClick={onShareDirectorAccessClick}
-          className={standardButtonClass}
-        >
-          <span className="flex items-center gap-3">Share Director Access</span>
-        </button>
-
-        <button onClick={onDownloadUsebioClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">Download USEBIO</span>
-        </button>
-
-        <div className="mt-6">
-          <button onClick={onDeleteGameClick} className={deleteButtonClass}>
-            <span className="flex items-center gap-3">Delete Game</span>
+    <GamePageLayout
+      headerTitle="Manage Game Menu"
+      children={
+        <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
+          <button onClick={onTimerClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Create/Amend Timer</span>
           </button>
+
+          <button onClick={onTravellersClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Travellers</span>
+          </button>
+
+          <button onClick={onMovementClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Movement</span>
+          </button>
+
+          <button
+            onClick={onShareDirectorAccessClick}
+            className={standardButtonClass}
+          >
+            <span className="flex items-center gap-3">
+              Share Director Access
+            </span>
+          </button>
+
+          <button
+            onClick={onDownloadUsebioClick}
+            className={standardButtonClass}
+          >
+            <span className="flex items-center gap-3">Download USEBIO</span>
+          </button>
+
+          <div className="mt-6">
+            <button onClick={onDeleteGameClick} className={deleteButtonClass}>
+              <span className="flex items-center gap-3">Delete Game</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      }
+    />
   );
 }

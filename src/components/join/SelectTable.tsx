@@ -27,7 +27,7 @@ export default function SelectTable({
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       {/* Fixed title */}
-      <div className="shrink-0 px-4 mt-4 mb-2">
+      <div className="shrink-0 px-4 mt-2 mb-2">
         <span>Please select the table and direction you are sitting:</span>
       </div>
 

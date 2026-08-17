@@ -1,6 +1,5 @@
 "use client";
 
-import SelectGame from "@/components/join/SelectGame";
 import { BridgeGame } from "@/db/game-index/schema";
 import { fetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
@@ -9,14 +8,17 @@ import useSWR, { useSWRConfig } from "swr";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { SelectGame } from "@/components/common/SelectGame";
 
 interface Props {
   onGameSelected: (gameId: string) => void;
 }
 
 export default function SelectGamePage({ onGameSelected }: Props) {
-  const { data } = useSWR<BridgeGame[], Error>(swrKeys.joinableGames, fetcher);
+  const { data, isLoading } = useSWR<BridgeGame[], Error>(
+    swrKeys.joinableGames,
+    fetcher,
+  );
   const { mutate } = useSWRConfig();
 
   useEffect(() => {
@@ -41,11 +43,11 @@ export default function SelectGamePage({ onGameSelected }: Props) {
   );
 
   return (
-    <PageLayout
-      headerTitle="Select Game"
-      children={
-        data && <SelectGame games={data} onGameSelected={onGameSelected} />
-      }
+    <SelectGame
+      headerTitle="Manage Game"
+      games={data ?? []}
+      isLoading={isLoading}
+      onGameSelected={onGameSelected}
     />
   );
 }

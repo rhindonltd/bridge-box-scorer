@@ -4,10 +4,10 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 export function AwaitingMovementPage() {
   return (
-      <GamePageLayout
-          headerTitle="Awaiting Movement"
-          centerContent={true}
-          children={ <AwaitingMovement /> }
-      />
+    <GamePageLayout
+      headerTitle="Awaiting Movement"
+      centerContent={true}
+      children={<AwaitingMovement />}
+    />
   );
 }
