@@ -6,18 +6,18 @@ import { useGame } from "@/context/GameContext";
 import { ContractWizard } from "@/components/play/contract-wizard/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { parseContract } from "@/model/contract";
-import { WaitingForConfirmation } from "@/components/pages/play/WaitingForConfirmation";
-import { ResultMismatch } from "@/components/pages/play/ResultMismatch";
-import { RoundInfoPage } from "@/components/pages/play/RoundInfoPage";
-import { GameComplete } from "@/components/pages/play/GameComplete";
-import { BoardResultsPage } from "@/components/pages/play/BoardResultsPage";
+import { WaitingForConfirmation } from "@/app/play/[gameId]/[initialSeat]/WaitingForConfirmation";
+import { ResultMismatch } from "@/app/play/[gameId]/[initialSeat]/ResultMismatch";
+import { RoundInfoPage } from "@/app/play/[gameId]/[initialSeat]/RoundInfoPage";
+import { GameComplete } from "@/app/play/[gameId]/[initialSeat]/GameComplete";
+import { BoardResultsPage } from "@/app/play/[gameId]/[initialSeat]/BoardResultsPage";
 import { score, ScoredTraveller } from "@/scoring/traveller/score-traveller";
 import { Traveller } from "@/model/traveller";
 import { Player } from "@/db/games/tables/players";
-import { SitOutPage } from "@/components/pages/play/SitOutPage";
+import { SitOutPage } from "@/app/play/[gameId]/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
 import { BoardInstance } from "@/app/manage/[gameId]/correct-result/Traveller";
-import { MoveInfoPage } from "@/components/pages/play/MoveInfoPage";
+import { MoveInfoPage } from "@/app/play/[gameId]/[initialSeat]/MoveInfoPage";
 
 export default function PlayPage() {
   const params = useParams<{ gameId: string; initialSeat: string }>();

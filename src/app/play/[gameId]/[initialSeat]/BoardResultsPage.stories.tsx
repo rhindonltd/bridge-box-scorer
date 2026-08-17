@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { BoardResultsPage } from "@/components/pages/play/BoardResultsPage";
+import { BoardResultsPage } from "@/app/play/[gameId]/[initialSeat]/BoardResultsPage";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";

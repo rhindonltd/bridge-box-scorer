@@ -2,11 +2,11 @@
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
-interface TimerStatus {
+export interface TimerStatus {
   isRunning: boolean;
   phase: string | null;
   remaining: number;
-  round: number;
+  round: number | null;
   projectedEndDate: Date | null;
 }
 

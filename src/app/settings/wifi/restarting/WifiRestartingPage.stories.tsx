@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { WifiRestartingPage } from "@/components/pages/settings/WifiRestartingPage";
+import { WifiRestartingPage } from "@/app/settings/wifi/restarting/WifiRestartingPage";
 
 const meta: Meta<typeof WifiRestartingPage> = {
   title: "Pages/Settings/WifiRestartingPage",

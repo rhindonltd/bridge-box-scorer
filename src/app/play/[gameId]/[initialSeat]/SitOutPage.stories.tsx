@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { SitOutPage } from "./SitOutPage";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 import { fn } from "storybook/test";
-import { withGame } from "../../../../.storybook/decorators/GameDecorator";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof SitOutPage> = {
   title: "Pages/Play/SitOutPage",

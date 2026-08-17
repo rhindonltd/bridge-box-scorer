@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Network } from "@/model/network";
-import { WifiSettingsForm } from "@/components/pages/settings/WifiSettingsForm";
+import { WifiSettingsForm } from "@/app/settings/wifi/WifiSettingsForm";
 
 const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || "";
 

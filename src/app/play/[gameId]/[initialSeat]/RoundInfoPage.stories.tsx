@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { RoundInfoPage } from "@/components/pages/play/RoundInfoPage";
+import { RoundInfoPage } from "@/app/play/[gameId]/[initialSeat]/RoundInfoPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 

@@ -7,7 +7,7 @@ import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { getDirectorToken } from "@/lib/director-token";
 import { useEffect, useMemo, useState } from "react";
-import { TimerControlsView } from "./TimerControlsView";
+import { TimerControlsView, TimerStatus } from "./TimerControlsView";
 
 export default function ManageTimerPage() {
   const { game } = useGame();
@@ -21,7 +21,7 @@ export default function ManageTimerPage() {
     return () => clearInterval(id);
   }, []);
 
-  const timer = useTimerDerived(timerState, tick);
+  const timer: TimerStatus | null = useTimerDerived(timerState, tick);
 
   const [boardsPerRound, setBoardsPerRound] = useState(3);
   const [totalRounds, setTotalRounds] = useState(8);

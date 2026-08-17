@@ -1,5 +1,5 @@
 import { GameProviderClient } from "@/context/GameProviderClient";
-import { DirectorGuard } from "@/components/manage/DirectorGuard";
+import { DirectorGuard } from "@/app/manage/[gameId]/DirectorGuard";
 
 export default async function GameLayout({
   children,

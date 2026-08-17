@@ -1,6 +1,6 @@
 "use client";
 
-import SelectGamePage from "@/components/pages/common/SelectGamePage";
+import SelectGamePage from "@/components/pages/SelectGamePage";
 import { useRouter } from "next/navigation";
 
 export default function SelectGameRoute() {
