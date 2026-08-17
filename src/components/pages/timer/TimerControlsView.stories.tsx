@@ -1,23 +1,23 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { TimerControlsView } from "./TimerControlsView";
-import {withGame} from "@storybook/decorators/GameDecorator";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const mockGame = {
-    id: 1,
-    eventName: "Monday AM Pairs",
-    director: "Jacqui Collier",
-    gameType: "PAIRS" as const,
-    scoringType: "MP" as const,
-    gameId: "abc123",
-    sessionName: "1",
-    sectionName: "A",
-    eventDate: new Date().toISOString(),
-    tables: 8,
-    leadCardRequired: true,
-    status: "JOINABLE" as const,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+  id: 1,
+  eventName: "Monday AM Pairs",
+  director: "Jacqui Collier",
+  gameType: "PAIRS" as const,
+  scoringType: "MP" as const,
+  gameId: "abc123",
+  sessionName: "1",
+  sectionName: "A",
+  eventDate: new Date().toISOString(),
+  tables: 8,
+  leadCardRequired: true,
+  status: "JOINABLE" as const,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 };
 
 const meta: Meta<typeof TimerControlsView> = {

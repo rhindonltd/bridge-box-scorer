@@ -54,6 +54,7 @@ export function TimerControlsView({
   return (
     <GamePageLayout
       headerTitle="Timer Controls"
+      centerContent={true}
       children={
         <>
           <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
@@ -211,40 +212,40 @@ export function TimerControlsView({
               </div>
             </div>
           </div>
-
-          {/* CONTROLS */}
-          <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-            {!hasSession ? (
+        </>
+      }
+      actions={
+        <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+          {!hasSession ? (
+            <button
+              onClick={onCreate}
+              className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              Create
+            </button>
+          ) : (
+            <>
               <button
-                onClick={onCreate}
+                onClick={onApplyChanges}
                 className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
-                Create
+                Apply Changes
               </button>
-            ) : (
-              <>
-                <button
-                  onClick={onApplyChanges}
-                  className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                >
-                  Apply Changes
-                </button>
-                <button
-                  onClick={onStart}
-                  className="bg-green-600 text-white py-6 rounded-xl text-xl font-semibold hover:bg-green-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-                >
-                  Start
-                </button>
-                <button
-                  onClick={onPause}
-                  className="bg-yellow-500 text-gray-900 py-6 rounded-xl text-xl font-semibold hover:bg-yellow-600 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
-                >
-                  Pause
-                </button>
-              </>
-            )}
-          </div>
-        </>
+              <button
+                onClick={onStart}
+                className="bg-green-600 text-white py-6 rounded-xl text-xl font-semibold hover:bg-green-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+              >
+                Start
+              </button>
+              <button
+                onClick={onPause}
+                className="bg-yellow-500 text-gray-900 py-6 rounded-xl text-xl font-semibold hover:bg-yellow-600 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
+              >
+                Pause
+              </button>
+            </>
+          )}
+        </div>
       }
     />
   );
