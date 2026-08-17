@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { MainMenuPage } from "@/components/pages/mainmenu/MainMenuPage";
+import { MainMenuPage } from "@/app/MainMenuPage";
 
 export default function MainMenu() {
   const router = useRouter();

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useGame } from "@/context/GameContext";
-import { DeleteGamePage } from "@/components/pages/manage/DeleteGamePage";
+import { DeleteGamePage } from "@/app/manage/[gameId]/delete-game/DeleteGamePage";
 
 export default function DeleteGameRoute() {
   const router = useRouter();

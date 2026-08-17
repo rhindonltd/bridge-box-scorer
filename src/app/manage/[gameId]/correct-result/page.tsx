@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useGame } from "@/context/GameContext";
-import { CorrectResultPage } from "@/components/pages/manage/correct-result/CorrectResultPage";
+import { CorrectResultPage } from "@/app/manage/[gameId]/correct-result/CorrectResultPage";
 
 export default function CorrectResultRoute() {
   const router = useRouter();

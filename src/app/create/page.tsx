@@ -1,4 +1,4 @@
-import { CreateGamePage } from "@/components/pages/create/CreateGamePage";
+import { CreateGamePage } from "@/app/create/CreateGamePage";
 
 export default function CreateRoute() {
   return <CreateGamePage />;

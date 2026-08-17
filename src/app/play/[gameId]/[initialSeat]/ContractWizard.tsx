@@ -1,0 +1,208 @@
+"use client";
+
+import { ArrowLeft } from "lucide-react";
+
+import { ContractCode } from "@/model/contract";
+import { Card } from "@/model/common";
+import { SpecialBoardOutcome } from "@/model/result";
+import { useGame } from "@/context/GameContext";
+import { useAssignment } from "@/context/AssignmentContext";
+
+import { StepBoard } from "@/components/contract-wizard/StepBoard";
+import { StepLevel } from "@/components/contract-wizard/StepLevel";
+import { StepSuit } from "@/components/contract-wizard/StepSuit";
+import { StepDeclarer } from "@/components/contract-wizard/StepDeclarer";
+import { StepOpeningLead } from "@/components/contract-wizard/StepOpeningLead";
+import { StepResult } from "@/components/contract-wizard/StepResult";
+import { StepConfirm } from "@/components/contract-wizard/StepConfirm";
+import { useBoardFlow } from "@/hooks/board-flow";
+import { BoardDropDown } from "@/components/contract-wizard/BoardDropDown";
+import { useState } from "react";
+
+interface Props {
+  round: number;
+  table: number;
+  roundBoards: number[];
+  playedBoards: number[];
+  leadCardRequired: boolean;
+  onComplete: (data: {
+    contract: ContractCode | SpecialBoardOutcome;
+    result: number;
+    lead: Card | null;
+  }) => void;
+}
+
+export function ContractWizard({
+  round,
+  table,
+  roundBoards,
+  playedBoards,
+  leadCardRequired,
+  onComplete,
+}: Props) {
+  const { game } = useGame();
+  const { assignment } = useAssignment();
+
+  const {
+    level,
+    suit,
+    declarer,
+    dbl,
+    specialOutcome,
+    leadSuit,
+    leadRank,
+    resultMode,
+    resultValue,
+    step,
+    handleBack,
+    onLeadComplete,
+    setLeadSuit,
+    setLeadRank,
+    onResultComplete,
+    onLevelSelected,
+    onSpecialOutcome,
+    onSuitSelected,
+    onDeclarerSelected,
+  } = useBoardFlow({ leadCardRequired });
+
+  const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
+
+  const onSubmit = () => {
+    if (specialOutcome) {
+      onComplete({ contract: specialOutcome, result: 0, lead: null });
+      return;
+    }
+
+    if (level && suit && declarer !== null) {
+      const contract: ContractCode = `${level}${suit}${dbl}${declarer}`;
+      const lead: Card | null =
+        leadSuit && leadRank ? (`${leadSuit}${leadRank}` as Card) : null;
+
+      const numericResult = resultMode === "down" ? -resultValue : resultValue;
+
+      onComplete({ contract, result: numericResult, lead });
+    }
+  };
+
+  const subHeader = (
+    <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
+      <span className="font-bold text-lg">
+        Table {table}, Round {round}
+      </span>
+      {step !== 0 && (
+        <BoardDropDown
+          roundBoards={roundBoards}
+          playedBoards={playedBoards}
+          selectedBoard={selectedBoard}
+          onBoardSelected={setSelectedBoard}
+        />
+      )}
+    </div>
+  );
+
+  // --- Header (grey bar) ---
+
+  const header = (
+    <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-center gap-2 shrink-0">
+      {step > 0 && (
+        <button
+          onClick={handleBack}
+          className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} />
+        </button>
+      )}
+      <div className="flex-1 flex items-start justify-between min-w-0">
+        <div className="truncate">
+          <div className="font-semibold">{game?.eventName}</div>
+          {(game?.sessionName || game?.sectionName) && (
+            <div className="text-sm text-gray-600">
+              {game?.sessionName}
+              {game?.sessionName && game?.sectionName && ", "}
+              {game?.sectionName}
+            </div>
+          )}
+        </div>
+        {assignment && (
+          <span className="text-base font-semibold">
+            {assignment.type === "PAIR" ? "Pair" : "Team"} {assignment.id}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
+  // --- Step rendering ---
+
+  const renderStep = () => {
+    if (step === 0) {
+      return (
+        <StepBoard
+          boards={roundBoards}
+          playedBoards={playedBoards}
+          onBoardSelected={setSelectedBoard}
+        />
+      );
+    }
+
+    switch (step) {
+      case 1:
+        return (
+          <StepLevel
+            onLevelSelected={onLevelSelected}
+            onSpecialOutcome={onSpecialOutcome}
+          />
+        );
+      case 2:
+        return <StepSuit level={level!} onSuitSelected={onSuitSelected} />;
+      case 3:
+        return (
+          <StepDeclarer
+            level={level!}
+            suit={suit!}
+            onDeclarerSelected={onDeclarerSelected}
+          />
+        );
+      case 4:
+        return (
+          <StepOpeningLead
+            onLeadComplete={onLeadComplete}
+            initialSuit={leadSuit}
+            initialRank={leadRank}
+            onSuitChange={setLeadSuit}
+            onRankChange={setLeadRank}
+          />
+        );
+      case 5:
+        return (
+          <StepResult level={level!} onResultComplete={onResultComplete} />
+        );
+      case 6:
+        return (
+          <StepConfirm
+            level={level}
+            suit={suit}
+            declarer={declarer}
+            dbl={dbl}
+            specialOutcome={specialOutcome}
+            leadSuit={leadSuit}
+            leadRank={leadRank}
+            resultMode={resultMode}
+            resultValue={resultValue}
+            onSubmit={onSubmit}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col">
+      {header}
+      {subHeader}
+      {renderStep()}
+    </div>
+  );
+}

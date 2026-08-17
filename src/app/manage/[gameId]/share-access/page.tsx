@@ -1,6 +1,6 @@
 "use client";
 
-import { ShareDirectorAccessPage } from "@/components/pages/manage/ShareDirectorAccessPage";
+import { ShareDirectorAccessPage } from "@/app/manage/[gameId]/share-access/ShareDirectorAccessPage";
 import { useParams, useRouter } from "next/navigation";
 
 export default function ShareDirectorAccessRoute() {

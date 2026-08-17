@@ -1,6 +1,6 @@
 "use client";
 
-import { DownloadUsebioPage } from "@/components/pages/manage/DownloadUsebioPage";
+import { DownloadUsebioPage } from "@/app/manage/[gameId]/download-usebio/DownloadUsebioPage";
 import { useParams, useRouter } from "next/navigation";
 
 export default function DownloadUsebioRoute() {

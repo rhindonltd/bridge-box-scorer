@@ -1,6 +1,6 @@
 "use client";
 
-import { ManageGameMenuPage } from "@/components/pages/manage/ManageGameMenuPage";
+import { ManageGameMenuPage } from "@/app/manage/[gameId]/menu/ManageGameMenuPage";
 import { useRouter, useParams } from "next/navigation";
 
 export default function ManageGameMenuRoute() {

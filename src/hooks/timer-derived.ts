@@ -5,6 +5,7 @@ export function useTimerDerived(state: TimerState | null, now: number) {
     return {
       remaining: 0,
       phase: null,
+      round: null,
       boardLabel: null,
       title: "Connecting…",
       isRunning: false,

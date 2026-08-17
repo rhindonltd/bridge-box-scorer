@@ -1,7 +1,7 @@
 "use client";
 
-import { DisplayMenuPage } from "@/components/pages/display/DisplayMenuPage";
 import { useParams, useRouter } from "next/navigation";
+import { DisplayMenuPage } from "@/app/display/[gameId]/manu/DisplayMenuPage";
 
 export default function DisplayMenuRoute() {
   const router = useRouter();
