@@ -1,6 +1,6 @@
 "use client";
 
-import { DisplayLeaderboardPage } from "@/components/pages/display/DisplayLeaderboardPage";
+import { DisplayLeaderboardPage } from "@/app/display/[gameId]/leaderboard/DisplayLeaderboardPage";
 
 export default function DisplayLeaderboardRoute() {
   return <DisplayLeaderboardPage />;

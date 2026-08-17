@@ -2,7 +2,6 @@
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useGame } from "@/context/GameContext";
-import { Clock, Monitor } from "lucide-react";
 
 export interface DisplayMenuPageProps {
   onTimerClick: () => void;

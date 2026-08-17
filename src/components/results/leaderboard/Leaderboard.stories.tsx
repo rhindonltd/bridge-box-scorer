@@ -1,5 +1,4 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { LeaderboardPage } from "@/components/pages/leaderboard/LeaderboardPage";
 import { Leaderboard } from "./Leaderboard";
 
 const meta: Meta<typeof Leaderboard> = {
@@ -12,7 +11,7 @@ const meta: Meta<typeof Leaderboard> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof LeaderboardPage>;
+type Story = StoryObj<typeof Leaderboard>;
 
 export const PairIMP: Story = {
   args: {

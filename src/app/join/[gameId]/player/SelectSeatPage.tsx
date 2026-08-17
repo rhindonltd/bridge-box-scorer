@@ -3,7 +3,7 @@
 import { useGame } from "@/context/GameContext";
 import { Pair, PairSeat, Seat } from "@/model/participants";
 import { useState } from "react";
-import EnterPlayerNames from "@/components/join/EnterPlayerNames";
+import EnterPlayerNames from "@/app/join/[gameId]/player/EnterPlayerNames";
 import { swrKeys } from "@/swr/swr-keys";
 import { fetcher } from "@/lib/fetcher";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
@@ -11,7 +11,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import useSWR from "swr";
 import { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
-import SelectPairsTable from "@/components/join/SelectTable";
+import SelectTable from "@/app/join/[gameId]/player/SelectTable";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {
@@ -61,7 +61,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
       children={
         <>
           {/* Main table selection */}
-          <SelectPairsTable
+          <SelectTable
             onSeatSelected={handleSeatSelected}
             tables={game.tables}
             startingPositions={data ?? []}

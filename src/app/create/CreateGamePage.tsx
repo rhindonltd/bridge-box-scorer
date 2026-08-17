@@ -1,7 +1,7 @@
 "use client";
 
 import { NewBridgeGame } from "@/db/game-index/schema";
-import SimpleCreateGameForm from "@/components/create/SimpleCreateGameForm";
+import SimpleCreateGameForm from "@/app/create/SimpleCreateGameForm";
 import { useRouter } from "next/navigation";
 import { createGame } from "@/lib/game-service";
 

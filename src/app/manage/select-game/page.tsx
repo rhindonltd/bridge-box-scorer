@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ManageSelectGamePage from "@/components/pages/manage/ManageSelectGamePage";
-import { ClaimDirectorCode } from "@/components/pages/manage/ClaimDirectorCode";
+import { ClaimDirectorCode } from "@/app/manage/select-game/ClaimDirectorCode";
 import { useRouter } from "next/navigation";
 import { isDirectorFor } from "@/lib/director-token";
 

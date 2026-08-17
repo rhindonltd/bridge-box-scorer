@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useGame } from "@/context/GameContext";
-import { SelectSeatPage } from "@/components/pages/join/SelectSeatPage";
+import { SelectSeatPage } from "@/app/join/[gameId]/player/SelectSeatPage";
 
 export default function JoinGameAsPlayerRoute() {
   const { game, isLoading } = useGame();

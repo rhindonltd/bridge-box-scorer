@@ -5,7 +5,6 @@ import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GameHeaderBar } from "@/components/layout/GameHeaderBar";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 export function DisplayLeaderboardPage() {
