@@ -151,26 +151,19 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     setSelected(null);
   }
 
-  function handleBack() {
-    setSelected(null);
-    setMitchellSpec(null);
-  }
-
   // Show detail view when a movement is selected
   if (selected && (movementDetail || mitchellPreview)) {
     const detailData =
       selected.type === "MITCHELL" ? mitchellPreview : movementDetail;
     if (!detailData) return null;
     return (
-      <div className="h-full">
-        <MovementDetailView
-          movementName={selected.name}
-          movementType="PAIRS"
-          tables={detailData.tables as MovementTableData[]}
-          onBack={handleBack}
-          onSelect={handleSelect}
-        />
-      </div>
+      <MovementDetailView
+        movementName={selected.name}
+        movementType="PAIRS"
+        tables={detailData.tables as MovementTableData[]}
+        backHref={`/create/${game.gameId}`}
+        onSelect={handleSelect}
+      />
     );
   }
 

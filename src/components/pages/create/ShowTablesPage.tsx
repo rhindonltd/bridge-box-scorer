@@ -13,7 +13,7 @@ import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { Pair, PairSeat, Seat } from "@/model/participants";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
-import { GameInfo } from "@/components/common/GameInfo";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 type Props = {
   onShowMovementsPage: () => void;
@@ -117,16 +117,20 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
       tables[tables.length - 1].players.E !== null);
 
   return (
-    <>
-      <GameInfo />
-      <DirectorTableControls
-        tables={tables}
-        onAddTable={handleAddTable}
-        onRemoveTable={handleRemoveTable}
-        onEvict={handleEvict}
-        canRemoveTable={game.tables > 1 && !lastTableOccupied}
-      />
-      <Button value={"Select Movement"} onClick={onShowMovementsPage} />
-    </>
+    <GamePageLayout
+      headerTitle="Tables View"
+      children={
+        <DirectorTableControls
+          tables={tables}
+          onAddTable={handleAddTable}
+          onRemoveTable={handleRemoveTable}
+          onEvict={handleEvict}
+          canRemoveTable={game.tables > 1 && !lastTableOccupied}
+        />
+      }
+      actions={
+        <Button value={"Select Movement"} onClick={onShowMovementsPage} />
+      }
+    />
   );
 }

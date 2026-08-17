@@ -1,16 +1,10 @@
 import React from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { HeaderBar } from "./HeaderBar";
 
-interface PageLayoutProps {
+import { GameHeaderBar } from "./GameHeaderBar";
+
+interface Props {
   /** Primary header text (e.g., event name, "Manage Games", "Settings") */
   headerTitle: string;
-  /** Secondary line below the title (e.g., session/section info, participant) */
-  headerSubtitle?: string;
-  /** Right-aligned content in the header (e.g., "Pair 3") */
-  headerRight?: React.ReactNode;
-  /** URL to navigate to when back arrow is tapped. Omit to hide back arrow. */
   backHref?: string;
   /** Fixed-bottom action buttons. Omit to hide the action bar. */
   actions?: React.ReactNode;
@@ -20,24 +14,16 @@ interface PageLayoutProps {
   children: React.ReactNode;
 }
 
-export function PageLayout({
+export function GamePageLayout({
   headerTitle,
-  headerSubtitle,
-  headerRight,
-  backHref,
   actions,
   centerContent = false,
   children,
-}: PageLayoutProps) {
+}: Props) {
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Header Bar */}
-      <HeaderBar
-        headerTitle={headerTitle}
-        backHref={backHref}
-        headerSubtitle={headerSubtitle}
-        headerRight={headerRight}
-      />
+      <GameHeaderBar headerTitle={headerTitle} />
 
       {/* Content Area */}
       <div

@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import SelectTable from "./SelectTable";
 
 const meta: Meta<typeof SelectTable> = {
-  title: "Components/Join/SelectPairsTable",
+  title: "Components/Join/SelectTable",
   component: SelectTable,
   parameters: {
     layout: "fullscreen",

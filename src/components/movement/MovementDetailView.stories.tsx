@@ -10,7 +10,7 @@ const meta: Meta<typeof MovementDetailView> = {
   },
   tags: ["autodocs"],
   args: {
-    onBack: fn(),
+    backHref: "/games",
   },
 };
 

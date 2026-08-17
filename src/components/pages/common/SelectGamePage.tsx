@@ -9,6 +9,7 @@ import useSWR, { useSWRConfig } from "swr";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
+import { PageLayout } from "@/components/layout/PageLayout";
 
 interface Props {
   onGameSelected: (gameId: string) => void;
@@ -40,13 +41,11 @@ export default function SelectGamePage({ onGameSelected }: Props) {
   );
 
   return (
-    <>
-      <div className="w-full">
-        <div className="bg-blue-100 text-blue-900 py-2 text-center font-bold">
-          <span>Select Game</span>
-        </div>
-      </div>
-      {data && <SelectGame games={data} onGameSelected={onGameSelected} />}
-    </>
+    <PageLayout
+      headerTitle="Select Game"
+      children={
+        data && <SelectGame games={data} onGameSelected={onGameSelected} />
+      }
+    />
   );
 }

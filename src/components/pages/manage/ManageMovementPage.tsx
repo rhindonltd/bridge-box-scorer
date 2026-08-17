@@ -10,10 +10,10 @@ import { SocketEvents } from "@/socket/socket-events";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
 
 interface ManageMovementPageProps {
-  onBack: () => void;
+  backHref: string;
 }
 
-export function ManageMovementPage({ onBack }: ManageMovementPageProps) {
+export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
   interface MovementResponse {
     type: string;
     tables: MovementTableData[];
@@ -69,7 +69,7 @@ export function ManageMovementPage({ onBack }: ManageMovementPageProps) {
         movementName={game.eventName}
         movementType={data.type}
         tables={data.tables}
-        onBack={onBack}
+        backHref={backHref}
       />
     </div>
   );

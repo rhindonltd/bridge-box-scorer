@@ -17,6 +17,16 @@ const preview: Preview = {
       test: "todo",
     },
   },
+
+  decorators: [
+    (Story) => (
+      <div className="h-dvh bg-gray-100 overflow-hidden">
+        <div className="mx-auto max-w-2xl h-full bg-white flex flex-col overflow-hidden">
+          <Story />
+        </div>
+      </div>
+    ),
+  ],
 };
 
 export default preview;

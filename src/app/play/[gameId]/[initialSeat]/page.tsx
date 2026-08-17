@@ -12,7 +12,6 @@ import { RoundInfoPage } from "@/components/pages/play/RoundInfoPage";
 import { GameComplete } from "@/components/pages/play/GameComplete";
 import { BoardResultsPage } from "@/components/pages/play/BoardResultsPage";
 import { score, ScoredTraveller } from "@/scoring/traveller/score-traveller";
-import { PlayHeader } from "@/components/play/PlayHeader";
 import { Traveller } from "@/model/traveller";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/components/pages/play/SitOutPage";
@@ -150,12 +149,16 @@ export default function PlayPage() {
     }
 
     case "moveInfo": {
-      return <MoveInfoPage
-          roundNumber={schedule.rounds[playState.nextRoundIndex].roundNumber}
-          tableNumber={schedule.rounds[playState.nextRoundIndex].tableNumber!}
-          sitOut={schedule.rounds[playState.nextRoundIndex].sitOut ?? false}
+      const roundSchedule = schedule.rounds[playState.nextRoundIndex];
+
+      return (
+        <MoveInfoPage
+          roundNumber={roundSchedule.roundNumber}
+          tableNumber={roundSchedule.tableNumber!}
+          sitOut={roundSchedule.sitOut ?? false}
           onMoveInfoContinue={handleMoveInfoContinue}
-      />
+        />
+      );
     }
 
     case "gameComplete":

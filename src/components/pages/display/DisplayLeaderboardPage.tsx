@@ -2,10 +2,10 @@
 
 import { useGame } from "@/context/GameContext";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { GameInfo } from "@/components/common/GameInfo";
 import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { GameHeaderBar } from "@/components/layout/GameHeaderBar";
 
 export function DisplayLeaderboardPage() {
   const { game, isLoading } = useGame();
@@ -49,7 +49,7 @@ export function DisplayLeaderboardPage() {
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex flex-row w-full">
-        <GameInfo />
+        <GameHeaderBar headerTitle="Leaderboard" />
       </div>
 
       <div className="w-full">

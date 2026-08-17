@@ -41,7 +41,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           tableNumber,
           boardNumber,
           side: isNS ? "NS" : "EW",
-          result
+          result,
         });
 
         cb?.({ success: true });

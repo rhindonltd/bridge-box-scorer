@@ -19,8 +19,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-gray-100">
-        <div className="mx-auto max-w-2xl min-h-dvh bg-white flex flex-col">
+      <body className="bg-gray-100 overflow-hidden">
+        <div className="mx-auto max-w-2xl h-dvh bg-white flex flex-col overflow-hidden">
           {children}
         </div>
       </body>

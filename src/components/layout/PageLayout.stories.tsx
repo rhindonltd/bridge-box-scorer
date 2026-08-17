@@ -16,69 +16,95 @@ type Story = StoryObj<typeof PageLayout>;
 
 export const Default: Story = {
   args: {
-    header: (
-      <div className="bg-gray-100 p-4">
-        <h1 className="text-xl font-semibold">Page Header</h1>
-      </div>
-    ),
-    subHeader: (
-      <div className="border-b p-3">
-        <p className="text-sm text-gray-600">Page sub-header</p>
-      </div>
-    ),
+    headerTitle: "Manage Games",
+    headerSubtitle: "Summer Pairs Championship",
+    headerRight: "Pair 3",
     children: (
-      <div className="flex-1 p-6">
-        <p>Main page content goes here.</p>
+      <div className="p-6">
+        <h2 className="mb-4 text-lg font-semibold">Games</h2>
+        <div className="space-y-3">
+          <div className="rounded border p-4">Game 1</div>
+          <div className="rounded border p-4">Game 2</div>
+          <div className="rounded border p-4">Game 3</div>
+        </div>
+      </div>
+    ),
+  },
+};
+
+export const WithBackButton: Story = {
+  args: {
+    headerTitle: "Manage Games",
+    headerSubtitle: "Summer Pairs Championship",
+    headerRight: "Pair 3",
+    backHref: "/games",
+    children: (
+      <div className="p-6">
+        <p>Select a game to manage.</p>
+      </div>
+    ),
+  },
+};
+
+export const WithSubHeader: Story = {
+  args: {
+    headerTitle: "Select Table",
+    headerSubtitle: "Summer Pairs Championship",
+    backHref: "/join",
+    children: (
+      <div className="grid grid-cols-2 gap-4 p-6 sm:grid-cols-4">
+        {Array.from({ length: 8 }, (_, index) => (
+          <button
+            key={index}
+            className="rounded-lg border bg-white p-6 text-center font-semibold shadow-sm hover:bg-gray-50"
+          >
+            Table {index + 1}
+          </button>
+        ))}
+      </div>
+    ),
+  },
+};
+
+export const WithActions: Story = {
+  args: {
+    headerTitle: "Confirm Selection",
+    headerSubtitle: "Table 4",
+    backHref: "/select-table",
+    children: (
+      <div className="p-6">
+        <h2 className="mb-2 text-lg font-semibold">Table 4</h2>
+        <p className="text-gray-600">
+          You are about to join Table 4. Are you sure?
+        </p>
       </div>
     ),
     actions: (
-      <div className="flex justify-end gap-2">
-        <button className="rounded border px-4 py-2">Cancel</button>
-        <button className="rounded bg-blue-600 px-4 py-2 text-white">
-          Continue
+      <div className="flex gap-2">
+        <button className="flex-1 rounded-lg border px-4 py-3">Cancel</button>
+        <button className="flex-1 rounded-lg bg-blue-600 px-4 py-3 text-white">
+          Confirm
         </button>
       </div>
     ),
   },
 };
 
-export const WithoutHeader: Story = {
+export const CenteredContent: Story = {
   args: {
+    headerTitle: "Settings",
+    backHref: "/",
+    centerContent: true,
     children: (
-      <div className="flex-1 p-6">
-        <p>Content without a header.</p>
-      </div>
-    ),
-  },
-};
-
-export const WithHeaderOnly: Story = {
-  args: {
-    header: (
-      <div className="border-b p-4">
-        <h1 className="text-xl font-semibold">Page Header</h1>
-      </div>
-    ),
-    children: (
-      <div className="flex-1 p-6">
-        <p>Main page content.</p>
-      </div>
-    ),
-  },
-};
-
-export const WithActionsOnly: Story = {
-  args: {
-    children: (
-      <div className="flex-1 p-6">
-        <p>Main page content.</p>
-      </div>
-    ),
-    actions: (
-      <div className="flex justify-end">
-        <button className="rounded bg-blue-600 px-4 py-2 text-white">
-          Save
-        </button>
+      <div className="flex flex-col items-center gap-4 p-6">
+        <h2 className="text-xl font-semibold">Settings</h2>
+        <p className="text-center text-gray-600">
+          Choose an option to continue.
+        </p>
+        <div className="flex flex-col gap-2">
+          <button className="rounded-lg border px-6 py-3">Profile</button>
+          <button className="rounded-lg border px-6 py-3">Preferences</button>
+        </div>
       </div>
     ),
   },
@@ -86,31 +112,22 @@ export const WithActionsOnly: Story = {
 
 export const LongContent: Story = {
   args: {
-    header: (
-      <div className="border-b p-4">
-        <h1 className="text-xl font-semibold">Long Content</h1>
-      </div>
-    ),
-    subHeader: (
-      <div className="border-b p-3 text-sm text-gray-600">
-        Scrollable content example
-      </div>
-    ),
+    headerTitle: "Game Results",
+    headerSubtitle: "Summer Pairs Championship",
+    backHref: "/games",
     children: (
-      <div className="flex-1 overflow-auto p-6">
-        <div className="space-y-4">
-          {Array.from({ length: 20 }, (_, index) => (
-            <p key={index}>
-              This is example content paragraph {index + 1}. The content area
-              can grow and scroll independently of the fixed header and actions.
-            </p>
-          ))}
-        </div>
+      <div className="space-y-4 p-6">
+        {Array.from({ length: 25 }, (_, index) => (
+          <div key={index} className="rounded-lg border bg-white p-4 shadow-sm">
+            <div className="font-semibold">Game {index + 1}</div>
+            <div className="text-sm text-gray-600">Result and game details</div>
+          </div>
+        ))}
       </div>
     ),
     actions: (
-      <div className="flex justify-end border-t">
-        <button className="rounded bg-blue-600 px-4 py-2 text-white">
+      <div>
+        <button className="rounded-lg bg-blue-600 px-6 py-3 text-white w-full">
           Continue
         </button>
       </div>

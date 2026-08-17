@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageLayout } from "../layout/PageLayout";
 
 type ViewMode = "byRound" | "byTable";
 
@@ -30,7 +31,7 @@ type Props = {
   movementName: string;
   movementType: string;
   tables: MovementTableData[];
-  onBack: () => void;
+  backHref: string;
   onSelect?: () => void;
 };
 
@@ -50,7 +51,7 @@ export function MovementDetailView({
   movementName,
   movementType,
   tables,
-  onBack,
+  backHref,
   onSelect,
 }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("byRound");
@@ -58,74 +59,67 @@ export function MovementDetailView({
   const isPair = true;
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header with name and back button */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-blue-100 text-blue-900 shrink-0">
-        <button
-          onClick={onBack}
-          className="px-3 py-1 text-sm bg-white rounded-lg shadow hover:bg-gray-50 transition"
-          aria-label="Back to movement list"
-        >
-          ← Back
-        </button>
-        <h2 className="flex-1 text-center font-bold text-lg">{movementName}</h2>
-      </div>
+    <PageLayout
+      headerTitle={movementName}
+      backHref={backHref}
+      children={
+        <>
+          <div className="flex justify-center gap-2 p-3 bg-gray-50 border-b shrink-0">
+            <button
+              onClick={() => setViewMode("byRound")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                viewMode === "byRound"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white border text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              By Round
+            </button>
+            <button
+              onClick={() => setViewMode("byTable")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                viewMode === "byTable"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white border text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              By Table
+            </button>
+          </div>
 
-      {/* Toggle */}
-      <div className="flex justify-center gap-2 p-3 bg-gray-50 border-b shrink-0">
-        <button
-          onClick={() => setViewMode("byRound")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-            viewMode === "byRound"
-              ? "bg-blue-600 text-white"
-              : "bg-white border text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          By Round
-        </button>
-        <button
-          onClick={() => setViewMode("byTable")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-            viewMode === "byTable"
-              ? "bg-blue-600 text-white"
-              : "bg-white border text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          By Table
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {viewMode === "byTable"
-          ? tables.map((table) => (
-              <TableView
-                key={table.tableNumber}
-                table={table}
-                isPair={isPair}
-              />
-            ))
-          : buildRounds(tables).map((round) => (
-              <RoundView
-                key={round.roundNumber}
-                round={round}
-                isPair={isPair}
-              />
-            ))}
-      </div>
-
-      {/* Footer */}
-      {onSelect && (
-        <div className="p-3 border-t">
-          <button
-            onClick={onSelect}
-            className="w-full py-3 text-lg font-bold bg-green-700 text-white rounded-xl hover:bg-green-800 transition"
-          >
-            Select Movement
-          </button>
-        </div>
-      )}
-    </div>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {viewMode === "byTable"
+              ? tables.map((table) => (
+                  <TableView
+                    key={table.tableNumber}
+                    table={table}
+                    isPair={isPair}
+                  />
+                ))
+              : buildRounds(tables).map((round) => (
+                  <RoundView
+                    key={round.roundNumber}
+                    round={round}
+                    isPair={isPair}
+                  />
+                ))}
+          </div>
+        </>
+      }
+      actions={
+        onSelect && (
+          <div className="p-3 border-t">
+            <button
+              onClick={onSelect}
+              className="w-full py-3 text-lg font-bold bg-green-700 text-white rounded-xl hover:bg-green-800 transition"
+            >
+              Use Movement
+            </button>
+          </div>
+        )
+      }
+    />
   );
 }
 
