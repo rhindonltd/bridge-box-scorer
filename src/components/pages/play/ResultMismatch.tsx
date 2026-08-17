@@ -22,6 +22,7 @@ export function ResultMismatch({
   return (
     <GamePageLayout
       headerTitle={boardMismatch ? "Mismatch" : `Board ${nsBoardNumber}`}
+      centerContent={true}
       children={
         <div className="flex-1 flex flex-col items-center justify-center p-6">
           <div className="text-xl font-bold text-red-600 mb-4">

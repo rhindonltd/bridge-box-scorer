@@ -18,6 +18,7 @@ export function MoveInfoPage({
     return (
       <GamePageLayout
         headerTitle="Move Info"
+        centerContent={true}
         children={
           <div className="flex-1 flex flex-col items-center justify-center p-6">
             <div className="text-xl font-semibold text-gray-900 mb-2">Next</div>
@@ -40,6 +41,7 @@ export function MoveInfoPage({
   return (
     <GamePageLayout
       headerTitle="Move Info"
+      centerContent={true}
       children={
         <div className="flex-1 flex flex-col items-center justify-center p-6">
           <div className="text-xl font-semibold text-gray-900 mb-2">
