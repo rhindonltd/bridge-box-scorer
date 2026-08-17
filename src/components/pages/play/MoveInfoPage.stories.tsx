@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { PlayHeader } from "./PlayHeader";
+import { fn } from "storybook/test";
+import { MoveInfoPage } from "./MoveInfoPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
@@ -10,8 +11,8 @@ const mockGame = {
   gameType: "PAIRS" as const,
   scoringType: "MP" as const,
   gameId: "abc123",
-  sessionName: "Session 1",
-  sectionName: "Section A",
+  sessionName: "1",
+  sectionName: "A",
   eventDate: new Date().toISOString(),
   tables: 8,
   leadCardRequired: true,
@@ -20,26 +21,30 @@ const mockGame = {
   updatedAt: new Date().toISOString(),
 };
 
-const meta: Meta<typeof PlayHeader> = {
-  title: "Components/Play/PlayHeader",
-  component: PlayHeader,
-  parameters: {
-    layout: "fullscreen",
-  },
-  tags: ["autodocs"],
+const meta: Meta<typeof MoveInfoPage> = {
+  title: "Pages/Play/MoveInfoPage",
+  component: MoveInfoPage,
   decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
+  parameters: { layout: "fullscreen" },
+  tags: ["autodocs"],
+  args: { onMoveInfoContinue: fn() },
 };
 
 export default meta;
+type Story = StoryObj<typeof MoveInfoPage>;
 
-type Story = StoryObj<typeof PlayHeader>;
-
-export const WithDetail: Story = {
+export const Default: Story = {
   args: {
-    detail: "Board 5",
+    roundNumber: 2,
+    tableNumber: 3,
+    sitOut: false,
   },
 };
 
-export const NoDetail: Story = {
-  args: {},
+export const SitOut: Story = {
+  args: {
+    roundNumber: 2,
+    tableNumber: 3,
+    sitOut: true,
+  },
 };

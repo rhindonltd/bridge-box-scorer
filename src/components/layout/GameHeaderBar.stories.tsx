@@ -1,19 +1,22 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { GameInfo } from "@/components/common/GameInfo";
+import { GameHeaderBar } from "@/components/layout/GameHeaderBar";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
-const meta: Meta<typeof GameInfo> = {
-  title: "Components/Common/GameInfo",
-  component: GameInfo,
+const meta: Meta<typeof GameHeaderBar> = {
+  title: "Components/Layout/GameHeaderBar",
+  component: GameHeaderBar,
   parameters: {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
+  args: {
+    headerTitle: "Some Title",
+  },
 };
 
 export default meta;
 
-type Story = StoryObj<typeof GameInfo>;
+type Story = StoryObj<typeof GameHeaderBar>;
 
 export const EventOnly: Story = {
   decorators: [
@@ -46,7 +49,7 @@ export const EventAndSection: Story = {
       scoringType: "MP",
       gameId: crypto.randomUUID(),
       sessionName: "",
-      sectionName: "Section A",
+      sectionName: "A",
       eventDate: new Date().toISOString(),
       status: "CREATED",
       tables: 10,
@@ -66,7 +69,7 @@ export const EventAndSession: Story = {
       gameType: "PAIRS",
       scoringType: "MP",
       gameId: crypto.randomUUID(),
-      sessionName: "Session 1",
+      sessionName: "1",
       sectionName: "",
       eventDate: new Date().toISOString(),
       status: "CREATED",
@@ -87,8 +90,8 @@ export const EventSessionAndSection: Story = {
       gameType: "PAIRS",
       scoringType: "MP",
       gameId: crypto.randomUUID(),
-      sessionName: "Session 1",
-      sectionName: "Section A",
+      sessionName: "1",
+      sectionName: "A",
       eventDate: new Date().toISOString(),
       status: "CREATED",
       tables: 10,

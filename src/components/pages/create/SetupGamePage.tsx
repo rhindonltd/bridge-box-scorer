@@ -22,13 +22,7 @@ export function SetupGamePage() {
   }
 
   if (step === "tables") {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1">
-          <ShowTablesPage onShowMovementsPage={() => goTo("movements")} />
-        </div>
-      </div>
-    );
+    return <ShowTablesPage onStartGame={() => goTo("movements")} />;
   }
 
   if (step === "movements") {

@@ -1,6 +1,5 @@
 "use client";
 
-import { MovementTableData } from "@/components/movement/MovementDetailView";
 import { useGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
@@ -8,15 +7,17 @@ import { useEffect } from "react";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
+import { PageLayout } from "../../layout/PageLayout";
+import { MovementByTable } from "@/movement/movementData";
 
 interface ManageMovementPageProps {
-  onBack: () => void;
+  backHref: string;
 }
 
-export function ManageMovementPage({ onBack }: ManageMovementPageProps) {
+export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
   interface MovementResponse {
     type: string;
-    tables: MovementTableData[];
+    tables: MovementByTable[];
   }
 
   const { game } = useGame();
@@ -65,11 +66,10 @@ export function ManageMovementPage({ onBack }: ManageMovementPageProps) {
 
   return (
     <div className="h-dvh flex flex-col">
-      <MovementDetailView
-        movementName={game.eventName}
-        movementType={data.type}
-        tables={data.tables}
-        onBack={onBack}
+      <PageLayout
+        headerTitle="Movement Details"
+        backHref={backHref}
+        children={<MovementDetailView tables={data.tables} />}
       />
     </div>
   );

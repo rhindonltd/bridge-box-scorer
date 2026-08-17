@@ -9,9 +9,6 @@ const meta: Meta<typeof MovementDetailView> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
-  args: {
-    onBack: fn(),
-  },
 };
 
 export default meta;
@@ -20,9 +17,6 @@ type Story = StoryObj<typeof MovementDetailView>;
 // 1. No progress data (setup view - no played column shown)
 export const SetupView: Story = {
   args: {
-    movementName: "Mitchell 4 Tables",
-    movementType: "PAIRS",
-    onSelect: fn(),
     tables: [
       {
         tableNumber: 1,
@@ -63,8 +57,6 @@ export const SetupView: Story = {
 // 2. Brand new game - all 0/3, no colours
 export const NewGame: Story = {
   args: {
-    movementName: "Monday AM Pairs",
-    movementType: "PAIRS",
     tables: [
       {
         tableNumber: 1,
@@ -143,8 +135,6 @@ export const NewGame: Story = {
 // 3. Game in progress - mix of complete (green), in progress (yellow), and not started (no colour)
 export const InProgress: Story = {
   args: {
-    movementName: "Tuesday PM Pairs",
-    movementType: "PAIRS",
     tables: [
       {
         tableNumber: 1,
@@ -258,8 +248,6 @@ export const InProgress: Story = {
 // 4. Problem detected - table has results in round 2 but round 1 is incomplete (red)
 export const WithGaps: Story = {
   args: {
-    movementName: "Problem Game",
-    movementType: "PAIRS",
     tables: [
       {
         tableNumber: 1,
@@ -373,8 +361,6 @@ export const WithGaps: Story = {
 // 5. All complete - everything green
 export const AllComplete: Story = {
   args: {
-    movementName: "Finished Game",
-    movementType: "PAIRS",
     tables: [
       {
         tableNumber: 1,

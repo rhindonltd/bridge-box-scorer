@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import MovementRound from "./MovementRound";
+import { MovementRound } from "./MovementRound";
 
 // Mock formatter so tests are deterministic
 vi.mock("@/movement/shared", () => ({

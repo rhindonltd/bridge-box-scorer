@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { DisplayLeaderboardPage } from "./DisplayLeaderboardPage";
-import { withGame } from "../../../../.storybook/decorators/GameDecorator";
+import { withGame } from "@storybook/decorators/GameDecorator";
 
 const pairsGame4Tables = {
   id: 1,
@@ -10,8 +10,8 @@ const pairsGame4Tables = {
   gameType: "PAIRS" as const,
   scoringType: "MP" as const,
   gameId: "abc123",
-  sessionName: "Session 1",
-  sectionName: "Section A",
+  sessionName: "1",
+  sectionName: "A",
   eventDate: new Date().toISOString(),
   tables: 4,
   leadCardRequired: true,

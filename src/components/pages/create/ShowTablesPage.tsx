@@ -13,13 +13,13 @@ import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { Pair, PairSeat, Seat } from "@/model/participants";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
-import { GameInfo } from "@/components/common/GameInfo";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 type Props = {
-  onShowMovementsPage: () => void;
+  onStartGame: () => void;
 };
 
-export function ShowTablesPage({ onShowMovementsPage }: Props) {
+export function ShowTablesPage({ onStartGame }: Props) {
   const { game, mutateGame } = useGame();
 
   const gameId = game?.gameId;
@@ -70,30 +70,15 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
     };
   }
 
-  function handleAddTable() {
+  function handleChange(tables: number) {
     getSocket().emit(
       SocketEvents.UPDATE_TABLES,
       {
         gameId,
-        tables: game!.tables + 1,
+        tables,
         directorToken: getDirectorToken(gameId!),
       },
       () => mutateGame(),
-    );
-  }
-
-  function handleRemoveTable() {
-    getSocket().emit(
-      SocketEvents.UPDATE_TABLES,
-      {
-        gameId,
-        tables: game!.tables - 1,
-        directorToken: getDirectorToken(gameId!),
-      },
-      (res: { success: boolean; error?: string }) => {
-        if (res.success) mutateGame();
-        else alert(res.error);
-      },
     );
   }
 
@@ -117,16 +102,19 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
       tables[tables.length - 1].players.E !== null);
 
   return (
-    <>
-      <GameInfo />
-      <DirectorTableControls
-        tables={tables}
-        onAddTable={handleAddTable}
-        onRemoveTable={handleRemoveTable}
-        onEvict={handleEvict}
-        canRemoveTable={game.tables > 1 && !lastTableOccupied}
-      />
-      <Button value={"Select Movement"} onClick={onShowMovementsPage} />
-    </>
+    <GamePageLayout
+      headerTitle="Tables View"
+      children={
+        <DirectorTableControls
+          tables={tables}
+          onChange={handleChange}
+          onEvict={handleEvict}
+          canRemoveTable={game.tables > 1 && !lastTableOccupied}
+        />
+      }
+      actions={
+        <Button value={"Start Game"} onClick={onStartGame} className="w-full" />
+      }
+    />
   );
 }

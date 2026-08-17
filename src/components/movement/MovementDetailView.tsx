@@ -1,77 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { buildRounds, MovementByTable } from "@/movement/movementData";
+import { MovementTable } from "./MovementTable";
+import { MovementRound } from "./MovementRound";
 
 type ViewMode = "byRound" | "byTable";
 
-/**
- * Raw movement table data as returned from the API.
- * Works for PAIRS (ns/ew) movements.
- */
-export type MovementTableData = {
-  tableNumber: number;
-  rounds: {
-    roundNumber: number;
-    ns?: string;
-    ew?: string;
-    n?: string;
-    s?: string;
-    e?: string;
-    w?: string;
-    boardStart: number;
-    boardEnd: number;
-    played?: number;
-    total?: number;
-    hasPreviousGap?: boolean;
-  }[];
-};
-
 type Props = {
-  movementName: string;
-  movementType: string;
-  tables: MovementTableData[];
-  onBack: () => void;
-  onSelect?: () => void;
+  tables: MovementByTable[];
 };
 
-function getRowClass(round: {
-  played?: number;
-  total?: number;
-  hasPreviousGap?: boolean;
-}): string {
-  if (round.played == null || round.total == null) return "even:bg-gray-50";
-  if (round.hasPreviousGap) return "bg-red-100";
-  if (round.played === round.total && round.total > 0) return "bg-green-100";
-  if (round.played > 0) return "bg-yellow-100";
-  return "";
-}
-
-export function MovementDetailView({
-  movementName,
-  movementType,
-  tables,
-  onBack,
-  onSelect,
-}: Props) {
+export function MovementDetailView({ tables }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("byRound");
 
-  const isPair = true;
-
   return (
-    <div className="h-full flex flex-col">
-      {/* Header with name and back button */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-blue-100 text-blue-900 shrink-0">
-        <button
-          onClick={onBack}
-          className="px-3 py-1 text-sm bg-white rounded-lg shadow hover:bg-gray-50 transition"
-          aria-label="Back to movement list"
-        >
-          ← Back
-        </button>
-        <h2 className="flex-1 text-center font-bold text-lg">{movementName}</h2>
-      </div>
-
-      {/* Toggle */}
+    <>
       <div className="flex justify-center gap-2 p-3 bg-gray-50 border-b shrink-0">
         <button
           onClick={() => setViewMode("byRound")}
@@ -99,209 +43,12 @@ export function MovementDetailView({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {viewMode === "byTable"
           ? tables.map((table) => (
-              <TableView
-                key={table.tableNumber}
-                table={table}
-                isPair={isPair}
-              />
+              <MovementTable key={table.tableNumber} table={table} />
             ))
           : buildRounds(tables).map((round) => (
-              <RoundView
-                key={round.roundNumber}
-                round={round}
-                isPair={isPair}
-              />
+              <MovementRound key={round.roundNumber} round={round} />
             ))}
       </div>
-
-      {/* Footer */}
-      {onSelect && (
-        <div className="p-3 border-t">
-          <button
-            onClick={onSelect}
-            className="w-full py-3 text-lg font-bold bg-green-700 text-white rounded-xl hover:bg-green-800 transition"
-          >
-            Select Movement
-          </button>
-        </div>
-      )}
-    </div>
+    </>
   );
-}
-
-/* ---- Table View ---- */
-
-function TableView({
-  table,
-  isPair,
-}: {
-  table: MovementTableData;
-  isPair: boolean;
-}) {
-  const hasProgress = table.rounds.length > 0 && table.rounds[0].played != null;
-
-  return (
-    <div className="border rounded-lg shadow-sm overflow-x-auto">
-      <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
-        Table {table.tableNumber}
-      </div>
-      <table className="w-full table-auto border-collapse text-center text-sm">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-2 py-1">Round</th>
-            {isPair ? (
-              <>
-                <th className="border px-2 py-1">NS</th>
-                <th className="border px-2 py-1">EW</th>
-              </>
-            ) : (
-              <>
-                <th className="border px-2 py-1">N</th>
-                <th className="border px-2 py-1">S</th>
-                <th className="border px-2 py-1">E</th>
-                <th className="border px-2 py-1">W</th>
-              </>
-            )}
-            <th className="border px-2 py-1">Boards</th>
-            {hasProgress && <th className="border px-2 py-1">Played</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {table.rounds.map((round) => (
-            <tr key={round.roundNumber} className={getRowClass(round)}>
-              <td className="border px-2 py-1">{round.roundNumber}</td>
-              {isPair ? (
-                <>
-                  <td className="border px-2 py-1">{round.ns}</td>
-                  <td className="border px-2 py-1">{round.ew}</td>
-                </>
-              ) : (
-                <>
-                  <td className="border px-2 py-1">{round.n}</td>
-                  <td className="border px-2 py-1">{round.s}</td>
-                  <td className="border px-2 py-1">{round.e}</td>
-                  <td className="border px-2 py-1">{round.w}</td>
-                </>
-              )}
-              <td className="border px-2 py-1">
-                {boardRange(round.boardStart, round.boardEnd)}
-              </td>
-              {hasProgress && (
-                <td className="border px-2 py-1">
-                  {round.played}/{round.total}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/* ---- Round View ---- */
-
-type RoundData = {
-  roundNumber: number;
-  tables: {
-    tableNumber: number;
-    ns?: string;
-    ew?: string;
-    n?: string;
-    s?: string;
-    e?: string;
-    w?: string;
-    boardStart: number;
-    boardEnd: number;
-    played?: number;
-    total?: number;
-    hasPreviousGap?: boolean;
-  }[];
-};
-
-function RoundView({ round, isPair }: { round: RoundData; isPair: boolean }) {
-  const hasProgress = round.tables.length > 0 && round.tables[0].played != null;
-
-  return (
-    <div className="border rounded-lg shadow-sm overflow-x-auto">
-      <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
-        Round {round.roundNumber}
-      </div>
-      <table className="w-full table-auto border-collapse text-center text-sm">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="border px-2 py-1">Table</th>
-            {isPair ? (
-              <>
-                <th className="border px-2 py-1">NS</th>
-                <th className="border px-2 py-1">EW</th>
-              </>
-            ) : (
-              <>
-                <th className="border px-2 py-1">N</th>
-                <th className="border px-2 py-1">S</th>
-                <th className="border px-2 py-1">E</th>
-                <th className="border px-2 py-1">W</th>
-              </>
-            )}
-            <th className="border px-2 py-1">Boards</th>
-            {hasProgress && <th className="border px-2 py-1">Played</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {round.tables.map((table) => (
-            <tr key={table.tableNumber} className={getRowClass(table)}>
-              <td className="border px-2 py-1">{table.tableNumber}</td>
-              {isPair ? (
-                <>
-                  <td className="border px-2 py-1">{table.ns}</td>
-                  <td className="border px-2 py-1">{table.ew}</td>
-                </>
-              ) : (
-                <>
-                  <td className="border px-2 py-1">{table.n}</td>
-                  <td className="border px-2 py-1">{table.s}</td>
-                  <td className="border px-2 py-1">{table.e}</td>
-                  <td className="border px-2 py-1">{table.w}</td>
-                </>
-              )}
-              <td className="border px-2 py-1">
-                {boardRange(table.boardStart, table.boardEnd)}
-              </td>
-              {hasProgress && (
-                <td className="border px-2 py-1">
-                  {table.played}/{table.total}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/* ---- Helpers ---- */
-
-function buildRounds(tables: MovementTableData[]): RoundData[] {
-  if (tables.length === 0) return [];
-
-  const roundCount = tables[0].rounds.length;
-  const rounds: RoundData[] = [];
-
-  for (let r = 0; r < roundCount; r++) {
-    rounds.push({
-      roundNumber: r + 1,
-      tables: tables.map((t) => ({
-        tableNumber: t.tableNumber,
-        ...t.rounds[r],
-      })),
-    });
-  }
-
-  return rounds;
-}
-
-function boardRange(start: number, end: number): string {
-  return start === end ? `${start}` : `${start}-${end}`;
 }

@@ -11,7 +11,7 @@ const meta: Meta<typeof ManageMovementPage> = {
   },
   tags: ["autodocs"],
   args: {
-    onBack: fn(),
+    backHref: "/games",
   },
 };
 

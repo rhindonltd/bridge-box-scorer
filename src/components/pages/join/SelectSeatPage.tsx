@@ -11,8 +11,8 @@ import { SocketEvents } from "@/socket/socket-events";
 import useSWR from "swr";
 import { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
-import { GameInfo } from "@/components/common/GameInfo";
 import SelectPairsTable from "@/components/join/SelectTable";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {
   onSeatSelected: (seat: Seat) => void;
@@ -56,46 +56,46 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="flex flex-row w-full">
-        <GameInfo />
-      </div>
-
-      {/* Main table selection */}
-      <SelectPairsTable
-        onSeatSelected={handleSeatSelected}
-        tables={game.tables}
-        startingPositions={data ?? []}
-      />
-
-      {/* Backdrop */}
-      {selectedSeat && (
-        <div
-          className="fixed inset-0 bg-black/30"
-          onClick={() => setSelectedSeat(null)}
-        />
-      )}
-
-      {/* Bottom sheet */}
-      <div
-        className={`
-          fixed bottom-0 left-0 right-0
-          bg-white
-          shadow-2xl
-          rounded-t-2xl
-          transform
-          transition-transform duration-300 ease-out
-          ${selectedSeat ? "translate-y-0" : "translate-y-full"}
-        `}
-      >
-        {selectedSeat && (
-          <EnterPlayerNames
-            seat={selectedSeat}
-            onSubmitPair={handlePairSubmitted}
+    <GamePageLayout
+      headerTitle="Select Seat"
+      children={
+        <>
+          {/* Main table selection */}
+          <SelectPairsTable
+            onSeatSelected={handleSeatSelected}
+            tables={game.tables}
+            startingPositions={data ?? []}
           />
-        )}
-      </div>
-    </div>
+
+          {/* Backdrop */}
+          {selectedSeat && (
+            <div
+              className="fixed inset-0 bg-black/30"
+              onClick={() => setSelectedSeat(null)}
+            />
+          )}
+
+          {/* Bottom sheet */}
+          <div
+            className={`
+                    fixed bottom-0 left-0 right-0
+                    bg-white
+                    shadow-2xl
+                    rounded-t-2xl
+                    transform
+                    transition-transform duration-300 ease-out
+                    ${selectedSeat ? "translate-y-0" : "translate-y-full"}
+                  `}
+          >
+            {selectedSeat && (
+              <EnterPlayerNames
+                seat={selectedSeat}
+                onSubmitPair={handlePairSubmitted}
+              />
+            )}
+          </div>
+        </>
+      }
+    />
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useGame } from "@/context/GameContext";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface DownloadUsebioPageProps {
   onUsebioDownloaded: () => void;
@@ -102,71 +103,68 @@ export function DownloadUsebioPage({
   }
 
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
-      {/* Header */}
-      <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
-        {game.eventName}
-      </div>
+    <GamePageLayout
+      headerTitle="Download USEBIO"
+      centerContent={true}
+      children={
+        <form
+          onSubmit={handleDownload}
+          className="px-6"
+          id="download-usebio-form"
+        >
+          <p className="text-sm text-gray-600 mb-4">
+            Confirm your club details before downloading. These will be included
+            in the USEBIO file.
+          </p>
 
-      {/* Sub-header */}
-      <div className="bg-blue-600 text-white px-3 py-2.5 text-center font-bold text-lg">
-        Download USEBIO
-      </div>
+          <div className="space-y-4 flex-1">
+            <div>
+              <label
+                htmlFor="club-name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Club Name
+              </label>
+              <input
+                id="club-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Anytown Bridge Club"
+                className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-      <form
-        onSubmit={handleDownload}
-        className="flex-1 flex flex-col px-6 pt-6 pb-8 max-w-sm w-full mx-auto"
-      >
-        <p className="text-sm text-gray-600 mb-4">
-          Confirm your club details before downloading. These will be included
-          in the USEBIO file.
-        </p>
+            <div>
+              <label
+                htmlFor="club-number"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                EBU Club Number
+              </label>
+              <input
+                id="club-number"
+                type="text"
+                value={clubNumber}
+                onChange={(e) => setClubNumber(e.target.value)}
+                placeholder="e.g. 12345"
+                className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
 
-        <div className="space-y-4 flex-1">
-          <div>
-            <label
-              htmlFor="club-name"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Club Name
-            </label>
-            <input
-              id="club-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Anytown Bridge Club"
-              className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            {error && (
+              <p role="alert" className="text-red-600 text-base text-center">
+                {error}
+              </p>
+            )}
           </div>
-
-          <div>
-            <label
-              htmlFor="club-number"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              EBU Club Number
-            </label>
-            <input
-              id="club-number"
-              type="text"
-              value={clubNumber}
-              onChange={(e) => setClubNumber(e.target.value)}
-              placeholder="e.g. 12345"
-              className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {error && (
-            <p role="alert" className="text-red-600 text-base text-center">
-              {error}
-            </p>
-          )}
-        </div>
-
+        </form>
+      }
+      actions={
         <div className="flex flex-col gap-3 pt-6">
           <button
             type="submit"
+            form="download-usebio-form"
             disabled={saving}
             className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
           >
@@ -182,7 +180,7 @@ export function DownloadUsebioPage({
             Cancel
           </button>
         </div>
-      </form>
-    </div>
+      }
+    />
   );
 }

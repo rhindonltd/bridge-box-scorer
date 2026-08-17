@@ -10,8 +10,8 @@ const mockGame = {
   gameType: "PAIRS" as const,
   scoringType: "MP" as const,
   gameId: "abc123",
-  sessionName: "Session 1",
-  sectionName: "Section A",
+  sessionName: "1",
+  sectionName: "A",
   eventDate: new Date().toISOString(),
   tables: 8,
   leadCardRequired: true,
@@ -31,7 +31,6 @@ const meta: Meta<typeof ManageGameMenuPage> = {
   args: {
     onTimerClick: fn(),
     onTravellersClick: fn(),
-    onChangeStatusClick: fn(),
     onMovementClick: fn(),
     onDownloadUsebioClick: fn(),
     onDeleteGameClick: fn(),

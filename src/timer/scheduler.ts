@@ -2,10 +2,7 @@ import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
 import { TimerState } from "@/timer/timer-state";
 
 type SchedulerDeps = {
-  updateTimerState: (
-    gameId: string,
-    timerState: TimerState,
-  ) => Promise<void>;
+  updateTimerState: (gameId: string, timerState: TimerState) => Promise<void>;
 
   broadcast: (gameId: string, timerState: TimerState) => void;
 };

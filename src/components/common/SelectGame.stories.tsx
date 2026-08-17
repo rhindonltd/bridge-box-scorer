@@ -1,8 +1,8 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import SelectGame from "./SelectGame";
+import { SelectGame } from "./SelectGame";
 
 const meta: Meta<typeof SelectGame> = {
-  title: "Components/Join/SelectGame",
+  title: "Components/Common/SelectGame",
   component: SelectGame,
   parameters: {
     layout: "fullscreen",

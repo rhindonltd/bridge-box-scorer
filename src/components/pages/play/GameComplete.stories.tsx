@@ -39,4 +39,8 @@ const meta: Meta<typeof GameComplete> = {
 export default meta;
 type Story = StoryObj<typeof GameComplete>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  args: {
+    loading: false,
+  },
+};

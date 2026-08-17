@@ -58,7 +58,7 @@ export default function NumberStepper({
         : `${value}`;
 
   return (
-    <div className="flex justify-center items-center gap-5 mt-3">
+    <div className="flex justify-center items-center gap-5">
       {/* Decrement */}
       <button
         type="button"
