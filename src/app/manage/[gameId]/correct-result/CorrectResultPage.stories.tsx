@@ -4,7 +4,7 @@ import { CorrectResultPage } from "./CorrectResultPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof CorrectResultPage> = {
-  title: "Pages/Manage/CorrectResult/CorrectResultPage",
+  title: "App/Manage/Game/CorrectResult/CorrectResultPage",
   component: CorrectResultPage,
   parameters: {
     layout: "fullscreen",

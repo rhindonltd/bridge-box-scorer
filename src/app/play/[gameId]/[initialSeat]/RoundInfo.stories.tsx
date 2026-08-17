@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import RoundInfo from "./RoundInfo";
 
 const meta: Meta<typeof RoundInfo> = {
-  title: "Components/Play/RoundInfo",
+  title: "App/Play/Game/Assignment/RoundInfo",
   component: RoundInfo,
   parameters: {
     layout: "fullscreen",

@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import { PlayerSearchView } from "./PlayerSearchView";
 
 const meta: Meta<typeof PlayerSearchView> = {
-  title: "Pages/Join/PlayerSearchView",
+  title: "App/Join/Game/Player/PlayerSearchView",
   component: PlayerSearchView,
   parameters: { layout: "centered" },
   tags: ["autodocs"],

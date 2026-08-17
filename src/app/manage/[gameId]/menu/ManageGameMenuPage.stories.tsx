@@ -21,7 +21,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof ManageGameMenuPage> = {
-  title: "Pages/Manage/DirectorMenuPage",
+  title: "App/Manage/Game/Menu/DirectorMenuPage",
   component: ManageGameMenuPage,
   decorators: [withGame(mockGame)],
   parameters: {

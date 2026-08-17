@@ -3,7 +3,7 @@ import { StepResult } from "./StepResult";
 import { fn } from "storybook/test";
 
 const meta: Meta<typeof StepResult> = {
-  title: "Components/Play/ContractWizard/StepResult",
+  title: "Components/ContractWizard/StepResult",
   component: StepResult,
   parameters: {
     layout: "fullscreen",

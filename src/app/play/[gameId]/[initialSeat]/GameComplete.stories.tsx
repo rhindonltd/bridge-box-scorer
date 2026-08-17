@@ -21,7 +21,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof GameComplete> = {
-  title: "Pages/Play/GameComplete",
+  title: "App/Play/Game/Assignment/GameComplete",
   component: GameComplete,
   decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
   parameters: {

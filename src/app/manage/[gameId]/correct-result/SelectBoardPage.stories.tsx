@@ -21,7 +21,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof SelectBoardPage> = {
-  title: "Pages/Manage/CorrectResult/SelectBoardPage",
+  title: "App/Manage/Game/CorrectResult/SelectBoardPage",
   component: SelectBoardPage,
   decorators: [withGame(mockGame)],
   parameters: {

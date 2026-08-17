@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { TeamMatchLeaderboard } from "@/components/leaderboard/TeamMatchLeaderboard";
 
 const meta: Meta<typeof TeamMatchLeaderboard> = {
-  title: "Components/Results/Leaderboard/TeamMatchLeaderboard",
+  title: "Components/Leaderboard/TeamMatchLeaderboard",
   component: TeamMatchLeaderboard,
   parameters: {
     layout: "fullscreen",

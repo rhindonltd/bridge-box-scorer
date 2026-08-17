@@ -37,7 +37,7 @@ const pairsGame8Tables = {
 };
 
 const meta: Meta<typeof ShowMovementsPage> = {
-  title: "Pages/Create/ShowMovementsPage",
+  title: "App/Create/Game/ShowMovementsPage",
   component: ShowMovementsPage,
   parameters: {
     layout: "fullscreen",

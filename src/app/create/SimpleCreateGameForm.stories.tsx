@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import SimpleCreateGameForm from "./SimpleCreateGameForm";
 
 const meta: Meta<typeof SimpleCreateGameForm> = {
-  title: "Components/Create/SimpleCreateGameForm",
+  title: "App/Create/SimpleCreateGameForm",
   component: SimpleCreateGameForm,
   parameters: {
     layout: "fullscreen",
