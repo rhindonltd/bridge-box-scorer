@@ -1,6 +1,6 @@
 "use client";
 
-import { ManageMovementPage } from "@/components/pages/manage/ManageMovementPage";
+import { ManageMovementPage } from "@/app/manage/[gameId]/movement/ManageMovementPage";
 import { useParams } from "next/navigation";
 
 export default function ManageMovementRoute() {

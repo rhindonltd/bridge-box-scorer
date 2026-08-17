@@ -16,7 +16,7 @@ import { Traveller } from "@/model/traveller";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/components/pages/play/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
-import { BoardInstance } from "@/components/pages/manage/correct-result/Traveller";
+import { BoardInstance } from "@/app/manage/[gameId]/correct-result/Traveller";
 import { MoveInfoPage } from "@/components/pages/play/MoveInfoPage";
 
 export default function PlayPage() {

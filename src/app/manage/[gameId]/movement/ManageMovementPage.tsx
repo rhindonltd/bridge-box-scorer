@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
-import { PageLayout } from "../../layout/PageLayout";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { MovementByTable } from "@/movement/movementData";
 
 interface ManageMovementPageProps {

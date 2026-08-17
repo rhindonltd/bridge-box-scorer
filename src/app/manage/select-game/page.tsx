@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import ManageSelectGamePage from "@/components/pages/manage/ManageSelectGamePage";
+import ManageSelectGamePage from "@/app/manage/select-game/ManageSelectGamePage";
 import { ClaimDirectorCode } from "@/app/manage/select-game/ClaimDirectorCode";
 import { useRouter } from "next/navigation";
 import { isDirectorFor } from "@/lib/director-token";
