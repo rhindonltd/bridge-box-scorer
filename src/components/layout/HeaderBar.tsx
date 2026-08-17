@@ -6,6 +6,7 @@ type Props = {
   headerTitle: string;
   /** URL to navigate to when back arrow is tapped. Omit to hide back arrow. */
   backHref?: string;
+  backAction?: () => void;
   /** Secondary line below the title (e.g., session/section info) */
   headerSubtitle?: string;
   /** Secondary line below the title (e.g., session/section info) */
@@ -17,6 +18,7 @@ type Props = {
 export function HeaderBar({
   headerTitle,
   backHref,
+  backAction,
   headerSubtitle,
   headerSubtitle2,
   headerRight,
@@ -32,6 +34,16 @@ export function HeaderBar({
           >
             <ArrowLeft size={20} />
           </Link>
+        )}
+        {backAction && (
+          <button
+            onClick={backAction}
+            className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
+            aria-label="Go back"
+            type="button"
+          >
+            <ArrowLeft size={20} />
+          </button>
         )}
         <div className="flex-1 flex items-start justify-between min-w-0">
           <div className="truncate">

@@ -1,5 +1,6 @@
 "use client";
 
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useGame } from "@/context/GameContext";
 import { Clock, Monitor } from "lucide-react";
 
@@ -16,29 +17,23 @@ export function DisplayMenuPage({
 
   if (isLoading || !game) return null;
 
-  const standardButtonClass =
-    "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2";
+    const standardButtonClass =
+        "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 pl-4";
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
-        {game.eventName}
-      </div>
+    <GamePageLayout
+      headerTitle="Display Menu"
+      children={
+          <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
+          <button onClick={onTimerClick} className={standardButtonClass}>
+                <span className="flex items-center gap-3">Timer</span>
+          </button>
 
-      <button onClick={onTimerClick} className={standardButtonClass}>
-        <span className="flex items-center gap-3">
-          <Clock size={20} />
-          Timer
-        </span>
-      </button>
-
-      <button onClick={onLeaderboardClick} className={standardButtonClass}>
-        <span className="flex items-center gap-3">
-          <Monitor size={20} />
-          Leaderboard
-        </span>
-      </button>
-    </div>
+          <button onClick={onLeaderboardClick} className={standardButtonClass}>
+                <span className="flex items-center gap-3">Leaderboard</span>
+          </button>
+          </div>
+      }
+    />
   );
 }

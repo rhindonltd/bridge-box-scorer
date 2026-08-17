@@ -5,9 +5,11 @@ import { HeaderBar } from "./HeaderBar";
 
 type Props = {
   headerTitle: string;
+  backAction?: () => void;
+  backHref?: string;
 };
 
-export function GameHeaderBar({ headerTitle }: Props) {
+export function GameHeaderBar({ headerTitle, backAction, backHref }: Props) {
   const { game } = useGame();
 
   if (!game) return null;
@@ -30,6 +32,8 @@ export function GameHeaderBar({ headerTitle }: Props) {
       headerTitle={headerTitle}
       headerSubtitle={game.eventName}
       headerSubtitle2={headerSubtitle2()}
+      backHref={backHref}
+      backAction={backAction}
     />
   );
 }

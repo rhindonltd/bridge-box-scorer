@@ -6,13 +6,12 @@ import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
 import { MovementCard } from "@/components/create/MovementCard";
-import Button from "@/components/common/Button";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import { MitchellMovementSpec, generateMitchell } from "@/movement/mitchell";
 import NumberStepper from "@/components/common/NumberStepper";
-import { PageLayout } from "@/components/layout/PageLayout";
 import { MovementByTable } from "@/movement/movementData";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 type Props = {
   onShowTablesPage: () => void;
@@ -156,7 +155,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
       selected.type === "MITCHELL" ? mitchellPreview : movementDetail;
     if (!detailData) return null;
     return (
-      <PageLayout
+      <GamePageLayout
         headerTitle={selected.name}
         backHref={`/create/${game.gameId}`}
         children={
@@ -196,59 +195,61 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
 
   // Movement list view — grouped by type with section headings
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {shouldLoadPairs && (
-          <div>
-            <SectionHeading title="Generated Movements" />
-            <div className="mb-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-semibold text-gray-600">
-                  Boards per round:
-                </label>
-                <NumberStepper
-                  value={mitchellBoardsPerRound}
-                  onChange={setMitchellBoardsPerRound}
-                  min={2}
-                />
+    <GamePageLayout
+      headerTitle="Select Movement"
+      backAction={onShowTablesPage}
+      children={
+        <div className="flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {shouldLoadPairs && (
+              <div>
+                <SectionHeading title="Generated Movements" />
+                <div className="mb-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-semibold text-gray-600">
+                      Boards per round:
+                    </label>
+                    <NumberStepper
+                      value={mitchellBoardsPerRound}
+                      onChange={setMitchellBoardsPerRound}
+                      min={2}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {mitchellOptions.map((option) => (
+                    <MitchellCard
+                      key={option.name}
+                      name={option.name}
+                      spec={option.spec}
+                      onSelect={() => handleMitchellSelected(option)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {mitchellOptions.map((option) => (
-                <MitchellCard
-                  key={option.name}
-                  name={option.name}
-                  spec={option.spec}
-                  onSelect={() => handleMitchellSelected(option)}
-                />
-              ))}
-            </div>
+            )}
+
+            {shouldLoadPairs && (
+              <MovementSection
+                title="Pairs Movements"
+                movements={pairMovements ?? []}
+                type="PAIRS"
+                onSelect={handleMovementClicked}
+              />
+            )}
+
+            {shouldLoadTeams && (
+              <MovementSection
+                title="Teams Movements"
+                movements={teamMovements ?? []}
+                type="TEAMS"
+                onSelect={handleMovementClicked}
+              />
+            )}
           </div>
-        )}
-
-        {shouldLoadPairs && (
-          <MovementSection
-            title="Pairs Movements"
-            movements={pairMovements ?? []}
-            type="PAIRS"
-            onSelect={handleMovementClicked}
-          />
-        )}
-
-        {shouldLoadTeams && (
-          <MovementSection
-            title="Teams Movements"
-            movements={teamMovements ?? []}
-            type="TEAMS"
-            onSelect={handleMovementClicked}
-          />
-        )}
-      </div>
-
-      <div className="p-4 border-t">
-        <Button value="Show Tables" onClick={onShowTablesPage} />
-      </div>
-    </div>
+        </div>
+      }
+    />
   );
 }
 

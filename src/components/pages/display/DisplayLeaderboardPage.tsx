@@ -6,6 +6,7 @@ import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GameHeaderBar } from "@/components/layout/GameHeaderBar";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 export function DisplayLeaderboardPage() {
   const { game, isLoading } = useGame();
@@ -47,31 +48,25 @@ export function DisplayLeaderboardPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="flex flex-row w-full">
-        <GameHeaderBar headerTitle="Leaderboard" />
-      </div>
-
-      <div className="w-full">
-        <div className="flex flex-col bg-blue-100 text-blue-900 py-2">
-          <div className="text-center font-bold">Results</div>
+    <GamePageLayout
+      headerTitle="Leaderboard"
+      centerContent={true}
+      children={
+        <div className="flex-1 min-h-0">
+          {leaderboardData ? (
+            <Leaderboard overallScoreAndParticipant={leaderboardData} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full p-6">
+              <div className="text-xl font-bold text-gray-900 mb-2">
+                No Results Yet
+              </div>
+              <div className="text-base text-gray-500 text-center">
+                Results will appear here once boards have been played.
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-
-      <div className="flex-1 min-h-0">
-        {leaderboardData ? (
-          <Leaderboard overallScoreAndParticipant={leaderboardData} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full p-6">
-            <div className="text-xl font-bold text-gray-900 mb-2">
-              No Results Yet
-            </div>
-            <div className="text-base text-gray-500 text-center">
-              Results will appear here once boards have been played.
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      }
+    />
   );
 }

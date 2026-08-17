@@ -65,7 +65,7 @@ export default function DirectorTableControls({
   tables,
   onChange,
   onEvict,
-  canRemoveTable
+  canRemoveTable,
 }: Props) {
   return (
     <>

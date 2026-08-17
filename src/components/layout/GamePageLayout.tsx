@@ -5,6 +5,7 @@ import { GameHeaderBar } from "./GameHeaderBar";
 interface Props {
   /** Primary header text (e.g., event name, "Manage Games", "Settings") */
   headerTitle: string;
+  backAction?: () => void;
   backHref?: string;
   /** Fixed-bottom action buttons. Omit to hide the action bar. */
   actions?: React.ReactNode;
@@ -16,6 +17,8 @@ interface Props {
 
 export function GamePageLayout({
   headerTitle,
+  backAction,
+  backHref,
   actions,
   centerContent = false,
   children,
@@ -23,7 +26,11 @@ export function GamePageLayout({
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Header Bar */}
-      <GameHeaderBar headerTitle={headerTitle} />
+      <GameHeaderBar
+        headerTitle={headerTitle}
+        backAction={backAction}
+        backHref={backHref}
+      />
 
       {/* Content Area */}
       <div
