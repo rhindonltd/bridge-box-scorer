@@ -1,8 +1,8 @@
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { PairIMPLeaderboard } from "@/components/results/leaderboard/PairIMPLeaderboard";
-import { TeamMatchLeaderboard } from "@/components/results/leaderboard/TeamMatchLeaderboard";
-import { TeamOverallLeaderboard } from "@/components/results/leaderboard/TeamOverallLeaderboard";
-import { PairMP } from "@/components/results/leaderboard/PairMP";
+import { PairIMPLeaderboard } from "@/components/leaderboard/PairIMPLeaderboard";
+import { TeamMatchLeaderboard } from "@/components/leaderboard/TeamMatchLeaderboard";
+import { TeamOverallLeaderboard } from "@/components/leaderboard/TeamOverallLeaderboard";
+import { PairMP } from "@/components/leaderboard/PairMP";
 
 type Props = {
   overallScoreAndParticipant: OverallScoreAndParticipant;

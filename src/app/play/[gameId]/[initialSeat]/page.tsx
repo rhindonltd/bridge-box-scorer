@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useGame } from "@/context/GameContext";
-import { ContractWizard } from "@/components/play/contract-wizard/ContractWizard";
+import { ContractWizard } from "@/app/play/[gameId]/[initialSeat]/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { parseContract } from "@/model/contract";
 import { WaitingForConfirmation } from "@/app/play/[gameId]/[initialSeat]/WaitingForConfirmation";

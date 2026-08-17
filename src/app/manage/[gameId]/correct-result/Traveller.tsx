@@ -1,7 +1,7 @@
 "use client";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { BoardResult as ContractDisplay } from "@/components/results/traveller/BoardResult";
+import { BoardResult as ContractDisplay } from "@/components/traveller/BoardResult";
 import { BoardOutcome } from "@/model/score";
 
 interface PairsParticipants {

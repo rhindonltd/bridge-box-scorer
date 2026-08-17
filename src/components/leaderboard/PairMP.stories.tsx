@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { PairMP } from "@/components/results/leaderboard/PairMP";
+import { PairMP } from "@/components/leaderboard/PairMP";
 
 const meta: Meta<typeof PairMP> = {
   title: "Components/Results/Leaderboard/PairMP",

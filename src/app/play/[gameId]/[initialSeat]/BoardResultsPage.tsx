@@ -1,7 +1,7 @@
-import { Traveller } from "@/components/results/traveller/Traveller";
+import { Traveller } from "@/components/traveller/Traveller";
 import { ScoredTraveller } from "@/scoring/traveller/score-traveller";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { BoardSelector } from "@/components/play/BoardSelector";
+import { BoardSelector } from "@/app/play/[gameId]/[initialSeat]/BoardSelector";
 
 interface Props {
   board: number;

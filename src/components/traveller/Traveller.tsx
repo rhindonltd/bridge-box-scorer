@@ -1,4 +1,4 @@
-import { PairMP } from "@/components/results/traveller/PairMP";
+import { PairMP } from "@/components/traveller/PairMP";
 import { ScoredTraveller } from "@/scoring/traveller/score-traveller";
 import { PairXIMPTable } from "./PairXIMPTable";
 

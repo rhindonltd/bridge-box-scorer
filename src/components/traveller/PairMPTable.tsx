@@ -1,20 +1,20 @@
-import { BoardResult } from "@/components/results/traveller/BoardResult";
+import { BoardResult } from "@/components/traveller/BoardResult";
 import { TableRow } from "@/components/common/table/TableRow";
 import { Table } from "@/components/common/table/Table";
 import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
 type Props = {
-  scoredTraveller: ScoredTravellerOfType<"PAIR_XIMP">;
+  scoredTraveller: ScoredTravellerOfType<"PAIR_MP">;
 };
 
-export function PairXIMPTable({ scoredTraveller }: Props) {
+export function PairMPTable({ scoredTraveller }: Props) {
   const rows = scoredTraveller.lines
     .filter((x) => x.score !== null)
-    .sort((a, b) => b.nsCrossImps - a.nsCrossImps);
+    .sort((a, b) => b.nsMatchPoints - a.nsMatchPoints);
 
   return (
     <Table
-      columns={["NS", "EW", "Contract", "NS Score", "NS IMP", "EW IMP"]}
+      columns={["NS", "EW", "Contract", "NS Score", "NS MP", "EW MP"]}
       body={rows
         .filter((x) => x.score !== null)
         .map((row, index, arr) => {
@@ -27,8 +27,8 @@ export function PairXIMPTable({ scoredTraveller }: Props) {
                 `${row.ewId}`,
                 <BoardResult key={index} boardOutcome={row.outcome} />,
                 row.score,
-                row.nsCrossImps.toFixed(2),
-                row.ewCrossImps.toFixed(2),
+                row.nsMatchPoints,
+                row.ewMatchPoints,
               ]}
               className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
             />

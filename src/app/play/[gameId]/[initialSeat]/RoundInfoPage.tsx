@@ -1,6 +1,6 @@
 "use client";
 
-import RoundInfo from "@/components/play/RoundInfo";
+import RoundInfo from "@/app/play/[gameId]/[initialSeat]/RoundInfo";
 import React from "react";
 import { Player } from "@/db/games/tables/players";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";

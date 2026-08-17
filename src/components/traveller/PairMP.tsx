@@ -1,7 +1,7 @@
 "use client";
 
-import { PairMPTable } from "@/components/results/traveller/PairMPTable";
-import { PairMPPercentageTable } from "@/components/results/traveller/PairMPPercentageTable";
+import { PairMPTable } from "@/components/traveller/PairMPTable";
+import { PairMPPercentageTable } from "@/components/traveller/PairMPPercentageTable";
 import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
 import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";

@@ -2,7 +2,7 @@
 
 import { useGame } from "@/context/GameContext";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
+import { Leaderboard } from "@/components/leaderboard/Leaderboard";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";

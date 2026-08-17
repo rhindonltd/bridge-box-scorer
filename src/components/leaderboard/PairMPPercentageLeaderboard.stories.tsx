@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { PairMPPercentageLeaderboard } from "@/components/results/leaderboard/PairMPPercentageLeaderboard";
+import { PairMPPercentageLeaderboard } from "@/components/leaderboard/PairMPPercentageLeaderboard";
 
 const meta: Meta<typeof PairMPPercentageLeaderboard> = {
   title: "Components/Results/Leaderboard/PairMPPercentageLeaderboard",

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { Traveller } from "@/components/results/traveller/Traveller";
+import { Traveller } from "@/components/traveller/Traveller";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { score } from "@/scoring/traveller/score-traveller";

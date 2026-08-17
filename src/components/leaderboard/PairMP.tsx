@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Toggle } from "@/components/common/Toggle";
-import { PairMPPercentageLeaderboard } from "@/components/results/leaderboard/PairMPPercentageLeaderboard";
-import { PairMPLeaderboard } from "@/components/results/leaderboard/PairMPLeaderboard";
+import { PairMPPercentageLeaderboard } from "@/components/leaderboard/PairMPPercentageLeaderboard";
+import { PairMPLeaderboard } from "@/components/leaderboard/PairMPLeaderboard";
 import { PairMatchpointOverallScore } from "@/model/leaderboard";
 import { AssignedPair } from "@/model/participants";
 

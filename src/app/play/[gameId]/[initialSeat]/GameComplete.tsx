@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
+import { Leaderboard } from "@/components/leaderboard/Leaderboard";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 

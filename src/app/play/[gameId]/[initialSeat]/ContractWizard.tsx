@@ -8,15 +8,15 @@ import { SpecialBoardOutcome } from "@/model/result";
 import { useGame } from "@/context/GameContext";
 import { useAssignment } from "@/context/AssignmentContext";
 
-import { StepBoard } from "./StepBoard";
-import { StepLevel } from "./StepLevel";
-import { StepSuit } from "./StepSuit";
-import { StepDeclarer } from "./StepDeclarer";
-import { StepOpeningLead } from "./StepOpeningLead";
-import { StepResult } from "./StepResult";
-import { StepConfirm } from "./StepConfirm";
+import { StepBoard } from "@/components/contract-wizard/StepBoard";
+import { StepLevel } from "@/components/contract-wizard/StepLevel";
+import { StepSuit } from "@/components/contract-wizard/StepSuit";
+import { StepDeclarer } from "@/components/contract-wizard/StepDeclarer";
+import { StepOpeningLead } from "@/components/contract-wizard/StepOpeningLead";
+import { StepResult } from "@/components/contract-wizard/StepResult";
+import { StepConfirm } from "@/components/contract-wizard/StepConfirm";
 import { useBoardFlow } from "@/hooks/board-flow";
-import { BoardDropDown } from "./BoardDropDown";
+import { BoardDropDown } from "@/components/contract-wizard/BoardDropDown";
 import { useState } from "react";
 
 interface Props {
