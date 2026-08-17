@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
-import { Card, Direction, Rank, Suit } from "@/model/common";
+import { ContractCode } from "@/model/contract";
+import { Card } from "@/model/common";
 import { SpecialBoardOutcome } from "@/model/result";
 import { useGame } from "@/context/GameContext";
 import { useAssignment } from "@/context/AssignmentContext";
@@ -16,8 +15,11 @@ import { StepDeclarer } from "./StepDeclarer";
 import { StepOpeningLead } from "./StepOpeningLead";
 import { StepResult } from "./StepResult";
 import { StepConfirm } from "./StepConfirm";
+import { useBoardFlow } from "@/hooks/board-flow";
+import { BoardDropDown } from "./BoardDropDown";
+import { useState } from "react";
 
-interface ContractWizardProps {
+interface Props {
   round: number;
   table: number;
   roundBoards: number[];
@@ -37,101 +39,33 @@ export function ContractWizard({
   playedBoards,
   leadCardRequired,
   onComplete,
-}: ContractWizardProps) {
+}: Props) {
   const { game } = useGame();
   const { assignment } = useAssignment();
 
-  // Step state
-  const [step, setStep] = useState(0);
+  const {
+    level,
+    suit,
+    declarer,
+    dbl,
+    specialOutcome,
+    leadSuit,
+    leadRank,
+    resultMode,
+    resultValue,
+    step,
+    handleBack,
+    onLeadComplete,
+    setLeadSuit,
+    setLeadRank,
+    onResultComplete,
+    onLevelSelected,
+    onSpecialOutcome,
+    onSuitSelected,
+    onDeclarerSelected,
+  } = useBoardFlow({ leadCardRequired });
+
   const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
-  const [boardDropdownOpen, setBoardDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Contract state
-  const [level, setLevel] = useState<Level | null>(null);
-  const [suit, setSuit] = useState<ContractSuit | null>(null);
-  const [declarer, setDeclarer] = useState<Direction | null>(null);
-  const [dbl, setDbl] = useState<Doubling>("");
-  const [specialOutcome, setSpecialOutcome] =
-    useState<SpecialBoardOutcome | null>(null);
-
-  // Lead state
-  const [leadSuit, setLeadSuit] = useState<Suit | null>(null);
-  const [leadRank, setLeadRank] = useState<Rank | null>(null);
-
-  // Result state
-  const [resultMode, setResultMode] = useState<"made" | "down">("made");
-  const [resultValue, setResultValue] = useState(0);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!boardDropdownOpen) return;
-
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setBoardDropdownOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [boardDropdownOpen]);
-
-  // --- Board selection handler ---
-
-  const handleBoardSelected = (board: number) => {
-    setSelectedBoard(board);
-    setBoardDropdownOpen(false);
-    if (step === 0) {
-      setStep(1);
-    }
-  };
-
-  // --- Step transition handlers ---
-
-  const onLevelSelected = (selectedLevel: Level) => {
-    setLevel(selectedLevel);
-    setSpecialOutcome(null);
-    setStep(2);
-  };
-
-  const onSpecialOutcome = (outcome: SpecialBoardOutcome) => {
-    setSpecialOutcome(outcome);
-    setLevel(null);
-    setSuit(null);
-    setDeclarer(null);
-    setDbl("");
-    setStep(6);
-  };
-
-  const onSuitSelected = (selectedSuit: ContractSuit) => {
-    setSuit(selectedSuit);
-    setStep(3);
-  };
-
-  const onDeclarerSelected = (
-    selectedDeclarer: Direction,
-    selectedDbl: Doubling,
-  ) => {
-    setDeclarer(selectedDeclarer);
-    setDbl(selectedDbl);
-    setStep(leadCardRequired ? 4 : 5);
-  };
-
-  const onLeadComplete = (selectedSuit: Suit, selectedRank: Rank) => {
-    setLeadSuit(selectedSuit);
-    setLeadRank(selectedRank);
-    setStep(5);
-  };
-
-  const onResultComplete = (mode: "made" | "down", value: number) => {
-    setResultMode(mode);
-    setResultValue(value);
-    setStep(6);
-  };
 
   const onSubmit = () => {
     if (specialOutcome) {
@@ -150,76 +84,18 @@ export function ContractWizard({
     }
   };
 
-  // --- Back arrow logic ---
-
-  const handleBack = () => {
-    switch (step) {
-      case 1:
-        setStep(0);
-        break;
-      case 2:
-        setStep(1);
-        break;
-      case 3:
-        setStep(2);
-        break;
-      case 4:
-        setStep(3);
-        break;
-      case 5:
-        setStep(leadCardRequired ? 4 : 3);
-        break;
-      case 6:
-        setStep(specialOutcome ? 1 : 5);
-        break;
-    }
-  };
-
-  const showBackArrow = step > 0;
-
-  // --- Sub-header (blue bar) ---
-
-  const showBoardButton = selectedBoard !== null && step !== 0;
-
   const subHeader = (
     <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
       <span className="font-bold text-lg">
         Table {table}, Round {round}
       </span>
-      {showBoardButton && (
-        <div className="relative" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setBoardDropdownOpen((v) => !v)}
-            className="px-4 py-2 text-lg font-bold bg-white text-blue-900 rounded-lg border-2 border-blue-300 shadow-sm flex items-center gap-1"
-          >
-            Board {selectedBoard}
-            <ChevronDown size={18} />
-          </button>
-
-          {boardDropdownOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 min-w-[140px] overflow-hidden">
-              {roundBoards.map((board) => {
-                const isPlayed = playedBoards.includes(board);
-                const isCurrent = board === selectedBoard;
-                return (
-                  <button
-                    key={board}
-                    type="button"
-                    disabled={isPlayed}
-                    onClick={() => handleBoardSelected(board)}
-                    className={`w-full px-4 py-2.5 text-left text-base font-semibold transition
-                      ${isCurrent ? "bg-blue-50 text-blue-900" : "text-gray-800 hover:bg-gray-50"}
-                      ${isPlayed ? "opacity-40 cursor-not-allowed line-through" : ""}
-                    `}
-                  >
-                    Board {board}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+      {step !== 0 && (
+        <BoardDropDown
+          roundBoards={roundBoards}
+          playedBoards={playedBoards}
+          selectedBoard={selectedBoard}
+          onBoardSelected={setSelectedBoard}
+        />
       )}
     </div>
   );
@@ -228,7 +104,7 @@ export function ContractWizard({
 
   const header = (
     <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-center gap-2 shrink-0">
-      {showBackArrow && (
+      {step > 0 && (
         <button
           onClick={handleBack}
           className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
@@ -265,7 +141,7 @@ export function ContractWizard({
         <StepBoard
           boards={roundBoards}
           playedBoards={playedBoards}
-          onBoardSelected={handleBoardSelected}
+          onBoardSelected={setSelectedBoard}
         />
       );
     }

@@ -73,14 +73,6 @@ export const UnsortedBoards: Story = {
   },
 };
 
-export const NoBoards: Story = {
-  args: {
-    table: 1,
-    boards: [],
-    players,
-  },
-};
-
 export const DifferentTable: Story = {
   args: {
     table: 8,

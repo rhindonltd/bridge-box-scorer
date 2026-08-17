@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { PlayHeader } from "@/components/play/PlayHeader";
 import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 export function GameComplete() {
   const params = useParams<{ gameId: string }>();
@@ -36,23 +36,24 @@ export function GameComplete() {
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <PlayHeader detail="Results" />
-
-      <div className="flex-1 min-h-0">
-        {leaderboardData ? (
-          <Leaderboard overallScoreAndParticipant={leaderboardData} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full p-6">
-            <div className="text-2xl font-bold text-gray-900 mb-2">
-              Game Complete
+    <GamePageLayout
+      headerTitle="Game Complete"
+      children={
+        <div className="flex-1 min-h-0">
+          {leaderboardData ? (
+            <Leaderboard overallScoreAndParticipant={leaderboardData} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full p-6">
+              <div className="text-2xl font-bold text-gray-900 mb-2">
+                Game Complete
+              </div>
+              <div className="text-base text-gray-500 text-center">
+                All rounds have been played. Thank you!
+              </div>
             </div>
-            <div className="text-base text-gray-500 text-center">
-              All rounds have been played. Thank you!
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+          )}
+        </div>
+      }
+    />
   );
 }

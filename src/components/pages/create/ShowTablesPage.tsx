@@ -16,10 +16,10 @@ import { getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 type Props = {
-  onShowMovementsPage: () => void;
+  onStartGame: () => void;
 };
 
-export function ShowTablesPage({ onShowMovementsPage }: Props) {
+export function ShowTablesPage({ onStartGame }: Props) {
   const { game, mutateGame } = useGame();
 
   const gameId = game?.gameId;
@@ -70,30 +70,15 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
     };
   }
 
-  function handleAddTable() {
+  function handleChange(tables: number) {
     getSocket().emit(
       SocketEvents.UPDATE_TABLES,
       {
         gameId,
-        tables: game!.tables + 1,
+        tables,
         directorToken: getDirectorToken(gameId!),
       },
       () => mutateGame(),
-    );
-  }
-
-  function handleRemoveTable() {
-    getSocket().emit(
-      SocketEvents.UPDATE_TABLES,
-      {
-        gameId,
-        tables: game!.tables - 1,
-        directorToken: getDirectorToken(gameId!),
-      },
-      (res: { success: boolean; error?: string }) => {
-        if (res.success) mutateGame();
-        else alert(res.error);
-      },
     );
   }
 
@@ -122,14 +107,13 @@ export function ShowTablesPage({ onShowMovementsPage }: Props) {
       children={
         <DirectorTableControls
           tables={tables}
-          onAddTable={handleAddTable}
-          onRemoveTable={handleRemoveTable}
+          onChange={handleChange}
           onEvict={handleEvict}
           canRemoveTable={game.tables > 1 && !lastTableOccupied}
         />
       }
       actions={
-        <Button value={"Select Movement"} onClick={onShowMovementsPage} />
+        <Button value={"Start Game"} onClick={onStartGame} className="w-full" />
       }
     />
   );
