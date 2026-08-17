@@ -1,7 +1,7 @@
 "use client";
 
-import {redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
 export default function DisplayRoute() {
-    redirect("/display/select-game");
+  redirect("/display/select-game");
 }
