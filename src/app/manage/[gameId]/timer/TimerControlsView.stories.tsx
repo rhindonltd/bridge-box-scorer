@@ -21,7 +21,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof TimerControlsView> = {
-  title: "Pages/Timer/TimerControlsView",
+  title: "App/Manage/Game/Timer/TimerControlsView",
   component: TimerControlsView,
   decorators: [withGame(mockGame)],
   parameters: { layout: "fullscreen" },

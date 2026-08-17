@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { StepConfirm } from "./StepConfirm";
 
 const meta: Meta<typeof StepConfirm> = {
-  title: "Components/Play/ContractWizard/StepConfirm",
+  title: "Components/ContractWizard/StepConfirm",
   component: StepConfirm,
   parameters: {
     layout: "fullscreen",

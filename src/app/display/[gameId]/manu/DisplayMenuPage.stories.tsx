@@ -21,7 +21,7 @@ const pairsGame4Tables = {
 };
 
 const meta: Meta<typeof DisplayMenuPage> = {
-  title: "Pages/Display/DisplayMenuPage",
+  title: "App/Display/Game/Menu/DisplayMenuPage",
   component: DisplayMenuPage,
   parameters: {
     layout: "fullscreen",

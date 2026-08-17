@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import { StepDeclarer } from "./StepDeclarer";
 
 const meta: Meta<typeof StepDeclarer> = {
-  title: "Components/Play/ContractWizard/StepDeclarer",
+  title: "Components/ContractWizard/StepDeclarer",
   component: StepDeclarer,
   parameters: {
     layout: "fullscreen",

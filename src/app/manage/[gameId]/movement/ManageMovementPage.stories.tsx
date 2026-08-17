@@ -4,7 +4,7 @@ import { ManageMovementPage } from "./ManageMovementPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof ManageMovementPage> = {
-  title: "Pages/Manage/ManageMovementPage",
+  title: "App/Manage/Game/Movement/ManageMovementPage",
   component: ManageMovementPage,
   parameters: {
     layout: "fullscreen",

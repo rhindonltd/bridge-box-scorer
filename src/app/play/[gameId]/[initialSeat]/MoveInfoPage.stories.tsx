@@ -22,7 +22,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof MoveInfoPage> = {
-  title: "Pages/Play/MoveInfoPage",
+  title: "App/Play/Game/Assignment/MoveInfoPage",
   component: MoveInfoPage,
   decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
   parameters: { layout: "fullscreen" },

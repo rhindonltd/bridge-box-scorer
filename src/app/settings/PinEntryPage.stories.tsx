@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import { PinEntryPage } from "./PinEntryPage";
 
 const meta: Meta<typeof PinEntryPage> = {
-  title: "Pages/Settings/PinEntryPage",
+  title: "App/Settings/PinEntryPage",
   component: PinEntryPage,
   parameters: {
     layout: "fullscreen",

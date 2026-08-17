@@ -23,7 +23,7 @@ const mockAssignment = {
 };
 
 const meta: Meta<typeof DirectorContractWizard> = {
-  title: "Pages/Manage/CorrectResult/DirectorContractWizard",
+  title: "App/Manage/Game/CorrectResult/DirectorContractWizard",
   component: DirectorContractWizard,
   parameters: {
     layout: "fullscreen",

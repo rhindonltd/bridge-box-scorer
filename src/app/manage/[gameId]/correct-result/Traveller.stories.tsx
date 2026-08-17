@@ -21,7 +21,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof Traveller> = {
-  title: "Pages/Manage/Traveller",
+  title: "App/Manage/Game/CorrectResult/Traveller",
   component: Traveller,
   decorators: [withGame(mockGame)],
   parameters: {

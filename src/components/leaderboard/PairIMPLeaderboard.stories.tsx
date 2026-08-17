@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { PairIMPLeaderboard } from "./PairIMPLeaderboard";
 
 const meta: Meta<typeof PairIMPLeaderboard> = {
-  title: "Components/Results/Leaderboard/PairIMPLeaderboard",
+  title: "Components/Leaderboard/PairIMPLeaderboard",
   component: PairIMPLeaderboard,
   parameters: {
     layout: "fullscreen",

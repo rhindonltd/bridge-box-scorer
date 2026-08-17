@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { CreateGamePage } from "./CreateGamePage";
 
 const meta: Meta<typeof CreateGamePage> = {
-  title: "Pages/Create/CreateGamePage",
+  title: "App/Create/CreateGamePage",
   component: CreateGamePage,
   parameters: {
     layout: "fullscreen",

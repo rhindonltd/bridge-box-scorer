@@ -21,7 +21,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof WaitingForConfirmation> = {
-  title: "Pages/Play/WaitingForConfirmation",
+  title: "App/Play/Game/Assignment/WaitingForConfirmation",
   component: WaitingForConfirmation,
   decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
   parameters: { layout: "fullscreen" },

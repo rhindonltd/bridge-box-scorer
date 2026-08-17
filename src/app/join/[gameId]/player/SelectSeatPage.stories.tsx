@@ -5,7 +5,7 @@ import { SelectSeatPage } from "@/app/join/[gameId]/player/SelectSeatPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof SelectSeatPage> = {
-  title: "Pages/Join/SelectSeatPage",
+  title: "App/Join/Game/Player/SelectSeatPage",
   component: SelectSeatPage,
   parameters: {
     layout: "fullscreen",

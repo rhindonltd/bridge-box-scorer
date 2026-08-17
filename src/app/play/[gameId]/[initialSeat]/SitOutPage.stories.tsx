@@ -5,7 +5,7 @@ import { fn } from "storybook/test";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof SitOutPage> = {
-  title: "Pages/Play/SitOutPage",
+  title: "App/Play/Game/Assignment/SitOutPage",
   component: SitOutPage,
   decorators: [
     withGame({
