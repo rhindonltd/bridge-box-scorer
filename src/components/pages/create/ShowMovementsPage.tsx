@@ -8,12 +8,11 @@ import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
 import { MovementCard } from "@/components/create/MovementCard";
 import Button from "@/components/common/Button";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
-import {
-  MovementDetailView,
-  MovementTableData,
-} from "@/components/movement/MovementDetailView";
+import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import { MitchellMovementSpec, generateMitchell } from "@/movement/mitchell";
 import NumberStepper from "@/components/common/NumberStepper";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { MovementByTable } from "@/movement/movementData";
 
 type Props = {
   onShowTablesPage: () => void;
@@ -53,7 +52,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
   // Fetch full movement detail when one is selected (DB-based)
   const { data: movementDetail } = useSWR<{
     type: string;
-    tables: MovementTableData[];
+    tables: MovementByTable[];
   }>(
     selected && selected.type !== "MITCHELL"
       ? `/api/movements/detail/${selected.type}/${selected.id}`
@@ -157,12 +156,24 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
       selected.type === "MITCHELL" ? mitchellPreview : movementDetail;
     if (!detailData) return null;
     return (
-      <MovementDetailView
-        movementName={selected.name}
-        movementType="PAIRS"
-        tables={detailData.tables as MovementTableData[]}
+      <PageLayout
+        headerTitle={selected.name}
         backHref={`/create/${game.gameId}`}
-        onSelect={handleSelect}
+        children={
+          <MovementDetailView tables={detailData.tables as MovementByTable[]} />
+        }
+        actions={
+          handleSelect && (
+            <div className="p-3 border-t">
+              <button
+                onClick={handleSelect}
+                className="w-full py-3 text-lg font-bold bg-green-700 text-white rounded-xl hover:bg-green-800 transition"
+              >
+                Use Movement
+              </button>
+            </div>
+          )
+        }
       />
     );
   }

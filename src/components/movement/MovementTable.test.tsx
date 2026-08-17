@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import MovementTable from "./MovementTable";
+import { MovementTable } from "./MovementTable";
 
 // Mock formatter for deterministic output
 vi.mock("@/movement/shared", () => ({

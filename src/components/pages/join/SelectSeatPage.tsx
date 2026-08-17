@@ -11,8 +11,8 @@ import { SocketEvents } from "@/socket/socket-events";
 import useSWR from "swr";
 import { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
-import { GameInfo } from "@/components/common/GameInfo";
 import SelectPairsTable from "@/components/join/SelectTable";
+import { GameHeaderBar } from "@/components/layout/GameHeaderBar";
 
 interface Props {
   onSeatSelected: (seat: Seat) => void;
@@ -59,7 +59,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
     <div className="flex-1 flex flex-col">
       {/* Header */}
       <div className="flex flex-row w-full">
-        <GameInfo />
+        <GameHeaderBar headerTitle="Select Seat" />
       </div>
 
       {/* Main table selection */}

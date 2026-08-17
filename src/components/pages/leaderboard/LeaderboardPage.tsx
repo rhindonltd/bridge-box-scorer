@@ -1,7 +1,7 @@
 import React from "react";
 import { Leaderboard } from "@/components/results/leaderboard/Leaderboard";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { GameInfo } from "@/components/common/GameInfo";
+import { GameHeaderBar } from "@/components/layout/GameHeaderBar";
 
 interface Props {
   overallScoreAndParticipant: OverallScoreAndParticipant;
@@ -12,7 +12,7 @@ export function LeaderboardPage({ overallScoreAndParticipant, onNext }: Props) {
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex flex-row w-full">
-        <GameInfo />
+        <GameHeaderBar headerTitle="Leaderboard" />
       </div>
 
       <div className="w-full">
