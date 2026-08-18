@@ -140,7 +140,9 @@ export function ShowTablesPage({
         transition-all duration-150
         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              <div className="font-semibold text-gray-900">Set Up Timer</div>
+              <div className="font-semibold text-gray-900">
+                Set Up Timer (Optional)
+              </div>
               <div className="mt-1 text-sm text-gray-500">
                 Configure the round timer
               </div>

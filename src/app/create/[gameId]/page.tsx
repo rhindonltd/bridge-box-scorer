@@ -1,14 +1,14 @@
 "use client";
 
 import { SetupGamePage } from "@/app/create/[gameId]/SetupGamePage";
-import {useGame} from "@/context/GameContext";
+import { useGame } from "@/context/GameContext";
 
 export default function SetUpGameRoute() {
-    const { game } = useGame();
+  const { game } = useGame();
 
-    if (!game) {
-        return null;
-    }
+  if (!game) {
+    return null;
+  }
 
   return <SetupGamePage />;
 }

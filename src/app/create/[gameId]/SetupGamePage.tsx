@@ -44,7 +44,7 @@ export function SetupGamePage() {
   }
 
   if (step === "start") {
-      // Show confirmation that game has started
-      return <GameCreatedMenuPage />
+    // Show confirmation that game has started
+    return <GameCreatedMenuPage />;
   }
 }

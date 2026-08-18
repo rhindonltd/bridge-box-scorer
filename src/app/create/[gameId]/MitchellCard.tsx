@@ -43,7 +43,7 @@ export function MitchellCard({ name, spec, onSelect }: Props) {
           transition-all duration-150
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
-        Select Movement
+        Show Movement Details
       </button>
     </div>
   );
