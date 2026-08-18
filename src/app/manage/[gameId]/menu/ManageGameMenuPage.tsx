@@ -4,7 +4,7 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useGame } from "@/context/GameContext";
 
 export interface DirectorMenuPageProps {
-  onTimerClick: () => void;
+  onSetUpGameClick: () => void;
   onTravellersClick: () => void;
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
@@ -13,7 +13,7 @@ export interface DirectorMenuPageProps {
 }
 
 export function ManageGameMenuPage({
-  onTimerClick,
+  onSetUpGameClick,
   onTravellersClick,
   onMovementClick,
   onShareDirectorAccessClick,
@@ -33,10 +33,11 @@ export function ManageGameMenuPage({
   return (
     <GamePageLayout
       headerTitle="Manage Game Menu"
+      centerContent={true}
       children={
         <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
-          <button onClick={onTimerClick} className={standardButtonClass}>
-            <span className="flex items-center gap-3">Create/Amend Timer</span>
+          <button onClick={onSetUpGameClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Set Up Game</span>
           </button>
 
           <button onClick={onTravellersClick} className={standardButtonClass}>

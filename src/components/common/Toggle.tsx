@@ -1,21 +1,23 @@
 type Props = {
   value: boolean;
+  onChange: (value: boolean) => void;
   offLabel: string;
   onLabel: string;
-  onSwitch: () => void;
 };
 
-export function Toggle({ value, onSwitch, offLabel, onLabel }: Props) {
+export function Toggle({ value, onChange, offLabel, onLabel }: Props) {
   return (
     <div className="inline-flex rounded-xl bg-gray-100 p-1">
       <button
         type="button"
-        onClick={onSwitch}
-        className={`px-4 py-2 text-sm font-medium rounded-lg transition
+        onClick={() => onChange(false)}
+        aria-pressed={!value}
+        className={`rounded-lg px-4 py-2 text-sm font-medium transition-all
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
           ${
             !value
-              ? "bg-white shadow text-gray-900"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
           }`}
       >
         {offLabel}
@@ -23,12 +25,14 @@ export function Toggle({ value, onSwitch, offLabel, onLabel }: Props) {
 
       <button
         type="button"
-        onClick={onSwitch}
-        className={`px-4 py-2 text-sm font-medium rounded-lg transition
+        onClick={() => onChange(true)}
+        aria-pressed={value}
+        className={`rounded-lg px-4 py-2 text-sm font-medium transition-all
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
           ${
             value
-              ? "bg-white shadow text-gray-900"
-              : "text-gray-500 hover:text-gray-700"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
           }`}
       >
         {onLabel}

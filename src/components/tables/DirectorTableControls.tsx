@@ -69,9 +69,9 @@ export default function DirectorTableControls({
 }: Props) {
   return (
     <>
-      <div className="flex justify-center gap-2 p-3 bg-gray-50 border-b shrink-0">
-        <NumberStepper min={1} value={tables.length} onChange={onChange} />
-      </div>
+      {/*<div className="flex justify-center gap-2 p-3 bg-gray-50 border-b shrink-0">*/}
+      {/*  <NumberStepper min={1} value={tables.length} onChange={onChange} />*/}
+      {/*</div>*/}
 
       {/* Table grid */}
 

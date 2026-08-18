@@ -7,7 +7,10 @@ import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { getDirectorToken } from "@/lib/director-token";
 import { useEffect, useMemo, useState } from "react";
-import { TimerControlsView, TimerStatus } from "./TimerControlsView";
+import {
+  TimerControlsView,
+  TimerStatus,
+} from "@/components/timer/TimerControlsView";
 
 export default function ManageTimerPage() {
   const { game } = useGame();

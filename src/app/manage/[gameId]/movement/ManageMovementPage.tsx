@@ -65,12 +65,10 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
   }
 
   return (
-    <div className="h-dvh flex flex-col">
       <PageLayout
         headerTitle="Movement Details"
         backHref={backHref}
         children={<MovementDetailView tables={data.tables} />}
       />
-    </div>
   );
 }

@@ -7,7 +7,6 @@ import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
-import NumberStepper from "@/components/common/NumberStepper";
 import { MovementByTable } from "@/movement/movementData";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { MovementSection } from "./MovementSection";
@@ -29,7 +28,7 @@ type SelectedMovement = {
   name: string;
 };
 
-export function ShowMovementsPage({ onShowTablesPage }: Props) {
+export function ShowRecommendedMovementsPage({ onShowTablesPage }: Props) {
   const { game } = useGame();
 
   if (!game) {
@@ -37,12 +36,11 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
   }
 
   const [selected, setSelected] = useState<SelectedMovement | null>(null);
-  const [boardsPerPlayer, setBoardsPerPlayer] = useState(
-    findBestBoardsPerPlayer(game.tables),
-  );
   const [mitchellSpec, setMitchellSpec] = useState<MitchellMovementSpec | null>(
     null,
   );
+
+  const boardsPerPlayer = findBestBoardsPerPlayer(game.tables);
 
   const tables = game.tables ?? 0;
   const gameType = game.gameType;
@@ -126,6 +124,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
       selectMovement(game!.gameId, selected.id, selected.type);
     }
     setSelected(null);
+    onShowTablesPage();
   }
 
   // Show detail view when a movement is selected
@@ -179,18 +178,6 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {shouldLoadPairs && (
               <div>
-                <div className="mb-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-600">
-                      Boards per player:
-                    </label>
-                    <NumberStepper
-                      value={boardsPerPlayer}
-                      onChange={setBoardsPerPlayer}
-                      min={1}
-                    />
-                  </div>
-                </div>
                 <div className="grid gap-3">
                   {mitchellOptions.map((option) => (
                     <MitchellCard

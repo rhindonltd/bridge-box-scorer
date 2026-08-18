@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { ShowMovementsPage } from "./ShowMovementsPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { ShowRecommendedMovementsPage } from "./ShowRecommendedMovementsPage";
 
 const pairsGame4Tables = {
   id: 1,
@@ -45,9 +45,9 @@ const pairsGame5Tables = {
   leadCardRequired: true,
 };
 
-const meta: Meta<typeof ShowMovementsPage> = {
-  title: "App/Create/Game/ShowMovementsPage",
-  component: ShowMovementsPage,
+const meta: Meta<typeof ShowRecommendedMovementsPage> = {
+  title: "App/Create/Game/ShowRecommendedMovementsPage",
+  component: ShowRecommendedMovementsPage,
   parameters: {
     layout: "fullscreen",
   },
@@ -58,7 +58,7 @@ const meta: Meta<typeof ShowMovementsPage> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof ShowMovementsPage>;
+type Story = StoryObj<typeof ShowRecommendedMovementsPage>;
 
 export const Teams: Story = {
   decorators: [withGame(teamsGame4Tables)],

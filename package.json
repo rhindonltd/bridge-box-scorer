@@ -13,7 +13,7 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "test": "vitest --project unit",
-    "coverage": "vitest --project unit run --coverage",
+    "coverage": "vitest --project unit run --coverage --reporter=html --outputFile=unit.html",
     "e2e": "npx playwright test",
     "journey:phone": "playwright test --project=journeys-phone",
     "journey:tablet": "playwright test --project=journeys-tablet",
