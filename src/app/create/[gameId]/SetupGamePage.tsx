@@ -1,9 +1,9 @@
 "use client";
 
 import { ShowTablesPage } from "./ShowTablesPage";
-import { ShowMovementsPage } from "./ShowMovementsPage";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useGame } from "@/context/GameContext";
+import { ShowRecommendedMovementsPage } from "./ShowRecommendedMovementsPage";
 
 const setupGameFlow = createFlow(
   {
@@ -26,6 +26,8 @@ export function SetupGamePage() {
   }
 
   if (step === "movements") {
-    return <ShowMovementsPage onShowTablesPage={() => goTo("tables")} />;
+    return (
+      <ShowRecommendedMovementsPage onShowTablesPage={() => goTo("tables")} />
+    );
   }
 }

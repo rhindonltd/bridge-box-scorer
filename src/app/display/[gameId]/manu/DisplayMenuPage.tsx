@@ -22,6 +22,7 @@ export function DisplayMenuPage({
   return (
     <GamePageLayout
       headerTitle="Display Menu"
+      centerContent={true}
       children={
         <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
           <button onClick={onTimerClick} className={standardButtonClass}>

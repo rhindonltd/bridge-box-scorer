@@ -105,12 +105,54 @@ export function ShowTablesPage({ onStartGame }: Props) {
     <GamePageLayout
       headerTitle="Tables View"
       children={
-        <DirectorTableControls
-          tables={tables}
-          onChange={handleChange}
-          onEvict={handleEvict}
-          canRemoveTable={game.tables > 1 && !lastTableOccupied}
-        />
+          <div className="flex h-full min-h-0 flex-col">
+              {/* These stay fixed */}
+              <div className="flex w-full flex-row gap-2 shrink-0 px-4 pt-2">
+                  <button
+                      type="button"
+                      className="flex-1 rounded-xl border border-gray-200 bg-white p-4 text-left
+        shadow-sm
+        hover:border-blue-300 hover:bg-blue-50 hover:shadow-md
+        active:scale-[0.98]
+        transition-all duration-150
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                      <div className="font-semibold text-gray-900">
+                          Movement
+                      </div>
+                      <div className="mt-1 text-sm text-gray-500">
+                          View and edit the movement
+                      </div>
+                  </button>
+
+                  <button
+                      type="button"
+                      className="flex-1 rounded-xl border border-gray-200 bg-white p-4 text-left
+        shadow-sm
+        hover:border-blue-300 hover:bg-blue-50 hover:shadow-md
+        active:scale-[0.98]
+        transition-all duration-150
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                      <div className="font-semibold text-gray-900">
+                          Set Up Timer
+                      </div>
+                      <div className="mt-1 text-sm text-gray-500">
+                          Configure the round timer
+                      </div>
+                  </button>
+              </div>
+
+              {/* This scrolls */}
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                  <DirectorTableControls
+                      tables={tables}
+                      onChange={handleChange}
+                      onEvict={handleEvict}
+                      canRemoveTable={game.tables > 1 && !lastTableOccupied}
+                  />
+              </div>
+          </div>
       }
       actions={
         <Button value={"Start Game"} onClick={onStartGame} className="w-full" />

@@ -11,7 +11,8 @@ export function findBestBoardsPerPlayer(
   minBoardsPerRound = 2,
   maxBoardsPerRound = 12,
 ): number {
-  const maxTargetBoards = targetBoards + 10;
+  const minTargetBoards = targetBoards - 2;
+  const maxTargetBoards = targetBoards + 2;
 
   // Maximise rounds.
   for (let rounds = tables; rounds >= 2; rounds--) {
@@ -23,7 +24,10 @@ export function findBestBoardsPerPlayer(
       const boardsPerPlayer = rounds * boardsPerRound;
 
       // Must be within the desired board-count range.
-      if (boardsPerPlayer < targetBoards || boardsPerPlayer > maxTargetBoards) {
+      if (
+        boardsPerPlayer < minTargetBoards ||
+        boardsPerPlayer > maxTargetBoards
+      ) {
         continue;
       }
 
