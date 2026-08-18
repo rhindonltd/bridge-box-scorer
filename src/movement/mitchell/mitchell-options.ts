@@ -1,4 +1,4 @@
-import { MitchellMovementSpec } from "./mitchell";
+import { MitchellMovementSpec } from "./mitchell-utils";
 
 type MitchellMovementOption = {
   name: string;
@@ -6,45 +6,42 @@ type MitchellMovementOption = {
 };
 
 export function findBestBoardsPerPlayer(
-    tables: number,
-    targetBoards = 20,
-    minBoardsPerRound = 2,
-    maxBoardsPerRound = 7,
+  tables: number,
+  targetBoards = 20,
+  minBoardsPerRound = 2,
+  maxBoardsPerRound = 7,
 ): number {
-    const maxTargetBoards = targetBoards + 10;
+  const maxTargetBoards = targetBoards + 10;
 
-    // Maximise rounds.
-    for (let rounds = tables; rounds >= 2; rounds--) {
-        for (
-            let boardsPerRound = minBoardsPerRound;
-            boardsPerRound <= maxBoardsPerRound;
-            boardsPerRound++
-        ) {
-            const boardsPerPlayer = rounds * boardsPerRound;
+  // Maximise rounds.
+  for (let rounds = tables; rounds >= 2; rounds--) {
+    for (
+      let boardsPerRound = minBoardsPerRound;
+      boardsPerRound <= maxBoardsPerRound;
+      boardsPerRound++
+    ) {
+      const boardsPerPlayer = rounds * boardsPerRound;
 
-            // Must be within the desired board-count range.
-            if (
-                boardsPerPlayer < targetBoards ||
-                boardsPerPlayer > maxTargetBoards
-            ) {
-                continue;
-            }
+      // Must be within the desired board-count range.
+      if (boardsPerPlayer < targetBoards || boardsPerPlayer > maxTargetBoards) {
+        continue;
+      }
 
-            // The movement must actually have this number of rounds.
-            // Since we constructed boardsPerPlayer as
-            // rounds * boardsPerRound, this is guaranteed.
-            //
-            // We also know:
-            //   rounds >= 2
-            //   rounds <= tables
-            //   minBoardsPerRound <= boardsPerRound <= maxBoardsPerRound
-            //
-            // Therefore this is a valid movement candidate.
-            return boardsPerPlayer;
-        }
+      // The movement must actually have this number of rounds.
+      // Since we constructed boardsPerPlayer as
+      // rounds * boardsPerRound, this is guaranteed.
+      //
+      // We also know:
+      //   rounds >= 2
+      //   rounds <= tables
+      //   minBoardsPerRound <= boardsPerRound <= maxBoardsPerRound
+      //
+      // Therefore this is a valid movement candidate.
+      return boardsPerPlayer;
     }
+  }
 
-    return targetBoards;
+  return targetBoards;
 }
 
 export function generateMitchellOptions(
@@ -96,13 +93,13 @@ export function generateMitchellOptions(
       continue;
     }
 
-      console.log({
-          tables,
-          boardsPerPlayer,
-          boardsPerRound,
-          rounds,
-          calculatedBoards: rounds * boardsPerRound,
-      });
+    console.log({
+      tables,
+      boardsPerPlayer,
+      boardsPerRound,
+      rounds,
+      calculatedBoards: rounds * boardsPerRound,
+    });
 
     if (isOddNumberOfTables) {
       return [
@@ -123,6 +120,7 @@ export function generateMitchellOptions(
             tables,
             rounds,
             boardsPerRound,
+            shareAndRelay: true,
           },
         },
       ];

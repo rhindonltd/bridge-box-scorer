@@ -5,24 +5,24 @@ import { generateShareAndRelayMitchell } from "./share-and-relay-mitchell";
 import { generateStandardMitchell } from "./standard-mitchell";
 
 export function generateMitchell(
-    spec: MitchellMovementSpec & {
-        skip?: boolean;
-        shareAndRelay?: boolean;
-    },
+  spec: MitchellMovementSpec & {
+    skip?: boolean;
+    shareAndRelay?: boolean;
+  },
 ): Tables<"PAIR"> {
-    if (spec.skip) {
-        return generateSkipMitchell({
-            ...spec,
-            skip: true,
-        });
-    }
+  if (spec.skip) {
+    return generateSkipMitchell({
+      ...spec,
+      skip: true,
+    });
+  }
 
-    if (spec.shareAndRelay) {
-        return generateShareAndRelayMitchell({
-            ...spec,
-            shareAndRelay: true,
-        });
-    }
+  if (spec.shareAndRelay) {
+    return generateShareAndRelayMitchell({
+      ...spec,
+      shareAndRelay: true,
+    });
+  }
 
-    return generateStandardMitchell(spec);
+  return generateStandardMitchell(spec);
 }

@@ -65,23 +65,27 @@ export const Teams: Story = {
 };
 
 export const Pairs2Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 2,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 2,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs3Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 3,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 3,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs4Tables: Story = {
@@ -89,161 +93,193 @@ export const Pairs4Tables: Story = {
 };
 
 export const Pairs5Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 5,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 5,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs6Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 6,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 6,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs7Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 7,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 7,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs8Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 8,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 8,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs9Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 9,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 9,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs10Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 10,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 10,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs11Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 11,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 11,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs12Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 12,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 12,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs13Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 13,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 13,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs14Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 14,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 14,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs15Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 15,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 15,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs16Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 16,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 16,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs17Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 17,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 17,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs18Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 18,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 18,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs19Tables: Story = {
-    decorators: [withGame({
-        ...pairsGame4Tables,
-        id: 3,
-        eventName: "Wednesday Pairs",
-        tables: 19,
-        leadCardRequired: true,
-    })],
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      id: 3,
+      eventName: "Wednesday Pairs",
+      tables: 19,
+      leadCardRequired: true,
+    }),
+  ],
 };
 
 export const Pairs20Tables: Story = {
-  decorators: [withGame({
+  decorators: [
+    withGame({
       ...pairsGame4Tables,
       id: 3,
       eventName: "Wednesday Pairs",
       tables: 20,
       leadCardRequired: true,
-  })],
+    }),
+  ],
 };

@@ -20,8 +20,9 @@ import {
 } from "@/db/games/tables/assignments";
 
 import { assertDirector } from "@/socket/middleware/director-auth";
-import { generateMitchell, MitchellMovementSpec } from "@/movement/mitchell";
 import { Tables } from "@/model/movement";
+import { generateMitchell } from "@/movement/mitchell/mitchell";
+import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 
 /**
  * Pair + Team movement handler — bulk inserts inside a single transaction.

@@ -1,105 +1,85 @@
 export interface MitchellMovementSpec {
-    tables: number;
-    rounds: number;
-    boardsPerRound: number;
-    arrowSwitchRounds?: number;
+  tables: number;
+  rounds: number;
+  boardsPerRound: number;
+  arrowSwitchRounds?: number;
+  skip?: boolean;
+  shareAndRelay?: boolean;
 }
 
 export interface SkipMitchellMovementSpec extends MitchellMovementSpec {
-    skip: true;
+  skip: true;
 }
 
 export interface ShareAndRelayMovementSpec extends MitchellMovementSpec {
-    shareAndRelay: true;
+  shareAndRelay: true;
 }
 
 export function wrapValue(value: number, modulus: number): number {
-    return ((value - 1) % modulus + modulus) % modulus + 1;
+  return ((((value - 1) % modulus) + modulus) % modulus) + 1;
 }
 
-export function boardsForSet(
-    set: number,
-    perRound: number,
-): number[] {
-    const start = (set - 1) * perRound + 1;
+export function boardsForSet(set: number, perRound: number): number[] {
+  const start = (set - 1) * perRound + 1;
 
-    return Array.from(
-        { length: perRound },
-        (_, i) => start + i,
-    );
+  return Array.from({ length: perRound }, (_, i) => start + i);
 }
 
-export function validateMitchellSpec(
-    spec: MitchellMovementSpec,
-): void {
-    const {
-        tables,
-        rounds,
-        boardsPerRound,
-    } = spec;
+export function validateMitchellSpec(spec: MitchellMovementSpec): void {
+  const { tables, rounds, boardsPerRound } = spec;
 
-    if (!Number.isInteger(tables) || tables < 1) {
-        throw new Error("tables must be a positive integer");
-    }
+  if (!Number.isInteger(tables) || tables < 1) {
+    throw new Error("tables must be a positive integer");
+  }
 
-    if (!Number.isInteger(rounds) || rounds < 2) {
-        throw new Error(
-            "A Mitchell must have at least 2 rounds",
-        );
-    }
+  if (!Number.isInteger(rounds) || rounds < 2) {
+    throw new Error("A Mitchell must have at least 2 rounds");
+  }
 
-    if (rounds > tables) {
-        throw new Error(
-            "A Mitchell cannot have more rounds than tables",
-        );
-    }
+  if (rounds > tables) {
+    throw new Error("A Mitchell cannot have more rounds than tables");
+  }
 
-    if (
-        !Number.isInteger(boardsPerRound) ||
-        boardsPerRound < 1
-    ) {
-        throw new Error(
-            "boardsPerRound must be a positive integer",
-        );
-    }
+  if (!Number.isInteger(boardsPerRound) || boardsPerRound < 1) {
+    throw new Error("boardsPerRound must be a positive integer");
+  }
 }
 
 export function getPairIds(
-    nsTable: number,
-    ewTable: number,
-    tables: number,
-    arrowSwitchRounds: number,
-    roundNumber: number,
-    totalRounds: number,
+  nsTable: number,
+  ewTable: number,
+  tables: number,
+  arrowSwitchRounds: number,
+  roundNumber: number,
+  totalRounds: number,
 ): {
-    nsId: string;
-    ewId: string;
+  nsId: string;
+  ewId: string;
 } {
-    // Standard two-winner movement.
-    if (arrowSwitchRounds === 0) {
-        return {
-            nsId: `${nsTable}NS`,
-            ewId: `${ewTable}EW`,
-        };
-    }
-
-    // 1-winner movement.
-    // EW pairs are numbered immediately after the NS pairs.
-    const ewPair = ewTable + tables;
-
-    const arrowSwitchFrom =
-        totalRounds - arrowSwitchRounds + 1;
-
-    if (roundNumber < arrowSwitchFrom) {
-        return {
-            nsId: `${nsTable}`,
-            ewId: `${ewPair}`,
-        };
-    }
-
-    // After the arrow switch, the pairs swap direction.
+  // Standard two-winner movement.
+  if (arrowSwitchRounds === 0) {
     return {
-        nsId: `${ewPair}`,
-        ewId: `${nsTable}`,
+      nsId: `${nsTable}NS`,
+      ewId: `${ewTable}EW`,
     };
+  }
+
+  // 1-winner movement.
+  // EW pairs are numbered immediately after the NS pairs.
+  const ewPair = ewTable + tables;
+
+  const arrowSwitchFrom = totalRounds - arrowSwitchRounds + 1;
+
+  if (roundNumber < arrowSwitchFrom) {
+    return {
+      nsId: `${nsTable}`,
+      ewId: `${ewPair}`,
+    };
+  }
+
+  // After the arrow switch, the pairs swap direction.
+  return {
+    nsId: `${ewPair}`,
+    ewId: `${nsTable}`,
+  };
 }
