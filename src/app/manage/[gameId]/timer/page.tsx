@@ -1,4 +1,4 @@
-import ManageTimerPage from "@/app/manage/[gameId]/timer/ManageTimerPage";
+import ManageTimerPage from "@/components/timer/ManageTimerPage";
 
 export default function ManageTimerRoute() {
   return <ManageTimerPage />;

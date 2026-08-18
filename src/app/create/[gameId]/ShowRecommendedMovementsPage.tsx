@@ -124,7 +124,7 @@ export function ShowRecommendedMovementsPage({ onShowTablesPage }: Props) {
       selectMovement(game!.gameId, selected.id, selected.type);
     }
     setSelected(null);
-    onShowTablesPage()
+    onShowTablesPage();
   }
 
   // Show detail view when a movement is selected
