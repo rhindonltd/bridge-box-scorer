@@ -29,7 +29,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
   },
   tags: ["autodocs"],
   args: {
-    onTimerClick: fn(),
+    onSetUpGameClick: fn(),
     onTravellersClick: fn(),
     onMovementClick: fn(),
     onDownloadUsebioClick: fn(),
