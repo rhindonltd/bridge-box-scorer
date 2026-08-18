@@ -9,7 +9,7 @@ export function findBestBoardsPerPlayer(
   tables: number,
   targetBoards = 20,
   minBoardsPerRound = 2,
-  maxBoardsPerRound = 7,
+  maxBoardsPerRound = 12,
 ): number {
   const maxTargetBoards = targetBoards + 10;
 
@@ -48,7 +48,7 @@ export function generateMitchellOptions(
   tables: number,
   boardsPerPlayer: number,
   minBoardsPerRound = 2,
-  maxBoardsPerRound = 7,
+  maxBoardsPerRound = 12,
 ): MitchellMovementOption[] {
   if (!Number.isInteger(tables) || tables < 1) {
     throw new Error("tables must be a positive integer");
