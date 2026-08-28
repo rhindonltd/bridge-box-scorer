@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { testApiHandler } from "next-test-api-route-handler";
 
-import * as appHandler from "./route";
+import * as appHandler from "@/app/api/games/[gameId]/participants/route";
 
 vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
   findPairs: vi.fn(),

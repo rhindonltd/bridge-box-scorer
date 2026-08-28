@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { MainMenuPage } from "./MainMenuPage";
+import { MainMenuPage } from "@/app/MainMenuPage";
 
 const meta: Meta<typeof MainMenuPage> = {
   title: "Pages/MainMenu/MainMenuPage",

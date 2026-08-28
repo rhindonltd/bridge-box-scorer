@@ -16,11 +16,11 @@ test.describe("Correct Result Wizard", () => {
     directorContext,
   }) => {
     const { page, gameId } = directorContext;
-    await page.goto(`/manage/${gameId}/correct-result`);
+    await page.goto(`/manage/${gameId}/travellers`);
 
     // A fresh game has no boards, so we expect "No boards found" or
     // at minimum the page renders without crashing
-    await expect(page.getByText("Select Board")).toBeVisible({
+    await expect(page.getByText("No boards found")).toBeVisible({
       timeout: 10000,
     });
   });
@@ -84,7 +84,7 @@ test.describe("Correct Result Wizard", () => {
       });
     });
 
-    await page.goto(`/manage/${gameId}/correct-result`);
+    await page.goto(`/manage/${gameId}/travellers`);
 
     // Assert board buttons are visible
     await expect(page.getByRole("button", { name: "1" })).toBeVisible({
@@ -150,7 +150,7 @@ test.describe("Correct Result Wizard", () => {
       });
     });
 
-    await page.goto(`/manage/${gameId}/correct-result`);
+    await page.goto(`/manage/${gameId}/travellers`);
 
     // Click board 1
     await expect(page.getByRole("button", { name: "1" })).toBeVisible({
@@ -326,7 +326,7 @@ test.describe("Correct Result Wizard", () => {
       return route.continue();
     });
 
-    await page.goto(`/manage/${gameId}/correct-result`);
+    await page.goto(`/manage/${gameId}/travellers`);
 
     // Navigate to board 1 traveller
     await expect(page.getByRole("button", { name: "1" })).toBeVisible({

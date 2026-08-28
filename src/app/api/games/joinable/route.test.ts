@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { testApiHandler } from "next-test-api-route-handler";
 
-import * as appHandler from "./route";
+import * as appHandler from "@/app/api/games/joinable/route";
 
 vi.mock("@/db/game-index/queries", () => ({
   findJoinableGames: vi.fn(),

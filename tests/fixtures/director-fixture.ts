@@ -14,7 +14,7 @@ export const test = base.extend<{ directorContext: DirectorContext }>({
     const eventName = `E2E Director ${Date.now()}`;
     await page.getByLabel("Event Name").fill(eventName);
     await page.getByLabel("Director Name").fill("E2E Director");
-    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByRole("button", { name: "Create Game", exact: true }).click();
 
     // Wait for redirect to /create/[id]
     await page.waitForURL(/\/create\/.+/);

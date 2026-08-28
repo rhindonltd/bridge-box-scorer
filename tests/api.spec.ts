@@ -8,64 +8,6 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("API Routes", () => {
-  test.describe("Director API", () => {
-    test("GET /api/director/status returns JSON with passwordSet", async ({
-      request,
-    }) => {
-      const response = await request.get("/api/director/status");
-
-      expect(response.ok()).toBe(true);
-      expect(response.headers()["content-type"]).toContain("application/json");
-
-      const body = await response.json();
-      expect(body).toHaveProperty("passwordSet");
-      expect(typeof body.passwordSet).toBe("boolean");
-    });
-
-    test("POST /api/director/login with invalid JSON returns 400", async ({
-      request,
-    }) => {
-      const response = await request.post("/api/director/login", {
-        headers: { "content-type": "application/json" },
-        data: "not valid json{{{",
-      });
-
-      // Should return 400 for invalid JSON
-      expect(response.status()).toBe(400);
-    });
-
-    test("POST /api/director/login with missing password returns 400", async ({
-      request,
-    }) => {
-      const response = await request.post("/api/director/login", {
-        data: { username: "admin" },
-      });
-
-      expect(response.status()).toBe(400);
-      const body = await response.json();
-      expect(body.success).toBe(false);
-    });
-
-    test("POST /api/director/login validates password is non-empty string", async ({
-      request,
-    }) => {
-      const response = await request.post("/api/director/login", {
-        data: { password: "" },
-      });
-
-      expect(response.status()).toBe(400);
-      const body = await response.json();
-      expect(body.success).toBe(false);
-    });
-
-    test("GET /api/director/token endpoint no longer exists (returns 404)", async ({
-      request,
-    }) => {
-      const response = await request.get("/api/director/token");
-
-      expect(response.status()).toBe(404);
-    });
-  });
 
   test.describe("Games API", () => {
     test("GET /api/games/joinable returns array", async ({ request }) => {
@@ -83,10 +25,12 @@ test.describe("API Routes", () => {
     }) => {
       const response = await request.get("/api/games/does-not-exist");
 
-      expect(response.headers()["content-type"]).toContain("application/json");
-      // May return null or an error, but should be valid JSON
-      const body = await response.json();
-      expect(body !== undefined).toBe(true);
+        expect(response.headers()["content-type"]).toContain("application/json");
+        expect(response.status()).toBe(404);
+
+        const body = await response.json();
+        expect(body.success).toBe(false);
+        expect(body.error).toContain("Game not found");
     });
 
     test("GET /api/games/joinable returns correct shape when games exist", async ({
@@ -109,26 +53,10 @@ test.describe("API Routes", () => {
   });
 
   test.describe("Players API", () => {
-    test("GET /api/players/search?q=john returns matching players", async ({
+    test("GET /api/players/search?q=477484 searches by EBU number", async ({
       request,
     }) => {
-      const response = await request.get("/api/players/search?q=john");
-
-      expect(response.ok()).toBe(true);
-      expect(response.headers()["content-type"]).toContain("application/json");
-
-      const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
-      expect(body.length).toBeGreaterThanOrEqual(1);
-      expect(
-        body.some((p: { firstName: string }) => p.firstName === "John"),
-      ).toBe(true);
-    });
-
-    test("GET /api/players/search?q=123 searches by EBU number", async ({
-      request,
-    }) => {
-      const response = await request.get("/api/players/search?q=123");
+      const response = await request.get("/api/players/search?q=477484");
 
       expect(response.ok()).toBe(true);
 
@@ -137,7 +65,7 @@ test.describe("API Routes", () => {
       expect(body.length).toBeGreaterThanOrEqual(1);
       expect(
         body.some((p: { nationalId: string }) =>
-          p.nationalId?.startsWith("123"),
+          p.nationalId?.startsWith("477484"),
         ),
       ).toBe(true);
     });

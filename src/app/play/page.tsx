@@ -1,5 +1,14 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function PlayPage() {
-  redirect("/join/select-game");
+import SelectGamePage from "@/components/pages/SelectGamePage";
+import { useRouter } from "next/navigation";
+
+export default function JoinRoute() {
+    const router = useRouter();
+
+    function onGameSelected(gameId: string) {
+        router.push(`/join/${gameId}/player`);
+    }
+
+    return <SelectGamePage onGameSelected={onGameSelected} />;
 }

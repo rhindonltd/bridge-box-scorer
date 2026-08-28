@@ -30,7 +30,7 @@ export async function createGameViaUI(
   }
 
   // Submit the form — triggers Socket.IO create-game, stores directorToken in localStorage
-  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "Create Game", exact: true }).click();
 
   // Wait for redirect to /create/[id]
   await page.waitForURL(/\/create\/.+/);

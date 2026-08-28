@@ -1,0 +1,23 @@
+"use client";
+
+import { ManageGameMenuPage } from "@/app/game/[gameId]/manage/menu/ManageGameMenuPage";
+import { useRouter, useParams } from "next/navigation";
+
+export default function ManageGameMenuRoute() {
+  const router = useRouter();
+  const params = useParams<{ gameId: string }>();
+  const id = params.gameId;
+
+  return (
+    <ManageGameMenuPage
+      onTimerClick={() => router.push(`/manage/${id}/timer`)}
+      onTravellersClick={() => router.push(`/manage/${id}/correct-result`)}
+      onMovementClick={() => router.push(`/manage/${id}/movement`)}
+      onShareDirectorAccessClick={() =>
+        router.push(`/manage/${id}/share-access`)
+      }
+      onDownloadUsebioClick={() => router.push(`/manage/${id}/download-usebio`)}
+      onDeleteGameClick={() => router.push(`/manage/${id}/delete-game`)}
+    />
+  );
+}

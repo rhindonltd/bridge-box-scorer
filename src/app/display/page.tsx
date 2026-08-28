@@ -1,7 +1,14 @@
 "use client";
 
-import {redirect } from "next/navigation";
+import SelectGamePage from "@/components/pages/SelectGamePage";
+import { useRouter } from "next/navigation";
 
 export default function DisplayRoute() {
-    redirect("/display/select-game");
+    const router = useRouter();
+
+    function onGameSelected(gameId: string) {
+        router.push(`/display/${gameId}/menu`);
+    }
+
+    return <SelectGamePage onGameSelected={onGameSelected} />;
 }
