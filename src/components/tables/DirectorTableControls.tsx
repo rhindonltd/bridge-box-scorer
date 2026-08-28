@@ -5,7 +5,6 @@ import { Player } from "@/db/games/tables/players";
 import { Seat } from "@/model/participants";
 import PlayerCard from "@/components/common/PlayerCard";
 import TableCompassLayout from "@/components/layout/TableCompassLayout";
-import NumberStepper from "../common/NumberStepper";
 
 interface Players {
   N: Player | null;
@@ -28,7 +27,6 @@ export interface DirectorTable {
 
 interface Props {
   tables: DirectorTable[];
-  onChange: (tables: number) => void;
   onEvict: (seat: Seat) => void;
   canRemoveTable: boolean;
 }
@@ -61,20 +59,9 @@ function EvictablePlayerCard({
   );
 }
 
-export default function DirectorTableControls({
-  tables,
-  onChange,
-  onEvict,
-  canRemoveTable,
-}: Props) {
+export default function DirectorTableControls({ tables, onEvict }: Props) {
   return (
     <>
-      <div className="flex justify-center gap-2 p-3 bg-gray-50 border-b shrink-0">
-        <NumberStepper min={1} value={tables.length} onChange={onChange} />
-      </div>
-
-      {/* Table grid */}
-
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {tables.map((table) => (

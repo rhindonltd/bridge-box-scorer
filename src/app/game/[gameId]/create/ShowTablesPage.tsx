@@ -14,6 +14,7 @@ import { Pair, PairSeat, Seat } from "@/model/participants";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import NumberStepper from "@/components/common/NumberStepper";
 
 type Props = {
   onStartGame: () => void;
@@ -107,10 +108,15 @@ export function ShowTablesPage({ onStartGame }: Props) {
       children={
         <DirectorTableControls
           tables={tables}
-          onChange={handleChange}
           onEvict={handleEvict}
           canRemoveTable={game.tables > 1 && !lastTableOccupied}
         />
+      }
+      headerRight={
+          <div className="flex flex-col justify-center p-2">
+              <div className="text-center mb-2">Tables:</div>
+              <div><NumberStepper min={1} value={tables.length} onChange={handleChange} /></div>
+          </div>
       }
       actions={
         <Button value={"Start Game"} onClick={onStartGame} className="w-full" />
