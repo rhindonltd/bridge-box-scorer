@@ -23,7 +23,7 @@ export function CreateGamePage() {
   async function onCreateGame(game: NewBridgeGame) {
     try {
       const created = await createGame(game);
-      router.replace(`/create/${created.gameId}`);
+      router.replace(`/game/${created.gameId}/create`);
     } catch (err) {
       console.error("Failed to create game:", err);
       alert("Failed to create game. Please try again.");

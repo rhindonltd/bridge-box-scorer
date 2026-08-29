@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { PinEntryPage } from "./PinEntryPage";
+import { PinEntryPage } from "@/app/settings/PinEntryPage";
 
 const meta: Meta<typeof PinEntryPage> = {
   title: "App/Settings/PinEntryPage",

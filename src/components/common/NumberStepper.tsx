@@ -58,11 +58,11 @@ export default function NumberStepper({
         : `${value}`;
 
   return (
-    <div className="flex justify-center items-center gap-5">
+    <div className="flex">
       {/* Decrement */}
       <button
         type="button"
-        className="w-[50px] h-[50px] text-2xl rounded-lg border disabled:opacity-50"
+        className="w-[35px] h-[35px] text-xl rounded-lg border disabled:opacity-50"
         onMouseDown={() => startAdjusting(-1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
@@ -81,7 +81,7 @@ export default function NumberStepper({
       {/* Increment */}
       <button
         type="button"
-        className="w-[50px] h-[50px] text-2xl rounded-lg border disabled:opacity-50"
+        className="w-[35px] h-[35px] text-2xl rounded-lg border disabled:opacity-50"
         onMouseDown={() => startAdjusting(1)}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}

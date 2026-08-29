@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { WifiSettingsForm } from "./WifiSettingsForm";
+import { WifiSettingsForm } from "@/app/settings/wifi/WifiSettingsForm";
 import { Network } from "@/model/network";
 
 const networks: Network[] = [

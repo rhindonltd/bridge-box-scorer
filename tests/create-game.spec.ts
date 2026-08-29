@@ -73,7 +73,7 @@ test.describe("Game Creation Flow", () => {
     await page.getByLabel("Director Name").fill("E2E Director");
 
     // Submit the form
-    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByRole("button", { name: "Create Game", exact: true }).click();
 
     // Wait for redirect to /create/[gameId]
     await page.waitForURL(/\/create\/.+/);
@@ -102,7 +102,7 @@ test.describe("Game Creation Flow", () => {
     await page.getByLabel("Director Name").fill("E2E Director");
 
     // Event Type defaults to "Pairs" so no change needed
-    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByRole("button", { name: "Create Game", exact: true }).click();
 
     // Wait for successful creation redirect
     await page.waitForURL(/\/create\/.+/);
@@ -141,7 +141,7 @@ test.describe("Game Creation Flow", () => {
     await page.getByLabel("Director Name").fill("Test Director");
 
     // Submit the form
-    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByRole("button", { name: "Create Game", exact: true }).click();
 
     // Wait for the error alert to appear
     await expect

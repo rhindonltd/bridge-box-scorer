@@ -74,3 +74,20 @@ export type AssignedPair = Pair & PairAssignment;
 export type AssignedTeam = Team & TeamAssignment;
 
 export type AssignedParticipant = AssignedTeam | AssignedPair;
+
+interface PairsParticipants {
+    type: "PAIRS";
+    ns: string;
+    ew: string;
+    nsNames?: string | null;
+    ewNames?: string | null;
+}
+
+export interface BoardInstance {
+    roundNumber: number;
+    tableNumber: number;
+    boardNumber: number;
+    participants: PairsParticipants;
+    currentResult: string | null;
+    status: string | null;
+}

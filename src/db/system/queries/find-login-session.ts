@@ -14,7 +14,7 @@ function getSystemDb() {
   const dataDir = process.env.DATABASE_URL ?? "/home/bridgebox/data";
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-  const dbFile = path.join(dataDir, "login-sessions.db");
+  const dbFile = path.join(dataDir, "system.db");
   const sqlite = new Database(dbFile);
   return drizzle(sqlite, { schema });
 }

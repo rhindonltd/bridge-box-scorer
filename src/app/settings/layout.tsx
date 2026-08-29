@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PinEntryPage } from "./PinEntryPage";
+import { PinEntryPage } from "@/app/settings/PinEntryPage";
 
 export default function GameLayout({
   children,

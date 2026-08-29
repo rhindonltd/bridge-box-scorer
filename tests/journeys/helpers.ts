@@ -62,7 +62,7 @@ export async function createGameStep(
       await incrementButton.click();
     }
 
-    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByRole("button", { name: "Create Game", exact: true }).click();
     await page.waitForURL(/\/create\/.+/);
 
     const gameId = page.url().split("/create/")[1];

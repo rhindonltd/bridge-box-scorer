@@ -7,9 +7,10 @@ type Props = {
   headerTitle: string;
   backAction?: () => void;
   backHref?: string;
+  headerRight?: React.ReactNode;
 };
 
-export function GameHeaderBar({ headerTitle, backAction, backHref }: Props) {
+export function GameHeaderBar({ headerTitle, backAction, backHref, headerRight }: Props) {
   const { game } = useGame();
 
   if (!game) return null;
@@ -32,6 +33,7 @@ export function GameHeaderBar({ headerTitle, backAction, backHref }: Props) {
       headerTitle={headerTitle}
       headerSubtitle={game.eventName}
       headerSubtitle2={headerSubtitle2()}
+      headerRight={headerRight}
       backHref={backHref}
       backAction={backAction}
     />

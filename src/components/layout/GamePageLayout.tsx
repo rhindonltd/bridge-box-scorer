@@ -7,6 +7,7 @@ interface Props {
   headerTitle: string;
   backAction?: () => void;
   backHref?: string;
+  headerRight?: React.ReactNode;
   /** Fixed-bottom action buttons. Omit to hide the action bar. */
   actions?: React.ReactNode;
   /** When true, content area centres children vertically and horizontally (for menu-only pages). */
@@ -19,6 +20,7 @@ export function GamePageLayout({
   headerTitle,
   backAction,
   backHref,
+  headerRight,
   actions,
   centerContent = false,
   children,
@@ -30,6 +32,7 @@ export function GamePageLayout({
         headerTitle={headerTitle}
         backAction={backAction}
         backHref={backHref}
+        headerRight={headerRight}
       />
 
       {/* Content Area */}
