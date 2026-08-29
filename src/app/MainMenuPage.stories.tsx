@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import { MainMenuPage } from "@/app/MainMenuPage";
 
 const meta: Meta<typeof MainMenuPage> = {
-  title: "Pages/MainMenu/MainMenuPage",
+  title: "App/MainMenuPage",
   component: MainMenuPage,
   parameters: {
     layout: "fullscreen",

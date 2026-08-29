@@ -4,7 +4,7 @@ import { fn } from "storybook/test";
 import { StepOpeningLead } from "./StepOpeningLead";
 
 const meta: Meta<typeof StepOpeningLead> = {
-  title: "Components/Play/ContractWizard/StepOpeningLead",
+  title: "Components/ContractWizard/StepOpeningLead",
   component: StepOpeningLead,
   parameters: {
     layout: "fullscreen",

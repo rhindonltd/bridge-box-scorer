@@ -21,7 +21,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof ManageGameMenuPage> = {
-  title: "Pages/Manage/DirectorMenuPage",
+  title: "App/Manage/Game/Menu/DirectorMenuPage",
   component: ManageGameMenuPage,
   decorators: [withGame(mockGame)],
   parameters: {
@@ -29,7 +29,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
   },
   tags: ["autodocs"],
   args: {
-    onTimerClick: fn(),
+    onSetUpGameClick: fn(),
     onTravellersClick: fn(),
     onMovementClick: fn(),
     onDownloadUsebioClick: fn(),

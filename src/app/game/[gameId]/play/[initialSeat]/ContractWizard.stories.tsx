@@ -23,7 +23,7 @@ const mockAssignment = {
 };
 
 const meta: Meta<typeof ContractWizard> = {
-  title: "Components/Play/ContractWizard/ContractWizard",
+  title: "App/Play/Game/Assignment/ContractWizard",
   component: ContractWizard,
   parameters: {
     layout: "fullscreen",

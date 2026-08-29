@@ -10,7 +10,7 @@ export default function ManageGameMenuRoute() {
 
   return (
     <ManageGameMenuPage
-      onTimerClick={() => router.push(`/manage/${id}/timer`)}
+      onSetUpGameClick={() => router.push(`/create/${id}`)}
       onTravellersClick={() => router.push(`/manage/${id}/correct-result`)}
       onMovementClick={() => router.push(`/manage/${id}/movement`)}
       onShareDirectorAccessClick={() =>

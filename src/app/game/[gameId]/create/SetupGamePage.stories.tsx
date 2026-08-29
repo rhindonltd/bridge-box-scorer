@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { SetupGamePage } from "@/app/game/[gameId]/create/SetupGamePage";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { SetupGamePage } from "./SetupGamePage";
+import { fn } from "storybook/test";
 
-const pairsGame4Tables = {
+const mockGame = {
   id: 1,
   eventName: "Monday AM Pairs",
   director: "Jacqui Collier",
@@ -13,32 +14,34 @@ const pairsGame4Tables = {
   sessionName: "1",
   sectionName: "A",
   eventDate: new Date().toISOString(),
-  tables: 4,
+  tables: 8,
   leadCardRequired: true,
-  status: "CREATED" as const,
+  status: "JOINABLE" as const,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
 
 const meta: Meta<typeof SetupGamePage> = {
-  title: "Pages/Create/SetupGamePage",
+  title: "App/Create/Game/SetupGamePage",
   component: SetupGamePage,
+  decorators: [withGame(mockGame)],
   parameters: {
     layout: "fullscreen",
     nextjs: {
       appDirectory: true,
-      navigation: {
-        pathname: "/create",
-      },
     },
   },
   tags: ["autodocs"],
+  args: {
+    onTimerClick: fn(),
+    onTravellersClick: fn(),
+    onMovementClick: fn(),
+    onDownloadUsebioClick: fn(),
+    onDeleteGameClick: fn(),
+  },
 };
 
 export default meta;
-
 type Story = StoryObj<typeof SetupGamePage>;
 
-export const Default: Story = {
-  decorators: [withGame(pairsGame4Tables)],
-};
+export const Default: Story = {};

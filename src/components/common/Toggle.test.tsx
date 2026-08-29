@@ -6,7 +6,7 @@ import { describe, it, expect, vi } from "vitest";
 describe("Toggle", () => {
   it("renders both labels", () => {
     render(
-      <Toggle value={false} offLabel="Off" onLabel="On" onSwitch={vi.fn()} />,
+      <Toggle value={false} offLabel="Off" onLabel="On" onChange={vi.fn()} />,
     );
 
     expect(screen.getByText("Off")).toBeInTheDocument();
@@ -15,7 +15,7 @@ describe("Toggle", () => {
 
   it("highlights off state when value is false", () => {
     render(
-      <Toggle value={false} offLabel="Off" onLabel="On" onSwitch={vi.fn()} />,
+      <Toggle value={false} offLabel="Off" onLabel="On" onChange={vi.fn()} />,
     );
 
     const offButton = screen.getByRole("button", { name: "Off" });
@@ -27,7 +27,7 @@ describe("Toggle", () => {
 
   it("highlights on state when value is true", () => {
     render(
-      <Toggle value={true} offLabel="Off" onLabel="On" onSwitch={vi.fn()} />,
+      <Toggle value={true} offLabel="Off" onLabel="On" onChange={vi.fn()} />,
     );
 
     const offButton = screen.getByRole("button", { name: "Off" });
@@ -42,7 +42,7 @@ describe("Toggle", () => {
     const onSwitch = vi.fn();
 
     render(
-      <Toggle value={true} offLabel="Off" onLabel="On" onSwitch={onSwitch} />,
+      <Toggle value={true} offLabel="Off" onLabel="On" onChange={onSwitch} />,
     );
 
     await user.click(screen.getByRole("button", { name: "Off" }));
@@ -55,7 +55,7 @@ describe("Toggle", () => {
     const onSwitch = vi.fn();
 
     render(
-      <Toggle value={false} offLabel="Off" onLabel="On" onSwitch={onSwitch} />,
+      <Toggle value={false} offLabel="Off" onLabel="On" onChange={onSwitch} />,
     );
 
     await user.click(screen.getByRole("button", { name: "On" }));
@@ -68,7 +68,7 @@ describe("Toggle", () => {
     const onSwitch = vi.fn();
 
     render(
-      <Toggle value={false} offLabel="No" onLabel="Yes" onSwitch={onSwitch} />,
+      <Toggle value={false} offLabel="No" onLabel="Yes" onChange={onSwitch} />,
     );
 
     await user.click(screen.getByRole("button", { name: "No" }));

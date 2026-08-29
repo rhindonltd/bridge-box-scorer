@@ -10,7 +10,7 @@ const meta: Meta<typeof Toggle> = {
   },
   tags: ["autodocs"],
   args: {
-    onSwitch: fn(),
+    onChange: fn(),
   },
 };
 

@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import EnterPairPlayerNames from "@/app/game/[gameId]/join/player/EnterPlayerNames";
 
 const meta: Meta<typeof EnterPairPlayerNames> = {
-  title: "Components/Join/EnterPlayerNames",
+  title: "App/Join/Game/Player/EnterPlayerNames",
   component: EnterPairPlayerNames,
   parameters: {
     layout: "fullscreen",

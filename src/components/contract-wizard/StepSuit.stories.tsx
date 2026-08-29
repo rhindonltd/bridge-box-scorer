@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { StepSuit } from "./StepSuit";
 
 const meta: Meta<typeof StepSuit> = {
-  title: "Components/Play/ContractWizard/StepSuit",
+  title: "Components/ContractWizard/StepSuit",
   component: StepSuit,
   parameters: {
     layout: "fullscreen",

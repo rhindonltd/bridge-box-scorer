@@ -23,7 +23,7 @@ export function PairMP({ pairs, leaderboard }: Props) {
           value={showPercentage}
           offLabel={"MP"}
           onLabel={"%"}
-          onSwitch={() => setShowPercentage(!showPercentage)}
+          onChange={(isOn) => setShowPercentage(isOn)}
         />
       </div>
 

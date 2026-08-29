@@ -4,7 +4,7 @@ import { DeleteGamePage } from "@/app/game/[gameId]/manage/delete-game/DeleteGam
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof DeleteGamePage> = {
-  title: "Pages/Manage/DeleteGamePage",
+  title: "App/Manage/Game/DeleteGame/DeleteGamePage",
   component: DeleteGamePage,
   parameters: {
     layout: "fullscreen",

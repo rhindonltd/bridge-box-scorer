@@ -7,7 +7,7 @@ import { score } from "@/scoring/traveller/score-traveller";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 
 const meta: Meta<typeof BoardResultsPage> = {
-  title: "Pages/Play/BoardResultsPage",
+  title: "App/Play/Game/Assignment/BoardResultsPage",
   component: BoardResultsPage,
   parameters: {
     layout: "fullscreen",

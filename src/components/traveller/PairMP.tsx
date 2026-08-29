@@ -21,7 +21,7 @@ export function PairMP({ scoredTraveller }: Props) {
           value={showPercentage}
           offLabel={"MP"}
           onLabel={"%"}
-          onSwitch={() => setShowPercentage(!showPercentage)}
+          onChange={(isOn) => setShowPercentage(isOn)}
         />
       </div>
 

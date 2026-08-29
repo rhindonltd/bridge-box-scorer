@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { DisplayTimerPage } from "@/app/game/[gameId]/display/timer/DisplayTimerPage";
 
 const meta: Meta<typeof DisplayTimerPage> = {
-  title: "Pages/Display/DisplayTimerPage",
+  title: "App/Display/Game/Timer/DisplayTimerPage",
   component: DisplayTimerPage,
   parameters: {
     layout: "fullscreen",

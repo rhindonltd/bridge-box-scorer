@@ -5,7 +5,7 @@ import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { score } from "@/scoring/traveller/score-traveller";
 
 const meta: Meta<typeof Traveller> = {
-  title: "Components/Results/Traveller/Traveller",
+  title: "Components/Traveller/Traveller",
   component: Traveller,
   parameters: {
     layout: "fullscreen",

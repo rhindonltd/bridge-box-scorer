@@ -7,11 +7,12 @@ import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
-import { MitchellMovementSpec, generateMitchell } from "@/movement/mitchell";
 import NumberStepper from "@/components/common/NumberStepper";
 import { MovementByTable } from "@/movement/movementData";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { MovementCard } from "@/app/game/[gameId]/create/MovementCard";
+import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
+import { generateMitchell } from "@/movement/mitchell/mitchell";
 
 type Props = {
   onShowTablesPage: () => void;

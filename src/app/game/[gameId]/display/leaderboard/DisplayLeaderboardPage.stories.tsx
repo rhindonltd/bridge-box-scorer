@@ -21,7 +21,7 @@ const pairsGame4Tables = {
 };
 
 const meta: Meta<typeof DisplayLeaderboardPage> = {
-  title: "Pages/Display/DisplayLeaderboardPage",
+  title: "App/Display/Game/Leaderboard/DisplayLeaderboardPage",
   component: DisplayLeaderboardPage,
   parameters: {
     layout: "fullscreen",

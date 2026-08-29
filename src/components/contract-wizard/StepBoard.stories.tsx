@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import { StepBoard } from "./StepBoard";
 
 const meta: Meta<typeof StepBoard> = {
-  title: "Components/Play/ContractWizard/StepBoard",
+  title: "Components/ContractWizard/StepBoard",
   component: StepBoard,
   parameters: { layout: "fullscreen" },
   tags: ["autodocs"],

@@ -4,7 +4,7 @@ import { DownloadUsebioPage } from "@/app/game/[gameId]/manage/download-usebio/D
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof DownloadUsebioPage> = {
-  title: "Pages/Manage/DownloadUsebioPage",
+  title: "App/Manage/Game/DownloadUsebio/DownloadUsebioPage",
   component: DownloadUsebioPage,
   parameters: {
     layout: "fullscreen",

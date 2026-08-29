@@ -4,7 +4,7 @@ import { ClaimDirectorCodeView } from "@/app/manage/ClaimDirectorCodeView";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof ClaimDirectorCodeView> = {
-  title: "Pages/Manage/ClaimDirectorCodeView",
+  title: "App/Manage/SelectGame/ClaimDirectorCodeView",
   component: ClaimDirectorCodeView,
   parameters: { layout: "fullscreen" },
   tags: ["autodocs"],

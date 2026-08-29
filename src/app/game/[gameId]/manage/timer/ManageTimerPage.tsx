@@ -1,13 +1,15 @@
 "use client";
 
 import { useGame } from "@/context/GameContext";
-import { useTimerDerived } from "@/hooks/timer-derived";
 import { useTimerSync } from "@/hooks/timer-sync";
+import {useEffect, useMemo, useState } from "react";
+import {TimerControlsView, TimerStatus } from "./TimerControlsView";
+import { useTimerDerived } from "@/hooks/timer-derived";
 import { getSocket } from "@/lib/socket";
-import { SocketEvents } from "@/socket/socket-events";
 import { getDirectorToken } from "@/lib/director-token";
-import { useEffect, useMemo, useState } from "react";
-import { TimerControlsView, TimerStatus } from "@/app/game/[gameId]/manage/timer/TimerControlsView";
+import { SocketEvents } from "@/socket/socket-events";
+
+
 
 export default function ManageTimerPage() {
   const { game } = useGame();

@@ -5,7 +5,7 @@ import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 import { RoundInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/RoundInfoPage";
 
 const meta: Meta<typeof RoundInfoPage> = {
-  title: "Pages/Play/RoundInfoPage",
+  title: "App/Play/Game/Assignment/RoundInfoPage",
   component: RoundInfoPage,
   parameters: {
     layout: "fullscreen",

@@ -22,7 +22,7 @@ const mockGame = {
 };
 
 const meta: Meta<typeof ResultMismatch> = {
-  title: "Pages/Play/ResultMismatch",
+  title: "App/Play/Game/Assignment/ResultMismatch",
   component: ResultMismatch,
   decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
   parameters: { layout: "fullscreen" },
