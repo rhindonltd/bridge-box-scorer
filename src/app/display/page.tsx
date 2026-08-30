@@ -4,11 +4,11 @@ import SelectGamePage from "@/components/pages/SelectGamePage";
 import { useRouter } from "next/navigation";
 
 export default function DisplayRoute() {
-    const router = useRouter();
+  const router = useRouter();
 
-    function onGameSelected(gameId: string) {
-        router.push(`/game/${gameId}/display/menu`);
-    }
+  function onGameSelected(gameId: string) {
+    router.push(`/game/${gameId}/display/menu`);
+  }
 
-    return <SelectGamePage onGameSelected={onGameSelected} />;
+  return <SelectGamePage onGameSelected={onGameSelected} />;
 }

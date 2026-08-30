@@ -15,7 +15,7 @@ export function MovementDetailView({ tables }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("byRound");
 
   return (
-      <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex justify-center w-full flex-row p-3 bg-gray-50 border-b gap-2 shrink-0 px-4 pt-2">
         <button
           onClick={() => setViewMode("byRound")}
@@ -49,6 +49,6 @@ export function MovementDetailView({ tables }: Props) {
               <MovementRound key={round.roundNumber} round={round} />
             ))}
       </div>
-      </div>
+    </div>
   );
 }

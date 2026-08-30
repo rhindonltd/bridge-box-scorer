@@ -3,6 +3,8 @@ import { fn } from "storybook/test";
 import { ContractWizard } from "@/app/game/[gameId]/play/[initialSeat]/ContractWizard";
 import { GameContext } from "@/context/GameContext";
 import { AssignmentContext } from "@/context/AssignmentContext";
+import { KeyedMutator } from "swr";
+import { BridgeGame } from "@/db/game-index/schema";
 
 const mockGame = {
   gameId: "test-game-1",
@@ -20,6 +22,10 @@ const mockGame = {
 const mockAssignment = {
   type: "PAIR" as const,
   id: "3",
+};
+
+export const mockMutateGame: KeyedMutator<BridgeGame> = async () => {
+  return undefined;
 };
 
 const meta: Meta<typeof ContractWizard> = {
@@ -43,7 +49,7 @@ const meta: Meta<typeof ContractWizard> = {
         value={{
           game: mockGame as any,
           isLoading: false,
-          mutateGame: () => {},
+          mutateGame: mockMutateGame,
         }}
       >
         <AssignmentContext.Provider value={{ assignment: mockAssignment }}>

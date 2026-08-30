@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode, useEffect } from "react";
 
-import useSWR from "swr";
+import useSWR, { KeyedMutator } from "swr";
 import { BridgeGame } from "@/db/game-index/schema";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
@@ -10,9 +10,9 @@ import { swrKeys } from "@/swr/swr-keys";
 import { fetcher } from "@/lib/fetcher";
 
 interface ContextType {
-  game: BridgeGame | undefined;
+  game: BridgeGame | null;
   isLoading: boolean;
-  mutateGame: () => void;
+  mutateGame: KeyedMutator<BridgeGame>;
 }
 
 export const GameContext = createContext<ContextType | undefined>(undefined);
@@ -56,7 +56,7 @@ export function GameProvider({
   return (
     <GameContext.Provider
       value={{
-        game,
+        game: game ?? null,
         isLoading,
         mutateGame: mutate,
       }}
@@ -66,7 +66,7 @@ export function GameProvider({
   );
 }
 
-export function useGame() {
+export function useGame() : ContextType {
   const ctx = useContext(GameContext);
 
   if (!ctx) {
@@ -74,4 +74,17 @@ export function useGame() {
   }
 
   return ctx;
+}
+
+export function useRequiredGame(): {
+    game: BridgeGame;
+    mutateGame: KeyedMutator<BridgeGame>;
+} {
+  const { game, isLoading, mutateGame } = useGame();
+
+  if (isLoading || !game) {
+    throw new Error("Game is not available");
+  }
+
+  return { game, mutateGame };
 }

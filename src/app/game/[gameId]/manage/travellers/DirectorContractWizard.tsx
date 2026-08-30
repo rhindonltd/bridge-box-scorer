@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
 import { Card, Direction, Rank, Suit } from "@/model/common";
 import { SpecialBoardOutcome } from "@/model/result";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 
 import { StepLevel } from "@/components/contract-wizard/StepLevel";
 import { StepSuit } from "@/components/contract-wizard/StepSuit";
@@ -51,7 +51,7 @@ export function DirectorContractWizard({
   onComplete,
   onBack,
 }: DirectorContractWizardProps) {
-  const { game } = useGame();
+  const { game } = useRequiredGame();
 
   // Steps: 1=Level, 2=Suit, 3=Declarer, 4=OpeningLead, 5=Result, 6=Confirm, 7=AdjustedScore
   const [step, setStep] = useState(1);
@@ -194,12 +194,12 @@ export function DirectorContractWizard({
       </button>
       <div className="flex-1 flex items-start justify-between min-w-0">
         <div className="truncate">
-          <div className="font-semibold">{game?.eventName}</div>
-          {(game?.sessionName || game?.sectionName) && (
+          <div className="font-semibold">{game.eventName}</div>
+          {(game.sessionName || game.sectionName) && (
             <div className="text-sm text-gray-600">
-              {game?.sessionName}
-              {game?.sessionName && game?.sectionName && ", "}
-              {game?.sectionName}
+              {game.sessionName}
+              {game.sessionName && game.sectionName && ", "}
+              {game.sectionName}
             </div>
           )}
         </div>

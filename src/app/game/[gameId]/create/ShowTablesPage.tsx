@@ -3,7 +3,7 @@
 import DirectorTableControls, {
   DirectorTable,
 } from "@/components/tables/DirectorTableControls";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { fetcher } from "@/lib/fetcher";
 import useSWR from "swr";
 import { SocketEvents } from "@/socket/socket-events";
@@ -21,11 +21,11 @@ type Props = {
 };
 
 export function ShowTablesPage({ onStartGame }: Props) {
-  const { game, mutateGame } = useGame();
+  const { game, mutateGame } = useRequiredGame();
 
-  const gameId = game?.gameId;
+  const gameId = game.gameId;
 
-  const key = gameId ? swrKeys.pairs(gameId) : null;
+  const key = swrKeys.pairs(gameId);
 
   const { data } = useSWR<Pair[], Error>(key, fetcher);
 
@@ -38,12 +38,8 @@ export function ShowTablesPage({ onStartGame }: Props) {
     [gameId],
   );
 
-  if (!gameId || !game) {
-    return null;
-  }
-
   function createTables(): DirectorTable[] {
-    return Array.from({ length: game!.tables }, (_, i) => createTable(i + 1));
+    return Array.from({ length: game.tables }, (_, i) => createTable(i + 1));
   }
 
   function createTable(tableNumber: number): DirectorTable {
@@ -113,10 +109,16 @@ export function ShowTablesPage({ onStartGame }: Props) {
         />
       }
       headerRight={
-          <div className="flex flex-col justify-center p-2">
-              <div className="text-center mb-2">Tables:</div>
-              <div><NumberStepper min={1} value={tables.length} onChange={handleChange} /></div>
+        <div className="flex flex-col justify-center p-2">
+          <div className="text-center mb-2">Tables:</div>
+          <div>
+            <NumberStepper
+              min={1}
+              value={tables.length}
+              onChange={handleChange}
+            />
           </div>
+        </div>
       }
       actions={
         <Button value={"Start Game"} onClick={onStartGame} className="w-full" />

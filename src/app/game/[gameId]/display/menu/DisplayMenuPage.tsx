@@ -1,7 +1,6 @@
 "use client";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { useGame } from "@/context/GameContext";
 
 export interface DisplayMenuPageProps {
   onTimerClick: () => void;
@@ -12,9 +11,6 @@ export function DisplayMenuPage({
   onTimerClick,
   onLeaderboardClick,
 }: DisplayMenuPageProps) {
-  const { game, isLoading } = useGame();
-
-  if (isLoading || !game) return null;
 
   const standardButtonClass =
     "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 pl-4";

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { ContractWizard } from "@/app/game/[gameId]/play/[initialSeat]/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { parseContract } from "@/model/contract";
@@ -20,11 +20,10 @@ import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPag
 import { BoardInstance } from "@/model/participants";
 
 export default function PlayPage() {
-  const params = useParams<{ gameId: string; initialSeat: string }>();
-  const gameId = params.gameId;
+  const params = useParams<{ initialSeat: string }>();
   const seat = params.initialSeat;
 
-  const { game } = useGame();
+  const { game } = useRequiredGame();
   const {
     schedule,
     playState,
@@ -34,9 +33,9 @@ export default function PlayPage() {
     handleReenter,
     handleEnterRound,
     submitResult,
-  } = usePlayFlow(gameId, seat);
+  } = usePlayFlow(game.gameId, seat);
 
-  if (!game || !schedule) {
+  if (!schedule) {
     return (
       <div className="h-dvh flex items-center justify-center bg-gray-100">
         <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
@@ -89,7 +88,7 @@ export default function PlayPage() {
           table={round.tableNumber!}
           roundBoards={round.boards}
           playedBoards={playedBoards}
-          leadCardRequired={game?.leadCardRequired ?? true}
+          leadCardRequired={game.leadCardRequired}
           onComplete={(data) => {
             if (data.contract === "PO" || data.contract === "NP") {
               submitResult(data.contract);
@@ -137,7 +136,7 @@ export default function PlayPage() {
 
       return (
         <BoardResultsLoader
-          gameId={gameId}
+          gameId={game.gameId}
           gameType={game.gameType}
           scoringType={game.scoringType}
           boardNumber={boardNumber}

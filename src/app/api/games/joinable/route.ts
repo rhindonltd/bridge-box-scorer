@@ -3,7 +3,10 @@ import { findJoinableGames } from "@/db/game-index/queries";
 
 export async function GET() {
   try {
-    return NextResponse.json({ success: true, games: await findJoinableGames() });
+    return NextResponse.json({
+      success: true,
+      games: await findJoinableGames(),
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

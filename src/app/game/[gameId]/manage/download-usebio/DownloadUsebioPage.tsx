@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface DownloadUsebioPageProps {
@@ -13,7 +13,7 @@ export function DownloadUsebioPage({
   onUsebioDownloaded,
   onCancel,
 }: DownloadUsebioPageProps) {
-  const { game } = useGame();
+  const { game } = useRequiredGame();
 
   const [name, setName] = useState("");
   const [clubNumber, setClubNumber] = useState("");
@@ -62,7 +62,7 @@ export function DownloadUsebioPage({
       }
 
       // Fetch the USEBIO file and trigger download via blob URL
-      const usebioRes = await fetch(`/api/games/${game!.gameId}/usebio`);
+      const usebioRes = await fetch(`/api/games/${game.gameId}/usebio`);
       if (!usebioRes.ok) {
         const errData = await usebioRes.json().catch(() => null);
         setError(errData?.error ?? "Failed to generate USEBIO file");
@@ -91,8 +91,6 @@ export function DownloadUsebioPage({
       setSaving(false);
     }
   }
-
-  if (!game) return null;
 
   if (loading) {
     return (

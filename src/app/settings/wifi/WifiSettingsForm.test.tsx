@@ -1,6 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { WifiSettingsForm, Network } from "@/app/settings/wifi/WifiSettingsForm";
+import {
+  WifiSettingsForm,
+  Network,
+} from "@/app/settings/wifi/WifiSettingsForm";
 import { describe, it, expect, vi } from "vitest";
 
 const networks: Network[] = [

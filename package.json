@@ -14,7 +14,7 @@
     "build-storybook": "storybook build",
     "test": "vitest --project unit",
     "coverage": "vitest --project unit run --coverage --reporter=html --outputFile=unit.html",
-    "e2e": "npx playwright test",
+    "e2e_ui": "npx playwright test --ui",
     "journey:phone": "playwright test --project=journeys-phone",
     "journey:tablet": "playwright test --project=journeys-tablet",
     "journey:all": "playwright test --project=journeys-phone --project=journeys-tablet",

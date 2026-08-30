@@ -8,15 +8,15 @@ export async function GET(
   const gameId = (await params).gameId;
 
   try {
-      const game = await findGameById(gameId);
-      if (!game) {
-          return NextResponse.json(
-              { success: false, error: "Game not found" },
-              { status: 404 },
-          );
-      }
+    const game = await findGameById(gameId);
+    if (!game) {
+      return NextResponse.json(
+        { success: false, error: "Game not found" },
+        { status: 404 },
+      );
+    }
 
-      return NextResponse.json({ success: true, game });
+    return NextResponse.json({ success: true, game });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

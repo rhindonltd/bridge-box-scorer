@@ -30,11 +30,13 @@ test.describe("Game Creation Flow", () => {
     await expect(select).toHaveValue("PAIRS");
   });
 
-  test("create form has a Next button", async ({ page }) => {
+  test("create form has a Create Game button", async ({ page }) => {
     await page.goto("/create");
-    await expect(page.getByRole("button", { name: "Next" })).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page.getByRole("button", { name: "Create Game" })).toBeVisible(
+      {
+        timeout: 10000,
+      },
+    );
   });
 
   test("create form allows filling in event details", async ({ page }) => {
@@ -73,7 +75,9 @@ test.describe("Game Creation Flow", () => {
     await page.getByLabel("Director Name").fill("E2E Director");
 
     // Submit the form
-    await page.getByRole("button", { name: "Create Game", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Create Game", exact: true })
+      .click();
 
     // Wait for redirect to /create/[gameId]
     await page.waitForURL(/\/create\/.+/);
@@ -102,7 +106,9 @@ test.describe("Game Creation Flow", () => {
     await page.getByLabel("Director Name").fill("E2E Director");
 
     // Event Type defaults to "Pairs" so no change needed
-    await page.getByRole("button", { name: "Create Game", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Create Game", exact: true })
+      .click();
 
     // Wait for successful creation redirect
     await page.waitForURL(/\/create\/.+/);
@@ -141,7 +147,9 @@ test.describe("Game Creation Flow", () => {
     await page.getByLabel("Director Name").fill("Test Director");
 
     // Submit the form
-    await page.getByRole("button", { name: "Create Game", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Create Game", exact: true })
+      .click();
 
     // Wait for the error alert to appear
     await expect

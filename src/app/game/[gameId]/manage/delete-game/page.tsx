@@ -1,19 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { DeleteGamePage } from "@/app/game/[gameId]/manage/delete-game/DeleteGamePage";
 
 export default function DeleteGameRoute() {
   const router = useRouter();
-  const { game } = useGame();
-
-  if (!game) return null;
+  const { game } = useRequiredGame();
 
   return (
     <DeleteGamePage
-      onGameDeleted={() => router.replace("/manage/select-game")}
-      onCancel={() => router.replace(`/manage/${game.gameId}/menu`)}
+      onGameDeleted={() => router.replace("/manage")}
+      onCancel={() => router.replace(`/game/${game.gameId}/manage/menu`)}
     />
   );
 }

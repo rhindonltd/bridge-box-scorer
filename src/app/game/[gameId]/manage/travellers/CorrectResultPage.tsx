@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { parseContract } from "@/model/contract";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { getDirectorToken } from "@/lib/director-token";
@@ -31,7 +31,7 @@ export function CorrectResultPage({
       }
     | { step: "saving" };
 
-  const { game } = useGame();
+  const { game } = useRequiredGame();
 
   const [wizardStep, setWizardStep] = useState<WizardStep>({
     step: "selectBoard",
@@ -49,7 +49,7 @@ export function CorrectResultPage({
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag before async fetch
     setBoardsLoading(true);
-    fetch(`/api/games/${game!.gameId}/boards`)
+    fetch(`/api/games/${game.gameId}/boards`)
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled) {
@@ -75,7 +75,7 @@ export function CorrectResultPage({
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag before async fetch
     setInstancesLoading(true);
-    fetch(`/api/games/${game!.gameId}/boards/${wizardStep.boardNumber}`)
+    fetch(`/api/games/${game.gameId}/boards/${wizardStep.boardNumber}`)
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled) {
@@ -160,7 +160,7 @@ export function CorrectResultPage({
 
     try {
       const res = await fetch(
-        `/api/games/${game!.gameId}/boards/${boardNumber}/override`,
+        `/api/games/${game.gameId}/boards/${boardNumber}/override`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -168,7 +168,7 @@ export function CorrectResultPage({
             roundNumber,
             tableNumber,
             result,
-            directorToken: getDirectorToken(game!.gameId),
+            directorToken: getDirectorToken(game.gameId),
           }),
         },
       );
@@ -186,8 +186,6 @@ export function CorrectResultPage({
       setWizardStep({ step: "selectBoard" });
     }
   }
-
-  if (!game) return null;
 
   switch (wizardStep.step) {
     case "selectBoard":

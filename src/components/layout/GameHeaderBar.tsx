@@ -1,6 +1,6 @@
 "use client";
 
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { HeaderBar } from "./HeaderBar";
 
 type Props = {
@@ -10,10 +10,13 @@ type Props = {
   headerRight?: React.ReactNode;
 };
 
-export function GameHeaderBar({ headerTitle, backAction, backHref, headerRight }: Props) {
-  const { game } = useGame();
-
-  if (!game) return null;
+export function GameHeaderBar({
+  headerTitle,
+  backAction,
+  backHref,
+  headerRight,
+}: Props) {
+  const { game } = useRequiredGame();
 
   function headerSubtitle2(): string {
     let subTitle: string = "";
