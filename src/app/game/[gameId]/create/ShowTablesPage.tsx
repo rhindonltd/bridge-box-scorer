@@ -32,7 +32,7 @@ export function ShowTablesPage({ onStartGame }: Props) {
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.pairs(gameId!),
+      key: swrKeys.pairs(gameId),
       data: p.participants,
     }),
     [gameId],

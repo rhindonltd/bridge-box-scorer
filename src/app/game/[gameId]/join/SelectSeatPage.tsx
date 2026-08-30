@@ -3,7 +3,7 @@
 import { useRequiredGame } from "@/context/GameContext";
 import { Pair, PairSeat, Seat } from "@/model/participants";
 import { useState } from "react";
-import EnterPlayerNames from "@/app/game/[gameId]/join/player/EnterPlayerNames";
+import EnterPlayerNames from "@/app/game/[gameId]/join/EnterPlayerNames";
 import { swrKeys } from "@/swr/swr-keys";
 import { fetcher } from "@/lib/fetcher";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
@@ -11,7 +11,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import useSWR from "swr";
 import { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
-import SelectTable from "@/app/game/[gameId]/join/player/SelectTable";
+import SelectTable from "@/app/game/[gameId]/join/SelectTable";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {

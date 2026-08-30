@@ -10,5 +10,7 @@ export default function JoinRoute() {
     router.push(`/join/${gameId}/player`);
   }
 
-  return <SelectGamePage onGameSelected={onGameSelected} />;
+  return (
+    <SelectGamePage headerTitle="Join Game" onGameSelected={onGameSelected} />
+  );
 }

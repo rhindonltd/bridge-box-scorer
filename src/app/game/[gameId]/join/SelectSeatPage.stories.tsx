@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
 import { fn } from "storybook/test";
-import { SelectSeatPage } from "@/app/game/[gameId]/join/player/SelectSeatPage";
+import { SelectSeatPage } from "@/app/game/[gameId]/join/SelectSeatPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const meta: Meta<typeof SelectSeatPage> = {

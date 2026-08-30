@@ -11,10 +11,11 @@ import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { SelectGame } from "@/components/common/SelectGame";
 
 interface Props {
+  headerTitle: string;
   onGameSelected: (gameId: string) => void;
 }
 
-export default function SelectGamePage({ onGameSelected }: Props) {
+export default function SelectGamePage({ headerTitle, onGameSelected }: Props) {
   const { data, isLoading } = useSWR<BridgeGame[], Error>(
     swrKeys.joinableGames,
     fetcher,
@@ -44,7 +45,7 @@ export default function SelectGamePage({ onGameSelected }: Props) {
 
   return (
     <SelectGame
-      headerTitle="Manage Game"
+      headerTitle={headerTitle}
       games={data ?? []}
       isLoading={isLoading}
       onGameSelected={onGameSelected}

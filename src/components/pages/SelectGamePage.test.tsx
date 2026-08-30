@@ -14,6 +14,7 @@ vi.mock("@/components/join/SelectGame", () => ({
 
 describe("SelectGamePage", () => {
   const baseProps = {
+    headerTitle: "Header Title",
     games: [
       { id: 1, eventName: "Game 1" },
       { id: 2, eventName: "Game 2" },

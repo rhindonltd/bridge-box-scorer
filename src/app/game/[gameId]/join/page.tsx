@@ -1,11 +1,18 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function JoinGameRoute({
-  params,
-}: {
-  params: Promise<{ gameId: string }>;
-}) {
-  const { gameId } = await params;
+import { useRouter } from "next/navigation";
+import { useRequiredGame } from "@/context/GameContext";
+import { SelectSeatPage } from "@/app/game/[gameId]/join/SelectSeatPage";
 
-  redirect(`/join/${gameId}/player`);
+export default function JoinGameAsPlayerRoute() {
+  const { game } = useRequiredGame();
+  const router = useRouter();
+
+  return (
+    <SelectSeatPage
+      onSeatSelected={(seat) =>
+        router.replace(`/game/${game.gameId}/${seat}/play`)
+      }
+    />
+  );
 }

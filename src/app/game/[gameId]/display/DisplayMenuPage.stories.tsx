@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 
-import { DisplayMenuPage } from "@/app/game/[gameId]/display/menu/DisplayMenuPage";
+import { DisplayMenuPage } from "@/app/game/[gameId]/display/DisplayMenuPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const pairsGame4Tables = {
