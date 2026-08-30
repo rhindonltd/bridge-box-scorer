@@ -7,6 +7,7 @@ import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { parseSeat } from "@/model/participants";
+import { Db, getDb } from "@/db/games";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
@@ -37,10 +38,17 @@ export function registerUpdateTablesHandler(socket: Socket, io: Server) {
           return;
         }
 
+        const db = await getDb(gameId);
+
+        if (!db) {
+          cb?.({ success: false, error: "Game db not found" });
+          return;
+        }
+
         // When reducing tables, check that no participants are seated at
         // tables that would be removed (i.e., tables > new count)
         if (tables < game.tables) {
-          const highestOccupiedTable = await getHighestOccupiedTable(gameId);
+          const highestOccupiedTable = await getHighestOccupiedTable(db);
 
           if (highestOccupiedTable > tables) {
             cb?.({
@@ -67,8 +75,8 @@ export function registerUpdateTablesHandler(socket: Socket, io: Server) {
   );
 }
 
-async function getHighestOccupiedTable(gameId: string): Promise<number> {
-  const seats = await findPairs(gameId);
+async function getHighestOccupiedTable(db: Db): Promise<number> {
+  const seats = await findPairs(db);
 
   if (seats.length === 0) return 0;
 

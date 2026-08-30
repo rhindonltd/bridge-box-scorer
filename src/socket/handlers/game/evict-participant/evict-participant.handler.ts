@@ -7,6 +7,7 @@ import { deleteParticipant as deletePairParticipant } from "@/db/games/actions/d
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { PairSeat } from "@/model/participants";
+import { getDb } from "@/db/games";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
@@ -37,9 +38,15 @@ export function registerEvictParticipantHandler(socket: Socket, io: Server) {
           return;
         }
 
+        const db = await getDb(gameId);
+
+        if (!db) {
+          throw new Error("Game db does not exist");
+        }
+
         await deletePairParticipant(gameId, seat as PairSeat);
         io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
-          participants: await findPairs(gameId),
+          participants: await findPairs(db),
         });
 
         cb?.({ success: true });

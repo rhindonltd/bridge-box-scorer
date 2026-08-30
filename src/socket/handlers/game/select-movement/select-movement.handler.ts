@@ -8,16 +8,10 @@ import {
   getTeamMovement,
 } from "@/db/movements/queries/get-movement";
 
-import { getDb as getPairsDb } from "@/db/games";
+import { getDb } from "@/db/games";
 
-import {
-  boards as pairBoards,
-  NewBoard as NewPairBoard,
-} from "@/db/games/tables/boards";
-import {
-  assignments as pairAssignments,
-  Assignment as PairAssignment,
-} from "@/db/games/tables/assignments";
+import { boards, NewBoard } from "@/db/games/tables/boards";
+import { assignments, Assignment } from "@/db/games/tables/assignments";
 
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { Tables } from "@/model/movement";
@@ -31,8 +25,8 @@ async function handlePairLikeMovement(
   movement: PairMovement[] | TeamMovement[],
   gameId: string,
 ) {
-  const boardRows: NewPairBoard[] = [];
-  const assignmentRows: PairAssignment[] = [];
+  const boardRows: NewBoard[] = [];
+  const assignmentRows: Assignment[] = [];
 
   for (const m of movement) {
     for (const r of m.rounds) {
@@ -61,18 +55,23 @@ async function handlePairLikeMovement(
           assignmentRows.push({
             id: movementId,
             initialSeat:
-              `${m.tableNumber}${position}` as PairAssignment["initialSeat"],
+              `${m.tableNumber}${position}` as Assignment["initialSeat"],
           });
         }
       }
     }
   }
 
-  const db = await getPairsDb(gameId);
+  const db = await getDb(gameId);
+
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
   db.transaction((tx) => {
-    tx.insert(pairBoards).values(boardRows).run();
+    tx.insert(boards).values(boardRows).run();
     if (assignmentRows.length > 0) {
-      tx.insert(pairAssignments).values(assignmentRows).run();
+      tx.insert(assignments).values(assignmentRows).run();
     }
   });
 }

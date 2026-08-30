@@ -10,6 +10,22 @@ export type Db = ReturnType<typeof drizzle<typeof schema>>;
 
 const dbInstances: Map<string, Db> = new Map();
 
+export async function createDb(gameId: string): Promise<Db> {
+  if (typeof window !== "undefined") {
+    throw new Error("SQLite can only be used on the server");
+  }
+
+  const dataDir =
+    process.env.DATABASE_GAMES_URL ?? "/home/bridgebox/data/games";
+
+  const dbFile = path.join(dataDir, `${gameId}.db`);
+
+  const dbInstance = drizzle(new Database(dbFile), { schema });
+  dbInstances.set(gameId, dbInstance);
+
+  return dbInstance;
+}
+
 export async function getDb(gameId: string): Promise<Db | null> {
   if (dbInstances.has(gameId)) {
     return dbInstances.get(gameId)!;

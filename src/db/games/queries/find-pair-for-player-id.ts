@@ -8,6 +8,10 @@ export async function findPairForPlayerId(
 ): Promise<Participant | null> {
   const db = await getDb(gameId);
 
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
   const results = await db
     .select()
     .from(participants)

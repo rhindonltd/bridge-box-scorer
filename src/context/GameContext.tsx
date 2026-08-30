@@ -31,10 +31,12 @@ export function GameProvider({
   const gameFetcher = async (url: string): Promise<BridgeGame> => {
     const response: {
       success: boolean;
-      game: BridgeGame;
+      result: {
+        game: BridgeGame;
+      };
     } = await fetcher(url);
 
-    return response.game;
+    return response.result.game;
   };
 
   const {

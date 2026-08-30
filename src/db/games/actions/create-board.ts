@@ -4,5 +4,11 @@ import { getDb } from "@/db/games";
 import { boards, NewBoard } from "@/db/games/tables/boards";
 
 export async function createBoard(gameId: string, board: NewBoard) {
-  await (await getDb(gameId)).insert(boards).values(board);
+  const db = await getDb(gameId);
+
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
+  await db.insert(boards).values(board);
 }

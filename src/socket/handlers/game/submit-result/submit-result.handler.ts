@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import { eq, and } from "drizzle-orm";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
-import { getDb as getPairsDb } from "@/db/games";
+import { getDb } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { BoardOutcome } from "@/model/score";
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
@@ -73,7 +73,12 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           const confirmedResult = boardSubmissions[0].result;
 
           // Write to database
-          const db = await getPairsDb(gameId);
+          const db = await getDb(gameId);
+
+          if (!db) {
+            throw new Error("Game db does not exist");
+          }
+
           await db
             .update(pairsBoards)
             .set({

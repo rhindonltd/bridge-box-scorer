@@ -9,7 +9,7 @@ vi.mock("@/db/games/pairs/tables/boards", () => ({
   boards: "pairsBoards",
 }));
 
-import { getDb as getPairsDb } from "@/db/games";
+import { Db, getDb as getPairsDb } from "@/db/games";
 
 describe("movement-service", () => {
   beforeEach(() => {
@@ -73,10 +73,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       expect(result.type).toBe("PAIRS");
       expect(result.tables).toHaveLength(1);
@@ -126,10 +126,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       // Round 1 is incomplete (0/1) and round 2 has results → round 1 flagged
       expect(result.tables[0].rounds[0].hasPreviousGap).toBe(true);
@@ -141,10 +141,10 @@ describe("movement-service", () => {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       expect(result.tables).toHaveLength(0);
     });
@@ -175,10 +175,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       expect(result.tables).toHaveLength(2);
       expect(result.tables[0].tableNumber).toBe(1);
@@ -203,10 +203,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       expect(result.tables[0].rounds[0].played).toBe(1);
     });
@@ -257,10 +257,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       // All boards are played, so no gap detected
       expect(result.tables[0].rounds[0].hasPreviousGap).toBe(false);
@@ -303,10 +303,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       // No rounds have results, no gaps
       expect(result.tables[0].rounds[0].hasPreviousGap).toBe(false);
@@ -330,10 +330,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       expect(result.tables[0].rounds[0].played).toBe(1);
     });
@@ -384,10 +384,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       // Round 1 is incomplete (1/2) but round 2 has 0 played, so no gap flagged
       expect(result.tables[0].rounds[0].hasPreviousGap).toBe(false);
@@ -412,10 +412,10 @@ describe("movement-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getMovementWithProgress("game-1", "PAIRS");
+      const result = await getMovementWithProgress(mockDb);
 
       // With valid data, boardCountMap always has the key - just verify it works
       expect(result.tables[0].rounds[0].played).toBe(1);

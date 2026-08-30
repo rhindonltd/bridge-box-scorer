@@ -1,1 +1,0 @@
-ALTER TABLE `games` ADD `lead_card_required` integer DEFAULT true NOT NULL;

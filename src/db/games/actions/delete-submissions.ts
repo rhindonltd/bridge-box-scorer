@@ -14,6 +14,10 @@ export async function deleteBoardSubmissions(
 ) {
   const db = await getDb(gameId);
 
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
   await db
     .delete(boardSubmissions)
     .where(

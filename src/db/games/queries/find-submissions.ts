@@ -7,9 +7,13 @@ export async function findBoardSubmissions(
   table: number,
   round: number,
 ): Promise<BoardSubmission[]> {
-  return await (
-    await getDb(gameId)
-  )
+  const db = await getDb(gameId);
+
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
+  return db
     .select()
     .from(boardSubmissions)
     .where(
