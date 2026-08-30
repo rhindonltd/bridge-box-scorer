@@ -1,56 +1,29 @@
 import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
-import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { getDb as getPairsDb } from "@/db/games";
-import { boards as pairsBoards } from "@/db/games/tables/boards";
+import { boards } from "@/db/games/tables/boards";
+import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { BoardOutcome } from "@/model/score";
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ gameId: string; boardNumber: string }> },
-) {
-  const { gameId, boardNumber } = await params;
-  const body = await req.json();
-  const { roundNumber, tableNumber, result, directorToken } = body;
+export const POST = withDirectorRoute(async ({ db, body, boardNumber }) => {
+  const { roundNumber, tableNumber, result } = body as {
+    roundNumber: number;
+    tableNumber: number;
+    result: BoardOutcome;
+  };
 
-  try {
-    if (!validateDirectorToken(directorToken, gameId)) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const game = await findGameById(gameId);
-
-    if (!game) {
-      return NextResponse.json(
-        { success: false, error: "Game not found" },
-        { status: 404 },
-      );
-    }
-
-    const db = await getPairsDb(gameId);
-    await db
-      .update(pairsBoards)
-      .set({
-        directorOverrideResult: result,
-        status: "OVERRIDDEN",
-      })
-      .where(
-        and(
-          eq(pairsBoards.roundNumber, roundNumber),
-          eq(pairsBoards.tableNumber, tableNumber),
-          eq(pairsBoards.boardNumber, Number(boardNumber)),
-        ),
-      );
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 },
+  await db
+    .update(boards)
+    .set({
+      directorOverrideResult: result,
+      status: "OVERRIDDEN",
+    })
+    .where(
+      and(
+        eq(boards.roundNumber, roundNumber),
+        eq(boards.tableNumber, tableNumber),
+        eq(boards.boardNumber, boardNumber!),
+      ),
     );
-  }
-}
+
+  return NextResponse.json({ success: true });
+});

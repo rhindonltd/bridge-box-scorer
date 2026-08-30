@@ -1,37 +1,17 @@
 import { NextResponse } from "next/server";
-import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { getDb as getPairsDb } from "@/db/games";
-import { boards as pairsBoards } from "@/db/games/tables/boards";
+import { boards } from "@/db/games/tables/boards";
+import { withGameRoute } from "@/lib/api/gameRoute";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ gameId: string }> },
-) {
-  const { gameId } = await params;
-
-  try {
-    const game = await findGameById(gameId);
-
-    if (!game) {
-      return NextResponse.json(
-        { success: false, error: "Game not found" },
-        { status: 404 },
-      );
-    }
-
-    const db = await getPairsDb(gameId);
-    const result = await db
-      .selectDistinct({ boardNumber: pairsBoards.boardNumber })
-      .from(pairsBoards)
-      .orderBy(pairsBoards.boardNumber);
-    const boardNumbers = result.map((r) => r.boardNumber);
-
-    return NextResponse.json({ boards: boardNumbers });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+export const GET = withGameRoute(async ({ db }) => {
+  return NextResponse.json({
+    success: true,
+    result: {
+      boards: (
+        await db
+          .selectDistinct({ boardNumber: boards.boardNumber })
+          .from(boards)
+          .orderBy(boards.boardNumber)
+      ).map((r) => r.boardNumber),
+    },
+  });
+});

@@ -1,13 +1,11 @@
-import { getDb } from "@/db/games";
+import { Db } from "@/db/games";
 import { players } from "@/db/games/tables/players";
 import { eq, sql } from "drizzle-orm";
 import { participants } from "@/db/games/tables/participants";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Pair } from "@/model/participants";
 
-export async function findPairs(gameId: string): Promise<Pair[]> {
-  const db = await getDb(gameId);
-
+export async function findPairs(db: Db): Promise<Pair[]> {
   const player1 = alias(players, "player1");
   const player2 = alias(players, "player2");
 

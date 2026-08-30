@@ -6,9 +6,11 @@ import path from "path";
 import fs from "fs";
 import * as schema from "./schema";
 
-const dbInstances: Map<string, ReturnType<typeof drizzle>> = new Map();
+export type Db = ReturnType<typeof drizzle<typeof schema>>;
 
-export async function getDb(gameId: string) {
+const dbInstances: Map<string, Db> = new Map();
+
+export async function getDb(gameId: string): Promise<Db | null> {
   if (dbInstances.has(gameId)) {
     return dbInstances.get(gameId)!;
   }
@@ -19,12 +21,14 @@ export async function getDb(gameId: string) {
 
   const dataDir =
     process.env.DATABASE_GAMES_URL ?? "/home/bridgebox/data/games";
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
   const dbFile = path.join(dataDir, `${gameId}.db`);
-  const sqlite = new Database(dbFile);
 
-  const dbInstance = drizzle(sqlite, { schema });
+  if (!fs.existsSync(dbFile)) {
+    return null;
+  }
+
+  const dbInstance = drizzle(new Database(dbFile), { schema });
   dbInstances.set(gameId, dbInstance);
 
   return dbInstance;
