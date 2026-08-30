@@ -1,11 +1,13 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { GameTypes } from "@/db/games/types/game-type";
-import { GameStatuses } from "@/db/games/types/game-status";
 import { ScoringTypes } from "@/db/games/types/scoring-type";
 
 export const games = sqliteTable("games", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+  gameId: text("game_id")
+    .notNull()
+    .default(sql`(lower(hex(randomblob(16))))`)
+    .primaryKey(),
   eventName: text("event_name").notNull(),
   director: text("director"),
   gameType: text("game_type", {
@@ -16,9 +18,6 @@ export const games = sqliteTable("games", {
   })
     .notNull()
     .default("MP"),
-  gameId: text("game_id")
-    .notNull()
-    .default(sql`(lower(hex(randomblob(16))))`),
   sessionName: text("session_name").notNull(),
   sectionName: text("section_name").notNull(),
   eventDate: text("event_date").notNull(),
@@ -26,9 +25,6 @@ export const games = sqliteTable("games", {
   leadCardRequired: integer("lead_card_required", { mode: "boolean" })
     .notNull()
     .default(true),
-  status: text("status", {
-    enum: GameStatuses,
-  }).notNull(),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

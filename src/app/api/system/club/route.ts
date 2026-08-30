@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { findClub } from "@/db/system/queries/find-club";
 import { upsertClub } from "@/db/system/actions/upsert-club";
+import { z } from "zod";
 
 export async function GET() {
   try {
@@ -18,16 +19,25 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, clubNumber } = body;
 
-    if (!name || !clubNumber) {
+    const schema = z.object({
+      name: z.string(),
+      clubNumber: z.string(),
+    });
+
+    const parsed = schema.safeParse(body);
+
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "Club name and number are required" },
+        {
+          success: false,
+          error: "Invalid request",
+        },
         { status: 400 },
       );
     }
 
-    await upsertClub(name, clubNumber);
+    await upsertClub(parsed.data.name, parsed.data.clubNumber);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(error);

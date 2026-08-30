@@ -6,7 +6,7 @@ export const GET = withGameRoute(async ({ db }) => {
   return NextResponse.json({
     success: true,
     result: {
-        movement: (await getMovementWithProgress(db))
+      movement: await getMovementWithProgress(db),
     },
   });
 });

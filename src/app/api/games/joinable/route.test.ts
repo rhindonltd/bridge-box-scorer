@@ -9,7 +9,6 @@ vi.mock("@/db/game-index/queries", () => ({
 
 import { findJoinableGames } from "@/db/game-index/queries";
 import { GameType } from "@/db/games/types/game-type";
-import { GameStatus } from "@/db/games/types/game-status";
 
 describe("GET /api/games/joinable", () => {
   beforeEach(() => {
@@ -19,34 +18,30 @@ describe("GET /api/games/joinable", () => {
   it("returns joinable games", async () => {
     const mockGames = [
       {
-        id: 1,
+        gameId: "xx",
         eventName: "Game One",
         director: "xxx",
         gameType: "PAIRS" as GameType,
         scoringType: "MP" as const,
-        gameId: "xx",
         sessionName: "",
         sectionName: "",
         eventDate: new Date().toISOString(),
         tables: 5,
         leadCardRequired: true,
-        status: "JOINABLE" as GameStatus,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
       {
-        id: 1,
+        gameId: "xx",
         eventName: "Game Two",
         director: "yyy",
         gameType: "PAIRS" as GameType,
         scoringType: "MP" as const,
-        gameId: "xx",
         sessionName: "",
         sectionName: "",
         eventDate: new Date().toISOString(),
         tables: 6,
         leadCardRequired: true,
-        status: "JOINABLE" as GameStatus,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

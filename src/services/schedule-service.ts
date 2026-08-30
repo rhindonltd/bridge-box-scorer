@@ -9,7 +9,6 @@ import { players } from "@/db/games/tables/players";
 import { PairSeat } from "@/model/participants";
 
 export async function getSchedule(db: Db, seat: string) {
-
   // Look up assignment ID for this seat
   const assignment = await db
     .select()

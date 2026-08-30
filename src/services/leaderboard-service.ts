@@ -1,6 +1,6 @@
 "use server";
 
-import { Db, getDb } from "@/db/games";
+import { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import {
@@ -12,18 +12,14 @@ import { PairTraveller } from "@/model/traveller";
 import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
 import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";
 import { BoardOutcome, ScoringMode } from "@/model/score";
-import { BridgeGame } from "@/db/game-index/schema";
+import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 
-export async function computeLeaderboard(db: Db) {
+export async function computeLeaderboard(db: Db, gameId: string) {
   const game = await findGameById(gameId);
 
   const scoringMode: ScoringMode =
-    game.scoringType === "IMP" || game.scoringType === "XIMP" ? "XIMP" : "MP";
+    game!.scoringType === "IMP" || game!.scoringType === "XIMP" ? "XIMP" : "MP";
 
-  return computePairsLeaderboard(game.gameId, scoringMode);
-}
-
-async function computePairsLeaderboard(db: Db, scoringMode: ScoringMode) {
   const allBoardRows = await db.select().from(boards);
 
   const boardMap = new Map<number, (typeof allBoardRows)[number][]>();
@@ -67,12 +63,13 @@ async function computePairsLeaderboard(db: Db, scoringMode: ScoringMode) {
           travellers as ScoredTravellerOfType<"PAIR_XIMP">[],
         );
 
-  const pairs = await findPairs(gameId);
-  const participants = pairs.map((p) => ({
-    ...p,
-    type: "PAIR" as const,
-    id: p.initialSeat,
-  }));
-
-  return { type: overallScore.type, overallScore, participants };
+  return {
+    type: overallScore.type,
+    overallScore,
+    participants: (await findPairs(db)).map((p) => ({
+      ...p,
+      type: "PAIR" as const,
+      id: p.initialSeat,
+    })),
+  };
 }
