@@ -8,7 +8,6 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("API Routes", () => {
-
   test.describe("Games API", () => {
     test("GET /api/games/joinable returns array", async ({ request }) => {
       const response = await request.get("/api/games/joinable");
@@ -25,12 +24,12 @@ test.describe("API Routes", () => {
     }) => {
       const response = await request.get("/api/games/does-not-exist");
 
-        expect(response.headers()["content-type"]).toContain("application/json");
-        expect(response.status()).toBe(404);
+      expect(response.headers()["content-type"]).toContain("application/json");
+      expect(response.status()).toBe(404);
 
-        const body = await response.json();
-        expect(body.success).toBe(false);
-        expect(body.error).toContain("Game not found");
+      const body = await response.json();
+      expect(body.success).toBe(false);
+      expect(body.error).toContain("Game not found");
     });
 
     test("GET /api/games/joinable returns correct shape when games exist", async ({

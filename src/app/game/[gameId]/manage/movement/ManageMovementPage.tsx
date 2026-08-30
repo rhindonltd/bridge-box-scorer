@@ -1,6 +1,6 @@
 "use client";
 
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { useEffect } from "react";
@@ -20,10 +20,10 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
     tables: MovementByTable[];
   }
 
-  const { game } = useGame();
+  const { game } = useRequiredGame();
 
   const { data, isLoading, mutate } = useSWR<MovementResponse>(
-    `/api/games/${game!.gameId}/movement`,
+    `/api/games/${game.gameId}/movement`,
     fetcher,
   );
 
@@ -37,8 +37,6 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
       socket.off(SocketEvents.BOARD_RESULT_UPDATED, onBoardResultUpdated);
     };
   }, [mutate]);
-
-  if (!game) return null;
 
   if (isLoading || !data) {
     return (
@@ -65,10 +63,10 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
   }
 
   return (
-      <PageLayout
-        headerTitle="Movement Details"
-        backHref={backHref}
-        children={<MovementDetailView tables={data.tables} />}
-      />
+    <PageLayout
+      headerTitle="Movement Details"
+      backHref={backHref}
+      children={<MovementDetailView tables={data.tables} />}
+    />
   );
 }

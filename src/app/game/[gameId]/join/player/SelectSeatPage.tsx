@@ -1,6 +1,6 @@
 "use client";
 
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { Pair, PairSeat, Seat } from "@/model/participants";
 import { useState } from "react";
 import EnterPlayerNames from "@/app/game/[gameId]/join/player/EnterPlayerNames";
@@ -19,35 +19,31 @@ interface Props {
 }
 
 export function SelectSeatPage({ onSeatSelected }: Props) {
-  const { game } = useGame();
+  const { game } = useRequiredGame();
 
-  const gameId = game?.gameId;
+  const gameId = game.gameId;
 
   const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
 
-  const key = gameId ? swrKeys.pairs(gameId) : null;
+  const key = swrKeys.pairs(gameId);
 
   const { data } = useSWR<Pair[], Error>(key, fetcher);
 
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.pairs(gameId!),
+      key: swrKeys.pairs(gameId),
       data: p.participants,
     }),
     [gameId],
   );
-
-  if (!game || !gameId) {
-    return null;
-  }
 
   const handleSeatSelected = (seat: PairSeat) => {
     setSelectedSeat(seat);
   };
 
   async function handlePairSubmitted(player1: NewPlayer, player2: NewPlayer) {
-    await createParticipant(gameId!, {
+    await createParticipant(gameId, {
       type: "PAIR",
       initialSeat: selectedSeat!,
       player1,

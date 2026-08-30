@@ -1,7 +1,6 @@
 "use client";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { useGame } from "@/context/GameContext";
 
 interface SelectBoardPageProps {
   boards: number[];
@@ -14,10 +13,6 @@ export function SelectBoardPage({
   isLoading,
   onBoardSelected,
 }: SelectBoardPageProps) {
-  const { game } = useGame();
-
-  if (!game) return null;
-
   return (
     <GamePageLayout
       headerTitle="Select Board"

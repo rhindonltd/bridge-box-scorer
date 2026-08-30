@@ -3,7 +3,7 @@
 import { ShowTablesPage } from "@/app/game/[gameId]/create/ShowTablesPage";
 import { ShowMovementsPage } from "@/app/game/[gameId]/create/ShowMovementsPage";
 import { createFlow, useFlow } from "@/hooks/flow";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 
 const setupGameFlow = createFlow(
   {
@@ -14,8 +14,13 @@ const setupGameFlow = createFlow(
 );
 
 export function SetupGamePage() {
-  const { game } = useGame();
-  const { step, goTo } = useFlow(setupGameFlow, {}, `/create/${game?.gameId}`);
+  const { game } = useRequiredGame();
+
+  const { step, goTo } = useFlow(
+    setupGameFlow,
+    {},
+    `/game/${game.gameId}/create`,
+  );
 
   if (step === "tables") {
     return <ShowTablesPage onStartGame={() => goTo("movements")} />;

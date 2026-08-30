@@ -1,27 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { SelectSeatPage } from "@/app/game/[gameId]/join/player/SelectSeatPage";
 
 export default function JoinGameAsPlayerRoute() {
-  const { game, isLoading } = useGame();
+  const { game } = useRequiredGame();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !game) {
-      router.replace("/join/select-game");
-    }
-  }, [game, isLoading, router]);
-
-  if (!game) {
-    return null;
-  }
 
   return (
     <SelectSeatPage
-      onSeatSelected={(seat) => router.replace(`/play/${game.gameId}/${seat}`)}
+      onSeatSelected={(seat) => router.replace(`/game/${game.gameId}/${seat}/play`)}
     />
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { clearDirectorToken, getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
@@ -14,28 +14,26 @@ export function DeleteGamePage({
   onGameDeleted,
   onCancel,
 }: DeleteGamePageProps) {
-  const { game } = useGame();
+  const { game } = useRequiredGame();
 
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  if (!game) return null;
 
   async function handleDelete() {
     setDeleting(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/games/${game!.gameId}/delete`, {
+      const res = await fetch(`/api/games/${game.gameId}/delete`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          directorToken: getDirectorToken(game!.gameId),
+          directorToken: getDirectorToken(game.gameId),
         }),
       });
 
       if (res.ok) {
-        clearDirectorToken(game!.gameId);
+        clearDirectorToken(game.gameId);
         onGameDeleted();
       } else {
         const data = await res.json();

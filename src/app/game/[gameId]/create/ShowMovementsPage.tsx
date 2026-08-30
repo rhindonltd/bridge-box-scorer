@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
@@ -25,7 +25,7 @@ type SelectedMovement = {
 };
 
 export function ShowMovementsPage({ onShowTablesPage }: Props) {
-  const { game } = useGame();
+  const { game } = useRequiredGame();
 
   const [selected, setSelected] = useState<SelectedMovement | null>(null);
   const [mitchellBoardsPerRound, setMitchellBoardsPerRound] = useState(3);
@@ -33,8 +33,8 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     null,
   );
 
-  const tables = game?.tables ?? 0;
-  const gameType = game?.gameType;
+  const tables = game.tables;
+  const gameType = game.gameType;
 
   const shouldLoadPairs = gameType === "PAIRS";
   const shouldLoadTeams = gameType === "PAIRS";

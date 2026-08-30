@@ -1,18 +1,16 @@
 "use client";
 
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { useTimerSync } from "@/hooks/timer-sync";
-import {useEffect, useMemo, useState } from "react";
-import {TimerControlsView, TimerStatus } from "./TimerControlsView";
+import { useEffect, useMemo, useState } from "react";
+import { TimerControlsView, TimerStatus } from "./TimerControlsView";
 import { useTimerDerived } from "@/hooks/timer-derived";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { SocketEvents } from "@/socket/socket-events";
 
-
-
 export default function ManageTimerPage() {
-  const { game } = useGame();
+  const { game } = useRequiredGame();
   const { timerState } = useTimerSync();
 
   // eslint-disable-next-line react-compiler/react-compiler
@@ -56,8 +54,6 @@ export default function ManageTimerPage() {
     [totalSessionSeconds],
   );
 
-  if (!game) return null;
-
   function formatDuration(totalSeconds: number) {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -72,17 +68,17 @@ export default function ManageTimerPage() {
 
   function emitSimple(event: string) {
     getSocket().emit(event, {
-      gameType: game!.gameType,
-      gameId: game!.gameId,
-      directorToken: getDirectorToken(game!.gameId),
+      gameType: game.gameType,
+      gameId: game.gameId,
+      directorToken: getDirectorToken(game.gameId),
     });
   }
 
   function emitConfig(event: string) {
     getSocket().emit(event, {
-      gameType: game!.gameType,
-      gameId: game!.gameId,
-      directorToken: getDirectorToken(game!.gameId),
+      gameType: game.gameType,
+      gameId: game.gameId,
+      directorToken: getDirectorToken(game.gameId),
       boardsPerRound,
       totalRounds,
       playDuration: effectivePlayDuration,

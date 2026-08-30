@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useGame } from "@/context/GameContext";
 import { useTimerSync } from "@/hooks/timer-sync";
 import { useTimerDerived } from "@/hooks/timer-derived";
 import { DisplayTimerPage } from "@/app/game/[gameId]/display/timer/DisplayTimerPage";
@@ -9,7 +8,6 @@ import { DisplayTimerPage } from "@/app/game/[gameId]/display/timer/DisplayTimer
 /* ---------------- COMPONENT ---------------- */
 
 export default function TimerPage() {
-  const { game } = useGame();
   const { timerState, now } = useTimerSync();
 
   const { remaining, phase, boardLabel, title, isRunning, projectedEndDate } =
@@ -25,10 +23,6 @@ export default function TimerPage() {
   }, []);
 
   /* ---------------- LOADING ---------------- */
-
-  if (!game) {
-    return null;
-  }
 
   if (!timerState) {
     return (

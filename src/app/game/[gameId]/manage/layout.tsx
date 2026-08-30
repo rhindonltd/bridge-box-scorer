@@ -9,7 +9,5 @@ export default async function GameLayout({
 }) {
   const { gameId } = await params;
 
-  return (
-      <DirectorGuard gameId={gameId}>{children}</DirectorGuard>
-  );
+  return <DirectorGuard gameId={gameId}>{children}</DirectorGuard>;
 }

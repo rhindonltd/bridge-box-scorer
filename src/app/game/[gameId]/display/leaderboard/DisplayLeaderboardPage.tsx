@@ -1,28 +1,18 @@
 "use client";
 
-import { useGame } from "@/context/GameContext";
+import { useRequiredGame } from "@/context/GameContext";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { Leaderboard } from "@/components/leaderboard/Leaderboard";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 export function DisplayLeaderboardPage() {
-  const { game, isLoading } = useGame();
-  const router = useRouter();
+  const { game } = useRequiredGame();
   const [leaderboardData, setLeaderboardData] =
     useState<OverallScoreAndParticipant | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && !game) {
-      router.replace("/display");
-    }
-  }, [game, isLoading, router]);
-
-  useEffect(() => {
-    if (!game) return;
-
     fetch(`/api/games/${game.gameId}/leaderboard`)
       .then((r) => r.json())
       .then((data) => {
@@ -33,10 +23,6 @@ export function DisplayLeaderboardPage() {
       })
       .catch(() => setLoading(false));
   }, [game]);
-
-  if (!game) {
-    return null;
-  }
 
   if (loading) {
     return (
