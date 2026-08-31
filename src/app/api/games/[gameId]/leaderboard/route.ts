@@ -1,12 +1,7 @@
-import { NextResponse } from "next/server";
 import { computeLeaderboard } from "@/services/leaderboard-service";
 import { withGameRoute } from "@/lib/api/gameRoute";
+import { success } from "@/lib/api/success";
 
 export const GET = withGameRoute(async ({ db, gameId }) => {
-  return NextResponse.json({
-    success: true,
-    data: {
-      leaderboard: await computeLeaderboard(db, gameId),
-    },
-  });
+  return success({ leaderboard: await computeLeaderboard(db, gameId) });
 });

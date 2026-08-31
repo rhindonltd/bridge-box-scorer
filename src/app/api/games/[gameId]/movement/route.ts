@@ -1,12 +1,7 @@
-import { NextResponse } from "next/server";
 import { getMovementWithProgress } from "@/services/movement-service";
 import { withGameRoute } from "@/lib/api/gameRoute";
+import { success } from "@/lib/api/success";
 
 export const GET = withGameRoute(async ({ db }) => {
-  return NextResponse.json({
-    success: true,
-    result: {
-      movement: await getMovementWithProgress(db),
-    },
-  });
+  return success({ movement: await getMovementWithProgress(db) });
 });

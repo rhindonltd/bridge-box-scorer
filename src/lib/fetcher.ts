@@ -7,5 +7,7 @@ export async function fetcher<T = unknown>(url: string): Promise<T> {
     throw error;
   }
 
-  return res.json() as Promise<T>;
+  const data = await res.json();
+
+  return data.result;
 }

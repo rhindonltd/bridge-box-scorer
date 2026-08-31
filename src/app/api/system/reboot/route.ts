@@ -1,10 +1,9 @@
+import { withBasicRoute } from "@/lib/api/basicRoute";
 import { exec } from "child_process";
+import { success } from "@/lib/api/success"
 
-export async function POST() {
+export const POST = withBasicRoute(async () => {
   exec("sudo /usr/local/bridgebox/bin/reboot.sh");
 
-  return Response.json({
-    success: true,
-    message: "Rebooting device...",
-  });
-}
+  return success({ message: "Rebooting device..." });
+});

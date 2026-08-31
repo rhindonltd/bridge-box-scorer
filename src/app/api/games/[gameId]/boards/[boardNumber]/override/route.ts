@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { boards } from "@/db/games/tables/boards";
 import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { BoardOutcome } from "@/model/score";
+import { success } from "@/lib/api/success";
 
 export const POST = withDirectorRoute(async ({ db, body, boardNumber }) => {
   const { roundNumber, tableNumber, result } = body as {
@@ -25,5 +25,5 @@ export const POST = withDirectorRoute(async ({ db, body, boardNumber }) => {
       ),
     );
 
-  return NextResponse.json({ success: true });
+  return success({});
 });

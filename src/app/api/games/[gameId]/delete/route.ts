@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import { games } from "@/db/game-index/schema";
 import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { success } from "@/lib/api/success";
 
 export const GET = withDirectorRoute(async ({ gameId, db }) => {
   await db.delete(games).where(eq(games.gameId, gameId));
@@ -17,5 +17,5 @@ export const GET = withDirectorRoute(async ({ gameId, db }) => {
     fs.unlinkSync(dbFile);
   }
 
-  return NextResponse.json({ success: true });
+  return success({});
 });

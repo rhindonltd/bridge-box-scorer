@@ -37,7 +37,6 @@ export function CreateGamePage() {
       gameType,
       sessionName: "",
       eventDate: new Date().toISOString(),
-      status: "JOINABLE",
       sectionName: "",
       tables: tables,
       leadCardRequired,

@@ -13,10 +13,5 @@ export async function findJoinableGames(): Promise<BridgeGame[]> {
   return db
     .select()
     .from(games)
-    .where(
-      and(
-        gte(games.eventDate, today.toISOString()),
-        eq(games.status, "JOINABLE"),
-      ),
-    );
+    .where(and(gte(games.eventDate, today.toISOString())));
 }

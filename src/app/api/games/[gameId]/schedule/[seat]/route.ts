@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSchedule } from "@/services/schedule-service";
 import { withGameRoute } from "@/lib/api/gameRoute";
+import { success } from "@/lib/api/success";
 
 export const GET = withGameRoute(async ({ db, seat }) => {
   const result = await getSchedule(db, seat!);
@@ -11,5 +12,5 @@ export const GET = withGameRoute(async ({ db, seat }) => {
     );
   }
 
-  return NextResponse.json(result);
+  return success(result);
 });

@@ -10,7 +10,16 @@ interface Props {
 }
 
 export default function ManageSelectGamePage({ onGameSelected }: Props) {
-  const { data, isLoading } = useSWR<BridgeGame[]>("/api/games/all", fetcher);
+  const gamesFetcher = async (url: string): Promise<BridgeGame[]> => {
+    const response: { games: BridgeGame[] } = await fetcher(url);
+
+    return response.games;
+  };
+
+  const { data, isLoading } = useSWR<BridgeGame[]>(
+    "/api/games/all",
+    gamesFetcher,
+  );
 
   return (
     <SelectGame

@@ -29,14 +29,9 @@ export function GameProvider({
   const key = gameId ? swrKeys.game(gameId) : null;
 
   const gameFetcher = async (url: string): Promise<BridgeGame> => {
-    const response: {
-      success: boolean;
-      result: {
-        game: BridgeGame;
-      };
-    } = await fetcher(url);
+    const response: { game: BridgeGame } = await fetcher(url);
 
-    return response.result.game;
+    return response.game;
   };
 
   const {
