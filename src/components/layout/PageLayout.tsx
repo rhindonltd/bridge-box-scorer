@@ -1,7 +1,7 @@
 import React from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { HeaderBar } from "./HeaderBar";
+import { CenteredContent } from "./CenteredContent";
+import { ScrollableContent } from "./ScrollableContent";
 
 interface PageLayoutProps {
   /** Primary header text (e.g., event name, "Manage Games", "Settings") */
@@ -39,12 +39,11 @@ export function PageLayout({
         headerRight={headerRight}
       />
 
-      {/* Content Area */}
-      <div
-        className={`flex-1 min-h-0 ${centerContent ? "flex flex-col items-center justify-center" : "overflow-y-auto"}`}
-      >
-        {children}
-      </div>
+      {centerContent ? (
+        <CenteredContent children={children} />
+      ) : (
+        <ScrollableContent children={children} />
+      )}
 
       {/* Action Bar */}
       {actions && <div className="shrink-0 p-2">{actions}</div>}
