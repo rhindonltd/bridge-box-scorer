@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getPlayerSchedule } from "./schedule-service";
+import { getSchedule } from "./schedule-service";
 
 vi.mock("@/db/games/pairs", () => ({
   getDb: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock("drizzle-orm", () => ({
   or: vi.fn((...args: any[]) => args),
 }));
 
-import { getDb as getPairsDb } from "@/db/games";
+import { Db, getDb as getPairsDb } from "@/db/games";
 
 describe("schedule-service", () => {
   beforeEach(() => {
@@ -48,10 +48,10 @@ describe("schedule-service", () => {
             }),
           }),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getPlayerSchedule("game-1", "99NS");
+      const result = await getSchedule(mockDb, "99NS");
 
       expect(result).toBeNull();
     });
@@ -141,11 +141,11 @@ describe("schedule-service", () => {
             };
           }
         }),
-      };
+      } as unknown as Db;
 
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getPlayerSchedule("game-1", "1NS");
+      const result = await getSchedule(mockDb, "1NS");
 
       expect(result).not.toBeNull();
       expect(result!.side).toBe("NS");
@@ -205,11 +205,11 @@ describe("schedule-service", () => {
             return { from: vi.fn().mockResolvedValue([{ roundNumber: 1 }]) };
           }
         }),
-      };
+      } as unknown as Db;
 
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      const result = await getPlayerSchedule("game-1", "1EW");
+      const result = await getSchedule(mockDb, "1EW");
 
       expect(result).not.toBeNull();
       expect(result!.side).toBe("EW");

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import SelectTable from "@/app/game/[gameId]/join/player/SelectTable";
+import SelectTable from "@/app/game/[gameId]/join/SelectTable";
 
 const meta: Meta<typeof SelectTable> = {
   title: "App/Join/Game/Player/SelectTable",

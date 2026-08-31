@@ -10,5 +10,10 @@ export default function DisplayRoute() {
     router.push(`/game/${gameId}/display/menu`);
   }
 
-  return <SelectGamePage onGameSelected={onGameSelected} />;
+  return (
+    <SelectGamePage
+      headerTitle="Display Game"
+      onGameSelected={onGameSelected}
+    />
+  );
 }

@@ -15,7 +15,7 @@ export default function MainMenu() {
     router.push("/join");
   }
 
-  function managePastGames() {
+  function manageGames() {
     router.push("/manage");
   }
 
@@ -31,7 +31,7 @@ export default function MainMenu() {
     <MainMenuPage
       onCreateNewGame={createNewGame}
       onJoinGame={joinGame}
-      onManagePastGames={managePastGames}
+      onManageGames={manageGames}
       onRoomDisplay={roomDisplay}
       onOpenSettings={openSettings}
     />

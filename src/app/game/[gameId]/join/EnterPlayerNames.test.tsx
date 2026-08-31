@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import EnterPlayerNames from "@/app/game/[gameId]/join/player/EnterPlayerNames";
+import EnterPlayerNames from "@/app/game/[gameId]/join/EnterPlayerNames";
 
 // Mock PlayerSearch — the component renders a label heading and a search input
 vi.mock("@/components/pages/join/PlayerSearch", () => ({

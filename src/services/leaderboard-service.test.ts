@@ -26,7 +26,7 @@ vi.mock("@/scoring/overall/pair/x-imp", () => ({
   calculateOverallXIMPResults: vi.fn(),
 }));
 
-import { getDb as getPairsDb } from "@/db/games";
+import { Db, getDb as getPairsDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { score } from "@/scoring/traveller/score-traveller";
 import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
@@ -58,8 +58,8 @@ describe("leaderboard-service", () => {
             },
           ]),
         }),
-      };
-      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+      } as unknown as Db;
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb);
 
       vi.mocked(score).mockReturnValue({
         type: "PAIR_MP",
@@ -107,7 +107,7 @@ describe("leaderboard-service", () => {
         scoringType: "MP",
       } as BridgeGame;
 
-      const result = await computeLeaderboard(game);
+      const result = await computeLeaderboard(mockDb, "game-1");
 
       expect(result.type).toBe("PAIR_MP");
       expect(result.overallScore).toBeDefined();
@@ -137,7 +137,7 @@ describe("leaderboard-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       vi.mocked(calculateOverallMPResults).mockReturnValue({
@@ -149,13 +149,7 @@ describe("leaderboard-service", () => {
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
-      const game = {
-        gameId: "game-1",
-        gameType: "PAIRS",
-        scoringType: "MP",
-      } as BridgeGame;
-
-      const result = await computeLeaderboard(game);
+      const result = await computeLeaderboard(mockDb, "game-1");
 
       expect(score).not.toHaveBeenCalled();
       expect(result.overallScore.lines).toHaveLength(0);
@@ -181,7 +175,7 @@ describe("leaderboard-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       vi.mocked(score).mockReturnValue({
@@ -199,13 +193,7 @@ describe("leaderboard-service", () => {
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
-      const game = {
-        gameId: "game-1",
-        gameType: "PAIRS",
-        scoringType: "MP",
-      } as BridgeGame;
-
-      await computeLeaderboard(game);
+      await computeLeaderboard(mockDb, "game-1");
 
       // score should be called with the override result for pair 1
       expect(score).toHaveBeenCalledWith(
@@ -238,7 +226,7 @@ describe("leaderboard-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       vi.mocked(score).mockReturnValue({
@@ -256,13 +244,7 @@ describe("leaderboard-service", () => {
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
-      const game = {
-        gameId: "game-1",
-        gameType: "PAIRS",
-        scoringType: "IMP",
-      } as BridgeGame;
-
-      await computeLeaderboard(game);
+      await computeLeaderboard(mockDb, "game-1");
 
       expect(score).toHaveBeenCalledWith(expect.anything(), "XIMP");
       expect(calculatePairXIMPResults).toHaveBeenCalled();
@@ -288,7 +270,7 @@ describe("leaderboard-service", () => {
             },
           ]),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       vi.mocked(score).mockReturnValue({
@@ -312,13 +294,7 @@ describe("leaderboard-service", () => {
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
-      const game = {
-        gameId: "game-1",
-        gameType: "PAIRS",
-        scoringType: "XIMP",
-      } as BridgeGame;
-
-      const result = await computeLeaderboard(game);
+      const result = await computeLeaderboard(mockDb, "game-1");
 
       expect(result.type).toBe("PAIR_XIMP");
       expect(score).toHaveBeenCalledWith(expect.anything(), "XIMP");

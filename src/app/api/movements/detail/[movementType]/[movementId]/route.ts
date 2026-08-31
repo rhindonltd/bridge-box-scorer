@@ -17,12 +17,13 @@ import {
  */
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ type: string; id: string }> },
+  { params }: { params: Promise<{ movementType: string; movementId: string }> },
 ) {
-  const { type, id } = await params;
-  const movementId = Number(id);
+  const { movementType, movementId } = await params;
 
-  if (isNaN(movementId) || movementId < 1) {
+  const movementIdNo = Number(movementId);
+
+  if (isNaN(movementIdNo) || movementIdNo < 1) {
     return NextResponse.json(
       { success: false, error: "Invalid movement ID" },
       { status: 400 },
@@ -32,21 +33,24 @@ export async function GET(
   try {
     let tables;
 
-    switch (type) {
+    switch (movementType) {
       case "PAIRS":
-        tables = await getPairMovement(movementId);
+        tables = await getPairMovement(movementIdNo);
         break;
       case "TEAMS":
-        tables = await getTeamMovement(movementId);
+        tables = await getTeamMovement(movementIdNo);
         break;
       default:
         return NextResponse.json(
-          { success: false, error: `Unknown movement type: ${type}` },
+          { success: false, error: `Unknown movement type: ${movementType}` },
           { status: 400 },
         );
     }
 
-    return NextResponse.json({ type, tables });
+    return NextResponse.json({
+      success: true,
+      result: { type: movementType, tables },
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

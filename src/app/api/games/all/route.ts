@@ -1,14 +1,7 @@
-import { NextResponse } from "next/server";
 import { findAllGames } from "@/db/game-index/queries/find-all-games";
+import { withBasicRoute } from "@/lib/api/basicRoute";
+import { success } from "@/lib/api/success";
 
-export async function GET() {
-  try {
-    return NextResponse.json(await findAllGames());
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+export const GET = withBasicRoute(async () => {
+  return success({ games: await findAllGames() });
+});

@@ -4,7 +4,6 @@ import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
-import { GameType } from "@/db/games/types/game-type";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
 
 /**
@@ -18,7 +17,7 @@ export function registerCreateGameHandler(socket: Socket, io: Server) {
     async (newBridgeGame: NewBridgeGame, cb) => {
       try {
         const bridgeGame: BridgeGame = await createBridgeGame(newBridgeGame);
-        await createGameDb(bridgeGame.gameId, bridgeGame.gameType as GameType);
+        await createGameDb(bridgeGame.gameId);
 
         // Automatically make the creator a director
         const directorToken = crypto.randomUUID();

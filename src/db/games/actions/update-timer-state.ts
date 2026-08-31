@@ -7,6 +7,10 @@ import { metadata } from "@/db/games/tables/metadata";
 export async function updateTimerState(gameId: string, timerState: TimerState) {
   const db = await getDb(gameId);
 
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
   await db
     .insert(metadata)
     .values({

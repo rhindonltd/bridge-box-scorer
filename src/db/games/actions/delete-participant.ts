@@ -12,6 +12,10 @@ import { PairSeat } from "@/model/participants";
 export async function deleteParticipant(gameId: string, seat: PairSeat) {
   const db = await getDb(gameId);
 
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
   const participant = await db
     .select()
     .from(participants)

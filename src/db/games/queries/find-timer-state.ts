@@ -8,6 +8,10 @@ export async function findTimerState(
 ): Promise<TimerState | null> {
   const db = await getDb(gameId);
 
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
   const timers = await db
     .select()
     .from(metadata)

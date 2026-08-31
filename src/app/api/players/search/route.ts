@@ -1,12 +1,14 @@
 import { NewPlayer } from "@/db/games/tables/players";
 import { findPlayer } from "@/db/players/queries/find-player";
-import { NextRequest, NextResponse } from "next/server";
+import { withBasicRoute } from "@/lib/api/basicRoute";
+import { NextResponse } from "next/server";
+import { success } from "@/lib/api/success";
 
 function isNumeric(query: string): boolean {
   return /^\d+$/.test(query.trim());
 }
 
-export async function GET(req: NextRequest) {
+export const GET = withBasicRoute(async ({ req }) => {
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
 
   if (q.length == 0) {
@@ -26,5 +28,5 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return NextResponse.json(results);
-}
+  return success(results);
+});

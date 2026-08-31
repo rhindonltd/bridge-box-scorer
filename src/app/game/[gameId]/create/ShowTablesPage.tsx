@@ -27,12 +27,18 @@ export function ShowTablesPage({ onStartGame }: Props) {
 
   const key = swrKeys.pairs(gameId);
 
-  const { data } = useSWR<Pair[], Error>(key, fetcher);
+  const pairsFetcher = async (url: string): Promise<Pair[]> => {
+    const response: { pairs: Pair[] } = await fetcher(url);
+
+    return response.pairs;
+  };
+
+  const { data: pairs } = useSWR<Pair[], Error>(key, pairsFetcher);
 
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
     (p) => ({
-      key: swrKeys.pairs(gameId!),
+      key: swrKeys.pairs(gameId),
       data: p.participants,
     }),
     [gameId],
@@ -43,10 +49,10 @@ export function ShowTablesPage({ onStartGame }: Props) {
   }
 
   function createTable(tableNumber: number): DirectorTable {
-    const nsParticipant = data?.find(
+    const nsParticipant = pairs?.find(
       (it) => it.initialSeat === `${tableNumber}NS`,
     );
-    const ewParticipant = data?.find(
+    const ewParticipant = pairs?.find(
       (it) => it.initialSeat === `${tableNumber}EW`,
     );
 

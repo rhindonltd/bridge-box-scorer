@@ -10,7 +10,9 @@ export default function CorrectResultRoute() {
 
   return (
     <CorrectResultPage
-      onResultCorrected={() => router.replace(`/game/${game.gameId}/manage/menu`)}
+      onResultCorrected={() =>
+        router.replace(`/game/${game.gameId}/manage/menu`)
+      }
     />
   );
 }

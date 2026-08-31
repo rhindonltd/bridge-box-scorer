@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { ManageGameMenuPage } from "@/app/game/[gameId]/manage/menu/ManageGameMenuPage";
+import { ManageGameMenuPage } from "@/app/game/[gameId]/manage/ManageGameMenuPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 
 const mockGame = {

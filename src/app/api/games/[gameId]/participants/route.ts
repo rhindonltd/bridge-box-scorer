@@ -1,19 +1,7 @@
 import { findPairs } from "@/db/games/queries/find-pairs";
-import { NextResponse } from "next/server";
+import { withGameRoute } from "@/lib/api/gameRoute";
+import { success } from "@/lib/api/success";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ gameId: string }> },
-) {
-  const gameId = (await params).gameId;
-
-  try {
-    return NextResponse.json(await findPairs(gameId));
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+export const GET = withGameRoute(async ({ db }) => {
+  return success({ pairs: await findPairs(db) });
+});

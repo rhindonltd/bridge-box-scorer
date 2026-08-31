@@ -17,7 +17,7 @@ vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: any[]) => args),
 }));
 
-import { getDb as getPairsDb } from "@/db/games";
+import { Db, getDb as getPairsDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 
 describe("board-service", () => {
@@ -54,7 +54,7 @@ describe("board-service", () => {
             ]),
           }),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       vi.mocked(findPairs).mockResolvedValue([
@@ -108,7 +108,7 @@ describe("board-service", () => {
         },
       ] as any);
 
-      const result = await getBoardInstances("game-1", "PAIRS", 7);
+      const result = await getBoardInstances(mockDb, 7);
 
       expect(result).toHaveLength(2);
       expect(result[0].currentResult).toBe("3NTN=");
@@ -143,12 +143,12 @@ describe("board-service", () => {
             ]),
           }),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
-      const result = await getBoardInstances("game-1", "PAIRS", 5);
+      const result = await getBoardInstances(mockDb, 5);
 
       expect(result[0].currentResult).toBe("3NTN+1");
     });
@@ -171,12 +171,12 @@ describe("board-service", () => {
             ]),
           }),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
-      const result = await getBoardInstances("game-1", "PAIRS", 1);
+      const result = await getBoardInstances(mockDb, 1);
 
       expect(result[0].participants.type).toBe("PAIRS");
       if (result[0].participants.type === "PAIRS") {
@@ -203,7 +203,7 @@ describe("board-service", () => {
             ]),
           }),
         }),
-      };
+      } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       vi.mocked(findPairs).mockResolvedValue([
@@ -241,7 +241,7 @@ describe("board-service", () => {
         },
       ] as any);
 
-      const result = await getBoardInstances("game-1", "PAIRS", 1);
+      const result = await getBoardInstances(mockDb, 1);
 
       expect(result[0].currentResult).toBeNull();
       expect(result[0].status).toBeNull();

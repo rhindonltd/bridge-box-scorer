@@ -3,7 +3,7 @@ import { Settings } from "lucide-react";
 interface Props {
   onCreateNewGame: () => void;
   onJoinGame: () => void;
-  onManagePastGames: () => void;
+  onManageGames: () => void;
   onRoomDisplay: () => void;
   onOpenSettings: () => void;
 }
@@ -11,7 +11,7 @@ interface Props {
 export function MainMenuPage({
   onCreateNewGame,
   onJoinGame,
-  onManagePastGames,
+  onManageGames,
   onRoomDisplay,
   onOpenSettings,
 }: Props) {
@@ -52,7 +52,7 @@ export function MainMenuPage({
         </button>
 
         <button
-          onClick={onManagePastGames}
+          onClick={onManageGames}
           className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Manage Games

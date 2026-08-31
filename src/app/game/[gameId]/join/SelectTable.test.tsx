@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import SelectTable from "@/app/game/[gameId]/join/player/SelectTable";
+import SelectTable from "@/app/game/[gameId]/join/SelectTable";
 import { Pair } from "@/model/participants";
 
 const makePlayer = (id: number) => ({

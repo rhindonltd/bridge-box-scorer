@@ -8,9 +8,13 @@ export async function createBoardSubmission(
   gameId: string,
   boardSubmission: NewBoardSubmission,
 ) {
-  await (
-    await getDb(gameId)
-  )
+  const db = await getDb(gameId);
+
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
+  await db
     .insert(boardSubmissions)
     .values(boardSubmission)
     .onConflictDoUpdate({

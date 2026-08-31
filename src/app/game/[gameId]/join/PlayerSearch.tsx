@@ -2,7 +2,7 @@
 
 import { NewPlayer } from "@/db/games/tables/players";
 import { useEffect, useMemo, useState } from "react";
-import { PlayerSearchView } from "@/app/game/[gameId]/join/player/PlayerSearchView";
+import { PlayerSearchView } from "@/app/game/[gameId]/join/PlayerSearchView";
 
 interface Props {
   label: string;

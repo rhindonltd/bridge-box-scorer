@@ -1,17 +1,7 @@
-import { NextResponse } from "next/server";
 import { findJoinableGames } from "@/db/game-index/queries";
+import { withBasicRoute } from "@/lib/api/basicRoute";
+import { success } from "@/lib/api/success";
 
-export async function GET() {
-  try {
-    return NextResponse.json({
-      success: true,
-      games: await findJoinableGames(),
-    });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+export const GET = withBasicRoute(async () => {
+  return success({ games: await findJoinableGames() });
+});

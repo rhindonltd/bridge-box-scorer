@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NewPlayer } from "@/db/games/tables/players";
-import PlayerSearch from "@/app/game/[gameId]/join/player/PlayerSearch";
+import PlayerSearch from "@/app/game/[gameId]/join/PlayerSearch";
 import { parseSeat, Seat } from "@/model/participants";
 
 interface Props {

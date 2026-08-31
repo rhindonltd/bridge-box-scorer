@@ -1,18 +1,10 @@
 "use server";
 
-import { getDb as getPairsDb } from "@/db/games";
+import { Db } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { isBoardEntered } from "@/lib/round-status";
 
-export async function getMovementWithProgress(
-  gameId: string,
-  gameType: string,
-) {
-  return getPairsMovementWithProgress(gameId);
-}
-
-async function getPairsMovementWithProgress(gameId: string) {
-  const db = await getPairsDb(gameId);
+export async function getMovementWithProgress(db: Db) {
   const rows = await db.select().from(pairsBoards);
 
   const tableMap = new Map<

@@ -28,7 +28,17 @@ export function GameProvider({
 
   const key = gameId ? swrKeys.game(gameId) : null;
 
-  const { data: game, isLoading, mutate } = useSWR<BridgeGame>(key, fetcher);
+  const gameFetcher = async (url: string): Promise<BridgeGame> => {
+    const response: { game: BridgeGame } = await fetcher(url);
+
+    return response.game;
+  };
+
+  const {
+    data: game,
+    isLoading,
+    mutate,
+  } = useSWR<BridgeGame>(key, gameFetcher);
 
   useEffect(() => {
     if (!gameId) return;
@@ -66,7 +76,7 @@ export function GameProvider({
   );
 }
 
-export function useGame() : ContextType {
+export function useGame(): ContextType {
   const ctx = useContext(GameContext);
 
   if (!ctx) {
@@ -77,8 +87,8 @@ export function useGame() : ContextType {
 }
 
 export function useRequiredGame(): {
-    game: BridgeGame;
-    mutateGame: KeyedMutator<BridgeGame>;
+  game: BridgeGame;
+  mutateGame: KeyedMutator<BridgeGame>;
 } {
   const { game, isLoading, mutateGame } = useGame();
 

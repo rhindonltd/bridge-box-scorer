@@ -1,11 +1,14 @@
 "use server";
 
-import { getDb } from "@/db/games";
+import { createDb, getDb } from "@/db/games";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { GameType } from "@/db/games/types/game-type";
 
-export async function createGameDb(gameId: string, gameType: GameType) {
-  migrate(await getDb(gameId), {
-    migrationsFolder: "./drizzle/games/pairs",
+export async function createGameDb(gameId: string) {
+  if (await getDb(gameId)) {
+    throw new Error("Database already exists");
+  }
+
+  migrate(await createDb(gameId), {
+    migrationsFolder: "./drizzle/games",
   });
 }

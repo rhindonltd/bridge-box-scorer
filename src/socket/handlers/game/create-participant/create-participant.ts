@@ -9,6 +9,7 @@ import { createParticipant as createPair } from "@/db/games/actions/create-parti
 import { findPairs } from "@/db/games/queries/find-pairs";
 
 import { NewParticipant } from "@/model/participants";
+import { getDb } from "@/db/games";
 
 export function registerCreateParticipantHandler(socket: Socket, io: Server) {
   socket.on(
@@ -37,8 +38,14 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
           secretKey: key,
         });
 
+        const db = await getDb(gameId);
+
+        if (!db) {
+          throw new Error("Game db does not exist");
+        }
+
         io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
-          participants: await findPairs(gameId),
+          participants: await findPairs(db),
         });
         cb({
           data: { key },

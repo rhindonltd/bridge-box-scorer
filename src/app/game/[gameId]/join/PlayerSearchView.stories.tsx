@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { PlayerSearchView } from "@/app/game/[gameId]/join/player/PlayerSearchView";
+import { PlayerSearchView } from "@/app/game/[gameId]/join/PlayerSearchView";
 
 const meta: Meta<typeof PlayerSearchView> = {
   title: "App/Join/Game/Player/PlayerSearchView",
