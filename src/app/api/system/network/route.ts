@@ -3,7 +3,7 @@ import { promisify } from "util";
 import fs from "fs";
 import { withBasicRoute } from "@/lib/api/basicRoute";
 import { NextResponse } from "next/server";
-import { success } from "@/lib/api/success"
+import { success } from "@/lib/api/success";
 
 const execAsync = promisify(exec);
 
@@ -22,10 +22,10 @@ export const GET = withBasicRoute(async () => {
   }
 
   return success({
-      wifi: {
-        connected: !!currentSSID,
-        currentSSID,
-        savedSSID: savedConfig?.ssid ?? null,
-      }
+    wifi: {
+      connected: !!currentSSID,
+      currentSSID,
+      savedSSID: savedConfig?.ssid ?? null,
+    },
   });
 });

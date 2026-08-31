@@ -1,7 +1,7 @@
 import fs from "fs";
 import { exec } from "child_process";
 import { withBasicRoute } from "@/lib/api/basicRoute";
-import { success } from "@/lib/api/success"
+import { success } from "@/lib/api/success";
 
 const WIFI_CONFIG = "/home/bridgebox/bridge-box/wifi.json";
 

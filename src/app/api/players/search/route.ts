@@ -2,7 +2,7 @@ import { NewPlayer } from "@/db/games/tables/players";
 import { findPlayer } from "@/db/players/queries/find-player";
 import { withBasicRoute } from "@/lib/api/basicRoute";
 import { NextResponse } from "next/server";
-import { success } from "@/lib/api/success"
+import { success } from "@/lib/api/success";
 
 function isNumeric(query: string): boolean {
   return /^\d+$/.test(query.trim());

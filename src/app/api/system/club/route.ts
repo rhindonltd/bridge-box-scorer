@@ -3,7 +3,7 @@ import { findClub } from "@/db/system/queries/find-club";
 import { upsertClub } from "@/db/system/actions/upsert-club";
 import { z } from "zod";
 import { withBasicRoute } from "@/lib/api/basicRoute";
-import { success } from "@/lib/api/success"
+import { success } from "@/lib/api/success";
 
 export const GET = withBasicRoute(async () => {
   return success({ club: await findClub() });
