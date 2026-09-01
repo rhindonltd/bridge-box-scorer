@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "postinstall": "node scripts/link-ts6.mjs",
-    "dev": "tsx watch server.ts",
-    "prebuild": "npx tsx --env-file=.env src/scripts/migrate.ts",
+    "dev": "tsx watch --require ./scripts/allow-server-only.cjs server.ts",
+    "prebuild": "npx tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/migrate.ts",
     "build": "next build",
-    "start": "NODE_ENV=production tsx server.ts",
+    "start": "NODE_ENV=production tsx --require ./scripts/allow-server-only.cjs server.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
@@ -26,8 +26,9 @@
     "run_game_index_migration": "npx drizzle-kit migrate --config=drizzle.config.game-index.ts",
     "generate_system_migration": "npx drizzle-kit generate --config=drizzle.config.system.ts",
     "run_system_migration": "npx drizzle-kit migrate --config=drizzle.config.system.ts",
-    "sync:ebu-players": "tsx --env-file=.env src/scripts/sync-ebu-players.ts",
-    "seed-movements": "tsx --env-file=.env src/scripts/seed-movements.ts"
+    "sync:ebu-players": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/sync-ebu-players.ts",
+    "seed-movements": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/seed-movements.ts",
+    "seed-admin-key": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/seed-admin-key.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",

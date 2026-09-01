@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { Network } from "@/model/network";
 import { WifiSettingsForm } from "@/app/settings/wifi/WifiSettingsForm";
-
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || "";
+import { getAdminToken } from "@/lib/admin-token";
 
 export default function WifiSettings() {
   const [networks, setNetworks] = useState<Network[]>([]);
@@ -41,7 +40,7 @@ export default function WifiSettings() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-key": ADMIN_KEY,
+          "x-admin-token": getAdminToken() ?? "",
         },
         body: JSON.stringify({ ssid, password }),
       });
@@ -62,17 +61,18 @@ export default function WifiSettings() {
     setLoading(true);
     setMessage("Saving WiFi settings...");
     try {
+      const adminToken = getAdminToken() ?? "";
       await fetch("/api/system/wifi", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-key": ADMIN_KEY,
+          "x-admin-token": adminToken,
         },
         body: JSON.stringify({ ssid, password }),
       });
       await fetch("/api/system/restart", {
         method: "POST",
-        headers: { "x-admin-key": ADMIN_KEY },
+        headers: { "x-admin-token": adminToken },
       });
       window.location.href = "/restarting";
     } catch {

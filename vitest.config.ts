@@ -34,16 +34,8 @@ export default mergeConfig(
       projects: [
         {
           extends: true,
-          resolve: {
-            alias: {
-              // The real `server-only` package throws when resolved in a
-              // client module graph, which includes Vitest's jsdom env. Server
-              // modules guard themselves with `import "server-only"`, so alias
-              // it to a no-op stub here to allow direct unit testing. The guard
-              // still protects real client bundles built by Next.js.
-              "server-only": path.resolve(dirname, "./test/stubs/server-only.ts"),
-            },
-          },
+          // Note: the `server-only` -> stub alias lives in vite.config.ts so it
+          // is shared by both the unit and storybook projects (and Storybook).
           test: {
             name: "unit",
             environment: "jsdom",

@@ -1,11 +1,11 @@
 import fs from "fs";
 import { exec } from "child_process";
-import { withBasicRoute } from "@/lib/api/basicRoute";
+import { withAdminRoute } from "@/lib/api/adminRoute";
 import { success } from "@/lib/api/success";
 
 const WIFI_CONFIG = "/home/bridgebox/bridge-box/wifi.json";
 
-export const POST = withBasicRoute(async () => {
+export const POST = withAdminRoute(async () => {
   if (fs.existsSync(WIFI_CONFIG)) {
     fs.unlinkSync(WIFI_CONFIG);
   }
