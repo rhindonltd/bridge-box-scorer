@@ -6,9 +6,14 @@ import { AssignedTeam } from "@/model/participants";
 interface Props {
   teams: AssignedTeam[];
   leaderboard: TeamOverallOverallScore;
+  highlightAssignmentId?: string;
 }
 
-export function TeamOverallLeaderboard({ teams, leaderboard }: Props) {
+export function TeamOverallLeaderboard({
+  teams,
+  leaderboard,
+  highlightAssignmentId,
+}: Props) {
   const getPlayerNames = (playerId: string) => {
     const participant = teams.find((ind) => ind.id === playerId);
     if (!participant) return playerId;
@@ -43,6 +48,8 @@ export function TeamOverallLeaderboard({ teams, leaderboard }: Props) {
         return (
           <TableRow
             key={index}
+            highlighted={row.teamId === highlightAssignmentId}
+            striped={highlightAssignmentId === undefined}
             cells={[
               row.tied ? `${row.rank}=` : row.rank,
               getPlayerNames(row.teamId),

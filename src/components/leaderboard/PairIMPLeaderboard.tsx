@@ -6,9 +6,14 @@ import { PairXIMPOverallScore } from "@/model/leaderboard";
 interface Props {
   pairs: AssignedPair[];
   leaderboard: PairXIMPOverallScore;
+  highlightAssignmentId?: string;
 }
 
-export function PairIMPLeaderboard({ pairs, leaderboard }: Props) {
+export function PairIMPLeaderboard({
+  pairs,
+  leaderboard,
+  highlightAssignmentId,
+}: Props) {
   const getPlayerNames = (playerId: string) => {
     const participant = pairs.find(
       (pairWithPlayers) => pairWithPlayers.id === playerId,
@@ -35,6 +40,8 @@ export function PairIMPLeaderboard({ pairs, leaderboard }: Props) {
         return (
           <TableRow
             key={index}
+            highlighted={row.pairId === highlightAssignmentId}
+            striped={highlightAssignmentId === undefined}
             cells={[
               row.tied ? `${row.rank}=` : row.rank,
               getPlayerNames(row.pairId),

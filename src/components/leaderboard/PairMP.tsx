@@ -10,9 +10,10 @@ import { AssignedPair } from "@/model/participants";
 type Props = {
   pairs: AssignedPair[];
   leaderboard: PairMatchpointOverallScore;
+  highlightAssignmentId?: string;
 };
 
-export function PairMP({ pairs, leaderboard }: Props) {
+export function PairMP({ pairs, leaderboard, highlightAssignmentId }: Props) {
   const [showPercentage, setShowPercentage] = useState(true);
 
   return (
@@ -29,9 +30,17 @@ export function PairMP({ pairs, leaderboard }: Props) {
 
       {/* Scrollable table */}
       {showPercentage ? (
-        <PairMPPercentageLeaderboard pairs={pairs} leaderboard={leaderboard} />
+        <PairMPPercentageLeaderboard
+          pairs={pairs}
+          leaderboard={leaderboard}
+          highlightAssignmentId={highlightAssignmentId}
+        />
       ) : (
-        <PairMPLeaderboard pairs={pairs} leaderboard={leaderboard} />
+        <PairMPLeaderboard
+          pairs={pairs}
+          leaderboard={leaderboard}
+          highlightAssignmentId={highlightAssignmentId}
+        />
       )}
     </div>
   );

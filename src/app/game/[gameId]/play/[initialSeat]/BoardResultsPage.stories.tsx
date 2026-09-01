@@ -24,7 +24,7 @@ export const PairXIMP: Story = {
     withGame(mockGame),
     withAssignment({
       type: "PAIR",
-      id: "1",
+      id: "3:2",
     }),
   ],
   args: {

@@ -6,9 +6,14 @@ import { PairMatchpointOverallScore } from "@//model/leaderboard";
 interface Props {
   pairs: AssignedPair[];
   leaderboard: PairMatchpointOverallScore;
+  highlightAssignmentId?: string;
 }
 
-export function PairMPLeaderboard({ pairs, leaderboard }: Props) {
+export function PairMPLeaderboard({
+  pairs,
+  leaderboard,
+  highlightAssignmentId,
+}: Props) {
   const getPlayerNames = (playerId: string) => {
     const participant = pairs.find((ind) => ind.id === playerId);
     if (!participant) return playerId;
@@ -33,6 +38,8 @@ export function PairMPLeaderboard({ pairs, leaderboard }: Props) {
         return (
           <TableRow
             key={index}
+            highlighted={row.pairId === highlightAssignmentId}
+            striped={highlightAssignmentId === undefined}
             cells={[
               row.tied ? `${row.rank}=` : row.rank,
               getPlayerNames(row.pairId),

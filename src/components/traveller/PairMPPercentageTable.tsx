@@ -5,9 +5,13 @@ import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
 type Props = {
   scoredTraveller: ScoredTravellerOfType<"PAIR_MP">;
+  highlightAssignmentId?: string;
 };
 
-export function PairMPPercentageTable({ scoredTraveller }: Props) {
+export function PairMPPercentageTable({
+  scoredTraveller,
+  highlightAssignmentId,
+}: Props) {
   function mpToPercent(mp: number): number {
     const maxMP = 2 * (scoredTraveller.lines.length - 1);
     return (mp / maxMP) * 100;
@@ -22,10 +26,16 @@ export function PairMPPercentageTable({ scoredTraveller }: Props) {
       columns={["NS", "EW", "Contract", "NS Score", "NS %", "EW %"]}
       body={rows.map((row, index) => {
         const isLast = index === rows.length - 1;
+        const highlighted =
+          highlightAssignmentId !== undefined &&
+          (row.nsId === highlightAssignmentId ||
+            row.ewId === highlightAssignmentId);
 
         return (
           <TableRow
             key={index}
+            highlighted={highlighted}
+            striped={highlightAssignmentId === undefined}
             cells={[
               `${row.nsId}`,
               `${row.ewId}`,

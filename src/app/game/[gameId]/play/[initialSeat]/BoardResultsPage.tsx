@@ -2,6 +2,7 @@ import { Traveller } from "@/components/traveller/Traveller";
 import { ScoredTraveller } from "@/scoring/traveller/score-traveller";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { BoardSelector } from "@/app/game/[gameId]/play/[initialSeat]/BoardSelector";
+import { useAssignment } from "@/context/AssignmentContext";
 
 interface Props {
   board: number;
@@ -20,6 +21,8 @@ export function BoardResultsPage({
   onBoardSelected,
   onNext,
 }: Props) {
+  const { assignment } = useAssignment();
+
   return (
     <GamePageLayout
       headerTitle="Board Results"
@@ -38,7 +41,10 @@ export function BoardResultsPage({
           playedBoards={playedBoards}
           onBoardSelected={onBoardSelected}
         />
-        <Traveller scoredTraveller={scoredTraveller} />
+        <Traveller
+          scoredTraveller={scoredTraveller}
+          highlightAssignmentId={assignment?.id}
+        />
       </>
     </GamePageLayout>
   );

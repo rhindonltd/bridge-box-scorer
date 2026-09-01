@@ -7,10 +7,12 @@ import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
+import { useAssignment } from "@/context/AssignmentContext";
 
 export function GameComplete() {
   const params = useParams<{ gameId: string }>();
   const gameId = params.gameId;
+  const { assignment } = useAssignment();
 
   const { data, isLoading } = useSWR<{
     leaderboard: OverallScoreAndParticipant;
@@ -30,7 +32,10 @@ export function GameComplete() {
     <GamePageLayout headerTitle="Game Complete">
       <div className="flex-1 min-h-0">
         {leaderboardData ? (
-          <Leaderboard overallScoreAndParticipant={leaderboardData} />
+          <Leaderboard
+            overallScoreAndParticipant={leaderboardData}
+            highlightAssignmentId={assignment?.id}
+          />
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-6">
             <div className="text-2xl font-bold text-gray-900 mb-2">
