@@ -1,6 +1,6 @@
 import { calculateOverallXIMPResults } from "@/scoring/overall/pair/x-imp";
 import { PairXIMPOverallScore } from "@/model/leaderboard";
-import { ScoredTravellerOfType } from "@/scoring/overall/legacy-scored-traveller";
+import { ScoredTravellerOfType } from "@/scoring/overall/scored-traveller";
 import {
   ScoreTable,
   multilineCell,
@@ -32,11 +32,12 @@ const crossImpsView: OverallView<XimpOverall> = {
   },
 };
 
-export const ximpOverallPlugin: OverallScoringPlugin<XimpScored, XimpOverall> = {
-  id: "XIMP",
-  aggregate: (scoredTravellers) =>
-    calculateOverallXIMPResults(scoredTravellers),
-  views: [crossImpsView],
-};
+export const ximpOverallPlugin: OverallScoringPlugin<XimpScored, XimpOverall> =
+  {
+    id: "XIMP",
+    aggregate: (scoredTravellers) =>
+      calculateOverallXIMPResults(scoredTravellers),
+    views: [crossImpsView],
+  };
 
 registerOverallPlugin(ximpOverallPlugin);

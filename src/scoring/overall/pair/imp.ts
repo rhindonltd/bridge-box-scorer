@@ -1,5 +1,5 @@
 import { PairIMPOverallScore } from "@/model/leaderboard";
-import { ScoredTravellerOfType } from "@/scoring/overall/legacy-scored-traveller";
+import { ScoredTravellerOfType } from "@/scoring/overall/scored-traveller";
 import { buildOverallScore } from "../common";
 
 export function calculateOverallIMPResults(

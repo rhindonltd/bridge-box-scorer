@@ -18,24 +18,8 @@ export function Leaderboard({
   overallScoreAndParticipant,
   highlightAssignmentId,
 }: Props) {
-  const { overallScore, participants } = overallScoreAndParticipant;
-
-  // PAIR scoring is fully plugin-driven: resolve the overall plugin by its
-  // scoring id and render its views through the shared table view.
-  if (overallScore.mode === "PAIR") {
-    const plugin = getOverallPlugin(overallScore.scoring);
-
-    return (
-      <OverallLeaderboardView
-        plugin={plugin}
-        lines={overallScore}
-        participants={participants}
-        highlightAssignmentId={highlightAssignmentId}
-      />
-    );
-  }
-
-  // TEAM scoring is not yet plugin-migrated; keep the existing components.
+  // TEAM scoring is not yet plugin-migrated; handle those variants first so
+  // the remaining case narrows to PAIR (with AssignedPair[] participants).
   switch (overallScoreAndParticipant.type) {
     case "TEAM_MATCH":
       return (
@@ -52,7 +36,19 @@ export function Leaderboard({
           highlightAssignmentId={highlightAssignmentId}
         />
       );
-    default:
-      return null;
   }
+
+  // PAIR scoring is fully plugin-driven: resolve the overall plugin by its
+  // scoring id and render its views through the shared table view.
+  const { overallScore, participants } = overallScoreAndParticipant;
+  const plugin = getOverallPlugin(overallScore.scoring);
+
+  return (
+    <OverallLeaderboardView
+      plugin={plugin}
+      lines={overallScore}
+      participants={participants}
+      highlightAssignmentId={highlightAssignmentId}
+    />
+  );
 }

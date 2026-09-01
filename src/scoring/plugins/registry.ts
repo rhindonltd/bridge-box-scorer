@@ -26,10 +26,7 @@ const overallPlugins = new Map<
 export function registerPerBoardPlugin<TLines>(
   plugin: PerBoardScoringPlugin<TLines>,
 ): void {
-  perBoardPlugins.set(
-    plugin.id,
-    plugin as PerBoardScoringPlugin<unknown>,
-  );
+  perBoardPlugins.set(plugin.id, plugin as PerBoardScoringPlugin<unknown>);
 }
 
 export function registerOverallPlugin<TScored, TLines>(

@@ -1,6 +1,6 @@
 import { calculateOverallIMPResults } from "@/scoring/overall/pair/imp";
 import { PairIMPOverallScore } from "@/model/leaderboard";
-import { ScoredTravellerOfType } from "@/scoring/overall/legacy-scored-traveller";
+import { ScoredTravellerOfType } from "@/scoring/overall/scored-traveller";
 import {
   ScoreTable,
   multilineCell,

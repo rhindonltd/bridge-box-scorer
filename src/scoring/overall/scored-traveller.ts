@@ -3,9 +3,10 @@ import * as PairXIMP from "@/scoring/traveller/pair/x-imp";
 import * as PairMP from "@/scoring/traveller/pair/mp";
 
 /**
- * Transitional types for the overall aggregators, which still consume the
- * old discriminated `ScoredTraveller` shape (`{ type, board, lines }`). These
- * are removed once the overall side is fully migrated to plugins (Task 7).
+ * Input contract for the overall (leaderboard) aggregators: a per-board scored
+ * traveller, discriminated by its per-board scoring `type` with `lines` typed
+ * from the matching per-board algorithm. Each overall plugin narrows this to
+ * the variant it aggregates (via `ScoredTravellerOfType`).
  */
 export type ScoredTraveller =
   | {

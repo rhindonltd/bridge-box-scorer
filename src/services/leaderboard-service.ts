@@ -5,10 +5,10 @@ import { boards } from "@/db/games/tables/boards";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { PairTraveller } from "@/model/traveller";
-import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
-import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";
 import { BoardOutcome } from "@/model/score";
-import { ScoredTravellerOfType } from "@/scoring/overall/legacy-scored-traveller";
+import { OverallScore } from "@/model/leaderboard";
+import "@/scoring/plugins/register";
+import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 
 export async function computeLeaderboard(db: Db, gameId: string) {
@@ -50,14 +50,12 @@ export async function computeLeaderboard(db: Db, gameId: string) {
     scoredBoards.push(scoreBoard(pairTraveller, scoringType));
   }
 
-  const overallScore =
-    scoringType === "MP"
-      ? calculateOverallMPResults(
-          scoredBoards as unknown as ScoredTravellerOfType<"PAIR_MP">[],
-        )
-      : calculatePairXIMPResults(
-          scoredBoards as unknown as ScoredTravellerOfType<"PAIR_XIMP">[],
-        );
+  // Aggregation is driven by the overall plugin for this scoring type; the
+  // per-board scored lines are the aggregator's input.
+  const overallPlugin = getOverallPlugin(getCombination(scoringType).overall);
+  const overallScore = overallPlugin.aggregate(
+    scoredBoards.map((b) => ({ lines: b.lines })),
+  ) as OverallScore;
 
   return {
     type: overallScore.type,

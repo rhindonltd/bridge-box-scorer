@@ -1,6 +1,6 @@
 import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
 import { PairMatchpointOverallScore } from "@/model/leaderboard";
-import { ScoredTravellerOfType } from "@/scoring/overall/legacy-scored-traveller";
+import { ScoredTravellerOfType } from "@/scoring/overall/scored-traveller";
 import {
   ScoreTable,
   multilineCell,

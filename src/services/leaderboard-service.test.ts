@@ -22,20 +22,35 @@ vi.mock("@/scoring/traveller/score-traveller", () => ({
   scoreBoard: vi.fn(),
 }));
 
-vi.mock("@/scoring/overall/pair/mp", () => ({
-  calculateOverallMPResults: vi.fn(),
-}));
-
-vi.mock("@/scoring/overall/pair/x-imp", () => ({
-  calculateOverallXIMPResults: vi.fn(),
-}));
+// The overall aggregation is resolved through the plugin registry; mock the
+// registry so we can assert which plugin is selected without exercising the
+// real aggregators.
+vi.mock("@/scoring/plugins/registry", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/scoring/plugins/registry")>();
+  return {
+    ...actual,
+    getCombination: vi.fn(),
+    getOverallPlugin: vi.fn(),
+  };
+});
 
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { scoreBoard } from "@/scoring/traveller/score-traveller";
-import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
-import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";
+import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
+
+/** Build a mock overall plugin whose aggregate returns the given overall score. */
+function mockOverallPlugin(overallScore: unknown) {
+  const aggregate = vi.fn().mockReturnValue(overallScore);
+  vi.mocked(getOverallPlugin).mockReturnValue({
+    id: "MP",
+    aggregate,
+    views: [],
+  } as any);
+  return aggregate;
+}
 
 describe("leaderboard-service", () => {
   beforeEach(() => {
@@ -46,6 +61,11 @@ describe("leaderboard-service", () => {
       gameType: "PAIRS",
       scoringType: "MP",
     } as BridgeGame);
+    // Default combination maps MP -> { perBoard: MP, overall: MP }.
+    vi.mocked(getCombination).mockReturnValue({
+      perBoard: "MP",
+      overall: "MP",
+    });
   });
 
   describe("PAIRS + MP", () => {
@@ -93,7 +113,7 @@ describe("leaderboard-service", () => {
         ],
       } as any);
 
-      vi.mocked(calculateOverallMPResults).mockReturnValue({
+      const aggregate = mockOverallPlugin({
         type: "PAIR_MP",
         mode: "PAIR",
         scoring: "MP",
@@ -101,7 +121,7 @@ describe("leaderboard-service", () => {
           { pairId: "3", totalMP: 2, maxMP: 2 },
           { pairId: "1", totalMP: 0, maxMP: 2 },
         ],
-      } as any);
+      });
 
       vi.mocked(findPairs).mockResolvedValue([
         {
@@ -119,7 +139,9 @@ describe("leaderboard-service", () => {
       expect(result.overallScore.lines).toHaveLength(2);
       expect(result.participants).toHaveLength(1);
       expect(scoreBoard).toHaveBeenCalledTimes(1);
-      expect(calculateOverallMPResults).toHaveBeenCalledTimes(1);
+      expect(getCombination).toHaveBeenCalledWith("MP");
+      expect(getOverallPlugin).toHaveBeenCalledWith("MP");
+      expect(aggregate).toHaveBeenCalledTimes(1);
     });
 
     it("skips boards with no confirmed or override results", async () => {
@@ -145,12 +167,12 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(calculateOverallMPResults).mockReturnValue({
+      mockOverallPlugin({
         type: "PAIR_MP",
         mode: "PAIR",
         scoring: "MP",
         lines: [],
-      } as any);
+      });
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
@@ -189,12 +211,12 @@ describe("leaderboard-service", () => {
         lines: [],
       } as any);
 
-      vi.mocked(calculateOverallMPResults).mockReturnValue({
+      mockOverallPlugin({
         type: "PAIR_MP",
         mode: "PAIR",
         scoring: "MP",
         lines: [{ pairId: "1", totalMP: 2, maxMP: 2 }],
-      } as any);
+      });
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
@@ -224,9 +246,13 @@ describe("leaderboard-service", () => {
         gameType: "PAIRS",
         scoringType: "XIMP",
       } as BridgeGame);
+      vi.mocked(getCombination).mockReturnValue({
+        perBoard: "XIMP",
+        overall: "XIMP",
+      });
     });
 
-    it("uses XIMP scoring mode for IMP-type games", async () => {
+    it("selects the XIMP per-board plugin and overall combination", async () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
@@ -248,22 +274,24 @@ describe("leaderboard-service", () => {
         lines: [],
       } as any);
 
-      vi.mocked(calculatePairXIMPResults).mockReturnValue({
+      const aggregate = mockOverallPlugin({
         type: "PAIR_XIMP",
         mode: "PAIR",
         scoring: "XIMP",
         lines: [],
-      } as any);
+      });
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
       await computeLeaderboard(mockDb, "game-1");
 
       expect(scoreBoard).toHaveBeenCalledWith(expect.anything(), "XIMP");
-      expect(calculatePairXIMPResults).toHaveBeenCalled();
+      expect(getCombination).toHaveBeenCalledWith("XIMP");
+      expect(getOverallPlugin).toHaveBeenCalledWith("XIMP");
+      expect(aggregate).toHaveBeenCalledTimes(1);
     });
 
-    it("uses XIMP scoring mode for XIMP-type games (line 63, 72)", async () => {
+    it("returns the XIMP overall score type", async () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({
           from: vi.fn().mockResolvedValue([
@@ -290,20 +318,20 @@ describe("leaderboard-service", () => {
         pluginId: "XIMP",
         board: 1,
         lines: [
-          { nsId: "1", ewId: "2", nsXimps: 5, ewXimps: -5 },
-          { nsId: "3", ewId: "4", nsXimps: -5, ewXimps: 5 },
+          { nsId: "1", ewId: "2", nsCrossImps: 5, ewCrossImps: -5 },
+          { nsId: "3", ewId: "4", nsCrossImps: -5, ewCrossImps: 5 },
         ],
       } as any);
 
-      vi.mocked(calculatePairXIMPResults).mockReturnValue({
+      mockOverallPlugin({
         type: "PAIR_XIMP",
         mode: "PAIR",
         scoring: "XIMP",
         lines: [
-          { pairId: "1", totalXimps: 5 },
-          { pairId: "3", totalXimps: -5 },
+          { pairId: "1", crossImps: 5 },
+          { pairId: "3", crossImps: -5 },
         ],
-      } as any);
+      });
 
       vi.mocked(findPairs).mockResolvedValue([]);
 
@@ -311,8 +339,6 @@ describe("leaderboard-service", () => {
 
       expect(result.type).toBe("PAIR_XIMP");
       expect(scoreBoard).toHaveBeenCalledWith(expect.anything(), "XIMP");
-      expect(calculatePairXIMPResults).toHaveBeenCalledTimes(1);
-      expect(calculateOverallMPResults).not.toHaveBeenCalled();
     });
   });
 });
