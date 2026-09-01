@@ -40,6 +40,13 @@ export async function selectMitchellMovement(
   });
 }
 
+export async function startGame(gameId: string): Promise<void> {
+  await emitWithAck(SocketEvents.START_GAME, {
+    gameId,
+    directorToken: getDirectorToken(gameId),
+  });
+}
+
 export async function createParticipant(
   gameId: string,
   newParticipant: NewParticipant,

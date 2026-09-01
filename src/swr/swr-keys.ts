@@ -13,6 +13,8 @@ export const swrKeys = {
 
   leaderboard: (gameId: string) => `/api/games/${gameId}/leaderboard`,
 
+  startCheck: (gameId: string) => `/api/games/${gameId}/start-check`,
+
   schedule: (gameId: string, seat: string) =>
     `/api/games/${gameId}/schedule/${seat}`,
 

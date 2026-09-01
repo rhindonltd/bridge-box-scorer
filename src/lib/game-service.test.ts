@@ -82,6 +82,20 @@ describe("game-service", () => {
     });
   });
 
+  describe("startGame", () => {
+    it("emits START_GAME with gameId and directorToken", async () => {
+      mockEmitWithAck.mockResolvedValue({ success: true });
+
+      const { startGame } = await import("./game-service");
+      await startGame("g1");
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(SocketEvents.START_GAME, {
+        gameId: "g1",
+        directorToken: "stored-token",
+      });
+    });
+  });
+
   describe("createParticipant", () => {
     it("emits CREATE_PARTICIPANT and stores the returned key as the player token", async () => {
       mockEmitWithAck.mockResolvedValue({ success: true, key: "p-key-123" });

@@ -17,7 +17,13 @@ export type SocketEventMap = {
       boardsPerRound: number;
       arrowSwitchRounds?: number;
       skip?: boolean;
+      shareAndRelay?: boolean;
     };
+  };
+
+  [SocketEvents.START_GAME]: {
+    gameId: string;
+    directorToken: string;
   };
 
   [SocketEvents.JOINABLE_GAMES]: {

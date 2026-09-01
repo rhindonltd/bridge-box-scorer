@@ -148,6 +148,9 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
       selectMovement(game!.gameId, selected.id, selected.type);
     }
     setSelected(null);
+    // Selecting a movement only persists the choice; return to the tables view
+    // where the director seats pairs and starts the game.
+    onShowTablesPage();
   }
 
   // Show detail view when a movement is selected

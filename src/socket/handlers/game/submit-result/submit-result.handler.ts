@@ -35,6 +35,28 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         // Determine which side
         const isNS = seat.endsWith("NS");
 
+        // Defensively reject submissions against a sit-out board: nobody plays
+        // that board at that table this round.
+        const db = await getDb(gameId);
+        if (db) {
+          const targetBoard = await db
+            .select({ status: pairsBoards.status })
+            .from(pairsBoards)
+            .where(
+              and(
+                eq(pairsBoards.roundNumber, roundNumber),
+                eq(pairsBoards.tableNumber, tableNumber),
+                eq(pairsBoards.boardNumber, boardNumber),
+              ),
+            )
+            .get();
+
+          if (targetBoard?.status === "SIT_OUT") {
+            cb?.({ success: false, error: "This board is a sit-out" });
+            return;
+          }
+        }
+
         // Store board submission
         await createBoardSubmission(gameId, {
           roundNumber,
@@ -72,9 +94,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           const confirmedBoardNumber = boardSubmissions[0].boardNumber;
           const confirmedResult = boardSubmissions[0].result;
 
-          // Write to database
-          const db = await getDb(gameId);
-
+          // Write to database (reuse the db resolved above).
           if (!db) {
             throw new Error("Game db does not exist");
           }

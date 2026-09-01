@@ -8,6 +8,7 @@ export const SocketEvents = {
   CREATE_PARTICIPANT: "game:createParticipant",
   EVICT_PARTICIPANT: "game:evictParticipant",
   SELECT_MOVEMENT: "game:selectMovement",
+  START_GAME: "game:start",
   UPDATE_TABLES: "game:updateTables",
   LEAVE_GAME: "game:leave",
   GENERATE_SHARE_CODE: "game:generateShareCode",

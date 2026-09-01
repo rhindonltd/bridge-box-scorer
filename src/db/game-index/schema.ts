@@ -22,6 +22,10 @@ export const games = sqliteTable("games", {
   sectionName: text("section_name").notNull(),
   eventDate: text("event_date").notNull(),
   tables: integer("tables").notNull(),
+  // JSON-encoded SelectedMovement tagged union (see src/model/selected-movement.ts).
+  // Null until the director has chosen a movement. Materialized into boards /
+  // assignments only when the game is started.
+  selectedMovement: text("selected_movement"),
   leadCardRequired: integer("lead_card_required", { mode: "boolean" })
     .notNull()
     .default(true),

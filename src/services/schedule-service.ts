@@ -105,13 +105,23 @@ export async function getSchedule(db: Db, seat: string) {
       const nsPlayers = nsEw ? assignmentToPlayers.get(nsEw.ns) : undefined;
       const ewPlayers = nsEw ? assignmentToPlayers.get(nsEw.ew) : undefined;
 
+      // A round whose boards are all SIT_OUT is a sit-out round for this pair.
+      // It keeps its table (so the player is told where to wait) but exposes no
+      // playable boards.
+      const isSitOut =
+        data.boards.length > 0 &&
+        data.boards.every((b) => b.status === "SIT_OUT");
+
       return {
         roundNumber,
         tableNumber: data.tableNumber,
-        boards: data.boards.map((b) => b.boardNumber).sort((a, b) => a - b),
-        boardStatuses: data.boards.sort(
-          (a, b) => a.boardNumber - b.boardNumber,
-        ),
+        boards: isSitOut
+          ? []
+          : data.boards.map((b) => b.boardNumber).sort((a, b) => a - b),
+        boardStatuses: isSitOut
+          ? []
+          : data.boards.sort((a, b) => a.boardNumber - b.boardNumber),
+        sitOut: isSitOut,
         players: {
           N: nsPlayers?.player1 ?? null,
           S: nsPlayers?.player2 ?? null,
@@ -132,7 +142,7 @@ export async function getSchedule(db: Db, seat: string) {
   // Build complete schedule including sit-outs. A round is either an active
   // round (widened so tableNumber may be null) or a sit-out marker.
   type ActiveRound = (typeof rounds)[number];
-  type ScheduleRound = Omit<ActiveRound, "tableNumber"> & {
+  type ScheduleRound = Omit<ActiveRound, "tableNumber" | "sitOut"> & {
     tableNumber: number | null;
     sitOut?: boolean;
   };

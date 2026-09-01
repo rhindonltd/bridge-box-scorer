@@ -23,7 +23,7 @@ export function SetupGamePage() {
   );
 
   if (step === "tables") {
-    return <ShowTablesPage onStartGame={() => goTo("movements")} />;
+    return <ShowTablesPage onSelectMovement={() => goTo("movements")} />;
   }
 
   if (step === "movements") {

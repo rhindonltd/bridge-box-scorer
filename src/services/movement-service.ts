@@ -5,7 +5,11 @@ import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { isBoardEntered } from "@/lib/round-status";
 
 export async function getMovementWithProgress(db: Db) {
-  const rows = await db.select().from(pairsBoards);
+  const allRows = await db.select().from(pairsBoards);
+
+  // SIT_OUT boards are not played at their table that round; exclude them so
+  // they don't inflate board ranges, totals, or trigger false gaps.
+  const rows = allRows.filter((row) => row.status !== "SIT_OUT");
 
   const tableMap = new Map<
     number,

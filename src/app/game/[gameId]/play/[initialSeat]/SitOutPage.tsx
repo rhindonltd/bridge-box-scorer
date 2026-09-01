@@ -2,10 +2,18 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {
   round: number;
+  tableNumber?: number | null;
   onHandleSitOutContinue: () => void;
 }
 
-export function SitOutPage({ round, onHandleSitOutContinue }: Props) {
+export function SitOutPage({
+  round,
+  tableNumber,
+  onHandleSitOutContinue,
+}: Props) {
+  const heading =
+    tableNumber != null ? `Sit Out at Table ${tableNumber}` : "Sit Out";
+
   return (
     <GamePageLayout
       headerTitle={`Round ${round}`}
@@ -20,7 +28,7 @@ export function SitOutPage({ round, onHandleSitOutContinue }: Props) {
       }
     >
       <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="text-2xl font-bold text-gray-900 mb-2">Sit Out</div>
+        <div className="text-2xl font-bold text-gray-900 mb-2">{heading}</div>
         <div className="text-base text-gray-500 text-center">
           You have a sit-out this round. Please wait for the next round.
         </div>

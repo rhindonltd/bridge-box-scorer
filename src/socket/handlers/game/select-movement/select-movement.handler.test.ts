@@ -3,41 +3,21 @@ import { SocketEvents } from "@/socket/socket-events";
 
 // ---- mocks ----
 
-vi.mock("@/db/movements/queries/get-movement", () => ({
-  getPairMovement: vi.fn(),
-  getTeamMovement: vi.fn(),
+vi.mock("@/db/game-index/actions/set-selected-movement", () => ({
+  setSelectedMovement: vi.fn(async () => {}),
 }));
 
-// Mock the DB factories so db.transaction() is a no-op
-const mockTransaction = vi.fn((fn: (tx: any) => void) => {
-  const tx = {
-    insert: vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) })),
-  };
-  fn(tx);
-});
-
-vi.mock("@/db/games", () => ({
-  getDb: vi.fn(async () => ({ transaction: mockTransaction })),
+vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
+  findGameById: vi.fn(async () => ({ gameId: "g1" })),
 }));
 
 vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import {
-  getPairMovement,
-  getTeamMovement,
-} from "@/db/movements/queries/get-movement";
+import { setSelectedMovement } from "@/db/game-index/actions/set-selected-movement";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerSelectMovementHandler } from "./select-movement.handler";
-
-// Minimal PAIRS movement fixture
-const pairMovement = [
-  {
-    tableNumber: 1,
-    rounds: [{ roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 }],
-  },
-];
 
 function makeDirectorSocket() {
   return {
@@ -47,15 +27,15 @@ function makeDirectorSocket() {
   };
 }
 
+function makeIo() {
+  const emit = vi.fn();
+  const io = { to: vi.fn(() => ({ emit })) };
+  return { io, emit };
+}
+
 describe("registerSelectMovementHandler (unit)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockTransaction.mockImplementation((fn: (tx: any) => void) => {
-      const tx = {
-        insert: vi.fn(() => ({ values: vi.fn(() => ({ run: vi.fn() })) })),
-      };
-      fn(tx);
-    });
 
     // Default: valid director session
     vi.mocked(findLoginSession).mockReturnValue({
@@ -67,7 +47,8 @@ describe("registerSelectMovementHandler (unit)", () => {
 
   it("registers handler on SELECT_MOVEMENT event", () => {
     const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
+    const { io } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
     expect(socket.on).toHaveBeenCalledWith(
       SocketEvents.SELECT_MOVEMENT,
       expect.any(Function),
@@ -78,7 +59,8 @@ describe("registerSelectMovementHandler (unit)", () => {
     vi.mocked(findLoginSession).mockReturnValue(null as any);
 
     const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
+    const { io } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
@@ -89,107 +71,109 @@ describe("registerSelectMovementHandler (unit)", () => {
     );
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
-    expect(getPairMovement).not.toHaveBeenCalled();
+    expect(setSelectedMovement).not.toHaveBeenCalled();
   });
 
-  it("processes PAIRS movement and returns success", async () => {
+  it("persists a SPEC selection and does not materialize", async () => {
     const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
+    const { io, emit } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-
-    vi.mocked(getPairMovement).mockResolvedValue(pairMovement as any);
 
     await handler(
       { gameId: "g1", type: "PAIRS", id: 5, directorToken: "test-token" },
       cb,
     );
 
-    expect(getPairMovement).toHaveBeenCalledWith(5);
-    expect(mockTransaction).toHaveBeenCalled();
-    expect(cb).toHaveBeenCalledWith({ success: true });
-  });
-
-  it("falls back to TEAM movement for TEAMS type and returns success", async () => {
-    const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
-
-    const handler = socket.on.mock.calls[0][1];
-    const cb = vi.fn();
-
-    vi.mocked(getTeamMovement).mockResolvedValue(pairMovement as any);
-
-    await handler(
-      { gameId: "g1", type: "TEAMS", id: 3, directorToken: "test-token" },
-      cb,
-    );
-
-    expect(getTeamMovement).toHaveBeenCalledWith(3);
-    expect(cb).toHaveBeenCalledWith({ success: true });
-  });
-
-  it("returns success: false when movement query throws", async () => {
-    const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
-
-    const handler = socket.on.mock.calls[0][1];
-    const cb = vi.fn();
-
-    vi.mocked(getPairMovement).mockRejectedValue(new Error("db fail"));
-
-    await handler(
-      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
-      cb,
-    );
-
-    expect(cb).toHaveBeenCalledWith({ success: false });
-  });
-
-  it("returns success: false when transaction throws", async () => {
-    const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
-
-    const handler = socket.on.mock.calls[0][1];
-    const cb = vi.fn();
-
-    vi.mocked(getPairMovement).mockResolvedValue(pairMovement as any);
-    mockTransaction.mockImplementation(() => {
-      throw new Error("tx fail");
+    expect(setSelectedMovement).toHaveBeenCalledWith("g1", {
+      source: "SPEC",
+      specId: 5,
     });
-
-    await handler(
-      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
-      cb,
+    expect(emit).toHaveBeenCalledWith(
+      SocketEvents.GAME_UPDATED,
+      expect.objectContaining({ game: expect.any(Object) }),
     );
-
-    expect(cb).toHaveBeenCalledWith({ success: false });
+    expect(cb).toHaveBeenCalledWith({ success: true });
   });
 
-  it("processes a mitchell movement spec", async () => {
+  it("persists a MITCHELL selection", async () => {
     const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
+    const { io } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
+
+    const mitchell = { tables: 3, rounds: 3, boardsPerRound: 2 };
 
     await handler(
       {
         gameId: "g1",
         type: "PAIRS",
-        mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
+        mitchell,
         directorToken: "test-token",
       },
       cb,
     );
 
-    expect(mockTransaction).toHaveBeenCalled();
+    expect(setSelectedMovement).toHaveBeenCalledWith("g1", {
+      source: "MITCHELL",
+      mitchell,
+    });
     expect(cb).toHaveBeenCalledWith({ success: true });
+  });
+
+  it("re-selecting overwrites the previous selection", async () => {
+    const socket = makeDirectorSocket();
+    const { io } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler(
+      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+      cb,
+    );
+    await handler(
+      { gameId: "g1", type: "PAIRS", id: 2, directorToken: "test-token" },
+      cb,
+    );
+
+    expect(setSelectedMovement).toHaveBeenNthCalledWith(1, "g1", {
+      source: "SPEC",
+      specId: 1,
+    });
+    expect(setSelectedMovement).toHaveBeenNthCalledWith(2, "g1", {
+      source: "SPEC",
+      specId: 2,
+    });
+  });
+
+  it("returns success: false when persisting throws", async () => {
+    const socket = makeDirectorSocket();
+    const { io } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    vi.mocked(setSelectedMovement).mockRejectedValueOnce(new Error("db fail"));
+
+    await handler(
+      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+      cb,
+    );
+
+    expect(cb).toHaveBeenCalledWith({ success: false });
   });
 
   it("returns error when no movement specified (no id and no mitchell)", async () => {
     const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
+    const { io } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
@@ -203,16 +187,16 @@ describe("registerSelectMovementHandler (unit)", () => {
       success: false,
       error: "No movement specified",
     });
-    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(setSelectedMovement).not.toHaveBeenCalled();
   });
 
   it("does not throw when cb is undefined and no movement specified", async () => {
     const socket = makeDirectorSocket();
-    registerSelectMovementHandler(socket as any);
+    const { io } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
 
     const handler = socket.on.mock.calls[0][1];
 
-    // Should not throw when cb is not provided
     await expect(
       handler(
         { gameId: "g1", type: "PAIRS", directorToken: "test-token" },
@@ -220,6 +204,6 @@ describe("registerSelectMovementHandler (unit)", () => {
       ),
     ).resolves.not.toThrow();
 
-    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(setSelectedMovement).not.toHaveBeenCalled();
   });
 });
