@@ -3,7 +3,7 @@ import { swrKeys } from "./swr-keys";
 
 describe("swrKeys", () => {
   it("pairs returns correct API path", () => {
-    expect(swrKeys.pairs("g1")).toBe("/api/games/pairs/g1/pairs");
+    expect(swrKeys.pairs("g1")).toBe("/api/games/g1/participants");
   });
 
   it("joinableGames returns static path", () => {

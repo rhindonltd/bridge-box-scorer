@@ -14,18 +14,23 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/actions/delete-participant", () => ({
+vi.mock("@/db/games/actions/delete-participant", () => ({
   deleteParticipant: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
+}));
+
+vi.mock("@/db/games", () => ({
+  getDb: vi.fn(),
 }));
 
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { deleteParticipant as deletePairParticipant } from "@/db/games/actions/delete-participant";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { getDb } from "@/db/games";
 
 describe("registerEvictParticipantHandler (integration)", () => {
   let closeServer: () => Promise<void>;
@@ -37,6 +42,7 @@ describe("registerEvictParticipantHandler (integration)", () => {
       role: "DIRECTOR",
       gameId: "game-1",
     } as any);
+    vi.mocked(getDb).mockResolvedValue({} as any);
     vi.mocked(findGameById).mockResolvedValue({
       gameId: "game-1",
       gameType: "PAIRS",

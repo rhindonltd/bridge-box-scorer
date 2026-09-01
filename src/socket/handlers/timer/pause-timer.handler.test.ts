@@ -4,7 +4,7 @@ vi.mock("@/timer/game-store", () => ({
   getEngine: vi.fn(),
 }));
 
-vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
+vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
@@ -82,8 +82,8 @@ describe("registerPauseTimerHandler", () => {
     });
 
     expect(mockEngine.pause).toHaveBeenCalled();
-    expect(cancelGameSchedule).toHaveBeenCalledWith("PAIRS", "game-2");
-    expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-2", mockState);
+    expect(cancelGameSchedule).toHaveBeenCalledWith("game-2");
+    expect(updateTimerState).toHaveBeenCalledWith("game-2", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-2");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",

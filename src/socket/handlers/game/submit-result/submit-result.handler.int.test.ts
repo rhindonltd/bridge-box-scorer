@@ -15,15 +15,11 @@ const mockUpdate = vi.fn(() => ({
   set: mockSet,
 }));
 
-vi.mock("@/db/games/pairs", () => ({
+vi.mock("@/db/games", () => ({
   getDb: vi.fn(async () => ({ update: mockUpdate })),
 }));
 
-vi.mock("@/db/games/individual", () => ({
-  getDb: vi.fn(async () => ({ update: mockUpdate })),
-}));
-
-vi.mock("@/db/games/pairs/tables/boards", () => ({
+vi.mock("@/db/games/tables/boards", () => ({
   boards: {
     roundNumber: "roundNumber",
     tableNumber: "tableNumber",
@@ -31,12 +27,47 @@ vi.mock("@/db/games/pairs/tables/boards", () => ({
   },
 }));
 
-vi.mock("@/db/games/individual/tables/boards", () => ({
-  boards: {
-    roundNumber: "roundNumber",
-    tableNumber: "tableNumber",
-    boardNumber: "boardNumber",
-  },
+// Stateful in-memory fake for the board-submission persistence layer. The
+// handler now stores pending submissions in the DB (create/find/delete) rather
+// than tracking them in memory, so these mocks reconstruct that state keyed by
+// game/table/round, with a re-submission from the same side overwriting the
+// previous one (mirroring the real upsert behaviour).
+type FakeSubmission = {
+  side: "NS" | "EW";
+  boardNumber: number;
+  result: string;
+};
+const submissionStore = new Map<string, FakeSubmission[]>();
+const storeKey = (gameId: string, tableNumber: number, roundNumber: number) =>
+  `${gameId}:${tableNumber}:${roundNumber}`;
+
+vi.mock("@/db/games/actions/create-submission", () => ({
+  createBoardSubmission: vi.fn(async (gameId: string, sub: any) => {
+    const key = storeKey(gameId, sub.tableNumber, sub.roundNumber);
+    const existing = submissionStore.get(key) ?? [];
+    const next = existing.filter((s) => s.side !== sub.side);
+    next.push({
+      side: sub.side,
+      boardNumber: sub.boardNumber,
+      result: sub.result,
+    });
+    submissionStore.set(key, next);
+  }),
+}));
+
+vi.mock("@/db/games/queries/find-submissions", () => ({
+  findBoardSubmissions: vi.fn(
+    async (gameId: string, tableNumber: number, roundNumber: number) =>
+      submissionStore.get(storeKey(gameId, tableNumber, roundNumber)) ?? [],
+  ),
+}));
+
+vi.mock("@/db/games/actions/delete-submissions", () => ({
+  deleteBoardSubmissions: vi.fn(
+    async (gameId: string, tableNumber: number, roundNumber: number) => {
+      submissionStore.delete(storeKey(gameId, tableNumber, roundNumber));
+    },
+  ),
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -49,6 +80,7 @@ describe("registerSubmitResultHandler (integration)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    submissionStore.clear();
   });
 
   afterEach(async () => {

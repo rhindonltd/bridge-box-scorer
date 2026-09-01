@@ -2,15 +2,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { computeLeaderboard } from "./leaderboard-service";
 import { BridgeGame } from "@/db/game-index/schema";
 
-vi.mock("@/db/games/pairs", () => ({
+vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/tables/boards", () => ({
+vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
+  findGameById: vi.fn(),
+}));
+
+vi.mock("@/db/games/tables/boards", () => ({
   boards: "pairsBoards",
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
@@ -28,6 +32,7 @@ vi.mock("@/scoring/overall/pair/x-imp", () => ({
 
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { score } from "@/scoring/traveller/score-traveller";
 import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
 import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";
@@ -35,6 +40,12 @@ import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scori
 describe("leaderboard-service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: an MP pairs game. Individual describe blocks override as needed.
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+    } as BridgeGame);
   });
 
   describe("PAIRS + MP", () => {
@@ -213,6 +224,14 @@ describe("leaderboard-service", () => {
   });
 
   describe("PAIRS + XIMP", () => {
+    beforeEach(() => {
+      vi.mocked(findGameById).mockResolvedValue({
+        gameId: "game-1",
+        gameType: "PAIRS",
+        scoringType: "XIMP",
+      } as BridgeGame);
+    });
+
     it("uses XIMP scoring mode for IMP-type games", async () => {
       const mockDb = {
         select: vi.fn().mockReturnValue({

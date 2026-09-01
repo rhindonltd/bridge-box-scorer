@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/db/games/shared/queries/find-timer-state", () => ({
+vi.mock("@/db/games/queries/find-timer-state", () => ({
   findTimerState: vi.fn(),
 }));
 
-vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
+vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
@@ -44,7 +44,6 @@ describe("game-store", () => {
       await createEngine("game-2", 2, 4, 300, 45);
 
       expect(updateTimerState).toHaveBeenCalledWith(
-        "PAIRS",
         "game-2",
         expect.objectContaining({
           version: 1,
@@ -114,7 +113,7 @@ describe("game-store", () => {
       const allEngines = getAllEngines();
 
       expect(allEngines).toBeInstanceOf(Map);
-      expect(allEngines.has("PAIRS_all-engines-1")).toBe(true);
+      expect(allEngines.has("all-engines-1")).toBe(true);
     });
   });
 });

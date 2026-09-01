@@ -18,14 +18,19 @@ vi.mock("@/db/game-index/actions/update-table-count", () => ({
   updateTableCount: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
+}));
+
+vi.mock("@/db/games", () => ({
+  getDb: vi.fn(),
 }));
 
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { getDb } from "@/db/games";
 
 describe("registerUpdateTablesHandler (integration)", () => {
   let closeServer: () => Promise<void>;
@@ -37,6 +42,7 @@ describe("registerUpdateTablesHandler (integration)", () => {
       role: "DIRECTOR",
       gameId: "game-1",
     } as any);
+    vi.mocked(getDb).mockResolvedValue({} as any);
     vi.mocked(updateTableCount).mockResolvedValue(undefined as any);
     vi.mocked(findPairs).mockResolvedValue([]);
   });

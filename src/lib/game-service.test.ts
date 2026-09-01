@@ -19,8 +19,13 @@ vi.mock("@/lib/director-token", () => ({
   isDirectorFor: vi.fn(),
 }));
 
+vi.mock("./player-token", () => ({
+  setPlayerToken: vi.fn(),
+}));
+
 import { emitWithAck, emitEvent } from "@/lib/socket";
 import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
+import { setPlayerToken } from "./player-token";
 
 const mockEmitWithAck = vi.mocked(emitWithAck);
 const mockEmitEvent = vi.mocked(emitEvent);
@@ -83,17 +88,20 @@ describe("game-service", () => {
   });
 
   describe("createParticipant", () => {
-    it("emits CREATE_PARTICIPANT and returns the key from the ack", async () => {
+    it("emits CREATE_PARTICIPANT and stores the returned key as the player token", async () => {
       mockEmitWithAck.mockResolvedValue({ success: true, key: "p-key-123" });
 
-      const newParticipant = { name: "Alice" } as any;
-      const result = await createParticipant("g1", newParticipant);
+      const newParticipant = { name: "Alice", initialSeat: "1NS" } as any;
+      await createParticipant("g1", newParticipant);
 
       expect(mockEmitWithAck).toHaveBeenCalledWith(
         SocketEvents.CREATE_PARTICIPANT,
-        { gameId: "g1", newParticipant, directorToken: "stored-token" },
+        { gameId: "g1", newParticipant },
       );
-      expect(result).toBe("p-key-123");
+      expect(setPlayerToken).toHaveBeenCalledWith("g1", {
+        startingPosition: "1NS",
+        token: "p-key-123",
+      });
     });
   });
 });

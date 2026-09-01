@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getMovementWithProgress } from "./movement-service";
 
-vi.mock("@/db/games/pairs", () => ({
+vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/tables/boards", () => ({
+vi.mock("@/db/games/tables/boards", () => ({
   boards: "pairsBoards",
 }));
 

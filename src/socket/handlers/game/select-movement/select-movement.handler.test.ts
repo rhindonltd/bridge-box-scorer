@@ -16,7 +16,7 @@ const mockTransaction = vi.fn((fn: (tx: any) => void) => {
   fn(tx);
 });
 
-vi.mock("@/db/games/pairs", () => ({
+vi.mock("@/db/games", () => ({
   getDb: vi.fn(async () => ({ transaction: mockTransaction })),
 }));
 

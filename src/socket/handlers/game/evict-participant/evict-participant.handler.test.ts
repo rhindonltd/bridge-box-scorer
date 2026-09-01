@@ -5,12 +5,16 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/actions/delete-participant", () => ({
+vi.mock("@/db/games/actions/delete-participant", () => ({
   deleteParticipant: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
+}));
+
+vi.mock("@/db/games", () => ({
+  getDb: vi.fn(),
 }));
 
 vi.mock("@/db/system/queries/find-login-session", () => ({
@@ -20,6 +24,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { deleteParticipant as deletePair } from "@/db/games/actions/delete-participant";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { getDb } from "@/db/games";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerEvictParticipantHandler } from "./evict-participant.handler";
 
@@ -40,6 +45,7 @@ describe("registerEvictParticipantHandler", () => {
       role: "DIRECTOR",
       gameId: "g1",
     } as any);
+    vi.mocked(getDb).mockResolvedValue({} as any);
   });
 
   it("registers handler on EVICT_PARTICIPANT event", () => {

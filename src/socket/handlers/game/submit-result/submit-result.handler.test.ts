@@ -7,10 +7,30 @@ const mockUpdate = vi.fn(() => ({
   })),
 }));
 
-vi.mock("@/db/games/pairs", () => ({
+vi.mock("@/db/games", () => ({
   getDb: vi.fn(async () => ({
     update: mockUpdate,
   })),
+}));
+
+vi.mock("@/db/games/tables/boards", () => ({
+  boards: {
+    roundNumber: "roundNumber",
+    tableNumber: "tableNumber",
+    boardNumber: "boardNumber",
+  },
+}));
+
+vi.mock("@/db/games/actions/create-submission", () => ({
+  createBoardSubmission: vi.fn(),
+}));
+
+vi.mock("@/db/games/queries/find-submissions", () => ({
+  findBoardSubmissions: vi.fn(),
+}));
+
+vi.mock("@/db/games/actions/delete-submissions", () => ({
+  deleteBoardSubmissions: vi.fn(),
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -18,6 +38,10 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn((...args: any[]) => args),
 }));
 
+import { getDb } from "@/db/games";
+import { createBoardSubmission } from "@/db/games/actions/create-submission";
+import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
+import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
 import { registerSubmitResultHandler } from "./submit-result.handler";
 
 function makeSocket() {
@@ -29,9 +53,23 @@ function makeIo() {
   return { to: vi.fn(() => ({ emit })), _emit: emit } as any;
 }
 
+function submission(
+  side: "NS" | "EW",
+  boardNumber: number,
+  result: string,
+): any {
+  return { side, boardNumber, result };
+}
+
 describe("registerSubmitResultHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(createBoardSubmission).mockResolvedValue(undefined as any);
+    vi.mocked(deleteBoardSubmissions).mockResolvedValue(undefined as any);
+    // Default: only one side has submitted, so no confirm/mismatch yet.
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      submission("NS", 1, "3NTN="),
+    ] as any);
   });
 
   it("registers handler on SUBMIT_RESULT event", () => {
@@ -43,7 +81,7 @@ describe("registerSubmitResultHandler", () => {
     );
   });
 
-  it("stores NS pending submission and returns success", async () => {
+  it("stores a pending submission and returns success", async () => {
     const socket = makeSocket();
     const io = makeIo();
     registerSubmitResultHandler(socket, io);
@@ -54,7 +92,6 @@ describe("registerSubmitResultHandler", () => {
     await handler(
       {
         gameId: "g1",
-        gameType: "PAIRS",
         seat: "1NS",
         roundNumber: 1,
         tableNumber: 1,
@@ -64,12 +101,27 @@ describe("registerSubmitResultHandler", () => {
       cb,
     );
 
+    expect(createBoardSubmission).toHaveBeenCalledWith(
+      "g1",
+      expect.objectContaining({
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: 1,
+        side: "NS",
+        result: "3NTN=",
+      }),
+    );
     expect(cb).toHaveBeenCalledWith({ success: true });
-    // No emit since only one side submitted
+    // Only one side submitted, so no board event.
     expect(io._emit).not.toHaveBeenCalled();
   });
 
-  it("stores EW pending submission and returns success", async () => {
+  it("confirms result when both NS and EW agree", async () => {
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      submission("NS", 1, "4HS+1"),
+      submission("EW", 1, "4HS+1"),
+    ] as any);
+
     const socket = makeSocket();
     const io = makeIo();
     registerSubmitResultHandler(socket, io);
@@ -79,61 +131,17 @@ describe("registerSubmitResultHandler", () => {
 
     await handler(
       {
-        gameId: "g2",
-        gameType: "PAIRS",
+        gameId: "g3",
         seat: "1EW",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
-        result: "3NTN=",
+        result: "4HS+1",
       },
       cb,
     );
 
     expect(cb).toHaveBeenCalledWith({ success: true });
-  });
-
-  it("confirms result when both NS and EW agree", async () => {
-    const socket = makeSocket();
-    const io = makeIo();
-    registerSubmitResultHandler(socket, io);
-
-    const handler = socket.on.mock.calls[0][1];
-    const cb1 = vi.fn();
-    const cb2 = vi.fn();
-
-    // NS submits
-    await handler(
-      {
-        gameId: "g3",
-        gameType: "PAIRS",
-        seat: "1NS",
-        roundNumber: 1,
-        tableNumber: 1,
-        boardNumber: 1,
-        result: "4HS+1",
-      },
-      cb1,
-    );
-
-    // EW submits same result
-    await handler(
-      {
-        gameId: "g3",
-        gameType: "PAIRS",
-        seat: "1EW",
-        roundNumber: 1,
-        tableNumber: 1,
-        boardNumber: 1,
-        result: "4HS+1",
-      },
-      cb2,
-    );
-
-    expect(cb1).toHaveBeenCalledWith({ success: true });
-    expect(cb2).toHaveBeenCalledWith({ success: true });
-
-    // Should emit BOARD_CONFIRMED and BOARD_RESULT_UPDATED
     expect(io._emit).toHaveBeenCalledWith(
       SocketEvents.BOARD_CONFIRMED,
       expect.objectContaining({
@@ -153,34 +161,24 @@ describe("registerSubmitResultHandler", () => {
         boardNumber: 1,
       }),
     );
+    expect(deleteBoardSubmissions).toHaveBeenCalledWith("g3", 1, 1);
   });
 
   it("emits BOARD_MISMATCH when results disagree", async () => {
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      submission("NS", 3, "3NTN="),
+      submission("EW", 3, "3NTN-1"),
+    ] as any);
+
     const socket = makeSocket();
     const io = makeIo();
     registerSubmitResultHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
 
-    // NS submits one result
     await handler(
       {
         gameId: "g4",
-        gameType: "PAIRS",
-        seat: "1NS",
-        roundNumber: 2,
-        tableNumber: 1,
-        boardNumber: 3,
-        result: "3NTN=",
-      },
-      vi.fn(),
-    );
-
-    // EW submits a different result
-    await handler(
-      {
-        gameId: "g4",
-        gameType: "PAIRS",
         seat: "1EW",
         roundNumber: 2,
         tableNumber: 1,
@@ -203,31 +201,20 @@ describe("registerSubmitResultHandler", () => {
   });
 
   it("emits BOARD_MISMATCH when board numbers disagree", async () => {
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      submission("NS", 1, "2SN+1"),
+      submission("EW", 2, "2SN+1"),
+    ] as any);
+
     const socket = makeSocket();
     const io = makeIo();
     registerSubmitResultHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
 
-    // NS submits for board 1
     await handler(
       {
         gameId: "g5",
-        gameType: "PAIRS",
-        seat: "2NS",
-        roundNumber: 1,
-        tableNumber: 2,
-        boardNumber: 1,
-        result: "2SN+1",
-      },
-      vi.fn(),
-    );
-
-    // EW submits for board 2 (different board number)
-    await handler(
-      {
-        gameId: "g5",
-        gameType: "PAIRS",
         seat: "2EW",
         roundNumber: 1,
         tableNumber: 2,
@@ -248,9 +235,9 @@ describe("registerSubmitResultHandler", () => {
   });
 
   it("returns error on internal failure", async () => {
-    // Make getDb throw
-    const { getDb } = await import("@/db/games");
-    vi.mocked(getDb).mockRejectedValueOnce(new Error("DB fail"));
+    vi.mocked(createBoardSubmission).mockRejectedValueOnce(
+      new Error("DB fail"),
+    );
 
     const socket = makeSocket();
     const io = makeIo();
@@ -259,26 +246,10 @@ describe("registerSubmitResultHandler", () => {
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
-    // First submit NS to populate pending
     await handler(
       {
         gameId: "g6",
-        gameType: "PAIRS",
         seat: "1NS",
-        roundNumber: 1,
-        tableNumber: 1,
-        boardNumber: 1,
-        result: "1NTN=",
-      },
-      vi.fn(),
-    );
-
-    // Second submit to trigger the DB write path which will throw
-    await handler(
-      {
-        gameId: "g6",
-        gameType: "PAIRS",
-        seat: "1EW",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,

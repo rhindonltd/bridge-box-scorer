@@ -9,8 +9,12 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
+}));
+
+vi.mock("@/db/games", () => ({
+  getDb: vi.fn(),
 }));
 
 vi.mock("@/db/system/queries/find-login-session", () => ({
@@ -20,6 +24,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { updateTableCount } from "@/db/game-index/actions/update-table-count";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { getDb } from "@/db/games";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerUpdateTablesHandler } from "./update-tables.handler";
 
@@ -41,6 +46,8 @@ describe("registerUpdateTablesHandler", () => {
       role: "DIRECTOR",
       gameId: "g1",
     } as any);
+    // Default: a resolvable per-game DB. Individual tests override findPairs.
+    vi.mocked(getDb).mockResolvedValue({} as any);
   });
 
   it("registers handler on UPDATE_TABLES event", () => {

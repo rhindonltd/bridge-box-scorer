@@ -4,8 +4,18 @@ import { SelectGame } from "./SelectGame";
 
 describe("SelectGame", () => {
   const mockGames = [
-    { gameId: "id-a", eventName: "Game A" },
-    { gameId: "id-b", eventName: "Game B" },
+    {
+      gameId: "id-a",
+      eventName: "Game A",
+      eventDate: "2026-01-01",
+      tables: 4,
+    },
+    {
+      gameId: "id-b",
+      eventName: "Game B",
+      eventDate: "2026-01-02",
+      tables: 5,
+    },
   ] as any;
 
   it("shows empty state when no games exist", () => {
@@ -13,21 +23,20 @@ describe("SelectGame", () => {
       <SelectGame headerTitle="Title" games={[]} onGameSelected={vi.fn()} />,
     );
     expect(
-      screen.getByText("No games yet. Waiting for director..."),
+      screen.getByText("No games have been created yet."),
     ).toBeInTheDocument();
   });
 
-  it("shows selection prompt when games exist", () => {
-    render(
+  it("shows a loading spinner while loading", () => {
+    const { container } = render(
       <SelectGame
         headerTitle="Title"
-        games={mockGames}
+        games={[]}
+        isLoading
         onGameSelected={vi.fn()}
       />,
     );
-    expect(
-      screen.getByText("Please select the game you wish to join:"),
-    ).toBeInTheDocument();
+    expect(container.querySelector(".animate-spin")).toBeInTheDocument();
   });
 
   it("renders all game buttons", () => {
@@ -42,13 +51,13 @@ describe("SelectGame", () => {
     expect(screen.getByText("Game B")).toBeInTheDocument();
   });
 
-  it("calls onGameSelected with gameId when a game is clicked", () => {
+  it("calls onGameSelected with gameId and name when a game is clicked", () => {
     const fn = vi.fn();
     render(
       <SelectGame headerTitle="Title" games={mockGames} onGameSelected={fn} />,
     );
     fireEvent.click(screen.getByText("Game A"));
-    expect(fn).toHaveBeenCalledWith("id-a");
+    expect(fn).toHaveBeenCalledWith("id-a", "Game A");
   });
 
   it("calls onGameSelected for second game", () => {
@@ -57,10 +66,10 @@ describe("SelectGame", () => {
       <SelectGame headerTitle="Title" games={mockGames} onGameSelected={fn} />,
     );
     fireEvent.click(screen.getByText("Game B"));
-    expect(fn).toHaveBeenCalledWith("id-b");
+    expect(fn).toHaveBeenCalledWith("id-b", "Game B");
   });
 
-  it("renders correct number of buttons", () => {
+  it("renders one button per game", () => {
     render(
       <SelectGame
         headerTitle="Title"
@@ -80,14 +89,7 @@ describe("SelectGame", () => {
         onGameSelected={vi.fn()}
       />,
     );
-    const button = screen.getByText("Game A");
-    expect(button).toHaveClass(
-      "w-full",
-      "py-3",
-      "text-lg",
-      "font-semibold",
-      "bg-blue-600",
-      "rounded-lg",
-    );
+    const button = screen.getByText("Game A").closest("button");
+    expect(button).toHaveClass("w-full", "bg-gray-50", "border", "rounded-xl");
   });
 });

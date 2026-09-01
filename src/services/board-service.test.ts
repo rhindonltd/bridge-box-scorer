@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getBoardInstances } from "./board-service";
 
-vi.mock("@/db/games/pairs", () => ({
+vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/tables/boards", () => ({
+vi.mock("@/db/games/tables/boards", () => ({
   boards: { boardNumber: "boardNumber" },
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
