@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { Db, getDb } from "@/db/games";
+
+const boardNumberSchema = z.coerce.number().int().min(1);
 
 export type RouteParams = {
   gameId: string;
@@ -22,6 +25,18 @@ export function withGameRoute(
     try {
       const { gameId, boardNumber, seat } = await params;
 
+      let parsedBoardNumber: number | null = null;
+      if (boardNumber !== undefined) {
+        const result = boardNumberSchema.safeParse(boardNumber);
+        if (!result.success) {
+          return NextResponse.json(
+            { success: false, error: "Invalid board number" },
+            { status: 400 },
+          );
+        }
+        parsedBoardNumber = result.data;
+      }
+
       const db = await getDb(gameId);
 
       if (!db) {
@@ -34,7 +49,7 @@ export function withGameRoute(
       return handler({
         req,
         gameId,
-        boardNumber: boardNumber ? Number(boardNumber) : null,
+        boardNumber: parsedBoardNumber,
         seat: seat ?? null,
         db,
       });
