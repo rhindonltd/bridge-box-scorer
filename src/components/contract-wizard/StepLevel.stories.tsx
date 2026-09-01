@@ -12,14 +12,7 @@ const meta: Meta<typeof StepLevel> = {
   args: {
     onLevelSelected: fn(),
     onSpecialOutcome: fn(),
-  },
-  decorators: [
-    (Story) => (
-      <div className="h-screen flex flex-col">
-        <Story />
-      </div>
-    ),
-  ],
+  }
 };
 
 export default meta;

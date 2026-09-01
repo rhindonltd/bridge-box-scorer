@@ -5,19 +5,7 @@ import { GameContext } from "@/context/GameContext";
 import { AssignmentContext } from "@/context/AssignmentContext";
 import { KeyedMutator } from "swr";
 import { BridgeGame } from "@/db/game-index/schema";
-
-const mockGame = {
-  gameId: "test-game-1",
-  eventName: "Monday AM Pairs",
-  sessionName: "Afternoon",
-  sectionName: "Section A",
-  gameType: "PAIRS" as const,
-  director: "John Smith",
-  eventDate: "2024-01-15",
-  status: "JOINABLE" as const,
-  tables: 4,
-  scoringType: "MP",
-};
+import { mockGame } from "@/mocks/fixtures/game";
 
 const mockAssignment = {
   type: "PAIR" as const,

@@ -11,14 +11,7 @@ const meta: Meta<typeof StepResult> = {
   tags: ["autodocs"],
   args: {
     onResultComplete: fn(),
-  },
-  decorators: [
-    (Story) => (
-      <div className="h-screen flex flex-col">
-        <Story />
-      </div>
-    ),
-  ],
+  }
 };
 
 export default meta;

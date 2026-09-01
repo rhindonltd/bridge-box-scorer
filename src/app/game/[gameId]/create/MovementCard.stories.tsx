@@ -3,7 +3,7 @@ import { fn } from "storybook/test";
 import { MovementCard } from "@/app/game/[gameId]/create/MovementCard";
 
 const meta: Meta<typeof MovementCard> = {
-  title: "App/Create/Game/MovementCard",
+  title: "App/Game/Create/MovementCard",
   component: MovementCard,
   parameters: {
     layout: "fullscreen",

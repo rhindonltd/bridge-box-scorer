@@ -11,7 +11,6 @@ const meta: Meta<typeof DirectorTableControls> = {
   },
   tags: ["autodocs"],
   args: {
-    onChange: fn(),
     onEvict: fn(),
   },
 };

@@ -1,83 +1,73 @@
 # Tech Stack
 
-## Runtime & Framework
+## Runtime & tooling
 
-- **Next.js 16** (App Router) — UI and REST API routes
-- **React 19** — component layer
-- **TypeScript** (strict mode) — used throughout; `@/*` aliases to `src/*`
-- **Node.js** — server runtime via a custom `server.ts` entry point
+- Node.js 24.19.0 (pinned in `.nvmrc`; run `nvm use`)
+- npm as the package manager (`package-lock.json`)
+- TypeScript in `strict` mode; path alias `@/*` maps to `src/*`
+- Custom server (`server.ts`) runs Next.js and Socket.IO together on one port, launched via `tsx`
 
-## Custom Server
+## Frameworks & libraries
 
-`server.ts` combines Next.js and Socket.IO on a single HTTP server (port 3000). This is the entry point for both dev and production. Next.js alone is **not** sufficient — always use the custom server.
+- Next.js 16 (App Router) with React 19
+- Tailwind CSS 4 for styling; Headless UI + lucide-react for UI primitives
+- Socket.IO 4 (`socket.io` / `socket.io-client`) for real-time transport
+- Drizzle ORM over SQLite (`better-sqlite3`); multiple databases (see `drizzle.config.*.ts`)
+- SWR for HTTP data fetching, bridged to socket events for live updates
+- Zustand for client state; Zod for validation
+- bcrypt for director PIN hashing; xmlbuilder2 and csv-parse for data import/export
 
-```
-dev:   tsx watch server.ts
-prod:  NODE_ENV=production tsx server.ts
-```
+## Testing & quality
 
-## Database
+- Vitest for unit tests (jsdom, `--project unit`), co-located as `*.test.ts(x)`; integration tests as `*.int.test.ts`
+- Playwright for E2E / journey tests in `tests/`
+- Storybook 10 for component development and visual tests
+- ESLint (`eslint-config-next`) and Prettier for lint/format
 
-- **better-sqlite3** — embedded SQLite, no separate DB process needed
-- **Drizzle ORM** — schema definitions, migrations, and queries
-- Each game gets its own `.db` file; location controlled by `DATABASE_GAMES_URL` env var
-- Separate databases exist for: game index, players, movements, system
-- Schema tables are defined in `src/db/*/tables/` and exported via `src/db/*/schema.ts`
-- Types are inferred from the schema: `typeof table.$inferInsert` / `$inferSelect`
+## Common commands
 
-## Real-Time
+```bash
+# Development (Next.js + Socket.IO, hot reload)
+npm run dev
 
-- **Socket.IO 4** — bidirectional communication between server and clients
-- Server-side handlers registered in `src/socket/handlers/`
-- Client emits via `emitWithAck` / `emitEvent` helpers in `src/lib/socket.ts`
-- All event names live in `src/socket/socket-events.ts` (central registry)
-- Typed event map in `src/socket/socket-event-map.ts`
+# Production build (runs DB migrations first via prebuild) and start
+npm run build
+npm start
 
-## State Management
+# Unit tests
+npm test
+npx vitest --project unit          # watch mode
+npm run coverage                   # with coverage report
 
-- **SWR** — server state fetching and caching; keys centralised in `src/swr/swr-keys.ts`
-- **React Context** — wraps SWR data and socket subscriptions (e.g. `GameContext`, `AssignmentContext`)
-- **Zustand** — available for local UI state where needed
+# E2E / journeys (require a running server)
+npm run journey:phone
+npm run journey:tablet
+npm run journey:all
+npm run e2e_ui                     # Playwright UI mode
 
-## Styling
+# Lint & format
+npm run lint
+npm run format
 
-- **Tailwind CSS v4** — utility-first, applied directly in JSX
-- No CSS modules or styled-components
-
-## Validation
-
-- **Zod v4** — runtime schema validation, especially for API and socket payloads
-
-## Testing
-
-- **Vitest** — unit tests (project: `unit`), co-located as `*.test.ts(x)`
-- **Storybook 10** — component stories co-located as `*.stories.tsx`; also runs via Vitest (project: `storybook`)
-- **Playwright** — end-to-end tests
-- **Testing Library** — DOM assertions in unit tests
-
-## Common Commands
-
-| Task                     | Command             |
-| ------------------------ | ------------------- |
-| Dev server               | `npm run dev`       |
-| Production build         | `npm run build`     |
-| Production start         | `npm start`         |
-| Unit tests               | `npm test`          |
-| Unit tests with coverage | `npm run coverage`  |
-| E2E tests                | `npm run e2e`       |
-| Storybook                | `npm run storybook` |
-| Lint                     | `npm run lint`      |
-| Format                   | `npm run format`    |
-
-## Database Migrations
-
-Each database has its own Drizzle config. Generate then apply:
-
-```
-npm run generate_pairs_migration   # generate SQL for pairs game DB
-npm run generate_players_migration
-npm run generate_movements_migration
-npm run generate_game_index_migration
+# Storybook
+npm run storybook                  # dev server on port 6006
+npm run build-storybook
 ```
 
-The `prebuild` script runs `src/scripts/migrate.ts` automatically before every build.
+## Database migrations
+
+Each SQLite database has its own Drizzle config and migration scripts. Migrations run automatically on `build` (prebuild). To manage manually:
+
+```bash
+npm run generate_<db>_migration   # e.g. generate_movements_migration
+npm run run_<db>_migration        # e.g. run_movements_migration
+```
+
+Databases: `game-index`, per-game `games`, `movements`, `players`, `system`.
+
+## Conventions & gotchas
+
+- Prefer the `@/*` import alias over long relative paths.
+- `any` is disallowed except in test files, mock factories, Storybook decorators, and `src/socket/test/**`.
+- TypeScript 7 lacks the compiler API Next.js expects; `next.config.ts` sets `useTypeScriptCli: true` and there is a TS6 shim (`scripts/link-ts6.mjs` postinstall). Do not remove these.
+- Do not commit or read secrets from `.env`; database directories are configured via env vars (`DATABASE_URL`, `DATABASE_GAMES_URL`, `NEXT_PUBLIC_APP_URL`).

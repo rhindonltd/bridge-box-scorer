@@ -8,13 +8,6 @@ const meta: Meta<typeof StepBoard> = {
   parameters: { layout: "fullscreen" },
   tags: ["autodocs"],
   args: { onBoardSelected: fn() },
-  decorators: [
-    (Story) => (
-      <div className="h-screen flex flex-col">
-        <Story />
-      </div>
-    ),
-  ],
 };
 export default meta;
 type Story = StoryObj<typeof StepBoard>;

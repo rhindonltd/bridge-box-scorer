@@ -1,74 +1,40 @@
 # Project Structure
 
+## Top level
+
 ```
-bridge-box-scorer/
-├── server.ts                  # Custom entry point: Next.js + Socket.IO
-├── src/
-│   ├── app/                   # Next.js App Router pages and API routes
-│   │   ├── api/               # REST endpoints (route.ts files)
-│   │   ├── create/            # Game creation flow
-│   │   ├── join/              # Player join flow
-│   │   ├── play/              # Active game play UI
-│   │   ├── manage/            # Director game management
-│   │   └── settings/          # App settings
-│   ├── components/            # Reusable React components
-│   │   ├── common/            # Shared display components (e.g. GameInfo, ParticipantInfo)
-│   │   ├── contract/          # Contract entry UI
-│   │   ├── create/            # Game creation components
-│   │   ├── join/              # Join flow components
-│   │   ├── layout/            # Shell/layout components
-│   │   ├── movement/          # Movement selection components
-│   │   ├── pages/             # Full-page compositions used by app/ routes
-│   │   ├── play/              # In-round play components
-│   │   ├── results/           # Results and scoring display
-│   │   └── tables/            # Table/board grid components
-│   ├── context/               # React Contexts (GameContext, AssignmentContext, etc.)
-│   ├── db/                    # Database layer (Drizzle ORM)
-│   │   ├── game-index/        # Index DB: registry of all games
-│   │   ├── games/             # Per-game databases
-│   │   │   ├── pairs/         # Pairs game schema and queries
-│   │   │   │   ├── tables/    # Drizzle table definitions
-│   │   │   │   ├── actions/   # Next.js Server Actions ("use server")
-│   │   │   │   ├── queries/   # Read queries
-│   │   │   │   └── index.ts   # getDb(gameId) factory
-│   │   │   └── shared/        # Tables shared across game types
-│   │   ├── movements/         # Movements DB
-│   │   ├── players/           # Players/EBU membership DB
-│   │   └── system/            # System-level config DB
-│   ├── hooks/                 # Custom React hooks
-│   ├── lib/                   # Shared utilities
-│   │   ├── socket.ts          # Client socket singleton + emitWithAck/emitEvent
-│   │   ├── fetcher.ts         # SWR fetcher
-│   │   └── game-service.ts    # High-level client-side game operations (emit wrappers)
-│   ├── mocks/                 # Test/Storybook mock data
-│   ├── model/                 # Pure domain types and logic (no DB or React imports)
-│   │   ├── contract.ts        # Contract codes, parsing, validation
-│   │   ├── score.ts           # Scoring types and calculations
-│   │   └── common.ts          # Shared domain primitives (Direction, Card, etc.)
-│   ├── movement/              # Movement generation algorithms
-│   ├── scoring/               # Scoring algorithms (matchpoints, IMPs, etc.)
-│   ├── scripts/               # One-off scripts (migrate, seed, sync-ebu-players)
-│   ├── socket/                # Socket.IO server layer
-│   │   ├── handlers/          # Event handlers (game/, timer/)
-│   │   ├── socket-events.ts   # Centralised event name constants
-│   │   ├── socket-event-map.ts # Typed event payload map
-│   │   ├── socket-response.ts # Standard response envelope type
-│   │   └── websocket.ts       # Server initialisation (startSocketServer)
-│   ├── swr/                   # SWR key factories
-│   ├── timer/                 # Timer logic
-│   └── styles/                # Global CSS
-├── .storybook/                # Storybook config and decorators
-└── drizzle.config.*.ts        # Per-database Drizzle config files
+server.ts                  # Custom server: boots Next.js + Socket.IO on one port
+next.config.ts             # Next.js config (App Router, TS CLI flag)
+drizzle.config.*.ts        # One Drizzle config per SQLite database
+src/                       # Application source
+tests/                     # Playwright E2E / journey tests
+scripts/                   # Build/setup scripts (e.g. TS6 link shim)
+.storybook/                # Storybook config and decorators
+data/                      # Local SQLite database files (gitignored)
+public/                    # Static assets
 ```
 
-## Key Conventions
+## `src/` layout
 
-- **Path alias**: `@/` resolves to `src/`. Always use `@/` imports, never relative `../../`.
-- **Components**: Named exports, PascalCase filenames. Props typed with a local `interface Props`.
-- **Server Actions**: Files with `"use server"` live in `src/db/*/actions/`. One action per file, named to match the operation (e.g. `create-board.ts` exports `createBoard`).
-- **DB queries**: Pure read functions in `src/db/*/queries/`. Server-side only; never import from client components.
-- **Model layer**: `src/model/` contains pure TypeScript — no DB, no React, no side effects. Domain types and parse/validate functions go here.
-- **Socket events**: Always reference event names from `src/socket/socket-events.ts`, never use raw strings.
-- **Stories**: Co-located alongside the component as `ComponentName.stories.tsx`.
-- **Tests**: Co-located alongside the source file as `*.test.ts(x)`.
-- **File naming**: kebab-case for non-component files; PascalCase for component files.
+- `app/` — Next.js App Router: pages, layouts, and `api/` route handlers. Routes grouped by feature (`create`, `join`, `manage`, `game`, `display`, `settings`).
+- `components/` — React components, grouped by area (common, pages, play, results, etc.).
+- `context/` — React Contexts (Game, Play, Assignment) for shared client state.
+- `hooks/` — Custom React hooks, including the socket/SWR sync hooks.
+- `swr/` — SWR fetchers and cache-key helpers.
+- `lib/` — Shared client/server utilities (socket client, fetcher).
+- `services/` — Higher-level application/service logic.
+- `model/` — Pure domain types and logic (framework-agnostic).
+- `movement/` — Movement generation algorithms (Mitchell, Howell, American Whist).
+- `scoring/` — Scoring algorithms (matchpoint, IMP, cross-IMP).
+- `timer/` — Bridge session timer engine and scheduler.
+- `socket/` — Socket.IO server: `handlers/`, `middleware/`, room/event maps (`rooms.ts`, `socket-event-map.ts`, `socket-events.ts`).
+- `db/` — Drizzle schemas, queries, and actions, split per database: `game-index/`, `games/`, `movements/`, `players/`, `system/`.
+- `scripts/` — Runtime scripts (migrations, EBU sync, movement seeding) run via `tsx`.
+- `styles/`, `mocks/` — Global styles and test/dev mocks.
+
+## Conventions
+
+- Keep pure domain logic (`model/`, `movement/`, `scoring/`, `timer/`) free of React and I/O so it stays unit-testable.
+- Co-locate tests and stories with their source: `Name.tsx`, `Name.test.tsx`, `Name.stories.tsx`; integration tests use `*.int.test.ts`.
+- Data flow: SWR fetches initial HTTP data, Socket.IO pushes real-time updates, and a socket→SWR sync hook merges those events into the SWR cache. Route new real-time state through this pattern rather than ad-hoc socket listeners in components.
+- Each database is a separate Drizzle unit; put schema/queries under the matching `src/db/<db>/` folder and use its dedicated `drizzle.config.<db>.ts`.

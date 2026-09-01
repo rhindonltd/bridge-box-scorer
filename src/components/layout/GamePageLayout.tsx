@@ -1,6 +1,10 @@
-import React from "react";
+"use client";
+
+import React, { useRef } from "react";
 
 import { GameHeaderBar } from "./GameHeaderBar";
+import { ScrollableContent } from "./ScrollableContent";
+import { CenteredContent } from "./CenteredContent";
 
 interface Props {
   /** Primary header text (e.g., event name, "Manage Games", "Settings") */
@@ -35,12 +39,11 @@ export function GamePageLayout({
         headerRight={headerRight}
       />
 
-      {/* Content Area */}
-      <div
-        className={`flex-1 min-h-0 ${centerContent ? "flex flex-col items-center justify-center" : "overflow-y-auto"}`}
-      >
-        {children}
-      </div>
+      {centerContent ? (
+        <CenteredContent children={children} />
+      ) : (
+        <ScrollableContent children={children} />
+      )}
 
       {/* Action Bar */}
       {actions && <div className="shrink-0 p-2">{actions}</div>}

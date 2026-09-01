@@ -3,23 +3,7 @@ import { fn } from "storybook/test";
 import { ResultMismatch } from "@/app/game/[gameId]/play/[initialSeat]/ResultMismatch";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
-
-const mockGame = {
-  id: 1,
-  eventName: "Monday AM Pairs",
-  director: "Jacqui Collier",
-  gameType: "PAIRS" as const,
-  scoringType: "MP" as const,
-  gameId: "abc123",
-  sessionName: "Session 1",
-  sectionName: "Section A",
-  eventDate: new Date().toISOString(),
-  tables: 8,
-  leadCardRequired: true,
-  status: "JOINABLE" as const,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
+import { mockGame } from "@/mocks/fixtures/game";
 
 const meta: Meta<typeof ResultMismatch> = {
   title: "App/Play/Game/Assignment/ResultMismatch",
