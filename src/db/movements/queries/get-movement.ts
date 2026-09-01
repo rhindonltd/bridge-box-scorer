@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { getDb } from "@/db/movements";
 import { eq } from "drizzle-orm";

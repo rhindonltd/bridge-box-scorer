@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { getDb } from "@/db/games";
 import { TimerState } from "@/timer/timer-state";

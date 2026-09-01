@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { BridgeGame, NewBridgeGame, games } from "@/db/game-index/schema";
 import { getDb } from "@/db/game-index";

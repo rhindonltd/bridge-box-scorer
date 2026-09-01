@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { getDb } from "@/db/system";
 import { club, Club } from "@/db/system/schema";

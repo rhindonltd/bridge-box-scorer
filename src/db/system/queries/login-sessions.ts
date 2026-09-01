@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { getDb } from "@/db/system";
 import { loginSessions, settings } from "@/db/system/schema";
