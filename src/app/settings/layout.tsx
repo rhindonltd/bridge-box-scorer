@@ -1,19 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { PinEntryPage } from "@/app/settings/PinEntryPage";
+import { useEffect, useState } from "react";
+import { hasAdminToken } from "@/lib/admin-token";
+import { AdminKeyEntry } from "@/app/settings/AdminKeyEntry";
 
-export default function GameLayout({
+export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [pinEntered, setPinEntered] = useState(false);
+  // `null` until we've checked localStorage on the client, to avoid a
+  // hydration mismatch (server can't read the token).
+  const [unlocked, setUnlocked] = useState<boolean | null>(null);
 
-  if (!pinEntered) {
-    return (
-      <PinEntryPage correctPin="1234" onSuccess={() => setPinEntered(true)} />
-    );
+  useEffect(() => {
+    setUnlocked(hasAdminToken());
+  }, []);
+
+  if (unlocked === null) {
+    return null;
+  }
+
+  if (!unlocked) {
+    return <AdminKeyEntry onSuccess={() => setUnlocked(true)} />;
   }
 
   return <>{children}</>;

@@ -1,4 +1,4 @@
-import { withBasicRoute } from "@/lib/api/basicRoute";
+import { withAdminRoute } from "@/lib/api/adminRoute";
 import fs from "fs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -6,7 +6,7 @@ import { success } from "@/lib/api/success";
 
 const WIFI_CONFIG = "/home/bridgebox/bridge-box/wifi.json";
 
-export const POST = withBasicRoute(async ({ req }) => {
+export const POST = withAdminRoute(async ({ req }) => {
   const body = await req.json();
 
   const schema = z.object({
