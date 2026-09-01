@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import useSWR from "swr";
 import { useParams } from "next/navigation";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 import { useRequiredGame } from "@/context/GameContext";
 import { ContractWizard } from "@/app/game/[gameId]/play/[initialSeat]/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
@@ -137,7 +140,6 @@ export default function PlayPage() {
       return (
         <BoardResultsLoader
           gameId={game.gameId}
-          gameType={game.gameType}
           scoringType={game.scoringType}
           boardNumber={boardNumber}
           playedBoards={playedBoards}
@@ -167,7 +169,6 @@ export default function PlayPage() {
 
 function BoardResultsLoader({
   gameId,
-  gameType,
   scoringType,
   boardNumber,
   playedBoards,
@@ -175,7 +176,6 @@ function BoardResultsLoader({
   onNext,
 }: {
   gameId: string;
-  gameType: string;
   scoringType: string;
   boardNumber: number;
   playedBoards: number[];
@@ -183,51 +183,39 @@ function BoardResultsLoader({
   onNext: () => void;
 }) {
   const [viewingBoard, setViewingBoard] = useState(boardNumber);
-  const [scoredTraveller, setScoredTraveller] =
-    useState<ScoredTraveller | null>(null);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting before async fetch
-    setScoredTraveller(null);
-    let cancelled = false;
-    fetch(`/api/games/${gameId}/boards/${viewingBoard}`)
-      .then((r) => r.json())
-      .then((data: { instances?: BoardInstance[] }) => {
-        if (cancelled) return;
-        if (data.instances) {
-          const mode = "PAIR";
-          const scoringMode =
-            scoringType === "IMP" || scoringType === "XIMP" ? "XIMP" : "MP";
+  const { data } = useSWR<{ instances: BoardInstance[] }>(
+    swrKeys.boardInstances(gameId, viewingBoard),
+    fetcher,
+  );
 
-          const lines = data.instances
-            .filter((i) => i.currentResult != null)
-            .map((i) => {
-              return {
-                nsId: i.participants.ns,
-                ewId: i.participants.ew,
-                outcome: i.currentResult,
-              };
-            });
+  const scoredTraveller = useMemo<ScoredTraveller | null>(() => {
+    if (!data?.instances) return null;
 
-          if (lines.length > 0) {
-            const traveller: Traveller = {
-              type: mode,
-              mode,
-              board: viewingBoard,
-              section: gameId,
-              lines: lines as Traveller["lines"],
-            };
+    const mode = "PAIR";
+    const scoringMode =
+      scoringType === "IMP" || scoringType === "XIMP" ? "XIMP" : "MP";
 
-            const scored = score(traveller, scoringMode);
-            setScoredTraveller(scored);
-          }
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
+    const lines = data.instances
+      .filter((i) => i.currentResult != null)
+      .map((i) => ({
+        nsId: i.participants.ns,
+        ewId: i.participants.ew,
+        outcome: i.currentResult,
+      }));
+
+    if (lines.length === 0) return null;
+
+    const traveller: Traveller = {
+      type: mode,
+      mode,
+      board: viewingBoard,
+      section: gameId,
+      lines: lines as Traveller["lines"],
     };
-  }, [gameId, gameType, scoringType, viewingBoard]);
+
+    return score(traveller, scoringMode);
+  }, [data, gameId, scoringType, viewingBoard]);
 
   if (!scoredTraveller) {
     return (

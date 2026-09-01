@@ -1,16 +1,10 @@
-"use client";
+import type { Metadata } from "next";
+import { JoinGamePage } from "@/app/join/JoinGamePage";
 
-import SelectGamePage from "@/components/pages/SelectGamePage";
-import { useRouter } from "next/navigation";
+export const metadata: Metadata = {
+  title: "Join Game | Bridge Box",
+};
 
 export default function JoinRoute() {
-  const router = useRouter();
-
-  function onGameSelected(gameId: string) {
-    router.push(`/game/${gameId}/join/player`);
-  }
-
-  return (
-    <SelectGamePage headerTitle="Join Game" onGameSelected={onGameSelected} />
-  );
+  return <JoinGamePage />;
 }

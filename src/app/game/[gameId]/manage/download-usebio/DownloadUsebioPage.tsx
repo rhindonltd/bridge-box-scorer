@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { Club } from "@/db/system/schema";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 
 interface DownloadUsebioPageProps {
   onUsebioDownloaded: () => void;
@@ -17,22 +21,22 @@ export function DownloadUsebioPage({
 
   const [name, setName] = useState("");
   const [clubNumber, setClubNumber] = useState("");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const {
+    data,
+    isLoading: loading,
+    mutate,
+  } = useSWR<{ club: Club | null }>(swrKeys.club(), fetcher);
+
+  // Seed the form fields once the club record loads.
   useEffect(() => {
-    fetch("/api/system/club")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.club) {
-          setName(data.club.name);
-          setClubNumber(data.club.clubNumber);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    if (data?.club) {
+      setName(data.club.name);
+      setClubNumber(data.club.clubNumber);
+    }
+  }, [data]);
 
   async function handleDownload(e: React.FormEvent) {
     e.preventDefault();
@@ -60,6 +64,9 @@ export function DownloadUsebioPage({
         setSaving(false);
         return;
       }
+
+      // Revalidate the shared club cache so other views reflect the save.
+      await mutate();
 
       // Fetch the USEBIO file and trigger download via blob URL
       const usebioRes = await fetch(`/api/games/${game.gameId}/usebio`);

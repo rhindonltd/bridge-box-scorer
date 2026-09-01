@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import useSWR from "swr";
 import { getSocket } from "../lib/socket";
 import { SocketEvents } from "../socket/socket-events";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 
 export interface RoundSchedule {
   roundNumber: number;
@@ -65,11 +68,58 @@ type PlayState =
   | { state: "moveInfo"; nextRoundIndex: number }
   | { state: "gameComplete" };
 
+/*
+ * Given a freshly loaded schedule, find the first incomplete round.
+ * Returns the play state the flow should start in.
+ */
+function initialPlayState(schedule: Schedule): PlayState {
+  let startRoundIndex = 0;
+
+  for (let i = 0; i < schedule.rounds.length; i++) {
+    const round = schedule.rounds[i];
+
+    if (round.sitOut) {
+      startRoundIndex = i + 1;
+      continue;
+    }
+
+    const roundComplete = round.boardStatuses.every(
+      (b) => b.status === "CONFIRMED",
+    );
+
+    if (roundComplete) {
+      startRoundIndex = i + 1;
+      continue;
+    }
+
+    // First incomplete round.
+    startRoundIndex = i;
+    break;
+  }
+
+  if (startRoundIndex >= schedule.rounds.length) {
+    return { state: "gameComplete" };
+  }
+
+  return { state: "roundInfo", roundIndex: startRoundIndex };
+}
+
 export function usePlayFlow(gameId: string, seat: string) {
-  const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [playState, setPlayState] = useState<PlayState>({
     state: "loading",
   });
+
+  /*
+   * Fetch the schedule via SWR. The route returns the Schedule object
+   * directly (unwrapped from the success envelope by `fetcher`).
+   */
+  const { data: fetchedSchedule } = useSWR<Schedule>(
+    swrKeys.schedule(gameId, seat),
+    fetcher,
+  );
+
+  const schedule =
+    fetchedSchedule && fetchedSchedule.rounds ? fetchedSchedule : null;
 
   /*
    * Keep the latest schedule in a ref so socket event handlers don't
@@ -82,79 +132,31 @@ export function usePlayFlow(gameId: string, seat: string) {
   }, [schedule]);
 
   /*
-   * Fetch schedule.
+   * Initialise the play state once per (gameId, seat). Background SWR
+   * revalidations may hand back a fresh schedule object, but we must not
+   * reset the player back to the starting round mid-session, so the
+   * derived starting state is computed only the first time a schedule is
+   * seen for this key.
    */
+  const initialisedKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
-    let cancelled = false;
+    const key = `${gameId}/${seat}`;
 
-    setSchedule(null);
-    setPlayState({ state: "loading" });
-
-    fetch(`/api/games/${gameId}/schedule/${seat}`)
-      .then((r) => {
-        if (!r.ok) {
-          throw new Error(`Failed to fetch schedule: ${r.status}`);
-        }
-
-        return r.json();
-      })
-      .then((data: Schedule) => {
-        if (cancelled) return;
-
-        if (!data.rounds) {
-          return;
-        }
-
-        setSchedule(data);
-        scheduleRef.current = data;
-
-        /*
-         * Find the first incomplete round.
-         */
-        let startRoundIndex = 0;
-
-        for (let i = 0; i < data.rounds.length; i++) {
-          const round = data.rounds[i];
-
-          if (round.sitOut) {
-            startRoundIndex = i + 1;
-            continue;
-          }
-
-          const roundComplete = round.boardStatuses.every(
-            (b) => b.status === "CONFIRMED",
-          );
-
-          if (roundComplete) {
-            startRoundIndex = i + 1;
-            continue;
-          }
-
-          // First incomplete round.
-          startRoundIndex = i;
-          break;
-        }
-
-        if (startRoundIndex >= data.rounds.length) {
-          setPlayState({ state: "gameComplete" });
-        } else {
-          setPlayState({
-            state: "roundInfo",
-            roundIndex: startRoundIndex,
-          });
-        }
-      })
-      .catch(() => {
-        if (cancelled) return;
-
-        // You could add an error state here later.
+    if (!schedule) {
+      if (initialisedKeyRef.current !== key) {
         setPlayState({ state: "loading" });
-      });
+      }
+      return;
+    }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [gameId, seat]);
+    if (initialisedKeyRef.current === key) {
+      return;
+    }
+
+    initialisedKeyRef.current = key;
+    setPlayState(initialPlayState(schedule));
+  }, [schedule, gameId, seat]);
 
   /*
    * Socket listeners.

@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
+import { Club } from "@/db/system/schema";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 
 export default function ClubSettingsPage() {
   const router = useRouter();
@@ -9,20 +13,20 @@ export default function ClubSettingsPage() {
   const [clubNumber, setClubNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
+  const {
+    data,
+    isLoading: loading,
+    mutate,
+  } = useSWR<{ club: Club | null }>(swrKeys.club(), fetcher);
+
+  // Seed the form fields once the club record loads.
   useEffect(() => {
-    fetch("/api/system/club")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.club) {
-          setName(data.club.name);
-          setClubNumber(data.club.clubNumber);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    if (data?.club) {
+      setName(data.club.name);
+      setClubNumber(data.club.clubNumber);
+    }
+  }, [data]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -45,6 +49,8 @@ export default function ClubSettingsPage() {
       });
 
       if (res.ok) {
+        // Revalidate the shared club cache so other views reflect the save.
+        await mutate();
         setMessage("✅ Club info saved");
       } else {
         const data = await res.json();

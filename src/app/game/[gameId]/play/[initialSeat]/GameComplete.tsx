@@ -1,33 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import useSWR from "swr";
 import { Leaderboard } from "@/components/leaderboard/Leaderboard";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 
 export function GameComplete() {
   const params = useParams<{ gameId: string }>();
   const gameId = params.gameId;
-  const [leaderboardData, setLeaderboardData] =
-    useState<OverallScoreAndParticipant | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!gameId) return;
+  const { data, isLoading } = useSWR<{
+    leaderboard: OverallScoreAndParticipant;
+  }>(gameId ? swrKeys.leaderboard(gameId) : null, fetcher);
 
-    fetch(`/api/games/${gameId}/leaderboard`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.overallScore && data.participants) {
-          setLeaderboardData(data as OverallScoreAndParticipant);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [gameId]);
+  const leaderboardData = data?.leaderboard ?? null;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />

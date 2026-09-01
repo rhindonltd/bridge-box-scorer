@@ -1,8 +1,11 @@
 "use client";
 
 import { NewPlayer } from "@/db/games/tables/players";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import useSWR from "swr";
 import { PlayerSearchView } from "@/app/game/[gameId]/join/PlayerSearchView";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 
 interface Props {
   label: string;
@@ -12,32 +15,25 @@ interface Props {
 
 export default function PlayerSearch({ label, value, onChange }: Props) {
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [rawResults, setRawResults] = useState<NewPlayer[]>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Derive displayed results: only show when query is long enough
-  const results = useMemo(
-    () => (query.length < 2 ? [] : rawResults),
-    [query, rawResults],
-  );
-
+  // Debounce the query so we only fetch after the user pauses typing.
   useEffect(() => {
-    if (query.length < 2) {
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      const response = await fetch(
-        `/api/players/search?q=${encodeURIComponent(query)}`,
-      );
-      const players = await response.json();
-      setRawResults(players);
-      setLoading(false);
-    }, 250);
-
+    const timer = setTimeout(() => setDebouncedQuery(query), 250);
     return () => clearTimeout(timer);
   }, [query]);
+
+  // Only search once the (debounced) query is long enough.
+  const shouldSearch = debouncedQuery.length >= 2;
+
+  const { data, isLoading } = useSWR<NewPlayer[]>(
+    shouldSearch ? swrKeys.playerSearch(debouncedQuery) : null,
+    fetcher,
+  );
+
+  // Only show results once the live query is long enough, mirroring the
+  // previous behaviour where clearing the box hid results immediately.
+  const results = query.length < 2 ? [] : (data ?? []);
 
   return (
     <PlayerSearchView
@@ -45,12 +41,12 @@ export default function PlayerSearch({ label, value, onChange }: Props) {
       value={value}
       query={query}
       results={results}
-      loading={loading}
+      loading={shouldSearch && isLoading}
       onQueryChange={setQuery}
       onPlayerSelected={(player) => {
         onChange(player);
         setQuery("");
-        setRawResults([]);
+        setDebouncedQuery("");
       }}
       onClear={() => onChange(null)}
     />

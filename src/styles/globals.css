@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Wire the next/font-provided Inter face (exposed as --font-sans on <html>)
+   into Tailwind's default sans-serif stack, with a system-font fallback. */
+@theme inline {
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
 /* Base font-size: 16px on phones, 18px on tablets and larger screens.
    Since Tailwind uses rem units, this scales everything proportionally. */
 html {
