@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Settings } from "lucide-react";
 
 const menuButtonClasses =
@@ -18,9 +19,13 @@ export function MainMenuPage() {
 
       {/* Logo — scales down on small screens */}
       <div className="flex flex-col items-center mt-8 mb-8 px-6">
-        <img
+        <Image
           src="/bridge-box-logo.png"
           alt="Bridge Box"
+          width={256}
+          height={256}
+          priority
+          sizes="(min-width: 640px) 16rem, 12rem"
           className="w-48 sm:w-64 h-auto block"
         />
       </div>
