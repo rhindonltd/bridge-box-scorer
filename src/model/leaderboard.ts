@@ -22,6 +22,10 @@ export interface CrossImpOverallScore {
   crossImps: number;
 }
 
+export interface ImpOverallScore {
+  imps: number;
+}
+
 export interface TeamMatchLineScore {
   board: number;
   opponent: string;
@@ -50,6 +54,7 @@ interface ScoreByModeAndScoring {
   PAIR: {
     MP: MatchpointOverallScore;
     XIMP: CrossImpOverallScore;
+    IMP: ImpOverallScore;
   };
   TEAM: {
     MATCH: TeamMatchScore;
@@ -94,12 +99,14 @@ export interface OverallScoreBase<
 
 export type PairMatchpointOverallScore = OverallScoreBase<"PAIR", "MP">;
 export type PairXIMPOverallScore = OverallScoreBase<"PAIR", "XIMP">;
+export type PairIMPOverallScore = OverallScoreBase<"PAIR", "IMP">;
 export type TeamMatchOverallScore = OverallScoreBase<"TEAM", "MATCH">;
 export type TeamOverallOverallScore = OverallScoreBase<"TEAM", "OVERALL">;
 
 export type OverallScore =
   | PairMatchpointOverallScore
   | PairXIMPOverallScore
+  | PairIMPOverallScore
   | TeamMatchOverallScore
   | TeamOverallOverallScore;
 

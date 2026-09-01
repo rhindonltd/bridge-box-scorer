@@ -1,4 +1,4 @@
-import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
+import { ScoredTravellerOfType } from "@/scoring/overall/legacy-scored-traveller";
 
 export const pairMpTraveller: ScoredTravellerOfType<"PAIR_MP"> = {
   type: "PAIR_MP",

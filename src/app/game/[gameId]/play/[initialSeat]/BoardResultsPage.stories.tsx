@@ -3,7 +3,7 @@ import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardRe
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";
-import { score } from "@/scoring/traveller/score-traveller";
+import { scoreBoard } from "@/scoring/traveller/score-traveller";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 import { mockGame } from "@/mocks/fixtures/game";
 
@@ -30,7 +30,7 @@ export const PairXIMP: Story = {
   args: {
     board: 5,
     lastBoardOfRound: false,
-    scoredTraveller: score(impBoard1, "XIMP"),
+    scoredBoard: scoreBoard(impBoard1, "XIMP"),
     playedBoards: [5],
   },
 };
@@ -46,7 +46,7 @@ export const PairMP: Story = {
   args: {
     board: 5,
     lastBoardOfRound: false,
-    scoredTraveller: score(mpBoard1, "MP"),
+    scoredBoard: scoreBoard(mpBoard1, "MP"),
     playedBoards: [4, 5, 6],
   },
 };

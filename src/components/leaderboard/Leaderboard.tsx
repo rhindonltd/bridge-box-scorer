@@ -1,8 +1,9 @@
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { PairIMPLeaderboard } from "@/components/leaderboard/PairIMPLeaderboard";
 import { TeamMatchLeaderboard } from "@/components/leaderboard/TeamMatchLeaderboard";
 import { TeamOverallLeaderboard } from "@/components/leaderboard/TeamOverallLeaderboard";
-import { PairMP } from "@/components/leaderboard/PairMP";
+import { OverallLeaderboardView } from "@/components/scoring/OverallLeaderboardView";
+import { getOverallPlugin } from "@/scoring/plugins/registry";
+import "@/scoring/plugins/register";
 
 type Props = {
   overallScoreAndParticipant: OverallScoreAndParticipant;
@@ -17,23 +18,25 @@ export function Leaderboard({
   overallScoreAndParticipant,
   highlightAssignmentId,
 }: Props) {
+  const { overallScore, participants } = overallScoreAndParticipant;
+
+  // PAIR scoring is fully plugin-driven: resolve the overall plugin by its
+  // scoring id and render its views through the shared table view.
+  if (overallScore.mode === "PAIR") {
+    const plugin = getOverallPlugin(overallScore.scoring);
+
+    return (
+      <OverallLeaderboardView
+        plugin={plugin}
+        lines={overallScore}
+        participants={participants}
+        highlightAssignmentId={highlightAssignmentId}
+      />
+    );
+  }
+
+  // TEAM scoring is not yet plugin-migrated; keep the existing components.
   switch (overallScoreAndParticipant.type) {
-    case "PAIR_MP":
-      return (
-        <PairMP
-          pairs={overallScoreAndParticipant.participants}
-          leaderboard={overallScoreAndParticipant.overallScore}
-          highlightAssignmentId={highlightAssignmentId}
-        />
-      );
-    case "PAIR_XIMP":
-      return (
-        <PairIMPLeaderboard
-          pairs={overallScoreAndParticipant.participants}
-          leaderboard={overallScoreAndParticipant.overallScore}
-          highlightAssignmentId={highlightAssignmentId}
-        />
-      );
     case "TEAM_MATCH":
       return (
         <TeamMatchLeaderboard

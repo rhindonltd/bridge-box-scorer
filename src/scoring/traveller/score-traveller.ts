@@ -1,54 +1,35 @@
-import * as PairIMP from "./pair/imp";
-import * as PairXIMP from "./pair/x-imp";
-import * as PairMP from "./pair/mp";
-
 import { Traveller } from "@/model/traveller";
+import { ScoringType } from "@/db/games/types/scoring-type";
+import "@/scoring/plugins/register";
+import { getCombination, getPerBoardPlugin } from "@/scoring/plugins/registry";
+import { PerBoardPluginId } from "@/scoring/plugins/types";
 
-export type ScoredTraveller =
-  | {
-      type: "PAIR_IMP";
-      board: number;
-      lines: ReturnType<typeof PairIMP.scoreIMP>;
-    }
-  | {
-      type: "PAIR_XIMP";
-      board: number;
-      lines: ReturnType<typeof PairXIMP.scoreXIMP>;
-    }
-  | {
-      type: "PAIR_MP";
-      board: number;
-      lines: ReturnType<typeof PairMP.scoreMP>;
-    };
+/**
+ * A per-board scoring result. Carries the id of the plugin that produced it so
+ * the display layer can resolve the plugin (and its views) from the registry,
+ * plus the scored lines (shape defined by that plugin).
+ */
+export interface ScoredBoard {
+  pluginId: PerBoardPluginId;
+  board: number;
+  lines: unknown;
+}
 
-export type ScoredTravellerOfType<T extends ScoredTraveller["type"]> = Extract<
-  ScoredTraveller,
-  { type: T }
->;
-
-export function score(
+/**
+ * Score a single board's traveller for the given stored scoring type. The
+ * combination registry decides which per-board plugin to use; there is no
+ * scoring-type branching here.
+ */
+export function scoreBoard(
   traveller: Traveller,
-  mode: "IMP" | "XIMP" | "MP",
-): ScoredTraveller {
-  if (mode === "IMP") {
-    return {
-      type: "PAIR_IMP",
-      board: traveller.board,
-      lines: PairIMP.scoreIMP(traveller.board, traveller.lines),
-    };
-  }
-
-  if (mode === "XIMP") {
-    return {
-      type: "PAIR_XIMP",
-      board: traveller.board,
-      lines: PairXIMP.scoreXIMP(traveller.board, traveller.lines),
-    };
-  }
+  scoringType: ScoringType,
+): ScoredBoard {
+  const pluginId = getCombination(scoringType).perBoard;
+  const plugin = getPerBoardPlugin(pluginId);
 
   return {
-    type: "PAIR_MP",
+    pluginId,
     board: traveller.board,
-    lines: PairMP.scoreMP(traveller.board, traveller.lines),
+    lines: plugin.score(traveller),
   };
 }

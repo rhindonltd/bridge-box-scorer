@@ -19,7 +19,7 @@ vi.mock("@/db/games/queries/find-pairs", () => ({
 }));
 
 vi.mock("@/scoring/traveller/score-traveller", () => ({
-  score: vi.fn(),
+  scoreBoard: vi.fn(),
 }));
 
 vi.mock("@/scoring/overall/pair/mp", () => ({
@@ -33,7 +33,7 @@ vi.mock("@/scoring/overall/pair/x-imp", () => ({
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { score } from "@/scoring/traveller/score-traveller";
+import { scoreBoard } from "@/scoring/traveller/score-traveller";
 import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
 import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";
 
@@ -72,8 +72,8 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb);
 
-      vi.mocked(score).mockReturnValue({
-        type: "PAIR_MP",
+      vi.mocked(scoreBoard).mockReturnValue({
+        pluginId: "MP",
         board: 1,
         lines: [
           {
@@ -118,7 +118,7 @@ describe("leaderboard-service", () => {
       expect(result.overallScore).toBeDefined();
       expect(result.overallScore.lines).toHaveLength(2);
       expect(result.participants).toHaveLength(1);
-      expect(score).toHaveBeenCalledTimes(1);
+      expect(scoreBoard).toHaveBeenCalledTimes(1);
       expect(calculateOverallMPResults).toHaveBeenCalledTimes(1);
     });
 
@@ -156,7 +156,7 @@ describe("leaderboard-service", () => {
 
       const result = await computeLeaderboard(mockDb, "game-1");
 
-      expect(score).not.toHaveBeenCalled();
+      expect(scoreBoard).not.toHaveBeenCalled();
       expect(result.overallScore.lines).toHaveLength(0);
     });
 
@@ -183,8 +183,8 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(score).mockReturnValue({
-        type: "PAIR_MP",
+      vi.mocked(scoreBoard).mockReturnValue({
+        pluginId: "MP",
         board: 1,
         lines: [],
       } as any);
@@ -200,8 +200,8 @@ describe("leaderboard-service", () => {
 
       await computeLeaderboard(mockDb, "game-1");
 
-      // score should be called with the override result for pair 1
-      expect(score).toHaveBeenCalledWith(
+      // scoreBoard should be called with the override result for pair 1
+      expect(scoreBoard).toHaveBeenCalledWith(
         expect.objectContaining({
           lines: expect.arrayContaining([
             expect.objectContaining({
@@ -242,8 +242,8 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(score).mockReturnValue({
-        type: "PAIR_XIMP",
+      vi.mocked(scoreBoard).mockReturnValue({
+        pluginId: "XIMP",
         board: 1,
         lines: [],
       } as any);
@@ -259,7 +259,7 @@ describe("leaderboard-service", () => {
 
       await computeLeaderboard(mockDb, "game-1");
 
-      expect(score).toHaveBeenCalledWith(expect.anything(), "XIMP");
+      expect(scoreBoard).toHaveBeenCalledWith(expect.anything(), "XIMP");
       expect(calculatePairXIMPResults).toHaveBeenCalled();
     });
 
@@ -286,8 +286,8 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(score).mockReturnValue({
-        type: "PAIR_XIMP",
+      vi.mocked(scoreBoard).mockReturnValue({
+        pluginId: "XIMP",
         board: 1,
         lines: [
           { nsId: "1", ewId: "2", nsXimps: 5, ewXimps: -5 },
@@ -310,7 +310,7 @@ describe("leaderboard-service", () => {
       const result = await computeLeaderboard(mockDb, "game-1");
 
       expect(result.type).toBe("PAIR_XIMP");
-      expect(score).toHaveBeenCalledWith(expect.anything(), "XIMP");
+      expect(scoreBoard).toHaveBeenCalledWith(expect.anything(), "XIMP");
       expect(calculatePairXIMPResults).toHaveBeenCalledTimes(1);
       expect(calculateOverallMPResults).not.toHaveBeenCalled();
     });

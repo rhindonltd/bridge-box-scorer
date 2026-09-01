@@ -3,22 +3,18 @@ import "server-only";
 import { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { findPairs } from "@/db/games/queries/find-pairs";
-import {
-  score,
-  ScoredTraveller,
-  ScoredTravellerOfType,
-} from "@/scoring/traveller/score-traveller";
+import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { PairTraveller } from "@/model/traveller";
 import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
 import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";
-import { BoardOutcome, ScoringMode } from "@/model/score";
+import { BoardOutcome } from "@/model/score";
+import { ScoredTravellerOfType } from "@/scoring/overall/legacy-scored-traveller";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 
 export async function computeLeaderboard(db: Db, gameId: string) {
   const game = await findGameById(gameId);
 
-  const scoringMode: ScoringMode =
-    game!.scoringType === "IMP" || game!.scoringType === "XIMP" ? "XIMP" : "MP";
+  const scoringType = game!.scoringType;
 
   const allBoardRows = await db.select().from(boards);
 
@@ -29,7 +25,7 @@ export async function computeLeaderboard(db: Db, gameId: string) {
     boardMap.set(row.boardNumber, arr);
   }
 
-  const travellers: ScoredTraveller[] = [];
+  const scoredBoards: ScoredBoard[] = [];
   for (const [boardNumber, rows] of boardMap) {
     const linesWithResults = rows.filter((r) => {
       const result = r.directorOverrideResult ?? r.confirmedResult;
@@ -51,16 +47,16 @@ export async function computeLeaderboard(db: Db, gameId: string) {
       })),
     };
 
-    travellers.push(score(pairTraveller, scoringMode));
+    scoredBoards.push(scoreBoard(pairTraveller, scoringType));
   }
 
   const overallScore =
-    scoringMode === "MP"
+    scoringType === "MP"
       ? calculateOverallMPResults(
-          travellers as ScoredTravellerOfType<"PAIR_MP">[],
+          scoredBoards as unknown as ScoredTravellerOfType<"PAIR_MP">[],
         )
       : calculatePairXIMPResults(
-          travellers as ScoredTravellerOfType<"PAIR_XIMP">[],
+          scoredBoards as unknown as ScoredTravellerOfType<"PAIR_XIMP">[],
         );
 
   return {

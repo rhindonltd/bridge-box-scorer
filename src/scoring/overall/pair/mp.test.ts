@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
+import { ScoredTravellerOfType } from "@/scoring/overall/legacy-scored-traveller";
 import { calculateOverallMPResults } from "./mp";
 
 describe("calculateOverallMPResults", () => {
