@@ -1,20 +1,40 @@
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { GameRouteContext, withGameRoute } from "@/lib/api/gameRoute";
+
+const directorBodySchema = z
+  .object({
+    directorToken: z.string().min(1),
+  })
+  .passthrough();
 
 export function withDirectorRoute(
   handler: (
-    context: GameRouteContext & { body: unknown },
+    context: GameRouteContext & { body: Record<string, unknown> },
   ) => Promise<NextResponse>,
 ) {
   return withGameRoute(async (context) => {
-    const body = await context.req.json();
+    let rawBody: unknown;
+    try {
+      rawBody = await context.req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON body" },
+        { status: 400 },
+      );
+    }
 
-    const { directorToken } = body as {
-      directorToken?: string;
-    };
+    const parsed = directorBodySchema.safeParse(rawBody);
 
-    if (!validateDirectorToken(directorToken, context.gameId)) {
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: "Missing or invalid director token" },
+        { status: 400 },
+      );
+    }
+
+    if (!validateDirectorToken(parsed.data.directorToken, context.gameId)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 },
@@ -23,7 +43,7 @@ export function withDirectorRoute(
 
     return handler({
       ...context,
-      body,
+      body: parsed.data,
     });
   });
 }

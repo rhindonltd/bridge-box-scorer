@@ -3,11 +3,23 @@ type Props = {
   onChange: (value: boolean) => void;
   offLabel: string;
   onLabel: string;
+  /** id of an external label element describing this control (for a11y) */
+  labelledBy?: string;
 };
 
-export function Toggle({ value, onChange, offLabel, onLabel }: Props) {
+export function Toggle({
+  value,
+  onChange,
+  offLabel,
+  onLabel,
+  labelledBy,
+}: Props) {
   return (
-    <div className="inline-flex rounded-xl bg-gray-100 p-1">
+    <div
+      role="group"
+      aria-labelledby={labelledBy}
+      className="inline-flex rounded-xl bg-gray-100 p-1"
+    >
       <button
         type="button"
         onClick={() => onChange(false)}
