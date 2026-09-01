@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function ClaimDirectorCode({
-  gameId,
+  gameId: _gameId,
   gameName,
   onSuccess,
   onCancel,

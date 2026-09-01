@@ -5,7 +5,7 @@ import { games } from "@/db/game-index/schema";
 import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 
-export const GET = withDirectorRoute(async ({ gameId, db }) => {
+export const DELETE = withDirectorRoute(async ({ gameId, db }) => {
   await db.delete(games).where(eq(games.gameId, gameId));
 
   const dbFile = path.join(

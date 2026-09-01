@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { score } from "./score-traveller";
-import type { Traveller, PairTraveller } from "@/model/traveller";
+import type { PairTraveller } from "@/model/traveller";
 
 function makePairTraveller(): PairTraveller {
   return {

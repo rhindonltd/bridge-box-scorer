@@ -129,13 +129,20 @@ export async function getSchedule(db: Db, seat: string) {
   const totalRounds =
     allRoundNumbers.size > 0 ? Math.max(...allRoundNumbers) : 0;
 
-  // Build complete schedule including sit-outs
-  const activeRoundNumbers = new Set(rounds.map((r) => r.roundNumber));
-  const completeRounds: any[] = [];
+  // Build complete schedule including sit-outs. A round is either an active
+  // round (widened so tableNumber may be null) or a sit-out marker.
+  type ActiveRound = (typeof rounds)[number];
+  type ScheduleRound = Omit<ActiveRound, "tableNumber"> & {
+    tableNumber: number | null;
+    sitOut?: boolean;
+  };
+
+  const completeRounds: ScheduleRound[] = [];
 
   for (let r = 1; r <= totalRounds; r++) {
-    if (activeRoundNumbers.has(r)) {
-      completeRounds.push(rounds.find((round) => round.roundNumber === r));
+    const activeRound = rounds.find((round) => round.roundNumber === r);
+    if (activeRound) {
+      completeRounds.push(activeRound);
     } else {
       // Sit-out round
       completeRounds.push({

@@ -49,7 +49,6 @@ export async function createGameViaUI(
 export const test = base.extend<{ gameFixture: GameFixture }>({
   gameFixture: async ({ page }, use) => {
     const fixture = await createGameViaUI(page, `E2E Test ${Date.now()}`);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(fixture);
 
     // Cleanup: delete the game via UI

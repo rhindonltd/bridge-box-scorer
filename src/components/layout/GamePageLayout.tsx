@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React from "react";
 
 import { GameHeaderBar } from "./GameHeaderBar";
 import { ScrollableContent } from "./ScrollableContent";
@@ -40,9 +40,9 @@ export function GamePageLayout({
       />
 
       {centerContent ? (
-        <CenteredContent children={children} />
+        <CenteredContent>{children}</CenteredContent>
       ) : (
-        <ScrollableContent children={children} />
+        <ScrollableContent>{children}</ScrollableContent>
       )}
 
       {/* Action Bar */}

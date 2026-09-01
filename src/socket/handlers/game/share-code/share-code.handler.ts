@@ -15,7 +15,7 @@ const claimSchema = z.object({
   code: z.string().min(1),
 });
 
-export function registerShareCodeHandlers(socket: Socket, io: Server) {
+export function registerShareCodeHandlers(socket: Socket, _io: Server) {
   /**
    * GENERATE_SHARE_CODE — current director requests a share code.
    * Requires director auth for the game.

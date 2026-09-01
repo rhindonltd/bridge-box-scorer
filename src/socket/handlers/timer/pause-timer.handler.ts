@@ -30,7 +30,7 @@ export function registerPauseTimerHandler(socket: Socket, io: Server) {
       return;
     }
 
-    const { gameType, gameId, directorToken } = parsed.data;
+    const { gameId, directorToken } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
     try {

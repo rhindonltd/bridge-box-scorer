@@ -13,12 +13,20 @@ export default function ManageTimerPage() {
   const { game } = useRequiredGame();
   const { timerState } = useTimerSync();
 
-  // eslint-disable-next-line react-compiler/react-compiler
-  const [tick, setTick] = useState(Date.now());
+  // `tick` is the current wall-clock time in ms, refreshed every second so
+  // time-derived values recompute. It starts at 0 and is populated by the
+  // effect below, keeping the impure Date.now() call out of render.
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
+    // Seed immediately via a 0ms timer (a callback, not a synchronous
+    // in-effect setState) then refresh every second.
+    const seed = setTimeout(() => setTick(Date.now()), 0);
     const id = setInterval(() => setTick(Date.now()), 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(seed);
+      clearInterval(id);
+    };
   }, []);
 
   const timer: TimerStatus | null = useTimerDerived(timerState, tick);
@@ -48,10 +56,11 @@ export default function ManageTimerPage() {
     totalRounds * effectivePlayDuration +
     Math.max(0, totalRounds - 1) * moveDuration;
 
-  // eslint-disable-next-line react-compiler/react-compiler
+  // Derived from `tick` (current time) rather than Date.now() so it stays pure
+  // during render and refreshes with the per-second tick.
   const previewEndDate = useMemo(
-    () => new Date(Date.now() + totalSessionSeconds * 1000),
-    [totalSessionSeconds],
+    () => new Date(tick + totalSessionSeconds * 1000),
+    [tick, totalSessionSeconds],
   );
 
   function formatDuration(totalSeconds: number) {

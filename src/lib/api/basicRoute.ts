@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export type RouteParams = {};
-
 export type BasicRouteContext = {
   req: NextRequest;
 };

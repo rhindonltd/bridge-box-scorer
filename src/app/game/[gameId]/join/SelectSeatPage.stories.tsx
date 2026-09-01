@@ -22,7 +22,5 @@ export default meta;
 type Story = StoryObj<typeof SelectSeatPage>;
 
 export const Pairs: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
 };

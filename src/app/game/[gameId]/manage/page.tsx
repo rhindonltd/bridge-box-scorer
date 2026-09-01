@@ -1,25 +1,16 @@
-"use client";
+import type { Metadata } from "next";
+import { ManageGameMenu } from "@/app/game/[gameId]/manage/ManageGameMenu";
 
-import { ManageGameMenuPage } from "@/app/game/[gameId]/manage/ManageGameMenuPage";
-import { useRouter, useParams } from "next/navigation";
+export const metadata: Metadata = {
+  title: "Manage Game | Bridge Box",
+};
 
-export default function ManageGameMenuRoute() {
-  const router = useRouter();
-  const params = useParams<{ gameId: string }>();
-  const id = params.gameId;
+export default async function ManageGameMenuRoute({
+  params,
+}: {
+  params: Promise<{ gameId: string }>;
+}) {
+  const { gameId } = await params;
 
-  return (
-    <ManageGameMenuPage
-      onSetUpGameClick={() => router.push(`/game/${id}/create`)}
-      onTravellersClick={() => router.push(`/game/${id}/manage/travellers`)}
-      onMovementClick={() => router.push(`/game/${id}/manage/movement`)}
-      onShareDirectorAccessClick={() =>
-        router.push(`/game/${id}/manage/share-access`)
-      }
-      onDownloadUsebioClick={() =>
-        router.push(`/game/${id}/manage/download-usebio`)
-      }
-      onDeleteGameClick={() => router.push(`/game/${id}/manage/delete-game`)}
-    />
-  );
+  return <ManageGameMenu gameId={gameId} />;
 }

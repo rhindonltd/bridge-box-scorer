@@ -20,25 +20,17 @@ export default meta;
 type Story = StoryObj<typeof GameHeaderBar>;
 
 export const EventOnly: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
 };
 
 export const EventAndSection: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
 };
 
 export const EventAndSession: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
 };
 
 export const EventSessionAndSection: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
 };

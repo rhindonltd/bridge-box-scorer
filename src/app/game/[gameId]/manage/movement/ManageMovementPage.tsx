@@ -22,9 +22,15 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
 
   const { game } = useRequiredGame();
 
+  const movementFetcher = async (url: string): Promise<MovementResponse> => {
+    const response: { movement: MovementResponse } = await fetcher(url);
+
+    return response.movement;
+  };
+
   const { data, isLoading, mutate } = useSWR<MovementResponse>(
     `/api/games/${game.gameId}/movement`,
-    fetcher,
+    movementFetcher,
   );
 
   useEffect(() => {
@@ -63,10 +69,8 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
   }
 
   return (
-    <PageLayout
-      headerTitle="Movement Details"
-      backHref={backHref}
-      children={<MovementDetailView tables={data.tables} />}
-    />
+    <PageLayout headerTitle="Movement Details" backHref={backHref}>
+      <MovementDetailView tables={data.tables} />
+    </PageLayout>
   );
 }

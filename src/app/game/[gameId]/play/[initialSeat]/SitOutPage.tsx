@@ -10,14 +10,6 @@ export function SitOutPage({ round, onHandleSitOutContinue }: Props) {
     <GamePageLayout
       headerTitle={`Round ${round}`}
       centerContent={true}
-      children={
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="text-2xl font-bold text-gray-900 mb-2">Sit Out</div>
-          <div className="text-base text-gray-500 text-center">
-            You have a sit-out this round. Please wait for the next round.
-          </div>
-        </div>
-      }
       actions={
         <button
           onClick={onHandleSitOutContinue}
@@ -26,6 +18,13 @@ export function SitOutPage({ round, onHandleSitOutContinue }: Props) {
           Continue
         </button>
       }
-    />
+    >
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div className="text-2xl font-bold text-gray-900 mb-2">Sit Out</div>
+        <div className="text-base text-gray-500 text-center">
+          You have a sit-out this round. Please wait for the next round.
+        </div>
+      </div>
+    </GamePageLayout>
   );
 }

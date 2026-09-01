@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Server, Socket } from "socket.io";
+import { Socket } from "socket.io";
 import { createSocketTestServer } from "@/socket/test/socket-test-harness";
 import { emitWithAck, waitForEvent } from "@/socket/test/socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";

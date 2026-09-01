@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getDb } from "@/db/game-index";
-import { and, eq, gte } from "drizzle-orm";
+import { and, gte } from "drizzle-orm";
 import { BridgeGame, games } from "../schema";
 
 export async function findJoinableGames(): Promise<BridgeGame[]> {

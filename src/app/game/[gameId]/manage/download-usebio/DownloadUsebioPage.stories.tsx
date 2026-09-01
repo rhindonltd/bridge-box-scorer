@@ -21,7 +21,5 @@ export default meta;
 type Story = StoryObj<typeof DownloadUsebioPage>;
 
 export const Default: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
 };

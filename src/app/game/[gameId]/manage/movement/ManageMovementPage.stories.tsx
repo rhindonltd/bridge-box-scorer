@@ -19,7 +19,5 @@ export default meta;
 type Story = StoryObj<typeof ManageMovementPage>;
 
 export const Default: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
 };

@@ -1,5 +1,5 @@
 import { createServer } from "http";
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
 import { io as Client, Socket as ClientSocket } from "socket.io-client";
 
 export async function createSocketTestServer(register: (io: Server) => void) {

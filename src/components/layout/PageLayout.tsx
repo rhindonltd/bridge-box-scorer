@@ -40,9 +40,9 @@ export function PageLayout({
       />
 
       {centerContent ? (
-        <CenteredContent children={children} />
+        <CenteredContent>{children}</CenteredContent>
       ) : (
-        <ScrollableContent children={children} />
+        <ScrollableContent>{children}</ScrollableContent>
       )}
 
       {/* Action Bar */}

@@ -79,9 +79,7 @@ test.describe("Manage Game Selection", () => {
     await expect(page.getByPlaceholder("Enter code")).toBeVisible();
   });
 
-  test.skip("entering valid director code navigates to /manage/[id]/menu", async ({
-    page,
-  }) => {
+  test.skip("entering valid director code navigates to /manage/[id]/menu", async () => {
     // Skipped: The director share code is generated server-side during game
     // creation via Socket.IO and is not retrievable through the UI or REST API
     // in a test context without direct database access.

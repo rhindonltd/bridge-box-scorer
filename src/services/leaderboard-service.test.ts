@@ -112,12 +112,6 @@ describe("leaderboard-service", () => {
         },
       ] as any);
 
-      const game = {
-        gameId: "game-1",
-        gameType: "PAIRS",
-        scoringType: "MP",
-      } as BridgeGame;
-
       const result = await computeLeaderboard(mockDb, "game-1");
 
       expect(result.type).toBe("PAIR_MP");

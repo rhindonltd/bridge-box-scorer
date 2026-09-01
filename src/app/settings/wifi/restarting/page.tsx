@@ -21,6 +21,10 @@ export default function WifiRestarting() {
         try {
           const res = await fetch("/api/system/network");
           if (res.ok) {
+            // Full-page navigation is intentional: the device has just come
+            // back online after a reboot, so a hard reload re-establishes the
+            // app and Socket.IO connection cleanly.
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
             window.location.href = "/";
           }
         } catch {

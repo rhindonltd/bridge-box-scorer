@@ -1,28 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
+import { Club } from "@/db/system/schema";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 
 export default function ClubSettingsPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [clubNumber, setClubNumber] = useState("");
+  // Edited values are null until the user types; the displayed value falls
+  // back to the fetched club record. This avoids mirroring fetched data into
+  // state via an effect.
+  const [nameEdit, setNameEdit] = useState<string | null>(null);
+  const [clubNumberEdit, setClubNumberEdit] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch("/api/system/club")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.club) {
-          setName(data.club.name);
-          setClubNumber(data.club.clubNumber);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  const {
+    data,
+    isLoading: loading,
+    mutate,
+  } = useSWR<{ club: Club | null }>(swrKeys.club(), fetcher);
+
+  const name = nameEdit ?? data?.club?.name ?? "";
+  const clubNumber = clubNumberEdit ?? data?.club?.clubNumber ?? "";
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -45,6 +47,8 @@ export default function ClubSettingsPage() {
       });
 
       if (res.ok) {
+        // Revalidate the shared club cache so other views reflect the save.
+        await mutate();
         setMessage("✅ Club info saved");
       } else {
         const data = await res.json();
@@ -87,7 +91,7 @@ export default function ClubSettingsPage() {
               id="club-name"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => setNameEdit(e.target.value)}
               placeholder="e.g. Anytown Bridge Club"
               className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
@@ -104,7 +108,7 @@ export default function ClubSettingsPage() {
               id="club-number"
               type="text"
               value={clubNumber}
-              onChange={(e) => setClubNumber(e.target.value)}
+              onChange={(e) => setClubNumberEdit(e.target.value)}
               placeholder="e.g. 12345"
               className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />

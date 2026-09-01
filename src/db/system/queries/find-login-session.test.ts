@@ -1,15 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { mockGet, mockWhere, mockFrom, mockSelect, mockDrizzle } = vi.hoisted(
-  () => {
-    const mockGet = vi.fn();
-    const mockWhere = vi.fn(() => ({ get: mockGet }));
-    const mockFrom = vi.fn(() => ({ where: mockWhere }));
-    const mockSelect = vi.fn(() => ({ from: mockFrom }));
-    const mockDrizzle = vi.fn(() => ({ select: mockSelect }));
-    return { mockGet, mockWhere, mockFrom, mockSelect, mockDrizzle };
-  },
-);
+const { mockGet, mockSelect, mockDrizzle } = vi.hoisted(() => {
+  const mockGet = vi.fn();
+  const mockWhere = vi.fn(() => ({ get: mockGet }));
+  const mockFrom = vi.fn(() => ({ where: mockWhere }));
+  const mockSelect = vi.fn(() => ({ from: mockFrom }));
+  const mockDrizzle = vi.fn(() => ({ select: mockSelect }));
+  return { mockGet, mockSelect, mockDrizzle };
+});
 
 vi.mock("better-sqlite3", () => ({
   default: class MockDatabase {},

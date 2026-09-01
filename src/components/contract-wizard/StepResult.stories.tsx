@@ -11,7 +11,7 @@ const meta: Meta<typeof StepResult> = {
   tags: ["autodocs"],
   args: {
     onResultComplete: fn(),
-  }
+  },
 };
 
 export default meta;

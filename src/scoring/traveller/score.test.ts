@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { scoreContract } from "./score";
 import type { ParsedContract } from "@/model/result";
-import type { Vulnerability } from "@/model/vulnerability";
 
 function contract(
   level: 1 | 2 | 3 | 4 | 5 | 6 | 7,

@@ -1,0 +1,16 @@
+"use client";
+
+import SelectGamePage from "@/components/pages/SelectGamePage";
+import { useRouter } from "next/navigation";
+
+export function JoinGamePage() {
+  const router = useRouter();
+
+  function onGameSelected(gameId: string) {
+    router.push(`/game/${gameId}/join/player`);
+  }
+
+  return (
+    <SelectGamePage headerTitle="Join Game" onGameSelected={onGameSelected} />
+  );
+}

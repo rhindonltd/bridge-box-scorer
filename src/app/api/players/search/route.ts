@@ -1,7 +1,6 @@
 import { NewPlayer } from "@/db/games/tables/players";
 import { findPlayer } from "@/db/players/queries/find-player";
 import { withBasicRoute } from "@/lib/api/basicRoute";
-import { NextResponse } from "next/server";
 import { success } from "@/lib/api/success";
 
 function isNumeric(query: string): boolean {
@@ -12,7 +11,7 @@ export const GET = withBasicRoute(async ({ req }) => {
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
 
   if (q.length == 0) {
-    return NextResponse.json([]);
+    return success([] as NewPlayer[]);
   }
 
   let results: NewPlayer[] = [];

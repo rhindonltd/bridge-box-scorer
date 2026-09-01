@@ -12,7 +12,7 @@ const meta: Meta<typeof StepDeclarer> = {
   tags: ["autodocs"],
   args: {
     onDeclarerSelected: fn(),
-  }
+  },
 };
 
 export default meta;

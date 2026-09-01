@@ -1,12 +1,6 @@
 import { computeCrossImps, prepare } from "../common";
 import { PairLine } from "./common";
 
-type XImpLine = PairLine & {
-  score: number | null;
-  nsCrossImps: number;
-  ewCrossImps: number;
-};
-
 export function scoreXIMP(board: number, lines: PairLine[]) {
   const prepared = prepare(board, lines);
   const valid = prepared

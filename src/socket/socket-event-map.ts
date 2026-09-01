@@ -1,5 +1,5 @@
 import { BridgeGame } from "@/db/game-index/schema";
-import { Participant, Seat } from "@/model/participants";
+import { Participant } from "@/model/participants";
 import { SocketEvents } from "@/socket/socket-events";
 
 export type SocketEventMap = {

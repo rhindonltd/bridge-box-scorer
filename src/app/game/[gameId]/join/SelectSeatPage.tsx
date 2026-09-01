@@ -27,7 +27,13 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
 
   const key = swrKeys.pairs(gameId);
 
-  const { data } = useSWR<Pair[], Error>(key, fetcher);
+  const pairsFetcher = async (url: string): Promise<Pair[]> => {
+    const response: { pairs: Pair[] } = await fetcher(url);
+
+    return response.pairs;
+  };
+
+  const { data } = useSWR<Pair[], Error>(key, pairsFetcher);
 
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
@@ -52,28 +58,26 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   }
 
   return (
-    <GamePageLayout
-      headerTitle="Select Seat"
-      children={
-        <>
-          {/* Main table selection */}
-          <SelectTable
-            onSeatSelected={handleSeatSelected}
-            tables={game.tables}
-            startingPositions={data ?? []}
-          />
+    <GamePageLayout headerTitle="Select Seat">
+      <>
+        {/* Main table selection */}
+        <SelectTable
+          onSeatSelected={handleSeatSelected}
+          tables={game.tables}
+          startingPositions={data ?? []}
+        />
 
-          {/* Backdrop */}
-          {selectedSeat && (
-            <div
-              className="fixed inset-0 bg-black/30"
-              onClick={() => setSelectedSeat(null)}
-            />
-          )}
-
-          {/* Bottom sheet */}
+        {/* Backdrop */}
+        {selectedSeat && (
           <div
-            className={`
+            className="fixed inset-0 bg-black/30"
+            onClick={() => setSelectedSeat(null)}
+          />
+        )}
+
+        {/* Bottom sheet */}
+        <div
+          className={`
                     fixed bottom-0 left-0 right-0
                     bg-white
                     shadow-2xl
@@ -82,16 +86,15 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
                     transition-transform duration-300 ease-out
                     ${selectedSeat ? "translate-y-0" : "translate-y-full"}
                   `}
-          >
-            {selectedSeat && (
-              <EnterPlayerNames
-                seat={selectedSeat}
-                onSubmitPair={handlePairSubmitted}
-              />
-            )}
-          </div>
-        </>
-      }
-    />
+        >
+          {selectedSeat && (
+            <EnterPlayerNames
+              seat={selectedSeat}
+              onSubmitPair={handlePairSubmitted}
+            />
+          )}
+        </div>
+      </>
+    </GamePageLayout>
   );
 }

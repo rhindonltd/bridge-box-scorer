@@ -1,4 +1,7 @@
-import { deriveDefaultAdminKey, seedAdminKey } from "@/db/system/seed-admin-key";
+import {
+  deriveDefaultAdminKey,
+  seedAdminKey,
+} from "@/db/system/seed-admin-key";
 
 async function main() {
   const seeded = await seedAdminKey();

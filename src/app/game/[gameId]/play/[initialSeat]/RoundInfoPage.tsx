@@ -28,7 +28,6 @@ export function RoundInfoPage({
   return (
     <GamePageLayout
       headerTitle={`Table ${table}, Round ${round}`}
-      children={<RoundInfo boards={boards} table={table} players={players} />}
       centerContent={true}
       actions={
         <button
@@ -38,6 +37,8 @@ export function RoundInfoPage({
           Enter Round
         </button>
       }
-    />
+    >
+      <RoundInfo boards={boards} table={table} players={players} />
+    </GamePageLayout>
   );
 }

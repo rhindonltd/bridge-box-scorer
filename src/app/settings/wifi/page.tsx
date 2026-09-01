@@ -1,33 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Network } from "@/model/network";
 import { WifiSettingsForm } from "@/app/settings/wifi/WifiSettingsForm";
 import { getAdminToken } from "@/lib/admin-token";
+import { postFetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 
 export default function WifiSettings() {
-  const [networks, setNetworks] = useState<Network[]>([]);
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/system/wifi/scan")
-      .then((res) => res.json())
-      .then((data: Network[]) => {
-        if (!cancelled) {
-          data.sort((a, b) => b.signal - a.signal);
-          setNetworks(data);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setMessage("Failed to load WiFi networks");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // The scan endpoint is a POST (it shells out to nmcli) that returns
+  // { ssids } inside the success envelope.
+  const { data, error } = useSWR<{ ssids: Network[] }>(
+    swrKeys.wifiScan(),
+    postFetcher,
+  );
+
+  const networks = [...(data?.ssids ?? [])].sort((a, b) => b.signal - a.signal);
+
+  const scanFailedMessage = error ? "Failed to load WiFi networks" : null;
 
   const handleTest = async (
     ssid: string,
@@ -70,10 +65,13 @@ export default function WifiSettings() {
         },
         body: JSON.stringify({ ssid, password }),
       });
-      await fetch("/api/system/restart", {
+      await fetch("/api/system/reboot", {
         method: "POST",
         headers: { "x-admin-token": adminToken },
       });
+      // Full-page navigation is intentional: the device is rebooting its WiFi,
+      // so we want a hard reload rather than an SPA transition here.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = "/restarting";
     } catch {
       setMessage("Failed to save WiFi");
@@ -87,7 +85,7 @@ export default function WifiSettings() {
       networks={networks}
       testing={testing}
       loading={loading}
-      message={message}
+      message={message ?? scanFailedMessage}
       onTestConnection={handleTest}
       onSaveWifi={handleSave}
     />

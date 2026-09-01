@@ -12,7 +12,7 @@ const meta: Meta<typeof StepLevel> = {
   args: {
     onLevelSelected: fn(),
     onSpecialOutcome: fn(),
-  }
+  },
 };
 
 export default meta;
