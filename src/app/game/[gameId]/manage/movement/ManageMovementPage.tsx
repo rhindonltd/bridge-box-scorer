@@ -22,9 +22,15 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
 
   const { game } = useRequiredGame();
 
+  const movementFetcher = async (url: string): Promise<MovementResponse> => {
+    const response: { movement: MovementResponse } = await fetcher(url);
+
+    return response.movement;
+  };
+
   const { data, isLoading, mutate } = useSWR<MovementResponse>(
     `/api/games/${game.gameId}/movement`,
-    fetcher,
+    movementFetcher,
   );
 
   useEffect(() => {

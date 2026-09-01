@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getPairMovementSpecsForTables } from "@/db/movements/queries";
+import { success } from "@/lib/api/success";
 
 const tablesSchema = z.coerce.number().int().min(1);
 
@@ -18,9 +19,7 @@ export async function GET(
   }
 
   try {
-    return NextResponse.json(
-      await getPairMovementSpecsForTables(parsed.data),
-    );
+    return success(await getPairMovementSpecsForTables(parsed.data));
   } catch (error) {
     console.error(error);
     return NextResponse.json(

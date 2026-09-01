@@ -27,7 +27,13 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
 
   const key = swrKeys.pairs(gameId);
 
-  const { data } = useSWR<Pair[], Error>(key, fetcher);
+  const pairsFetcher = async (url: string): Promise<Pair[]> => {
+    const response: { pairs: Pair[] } = await fetcher(url);
+
+    return response.pairs;
+  };
+
+  const { data } = useSWR<Pair[], Error>(key, pairsFetcher);
 
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
