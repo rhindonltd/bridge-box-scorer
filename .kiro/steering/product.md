@@ -1,27 +1,20 @@
-# Product: Bridge Box Scorer
+# Product
 
-A real-time scoring application for bridge clubs, designed to run on a local "Bridge Box" device during club sessions.
+Bridge Box Scorer is a real-time scoring application for duplicate bridge clubs. It is designed to run on a local "Bridge Box" device (e.g. a Raspberry Pi) during club sessions.
 
-## Core Purpose
+Directors manage games from the device while players enter results from their own devices at the table, with updates propagating live over WebSockets.
 
-Manages and scores duplicate bridge games. Directors create and configure games; players at each table enter their results in real time. Final scores and rankings are computed and displayed at the end of a session.
+## Core capabilities
 
-## Game Formats Supported
+- Create and manage duplicate bridge games (Pairs, Individual)
+- Real-time score entry from player devices
+- Multiple movement types: Mitchell, Howell, American Whist
+- Live session timer with director controls
+- Matchpoint (MP), IMP, and Cross-IMP scoring
+- Traveller sheets and leaderboard display
+- EBU player database integration
+- Director authentication via PIN
 
-- **Pairs** — the primary format; NS/EW pairs compete across multiple boards
-- **Individual** — players rotate individually
-- Teams (infrastructure present but less prominent)
+## Deployment context
 
-## Key User Roles
-
-- **Director** — creates games, assigns movements, oversees play, can override results
-- **Players** — join a game via a session key, enter contract and result for each board at their table
-
-## Domain Vocabulary
-
-- **Board** — a single deal played at a table in a round
-- **Movement** — the pre-defined schedule of which pairs play which boards at which table in each round (e.g., Mitchell, Howell)
-- **Round** — one cycle of play; a pair plays a set of boards at a table before moving
-- **Contract** — the bid (level + suit + doubling + declarer), e.g. `3NTX N`
-- **Result** — outcome of a board: tricks made relative to contract, expressed as a `BoardOutcome`
-- **Participant** — a pair or individual registered for a game, identified by a session key
+Runs as a single self-hosted server on a local device, serving both HTTP (Next.js) and WebSocket (Socket.IO) traffic on one port. Assume a small number of concurrent local clients on a LAN rather than internet-scale traffic.
