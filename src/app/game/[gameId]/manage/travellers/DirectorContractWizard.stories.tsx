@@ -38,7 +38,9 @@ const meta: Meta<typeof DirectorContractWizard> = {
           mutateGame: mockMutateGame,
         }}
       >
-        <AssignmentContext.Provider value={{ assignment: mockAssignment }}>
+        <AssignmentContext.Provider
+          value={{ assignment: mockAssignment, isLoading: false }}
+        >
           <div style={{ height: "100dvh" }} className="flex flex-col">
             <Story />
           </div>
