@@ -11,7 +11,7 @@ describe("MainMenuPage", () => {
   const baseProps = {
     onCreateNewGame: vi.fn(),
     onJoinGame: vi.fn(),
-    onManagePastGames: vi.fn(),
+    onManageGames: vi.fn(),
     onRoomDisplay: vi.fn(),
     onOpenSettings: vi.fn(),
   };
@@ -54,12 +54,12 @@ describe("MainMenuPage", () => {
     expect(baseProps.onCreateNewGame).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onManagePastGames when Manage Games clicked", () => {
+  it("calls onManageGames when Manage Games clicked", () => {
     render(<MainMenuPage {...baseProps} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Manage Games" }));
 
-    expect(baseProps.onManagePastGames).toHaveBeenCalledTimes(1);
+    expect(baseProps.onManageGames).toHaveBeenCalledTimes(1);
   });
 
   it("applies layout structure classes", () => {
