@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MainMenuPage } from "./MainMenuPage";
 
 // Mock lucide icon to avoid SVG noise
@@ -8,62 +8,58 @@ vi.mock("lucide-react", () => ({
 }));
 
 describe("MainMenuPage", () => {
-  const baseProps = {
-    onCreateNewGame: vi.fn(),
-    onJoinGame: vi.fn(),
-    onManageGames: vi.fn(),
-    onRoomDisplay: vi.fn(),
-    onOpenSettings: vi.fn(),
-  };
-
   it("renders logo", () => {
-    render(<MainMenuPage {...baseProps} />);
+    render(<MainMenuPage />);
 
     expect(screen.getByAltText("Bridge Box")).toBeInTheDocument();
   });
 
-  it("renders Settings button", () => {
-    render(<MainMenuPage {...baseProps} />);
+  it("links to settings", () => {
+    render(<MainMenuPage />);
+
+    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
+      "href",
+      "/settings",
+    );
+  });
+
+  it("links Join Game to /join", () => {
+    render(<MainMenuPage />);
+
+    expect(screen.getByRole("link", { name: "Join Game" })).toHaveAttribute(
+      "href",
+      "/join",
+    );
+  });
+
+  it("links Create New Game to /create", () => {
+    render(<MainMenuPage />);
 
     expect(
-      screen.getByRole("button", { name: "Settings" }),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: "Create New Game" }),
+    ).toHaveAttribute("href", "/create");
   });
 
-  it("calls onOpenSettings when settings clicked", () => {
-    render(<MainMenuPage {...baseProps} />);
+  it("links Manage Games to /manage", () => {
+    render(<MainMenuPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-
-    expect(baseProps.onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: "Manage Games" })).toHaveAttribute(
+      "href",
+      "/manage",
+    );
   });
 
-  it("calls onJoinGame when Join Game clicked", () => {
-    render(<MainMenuPage {...baseProps} />);
+  it("links Room Display to /display", () => {
+    render(<MainMenuPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Join Game" }));
-
-    expect(baseProps.onJoinGame).toHaveBeenCalledTimes(1);
-  });
-
-  it("calls onCreateNewGame when Create New Game clicked", () => {
-    render(<MainMenuPage {...baseProps} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Create New Game" }));
-
-    expect(baseProps.onCreateNewGame).toHaveBeenCalledTimes(1);
-  });
-
-  it("calls onManageGames when Manage Games clicked", () => {
-    render(<MainMenuPage {...baseProps} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Manage Games" }));
-
-    expect(baseProps.onManageGames).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: "Room Display" })).toHaveAttribute(
+      "href",
+      "/display",
+    );
   });
 
   it("applies layout structure classes", () => {
-    const { container } = render(<MainMenuPage {...baseProps} />);
+    const { container } = render(<MainMenuPage />);
 
     const root = container.firstChild as HTMLElement;
 
@@ -76,16 +72,8 @@ describe("MainMenuPage", () => {
     );
   });
 
-  it("calls onRoomDisplay when Room Display clicked", () => {
-    render(<MainMenuPage {...baseProps} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Room Display" }));
-
-    expect(baseProps.onRoomDisplay).toHaveBeenCalledTimes(1);
-  });
-
-  it("renders all main menu buttons", () => {
-    render(<MainMenuPage {...baseProps} />);
+  it("renders all main menu links", () => {
+    render(<MainMenuPage />);
 
     expect(screen.getByText("Join Game")).toBeInTheDocument();
     expect(screen.getByText("Create New Game")).toBeInTheDocument();
