@@ -65,7 +65,7 @@ export default function WifiSettings() {
         },
         body: JSON.stringify({ ssid, password }),
       });
-      await fetch("/api/system/restart", {
+      await fetch("/api/system/reboot", {
         method: "POST",
         headers: { "x-admin-token": adminToken },
       });
