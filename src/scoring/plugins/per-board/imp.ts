@@ -17,7 +17,7 @@ const impView: PerBoardView<ImpScoredLines> = {
   toTable(lines): ScoreTable {
     const rows = lines
       .filter((x) => x.score !== null)
-      .sort((a, b) => b.nsImps - a.nsImps);
+      .sort((a, b) => b.score! - a.score!);
 
     return {
       columns: [

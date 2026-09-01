@@ -17,7 +17,7 @@ const crossImpsView: PerBoardView<XimpScoredLines> = {
   toTable(lines): ScoreTable {
     const rows = lines
       .filter((x) => x.score !== null)
-      .sort((a, b) => b.nsCrossImps - a.nsCrossImps);
+      .sort((a, b) => b.score! - a.score!);
 
     return {
       columns: [

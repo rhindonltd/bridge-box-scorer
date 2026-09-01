@@ -14,7 +14,7 @@ describe("imp per-board plugin", () => {
     expect(scored[0]).toHaveProperty("ewImps");
   });
 
-  it("view produces IMP columns sorted by NS imps", () => {
+  it("view produces IMP columns sorted by NS score descending", () => {
     const scored = impPerBoardPlugin.score(mpBoard1);
     const table = impPerBoardPlugin.views[0].toTable(scored);
 
@@ -27,16 +27,22 @@ describe("imp per-board plugin", () => {
       "EW IMP",
     ]);
 
-    const nsImp = table.rows.map((r) => {
-      const cell = r.cells[4];
+    // Per-board IMP is a whole-number IMP value (no decimals), which
+    // distinguishes it from the XIMP view's 2-decimal cross-imps.
+    for (const row of table.rows) {
+      const impCell = row.cells[4];
+      if (impCell.kind !== "number") throw new Error("expected number cell");
+      expect(impCell.decimals).toBeUndefined();
+    }
+
+    // Rows are ordered by NS score descending (NS Score column, index 3).
+    const nsScore = table.rows.map((r) => {
+      const cell = r.cells[3];
       if (cell.kind !== "number") throw new Error("expected number cell");
-      // Per-board IMP is a whole-number IMP value (no decimals), which
-      // distinguishes it from the XIMP view's 2-decimal cross-imps.
-      expect(cell.decimals).toBeUndefined();
       return cell.value;
     });
-    const sorted = [...nsImp].sort((a, b) => b - a);
-    expect(nsImp).toEqual(sorted);
+    const sorted = [...nsScore].sort((a, b) => b - a);
+    expect(nsScore).toEqual(sorted);
 
     for (const row of table.rows) {
       expect(row.highlightIds).toHaveLength(2);

@@ -11,11 +11,11 @@ import { registerPerBoardPlugin } from "@/scoring/plugins/registry";
 
 export type MpScoredLines = MatchpointLine[];
 
-/** Rows with a real score, ordered as displayed (best NS matchpoints first). */
+/** Rows with a real score, ordered by NS score descending. */
 function displayRows(lines: MpScoredLines): MatchpointLine[] {
   return lines
     .filter((x) => x.score !== null)
-    .sort((a, b) => b.nsMatchPoints - a.nsMatchPoints);
+    .sort((a, b) => b.score! - a.score!);
 }
 
 const matchpointsView: PerBoardView<MpScoredLines> = {

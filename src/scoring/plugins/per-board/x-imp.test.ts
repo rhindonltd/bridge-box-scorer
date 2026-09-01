@@ -14,7 +14,7 @@ describe("ximp per-board plugin", () => {
     expect(scored[0]).toHaveProperty("ewCrossImps");
   });
 
-  it("view produces IMP columns sorted by NS cross-imps with 2 decimals", () => {
+  it("view produces IMP columns sorted by NS score with 2-decimal imps", () => {
     const scored = ximpPerBoardPlugin.score(impBoard1);
     const table = ximpPerBoardPlugin.views[0].toTable(scored);
 
@@ -27,14 +27,21 @@ describe("ximp per-board plugin", () => {
       "EW IMP",
     ]);
 
-    const nsImp = table.rows.map((r) => {
-      const cell = r.cells[4];
+    // Cross-imps are shown to 2 decimals.
+    for (const row of table.rows) {
+      const impCell = row.cells[4];
+      if (impCell.kind !== "number") throw new Error("expected number cell");
+      expect(impCell.decimals).toBe(2);
+    }
+
+    // Rows are ordered by NS score descending (NS Score column, index 3).
+    const nsScore = table.rows.map((r) => {
+      const cell = r.cells[3];
       if (cell.kind !== "number") throw new Error("expected number cell");
-      expect(cell.decimals).toBe(2);
       return cell.value;
     });
-    const sorted = [...nsImp].sort((a, b) => b - a);
-    expect(nsImp).toEqual(sorted);
+    const sorted = [...nsScore].sort((a, b) => b - a);
+    expect(nsScore).toEqual(sorted);
 
     for (const row of table.rows) {
       expect(row.highlightIds).toHaveLength(2);

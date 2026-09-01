@@ -18,7 +18,7 @@ describe("mp per-board plugin", () => {
     expect(scored[0]).toHaveProperty("ewMatchPoints");
   });
 
-  it("matchpoints view produces MP columns sorted by NS matchpoints", () => {
+  it("matchpoints view produces MP columns sorted by NS score descending", () => {
     const scored = mpPerBoardPlugin.score(mpBoard1);
     const view = mpPerBoardPlugin.views.find((v) => v.id === "matchpoints")!;
     const table = view.toTable(scored);
@@ -32,15 +32,15 @@ describe("mp per-board plugin", () => {
       "EW MP",
     ]);
 
-    // Rows are sorted best NS matchpoints first: the NS MP column (index 4)
+    // Rows are ordered by NS score descending: the NS Score column (index 3)
     // is non-increasing.
-    const nsMp = table.rows.map((r) => {
-      const cell = r.cells[4];
+    const nsScore = table.rows.map((r) => {
+      const cell = r.cells[3];
       if (cell.kind !== "number") throw new Error("expected number cell");
       return cell.value;
     });
-    const sorted = [...nsMp].sort((a, b) => b - a);
-    expect(nsMp).toEqual(sorted);
+    const sorted = [...nsScore].sort((a, b) => b - a);
+    expect(nsScore).toEqual(sorted);
 
     // Each row carries its NS/EW ids for highlighting.
     for (const row of table.rows) {
@@ -63,10 +63,11 @@ describe("mp per-board plugin", () => {
     ]);
 
     const maxMP = 2 * (scored.length - 1);
-    // Find the top row's NS matchpoints and confirm the % matches mp/max*100.
+    // The first displayed row is the highest NS score; its % must match
+    // that line's matchpoints / max * 100.
     const topLine = [...scored]
       .filter((l) => l.score !== null)
-      .sort((a, b) => b.nsMatchPoints - a.nsMatchPoints)[0];
+      .sort((a, b) => b.score! - a.score!)[0];
     const nsPercentCell = table.rows[0].cells[4];
     if (nsPercentCell.kind !== "number") {
       throw new Error("expected number cell");
