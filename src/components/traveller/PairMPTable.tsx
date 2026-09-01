@@ -5,9 +5,10 @@ import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
 type Props = {
   scoredTraveller: ScoredTravellerOfType<"PAIR_MP">;
+  highlightAssignmentId?: string;
 };
 
-export function PairMPTable({ scoredTraveller }: Props) {
+export function PairMPTable({ scoredTraveller, highlightAssignmentId }: Props) {
   const rows = scoredTraveller.lines
     .filter((x) => x.score !== null)
     .sort((a, b) => b.nsMatchPoints - a.nsMatchPoints);
@@ -19,9 +20,15 @@ export function PairMPTable({ scoredTraveller }: Props) {
         .filter((x) => x.score !== null)
         .map((row, index, arr) => {
           const isLast = index === arr.length - 1;
+          const highlighted =
+            highlightAssignmentId !== undefined &&
+            (row.nsId === highlightAssignmentId ||
+              row.ewId === highlightAssignmentId);
           return (
             <TableRow
               key={index}
+              highlighted={highlighted}
+              striped={highlightAssignmentId === undefined}
               cells={[
                 `${row.nsId}`,
                 `${row.ewId}`,

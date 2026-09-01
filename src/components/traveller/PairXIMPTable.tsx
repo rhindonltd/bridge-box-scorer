@@ -5,9 +5,13 @@ import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
 type Props = {
   scoredTraveller: ScoredTravellerOfType<"PAIR_XIMP">;
+  highlightAssignmentId?: string;
 };
 
-export function PairXIMPTable({ scoredTraveller }: Props) {
+export function PairXIMPTable({
+  scoredTraveller,
+  highlightAssignmentId,
+}: Props) {
   const rows = scoredTraveller.lines
     .filter((x) => x.score !== null)
     .sort((a, b) => b.nsCrossImps - a.nsCrossImps);
@@ -19,9 +23,15 @@ export function PairXIMPTable({ scoredTraveller }: Props) {
         .filter((x) => x.score !== null)
         .map((row, index, arr) => {
           const isLast = index === arr.length - 1;
+          const highlighted =
+            highlightAssignmentId !== undefined &&
+            (row.nsId === highlightAssignmentId ||
+              row.ewId === highlightAssignmentId);
           return (
             <TableRow
               key={index}
+              highlighted={highlighted}
+              striped={highlightAssignmentId === undefined}
               cells={[
                 `${row.nsId}`,
                 `${row.ewId}`,

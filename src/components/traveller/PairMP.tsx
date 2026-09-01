@@ -8,9 +8,10 @@ import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
 
 type Props = {
   scoredTraveller: ScoredTravellerOfType<"PAIR_MP">;
+  highlightAssignmentId?: string;
 };
 
-export function PairMP({ scoredTraveller }: Props) {
+export function PairMP({ scoredTraveller, highlightAssignmentId }: Props) {
   const [showPercentage, setShowPercentage] = useState(true);
 
   return (
@@ -27,9 +28,15 @@ export function PairMP({ scoredTraveller }: Props) {
 
       {/* Scrollable table */}
       {showPercentage ? (
-        <PairMPPercentageTable scoredTraveller={scoredTraveller} />
+        <PairMPPercentageTable
+          scoredTraveller={scoredTraveller}
+          highlightAssignmentId={highlightAssignmentId}
+        />
       ) : (
-        <PairMPTable scoredTraveller={scoredTraveller} />
+        <PairMPTable
+          scoredTraveller={scoredTraveller}
+          highlightAssignmentId={highlightAssignmentId}
+        />
       )}
     </div>
   );
