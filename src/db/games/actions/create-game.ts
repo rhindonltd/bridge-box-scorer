@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { createDb, getDb } from "@/db/games";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";

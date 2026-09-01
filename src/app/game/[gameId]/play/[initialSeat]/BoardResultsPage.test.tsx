@@ -2,16 +2,18 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
 
-vi.mock("@/context/GameContext", () => ({
-  useGame: () => ({
-    game: {
-      eventName: "Monday Pairs",
-      gameId: "g1",
-      gameType: "PAIRS",
-      tables: 4,
-    },
-  }),
-}));
+vi.mock("@/context/GameContext", () => {
+  const game = {
+    eventName: "Monday Pairs",
+    gameId: "g1",
+    gameType: "PAIRS",
+    tables: 4,
+  };
+  return {
+    useGame: () => ({ game, isLoading: false, mutateGame: vi.fn() }),
+    useRequiredGame: () => ({ game, mutateGame: vi.fn() }),
+  };
+});
 
 vi.mock("@/context/AssignmentContext", () => ({
   useAssignment: () => ({
@@ -19,7 +21,7 @@ vi.mock("@/context/AssignmentContext", () => ({
   }),
 }));
 
-vi.mock("@/components/results/traveller/Traveller", () => ({
+vi.mock("@/components/traveller/Traveller", () => ({
   Traveller: ({ scoredTraveller }: any) => (
     <div data-testid="traveller">Traveller {scoredTraveller?.id ?? "none"}</div>
   ),
@@ -35,15 +37,9 @@ describe("BoardResultsPage", () => {
     onNext: vi.fn(),
   };
 
-  it("renders header with event name and pair info", () => {
+  it("renders the Board Results header", () => {
     render(<BoardResultsPage {...baseProps} />);
-    expect(screen.getByText("Monday Pairs")).toBeInTheDocument();
-    expect(screen.getByText("Pair 3")).toBeInTheDocument();
-  });
-
-  it("renders board info in header detail", () => {
-    render(<BoardResultsPage {...baseProps} />);
-    expect(screen.getByText("Board 5")).toBeInTheDocument();
+    expect(screen.getByText("Board Results")).toBeInTheDocument();
   });
 
   it("renders Traveller component", () => {
@@ -65,10 +61,10 @@ describe("BoardResultsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls onNext when button clicked", () => {
+  it("calls onNext when the action button is clicked", () => {
     const fn = vi.fn();
     render(<BoardResultsPage {...baseProps} onNext={fn} />);
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: "Next Board" }));
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
@@ -76,11 +72,5 @@ describe("BoardResultsPage", () => {
     const { container } = render(<BoardResultsPage {...baseProps} />);
     const root = container.firstChild as HTMLElement;
     expect(root).toHaveClass("flex-1", "flex", "flex-col");
-  });
-
-  it("keeps traveller in flexible scroll area", () => {
-    render(<BoardResultsPage {...baseProps} />);
-    const travellerWrapper = screen.getByTestId("traveller").parentElement;
-    expect(travellerWrapper).toHaveClass("flex-1", "min-h-0");
   });
 });

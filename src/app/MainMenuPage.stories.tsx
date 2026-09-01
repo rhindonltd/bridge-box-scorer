@@ -1,5 +1,4 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { fn } from "storybook/test";
 import { MainMenuPage } from "@/app/MainMenuPage";
 
 const meta: Meta<typeof MainMenuPage> = {
@@ -9,13 +8,6 @@ const meta: Meta<typeof MainMenuPage> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
-  args: {
-    onCreateNewGame: fn(),
-    onJoinGame: fn(),
-    onManageGames: fn(),
-    onRoomDisplay: fn(),
-    onOpenSettings: fn()
-  },
 };
 
 export default meta;

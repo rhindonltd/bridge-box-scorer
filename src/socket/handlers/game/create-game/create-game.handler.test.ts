@@ -68,7 +68,7 @@ describe("registerCreateGameHandler", () => {
     await handler(newBridgeGame, cb);
 
     expect(createBridgeGame).toHaveBeenCalledWith(newBridgeGame);
-    expect(createGameDb).toHaveBeenCalledWith("123", "PAIRS");
+    expect(createGameDb).toHaveBeenCalledWith("123");
 
     // Should create a director login session
     expect(createLoginSession).toHaveBeenCalledWith(

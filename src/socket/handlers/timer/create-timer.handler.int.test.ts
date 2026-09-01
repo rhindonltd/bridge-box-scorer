@@ -9,7 +9,7 @@ vi.mock("@/timer/game-store", () => ({
   createEngine: vi.fn(),
 }));
 
-vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
+vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 

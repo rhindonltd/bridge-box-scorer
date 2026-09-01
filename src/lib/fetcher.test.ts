@@ -14,7 +14,8 @@ describe("fetcher", () => {
     const mockData = { id: 1, name: "Test" };
     const mockResponse = {
       ok: true,
-      json: vi.fn().mockResolvedValue(mockData),
+      // fetcher unwraps the `{ success, result }` API envelope and returns `result`.
+      json: vi.fn().mockResolvedValue({ success: true, result: mockData }),
     };
     vi.mocked(fetch).mockResolvedValue(mockResponse as any);
 

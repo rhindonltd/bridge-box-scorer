@@ -21,8 +21,8 @@ describe("Toggle", () => {
     const offButton = screen.getByRole("button", { name: "Off" });
     const onButton = screen.getByRole("button", { name: "On" });
 
-    expect(offButton).toHaveClass("bg-white");
-    expect(onButton).not.toHaveClass("bg-white");
+    expect(offButton).toHaveClass("bg-blue-600");
+    expect(onButton).not.toHaveClass("bg-blue-600");
   });
 
   it("highlights on state when value is true", () => {
@@ -33,8 +33,8 @@ describe("Toggle", () => {
     const offButton = screen.getByRole("button", { name: "Off" });
     const onButton = screen.getByRole("button", { name: "On" });
 
-    expect(onButton).toHaveClass("bg-white");
-    expect(offButton).not.toHaveClass("bg-white");
+    expect(onButton).toHaveClass("bg-blue-600");
+    expect(offButton).not.toHaveClass("bg-blue-600");
   });
 
   it("calls onSwitch when clicking off button", async () => {

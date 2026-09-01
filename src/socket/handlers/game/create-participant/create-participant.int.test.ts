@@ -8,16 +8,20 @@ import { Rooms } from "@/socket/rooms";
 
 // ---- mock DB layer ----
 
-vi.mock("@/db/games/shared/actions/create-player", () => ({
+vi.mock("@/db/games/actions/create-player", () => ({
   createPlayer: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/actions/create-participant", () => ({
+vi.mock("@/db/games/actions/create-participant", () => ({
   createParticipant: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
+}));
+
+vi.mock("@/db/games", () => ({
+  getDb: vi.fn(),
 }));
 
 vi.mock("@/db/system/queries/find-login-session", () => ({
@@ -27,6 +31,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { createPlayer } from "@/db/games/actions/create-player";
 import { createParticipant as createPair } from "@/db/games/actions/create-participant";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { getDb } from "@/db/games";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateParticipantHandler } from "./create-participant";
 
@@ -37,6 +42,8 @@ describe("registerCreateParticipantHandler (integration)", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+
+    vi.mocked(getDb).mockResolvedValue({} as any);
 
     // Mock findLoginSession to validate the test director token
     vi.mocked(findLoginSession).mockReturnValue({
@@ -114,7 +121,10 @@ describe("registerCreateParticipantHandler (integration)", () => {
       );
     });
 
-    expect(response).toMatchObject({ success: true, key: expect.any(String) });
+    expect(response).toMatchObject({
+      success: true,
+      data: { key: expect.any(String) },
+    });
 
     const event = await participantsEvent;
     expect(event.participants).toEqual([
@@ -142,6 +152,6 @@ describe("registerCreateParticipantHandler (integration)", () => {
       );
     });
 
-    expect(response).toEqual({ success: false });
+    expect(response).toMatchObject({ success: false });
   });
 });

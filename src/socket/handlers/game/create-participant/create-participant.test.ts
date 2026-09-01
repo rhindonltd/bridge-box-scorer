@@ -3,26 +3,26 @@ import { SocketEvents } from "@/socket/socket-events";
 
 // ---- mocks ----
 
-vi.mock("@/db/games/shared/actions/create-player", () => ({
+vi.mock("@/db/games/actions/create-player", () => ({
   createPlayer: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/actions/create-participant", () => ({
+vi.mock("@/db/games/actions/create-participant", () => ({
   createParticipant: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-vi.mock("@/db/system/queries/find-login-session", () => ({
-  findLoginSession: vi.fn(),
+vi.mock("@/db/games", () => ({
+  getDb: vi.fn(),
 }));
 
 import { createPlayer } from "@/db/games/actions/create-player";
 import { createParticipant as createPair } from "@/db/games/actions/create-participant";
 import { findPairs } from "@/db/games/queries/find-pairs";
-import { findLoginSession } from "@/db/system/queries/find-login-session";
+import { getDb } from "@/db/games";
 import { registerCreateParticipantHandler } from "./create-participant";
 
 function makeDirectorSocket() {
@@ -42,12 +42,7 @@ function makeIo(emitFn = vi.fn()) {
 describe("registerCreateParticipantHandler (unit)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: findLoginSession returns a valid director session
-    vi.mocked(findLoginSession).mockReturnValue({
-      token: "test-token",
-      role: "DIRECTOR",
-      gameId: "game-1",
-    } as any);
+    vi.mocked(getDb).mockResolvedValue({} as any);
   });
 
   it("registers handler on CREATE_PARTICIPANT event", () => {
@@ -57,32 +52,6 @@ describe("registerCreateParticipantHandler (unit)", () => {
       SocketEvents.CREATE_PARTICIPANT,
       expect.any(Function),
     );
-  });
-
-  it("rejects when no directorToken is provided", async () => {
-    vi.mocked(findLoginSession).mockReturnValue(null as any);
-
-    const socket = makeDirectorSocket();
-    registerCreateParticipantHandler(socket as any, makeIo() as any);
-
-    const handler = socket.on.mock.calls[0][1];
-    const cb = vi.fn();
-
-    await handler(
-      {
-        gameId: "g1",
-        newParticipant: {
-          type: "PAIR",
-          initialSeat: "1NS",
-          player1: { firstName: "A", lastName: "B" },
-          player2: { firstName: "C", lastName: "D" },
-        },
-      },
-      cb,
-    );
-
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
-    expect(createPlayer).not.toHaveBeenCalled();
   });
 
   describe("PAIR participant", () => {
@@ -104,7 +73,6 @@ describe("registerCreateParticipantHandler (unit)", () => {
       await handler(
         {
           gameId: "game-1",
-          directorToken: "test-token",
           newParticipant: {
             type: "PAIR",
             initialSeat: "1NS",
@@ -116,11 +84,11 @@ describe("registerCreateParticipantHandler (unit)", () => {
       );
 
       expect(createPlayer).toHaveBeenCalledTimes(2);
-      expect(createPlayer).toHaveBeenNthCalledWith(1, "PAIRS", "game-1", {
+      expect(createPlayer).toHaveBeenNthCalledWith(1, "game-1", {
         firstName: "P1",
         lastName: "L1",
       });
-      expect(createPlayer).toHaveBeenNthCalledWith(2, "PAIRS", "game-1", {
+      expect(createPlayer).toHaveBeenNthCalledWith(2, "game-1", {
         firstName: "P2",
         lastName: "L2",
       });
@@ -140,7 +108,10 @@ describe("registerCreateParticipantHandler (unit)", () => {
       );
 
       expect(cb).toHaveBeenCalledWith(
-        expect.objectContaining({ success: true, key: expect.any(String) }),
+        expect.objectContaining({
+          success: true,
+          data: expect.objectContaining({ key: expect.any(String) }),
+        }),
       );
     });
 
@@ -155,7 +126,6 @@ describe("registerCreateParticipantHandler (unit)", () => {
       await handler(
         {
           gameId: "game-1",
-          directorToken: "test-token",
           newParticipant: {
             type: "PAIR",
             initialSeat: "1NS",
@@ -166,31 +136,9 @@ describe("registerCreateParticipantHandler (unit)", () => {
         cb,
       );
 
-      expect(cb).toHaveBeenCalledWith({ success: false });
-    });
-
-    it("handles missing callback on error safely", async () => {
-      const socket = makeDirectorSocket();
-      registerCreateParticipantHandler(socket as any, makeIo() as any);
-      const handler = socket.on.mock.calls[0][1];
-
-      vi.mocked(createPlayer).mockRejectedValue(new Error("fail"));
-
-      await expect(
-        handler(
-          {
-            gameId: "game-1",
-            directorToken: "test-token",
-            newParticipant: {
-              type: "PAIR",
-              initialSeat: "1NS",
-              player1: { firstName: "P1", lastName: "L1" },
-              player2: { firstName: "P2", lastName: "L2" },
-            },
-          },
-          undefined,
-        ),
-      ).resolves.not.toThrow();
+      expect(cb).toHaveBeenCalledWith(
+        expect.objectContaining({ success: false }),
+      );
     });
   });
 });

@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { getDb } from "@/db/game-index";
 import { games } from "@/db/game-index/schema";

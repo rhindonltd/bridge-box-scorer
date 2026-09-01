@@ -19,14 +19,15 @@ export const GameContext = createContext<ContextType | undefined>(undefined);
 
 export function GameProvider({
   children,
-  gameId,
+  initialGame,
 }: {
   children: ReactNode;
-  gameId: string | null;
+  initialGame: BridgeGame;
 }) {
   const socket = getSocket();
 
-  const key = gameId ? swrKeys.game(gameId) : null;
+  const gameId = initialGame.gameId;
+  const key = swrKeys.game(gameId);
 
   const gameFetcher = async (url: string): Promise<BridgeGame> => {
     const response: { game: BridgeGame } = await fetcher(url);
@@ -38,11 +39,14 @@ export function GameProvider({
     data: game,
     isLoading,
     mutate,
-  } = useSWR<BridgeGame>(key, gameFetcher);
+  } = useSWR<BridgeGame>(key, gameFetcher, {
+    fallbackData: initialGame,
+    // The server layout already provides a fresh snapshot and Socket.IO pushes
+    // live updates, so there is no need to refetch on mount.
+    revalidateOnMount: false,
+  });
 
   useEffect(() => {
-    if (!gameId) return;
-
     socket.emit(SocketEvents.JOIN_GAME, { gameId });
 
     const handleReconnect = () => {

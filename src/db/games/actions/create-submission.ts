@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { getDb } from "@/db/games";
 import { boardSubmissions } from "@/db/games/tables/submissions";

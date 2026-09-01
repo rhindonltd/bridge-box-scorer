@@ -27,19 +27,19 @@ vi.mock("@/db/game-index/actions/update-table-count", () => ({
   updateTableCount: vi.fn(),
 }));
 
-vi.mock("@/db/games/shared/actions/create-player", () => ({
+vi.mock("@/db/games/actions/create-player", () => ({
   createPlayer: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/actions/create-participant", () => ({
+vi.mock("@/db/games/actions/create-participant", () => ({
   createParticipant: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/queries/find-pairs", () => ({
+vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/actions/delete-participant", () => ({
+vi.mock("@/db/games/actions/delete-participant", () => ({
   deleteParticipant: vi.fn(),
 }));
 
@@ -64,7 +64,7 @@ vi.mock("@/db/movements/queries/get-movement", () => ({
   getTeamMovement: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs", () => ({
+vi.mock("@/db/games", () => ({
   getDb: vi.fn(async () => ({
     transaction: vi.fn(async (fn: any) =>
       fn({ insert: vi.fn(() => ({ values: vi.fn() })) }),
@@ -77,7 +77,7 @@ vi.mock("@/timer/game-store", () => ({
   createEngine: vi.fn(),
 }));
 
-vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
+vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 

@@ -24,7 +24,7 @@ describe("useTimerDerived", () => {
     const result = useTimerDerived(null, Date.now());
     expect(result.remaining).toBe(0);
     expect(result.phase).toBeNull();
-    expect(result.round).toBe(0);
+    expect(result.round).toBeNull();
     expect(result.boardLabel).toBeNull();
     expect(result.title).toBe("Connecting…");
     expect(result.isRunning).toBe(false);

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getSchedule } from "./schedule-service";
 
-vi.mock("@/db/games/pairs", () => ({
+vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
-vi.mock("@/db/games/pairs/tables/boards", () => ({
+vi.mock("@/db/games/tables/boards", () => ({
   boards: {
     ns: "ns",
     ew: "ew",
@@ -14,15 +14,15 @@ vi.mock("@/db/games/pairs/tables/boards", () => ({
   },
 }));
 
-vi.mock("@/db/games/pairs/tables/assignments", () => ({
+vi.mock("@/db/games/tables/assignments", () => ({
   assignments: { initialSeat: "initialSeat", id: "id" },
 }));
 
-vi.mock("@/db/games/pairs/tables/participants", () => ({
+vi.mock("@/db/games/tables/participants", () => ({
   participants: "pairParticipants",
 }));
 
-vi.mock("@/db/games/shared/tables/players", () => ({
+vi.mock("@/db/games/tables/players", () => ({
   players: "players",
 }));
 

@@ -5,7 +5,7 @@ vi.mock("@/timer/game-store", () => ({
   createEngine: vi.fn(),
 }));
 
-vi.mock("@/db/games/shared/actions/update-timer-state", () => ({
+vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
@@ -97,14 +97,13 @@ describe("registerUpdateConfigHandler", () => {
     });
 
     expect(mockEngine.updateConfig).toHaveBeenCalledWith(4, 6, 480, 90);
-    expect(updateTimerState).toHaveBeenCalledWith("PAIRS", "game-5", mockState);
+    expect(updateTimerState).toHaveBeenCalledWith("game-5", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-5");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
     );
     expect(scheduleGame).toHaveBeenCalledWith(
-      "PAIRS",
       "game-5",
       mockEngine,
       expect.objectContaining({
