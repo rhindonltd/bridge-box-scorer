@@ -12,14 +12,7 @@ const meta: Meta<typeof StepDeclarer> = {
   tags: ["autodocs"],
   args: {
     onDeclarerSelected: fn(),
-  },
-  decorators: [
-    (Story) => (
-      <div className="h-screen flex flex-col">
-        <Story />
-      </div>
-    ),
-  ],
+  }
 };
 
 export default meta;

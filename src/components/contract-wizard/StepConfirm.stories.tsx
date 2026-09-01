@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { StepConfirm } from "./StepConfirm";
+import { fn } from "storybook/test";
 
 const meta: Meta<typeof StepConfirm> = {
   title: "Components/ContractWizard/StepConfirm",
@@ -8,6 +9,7 @@ const meta: Meta<typeof StepConfirm> = {
     layout: "fullscreen",
   },
   tags: ["autodocs"],
+  args: { onSubmit: fn() },
 };
 
 export default meta;
@@ -24,8 +26,7 @@ export const NormalContract: Story = {
     leadSuit: null,
     leadRank: null,
     resultMode: "made",
-    resultValue: 1,
-    onSubmit: () => {},
+    resultValue: 1
   },
 };
 
@@ -39,8 +40,7 @@ export const Doubled: Story = {
     leadSuit: null,
     leadRank: null,
     resultMode: "down",
-    resultValue: 2,
-    onSubmit: () => {},
+    resultValue: 2
   },
 };
 
@@ -54,8 +54,7 @@ export const WithLead: Story = {
     leadSuit: "S",
     leadRank: "A",
     resultMode: "made",
-    resultValue: 0,
-    onSubmit: () => {},
+    resultValue: 0
   },
 };
 
@@ -69,8 +68,7 @@ export const PassOut: Story = {
     leadSuit: null,
     leadRank: null,
     resultMode: "made",
-    resultValue: 0,
-    onSubmit: () => {},
+    resultValue: 0
   },
 };
 
@@ -84,7 +82,6 @@ export const NotPlayed: Story = {
     leadSuit: null,
     leadRank: null,
     resultMode: "made",
-    resultValue: 0,
-    onSubmit: () => {},
+    resultValue: 0
   },
 };

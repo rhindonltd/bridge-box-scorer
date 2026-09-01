@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { ClaimDirectorCodeView } from "@/app/manage/ClaimDirectorCodeView";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { mockGame } from "@/mocks/fixtures/game";
 
 const meta: Meta<typeof ClaimDirectorCodeView> = {
   title: "App/Manage/SelectGame/ClaimDirectorCodeView",
@@ -20,22 +21,7 @@ type Story = StoryObj<typeof ClaimDirectorCodeView>;
 
 export const Empty: Story = {
   decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      leadCardRequired: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
+    withGame(mockGame),
   ],
   args: {
     gameName: "Monday AM Pairs",
@@ -47,22 +33,7 @@ export const Empty: Story = {
 
 export const PartialCode: Story = {
   decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      leadCardRequired: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
+    withGame(mockGame),
   ],
   args: {
     gameName: "Tuesday PM Individual",
@@ -74,22 +45,7 @@ export const PartialCode: Story = {
 
 export const FullCode: Story = {
   decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      leadCardRequired: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
+    withGame(mockGame),
   ],
   args: {
     gameName: "Monday AM Pairs",
@@ -101,22 +57,7 @@ export const FullCode: Story = {
 
 export const Loading: Story = {
   decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      leadCardRequired: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
+    withGame(mockGame),
   ],
   args: {
     gameName: "Monday AM Pairs",
@@ -128,22 +69,7 @@ export const Loading: Story = {
 
 export const WithError: Story = {
   decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      leadCardRequired: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
+    withGame(mockGame),
   ],
   args: {
     gameName: "Monday AM Pairs",

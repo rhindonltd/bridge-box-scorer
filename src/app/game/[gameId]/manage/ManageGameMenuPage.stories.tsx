@@ -2,23 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { ManageGameMenuPage } from "@/app/game/[gameId]/manage/ManageGameMenuPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
-
-const mockGame = {
-  id: 1,
-  eventName: "Monday AM Pairs",
-  director: "Jacqui Collier",
-  gameType: "PAIRS" as const,
-  scoringType: "MP" as const,
-  gameId: "abc123",
-  sessionName: "1",
-  sectionName: "A",
-  eventDate: new Date().toISOString(),
-  tables: 8,
-  leadCardRequired: true,
-  status: "JOINABLE" as const,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
+import { mockGame } from "@/mocks/fixtures/game";
 
 const meta: Meta<typeof ManageGameMenuPage> = {
   title: "App/Manage/Game/Menu/DirectorMenuPage",

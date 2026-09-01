@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 import { RoundInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/RoundInfoPage";
+import { mockGame } from "@/mocks/fixtures/game";
 
 const meta: Meta<typeof RoundInfoPage> = {
   title: "App/Play/Game/Assignment/RoundInfoPage",
@@ -36,22 +37,7 @@ type Story = StoryObj<typeof RoundInfoPage>;
 
 export const Default: Story = {
   decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      leadCardRequired: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
+    withGame(mockGame),
     withAssignment({
       type: "PAIR",
       id: "1",
@@ -61,22 +47,7 @@ export const Default: Story = {
 
 export const LaterRound: Story = {
   decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      leadCardRequired: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
+    withGame(mockGame),
     withAssignment({
       type: "PAIR",
       id: "1",
@@ -91,22 +62,7 @@ export const LaterRound: Story = {
 
 export const LongNames: Story = {
   decorators: [
-    withGame({
-      id: 1,
-      eventName: "Monday AM Pairs",
-      director: null,
-      gameType: "PAIRS",
-      scoringType: "MP",
-      gameId: crypto.randomUUID(),
-      sessionName: "",
-      sectionName: "",
-      eventDate: new Date().toISOString(),
-      status: "CREATED",
-      tables: 10,
-      leadCardRequired: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }),
+    withGame(mockGame),
     withAssignment({
       type: "PAIR",
       id: "11EW",
