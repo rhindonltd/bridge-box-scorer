@@ -7,9 +7,20 @@ const mockUpdate = vi.fn(() => ({
   })),
 }));
 
+// The SIT_OUT guard reads the target board's status; default to a playable
+// (non-SIT_OUT) board so normal submissions proceed.
+const mockSelect = vi.fn(() => ({
+  from: vi.fn(() => ({
+    where: vi.fn(() => ({
+      get: vi.fn(async () => ({ status: "NOT_PLAYED" })),
+    })),
+  })),
+}));
+
 vi.mock("@/db/games", () => ({
   getDb: vi.fn(async () => ({
     update: mockUpdate,
+    select: mockSelect,
   })),
 }));
 
@@ -18,6 +29,7 @@ vi.mock("@/db/games/tables/boards", () => ({
     roundNumber: "roundNumber",
     tableNumber: "tableNumber",
     boardNumber: "boardNumber",
+    status: "status",
   },
 }));
 
@@ -78,6 +90,41 @@ describe("registerSubmitResultHandler", () => {
       SocketEvents.SUBMIT_RESULT,
       expect.any(Function),
     );
+  });
+
+  it("rejects a submission against a SIT_OUT board", async () => {
+    mockSelect.mockReturnValueOnce({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          get: vi.fn(async () => ({ status: "SIT_OUT" })),
+        })),
+      })),
+    } as any);
+
+    const socket = makeSocket();
+    const io = makeIo();
+    registerSubmitResultHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler(
+      {
+        gameId: "g1",
+        seat: "1NS",
+        roundNumber: 2,
+        tableNumber: 3,
+        boardNumber: 3,
+        result: "3NTN=",
+      },
+      cb,
+    );
+
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "This board is a sit-out",
+    });
+    expect(createBoardSubmission).not.toHaveBeenCalled();
   });
 
   it("stores a pending submission and returns success", async () => {

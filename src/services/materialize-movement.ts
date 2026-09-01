@@ -1,10 +1,5 @@
 import "server-only";
 
-import {
-  PairMovement,
-  TeamMovement,
-} from "@/db/movements/queries/get-movement";
-
 import { getDb } from "@/db/games";
 
 import { boards, NewBoard } from "@/db/games/tables/boards";
@@ -12,16 +7,43 @@ import { assignments, Assignment } from "@/db/games/tables/assignments";
 import { Tables } from "@/model/movement";
 
 /**
+ * A round in a movement ready to be materialized. Mirrors the DB round spec
+ * but adds an optional `sitOut` flag: when true, this (table, round) is the
+ * dormant position for a one-pair-short session — its boards are written with
+ * status SIT_OUT (not played anywhere at that table that round) and the pair
+ * scheduled there sits the round out.
+ */
+export interface MaterializableRound {
+  roundNumber: number;
+  ns: string;
+  ew: string;
+  boardStart: number;
+  boardEnd: number;
+  sitOut?: boolean;
+}
+
+export interface MaterializableTable {
+  tableNumber: number;
+  rounds: MaterializableRound[];
+}
+
+export type MaterializableMovement = MaterializableTable[];
+
+/**
  * Materialize a pair-like movement (Pairs or Teams) into the per-game database:
  * every round becomes board rows, and round 1 becomes the seat assignments.
  * All inserts run inside a single transaction.
+ *
+ * Rounds flagged `sitOut` still produce board rows (keeping their real board
+ * numbers and table) but with status SIT_OUT, so the sitting-out pair's screen
+ * can show the table while those boards are never played, scored, or submitted.
  *
  * This is deferred until the game is started (see the start-game handler); it is
  * intentionally free of validation and assumes the caller has already confirmed
  * the movement/seating is valid.
  */
 export async function materializePairLikeMovement(
-  movement: PairMovement[] | TeamMovement[],
+  movement: MaterializableMovement,
   gameId: string,
 ) {
   const boardRows: NewBoard[] = [];
@@ -40,7 +62,7 @@ export async function materializePairLikeMovement(
           boardNumber,
           ns: r.ns,
           ew: r.ew,
-          status: "NOT_PLAYED",
+          status: r.sitOut ? "SIT_OUT" : "NOT_PLAYED",
         });
       }
 
@@ -76,19 +98,15 @@ export async function materializePairLikeMovement(
 }
 
 /**
- * Convert the generateMitchell output (Tables<"PAIR">) into the PairMovement[]
- * shape expected by materializePairLikeMovement.
+ * Convert the generateMitchell output (Tables<"PAIR">) into the
+ * MaterializableMovement shape.
  */
 export function mitchellToPairMovement(
   tables: Tables<"PAIR">,
-): PairMovement[] {
+): MaterializableMovement {
   return tables.tables.map((table) => ({
-    id: 0,
-    movementId: 0,
     tableNumber: table.table,
     rounds: table.rounds.map((round) => ({
-      id: 0,
-      tableId: 0,
       roundNumber: round.round,
       ns: round.participants.nsId,
       ew: round.participants.ewId,

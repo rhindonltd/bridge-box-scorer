@@ -14,9 +14,11 @@ import { PairMovement } from "@/db/movements/queries/get-movement";
 import {
   rehydrateSelectedMovement,
   RehydratedMovement,
-  tablesToPairMovement,
 } from "@/services/movement-rehydration";
-import { materializePairLikeMovement } from "@/services/materialize-movement";
+import {
+  materializePairLikeMovement,
+  MaterializableMovement,
+} from "@/services/materialize-movement";
 import { generateStandardMitchellWithSitOut } from "@/movement/mitchell/sit-out";
 import {
   applySpecSitOutNoMissingPair,
@@ -30,29 +32,25 @@ import {
 export interface ResolvedStart {
   validation: StartValidationResult;
   /** The movement to materialize, present only when validation.canStart. */
-  movement: PairMovement[] | null;
+  movement: MaterializableMovement | null;
 }
 
 /**
  * Apply the appropriate sit-out transformation for a one-pair-short session.
- * Returns the movement in PairMovement[] shape ready for materialization.
+ * Returns a MaterializableMovement with the dormant rounds flagged sitOut.
  */
 function applySitOut(
   selected: SelectedMovement,
   rehydrated: RehydratedMovement,
   sitOutSeat: PairSeat,
-): PairMovement[] {
+): MaterializableMovement {
   if (selected.source === "MITCHELL") {
     if (!rehydrated.isStandardMitchell) {
       throw new Error(
         "Sit-out handling is only supported for Standard Mitchell movements.",
       );
     }
-    const withSitOut = generateStandardMitchellWithSitOut(
-      selected.mitchell,
-      sitOutSeat,
-    );
-    return tablesToPairMovement(withSitOut);
+    return generateStandardMitchellWithSitOut(selected.mitchell, sitOutSeat);
   }
 
   // Database spec.
@@ -101,7 +99,7 @@ export async function resolveStart(
   const movement =
     validation.sitOutSeat !== null
       ? applySitOut(selected, rehydrated, validation.sitOutSeat)
-      : rehydrated.movement;
+      : toMaterializable(rehydrated.movement);
 
   return { validation, movement };
 }
@@ -138,6 +136,23 @@ function pairMovementToTables(movement: PairMovement[]): {
 
 function rangeInclusive(start: number, end: number): number[] {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
+/**
+ * Convert a rehydrated DB movement to a MaterializableMovement with no sit-out
+ * flags (used when the movement is exactly filled).
+ */
+function toMaterializable(movement: PairMovement[]): MaterializableMovement {
+  return movement.map((table) => ({
+    tableNumber: table.tableNumber,
+    rounds: table.rounds.map((round) => ({
+      roundNumber: round.roundNumber,
+      ns: round.ns,
+      ew: round.ew,
+      boardStart: round.boardStart,
+      boardEnd: round.boardEnd,
+    })),
+  }));
 }
 
 /**

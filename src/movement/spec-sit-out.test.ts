@@ -3,7 +3,7 @@ import { PairMovement } from "@/db/movements/queries/get-movement";
 import {
   applySpecSitOutNoMissingPair,
   alignSpecMissingPair,
-  blankPhantomBoards,
+  flagPhantomRounds,
 } from "./spec-sit-out";
 
 /**
@@ -49,37 +49,37 @@ function makeMovement(): PairMovement[] {
   }));
 }
 
-function playsBoards(round: { boardStart: number; boardEnd: number }): boolean {
-  return round.boardEnd >= round.boardStart;
-}
-
-describe("blankPhantomBoards", () => {
-  it("blanks boards wherever the phantom id appears and leaves others intact", () => {
-    const result = blankPhantomBoards(makeMovement(), "6");
+describe("flagPhantomRounds", () => {
+  it("flags rounds where the phantom sits and leaves others unflagged", () => {
+    const result = flagPhantomRounds(makeMovement(), "6");
 
     // Phantom "6" is at: R1 T3, R2 T1, R3 T2.
-    const emptied: string[] = [];
+    const flagged: string[] = [];
     for (const table of result) {
       for (const round of table.rounds) {
-        if (!playsBoards(round)) {
-          emptied.push(`R${round.roundNumber}T${table.tableNumber}`);
+        if (round.sitOut) {
+          flagged.push(`R${round.roundNumber}T${table.tableNumber}`);
         }
       }
     }
-    expect(emptied.sort()).toEqual(["R1T3", "R2T1", "R3T2"]);
+    expect(flagged.sort()).toEqual(["R1T3", "R2T1", "R3T2"]);
+  });
+
+  it("preserves real board ranges on flagged rounds", () => {
+    const result = flagPhantomRounds(makeMovement(), "6");
+    const t3r1 = result.find((t) => t.tableNumber === 3)!.rounds[0];
+    expect(t3r1.sitOut).toBe(true);
+    expect(t3r1.boardStart).toBe(1);
+    expect(t3r1.boardEnd).toBe(2);
   });
 });
 
 describe("applySpecSitOutNoMissingPair", () => {
-  it("treats the position at the sit-out seat as the phantom (one sit-out per round)", () => {
+  it("treats the position at the sit-out seat as the phantom (one per round)", () => {
     const result = applySpecSitOutNoMissingPair(makeMovement(), "3EW");
 
-    // Seat 3EW in round 1 is pair "6"; each round has exactly one table not
-    // playing boards.
-    for (let r = 1; r <= 3; r++) {
-      const sitOuts = result.filter(
-        (t) => !playsBoards(t.rounds[r - 1]),
-      ).length;
+    for (let r = 0; r < 3; r++) {
+      const sitOuts = result.filter((t) => t.rounds[r].sitOut).length;
       expect(sitOuts).toBe(1);
     }
   });
@@ -87,32 +87,27 @@ describe("applySpecSitOutNoMissingPair", () => {
 
 describe("alignSpecMissingPair", () => {
   it("rotates the EW direction so the file phantom lands on the requested seat", () => {
-    // File phantom is pair "6", which sits at 3EW in round 1. Request the empty
-    // seat to be 1EW (offset -2 over 3 tables).
+    // File phantom "6" sits at 3EW in round 1. Request the empty seat as 1EW.
     const result = alignSpecMissingPair(makeMovement(), "6", "1EW");
 
-    // After alignment, table 1's EW in round 1 should be the phantom "6", and
-    // its boards blanked.
     const t1r1 = result.find((t) => t.tableNumber === 1)!.rounds[0];
     expect(t1r1.ew).toBe("6");
-    expect(playsBoards(t1r1)).toBe(false);
+    expect(t1r1.sitOut).toBe(true);
   });
 
   it("keeps exactly one sit-out per round after alignment", () => {
     const result = alignSpecMissingPair(makeMovement(), "6", "1EW");
 
-    for (let r = 1; r <= 3; r++) {
-      const sitOuts = result.filter(
-        (t) => !playsBoards(t.rounds[r - 1]),
-      ).length;
+    for (let r = 0; r < 3; r++) {
+      const sitOuts = result.filter((t) => t.rounds[r].sitOut).length;
       expect(sitOuts).toBe(1);
     }
   });
 
-  it("is a no-op alignment (only blanks) when the phantom already sits at the requested seat", () => {
+  it("flags in place when the phantom already sits at the requested seat", () => {
     const result = alignSpecMissingPair(makeMovement(), "6", "3EW");
     const t3r1 = result.find((t) => t.tableNumber === 3)!.rounds[0];
     expect(t3r1.ew).toBe("6");
-    expect(playsBoards(t3r1)).toBe(false);
+    expect(t3r1.sitOut).toBe(true);
   });
 });

@@ -63,6 +63,7 @@ export default function PlayPage() {
         return (
           <SitOutPage
             round={round.roundNumber}
+            tableNumber={round.tableNumber}
             onHandleSitOutContinue={handleSitOutContinue}
           />
         );

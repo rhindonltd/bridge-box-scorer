@@ -23,8 +23,8 @@ function seatsForTables(tables: number): PairSeat[] {
   return seats;
 }
 
-function playsBoards(round: { boardStart: number; boardEnd: number }): boolean {
-  return round.boardEnd >= round.boardStart;
+function isSitOut(round: { sitOut?: boolean }): boolean {
+  return round.sitOut === true;
 }
 
 describe("resolveStart", () => {
@@ -50,11 +50,9 @@ describe("resolveStart", () => {
     expect(result.validation.canStart).toBe(true);
     expect(result.validation.sitOutSeat).toBeNull();
     expect(result.movement).not.toBeNull();
-    // Every round plays boards (no sit-out).
-    const anyEmpty = result.movement!.some((t) =>
-      t.rounds.some((r) => !playsBoards(r)),
-    );
-    expect(anyEmpty).toBe(false);
+    // No round is a sit-out.
+    const anySitOut = result.movement!.some((t) => t.rounds.some(isSitOut));
+    expect(anySitOut).toBe(false);
   });
 
   it("resolves a one-short Mitchell with a sit-out applied", async () => {
@@ -67,11 +65,11 @@ describe("resolveStart", () => {
 
     expect(result.validation.canStart).toBe(true);
     expect(result.validation.sitOutSeat).toBe("3EW");
-    // Exactly one sit-out per round => 5 blanked rounds total.
-    const emptyCount = result.movement!.flatMap((t) => t.rounds).filter(
-      (r) => !playsBoards(r),
-    ).length;
-    expect(emptyCount).toBe(5);
+    // Exactly one sit-out per round => 5 flagged rounds total.
+    const sitOutTotal = result
+      .movement!.flatMap((t) => t.rounds)
+      .filter(isSitOut).length;
+    expect(sitOutTotal).toBe(5);
   });
 
   it("rejects a Mitchell that is two pairs short", async () => {
@@ -138,7 +136,7 @@ describe("resolveStart", () => {
     expect(result.validation.sitOutSeat).toBe("3EW");
     // One sit-out per round.
     for (let r = 0; r < 3; r++) {
-      const sitOuts = result.movement!.filter((t) => !playsBoards(t.rounds[r]))
+      const sitOuts = result.movement!.filter((t) => isSitOut(t.rounds[r]))
         .length;
       expect(sitOuts).toBe(1);
     }

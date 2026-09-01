@@ -15,8 +15,18 @@ const mockUpdate = vi.fn(() => ({
   set: mockSet,
 }));
 
+// The SIT_OUT guard reads the target board's status; default to a playable
+// (non-SIT_OUT) board so normal submissions proceed.
+const mockSelect = vi.fn(() => ({
+  from: vi.fn(() => ({
+    where: vi.fn(() => ({
+      get: vi.fn(async () => ({ status: "NOT_PLAYED" })),
+    })),
+  })),
+}));
+
 vi.mock("@/db/games", () => ({
-  getDb: vi.fn(async () => ({ update: mockUpdate })),
+  getDb: vi.fn(async () => ({ update: mockUpdate, select: mockSelect })),
 }));
 
 vi.mock("@/db/games/tables/boards", () => ({
@@ -24,6 +34,7 @@ vi.mock("@/db/games/tables/boards", () => ({
     roundNumber: "roundNumber",
     tableNumber: "tableNumber",
     boardNumber: "boardNumber",
+    status: "status",
   },
 }));
 

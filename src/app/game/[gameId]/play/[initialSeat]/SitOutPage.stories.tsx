@@ -22,3 +22,7 @@ type Story = StoryObj<typeof SitOutPage>;
 export const Default: Story = {
   args: { round: 5 },
 };
+
+export const AtTable: Story = {
+  args: { round: 5, tableNumber: 3 },
+};
