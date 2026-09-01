@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { hasAdminToken } from "@/lib/admin-token";
+import { useSyncExternalStore } from "react";
+import { hasAdminToken, subscribeAdminToken } from "@/lib/admin-token";
 import { AdminKeyEntry } from "@/app/settings/AdminKeyEntry";
 
 export default function SettingsLayout({
@@ -9,20 +9,22 @@ export default function SettingsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // `null` until we've checked localStorage on the client, to avoid a
-  // hydration mismatch (server can't read the token).
-  const [unlocked, setUnlocked] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    setUnlocked(hasAdminToken());
-  }, []);
+  // Read the client-only admin-token state via an external store. The server
+  // snapshot is `null` so nothing renders until the client has checked
+  // localStorage, avoiding a hydration mismatch. Unlocking after a successful
+  // key entry notifies subscribers through the admin-token store.
+  const unlocked = useSyncExternalStore(
+    subscribeAdminToken,
+    () => hasAdminToken(),
+    () => null,
+  );
 
   if (unlocked === null) {
     return null;
   }
 
   if (!unlocked) {
-    return <AdminKeyEntry onSuccess={() => setUnlocked(true)} />;
+    return <AdminKeyEntry onSuccess={() => {}} />;
   }
 
   return <>{children}</>;

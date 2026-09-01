@@ -38,7 +38,6 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn((...args: any[]) => args),
 }));
 
-import { getDb } from "@/db/games";
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";

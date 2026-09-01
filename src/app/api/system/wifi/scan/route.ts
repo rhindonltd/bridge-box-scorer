@@ -1,6 +1,5 @@
 import { withBasicRoute } from "@/lib/api/basicRoute";
 import { exec } from "child_process";
-import { NextResponse } from "next/server";
 import { promisify } from "util";
 import { success } from "@/lib/api/success";
 

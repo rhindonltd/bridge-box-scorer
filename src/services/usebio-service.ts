@@ -23,9 +23,6 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
   const usebioPairs: UsebioPair[] = pairs.map((pair) => {
     // Parse direction from initialSeat (e.g., "1NS" → table 1, direction NS)
     const direction = pair.initialSeat.endsWith("NS") ? "N" : "E";
-    // Pair number is the table number + direction identifier
-    const tableNumber = pair.initialSeat.slice(0, -2);
-    const pairNumber = `${tableNumber}${direction === "N" ? "" : "E"}`;
 
     return {
       pairNumber: pair.initialSeat, // Use initialSeat as pair ID

@@ -197,7 +197,6 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client2, SocketEvents.JOIN_GAME, { gameId: "game-2" });
 
     const mismatchPromise1 = waitForEvent(client, SocketEvents.BOARD_MISMATCH);
-    const mismatchPromise2 = waitForEvent(client2, SocketEvents.BOARD_MISMATCH);
 
     // NS submits one result
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {

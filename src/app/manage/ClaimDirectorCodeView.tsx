@@ -13,7 +13,7 @@ interface ClaimDirectorCodeViewProps {
 }
 
 export function ClaimDirectorCodeView({
-  gameName,
+  gameName: _gameName,
   code,
   error,
   loading,
@@ -25,48 +25,6 @@ export function ClaimDirectorCodeView({
     <GamePageLayout
       headerTitle="Claim Director Code"
       centerContent={true}
-      children={
-        <div className="flex-1 flex flex-col items-center justify-center px-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">
-            Become Director
-          </h1>
-          <p className="text-base text-gray-600 mb-8 text-center">
-            Please enter the share code
-          </p>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onSubmit();
-            }}
-            id="claim-director-code"
-            className="w-full max-w-xs space-y-4"
-          >
-            <div>
-              <label htmlFor="share-code" className="sr-only">
-                Share Code
-              </label>
-              <input
-                id="share-code"
-                type="text"
-                value={code}
-                onChange={(e) => onCodeChange(e.target.value.toUpperCase())}
-                placeholder="Enter code"
-                maxLength={6}
-                autoFocus
-                autoComplete="off"
-                className="w-full text-center text-2xl font-mono font-bold tracking-[0.3em] p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase"
-              />
-            </div>
-
-            {error && (
-              <p role="alert" className="text-red-600 text-base text-center">
-                {error}
-              </p>
-            )}
-          </form>
-        </div>
-      }
       actions={
         <>
           <button
@@ -87,6 +45,47 @@ export function ClaimDirectorCodeView({
           </button>
         </>
       }
-    />
+    >
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <h1 className="text-xl font-bold text-gray-900 mb-2">
+          Become Director
+        </h1>
+        <p className="text-base text-gray-600 mb-8 text-center">
+          Please enter the share code
+        </p>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit();
+          }}
+          id="claim-director-code"
+          className="w-full max-w-xs space-y-4"
+        >
+          <div>
+            <label htmlFor="share-code" className="sr-only">
+              Share Code
+            </label>
+            <input
+              id="share-code"
+              type="text"
+              value={code}
+              onChange={(e) => onCodeChange(e.target.value.toUpperCase())}
+              placeholder="Enter code"
+              maxLength={6}
+              autoFocus
+              autoComplete="off"
+              className="w-full text-center text-2xl font-mono font-bold tracking-[0.3em] p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase"
+            />
+          </div>
+
+          {error && (
+            <p role="alert" className="text-red-600 text-base text-center">
+              {error}
+            </p>
+          )}
+        </form>
+      </div>
+    </GamePageLayout>
   );
 }

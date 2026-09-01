@@ -159,9 +159,6 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
       <GamePageLayout
         headerTitle={selected.name}
         backHref={`/create/${game.gameId}`}
-        children={
-          <MovementDetailView tables={detailData.tables as MovementByTable[]} />
-        }
         actions={
           handleSelect && (
             <div className="p-3 border-t">
@@ -174,7 +171,9 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
             </div>
           )
         }
-      />
+      >
+        <MovementDetailView tables={detailData.tables as MovementByTable[]} />
+      </GamePageLayout>
     );
   }
 
@@ -196,10 +195,8 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
 
   // Movement list view — grouped by type with section headings
   return (
-    <GamePageLayout
-      headerTitle="Select Movement"
-      backAction={onShowTablesPage}
-      children={
+    <GamePageLayout headerTitle="Select Movement" backAction={onShowTablesPage}>
+      {
         <div className="flex flex-col h-full">
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {shouldLoadPairs && (
@@ -250,7 +247,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
           </div>
         </div>
       }
-    />
+    </GamePageLayout>
   );
 }
 

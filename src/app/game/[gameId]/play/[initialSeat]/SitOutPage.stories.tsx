@@ -8,10 +8,7 @@ import { mockGame } from "@/mocks/fixtures/game";
 const meta: Meta<typeof SitOutPage> = {
   title: "App/Play/Game/Assignment/SitOutPage",
   component: SitOutPage,
-  decorators: [
-    withGame(mockGame),
-    withAssignment({ type: "PAIR", id: "1NS" }),
-  ],
+  decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
   parameters: { layout: "fullscreen" },
   tags: ["autodocs"],
   args: {

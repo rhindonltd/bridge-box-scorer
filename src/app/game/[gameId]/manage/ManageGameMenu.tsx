@@ -17,7 +17,9 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       onDownloadUsebioClick={() =>
         router.push(`/game/${gameId}/manage/download-usebio`)
       }
-      onDeleteGameClick={() => router.push(`/game/${gameId}/manage/delete-game`)}
+      onDeleteGameClick={() =>
+        router.push(`/game/${gameId}/manage/delete-game`)
+      }
     />
   );
 }

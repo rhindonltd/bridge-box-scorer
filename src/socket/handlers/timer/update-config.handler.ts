@@ -38,7 +38,6 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
     }
 
     const {
-      gameType,
       gameId,
       directorToken,
       boardsPerRound,

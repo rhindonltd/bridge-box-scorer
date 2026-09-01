@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type {
-  Movement,
-  PairMovement,
-  AnyMovement,
-  Round,
-  Table,
-} from "./movement";
+import type { PairMovement, AnyMovement, Table } from "./movement";
 
 /**
  * model/movement.ts exports only types — no runtime functions.

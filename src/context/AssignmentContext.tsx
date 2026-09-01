@@ -13,15 +13,15 @@ export const AssignmentContext = createContext<ContextType | undefined>(
 );
 
 export function AssignmentProvider({
-  gameId,
-  initialSeat,
+  gameId: _gameId,
+  initialSeat: _initialSeat,
   children,
 }: {
   gameId: string;
   initialSeat: Seat;
   children: ReactNode;
 }) {
-  const [assignment, setAssignment] = useState<Assignment | null>(null);
+  const [assignment] = useState<Assignment | null>(null);
 
   return (
     <AssignmentContext.Provider

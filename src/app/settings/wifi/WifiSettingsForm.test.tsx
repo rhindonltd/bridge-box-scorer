@@ -13,7 +13,7 @@ const networks: Network[] = [
 
 describe("WifiSettingsForm UI", () => {
   it("enables Save & Apply after successful network test", async () => {
-    const onTestConnection = vi.fn(async (ssid, password) => {
+    const onTestConnection = vi.fn(async (ssid, _password) => {
       return ssid === "Home WiFi"; // simulate success for Home WiFi
     });
 

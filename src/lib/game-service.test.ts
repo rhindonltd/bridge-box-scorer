@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import {
-  createGame,
-  selectMovement,
-  selectMitchellMovement,
-  createParticipant,
-} from "./game-service";
+import { createGame, selectMovement, createParticipant } from "./game-service";
 import { SocketEvents } from "@/socket/socket-events";
 
 vi.mock("@/lib/socket", () => ({
@@ -24,7 +19,7 @@ vi.mock("./player-token", () => ({
 }));
 
 import { emitWithAck, emitEvent } from "@/lib/socket";
-import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
+import { setDirectorToken } from "@/lib/director-token";
 import { setPlayerToken } from "./player-token";
 
 const mockEmitWithAck = vi.mocked(emitWithAck);

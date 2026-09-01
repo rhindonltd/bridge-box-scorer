@@ -19,13 +19,6 @@ export function MoveInfoPage({
       <GamePageLayout
         headerTitle="Move Info"
         centerContent={true}
-        children={
-          <div className="flex-1 flex flex-col items-center justify-center p-6">
-            <div className="text-xl font-semibold text-gray-900 mb-2">Next</div>
-            <div className="text-4xl font-bold text-blue-600 mb-4">Sit Out</div>
-            <div className="text-base text-gray-500">Round {roundNumber}</div>
-          </div>
-        }
         actions={
           <button
             onClick={onMoveInfoContinue}
@@ -34,7 +27,13 @@ export function MoveInfoPage({
             Continue
           </button>
         }
-      />
+      >
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <div className="text-xl font-semibold text-gray-900 mb-2">Next</div>
+          <div className="text-4xl font-bold text-blue-600 mb-4">Sit Out</div>
+          <div className="text-base text-gray-500">Round {roundNumber}</div>
+        </div>
+      </GamePageLayout>
     );
   }
 
@@ -42,17 +41,6 @@ export function MoveInfoPage({
     <GamePageLayout
       headerTitle="Move Info"
       centerContent={true}
-      children={
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="text-xl font-semibold text-gray-900 mb-2">
-            Move to
-          </div>
-          <div className="text-4xl font-bold text-blue-600 mb-4">
-            Table {tableNumber}
-          </div>
-          <div className="text-base text-gray-500">Round {roundNumber}</div>
-        </div>
-      }
       actions={
         <button
           onClick={onMoveInfoContinue}
@@ -61,6 +49,14 @@ export function MoveInfoPage({
           Continue
         </button>
       }
-    />
+    >
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div className="text-xl font-semibold text-gray-900 mb-2">Move to</div>
+        <div className="text-4xl font-bold text-blue-600 mb-4">
+          Table {tableNumber}
+        </div>
+        <div className="text-base text-gray-500">Round {roundNumber}</div>
+      </div>
+    </GamePageLayout>
   );
 }

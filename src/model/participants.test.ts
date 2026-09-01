@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { isPairSeat, parseSeat } from "./participants";
-import type { Seat } from "./participants";
 
 describe("isPairSeat", () => {
   it("returns true for pair seats ending in NS or EW", () => {

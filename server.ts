@@ -26,7 +26,9 @@ async function main() {
   });
 
   server.listen(port, () => {
-    console.log(`Next.js + Socket.IO server running on http://localhost:${port}`);
+    console.log(
+      `Next.js + Socket.IO server running on http://localhost:${port}`,
+    );
   });
 }
 

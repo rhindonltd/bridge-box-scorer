@@ -6,7 +6,7 @@ interface Props {
   leaderboard: TeamMatchOverallScore;
 }
 
-export function TeamMatchLeaderboard({ leaderboard }: Props) {
+export function TeamMatchLeaderboard({ leaderboard: _leaderboard }: Props) {
   // rank
   // teamId
   // teamMatchLineScores: TeamMatchLineScore[];

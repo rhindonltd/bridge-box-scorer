@@ -222,11 +222,9 @@ test.describe("Correct Result Wizard", () => {
       return route.continue();
     });
 
-    // Capture the override API request
-    let overridePayload: Record<string, unknown> | null = null;
+    // Intercept the override API request
     await page.route(`**/api/games/${gameId}/boards/1/override`, (route) => {
       if (route.request().method() === "POST") {
-        overridePayload = JSON.parse(route.request().postData() || "{}");
         return route.fulfill({
           status: 200,
           contentType: "application/json",

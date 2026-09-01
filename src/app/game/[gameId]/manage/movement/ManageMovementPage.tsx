@@ -69,10 +69,8 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
   }
 
   return (
-    <PageLayout
-      headerTitle="Movement Details"
-      backHref={backHref}
-      children={<MovementDetailView tables={data.tables} />}
-    />
+    <PageLayout headerTitle="Movement Details" backHref={backHref}>
+      <MovementDetailView tables={data.tables} />
+    </PageLayout>
   );
 }

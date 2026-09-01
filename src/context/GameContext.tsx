@@ -65,7 +65,7 @@ export function GameProvider({
       socket.off(SocketEvents.CONNECT, handleReconnect);
       socket.off(SocketEvents.GAME_UPDATED, handleGameUpdated);
     };
-  }, [gameId]);
+  }, [gameId, socket, mutate]);
 
   return (
     <GameContext.Provider

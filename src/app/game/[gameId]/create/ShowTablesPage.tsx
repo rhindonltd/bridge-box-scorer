@@ -107,13 +107,6 @@ export function ShowTablesPage({ onStartGame }: Props) {
   return (
     <GamePageLayout
       headerTitle="Tables View"
-      children={
-        <DirectorTableControls
-          tables={tables}
-          onEvict={handleEvict}
-          canRemoveTable={game.tables > 1 && !lastTableOccupied}
-        />
-      }
       headerRight={
         <div className="flex flex-col justify-center p-2">
           <div className="text-center mb-2">Tables:</div>
@@ -129,6 +122,12 @@ export function ShowTablesPage({ onStartGame }: Props) {
       actions={
         <Button value={"Start Game"} onClick={onStartGame} className="w-full" />
       }
-    />
+    >
+      <DirectorTableControls
+        tables={tables}
+        onEvict={handleEvict}
+        canRemoveTable={game.tables > 1 && !lastTableOccupied}
+      />
+    </GamePageLayout>
   );
 }

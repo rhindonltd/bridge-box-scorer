@@ -54,7 +54,7 @@ export function useFlow<TState, TFlow extends AnyFlow<TState>>(
       return flow.getDefaultStep();
     }
     return rawStep;
-  }, [rawStep, state]);
+  }, [flow, rawStep, state]);
 
   function goTo(next: Step) {
     router.push(`${basePath}?step=${next}`);

@@ -67,8 +67,6 @@ describe("scoreMP", () => {
     const result = scoreMP(1, lines);
     expect(result).toHaveLength(3);
 
-    const maxMP = 2 * (3 - 1); // 4
-
     const pair1 = result.find((r) => r.nsId === "1")!;
     const pair2 = result.find((r) => r.nsId === "2")!;
     const pair3 = result.find((r) => r.nsId === "3")!;

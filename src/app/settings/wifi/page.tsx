@@ -69,6 +69,9 @@ export default function WifiSettings() {
         method: "POST",
         headers: { "x-admin-token": adminToken },
       });
+      // Full-page navigation is intentional: the device is rebooting its WiFi,
+      // so we want a hard reload rather than an SPA transition here.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = "/restarting";
     } catch {
       setMessage("Failed to save WiFi");

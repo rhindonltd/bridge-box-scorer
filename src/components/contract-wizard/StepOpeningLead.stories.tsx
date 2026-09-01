@@ -12,7 +12,7 @@ const meta: Meta<typeof StepOpeningLead> = {
   tags: ["autodocs"],
   args: {
     onLeadComplete: fn(),
-  }
+  },
 };
 
 export default meta;

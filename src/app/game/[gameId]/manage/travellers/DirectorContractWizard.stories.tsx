@@ -12,7 +12,7 @@ const mockAssignment = {
   id: "3",
 };
 
-export const mockMutateGame: KeyedMutator<BridgeGame> = async () => {
+const mockMutateGame: KeyedMutator<BridgeGame> = async () => {
   return undefined;
 };
 

@@ -23,16 +23,6 @@ export function BoardResultsPage({
   return (
     <GamePageLayout
       headerTitle="Board Results"
-      children={
-        <>
-          <BoardSelector
-            board={board}
-            playedBoards={playedBoards}
-            onBoardSelected={onBoardSelected}
-          />
-          <Traveller scoredTraveller={scoredTraveller} />
-        </>
-      }
       actions={
         <button
           onClick={onNext}
@@ -41,6 +31,15 @@ export function BoardResultsPage({
           {lastBoardOfRound ? "Next Round" : "Next Board"}
         </button>
       }
-    />
+    >
+      <>
+        <BoardSelector
+          board={board}
+          playedBoards={playedBoards}
+          onBoardSelected={onBoardSelected}
+        />
+        <Traveller scoredTraveller={scoredTraveller} />
+      </>
+    </GamePageLayout>
   );
 }

@@ -54,69 +54,6 @@ export function CreateGamePage() {
     <PageLayout
       headerTitle="Create Game"
       centerContent={true}
-      children={
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleCreate();
-          }}
-          id="create-game-form"
-          className="flex flex-col w-full max-w-md p-4"
-        >
-          <div className="flex flex-col flex-1 justify-center gap-4">
-            <TextField
-              label="Event Name"
-              value={eventName}
-              onChange={setEventName}
-            />
-
-            <TextField
-              label="Director Name"
-              value={director}
-              onChange={setDirector}
-            />
-
-            <SelectField
-              label="Event Type"
-              value={gameType}
-              options={[
-                { label: "Pairs", value: "PAIRS" },
-                { label: "Teams", value: "TEAMS" },
-              ]}
-              onSelect={setGameType}
-            />
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-semibold text-gray-600">
-                Initial Tables
-              </label>
-              <NumberStepper value={tables} onChange={setTables} min={1} />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label
-                id={leadCardLabelId}
-                className="text-sm font-semibold text-gray-700"
-              >
-                Record Opening Lead
-              </label>
-              <Toggle
-                value={leadCardRequired}
-                offLabel="No"
-                onLabel="Yes"
-                labelledBy={leadCardLabelId}
-                onChange={(isOn) => setLeadCardRequired(isOn)}
-              />
-            </div>
-
-            {error && (
-              <p role="alert" className="text-sm font-medium text-red-600">
-                {error}
-              </p>
-            )}
-          </div>
-        </form>
-      }
       actions={
         <button
           type="submit"
@@ -127,6 +64,68 @@ export function CreateGamePage() {
           {isSubmitting ? "Creating..." : "Create Game"}
         </button>
       }
-    />
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleCreate();
+        }}
+        id="create-game-form"
+        className="flex flex-col w-full max-w-md p-4"
+      >
+        <div className="flex flex-col flex-1 justify-center gap-4">
+          <TextField
+            label="Event Name"
+            value={eventName}
+            onChange={setEventName}
+          />
+
+          <TextField
+            label="Director Name"
+            value={director}
+            onChange={setDirector}
+          />
+
+          <SelectField
+            label="Event Type"
+            value={gameType}
+            options={[
+              { label: "Pairs", value: "PAIRS" },
+              { label: "Teams", value: "TEAMS" },
+            ]}
+            onSelect={setGameType}
+          />
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-semibold text-gray-600">
+              Initial Tables
+            </label>
+            <NumberStepper value={tables} onChange={setTables} min={1} />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label
+              id={leadCardLabelId}
+              className="text-sm font-semibold text-gray-700"
+            >
+              Record Opening Lead
+            </label>
+            <Toggle
+              value={leadCardRequired}
+              offLabel="No"
+              onLabel="Yes"
+              labelledBy={leadCardLabelId}
+              onChange={(isOn) => setLeadCardRequired(isOn)}
+            />
+          </div>
+
+          {error && (
+            <p role="alert" className="text-sm font-medium text-red-600">
+              {error}
+            </p>
+          )}
+        </div>
+      </form>
+    </PageLayout>
   );
 }

@@ -2,7 +2,6 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
 import { withBasicRoute } from "@/lib/api/basicRoute";
-import { NextResponse } from "next/server";
 import { success } from "@/lib/api/success";
 
 const execAsync = promisify(exec);

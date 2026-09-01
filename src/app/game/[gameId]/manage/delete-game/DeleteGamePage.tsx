@@ -54,29 +54,6 @@ export function DeleteGamePage({
     <GamePageLayout
       headerTitle="Delete Game"
       centerContent={true}
-      children={
-        <>
-          {/* Confirmation content */}
-          <div className="flex-1 flex flex-col items-center justify-center px-6">
-            <div className="max-w-sm w-full text-center space-y-6">
-              <p className="text-lg text-gray-900">
-                Are you sure you want to delete{" "}
-                <strong>{game.eventName}</strong>?
-              </p>
-              <p className="text-base text-gray-600">
-                This will permanently remove all results, scores, and game data.
-                This action cannot be undone.
-              </p>
-
-              {error && (
-                <p role="alert" className="text-red-600 text-base">
-                  {error}
-                </p>
-              )}
-            </div>
-          </div>
-        </>
-      }
       actions={
         <div className="flex flex-col gap-3 pt-4">
           <button
@@ -96,6 +73,25 @@ export function DeleteGamePage({
           </button>
         </div>
       }
-    />
+    >
+      {/* Confirmation content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <p className="text-lg text-gray-900">
+            Are you sure you want to delete <strong>{game.eventName}</strong>?
+          </p>
+          <p className="text-base text-gray-600">
+            This will permanently remove all results, scores, and game data.
+            This action cannot be undone.
+          </p>
+
+          {error && (
+            <p role="alert" className="text-red-600 text-base">
+              {error}
+            </p>
+          )}
+        </div>
+      </div>
+    </GamePageLayout>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
@@ -19,8 +19,11 @@ export function DownloadUsebioPage({
 }: DownloadUsebioPageProps) {
   const { game } = useRequiredGame();
 
-  const [name, setName] = useState("");
-  const [clubNumber, setClubNumber] = useState("");
+  // Edited values are null until the user types; the displayed value falls
+  // back to the fetched club record. This avoids mirroring fetched data into
+  // state via an effect.
+  const [nameEdit, setNameEdit] = useState<string | null>(null);
+  const [clubNumberEdit, setClubNumberEdit] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,13 +33,8 @@ export function DownloadUsebioPage({
     mutate,
   } = useSWR<{ club: Club | null }>(swrKeys.club(), fetcher);
 
-  // Seed the form fields once the club record loads.
-  useEffect(() => {
-    if (data?.club) {
-      setName(data.club.name);
-      setClubNumber(data.club.clubNumber);
-    }
-  }, [data]);
+  const name = nameEdit ?? data?.club?.name ?? "";
+  const clubNumber = clubNumberEdit ?? data?.club?.clubNumber ?? "";
 
   async function handleDownload(e: React.FormEvent) {
     e.preventDefault();
@@ -111,60 +109,6 @@ export function DownloadUsebioPage({
     <GamePageLayout
       headerTitle="Download USEBIO"
       centerContent={true}
-      children={
-        <form
-          onSubmit={handleDownload}
-          className="px-6"
-          id="download-usebio-form"
-        >
-          <p className="text-sm text-gray-600 mb-4">
-            Confirm your club details before downloading. These will be included
-            in the USEBIO file.
-          </p>
-
-          <div className="space-y-4 flex-1">
-            <div>
-              <label
-                htmlFor="club-name"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Club Name
-              </label>
-              <input
-                id="club-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Anytown Bridge Club"
-                className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="club-number"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                EBU Club Number
-              </label>
-              <input
-                id="club-number"
-                type="text"
-                value={clubNumber}
-                onChange={(e) => setClubNumber(e.target.value)}
-                placeholder="e.g. 12345"
-                className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            {error && (
-              <p role="alert" className="text-red-600 text-base text-center">
-                {error}
-              </p>
-            )}
-          </div>
-        </form>
-      }
       actions={
         <div className="flex flex-col gap-3 pt-6">
           <button
@@ -186,6 +130,59 @@ export function DownloadUsebioPage({
           </button>
         </div>
       }
-    />
+    >
+      <form
+        onSubmit={handleDownload}
+        className="px-6"
+        id="download-usebio-form"
+      >
+        <p className="text-sm text-gray-600 mb-4">
+          Confirm your club details before downloading. These will be included
+          in the USEBIO file.
+        </p>
+
+        <div className="space-y-4 flex-1">
+          <div>
+            <label
+              htmlFor="club-name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Club Name
+            </label>
+            <input
+              id="club-name"
+              type="text"
+              value={name}
+              onChange={(e) => setNameEdit(e.target.value)}
+              placeholder="e.g. Anytown Bridge Club"
+              className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="club-number"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              EBU Club Number
+            </label>
+            <input
+              id="club-number"
+              type="text"
+              value={clubNumber}
+              onChange={(e) => setClubNumberEdit(e.target.value)}
+              placeholder="e.g. 12345"
+              className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          {error && (
+            <p role="alert" className="text-red-600 text-base text-center">
+              {error}
+            </p>
+          )}
+        </div>
+      </form>
+    </GamePageLayout>
   );
 }

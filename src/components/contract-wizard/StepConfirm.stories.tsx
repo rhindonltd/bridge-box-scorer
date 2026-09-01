@@ -26,7 +26,7 @@ export const NormalContract: Story = {
     leadSuit: null,
     leadRank: null,
     resultMode: "made",
-    resultValue: 1
+    resultValue: 1,
   },
 };
 
@@ -40,7 +40,7 @@ export const Doubled: Story = {
     leadSuit: null,
     leadRank: null,
     resultMode: "down",
-    resultValue: 2
+    resultValue: 2,
   },
 };
 
@@ -54,7 +54,7 @@ export const WithLead: Story = {
     leadSuit: "S",
     leadRank: "A",
     resultMode: "made",
-    resultValue: 0
+    resultValue: 0,
   },
 };
 
@@ -68,7 +68,7 @@ export const PassOut: Story = {
     leadSuit: null,
     leadRank: null,
     resultMode: "made",
-    resultValue: 0
+    resultValue: 0,
   },
 };
 
@@ -82,6 +82,6 @@ export const NotPlayed: Story = {
     leadSuit: null,
     leadRank: null,
     resultMode: "made",
-    resultValue: 0
+    resultValue: 0,
   },
 };

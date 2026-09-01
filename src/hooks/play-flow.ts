@@ -270,14 +270,6 @@ export function usePlayFlow(gameId: string, seat: string) {
 
       if (!currentSchedule) return;
 
-      let submission: {
-        roundIndex: number;
-        boardIndex: number;
-        roundNumber: number;
-        tableNumber: number | null;
-        boardNumber: number;
-      } | null = null;
-
       /*
        * Read the current play state atomically.
        *
@@ -295,16 +287,6 @@ export function usePlayFlow(gameId: string, seat: string) {
           return prev;
         }
 
-        const boardNumber = round.boards[prev.boardIndex];
-
-        submission = {
-          roundIndex: prev.roundIndex,
-          boardIndex: prev.boardIndex,
-          roundNumber: round.roundNumber,
-          tableNumber: round.tableNumber,
-          boardNumber,
-        };
-
         return {
           state: "waiting",
           roundIndex: prev.roundIndex,
@@ -313,26 +295,22 @@ export function usePlayFlow(gameId: string, seat: string) {
       });
 
       /*
-       * The React state updater above isn't guaranteed to execute
-       * synchronously, so submission cannot reliably be used immediately
-       * after setPlayState.
-       *
-       * Instead, the actual socket submission is performed from the
-       * current state below.
+       * The setState updater above only schedules the transition to
+       * "waiting". The socket submission is derived from the play state of
+       * the current render (captured in this callback's closure), which is
+       * the "enterContract" state we're submitting for.
        */
-      const currentState = playStateRef.current;
-
-      if (currentState.state !== "enterContract") {
+      if (playState.state !== "enterContract") {
         return;
       }
 
-      const round = currentSchedule.rounds[currentState.roundIndex];
+      const round = currentSchedule.rounds[playState.roundIndex];
 
       if (!round) {
         return;
       }
 
-      const boardNumber = round.boards[currentState.boardIndex];
+      const boardNumber = round.boards[playState.boardIndex];
 
       const socket = getSocket();
 
@@ -345,18 +323,8 @@ export function usePlayFlow(gameId: string, seat: string) {
         result,
       });
     },
-    [gameId, seat],
+    [gameId, seat, playState],
   );
-
-  /*
-   * Keep the latest playState available to callbacks without forcing
-   * those callbacks to be recreated whenever state changes.
-   */
-  const playStateRef = useRef<PlayState>(playState);
-
-  useEffect(() => {
-    playStateRef.current = playState;
-  }, [playState]);
 
   /*
    * Enter a round.

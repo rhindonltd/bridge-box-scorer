@@ -26,25 +26,21 @@ export function DisplayLeaderboardPage() {
   }
 
   return (
-    <GamePageLayout
-      headerTitle="Leaderboard"
-      centerContent={true}
-      children={
-        <div className="flex-1 min-h-0">
-          {leaderboardData ? (
-            <Leaderboard overallScoreAndParticipant={leaderboardData} />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full p-6">
-              <div className="text-xl font-bold text-gray-900 mb-2">
-                No Results Yet
-              </div>
-              <div className="text-base text-gray-500 text-center">
-                Results will appear here once boards have been played.
-              </div>
+    <GamePageLayout headerTitle="Leaderboard" centerContent={true}>
+      <div className="flex-1 min-h-0">
+        {leaderboardData ? (
+          <Leaderboard overallScoreAndParticipant={leaderboardData} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-6">
+            <div className="text-xl font-bold text-gray-900 mb-2">
+              No Results Yet
             </div>
-          )}
-        </div>
-      }
-    />
+            <div className="text-base text-gray-500 text-center">
+              Results will appear here once boards have been played.
+            </div>
+          </div>
+        )}
+      </div>
+    </GamePageLayout>
   );
 }

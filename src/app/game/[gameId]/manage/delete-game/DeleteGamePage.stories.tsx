@@ -21,7 +21,5 @@ export default meta;
 type Story = StoryObj<typeof DeleteGamePage>;
 
 export const Default: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
 };

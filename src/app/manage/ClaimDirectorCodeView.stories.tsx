@@ -20,9 +20,7 @@ export default meta;
 type Story = StoryObj<typeof ClaimDirectorCodeView>;
 
 export const Empty: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
   args: {
     gameName: "Monday AM Pairs",
     code: "",
@@ -32,9 +30,7 @@ export const Empty: Story = {
 };
 
 export const PartialCode: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
   args: {
     gameName: "Tuesday PM Individual",
     code: "AB3",
@@ -44,9 +40,7 @@ export const PartialCode: Story = {
 };
 
 export const FullCode: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
   args: {
     gameName: "Monday AM Pairs",
     code: "XY7K2M",
@@ -56,9 +50,7 @@ export const FullCode: Story = {
 };
 
 export const Loading: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
   args: {
     gameName: "Monday AM Pairs",
     code: "XY7K2M",
@@ -68,9 +60,7 @@ export const Loading: Story = {
 };
 
 export const WithError: Story = {
-  decorators: [
-    withGame(mockGame),
-  ],
+  decorators: [withGame(mockGame)],
   args: {
     gameName: "Monday AM Pairs",
     code: "WRONG1",
