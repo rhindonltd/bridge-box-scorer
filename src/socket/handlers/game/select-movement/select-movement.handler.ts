@@ -1,118 +1,32 @@
-import type { Socket } from "socket.io";
+import type { Server, Socket } from "socket.io";
 import { SocketEvents } from "@/socket/socket-events";
-
-import {
-  PairMovement,
-  TeamMovement,
-  getPairMovement,
-  getTeamMovement,
-} from "@/db/movements/queries/get-movement";
-
-import { getDb } from "@/db/games";
-
-import { boards, NewBoard } from "@/db/games/tables/boards";
-import { assignments, Assignment } from "@/db/games/tables/assignments";
+import { Rooms } from "@/socket/rooms";
 
 import { assertDirector } from "@/socket/middleware/director-auth";
-import { Tables } from "@/model/movement";
-import { generateMitchell } from "@/movement/mitchell/mitchell";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
+import { setSelectedMovement } from "@/db/game-index/actions/set-selected-movement";
+import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import { SelectedMovement } from "@/model/selected-movement";
 
 /**
- * Pair + Team movement handler — bulk inserts inside a single transaction.
+ * Selecting a movement no longer materializes boards/assignments. It persists
+ * the chosen movement on the game row so the director can freely change their
+ * mind before the game starts. Boards/assignments are generated only when the
+ * game is started (see the start-game handler), at which point seating is
+ * validated and any sit-out transformation is applied.
  */
-async function handlePairLikeMovement(
-  movement: PairMovement[] | TeamMovement[],
-  gameId: string,
-) {
-  const boardRows: NewBoard[] = [];
-  const assignmentRows: Assignment[] = [];
-
-  for (const m of movement) {
-    for (const r of m.rounds) {
-      for (
-        let boardNumber = r.boardStart;
-        boardNumber <= r.boardEnd;
-        boardNumber++
-      ) {
-        boardRows.push({
-          roundNumber: r.roundNumber,
-          tableNumber: m.tableNumber,
-          boardNumber,
-          ns: r.ns,
-          ew: r.ew,
-          status: "NOT_PLAYED",
-        });
-      }
-
-      if (r.roundNumber === 1) {
-        const seats = [
-          { position: "NS", movementId: r.ns },
-          { position: "EW", movementId: r.ew },
-        ] as const;
-
-        for (const { position, movementId } of seats) {
-          assignmentRows.push({
-            id: movementId,
-            initialSeat:
-              `${m.tableNumber}${position}` as Assignment["initialSeat"],
-          });
-        }
-      }
-    }
-  }
-
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
-
-  db.transaction((tx) => {
-    tx.insert(boards).values(boardRows).run();
-    if (assignmentRows.length > 0) {
-      tx.insert(assignments).values(assignmentRows).run();
-    }
-  });
-}
-
-/**
- * Convert the generateMitchell output into the PairMovement[] format
- * expected by handlePairLikeMovement.
- */
-function mitchellToPairMovement(tables: Tables<"PAIR">): PairMovement[] {
-  return tables.tables.map((table) => ({
-    id: 0,
-    movementId: 0,
-    tableNumber: table.table,
-    rounds: table.rounds.map((round) => ({
-      id: 0,
-      tableId: 0,
-      roundNumber: round.round,
-      ns: round.participants.nsId,
-      ew: round.participants.ewId,
-      boardStart: round.boards[0],
-      boardEnd: round.boards[round.boards.length - 1],
-    })),
-  }));
-}
-
-/**
- * Socket handler
- */
-export function registerSelectMovementHandler(socket: Socket) {
+export function registerSelectMovementHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.SELECT_MOVEMENT,
     async (
       {
         gameId,
-        type,
         id,
         mitchell,
         directorToken,
       }: {
         gameId: string;
-        type: string;
+        type?: string;
         id?: number;
         mitchell?: MitchellMovementSpec;
         directorToken: string;
@@ -122,20 +36,23 @@ export function registerSelectMovementHandler(socket: Socket) {
       if (!assertDirector(directorToken, gameId, cb)) return;
 
       try {
+        let selected: SelectedMovement;
+
         if (mitchell) {
-          const generated = generateMitchell(mitchell);
-          const pairMovement = mitchellToPairMovement(generated);
-          await handlePairLikeMovement(pairMovement, gameId);
+          selected = { source: "MITCHELL", mitchell };
         } else if (id != null) {
-          if (type === "PAIRS") {
-            await handlePairLikeMovement(await getPairMovement(id), gameId);
-          } else {
-            await handlePairLikeMovement(await getTeamMovement(id), gameId);
-          }
+          selected = { source: "SPEC", specId: id };
         } else {
           cb?.({ success: false, error: "No movement specified" });
           return;
         }
+
+        await setSelectedMovement(gameId, selected);
+
+        const updatedGame = await findGameById(gameId);
+        io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, {
+          game: updatedGame,
+        });
 
         cb?.({ success: true });
       } catch (err) {

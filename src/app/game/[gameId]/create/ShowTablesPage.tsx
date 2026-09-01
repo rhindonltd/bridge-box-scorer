@@ -15,12 +15,16 @@ import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import NumberStepper from "@/components/common/NumberStepper";
+import { useStartCheck } from "@/hooks/start-check";
+import { startGame } from "@/lib/game-service";
+import { useState } from "react";
 
 type Props = {
-  onStartGame: () => void;
+  /** Navigate to the movement-selection step. */
+  onSelectMovement: () => void;
 };
 
-export function ShowTablesPage({ onStartGame }: Props) {
+export function ShowTablesPage({ onSelectMovement }: Props) {
   const { game, mutateGame } = useRequiredGame();
 
   const gameId = game.gameId;
@@ -34,6 +38,24 @@ export function ShowTablesPage({ onStartGame }: Props) {
   };
 
   const { data: pairs } = useSWR<Pair[], Error>(key, pairsFetcher);
+
+  const { canStart, problems, sitOutSeat } = useStartCheck(gameId);
+  const [starting, setStarting] = useState(false);
+
+  async function handleStartGame() {
+    if (!canStart || starting) return;
+    setStarting(true);
+    try {
+      await startGame(gameId);
+      // GAME_UPDATED will refresh the game; navigation into the running game is
+      // driven by the game state elsewhere.
+      await mutateGame();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to start game");
+    } finally {
+      setStarting(false);
+    }
+  }
 
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
@@ -120,7 +142,34 @@ export function ShowTablesPage({ onStartGame }: Props) {
         </div>
       }
       actions={
-        <Button value={"Start Game"} onClick={onStartGame} className="w-full" />
+        <div className="flex flex-col gap-2">
+          {!canStart && problems.length > 0 && (
+            <ul className="text-sm text-amber-700 list-disc pl-5">
+              {problems.map((problem) => (
+                <li key={problem.code}>{problem.message}</li>
+              ))}
+            </ul>
+          )}
+          {canStart && sitOutSeat && (
+            <p className="text-sm text-gray-600">
+              One pair short — {sitOutSeat} will sit out each round.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              value={"Select Movement"}
+              onClick={onSelectMovement}
+              bgColour="bg-gray-100"
+              textColour="text-gray-900"
+              hoverColour="hover:bg-gray-200"
+            />
+            <Button
+              value={starting ? "Starting…" : "Start Game"}
+              onClick={handleStartGame}
+              disabled={!canStart || starting}
+            />
+          </div>
+        </div>
       }
     >
       <DirectorTableControls

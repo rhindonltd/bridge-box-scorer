@@ -5,27 +5,21 @@ import { io as Client } from "socket.io-client";
 
 import { SocketEvents } from "@/socket/socket-events";
 
-// ---- mock heavy DB layer only ----
+// ---- mock DB layer only ----
 
-vi.mock("@/db/movements/queries/get-movement", () => ({
-  getPairMovement: vi.fn(),
-  getTeamMovement: vi.fn(),
+vi.mock("@/db/game-index/actions/set-selected-movement", () => ({
+  setSelectedMovement: vi.fn(async () => {}),
 }));
 
-const mockTransaction = vi.fn(async (fn: (tx: any) => Promise<void>) => {
-  const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
-  await fn(tx);
-});
-
-vi.mock("@/db/games", () => ({
-  getDb: vi.fn(async () => ({ transaction: mockTransaction })),
+vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
+  findGameById: vi.fn(async () => ({ gameId: "g1" })),
 }));
 
 vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import { getPairMovement } from "@/db/movements/queries/get-movement";
+import { setSelectedMovement } from "@/db/game-index/actions/set-selected-movement";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerSelectMovementHandler } from "./select-movement.handler";
 
@@ -36,14 +30,7 @@ describe("registerSelectMovementHandler (integration)", () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockTransaction.mockImplementation(
-      async (fn: (tx: any) => Promise<void>) => {
-        const tx = { insert: vi.fn(() => ({ values: vi.fn() })) };
-        await fn(tx);
-      },
-    );
 
-    // Mock findLoginSession to validate the test director token
     vi.mocked(findLoginSession).mockReturnValue({
       token: "test-token",
       role: "DIRECTOR",
@@ -54,7 +41,7 @@ describe("registerSelectMovementHandler (integration)", () => {
     io = new Server(httpServer, { cors: { origin: "*" } });
 
     io.on("connection", (socket: Socket) => {
-      registerSelectMovementHandler(socket);
+      registerSelectMovementHandler(socket, io);
     });
 
     await new Promise<void>((resolve) => httpServer.listen(() => resolve()));
@@ -69,16 +56,7 @@ describe("registerSelectMovementHandler (integration)", () => {
     await new Promise<void>((resolve) => io.close(() => resolve()));
   });
 
-  it("processes PAIRS movement and returns success", async () => {
-    vi.mocked(getPairMovement).mockResolvedValue([
-      {
-        tableNumber: 1,
-        rounds: [
-          { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 },
-        ],
-      },
-    ] as any);
-
+  it("persists a PAIRS spec selection and returns success", async () => {
     const result = await new Promise<any>((resolve) => {
       client.emit(
         SocketEvents.SELECT_MOVEMENT,
@@ -88,11 +66,14 @@ describe("registerSelectMovementHandler (integration)", () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(mockTransaction).toHaveBeenCalled();
+    expect(setSelectedMovement).toHaveBeenCalledWith("g1", {
+      source: "SPEC",
+      specId: 1,
+    });
   });
 
   it("handles errors gracefully and returns success: false", async () => {
-    vi.mocked(getPairMovement).mockRejectedValue(new Error("boom"));
+    vi.mocked(setSelectedMovement).mockRejectedValueOnce(new Error("boom"));
 
     const result = await new Promise<any>((resolve) => {
       client.emit(
