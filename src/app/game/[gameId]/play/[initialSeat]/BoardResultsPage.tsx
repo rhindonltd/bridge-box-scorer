@@ -1,5 +1,5 @@
 import { Traveller } from "@/components/traveller/Traveller";
-import { ScoredTraveller } from "@/scoring/traveller/score-traveller";
+import { ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { BoardSelector } from "@/app/game/[gameId]/play/[initialSeat]/BoardSelector";
 import { useAssignment } from "@/context/AssignmentContext";
@@ -8,7 +8,7 @@ interface Props {
   board: number;
   playedBoards: number[];
   lastBoardOfRound: boolean;
-  scoredTraveller: ScoredTraveller;
+  scoredBoard: ScoredBoard;
   onBoardSelected: (board: number) => void;
   onNext: () => void;
 }
@@ -17,7 +17,7 @@ export function BoardResultsPage({
   board,
   playedBoards,
   lastBoardOfRound,
-  scoredTraveller,
+  scoredBoard,
   onBoardSelected,
   onNext,
 }: Props) {
@@ -42,7 +42,7 @@ export function BoardResultsPage({
           onBoardSelected={onBoardSelected}
         />
         <Traveller
-          scoredTraveller={scoredTraveller}
+          scoredBoard={scoredBoard}
           highlightAssignmentId={assignment?.id}
         />
       </>

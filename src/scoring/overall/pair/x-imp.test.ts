@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
+import { ScoredTravellerOfType } from "@/scoring/overall/scored-traveller";
 import { calculateOverallXIMPResults } from "./x-imp";
 
 describe("calculateOverallXIMPResults", () => {

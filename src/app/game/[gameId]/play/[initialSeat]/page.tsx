@@ -14,7 +14,8 @@ import { ResultMismatch } from "@/app/game/[gameId]/play/[initialSeat]/ResultMis
 import { RoundInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/RoundInfoPage";
 import { GameComplete } from "@/app/game/[gameId]/play/[initialSeat]/GameComplete";
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
-import { score, ScoredTraveller } from "@/scoring/traveller/score-traveller";
+import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
+import { ScoringType } from "@/db/games/types/scoring-type";
 import { Traveller } from "@/model/traveller";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
@@ -176,7 +177,7 @@ function BoardResultsLoader({
   onNext,
 }: {
   gameId: string;
-  scoringType: string;
+  scoringType: ScoringType;
   boardNumber: number;
   playedBoards: number[];
   lastBoardOfRound: boolean;
@@ -189,12 +190,10 @@ function BoardResultsLoader({
     fetcher,
   );
 
-  const scoredTraveller = useMemo<ScoredTraveller | null>(() => {
+  const scoredBoard = useMemo<ScoredBoard | null>(() => {
     if (!data?.instances) return null;
 
     const mode = "PAIR";
-    const scoringMode =
-      scoringType === "IMP" || scoringType === "XIMP" ? "XIMP" : "MP";
 
     const lines = data.instances
       .filter((i) => i.currentResult != null)
@@ -214,10 +213,10 @@ function BoardResultsLoader({
       lines: lines as Traveller["lines"],
     };
 
-    return score(traveller, scoringMode);
+    return scoreBoard(traveller, scoringType);
   }, [data, gameId, scoringType, viewingBoard]);
 
-  if (!scoredTraveller) {
+  if (!scoredBoard) {
     return (
       <div className="h-dvh flex items-center justify-center bg-gray-100">
         <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
@@ -230,7 +229,7 @@ function BoardResultsLoader({
       board={viewingBoard}
       playedBoards={playedBoards}
       lastBoardOfRound={lastBoardOfRound}
-      scoredTraveller={scoredTraveller}
+      scoredBoard={scoredBoard}
       onBoardSelected={setViewingBoard}
       onNext={onNext}
     />

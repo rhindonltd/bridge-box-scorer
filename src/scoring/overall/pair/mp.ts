@@ -1,5 +1,5 @@
 import { PairMatchpointOverallScore } from "@/model/leaderboard";
-import { ScoredTravellerOfType } from "@/scoring/traveller/score-traveller";
+import { ScoredTravellerOfType } from "@/scoring/overall/scored-traveller";
 import { buildOverallScore } from "../common";
 
 export function calculateOverallMPResults(

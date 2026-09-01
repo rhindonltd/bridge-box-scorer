@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { score } from "./score-traveller";
+import { scoreBoard } from "./score-traveller";
 import type { PairTraveller } from "@/model/traveller";
+import type { ImpScoredLines } from "@/scoring/plugins/per-board/imp";
 
 function makePairTraveller(): PairTraveller {
   return {
@@ -15,39 +16,30 @@ function makePairTraveller(): PairTraveller {
   };
 }
 
-describe("score-traveller", () => {
-  describe("PAIR mode", () => {
-    it("returns PAIR_IMP result for IMP mode", () => {
-      const result = score(makePairTraveller(), "IMP");
-      expect(result.type).toBe("PAIR_IMP");
-      expect(result.board).toBe(1);
-      expect(result.lines).toHaveLength(2);
-    });
-
-    it("returns PAIR_XIMP result for XIMP mode", () => {
-      const result = score(makePairTraveller(), "XIMP");
-      expect(result.type).toBe("PAIR_XIMP");
-      expect(result.board).toBe(1);
-      expect(result.lines).toHaveLength(2);
-    });
-
-    it("returns PAIR_MP result for MP mode", () => {
-      const result = score(makePairTraveller(), "MP");
-      expect(result.type).toBe("PAIR_MP");
-      expect(result.board).toBe(1);
-      expect(result.lines).toHaveLength(2);
-    });
+describe("scoreBoard", () => {
+  it("resolves the MP per-board plugin for the MP scoring type", () => {
+    const result = scoreBoard(makePairTraveller(), "MP");
+    expect(result.pluginId).toBe("MP");
+    expect(result.board).toBe(1);
+    expect(result.lines).toHaveLength(2);
   });
 
-  describe("scoring correctness", () => {
-    it("PAIR_IMP lines contain nsImps and ewImps", () => {
-      const result = score(makePairTraveller(), "IMP");
-      if (result.type === "PAIR_IMP") {
-        for (const line of result.lines) {
-          expect(line).toHaveProperty("nsImps");
-          expect(line).toHaveProperty("ewImps");
-        }
-      }
-    });
+  it("resolves the XIMP per-board plugin for the XIMP scoring type", () => {
+    const result = scoreBoard(makePairTraveller(), "XIMP");
+    expect(result.pluginId).toBe("XIMP");
+    expect(result.board).toBe(1);
+    expect(result.lines).toHaveLength(2);
+  });
+
+  it("resolves the IMP per-board plugin for the IMP scoring type", () => {
+    const result = scoreBoard(makePairTraveller(), "IMP");
+    expect(result.pluginId).toBe("IMP");
+    expect(result.board).toBe(1);
+
+    const lines = result.lines as ImpScoredLines;
+    for (const line of lines) {
+      expect(line).toHaveProperty("nsImps");
+      expect(line).toHaveProperty("ewImps");
+    }
   });
 });

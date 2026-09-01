@@ -22,8 +22,10 @@ vi.mock("@/context/AssignmentContext", () => ({
 }));
 
 vi.mock("@/components/traveller/Traveller", () => ({
-  Traveller: ({ scoredTraveller }: any) => (
-    <div data-testid="traveller">Traveller {scoredTraveller?.id ?? "none"}</div>
+  Traveller: ({ scoredBoard }: any) => (
+    <div data-testid="traveller">
+      Traveller {scoredBoard?.pluginId ?? "none"}
+    </div>
   ),
 }));
 
@@ -32,7 +34,7 @@ describe("BoardResultsPage", () => {
     board: 5,
     playedBoards: [5],
     lastBoardOfRound: false,
-    scoredTraveller: { id: 123 } as any,
+    scoredBoard: { pluginId: "MP", board: 5, lines: [] } as any,
     onBoardSelected: vi.fn(),
     onNext: vi.fn(),
   };

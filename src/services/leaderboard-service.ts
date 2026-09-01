@@ -3,22 +3,18 @@ import "server-only";
 import { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { findPairs } from "@/db/games/queries/find-pairs";
-import {
-  score,
-  ScoredTraveller,
-  ScoredTravellerOfType,
-} from "@/scoring/traveller/score-traveller";
+import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { PairTraveller } from "@/model/traveller";
-import { calculateOverallMPResults } from "@/scoring/overall/pair/mp";
-import { calculateOverallXIMPResults as calculatePairXIMPResults } from "@/scoring/overall/pair/x-imp";
-import { BoardOutcome, ScoringMode } from "@/model/score";
+import { BoardOutcome } from "@/model/score";
+import { OverallScore } from "@/model/leaderboard";
+import "@/scoring/plugins/register";
+import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 
 export async function computeLeaderboard(db: Db, gameId: string) {
   const game = await findGameById(gameId);
 
-  const scoringMode: ScoringMode =
-    game!.scoringType === "IMP" || game!.scoringType === "XIMP" ? "XIMP" : "MP";
+  const scoringType = game!.scoringType;
 
   const allBoardRows = await db.select().from(boards);
 
@@ -29,7 +25,7 @@ export async function computeLeaderboard(db: Db, gameId: string) {
     boardMap.set(row.boardNumber, arr);
   }
 
-  const travellers: ScoredTraveller[] = [];
+  const scoredBoards: ScoredBoard[] = [];
   for (const [boardNumber, rows] of boardMap) {
     const linesWithResults = rows.filter((r) => {
       const result = r.directorOverrideResult ?? r.confirmedResult;
@@ -51,17 +47,15 @@ export async function computeLeaderboard(db: Db, gameId: string) {
       })),
     };
 
-    travellers.push(score(pairTraveller, scoringMode));
+    scoredBoards.push(scoreBoard(pairTraveller, scoringType));
   }
 
-  const overallScore =
-    scoringMode === "MP"
-      ? calculateOverallMPResults(
-          travellers as ScoredTravellerOfType<"PAIR_MP">[],
-        )
-      : calculatePairXIMPResults(
-          travellers as ScoredTravellerOfType<"PAIR_XIMP">[],
-        );
+  // Aggregation is driven by the overall plugin for this scoring type; the
+  // per-board scored lines are the aggregator's input.
+  const overallPlugin = getOverallPlugin(getCombination(scoringType).overall);
+  const overallScore = overallPlugin.aggregate(
+    scoredBoards.map((b) => ({ lines: b.lines })),
+  ) as OverallScore;
 
   return {
     type: overallScore.type,
