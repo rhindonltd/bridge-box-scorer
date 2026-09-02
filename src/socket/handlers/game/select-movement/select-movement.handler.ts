@@ -22,12 +22,14 @@ export function registerSelectMovementHandler(socket: Socket, io: Server) {
       {
         gameId,
         id,
+        boardsPerRound,
         mitchell,
         directorToken,
       }: {
         gameId: string;
         type?: string;
         id?: number;
+        boardsPerRound?: number;
         mitchell?: MitchellMovementSpec;
         directorToken: string;
       },
@@ -41,7 +43,11 @@ export function registerSelectMovementHandler(socket: Socket, io: Server) {
         if (mitchell) {
           selected = { source: "MITCHELL", mitchell };
         } else if (id != null) {
-          selected = { source: "SPEC", specId: id };
+          if (boardsPerRound == null) {
+            cb?.({ success: false, error: "No boards per round specified" });
+            return;
+          }
+          selected = { source: "SPEC", specId: id, boardsPerRound };
         } else {
           cb?.({ success: false, error: "No movement specified" });
           return;

@@ -16,10 +16,10 @@ import {
 } from "@/model/start-validator";
 import { AllSectionsValidationResult } from "@/model/validate-sections";
 
-import { PairMovement } from "@/db/movements/queries/get-movement";
 import {
   rehydrateSelectedMovement,
   RehydratedMovement,
+  RehydratedTable,
 } from "@/services/movement-rehydration";
 import {
   materializeSections,
@@ -221,11 +221,11 @@ function flattenAggregate(
 }
 
 /**
- * Convert a DB PairMovement[] into the round-oriented Tables<"PAIR"> shape used
- * by deriveExpectedSeats. Only round 1 participants matter for expected seats,
+ * Convert a rehydrated movement into the round-oriented Tables<"PAIR"> shape
+ * used by deriveExpectedSeats. Only round 1 participants matter for expected seats,
  * but we map all rounds for completeness.
  */
-function pairMovementToTables(movement: PairMovement[]): {
+function pairMovementToTables(movement: RehydratedTable[]): {
   tables: {
     table: number;
     rounds: {
@@ -258,7 +258,7 @@ function rangeInclusive(start: number, end: number): number[] {
  * Convert a rehydrated DB movement to a MaterializableMovement with no sit-out
  * flags (used when the movement is exactly filled).
  */
-function toMaterializable(movement: PairMovement[]): MaterializableMovement {
+function toMaterializable(movement: RehydratedTable[]): MaterializableMovement {
   return movement.map((table) => ({
     tableNumber: table.tableNumber,
     rounds: table.rounds.map((round) => ({

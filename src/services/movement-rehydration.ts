@@ -2,32 +2,52 @@ import "server-only";
 
 import { Tables } from "@/model/movement";
 import { SelectedMovement } from "@/model/selected-movement";
-import { PairMovement, getPairMovement } from "@/db/movements/queries/get-movement";
+import { getPairMovement } from "@/db/movements/queries/get-movement";
 import { getPairMovementSpecById } from "@/db/movements/queries/get-movement-spec";
 import { generateStandardMitchell } from "@/movement/mitchell/standard-mitchell";
+import { boardRangeForSet } from "@/movement/shared";
 
 /**
- * A rehydrated movement in the DB PairMovement[] shape plus the metadata needed
- * to reason about sit-outs (its built-in missing pair, if any).
+ * A single round of a rehydrated movement, carrying concrete board numbers.
+ *
+ * Stored specs keep only a board-set index; rehydration expands that into a
+ * `boardStart`/`boardEnd` range using the boards-per-round chosen for the
+ * selection, so all downstream consumers (materialization, sit-out handling)
+ * see real board numbers.
+ */
+export interface RehydratedRound {
+  roundNumber: number;
+  ns: string;
+  ew: string;
+  boardStart: number;
+  boardEnd: number;
+}
+
+export interface RehydratedTable {
+  tableNumber: number;
+  rounds: RehydratedRound[];
+}
+
+/**
+ * A rehydrated movement plus the metadata needed to reason about sit-outs (its
+ * built-in missing pair, if any).
  */
 export interface RehydratedMovement {
-  movement: PairMovement[];
+  movement: RehydratedTable[];
   missingPair: string | null;
   /** True when the selection is a Mitchell we support sit-outs for. */
   isStandardMitchell: boolean;
 }
 
 /**
- * Convert a generated Tables<"PAIR"> into the DB PairMovement[] shape.
+ * Convert a generated Tables<"PAIR"> into the rehydrated movement shape.
  */
-export function tablesToPairMovement(tables: Tables<"PAIR">): PairMovement[] {
+export function tablesToPairMovement(
+  tables: Tables<"PAIR">,
+): RehydratedTable[] {
   return tables.tables.map((table) => ({
-    id: 0,
-    movementId: 0,
     tableNumber: table.table,
     rounds: table.rounds.map((round) => ({
-      id: 0,
-      tableId: 0,
       roundNumber: round.round,
       ns: round.participants.nsId,
       ew: round.participants.ewId,
@@ -38,9 +58,10 @@ export function tablesToPairMovement(tables: Tables<"PAIR">): PairMovement[] {
 }
 
 /**
- * Rehydrate a persisted movement selection into the PairMovement[] shape,
- * without applying any sit-out. For a Mitchell this regenerates from the spec;
- * for a database spec this loads its rounds and metadata.
+ * Rehydrate a persisted movement selection, without applying any sit-out. For a
+ * Mitchell this regenerates from the spec; for a database spec this loads its
+ * rounds and metadata and expands each round's board-set index into concrete
+ * board numbers using the selection's chosen boards-per-round.
  */
 export async function rehydrateSelectedMovement(
   selected: SelectedMovement,
@@ -61,10 +82,20 @@ export async function rehydrateSelectedMovement(
     getPairMovementSpecById(selected.specId),
   ]);
 
+  const rehydrated: RehydratedTable[] = movement.map((table) => ({
+    tableNumber: table.tableNumber,
+    rounds: table.rounds.map((round) => ({
+      roundNumber: round.roundNumber,
+      ns: round.ns,
+      ew: round.ew,
+      ...boardRangeForSet(round.boardSet, selected.boardsPerRound),
+    })),
+  }));
+
   const missingPair =
     spec?.missingPair != null && spec.missingPair > 0
       ? `${spec.missingPair}`
       : null;
 
-  return { movement, missingPair, isStandardMitchell: false };
+  return { movement: rehydrated, missingPair, isStandardMitchell: false };
 }

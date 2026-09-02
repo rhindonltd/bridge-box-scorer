@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PairMovement } from "@/db/movements/queries/get-movement";
+import { RehydratedTable } from "@/services/movement-rehydration";
 import {
   applySpecSitOutNoMissingPair,
   alignSpecMissingPair,
@@ -14,7 +14,7 @@ import {
  * R2: T1(1,6) T2(2,4) T3(3,5)
  * R3: T1(1,5) T2(2,6) T3(3,4)
  */
-function makeMovement(): PairMovement[] {
+function makeMovement(): RehydratedTable[] {
   const pairings: Record<number, [string, string][]> = {
     1: [
       ["1", "4"],
@@ -34,12 +34,8 @@ function makeMovement(): PairMovement[] {
   };
 
   return [1, 2, 3].map((tableNumber) => ({
-    id: tableNumber,
-    movementId: 0,
     tableNumber,
     rounds: pairings[tableNumber].map(([ns, ew], idx) => ({
-      id: idx,
-      tableId: tableNumber,
       roundNumber: idx + 1,
       ns,
       ew,

@@ -39,12 +39,13 @@ export interface DoubleHesitationMitchellMovementSpec
  * exactly (T1=1-3, T2=4-6, T3=7-9, T4=10-12, relay 13-15, T5=16-18, T6=19-21,
  * relay 22-24).
  *
- * Supported for an EVEN number of tables from six upwards (the well-defined
- * case given in the reference, e.g. six tables playing eight 3-board rounds for
- * 24 boards). A four-table Double Hesitation is degenerate (a pair would meet an
- * opponent twice) and odd table counts use a different, ambiguous relay scheme
- * in the source, so both are rejected rather than emitting an unverified
- * movement.
+ * Supported for any number of tables from five upwards. Even and odd table
+ * counts share the same circulation ring (EW1..EW(T), NS2, NS(T)) and differ
+ * only in the board-set relay layout: even counts use one mid relay plus a
+ * trailing relay, odd counts use a doubled mid relay and no trailing relay (see
+ * buildDoubleHesitationSlots). A four-table Double Hesitation is degenerate (a
+ * pair would meet an opponent twice) and is rejected. The `modified`
+ * circulation variant remains even-only.
  */
 export function generateDoubleHesitationMitchell(
   spec: DoubleHesitationMitchellMovementSpec,
@@ -137,30 +138,50 @@ function buildModifiedStations(tables: number): Station[] {
 }
 
 /**
- * Map each table (1..T) to its 0-based slot in the T+2 board ring for an even
- * table count.
+ * Map each table (1..T) to its 0-based slot in the T+2 board ring. Boards move
+ * down one table per round, so a table with slot p plays wrapValue(p + r, T+2)
+ * in round r. There are always T+2 slots (T tables + two relay slots); the two
+ * relays are positioned differently for even and odd table counts.
  *
- * Per the reference the two relays sit (1) just after the half-way point — the
- * slot after table T/2+1 — and (2) between the last table and table 1 (a
- * trailing relay). So the ring is:
+ * Even T (per the reference): one relay just after the half-way point (the slot
+ * after table T/2+1) and one trailing relay between the last table and table 1:
  *   [T1 .. T(T/2+1), RELAY, T(T/2+2) .. T(T), RELAY]
+ * For T=6 this is the EBU layout (T1..T4 slots 0..3, relay, T5,T6 slots 5,6,
+ * trailing relay).
  *
- * Boards move down one table per round, so a table with slot p plays
- * wrapValue(p + r, T+2) in round r. For T=6 this gives the EBU layout
- * (T1..T4 in slots 0..3, relay, T5,T6 in slots 5,6, trailing relay).
+ * Odd T (per the reference): there is NO relay between the last table and table
+ * 1; instead one relay is doubled at the half-way point. So the two relay slots
+ * sit together after the first (T+1)/2 tables and there is no trailing relay:
+ *   [T1 .. T((T+1)/2), RELAY, RELAY, T((T+1)/2 + 1) .. T(T)]
+ * For T=7 this gives T1..T4 slots 0..3, doubled relay at slots 4,5, T5,T6,T7 at
+ * slots 6,7,8 (verified against [M49]); for T=5, T1..T3 slots 0..2, doubled
+ * relay at slots 3,4, T4,T5 at slots 5,6 (verified against [MS5]).
  */
 function buildDoubleHesitationSlots(tables: number): Record<number, number> {
   const slots: Record<number, number> = {};
-  const beforeRelay = tables / 2 + 1;
 
+  if (tables % 2 === 0) {
+    const beforeRelay = tables / 2 + 1;
+    for (let t = 1; t <= beforeRelay; t++) {
+      slots[t] = t - 1;
+    }
+    // Single relay slot at index `beforeRelay`.
+    for (let t = beforeRelay + 1; t <= tables; t++) {
+      slots[t] = t; // shifted by one to leave the relay slot
+    }
+    // Trailing relay slot at index (T+1).
+    return slots;
+  }
+
+  // Odd table count: doubled relay at the half-way point, no trailing relay.
+  const beforeRelay = (tables + 1) / 2;
   for (let t = 1; t <= beforeRelay; t++) {
     slots[t] = t - 1;
   }
-  // Relay slot at index `beforeRelay`.
+  // Two relay slots at indices `beforeRelay` and `beforeRelay + 1`.
   for (let t = beforeRelay + 1; t <= tables; t++) {
-    slots[t] = t; // shifted by one to leave the relay slot
+    slots[t] = t + 1; // shifted by two to leave the doubled relay
   }
-  // Trailing relay slot at index (T+1).
 
   return slots;
 }
@@ -168,15 +189,20 @@ function buildDoubleHesitationSlots(tables: number): Record<number, number> {
 function validateDoubleHesitationSpec(
   spec: DoubleHesitationMitchellMovementSpec,
 ): void {
-  const { tables, boardsPerRound } = spec;
+  const { tables, boardsPerRound, modified } = spec;
 
-  if (!Number.isInteger(tables) || tables < 6) {
-    throw new Error("Double Hesitation Mitchell requires at least 6 tables");
+  if (!Number.isInteger(tables) || tables < 5) {
+    throw new Error("Double Hesitation Mitchell requires at least 5 tables");
   }
 
-  if (tables % 2 !== 0) {
+  // A four-table Double Hesitation is degenerate (a pair would meet an opponent
+  // twice); five upwards is well defined. Odd and even table counts differ only
+  // in their board-set relay layout (see buildDoubleHesitationSlots).
+
+  if (tables % 2 !== 0 && modified) {
+    // The modified circulation is only defined for the even-table case.
     throw new Error(
-      "Double Hesitation Mitchell is only supported for an even number of tables",
+      "Modified Double Hesitation Mitchell is only supported for an even number of tables",
     );
   }
 

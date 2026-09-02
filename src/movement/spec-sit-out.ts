@@ -1,4 +1,4 @@
-import { PairMovement } from "@/db/movements/queries/get-movement";
+import { RehydratedTable } from "@/services/movement-rehydration";
 import { PairSeat, parseSeat } from "@/model/participants";
 import { PairDirection } from "@/model/common";
 import {
@@ -31,7 +31,7 @@ import {
  * round.
  */
 export function flagPhantomRounds(
-  movement: PairMovement[],
+  movement: RehydratedTable[],
   phantomId: string,
 ): MaterializableMovement {
   return movement.map((table) => ({
@@ -55,7 +55,7 @@ export function flagPhantomRounds(
  * no round-1 position (e.g. it is already the phantom).
  */
 function positionAtSeat(
-  movement: PairMovement[],
+  movement: RehydratedTable[],
   seat: PairSeat,
 ): string | null {
   const { tableNumber, direction } = parseSeat(seat);
@@ -72,7 +72,7 @@ function positionAtSeat(
  * treating the position currently at `sitOutSeat` as the phantom.
  */
 export function applySpecSitOutNoMissingPair(
-  movement: PairMovement[],
+  movement: RehydratedTable[],
   sitOutSeat: PairSeat,
 ): MaterializableMovement {
   const phantomId = positionAtSeat(movement, sitOutSeat);
@@ -85,7 +85,7 @@ export function applySpecSitOutNoMissingPair(
 /**
  * The number of tables (max table number) in the movement.
  */
-function tableCount(movement: PairMovement[]): number {
+function tableCount(movement: RehydratedTable[]): number {
   return movement.reduce((max, t) => Math.max(max, t.tableNumber), 0);
 }
 
@@ -106,7 +106,7 @@ function rotateTable(table: number, offset: number, tables: number): number {
  * `sitOutSeat`.
  */
 export function alignSpecMissingPair(
-  movement: PairMovement[],
+  movement: RehydratedTable[],
   missingPair: string,
   sitOutSeat: PairSeat,
 ): MaterializableMovement {
@@ -145,7 +145,7 @@ interface PhantomSeat {
 }
 
 function findPhantomSeat(
-  movement: PairMovement[],
+  movement: RehydratedTable[],
   missingPair: string,
 ): PhantomSeat | null {
   for (const table of movement) {
@@ -170,11 +170,11 @@ function findPhantomSeat(
  * keeping the other direction fixed.
  */
 function rotateDirection(
-  movement: PairMovement[],
+  movement: RehydratedTable[],
   direction: PairDirection,
   offset: number,
   tables: number,
-): PairMovement[] {
+): RehydratedTable[] {
   if (offset % tables === 0) {
     return movement;
   }
