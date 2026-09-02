@@ -41,13 +41,10 @@ describe("RECOMMENDATION_SPEC_MAP snapshot", () => {
   });
 
   it("includes every table count that has at least one resolvable movement", () => {
-    // Tables 2-18 and 20 each have resolvable recommendations. Table 19 has
-    // only the (deferred) odd-table Web entries, so it is legitimately absent.
-    for (const t of [
-      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20,
-    ]) {
+    // Tables 2-20 all now have at least one resolvable recommendation (table 19
+    // via the 9-round rover Web).
+    for (let t = 2; t <= 20; t++) {
       expect(snapshot[String(t)]).toBeDefined();
     }
-    expect(snapshot["19"]).toBeUndefined();
   });
 });

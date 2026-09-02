@@ -936,6 +936,19 @@
         ]
       }
     ],
+    "24": [
+      {
+        "type": "SPEC",
+        "name": "[WEB8R] 13 Table Web Mitchell (8 rounds)",
+        "boardsPerRound": 3,
+        "pros": [
+          "Shorter eight-round option with three boards per round."
+        ],
+        "cons": [
+          "Requires two board sets and relay/shared-board arrangements."
+        ]
+      }
+    ],
     "26": [
       {
         "type": "MITCHELL",
@@ -1057,6 +1070,19 @@
     ]
   },
   "15": {
+    "24": [
+      {
+        "type": "SPEC",
+        "name": "[WEB8R] 15 Table Web Mitchell (8 rounds)",
+        "boardsPerRound": 3,
+        "pros": [
+          "Eight rounds and three boards per round."
+        ],
+        "cons": [
+          "Requires two board sets and section setup."
+        ]
+      }
+    ],
     "26": [
       {
         "type": "SPEC",
@@ -1113,6 +1139,19 @@
     ]
   },
   "17": {
+    "24": [
+      {
+        "type": "SPEC",
+        "name": "[WEB8R] 17 Table Web Mitchell (8 rounds)",
+        "boardsPerRound": 3,
+        "pros": [
+          "Eight-round large-field movement; three boards per round."
+        ],
+        "cons": [
+          "Requires sectioned Web setup and board management."
+        ]
+      }
+    ],
     "27": [
       {
         "type": "SPEC",
@@ -1151,6 +1190,34 @@
         ],
         "cons": [
           "Requires two sections and careful board management."
+        ]
+      }
+    ]
+  },
+  "19": {
+    "24": [
+      {
+        "type": "SPEC",
+        "name": "[WEB8R] 19 Table Web Mitchell (8 rounds, truncated from 9)",
+        "boardsPerRound": 3,
+        "pros": [
+          "Eight rounds; efficient three boards per round."
+        ],
+        "cons": [
+          "Requires two sections and shared-board management unless a third board set is made."
+        ]
+      }
+    ],
+    "27": [
+      {
+        "type": "SPEC",
+        "name": "[WEB9R] 19 Table Web Mitchell (9 rounds)",
+        "boardsPerRound": 3,
+        "pros": [
+          "Nine rounds; efficient three boards per round."
+        ],
+        "cons": [
+          "Requires two sections and careful board movement."
         ]
       }
     ]

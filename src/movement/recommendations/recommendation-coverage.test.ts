@@ -40,33 +40,21 @@ type RecommendationsJson = {
 
 /**
  * The recommendation entries that do NOT yet resolve, each keyed
- * `tables/boards/movement/roundsxboardsPerRound`. The only remaining gaps are
- * ODD-table Web Mitchells (13/15/17/19 at 8 rounds, plus 19 at 9 rounds).
+ * `tables/boards/movement/roundsxboardsPerRound`.
  *
- * These are deferred, not skipped: a Web Mitchell is only replay-free when the
- * room splits into equal duplicate-board zones, which needs an EVEN table
- * count (see gen-web-mitchell.mjs, which validates by following each pair and
- * requires distinct physical boards). Several published "odd-table Web"
- * constructions were evaluated and every one made East-West pairs replay the
- * same physical boards for multiple consecutive rounds (they trade board
- * freshness for a simple move), so none passed validation. A genuinely
- * replay-free odd-table layout (e.g. a verified EBUScore/ACBLscore export) can
- * be seeded via the generator once available.
+ * This set is now EMPTY: every non-null recommendation resolves to a concrete,
+ * buildable movement. Odd-table Web Mitchells use a rover ("even Web + NS
+ * rover") construction seeded from the verified bridgecentral.com grids
+ * (13/15/17 tables at 8 rounds, 19 tables at 9 rounds); the 19-table 8-round
+ * Web is the 9-round movement with its final round truncated.
  *
- * Excluded movements (Twin, Twin Skip, Beynon, Hybrid) are NOT listed here:
- * they are intentionally out of scope (see EXCLUDED_LABELS in
- * resolve-recommendation.ts).
+ * Excluded movements (Twin, Twin Skip, Beynon, Hybrid) are handled separately
+ * via EXCLUDED_LABELS in resolve-recommendation.ts and are not gaps.
  *
- * As each gap is closed (a spec is seeded at the needed tables/rounds), remove
- * its line here. When this set is empty the mapping is complete.
+ * If a future change removes a seeded spec, the offending entry will surface
+ * here; add it back with a reason.
  */
-const EXPECTED_GAPS = new Set<string>([
-  "13/24/Web Mitchell/8x3",
-  "15/24/Web Mitchell/8x3",
-  "17/24/Web Mitchell/8x3",
-  "19/24/Web Mitchell/8x3",
-  "19/27/Web Mitchell/9x3",
-]);
+const EXPECTED_GAPS = new Set<string>([]);
 
 function gapKey(entry: RecommendationEntryInput): string {
   return `${entry.tables}/${entry.boards}/${entry.movement}/${entry.rounds}x${entry.boardsPerRound}`;
