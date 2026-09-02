@@ -3,8 +3,18 @@ export interface MitchellMovementSpec {
   rounds: number;
   boardsPerRound: number;
   arrowSwitchRounds?: number;
+  // Two-winner Mitchell variants.
   skip?: boolean;
   shareAndRelay?: boolean;
+  // Additional pair movements dispatched by generateMitchell. Each is an
+  // optional discriminant flag; at most one should be set.
+  blackpool?: boolean;
+  hesitation?: boolean;
+  doubleHesitation?: boolean;
+  /** Revenge rounds for Blackpool (see BlackpoolMovementSpec). */
+  revengeRounds?: number;
+  /** Modified variant flag for the Double Hesitation Mitchell. */
+  modified?: boolean;
 }
 
 export interface SkipMitchellMovementSpec extends MitchellMovementSpec {
