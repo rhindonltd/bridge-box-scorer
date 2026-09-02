@@ -11,14 +11,17 @@ import {
  * The resolved movement-spec mapping for the curated recommendations in
  * scripts/recommendations.json.
  *
- * Structure mirrors recommendations.json exactly:
- *   tables (2-20) -> boards (18-30) -> descriptor[] | null
+ * Structure:
+ *   tables -> boards -> descriptor[]
+ *
+ * Only cells that resolve to at least one concrete movement are included;
+ * boards cells with no recommendation (or none yet resolvable) are omitted
+ * entirely, and a table count with no resolvable cells is omitted too.
  *
  * Each recommendation entry resolves to one or more {@link MovementDescriptor}s.
  * A single recommendation can map to more than one descriptor (e.g. an Arrow
  * Switch Mitchell on an even table count yields both a share-and-relay and a
- * skip option). A `null` boards cell means either the source JSON had no
- * recommendation there, or none of its recommendations could yet be resolved.
+ * skip option).
  *
  * The map is DERIVED from the resolver (resolve-recommendation.ts) run over the
  * seeded PSMovements.txt catalog, so it stays in lock-step with the resolution
@@ -28,7 +31,7 @@ import {
  */
 export type RecommendationSpecMap = Record<
   string,
-  Record<string, MovementDescriptor[] | null>
+  Record<string, MovementDescriptor[]>
 >;
 
 type RawEntry = {
@@ -63,12 +66,9 @@ export function buildRecommendationSpecMap(): RecommendationSpecMap {
   const map: RecommendationSpecMap = {};
 
   for (const [tablesStr, byBoards] of Object.entries(json.recommendations)) {
-    map[tablesStr] = {};
+    const byBoardsOut: Record<string, MovementDescriptor[]> = {};
     for (const [boardsStr, list] of Object.entries(byBoards)) {
-      if (!list) {
-        map[tablesStr][boardsStr] = null;
-        continue;
-      }
+      if (!list) continue;
 
       const descriptors: MovementDescriptor[] = [];
       for (const rec of list) {
@@ -87,7 +87,15 @@ export function buildRecommendationSpecMap(): RecommendationSpecMap {
         }
       }
 
-      map[tablesStr][boardsStr] = descriptors.length > 0 ? descriptors : null;
+      // Omit cells with no resolved descriptor (source-null or unresolved).
+      if (descriptors.length > 0) {
+        byBoardsOut[boardsStr] = descriptors;
+      }
+    }
+
+    // Only include a table count that has at least one resolved boards cell.
+    if (Object.keys(byBoardsOut).length > 0) {
+      map[tablesStr] = byBoardsOut;
     }
   }
 

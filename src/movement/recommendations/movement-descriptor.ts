@@ -43,8 +43,13 @@ const prosCons = {
 
 export const specDescriptorSchema = z.object({
   type: z.literal("SPEC"),
-  /** Primary key of the seeded pairmovementspec row. */
-  id: z.number().int().positive(),
+  /**
+   * Name of the seeded pairmovementspec. Together with the recommendation's
+   * table count and round count this uniquely identifies a seeded movement
+   * (verified: no two seeded specs share a name at the same tables+rounds),
+   * and it is stable across re-seeds, unlike the auto-increment row id.
+   */
+  name: z.string().min(1),
   /**
    * Boards played per round when this spec is materialized. Sourced from the
    * recommendation entry and overrides the seeded spec's own default.
@@ -83,14 +88,27 @@ export type MovementDescriptor = z.infer<typeof movementDescriptorSchema>;
  * tagged union that is stored on `game.sections.selectedMovement` and
  * rehydrated at game start. The pros/cons and (for Mitchell) the descriptive
  * `subtype` are display metadata and are dropped here.
+ *
+ * A SPEC descriptor references its seeded movement by name (stable across
+ * re-seeds); the persisted selection needs the numeric primary key, so the
+ * caller supplies a `resolveSpecId` lookup (name -> id) for the live movements
+ * database. It is only required when converting a SPEC descriptor.
  */
 export function descriptorToSelectedMovement(
   descriptor: MovementDescriptor,
+  resolveSpecId?: (name: string) => number | undefined,
 ): SelectedMovement {
   if (descriptor.type === "SPEC") {
+    const specId = resolveSpecId?.(descriptor.name);
+    if (specId === undefined) {
+      throw new Error(
+        `Cannot resolve a spec id for movement "${descriptor.name}"; ` +
+          `pass a resolveSpecId lookup that knows this seeded movement.`,
+      );
+    }
     return {
       source: "SPEC",
-      specId: descriptor.id,
+      specId,
       boardsPerRound: descriptor.boardsPerRound,
     };
   }

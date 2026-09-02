@@ -77,7 +77,7 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
       expect(result.descriptors).toHaveLength(1);
       expect(result.descriptors[0]).toMatchObject({
         type: "SPEC",
-        id: 1,
+        name: "3 Table Howell",
         boardsPerRound: 5,
       });
     }
@@ -95,7 +95,10 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
     );
     expect(result.resolved).toBe(true);
     if (result.resolved) {
-      expect(result.descriptors[0]).toMatchObject({ type: "SPEC", id: 2 });
+      expect(result.descriptors[0]).toMatchObject({
+        type: "SPEC",
+        name: "6 Table 3/4 Howell",
+      });
     }
   });
 
@@ -118,9 +121,11 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
       }),
       catalog,
     );
-    expect(web.resolved && web.descriptors[0]).toMatchObject({ id: 4 });
+    expect(web.resolved && web.descriptors[0]).toMatchObject({
+      name: "Web Mitchell 9 round SPECIAL",
+    });
     expect(appendix.resolved && appendix.descriptors[0]).toMatchObject({
-      id: 5,
+      name: "13 table Appendix Mitchell",
     });
   });
 
@@ -143,7 +148,7 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
       if (result.resolved) {
         expect(result.descriptors[0]).toMatchObject({
           type: "SPEC",
-          id: 6,
+          name: "Square Mitchell (4 tables)",
           boardsPerRound: bpr,
         });
       }
@@ -163,7 +168,10 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
     );
     expect(result.resolved).toBe(true);
     if (result.resolved) {
-      expect(result.descriptors[0]).toMatchObject({ type: "SPEC", id: 7 });
+      expect(result.descriptors[0]).toMatchObject({
+        type: "SPEC",
+        name: "Double Weave Mitchell",
+      });
     }
   });
 

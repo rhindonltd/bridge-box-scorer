@@ -152,14 +152,21 @@ describe("recommendation coverage", () => {
         const context = `${entry.tables}t/${entry.boards}b ${entry.movement} (${entry.rounds}x${entry.boardsPerRound})`;
 
         if (descriptor.type === "SPEC") {
-          const row = catalog.find((c) => c.id === descriptor.id);
-          if (!row) {
-            failures.push(`${context}: SPEC id ${descriptor.id} not in catalog`);
-            continue;
-          }
-          if (row.tables !== entry.tables || row.rounds !== entry.rounds) {
+          // The (name, tables, rounds) triple must identify exactly one seeded
+          // spec (names are unique within a table count + round count).
+          const rows = catalog.filter(
+            (c) =>
+              c.name === descriptor.name &&
+              c.tables === entry.tables &&
+              c.rounds === entry.rounds,
+          );
+          if (rows.length === 0) {
             failures.push(
-              `${context}: SPEC id ${descriptor.id} is ${row.tables}t/${row.rounds}r, expected ${entry.tables}t/${entry.rounds}r`,
+              `${context}: no seeded spec named "${descriptor.name}" at ${entry.tables}t/${entry.rounds}r`,
+            );
+          } else if (rows.length > 1) {
+            failures.push(
+              `${context}: spec name "${descriptor.name}" is ambiguous at ${entry.tables}t/${entry.rounds}r (${rows.length} matches)`,
             );
           }
           continue;

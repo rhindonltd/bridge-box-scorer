@@ -9,7 +9,7 @@ describe("movementDescriptorSchema", () => {
   it("accepts a valid SPEC descriptor", () => {
     const parsed = movementDescriptorSchema.safeParse({
       type: "SPEC",
-      id: 42,
+      name: "3 Table Howell",
       boardsPerRound: 3,
       pros: ["Every pair plays every other pair"],
       cons: ["One stationary pair only"],
@@ -33,10 +33,10 @@ describe("movementDescriptorSchema", () => {
     }
   });
 
-  it("rejects a SPEC descriptor with a non-positive id", () => {
+  it("rejects a SPEC descriptor with an empty name", () => {
     const parsed = movementDescriptorSchema.safeParse({
       type: "SPEC",
-      id: 0,
+      name: "",
       boardsPerRound: 3,
       pros: [],
       cons: [],
@@ -67,19 +67,32 @@ describe("movementDescriptorSchema", () => {
 });
 
 describe("descriptorToSelectedMovement", () => {
-  it("converts a SPEC descriptor", () => {
+  it("converts a SPEC descriptor using the name->id resolver", () => {
     const descriptor: MovementDescriptor = {
       type: "SPEC",
-      id: 42,
+      name: "3 Table Howell",
       boardsPerRound: 3,
       pros: [],
       cons: [],
     };
-    expect(descriptorToSelectedMovement(descriptor)).toEqual({
+    const resolveSpecId = (name: string) =>
+      name === "3 Table Howell" ? 42 : undefined;
+    expect(descriptorToSelectedMovement(descriptor, resolveSpecId)).toEqual({
       source: "SPEC",
       specId: 42,
       boardsPerRound: 3,
     });
+  });
+
+  it("throws for a SPEC descriptor when the name cannot be resolved", () => {
+    const descriptor: MovementDescriptor = {
+      type: "SPEC",
+      name: "Unknown Movement",
+      boardsPerRound: 3,
+      pros: [],
+      cons: [],
+    };
+    expect(() => descriptorToSelectedMovement(descriptor, () => undefined)).toThrow();
   });
 
   it("converts a STANDARD Mitchell descriptor (no flags)", () => {

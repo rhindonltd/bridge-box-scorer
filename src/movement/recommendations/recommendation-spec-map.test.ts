@@ -26,10 +26,11 @@ describe("RECOMMENDATION_SPEC_MAP snapshot", () => {
     expect(snapshot).toEqual(derived);
   });
 
-  it("contains only schema-valid descriptors", () => {
+  it("contains only schema-valid descriptors and no empty cells", () => {
     for (const byBoards of Object.values(snapshot)) {
       for (const descriptors of Object.values(byBoards)) {
-        if (!descriptors) continue;
+        // Empty / null cells are omitted from the snapshot entirely.
+        expect(Array.isArray(descriptors) && descriptors.length > 0).toBe(true);
         for (const descriptor of descriptors) {
           expect(movementDescriptorSchema.safeParse(descriptor).success).toBe(
             true,
@@ -39,10 +40,14 @@ describe("RECOMMENDATION_SPEC_MAP snapshot", () => {
     }
   });
 
-  it("maps the same table/boards keys as recommendations.json", () => {
-    // Every table 2-20 is present.
-    for (let t = 2; t <= 20; t++) {
+  it("includes every table count that has at least one resolvable movement", () => {
+    // Tables 2-18 and 20 each have resolvable recommendations. Table 19 has
+    // only the (deferred) odd-table Web entries, so it is legitimately absent.
+    for (const t of [
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20,
+    ]) {
       expect(snapshot[String(t)]).toBeDefined();
     }
+    expect(snapshot["19"]).toBeUndefined();
   });
 });

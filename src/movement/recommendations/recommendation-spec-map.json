@@ -3,7 +3,7 @@
     "18": [
       {
         "type": "SPEC",
-        "id": 154,
+        "name": "Two Table Full Howell",
         "boardsPerRound": 6,
         "pros": [
           "Good for a tiny field: all opponents can be played."
@@ -14,7 +14,7 @@
       },
       {
         "type": "SPEC",
-        "id": 247,
+        "name": "Two Table Full Howell (6 rounds, play everyone twice)",
         "boardsPerRound": 3,
         "pros": [
           "More rounds allow fewer boards per round."
@@ -24,12 +24,10 @@
         ]
       }
     ],
-    "19": null,
-    "20": null,
     "21": [
       {
         "type": "SPEC",
-        "id": 154,
+        "name": "Two Table Full Howell",
         "boardsPerRound": 7,
         "pros": [
           "Good for a tiny field: all opponents can be played."
@@ -39,12 +37,10 @@
         ]
       }
     ],
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 154,
+        "name": "Two Table Full Howell",
         "boardsPerRound": 8,
         "pros": [
           "Good for a tiny field: all opponents can be played."
@@ -55,7 +51,7 @@
       },
       {
         "type": "SPEC",
-        "id": 247,
+        "name": "Two Table Full Howell (6 rounds, play everyone twice)",
         "boardsPerRound": 4,
         "pros": [
           "More rounds allow fewer boards per round."
@@ -64,13 +60,7 @@
           "Longer session and more movement complexity."
         ]
       }
-    ],
-    "25": null,
-    "26": null,
-    "27": null,
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "3": {
     "18": [
@@ -89,11 +79,10 @@
         ]
       }
     ],
-    "19": null,
     "20": [
       {
         "type": "SPEC",
-        "id": 77,
+        "name": "[M36] Full Howell (Green EBU24A F 3)",
         "boardsPerRound": 2,
         "pros": [
           "Long Howell gives broad opponent coverage with 2-3 boards per round."
@@ -104,7 +93,7 @@
       },
       {
         "type": "SPEC",
-        "id": 76,
+        "name": "[M35] Full Howell (Blue EBU26 F 3)",
         "boardsPerRound": 4,
         "pros": [
           "Balanced small-field Howell with manageable rounds."
@@ -130,8 +119,6 @@
         ]
       }
     ],
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "MITCHELL",
@@ -151,7 +138,7 @@
     "25": [
       {
         "type": "SPEC",
-        "id": 76,
+        "name": "[M35] Full Howell (Blue EBU26 F 3)",
         "boardsPerRound": 5,
         "pros": [
           "Balanced small-field Howell with manageable rounds."
@@ -161,14 +148,10 @@
         ]
       }
     ],
-    "26": null,
-    "27": null,
-    "28": null,
-    "29": null,
     "30": [
       {
         "type": "SPEC",
-        "id": 77,
+        "name": "[M36] Full Howell (Green EBU24A F 3)",
         "boardsPerRound": 3,
         "pros": [
           "Long Howell gives broad opponent coverage with 2-3 boards per round."
@@ -183,7 +166,7 @@
     "18": [
       {
         "type": "SPEC",
-        "id": 158,
+        "name": "3/4 Howell, ACBL SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Good opponent coverage with a relatively short movement."
@@ -193,11 +176,10 @@
         ]
       }
     ],
-    "19": null,
     "20": [
       {
         "type": "SPEC",
-        "id": 246,
+        "name": "[QM0404] Square Mitchell (4 tables, no skip, no relay)",
         "boardsPerRound": 5,
         "pros": [
           "No skip or relay; simple physical layout."
@@ -210,7 +192,7 @@
     "21": [
       {
         "type": "SPEC",
-        "id": 78,
+        "name": "[M37] Full Howell (Green EBU24A F 4)",
         "boardsPerRound": 3,
         "pros": [
           "Full Howell coverage in a small field."
@@ -220,12 +202,10 @@
         ]
       }
     ],
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 246,
+        "name": "[QM0404] Square Mitchell (4 tables, no skip, no relay)",
         "boardsPerRound": 6,
         "pros": [
           "No skip or relay; simple physical layout."
@@ -236,7 +216,7 @@
       },
       {
         "type": "SPEC",
-        "id": 158,
+        "name": "3/4 Howell, ACBL SPECIAL",
         "boardsPerRound": 4,
         "pros": [
           "Good opponent coverage with a relatively short movement."
@@ -246,13 +226,10 @@
         ]
       }
     ],
-    "25": null,
-    "26": null,
-    "27": null,
     "28": [
       {
         "type": "SPEC",
-        "id": 78,
+        "name": "[M37] Full Howell (Green EBU24A F 4)",
         "boardsPerRound": 4,
         "pros": [
           "Full Howell coverage in a small field."
@@ -261,15 +238,13 @@
           "Seven rounds and relays make it more involved."
         ]
       }
-    ],
-    "29": null,
-    "30": null
+    ]
   },
   "5": {
     "18": [
       {
         "type": "SPEC",
-        "id": 248,
+        "name": "5 Table 3/4 Howell (6 rounds)",
         "boardsPerRound": 3,
         "pros": [
           "Good coverage without a full Howell."
@@ -294,7 +269,7 @@
       },
       {
         "type": "SPEC",
-        "id": 80,
+        "name": "[M39] Full Howell (Green EBU24A F 5, Blue EBU26 F 5)",
         "boardsPerRound": 2,
         "pros": [
           "Excellent opponent coverage for a five-table field."
@@ -304,7 +279,6 @@
         ]
       }
     ],
-    "19": null,
     "20": [
       {
         "type": "MITCHELL",
@@ -321,13 +295,10 @@
         ]
       }
     ],
-    "21": null,
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 248,
+        "name": "5 Table 3/4 Howell (6 rounds)",
         "boardsPerRound": 4,
         "pros": [
           "Good coverage without a full Howell."
@@ -352,7 +323,7 @@
       },
       {
         "type": "SPEC",
-        "id": 79,
+        "name": "[M38] 3/4 Howell",
         "boardsPerRound": 3,
         "pros": [
           "Good coverage with only 2-3 boards per round."
@@ -378,11 +349,10 @@
         ]
       }
     ],
-    "26": null,
     "27": [
       {
         "type": "SPEC",
-        "id": 80,
+        "name": "[M39] Full Howell (Green EBU24A F 5, Blue EBU26 F 5)",
         "boardsPerRound": 3,
         "pros": [
           "Excellent opponent coverage for a five-table field."
@@ -391,10 +361,7 @@
           "Nine rounds is a long movement and involves a relay."
         ]
       }
-    ],
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "6": {
     "18": [
@@ -414,7 +381,7 @@
       },
       {
         "type": "SPEC",
-        "id": 81,
+        "name": "[M43] 3/4 Howell (Saffron EBU24B T 6)",
         "boardsPerRound": 2,
         "pros": [
           "Good coverage and three boards per round."
@@ -424,7 +391,6 @@
         ]
       }
     ],
-    "19": null,
     "20": [
       {
         "type": "MITCHELL",
@@ -441,11 +407,10 @@
         ]
       }
     ],
-    "21": null,
     "22": [
       {
         "type": "SPEC",
-        "id": 82,
+        "name": "[M45] Full Howell (Green EBU24A F 6)",
         "boardsPerRound": 2,
         "pros": [
           "Full Howell-style coverage; only two boards per round."
@@ -455,7 +420,6 @@
         ]
       }
     ],
-    "23": null,
     "24": [
       {
         "type": "MITCHELL",
@@ -473,7 +437,7 @@
       },
       {
         "type": "SPEC",
-        "id": 170,
+        "name": "3/4 Howell, ACBL SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Good opponent coverage with a compact board set."
@@ -483,12 +447,10 @@
         ]
       }
     ],
-    "25": null,
-    "26": null,
     "27": [
       {
         "type": "SPEC",
-        "id": 81,
+        "name": "[M43] 3/4 Howell (Saffron EBU24B T 6)",
         "boardsPerRound": 3,
         "pros": [
           "Good coverage and three boards per round."
@@ -497,15 +459,9 @@
           "Nine rounds is relatively long."
         ]
       }
-    ],
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "7": {
-    "18": null,
-    "19": null,
-    "20": null,
     "21": [
       {
         "type": "MITCHELL",
@@ -539,7 +495,7 @@
     "22": [
       {
         "type": "SPEC",
-        "id": 211,
+        "name": "[G171] 7 Table 3/4 Howell 11 Rounds, Groner",
         "boardsPerRound": 2,
         "pros": [
           "Good coverage with two boards per round."
@@ -549,11 +505,10 @@
         ]
       }
     ],
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 83,
+        "name": "[M51] 3/4 Howell",
         "boardsPerRound": 2,
         "pros": [
           "Very good coverage: 12 of 13 opponents."
@@ -564,7 +519,7 @@
       },
       {
         "type": "SPEC",
-        "id": 249,
+        "name": "[H0708] 7 Table 3/4 Howell (8 rounds, ACBLscore)",
         "boardsPerRound": 3,
         "pros": [
           "Good coverage in eight rounds."
@@ -588,11 +543,10 @@
         ]
       }
     ],
-    "25": null,
     "26": [
       {
         "type": "SPEC",
-        "id": 84,
+        "name": "[M53] Full Howell (Blue EBU26 F 7, Green EBU24A F 7, Saffron EBU24B T 7)",
         "boardsPerRound": 2,
         "pros": [
           "Full Howell; described as ideal and nicely balanced."
@@ -602,7 +556,6 @@
         ]
       }
     ],
-    "27": null,
     "28": [
       {
         "type": "MITCHELL",
@@ -632,14 +585,9 @@
           "Less opponent coverage; half-table sit-out may occur."
         ]
       }
-    ],
-    "29": null,
-    "30": null
+    ]
   },
   "8": {
-    "18": null,
-    "19": null,
-    "20": null,
     "21": [
       {
         "type": "MITCHELL",
@@ -656,12 +604,10 @@
         ]
       }
     ],
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 85,
+        "name": "[M57] 3/4 Howell",
         "boardsPerRound": 2,
         "pros": [
           "Good coverage: 12 of 15 opponents."
@@ -672,7 +618,7 @@
       },
       {
         "type": "SPEC",
-        "id": 67,
+        "name": "[M21] Double Weave Mitchell",
         "boardsPerRound": 3,
         "pros": [
           "No shared boards; efficient eight-round movement."
@@ -696,9 +642,6 @@
         ]
       }
     ],
-    "25": null,
-    "26": null,
-    "27": null,
     "28": [
       {
         "type": "MITCHELL",
@@ -714,9 +657,7 @@
           "Requires a skip and may involve a sit-out."
         ]
       }
-    ],
-    "29": null,
-    "30": null
+    ]
   },
   "9": {
     "18": [
@@ -735,7 +676,6 @@
         ]
       }
     ],
-    "19": null,
     "20": [
       {
         "type": "MITCHELL",
@@ -752,9 +692,6 @@
         ]
       }
     ],
-    "21": null,
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "MITCHELL",
@@ -771,8 +708,6 @@
         ]
       }
     ],
-    "25": null,
-    "26": null,
     "27": [
       {
         "type": "MITCHELL",
@@ -788,10 +723,7 @@
           "Less opponent coverage than Howell."
         ]
       }
-    ],
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "10": {
     "18": [
@@ -810,7 +742,6 @@
         ]
       }
     ],
-    "19": null,
     "20": [
       {
         "type": "MITCHELL",
@@ -827,12 +758,6 @@
         ]
       }
     ],
-    "21": null,
-    "22": null,
-    "23": null,
-    "24": null,
-    "25": null,
-    "26": null,
     "27": [
       {
         "type": "MITCHELL",
@@ -849,8 +774,6 @@
         ]
       }
     ],
-    "28": null,
-    "29": null,
     "30": [
       {
         "type": "MITCHELL",
@@ -869,10 +792,6 @@
     ]
   },
   "11": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
     "22": [
       {
         "type": "MITCHELL",
@@ -903,7 +822,6 @@
         ]
       }
     ],
-    "23": null,
     "24": [
       {
         "type": "MITCHELL",
@@ -933,19 +851,9 @@
           "36 boards in play and complex hesitation/arrow-switch mechanics."
         ]
       }
-    ],
-    "25": null,
-    "26": null,
-    "27": null,
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "12": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
     "22": [
       {
         "type": "MITCHELL",
@@ -962,11 +870,10 @@
         ]
       }
     ],
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 68,
+        "name": "[M21] Double Weave Mitchell",
         "boardsPerRound": 2,
         "pros": [
           "No shared boards or relay tables; very clean logistics."
@@ -991,7 +898,7 @@
       },
       {
         "type": "SPEC",
-        "id": 25,
+        "name": "[M13e] Web Skip Mitchell 8 round SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Good eight-round/24-board option with no shared boards within sections."
@@ -1001,12 +908,10 @@
         ]
       }
     ],
-    "25": null,
-    "26": null,
     "27": [
       {
         "type": "SPEC",
-        "id": 26,
+        "name": "[M13e] Web Mitchell 9 round SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Nine rounds and three boards per round."
@@ -1015,20 +920,13 @@
           "Requires two board sets and section relays."
         ]
       }
-    ],
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "13": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
     "22": [
       {
         "type": "SPEC",
-        "id": 62,
+        "name": "[M20] 1-Table Appendix Mitchell.  Tables 1/12 share.",
         "boardsPerRound": 2,
         "pros": [
           "Designed specifically for 13 tables; only two boards per round."
@@ -1038,9 +936,6 @@
         ]
       }
     ],
-    "23": null,
-    "24": null,
-    "25": null,
     "26": [
       {
         "type": "MITCHELL",
@@ -1074,7 +969,7 @@
     "27": [
       {
         "type": "SPEC",
-        "id": 27,
+        "name": "[M13e] Web Mitchell 9 round SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Nine-round, three-board option."
@@ -1099,21 +994,13 @@
           "Fourteen rounds plus hesitation/relay is complex."
         ]
       }
-    ],
-    "29": null,
-    "30": null
+    ]
   },
   "14": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 250,
+        "name": "[WEB8] 14 Table Web Mitchell (8 rounds)",
         "boardsPerRound": 3,
         "pros": [
           "Eight-round, three-board option."
@@ -1123,7 +1010,6 @@
         ]
       }
     ],
-    "25": null,
     "26": [
       {
         "type": "MITCHELL",
@@ -1143,7 +1029,7 @@
     "27": [
       {
         "type": "SPEC",
-        "id": 29,
+        "name": "[M13e] Web Mitchell 9 round SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Nine-round, three-board option."
@@ -1168,23 +1054,13 @@
           "Fourteen rounds and relay/board sharing."
         ]
       }
-    ],
-    "29": null,
-    "30": null
+    ]
   },
   "15": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
-    "22": null,
-    "23": null,
-    "24": null,
-    "25": null,
     "26": [
       {
         "type": "SPEC",
-        "id": 63,
+        "name": "[M20] 1-Table Appendix Mitchell.  Tables 1/14 share",
         "boardsPerRound": 2,
         "pros": [
           "Designed for 15 tables; 13 rounds of two boards."
@@ -1197,7 +1073,7 @@
     "27": [
       {
         "type": "SPEC",
-        "id": 32,
+        "name": "[M13e] Web Mitchell 9 round SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Nine rounds and three boards per round."
@@ -1206,22 +1082,13 @@
           "More setup and relay/shared-board management."
         ]
       }
-    ],
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "16": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 251,
+        "name": "[WEB8] 16 Table Web Mitchell (8 rounds)",
         "boardsPerRound": 3,
         "pros": [
           "Eight rounds and three boards per round; two clean sections."
@@ -1231,12 +1098,10 @@
         ]
       }
     ],
-    "25": null,
-    "26": null,
     "27": [
       {
         "type": "SPEC",
-        "id": 33,
+        "name": "[M13e] Web Mitchell 9 round SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Nine rounds and three boards per round."
@@ -1245,25 +1110,13 @@
           "Requires two sections and careful board movement."
         ]
       }
-    ],
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "17": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
-    "22": null,
-    "23": null,
-    "24": null,
-    "25": null,
-    "26": null,
     "27": [
       {
         "type": "SPEC",
-        "id": 34,
+        "name": "[M13e] Web Mitchell 9 round SPECIAL",
         "boardsPerRound": 3,
         "pros": [
           "Nine-round large-field movement; three boards per round."
@@ -1272,22 +1125,13 @@
           "More rounds and section management."
         ]
       }
-    ],
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "18": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 252,
+        "name": "[WEB8] 18 Table Web Mitchell (8 rounds)",
         "boardsPerRound": 3,
         "pros": [
           "Eight-round large-field movement; three boards per round."
@@ -1297,12 +1141,10 @@
         ]
       }
     ],
-    "25": null,
-    "26": null,
     "27": [
       {
         "type": "SPEC",
-        "id": 254,
+        "name": "[WEB9] 18 Table Web Mitchell (9 rounds)",
         "boardsPerRound": 3,
         "pros": [
           "Nine-round large-field movement; three boards per round."
@@ -1311,37 +1153,13 @@
           "Requires two sections and careful board management."
         ]
       }
-    ],
-    "28": null,
-    "29": null,
-    "30": null
-  },
-  "19": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
-    "22": null,
-    "23": null,
-    "24": null,
-    "25": null,
-    "26": null,
-    "27": null,
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   },
   "20": {
-    "18": null,
-    "19": null,
-    "20": null,
-    "21": null,
-    "22": null,
-    "23": null,
     "24": [
       {
         "type": "SPEC",
-        "id": 253,
+        "name": "[WEB8] 20 Table Web Mitchell (8 rounds)",
         "boardsPerRound": 3,
         "pros": [
           "Eight-round large-field movement; three boards per round."
@@ -1350,12 +1168,6 @@
           "Requires sectioned setup and board management."
         ]
       }
-    ],
-    "25": null,
-    "26": null,
-    "27": null,
-    "28": null,
-    "29": null,
-    "30": null
+    ]
   }
 }

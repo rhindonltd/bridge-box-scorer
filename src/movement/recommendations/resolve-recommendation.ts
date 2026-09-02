@@ -126,7 +126,7 @@ function resolveSpec(
     descriptors: [
       {
         type: "SPEC",
-        id: preferred.id,
+        name: preferred.name,
         boardsPerRound: entry.boardsPerRound,
         pros: entry.pros,
         cons: entry.cons,
