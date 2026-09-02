@@ -224,3 +224,14 @@ export const Pairs20Tables: Story = {
     }),
   ],
 };
+
+export const PairsNoRecommendations: Story = {
+  decorators: [
+    withGame({
+      ...pairsGame4Tables,
+      eventName: "Wednesday Pairs",
+      tables: 1,
+      leadCardRequired: true,
+    }),
+  ],
+};
