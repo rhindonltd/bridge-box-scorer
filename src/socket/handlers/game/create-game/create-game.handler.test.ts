@@ -55,7 +55,7 @@ describe("registerCreateGameHandler", () => {
 
   it("creates game, creates director session, and emits JOINABLE_GAMES", async () => {
     const newBridgeGame = { name: "test-game" };
-    const bridgeGame = { gameId: "123", gameType: "PAIRS" };
+    const bridgeGame = { gameId: "123", gameType: "PAIRS", tables: 4 };
 
     vi.mocked(createBridgeGame).mockResolvedValue(bridgeGame as any);
     vi.mocked(createGameDb).mockResolvedValue(undefined);
@@ -68,7 +68,7 @@ describe("registerCreateGameHandler", () => {
     await handler(newBridgeGame, cb);
 
     expect(createBridgeGame).toHaveBeenCalledWith(newBridgeGame);
-    expect(createGameDb).toHaveBeenCalledWith("123");
+    expect(createGameDb).toHaveBeenCalledWith("123", 4);
 
     // Should create a director login session
     expect(createLoginSession).toHaveBeenCalledWith(

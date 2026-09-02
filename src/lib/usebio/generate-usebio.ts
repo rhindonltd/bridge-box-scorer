@@ -112,13 +112,15 @@ export function generateUsebioXml(data: UsebioGameData): string {
     .txt(SCORING_TYPE_MAP[data.scoringType] ?? "MP");
   event.ele("BOARDS").txt(String(data.boards));
 
-  // PARTICIPANTS
+  // PARTICIPANTS — each pair is tagged with its real section (derived from the
+  // section-qualified pair number, falling back to the game's section label).
   const participants = event.ele("PARTICIPANTS");
   for (const pair of data.pairs) {
     const dir = pair.direction === "N" ? "NS" : "EW";
     const pairEl = participants.ele("PAIR", {
       PAIR_NUMBER: pair.pairNumber,
       DIRECTION: dir,
+      SECTION_ID: sectionOf(pair.pairNumber, data.sectionName),
     });
 
     addPlayer(pairEl, pair.player1);
@@ -201,6 +203,7 @@ export function generateUsebioXml(data: UsebioGameData): string {
       rankingEl.ele("RANK", {
         PAIR_NUMBER: entry.pairNumber,
         DIRECTION: entry.direction,
+        SECTION_ID: sectionOf(entry.pairNumber, data.sectionName),
         TOTAL_SCORE: String(entry.totalScore),
         MAX_SCORE: String(entry.maxScore),
         PERCENTAGE: entry.percentage,
@@ -215,6 +218,15 @@ export function generateUsebioXml(data: UsebioGameData): string {
 /* ============================================================
    HELPERS
 ============================================================ */
+
+/**
+ * Derive the section id from a section-qualified pair number (e.g. "A1NS" ->
+ * "A"). Falls back to the provided default when the id is not section-prefixed.
+ */
+function sectionOf(pairNumber: string, fallback: string): string {
+  const match = /^([A-Z]+)\d+(?:NS|EW)$/.exec(pairNumber);
+  return match ? match[1] : fallback || "A";
+}
 
 function addPlayer(parentEl: ReturnType<typeof create>, player: UsebioPlayer) {
   const playerEl = parentEl.ele("PLAYER");

@@ -1,4 +1,4 @@
-import { PairSeat, parseSeat } from "@/model/participants";
+import { PairSeat, parseSeat, seatFor } from "@/model/participants";
 import { ExpectedSeats } from "@/model/expected-seats";
 
 /**
@@ -177,10 +177,12 @@ function halfFilledTables(
   seated: Set<PairSeat>,
 ): PairSeat[] {
   return missing.filter((seat) => {
-    const { tableNumber, direction } = parseSeat(seat);
-    const other = `${tableNumber}${
-      direction === "NS" ? "EW" : "NS"
-    }` as PairSeat;
+    const { section, tableNumber, direction } = parseSeat(seat);
+    const other = seatFor(
+      section,
+      tableNumber,
+      direction === "NS" ? "EW" : "NS",
+    );
     return seated.has(other);
   });
 }

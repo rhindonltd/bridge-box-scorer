@@ -20,11 +20,11 @@ type Story = StoryObj<typeof SelectTable>;
 
 export const Default: Story = {
   args: {
-    tables: 8,
+    sections: [{ section: "A", label: "A", tables: 8 }],
     startingPositions: [
       {
         type: "PAIR",
-        initialSeat: "4NS",
+        initialSeat: "A4NS",
         player1: {
           id: 1,
           firstName: "Jacqui",
@@ -40,7 +40,7 @@ export const Default: Story = {
       },
       {
         type: "PAIR",
-        initialSeat: "6NS",
+        initialSeat: "A6NS",
         player1: {
           id: 3,
           firstName: "Peter",
@@ -56,7 +56,7 @@ export const Default: Story = {
       },
       {
         type: "PAIR",
-        initialSeat: "6EW",
+        initialSeat: "A6EW",
         player1: {
           id: 5,
           firstName: "Andrew",
@@ -76,14 +76,17 @@ export const Default: Story = {
 
 export const FewTables: Story = {
   args: {
-    tables: 3,
+    sections: [{ section: "A", label: "A", tables: 3 }],
     startingPositions: [],
   },
 };
 
-export const ManyTables: Story = {
+export const MultipleSections: Story = {
   args: {
-    tables: 16,
+    sections: [
+      { section: "A", label: "A", tables: 8 },
+      { section: "B", label: "B", tables: 6 },
+    ],
     startingPositions: [],
   },
 };

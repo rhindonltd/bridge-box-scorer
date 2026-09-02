@@ -31,6 +31,7 @@ vi.mock("@/db/games", () => ({
 
 vi.mock("@/db/games/tables/boards", () => ({
   boards: {
+    section: "section",
     roundNumber: "roundNumber",
     tableNumber: "tableNumber",
     boardNumber: "boardNumber",
@@ -49,12 +50,16 @@ type FakeSubmission = {
   result: string;
 };
 const submissionStore = new Map<string, FakeSubmission[]>();
-const storeKey = (gameId: string, tableNumber: number, roundNumber: number) =>
-  `${gameId}:${tableNumber}:${roundNumber}`;
+const storeKey = (
+  gameId: string,
+  section: string,
+  tableNumber: number,
+  roundNumber: number,
+) => `${gameId}:${section}:${tableNumber}:${roundNumber}`;
 
 vi.mock("@/db/games/actions/create-submission", () => ({
   createBoardSubmission: vi.fn(async (gameId: string, sub: any) => {
-    const key = storeKey(gameId, sub.tableNumber, sub.roundNumber);
+    const key = storeKey(gameId, sub.section, sub.tableNumber, sub.roundNumber);
     const existing = submissionStore.get(key) ?? [];
     const next = existing.filter((s) => s.side !== sub.side);
     next.push({
@@ -68,15 +73,28 @@ vi.mock("@/db/games/actions/create-submission", () => ({
 
 vi.mock("@/db/games/queries/find-submissions", () => ({
   findBoardSubmissions: vi.fn(
-    async (gameId: string, tableNumber: number, roundNumber: number) =>
-      submissionStore.get(storeKey(gameId, tableNumber, roundNumber)) ?? [],
+    async (
+      gameId: string,
+      section: string,
+      tableNumber: number,
+      roundNumber: number,
+    ) =>
+      submissionStore.get(storeKey(gameId, section, tableNumber, roundNumber)) ??
+      [],
   ),
 }));
 
 vi.mock("@/db/games/actions/delete-submissions", () => ({
   deleteBoardSubmissions: vi.fn(
-    async (gameId: string, tableNumber: number, roundNumber: number) => {
-      submissionStore.delete(storeKey(gameId, tableNumber, roundNumber));
+    async (
+      gameId: string,
+      section: string,
+      tableNumber: number,
+      roundNumber: number,
+    ) => {
+      submissionStore.delete(
+        storeKey(gameId, section, tableNumber, roundNumber),
+      );
     },
   ),
 }));
@@ -122,7 +140,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-1",
       gameType: "PAIRS",
-      seat: "1NS",
+      seat: "A1NS",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 1,
@@ -160,7 +178,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-1",
       gameType: "PAIRS",
-      seat: "1NS",
+      seat: "A1NS",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 7,
@@ -171,7 +189,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-1",
       gameType: "PAIRS",
-      seat: "1EW",
+      seat: "A1EW",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 7,
@@ -213,7 +231,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-2",
       gameType: "PAIRS",
-      seat: "2NS",
+      seat: "A2NS",
       roundNumber: 1,
       tableNumber: 2,
       boardNumber: 3,
@@ -224,7 +242,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-2",
       gameType: "PAIRS",
-      seat: "2EW",
+      seat: "A2EW",
       roundNumber: 1,
       tableNumber: 2,
       boardNumber: 3,
@@ -266,7 +284,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-3",
       gameType: "PAIRS",
-      seat: "1NS",
+      seat: "A1NS",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 1,
@@ -277,7 +295,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-3",
       gameType: "PAIRS",
-      seat: "1EW",
+      seat: "A1EW",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 2,
@@ -314,7 +332,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-4",
       gameType: "PAIRS",
-      seat: "1NS",
+      seat: "A1NS",
       roundNumber: 2,
       tableNumber: 1,
       boardNumber: 5,
@@ -325,7 +343,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-4",
       gameType: "PAIRS",
-      seat: "1EW",
+      seat: "A1EW",
       roundNumber: 2,
       tableNumber: 1,
       boardNumber: 5,
@@ -338,7 +356,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-4",
       gameType: "PAIRS",
-      seat: "1EW",
+      seat: "A1EW",
       roundNumber: 2,
       tableNumber: 1,
       boardNumber: 5,
@@ -376,7 +394,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-6",
       gameType: "PAIRS",
-      seat: "3NS",
+      seat: "A3NS",
       roundNumber: 1,
       tableNumber: 3,
       boardNumber: 9,
@@ -386,7 +404,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-6",
       gameType: "PAIRS",
-      seat: "3EW",
+      seat: "A3EW",
       roundNumber: 1,
       tableNumber: 3,
       boardNumber: 9,
@@ -423,7 +441,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-7",
       gameType: "PAIRS",
-      seat: "1NS",
+      seat: "A1NS",
       roundNumber: 3,
       tableNumber: 1,
       boardNumber: 10,
@@ -433,7 +451,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-7",
       gameType: "PAIRS",
-      seat: "1EW",
+      seat: "A1EW",
       roundNumber: 3,
       tableNumber: 1,
       boardNumber: 10,

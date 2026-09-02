@@ -9,6 +9,7 @@ import { boardSubmissions } from "../tables/submissions";
  */
 export async function deleteBoardSubmissions(
   gameId: string,
+  section: string,
   table: number,
   round: number,
 ) {
@@ -22,6 +23,7 @@ export async function deleteBoardSubmissions(
     .delete(boardSubmissions)
     .where(
       and(
+        eq(boardSubmissions.section, section),
         eq(boardSubmissions.tableNumber, table),
         eq(boardSubmissions.roundNumber, round),
       ),

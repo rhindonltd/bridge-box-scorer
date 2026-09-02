@@ -1,15 +1,17 @@
 import { Tables } from "@/model/movement";
-import { PairDirection } from "@/model/common";
-import { PairSeat } from "@/model/participants";
+import { PairSeat, SectionLetter, seatFor } from "@/model/participants";
 
 /**
  * The seats a movement expects to be filled, derived from its round-1 layout.
  *
  * A pair movement seats one pair NS and one pair EW at every table, so the
- * expected seats are `${table}NS` / `${table}EW` for each table present in the
- * movement. When the movement declares a built-in phantom (a sit-out position),
- * that seat is reported separately in `phantomSeat` and is excluded from
- * `seats` (nobody is expected to sit there).
+ * expected seats are `${section}${table}NS` / `${section}${table}EW` for each
+ * table present in the movement. When the movement declares a built-in phantom
+ * (a sit-out position), that seat is reported separately in `phantomSeat` and
+ * is excluded from `seats` (nobody is expected to sit there).
+ *
+ * Seats are always section-qualified: expected seats are derived per section
+ * from that section's own movement.
  */
 export interface ExpectedSeats {
   seats: Set<PairSeat>;
@@ -17,19 +19,18 @@ export interface ExpectedSeats {
   phantomSeat: PairSeat | null;
 }
 
-function seatFor(table: number, direction: PairDirection): PairSeat {
-  return `${table}${direction}` as PairSeat;
-}
-
 /**
- * Derive the expected seats from a movement's round-1 layout.
+ * Derive the expected seats for a single section from its movement's round-1
+ * layout.
  *
+ * @param section  The section these seats belong to (their seat prefix).
  * @param movement  The generated / loaded movement (Tables<"PAIR">).
  * @param missingParticipant  Optional movement position id of a built-in
  *   phantom pair. When provided and matched against a round-1 position, that
  *   seat becomes `phantomSeat` and is removed from `seats`.
  */
 export function deriveExpectedSeats(
+  section: SectionLetter,
   movement: Tables<"PAIR">,
   missingParticipant?: number | null,
 ): ExpectedSeats {
@@ -47,8 +48,8 @@ export function deriveExpectedSeats(
       continue;
     }
 
-    const nsSeat = seatFor(table.table, "NS");
-    const ewSeat = seatFor(table.table, "EW");
+    const nsSeat = seatFor(section, table.table, "NS");
+    const ewSeat = seatFor(section, table.table, "EW");
 
     if (phantomId !== null && round1.participants.nsId === phantomId) {
       phantomSeat = nsSeat;

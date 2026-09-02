@@ -15,6 +15,8 @@ export const swrKeys = {
 
   startCheck: (gameId: string) => `/api/games/${gameId}/start-check`,
 
+  sections: (gameId: string) => `/api/games/${gameId}/sections`,
+
   schedule: (gameId: string, seat: string) =>
     `/api/games/${gameId}/schedule/${seat}`,
 

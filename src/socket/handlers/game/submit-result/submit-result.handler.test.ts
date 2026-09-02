@@ -26,6 +26,7 @@ vi.mock("@/db/games", () => ({
 
 vi.mock("@/db/games/tables/boards", () => ({
   boards: {
+    section: "section",
     roundNumber: "roundNumber",
     tableNumber: "tableNumber",
     boardNumber: "boardNumber",
@@ -111,7 +112,7 @@ describe("registerSubmitResultHandler", () => {
     await handler(
       {
         gameId: "g1",
-        seat: "1NS",
+        seat: "A1NS",
         roundNumber: 2,
         tableNumber: 3,
         boardNumber: 3,
@@ -138,7 +139,7 @@ describe("registerSubmitResultHandler", () => {
     await handler(
       {
         gameId: "g1",
-        seat: "1NS",
+        seat: "A1NS",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
@@ -150,6 +151,7 @@ describe("registerSubmitResultHandler", () => {
     expect(createBoardSubmission).toHaveBeenCalledWith(
       "g1",
       expect.objectContaining({
+        section: "A",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
@@ -178,7 +180,7 @@ describe("registerSubmitResultHandler", () => {
     await handler(
       {
         gameId: "g3",
-        seat: "1EW",
+        seat: "A1EW",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
@@ -207,7 +209,7 @@ describe("registerSubmitResultHandler", () => {
         boardNumber: 1,
       }),
     );
-    expect(deleteBoardSubmissions).toHaveBeenCalledWith("g3", 1, 1);
+    expect(deleteBoardSubmissions).toHaveBeenCalledWith("g3", "A", 1, 1);
   });
 
   it("emits BOARD_MISMATCH when results disagree", async () => {
@@ -225,7 +227,7 @@ describe("registerSubmitResultHandler", () => {
     await handler(
       {
         gameId: "g4",
-        seat: "1EW",
+        seat: "A1EW",
         roundNumber: 2,
         tableNumber: 1,
         boardNumber: 3,
@@ -261,7 +263,7 @@ describe("registerSubmitResultHandler", () => {
     await handler(
       {
         gameId: "g5",
-        seat: "2EW",
+        seat: "A2EW",
         roundNumber: 1,
         tableNumber: 2,
         boardNumber: 2,
@@ -295,7 +297,7 @@ describe("registerSubmitResultHandler", () => {
     await handler(
       {
         gameId: "g6",
-        seat: "1NS",
+        seat: "A1NS",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,

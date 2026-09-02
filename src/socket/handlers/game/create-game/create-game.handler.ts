@@ -17,7 +17,7 @@ export function registerCreateGameHandler(socket: Socket, io: Server) {
     async (newBridgeGame: NewBridgeGame, cb) => {
       try {
         const bridgeGame: BridgeGame = await createBridgeGame(newBridgeGame);
-        await createGameDb(bridgeGame.gameId);
+        await createGameDb(bridgeGame.gameId, bridgeGame.tables);
 
         // Automatically make the creator a director
         const directorToken = crypto.randomUUID();

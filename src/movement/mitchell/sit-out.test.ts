@@ -14,7 +14,7 @@ function sitOutCount(movement: { rounds: { sitOut?: boolean }[] }[]): number {
 describe("applyMitchellSitOut", () => {
   it("flags one sit-out round per table for an EW phantom", () => {
     const movement = generateStandardMitchell(spec);
-    const result = applyMitchellSitOut(movement, "3EW");
+    const result = applyMitchellSitOut(movement, "A3EW");
 
     // Every NS table meets each EW pair exactly once, so each table sits out
     // exactly once (when it meets the phantom).
@@ -27,7 +27,7 @@ describe("applyMitchellSitOut", () => {
 
   it("keeps the real board ranges on flagged rounds", () => {
     const movement = generateStandardMitchell(spec);
-    const result = applyMitchellSitOut(movement, "3EW");
+    const result = applyMitchellSitOut(movement, "A3EW");
 
     for (const table of result) {
       for (const round of table.rounds) {
@@ -38,7 +38,7 @@ describe("applyMitchellSitOut", () => {
 
   it("flags an NS phantom's own table every round", () => {
     const movement = generateStandardMitchell(spec);
-    const result = applyMitchellSitOut(movement, "3NS");
+    const result = applyMitchellSitOut(movement, "A3NS");
 
     const table3 = result.find((t) => t.tableNumber === 3)!;
     expect(table3.rounds.every((r) => r.sitOut)).toBe(true);
@@ -66,7 +66,7 @@ describe("generateStandardMitchellWithSitOut", () => {
   });
 
   it("applies the sit-out when a seat is requested", () => {
-    const result = generateStandardMitchellWithSitOut(spec, "2EW");
+    const result = generateStandardMitchellWithSitOut(spec, "A2EW");
     expect(sitOutCount(result)).toBe(5);
   });
 
@@ -74,7 +74,7 @@ describe("generateStandardMitchellWithSitOut", () => {
     expect(() =>
       generateStandardMitchellWithSitOut(
         { ...spec, tables: 6, skip: true },
-        "1EW",
+        "A1EW",
       ),
     ).toThrow("only supported for Standard Mitchell");
   });

@@ -11,6 +11,7 @@ import { Card } from "@/model/common";
 export const boards = sqliteTable(
   "boards",
   {
+    section: text("section").notNull(),
     roundNumber: integer("round_number").notNull(),
     tableNumber: integer("table_number").notNull(),
     boardNumber: integer("board_number").notNull(),
@@ -28,7 +29,12 @@ export const boards = sqliteTable(
   },
   (table) => ({
     pk: primaryKey({
-      columns: [table.roundNumber, table.tableNumber, table.boardNumber],
+      columns: [
+        table.section,
+        table.roundNumber,
+        table.tableNumber,
+        table.boardNumber,
+      ],
     }),
   }),
 );

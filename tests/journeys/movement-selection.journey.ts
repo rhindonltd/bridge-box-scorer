@@ -44,10 +44,10 @@ test("Movement selection and player schedule display", async ({
 
     // Step 2: After game creation, the page shows table view on /create/[id]
     // Navigate to the movements step by clicking "Select Movement"
-    await test.step("Director navigates to movement selection on /create/[gameId]", async () => {
+    await test.step("Director navigates to sections & movements on /create/[gameId]", async () => {
       // After game creation we're on /create/[id] which shows the tables step first
       const selectMovementButton = directorPage.getByRole("button", {
-        name: "Select Movement",
+        name: "Sections & Movements",
         exact: true,
       });
       await expect(selectMovementButton).toBeVisible({ timeout: 10000 });
@@ -167,13 +167,13 @@ test("Movement selection and player schedule display", async ({
     await makeGameJoinableStep(directorPage, testInfo, gameId);
 
     await joinGameStep(playerPage, testInfo, gameId, {
-      seat: "1NS",
+      seat: "A1NS",
       ebuNumbers: ["477484", "404476"],
     });
 
     // Step 8: Verify the player can navigate to their play page and see round info
     await test.step("Player sees round info on play page", async () => {
-      await playerPage.goto(`/play/${gameId}/1NS`);
+      await playerPage.goto(`/play/${gameId}/A1NS`);
       await playerPage.waitForLoadState("networkidle");
 
       // The play page should show round info (table, round, boards, players)

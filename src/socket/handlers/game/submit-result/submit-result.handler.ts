@@ -5,6 +5,7 @@ import { Rooms } from "@/socket/rooms";
 import { getDb } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { BoardOutcome } from "@/model/score";
+import { parseSeat, PairSeat } from "@/model/participants";
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
 import { BoardSubmission } from "@/db/games/tables/submissions";
@@ -32,8 +33,11 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
       cb,
     ) => {
       try {
-        // Determine which side
-        const isNS = seat.endsWith("NS");
+        // The seat is section-qualified (e.g. "A1NS"); its section scopes every
+        // board / submission lookup so sections sharing a table number don't
+        // collide.
+        const { section, direction } = parseSeat(seat as PairSeat);
+        const isNS = direction === "NS";
 
         // Defensively reject submissions against a sit-out board: nobody plays
         // that board at that table this round.
@@ -44,6 +48,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             .from(pairsBoards)
             .where(
               and(
+                eq(pairsBoards.section, section),
                 eq(pairsBoards.roundNumber, roundNumber),
                 eq(pairsBoards.tableNumber, tableNumber),
                 eq(pairsBoards.boardNumber, boardNumber),
@@ -59,6 +64,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
 
         // Store board submission
         await createBoardSubmission(gameId, {
+          section,
           roundNumber,
           tableNumber,
           boardNumber,
@@ -71,6 +77,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         // Check if both sides have submitted
         const boardSubmissions: BoardSubmission[] = await findBoardSubmissions(
           gameId,
+          section,
           tableNumber,
           roundNumber,
         );
@@ -107,6 +114,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             })
             .where(
               and(
+                eq(pairsBoards.section, section),
                 eq(pairsBoards.roundNumber, roundNumber),
                 eq(pairsBoards.tableNumber, tableNumber),
                 eq(pairsBoards.boardNumber, confirmedBoardNumber),
@@ -122,7 +130,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           });
 
           // Clear pending for this board
-          await deleteBoardSubmissions(gameId, tableNumber, roundNumber);
+          await deleteBoardSubmissions(gameId, section, tableNumber, roundNumber);
 
           io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
             gameId,

@@ -75,7 +75,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
           gameId: "game-1",
           newParticipant: {
             type: "PAIR",
-            initialSeat: "1NS",
+            initialSeat: "A1NS",
             player1: { firstName: "P1", lastName: "L1" },
             player2: { firstName: "P2", lastName: "L2" },
           },
@@ -96,7 +96,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       expect(createPair).toHaveBeenCalledWith(
         "game-1",
         expect.objectContaining({
-          initialSeat: "1NS",
+          initialSeat: "A1NS",
           player1: 10,
           player2: 11,
         }),
@@ -128,7 +128,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
           gameId: "game-1",
           newParticipant: {
             type: "PAIR",
-            initialSeat: "1NS",
+            initialSeat: "A1NS",
             player1: { firstName: "P1", lastName: "L1" },
             player2: { firstName: "P2", lastName: "L2" },
           },

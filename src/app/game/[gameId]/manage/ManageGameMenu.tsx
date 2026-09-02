@@ -9,6 +9,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
   return (
     <ManageGameMenuPage
       onSetUpGameClick={() => router.push(`/game/${gameId}/create`)}
+      onSectionsClick={() => router.push(`/game/${gameId}/manage/sections`)}
       onTravellersClick={() => router.push(`/game/${gameId}/manage/travellers`)}
       onMovementClick={() => router.push(`/game/${gameId}/manage/movement`)}
       onShareDirectorAccessClick={() =>

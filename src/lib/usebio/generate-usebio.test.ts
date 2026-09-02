@@ -133,10 +133,10 @@ describe("generateUsebioXml", () => {
   describe("PARTICIPANTS section", () => {
     it("includes all pairs", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain('<PAIR PAIR_NUMBER="1NS" DIRECTION="NS">');
-      expect(xml).toContain('<PAIR PAIR_NUMBER="2NS" DIRECTION="NS">');
-      expect(xml).toContain('<PAIR PAIR_NUMBER="1EW" DIRECTION="EW">');
-      expect(xml).toContain('<PAIR PAIR_NUMBER="2EW" DIRECTION="EW">');
+      expect(xml).toContain('<PAIR PAIR_NUMBER="1NS" DIRECTION="NS"');
+      expect(xml).toContain('<PAIR PAIR_NUMBER="2NS" DIRECTION="NS"');
+      expect(xml).toContain('<PAIR PAIR_NUMBER="1EW" DIRECTION="EW"');
+      expect(xml).toContain('<PAIR PAIR_NUMBER="2EW" DIRECTION="EW"');
     });
 
     it("includes player names", () => {
@@ -385,6 +385,85 @@ describe("generateUsebioXml", () => {
       const xml = generateUsebioXml(data);
       // With no results, ranking computation returns empty list
       expect(xml).not.toContain("<RANKING>");
+    });
+  });
+
+  describe("multi-section output", () => {
+    function makeMultiSectionData(): UsebioGameData {
+      return {
+        ...makeBasicGameData(),
+        // Section-qualified pair numbers across sections A and B.
+        pairs: [
+          {
+            pairNumber: "A1NS",
+            direction: "N",
+            player1: { firstName: "Al", lastName: "A", nationalId: null },
+            player2: { firstName: "Bo", lastName: "B", nationalId: null },
+          },
+          {
+            pairNumber: "A1EW",
+            direction: "E",
+            player1: { firstName: "Cy", lastName: "C", nationalId: null },
+            player2: { firstName: "Di", lastName: "D", nationalId: null },
+          },
+          {
+            pairNumber: "B1NS",
+            direction: "N",
+            player1: { firstName: "Ed", lastName: "E", nationalId: null },
+            player2: { firstName: "Fi", lastName: "F", nationalId: null },
+          },
+          {
+            pairNumber: "B1EW",
+            direction: "E",
+            player1: { firstName: "Gu", lastName: "G", nationalId: null },
+            player2: { firstName: "Ha", lastName: "H", nationalId: null },
+          },
+        ],
+        boardResults: [
+          {
+            table: 1,
+            board: 1,
+            round: 1,
+            nsPairNumber: "A1NS",
+            ewPairNumber: "A1EW",
+            outcome: "3NTN=",
+            lead: null,
+          },
+          {
+            table: 1,
+            board: 1,
+            round: 1,
+            nsPairNumber: "B1NS",
+            ewPairNumber: "B1EW",
+            outcome: "3NTN+1",
+            lead: null,
+          },
+        ],
+      };
+    }
+
+    it("tags participants with their real section id", () => {
+      const xml = generateUsebioXml(makeMultiSectionData());
+      expect(xml).toContain('PAIR_NUMBER="A1NS"');
+      expect(xml).toContain('SECTION_ID="A"');
+      expect(xml).toContain('PAIR_NUMBER="B1NS"');
+      expect(xml).toContain('SECTION_ID="B"');
+    });
+
+    it("tags ranking entries with their section id", () => {
+      const xml = generateUsebioXml(makeMultiSectionData());
+      // Both sections' pairs are ranked and each carries a SECTION_ID.
+      const ranking = xml.split("<RANKING>")[1].split("</RANKING>")[0];
+      expect(ranking).toContain('PAIR_NUMBER="A1NS"');
+      expect(ranking).toContain('PAIR_NUMBER="B1NS"');
+      expect(ranking).toMatch(/SECTION_ID="A"/);
+      expect(ranking).toMatch(/SECTION_ID="B"/);
+    });
+
+    it("falls back to the section label for unprefixed pair numbers", () => {
+      const xml = generateUsebioXml(makeBasicGameData());
+      // Basic data uses unprefixed "1NS" etc., so SECTION_ID defaults to "A".
+      expect(xml).toContain('SECTION_ID="A"');
     });
   });
 });

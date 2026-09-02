@@ -18,6 +18,15 @@ vi.mock("@/hooks/socket-swr-sync", () => ({
   useSocketSWRSync: vi.fn(),
 }));
 
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({
+    sections: [
+      { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
+    ],
+    isLoading: false,
+  }),
+}));
+
 vi.mock("@/lib/socket", () => ({
   getSocket: () => ({ emit: vi.fn() }),
 }));
@@ -31,7 +40,9 @@ vi.mock("@/hooks/start-check", () => ({
   useStartCheck: () => mockUseStartCheck(),
 }));
 
-const mockStartGame = vi.fn(async () => {});
+const mockStartGame = vi.fn(async (...args: unknown[]) => {
+  void args;
+});
 vi.mock("@/lib/game-service", () => ({
   startGame: (...args: unknown[]) => mockStartGame(...args),
 }));
@@ -82,12 +93,12 @@ describe("ShowTablesPage start gate", () => {
     mockUseStartCheck.mockReturnValue({
       canStart: true,
       problems: [],
-      sitOutSeat: "3EW",
+      sitOutSeat: "A3EW",
     });
 
     render(<ShowTablesPage onSelectMovement={vi.fn()} />);
 
-    expect(screen.getByText(/3EW will sit out/)).toBeInTheDocument();
+    expect(screen.getByText(/A3EW will sit out/)).toBeInTheDocument();
   });
 
   it("navigates to movement selection via the secondary button", () => {
@@ -100,7 +111,9 @@ describe("ShowTablesPage start gate", () => {
 
     render(<ShowTablesPage onSelectMovement={onSelectMovement} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Select Movement" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Sections & Movements" }),
+    );
     expect(onSelectMovement).toHaveBeenCalled();
   });
 });

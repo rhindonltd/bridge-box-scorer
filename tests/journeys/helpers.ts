@@ -125,11 +125,12 @@ export async function selectMovementStep(
         () => reject(new Error("Movement apply timeout")),
         10000,
       );
+      // Movements are per-section now; the default section is "A".
       testSocket.emit(
-        "game:selectMovement",
+        "game:setSectionMovement",
         {
           gameId,
-          type: "PAIRS",
+          section: "A",
           mitchell: { tables, rounds: tables, boardsPerRound: 3 },
           directorToken,
         },
@@ -213,10 +214,13 @@ export async function joinGameStep(
     // Wait for the player/seat selection page
     await page.waitForURL(/\/join\/.+\/player/);
 
-    // Parse the seat to get table number and direction
-    // Seat format is like "1NS", "2EW", etc.
-    const tableNumber = options.seat.replace(/[A-Z]+$/, "");
-    const direction = options.seat.replace(/^\d+/, "");
+    // Parse the section-qualified seat (e.g. "A1NS") into section, table and
+    // direction.
+    const seatMatch = /^([A-Z]+)(\d+)(NS|EW)$/.exec(options.seat);
+    if (!seatMatch) {
+      throw new Error(`Invalid seat: ${options.seat}`);
+    }
+    const [, , tableNumber, direction] = seatMatch;
 
     // Find the table card by its header text "Table N" and click
     // the direction button within it

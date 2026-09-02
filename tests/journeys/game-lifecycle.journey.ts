@@ -50,27 +50,27 @@ test("Complete pairs game lifecycle", async ({ browser }, testInfo) => {
 
     // Step 4: Player 1 joins at seat 1NS
     await joinGameStep(player1Page, testInfo, gameId, {
-      seat: "1NS",
+      seat: "A1NS",
       ebuNumbers: ["477484", "404476"],
     });
 
     // Step 5: Player 2 joins at seat 1EW
     await joinGameStep(player2Page, testInfo, gameId, {
-      seat: "1EW",
+      seat: "A1EW",
       ebuNumbers: ["12269", "16671"],
     });
 
     // Step 6: Both players enter matching results (Pass Out for simplicity)
     await enterResultStep(player1Page, testInfo, {
       gameId,
-      seat: "1NS",
+      seat: "A1NS",
       board: 1,
       passOut: true,
     });
 
     await enterResultStep(player2Page, testInfo, {
       gameId,
-      seat: "1EW",
+      seat: "A1EW",
       board: 1,
       passOut: true,
     });

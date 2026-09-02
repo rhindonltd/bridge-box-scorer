@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SocketEvents } from "@/socket/socket-events";
 
-vi.mock("@/db/game-index/actions/update-table-count", () => ({
-  updateTableCount: vi.fn(),
+vi.mock("@/db/games/actions/update-section-tables", () => ({
+  updateSectionTables: vi.fn(),
 }));
 
 vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
 
-vi.mock("@/db/games/queries/find-pairs", () => ({
-  findPairs: vi.fn(),
+vi.mock("@/db/games/queries/find-sections", () => ({
+  findSections: vi.fn(),
 }));
 
 vi.mock("@/db/games", () => ({
@@ -21,9 +21,9 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import { updateTableCount } from "@/db/game-index/actions/update-table-count";
+import { updateSectionTables } from "@/db/games/actions/update-section-tables";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { findPairs } from "@/db/games/queries/find-pairs";
+import { findSections } from "@/db/games/queries/find-sections";
 import { getDb } from "@/db/games";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerUpdateTablesHandler } from "./update-tables.handler";
@@ -37,17 +37,23 @@ function makeIo() {
   return { to: vi.fn(() => ({ emit })), _emit: emit } as any;
 }
 
+function sectionRow(letter: string, tables: number) {
+  return { section: letter, label: letter, tables, selectedMovement: null, ordinal: 0 };
+}
+
 describe("registerUpdateTablesHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: valid director session
     vi.mocked(findLoginSession).mockReturnValue({
       token: "test-token",
       role: "DIRECTOR",
       gameId: "g1",
     } as any);
-    // Default: a resolvable per-game DB. Individual tests override findPairs.
     vi.mocked(getDb).mockResolvedValue({} as any);
+    vi.mocked(findSections).mockResolvedValue([
+      sectionRow("A", 4),
+      sectionRow("B", 3),
+    ] as any);
   });
 
   it("registers handler on UPDATE_TABLES event", () => {
@@ -59,14 +65,10 @@ describe("registerUpdateTablesHandler", () => {
     );
   });
 
-  it("adds a table and broadcasts GAME_UPDATED", async () => {
-    const game = { gameId: "g1", tables: 4, gameType: "PAIRS" };
-    const updatedGame = { ...game, tables: 5 };
-
-    vi.mocked(findGameById)
-      .mockResolvedValueOnce(game as any)
-      .mockResolvedValueOnce(updatedGame as any);
-    vi.mocked(updateTableCount).mockResolvedValue(undefined);
+  it("resizes the given section and broadcasts GAME_UPDATED", async () => {
+    const game = { gameId: "g1", gameType: "PAIRS" };
+    vi.mocked(findGameById).mockResolvedValue(game as any);
+    vi.mocked(updateSectionTables).mockResolvedValue(undefined);
 
     const socket = makeSocket();
     const io = makeIo();
@@ -74,22 +76,21 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", section: "B", tables: 5, directorToken: "test-token" },
+      cb,
+    );
 
-    expect(updateTableCount).toHaveBeenCalledWith("g1", 5);
+    expect(updateSectionTables).toHaveBeenCalledWith("g1", "B", 5);
     expect(io._emit).toHaveBeenCalledWith(SocketEvents.GAME_UPDATED, {
-      game: updatedGame,
+      game,
     });
     expect(cb).toHaveBeenCalledWith({ success: true });
   });
 
-  it("rejects table reduction when participants occupy higher tables", async () => {
-    const game = { gameId: "g1", tables: 4, gameType: "PAIRS" };
-
-    vi.mocked(findGameById).mockResolvedValue(game as any);
-    vi.mocked(findPairs).mockResolvedValue([
-      { initialSeat: "3NS", type: "PAIR", player1: {}, player2: {} },
-    ] as any);
+  it("defaults to section A when no section is given", async () => {
+    vi.mocked(findGameById).mockResolvedValue({ gameId: "g1" } as any);
+    vi.mocked(updateSectionTables).mockResolvedValue(undefined);
 
     const socket = makeSocket();
     const io = makeIo();
@@ -97,9 +98,30 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 2, directorToken: "test-token" }, cb);
+    await handler({ gameId: "g1", tables: 6, directorToken: "test-token" }, cb);
 
-    expect(updateTableCount).not.toHaveBeenCalled();
+    expect(updateSectionTables).toHaveBeenCalledWith("g1", "A", 6);
+  });
+
+  it("forwards the per-section shrink-guard error", async () => {
+    vi.mocked(findGameById).mockResolvedValue({ gameId: "g1" } as any);
+    vi.mocked(updateSectionTables).mockRejectedValue(
+      new Error(
+        "Cannot reduce section A to 2 tables: table 3 has seated participants. Evict them first.",
+      ),
+    );
+
+    const socket = makeSocket();
+    const io = makeIo();
+    registerUpdateTablesHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler(
+      { gameId: "g1", section: "A", tables: 2, directorToken: "test-token" },
+      cb,
+    );
+
     expect(cb).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,
@@ -108,17 +130,8 @@ describe("registerUpdateTablesHandler", () => {
     );
   });
 
-  it("allows reduction when no participants at removed tables", async () => {
-    const game = { gameId: "g1", tables: 4, gameType: "PAIRS" };
-    const updatedGame = { ...game, tables: 3 };
-
-    vi.mocked(findGameById)
-      .mockResolvedValueOnce(game as any)
-      .mockResolvedValueOnce(updatedGame as any);
-    vi.mocked(findPairs).mockResolvedValue([
-      { initialSeat: "1NS", type: "PAIR", player1: {}, player2: {} },
-    ] as any);
-    vi.mocked(updateTableCount).mockResolvedValue(undefined);
+  it("rejects an unknown section", async () => {
+    vi.mocked(findGameById).mockResolvedValue({ gameId: "g1" } as any);
 
     const socket = makeSocket();
     const io = makeIo();
@@ -126,10 +139,16 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 3, directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", section: "Z", tables: 5, directorToken: "test-token" },
+      cb,
+    );
 
-    expect(updateTableCount).toHaveBeenCalledWith("g1", 3);
-    expect(cb).toHaveBeenCalledWith({ success: true });
+    expect(updateSectionTables).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Section Z not found",
+    });
   });
 
   it("rejects non-directors", async () => {
@@ -141,7 +160,10 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 5, directorToken: "bad-token" }, cb);
+    await handler(
+      { gameId: "g1", section: "A", tables: 5, directorToken: "bad-token" },
+      cb,
+    );
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     expect(findGameById).not.toHaveBeenCalled();
@@ -172,13 +194,16 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", section: "A", tables: 5, directorToken: "test-token" },
+      cb,
+    );
 
     expect(cb).toHaveBeenCalledWith({
       success: false,
       error: "Game not found",
     });
-    expect(updateTableCount).not.toHaveBeenCalled();
+    expect(updateSectionTables).not.toHaveBeenCalled();
   });
 
   it("returns error on internal failure", async () => {
@@ -190,7 +215,10 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "g1", tables: 5, directorToken: "test-token" }, cb);
+    await handler(
+      { gameId: "g1", section: "A", tables: 5, directorToken: "test-token" },
+      cb,
+    );
 
     expect(cb).toHaveBeenCalledWith({
       success: false,
@@ -207,10 +235,9 @@ describe("registerUpdateTablesHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
 
-    // Should not throw when cb is not provided
     await expect(
       handler(
-        { gameId: "g1", tables: 5, directorToken: "test-token" },
+        { gameId: "g1", section: "A", tables: 5, directorToken: "test-token" },
         undefined,
       ),
     ).resolves.not.toThrow();

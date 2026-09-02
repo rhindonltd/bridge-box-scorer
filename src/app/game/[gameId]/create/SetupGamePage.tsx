@@ -1,9 +1,10 @@
 "use client";
 
 import { ShowTablesPage } from "@/app/game/[gameId]/create/ShowTablesPage";
-import { ShowMovementsPage } from "@/app/game/[gameId]/create/ShowMovementsPage";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useRequiredGame } from "@/context/GameContext";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { SectionManagerContainer } from "@/components/manage/sections/SectionManagerContainer";
 
 const setupGameFlow = createFlow(
   {
@@ -27,6 +28,14 @@ export function SetupGamePage() {
   }
 
   if (step === "movements") {
-    return <ShowMovementsPage onShowTablesPage={() => goTo("tables")} />;
+    // Sections & per-section movement selection.
+    return (
+      <GamePageLayout
+        headerTitle="Sections & Movements"
+        backAction={() => goTo("tables")}
+      >
+        <SectionManagerContainer gameId={game.gameId} />
+      </GamePageLayout>
+    );
   }
 }

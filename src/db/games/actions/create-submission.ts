@@ -19,6 +19,7 @@ export async function createBoardSubmission(
     .values(boardSubmission)
     .onConflictDoUpdate({
       target: [
+        boardSubmissions.section,
         boardSubmissions.roundNumber,
         boardSubmissions.tableNumber,
         boardSubmissions.side,

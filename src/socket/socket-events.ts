@@ -10,6 +10,10 @@ export const SocketEvents = {
   SELECT_MOVEMENT: "game:selectMovement",
   START_GAME: "game:start",
   UPDATE_TABLES: "game:updateTables",
+  CREATE_SECTION: "game:createSection",
+  RENAME_SECTION: "game:renameSection",
+  DELETE_SECTION: "game:deleteSection",
+  SET_SECTION_MOVEMENT: "game:setSectionMovement",
   LEAVE_GAME: "game:leave",
   GENERATE_SHARE_CODE: "game:generateShareCode",
   CLAIM_DIRECTOR_CODE: "game:claimDirectorCode",
@@ -20,6 +24,8 @@ export const SocketEvents = {
   // Server initiated - Game specific
   PARTICIPANTS: "game:participants",
   GAME_UPDATED: "game:updated",
+  // Server initiated - Section specific (config/movement changed for a section)
+  SECTION_UPDATED: "game:sectionUpdated",
 
   // Client initiated - Board result submission
   SUBMIT_RESULT: "game:submitResult",
