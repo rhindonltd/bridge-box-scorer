@@ -48,7 +48,10 @@
         { "movement": "3/4 Howell", "rounds": 6, "boardsPerRound": 4.0, "priority": 2, "pros": ["Good opponent coverage with a relatively short movement."], "cons": ["Requires board sharing/relay management."] }
       ],
       "25": null, "26": null, "27": null,
-      "28": [ { "movement": "Hybrid", "rounds": 7, "boardsPerRound": 4.0, "priority": 1, "pros": ["Combines Mitchell and Howell characteristics and is balanced."], "cons": ["More complicated than a standard Mitchell."] } ],
+      "28": [
+        { "movement": "Howell", "rounds": 7, "boardsPerRound": 4.0, "priority": 1, "pros": ["Full Howell coverage in a small field."], "cons": ["Seven rounds and relays make it more involved."] },
+        { "movement": "Hybrid", "rounds": 7, "boardsPerRound": 4.0, "priority": 2, "pros": ["Combines Mitchell and Howell characteristics and is balanced."], "cons": ["More complicated than a standard Mitchell."] }
+      ],
       "29": null, "30": null
     },
     "5": {

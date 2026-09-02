@@ -1,0 +1,1361 @@
+{
+  "2": {
+    "18": [
+      {
+        "type": "SPEC",
+        "id": 154,
+        "boardsPerRound": 6,
+        "pros": [
+          "Good for a tiny field: all opponents can be played."
+        ],
+        "cons": [
+          "Requires board sharing; only practical for very small fields."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 247,
+        "boardsPerRound": 3,
+        "pros": [
+          "More rounds allow fewer boards per round."
+        ],
+        "cons": [
+          "Longer session and more movement complexity."
+        ]
+      }
+    ],
+    "19": null,
+    "20": null,
+    "21": [
+      {
+        "type": "SPEC",
+        "id": 154,
+        "boardsPerRound": 7,
+        "pros": [
+          "Good for a tiny field: all opponents can be played."
+        ],
+        "cons": [
+          "Requires board sharing; only practical for very small fields."
+        ]
+      }
+    ],
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 154,
+        "boardsPerRound": 8,
+        "pros": [
+          "Good for a tiny field: all opponents can be played."
+        ],
+        "cons": [
+          "Requires board sharing; only practical for very small fields."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 247,
+        "boardsPerRound": 4,
+        "pros": [
+          "More rounds allow fewer boards per round."
+        ],
+        "cons": [
+          "Longer session and more movement complexity."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": null,
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "3": {
+    "18": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 3,
+        "rounds": 3,
+        "boardsPerRound": 6,
+        "arrowSwitches": 0,
+        "pros": [
+          "Very simple and familiar; few rounds."
+        ],
+        "cons": [
+          "Limited opponent coverage compared with Howell."
+        ]
+      }
+    ],
+    "19": null,
+    "20": [
+      {
+        "type": "SPEC",
+        "id": 77,
+        "boardsPerRound": 2,
+        "pros": [
+          "Long Howell gives broad opponent coverage with 2-3 boards per round."
+        ],
+        "cons": [
+          "Ten rounds can be operationally long."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 76,
+        "boardsPerRound": 4,
+        "pros": [
+          "Balanced small-field Howell with manageable rounds."
+        ],
+        "cons": [
+          "More complex than Mitchell and not all options suit every session."
+        ]
+      }
+    ],
+    "21": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 3,
+        "rounds": 3,
+        "boardsPerRound": 7,
+        "arrowSwitches": 0,
+        "pros": [
+          "Very simple and familiar; few rounds."
+        ],
+        "cons": [
+          "Limited opponent coverage compared with Howell."
+        ]
+      }
+    ],
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 3,
+        "rounds": 3,
+        "boardsPerRound": 8,
+        "arrowSwitches": 0,
+        "pros": [
+          "Very simple and familiar; few rounds."
+        ],
+        "cons": [
+          "Limited opponent coverage compared with Howell."
+        ]
+      }
+    ],
+    "25": [
+      {
+        "type": "SPEC",
+        "id": 76,
+        "boardsPerRound": 5,
+        "pros": [
+          "Balanced small-field Howell with manageable rounds."
+        ],
+        "cons": [
+          "More complex than Mitchell and not all options suit every session."
+        ]
+      }
+    ],
+    "26": null,
+    "27": null,
+    "28": null,
+    "29": null,
+    "30": [
+      {
+        "type": "SPEC",
+        "id": 77,
+        "boardsPerRound": 3,
+        "pros": [
+          "Long Howell gives broad opponent coverage with 2-3 boards per round."
+        ],
+        "cons": [
+          "Ten rounds can be operationally long."
+        ]
+      }
+    ]
+  },
+  "4": {
+    "18": [
+      {
+        "type": "SPEC",
+        "id": 158,
+        "boardsPerRound": 3,
+        "pros": [
+          "Good opponent coverage with a relatively short movement."
+        ],
+        "cons": [
+          "Requires board sharing/relay management."
+        ]
+      }
+    ],
+    "19": null,
+    "20": [
+      {
+        "type": "SPEC",
+        "id": 246,
+        "boardsPerRound": 5,
+        "pros": [
+          "No skip or relay; simple physical layout."
+        ],
+        "cons": [
+          "Requires tables arranged in a square; less familiar than standard Mitchell."
+        ]
+      }
+    ],
+    "21": [
+      {
+        "type": "SPEC",
+        "id": 78,
+        "boardsPerRound": 3,
+        "pros": [
+          "Full Howell coverage in a small field."
+        ],
+        "cons": [
+          "Seven rounds and relays make it more involved."
+        ]
+      }
+    ],
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 246,
+        "boardsPerRound": 6,
+        "pros": [
+          "No skip or relay; simple physical layout."
+        ],
+        "cons": [
+          "Requires tables arranged in a square; less familiar than standard Mitchell."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 158,
+        "boardsPerRound": 4,
+        "pros": [
+          "Good opponent coverage with a relatively short movement."
+        ],
+        "cons": [
+          "Requires board sharing/relay management."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": null,
+    "28": [
+      {
+        "type": "SPEC",
+        "id": 78,
+        "boardsPerRound": 4,
+        "pros": [
+          "Full Howell coverage in a small field."
+        ],
+        "cons": [
+          "Seven rounds and relays make it more involved."
+        ]
+      }
+    ],
+    "29": null,
+    "30": null
+  },
+  "5": {
+    "18": [
+      {
+        "type": "SPEC",
+        "id": 248,
+        "boardsPerRound": 3,
+        "pros": [
+          "Good coverage without a full Howell."
+        ],
+        "cons": [
+          "More complex; uses a relay table."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "HESITATION",
+        "tables": 5,
+        "rounds": 6,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "One extra round improves opponent coverage while retaining a Mitchell structure."
+        ],
+        "cons": [
+          "Hesitation/relay mechanics require careful directing."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 80,
+        "boardsPerRound": 2,
+        "pros": [
+          "Excellent opponent coverage for a five-table field."
+        ],
+        "cons": [
+          "Nine rounds is a long movement and involves a relay."
+        ]
+      }
+    ],
+    "19": null,
+    "20": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 5,
+        "rounds": 5,
+        "boardsPerRound": 4,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple, familiar, and efficient."
+        ],
+        "cons": [
+          "Opponent coverage is less complete than Howell."
+        ]
+      }
+    ],
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 248,
+        "boardsPerRound": 4,
+        "pros": [
+          "Good coverage without a full Howell."
+        ],
+        "cons": [
+          "More complex; uses a relay table."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "HESITATION",
+        "tables": 5,
+        "rounds": 6,
+        "boardsPerRound": 4,
+        "arrowSwitches": 0,
+        "pros": [
+          "One extra round improves opponent coverage while retaining a Mitchell structure."
+        ],
+        "cons": [
+          "Hesitation/relay mechanics require careful directing."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 79,
+        "boardsPerRound": 3,
+        "pros": [
+          "Good coverage with only 2-3 boards per round."
+        ],
+        "cons": [
+          "Eight rounds and relays are more demanding."
+        ]
+      }
+    ],
+    "25": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 5,
+        "rounds": 5,
+        "boardsPerRound": 5,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple, familiar, and efficient."
+        ],
+        "cons": [
+          "Opponent coverage is less complete than Howell."
+        ]
+      }
+    ],
+    "26": null,
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 80,
+        "boardsPerRound": 3,
+        "pros": [
+          "Excellent opponent coverage for a five-table field."
+        ],
+        "cons": [
+          "Nine rounds is a long movement and involves a relay."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "6": {
+    "18": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SHARE_AND_RELAY",
+        "tables": 6,
+        "rounds": 6,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Efficient six-round Mitchell variant; 24 boards fits neatly at four per round."
+        ],
+        "cons": [
+          "Relay and possible half-table sit-out require care."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 81,
+        "boardsPerRound": 2,
+        "pros": [
+          "Good coverage and three boards per round."
+        ],
+        "cons": [
+          "Nine rounds is relatively long."
+        ]
+      }
+    ],
+    "19": null,
+    "20": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SKIP",
+        "tables": 6,
+        "rounds": 5,
+        "boardsPerRound": 4,
+        "arrowSwitches": 0,
+        "pros": [
+          "Very simple five-round session."
+        ],
+        "cons": [
+          "Skip is required and board supply exceeds boards played."
+        ]
+      }
+    ],
+    "21": null,
+    "22": [
+      {
+        "type": "SPEC",
+        "id": 82,
+        "boardsPerRound": 2,
+        "pros": [
+          "Full Howell-style coverage; only two boards per round."
+        ],
+        "cons": [
+          "Eleven rounds is lengthy and has several relays."
+        ]
+      }
+    ],
+    "23": null,
+    "24": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SHARE_AND_RELAY",
+        "tables": 6,
+        "rounds": 6,
+        "boardsPerRound": 4,
+        "arrowSwitches": 0,
+        "pros": [
+          "Efficient six-round Mitchell variant; 24 boards fits neatly at four per round."
+        ],
+        "cons": [
+          "Relay and possible half-table sit-out require care."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 170,
+        "boardsPerRound": 3,
+        "pros": [
+          "Good opponent coverage with a compact board set."
+        ],
+        "cons": [
+          "Relay management adds complexity."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 81,
+        "boardsPerRound": 3,
+        "pros": [
+          "Good coverage and three boards per round."
+        ],
+        "cons": [
+          "Nine rounds is relatively long."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "7": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 7,
+        "rounds": 7,
+        "boardsPerRound": 3,
+        "arrowSwitches": 1,
+        "pros": [
+          "Familiar Mitchell structure with an arrow switch improving balance/coverage."
+        ],
+        "cons": [
+          "Arrow switch must be clearly communicated."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 7,
+        "rounds": 7,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple, familiar, and efficient."
+        ],
+        "cons": [
+          "Less opponent coverage; half-table sit-out may occur."
+        ]
+      }
+    ],
+    "22": [
+      {
+        "type": "SPEC",
+        "id": 211,
+        "boardsPerRound": 2,
+        "pros": [
+          "Good coverage with two boards per round."
+        ],
+        "cons": [
+          "Eleven rounds and relay table make it complex."
+        ]
+      }
+    ],
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 83,
+        "boardsPerRound": 2,
+        "pros": [
+          "Very good coverage: 12 of 13 opponents."
+        ],
+        "cons": [
+          "Twelve rounds is long."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 249,
+        "boardsPerRound": 3,
+        "pros": [
+          "Good coverage in eight rounds."
+        ],
+        "cons": [
+          "Requires relay/board management."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "HESITATION",
+        "tables": 7,
+        "rounds": 8,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Extra hesitation round improves opponent coverage."
+        ],
+        "cons": [
+          "More complex hesitation and relay procedure."
+        ]
+      }
+    ],
+    "25": null,
+    "26": [
+      {
+        "type": "SPEC",
+        "id": 84,
+        "boardsPerRound": 2,
+        "pros": [
+          "Full Howell; described as ideal and nicely balanced."
+        ],
+        "cons": [
+          "Thirteen rounds is lengthy."
+        ]
+      }
+    ],
+    "27": null,
+    "28": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 7,
+        "rounds": 7,
+        "boardsPerRound": 4,
+        "arrowSwitches": 1,
+        "pros": [
+          "Familiar Mitchell structure with an arrow switch improving balance/coverage."
+        ],
+        "cons": [
+          "Arrow switch must be clearly communicated."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 7,
+        "rounds": 7,
+        "boardsPerRound": 4,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple, familiar, and efficient."
+        ],
+        "cons": [
+          "Less opponent coverage; half-table sit-out may occur."
+        ]
+      }
+    ],
+    "29": null,
+    "30": null
+  },
+  "8": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SKIP",
+        "tables": 8,
+        "rounds": 7,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Very familiar and efficient; seven rounds."
+        ],
+        "cons": [
+          "Requires a skip and may involve a sit-out."
+        ]
+      }
+    ],
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 85,
+        "boardsPerRound": 2,
+        "pros": [
+          "Good coverage: 12 of 15 opponents."
+        ],
+        "cons": [
+          "Twelve rounds is long and uses relays."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 67,
+        "boardsPerRound": 3,
+        "pros": [
+          "No shared boards; efficient eight-round movement."
+        ],
+        "cons": [
+          "Criss-cross movement is less familiar and requires careful setup."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "SHARE_AND_RELAY",
+        "tables": 8,
+        "rounds": 8,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Straightforward Mitchell structure with a relay."
+        ],
+        "cons": [
+          "Requires shared boards and a relay table."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": null,
+    "28": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SKIP",
+        "tables": 8,
+        "rounds": 7,
+        "boardsPerRound": 4,
+        "arrowSwitches": 0,
+        "pros": [
+          "Very familiar and efficient; seven rounds."
+        ],
+        "cons": [
+          "Requires a skip and may involve a sit-out."
+        ]
+      }
+    ],
+    "29": null,
+    "30": null
+  },
+  "9": {
+    "18": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 9,
+        "rounds": 9,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Very simple and familiar; 27 boards fits 9x3."
+        ],
+        "cons": [
+          "Less opponent coverage than Howell."
+        ]
+      }
+    ],
+    "19": null,
+    "20": [
+      {
+        "type": "MITCHELL",
+        "subtype": "HESITATION",
+        "tables": 9,
+        "rounds": 10,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Extra round improves opponent coverage while retaining Mitchell format."
+        ],
+        "cons": [
+          "Hesitation/relay needs careful directing."
+        ]
+      }
+    ],
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 9,
+        "rounds": 8,
+        "boardsPerRound": 3,
+        "arrowSwitches": 1,
+        "pros": [
+          "Efficient 8-round, 3-board session with arrow switch."
+        ],
+        "cons": [
+          "27 boards are required in play; half-table sit-out may occur."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 9,
+        "rounds": 9,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Very simple and familiar; 27 boards fits 9x3."
+        ],
+        "cons": [
+          "Less opponent coverage than Howell."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "10": {
+    "18": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SKIP",
+        "tables": 10,
+        "rounds": 9,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Good nine-round option; familiar Mitchell mechanics."
+        ],
+        "cons": [
+          "Skip and possible sit-out; 30 boards in play for 27 played."
+        ]
+      }
+    ],
+    "19": null,
+    "20": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SHARE_AND_RELAY",
+        "tables": 10,
+        "rounds": 10,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple Mitchell structure; 20 or 30 boards fits ten rounds."
+        ],
+        "cons": [
+          "Relay and possible half-table sit-out."
+        ]
+      }
+    ],
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": null,
+    "25": null,
+    "26": null,
+    "27": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SKIP",
+        "tables": 10,
+        "rounds": 9,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Good nine-round option; familiar Mitchell mechanics."
+        ],
+        "cons": [
+          "Skip and possible sit-out; 30 boards in play for 27 played."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SHARE_AND_RELAY",
+        "tables": 10,
+        "rounds": 10,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple Mitchell structure; 20 or 30 boards fits ten rounds."
+        ],
+        "cons": [
+          "Relay and possible half-table sit-out."
+        ]
+      }
+    ]
+  },
+  "11": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 11,
+        "rounds": 11,
+        "boardsPerRound": 2,
+        "arrowSwitches": 1,
+        "pros": [
+          "Straightforward 11-round Mitchell with arrow switch."
+        ],
+        "cons": [
+          "Arrow switch must be handled correctly."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 11,
+        "rounds": 11,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple and familiar."
+        ],
+        "cons": [
+          "No extra coverage from arrow switch."
+        ]
+      }
+    ],
+    "23": null,
+    "24": [
+      {
+        "type": "MITCHELL",
+        "subtype": "HESITATION",
+        "tables": 11,
+        "rounds": 12,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Extra round improves opponent coverage."
+        ],
+        "cons": [
+          "Hesitation/relay adds complexity."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "HESITATION",
+        "tables": 11,
+        "rounds": 8,
+        "boardsPerRound": 3,
+        "arrowSwitches": 0,
+        "pros": [
+          "Only eight rounds for 24 boards; potentially attractive session length."
+        ],
+        "cons": [
+          "36 boards in play and complex hesitation/arrow-switch mechanics."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": null,
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "12": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SKIP",
+        "tables": 12,
+        "rounds": 11,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple Mitchell family with a skip."
+        ],
+        "cons": [
+          "24 boards are in play but only 22 played; sit-out may occur."
+        ]
+      }
+    ],
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 68,
+        "boardsPerRound": 2,
+        "pros": [
+          "No shared boards or relay tables; very clean logistics."
+        ],
+        "cons": [
+          "Twelve rounds and criss-cross movement."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "SHARE_AND_RELAY",
+        "tables": 12,
+        "rounds": 12,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Standard Mitchell structure and exactly 24 boards."
+        ],
+        "cons": [
+          "Requires relay and board sharing."
+        ]
+      },
+      {
+        "type": "SPEC",
+        "id": 25,
+        "boardsPerRound": 3,
+        "pros": [
+          "Good eight-round/24-board option with no shared boards within sections."
+        ],
+        "cons": [
+          "Requires two board sets and section-specific setup."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 26,
+        "boardsPerRound": 3,
+        "pros": [
+          "Nine rounds and three boards per round."
+        ],
+        "cons": [
+          "Requires two board sets and section relays."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "13": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": [
+      {
+        "type": "SPEC",
+        "id": 62,
+        "boardsPerRound": 2,
+        "pros": [
+          "Designed specifically for 13 tables; only two boards per round."
+        ],
+        "cons": [
+          "Appendix/board-sharing setup is less familiar."
+        ]
+      }
+    ],
+    "23": null,
+    "24": null,
+    "25": null,
+    "26": [
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 13,
+        "rounds": 13,
+        "boardsPerRound": 2,
+        "arrowSwitches": 1,
+        "pros": [
+          "Standard 13-round structure with arrow switch for balance."
+        ],
+        "cons": [
+          "Thirteen rounds is long."
+        ]
+      },
+      {
+        "type": "MITCHELL",
+        "subtype": "STANDARD",
+        "tables": 13,
+        "rounds": 13,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Simple and familiar; exactly 26 boards."
+        ],
+        "cons": [
+          "Long 13-round session; incomplete opponent coverage."
+        ]
+      }
+    ],
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 27,
+        "boardsPerRound": 3,
+        "pros": [
+          "Nine-round, three-board option."
+        ],
+        "cons": [
+          "More setup than ordinary Mitchell."
+        ]
+      }
+    ],
+    "28": [
+      {
+        "type": "MITCHELL",
+        "subtype": "HESITATION",
+        "tables": 13,
+        "rounds": 14,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Extra round improves opponent coverage."
+        ],
+        "cons": [
+          "Fourteen rounds plus hesitation/relay is complex."
+        ]
+      }
+    ],
+    "29": null,
+    "30": null
+  },
+  "14": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 250,
+        "boardsPerRound": 3,
+        "pros": [
+          "Eight-round, three-board option."
+        ],
+        "cons": [
+          "Requires two sections/board sets and a skip."
+        ]
+      }
+    ],
+    "25": null,
+    "26": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SKIP",
+        "tables": 14,
+        "rounds": 13,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Familiar Mitchell structure with a skip."
+        ],
+        "cons": [
+          "28 boards are in play; skip must be managed."
+        ]
+      }
+    ],
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 29,
+        "boardsPerRound": 3,
+        "pros": [
+          "Nine-round, three-board option."
+        ],
+        "cons": [
+          "More complex setup than ordinary Mitchell."
+        ]
+      }
+    ],
+    "28": [
+      {
+        "type": "MITCHELL",
+        "subtype": "SHARE_AND_RELAY",
+        "tables": 14,
+        "rounds": 14,
+        "boardsPerRound": 2,
+        "arrowSwitches": 0,
+        "pros": [
+          "Exactly 28 boards and standard Mitchell pattern."
+        ],
+        "cons": [
+          "Fourteen rounds and relay/board sharing."
+        ]
+      }
+    ],
+    "29": null,
+    "30": null
+  },
+  "15": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": null,
+    "25": null,
+    "26": [
+      {
+        "type": "SPEC",
+        "id": 63,
+        "boardsPerRound": 2,
+        "pros": [
+          "Designed for 15 tables; 13 rounds of two boards."
+        ],
+        "cons": [
+          "Special Appendix setup and shared boards."
+        ]
+      }
+    ],
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 32,
+        "boardsPerRound": 3,
+        "pros": [
+          "Nine rounds and three boards per round."
+        ],
+        "cons": [
+          "More setup and relay/shared-board management."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "16": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 251,
+        "boardsPerRound": 3,
+        "pros": [
+          "Eight rounds and three boards per round; two clean sections."
+        ],
+        "cons": [
+          "Requires two board sets and section management."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 33,
+        "boardsPerRound": 3,
+        "pros": [
+          "Nine rounds and three boards per round."
+        ],
+        "cons": [
+          "Requires two sections and careful board movement."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "17": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": null,
+    "25": null,
+    "26": null,
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 34,
+        "boardsPerRound": 3,
+        "pros": [
+          "Nine-round large-field movement; three boards per round."
+        ],
+        "cons": [
+          "More rounds and section management."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "18": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 252,
+        "boardsPerRound": 3,
+        "pros": [
+          "Eight-round large-field movement; three boards per round."
+        ],
+        "cons": [
+          "Requires two sections and careful setup."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": [
+      {
+        "type": "SPEC",
+        "id": 254,
+        "boardsPerRound": 3,
+        "pros": [
+          "Nine-round large-field movement; three boards per round."
+        ],
+        "cons": [
+          "Requires two sections and careful board management."
+        ]
+      }
+    ],
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "19": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": null,
+    "25": null,
+    "26": null,
+    "27": null,
+    "28": null,
+    "29": null,
+    "30": null
+  },
+  "20": {
+    "18": null,
+    "19": null,
+    "20": null,
+    "21": null,
+    "22": null,
+    "23": null,
+    "24": [
+      {
+        "type": "SPEC",
+        "id": 253,
+        "boardsPerRound": 3,
+        "pros": [
+          "Eight-round large-field movement; three boards per round."
+        ],
+        "cons": [
+          "Requires sectioned setup and board management."
+        ]
+      }
+    ],
+    "25": null,
+    "26": null,
+    "27": null,
+    "28": null,
+    "29": null,
+    "30": null
+  }
+}

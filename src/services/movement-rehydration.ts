@@ -4,7 +4,7 @@ import { Tables } from "@/model/movement";
 import { SelectedMovement } from "@/model/selected-movement";
 import { getPairMovement } from "@/db/movements/queries/get-movement";
 import { getPairMovementSpecById } from "@/db/movements/queries/get-movement-spec";
-import { generateStandardMitchell } from "@/movement/mitchell/standard-mitchell";
+import { generateMitchell } from "@/movement/mitchell/mitchell";
 import { boardRangeForSet } from "@/movement/shared";
 
 /**
@@ -67,9 +67,13 @@ export async function rehydrateSelectedMovement(
   selected: SelectedMovement,
 ): Promise<RehydratedMovement> {
   if (selected.source === "MITCHELL") {
-    const { skip, shareAndRelay } = selected.mitchell;
-    const isStandardMitchell = !skip && !shareAndRelay;
-    const generated = generateStandardMitchell(selected.mitchell);
+    const { skip, shareAndRelay, hesitation } = selected.mitchell;
+    // Only a plain Standard Mitchell (no variant flag) supports the sit-out
+    // handling applied downstream; the variants build differently.
+    const isStandardMitchell = !skip && !shareAndRelay && !hesitation;
+    // Dispatch through generateMitchell so every variant flag (skip,
+    // shareAndRelay, hesitation) is honoured, not just Standard.
+    const generated = generateMitchell(selected.mitchell);
     return {
       movement: tablesToPairMovement(generated),
       missingPair: null,

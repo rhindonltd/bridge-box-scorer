@@ -13,6 +13,8 @@ export type MovementFamily =
   | "MITCHELL"
   | "SKIP_MITCHELL"
   | "SHARE_AND_RELAY"
+  | "SQUARE"
+  | "DOUBLE_WEAVE"
   | "HOWELL"
   | "ROVER"
   | "APPENDIX"
@@ -123,6 +125,8 @@ export function movementTypeToFamily(
   if (lower.includes("rover")) return "ROVER";
   if (lower.includes("appendix")) return "APPENDIX";
   if (lower.includes("web")) return "WEB";
+  if (lower.includes("square")) return "SQUARE";
+  if (lower.includes("weave")) return "DOUBLE_WEAVE";
   if (lower.includes("share") && lower.includes("relay")) {
     return "SHARE_AND_RELAY";
   }
