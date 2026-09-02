@@ -1,6 +1,6 @@
 "use client";
 
-import { Assignment, Seat } from "@/model/participants";
+import { Assignment, Seat, parseSeat } from "@/model/participants";
 
 import {
   createContext,
@@ -52,6 +52,15 @@ export function AssignmentProvider({
 
   const key = swrKeys.schedule(gameId, initialSeat);
 
+  // This pair's section, derived from its (section-qualified) initial seat.
+  const mySection = useMemo(() => {
+    try {
+      return parseSeat(initialSeat).section;
+    } catch {
+      return null;
+    }
+  }, [initialSeat]);
+
   /*
    * When no movement has been selected the schedule route responds 404, so
    * `data` stays undefined and `assignment` resolves to null. That is the
@@ -72,14 +81,25 @@ export function AssignmentProvider({
       void globalMutate(key);
     };
 
+    // A section-scoped update only concerns this pair when it names this
+    // pair's section (the server also scopes the emit to the section room, so
+    // this is a belt-and-braces guard).
+    const revalidateForSection = (payload?: { section?: string }) => {
+      if (!payload?.section || payload.section === mySection) {
+        void globalMutate(key);
+      }
+    };
+
     socket.on(SocketEvents.GAME_UPDATED, revalidate);
+    socket.on(SocketEvents.SECTION_UPDATED, revalidateForSection);
     socket.on(SocketEvents.CONNECT, revalidate);
 
     return () => {
       socket.off(SocketEvents.GAME_UPDATED, revalidate);
+      socket.off(SocketEvents.SECTION_UPDATED, revalidateForSection);
       socket.off(SocketEvents.CONNECT, revalidate);
     };
-  }, [socket, key]);
+  }, [socket, key, mySection]);
 
   const assignment = useMemo<Assignment | null>(() => {
     if (!data?.assignmentId) {

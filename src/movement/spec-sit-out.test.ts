@@ -76,7 +76,7 @@ describe("flagPhantomRounds", () => {
 
 describe("applySpecSitOutNoMissingPair", () => {
   it("treats the position at the sit-out seat as the phantom (one per round)", () => {
-    const result = applySpecSitOutNoMissingPair(makeMovement(), "3EW");
+    const result = applySpecSitOutNoMissingPair(makeMovement(), "A3EW");
 
     for (let r = 0; r < 3; r++) {
       const sitOuts = result.filter((t) => t.rounds[r].sitOut).length;
@@ -88,7 +88,7 @@ describe("applySpecSitOutNoMissingPair", () => {
 describe("alignSpecMissingPair", () => {
   it("rotates the EW direction so the file phantom lands on the requested seat", () => {
     // File phantom "6" sits at 3EW in round 1. Request the empty seat as 1EW.
-    const result = alignSpecMissingPair(makeMovement(), "6", "1EW");
+    const result = alignSpecMissingPair(makeMovement(), "6", "A1EW");
 
     const t1r1 = result.find((t) => t.tableNumber === 1)!.rounds[0];
     expect(t1r1.ew).toBe("6");
@@ -96,7 +96,7 @@ describe("alignSpecMissingPair", () => {
   });
 
   it("keeps exactly one sit-out per round after alignment", () => {
-    const result = alignSpecMissingPair(makeMovement(), "6", "1EW");
+    const result = alignSpecMissingPair(makeMovement(), "6", "A1EW");
 
     for (let r = 0; r < 3; r++) {
       const sitOuts = result.filter((t) => t.rounds[r].sitOut).length;
@@ -105,7 +105,7 @@ describe("alignSpecMissingPair", () => {
   });
 
   it("flags in place when the phantom already sits at the requested seat", () => {
-    const result = alignSpecMissingPair(makeMovement(), "6", "3EW");
+    const result = alignSpecMissingPair(makeMovement(), "6", "A3EW");
     const t3r1 = result.find((t) => t.tableNumber === 3)!.rounds[0];
     expect(t3r1.ew).toBe("6");
     expect(t3r1.sitOut).toBe(true);

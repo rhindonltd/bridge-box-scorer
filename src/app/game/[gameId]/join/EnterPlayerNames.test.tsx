@@ -23,31 +23,31 @@ vi.mock("@/app/game/[gameId]/join/PlayerSearch", () => ({
 
 describe("EnterPlayerNames", () => {
   it("renders NS labels correctly", () => {
-    render(<EnterPlayerNames seat="1NS" onSubmitPair={vi.fn()} />);
+    render(<EnterPlayerNames seat="A1NS" onSubmitPair={vi.fn()} />);
     expect(screen.getByLabelText("North Player")).toBeInTheDocument();
     expect(screen.getByLabelText("South Player")).toBeInTheDocument();
   });
 
   it("renders EW labels correctly", () => {
-    render(<EnterPlayerNames seat="1EW" onSubmitPair={vi.fn()} />);
+    render(<EnterPlayerNames seat="A1EW" onSubmitPair={vi.fn()} />);
     expect(screen.getByLabelText("East Player")).toBeInTheDocument();
     expect(screen.getByLabelText("West Player")).toBeInTheDocument();
   });
 
   it("renders table number in header", () => {
-    render(<EnterPlayerNames seat="3NS" onSubmitPair={vi.fn()} />);
+    render(<EnterPlayerNames seat="A3NS" onSubmitPair={vi.fn()} />);
     expect(screen.getByText("Table 3")).toBeInTheDocument();
   });
 
   it("renders Enter Pair submit button", () => {
-    render(<EnterPlayerNames seat="1NS" onSubmitPair={vi.fn()} />);
+    render(<EnterPlayerNames seat="A1NS" onSubmitPair={vi.fn()} />);
     expect(
       screen.getByRole("button", { name: "Enter Pair" }),
     ).toBeInTheDocument();
   });
 
   it("submit button is disabled when no players selected", () => {
-    render(<EnterPlayerNames seat="1NS" onSubmitPair={vi.fn()} />);
+    render(<EnterPlayerNames seat="A1NS" onSubmitPair={vi.fn()} />);
     expect(screen.getByRole("button", { name: "Enter Pair" })).toBeDisabled();
   });
 });

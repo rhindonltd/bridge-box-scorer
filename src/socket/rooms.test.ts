@@ -23,4 +23,14 @@ describe("Rooms", () => {
       expect(Rooms.table("game1", "5")).toBe("game:game1:table:5");
     });
   });
+
+  describe("section", () => {
+    it("returns section room name scoped to game", () => {
+      expect(Rooms.section("abc123", "A")).toBe("game:abc123:section:A");
+    });
+
+    it("distinguishes sections within the same game", () => {
+      expect(Rooms.section("g1", "A")).not.toBe(Rooms.section("g1", "B"));
+    });
+  });
 });

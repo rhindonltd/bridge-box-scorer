@@ -13,6 +13,7 @@ import { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
 import SelectTable from "@/app/game/[gameId]/join/SelectTable";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { useSections } from "@/hooks/sections";
 
 interface Props {
   onSeatSelected: (seat: Seat) => void;
@@ -34,6 +35,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   };
 
   const { data } = useSWR<Pair[], Error>(key, pairsFetcher);
+  const { sections } = useSections(gameId);
 
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
@@ -63,7 +65,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
         {/* Main table selection */}
         <SelectTable
           onSeatSelected={handleSeatSelected}
-          tables={game.tables}
+          sections={sections}
           startingPositions={data ?? []}
         />
 

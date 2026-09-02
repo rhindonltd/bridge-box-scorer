@@ -80,7 +80,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
     vi.mocked(findPairs).mockResolvedValue([
       {
         type: "PAIR",
-        initialSeat: "1NS",
+        initialSeat: "A1NS",
         player1: {
           id: 10,
           firstName: "Alice",
@@ -112,7 +112,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
           directorToken: "test-token",
           newParticipant: {
             type: "PAIR",
-            initialSeat: "1NS",
+            initialSeat: "A1NS",
             player1: { firstName: "Alice", lastName: "Smith" },
             player2: { firstName: "Bob", lastName: "Jones" },
           },
@@ -143,7 +143,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
           directorToken: "test-token",
           newParticipant: {
             type: "PAIR",
-            initialSeat: "1NS",
+            initialSeat: "A1NS",
             player1: { firstName: "X", lastName: "Y" },
             player2: { firstName: "A", lastName: "B" },
           },

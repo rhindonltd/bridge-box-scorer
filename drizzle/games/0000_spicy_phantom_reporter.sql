@@ -3,7 +3,19 @@ CREATE TABLE `assignment` (
 	`initial_seat` text
 );
 --> statement-breakpoint
+CREATE TABLE `board_submissions` (
+	`section` text NOT NULL,
+	`round_number` integer NOT NULL,
+	`table_number` integer NOT NULL,
+	`board_number` integer NOT NULL,
+	`side` text NOT NULL,
+	`result` text,
+	`lead` text,
+	PRIMARY KEY(`section`, `round_number`, `table_number`, `side`)
+);
+--> statement-breakpoint
 CREATE TABLE `boards` (
+	`section` text NOT NULL,
 	`round_number` integer NOT NULL,
 	`table_number` integer NOT NULL,
 	`board_number` integer NOT NULL,
@@ -14,7 +26,7 @@ CREATE TABLE `boards` (
 	`director_override_result` text,
 	`director_override_lead` text,
 	`status` text,
-	PRIMARY KEY(`round_number`, `table_number`, `board_number`)
+	PRIMARY KEY(`section`, `round_number`, `table_number`, `board_number`)
 );
 --> statement-breakpoint
 CREATE TABLE `metadata` (
@@ -37,4 +49,12 @@ CREATE TABLE `players` (
 	`first_name` text NOT NULL,
 	`last_name` text NOT NULL,
 	`national_id` text
+);
+--> statement-breakpoint
+CREATE TABLE `sections` (
+	`section` text PRIMARY KEY NOT NULL,
+	`label` text NOT NULL,
+	`tables` integer NOT NULL,
+	`selected_movement` text,
+	`ordinal` integer NOT NULL
 );

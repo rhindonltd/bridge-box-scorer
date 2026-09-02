@@ -10,17 +10,18 @@ import { SocketEvents } from "@/socket/socket-events";
 import Button from "@/components/common/Button";
 import { swrKeys } from "@/swr/swr-keys";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
-import { Pair, PairSeat, Seat } from "@/model/participants";
+import { Pair, Seat, seatFor } from "@/model/participants";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import NumberStepper from "@/components/common/NumberStepper";
 import { useStartCheck } from "@/hooks/start-check";
 import { startGame } from "@/lib/game-service";
+import { useSections } from "@/hooks/sections";
 import { useState } from "react";
 
 type Props = {
-  /** Navigate to the movement-selection step. */
+  /** Navigate to the section/movement management step. */
   onSelectMovement: () => void;
 };
 
@@ -33,11 +34,11 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
 
   const pairsFetcher = async (url: string): Promise<Pair[]> => {
     const response: { pairs: Pair[] } = await fetcher(url);
-
     return response.pairs;
   };
 
   const { data: pairs } = useSWR<Pair[], Error>(key, pairsFetcher);
+  const { sections } = useSections(gameId);
 
   const { canStart, problems, sitOutSeat } = useStartCheck(gameId);
   const [starting, setStarting] = useState(false);
@@ -47,8 +48,6 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
     setStarting(true);
     try {
       await startGame(gameId);
-      // GAME_UPDATED will refresh the game; navigation into the running game is
-      // driven by the game state elsewhere.
       await mutateGame();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to start game");
@@ -66,17 +65,11 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
     [gameId],
   );
 
-  function createTables(): DirectorTable[] {
-    return Array.from({ length: game.tables }, (_, i) => createTable(i + 1));
-  }
-
-  function createTable(tableNumber: number): DirectorTable {
-    const nsParticipant = pairs?.find(
-      (it) => it.initialSeat === `${tableNumber}NS`,
-    );
-    const ewParticipant = pairs?.find(
-      (it) => it.initialSeat === `${tableNumber}EW`,
-    );
+  function createTable(section: string, tableNumber: number): DirectorTable {
+    const nsSeat = seatFor(section, tableNumber, "NS");
+    const ewSeat = seatFor(section, tableNumber, "EW");
+    const nsParticipant = pairs?.find((it) => it.initialSeat === nsSeat);
+    const ewParticipant = pairs?.find((it) => it.initialSeat === ewSeat);
 
     return {
       tableNumber,
@@ -87,21 +80,22 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
         W: ewParticipant?.player2 ?? null,
       },
       seats: {
-        N: nsParticipant ? (`${tableNumber}NS` as PairSeat) : null,
-        S: nsParticipant ? (`${tableNumber}NS` as PairSeat) : null,
-        E: ewParticipant ? (`${tableNumber}EW` as PairSeat) : null,
-        W: ewParticipant ? (`${tableNumber}EW` as PairSeat) : null,
+        N: nsParticipant ? nsSeat : null,
+        S: nsParticipant ? nsSeat : null,
+        E: ewParticipant ? ewSeat : null,
+        W: ewParticipant ? ewSeat : null,
       },
     };
   }
 
-  function handleChange(tables: number) {
+  function handleResizeSection(section: string, tables: number) {
     getSocket().emit(
       SocketEvents.UPDATE_TABLES,
       {
         gameId,
+        section,
         tables,
-        directorToken: getDirectorToken(gameId!),
+        directorToken: getDirectorToken(gameId),
       },
       () => mutateGame(),
     );
@@ -112,41 +106,22 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
 
     getSocket().emit(
       SocketEvents.EVICT_PARTICIPANT,
-      { gameId, seat, directorToken: getDirectorToken(gameId!) },
+      { gameId, seat, directorToken: getDirectorToken(gameId) },
       (res: { success: boolean; error?: string }) => {
         if (!res.success) alert(res.error);
       },
     );
   }
 
-  const tables = createTables();
-  const lastTableOccupied =
-    tables.length > 0 &&
-    tables[tables.length - 1] &&
-    (tables[tables.length - 1].players.N !== null ||
-      tables[tables.length - 1].players.E !== null);
-
   return (
     <GamePageLayout
       headerTitle="Tables View"
-      headerRight={
-        <div className="flex flex-col justify-center p-2">
-          <div className="text-center mb-2">Tables:</div>
-          <div>
-            <NumberStepper
-              min={1}
-              value={tables.length}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-      }
       actions={
         <div className="flex flex-col gap-2">
           {!canStart && problems.length > 0 && (
             <ul className="text-sm text-amber-700 list-disc pl-5">
-              {problems.map((problem) => (
-                <li key={problem.code}>{problem.message}</li>
+              {problems.map((problem, i) => (
+                <li key={`${problem.code}-${i}`}>{problem.message}</li>
               ))}
             </ul>
           )}
@@ -157,7 +132,7 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
           )}
           <div className="flex gap-2">
             <Button
-              value={"Select Movement"}
+              value={"Sections & Movements"}
               onClick={onSelectMovement}
               bgColour="bg-gray-100"
               textColour="text-gray-900"
@@ -172,11 +147,43 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
         </div>
       }
     >
-      <DirectorTableControls
-        tables={tables}
-        onEvict={handleEvict}
-        canRemoveTable={game.tables > 1 && !lastTableOccupied}
-      />
+      <div className="flex flex-col gap-6">
+        {sections.map((s) => {
+          const tables = Array.from({ length: s.tables }, (_, i) =>
+            createTable(s.section, i + 1),
+          );
+          const lastTable = tables[tables.length - 1];
+          const lastTableOccupied =
+            !!lastTable &&
+            (lastTable.players.N !== null || lastTable.players.E !== null);
+
+          return (
+            <div key={s.section} className="flex flex-col">
+              <div className="flex items-center justify-between px-4 pt-4">
+                <h2 className="text-lg font-bold text-gray-800">
+                  Section {s.section}
+                  {s.label !== s.section ? ` — ${s.label}` : ""}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Tables:</span>
+                  <NumberStepper
+                    min={1}
+                    value={s.tables}
+                    onChange={(tables) =>
+                      handleResizeSection(s.section, tables)
+                    }
+                  />
+                </div>
+              </div>
+              <DirectorTableControls
+                tables={tables}
+                onEvict={handleEvict}
+                canRemoveTable={s.tables > 1 && !lastTableOccupied}
+              />
+            </div>
+          );
+        })}
+      </div>
     </GamePageLayout>
   );
 }

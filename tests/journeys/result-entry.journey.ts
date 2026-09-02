@@ -51,20 +51,20 @@ test("NS and EW enter matching results and see confirmation", async ({
 
     // Step 4: NS player joins at Table 1 NS
     await joinGameStep(nsPage, testInfo, gameId, {
-      seat: "1NS",
+      seat: "A1NS",
       ebuNumbers: ["477484", "404476"],
     });
 
     // Step 5: EW player joins at Table 1 EW
     await joinGameStep(ewPage, testInfo, gameId, {
-      seat: "1EW",
+      seat: "A1EW",
       ebuNumbers: ["12269", "16671"],
     });
 
     // Step 6: NS enters result — Pass Out for Board 1
     await enterResultStep(nsPage, testInfo, {
       gameId,
-      seat: "1NS",
+      seat: "A1NS",
       board: 1,
       passOut: true,
     });
@@ -84,7 +84,7 @@ test("NS and EW enter matching results and see confirmation", async ({
     // Step 8: EW enters same result — Pass Out for Board 1
     await enterResultStep(ewPage, testInfo, {
       gameId,
-      seat: "1EW",
+      seat: "A1EW",
       board: 1,
       passOut: true,
     });

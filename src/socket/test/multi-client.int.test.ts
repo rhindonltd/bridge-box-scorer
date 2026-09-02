@@ -23,8 +23,12 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
 
-vi.mock("@/db/game-index/actions/update-table-count", () => ({
-  updateTableCount: vi.fn(),
+vi.mock("@/db/games/actions/update-section-tables", () => ({
+  updateSectionTables: vi.fn(),
+}));
+
+vi.mock("@/db/games/queries/find-sections", () => ({
+  findSections: vi.fn(),
 }));
 
 vi.mock("@/db/games/actions/create-player", () => ({
@@ -90,7 +94,8 @@ import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { updateTableCount } from "@/db/game-index/actions/update-table-count";
+import { updateSectionTables } from "@/db/games/actions/update-section-tables";
+import { findSections } from "@/db/games/queries/find-sections";
 import { createPlayer } from "@/db/games/actions/create-player";
 import { createParticipant as createPairParticipant } from "@/db/games/actions/create-participant";
 import { findPairs } from "@/db/games/queries/find-pairs";
@@ -177,7 +182,7 @@ describe("Multi-client Socket.IO scenarios", () => {
       vi.mocked(createPlayer).mockResolvedValue({ id: 1 } as any);
       vi.mocked(createPairParticipant).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([
-        { type: "PAIR", initialSeat: "1NS" },
+        { type: "PAIR", initialSeat: "A1NS" },
       ] as any);
 
       const { client, close, addClient } = await createFullServer();
@@ -214,7 +219,7 @@ describe("Multi-client Socket.IO scenarios", () => {
             directorToken: "tok",
             newParticipant: {
               type: "PAIR",
-              initialSeat: "1NS",
+              initialSeat: "A1NS",
               player1: { firstName: "A", lastName: "B" },
               player2: { firstName: "C", lastName: "D" },
             },
@@ -250,7 +255,10 @@ describe("Multi-client Socket.IO scenarios", () => {
       vi.mocked(findGameById)
         .mockResolvedValueOnce(game as any)
         .mockResolvedValueOnce(updatedGame as any);
-      vi.mocked(updateTableCount).mockResolvedValue(undefined);
+      vi.mocked(findSections).mockResolvedValue([
+        { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+      ] as any);
+      vi.mocked(updateSectionTables).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
 
       const { client, close, addClient } = await createFullServer();
@@ -267,6 +275,7 @@ describe("Multi-client Socket.IO scenarios", () => {
 
       await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
         gameId: "g1",
+        section: "A",
         tables: 5,
         directorToken: "tok",
       });
@@ -306,7 +315,7 @@ describe("Multi-client Socket.IO scenarios", () => {
 
       await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
         gameId: "g1",
-        seat: "1NS",
+        seat: "A1NS",
         directorToken: "tok",
       });
 
@@ -377,7 +386,10 @@ describe("Multi-client Socket.IO scenarios", () => {
           gameType: "PAIRS",
           tables: 4,
         } as any);
-      vi.mocked(updateTableCount).mockResolvedValue(undefined);
+      vi.mocked(findSections).mockResolvedValue([
+        { section: "A", label: "A", tables: 3, selectedMovement: null, ordinal: 0 },
+      ] as any);
+      vi.mocked(updateSectionTables).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
 
       await emitWithAck(newDirector, SocketEvents.JOIN_GAME, { gameId: "g1" });
@@ -385,7 +397,12 @@ describe("Multi-client Socket.IO scenarios", () => {
       const updateResult = await emitWithAck<{ success: boolean }>(
         newDirector,
         SocketEvents.UPDATE_TABLES,
-        { gameId: "g1", tables: 4, directorToken: claimResult.directorToken },
+        {
+          gameId: "g1",
+          section: "A",
+          tables: 4,
+          directorToken: claimResult.directorToken,
+        },
       );
 
       expect(updateResult).toMatchObject({ success: true });
@@ -489,7 +506,7 @@ describe("Multi-client Socket.IO scenarios", () => {
 
       await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
         gameId: "g1",
-        seat: "1NS",
+        seat: "A1NS",
         directorToken: "tok",
       });
 

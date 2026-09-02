@@ -14,12 +14,12 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
 
-vi.mock("@/db/game-index/actions/update-table-count", () => ({
-  updateTableCount: vi.fn(),
+vi.mock("@/db/games/actions/update-section-tables", () => ({
+  updateSectionTables: vi.fn(),
 }));
 
-vi.mock("@/db/games/queries/find-pairs", () => ({
-  findPairs: vi.fn(),
+vi.mock("@/db/games/queries/find-sections", () => ({
+  findSections: vi.fn(),
 }));
 
 vi.mock("@/db/games", () => ({
@@ -28,8 +28,8 @@ vi.mock("@/db/games", () => ({
 
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { updateTableCount } from "@/db/game-index/actions/update-table-count";
-import { findPairs } from "@/db/games/queries/find-pairs";
+import { updateSectionTables } from "@/db/games/actions/update-section-tables";
+import { findSections } from "@/db/games/queries/find-sections";
 import { getDb } from "@/db/games";
 
 describe("registerUpdateTablesHandler (integration)", () => {
@@ -43,25 +43,25 @@ describe("registerUpdateTablesHandler (integration)", () => {
       gameId: "game-1",
     } as any);
     vi.mocked(getDb).mockResolvedValue({} as any);
-    vi.mocked(updateTableCount).mockResolvedValue(undefined as any);
-    vi.mocked(findPairs).mockResolvedValue([]);
+    vi.mocked(updateSectionTables).mockResolvedValue(undefined as any);
+    vi.mocked(findSections).mockResolvedValue([
+      { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+    ] as any);
   });
 
   afterEach(async () => {
     await closeServer?.();
   });
 
-  it("updates table count and broadcasts GAME_UPDATED", async () => {
+  it("updates a section's table count and broadcasts GAME_UPDATED", async () => {
     vi.mocked(findGameById)
       .mockResolvedValueOnce({
         gameId: "game-1",
         gameType: "PAIRS",
-        tables: 4,
       } as any)
       .mockResolvedValueOnce({
         gameId: "game-1",
         gameType: "PAIRS",
-        tables: 5,
       } as any);
 
     const { client, close } = await createSocketTestServer((io) => {
@@ -78,24 +78,28 @@ describe("registerUpdateTablesHandler (integration)", () => {
 
     const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
       gameId: "game-1",
+      section: "A",
       tables: 5,
       directorToken: "test-token",
     });
 
     expect(result).toEqual({ success: true });
-    expect(updateTableCount).toHaveBeenCalledWith("game-1", 5);
+    expect(updateSectionTables).toHaveBeenCalledWith("game-1", "A", 5);
 
     const event = await updatedPromise;
     expect(event).toHaveProperty("game");
   });
 
-  it("rejects reducing tables when participants seated at higher tables", async () => {
+  it("rejects reducing a section when participants seated at higher tables", async () => {
     vi.mocked(findGameById).mockResolvedValue({
       gameId: "game-1",
       gameType: "PAIRS",
-      tables: 4,
     } as any);
-    vi.mocked(findPairs).mockResolvedValue([{ initialSeat: "3NS" }] as any);
+    vi.mocked(updateSectionTables).mockRejectedValue(
+      new Error(
+        "Cannot reduce section A to 2 tables: table 3 has seated participants. Evict them first.",
+      ),
+    );
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
@@ -106,13 +110,13 @@ describe("registerUpdateTablesHandler (integration)", () => {
 
     const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
       gameId: "game-1",
+      section: "A",
       tables: 2,
       directorToken: "test-token",
     });
 
     expect(result).toMatchObject({ success: false });
     expect(result.error).toContain("Cannot reduce");
-    expect(updateTableCount).not.toHaveBeenCalled();
   });
 
   it("rejects invalid director token", async () => {
@@ -127,6 +131,7 @@ describe("registerUpdateTablesHandler (integration)", () => {
 
     const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
       gameId: "game-1",
+      section: "A",
       tables: 5,
       directorToken: "bad-token",
     });

@@ -74,14 +74,14 @@ test("Result mismatch flow - multi-actor result submission and director correcti
 
     // Step 4: NS pair joins at seat 1NS
     await joinGameStep(nsPage, testInfo, gameId, {
-      seat: "1NS",
+      seat: "A1NS",
       ebuNumbers: ["477484", "404476"],
       directorToken,
     });
 
     // Step 5: EW pair joins at seat 1EW
     await joinGameStep(ewPage, testInfo, gameId, {
-      seat: "1EW",
+      seat: "A1EW",
       ebuNumbers: ["12269", "16671"],
       directorToken,
     });
@@ -89,7 +89,7 @@ test("Result mismatch flow - multi-actor result submission and director correcti
     // Step 6: NS enters Pass Out for Board 1
     await enterResultStep(nsPage, testInfo, {
       gameId,
-      seat: "1NS",
+      seat: "A1NS",
       board: 1,
       passOut: true,
     });
@@ -111,7 +111,7 @@ test("Result mismatch flow - multi-actor result submission and director correcti
     // (e.g., 3NT North making) which requires the full contract entry UI.
     await enterResultStep(ewPage, testInfo, {
       gameId,
-      seat: "1EW",
+      seat: "A1EW",
       board: 1,
       passOut: true,
     });

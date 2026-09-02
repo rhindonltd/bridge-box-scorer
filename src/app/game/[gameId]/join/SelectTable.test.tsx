@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import SelectTable from "@/app/game/[gameId]/join/SelectTable";
-import { Pair } from "@/model/participants";
+import { Pair, seatFor } from "@/model/participants";
 
 const makePlayer = (id: number) => ({
   id,
@@ -10,16 +10,24 @@ const makePlayer = (id: number) => ({
   nationalId: "123456",
 });
 
-const makePair = (tableNumber: number, direction: "NS" | "EW"): Pair => ({
+const makePair = (
+  section: string,
+  tableNumber: number,
+  direction: "NS" | "EW",
+): Pair => ({
   type: "PAIR",
-  initialSeat: `${tableNumber}${direction}` as Pair["initialSeat"],
+  initialSeat: seatFor(section, tableNumber, direction),
   player1: makePlayer(1),
   player2: makePlayer(2),
 });
 
-describe("SelectPairsTable", () => {
+const sectionA = (tables: number) => [
+  { section: "A", label: "A", tables },
+];
+
+describe("SelectTable", () => {
   const baseProps = {
-    tables: 2,
+    sections: sectionA(2),
     onSeatSelected: vi.fn(),
     startingPositions: [] as Pair[],
   };
@@ -34,59 +42,76 @@ describe("SelectPairsTable", () => {
   });
 
   it("renders correct number of tables", () => {
-    render(<SelectTable {...baseProps} tables={3} />);
+    render(<SelectTable {...baseProps} sections={sectionA(3)} />);
     expect(screen.getByText("Table 1")).toBeInTheDocument();
     expect(screen.getByText("Table 2")).toBeInTheDocument();
     expect(screen.getByText("Table 3")).toBeInTheDocument();
   });
 
+  it("selects a section-qualified seat", () => {
+    const onSeatSelected = vi.fn();
+    render(
+      <SelectTable
+        sections={sectionA(1)}
+        onSeatSelected={onSeatSelected}
+        startingPositions={[]}
+      />,
+    );
+    screen.getByRole("button", { name: "NS" }).click();
+    expect(onSeatSelected).toHaveBeenCalledWith("A1NS");
+  });
+
   it("disables NS button when assigned", () => {
     render(
       <SelectTable
-        tables={1}
+        sections={sectionA(1)}
         onSeatSelected={vi.fn()}
-        startingPositions={[makePair(1, "NS")]}
+        startingPositions={[makePair("A", 1, "NS")]}
       />,
     );
     expect(screen.getByRole("button", { name: "NS" })).toBeDisabled();
   });
 
-  it("disables EW button when assigned", () => {
-    render(
-      <SelectTable
-        tables={1}
-        onSeatSelected={vi.fn()}
-        startingPositions={[makePair(1, "EW")]}
-      />,
-    );
-    expect(screen.getByRole("button", { name: "EW" })).toBeDisabled();
-  });
-
   it("marks table as full when both directions are assigned", () => {
     const { container } = render(
       <SelectTable
-        tables={1}
+        sections={sectionA(1)}
         onSeatSelected={vi.fn()}
-        startingPositions={[makePair(1, "NS"), makePair(1, "EW")]}
+        startingPositions={[makePair("A", 1, "NS"), makePair("A", 1, "EW")]}
       />,
     );
     expect(container.querySelector(".opacity-50")).toBeInTheDocument();
   });
 
-  it("does not disable unrelated table buttons", () => {
+  it("renders multiple sections with headings", () => {
     render(
       <SelectTable
-        tables={2}
+        sections={[
+          { section: "A", label: "A", tables: 1 },
+          { section: "B", label: "B", tables: 1 },
+        ]}
         onSeatSelected={vi.fn()}
-        startingPositions={[makePair(1, "NS")]}
+        startingPositions={[]}
       />,
     );
-    const secondTableNS = screen.getAllByRole("button", { name: "NS" })[1];
-    expect(secondTableNS).not.toBeDisabled();
+    expect(screen.getByText("Section A")).toBeInTheDocument();
+    expect(screen.getByText("Section B")).toBeInTheDocument();
   });
 
-  it("renders grid structure", () => {
-    const { container } = render(<SelectTable {...baseProps} />);
-    expect(container.querySelector(".grid")).toBeInTheDocument();
+  it("scopes taken seats to the correct section", () => {
+    render(
+      <SelectTable
+        sections={[
+          { section: "A", label: "A", tables: 1 },
+          { section: "B", label: "B", tables: 1 },
+        ]}
+        onSeatSelected={vi.fn()}
+        // A1NS taken; B1NS must remain free.
+        startingPositions={[makePair("A", 1, "NS")]}
+      />,
+    );
+    const nsButtons = screen.getAllByRole("button", { name: "NS" });
+    expect(nsButtons[0]).toBeDisabled();
+    expect(nsButtons[1]).not.toBeDisabled();
   });
 });

@@ -12,13 +12,13 @@ vi.mock("@/db/movements/queries/get-movement-spec", () => ({
 
 import { getPairMovement } from "@/db/movements/queries/get-movement";
 import { getPairMovementSpecById } from "@/db/movements/queries/get-movement-spec";
-import { resolveStart } from "./start-game-service";
+import { resolveSectionStart } from "./start-game-service";
 import { PairSeat } from "@/model/participants";
 
-function seatsForTables(tables: number): PairSeat[] {
+function seatsForTables(tables: number, section = "A"): PairSeat[] {
   const seats: PairSeat[] = [];
   for (let t = 1; t <= tables; t++) {
-    seats.push(`${t}NS`, `${t}EW`);
+    seats.push(`${section}${t}NS`, `${section}${t}EW`);
   }
   return seats;
 }
@@ -27,13 +27,13 @@ function isSitOut(round: { sitOut?: boolean }): boolean {
   return round.sitOut === true;
 }
 
-describe("resolveStart", () => {
+describe("resolveSectionStart", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("returns NO_MOVEMENT_SELECTED when nothing is selected", async () => {
-    const result = await resolveStart(null, ["1NS", "1EW"]);
+    const result = await resolveSectionStart("A", null, ["A1NS", "A1EW"]);
     expect(result.validation.canStart).toBe(false);
     expect(result.movement).toBeNull();
     expect(result.validation.problems.map((p) => p.code)).toContain(
@@ -42,7 +42,8 @@ describe("resolveStart", () => {
   });
 
   it("resolves a fully-seated Mitchell without a sit-out", async () => {
-    const result = await resolveStart(
+    const result = await resolveSectionStart(
+      "A",
       { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
       seatsForTables(5),
     );
@@ -50,21 +51,21 @@ describe("resolveStart", () => {
     expect(result.validation.canStart).toBe(true);
     expect(result.validation.sitOutSeat).toBeNull();
     expect(result.movement).not.toBeNull();
-    // No round is a sit-out.
     const anySitOut = result.movement!.some((t) => t.rounds.some(isSitOut));
     expect(anySitOut).toBe(false);
   });
 
   it("resolves a one-short Mitchell with a sit-out applied", async () => {
-    const seated = seatsForTables(5).filter((s) => s !== "3EW");
+    const seated = seatsForTables(5).filter((s) => s !== "A3EW");
 
-    const result = await resolveStart(
+    const result = await resolveSectionStart(
+      "A",
       { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
       seated,
     );
 
     expect(result.validation.canStart).toBe(true);
-    expect(result.validation.sitOutSeat).toBe("3EW");
+    expect(result.validation.sitOutSeat).toBe("A3EW");
     // Exactly one sit-out per round => 5 flagged rounds total.
     const sitOutTotal = result
       .movement!.flatMap((t) => t.rounds)
@@ -72,12 +73,26 @@ describe("resolveStart", () => {
     expect(sitOutTotal).toBe(5);
   });
 
-  it("rejects a Mitchell that is two pairs short", async () => {
-    const seated = seatsForTables(5).filter(
-      (s) => s !== "4NS" && s !== "4EW" && s !== "5NS",
+  it("resolves a non-A section with a sit-out qualified to that section", async () => {
+    const seated = seatsForTables(5, "B").filter((s) => s !== "B3EW");
+
+    const result = await resolveSectionStart(
+      "B",
+      { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
+      seated,
     );
 
-    const result = await resolveStart(
+    expect(result.validation.canStart).toBe(true);
+    expect(result.validation.sitOutSeat).toBe("B3EW");
+  });
+
+  it("rejects a Mitchell that is two pairs short", async () => {
+    const seated = seatsForTables(5).filter(
+      (s) => s !== "A4NS" && s !== "A4EW" && s !== "A5NS",
+    );
+
+    const result = await resolveSectionStart(
+      "A",
       { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
       seated,
     );
@@ -90,7 +105,6 @@ describe("resolveStart", () => {
   });
 
   it("resolves a database spec with no missing pair (introduces a phantom)", async () => {
-    // 3-table two-winner spec (NS 1..3, EW 4..6 rotating).
     vi.mocked(getPairMovement).mockResolvedValue([
       {
         id: 1,
@@ -128,13 +142,12 @@ describe("resolveStart", () => {
       missingPair: null,
     } as any);
 
-    const seated = seatsForTables(3).filter((s) => s !== "3EW");
+    const seated = seatsForTables(3).filter((s) => s !== "A3EW");
 
-    const result = await resolveStart({ source: "SPEC", specId: 10 }, seated);
+    const result = await resolveSectionStart("A", { source: "SPEC", specId: 10 }, seated);
 
     expect(result.validation.canStart).toBe(true);
-    expect(result.validation.sitOutSeat).toBe("3EW");
-    // One sit-out per round.
+    expect(result.validation.sitOutSeat).toBe("A3EW");
     for (let r = 0; r < 3; r++) {
       const sitOuts = result.movement!.filter((t) => isSitOut(t.rounds[r]))
         .length;

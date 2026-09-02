@@ -8,6 +8,7 @@ export const mockGame = {
   sectionName: "A",
   eventDate: new Date().toISOString(),
   tables: 8,
+  selectedMovement: null,
   leadCardRequired: true,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

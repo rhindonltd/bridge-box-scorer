@@ -1,5 +1,5 @@
 import { NewPlayer, Player } from "@/db/games/tables/players";
-import { PairDirection, PairDirections } from "@/model/common";
+import { PairDirection } from "@/model/common";
 
 export interface ParticipantsByMode {
   PAIR: {
@@ -12,19 +12,64 @@ export type TravellerParticipantMode = "PAIR";
 
 /* ---------- seat ---------- */
 
-export type PairSeat = `${number}${PairDirection}`;
+/**
+ * A section is identified by a single uppercase letter (A, B, C, ...). Table
+ * numbers restart within each section, so a seat is only unique when qualified
+ * by its section.
+ */
+export type SectionLetter = string;
+
+/**
+ * A section-qualified pair seat: `${section}${table}${direction}`, e.g.
+ * "A3NS". Every seat in the system carries its section prefix; there is no
+ * unprefixed form.
+ */
+export type SectionedSeat = `${SectionLetter}${number}${PairDirection}`;
+
+// Retained name for the pair seat type; now always section-qualified.
+export type PairSeat = SectionedSeat;
 
 export type Seat = PairSeat;
 
+const SEAT_REGEX = /^([A-Z]+)(\d+)(NS|EW)$/;
+
 export function isPairSeat(seat: Seat): seat is PairSeat {
-  return PairDirections.some((direction) => seat.endsWith(direction));
+  return SEAT_REGEX.test(seat);
 }
 
-export function parseSeat(seat: Seat) {
+/**
+ * Decode a section-qualified seat into its parts.
+ *
+ * @throws if the seat is not a valid section-qualified seat (e.g. an
+ *   unprefixed "3NS"); all seats in the system are expected to be qualified.
+ */
+export function parseSeat(seat: Seat): {
+  section: SectionLetter;
+  tableNumber: number;
+  direction: PairDirection;
+} {
+  const match = SEAT_REGEX.exec(seat);
+  if (!match) {
+    throw new Error(`Invalid seat: ${seat}`);
+  }
+
+  const [, section, table, direction] = match;
   return {
-    tableNumber: Number(seat.slice(0, -2)),
-    direction: seat.slice(-2) as PairDirection,
+    section,
+    tableNumber: Number(table),
+    direction: direction as PairDirection,
   };
+}
+
+/**
+ * Build a section-qualified seat from its parts.
+ */
+export function seatFor(
+  section: SectionLetter,
+  tableNumber: number,
+  direction: PairDirection,
+): PairSeat {
+  return `${section}${tableNumber}${direction}` as PairSeat;
 }
 
 /* ---------- participants ---------- */

@@ -3,18 +3,24 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
-import { updateTableCount } from "@/db/game-index/actions/update-table-count";
+import { updateSectionTables } from "@/db/games/actions/update-section-tables";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { findPairs } from "@/db/games/queries/find-pairs";
-import { parseSeat } from "@/model/participants";
-import { Db, getDb } from "@/db/games";
+import { findSections } from "@/db/games/queries/find-sections";
+import { getDb } from "@/db/games";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
+  // The section to resize. Defaults to "A" so single-section callers keep
+  // working; the multi-section manage UI always sends an explicit section.
+  section: z.string().min(1).default("A"),
   tables: z.number().int().min(1),
   directorToken: z.string().min(1),
 });
 
+/**
+ * Set the number of tables for a single section. The per-section shrink guard
+ * (rejecting a reduction below a seated table) lives in updateSectionTables.
+ */
 export function registerUpdateTablesHandler(socket: Socket, io: Server) {
   socket.on(
     SocketEvents.UPDATE_TABLES,
@@ -28,7 +34,7 @@ export function registerUpdateTablesHandler(socket: Socket, io: Server) {
         return;
       }
 
-      const { gameId, tables, directorToken } = parsed.data;
+      const { gameId, section, tables, directorToken } = parsed.data;
       if (!assertDirector(directorToken, gameId, cb)) return;
 
       try {
@@ -39,27 +45,23 @@ export function registerUpdateTablesHandler(socket: Socket, io: Server) {
         }
 
         const db = await getDb(gameId);
-
         if (!db) {
           cb?.({ success: false, error: "Game db not found" });
           return;
         }
 
-        // When reducing tables, check that no participants are seated at
-        // tables that would be removed (i.e., tables > new count)
-        if (tables < game.tables) {
-          const highestOccupiedTable = await getHighestOccupiedTable(db);
-
-          if (highestOccupiedTable > tables) {
-            cb?.({
-              success: false,
-              error: `Cannot reduce to ${tables} tables: table ${highestOccupiedTable} has seated participants. Evict them first.`,
-            });
-            return;
-          }
+        const sections = await findSections(db);
+        if (!sections.some((s) => s.section === section)) {
+          cb?.({
+            success: false,
+            error: `Section ${section} not found`,
+          });
+          return;
         }
 
-        await updateTableCount(gameId, tables);
+        // updateSectionTables enforces the per-section shrink guard and throws
+        // a descriptive error when a seated table would be removed.
+        await updateSectionTables(gameId, section, tables);
 
         const updatedGame = await findGameById(gameId);
         io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, {
@@ -68,17 +70,19 @@ export function registerUpdateTablesHandler(socket: Socket, io: Server) {
 
         cb?.({ success: true });
       } catch (err) {
-        console.error(`Failed to update tables for game ${gameId}:`, err);
-        cb?.({ success: false, error: "Internal server error" });
+        // The shrink guard surfaces a user-facing message; forward it.
+        const message =
+          err instanceof Error && /seated participants|Section /.test(err.message)
+            ? err.message
+            : "Internal server error";
+        if (message === "Internal server error") {
+          console.error(
+            `Failed to update tables for game ${gameId} section ${section}:`,
+            err,
+          );
+        }
+        cb?.({ success: false, error: message });
       }
     },
   );
-}
-
-async function getHighestOccupiedTable(db: Db): Promise<number> {
-  const seats = await findPairs(db);
-
-  if (seats.length === 0) return 0;
-
-  return Math.max(...seats.map((s) => parseSeat(s.initialSeat).tableNumber));
 }

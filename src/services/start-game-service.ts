@@ -3,12 +3,18 @@ import "server-only";
 import { Db, getDb } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { findPairs } from "@/db/games/queries/find-pairs";
-import { getSelectedMovement } from "@/db/game-index/queries/get-selected-movement";
+import { findSections } from "@/db/games/queries/find-sections";
+import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 
-import { PairSeat } from "@/model/participants";
+import { PairSeat, SectionLetter, parseSeat } from "@/model/participants";
 import { SelectedMovement } from "@/model/selected-movement";
 import { deriveExpectedSeats } from "@/model/expected-seats";
-import { validateStart, StartValidationResult } from "@/model/start-validator";
+import {
+  validateStart,
+  StartValidationResult,
+  StartProblem,
+} from "@/model/start-validator";
+import { AllSectionsValidationResult } from "@/model/validate-sections";
 
 import { PairMovement } from "@/db/movements/queries/get-movement";
 import {
@@ -16,7 +22,7 @@ import {
   RehydratedMovement,
 } from "@/services/movement-rehydration";
 import {
-  materializePairLikeMovement,
+  materializeSections,
   MaterializableMovement,
 } from "@/services/materialize-movement";
 import { generateStandardMitchellWithSitOut } from "@/movement/mitchell/sit-out";
@@ -26,8 +32,8 @@ import {
 } from "@/movement/spec-sit-out";
 
 /**
- * Validate the current selection + seating for a game and, when valid, produce
- * the concrete movement (with any single sit-out applied) ready to materialize.
+ * Resolution of a single section: its validation and, when valid, the concrete
+ * movement (with any single sit-out applied) ready to materialize.
  */
 export interface ResolvedStart {
   validation: StartValidationResult;
@@ -36,8 +42,12 @@ export interface ResolvedStart {
 }
 
 /**
- * Apply the appropriate sit-out transformation for a one-pair-short session.
+ * Apply the appropriate sit-out transformation for a one-pair-short section.
  * Returns a MaterializableMovement with the dormant rounds flagged sitOut.
+ *
+ * `sitOutSeat` is section-qualified (e.g. "A3EW"); the sit-out helpers derive
+ * the within-section phantom position id from its table + direction, so the
+ * section prefix is harmless here.
  */
 function applySitOut(
   selected: SelectedMovement,
@@ -66,11 +76,16 @@ function applySitOut(
 }
 
 /**
- * Resolve the movement to start for a given selection and seated seats. This is
- * the shared core used both by the read-only start-check and by the start
- * handler, so the gate and the materialization always agree.
+ * Resolve the movement to start for a single section given its selection and
+ * the seats currently filled in that section. Shared by the read-only
+ * start-check and the start handler so the gate and materialization agree.
+ *
+ * @param section  The section these seats belong to (their seat prefix).
+ * @param selected  The section's selected movement, or null when none chosen.
+ * @param seatedSeats  Section-qualified seats currently occupied in the section.
  */
-export async function resolveStart(
+export async function resolveSectionStart(
+  section: SectionLetter,
   selected: SelectedMovement | null,
   seatedSeats: PairSeat[],
 ): Promise<ResolvedStart> {
@@ -84,8 +99,9 @@ export async function resolveStart(
   const rehydrated = await rehydrateSelectedMovement(selected);
 
   // Derive expected seats from the movement's round-1 layout (no sit-out yet),
-  // excluding any built-in phantom.
+  // excluding any built-in phantom, qualified to this section.
   const expected = deriveExpectedSeats(
+    section,
     pairMovementToTables(rehydrated.movement),
     rehydrated.missingPair != null ? Number(rehydrated.missingPair) : null,
   );
@@ -102,6 +118,106 @@ export async function resolveStart(
       : toMaterializable(rehydrated.movement);
 
   return { validation, movement };
+}
+
+/**
+ * A section's resolved start plus its letter, used to gather all sections.
+ */
+interface SectionResolution {
+  section: SectionLetter;
+  resolved: ResolvedStart;
+}
+
+/**
+ * Resolve every section of a game: read the sections, group the seated pairs by
+ * section, and resolve each against its own movement. Returns per-section
+ * resolutions plus the aggregate validation (all-or-nothing).
+ */
+async function resolveAllSections(
+  gameId: string,
+  db: Db,
+): Promise<{
+  aggregate: AllSectionsValidationResult;
+  resolutions: SectionResolution[];
+}> {
+  const [sections, pairs] = await Promise.all([findSections(db), findPairs(db)]);
+
+  // Group seated seats by their section prefix.
+  const seatsBySection = new Map<SectionLetter, PairSeat[]>();
+  for (const pair of pairs) {
+    const { section } = parseSeat(pair.initialSeat);
+    const list = seatsBySection.get(section) ?? [];
+    list.push(pair.initialSeat);
+    seatsBySection.set(section, list);
+  }
+
+  const resolutions: SectionResolution[] = [];
+  for (const s of sections) {
+    const selected = await getSectionMovement(db, s.section);
+    const seatedSeats = seatsBySection.get(s.section) ?? [];
+    const resolved = await resolveSectionStart(
+      s.section,
+      selected,
+      seatedSeats,
+    );
+    resolutions.push({ section: s.section, resolved });
+  }
+
+  // Each section is already resolved to a StartValidationResult; aggregate
+  // them all-or-nothing (matching validateSections' contract).
+  const sectionsResult = resolutions.map((r) => ({
+    section: r.section,
+    validation: r.resolved.validation,
+  }));
+  const canStart =
+    sectionsResult.length > 0 &&
+    sectionsResult.every((s) => s.validation.canStart);
+
+  return {
+    aggregate: { canStart, sections: sectionsResult },
+    resolutions,
+  };
+}
+
+/**
+ * Flatten a per-section aggregate into the flat StartValidationResult shape the
+ * start-check API and client currently consume. `canStart` is the all-or-nothing
+ * aggregate; problems are prefixed with their section label so the UI can show
+ * which section is blocking. `sitOutSeat` is null at the aggregate level (each
+ * section's sit-out is already applied internally on start).
+ */
+function flattenAggregate(
+  aggregate: AllSectionsValidationResult,
+): StartValidationResult {
+  const problems: StartProblem[] = [];
+
+  if (aggregate.sections.length === 0) {
+    return {
+      canStart: false,
+      sitOutSeat: null,
+      problems: [
+        {
+          code: "NO_MOVEMENT_SELECTED",
+          message: "Add at least one section before starting the game.",
+        },
+      ],
+    };
+  }
+
+  for (const s of aggregate.sections) {
+    for (const p of s.validation.problems) {
+      problems.push({
+        ...p,
+        message: `Section ${s.section}: ${p.message}`,
+      });
+    }
+  }
+
+  return {
+    canStart: aggregate.canStart,
+    sitOutSeat: null,
+    problems,
+  };
 }
 
 /**
@@ -156,31 +272,27 @@ function toMaterializable(movement: PairMovement[]): MaterializableMovement {
 }
 
 /**
- * Read-only check of whether a game can be started. Reads the persisted
- * selection and current seating and runs the same resolution as the start
- * handler, without writing anything. Used by the start-check endpoint so the
- * UI can enable/disable the Start button and show reasons.
+ * Read-only check of whether a game can be started, across all sections. Reads
+ * each section's selection and the current seating and runs the same resolution
+ * as the start handler, without writing anything. Used by the start-check
+ * endpoint so the UI can enable/disable the Start button and show reasons.
  */
 export async function checkStart(
   gameId: string,
   db: Db,
 ): Promise<StartValidationResult> {
-  const [selected, pairs] = await Promise.all([
-    getSelectedMovement(gameId),
-    findPairs(db),
-  ]);
-
-  const seatedSeats = pairs.map((p) => p.initialSeat);
-  const { validation } = await resolveStart(selected, seatedSeats);
-  return validation;
+  const { aggregate } = await resolveAllSections(gameId, db);
+  return flattenAggregate(aggregate);
 }
 
 /**
- * Start a game: read its selection and seating, validate, and (only if valid)
- * materialize boards + assignments with any sit-out applied. Idempotent-guarded
- * against a game whose boards have already been materialized.
+ * Start a game: read each section's selection and seating, validate all
+ * sections (all-or-nothing), and — only when every section is valid —
+ * materialize every section's boards + assignments in one transaction.
+ * Idempotent-guarded against a game whose boards have already been materialized.
  *
- * Returns the validation result; when it cannot start, nothing is written.
+ * Returns the flattened validation result; when it cannot start, nothing is
+ * written.
  */
 export async function startGame(
   gameId: string,
@@ -191,7 +303,10 @@ export async function startGame(
   }
 
   // Guard against double materialization.
-  const existing = await db.select({ n: boards.boardNumber }).from(boards).limit(1);
+  const existing = await db
+    .select({ n: boards.boardNumber })
+    .from(boards)
+    .limit(1);
   if (existing.length > 0) {
     return {
       canStart: false,
@@ -205,20 +320,20 @@ export async function startGame(
     };
   }
 
-  const [selected, pairs] = await Promise.all([
-    getSelectedMovement(gameId),
-    findPairs(db),
-  ]);
+  const { aggregate, resolutions } = await resolveAllSections(gameId, db);
 
-  const seatedSeats = pairs.map((p) => p.initialSeat);
-
-  const { validation, movement } = await resolveStart(selected, seatedSeats);
-
-  if (!validation.canStart || movement === null) {
-    return validation;
+  if (!aggregate.canStart) {
+    return flattenAggregate(aggregate);
   }
 
-  await materializePairLikeMovement(movement, gameId);
+  const sectionMovements = resolutions
+    .filter((r) => r.resolved.movement !== null)
+    .map((r) => ({
+      section: r.section,
+      movement: r.resolved.movement as MaterializableMovement,
+    }));
 
-  return validation;
+  await materializeSections(gameId, sectionMovements);
+
+  return flattenAggregate(aggregate);
 }

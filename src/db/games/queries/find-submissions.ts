@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 export async function findBoardSubmissions(
   gameId: string,
+  section: string,
   table: number,
   round: number,
 ): Promise<BoardSubmission[]> {
@@ -18,6 +19,7 @@ export async function findBoardSubmissions(
     .from(boardSubmissions)
     .where(
       and(
+        eq(boardSubmissions.section, section),
         eq(boardSubmissions.tableNumber, table),
         eq(boardSubmissions.roundNumber, round),
       ),
