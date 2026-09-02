@@ -65,11 +65,13 @@ export async function setSectionMovementSpec(
   gameId: string,
   section: string,
   specId: number,
+  boardsPerRound: number,
 ): Promise<void> {
   await emitWithAck(SocketEvents.SET_SECTION_MOVEMENT, {
     gameId,
     section,
     id: specId,
+    boardsPerRound,
     directorToken: getDirectorToken(gameId),
   });
 }

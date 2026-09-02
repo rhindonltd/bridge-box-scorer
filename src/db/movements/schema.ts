@@ -32,8 +32,10 @@ export const pairmovementroundspec = sqliteTable("pairmovementroundspec", {
   roundNumber: integer("round_number").notNull(),
   ns: text("ns").notNull(),
   ew: text("ew").notNull(),
-  boardStart: integer("board_start").notNull(),
-  boardEnd: integer("board_end").notNull(),
+  // The stable 1-based board-set index this round plays. Concrete board numbers
+  // are derived from this together with a chosen boards-per-round when the
+  // movement is materialized, so a spec can run at any boards-per-round.
+  boardSet: integer("board_set").notNull(),
 });
 
 export type NewPairMovementRoundSpec =
@@ -71,8 +73,10 @@ export const teammovementroundspec = sqliteTable("teammovementroundspec", {
   roundNumber: integer("round_number").notNull(),
   ns: text("ns").notNull(),
   ew: text("ew").notNull(),
-  boardStart: integer("board_start").notNull(),
-  boardEnd: integer("board_end").notNull(),
+  // The stable 1-based board-set index this round plays. Concrete board numbers
+  // are derived from this together with a chosen boards-per-round when the
+  // movement is materialized, so a spec can run at any boards-per-round.
+  boardSet: integer("board_set").notNull(),
 });
 
 export type NewTeamMovementRoundSpec =

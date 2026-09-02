@@ -7,7 +7,11 @@ import {
 
 describe("SelectedMovement round-trip", () => {
   it("round-trips a SPEC selection", () => {
-    const selected: SelectedMovement = { source: "SPEC", specId: 42 };
+    const selected: SelectedMovement = {
+      source: "SPEC",
+      specId: 42,
+      boardsPerRound: 3,
+    };
 
     const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
 
@@ -57,7 +61,15 @@ describe("parseSelectedMovement", () => {
 
   it("rejects a non-positive spec id", () => {
     expect(
-      parseSelectedMovement(JSON.stringify({ source: "SPEC", specId: 0 })),
+      parseSelectedMovement(
+        JSON.stringify({ source: "SPEC", specId: 0, boardsPerRound: 3 }),
+      ),
+    ).toBeNull();
+  });
+
+  it("rejects a SPEC selection without boards per round", () => {
+    expect(
+      parseSelectedMovement(JSON.stringify({ source: "SPEC", specId: 1 })),
     ).toBeNull();
   });
 });

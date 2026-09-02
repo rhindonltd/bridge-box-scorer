@@ -126,6 +126,30 @@ export const boardSetToBoardList = (
   return Array.from({ length: boardsPerRound }, (_, i) => start + i);
 };
 
+/**
+ * Inverse of {@link boardSetToBoardList}: recover the 1-based board-set index
+ * from the first board number of a round and the boards-per-round it was laid
+ * out with. Board sets are always aligned to boards-per-round boundaries, so
+ * this is exact.
+ */
+export const boardSetFor = (
+  firstBoard: number,
+  boardsPerRound: number,
+): number => Math.floor((firstBoard - 1) / boardsPerRound) + 1;
+
+/**
+ * Compute the inclusive board range a round plays, given its board-set index
+ * and the chosen boards-per-round.
+ */
+export const boardRangeForSet = (
+  boardSet: number,
+  boardsPerRound: number,
+): { boardStart: number; boardEnd: number } => {
+  const boardStart = (boardSet - 1) * boardsPerRound + 1;
+
+  return { boardStart, boardEnd: boardStart + boardsPerRound - 1 };
+};
+
 export const formatBoards = (boards: number[]): string => {
   if (boards.length === 0) return "";
   const ranges: string[] = [];

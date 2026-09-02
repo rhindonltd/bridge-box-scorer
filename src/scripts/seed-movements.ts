@@ -11,7 +11,7 @@ import {
   createTeamMovementTableSpec,
 } from "@/db/movements/actions/create-movement-table-spec";
 import { generatePairsMovements } from "@/movement/pairsMovements";
-import { Movement } from "@/movement/shared";
+import { boardSetFor, Movement } from "@/movement/shared";
 import { generateTeamsMovements } from "@/movement/teamsMovements";
 
 async function main() {
@@ -64,8 +64,7 @@ async function seedPairMovements(movements: Movement<"PAIR">[]) {
           roundNumber: idx + 1,
           ns: round.participants.nsId,
           ew: round.participants.ewId,
-          boardStart: round.boards[0],
-          boardEnd: round.boards[round.boards.length - 1],
+          boardSet: boardSetFor(round.boards[0], movement.boardsPerRound),
         });
       }
     }
@@ -99,8 +98,7 @@ async function seedTeamMovements(movements: Movement<"PAIR">[]) {
           roundNumber: idx + 1,
           ns: round.participants.nsId,
           ew: round.participants.ewId,
-          boardStart: round.boards[0],
-          boardEnd: round.boards[round.boards.length - 1],
+          boardSet: boardSetFor(round.boards[0], movement.boardsPerRound),
         });
       }
     }

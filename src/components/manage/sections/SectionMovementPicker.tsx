@@ -71,7 +71,7 @@ export function SectionMovementPicker({
 
   async function chooseSpec(specId: number) {
     try {
-      await setSectionMovementSpec(gameId, section, specId);
+      await setSectionMovementSpec(gameId, section, specId, boardsPerRound);
       onDone();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to set movement");
@@ -84,20 +84,24 @@ export function SectionMovementPicker({
       backAction={onDone}
     >
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-semibold text-gray-600">
+            Boards per round:
+          </label>
+          <NumberStepper
+            value={boardsPerRound}
+            onChange={setBoardsPerRound}
+            min={2}
+          />
+          <p className="text-xs text-gray-500">
+            Applies to every movement below.
+          </p>
+        </div>
+
         <div>
           <h2 className="text-lg font-bold text-gray-800 mb-3 border-b border-gray-200 pb-1">
             Generated Movements
           </h2>
-          <div className="mb-4 flex flex-col gap-1">
-            <label className="text-sm font-semibold text-gray-600">
-              Boards per round:
-            </label>
-            <NumberStepper
-              value={boardsPerRound}
-              onChange={setBoardsPerRound}
-              min={2}
-            />
-          </div>
           <div className="grid gap-3 md:grid-cols-2">
             {mitchellOptions.map((option) => (
               <MitchellOptionCard

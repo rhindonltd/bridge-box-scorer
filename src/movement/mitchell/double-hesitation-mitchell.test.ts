@@ -149,8 +149,8 @@ describe("generateDoubleHesitationMitchell modified variant", () => {
   });
 });
 
-describe("generateDoubleHesitationMitchell across even table counts", () => {
-  for (const tables of [8, 10, 12, 14]) {
+describe("generateDoubleHesitationMitchell across table counts (even and odd)", () => {
+  for (const tables of [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]) {
     it(`is replay- and repeat-free for ${tables} tables`, () => {
       const result = generateDoubleHesitationMitchell({
         tables,
@@ -166,10 +166,26 @@ describe("generateDoubleHesitationMitchell across even table counts", () => {
       }
     });
   }
+
+  it("uses T+2 board sets for an odd table count", () => {
+    const result = generateDoubleHesitationMitchell({
+      tables: 7,
+      rounds: 9,
+      boardsPerRound: 3,
+      doubleHesitation: true,
+    });
+    const sets = new Set<string>();
+    for (const table of result.tables) {
+      for (const round of table.rounds) {
+        sets.add(round.boards.join(","));
+      }
+    }
+    expect(sets.size).toBe(9);
+  });
 });
 
 describe("generateDoubleHesitationMitchell validation", () => {
-  it("rejects fewer than 6 tables", () => {
+  it("rejects fewer than 5 tables", () => {
     expect(() =>
       generateDoubleHesitationMitchell({
         tables: 4,
@@ -177,16 +193,28 @@ describe("generateDoubleHesitationMitchell validation", () => {
         boardsPerRound: 3,
         doubleHesitation: true,
       }),
-    ).toThrow("at least 6 tables");
+    ).toThrow("at least 5 tables");
   });
 
-  it("rejects an odd number of tables", () => {
+  it("accepts an odd number of tables", () => {
     expect(() =>
       generateDoubleHesitationMitchell({
         tables: 7,
         rounds: 9,
         boardsPerRound: 3,
         doubleHesitation: true,
+      }),
+    ).not.toThrow();
+  });
+
+  it("rejects the modified variant for an odd number of tables", () => {
+    expect(() =>
+      generateDoubleHesitationMitchell({
+        tables: 7,
+        rounds: 9,
+        boardsPerRound: 3,
+        doubleHesitation: true,
+        modified: true,
       }),
     ).toThrow("even number of tables");
   });
