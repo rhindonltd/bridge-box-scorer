@@ -83,13 +83,20 @@ describe("registerSelectMovementHandler (unit)", () => {
     const cb = vi.fn();
 
     await handler(
-      { gameId: "g1", type: "PAIRS", id: 5, directorToken: "test-token" },
+      {
+        gameId: "g1",
+        type: "PAIRS",
+        id: 5,
+        boardsPerRound: 3,
+        directorToken: "test-token",
+      },
       cb,
     );
 
     expect(setSelectedMovement).toHaveBeenCalledWith("g1", {
       source: "SPEC",
       specId: 5,
+      boardsPerRound: 3,
     });
     expect(emit).toHaveBeenCalledWith(
       SocketEvents.GAME_UPDATED,
@@ -134,22 +141,56 @@ describe("registerSelectMovementHandler (unit)", () => {
     const cb = vi.fn();
 
     await handler(
-      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+      {
+        gameId: "g1",
+        type: "PAIRS",
+        id: 1,
+        boardsPerRound: 2,
+        directorToken: "test-token",
+      },
       cb,
     );
     await handler(
-      { gameId: "g1", type: "PAIRS", id: 2, directorToken: "test-token" },
+      {
+        gameId: "g1",
+        type: "PAIRS",
+        id: 2,
+        boardsPerRound: 3,
+        directorToken: "test-token",
+      },
       cb,
     );
 
     expect(setSelectedMovement).toHaveBeenNthCalledWith(1, "g1", {
       source: "SPEC",
       specId: 1,
+      boardsPerRound: 2,
     });
     expect(setSelectedMovement).toHaveBeenNthCalledWith(2, "g1", {
       source: "SPEC",
       specId: 2,
+      boardsPerRound: 3,
     });
+  });
+
+  it("returns error when a SPEC id is given without boards per round", async () => {
+    const socket = makeDirectorSocket();
+    const { io } = makeIo();
+    registerSelectMovementHandler(socket as any, io as any);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler(
+      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+      cb,
+    );
+
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "No boards per round specified",
+    });
+    expect(setSelectedMovement).not.toHaveBeenCalled();
   });
 
   it("returns success: false when persisting throws", async () => {
@@ -163,7 +204,13 @@ describe("registerSelectMovementHandler (unit)", () => {
     vi.mocked(setSelectedMovement).mockRejectedValueOnce(new Error("db fail"));
 
     await handler(
-      { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+      {
+        gameId: "g1",
+        type: "PAIRS",
+        id: 1,
+        boardsPerRound: 2,
+        directorToken: "test-token",
+      },
       cb,
     );
 

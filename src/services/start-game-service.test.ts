@@ -111,9 +111,9 @@ describe("resolveSectionStart", () => {
         movementId: 0,
         tableNumber: 1,
         rounds: [
-          { id: 0, tableId: 1, roundNumber: 1, ns: "1", ew: "4", boardStart: 1, boardEnd: 2 },
-          { id: 0, tableId: 1, roundNumber: 2, ns: "1", ew: "6", boardStart: 3, boardEnd: 4 },
-          { id: 0, tableId: 1, roundNumber: 3, ns: "1", ew: "5", boardStart: 5, boardEnd: 6 },
+          { id: 0, tableId: 1, roundNumber: 1, ns: "1", ew: "4", boardSet: 1 },
+          { id: 0, tableId: 1, roundNumber: 2, ns: "1", ew: "6", boardSet: 2 },
+          { id: 0, tableId: 1, roundNumber: 3, ns: "1", ew: "5", boardSet: 3 },
         ],
       },
       {
@@ -121,9 +121,9 @@ describe("resolveSectionStart", () => {
         movementId: 0,
         tableNumber: 2,
         rounds: [
-          { id: 0, tableId: 2, roundNumber: 1, ns: "2", ew: "5", boardStart: 1, boardEnd: 2 },
-          { id: 0, tableId: 2, roundNumber: 2, ns: "2", ew: "4", boardStart: 3, boardEnd: 4 },
-          { id: 0, tableId: 2, roundNumber: 3, ns: "2", ew: "6", boardStart: 5, boardEnd: 6 },
+          { id: 0, tableId: 2, roundNumber: 1, ns: "2", ew: "5", boardSet: 1 },
+          { id: 0, tableId: 2, roundNumber: 2, ns: "2", ew: "4", boardSet: 2 },
+          { id: 0, tableId: 2, roundNumber: 3, ns: "2", ew: "6", boardSet: 3 },
         ],
       },
       {
@@ -131,9 +131,9 @@ describe("resolveSectionStart", () => {
         movementId: 0,
         tableNumber: 3,
         rounds: [
-          { id: 0, tableId: 3, roundNumber: 1, ns: "3", ew: "6", boardStart: 1, boardEnd: 2 },
-          { id: 0, tableId: 3, roundNumber: 2, ns: "3", ew: "5", boardStart: 3, boardEnd: 4 },
-          { id: 0, tableId: 3, roundNumber: 3, ns: "3", ew: "4", boardStart: 5, boardEnd: 6 },
+          { id: 0, tableId: 3, roundNumber: 1, ns: "3", ew: "6", boardSet: 1 },
+          { id: 0, tableId: 3, roundNumber: 2, ns: "3", ew: "5", boardSet: 2 },
+          { id: 0, tableId: 3, roundNumber: 3, ns: "3", ew: "4", boardSet: 3 },
         ],
       },
     ] as any);
@@ -144,7 +144,11 @@ describe("resolveSectionStart", () => {
 
     const seated = seatsForTables(3).filter((s) => s !== "A3EW");
 
-    const result = await resolveSectionStart("A", { source: "SPEC", specId: 10 }, seated);
+    const result = await resolveSectionStart(
+      "A",
+      { source: "SPEC", specId: 10, boardsPerRound: 2 },
+      seated,
+    );
 
     expect(result.validation.canStart).toBe(true);
     expect(result.validation.sitOutSeat).toBe("A3EW");

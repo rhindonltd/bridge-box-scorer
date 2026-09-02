@@ -60,7 +60,13 @@ describe("registerSelectMovementHandler (integration)", () => {
     const result = await new Promise<any>((resolve) => {
       client.emit(
         SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+        {
+          gameId: "g1",
+          type: "PAIRS",
+          id: 1,
+          boardsPerRound: 3,
+          directorToken: "test-token",
+        },
         resolve,
       );
     });
@@ -69,6 +75,7 @@ describe("registerSelectMovementHandler (integration)", () => {
     expect(setSelectedMovement).toHaveBeenCalledWith("g1", {
       source: "SPEC",
       specId: 1,
+      boardsPerRound: 3,
     });
   });
 
@@ -78,7 +85,13 @@ describe("registerSelectMovementHandler (integration)", () => {
     const result = await new Promise<any>((resolve) => {
       client.emit(
         SocketEvents.SELECT_MOVEMENT,
-        { gameId: "g1", type: "PAIRS", id: 1, directorToken: "test-token" },
+        {
+          gameId: "g1",
+          type: "PAIRS",
+          id: 1,
+          boardsPerRound: 3,
+          directorToken: "test-token",
+        },
         resolve,
       );
     });

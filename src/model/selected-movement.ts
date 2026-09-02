@@ -6,7 +6,9 @@ import { z } from "zod";
  * when the game is started.
  *
  * Two variants:
- * - SPEC: a hard-coded movement from the movements database, keyed by numeric id.
+ * - SPEC: a hard-coded movement from the movements database, keyed by numeric id
+ *   plus the boards-per-round chosen for it (the stored spec keeps only board-set
+ *   indices, so board numbers are computed at materialize time).
  * - MITCHELL: a generated Mitchell movement, described by its spec so it can be
  *   regenerated at start time.
  */
@@ -24,6 +26,10 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SPEC"),
     specId: z.number().int().positive(),
+    // Boards played per round when this spec is materialized. Required: the
+    // stored spec only carries board-set indices, so board numbers cannot be
+    // derived without it.
+    boardsPerRound: z.number().int().positive(),
   }),
   z.object({
     source: z.literal("MITCHELL"),

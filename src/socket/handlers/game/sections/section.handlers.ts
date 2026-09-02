@@ -128,12 +128,14 @@ export function registerSectionHandlers(socket: Socket, io: Server) {
         gameId,
         section,
         id,
+        boardsPerRound,
         mitchell,
         directorToken,
       }: {
         gameId: string;
         section: string;
         id?: number;
+        boardsPerRound?: number;
         mitchell?: MitchellMovementSpec;
         directorToken: string;
       },
@@ -145,7 +147,11 @@ export function registerSectionHandlers(socket: Socket, io: Server) {
         if (mitchell) {
           selected = { source: "MITCHELL", mitchell };
         } else if (id != null) {
-          selected = { source: "SPEC", specId: id };
+          if (boardsPerRound == null) {
+            cb?.({ success: false, error: "No boards per round specified" });
+            return;
+          }
+          selected = { source: "SPEC", specId: id, boardsPerRound };
         } else {
           // No movement specified clears the section's selection.
           selected = null;

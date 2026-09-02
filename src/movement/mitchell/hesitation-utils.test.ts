@@ -14,7 +14,9 @@ describe("circulateMovingPairs", () => {
     { table: 3, direction: "EW" },
   ];
 
-  const pairForStation = (s: Station): SeatOccupant => ({
+  const pairForStation = (
+    s: Station,
+  ): Omit<SeatOccupant, "originStation"> => ({
     pair: s.table + 10,
     origin: "EW",
   });
@@ -57,8 +59,8 @@ describe("circulateMovingPairs", () => {
 
 describe("arrowSwitchSeat", () => {
   it("swaps NS and EW occupants", () => {
-    const ns: SeatOccupant = { pair: 1, origin: "NS" };
-    const ew: SeatOccupant = { pair: 9, origin: "EW" };
+    const ns: SeatOccupant = { pair: 1, origin: "NS", originStation: null };
+    const ew: SeatOccupant = { pair: 9, origin: "EW", originStation: 0 };
 
     expect(arrowSwitchSeat({ ns, ew })).toEqual({ ns: ew, ew: ns });
   });
@@ -83,7 +85,9 @@ describe("buildPivotLayout (7-table Hesitation Mitchell)", () => {
   stations.push({ table: pivot, direction: "NS" });
 
   // Round-1 identity: EW at table t = pair t + tables; NS at pivot = pair 7.
-  const pairForStation = (s: Station): SeatOccupant =>
+  const pairForStation = (
+    s: Station,
+  ): Omit<SeatOccupant, "originStation"> =>
     s.direction === "EW"
       ? { pair: s.table + tables, origin: "EW" }
       : { pair: s.table, origin: "NS" };
