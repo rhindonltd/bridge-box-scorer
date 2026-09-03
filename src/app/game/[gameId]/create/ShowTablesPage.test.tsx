@@ -63,7 +63,7 @@ describe("ShowTablesPage start gate", () => {
       sitOutSeat: null,
     });
 
-    render(<ShowTablesPage onSelectMovement={vi.fn()} />);
+    render(<ShowTablesPage />);
 
     const startButton = screen.getByRole("button", { name: "Start Game" });
     expect(startButton).toBeDisabled();
@@ -79,7 +79,7 @@ describe("ShowTablesPage start gate", () => {
       sitOutSeat: null,
     });
 
-    render(<ShowTablesPage onSelectMovement={vi.fn()} />);
+    render(<ShowTablesPage />);
 
     const startButton = screen.getByRole("button", { name: "Start Game" });
     expect(startButton).toBeEnabled();
@@ -96,24 +96,20 @@ describe("ShowTablesPage start gate", () => {
       sitOutSeat: "A3EW",
     });
 
-    render(<ShowTablesPage onSelectMovement={vi.fn()} />);
+    render(<ShowTablesPage />);
 
     expect(screen.getByText(/A3EW will sit out/)).toBeInTheDocument();
   });
 
-  it("navigates to movement selection via the secondary button", () => {
+  it("renders the setup tab bar passed via the tabs slot", () => {
     mockUseStartCheck.mockReturnValue({
       canStart: false,
       problems: [],
       sitOutSeat: null,
     });
-    const onSelectMovement = vi.fn();
 
-    render(<ShowTablesPage onSelectMovement={onSelectMovement} />);
+    render(<ShowTablesPage tabs={<div>tab bar</div>} />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Sections & Movements" }),
-    );
-    expect(onSelectMovement).toHaveBeenCalled();
+    expect(screen.getByText("tab bar")).toBeInTheDocument();
   });
 });

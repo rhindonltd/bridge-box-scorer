@@ -18,14 +18,14 @@ import NumberStepper from "@/components/common/NumberStepper";
 import { useStartCheck } from "@/hooks/start-check";
 import { startGame } from "@/lib/game-service";
 import { useSections } from "@/hooks/sections";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 type Props = {
-  /** Navigate to the section/movement management step. */
-  onSelectMovement: () => void;
+  /** Persistent setup tab bar rendered at the top of the content area. */
+  tabs?: ReactNode;
 };
 
-export function ShowTablesPage({ onSelectMovement }: Props) {
+export function ShowTablesPage({ tabs }: Props) {
   const { game, mutateGame } = useRequiredGame();
 
   const gameId = game.gameId;
@@ -130,23 +130,15 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
               One pair short — {sitOutSeat} will sit out each round.
             </p>
           )}
-          <div className="flex gap-2">
-            <Button
-              value={"Sections & Movements"}
-              onClick={onSelectMovement}
-              bgColour="bg-gray-100"
-              textColour="text-gray-900"
-              hoverColour="hover:bg-gray-200"
-            />
-            <Button
-              value={starting ? "Starting…" : "Start Game"}
-              onClick={handleStartGame}
-              disabled={!canStart || starting}
-            />
-          </div>
+          <Button
+            value={starting ? "Starting…" : "Start Game"}
+            onClick={handleStartGame}
+            disabled={!canStart || starting}
+          />
         </div>
       }
     >
+      {tabs}
       <div className="flex flex-col gap-6">
         {sections.map((s) => {
           const tables = Array.from({ length: s.tables }, (_, i) =>
