@@ -1,4 +1,6 @@
 import { PairMovementSpec } from "@/db/movements/schema";
+import { generateMitchell } from "@/movement/mitchell/mitchell";
+import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 import {
   MovementDescriptor,
   descriptorToSelectedMovement,
@@ -83,6 +85,14 @@ function fromMitchellDescriptor(
 ): RecommendedMovement {
   const selected = descriptorToSelectedMovement(descriptor);
   const rounds = playedRounds(descriptor);
+  const mitchellSpec =
+    selected.source === "MITCHELL"
+      ? selected.mitchell
+      : {
+          tables: descriptor.tables,
+          rounds: descriptor.rounds,
+          boardsPerRound: descriptor.boardsPerRound,
+        };
 
   return {
     family: mitchellFamily(descriptor.subtype),
@@ -90,22 +100,30 @@ function fromMitchellDescriptor(
     rounds,
     boardsPerRound: descriptor.boardsPerRound,
     boardsPerPair: rounds * descriptor.boardsPerRound,
+    boardsInPlay: highestBoardNumber(mitchellSpec),
     copies: descriptor.copies,
     pros: descriptor.pros,
     cons: descriptor.cons,
     source: "generated",
-    specRef: {
-      source: "generated",
-      spec:
-        selected.source === "MITCHELL"
-          ? selected.mitchell
-          : {
-              tables: descriptor.tables,
-              rounds: descriptor.rounds,
-              boardsPerRound: descriptor.boardsPerRound,
-            },
-    },
+    specRef: { source: "generated", spec: mitchellSpec },
   };
+}
+
+/**
+ * The highest board number a generated Mitchell puts in play. Generate the
+ * movement and take the max board across all tables/rounds: relay and web
+ * variants circulate fewer distinct boards than rounds * boardsPerRound.
+ */
+function highestBoardNumber(spec: MitchellMovementSpec): number {
+  let highest = 0;
+  for (const table of generateMitchell(spec).tables) {
+    for (const round of table.rounds) {
+      for (const board of round.boards) {
+        if (board > highest) highest = board;
+      }
+    }
+  }
+  return highest;
 }
 
 /**
@@ -136,6 +154,10 @@ function fromSpecDescriptor(
     rounds: descriptor.rounds,
     boardsPerRound: descriptor.boardsPerRound,
     boardsPerPair: descriptor.rounds * descriptor.boardsPerRound,
+    // The seeded spec stores board-set indices; the highest board number in
+    // play scales with the recommendation's boards-per-round. The spec's own
+    // `boards` is at its default boards-per-round, so derive from the set count.
+    boardsInPlay: (spec.boards / spec.boardsPerRound) * descriptor.boardsPerRound,
     copies: descriptor.copies,
     pros: descriptor.pros,
     cons: descriptor.cons,

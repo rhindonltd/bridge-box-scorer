@@ -138,43 +138,49 @@ export function ShowTablesPage({ tabs }: Props) {
         </div>
       }
     >
-      {tabs}
-      <div className="flex flex-col gap-6">
-        {sections.map((s) => {
-          const tables = Array.from({ length: s.tables }, (_, i) =>
-            createTable(s.section, i + 1),
-          );
-          const lastTable = tables[tables.length - 1];
-          const lastTableOccupied =
-            !!lastTable &&
-            (lastTable.players.N !== null || lastTable.players.E !== null);
+      <div className="flex h-full min-h-0 flex-col">
+        {tabs}
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
+          {sections.map((s) => {
+            const tables = Array.from({ length: s.tables }, (_, i) =>
+              createTable(s.section, i + 1),
+            );
+            const lastTable = tables[tables.length - 1];
+            const lastTableOccupied =
+              !!lastTable &&
+              (lastTable.players.N !== null || lastTable.players.E !== null);
 
-          return (
-            <div key={s.section} className="flex flex-col">
-              <div className="flex items-center justify-between px-4 pt-4">
-                <h2 className="text-lg font-bold text-gray-800">
-                  Section {s.section}
-                  {s.label !== s.section ? ` — ${s.label}` : ""}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Tables:</span>
-                  <NumberStepper
-                    min={1}
-                    value={s.tables}
-                    onChange={(tables) =>
-                      handleResizeSection(s.section, tables)
-                    }
-                  />
+            return (
+              <div key={s.section} className="flex flex-col">
+                <div className="flex items-center justify-between px-4 pt-4">
+                  {sections.length > 1 ? (
+                    <h2 className="text-lg font-bold text-gray-800">
+                      Section {s.section}
+                      {s.label !== s.section ? ` — ${s.label}` : ""}
+                    </h2>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Tables:</span>
+                    <NumberStepper
+                      min={1}
+                      value={s.tables}
+                      onChange={(tables) =>
+                        handleResizeSection(s.section, tables)
+                      }
+                    />
+                  </div>
                 </div>
+                <DirectorTableControls
+                  tables={tables}
+                  onEvict={handleEvict}
+                  canRemoveTable={s.tables > 1 && !lastTableOccupied}
+                />
               </div>
-              <DirectorTableControls
-                tables={tables}
-                onEvict={handleEvict}
-                canRemoveTable={s.tables > 1 && !lastTableOccupied}
-              />
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </GamePageLayout>
   );

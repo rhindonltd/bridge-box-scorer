@@ -204,11 +204,15 @@ function flattenAggregate(
     };
   }
 
+  // Only qualify problems with their section label for multi-section events;
+  // a single-section game has no meaningful section distinction to show.
+  const multiSection = aggregate.sections.length > 1;
+
   for (const s of aggregate.sections) {
     for (const p of s.validation.problems) {
       problems.push({
         ...p,
-        message: `Section ${s.section}: ${p.message}`,
+        message: multiSection ? `Section ${s.section}: ${p.message}` : p.message,
       });
     }
   }

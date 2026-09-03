@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
 
 const mockUseSWR = vi.fn();
 vi.mock("swr", () => ({
@@ -20,22 +19,8 @@ vi.mock("@/movement/recommendations/spec-map-recommendations", () => ({
     mockRecommendations(...args),
 }));
 
-// Stub the layout + card so the test focuses on the picker's selection logic.
-vi.mock("@/components/layout/GamePageLayout", () => ({
-  GamePageLayout: ({
-    children,
-    headerTitle,
-  }: {
-    children: ReactNode;
-    headerTitle: string;
-  }) => (
-    <div>
-      <span data-testid="title">{headerTitle}</span>
-      {children}
-    </div>
-  ),
-}));
-
+// The picker renders its own content only — it is embedded in the setup page's
+// layout, so there is no nested page header to stub.
 vi.mock("@/app/game/[gameId]/create/RecommendedMovementCard", () => ({
   RecommendedMovementCard: ({
     movement,
@@ -60,6 +45,7 @@ function generatedRec(): RecommendedMovement {
     rounds: 8,
     boardsPerRound: 2,
     boardsPerPair: 16,
+    boardsInPlay: 16,
     copies: 1,
     pros: [],
     cons: [],
@@ -78,6 +64,7 @@ function dbRec(): RecommendedMovement {
     rounds: 6,
     boardsPerRound: 4,
     boardsPerPair: 24,
+    boardsInPlay: 24,
     copies: 1,
     pros: [],
     cons: [],
@@ -93,7 +80,7 @@ describe("SectionMovementPicker", () => {
     vi.stubGlobal("alert", vi.fn());
   });
 
-  it("shows the section title and an empty-state when no recommendations", () => {
+  it("shows a Section sub-heading and an empty-state when no recommendations", () => {
     mockRecommendations.mockReturnValue([]);
     render(
       <SectionMovementPicker
@@ -103,10 +90,45 @@ describe("SectionMovementPicker", () => {
         onDone={vi.fn()}
       />,
     );
-    expect(screen.getByTestId("title").textContent).toContain("Section A");
+    // Multi-section defaults to true, so the section is named.
+    expect(screen.getByText("Section A")).toBeInTheDocument();
     expect(
       screen.getByText(/No recommended movements are available/),
     ).toBeInTheDocument();
+  });
+
+  it("omits the Section sub-heading for a single-section game", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={8}
+        multiSection={false}
+      />,
+    );
+    expect(screen.queryByText("Section A")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/No recommended movements are available/),
+    ).toBeInTheDocument();
+  });
+
+  it("groups movements by boards a pair plays, ascending, with no 'Recommended Movements' heading", () => {
+    // generatedRec plays 16 boards, dbRec plays 24.
+    mockRecommendations.mockReturnValue([dbRec(), generatedRec()]);
+    render(
+      <SectionMovementPicker gameId="g1" section="A" tables={8} />,
+    );
+
+    expect(
+      screen.queryByText("Recommended Movements"),
+    ).not.toBeInTheDocument();
+
+    const headings = screen.getAllByRole("heading", { level: 2 });
+    const groupHeadings = headings
+      .map((h) => h.textContent)
+      .filter((t) => t?.includes("boards"));
+    expect(groupHeadings).toEqual(["16 boards", "24 boards"]);
   });
 
   it("persists a generated Mitchell and calls onDone", async () => {
@@ -152,6 +174,67 @@ describe("SectionMovementPicker", () => {
       expect(setSectionMovementSpec).toHaveBeenCalledWith("g1", "B", 42, 4),
     );
     expect(onDone).toHaveBeenCalled();
+  });
+
+  it("shows a back control that calls onDone when provided", () => {
+    mockRecommendations.mockReturnValue([]);
+    const onDone = vi.fn();
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={8}
+        onDone={onDone}
+      />,
+    );
+    const back = screen.getByRole("button", { name: /back to sections/i });
+    fireEvent.click(back);
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders no back control when onDone is omitted (setup root)", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
+    expect(
+      screen.queryByRole("button", { name: /back to sections/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows an Add Section button only when onAddSection is provided and calls it", () => {
+    mockRecommendations.mockReturnValue([]);
+    const { rerender } = render(
+      <SectionMovementPicker gameId="g1" section="A" tables={8} />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Add Section" }),
+    ).not.toBeInTheDocument();
+
+    const onAddSection = vi.fn();
+    rerender(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={8}
+        onAddSection={onAddSection}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Add Section" }));
+    expect(onAddSection).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not throw when a movement is chosen with no onDone", async () => {
+    mockRecommendations.mockReturnValue([generatedRec()]);
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+
+    await waitFor(() =>
+      expect(setSectionMitchellMovement).toHaveBeenCalledWith("g1", "A", {
+        tables: 8,
+        rounds: 8,
+        boardsPerRound: 2,
+      }),
+    );
   });
 
   it("alerts and does not call onDone when persisting fails", async () => {

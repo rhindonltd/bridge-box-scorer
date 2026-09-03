@@ -11,7 +11,6 @@ const meta: Meta<typeof SectionManager> = {
   args: {
     onAddSection: fn(),
     onRenameSection: fn(),
-    onResizeSection: fn(),
     onDeleteSection: fn(),
     onSelectMovement: fn(),
   },

@@ -39,11 +39,17 @@ export function SetupGamePage() {
   }
 
   if (step === "movements") {
-    // Sections & per-section movement selection.
+    // Sections & per-section movement selection. The tabs stay pinned; the
+    // container fills the remaining height and owns its own scrolling so its
+    // fixed header (Add Section banner etc.) doesn't scroll away.
     return (
       <GamePageLayout headerTitle="Sections & Movements">
-        {tabs}
-        <SectionManagerContainer gameId={game.gameId} />
+        <div className="flex h-full min-h-0 flex-col">
+          {tabs}
+          <div className="min-h-0 flex-1">
+            <SectionManagerContainer gameId={game.gameId} />
+          </div>
+        </div>
       </GamePageLayout>
     );
   }

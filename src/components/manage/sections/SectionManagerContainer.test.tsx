@@ -10,7 +10,6 @@ vi.mock("@/lib/section-service", () => ({
   createSection: vi.fn(),
   renameSection: vi.fn(),
   deleteSection: vi.fn(),
-  updateSectionTables: vi.fn(),
 }));
 
 // Stub the presentational children so we can drive their callbacks directly
@@ -21,7 +20,6 @@ vi.mock("./SectionManager", () => ({
     readOnly: boolean;
     onAddSection: () => void;
     onRenameSection: (s: string, l: string) => void;
-    onResizeSection: (s: string, t: number) => void;
     onDeleteSection: (s: string) => void;
     onSelectMovement: (s: string) => void;
   }) => (
@@ -30,7 +28,6 @@ vi.mock("./SectionManager", () => ({
       <span data-testid="read-only">{String(props.readOnly)}</span>
       <button onClick={() => props.onAddSection()}>add</button>
       <button onClick={() => props.onRenameSection("A", "North")}>rename</button>
-      <button onClick={() => props.onResizeSection("A", 9)}>resize</button>
       <button onClick={() => props.onDeleteSection("A")}>delete</button>
       <button onClick={() => props.onSelectMovement("A")}>pick</button>
     </div>
@@ -38,10 +35,20 @@ vi.mock("./SectionManager", () => ({
 }));
 
 vi.mock("./SectionMovementPicker", () => ({
-  SectionMovementPicker: (props: { section: string; onDone: () => void }) => (
+  SectionMovementPicker: (props: {
+    section: string;
+    multiSection?: boolean;
+    onDone?: () => void;
+    onAddSection?: () => void;
+  }) => (
     <div>
       <span data-testid="picker-section">{props.section}</span>
-      <button onClick={props.onDone}>done</button>
+      <span data-testid="picker-multi">{String(props.multiSection)}</span>
+      <span data-testid="picker-has-done">{String(!!props.onDone)}</span>
+      {props.onDone && <button onClick={props.onDone}>done</button>}
+      {props.onAddSection && (
+        <button onClick={props.onAddSection}>picker-add</button>
+      )}
     </div>
   ),
 }));
@@ -50,7 +57,6 @@ import {
   createSection,
   renameSection,
   deleteSection,
-  updateSectionTables,
 } from "@/lib/section-service";
 import { SectionManagerContainer } from "./SectionManagerContainer";
 
@@ -76,23 +82,18 @@ describe("SectionManagerContainer", () => {
   it("adds a section using the next unused letter", async () => {
     render(<SectionManagerContainer gameId="g1" />);
     fireEvent.click(screen.getByRole("button", { name: "add" }));
-    // A and B exist -> next letter is C, with 1 table.
+    // A and B exist -> next letter is C, defaulting to 5 tables.
     await waitFor(() =>
-      expect(createSection).toHaveBeenCalledWith("g1", "C", 1),
+      expect(createSection).toHaveBeenCalledWith("g1", "C", 5),
     );
   });
 
-  it("wires rename and resize through the section service", async () => {
+  it("wires rename through the section service", async () => {
     render(<SectionManagerContainer gameId="g1" />);
 
     fireEvent.click(screen.getByRole("button", { name: "rename" }));
     await waitFor(() =>
       expect(renameSection).toHaveBeenCalledWith("g1", "A", "North"),
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "resize" }));
-    await waitFor(() =>
-      expect(updateSectionTables).toHaveBeenCalledWith("g1", "A", 9),
     );
   });
 
@@ -136,5 +137,43 @@ describe("SectionManagerContainer", () => {
   it("passes readOnly through", () => {
     render(<SectionManagerContainer gameId="g1" readOnly />);
     expect(screen.getByTestId("read-only").textContent).toBe("true");
+  });
+
+  describe("single section", () => {
+    const single = [
+      { section: "A", label: "A", tables: 5, ordinal: 0, selectedMovement: null },
+    ];
+
+    beforeEach(() => {
+      mockUseSections.mockReturnValue({ sections: single, isLoading: false });
+    });
+
+    it("skips the list and shows the movement picker directly", () => {
+      render(<SectionManagerContainer gameId="g1" />);
+
+      expect(screen.getByTestId("picker-section").textContent).toBe("A");
+      // No section distinction, and it is the root view (no back control).
+      expect(screen.getByTestId("picker-multi").textContent).toBe("false");
+      expect(screen.getByTestId("picker-has-done").textContent).toBe("false");
+      // The list is not rendered.
+      expect(screen.queryByTestId("section-count")).not.toBeInTheDocument();
+    });
+
+    it("adds section B (default 5 tables) from the picker's Add Section", async () => {
+      render(<SectionManagerContainer gameId="g1" />);
+
+      fireEvent.click(screen.getByRole("button", { name: "picker-add" }));
+      // Only A exists -> next letter is B, defaulting to 5 tables.
+      await waitFor(() =>
+        expect(createSection).toHaveBeenCalledWith("g1", "B", 5),
+      );
+    });
+
+    it("shows the list (not the picker) when read-only", () => {
+      render(<SectionManagerContainer gameId="g1" readOnly />);
+
+      expect(screen.getByTestId("section-count").textContent).toBe("1");
+      expect(screen.queryByTestId("picker-section")).not.toBeInTheDocument();
+    });
   });
 });

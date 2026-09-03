@@ -23,7 +23,6 @@ function noopProps() {
   return {
     onAddSection: vi.fn(),
     onRenameSection: vi.fn(),
-    onResizeSection: vi.fn(),
     onDeleteSection: vi.fn(),
     onSelectMovement: vi.fn(),
   };
@@ -101,7 +100,41 @@ describe("SectionManager", () => {
     expect(screen.queryByText("Delete")).not.toBeInTheDocument();
   });
 
-  it("is read-only: no add/delete/steppers, shows static values", () => {
+  it("hides the section heading and label editor for a single section", () => {
+    const props = noopProps();
+    render(<SectionManager sections={[sections()[0]]} {...props} />);
+
+    // No "Section X" heading or label editor when there's nothing to distinguish.
+    expect(screen.queryByText("Section A")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Label")).not.toBeInTheDocument();
+
+    // Tables and movement controls remain, plus the way to go multi-section.
+    expect(screen.getByText("Tables")).toBeInTheDocument();
+    expect(screen.getByText("Add Section")).toBeInTheDocument();
+  });
+
+  it("shows the section heading and label editor once there are multiple sections", () => {
+    const props = noopProps();
+    render(<SectionManager sections={sections()} {...props} />);
+
+    expect(screen.getByText("Section A")).toBeInTheDocument();
+    expect(screen.getByText("Section B")).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Label")).toHaveLength(2);
+  });
+
+  it("shows the table count as display-only (adjusted from the Tables view)", () => {
+    const props = noopProps();
+    render(<SectionManager sections={sections()} {...props} />);
+
+    // Section A has 8 tables, B has 6 — shown as static text, no stepper.
+    expect(screen.getByText("8")).toBeInTheDocument();
+    expect(screen.getByText("6")).toBeInTheDocument();
+    // NumberStepper renders "−" / "+" buttons; neither should be present.
+    expect(screen.queryByText("−")).not.toBeInTheDocument();
+    expect(screen.queryByText("+")).not.toBeInTheDocument();
+  });
+
+  it("is read-only: no add/delete, shows static values", () => {
     const props = noopProps();
     render(<SectionManager sections={sections()} readOnly {...props} />);
 

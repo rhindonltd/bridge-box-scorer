@@ -8,8 +8,10 @@ import {
   createSection,
   renameSection,
   deleteSection,
-  updateSectionTables,
 } from "@/lib/section-service";
+
+/** Table count a newly added section starts with. */
+const DEFAULT_SECTION_TABLES = 5;
 
 interface Props {
   gameId: string;
@@ -41,6 +43,15 @@ export function SectionManagerContainer({ gameId, readOnly = false }: Props) {
   const { sections } = useSections(gameId);
   const [pickingFor, setPickingFor] = useState<string | null>(null);
 
+  async function handleAddSection() {
+    const letter = nextSectionLetter(sections.map((s) => s.section));
+    try {
+      await createSection(gameId, letter, DEFAULT_SECTION_TABLES);
+    } catch (err) {
+      reportError(err);
+    }
+  }
+
   const pickingSection = sections.find((s) => s.section === pickingFor);
 
   if (pickingFor && pickingSection) {
@@ -49,7 +60,26 @@ export function SectionManagerContainer({ gameId, readOnly = false }: Props) {
         gameId={gameId}
         section={pickingSection.section}
         tables={pickingSection.tables}
+        multiSection={sections.length > 1}
         onDone={() => setPickingFor(null)}
+      />
+    );
+  }
+
+  // Single-section games have no meaningful section distinction: skip the
+  // sections list and drop the director straight onto the movement picker.
+  // "Add Section" there converts the event to multi-section, which (because
+  // sections.length becomes > 1) reveals the full SectionManager list. In
+  // read-only mode (a running game) we keep the list so nothing is editable.
+  const singleSection = sections[0];
+  if (!readOnly && sections.length === 1 && singleSection) {
+    return (
+      <SectionMovementPicker
+        gameId={gameId}
+        section={singleSection.section}
+        tables={singleSection.tables}
+        multiSection={false}
+        onAddSection={handleAddSection}
       />
     );
   }
@@ -58,24 +88,10 @@ export function SectionManagerContainer({ gameId, readOnly = false }: Props) {
     <SectionManager
       sections={sections}
       readOnly={readOnly}
-      onAddSection={async () => {
-        const letter = nextSectionLetter(sections.map((s) => s.section));
-        try {
-          await createSection(gameId, letter, 1);
-        } catch (err) {
-          reportError(err);
-        }
-      }}
+      onAddSection={handleAddSection}
       onRenameSection={async (section, label) => {
         try {
           await renameSection(gameId, section, label);
-        } catch (err) {
-          reportError(err);
-        }
-      }}
-      onResizeSection={async (section, tables) => {
-        try {
-          await updateSectionTables(gameId, section, tables);
         } catch (err) {
           reportError(err);
         }

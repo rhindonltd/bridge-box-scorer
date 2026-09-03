@@ -14,22 +14,41 @@ describe("GET /api/games/[gameId]/movement", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getDb).mockResolvedValue({ marker: "db" } as never);
+    vi.mocked(getMovementWithProgress).mockResolvedValue({
+      type: "PAIRS",
+      tables: [],
+    } as never);
   });
 
-  it("returns the movement-with-progress result", async () => {
-    vi.mocked(getMovementWithProgress).mockResolvedValue([
-      { tableNumber: 1 },
-    ] as never);
-
+  it("forwards the section query param to the service", async () => {
     await testApiHandler({
       appHandler,
       params: { gameId: "g1" },
+      url: "/api/games/g1/movement?section=B",
       test: async ({ fetch }) => {
         const res = await fetch({ method: "GET" });
-        await expect(res.json()).resolves.toEqual({
-          success: true,
-          result: { movement: [{ tableNumber: 1 }] },
-        });
+        const body = await res.json();
+        expect(body.success).toBe(true);
+        expect(getMovementWithProgress).toHaveBeenCalledWith(
+          expect.anything(),
+          "B",
+        );
+      },
+    });
+  });
+
+  it("passes undefined when no section is given", async () => {
+    await testApiHandler({
+      appHandler,
+      params: { gameId: "g1" },
+      url: "/api/games/g1/movement",
+      test: async ({ fetch }) => {
+        const res = await fetch({ method: "GET" });
+        expect(res.status).toBe(200);
+        expect(getMovementWithProgress).toHaveBeenCalledWith(
+          expect.anything(),
+          undefined,
+        );
       },
     });
   });

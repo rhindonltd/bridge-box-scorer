@@ -16,38 +16,38 @@ export function RecommendedMovementCard({ movement, onSelect }: Props) {
     <button
       type="button"
       onClick={onSelect}
-      className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm text-left w-full
+      className="flex w-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm
         hover:border-blue-300 hover:shadow-md
         active:scale-[0.98] active:bg-blue-50
         transition-all duration-150
         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
     >
-      <h2 className="text-lg font-semibold text-gray-900">{movement.name}</h2>
+      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2.5">
+        <h3 className="text-base font-bold text-gray-900">{movement.name}</h3>
+      </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+      <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100 text-center">
         <Stat label="Rounds" value={movement.rounds} />
-        <Stat label="Boards in a Set" value={movement.boardsPerRound} />
-        <Stat label="Copies of each Set" value={movement.copies} />
-        <Stat label="Boards a Pair Plays" value={movement.boardsPerPair} />
+        <Stat label="Boards / Set" value={movement.boardsPerRound} />
+        <Stat label="Boards in Play" value={movement.boardsInPlay} />
       </div>
 
       {(movement.pros.length > 0 || movement.cons.length > 0) && (
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <ProsConsList
-            items={movement.pros}
-            tone="pro"
-            title="Pros"
-          />
-          <ProsConsList
-            items={movement.cons}
-            tone="con"
-            title="Cons"
-          />
+        <div className="grid gap-1.5 p-3 sm:grid-cols-2">
+          <ProsConsList items={movement.pros} tone="pro" />
+          <ProsConsList items={movement.cons} tone="con" />
         </div>
       )}
 
+      {movement.copies > 1 && (
+        <p className="flex items-start gap-1.5 px-3 pb-3 text-xs font-medium text-amber-700">
+          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+          <span>Needs {movement.copies} identical copies of each board set.</span>
+        </p>
+      )}
+
       {movement.note && (
-        <p className="mt-3 flex items-start gap-1.5 text-xs text-gray-500">
+        <p className="flex items-start gap-1.5 px-3 pb-3 text-xs text-gray-500">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
           <span>{movement.note}</span>
         </p>
@@ -63,9 +63,9 @@ type StatProps = {
 
 function Stat({ label, value }: StatProps) {
   return (
-    <div className="rounded-lg bg-gray-50 p-2 text-center">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="font-medium text-gray-900">{value}</div>
+    <div className="px-2 py-2">
+      <div className="text-base font-semibold text-gray-900">{value}</div>
+      <div className="text-[11px] leading-tight text-gray-500">{label}</div>
     </div>
   );
 }
@@ -73,10 +73,9 @@ function Stat({ label, value }: StatProps) {
 type ProsConsListProps = {
   items: string[];
   tone: "pro" | "con";
-  title: string;
 };
 
-function ProsConsList({ items, tone, title }: ProsConsListProps) {
+function ProsConsList({ items, tone }: ProsConsListProps) {
   if (items.length === 0) return null;
 
   const isPro = tone === "pro";
@@ -84,24 +83,19 @@ function ProsConsList({ items, tone, title }: ProsConsListProps) {
   const iconColor = isPro ? "text-green-600" : "text-amber-600";
 
   return (
-    <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-        {title}
-      </h3>
-      <ul className="mt-1 space-y-1">
-        {items.map((item, index) => (
-          <li
-            key={index}
-            className="flex items-start gap-1.5 text-sm text-gray-700"
-          >
-            <Icon
-              className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 ${iconColor}`}
-              aria-hidden="true"
-            />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="space-y-1">
+      {items.map((item, index) => (
+        <li
+          key={index}
+          className="flex items-start gap-1.5 text-xs leading-snug text-gray-700"
+        >
+          <Icon
+            className={`mt-0.5 h-3 w-3 flex-shrink-0 ${iconColor}`}
+            aria-hidden="true"
+          />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

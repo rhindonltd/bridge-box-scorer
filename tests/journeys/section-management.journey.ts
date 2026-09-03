@@ -122,8 +122,11 @@ test("Director manages multiple sections and per-section movements", async ({
       );
     });
 
-    await test.step("Manage sections page shows both sections", async () => {
-      await directorPage.goto(`/game/${gameId}/manage/sections`);
+    await test.step("Game setup movement step shows both sections", async () => {
+      // Sections are managed from Set Up Game -> Movement step (the standalone
+      // manage/sections route was removed). With two sections the container
+      // shows the full sections list.
+      await directorPage.goto(`/game/${gameId}/create?step=movements`);
       await directorPage.waitForLoadState("networkidle");
       await expect(directorPage.getByText("Section A")).toBeVisible({
         timeout: 10000,
