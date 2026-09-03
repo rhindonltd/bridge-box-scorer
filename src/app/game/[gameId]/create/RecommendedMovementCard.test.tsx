@@ -34,7 +34,7 @@ describe("RecommendedMovementCard", () => {
   it("shows the number of boards in play as a stat", () => {
     render(<RecommendedMovementCard movement={movement} onSelect={vi.fn()} />);
 
-    expect(screen.getByText("Boards in Play")).toBeInTheDocument();
+    expect(screen.getByText("Boards per Set")).toBeInTheDocument();
     // boardsInPlay (25) is shown; boardsPerPair is not a card stat.
     expect(screen.getByText("25")).toBeInTheDocument();
   });
