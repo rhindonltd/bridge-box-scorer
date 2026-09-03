@@ -6,10 +6,10 @@
         "name": "Two Table Full Howell",
         "boardsPerRound": 6,
         "pros": [
-          "Good for a tiny field: all opponents can be played."
+          "All opponents can be played."
         ],
         "cons": [
-          "Requires board sharing; only practical for very small fields."
+          "Requires board sharing."
         ]
       },
       {
@@ -30,10 +30,10 @@
         "name": "Two Table Full Howell",
         "boardsPerRound": 7,
         "pros": [
-          "Good for a tiny field: all opponents can be played."
+          "All opponents can be played."
         ],
         "cons": [
-          "Requires board sharing; only practical for very small fields."
+          "Requires board sharing."
         ]
       }
     ],
@@ -43,10 +43,10 @@
         "name": "Two Table Full Howell",
         "boardsPerRound": 8,
         "pros": [
-          "Good for a tiny field: all opponents can be played."
+          "All opponents can be played."
         ],
         "cons": [
-          "Requires board sharing; only practical for very small fields."
+          "Requires board sharing."
         ]
       },
       {
