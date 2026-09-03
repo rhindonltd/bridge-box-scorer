@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { NextResponse } from "next/server";
 
-import { withBasicRoute } from "./basicRoute";
+import { withBasicRoute, type BasicRouteContext } from "./basicRoute";
 
 function makeReq(): any {
   return { url: "http://localhost/api/thing" };
@@ -9,7 +9,9 @@ function makeReq(): any {
 
 describe("withBasicRoute", () => {
   it("passes the request to the handler and returns its response", async () => {
-    const handler = vi.fn(async () => NextResponse.json({ ok: true }));
+    const handler = vi.fn(async (_context: BasicRouteContext) =>
+      NextResponse.json({ ok: true }),
+    );
     const route = withBasicRoute(handler);
 
     const res = await route(makeReq());
