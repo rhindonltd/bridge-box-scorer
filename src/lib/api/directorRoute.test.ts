@@ -12,6 +12,9 @@ vi.mock("@/socket/middleware/director-auth", () => ({
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { withDirectorRoute } from "./directorRoute";
+import type { GameRouteContext } from "@/lib/api/gameRoute";
+
+type DirectorHandlerContext = GameRouteContext & { body: Record<string, unknown> };
 
 const fakeDb = { marker: "db" } as never;
 
@@ -37,7 +40,9 @@ describe("withDirectorRoute", () => {
   });
 
   it("invokes the handler with the parsed body when the token is valid", async () => {
-    const handler = vi.fn(async () => NextResponse.json({ ok: true }));
+    const handler = vi.fn(async (_context: DirectorHandlerContext) =>
+      NextResponse.json({ ok: true }),
+    );
 
     const res = await withDirectorRoute(handler)(
       makeReq({ directorToken: "tok", extra: 1 }),

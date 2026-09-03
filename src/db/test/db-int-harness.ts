@@ -45,7 +45,12 @@ interface DbDescriptor {
    * Dynamic import of the db index module (exposing `getDb`). Kept explicit
    * (rather than a `@/db/${name}` template) so Vite can statically analyse it.
    */
-  importIndex: () => Promise<{ getDb: (...args: unknown[]) => unknown }>;
+  // `getDb` signatures differ per db (the per-game `games` db takes a
+  // `gameId: string`, the singletons take no args). A parameter list of
+  // `unknown[]` is not assignable from `(gameId: string)` under strict
+  // contravariance, so widen to `any[]` here (allowed in test files).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  importIndex: () => Promise<{ getDb: (...args: any[]) => unknown }>;
 }
 
 const DESCRIPTORS: Record<DbName, DbDescriptor> = {
