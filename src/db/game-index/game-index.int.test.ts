@@ -140,13 +140,25 @@ describe("game-index db", () => {
       "@/db/game-index/queries/find-joinable-games"
     );
 
+    const dateOnly = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+    const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
     const lastYear = new Date();
     lastYear.setFullYear(lastYear.getFullYear() - 1);
 
     await createBridgeGame(
-      newGame({ gameId: "future", eventDate: tomorrow.toISOString() }),
+      newGame({ gameId: "today", eventDate: dateOnly(today) }),
+    );
+    await createBridgeGame(
+      newGame({ gameId: "future", eventDate: dateOnly(tomorrow) }),
+    );
+    await createBridgeGame(
+      newGame({ gameId: "yesterday", eventDate: dateOnly(yesterday) }),
     );
     await createBridgeGame(
       newGame({ gameId: "past", eventDate: lastYear.toISOString() }),
@@ -154,7 +166,9 @@ describe("game-index db", () => {
 
     const joinable = await findJoinableGames();
     const ids = joinable.map((g) => g.gameId);
+    expect(ids).toContain("today");
     expect(ids).toContain("future");
+    expect(ids).not.toContain("yesterday");
     expect(ids).not.toContain("past");
   });
 });

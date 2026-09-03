@@ -7,15 +7,22 @@ import { useId, useState } from "react";
 import { GameType } from "@/db/games/types/game-type";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
-import NumberStepper from "@/components/common/NumberStepper";
+import DateField from "@/components/common/DateField";
 import { Toggle } from "@/components/common/Toggle";
 import { PageLayout } from "@/components/layout/PageLayout";
+
+const DEFAULT_TABLES = 5;
+
+function todayDateOnly(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
 
 export function CreateGamePage() {
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
   const [gameType, setGameType] = useState<GameType>("PAIRS");
-  const [tables, setTables] = useState(1);
+  const [eventDate, setEventDate] = useState(todayDateOnly());
   const [leadCardRequired, setLeadCardRequired] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,9 +50,9 @@ export function CreateGamePage() {
       director,
       gameType,
       sessionName: "",
-      eventDate: new Date().toISOString(),
+      eventDate,
       sectionName: "",
-      tables: tables,
+      tables: DEFAULT_TABLES,
       leadCardRequired,
     });
   }
@@ -96,12 +103,11 @@ export function CreateGamePage() {
             onSelect={setGameType}
           />
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-semibold text-gray-600">
-              Initial Tables
-            </label>
-            <NumberStepper value={tables} onChange={setTables} min={1} />
-          </div>
+          <DateField
+            label="Date Played"
+            value={eventDate}
+            onChange={setEventDate}
+          />
 
           <div className="flex flex-col gap-1">
             <label
