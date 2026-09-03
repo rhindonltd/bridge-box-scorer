@@ -4,12 +4,11 @@ import { useState, useMemo } from "react";
 import { useRequiredGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
+import { PairMovementSpec } from "@/db/movements/schema";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import { MovementByTable } from "@/movement/movementData";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { MovementCard } from "@/app/game/[gameId]/create/MovementCard";
 import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedMovementCard";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 import { generateMitchell } from "@/movement/mitchell/mitchell";
@@ -42,11 +41,6 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
 
   const { data: pairMovements } = useSWR<PairMovementSpec[]>(
     isPairs ? `/api/movements/pairs/${tables}` : null,
-    fetcher,
-  );
-
-  const { data: teamMovements } = useSWR<TeamMovementSpec[]>(
-    isTeams ? `/api/movements/teams/${tables}` : null,
     fetcher,
   );
 
@@ -179,12 +173,12 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
           )}
 
           {isTeams && (
-            <MovementSection
-              title="Teams Movements"
-              movements={teamMovements ?? []}
-              type="TEAMS"
-              onSelect={handleMovementClicked}
-            />
+            <div>
+              <SectionHeading title="Teams Movements" />
+              <p className="text-gray-500 text-sm italic px-1">
+                Recommended teams movements are coming soon.
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -219,48 +213,6 @@ function RecommendedSection({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-/* ---- Teams section (fallback) ---- */
-
-type MovementSpec = PairMovementSpec | TeamMovementSpec;
-
-function MovementSection({
-  title,
-  movements,
-  type,
-  onSelect,
-}: {
-  title: string;
-  movements: MovementSpec[];
-  type: string;
-  onSelect: (id: number, type: string, name: string) => void;
-}) {
-  if (movements.length === 0) {
-    return (
-      <div>
-        <SectionHeading title={title} />
-        <p className="text-gray-500 text-sm italic px-1">
-          No movements available for this table count.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <SectionHeading title={title} />
-      <div className="grid gap-3 md:grid-cols-2">
-        {movements.map((movement) => (
-          <MovementCard
-            key={`${movement.type}-${movement.id}`}
-            movement={movement}
-            onSelected={(id) => onSelect(id, type, movement.name)}
-          />
-        ))}
-      </div>
     </div>
   );
 }

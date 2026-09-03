@@ -18,13 +18,15 @@ export interface RecommendationEntryInput {
 
 /**
  * A seeded pair-movement spec as it exists in the movements database, reduced
- * to the fields the resolver needs. `id` is the database primary key, which —
- * on a fresh seed — equals the 1-based order the movement appears in
- * PSMovements.txt (see src/scripts/seed-movements.ts + createPairMovementSpec's
- * use of lastInsertRowid).
+ * to the fields the resolver needs.
+ *
+ * A seeded movement is identified by the (name, tables, rounds) triple — the
+ * only key that is unique across PSMovements.txt (names alone, and even
+ * name+tables, repeat). The database's numeric primary key is deliberately not
+ * modelled here: it is a file-order artifact of a fresh seed and must not leak
+ * into the recommendation layer.
  */
 export interface SpecCatalogEntry {
-  id: number;
   name: string;
   family: MovementFamily;
   tables: number;

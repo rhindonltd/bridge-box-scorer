@@ -20,12 +20,12 @@ type Story = StoryObj<typeof EnterPairPlayerNames>;
 
 export const NorthSouth: Story = {
   args: {
-    seat: "1NS",
+    seat: "A1NS",
   },
 };
 
 export const EastWest: Story = {
   args: {
-    seat: "1EW",
+    seat: "A1EW",
   },
 };

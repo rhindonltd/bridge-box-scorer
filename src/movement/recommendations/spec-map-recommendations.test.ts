@@ -74,4 +74,34 @@ describe("recommendationsFromSpecMap", () => {
     );
     expect(new Set(keys).size).toBe(keys.length);
   });
+
+  it("resolves a SPEC by (name, rounds), not name alone", () => {
+    // Some names repeat at one table count with different round counts (e.g.
+    // "[M109] Double Howell" is seeded at 8 tables with both 7 and 8 rounds).
+    // The 8-table snapshot recommends "[M21] Double Weave Mitchell" at 8 rounds;
+    // a same-named decoy at a different round count must NOT be matched.
+    const target = dbSpec({
+      id: 100,
+      name: "[M21] Double Weave Mitchell",
+      type: "0",
+      tables: 8,
+      rounds: 8,
+    });
+    const decoy = dbSpec({
+      id: 200,
+      name: "[M21] Double Weave Mitchell",
+      type: "0",
+      tables: 8,
+      rounds: 7,
+    });
+
+    const movements = recommendationsFromSpecMap(8, [decoy, target]);
+
+    const weave = movements.find(
+      (m) => m.name === "[M21] Double Weave Mitchell",
+    );
+    expect(weave).toBeDefined();
+    // Must pick the 8-round spec (id 100), never the 7-round decoy (id 200).
+    expect(weave?.specRef).toMatchObject({ source: "db", id: 100 });
+  });
 });

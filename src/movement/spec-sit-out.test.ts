@@ -41,6 +41,7 @@ function makeMovement(): RehydratedTable[] {
       ew,
       boardStart: idx * 2 + 1,
       boardEnd: idx * 2 + 2,
+      boardCopy: "A",
     })),
   }));
 }

@@ -109,15 +109,25 @@ function fromMitchellDescriptor(
 }
 
 /**
+ * Key a seeded spec by (name, rounds). Within a single table count this is
+ * unique, whereas name alone is not: e.g. "[M109] Double Howell" is seeded at 8
+ * tables with both 7 and 8 rounds, so a name-only lookup would collide.
+ */
+function specKey(name: string, rounds: number): string {
+  return `${name}\u0000${rounds}`;
+}
+
+/**
  * Build a RecommendedMovement for a seeded (SPEC) descriptor by resolving its
- * name against the seeded specs available for this table count. Returns null
- * when no seeded spec matches (it cannot be selected without a concrete id).
+ * (name, rounds) against the seeded specs available for this table count.
+ * Returns null when no seeded spec matches (it cannot be selected without a
+ * concrete id).
  */
 function fromSpecDescriptor(
   descriptor: Extract<MovementDescriptor, { type: "SPEC" }>,
-  specsByName: Map<string, PairMovementSpec>,
+  specsByKey: Map<string, PairMovementSpec>,
 ): RecommendedMovement | null {
-  const spec = specsByName.get(descriptor.name);
+  const spec = specsByKey.get(specKey(descriptor.name, descriptor.rounds));
   if (!spec) return null;
 
   return {
@@ -165,7 +175,9 @@ export function recommendationsFromSpecMap(
   const byBoards = SPEC_MAP[String(tableCount)];
   if (!byBoards) return [];
 
-  const specsByName = new Map(pairSpecs.map((s) => [s.name, s]));
+  const specsByKey = new Map(
+    pairSpecs.map((s) => [specKey(s.name, s.rounds), s]),
+  );
 
   const seen = new Set<string>();
   const movements: RecommendedMovement[] = [];
@@ -179,7 +191,7 @@ export function recommendationsFromSpecMap(
       const movement =
         descriptor.type === "MITCHELL"
           ? fromMitchellDescriptor(descriptor)
-          : fromSpecDescriptor(descriptor, specsByName);
+          : fromSpecDescriptor(descriptor, specsByKey);
 
       if (movement) movements.push(movement);
     }

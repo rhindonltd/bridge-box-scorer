@@ -21,49 +21,23 @@ function entry(
 }
 
 const catalog: SpecCatalogEntry[] = [
-  { id: 1, name: "3 Table Howell", family: "HOWELL", tables: 3, rounds: 5 },
+  { name: "3 Table Howell", family: "HOWELL", tables: 3, rounds: 5 },
+  { name: "6 Table 3/4 Howell", family: "HOWELL", tables: 6, rounds: 9 },
+  { name: "6 Table Full Howell", family: "HOWELL", tables: 6, rounds: 11 },
   {
-    id: 2,
-    name: "6 Table 3/4 Howell",
-    family: "HOWELL",
-    tables: 6,
-    rounds: 9,
-  },
-  {
-    id: 3,
-    name: "6 Table Full Howell",
-    family: "HOWELL",
-    tables: 6,
-    rounds: 11,
-  },
-  {
-    id: 4,
     name: "[WEB8R] 13 Table Web Mitchell (8 rounds)",
     family: "WEB",
     tables: 13,
     rounds: 8,
   },
   {
-    id: 5,
     name: "13 table Appendix Mitchell",
     family: "APPENDIX",
     tables: 13,
     rounds: 11,
   },
-  {
-    id: 6,
-    name: "Square Mitchell (4 tables)",
-    family: "SQUARE",
-    tables: 4,
-    rounds: 4,
-  },
-  {
-    id: 7,
-    name: "Double Weave Mitchell",
-    family: "DOUBLE_WEAVE",
-    tables: 8,
-    rounds: 8,
-  },
+  { name: "Square Mitchell (4 tables)", family: "SQUARE", tables: 4, rounds: 4 },
+  { name: "Double Weave Mitchell", family: "DOUBLE_WEAVE", tables: 8, rounds: 8 },
 ];
 
 describe("resolveRecommendationDescriptor — SPEC labels", () => {

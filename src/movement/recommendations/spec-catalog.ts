@@ -3,19 +3,17 @@ import { movementTypeToFamily } from "./recommendation-types";
 import { SpecCatalogEntry } from "./resolve-recommendation";
 
 /**
- * Build the seeded pair-movement catalog from PSMovements.txt in the exact
- * order the seeder inserts it, assigning each block the database id it will
- * receive on a fresh seed (1-based, matching the auto-increment primary key —
- * see createPairMovementSpec's use of lastInsertRowid and seed-movements.ts,
- * which iterates generatePairsMovements() in file order).
+ * Build the seeded pair-movement catalog from PSMovements.txt.
  *
- * This lets the recommendation resolver produce concrete SPEC ids without a
- * live database. The coverage harness cross-checks each id against this same
- * catalog so any drift between the assumed and actual ordering is caught.
+ * Each entry is identified by its (name, tables, rounds) triple — the resolver
+ * matches recommendations to seeded specs on those fields, never on a numeric
+ * id. The database primary key is intentionally absent: it is a file-order
+ * artifact of a fresh seed, and coupling recommendations to it made reordering
+ * or removing blocks silently corrupt the mapping. The live DB id is recovered
+ * by name at selection time (see spec-map-recommendations.ts).
  */
 export function buildSpecCatalog(): SpecCatalogEntry[] {
-  return generatePairsMovements().map((movement, index) => ({
-    id: index + 1,
+  return generatePairsMovements().map((movement) => ({
     name: movement.name,
     family: movementTypeToFamily(movement.type.toString(), movement.name),
     tables: movement.tables,
