@@ -134,6 +134,25 @@ npm run e2e
 npm run storybook
 ```
 
+### Coverage scope
+
+`npm run coverage` reports coverage for the unit + integration suite only. A few
+areas are deliberately excluded because they are not unit-testable (see the
+`coverage.exclude` list in `vitest.config.ts`):
+
+- **Type-only modules** — no runtime code to execute.
+- **CLI entry scripts** (`src/scripts/**`) and the **custom-server bootstrap**
+  (`src/socket/websocket.ts`) — entry points/wiring, exercised by running them.
+- **Next.js route-entry files** (`page`/`layout`/`loading`/`error`/`not-found`
+  under `src/app/**`) — only exercised by a running app, so they are the
+  responsibility of the Playwright journey/E2E suite (`tests/`), not the unit
+  report. Ordinary components under `src/app/**` are intentionally left in the
+  report so genuine (unit-testable) gaps stay visible.
+
+There is currently no automated source-level coverage report for the E2E suite;
+the route-entry files above are considered "journey-covered" by the specs in
+`tests/`.
+
 ## Environment Variables
 
 | Variable              | Default                 | Description                            |

@@ -28,6 +28,28 @@ export default mergeConfig(
           ".storybook/**",
           "**/*.stories.*",
           "**/*.test.*",
+          // Type-only modules: no runtime code to execute, so they cannot be
+          // meaningfully unit-tested and would otherwise skew coverage.
+          "src/model/leaderboard.ts",
+          "src/model/traveller.ts",
+          "src/timer/timer-state.ts",
+          "src/scoring/plugins/types.ts",
+          "src/scoring/overall/scored-traveller.ts",
+          "src/scoring/traveller/pair/common.ts",
+          // CLI entry scripts (run via tsx): top-level side effects on import,
+          // not unit-testable as modules. Exercised by running them directly.
+          "src/scripts/**",
+          // Custom-server bootstrap wiring (boots Next.js + Socket.IO); not a
+          // unit target.
+          "src/socket/websocket.ts",
+          // Next.js App Router route-entry files (page/layout/loading/error/
+          // not-found). These are only exercised by a running app — server
+          // rendering, routing and data fetching — so their coverage is the
+          // responsibility of the Playwright journey/E2E suite (`tests/`),
+          // NOT the unit/integration suite. Ordinary components under
+          // src/app/** are intentionally left in the report so genuine
+          // (unit-testable) gaps stay visible.
+          "src/app/**/{page,layout,loading,error,not-found}.tsx",
         ],
       },
 
