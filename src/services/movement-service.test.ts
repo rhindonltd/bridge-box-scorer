@@ -421,5 +421,73 @@ describe("movement-service", () => {
       expect(result.tables[0].rounds[0].played).toBe(1);
       expect(result.tables[0].rounds[0].total).toBe(1);
     });
+
+    it("filters to a single section, isolating tables that share a number across sections", async () => {
+      // Both sections have a "table 1"; without section filtering they would
+      // merge into one entry. The query mock returns only the rows matching the
+      // requested section (mirroring the DB where-clause).
+      const allRows = [
+        {
+          section: "A",
+          tableNumber: 1,
+          roundNumber: 1,
+          boardNumber: 1,
+          ns: "A1",
+          ew: "A2",
+          confirmedResult: "3NTN=",
+          directorOverrideResult: null,
+          status: "CONFIRMED",
+        },
+        {
+          section: "B",
+          tableNumber: 1,
+          roundNumber: 1,
+          boardNumber: 1,
+          ns: "B1",
+          ew: "B2",
+          confirmedResult: null,
+          directorOverrideResult: null,
+          status: "NOT_PLAYED",
+        },
+      ];
+
+      const mockDb = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            // Emulate `.where(eq(boards.section, "A"))`; the service passes the
+            // drizzle condition, but our mock just needs to scope the rows.
+            where: () =>
+              Promise.resolve(allRows.filter((r) => r.section === "A")),
+          }),
+        }),
+      } as unknown as Db;
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+
+      const result = await getMovementWithProgress(mockDb, "A");
+
+      // Only section A's single table 1 is returned; B's table 1 is excluded.
+      expect(result.tables).toHaveLength(1);
+      expect(result.tables[0].tableNumber).toBe(1);
+      expect(result.tables[0].rounds[0]).toMatchObject({
+        ns: "A1",
+        ew: "A2",
+        played: 1,
+        total: 1,
+      });
+    });
+
+    it("selects unfiltered when no section is given", async () => {
+      const from = vi.fn().mockResolvedValue([]);
+      const mockDb = {
+        select: vi.fn().mockReturnValue({ from }),
+      } as unknown as Db;
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+
+      const result = await getMovementWithProgress(mockDb);
+
+      // No section => plain select().from() with no where clause.
+      expect(from).toHaveBeenCalledTimes(1);
+      expect(result.tables).toHaveLength(0);
+    });
   });
 });

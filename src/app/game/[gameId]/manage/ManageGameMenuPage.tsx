@@ -4,7 +4,6 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 export interface DirectorMenuPageProps {
   onSetUpGameClick: () => void;
-  onSectionsClick: () => void;
   onTravellersClick: () => void;
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
@@ -14,7 +13,6 @@ export interface DirectorMenuPageProps {
 
 export function ManageGameMenuPage({
   onSetUpGameClick,
-  onSectionsClick,
   onTravellersClick,
   onMovementClick,
   onShareDirectorAccessClick,
@@ -32,10 +30,6 @@ export function ManageGameMenuPage({
       <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
         <button onClick={onSetUpGameClick} className={standardButtonClass}>
           <span className="flex items-center gap-3">Set Up Game</span>
-        </button>
-
-        <button onClick={onSectionsClick} className={standardButtonClass}>
-          <span className="flex items-center gap-3">Sections</span>
         </button>
 
         <button onClick={onTravellersClick} className={standardButtonClass}>

@@ -1,11 +1,23 @@
 import "server-only";
 
+import { eq } from "drizzle-orm";
 import { Db } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { isBoardEntered } from "@/lib/round-status";
 
-export async function getMovementWithProgress(db: Db) {
-  const allRows = await db.select().from(pairsBoards);
+/**
+ * Build the by-table/by-round movement view (with per-round played/total
+ * progress) from the persisted board rows.
+ *
+ * @param section When provided, restrict the view to a single section. Table
+ *   numbers restart within each section, so a multi-section game MUST be
+ *   viewed one section at a time — omitting the section would merge rows from
+ *   different sections that share a table number.
+ */
+export async function getMovementWithProgress(db: Db, section?: string) {
+  const allRows = section
+    ? await db.select().from(pairsBoards).where(eq(pairsBoards.section, section))
+    : await db.select().from(pairsBoards);
 
   // SIT_OUT boards are not played at their table that round; exclude them so
   // they don't inflate board ranges, totals, or trigger false gaps.

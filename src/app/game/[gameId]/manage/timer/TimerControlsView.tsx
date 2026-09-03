@@ -31,6 +31,12 @@ export interface TimerControlsViewProps {
   onApplyChanges: () => void;
   onStart: () => void;
   onPause: () => void;
+  /**
+   * When true, render without the outer GamePageLayout so the controls can be
+   * embedded (e.g. beneath the setup flow's tab bar). Controls render inline
+   * after the config rather than in a fixed bottom action bar.
+   */
+  embedded?: boolean;
 }
 
 export function TimerControlsView({
@@ -44,6 +50,7 @@ export function TimerControlsView({
   onApplyChanges,
   onStart,
   onPause,
+  embedded = false,
 }: TimerControlsViewProps) {
   function formatTime(totalSeconds: number) {
     const mins = Math.floor(totalSeconds / 60);
@@ -51,45 +58,42 @@ export function TimerControlsView({
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   }
 
-  return (
-    <GamePageLayout
-      headerTitle="Timer Controls"
-      centerContent={true}
-      actions={
-        <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-          {!hasSession ? (
-            <button
-              onClick={onCreate}
-              className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-            >
-              Create
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={onApplyChanges}
-                className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-              >
-                Apply Changes
-              </button>
-              <button
-                onClick={onStart}
-                className="bg-green-600 text-white py-6 rounded-xl text-xl font-semibold hover:bg-green-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
-              >
-                Start
-              </button>
-              <button
-                onClick={onPause}
-                className="bg-yellow-500 text-gray-900 py-6 rounded-xl text-xl font-semibold hover:bg-yellow-600 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
-              >
-                Pause
-              </button>
-            </>
-          )}
-        </div>
-      }
-    >
-      <>
+  const controls = (
+    <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+      {!hasSession ? (
+        <button
+          onClick={onCreate}
+          className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        >
+          Create
+        </button>
+      ) : (
+        <>
+          <button
+            onClick={onApplyChanges}
+            className="bg-blue-600 text-white py-6 rounded-xl text-xl font-semibold col-span-2 hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            Apply Changes
+          </button>
+          <button
+            onClick={onStart}
+            className="bg-green-600 text-white py-6 rounded-xl text-xl font-semibold hover:bg-green-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
+          >
+            Start
+          </button>
+          <button
+            onClick={onPause}
+            className="bg-yellow-500 text-gray-900 py-6 rounded-xl text-xl font-semibold hover:bg-yellow-600 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
+          >
+            Pause
+          </button>
+        </>
+      )}
+    </div>
+  );
+
+  const body = (
+    <>
         <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
           {hasSession && timer ? (
             <>
@@ -243,6 +247,24 @@ export function TimerControlsView({
           </div>
         </div>
       </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex flex-col items-center gap-4 p-4">
+        {body}
+        {controls}
+      </div>
+    );
+  }
+
+  return (
+    <GamePageLayout
+      headerTitle="Timer Controls"
+      centerContent={true}
+      actions={controls}
+    >
+      {body}
     </GamePageLayout>
   );
 }

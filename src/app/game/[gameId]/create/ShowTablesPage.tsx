@@ -18,14 +18,14 @@ import NumberStepper from "@/components/common/NumberStepper";
 import { useStartCheck } from "@/hooks/start-check";
 import { startGame } from "@/lib/game-service";
 import { useSections } from "@/hooks/sections";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 type Props = {
-  /** Navigate to the section/movement management step. */
-  onSelectMovement: () => void;
+  /** Persistent setup tab bar rendered at the top of the content area. */
+  tabs?: ReactNode;
 };
 
-export function ShowTablesPage({ onSelectMovement }: Props) {
+export function ShowTablesPage({ tabs }: Props) {
   const { game, mutateGame } = useRequiredGame();
 
   const gameId = game.gameId;
@@ -130,59 +130,57 @@ export function ShowTablesPage({ onSelectMovement }: Props) {
               One pair short — {sitOutSeat} will sit out each round.
             </p>
           )}
-          <div className="flex gap-2">
-            <Button
-              value={"Sections & Movements"}
-              onClick={onSelectMovement}
-              bgColour="bg-gray-100"
-              textColour="text-gray-900"
-              hoverColour="hover:bg-gray-200"
-            />
-            <Button
-              value={starting ? "Starting…" : "Start Game"}
-              onClick={handleStartGame}
-              disabled={!canStart || starting}
-            />
-          </div>
+          <Button
+            value={starting ? "Starting…" : "Start Game"}
+            onClick={handleStartGame}
+            disabled={!canStart || starting}
+          />
         </div>
       }
     >
-      <div className="flex flex-col gap-6">
-        {sections.map((s) => {
-          const tables = Array.from({ length: s.tables }, (_, i) =>
-            createTable(s.section, i + 1),
-          );
-          const lastTable = tables[tables.length - 1];
-          const lastTableOccupied =
-            !!lastTable &&
-            (lastTable.players.N !== null || lastTable.players.E !== null);
+      <div className="flex h-full min-h-0 flex-col">
+        {tabs}
+        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
+          {sections.map((s) => {
+            const tables = Array.from({ length: s.tables }, (_, i) =>
+              createTable(s.section, i + 1),
+            );
+            const lastTable = tables[tables.length - 1];
+            const lastTableOccupied =
+              !!lastTable &&
+              (lastTable.players.N !== null || lastTable.players.E !== null);
 
-          return (
-            <div key={s.section} className="flex flex-col">
-              <div className="flex items-center justify-between px-4 pt-4">
-                <h2 className="text-lg font-bold text-gray-800">
-                  Section {s.section}
-                  {s.label !== s.section ? ` — ${s.label}` : ""}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Tables:</span>
-                  <NumberStepper
-                    min={1}
-                    value={s.tables}
-                    onChange={(tables) =>
-                      handleResizeSection(s.section, tables)
-                    }
-                  />
+            return (
+              <div key={s.section} className="flex flex-col">
+                <div className="flex items-center justify-between px-4 pt-4">
+                  {sections.length > 1 ? (
+                    <h2 className="text-lg font-bold text-gray-800">
+                      Section {s.section}
+                      {s.label !== s.section ? ` — ${s.label}` : ""}
+                    </h2>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">Tables:</span>
+                    <NumberStepper
+                      min={1}
+                      value={s.tables}
+                      onChange={(tables) =>
+                        handleResizeSection(s.section, tables)
+                      }
+                    />
+                  </div>
                 </div>
+                <DirectorTableControls
+                  tables={tables}
+                  onEvict={handleEvict}
+                  canRemoveTable={s.tables > 1 && !lastTableOccupied}
+                />
               </div>
-              <DirectorTableControls
-                tables={tables}
-                onEvict={handleEvict}
-                canRemoveTable={s.tables > 1 && !lastTableOccupied}
-              />
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </GamePageLayout>
   );

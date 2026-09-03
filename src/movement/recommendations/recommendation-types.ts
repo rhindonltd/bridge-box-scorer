@@ -54,6 +54,12 @@ export type RecommendedMovement = {
   boardsPerRound: number;
   /** rounds * boardsPerRound, or the entry fallback. Ordering key. */
   boardsPerPair: number;
+  /**
+   * The highest board number used across the whole session (i.e. the number of
+   * distinct boards physically in play). This is NOT rounds * boardsPerRound:
+   * relay/shared movements circulate fewer distinct boards than a pair plays.
+   */
+  boardsInPlay: number;
   /** Physical copies of each board set the director must prepare. */
   copies: number;
   pros: string[];

@@ -18,6 +18,9 @@ const meta: Meta<typeof ManageMovementPage> = {
 export default meta;
 type Story = StoryObj<typeof ManageMovementPage>;
 
+// The page fetches its sections and movement over SWR. Storybook has no request
+// mocking wired up, so these stories exercise the layout/loading shell; the
+// single- vs multi-section selector behaviour is covered by the unit test.
 export const Default: Story = {
   decorators: [withGame(mockGame)],
 };
