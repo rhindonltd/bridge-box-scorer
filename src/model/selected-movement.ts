@@ -23,6 +23,7 @@ export const mitchellSpecSchema = z.object({
   skip: z.boolean().optional(),
   shareAndRelay: z.boolean().optional(),
   hesitation: z.boolean().optional(),
+  web: z.boolean().optional(),
 });
 
 export const selectedMovementSchema = z.discriminatedUnion("source", [

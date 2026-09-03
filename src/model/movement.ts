@@ -3,11 +3,23 @@ import {
   ParticipantsByMode,
 } from "@/model/participants";
 
+/**
+ * The physical duplicate copy of a board set a table plays in a given round.
+ *
+ * Only Web Mitchell movements use more than one copy: many tables play the
+ * same board-set number simultaneously, so the copy label (A/B/C/D) is what
+ * distinguishes those otherwise-identical instances. Every other movement plays
+ * a single copy, so this is optional here and defaults to "A" at
+ * materialization (see materialize-movement.ts / the boards.copy column).
+ */
+export type BoardCopy = string;
+
 export type Round<M extends TravellerParticipantMode> = {
   round: number;
   tables: {
     table: number;
     boards: number[];
+    boardCopy?: BoardCopy;
     participants: ParticipantsByMode[M];
   }[];
 };
@@ -17,6 +29,7 @@ export type Table<M extends TravellerParticipantMode> = {
   rounds: {
     round: number;
     boards: number[];
+    boardCopy?: BoardCopy;
     participants: ParticipantsByMode[M];
   }[];
 };

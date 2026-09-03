@@ -267,6 +267,7 @@ function toMaterializable(movement: RehydratedTable[]): MaterializableMovement {
       ew: round.ew,
       boardStart: round.boardStart,
       boardEnd: round.boardEnd,
+      boardCopy: round.boardCopy,
     })),
   }));
 }

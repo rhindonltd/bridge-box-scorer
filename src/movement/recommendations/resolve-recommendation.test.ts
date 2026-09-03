@@ -38,10 +38,10 @@ const catalog: SpecCatalogEntry[] = [
   },
   {
     id: 4,
-    name: "Web Mitchell 9 round SPECIAL",
+    name: "[WEB8R] 13 Table Web Mitchell (8 rounds)",
     family: "WEB",
-    tables: 12,
-    rounds: 9,
+    tables: 13,
+    rounds: 8,
   },
   {
     id: 5,
@@ -102,16 +102,43 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
     }
   });
 
-  it("resolves Web / Appendix to their families", () => {
+  it("resolves an even-table Web Mitchell to a generated WEB descriptor", () => {
     const web = resolveRecommendationDescriptor(
       entry({
-        tables: 12,
+        tables: 14,
         movement: "Web Mitchell",
-        rounds: 9,
+        rounds: 8,
         boardsPerRound: 3,
       }),
       catalog,
     );
+    expect(web.resolved && web.descriptors[0]).toMatchObject({
+      type: "MITCHELL",
+      subtype: "WEB",
+      tables: 14,
+      rounds: 8,
+      boardsPerRound: 3,
+      arrowSwitches: 0,
+    });
+  });
+
+  it("resolves an odd-table Web Mitchell to the seeded WEB spec", () => {
+    const web = resolveRecommendationDescriptor(
+      entry({
+        tables: 13,
+        movement: "Web Mitchell",
+        rounds: 8,
+        boardsPerRound: 3,
+      }),
+      catalog,
+    );
+    expect(web.resolved && web.descriptors[0]).toMatchObject({
+      type: "SPEC",
+      name: "[WEB8R] 13 Table Web Mitchell (8 rounds)",
+    });
+  });
+
+  it("resolves Appendix to its family", () => {
     const appendix = resolveRecommendationDescriptor(
       entry({
         tables: 13,
@@ -121,9 +148,6 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
       }),
       catalog,
     );
-    expect(web.resolved && web.descriptors[0]).toMatchObject({
-      name: "Web Mitchell 9 round SPECIAL",
-    });
     expect(appendix.resolved && appendix.descriptors[0]).toMatchObject({
       name: "13 table Appendix Mitchell",
     });

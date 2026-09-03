@@ -15,6 +15,7 @@ export const boards = sqliteTable(
     roundNumber: integer("round_number").notNull(),
     tableNumber: integer("table_number").notNull(),
     boardNumber: integer("board_number").notNull(),
+    copy: text("copy").notNull().default("A"),
     ns: text("ns").notNull(),
     ew: text("ew").notNull(),
     confirmedResult: text("confirmed_result").$type<BoardOutcome>(),

@@ -185,6 +185,7 @@ export function groupByRound<M extends TravellerParticipantMode>(
     const roundTables = movement.tables.map((table) => ({
       table: table.table,
       boards: table.rounds[roundIdx].boards,
+      boardCopy: table.rounds[roundIdx].boardCopy,
       participants: table.rounds[roundIdx].participants,
     }));
 

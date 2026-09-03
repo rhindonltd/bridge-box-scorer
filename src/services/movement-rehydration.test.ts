@@ -57,4 +57,20 @@ describe("rehydrateSelectedMovement — Mitchell variants", () => {
     // Hesitation Mitchell always produces tables + 1 rounds.
     expect(result.movement[0].rounds).toHaveLength(6);
   });
+
+  it("builds a Web Mitchell — not standard, with board copies populated", async () => {
+    const result = await rehydrateSelectedMovement(
+      mitchell({ tables: 14, rounds: 8, boardsPerRound: 3, web: true }),
+    );
+
+    expect(result.isStandardMitchell).toBe(false);
+    expect(result.movement).toHaveLength(14);
+    expect(result.movement[0].rounds).toHaveLength(8);
+
+    // First half plays copy A, second half copy B.
+    const firstHalf = result.movement.find((t) => t.tableNumber === 1);
+    const secondHalf = result.movement.find((t) => t.tableNumber === 14);
+    expect(firstHalf?.rounds.every((r) => r.boardCopy === "A")).toBe(true);
+    expect(secondHalf?.rounds.every((r) => r.boardCopy === "B")).toBe(true);
+  });
 });

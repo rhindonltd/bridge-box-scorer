@@ -6,10 +6,10 @@
         "name": "Two Table Full Howell",
         "boardsPerRound": 6,
         "pros": [
-          "All opponents can be played."
+          "Good for a tiny field: all opponents can be played."
         ],
         "cons": [
-          "Requires board sharing."
+          "Requires board sharing; only practical for very small fields."
         ]
       },
       {
@@ -30,10 +30,10 @@
         "name": "Two Table Full Howell",
         "boardsPerRound": 7,
         "pros": [
-          "All opponents can be played."
+          "Good for a tiny field: all opponents can be played."
         ],
         "cons": [
-          "Requires board sharing."
+          "Requires board sharing; only practical for very small fields."
         ]
       }
     ],
@@ -43,10 +43,10 @@
         "name": "Two Table Full Howell",
         "boardsPerRound": 8,
         "pros": [
-          "All opponents can be played."
+          "Good for a tiny field: all opponents can be played."
         ],
         "cons": [
-          "Requires board sharing."
+          "Requires board sharing; only practical for very small fields."
         ]
       },
       {
@@ -897,9 +897,12 @@
         ]
       },
       {
-        "type": "SPEC",
-        "name": "[M13e] Web Skip Mitchell 8 round SPECIAL",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 12,
+        "rounds": 8,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Good eight-round/24-board option with no shared boards within sections."
         ],
@@ -910,9 +913,12 @@
     ],
     "27": [
       {
-        "type": "SPEC",
-        "name": "[M13e] Web Mitchell 9 round SPECIAL",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 12,
+        "rounds": 9,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Nine rounds and three boards per round."
         ],
@@ -1012,9 +1018,12 @@
   "14": {
     "24": [
       {
-        "type": "SPEC",
-        "name": "[WEB8] 14 Table Web Mitchell (8 rounds)",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 14,
+        "rounds": 8,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Eight-round, three-board option."
         ],
@@ -1041,9 +1050,12 @@
     ],
     "27": [
       {
-        "type": "SPEC",
-        "name": "[M13e] Web Mitchell 9 round SPECIAL",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 14,
+        "rounds": 9,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Nine-round, three-board option."
         ],
@@ -1113,9 +1125,12 @@
   "16": {
     "24": [
       {
-        "type": "SPEC",
-        "name": "[WEB8] 16 Table Web Mitchell (8 rounds)",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 16,
+        "rounds": 8,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Eight rounds and three boards per round; two clean sections."
         ],
@@ -1126,9 +1141,12 @@
     ],
     "27": [
       {
-        "type": "SPEC",
-        "name": "[M13e] Web Mitchell 9 round SPECIAL",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 16,
+        "rounds": 9,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Nine rounds and three boards per round."
         ],
@@ -1169,9 +1187,12 @@
   "18": {
     "24": [
       {
-        "type": "SPEC",
-        "name": "[WEB8] 18 Table Web Mitchell (8 rounds)",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 18,
+        "rounds": 8,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Eight-round large-field movement; three boards per round."
         ],
@@ -1182,9 +1203,12 @@
     ],
     "27": [
       {
-        "type": "SPEC",
-        "name": "[WEB9] 18 Table Web Mitchell (9 rounds)",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 18,
+        "rounds": 9,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Nine-round large-field movement; three boards per round."
         ],
@@ -1225,9 +1249,12 @@
   "20": {
     "24": [
       {
-        "type": "SPEC",
-        "name": "[WEB8] 20 Table Web Mitchell (8 rounds)",
+        "type": "MITCHELL",
+        "subtype": "WEB",
+        "tables": 20,
+        "rounds": 8,
         "boardsPerRound": 3,
+        "arrowSwitches": 0,
         "pros": [
           "Eight-round large-field movement; three boards per round."
         ],

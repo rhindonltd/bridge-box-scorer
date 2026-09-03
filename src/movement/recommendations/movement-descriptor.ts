@@ -26,12 +26,15 @@ import { SelectedMovement } from "@/model/selected-movement";
  * - SHARE_AND_RELAY -> shareAndRelay: true
  * - SKIP            -> skip: true
  * - HESITATION      -> hesitation: true (rounds computed as tables + 1)
+ * - WEB             -> web: true (even-table Web Mitchell; odd tables stay on
+ *                      seeded specs)
  */
 export const MITCHELL_SUBTYPES = [
   "STANDARD",
   "SHARE_AND_RELAY",
   "SKIP",
   "HESITATION",
+  "WEB",
 ] as const;
 
 export type MitchellSubtype = (typeof MITCHELL_SUBTYPES)[number];
@@ -125,6 +128,7 @@ export function descriptorToSelectedMovement(
       ...(subtype === "SHARE_AND_RELAY" ? { shareAndRelay: true } : {}),
       ...(subtype === "SKIP" ? { skip: true } : {}),
       ...(subtype === "HESITATION" ? { hesitation: true } : {}),
+      ...(subtype === "WEB" ? { web: true } : {}),
     },
   };
 }

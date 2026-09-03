@@ -34,6 +34,22 @@ describe("SelectedMovement round-trip", () => {
 
     expect(parsed).toEqual(selected);
   });
+
+  it("round-trips a WEB Mitchell selection", () => {
+    const selected: SelectedMovement = {
+      source: "MITCHELL",
+      mitchell: {
+        tables: 14,
+        rounds: 8,
+        boardsPerRound: 3,
+        web: true,
+      },
+    };
+
+    const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
+
+    expect(parsed).toEqual(selected);
+  });
 });
 
 describe("parseSelectedMovement", () => {

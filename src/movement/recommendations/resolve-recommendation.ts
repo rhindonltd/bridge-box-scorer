@@ -45,7 +45,8 @@ export type ResolveResult =
 const SPEC_LABEL_FAMILIES: Record<string, MovementFamily> = {
   howell: "HOWELL",
   "3/4 howell": "HOWELL",
-  "web mitchell": "WEB",
+  // "web mitchell" is handled explicitly (see resolveRecommendationDescriptor):
+  // even tables are generated, odd tables resolve to a seeded WEB spec.
   "appendix mitchell": "APPENDIX",
   "square mitchell": "SQUARE",
   "double weave mitchell": "DOUBLE_WEAVE",
@@ -184,6 +185,20 @@ export function resolveRecommendationDescriptor(
 
   if (UNSUPPORTED_LABELS.has(label)) {
     return { resolved: false, reason: `unsupported movement: ${entry.movement}` };
+  }
+
+  // Web Mitchell: even-table Webs are produced by the generator (verified to
+  // reproduce the seeded [WEB8]/[WEB9] blocks exactly); odd-table Webs use a
+  // rover/relay construction the generator does not reproduce, so those stay on
+  // the seeded [WEB8R]/[WEB9R] specs.
+  if (label === "web mitchell") {
+    if (entry.tables % 2 === 0) {
+      return {
+        resolved: true,
+        descriptors: [mitchellDescriptor(entry, "WEB", 0)],
+      };
+    }
+    return resolveSpec(entry, "WEB", catalog);
   }
 
   // Seeded DB specs.

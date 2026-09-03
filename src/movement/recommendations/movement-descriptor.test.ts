@@ -168,4 +168,21 @@ describe("descriptorToSelectedMovement", () => {
       mitchell: { tables: 5, rounds: 6, boardsPerRound: 3, hesitation: true },
     });
   });
+
+  it("converts a WEB descriptor", () => {
+    const descriptor: MovementDescriptor = {
+      type: "MITCHELL",
+      subtype: "WEB",
+      tables: 14,
+      rounds: 8,
+      boardsPerRound: 3,
+      arrowSwitches: 0,
+      pros: [],
+      cons: [],
+    };
+    expect(descriptorToSelectedMovement(descriptor)).toEqual({
+      source: "MITCHELL",
+      mitchell: { tables: 14, rounds: 8, boardsPerRound: 3, web: true },
+    });
+  });
 });
