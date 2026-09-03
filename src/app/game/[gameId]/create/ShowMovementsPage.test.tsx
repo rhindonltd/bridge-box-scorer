@@ -88,7 +88,9 @@ describe("ShowMovementsPage", () => {
     render(<ShowMovementsPage onShowTablesPage={vi.fn()} />);
 
     // The first recommended card for 7 tables resolves to a generated Mitchell.
-    const firstCard = screen.getByRole("button", { name: /Standard Mitchell/ });
+    const firstCard = screen.getAllByRole("button", {
+      name: /Mitchell/,
+    })[0];
     fireEvent.click(firstCard);
 
     // Detail view shows a "Use Movement" action button.

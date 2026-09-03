@@ -54,10 +54,22 @@ export const specDescriptorSchema = z.object({
    */
   name: z.string().min(1),
   /**
+   * Number of rounds the seeded spec plays. Carried on the descriptor so the
+   * snapshot is self-contained (the movement chooser can show rounds and
+   * boards-a-pair-plays without loading the seeded spec).
+   */
+  rounds: z.number().int().positive(),
+  /**
    * Boards played per round when this spec is materialized. Sourced from the
    * recommendation entry and overrides the seeded spec's own default.
    */
   boardsPerRound: z.number().int().positive(),
+  /**
+   * Physical copies of each board set the director must have to hand. Seeded
+   * Web specs need two duplicated board sets; every other seeded family is
+   * single-copy.
+   */
+  copies: z.number().int().positive(),
   ...prosCons,
 });
 
@@ -74,6 +86,12 @@ export const mitchellDescriptorSchema = z.object({
    * movement with no switch). Defaults to 0 when omitted.
    */
   arrowSwitches: z.number().int().nonnegative().default(0),
+  /**
+   * Physical copies of each board set the director must have to hand. Derived
+   * from the generated movement's distinct board-copy labels: an even-table Web
+   * uses two copies (A/B); every other generated Mitchell is single-copy.
+   */
+  copies: z.number().int().positive(),
   ...prosCons,
 });
 

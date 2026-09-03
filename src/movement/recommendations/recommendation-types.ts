@@ -22,44 +22,6 @@ export type MovementFamily =
   | "AMERICAN_WHIST";
 
 /**
- * A single curated recommendation for a given table count, derived from the
- * reference page. It describes the movement family the director should
- * consider, along with a short pros/cons summary for a snappy decision.
- */
-export type RecommendationEntry = {
-  /** Movement family this recommendation refers to. */
-  family: MovementFamily;
-  /**
-   * Preference rank as ordered on the reference page (1 = most recommended).
-   * Used only as a tie-breaker when two matched movements play the same number
-   * of boards per pair.
-   */
-  preference: number;
-  /** Short, ~1-line advantages. */
-  pros: string[];
-  /** Short, ~1-line drawbacks. */
-  cons: string[];
-  /**
-   * When set, prefer a concrete movement whose round count matches this value.
-   */
-  targetRounds?: number;
-  /**
-   * When set, prefer a concrete movement whose boards-per-round matches this
-   * value. For generated Mitchell recommendations this also fixes the
-   * boards-per-round used to generate the movement (there is no user stepper).
-   */
-  targetBoardsPerRound?: number;
-  /**
-   * Boards a pair plays, used for ordering when no concrete candidate provides
-   * its own numbers (e.g. the reference page states a board count the seeded
-   * spec does not expose directly).
-   */
-  fallbackBoardsPerPair?: number;
-  /** Optional short note shown to the director (e.g. setup caveat). */
-  note?: string;
-};
-
-/**
  * Reference to the concrete movement a recommendation resolved to. Either a
  * client-generated Mitchell (carrying the spec needed to preview/persist it) or
  * a seeded DB movement spec (carrying its id and persisted type string).
@@ -80,8 +42,9 @@ export type RecommendedMovementSpecRef =
 
 /**
  * A fully-resolved recommendation ready to render as a selectable card. Built
- * by matchRecommendations by combining a RecommendationEntry with a concrete
- * available movement.
+ * from the committed recommendation-spec snapshot (see
+ * spec-map-recommendations.ts), resolving each descriptor to a concrete
+ * generated or seeded movement.
  */
 export type RecommendedMovement = {
   family: MovementFamily;
@@ -91,6 +54,8 @@ export type RecommendedMovement = {
   boardsPerRound: number;
   /** rounds * boardsPerRound, or the entry fallback. Ordering key. */
   boardsPerPair: number;
+  /** Physical copies of each board set the director must prepare. */
+  copies: number;
   pros: string[];
   cons: string[];
   note?: string;

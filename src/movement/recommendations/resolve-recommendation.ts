@@ -1,5 +1,7 @@
 import { MovementFamily, movementTypeToFamily } from "./recommendation-types";
 import { MovementDescriptor, MitchellSubtype } from "./movement-descriptor";
+import { generateMitchell } from "@/movement/mitchell/mitchell";
+import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 
 /**
  * A single recommendation as authored in scripts/recommendations.json.
@@ -128,11 +130,58 @@ function resolveSpec(
       {
         type: "SPEC",
         name: preferred.name,
+        rounds: entry.rounds,
         boardsPerRound: entry.boardsPerRound,
+        // Seeded Web specs are bridgecentral two-board-set movements; every
+        // other seeded family plays a single copy.
+        copies: family === "WEB" ? 2 : 1,
         pros: entry.pros,
         cons: entry.cons,
       },
     ],
+  };
+}
+
+/**
+ * Number of physical copies of each board set a generated Mitchell movement
+ * needs, read authoritatively from the generator's per-round board-copy labels.
+ * An even-table Web uses two copies (A/B); every other Mitchell family is
+ * single-copy.
+ *
+ * Only the Web family uses duplicate copies, so we only build the movement to
+ * count them for a Web. Building other families here would be wasteful and, for
+ * some curated combinations (e.g. an even-table arrow-switch offered as a
+ * share-and-relay at rounds < tables), the generator would reject the spec even
+ * though the copy count is trivially one.
+ */
+function mitchellCopies(spec: MitchellMovementSpec): number {
+  if (!spec.web) return 1;
+
+  const generated = generateMitchell(spec);
+  const copies = new Set<string>();
+  for (const table of generated.tables) {
+    for (const round of table.rounds) {
+      copies.add(round.boardCopy ?? "A");
+    }
+  }
+  return copies.size;
+}
+
+/** Build the MitchellMovementSpec a subtype maps to, for generating/copies. */
+function specForSubtype(
+  entry: RecommendationEntryInput,
+  subtype: MitchellSubtype,
+  arrowSwitches: number,
+): MitchellMovementSpec {
+  return {
+    tables: entry.tables,
+    rounds: entry.rounds,
+    boardsPerRound: entry.boardsPerRound,
+    ...(arrowSwitches > 0 ? { arrowSwitchRounds: arrowSwitches } : {}),
+    ...(subtype === "SHARE_AND_RELAY" ? { shareAndRelay: true } : {}),
+    ...(subtype === "SKIP" ? { skip: true } : {}),
+    ...(subtype === "HESITATION" ? { hesitation: true } : {}),
+    ...(subtype === "WEB" ? { web: true } : {}),
   };
 }
 
@@ -148,6 +197,7 @@ function mitchellDescriptor(
     rounds: entry.rounds,
     boardsPerRound: entry.boardsPerRound,
     arrowSwitches,
+    copies: mitchellCopies(specForSubtype(entry, subtype, arrowSwitches)),
     pros: entry.pros,
     cons: entry.cons,
   };

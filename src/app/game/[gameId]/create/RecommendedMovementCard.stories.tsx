@@ -9,6 +9,7 @@ const generatedMitchell: RecommendedMovement = {
   rounds: 9,
   boardsPerRound: 3,
   boardsPerPair: 27,
+  copies: 1,
   pros: ["Best and easiest for nine tables", "Can shorten to 8 or 7 rounds"],
   cons: ["Two-winner game", "Each pair misses four opposing pairs"],
   source: "generated",
@@ -24,6 +25,7 @@ const dbHowell: RecommendedMovement = {
   rounds: 5,
   boardsPerRound: 5,
   boardsPerPair: 25,
+  copies: 1,
   pros: ["Every pair plays every other pair", "Full 25 or shorter 20 boards"],
   cons: ["One stationary pair only", "All three tables share the final set"],
   note: "Shuffle and copy the last-round boards in advance if you can.",
@@ -56,6 +58,26 @@ type Story = StoryObj<typeof RecommendedMovementCard>;
 
 export const GeneratedMitchell: Story = {
   args: { movement: generatedMitchell },
+};
+
+export const WebMitchellTwoCopies: Story = {
+  args: {
+    movement: {
+      family: "WEB",
+      name: "Web Mitchell",
+      rounds: 8,
+      boardsPerRound: 3,
+      boardsPerPair: 24,
+      copies: 2,
+      pros: ["All pairs play the same 24 boards, none missed"],
+      cons: ["Needs two pre-made board sets", "Careful round-one setup"],
+      source: "generated",
+      specRef: {
+        source: "generated",
+        spec: { tables: 14, rounds: 8, boardsPerRound: 3, web: true },
+      },
+    },
+  },
 };
 
 export const DbHowellWithNote: Story = {

@@ -78,7 +78,9 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
       expect(result.descriptors[0]).toMatchObject({
         type: "SPEC",
         name: "3 Table Howell",
+        rounds: 5,
         boardsPerRound: 5,
+        copies: 1,
       });
     }
   });
@@ -119,6 +121,8 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
       rounds: 8,
       boardsPerRound: 3,
       arrowSwitches: 0,
+      // Even-table Web uses two physical board-set copies (A/B).
+      copies: 2,
     });
   });
 
@@ -135,6 +139,9 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
     expect(web.resolved && web.descriptors[0]).toMatchObject({
       type: "SPEC",
       name: "[WEB8R] 13 Table Web Mitchell (8 rounds)",
+      rounds: 8,
+      // Seeded Web specs are two-board-set movements.
+      copies: 2,
     });
   });
 
@@ -218,6 +225,8 @@ describe("resolveRecommendationDescriptor — Mitchell family", () => {
       type: "MITCHELL",
       subtype: "STANDARD",
       arrowSwitches: 0,
+      // Non-Web Mitchell plays a single board-set copy.
+      copies: 1,
     });
   });
 

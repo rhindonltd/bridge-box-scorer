@@ -10,7 +10,9 @@ describe("movementDescriptorSchema", () => {
     const parsed = movementDescriptorSchema.safeParse({
       type: "SPEC",
       name: "3 Table Howell",
+      rounds: 5,
       boardsPerRound: 3,
+      copies: 1,
       pros: ["Every pair plays every other pair"],
       cons: ["One stationary pair only"],
     });
@@ -24,6 +26,7 @@ describe("movementDescriptorSchema", () => {
       tables: 5,
       rounds: 5,
       boardsPerRound: 5,
+      copies: 1,
       pros: ["Simple"],
       cons: ["Half the field"],
     });
@@ -37,11 +40,34 @@ describe("movementDescriptorSchema", () => {
     const parsed = movementDescriptorSchema.safeParse({
       type: "SPEC",
       name: "",
+      rounds: 5,
       boardsPerRound: 3,
+      copies: 1,
       pros: [],
       cons: [],
     });
     expect(parsed.success).toBe(false);
+  });
+
+  it("rejects a SPEC descriptor missing rounds or copies", () => {
+    const noRounds = movementDescriptorSchema.safeParse({
+      type: "SPEC",
+      name: "3 Table Howell",
+      boardsPerRound: 3,
+      copies: 1,
+      pros: [],
+      cons: [],
+    });
+    const noCopies = movementDescriptorSchema.safeParse({
+      type: "SPEC",
+      name: "3 Table Howell",
+      rounds: 5,
+      boardsPerRound: 3,
+      pros: [],
+      cons: [],
+    });
+    expect(noRounds.success).toBe(false);
+    expect(noCopies.success).toBe(false);
   });
 
   it("rejects a MITCHELL descriptor with an unknown subtype", () => {
@@ -51,6 +77,7 @@ describe("movementDescriptorSchema", () => {
       tables: 4,
       rounds: 4,
       boardsPerRound: 5,
+      copies: 1,
       pros: [],
       cons: [],
     });
@@ -71,7 +98,9 @@ describe("descriptorToSelectedMovement", () => {
     const descriptor: MovementDescriptor = {
       type: "SPEC",
       name: "3 Table Howell",
+      rounds: 5,
       boardsPerRound: 3,
+      copies: 1,
       pros: [],
       cons: [],
     };
@@ -88,7 +117,9 @@ describe("descriptorToSelectedMovement", () => {
     const descriptor: MovementDescriptor = {
       type: "SPEC",
       name: "Unknown Movement",
+      rounds: 5,
       boardsPerRound: 3,
+      copies: 1,
       pros: [],
       cons: [],
     };
@@ -103,6 +134,7 @@ describe("descriptorToSelectedMovement", () => {
       rounds: 5,
       boardsPerRound: 5,
       arrowSwitches: 0,
+      copies: 1,
       pros: [],
       cons: [],
     };
@@ -120,6 +152,7 @@ describe("descriptorToSelectedMovement", () => {
       rounds: 6,
       boardsPerRound: 4,
       arrowSwitches: 1,
+      copies: 1,
       pros: [],
       cons: [],
     };
@@ -143,6 +176,7 @@ describe("descriptorToSelectedMovement", () => {
       rounds: 6,
       boardsPerRound: 4,
       arrowSwitches: 0,
+      copies: 1,
       pros: [],
       cons: [],
     };
@@ -160,6 +194,7 @@ describe("descriptorToSelectedMovement", () => {
       rounds: 6,
       boardsPerRound: 3,
       arrowSwitches: 0,
+      copies: 1,
       pros: [],
       cons: [],
     };
@@ -177,6 +212,7 @@ describe("descriptorToSelectedMovement", () => {
       rounds: 8,
       boardsPerRound: 3,
       arrowSwitches: 0,
+      copies: 2,
       pros: [],
       cons: [],
     };

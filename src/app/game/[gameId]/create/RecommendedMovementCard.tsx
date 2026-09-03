@@ -24,9 +24,10 @@ export function RecommendedMovementCard({ movement, onSelect }: Props) {
     >
       <h2 className="text-lg font-semibold text-gray-900">{movement.name}</h2>
 
-      <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
+      <div className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <Stat label="Rounds" value={movement.rounds} />
-        <Stat label="Boards per Round" value={movement.boardsPerRound} />
+        <Stat label="Boards in a Set" value={movement.boardsPerRound} />
+        <Stat label="Copies of each Set" value={movement.copies} />
         <Stat label="Boards a Pair Plays" value={movement.boardsPerPair} />
       </div>
 

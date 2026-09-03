@@ -9,6 +9,7 @@ const movement: RecommendedMovement = {
   rounds: 5,
   boardsPerRound: 5,
   boardsPerPair: 25,
+  copies: 1,
   pros: ["Every pair plays every other pair", "Full 25 or shorter 20 boards"],
   cons: ["One stationary pair only"],
   note: "Shuffle the last-round boards in advance.",
@@ -23,6 +24,23 @@ describe("RecommendedMovementCard", () => {
     expect(screen.getByText("3 Table Howell")).toBeInTheDocument();
     expect(screen.getByText("Boards a Pair Plays")).toBeInTheDocument();
     expect(screen.getByText("25")).toBeInTheDocument();
+  });
+
+  it("renders the boards-in-a-set and copies stats", () => {
+    const web: RecommendedMovement = {
+      ...movement,
+      family: "WEB",
+      name: "Web Mitchell",
+      boardsPerRound: 3,
+      copies: 2,
+    };
+    render(<RecommendedMovementCard movement={web} onSelect={vi.fn()} />);
+
+    expect(screen.getByText("Boards in a Set")).toBeInTheDocument();
+    expect(screen.getByText("Copies of each Set")).toBeInTheDocument();
+    // The copies value (2) is shown so the director knows how many board sets
+    // to prepare.
+    expect(screen.getByText("2")).toBeInTheDocument();
   });
 
   it("renders pros and cons", () => {

@@ -13,12 +13,8 @@ import { MovementCard } from "@/app/game/[gameId]/create/MovementCard";
 import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedMovementCard";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 import { generateMitchell } from "@/movement/mitchell/mitchell";
-import {
-  matchRecommendations,
-  GeneratedMovementOption,
-} from "@/movement/recommendations/match-recommendations";
 import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
-import { RECOMMENDED_MOVEMENTS } from "@/movement/recommendations/recommended-movements-data";
+import { recommendationsFromSpecMap } from "@/movement/recommendations/spec-map-recommendations";
 
 type Props = {
   onShowTablesPage: () => void;
@@ -29,57 +25,6 @@ type SelectedMovement = {
   type: string;
   name: string;
 };
-
-/**
- * Build the client-generated Mitchell options for a table count, tagged with
- * the recommendation family they satisfy. Boards-per-round is taken from the
- * curated recommendation targets (there is no user stepper), so each generated
- * option lines up with a curated MITCHELL / SKIP_MITCHELL / SHARE_AND_RELAY
- * entry.
- */
-function buildGeneratedOptions(tables: number): GeneratedMovementOption[] {
-  if (!tables || tables < 2) return [];
-
-  const entries = RECOMMENDED_MOVEMENTS[tables] ?? [];
-
-  // Boards-per-round values the curated Mitchell-family entries ask for.
-  const mitchellBoardsPerRound = entries
-    .filter((e) => e.family === "MITCHELL")
-    .map((e) => e.targetBoardsPerRound)
-    .filter((v): v is number => v !== undefined);
-
-  // Fall back to a sensible default if the data did not specify one.
-  const boardsPerRoundValues =
-    mitchellBoardsPerRound.length > 0 ? mitchellBoardsPerRound : [3];
-
-  const options: GeneratedMovementOption[] = [];
-
-  for (const boardsPerRound of boardsPerRoundValues) {
-    if (tables % 2 === 1) {
-      // Odd tables: standard Mitchell, no skip needed.
-      options.push({
-        name: "Standard Mitchell",
-        family: "MITCHELL",
-        spec: { tables, rounds: tables, boardsPerRound },
-      });
-    } else {
-      // Even tables: a share-and-relay (full rounds) satisfies MITCHELL, and a
-      // skip variant is also offered.
-      options.push({
-        name: "Mitchell Share and Relay",
-        family: "MITCHELL",
-        spec: { tables, rounds: tables, boardsPerRound, shareAndRelay: true },
-      });
-      options.push({
-        name: "Skip Mitchell",
-        family: "SKIP_MITCHELL",
-        spec: { tables, rounds: tables, boardsPerRound, skip: true },
-      });
-    }
-  }
-
-  return options;
-}
 
 export function ShowMovementsPage({ onShowTablesPage }: Props) {
   const { game } = useRequiredGame();
@@ -121,11 +66,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
   // boards a pair plays.
   const recommendations = useMemo<RecommendedMovement[]>(() => {
     if (!isPairs) return [];
-    return matchRecommendations(
-      tables,
-      buildGeneratedOptions(tables),
-      pairMovements ?? [],
-    );
+    return recommendationsFromSpecMap(tables, pairMovements ?? []);
   }, [isPairs, tables, pairMovements]);
 
   // Mitchell preview generated client-side.
