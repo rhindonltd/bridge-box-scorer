@@ -21,6 +21,12 @@ export interface MaterializableRound {
   boardStart: number;
   boardEnd: number;
   sitOut?: boolean;
+  /**
+   * Physical duplicate copy of the board set (Web Mitchell only). Optional in
+   * this in-memory shape; every persisted board row still gets a definite copy
+   * because the boards.copy column defaults to "A".
+   */
+  boardCopy?: string;
 }
 
 export interface MaterializableTable {
@@ -61,6 +67,7 @@ export function buildSectionRows(
           roundNumber: r.roundNumber,
           tableNumber: m.tableNumber,
           boardNumber,
+          copy: r.boardCopy ?? "A",
           ns: sectionParticipantId(section, r.ns),
           ew: sectionParticipantId(section, r.ew),
           status: r.sitOut ? "SIT_OUT" : "NOT_PLAYED",
@@ -179,6 +186,7 @@ export function mitchellToPairMovement(
       ew: round.participants.ewId,
       boardStart: round.boards[0],
       boardEnd: round.boards[round.boards.length - 1],
+      boardCopy: round.boardCopy,
     })),
   }));
 }

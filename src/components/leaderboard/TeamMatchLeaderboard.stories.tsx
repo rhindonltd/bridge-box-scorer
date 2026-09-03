@@ -21,7 +21,7 @@ export const Default: Story = {
         type: "TEAM",
         pair1: {
           type: "PAIR",
-          initialSeat: "1NS",
+          initialSeat: "A1NS",
           player1: {
             id: 1,
             firstName: "David",
@@ -37,7 +37,7 @@ export const Default: Story = {
         },
         pair2: {
           type: "PAIR",
-          initialSeat: "1EW",
+          initialSeat: "A1EW",
           player1: {
             id: 3,
             firstName: "Peter",
@@ -56,7 +56,7 @@ export const Default: Story = {
         type: "TEAM",
         pair1: {
           type: "PAIR",
-          initialSeat: "2NS",
+          initialSeat: "A2NS",
           player1: {
             id: 5,
             firstName: "Piers",
@@ -72,7 +72,7 @@ export const Default: Story = {
         },
         pair2: {
           type: "PAIR",
-          initialSeat: "2EW",
+          initialSeat: "A2EW",
           player1: {
             id: 7,
             firstName: "Geoff",

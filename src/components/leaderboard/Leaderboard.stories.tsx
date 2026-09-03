@@ -22,7 +22,7 @@ export const PairIMP: Story = {
         {
           type: "PAIR",
           id: "1",
-          initialSeat: "1NS",
+          initialSeat: "A1NS",
           player1: {
             id: 1,
             firstName: "David",
@@ -62,7 +62,7 @@ export const PairMP: Story = {
         {
           type: "PAIR",
           id: "1",
-          initialSeat: "1NS",
+          initialSeat: "A1NS",
           player1: {
             id: 1,
             firstName: "David",
@@ -105,7 +105,7 @@ export const Team: Story = {
           id: "1",
           pair1: {
             type: "PAIR",
-            initialSeat: "1NS",
+            initialSeat: "A1NS",
             player1: {
               id: 1,
               firstName: "David",
@@ -121,7 +121,7 @@ export const Team: Story = {
           },
           pair2: {
             type: "PAIR",
-            initialSeat: "1EW",
+            initialSeat: "A1EW",
             player1: {
               id: 1,
               firstName: "Peter",
@@ -168,7 +168,7 @@ export const PairMPHighlighted: Story = {
         {
           type: "PAIR",
           id: "1",
-          initialSeat: "1NS",
+          initialSeat: "A1NS",
           player1: {
             id: 1,
             firstName: "David",
@@ -185,7 +185,7 @@ export const PairMPHighlighted: Story = {
         {
           type: "PAIR",
           id: "2",
-          initialSeat: "1EW",
+          initialSeat: "A1EW",
           player1: {
             id: 3,
             firstName: "Roy",

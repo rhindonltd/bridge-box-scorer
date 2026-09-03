@@ -6,13 +6,14 @@ import { generateStandardMitchell } from "./standard-mitchell";
 import { generateBlackpool } from "./blackpool";
 import { generateHesitationMitchell } from "./hesitation-mitchell";
 import { generateDoubleHesitationMitchell } from "./double-hesitation-mitchell";
+import { generateWebMitchell } from "./web-mitchell";
 
 /**
  * Single entry point for generating any Mitchell-family pair movement.
  *
  * The spec carries optional discriminant flags (skip, shareAndRelay, blackpool,
- * hesitation, doubleHesitation); at most one should be set. When none is set a
- * Standard Mitchell is produced.
+ * hesitation, doubleHesitation, web); at most one should be set. When none is
+ * set a Standard Mitchell is produced.
  *
  * NOTE: the movement-selection layer is not yet updated to offer or persist the
  * newer movements (Blackpool and the Hesitation family). `rehydrateSelectedMovement`
@@ -44,6 +45,10 @@ export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
       ...spec,
       doubleHesitation: true,
     });
+  }
+
+  if (spec.web) {
+    return generateWebMitchell({ ...spec, web: true });
   }
 
   return generateStandardMitchell(spec);

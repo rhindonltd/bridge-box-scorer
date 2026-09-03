@@ -8,6 +8,13 @@
       "when": 1788348506205,
       "tag": "0000_spicy_phantom_reporter",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788423410142,
+      "tag": "0001_sleepy_colossus",
+      "breakpoints": true
     }
   ]
 }

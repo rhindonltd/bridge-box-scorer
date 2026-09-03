@@ -4,15 +4,16 @@ import { useState, useMemo } from "react";
 import { useRequiredGame } from "@/context/GameContext";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import { PairMovementSpec, TeamMovementSpec } from "@/db/movements/schema";
+import { PairMovementSpec } from "@/db/movements/schema";
 import { selectMovement, selectMitchellMovement } from "@/lib/game-service";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
-import NumberStepper from "@/components/common/NumberStepper";
 import { MovementByTable } from "@/movement/movementData";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { MovementCard } from "@/app/game/[gameId]/create/MovementCard";
+import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedMovementCard";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 import { generateMitchell } from "@/movement/mitchell/mitchell";
+import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
+import { recommendationsFromSpecMap } from "@/movement/recommendations/spec-map-recommendations";
 
 type Props = {
   onShowTablesPage: () => void;
@@ -28,7 +29,6 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
   const { game } = useRequiredGame();
 
   const [selected, setSelected] = useState<SelectedMovement | null>(null);
-  const [mitchellBoardsPerRound, setMitchellBoardsPerRound] = useState(3);
   const [mitchellSpec, setMitchellSpec] = useState<MitchellMovementSpec | null>(
     null,
   );
@@ -36,20 +36,15 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
   const tables = game.tables;
   const gameType = game.gameType;
 
-  const shouldLoadPairs = gameType === "PAIRS";
-  const shouldLoadTeams = gameType === "PAIRS";
+  const isPairs = gameType === "PAIRS";
+  const isTeams = gameType === "TEAMS";
 
   const { data: pairMovements } = useSWR<PairMovementSpec[]>(
-    shouldLoadPairs ? `/api/movements/pairs/${tables}` : null,
+    isPairs ? `/api/movements/pairs/${tables}` : null,
     fetcher,
   );
 
-  const { data: teamMovements } = useSWR<TeamMovementSpec[]>(
-    shouldLoadTeams ? `/api/movements/teams/${tables}` : null,
-    fetcher,
-  );
-
-  // Fetch full movement detail when one is selected (DB-based)
+  // Fetch full movement detail when a DB-based movement is selected.
   const { data: movementDetail } = useSWR<{
     type: string;
     tables: MovementByTable[];
@@ -60,47 +55,15 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     fetcher,
   );
 
-  // Mitchell options based on table count
-  const mitchellOptions = useMemo(() => {
-    if (!tables || tables < 2) return [];
+  // Recommended movements: curated advice resolved against what the system can
+  // actually run (generated Mitchell options + seeded pairs specs), ordered by
+  // boards a pair plays.
+  const recommendations = useMemo<RecommendedMovement[]>(() => {
+    if (!isPairs) return [];
+    return recommendationsFromSpecMap(tables, pairMovements ?? []);
+  }, [isPairs, tables, pairMovements]);
 
-    const options: { name: string; spec: MitchellMovementSpec }[] = [];
-
-    if (tables % 2 === 1) {
-      // Odd tables: standard Mitchell
-      options.push({
-        name: "Standard Mitchell",
-        spec: {
-          tables,
-          rounds: tables,
-          boardsPerRound: mitchellBoardsPerRound,
-        },
-      });
-    } else {
-      // Even tables: share & relay or skip
-      options.push({
-        name: "Mitchell Share and Relay",
-        spec: {
-          tables,
-          rounds: tables,
-          boardsPerRound: mitchellBoardsPerRound,
-        },
-      });
-      options.push({
-        name: "Skip Mitchell",
-        spec: {
-          tables,
-          rounds: tables,
-          boardsPerRound: mitchellBoardsPerRound,
-          skip: true,
-        },
-      });
-    }
-
-    return options;
-  }, [tables, mitchellBoardsPerRound]);
-
-  // Mitchell preview generated client-side
+  // Mitchell preview generated client-side.
   const mitchellPreview = useMemo(() => {
     if (selected?.type !== "MITCHELL" || !mitchellSpec) return null;
     try {
@@ -132,12 +95,21 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     setMitchellSpec(null);
   }
 
-  function handleMitchellSelected(option: {
-    name: string;
-    spec: MitchellMovementSpec;
-  }) {
-    setSelected({ id: -1, type: "MITCHELL", name: option.name });
-    setMitchellSpec(option.spec);
+  function handleMitchellSelected(name: string, spec: MitchellMovementSpec) {
+    setSelected({ id: -1, type: "MITCHELL", name });
+    setMitchellSpec(spec);
+  }
+
+  function handleRecommendationSelected(movement: RecommendedMovement) {
+    if (movement.specRef.source === "generated") {
+      handleMitchellSelected(movement.name, movement.specRef.spec);
+    } else {
+      handleMovementClicked(
+        movement.specRef.id,
+        movement.specRef.type,
+        movement.name,
+      );
+    }
   }
 
   function handleSelect() {
@@ -153,7 +125,7 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     onShowTablesPage();
   }
 
-  // Show detail view when a movement is selected
+  // Show detail view when a movement is selected.
   if (selected && (movementDetail || mitchellPreview)) {
     const detailData =
       selected.type === "MITCHELL" ? mitchellPreview : movementDetail;
@@ -163,16 +135,14 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
         headerTitle={selected.name}
         backHref={`/create/${game.gameId}`}
         actions={
-          handleSelect && (
-            <div className="p-3 border-t">
-              <button
-                onClick={handleSelect}
-                className="w-full py-3 text-lg font-bold bg-green-700 text-white rounded-xl hover:bg-green-800 transition"
-              >
-                Use Movement
-              </button>
-            </div>
-          )
+          <div className="p-3 border-t">
+            <button
+              onClick={handleSelect}
+              className="w-full py-3 text-lg font-bold bg-green-700 text-white rounded-xl hover:bg-green-800 transition"
+            >
+              Use Movement
+            </button>
+          </div>
         }
       >
         <MovementDetailView tables={detailData.tables as MovementByTable[]} />
@@ -180,161 +150,69 @@ export function ShowMovementsPage({ onShowTablesPage }: Props) {
     );
   }
 
-  // Show loading state while detail is being fetched (DB-based only)
+  // Show loading state while DB-based detail is being fetched.
   if (selected && selected.type !== "MITCHELL" && !movementDetail) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          <div>
-            <SectionHeading title="Generated Movements" />
-          </div>
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-          </div>
+      <GamePageLayout headerTitle="Select Movement" backAction={onShowTablesPage}>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
         </div>
-      </div>
+      </GamePageLayout>
     );
   }
 
-  // Movement list view — grouped by type with section headings
   return (
     <GamePageLayout headerTitle="Select Movement" backAction={onShowTablesPage}>
-      {
-        <div className="flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {shouldLoadPairs && (
-              <div>
-                <SectionHeading title="Generated Movements" />
-                <div className="mb-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-600">
-                      Boards per round:
-                    </label>
-                    <NumberStepper
-                      value={mitchellBoardsPerRound}
-                      onChange={setMitchellBoardsPerRound}
-                      min={2}
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {mitchellOptions.map((option) => (
-                    <MitchellCard
-                      key={option.name}
-                      name={option.name}
-                      spec={option.spec}
-                      onSelect={() => handleMitchellSelected(option)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {isPairs && (
+            <RecommendedSection
+              recommendations={recommendations}
+              onSelect={handleRecommendationSelected}
+            />
+          )}
 
-            {shouldLoadPairs && (
-              <MovementSection
-                title="Pairs Movements"
-                movements={pairMovements ?? []}
-                type="PAIRS"
-                onSelect={handleMovementClicked}
-              />
-            )}
-
-            {shouldLoadTeams && (
-              <MovementSection
-                title="Teams Movements"
-                movements={teamMovements ?? []}
-                type="TEAMS"
-                onSelect={handleMovementClicked}
-              />
-            )}
-          </div>
+          {isTeams && (
+            <div>
+              <SectionHeading title="Teams Movements" />
+              <p className="text-gray-500 text-sm italic px-1">
+                Recommended teams movements are coming soon.
+              </p>
+            </div>
+          )}
         </div>
-      }
+      </div>
     </GamePageLayout>
   );
 }
 
-/* ---- Mitchell Card component ---- */
+/* ---- Recommended section ---- */
 
-function MitchellCard({
-  name,
-  spec,
+function RecommendedSection({
+  recommendations,
   onSelect,
 }: {
-  name: string;
-  spec: MitchellMovementSpec;
-  onSelect: () => void;
+  recommendations: RecommendedMovement[];
+  onSelect: (movement: RecommendedMovement) => void;
 }) {
-  const effectiveRounds = spec.skip ? spec.tables - 1 : spec.rounds;
-  const totalBoards = spec.tables * spec.boardsPerRound;
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm text-left w-full
-        hover:border-blue-300 hover:shadow-md
-        active:scale-[0.98] active:bg-blue-100
-        transition-all duration-150
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-    >
-      <h2 className="text-lg font-semibold text-gray-900">{name}</h2>
-      <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
-        <div className="rounded-lg bg-white p-2 text-center">
-          <div className="text-xs text-gray-500">Rounds</div>
-          <div className="font-medium text-gray-900">{effectiveRounds}</div>
-        </div>
-        <div className="rounded-lg bg-white p-2 text-center">
-          <div className="text-xs text-gray-500">Boards per Round</div>
-          <div className="font-medium text-gray-900">{spec.boardsPerRound}</div>
-        </div>
-        <div className="rounded-lg bg-white p-2 text-center">
-          <div className="text-xs text-gray-500">Total Boards</div>
-          <div className="font-medium text-gray-900">{totalBoards}</div>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-/* ---- Section component ---- */
-
-type MovementSpec = PairMovementSpec | TeamMovementSpec;
-
-function MovementSection({
-  title,
-  movements,
-  type,
-  onSelect,
-}: {
-  title: string;
-  movements: MovementSpec[];
-  type: string;
-  onSelect: (id: number, type: string, name: string) => void;
-}) {
-  if (movements.length === 0) {
-    return (
-      <div>
-        <SectionHeading title={title} />
-        <p className="text-gray-500 text-sm italic px-1">
-          No movements available for this table count.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div>
-      <SectionHeading title={title} />
-      <div className="grid gap-3 md:grid-cols-2">
-        {movements.map((movement) => (
-          <MovementCard
-            key={`${movement.type}-${movement.id}`}
-            movement={movement}
-            onSelected={(id) => onSelect(id, type, movement.name)}
-          />
-        ))}
-      </div>
+      <SectionHeading title="Recommended Movements" />
+      {recommendations.length === 0 ? (
+        <p className="text-gray-500 text-sm italic px-1">
+          No recommended movements are available for this table count yet.
+        </p>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {recommendations.map((movement, index) => (
+            <RecommendedMovementCard
+              key={`${movement.source}-${movement.name}-${index}`}
+              movement={movement}
+              onSelect={() => onSelect(movement)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

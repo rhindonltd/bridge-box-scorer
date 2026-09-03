@@ -78,6 +78,63 @@ describe("section-aware materialization", () => {
     expect(board1.ew).toBe("B3");
   });
 
+  it("defaults the board copy to 'A' when the round omits it", async () => {
+    const db = await setup();
+    const { materializePairLikeMovement } = await import(
+      "@/services/materialize-movement"
+    );
+    const { boards } = await import("@/db/games/tables/boards");
+
+    await materializePairLikeMovement("A", twoTable, gameId);
+
+    const boardRows = db.select().from(boards).all();
+    expect(boardRows.every((b) => b.copy === "A")).toBe(true);
+  });
+
+  it("persists per-round board copies for a Web movement", async () => {
+    const db = await setup();
+    const { materializePairLikeMovement } = await import(
+      "@/services/materialize-movement"
+    );
+    const { boards } = await import("@/db/games/tables/boards");
+
+    // Table 1 on copy A, table 2 on copy B (mirrors the even-Web halves).
+    const webLike: MaterializableMovement = [
+      {
+        tableNumber: 1,
+        rounds: [
+          {
+            roundNumber: 1,
+            ns: "1",
+            ew: "3",
+            boardStart: 1,
+            boardEnd: 2,
+            boardCopy: "A",
+          },
+        ],
+      },
+      {
+        tableNumber: 2,
+        rounds: [
+          {
+            roundNumber: 1,
+            ns: "2",
+            ew: "4",
+            boardStart: 1,
+            boardEnd: 2,
+            boardCopy: "B",
+          },
+        ],
+      },
+    ];
+
+    await materializePairLikeMovement("A", webLike, gameId);
+
+    const boardRows = db.select().from(boards).all();
+    expect(boardRows.filter((b) => b.tableNumber === 1).every((b) => b.copy === "A")).toBe(true);
+    expect(boardRows.filter((b) => b.tableNumber === 2).every((b) => b.copy === "B")).toBe(true);
+  });
+
   it("marks sit-out rounds with SIT_OUT status", async () => {
     const db = await setup();
     const { materializePairLikeMovement } = await import(

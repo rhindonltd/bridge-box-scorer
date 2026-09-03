@@ -4,7 +4,7 @@ import { Tables } from "@/model/movement";
 import { SelectedMovement } from "@/model/selected-movement";
 import { getPairMovement } from "@/db/movements/queries/get-movement";
 import { getPairMovementSpecById } from "@/db/movements/queries/get-movement-spec";
-import { generateStandardMitchell } from "@/movement/mitchell/standard-mitchell";
+import { generateMitchell } from "@/movement/mitchell/mitchell";
 import { boardRangeForSet } from "@/movement/shared";
 
 /**
@@ -21,6 +21,12 @@ export interface RehydratedRound {
   ew: string;
   boardStart: number;
   boardEnd: number;
+  /**
+   * The physical duplicate copy of the board set played this round. Only Web
+   * Mitchell movements use more than one copy; every other movement (including
+   * seeded specs) plays a single copy, so this defaults to "A".
+   */
+  boardCopy: string;
 }
 
 export interface RehydratedTable {
@@ -53,6 +59,7 @@ export function tablesToPairMovement(
       ew: round.participants.ewId,
       boardStart: round.boards[0],
       boardEnd: round.boards[round.boards.length - 1],
+      boardCopy: round.boardCopy ?? "A",
     })),
   }));
 }
@@ -67,9 +74,13 @@ export async function rehydrateSelectedMovement(
   selected: SelectedMovement,
 ): Promise<RehydratedMovement> {
   if (selected.source === "MITCHELL") {
-    const { skip, shareAndRelay } = selected.mitchell;
-    const isStandardMitchell = !skip && !shareAndRelay;
-    const generated = generateStandardMitchell(selected.mitchell);
+    const { skip, shareAndRelay, hesitation, web } = selected.mitchell;
+    // Only a plain Standard Mitchell (no variant flag) supports the sit-out
+    // handling applied downstream; the variants build differently.
+    const isStandardMitchell = !skip && !shareAndRelay && !hesitation && !web;
+    // Dispatch through generateMitchell so every variant flag (skip,
+    // shareAndRelay, hesitation, web) is honoured, not just Standard.
+    const generated = generateMitchell(selected.mitchell);
     return {
       movement: tablesToPairMovement(generated),
       missingPair: null,
@@ -89,6 +100,9 @@ export async function rehydrateSelectedMovement(
       ns: round.ns,
       ew: round.ew,
       ...boardRangeForSet(round.boardSet, selected.boardsPerRound),
+      // Seeded specs are single-copy; Web logistics for those live in the
+      // seeded data itself, not as a distinct copy label here.
+      boardCopy: "A",
     })),
   }));
 

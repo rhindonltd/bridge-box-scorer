@@ -18,8 +18,12 @@ export const mitchellSpecSchema = z.object({
   rounds: z.number().int().positive(),
   boardsPerRound: z.number().int().positive(),
   arrowSwitchRounds: z.number().int().nonnegative().optional(),
+  // Mutually-exclusive Mitchell variant flags; at most one should be set. When
+  // none is set a Standard Mitchell is regenerated at rehydration.
   skip: z.boolean().optional(),
   shareAndRelay: z.boolean().optional(),
+  hesitation: z.boolean().optional(),
+  web: z.boolean().optional(),
 });
 
 export const selectedMovementSchema = z.discriminatedUnion("source", [

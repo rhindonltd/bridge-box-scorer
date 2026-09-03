@@ -1,0 +1,1 @@
+ALTER TABLE `boards` ADD `copy` text DEFAULT 'A' NOT NULL;
