@@ -1,4 +1,5 @@
-import { TimerState } from "@/timer/timer-state";
+import { TimerState, getWarningSeconds } from "@/timer/timer-state";
+import { gapPhaseAfterRound, resolveBreakDurationMs } from "@/timer/breaks";
 
 export function useTimerDerived(state: TimerState | null, now: number) {
   if (!state) {
@@ -10,52 +11,98 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       title: "Connecting…",
       isRunning: false,
       projectedEndDate: new Date(),
+      warningSeconds: 60,
     };
   }
 
-  function computeRemainingSessionMs(now = Date.now()): number {
+  const playMs = state.playDuration * 1000;
+  const moveMs = state.moveDuration * 1000;
+
+  // Milliseconds occupied by the gap after `round` (break replaces move).
+  // Resume-time breaks are resolved against `gapStartMs`, the projected
+  // wall-clock time at which that gap begins.
+  function gapMsAfterRound(round: number, gapStartMs: number): number {
+    const gap = gapPhaseAfterRound(state!, round);
+    if (gap.kind === "break") {
+      return resolveBreakDurationMs(gap.config, gapStartMs);
+    }
+    return moveMs;
+  }
+
+  function computeRemainingSessionMs(clock: number): number {
     if (!state || state.phase === "finished") {
       return 0;
     }
-
-    const playMs = state.playDuration * 1000;
-    const moveMs = state.moveDuration * 1000;
 
     let remainingCurrentPhaseMs: number;
 
     if (!state.isRunning) {
       remainingCurrentPhaseMs =
-        state.remainingMs ?? (state.phase === "play" ? playMs : moveMs);
+        state.remainingMs ??
+        (state.phase === "play"
+          ? playMs
+          : state.phase === "move"
+            ? moveMs
+            : (state.remainingMs ?? 0));
     } else {
-      const elapsed = now - state.phaseStartedAt!;
-
-      const phaseDurationMs = state.phase === "play" ? playMs : moveMs;
-
+      const elapsed = clock - state.phaseStartedAt!;
+      const phaseDurationMs =
+        state.phase === "play"
+          ? playMs
+          : state.phase === "move"
+            ? moveMs
+            : (state.remainingMs ?? 0);
       remainingCurrentPhaseMs = Math.max(0, phaseDurationMs - elapsed);
     }
 
-    const futureRounds = state.totalRounds - state.round;
+    // Walk forward from the current position, accumulating remaining time and
+    // tracking the projected wall-clock cursor so resume-time breaks resolve
+    // against the projected start of their gap.
+    let total = remainingCurrentPhaseMs;
+    let cursor = clock + remainingCurrentPhaseMs;
 
     if (state.phase === "play") {
-      // After current play: (futureRounds) move phases + (futureRounds) play phases
-      return (
-        remainingCurrentPhaseMs + futureRounds * playMs + futureRounds * moveMs
-      );
+      // The gap after the current round, then every subsequent round.
+      for (let round = state.round; round < state.totalRounds; round++) {
+        const gap = gapMsAfterRound(round, cursor);
+        total += gap;
+        cursor += gap;
+        total += playMs;
+        cursor += playMs;
+      }
+      return total;
     }
 
-    // phase === "move"
-    // After current move: the play phase for this round still needs to happen,
-    // plus all subsequent round pairs (move + play). That's:
-    // (futureRounds + 1) play phases + (futureRounds) move phases
-    return (
-      remainingCurrentPhaseMs +
-      (futureRounds + 1) * playMs +
-      futureRounds * moveMs
-    );
+    if (state.phase === "move" || state.phase === "break") {
+      // The current gap belongs to the round after the previous play; the play
+      // for `state.round` still needs to happen, then subsequent rounds.
+      total += playMs;
+      cursor += playMs;
+      for (let round = state.round; round < state.totalRounds; round++) {
+        const gap = gapMsAfterRound(round, cursor);
+        total += gap;
+        cursor += gap;
+        total += playMs;
+        cursor += playMs;
+      }
+      return total;
+    }
+
+    return total;
   }
 
   const getRemaining = () => {
     if (state.phase === "finished") return 0;
+
+    if (state.phase === "break") {
+      if (!state.isRunning) {
+        return Math.ceil((state.remainingMs ?? 0) / 1000);
+      }
+      if (!state.phaseStartedAt) return Math.ceil((state.remainingMs ?? 0) / 1000);
+      const durationMs = state.remainingMs ?? 0;
+      const elapsed = now - state.phaseStartedAt;
+      return Math.max(0, Math.ceil((durationMs - elapsed) / 1000));
+    }
 
     const duration =
       state.phase === "move" ? state.moveDuration : state.playDuration;
@@ -76,7 +123,7 @@ export function useTimerDerived(state: TimerState | null, now: number) {
 
   const remaining = getRemaining();
 
-  const sessionRemainingMs = computeRemainingSessionMs();
+  const sessionRemainingMs = computeRemainingSessionMs(now);
   const projectedEnd = sessionRemainingMs ? now + sessionRemainingMs : now;
   const projectedEndDate = new Date(projectedEnd);
 
@@ -102,5 +149,6 @@ export function useTimerDerived(state: TimerState | null, now: number) {
     title,
     isRunning: state.isRunning,
     projectedEndDate,
+    warningSeconds: getWarningSeconds(state),
   };
 }

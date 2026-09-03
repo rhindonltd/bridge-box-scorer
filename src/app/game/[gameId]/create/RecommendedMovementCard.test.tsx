@@ -42,7 +42,7 @@ describe("RecommendedMovementCard", () => {
   it("renders the boards-per-set stat and no Copies stat", () => {
     render(<RecommendedMovementCard movement={movement} onSelect={vi.fn()} />);
 
-    expect(screen.getByText("Boards / Set")).toBeInTheDocument();
+    expect(screen.getByText("Boards / Round")).toBeInTheDocument();
     expect(screen.queryByText("Copies")).not.toBeInTheDocument();
   });
 
@@ -51,7 +51,7 @@ describe("RecommendedMovementCard", () => {
     const { rerender } = render(
       <RecommendedMovementCard movement={movement} onSelect={vi.fn()} />,
     );
-    expect(screen.queryByText(/copies of each board set/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/sets of boards/i)).not.toBeInTheDocument();
 
     // Multi-copy (e.g. Web Mitchell): note explains the duplicate sets.
     const web: RecommendedMovement = {
@@ -62,7 +62,7 @@ describe("RecommendedMovementCard", () => {
     };
     rerender(<RecommendedMovementCard movement={web} onSelect={vi.fn()} />);
     expect(
-      screen.getByText("Needs 2 identical copies of each board set."),
+      screen.getByText("Needs 2 sets of boards."),
     ).toBeInTheDocument();
   });
 

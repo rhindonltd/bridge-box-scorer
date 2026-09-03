@@ -1,27 +1,17 @@
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
-import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
 import { cancelGameSchedule } from "@/timer/scheduler";
-import { TimerState } from "@/timer/timer-state";
 import { Server, Socket } from "socket.io";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
-import { GameTypes } from "@/db/games/types/game-type";
+import { makeTimerBroadcaster } from "./broadcast-timer";
+import { directorTimerFields } from "./payload";
 
-const payloadSchema = z.object({
-  gameType: z.enum(GameTypes),
-  gameId: z.string().min(1),
-  directorToken: z.string().min(1),
-});
+const payloadSchema = z.object(directorTimerFields);
 
 export function registerPauseTimerHandler(socket: Socket, io: Server) {
-  function broadcast(gameId: string, timerState: TimerState) {
-    io.to(Rooms.game(gameId)).emit(SocketEvents.TIMER_SYNC, {
-      ...timerState,
-      serverNow: Date.now(),
-    });
-  }
+  const broadcast = makeTimerBroadcaster(io);
 
   socket.on(SocketEvents.PAUSE_TIMER, async (payload: unknown) => {
     const parsed = payloadSchema.safeParse(payload);

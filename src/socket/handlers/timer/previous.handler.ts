@@ -8,33 +8,46 @@ import { z } from "zod";
 import { makeTimerBroadcaster } from "./broadcast-timer";
 import { directorTimerFields } from "./payload";
 
-const payloadSchema = z.object(directorTimerFields);
+/**
+ * "Previous" is a two-step control. The first press restarts the current phase;
+ * a second press (while the phase is already at full duration) steps back to
+ * the previous phase. The `restart` flag lets the client request the restart
+ * step explicitly; when false the handler steps to the previous phase.
+ */
+const payloadSchema = z.object({
+  ...directorTimerFields,
+  restart: z.boolean().optional(),
+});
 
-export function registerNextRoundHandler(socket: Socket, io: Server) {
+export function registerPreviousHandler(socket: Socket, io: Server) {
   const broadcast = makeTimerBroadcaster(io);
 
-  socket.on(SocketEvents.NEXT_ROUND_TIMER, async (payload: unknown) => {
+  socket.on(SocketEvents.PREVIOUS_TIMER, async (payload: unknown) => {
     const parsed = payloadSchema.safeParse(payload);
     if (!parsed.success) {
-      console.warn("Invalid NEXT_ROUND_TIMER payload:", parsed.error.message);
+      console.warn("Invalid PREVIOUS_TIMER payload:", parsed.error.message);
       return;
     }
 
-    const { gameId, directorToken } = parsed.data;
+    const { gameId, directorToken, restart } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
     try {
       const engine = await getEngine(gameId);
       if (!engine) return;
 
-      engine.nextPhase();
+      if (restart) {
+        engine.restartPhase();
+      } else {
+        engine.previousPhase();
+      }
 
       await updateTimerState(gameId, engine.getState());
       broadcast(gameId, engine.getState());
 
       scheduleGame(gameId, engine, { updateTimerState, broadcast });
     } catch (err) {
-      console.error(`Failed to advance timer for game ${gameId}:`, err);
+      console.error(`Failed to step timer back for game ${gameId}:`, err);
     }
   });
 }

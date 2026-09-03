@@ -87,7 +87,10 @@ describe("registerCreateTimerHandler", () => {
       moveDuration: 60,
     });
 
-    expect(createEngine).toHaveBeenCalledWith("game-4", 3, 5, 420, 60);
+    expect(createEngine).toHaveBeenCalledWith("game-4", 3, 5, 420, 60, {
+      breaks: undefined,
+      warningSeconds: undefined,
+    });
     expect(updateTimerState).toHaveBeenCalledWith("game-4", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-4");
     expect(io._emit).toHaveBeenCalledWith(

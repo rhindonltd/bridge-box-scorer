@@ -96,7 +96,10 @@ describe("registerUpdateConfigHandler", () => {
       moveDuration: 90,
     });
 
-    expect(mockEngine.updateConfig).toHaveBeenCalledWith(4, 6, 480, 90);
+    expect(mockEngine.updateConfig).toHaveBeenCalledWith(4, 6, 480, 90, {
+      breaks: undefined,
+      warningSeconds: undefined,
+    });
     expect(updateTimerState).toHaveBeenCalledWith("game-5", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-5");
     expect(io._emit).toHaveBeenCalledWith(

@@ -7,6 +7,8 @@ type TimerDisplayProps = {
   phase: "play" | "move" | "break" | "finished" | null;
   isRunning: boolean;
   projectedEndDate: Date;
+  /** Seconds before end of play at which the "last minute" warning shows. */
+  warningSeconds?: number;
 };
 
 export function DisplayTimerPage({
@@ -16,6 +18,7 @@ export function DisplayTimerPage({
   phase,
   isRunning,
   projectedEndDate,
+  warningSeconds = 60,
 }: TimerDisplayProps) {
   function formatTime(totalSeconds: number) {
     const mins = Math.floor(totalSeconds / 60);
@@ -24,7 +27,8 @@ export function DisplayTimerPage({
     return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   }
 
-  const isLastMinute = remaining > 0 && remaining < 60 && phase === "play";
+  const isLastMinute =
+    remaining > 0 && remaining < warningSeconds && phase === "play";
 
   const isMoving = phase === "move";
   const isBreak = phase === "break";

@@ -10,8 +10,15 @@ import { DisplayTimerPage } from "@/app/game/[gameId]/display/timer/DisplayTimer
 export default function TimerPage() {
   const { timerState, now } = useTimerSync();
 
-  const { remaining, phase, boardLabel, title, isRunning, projectedEndDate } =
-    useTimerDerived(timerState, now());
+  const {
+    remaining,
+    phase,
+    boardLabel,
+    title,
+    isRunning,
+    projectedEndDate,
+    warningSeconds,
+  } = useTimerDerived(timerState, now());
 
   /* ---------------- LOCAL TICK (render only) ---------------- */
 
@@ -42,6 +49,7 @@ export default function TimerPage() {
       phase={phase}
       isRunning={isRunning}
       projectedEndDate={projectedEndDate}
+      warningSeconds={warningSeconds}
     />
   );
 }

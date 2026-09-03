@@ -43,5 +43,7 @@ export const SocketEvents = {
   START_TIMER: "timer:start",
   PAUSE_TIMER: "timer:pause",
   NEXT_ROUND_TIMER: "timer:nextRound",
+  PREVIOUS_TIMER: "timer:previous",
+  ADJUST_TIME_TIMER: "timer:adjustTime",
   UPDATE_CONFIG_TIMER: "timer:updateConfig",
 } as const;
