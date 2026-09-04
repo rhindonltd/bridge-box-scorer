@@ -11,6 +11,10 @@ export async function createEngine(
   totalRounds: number,
   playDuration: number,
   moveDuration: number,
+  options?: {
+    breaks?: TimerState["breaks"];
+    warningSeconds?: number;
+  },
 ) {
   const newTimerState: TimerState = {
     version: 1,
@@ -21,9 +25,12 @@ export async function createEngine(
     totalRounds,
     playDuration,
     moveDuration,
+    breaks: options?.breaks ?? [],
+    warningSeconds: options?.warningSeconds,
     isRunning: false,
     phaseStartedAt: null,
     remainingMs: playDuration * 1000,
+    breakDurationMs: null,
   };
 
   const engine = new BridgeTimerEngine(newTimerState);

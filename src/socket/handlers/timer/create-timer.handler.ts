@@ -2,11 +2,11 @@ import { SocketEvents } from "@/socket/socket-events";
 import { createEngine } from "@/timer/game-store";
 import { Server, Socket } from "socket.io";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
-import { Rooms } from "@/socket/rooms";
 import { scheduleGame } from "@/timer/scheduler";
-import { TimerState } from "@/timer/timer-state";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { z } from "zod";
+import { makeTimerBroadcaster } from "./broadcast-timer";
+import { timerConfigExtras, toBreakConfigs } from "./payload";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
@@ -15,15 +15,11 @@ const payloadSchema = z.object({
   totalRounds: z.number().int().positive(),
   playDuration: z.number().int().positive(),
   moveDuration: z.number().int().positive(),
+  ...timerConfigExtras,
 });
 
 export function registerCreateTimerHandler(socket: Socket, io: Server) {
-  function broadcast(gameId: string, timerState: TimerState) {
-    io.to(Rooms.game(gameId)).emit(SocketEvents.TIMER_SYNC, {
-      ...timerState,
-      serverNow: Date.now(),
-    });
-  }
+  const broadcast = makeTimerBroadcaster(io);
 
   socket.on(SocketEvents.CREATE_TIMER, async (payload: unknown) => {
     const parsed = payloadSchema.safeParse(payload);
@@ -39,6 +35,8 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
       totalRounds,
       playDuration,
       moveDuration,
+      breaks,
+      warningSeconds,
     } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
@@ -49,6 +47,7 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
         totalRounds,
         playDuration,
         moveDuration,
+        { breaks: toBreakConfigs(breaks), warningSeconds },
       );
 
       await updateTimerState(gameId, engine.getState());

@@ -11,8 +11,14 @@ vi.mock("@/context/GameContext", () => ({
 }));
 
 let mockTimerState: unknown = null;
-vi.mock("@/hooks/timer-sync", () => ({
-  useTimerSync: () => ({ timerState: mockTimerState }),
+vi.mock("@/context/TimerContext", () => ({
+  TimerProvider: ({ children }: { children: React.ReactNode }) => children,
+  useTimerContext: () => ({
+    timerState: mockTimerState,
+    breakProblems: [],
+    now: () => Date.now(),
+    isConnected: !!mockTimerState,
+  }),
 }));
 
 const mockEmit = vi.fn();
@@ -73,7 +79,7 @@ describe("TimerSetup", () => {
     );
   });
 
-  it("emits start/pause/apply events when a session exists", () => {
+  it("emits pause and apply events for a running session", () => {
     mockTimerState = {
       phase: "play",
       round: 1,
@@ -95,15 +101,46 @@ describe("TimerSetup", () => {
       expect.objectContaining({ gameId: "g1" }),
     );
 
+    // While running, the primary action is Pause (Start/Resume is hidden).
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    expect(mockEmit).toHaveBeenCalledWith(
+      SocketEvents.PAUSE_TIMER,
+      expect.objectContaining({ gameId: "g1", directorToken: "token" }),
+    );
+  });
+
+  it("emits start and control events for a paused session", () => {
+    mockTimerState = {
+      phase: "play",
+      round: 1,
+      totalRounds: 8,
+      board: 1,
+      boardsPerRound: 3,
+      isRunning: false,
+      playDuration: 120,
+      moveDuration: 90,
+      phaseStartedAt: null,
+      remainingMs: null,
+    };
+
+    render(<TimerSetup />);
+
+    // Not running and no remaining -> the primary action reads "Start".
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
     expect(mockEmit).toHaveBeenCalledWith(
       SocketEvents.START_TIMER,
       expect.objectContaining({ gameId: "g1", directorToken: "token" }),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next phase" }));
     expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.PAUSE_TIMER,
+      SocketEvents.NEXT_ROUND_TIMER,
+      expect.objectContaining({ gameId: "g1", directorToken: "token" }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous phase" }));
+    expect(mockEmit).toHaveBeenCalledWith(
+      SocketEvents.PREVIOUS_TIMER,
       expect.objectContaining({ gameId: "g1", directorToken: "token" }),
     );
   });

@@ -18,7 +18,7 @@ public/                    # Static assets
 
 - `app/` — Next.js App Router: pages, layouts, and `api/` route handlers. Routes grouped by feature (`create`, `join`, `manage`, `game`, `display`, `settings`).
 - `components/` — React components, grouped by area (common, pages, play, results, etc.).
-- `context/` — React Contexts (Game, Play, Assignment) for shared client state.
+- `context/` — React Contexts (Game, Play, Assignment, Timer) for shared client state.
 - `hooks/` — Custom React hooks, including the socket/SWR sync hooks.
 - `swr/` — SWR fetchers and cache-key helpers.
 - `lib/` — Shared client/server utilities (socket client, fetcher).
@@ -36,5 +36,6 @@ public/                    # Static assets
 
 - Keep pure domain logic (`model/`, `movement/`, `scoring/`, `timer/`) free of React and I/O so it stays unit-testable.
 - Co-locate tests and stories with their source: `Name.tsx`, `Name.test.tsx`, `Name.stories.tsx`; integration tests use `*.int.test.ts`.
-- Data flow: SWR fetches initial HTTP data, Socket.IO pushes real-time updates, and a socket→SWR sync hook merges those events into the SWR cache. Route new real-time state through this pattern rather than ad-hoc socket listeners in components.
+- Data flow (default): SWR fetches initial HTTP data, Socket.IO pushes real-time updates, and a socket→SWR sync hook merges those events into the SWR cache. Route new real-time state through this pattern rather than ad-hoc socket listeners in components.
+- Data flow (socket-only screens): for state that lives only over Socket.IO (no HTTP resource), use a feature-scoped context provider that (a) requests its initial slice on mount — and on reconnect — via an acknowledged request event whose data is returned on the callback (e.g. `timer:requestState` → `{ success, data }`), then (b) applies live update events on top. Keep `game:join` a dumb room-join: it must not replay feature state, so joining does not spray every feature's data at every client. The bridge session timer is the reference implementation (`src/context/TimerContext.tsx` + the `timer:requestState` handler); mirror it if leaderboard/traveller ever move off SWR.
 - Each database is a separate Drizzle unit; put schema/queries under the matching `src/db/<db>/` folder and use its dedicated `drizzle.config.<db>.ts`.

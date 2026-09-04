@@ -1,41 +1,53 @@
 "use client";
 
 import { useRequiredGame } from "@/context/GameContext";
-import { useTimerSync } from "@/hooks/timer-sync";
+import { TimerProvider, useTimerContext } from "@/context/TimerContext";
 import { useEffect, useMemo, useState } from "react";
-import { TimerControlsView, TimerStatus } from "./TimerControlsView";
+import {
+  TimerControlsView,
+  TimerStatus,
+  BreakDraft,
+} from "./TimerControlsView";
 import { useTimerDerived } from "@/hooks/timer-derived";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { SocketEvents } from "@/socket/socket-events";
+import { BreakConfig } from "@/timer/timer-state";
 
 interface Props {
-  /**
-   * When true, render the timer controls without the outer GamePageLayout so
-   * they can be embedded beneath the setup flow's tab bar. Defaults to false
-   * (standalone page, used by the manage/timer route).
-   */
   embedded?: boolean;
 }
 
-/**
- * Stateful timer configuration + controls. Holds the config state, derived
- * preview values, live timer sync, and the socket emitters, and renders the
- * presentational TimerControlsView. Shared between the manage/timer route
- * (standalone) and the game setup flow's Timer tab (embedded).
- */
-export function TimerSetup({ embedded = false }: Props) {
-  const { game } = useRequiredGame();
-  const { timerState } = useTimerSync();
+/** Parse "HH:MM" against a reference date, returning ms since epoch. */
+function resumeAtToMs(resumeAt: string, reference: number): number {
+  const [h, m] = resumeAt.split(":").map((n) => parseInt(n, 10));
+  if (Number.isNaN(h) || Number.isNaN(m)) return reference;
+  const d = new Date(reference);
+  d.setHours(h, m, 0, 0);
+  // If the chosen time is earlier than the reference, assume it's later today
+  // (breaks always resume after play, never the previous day).
+  if (d.getTime() < reference) {
+    d.setDate(d.getDate() + 1);
+  }
+  return d.getTime();
+}
 
-  // `tick` is the current wall-clock time in ms, refreshed every second so
-  // time-derived values recompute. It starts at 0 and is populated by the
-  // effect below, keeping the impure Date.now() call out of render.
+function msToLabel(ms: number): string {
+  const totalMinutes = Math.round(ms / 60000);
+  if (totalMinutes <= 0) return "0m";
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function TimerSetupContent({ embedded = false }: Props) {
+  const { game } = useRequiredGame();
+  const { timerState, breakProblems } = useTimerContext();
+
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    // Seed immediately via a 0ms timer (a callback, not a synchronous
-    // in-effect setState) then refresh every second.
     const seed = setTimeout(() => setTick(Date.now()), 0);
     const id = setInterval(() => setTick(Date.now()), 1000);
     return () => {
@@ -59,6 +71,10 @@ export function TimerSetup({ embedded = false }: Props) {
     "perRound",
   );
 
+  const [warningSeconds, setWarningSeconds] = useState(60);
+  const [breaks, setBreaks] = useState<BreakDraft[]>([]);
+  const [adjustApplyToFuture, setAdjustApplyToFuture] = useState(false);
+
   const enteredPlaySeconds = playMinutes * 60 + playSeconds;
   const moveDuration = moveMinutes * 60 + moveSeconds;
 
@@ -67,12 +83,74 @@ export function TimerSetup({ embedded = false }: Props) {
       ? enteredPlaySeconds
       : enteredPlaySeconds * boardsPerRound;
 
+  // Convert break drafts into domain BreakConfig for emitting. Resume-time
+  // breaks are anchored against the current tick so "HH:MM" maps to an absolute
+  // instant.
+  const breakConfigs: BreakConfig[] = useMemo(() => {
+    const reference = tick;
+    return breaks.map((b) =>
+      b.mode === "duration"
+        ? {
+            afterRound: b.afterRound,
+            mode: "duration",
+            durationSeconds: Math.max(0, Math.round(b.durationMinutes * 60)),
+          }
+        : {
+            afterRound: b.afterRound,
+            mode: "resumeTime",
+            resumeAtMs: resumeAtToMs(b.resumeAt, reference),
+          },
+    );
+  }, [breaks, tick]);
+
+  // Compute a preview of projected play-end per round for the *unsaved* config
+  // so resume-time break drafts can show their derived length. Session start is
+  // assumed to be "now" (tick).
+  const playEndByRound = useMemo(() => {
+    const map = new Map<number, number>();
+    const start = tick;
+    const playMs = effectivePlayDuration * 1000;
+    const moveMs = moveDuration * 1000;
+    let cursor = start;
+    for (let round = 1; round <= totalRounds; round++) {
+      cursor += playMs;
+      map.set(round, cursor);
+      if (round < totalRounds) {
+        const brk = breakConfigs.find((b) => b.afterRound === round);
+        if (brk) {
+          cursor +=
+            brk.mode === "duration"
+              ? brk.durationSeconds * 1000
+              : Math.max(0, brk.resumeAtMs - cursor);
+        } else {
+          cursor += moveMs;
+        }
+      }
+    }
+    return map;
+  }, [
+    tick,
+    effectivePlayDuration,
+    moveDuration,
+    totalRounds,
+    breakConfigs,
+  ]);
+
+  // Enrich resume-time break drafts with a computed length label.
+  const breaksWithComputed: BreakDraft[] = breaks.map((b) => {
+    if (b.mode !== "resumeTime") {
+      return { ...b, computedLength: null };
+    }
+    const reference = tick;
+    const priorPlayEnd = playEndByRound.get(b.afterRound) ?? reference;
+    const resumeMs = resumeAtToMs(b.resumeAt, reference);
+    return { ...b, computedLength: msToLabel(resumeMs - priorPlayEnd) };
+  });
+
   const totalSessionSeconds =
     totalRounds * effectivePlayDuration +
     Math.max(0, totalRounds - 1) * moveDuration;
 
-  // Derived from `tick` (current time) rather than Date.now() so it stays pure
-  // during render and refreshes with the per-second tick.
   const previewEndDate = useMemo(
     () => new Date(tick + totalSessionSeconds * 1000),
     [tick, totalSessionSeconds],
@@ -107,7 +185,53 @@ export function TimerSetup({ embedded = false }: Props) {
       totalRounds,
       playDuration: effectivePlayDuration,
       moveDuration,
+      warningSeconds,
+      breaks: breakConfigs,
     });
+  }
+
+  function emitAdjust(deltaSeconds: number) {
+    getSocket().emit(SocketEvents.ADJUST_TIME_TIMER, {
+      gameType: game.gameType,
+      gameId: game.gameId,
+      directorToken: getDirectorToken(game.gameId),
+      deltaSeconds,
+      applyToFutureSameType: adjustApplyToFuture,
+    });
+  }
+
+  function emitPrevious() {
+    getSocket().emit(SocketEvents.PREVIOUS_TIMER, {
+      gameType: game.gameType,
+      gameId: game.gameId,
+      directorToken: getDirectorToken(game.gameId),
+    });
+  }
+
+  function addBreak() {
+    setBreaks((prev) => [
+      ...prev,
+      {
+        afterRound: Math.min(totalRounds - 1 || 1, prev.length + 1),
+        mode: "duration",
+        durationMinutes: 10,
+        resumeAt: "",
+      },
+    ]);
+  }
+
+  function removeBreak(index: number) {
+    setBreaks((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function changeBreak(
+    index: number,
+    field: keyof BreakDraft,
+    value: number | string,
+  ) {
+    setBreaks((prev) =>
+      prev.map((b, i) => (i === index ? { ...b, [field]: value } : b)),
+    );
   }
 
   return (
@@ -115,6 +239,7 @@ export function TimerSetup({ embedded = false }: Props) {
       embedded={embedded}
       hasSession={hasSession}
       timer={hasSession ? timer : null}
+      breakProblems={breakProblems}
       config={{
         boardsPerRound,
         totalRounds,
@@ -123,6 +248,8 @@ export function TimerSetup({ embedded = false }: Props) {
         moveMinutes,
         moveSeconds,
         timingMode,
+        warningSeconds,
+        breaks: breaksWithComputed,
       }}
       sessionLength={formatDuration(totalSessionSeconds)}
       previewEnd={previewEndDate.toLocaleTimeString([], {
@@ -152,12 +279,37 @@ export function TimerSetup({ embedded = false }: Props) {
           case "timingMode":
             setTimingMode(value as "perRound" | "perBoard");
             break;
+          case "warningSeconds":
+            setWarningSeconds(value as number);
+            break;
         }
       }}
+      onAddBreak={addBreak}
+      onRemoveBreak={removeBreak}
+      onBreakChange={changeBreak}
+      adjustApplyToFuture={adjustApplyToFuture}
+      onAdjustApplyToFutureChange={setAdjustApplyToFuture}
       onCreate={() => emitConfig(SocketEvents.CREATE_TIMER)}
       onApplyChanges={() => emitConfig(SocketEvents.UPDATE_CONFIG_TIMER)}
       onStart={() => emitSimple(SocketEvents.START_TIMER)}
       onPause={() => emitSimple(SocketEvents.PAUSE_TIMER)}
+      onNext={() => emitSimple(SocketEvents.NEXT_ROUND_TIMER)}
+      onPrevious={emitPrevious}
+      onAdjustTime={emitAdjust}
     />
+  );
+}
+
+/**
+ * Director timer controls. Wraps the stateful content in a TimerProvider so the
+ * current timer state is requested on mount (and re-requested on reconnect),
+ * both for the standalone /manage/timer route and when embedded in the game
+ * setup flow's Timer tab.
+ */
+export function TimerSetup({ embedded = false }: Props) {
+  return (
+    <TimerProvider>
+      <TimerSetupContent embedded={embedded} />
+    </TimerProvider>
   );
 }

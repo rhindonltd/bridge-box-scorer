@@ -1,58 +1,195 @@
-import { test, expect } from "./fixtures/director-fixture";
-import { createGameViaUI } from "./fixtures/game-fixture";
-import { test as base } from "@playwright/test";
+import { test, expect, Browser, Page } from "@playwright/test";
 
 /**
- * Timer E2E Tests
+ * Two-context timer E2E.
  *
- * Tests the timer pages for both director (controls) and player (display).
- * Timer pages depend on Socket.IO for real-time state, so these tests
- * verify that pages render without errors rather than full timer interaction.
+ * One browser context acts as the director managing the timer via
+ * /game/[id]/manage/timer; a second context is a pure display at
+ * /game/[id]/display/timer. These tests assert real cross-context
+ * synchronisation over Socket.IO: configuring, starting, pausing/resuming,
+ * stepping phases, and breaks.
+ *
+ * Timing note: the timer counts down in real time, so tests use short
+ * durations and assert observable display states (MM:SS, round label, PAUSED,
+ * Break) with generous timeouts rather than exact remaining values.
  */
 
-test.describe("Director Timer", () => {
-  test("director timer page renders without errors", async ({
-    directorContext,
-  }) => {
-    const { page, gameId } = directorContext;
-    await page.goto(`/manage/${gameId}/timer`);
+async function newContextPage(browser: Browser): Promise<Page> {
+  const deviceConfig = test.info().project.use;
+  const context = await browser.newContext(deviceConfig);
+  return context.newPage();
+}
 
-    // Page should load without crashing
-    await expect(page.locator("body")).toBeVisible();
-    // The controls page renders config inputs when no timer session exists
-    await page.waitForLoadState("networkidle");
-    await expect(page.locator("body")).toBeVisible();
+/**
+ * Create a game through the UI on the given page and return its id. Uses the
+ * current /game/[id]/create flow. The director token is stored in the page's
+ * localStorage as `director:{gameId}`.
+ */
+async function createGame(page: Page, eventName: string): Promise<string> {
+  await page.goto("/create");
+  await page.getByLabel("Event Name").fill(eventName);
+  await page.getByLabel("Director Name").fill("E2E Director");
+  await page.getByRole("button", { name: "Create Game", exact: true }).click();
+
+  await page.waitForURL(/\/game\/.+\/create/, { timeout: 15000 });
+  const match = /\/game\/([^/]+)\/create/.exec(page.url());
+  if (!match) {
+    throw new Error(`Unexpected create URL: ${page.url()}`);
+  }
+  return match[1];
+}
+
+async function deleteGame(page: Page, gameId: string): Promise<void> {
+  try {
+    await page.goto(`/game/${gameId}/manage/menu`);
+    await page
+      .getByRole("button", { name: "Delete Game" })
+      .click({ timeout: 5000 });
+    await page
+      .getByRole("button", { name: "Yes, Delete Game" })
+      .click({ timeout: 5000 });
+  } catch {
+    // Best-effort cleanup.
+  }
+}
+
+test.describe("Timer director + display sync", () => {
+  test("director controls propagate to the display page", async ({
+    browser,
+  }) => {
+    test.setTimeout(60_000);
+    const directorPage = await newContextPage(browser);
+    const displayPage = await newContextPage(browser);
+
+    const gameId = await createGame(directorPage, `Timer Sync ${Date.now()}`);
+
+    try {
+      // --- Director configures and creates a timer ---
+      await directorPage.goto(`/game/${gameId}/manage/timer`);
+      await directorPage.waitForLoadState("networkidle");
+
+      // Short durations so phase transitions are observable within the test.
+      await directorPage.locator("#total-rounds").fill("3");
+      await directorPage.getByLabel("Play minutes").fill("0");
+      await directorPage.getByLabel("Play seconds").fill("30");
+      await directorPage.getByLabel("Move minutes").fill("0");
+      await directorPage.getByLabel("Move seconds").fill("10");
+
+      await directorPage.getByRole("button", { name: "Create" }).click();
+
+      await expect(
+        directorPage.getByRole("button", { name: "Start" }),
+      ).toBeVisible({ timeout: 15000 });
+
+      // --- Display opens AFTER the timer was created and still syncs, because
+      // the TimerProvider requests current state on mount (timer:requestState),
+      // not because game:join replays anything. ---
+      await displayPage.goto(`/game/${gameId}/display/timer`);
+      await displayPage.waitForLoadState("networkidle");
+
+      await expect(displayPage.getByText("Round 1 of 3")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(displayPage.getByText("PAUSED")).toBeVisible({
+        timeout: 15000,
+      });
+
+      // --- Director starts the timer; display should count down ---
+      await directorPage.getByRole("button", { name: "Start" }).click();
+
+      await expect(displayPage.getByText("PAUSED")).toBeHidden({
+        timeout: 15000,
+      });
+      await expect(displayPage.getByText(/^\d{2}:\d{2}$/)).toBeVisible({
+        timeout: 15000,
+      });
+
+      // --- Director pauses; display shows PAUSED again ---
+      await directorPage.getByRole("button", { name: "Pause" }).click();
+      await expect(displayPage.getByText("PAUSED")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(directorPage.getByText("paused")).toBeVisible({
+        timeout: 15000,
+      });
+
+      // --- Resume, then step to the next phase ---
+      await directorPage.getByRole("button", { name: "Start" }).click();
+      await expect(displayPage.getByText("PAUSED")).toBeHidden({
+        timeout: 15000,
+      });
+
+      await directorPage.getByRole("button", { name: "Next phase" }).click();
+      await expect(displayPage.getByText("Move for Round 2")).toBeVisible({
+        timeout: 15000,
+      });
+
+      // --- Previous steps back into a round's play ---
+      await directorPage
+        .getByRole("button", { name: "Previous phase" })
+        .click();
+      await expect(displayPage.getByText(/Round \d of 3/)).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await displayPage.context().close();
+    }
   });
 
-  test("director timer shows initial state with configuration controls", async ({
-    directorContext,
+  test("a scheduled break shows the break screen on the display", async ({
+    browser,
   }) => {
-    const { page, gameId } = directorContext;
-    await page.goto(`/manage/${gameId}/timer`);
+    test.setTimeout(60_000);
+    const directorPage = await newContextPage(browser);
+    const displayPage = await newContextPage(browser);
 
-    await page.waitForLoadState("networkidle");
+    const gameId = await createGame(directorPage, `Timer Break ${Date.now()}`);
 
-    // The ControlsPage should render timer configuration UI since no timer is active
-    // Look for common timer config elements (rounds, boards, timing mode)
-    const body = page.locator("body");
-    await expect(body).toBeVisible();
+    try {
+      await directorPage.goto(`/game/${gameId}/manage/timer`);
+      await directorPage.waitForLoadState("networkidle");
 
-    // The page should have some meaningful content (not blank/null render)
-    const bodyText = await body.textContent();
-    expect(bodyText?.length).toBeGreaterThan(0);
-  });
-});
+      await directorPage.locator("#total-rounds").fill("3");
+      await directorPage.getByLabel("Play minutes").fill("0");
+      await directorPage.getByLabel("Play seconds").fill("20");
+      await directorPage.getByLabel("Move minutes").fill("0");
+      await directorPage.getByLabel("Move seconds").fill("10");
 
-base.describe("Player Timer", () => {
-  base("player timer page renders without errors", async ({ page }) => {
-    const eventName = `Timer E2E ${Date.now()}`;
-    const { gameId } = await createGameViaUI(page, eventName);
+      // Add a 2-minute break after round 1.
+      await directorPage.getByRole("button", { name: "+ Add break" }).click();
+      await directorPage.getByLabel("Break 1 after round").fill("1");
+      await directorPage.getByLabel("Break 1 duration minutes").fill("2");
 
-    await page.goto(`/join/${gameId}/timer`);
+      await directorPage.getByRole("button", { name: "Create" }).click();
+      await expect(
+        directorPage.getByRole("button", { name: "Start" }),
+      ).toBeVisible({ timeout: 15000 });
 
-    // The timer page either renders with "Connecting…" text (waiting for socket)
-    // or redirects if game context isn't loaded yet. Both are valid non-crash states.
-    await page.waitForLoadState("networkidle");
-    await expect(page.locator("body")).toBeVisible();
+      // The display opens after creation and syncs because the TimerProvider
+      // requests the current state on mount (timer:requestState).
+      await displayPage.goto(`/game/${gameId}/display/timer`);
+      await displayPage.waitForLoadState("networkidle");
+      await expect(displayPage.getByText("Round 1 of 3")).toBeVisible({
+        timeout: 15000,
+      });
+
+      // Advance one phase from the created (paused) state. The gap after
+      // round 1 is a break, so the display should show the break screen.
+      await directorPage.getByRole("button", { name: "Next phase" }).click();
+
+      // The break replaces the move gap after round 1.
+      await expect(displayPage.getByText("Break")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(
+        displayPage.getByText(/Next round starts at/),
+      ).toBeVisible({ timeout: 15000 });
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await displayPage.context().close();
+    }
   });
 });

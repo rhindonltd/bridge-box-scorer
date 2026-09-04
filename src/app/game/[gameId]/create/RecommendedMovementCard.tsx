@@ -28,8 +28,8 @@ export function RecommendedMovementCard({ movement, onSelect }: Props) {
 
       <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100 text-center">
         <Stat label="Rounds" value={movement.rounds} />
-        <Stat label="Boards / Set" value={movement.boardsPerRound} />
-        <Stat label="Boards in Play" value={movement.boardsInPlay} />
+        <Stat label="Boards / Round" value={movement.boardsPerRound} />
+        <Stat label="Boards per Set" value={movement.boardsInPlay} />
       </div>
 
       {(movement.pros.length > 0 || movement.cons.length > 0) && (
@@ -42,7 +42,7 @@ export function RecommendedMovementCard({ movement, onSelect }: Props) {
       {movement.copies > 1 && (
         <p className="flex items-start gap-1.5 px-3 pb-3 text-xs font-medium text-amber-700">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-          <span>Needs {movement.copies} identical copies of each board set.</span>
+          <span>Needs {movement.copies} sets of boards.</span>
         </p>
       )}
 
