@@ -96,7 +96,7 @@ export default function PlayPage() {
           leadCardRequired={game.leadCardRequired}
           onComplete={(data) => {
             if (data.contract === "PO" || data.contract === "NP") {
-              submitResult(data.contract);
+              submitResult(data.board, data.contract);
             } else {
               const parsed = parseContract(data.contract);
               const fullResult = buildPlayedContractCode(
@@ -106,7 +106,7 @@ export default function PlayPage() {
                 parsed.declarer,
                 data.result,
               );
-              submitResult(fullResult);
+              submitResult(data.board, fullResult);
             }
           }}
         />

@@ -56,9 +56,14 @@ function DisplayLeaderboardContent() {
 
         <div className="flex-1 min-h-0">
           {active ? (
-            <Leaderboard overallScoreAndParticipant={active} />
+            <div data-testid="leaderboard-standings" className="h-full">
+              <Leaderboard overallScoreAndParticipant={active} />
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full p-6">
+            <div
+              data-testid="leaderboard-empty"
+              className="flex flex-col items-center justify-center h-full p-6"
+            >
               <div className="text-xl font-bold text-gray-900 mb-2">
                 No Results Yet
               </div>

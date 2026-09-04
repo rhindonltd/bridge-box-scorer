@@ -18,6 +18,7 @@ export function StepBoard({ boards, playedBoards, onBoardSelected }: Props) {
               key={board}
               type="button"
               disabled={isPlayed}
+              data-testid={`wizard-board-${board}`}
               className={`text-2xl font-bold py-6 rounded-xl transition ${
                 isPlayed
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed"

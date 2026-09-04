@@ -10,6 +10,8 @@ type Props = {
    * highlights a specific row, so the highlight is the only emphasis.
    */
   striped?: boolean;
+  /** Optional test id applied to the row element (for E2E selection). */
+  testId?: string;
 };
 
 export function TableRow({
@@ -17,6 +19,7 @@ export function TableRow({
   className,
   highlighted = false,
   striped = true,
+  testId,
 }: Props) {
   const rowClass = highlighted
     ? "bg-blue-100 even:bg-blue-100 hover:bg-blue-200 font-semibold"
@@ -25,7 +28,7 @@ export function TableRow({
       : "hover:bg-gray-100";
 
   return (
-    <tr className={`${rowClass} ${className}`}>
+    <tr className={`${rowClass} ${className}`} data-testid={testId}>
       {cells.map((cell, index) => {
         const isLast = index === cells.length - 1;
         // The top-corner radii are only meant to soften the very first row.

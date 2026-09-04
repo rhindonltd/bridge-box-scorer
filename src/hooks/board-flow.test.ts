@@ -13,6 +13,31 @@ describe("useBoardFlow", () => {
     expect(result.current.suit).toBeNull();
   });
 
+  it("records the selected board and advances to the level step", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: true }),
+    );
+
+    expect(result.current.selectedBoard).toBeNull();
+
+    act(() => result.current.onBoardSelected(4));
+    expect(result.current.selectedBoard).toBe(4);
+    expect(result.current.step).toBe(1);
+  });
+
+  it("clears the selected board when stepping back from level to board", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: true }),
+    );
+
+    act(() => result.current.onBoardSelected(2));
+    expect(result.current.step).toBe(1);
+
+    act(() => result.current.handleBack());
+    expect(result.current.step).toBe(0);
+    expect(result.current.selectedBoard).toBeNull();
+  });
+
   it("walks the played-contract path including the lead step when required", () => {
     const { result } = renderHook(() =>
       useBoardFlow({ leadCardRequired: true }),

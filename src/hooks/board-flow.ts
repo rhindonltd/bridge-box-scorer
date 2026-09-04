@@ -13,6 +13,9 @@ export function useBoardFlow({ leadCardRequired }: Props) {
   // Step state
   const [step, setStep] = useState(0);
 
+  // Board state — the board the player has chosen to enter on step 0.
+  const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
+
   // Contract state
   const [level, setLevel] = useState<Level | null>(null);
   const [suit, setSuit] = useState<ContractSuit | null>(null);
@@ -30,6 +33,11 @@ export function useBoardFlow({ leadCardRequired }: Props) {
   const [resultValue, setResultValue] = useState(0);
 
   // --- Step transition handlers ---
+
+  const onBoardSelected = (board: number) => {
+    setSelectedBoard(board);
+    setStep(1);
+  };
 
   const onLevelSelected = (selectedLevel: Level) => {
     setLevel(selectedLevel);
@@ -77,6 +85,7 @@ export function useBoardFlow({ leadCardRequired }: Props) {
   const handleBack = () => {
     switch (step) {
       case 1:
+        setSelectedBoard(null);
         setStep(0);
         break;
       case 2:
@@ -108,8 +117,10 @@ export function useBoardFlow({ leadCardRequired }: Props) {
     resultMode,
     resultValue,
     step,
+    selectedBoard,
 
     handleBack,
+    onBoardSelected,
     onLeadComplete,
     setLeadSuit,
     setLeadRank,

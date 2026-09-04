@@ -95,7 +95,7 @@ describe("usePlayFlow", () => {
       boardIndex: 0,
     });
 
-    act(() => result.current.submitResult("3NTN="));
+    act(() => result.current.submitResult(1, "3NTN="));
 
     // Transitions to waiting and emits the submission for board 1.
     expect(result.current.playState.state).toBe("waiting");
@@ -108,6 +108,31 @@ describe("usePlayFlow", () => {
         boardNumber: 1,
         result: "3NTN=",
       }),
+    );
+  });
+
+  it("submits the board chosen in the wizard, not the positional first board", () => {
+    withSchedule({
+      assignmentId: "A1",
+      side: "NS",
+      rounds: [round(1, [1, 2])],
+    });
+
+    const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+    act(() => result.current.handleEnterRound());
+    // Player picks the second board of the round in the wizard.
+    act(() => result.current.submitResult(2, "4SE="));
+
+    // waiting state tracks board 2 (index 1), and the emit carries board 2.
+    expect(result.current.playState).toEqual({
+      state: "waiting",
+      roundIndex: 0,
+      boardIndex: 1,
+    });
+    expect(socketEmit).toHaveBeenCalledWith(
+      SocketEvents.SUBMIT_RESULT,
+      expect.objectContaining({ boardNumber: 2, result: "4SE=" }),
     );
   });
 
