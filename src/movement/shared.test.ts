@@ -11,6 +11,9 @@ import {
   MovementType,
   groupLinesReducer,
   splitLinesOfFile,
+  boardSetFor,
+  boardRangeForSet,
+  buildTables,
 } from "./shared";
 import { Tables } from "@/model/movement";
 
@@ -68,6 +71,58 @@ describe("boardSetToBoardList", () => {
 
   it("handles boardSet 1 with 1 board per round", () => {
     expect(boardSetToBoardList(1, 1)).toEqual([1]);
+  });
+});
+
+describe("buildTables", () => {
+  it("slices off the two header lines and builds a table per remaining line", () => {
+    const lines = [
+      "Header line 1",
+      "0,2,4,2,2",
+      "tableOneData",
+      "tableTwoData",
+    ];
+    const roundParser = (line: string) => [
+      {
+        round: 1,
+        boards: [line.length],
+        participants: { nsId: "1", ewId: "2" },
+      },
+    ];
+
+    const tables = buildTables<"PAIR">(lines, roundParser);
+
+    expect(tables).toEqual([
+      {
+        table: 1,
+        rounds: [
+          { round: 1, boards: [12], participants: { nsId: "1", ewId: "2" } },
+        ],
+      },
+      {
+        table: 2,
+        rounds: [
+          { round: 1, boards: [12], participants: { nsId: "1", ewId: "2" } },
+        ],
+      },
+    ]);
+  });
+});
+
+describe("boardRangeForSet", () => {
+  it("computes the inclusive board range for a board set", () => {
+    expect(boardRangeForSet(1, 2)).toEqual({ boardStart: 1, boardEnd: 2 });
+    expect(boardRangeForSet(3, 4)).toEqual({ boardStart: 9, boardEnd: 12 });
+    expect(boardRangeForSet(2, 1)).toEqual({ boardStart: 2, boardEnd: 2 });
+  });
+});
+
+describe("boardSetFor", () => {
+  it("is the inverse of boardSetToBoardList", () => {
+    expect(boardSetFor(1, 2)).toBe(1);
+    expect(boardSetFor(4, 3)).toBe(2);
+    expect(boardSetFor(9, 4)).toBe(3);
+    expect(boardSetFor(1, 1)).toBe(1);
   });
 });
 

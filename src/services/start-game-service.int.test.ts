@@ -96,6 +96,20 @@ describe("checkStart (multi-section)", () => {
     );
   });
 
+  it("resolves a section that has no seated pairs (empty seat list)", async () => {
+    // Section A exists with a movement, but no pairs are seated anywhere, so
+    // seatsBySection has no entry for A and the `?? []` fallback is taken.
+    vi.mocked(findSections).mockResolvedValue([section("A", 5)] as any);
+    vi.mocked(getSectionMovement).mockResolvedValue(mitchell(5));
+    vi.mocked(findPairs).mockResolvedValue([] as any);
+
+    const result = await checkStart("g1", {} as any);
+
+    expect(result.canStart).toBe(false);
+    // No pairs seated -> the section reports NO_PAIRS_SEATED.
+    expect(result.problems.map((p) => p.code)).toContain("NO_PAIRS_SEATED");
+  });
+
   it("reports canStart false with no sections", async () => {
     vi.mocked(findSections).mockResolvedValue([] as any);
     vi.mocked(findPairs).mockResolvedValue([] as any);
@@ -190,6 +204,15 @@ describe("startGame (multi-section)", () => {
     const result = await startGame("g1");
 
     expect(result.canStart).toBe(false);
+    expect(materializeSections).not.toHaveBeenCalled();
+  });
+
+  it("throws when the game db does not exist", async () => {
+    vi.mocked(getDb).mockResolvedValue(undefined as any);
+
+    await expect(startGame("missing-game")).rejects.toThrow(
+      "Game db does not exist",
+    );
     expect(materializeSections).not.toHaveBeenCalled();
   });
 

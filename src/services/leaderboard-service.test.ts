@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { computeLeaderboard } from "./leaderboard-service";
+import {
+  computeLeaderboard,
+  computeSectionLeaderboards,
+} from "./leaderboard-service";
 import { BridgeGame } from "@/db/game-index/schema";
 
 vi.mock("@/db/games", () => ({
@@ -340,5 +343,138 @@ describe("leaderboard-service", () => {
       expect(result.type).toBe("PAIR_XIMP");
       expect(scoreBoard).toHaveBeenCalledWith(expect.anything(), "XIMP");
     });
+  });
+});
+
+describe("computeSectionLeaderboards", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+    } as BridgeGame);
+    vi.mocked(getCombination).mockReturnValue({
+      perBoard: "MP",
+      overall: "MP",
+    });
+  });
+
+  it("computes one leaderboard per section, sorted ascending", async () => {
+    // Section B rows come first to prove the ascending sort of the result.
+    const mockDb = {
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockResolvedValue([
+          {
+            boardNumber: 1,
+            ns: "1",
+            ew: "2",
+            section: "B",
+            confirmedResult: "3NTN=",
+            directorOverrideResult: null,
+          },
+          {
+            boardNumber: 1,
+            ns: "1",
+            ew: "2",
+            section: "A",
+            confirmedResult: "3NTN+1",
+            directorOverrideResult: null,
+          },
+        ]),
+      }),
+    } as unknown as Db;
+
+    vi.mocked(scoreBoard).mockReturnValue({
+      pluginId: "MP",
+      board: 1,
+      lines: [],
+    } as any);
+
+    mockOverallPlugin({
+      type: "PAIR_MP",
+      mode: "PAIR",
+      scoring: "MP",
+      lines: [],
+    });
+
+    // Two pairs, one in each section, to exercise pairsBySection grouping.
+    vi.mocked(findPairs).mockResolvedValue([
+      {
+        initialSeat: "A1NS",
+        type: "PAIR",
+        player1: { id: 1, firstName: "A", lastName: "B", nationalId: null },
+        player2: { id: 2, firstName: "C", lastName: "D", nationalId: null },
+      },
+      {
+        initialSeat: "B1NS",
+        type: "PAIR",
+        player1: { id: 3, firstName: "E", lastName: "F", nationalId: null },
+        player2: { id: 4, firstName: "G", lastName: "H", nationalId: null },
+      },
+    ] as any);
+
+    const result = await computeSectionLeaderboards(mockDb, "game-1");
+
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.section)).toEqual(["A", "B"]);
+    expect(result[0].type).toBe("PAIR_MP");
+    expect(result[0].participants).toHaveLength(1);
+    expect(result[0].participants[0].id).toBe("A1NS");
+    expect(result[1].participants[0].id).toBe("B1NS");
+    // One scoreBoard call per section (each has one board with a result).
+    expect(scoreBoard).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to empty rows/pairs for a section present only on one side", async () => {
+    // A section with board rows but no pairs, and a section with pairs but no
+    // rows — exercises both `?? []` fallbacks in the section map lookups.
+    const mockDb = {
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockResolvedValue([
+          {
+            boardNumber: 1,
+            ns: "1",
+            ew: "2",
+            section: "A",
+            confirmedResult: "3NTN=",
+            directorOverrideResult: null,
+          },
+        ]),
+      }),
+    } as unknown as Db;
+
+    vi.mocked(scoreBoard).mockReturnValue({
+      pluginId: "MP",
+      board: 1,
+      lines: [],
+    } as any);
+
+    mockOverallPlugin({
+      type: "PAIR_MP",
+      mode: "PAIR",
+      scoring: "MP",
+      lines: [],
+    });
+
+    // Pair only in section B, which has no board rows.
+    vi.mocked(findPairs).mockResolvedValue([
+      {
+        initialSeat: "B1NS",
+        type: "PAIR",
+        player1: { id: 3, firstName: "E", lastName: "F", nationalId: null },
+        player2: { id: 4, firstName: "G", lastName: "H", nationalId: null },
+      },
+    ] as any);
+
+    const result = await computeSectionLeaderboards(mockDb, "game-1");
+
+    expect(result.map((r) => r.section)).toEqual(["A", "B"]);
+    // Section A has rows but no pairs.
+    expect(result[0].section).toBe("A");
+    expect(result[0].participants).toHaveLength(0);
+    // Section B has a pair but no board rows -> scoreBoardsToOverall gets [].
+    expect(result[1].section).toBe("B");
+    expect(result[1].participants).toHaveLength(1);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetcher } from "./fetcher";
+import { fetcher, postFetcher } from "./fetcher";
 
 describe("fetcher", () => {
   beforeEach(() => {
@@ -57,5 +57,58 @@ describe("fetcher", () => {
     vi.mocked(fetch).mockRejectedValue(new Error("Network error"));
 
     await expect(fetcher("/api/fail")).rejects.toThrow("Network error");
+  });
+});
+
+describe("postFetcher", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("issues a POST request and returns the unwrapped result", async () => {
+    const mockData = { networks: ["home", "office"] };
+    const mockResponse = {
+      ok: true,
+      json: vi.fn().mockResolvedValue({ success: true, result: mockData }),
+    };
+    vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+
+    const result = await postFetcher("/api/wifi/scan");
+
+    expect(fetch).toHaveBeenCalledWith("/api/wifi/scan", { method: "POST" });
+    expect(result).toEqual(mockData);
+  });
+
+  it("throws an error when response is not ok", async () => {
+    const mockResponse = {
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+    };
+    vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+
+    await expect(postFetcher("/api/missing")).rejects.toThrow(
+      "Fetch failed: 404 Not Found",
+    );
+  });
+
+  it("attaches status code to the error", async () => {
+    const mockResponse = {
+      ok: false,
+      status: 503,
+      statusText: "Service Unavailable",
+    };
+    vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+
+    try {
+      await postFetcher("/api/broken");
+      throw new Error("should have thrown");
+    } catch (err: unknown) {
+      expect((err as { status: number }).status).toBe(503);
+    }
   });
 });

@@ -5,6 +5,7 @@ function useHasMoreBelow(ref: React.RefObject<HTMLElement | null>) {
 
   React.useEffect(() => {
     const element = ref.current;
+    /* v8 ignore next -- ref is always attached before this effect runs, so the null guard is unreachable in practice */
     if (!element) return;
 
     const update = () => {

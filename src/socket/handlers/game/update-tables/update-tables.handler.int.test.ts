@@ -139,6 +139,140 @@ describe("registerUpdateTablesHandler (integration)", () => {
     expect(result).toMatchObject({ success: false });
   });
 
+  it("returns an error when the game is not found", async () => {
+    vi.mocked(findGameById).mockResolvedValue(null as any);
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerUpdateTablesHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
+      gameId: "game-1",
+      section: "A",
+      tables: 5,
+      directorToken: "test-token",
+    });
+
+    expect(result).toMatchObject({ success: false, error: "Game not found" });
+  });
+
+  it("returns an error when the game db is not found", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+    } as any);
+    vi.mocked(getDb).mockResolvedValue(null as any);
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerUpdateTablesHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
+      gameId: "game-1",
+      section: "A",
+      tables: 5,
+      directorToken: "test-token",
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: "Game db not found",
+    });
+  });
+
+  it("returns an error when the section is not found", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+    } as any);
+    vi.mocked(findSections).mockResolvedValue([
+      { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+    ] as any);
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerUpdateTablesHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
+      gameId: "game-1",
+      section: "Z",
+      tables: 5,
+      directorToken: "test-token",
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: "Section Z not found",
+    });
+  });
+
+  it("maps an unexpected error to a generic internal server error", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+    } as any);
+    vi.mocked(updateSectionTables).mockRejectedValue(new Error("boom"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerUpdateTablesHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
+      gameId: "game-1",
+      section: "A",
+      tables: 5,
+      directorToken: "test-token",
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: "Internal server error",
+    });
+    errSpy.mockRestore();
+  });
+
+  it("maps a non-Error thrown value to a generic internal server error", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+    } as any);
+    vi.mocked(updateSectionTables).mockRejectedValue("boom");
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerUpdateTablesHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    const result = await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
+      gameId: "game-1",
+      section: "A",
+      tables: 5,
+      directorToken: "test-token",
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: "Internal server error",
+    });
+    errSpy.mockRestore();
+  });
+
   it("rejects invalid payload", async () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {

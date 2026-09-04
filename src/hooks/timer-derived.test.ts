@@ -159,6 +159,124 @@ describe("useTimerDerived - breaks and warning", () => {
     expect(result.boardLabel).toBeNull();
   });
 
+  it("computes break remaining from elapsed time when the break is running", () => {
+    const now = 2_000_000;
+    const state = makeState({
+      phase: "break",
+      round: 2,
+      isRunning: true,
+      phaseStartedAt: now - 60_000,
+      remainingMs: 300_000,
+    });
+    const result = useTimerDerived(state, now);
+    // 300s break, 60s elapsed -> 240s remaining.
+    expect(result.remaining).toBe(240);
+  });
+
+  it("falls back to remainingMs for a running break with no phaseStartedAt", () => {
+    const state = makeState({
+      phase: "break",
+      round: 2,
+      isRunning: true,
+      phaseStartedAt: null,
+      remainingMs: 180_000,
+    });
+    const result = useTimerDerived(state, Date.now());
+    expect(result.remaining).toBe(180);
+  });
+
+  it("projects the session end from a move phase (move/break session branch)", () => {
+    const now = 1_700_000_000_000;
+    const state = makeState({
+      phase: "move",
+      round: 1,
+      totalRounds: 2,
+      playDuration: 420,
+      moveDuration: 60,
+      isRunning: false,
+    });
+    const result = useTimerDerived(state, now);
+    // move branch: current move (60s) + play for round 1 (420s) +
+    // gap after round 1 (60s) + play for round 2 (420s) = 960s.
+    expect(result.projectedEndDate.getTime()).toBe(now + 960_000);
+  });
+
+  it("projects the session end from a running move phase", () => {
+    const now = 1_700_000_000_000;
+    const state = makeState({
+      phase: "move",
+      round: 2,
+      totalRounds: 2,
+      playDuration: 420,
+      moveDuration: 60,
+      isRunning: true,
+      phaseStartedAt: now - 30_000,
+    });
+    const result = useTimerDerived(state, now);
+    // running move: 30s left of move + play for round 2 (420s) = 450s
+    // (round === totalRounds so the loop does not add further rounds).
+    expect(result.projectedEndDate.getTime()).toBe(now + 450_000);
+  });
+
+  it("treats a null phase as a zero-length remaining session", () => {
+    const now = 1_700_000_000_000;
+    // A null phase is neither play nor move/break nor finished, so the
+    // session walk falls through to `return total` with only the current
+    // (paused, no remainingMs) phase contribution, which is 0.
+    const state = makeState({
+      phase: null,
+      isRunning: false,
+      remainingMs: null,
+    });
+    const result = useTimerDerived(state, now);
+    // sessionRemainingMs is 0 -> projectedEnd falls back to `now`.
+    expect(result.projectedEndDate.getTime()).toBe(now);
+  });
+
+  it("treats a paused break with no remainingMs as zero remaining", () => {
+    const state = makeState({
+      phase: "break",
+      round: 2,
+      isRunning: false,
+      remainingMs: null,
+    });
+    expect(useTimerDerived(state, Date.now()).remaining).toBe(0);
+  });
+
+  it("treats a running break (no phaseStartedAt, no remainingMs) as zero remaining", () => {
+    const state = makeState({
+      phase: "break",
+      round: 2,
+      isRunning: true,
+      phaseStartedAt: null,
+      remainingMs: null,
+    });
+    expect(useTimerDerived(state, Date.now()).remaining).toBe(0);
+  });
+
+  it("treats a running break with elapsed time but no remainingMs as zero remaining", () => {
+    const now = 2_000_000;
+    const state = makeState({
+      phase: "break",
+      round: 2,
+      isRunning: true,
+      phaseStartedAt: now - 10_000,
+      remainingMs: null,
+    });
+    // durationMs falls back to 0, so remaining is clamped to 0.
+    expect(useTimerDerived(state, now).remaining).toBe(0);
+  });
+
+  it("returns the full duration for a running play phase with no phaseStartedAt", () => {
+    const state = makeState({
+      phase: "play",
+      isRunning: true,
+      phaseStartedAt: null,
+      playDuration: 420,
+    });
+    expect(useTimerDerived(state, Date.now()).remaining).toBe(420);
+  });
+
   it("includes break time in the projected session end", () => {
     const now = 1_700_000_000_000;
     const withoutBreak = makeState({

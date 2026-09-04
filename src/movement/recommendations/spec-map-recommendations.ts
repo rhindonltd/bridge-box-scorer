@@ -85,6 +85,7 @@ function fromMitchellDescriptor(
 ): RecommendedMovement {
   const selected = descriptorToSelectedMovement(descriptor);
   const rounds = playedRounds(descriptor);
+  /* v8 ignore next 8 -- the `: {...}` fallback is unreachable: a MITCHELL descriptor always maps to a source==="MITCHELL" selected movement */
   const mitchellSpec =
     selected.source === "MITCHELL"
       ? selected.mitchell

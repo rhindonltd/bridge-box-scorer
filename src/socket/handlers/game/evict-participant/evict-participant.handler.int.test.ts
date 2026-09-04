@@ -134,4 +134,30 @@ describe("registerEvictParticipantHandler (integration)", () => {
 
     expect(result).toMatchObject({ success: false, error: "Game not found" });
   });
+
+  it("returns an internal server error when the game db is missing", async () => {
+    vi.mocked(getDb).mockResolvedValue(null as any);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerEvictParticipantHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    const result = await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
+      gameId: "game-1",
+      seat: "1NS",
+      directorToken: "test-token",
+    });
+
+    // The `if (!db) throw` guard is caught and mapped to a generic error.
+    expect(result).toMatchObject({
+      success: false,
+      error: "Internal server error",
+    });
+    expect(deletePairParticipant).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
 });

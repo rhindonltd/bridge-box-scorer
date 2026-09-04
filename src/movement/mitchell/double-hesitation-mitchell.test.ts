@@ -218,4 +218,15 @@ describe("generateDoubleHesitationMitchell validation", () => {
       }),
     ).toThrow("even number of tables");
   });
+
+  it("rejects a non-positive boardsPerRound", () => {
+    expect(() =>
+      generateDoubleHesitationMitchell({
+        tables: 6,
+        rounds: 8,
+        boardsPerRound: 0,
+        doubleHesitation: true,
+      }),
+    ).toThrow("boardsPerRound must be a positive integer");
+  });
 });

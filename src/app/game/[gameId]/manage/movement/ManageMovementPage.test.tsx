@@ -1,10 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { SocketEvents } from "@/socket/socket-events";
 
 const mockOn = vi.fn();
 const mockOff = vi.fn();
 vi.mock("@/lib/socket", () => ({
   getSocket: () => ({ on: mockOn, off: mockOff }),
+}));
+
+const mockFetcher = vi.fn();
+vi.mock("@/lib/fetcher", () => ({
+  fetcher: (...args: unknown[]) => mockFetcher(...args),
 }));
 
 vi.mock("@/context/GameContext", () => ({
@@ -51,6 +57,7 @@ describe("ManageMovementPage", () => {
       isLoading: false,
       mutate: vi.fn(),
     });
+    mockFetcher.mockResolvedValue({ movement: oneTable });
   });
 
   it("shows no section selector for a single-section game", () => {
@@ -103,5 +110,67 @@ describe("ManageMovementPage", () => {
     render(<ManageMovementPage backHref="/back" />);
 
     expect(mockUseSWR).toHaveBeenCalledWith(null, expect.any(Function));
+  });
+
+  it("renders a loading spinner while movement data loads", () => {
+    mockUseSections.mockReturnValue({ sections: [section("A")] });
+    mockUseSWR.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      mutate: vi.fn(),
+    });
+
+    const { container } = render(<ManageMovementPage backHref="/back" />);
+    expect(container.querySelector(".animate-spin")).toBeTruthy();
+  });
+
+  it("renders an empty state when no movement is set up", () => {
+    mockUseSections.mockReturnValue({ sections: [section("A")] });
+    mockUseSWR.mockReturnValue({
+      data: { type: "PAIRS", tables: [] },
+      isLoading: false,
+      mutate: vi.fn(),
+    });
+
+    render(<ManageMovementPage backHref="/back" />);
+    expect(screen.getByText("No movement set up yet.")).toBeInTheDocument();
+  });
+
+  it("unwraps the movement payload in the SWR fetcher", async () => {
+    mockUseSections.mockReturnValue({ sections: [section("A")] });
+    render(<ManageMovementPage backHref="/back" />);
+
+    // The second arg passed to useSWR is the movementFetcher; invoke it with a
+    // stubbed low-level fetcher response to exercise its unwrap logic.
+    const passedFetcher = mockUseSWR.mock.calls.at(-1)?.[1] as (
+      url: string,
+    ) => Promise<unknown>;
+
+    // fetcher is mocked to resolve { movement }.
+    const result = await passedFetcher("/api/games/g1/movement?section=A");
+    expect(result).toEqual(oneTable);
+    expect(mockFetcher).toHaveBeenCalledWith(
+      "/api/games/g1/movement?section=A",
+    );
+  });
+
+  it("re-fetches on the board-result-updated socket event", () => {
+    mockUseSections.mockReturnValue({ sections: [section("A")] });
+    const mutate = vi.fn();
+    mockUseSWR.mockReturnValue({
+      data: oneTable,
+      isLoading: false,
+      mutate,
+    });
+
+    render(<ManageMovementPage backHref="/back" />);
+
+    // The effect registered a BOARD_RESULT_UPDATED handler; invoke it.
+    const call = mockOn.mock.calls.find(
+      (c) => c[0] === SocketEvents.BOARD_RESULT_UPDATED,
+    );
+    expect(call).toBeTruthy();
+    call![1]();
+    expect(mutate).toHaveBeenCalled();
   });
 });

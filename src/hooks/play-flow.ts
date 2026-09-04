@@ -297,6 +297,7 @@ export function usePlayFlow(gameId: string, seat: string) {
        * "waiting" if we're still in "enterContract" for this round.
        */
       setPlayState((prev) => {
+        /* v8 ignore next 3 -- defensive atomic re-check: the outer guard above already returned unless playState is "enterContract", and React runs this updater synchronously against that same state, so prev is always "enterContract" here */
         if (prev.state !== "enterContract") {
           return prev;
         }

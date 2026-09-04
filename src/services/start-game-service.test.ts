@@ -158,4 +158,88 @@ describe("resolveSectionStart", () => {
       expect(sitOuts).toBe(1);
     }
   });
+
+  it("resolves a database spec WITH a built-in missing pair (aligns the phantom)", async () => {
+    // Same 3-table movement, but pair 6 (round-1 EW at table 3) is the built-in
+    // phantom. deriveExpectedSeats drops A3EW, so seating everyone else makes it
+    // startable with A3EW as the sit-out — driving alignSpecMissingPair.
+    vi.mocked(getPairMovement).mockResolvedValue([
+      {
+        id: 1,
+        movementId: 0,
+        tableNumber: 1,
+        rounds: [
+          { id: 0, tableId: 1, roundNumber: 1, ns: "1", ew: "4", boardSet: 1 },
+          { id: 0, tableId: 1, roundNumber: 2, ns: "1", ew: "6", boardSet: 2 },
+          { id: 0, tableId: 1, roundNumber: 3, ns: "1", ew: "5", boardSet: 3 },
+        ],
+      },
+      {
+        id: 2,
+        movementId: 0,
+        tableNumber: 2,
+        rounds: [
+          { id: 0, tableId: 2, roundNumber: 1, ns: "2", ew: "5", boardSet: 1 },
+          { id: 0, tableId: 2, roundNumber: 2, ns: "2", ew: "4", boardSet: 2 },
+          { id: 0, tableId: 2, roundNumber: 3, ns: "2", ew: "6", boardSet: 3 },
+        ],
+      },
+      {
+        id: 3,
+        movementId: 0,
+        tableNumber: 3,
+        rounds: [
+          { id: 0, tableId: 3, roundNumber: 1, ns: "3", ew: "6", boardSet: 1 },
+          { id: 0, tableId: 3, roundNumber: 2, ns: "3", ew: "5", boardSet: 2 },
+          { id: 0, tableId: 3, roundNumber: 3, ns: "3", ew: "4", boardSet: 3 },
+        ],
+      },
+    ] as any);
+    vi.mocked(getPairMovementSpecById).mockResolvedValue({
+      id: 11,
+      missingPair: 6,
+    } as any);
+
+    // A3EW is the built-in phantom (excluded from expected seats). Leave one
+    // real expected seat empty (A1EW) so validation yields exactly one missing
+    // seat -> a sit-out -> alignSpecMissingPair runs to align the phantom.
+    const seated = seatsForTables(3).filter(
+      (s) => s !== "A3EW" && s !== "A1EW",
+    );
+
+    const result = await resolveSectionStart(
+      "A",
+      { source: "SPEC", specId: 11, boardsPerRound: 2 },
+      seated,
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.validation.sitOutSeat).toBe("A1EW");
+    expect(result.movement).not.toBeNull();
+    // The phantom (pair 6) sits out exactly one round at each involved table.
+    const sitOutTotal = result
+      .movement!.flatMap((t) => t.rounds)
+      .filter(isSitOut).length;
+    expect(sitOutTotal).toBeGreaterThan(0);
+  });
+
+  it("throws when a sit-out is required for a non-Standard Mitchell variant", async () => {
+    // A Skip Mitchell is not Standard, so isStandardMitchell is false. Seating
+    // it one pair short forces validation to yield a sitOutSeat, which routes
+    // into applySitOut and hits the guard throw.
+    const seated = seatsForTables(6).filter((s) => s !== "A3EW");
+
+    await expect(
+      resolveSectionStart(
+        "A",
+        {
+          source: "MITCHELL",
+          mitchell: { tables: 6, rounds: 5, boardsPerRound: 3, skip: true },
+        },
+        seated,
+      ),
+    ).rejects.toThrow(
+      "Sit-out handling is only supported for Standard Mitchell movements.",
+    );
+  });
 });

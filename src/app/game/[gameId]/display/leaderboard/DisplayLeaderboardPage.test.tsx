@@ -95,6 +95,12 @@ describe("DisplayLeaderboardPage", () => {
     expect(leaderboardSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: "PAIR_MP_B", section: "B" }),
     );
+
+    // Switch back to the Combined tab.
+    fireEvent.click(screen.getByText("Combined"));
+    expect(leaderboardSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: "PAIR_MP" }),
+    );
   });
 
   it("shows an empty state when there is no leaderboard yet", () => {
@@ -107,5 +113,49 @@ describe("DisplayLeaderboardPage", () => {
     render(<DisplayLeaderboardPage />);
 
     expect(screen.getByText("No Results Yet")).toBeInTheDocument();
+  });
+
+  it("shows a spinner while the leaderboard is loading", () => {
+    mockContext.mockReturnValue({
+      leaderboard: null,
+      sections: [],
+      isLoading: true,
+    });
+
+    const { container } = render(<DisplayLeaderboardPage />);
+    expect(container.querySelector(".animate-spin")).toBeTruthy();
+  });
+
+  it("falls back to the combined leaderboard when the selected section is missing", () => {
+    // Three "sections" so the tab bar shows, but their `section` values differ
+    // from what we select, forcing the `?? combined` fallback path.
+    mockContext.mockReturnValue({
+      leaderboard: combined(),
+      sections: [sectionLb("A"), sectionLb("B")],
+      isLoading: false,
+    });
+
+    const { rerender } = render(<DisplayLeaderboardPage />);
+
+    // Click Section B, then simulate that section disappearing from the
+    // snapshot (e.g. a re-scored update) so `find` returns undefined and the
+    // component falls back to the combined leaderboard.
+    fireEvent.click(screen.getByText("Section B"));
+    expect(leaderboardSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: "PAIR_MP_B" }),
+    );
+
+    mockContext.mockReturnValue({
+      leaderboard: combined(),
+      // B removed, but keep >1 section so the view stays "B".
+      sections: [sectionLb("A"), sectionLb("C")],
+      isLoading: false,
+    });
+    rerender(<DisplayLeaderboardPage />);
+
+    // View is still "B" but no matching section -> combined fallback.
+    expect(leaderboardSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({ type: "PAIR_MP" }),
+    );
   });
 });

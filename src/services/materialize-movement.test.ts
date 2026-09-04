@@ -1,12 +1,19 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("@/db/games", () => ({
+  getDb: vi.fn(),
+}));
 
 import {
   buildSectionRows,
   sectionParticipantId,
   mitchellToPairMovement,
+  materializePairLikeMovement,
+  materializeSections,
   type MaterializableMovement,
 } from "./materialize-movement";
 import type { Tables } from "@/model/movement";
+import { getDb } from "@/db/games";
 
 describe("sectionParticipantId", () => {
   it("prefixes the movement id with the section letter", () => {
@@ -161,5 +168,67 @@ describe("mitchellToPairMovement", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("materializePairLikeMovement", () => {
+  it("throws when the game db does not exist", async () => {
+    vi.mocked(getDb).mockResolvedValue(undefined as any);
+
+    const movement: MaterializableMovement = [
+      {
+        tableNumber: 1,
+        rounds: [{ roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 }],
+      },
+    ];
+
+    await expect(
+      materializePairLikeMovement("A", movement, "missing-game"),
+    ).rejects.toThrow("Game db does not exist");
+  });
+
+  it("skips inserts when there are no board or assignment rows", async () => {
+    const insert = vi.fn();
+    const tx = { insert };
+    const transaction = vi.fn((cb: (tx: unknown) => void) => cb(tx));
+    vi.mocked(getDb).mockResolvedValue({ transaction } as any);
+
+    // Empty movement -> buildSectionRows returns empty arrays, so both the
+    // boardRows and assignmentRows `if (... > 0)` guards take the false branch.
+    await materializePairLikeMovement("A", [], "empty-game");
+
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(insert).not.toHaveBeenCalled();
+  });
+});
+
+describe("materializeSections", () => {
+  it("throws when the game db does not exist", async () => {
+    vi.mocked(getDb).mockResolvedValue(undefined as any);
+
+    const movement: MaterializableMovement = [
+      {
+        tableNumber: 1,
+        rounds: [{ roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 }],
+      },
+    ];
+
+    await expect(
+      materializeSections("missing-game", [{ section: "A", movement }]),
+    ).rejects.toThrow("Game db does not exist");
+  });
+
+  it("skips inserts when there are no board or assignment rows", async () => {
+    const insert = vi.fn();
+    const tx = { insert };
+    const transaction = vi.fn((cb: (tx: unknown) => void) => cb(tx));
+    vi.mocked(getDb).mockResolvedValue({ transaction } as any);
+
+    // No sections -> both aggregated arrays stay empty, taking the false
+    // branch of both insert guards inside the transaction.
+    await materializeSections("empty-game", []);
+
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(insert).not.toHaveBeenCalled();
   });
 });

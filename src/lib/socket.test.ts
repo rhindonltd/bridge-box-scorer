@@ -121,3 +121,46 @@ describe("socket", () => {
     });
   });
 });
+
+describe("getSocket url fallback", () => {
+  const ORIGINAL_URL = process.env.NEXT_PUBLIC_APP_URL;
+
+  beforeEach(() => {
+    // The module caches a module-level `socket`, so reset the module registry
+    // to re-exercise the getSocket() connection branch per test.
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    if (ORIGINAL_URL === undefined) {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+    } else {
+      process.env.NEXT_PUBLIC_APP_URL = ORIGINAL_URL;
+    }
+  });
+
+  it("uses NEXT_PUBLIC_APP_URL when it is set", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://box.local:4000";
+
+    const ioMock = vi.fn(() => mockSocket);
+    vi.doMock("socket.io-client", () => ({ io: ioMock }));
+
+    const { getSocket: freshGetSocket } = await import("./socket");
+    freshGetSocket();
+
+    expect(ioMock).toHaveBeenCalledWith("https://box.local:4000");
+  });
+
+  it("falls back to http://localhost:3000 when the env var is unset", async () => {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+
+    const ioMock = vi.fn(() => mockSocket);
+    vi.doMock("socket.io-client", () => ({ io: ioMock }));
+
+    const { getSocket: freshGetSocket } = await import("./socket");
+    freshGetSocket();
+
+    expect(ioMock).toHaveBeenCalledWith("http://localhost:3000");
+  });
+});

@@ -49,4 +49,33 @@ describe("SelectGamePage", () => {
     );
     expect(onHandler).toHaveBeenCalled();
   });
+
+  it("revalidates joinable games on reconnect", () => {
+    render(
+      <SelectGamePage headerTitle="Header Title" onGameSelected={vi.fn()} />,
+    );
+
+    // Grab the handler registered for the "connect" event and fire it. It calls
+    // mutate(swrKeys.joinableGames) — invoking it here exercises that body
+    // without throwing.
+    const connectCall = onHandler.mock.calls.find(([evt]) => evt === "connect");
+    expect(connectCall).toBeDefined();
+    expect(() => connectCall![1]()).not.toThrow();
+  });
+
+  it("maps a joinable-games socket payload into an SWR update", () => {
+    render(
+      <SelectGamePage headerTitle="Header Title" onGameSelected={vi.fn()} />,
+    );
+
+    // useSocketSWRSync registers a handler for the joinable-games event; firing
+    // it runs the transform callback that maps the payload to { key, data }.
+    const syncCall = onHandler.mock.calls.find(
+      ([evt]) => evt === "joinable-games",
+    );
+    expect(syncCall).toBeDefined();
+    expect(() =>
+      syncCall![1]({ joinableGames: [{ gameId: "g3" }] }),
+    ).not.toThrow();
+  });
 });

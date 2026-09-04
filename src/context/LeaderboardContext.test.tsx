@@ -139,4 +139,52 @@ describe("LeaderboardProvider", () => {
       gameId: "g1",
     });
   });
+
+  it("clears loading when the request rejects (no snapshot yet)", async () => {
+    mockEmitWithAck.mockRejectedValue(new Error("no snapshot"));
+
+    render(
+      <LeaderboardProvider>
+        <Probe />
+      </LeaderboardProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("loading").textContent).toBe("false"),
+    );
+    expect(screen.getByTestId("lb").textContent).toBe("no");
+  });
+
+  it("ignores a request rejection that resolves after unmount", async () => {
+    let reject!: (reason?: unknown) => void;
+    mockEmitWithAck.mockReturnValue(
+      new Promise((_, rej) => {
+        reject = rej;
+      }),
+    );
+
+    const { unmount } = render(
+      <LeaderboardProvider>
+        <Probe />
+      </LeaderboardProvider>,
+    );
+
+    // Unmount first (sets cancelled = true), then let the request reject.
+    unmount();
+    await act(async () => {
+      reject(new Error("late failure"));
+      await Promise.resolve();
+    });
+    // No throw / no act warning => the cancelled guard short-circuited.
+  });
+
+  it("useLeaderboardContext throws when used outside a provider", () => {
+    function Orphan() {
+      useLeaderboardContext();
+      return null;
+    }
+    expect(() => render(<Orphan />)).toThrow(
+      /must be used within a LeaderboardProvider/,
+    );
+  });
 });

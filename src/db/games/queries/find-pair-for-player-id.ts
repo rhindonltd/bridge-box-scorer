@@ -22,6 +22,7 @@ export async function findPairForPlayerId(
       ),
     );
 
+  /* v8 ignore next 3 -- unreachable defensive guard: drizzle `.select()` always resolves to an array, never null/undefined */
   if (!results) {
     return null;
   }

@@ -75,6 +75,44 @@ describe("TableRow", () => {
     expect(renderedCells[2]).toHaveClass("rounded-tr-lg");
   });
 
+  it("applies highlight styling and drops corner radii when highlighted", () => {
+    const cells = ["A", "B", "C"];
+    render(
+      <table>
+        <tbody>
+          <TableRow
+            cells={cells}
+            className="custom"
+            highlighted
+            testId="hl-row"
+          />
+        </tbody>
+      </table>,
+    );
+
+    const row = screen.getByTestId("hl-row");
+    expect(row).toHaveClass("bg-blue-100", "font-semibold");
+
+    const renderedCells = screen.getAllByTestId("cell");
+    // Highlighted rows never get corner radii.
+    expect(renderedCells[0]).not.toHaveClass("rounded-tl-lg");
+    expect(renderedCells[2]).not.toHaveClass("rounded-tr-lg");
+  });
+
+  it("uses the non-striped hover style when striping is disabled", () => {
+    render(
+      <table>
+        <tbody>
+          <TableRow cells={["A"]} className="" striped={false} />
+        </tbody>
+      </table>,
+    );
+
+    const row = screen.getByRole("row");
+    expect(row).toHaveClass("hover:bg-gray-100");
+    expect(row).not.toHaveClass("even:bg-gray-200");
+  });
+
   it("handles single cell (both first and last)", () => {
     render(
       <table>

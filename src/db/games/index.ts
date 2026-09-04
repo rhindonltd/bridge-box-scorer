@@ -11,9 +11,11 @@ export type Db = ReturnType<typeof drizzle<typeof schema>>;
 const dbInstances: Map<string, Db> = new Map();
 
 export async function createDb(gameId: string): Promise<Db> {
+  /* v8 ignore start -- server-only guard; window is always undefined under the node test env */
   if (typeof window !== "undefined") {
     throw new Error("SQLite can only be used on the server");
   }
+  /* v8 ignore stop */
 
   const dataDir =
     process.env.DATABASE_GAMES_URL ?? "/home/bridgebox/data/games";
@@ -31,9 +33,11 @@ export async function getDb(gameId: string): Promise<Db | null> {
     return dbInstances.get(gameId)!;
   }
 
+  /* v8 ignore start -- server-only guard; window is always undefined under the node test env */
   if (typeof window !== "undefined") {
     throw new Error("SQLite can only be used on the server");
   }
+  /* v8 ignore stop */
 
   const dataDir =
     process.env.DATABASE_GAMES_URL ?? "/home/bridgebox/data/games";

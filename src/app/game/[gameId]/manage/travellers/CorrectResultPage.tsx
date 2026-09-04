@@ -99,6 +99,10 @@ export function CorrectResultPage({
   }
 
   function handleWizardComplete(data: DirectorWizardResult) {
+    // Defensive type-narrowing guard. `handleWizardComplete` is only ever wired
+    // to the wizard rendered in the "enterContract" state, so this early return
+    // is unreachable in practice but required to narrow the union below.
+    /* v8 ignore next */
     if (wizardStep.step !== "enterContract") return;
 
     if (data.type === "adjusted") {

@@ -82,6 +82,37 @@ describe("RecommendedMovementCard", () => {
     ).toBeInTheDocument();
   });
 
+  it("omits the pros/cons block entirely when both are empty and hides an absent note", () => {
+    const bare: RecommendedMovement = {
+      ...movement,
+      pros: [],
+      cons: [],
+      note: undefined,
+      copies: 1,
+    };
+    render(<RecommendedMovementCard movement={bare} onSelect={vi.fn()} />);
+
+    expect(
+      screen.queryByText("Every pair plays every other pair"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("One stationary pair only")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Shuffle the last-round boards in advance."),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the pros list but skips an empty cons list", () => {
+    const prosOnly: RecommendedMovement = {
+      ...movement,
+      pros: ["A single upside"],
+      cons: [],
+    };
+    render(<RecommendedMovementCard movement={prosOnly} onSelect={vi.fn()} />);
+
+    expect(screen.getByText("A single upside")).toBeInTheDocument();
+    expect(screen.queryByText("One stationary pair only")).not.toBeInTheDocument();
+  });
+
   it("calls onSelect when clicked", () => {
     const onSelect = vi.fn();
     render(

@@ -37,6 +37,13 @@ describe("findBestBoardsPerPlayer", () => {
     // so the loop finds nothing and the target is returned.
     expect(findBestBoardsPerPlayer(1, 20)).toBe(20);
   });
+
+  it("skips candidates outside the target window before accepting one", () => {
+    // tables=3, target=20 (window [18,22]): at rounds=3 the early bpr values
+    // (2->6, 3->9, 4->12, 5->15) fall below the window and hit the continue
+    // guard, until bpr=6 yields 18, the first candidate inside the window.
+    expect(findBestBoardsPerPlayer(3, 20)).toBe(18);
+  });
 });
 
 describe("generateMitchellOptions", () => {
@@ -80,6 +87,12 @@ describe("generateMitchellOptions", () => {
   it("returns an empty list when no valid movement exists", () => {
     // 13 is prime and > maxBoardsPerRound, so nothing divides it in [2,12].
     expect(generateMitchellOptions(5, 13)).toEqual([]);
+  });
+
+  it("skips a single-round candidate before returning empty", () => {
+    // tables=5, 2 boards: bpr=2 divides -> rounds=1, hitting the rounds<=1
+    // guard. No larger bpr divides 2, so the result is empty.
+    expect(generateMitchellOptions(5, 2)).toEqual([]);
   });
 
   it("validates tables", () => {

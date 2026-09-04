@@ -187,6 +187,23 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
     );
     expect(result.resolved).toBe(false);
   });
+
+  it("falls back to the first family match when no 3/4-named spec exists", () => {
+    // Wants a 3/4 spec (label contains "3/4") but the only HOWELL match for
+    // 3 tables / 5 rounds is the plain "3 Table Howell", so the `.find` yields
+    // nothing and we fall back to familyMatches[0].
+    const result = resolveRecommendationDescriptor(
+      entry({ tables: 3, movement: "3/4 Howell", rounds: 5, boardsPerRound: 5 }),
+      catalog,
+    );
+    expect(result.resolved).toBe(true);
+    if (result.resolved) {
+      expect(result.descriptors[0]).toMatchObject({
+        type: "SPEC",
+        name: "3 Table Howell",
+      });
+    }
+  });
 });
 
 describe("resolveRecommendationDescriptor — Mitchell family", () => {
@@ -310,6 +327,19 @@ describe("resolveRecommendationDescriptor — Mitchell family", () => {
           (d) => d.type === "MITCHELL" && d.arrowSwitches === 1,
         ),
       ).toBe(true);
+    }
+  });
+
+  it("reports no mapping rule for an unrecognised movement label", () => {
+    // Not excluded, not unsupported, not a spec family, and not a known
+    // Mitchell case, so the switch falls through to its default branch.
+    const result = resolveRecommendationDescriptor(
+      entry({ movement: "Completely Made Up Movement" }),
+      catalog,
+    );
+    expect(result.resolved).toBe(false);
+    if (!result.resolved) {
+      expect(result.reason).toMatch(/no mapping rule for movement/);
     }
   });
 });

@@ -6,6 +6,8 @@ import { SocketEvents } from "@/socket/socket-events";
 import { registerSubmitResultHandler } from "./submit-result.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
 import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
+import { getDb } from "@/db/games";
+import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
 
 // Mock the results broadcaster so this test does not pull in the real
 // leaderboard/board compute + drizzle chain; assert it's invoked on confirm.
@@ -117,6 +119,24 @@ describe("registerSubmitResultHandler (integration)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     submissionStore.clear();
+    // Restore the default db (mockResolvedValue overrides in some tests persist
+    // across cases since clearAllMocks does not reset implementations).
+    vi.mocked(getDb).mockResolvedValue({
+      update: mockUpdate,
+      select: mockSelect,
+    } as any);
+    // Restore the stateful default for findBoardSubmissions.
+    vi.mocked(findBoardSubmissions).mockImplementation(
+      async (
+        gameId: string,
+        section: string,
+        tableNumber: number,
+        roundNumber: number,
+      ) =>
+        submissionStore.get(
+          storeKey(gameId, section, tableNumber, roundNumber),
+        ) ?? [],
+    );
   });
 
   afterEach(async () => {
@@ -479,5 +499,178 @@ describe("registerSubmitResultHandler (integration)", () => {
     expect(mockUpdate).toHaveBeenCalled();
 
     client2.disconnect();
+  });
+
+  it("rejects a submission against a SIT_OUT board", async () => {
+    // Override the board status lookup to report a sit-out board.
+    vi.mocked(getDb).mockResolvedValue({
+      update: mockUpdate,
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => ({
+            get: vi.fn(async () => ({ status: "SIT_OUT" })),
+          })),
+        })),
+      })),
+    } as any);
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerJoinGameHandler(socket);
+        registerSubmitResultHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "game-so" });
+
+    const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
+      gameId: "game-so",
+      seat: "A1NS",
+      roundNumber: 1,
+      tableNumber: 1,
+      boardNumber: 1,
+      result: "3NTN=",
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: "This board is a sit-out",
+    });
+    // No confirmation write happens for a rejected sit-out submission.
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("does not confirm when two pending submissions are the same side", async () => {
+    // Defensive branch: two rows exist but both are NS (no EW), so the
+    // `!ns || !ew` guard returns without confirming.
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      { side: "NS", boardNumber: 3, result: "3NTN=" },
+      { side: "NS", boardNumber: 3, result: "3NTN=" },
+    ] as any);
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerJoinGameHandler(socket);
+        registerSubmitResultHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "game-ns2" });
+
+    let confirmed = false;
+    client.on(SocketEvents.BOARD_CONFIRMED, () => {
+      confirmed = true;
+    });
+
+    const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
+      gameId: "game-ns2",
+      seat: "A1NS",
+      roundNumber: 1,
+      tableNumber: 1,
+      boardNumber: 3,
+      result: "3NTN=",
+    });
+
+    expect(result).toEqual({ success: true });
+    await new Promise((r) => setTimeout(r, 100));
+    expect(confirmed).toBe(false);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("throws (and reports failure) when db is missing at confirm time", async () => {
+    // getDb resolves null: the SIT_OUT lookup is skipped, the submission is
+    // stored, and at confirm time the `if (!db) throw` guard fires and is
+    // caught, reporting a generic failure.
+    vi.mocked(getDb).mockResolvedValue(null as any);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { client, close, addClient } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerJoinGameHandler(socket);
+        registerSubmitResultHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    const client2 = await addClient();
+
+    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "game-nodb" });
+    await emitWithAck(client2, SocketEvents.JOIN_GAME, { gameId: "game-nodb" });
+
+    // First (NS) submission acks success (db null path stores it).
+    await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
+      gameId: "game-nodb",
+      seat: "A1NS",
+      roundNumber: 1,
+      tableNumber: 1,
+      boardNumber: 4,
+      result: "3NTN=",
+    });
+
+    let confirmed = false;
+    client.on(SocketEvents.BOARD_CONFIRMED, () => {
+      confirmed = true;
+    });
+
+    // Matching EW submission reaches the confirm path where `!db` throws.
+    // The success ack already fired before confirmation, so the ack is still
+    // success; the observable effect is that confirmation never completes and
+    // the error is logged.
+    const result = await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
+      gameId: "game-nodb",
+      seat: "A1EW",
+      roundNumber: 1,
+      tableNumber: 1,
+      boardNumber: 4,
+      result: "3NTN=",
+    });
+
+    expect(result).toEqual({ success: true });
+    await new Promise((r) => setTimeout(r, 100));
+    expect(confirmed).toBe(false);
+    expect(errSpy).toHaveBeenCalledWith(
+      "Submit result error:",
+      expect.any(Error),
+    );
+
+    client2.disconnect();
+    errSpy.mockRestore();
+  });
+
+  it("reports failure when persisting the submission throws (catch block)", async () => {
+    const { createBoardSubmission } = await import(
+      "@/db/games/actions/create-submission"
+    );
+    vi.mocked(createBoardSubmission).mockRejectedValueOnce(
+      new Error("db write failed"),
+    );
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerJoinGameHandler(socket);
+        registerSubmitResultHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "game-err" });
+
+    const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
+      gameId: "game-err",
+      seat: "A1NS",
+      roundNumber: 1,
+      tableNumber: 1,
+      boardNumber: 1,
+      result: "3NTN=",
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: "Failed to submit result",
+    });
+    errSpy.mockRestore();
   });
 });

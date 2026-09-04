@@ -50,6 +50,37 @@ describe("db integration harness", () => {
     expect(db).toBeTruthy();
   });
 
+  // Drive `getDb()` (which invokes each descriptor's `importIndex` thunk) and
+  // `dbFilePath()` for every database, covering both the singleton branch and
+  // the games branch of the harness.
+  it.each(ALL_DB_NAMES)(
+    "resolves a live getDb() and dbFilePath() for the %s database",
+    async (name) => {
+      harness = createDbHarness(name);
+      await harness.setup();
+
+      const db = await harness.getDb();
+      expect(db).toBeTruthy();
+
+      // dbFilePath points inside the temp dir; games uses <gameId>.db while the
+      // singletons use their fixed file name.
+      expect(harness.dbFilePath().startsWith(harness.dir)).toBe(true);
+      expect(harness.dbFilePath().endsWith(".db")).toBe(true);
+    },
+  );
+
+  it("getDb throws when a games db was never built on disk", async () => {
+    // A fresh games harness whose file we delete before requesting getDb: the
+    // index module's getDb returns null, so the harness raises its own guard.
+    harness = createDbHarness("games");
+    await harness.setup();
+
+    const fs = await import("node:fs");
+    fs.rmSync(harness.dbFilePath(), { force: true });
+
+    await expect(harness.getDb()).rejects.toThrow(/games db not created/);
+  });
+
   it("isolates temp dirs between harness instances", async () => {
     const a = createDbHarness("system");
     const b = createDbHarness("system");

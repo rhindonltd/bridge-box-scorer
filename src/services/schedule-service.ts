@@ -102,7 +102,12 @@ export async function getSchedule(db: Db, seat: string) {
     .sort(([a], [b]) => a - b)
     .map(([roundNumber, data]) => {
       const nsEw = roundNsEw.get(roundNumber);
+      // roundNsEw is populated from the same allBoards rows and with the same
+      // per-round guard as roundMap, so every round iterated here always has an
+      // nsEw entry; the `: undefined` arms below are defensive only.
+      /* v8 ignore next -- see note above: nsEw is always defined here */
       const nsPlayers = nsEw ? assignmentToPlayers.get(nsEw.ns) : undefined;
+      /* v8 ignore next -- see note above: nsEw is always defined here */
       const ewPlayers = nsEw ? assignmentToPlayers.get(nsEw.ew) : undefined;
 
       // A round whose boards are all SIT_OUT is a sit-out round for this pair.

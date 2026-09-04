@@ -131,6 +131,23 @@ describe("SectionMovementPicker", () => {
     expect(groupHeadings).toEqual(["16 boards", "24 boards"]);
   });
 
+  it("groups multiple movements sharing the same boards-a-pair count together", () => {
+    // Two movements both playing 16 boards -> single group with both cards.
+    const rec2: RecommendedMovement = { ...generatedRec(), name: "Skip Mitchell" };
+    mockRecommendations.mockReturnValue([generatedRec(), rec2]);
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
+
+    const groupHeadings = screen
+      .getAllByRole("heading", { level: 2 })
+      .map((h) => h.textContent)
+      .filter((t) => t?.includes("boards"));
+    expect(groupHeadings).toEqual(["16 boards"]);
+    expect(screen.getByRole("button", { name: "Mitchell" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Skip Mitchell" }),
+    ).toBeInTheDocument();
+  });
+
   it("persists a generated Mitchell and calls onDone", async () => {
     mockRecommendations.mockReturnValue([generatedRec()]);
     const onDone = vi.fn();
@@ -234,6 +251,31 @@ describe("SectionMovementPicker", () => {
         rounds: 8,
         boardsPerRound: 2,
       }),
+    );
+  });
+
+  it("handles SWR returning no data yet", () => {
+    mockUseSWR.mockReturnValue({ data: undefined });
+    mockRecommendations.mockReturnValue([]);
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
+    // recommendationsFromSpecMap is called with an empty array fallback.
+    expect(mockRecommendations).toHaveBeenCalledWith(8, []);
+    expect(
+      screen.getByText(/No recommended movements are available/),
+    ).toBeInTheDocument();
+  });
+
+  it("uses a generic message when a non-Error is thrown while persisting", async () => {
+    mockRecommendations.mockReturnValue([generatedRec()]);
+    vi.mocked(setSectionMitchellMovement).mockRejectedValueOnce("string boom");
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
+    fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Failed to set movement"),
     );
   });
 

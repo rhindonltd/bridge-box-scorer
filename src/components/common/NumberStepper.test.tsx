@@ -1,99 +1,128 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+
 import NumberStepper from "./NumberStepper";
-import { describe, expect, it, vi } from "vitest";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("NumberStepper", () => {
-  it("renders value correctly", () => {
-    render(<NumberStepper value={5} onChange={vi.fn()} />);
-
-    expect(screen.getByText("5")).toBeInTheDocument();
-  });
-
-  it("renders zeroCharacter when value is 0", () => {
-    render(<NumberStepper value={0} zeroCharacter="ZERO" onChange={vi.fn()} />);
-
-    expect(screen.getByText("ZERO")).toBeInTheDocument();
-  });
-
-  it("shows + sign when showPlus is enabled", () => {
-    render(<NumberStepper value={5} showPlus onChange={vi.fn()} />);
-
-    expect(screen.getByText("+5")).toBeInTheDocument();
-  });
-
-  it("does not show + sign when showPlus is false", () => {
-    render(<NumberStepper value={5} showPlus={false} onChange={vi.fn()} />);
-
-    expect(screen.getByText("5")).toBeInTheDocument();
-  });
-
-  it("calls onChange when increment button is clicked", async () => {
-    const user = userEvent.setup();
+  it("increments and decrements via press-and-release", () => {
     const onChange = vi.fn();
+    render(<NumberStepper value={2} onChange={onChange} />);
 
-    render(<NumberStepper value={5} onChange={onChange} />);
+    const [decrement, increment] = screen.getAllByRole("button");
+
+    fireEvent.mouseDown(increment);
+    expect(onChange).toHaveBeenLastCalledWith(3);
+    fireEvent.mouseUp(increment);
+
+    fireEvent.mouseDown(decrement);
+    expect(onChange).toHaveBeenLastCalledWith(1);
+    fireEvent.mouseUp(decrement);
+  });
+
+  it("clamps to max and disables the increment button at max", () => {
+    const onChange = vi.fn();
+    render(<NumberStepper value={5} max={5} onChange={onChange} />);
 
     const increment = screen.getByRole("button", { name: "+" });
+    expect(increment).toBeDisabled();
 
-    await user.click(increment);
-
-    expect(onChange).toHaveBeenCalledWith(6);
+    const decrement = screen.getByRole("button", { name: "−" });
+    expect(decrement).not.toBeDisabled();
   });
 
-  it("calls onChange when decrement button is clicked", async () => {
-    const user = userEvent.setup();
+  it("clamps to min and disables the decrement button at min", () => {
     const onChange = vi.fn();
-
-    render(<NumberStepper value={5} onChange={onChange} />);
-
-    const decrement = screen.getByRole("button", { name: "−" });
-
-    await user.click(decrement);
-
-    expect(onChange).toHaveBeenCalledWith(4);
-  });
-
-  it("respects min boundary (disables decrement)", () => {
-    render(<NumberStepper value={0} min={0} onChange={vi.fn()} />);
+    render(<NumberStepper value={-3} min={-3} onChange={onChange} />);
 
     const decrement = screen.getByRole("button", { name: "−" });
-
     expect(decrement).toBeDisabled();
   });
 
-  it("respects max boundary (disables increment)", () => {
-    render(<NumberStepper value={10} max={10} onChange={vi.fn()} />);
+  it("shows the zero character when value is zero", () => {
+    render(<NumberStepper value={0} onChange={vi.fn()} />);
+    expect(screen.getByText("=")).toBeInTheDocument();
+  });
+
+  it("uses a custom zero character", () => {
+    render(<NumberStepper value={0} zeroCharacter="Made" onChange={vi.fn()} />);
+    expect(screen.getByText("Made")).toBeInTheDocument();
+  });
+
+  it("shows a plus prefix for positive values when showPlus is set", () => {
+    render(<NumberStepper value={3} showPlus onChange={vi.fn()} />);
+    expect(screen.getByText("+3")).toBeInTheDocument();
+  });
+
+  it("shows positive values without a prefix when showPlus is not set", () => {
+    render(<NumberStepper value={3} onChange={vi.fn()} />);
+    expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("renders negative values with the minus sign", () => {
+    render(<NumberStepper value={-2} onChange={vi.fn()} />);
+    expect(screen.getByText("-2")).toBeInTheDocument();
+  });
+
+  it("repeatedly adjusts while held down (touch)", () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    render(<NumberStepper value={0} onChange={onChange} />);
 
     const increment = screen.getByRole("button", { name: "+" });
 
-    expect(increment).toBeDisabled();
+    fireEvent.touchStart(increment);
+    // immediate adjust
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    // delay before repeating starts
+    vi.advanceTimersByTime(400);
+    // first tick
+    expect(onChange).toHaveBeenCalledTimes(2);
+    // subsequent accelerating ticks
+    vi.advanceTimersByTime(300);
+    expect(onChange.mock.calls.length).toBeGreaterThan(2);
+
+    fireEvent.touchEnd(increment);
+    const callsAfterStop = onChange.mock.calls.length;
+    vi.advanceTimersByTime(1000);
+    expect(onChange).toHaveBeenCalledTimes(callsAfterStop);
   });
 
-  it("does not go below min when decrementing", async () => {
-    const user = userEvent.setup();
+  it("is a no-op when released without being pressed", () => {
     const onChange = vi.fn();
+    render(<NumberStepper value={0} onChange={onChange} />);
 
-    render(<NumberStepper value={0} min={0} onChange={onChange} />);
+    const increment = screen.getByRole("button", { name: "+" });
+    // No preceding mouseDown, so both timers are null when stopAdjusting runs.
+    fireEvent.mouseUp(increment);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("supports touch on the decrement button", () => {
+    const onChange = vi.fn();
+    render(<NumberStepper value={0} onChange={onChange} />);
 
     const decrement = screen.getByRole("button", { name: "−" });
-
-    // Even if clicked, component logic clamps internally
-    await user.click(decrement);
-
-    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.touchStart(decrement);
+    expect(onChange).toHaveBeenLastCalledWith(-1);
+    fireEvent.touchEnd(decrement);
   });
 
-  it("clamps value to max when incremented beyond max", async () => {
-    const user = userEvent.setup();
+  it("stops adjusting when the pointer leaves the button", () => {
+    vi.useFakeTimers();
     const onChange = vi.fn();
-
-    render(<NumberStepper value={10} max={10} onChange={onChange} />);
+    render(<NumberStepper value={0} onChange={onChange} />);
 
     const increment = screen.getByRole("button", { name: "+" });
+    fireEvent.mouseDown(increment);
+    fireEvent.mouseLeave(increment);
 
-    await user.click(increment);
-
-    expect(onChange).not.toHaveBeenCalled();
+    const calls = onChange.mock.calls.length;
+    vi.advanceTimersByTime(1000);
+    expect(onChange).toHaveBeenCalledTimes(calls);
   });
 });

@@ -188,5 +188,18 @@ describe("generateWebMitchell", () => {
         expect(copies.size).toBe(1);
       }
     });
+
+    it("falls back to copy 'A' when a table's band exceeds the label list", () => {
+      // 13 tables / 3 rounds gives 5 bands (A,B,C,D then a 5th). Table 13 is
+      // band index floor(12/3)=4, past the four COPY_LABELS, so it defaults
+      // to "A" via the `?? "A"` fallback.
+      const movement = build(13, 3);
+
+      const table13 = movement.tables.find((t) => t.table === 13);
+      expect(table13).toBeDefined();
+      for (const round of table13!.rounds) {
+        expect(round.boardCopy).toBe("A");
+      }
+    });
   });
 });

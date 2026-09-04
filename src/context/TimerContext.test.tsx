@@ -34,12 +34,13 @@ const snapshot = {
 };
 
 function Probe() {
-  const { timerState, isConnected } = useTimerContext();
+  const { timerState, isConnected, now } = useTimerContext();
   return (
     <div>
       <span data-testid="connected">{String(isConnected)}</span>
       <span data-testid="round">{timerState?.round ?? "none"}</span>
       <span data-testid="phase">{timerState?.phase ?? "none"}</span>
+      <span data-testid="now">{now()}</span>
     </div>
   );
 }
@@ -110,8 +111,10 @@ describe("TimerProvider", () => {
     );
     const handler = syncCall![1];
 
+    // Omit breakProblems so the `problems ?? []` fallback branch is taken.
+    const noProblems = { ...snapshot, breakProblems: undefined };
     act(() => {
-      handler({ ...snapshot, phase: "move", round: 3 });
+      handler({ ...noProblems, phase: "move", round: 3 });
     });
 
     await waitFor(() =>
@@ -139,5 +142,56 @@ describe("TimerProvider", () => {
     });
 
     await waitFor(() => expect(mockEmitWithAck).toHaveBeenCalledTimes(2));
+  });
+
+  it("exposes a server-clock-corrected now() that seeds its offset from serverNow", async () => {
+    const fixed = 1_000_000;
+    vi.spyOn(Date, "now").mockReturnValue(fixed);
+    // serverNow ahead of the client clock by 5s => now() should be +5s.
+    mockEmitWithAck.mockResolvedValue({ ...snapshot, serverNow: fixed + 5_000 });
+
+    render(
+      <TimerProvider>
+        <Probe />
+      </TimerProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("now").textContent).toBe(String(fixed + 5_000)),
+    );
+    vi.restoreAllMocks();
+  });
+
+  it("ignores a snapshot that resolves after unmount", async () => {
+    let resolve!: (value: unknown) => void;
+    mockEmitWithAck.mockReturnValue(
+      new Promise((res) => {
+        resolve = res;
+      }),
+    );
+
+    const { unmount } = render(
+      <TimerProvider>
+        <Probe />
+      </TimerProvider>,
+    );
+
+    // Unmount first (sets cancelled = true), then let the request resolve.
+    unmount();
+    await act(async () => {
+      resolve(snapshot);
+      await Promise.resolve();
+    });
+    // apply() short-circuits on cancelled, so no state update / act warning.
+  });
+
+  it("useTimerContext throws when used outside a provider", () => {
+    function Orphan() {
+      useTimerContext();
+      return null;
+    }
+    expect(() => render(<Orphan />)).toThrow(
+      /must be used within a TimerProvider/,
+    );
   });
 });

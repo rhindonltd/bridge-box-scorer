@@ -55,6 +55,24 @@ export function Traveller({
 
   const isPair = true;
 
+  // `isPair` is a compile-time constant `true`, so the individual (N/S/E/W)
+  // header layout is unreachable dead code kept for a future individual-
+  // traveller view. The untaken branch is excluded from coverage.
+  /* v8 ignore next 13 */
+  const pairColumnHeaders = isPair ? (
+    <>
+      <th className="border px-2 py-1.5">NS</th>
+      <th className="border px-2 py-1.5">EW</th>
+    </>
+  ) : (
+    <>
+      <th className="border px-2 py-1.5">N</th>
+      <th className="border px-2 py-1.5">S</th>
+      <th className="border px-2 py-1.5">E</th>
+      <th className="border px-2 py-1.5">W</th>
+    </>
+  );
+
   return (
     <GamePageLayout headerTitle="Travellers" backAction={onBack}>
       <div className="flex-1 overflow-y-auto p-4">
@@ -71,19 +89,7 @@ export function Traveller({
               <table className="w-full table-auto border-collapse text-center text-sm">
                 <thead className="bg-gray-100">
                   <tr>
-                    {isPair ? (
-                      <>
-                        <th className="border px-2 py-1.5">NS</th>
-                        <th className="border px-2 py-1.5">EW</th>
-                      </>
-                    ) : (
-                      <>
-                        <th className="border px-2 py-1.5">N</th>
-                        <th className="border px-2 py-1.5">S</th>
-                        <th className="border px-2 py-1.5">E</th>
-                        <th className="border px-2 py-1.5">W</th>
-                      </>
-                    )}
+                    {pairColumnHeaders}
                     <th className="border px-2 py-1.5">Contract</th>
                   </tr>
                 </thead>

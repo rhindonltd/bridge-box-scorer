@@ -106,11 +106,12 @@ export class BridgeTimerEngine {
   private enterBreak(afterRound: number, priorPlayEndMs = Date.now()) {
     const gap = gapPhaseAfterRound(this.state, afterRound);
 
-    // Caller must have confirmed a break exists after this round.
+    // Caller must have confirmed a break exists after this round, so the gap is
+    // always a break here; the `: 0` arm is defensive only.
     const durationMs =
       gap.kind === "break"
         ? resolveBreakDurationMs(gap.config, priorPlayEndMs)
-        : 0;
+        : /* v8 ignore next -- enterBreak is only called after nextPhase confirms a break */ 0;
 
     this.state.phase = "break";
     this.state.round += 1;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 const mockUseSWR = vi.fn();
@@ -14,7 +14,8 @@ vi.mock("@/lib/socket", () => ({
   getSocket: () => ({ on: socketOn, off: socketOff, emit: socketEmit }),
 }));
 
-vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
+const mockFetcher = vi.fn();
+vi.mock("@/lib/fetcher", () => ({ fetcher: (...args: unknown[]) => mockFetcher(...args) }));
 
 import { GameProvider, useGame, useRequiredGame } from "./GameContext";
 import { SocketEvents } from "@/socket/socket-events";
@@ -25,6 +26,11 @@ const mutate = vi.fn();
 
 function wrapper(children: ReactNode) {
   return <GameProvider initialGame={initialGame}>{children}</GameProvider>;
+}
+
+function handlerFor(event: string) {
+  const call = socketOn.mock.calls.find((c) => c[0] === event);
+  return call![1] as (payload?: { game: BridgeGame }) => void;
 }
 
 describe("GameContext", () => {
@@ -74,5 +80,42 @@ describe("GameContext", () => {
         wrapper: ({ children }) => wrapper(children),
       }),
     ).toThrow(/Game is not available/);
+  });
+
+  it("gameFetcher unwraps the { game } envelope from the HTTP response", async () => {
+    renderHook(() => useGame(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    // The fetcher SWR was configured with (2nd useSWR arg).
+    const passedFetcher = mockUseSWR.mock.calls[0][1] as (
+      url: string,
+    ) => Promise<BridgeGame>;
+    mockFetcher.mockResolvedValue({ game: initialGame });
+
+    await expect(passedFetcher("/api/game/g1")).resolves.toEqual(initialGame);
+    expect(mockFetcher).toHaveBeenCalledWith("/api/game/g1");
+  });
+
+  it("re-joins the game room on reconnect", () => {
+    renderHook(() => useGame(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    socketEmit.mockClear();
+    act(() => handlerFor(SocketEvents.CONNECT)());
+    expect(socketEmit).toHaveBeenCalledWith(SocketEvents.JOIN_GAME, {
+      gameId: "g1",
+    });
+  });
+
+  it("merges pushed GAME_UPDATED payloads into the SWR cache without revalidating", () => {
+    renderHook(() => useGame(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    const updated = { gameId: "g1", eventName: "Tuesday Pairs" } as BridgeGame;
+    act(() => handlerFor(SocketEvents.GAME_UPDATED)({ game: updated }));
+    expect(mutate).toHaveBeenCalledWith(updated, false);
   });
 });

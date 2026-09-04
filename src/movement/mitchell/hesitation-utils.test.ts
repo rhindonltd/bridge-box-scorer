@@ -3,6 +3,7 @@ import {
   arrowSwitchSeat,
   buildPivotLayout,
   circulateMovingPairs,
+  layoutToTables,
   Station,
   SeatOccupant,
 } from "./hesitation-utils";
@@ -168,5 +169,83 @@ describe("buildPivotLayout (7-table Hesitation Mitchell)", () => {
         plain.seatByTableRound[t - 1][0],
       );
     }
+  });
+});
+
+describe("layoutToTables", () => {
+  it("converts a layout into per-table rounds with board ranges and pair ids", () => {
+    // A minimal 1-table, 2-round layout with stationary NS pair 1 and a single
+    // EW station circulating a single pair.
+    const layout = buildPivotLayout({
+      tables: 1,
+      rounds: 2,
+      stationaryNs: new Map<number, number>([[1, 1]]),
+      stations: [{ table: 1, direction: "EW" }],
+      pairForStation: (s: Station): Omit<SeatOccupant, "originStation"> => ({
+        pair: s.table + 10,
+        origin: s.direction,
+      }),
+      arrowSwitchRounds: 0,
+      pivotTables: new Set<number>(),
+    });
+
+    // Board set 1 for round 1, board set 2 for round 2, 2 boards per round.
+    const boardSetByTableRound = [[1, 2]];
+
+    const result = layoutToTables(layout, 2, boardSetByTableRound);
+
+    expect(result.tables).toHaveLength(1);
+    const table = result.tables[0];
+    expect(table.table).toBe(1);
+    expect(table.rounds).toHaveLength(2);
+    expect(table.rounds[0]).toEqual({
+      round: 1,
+      boards: [1, 2],
+      participants: { nsId: "1", ewId: "11" },
+    });
+    expect(table.rounds[1].round).toBe(2);
+    expect(table.rounds[1].boards).toEqual([3, 4]);
+    expect(table.rounds[1].participants.nsId).toBe("1");
+  });
+});
+
+describe("buildPivotLayout — unresolvable seats", () => {
+  const pairForStation = (
+    s: Station,
+  ): Omit<SeatOccupant, "originStation"> => ({
+    pair: s.table,
+    origin: s.direction,
+  });
+
+  it("throws when a table's NS seat has neither a moving nor a stationary pair", () => {
+    // No stationary NS pair for table 1 and no station occupies its NS/EW
+    // seat, so the NS seat cannot be resolved.
+    expect(() =>
+      buildPivotLayout({
+        tables: 1,
+        rounds: 1,
+        stationaryNs: new Map<number, number>(),
+        stations: [],
+        pairForStation,
+        arrowSwitchRounds: 0,
+        pivotTables: new Set<number>(),
+      }),
+    ).toThrow("does not cover this seat");
+  });
+
+  it("throws when a table's EW seat has no moving pair", () => {
+    // Table 1 has a stationary NS pair (so NS resolves) but no EW station,
+    // leaving the EW seat unresolved.
+    expect(() =>
+      buildPivotLayout({
+        tables: 1,
+        rounds: 1,
+        stationaryNs: new Map<number, number>([[1, 1]]),
+        stations: [],
+        pairForStation,
+        arrowSwitchRounds: 0,
+        pivotTables: new Set<number>(),
+      }),
+    ).toThrow("table 1 round 1 EW");
   });
 });
