@@ -59,6 +59,7 @@ export function StepConfirm({
         <div className="shrink-0 pt-4">
           <button
             onClick={onSubmit}
+            data-testid="wizard-submit"
             className="bg-green-700 text-white py-3 text-lg font-bold rounded-xl w-full"
           >
             Submit
@@ -117,6 +118,7 @@ export function StepConfirm({
       <div className="shrink-0 pt-4">
         <button
           onClick={onSubmit}
+          data-testid="wizard-submit"
           className="bg-green-700 text-white py-3 text-lg font-bold rounded-xl w-full"
         >
           Submit

@@ -7,7 +7,7 @@ export function JoinGamePage() {
   const router = useRouter();
 
   function onGameSelected(gameId: string) {
-    router.push(`/game/${gameId}/join/player`);
+    router.push(`/game/${gameId}/join`);
   }
 
   return (

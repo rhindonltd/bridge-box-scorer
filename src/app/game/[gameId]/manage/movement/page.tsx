@@ -7,5 +7,5 @@ export default function ManageMovementRoute() {
   const params = useParams<{ gameId: string }>();
   const gameId = params.gameId;
 
-  return <ManageMovementPage backHref={`/manage/${gameId}/menu`} />;
+  return <ManageMovementPage backHref={`/game/${gameId}/manage`} />;
 }

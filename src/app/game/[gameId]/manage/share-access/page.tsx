@@ -11,7 +11,7 @@ export default function ShareDirectorAccessRoute() {
   return (
     <ShareDirectorAccessPage
       gameId={gameId}
-      onBack={() => router.replace(`/manage/${gameId}/menu`)}
+      onBack={() => router.replace(`/game/${gameId}/manage`)}
     />
   );
 }

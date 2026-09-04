@@ -11,7 +11,7 @@ export default function DeleteGameRoute() {
   return (
     <DeleteGamePage
       onGameDeleted={() => router.replace("/manage")}
-      onCancel={() => router.replace(`/game/${game.gameId}/manage/menu`)}
+      onCancel={() => router.replace(`/game/${game.gameId}/manage`)}
     />
   );
 }

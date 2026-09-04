@@ -34,6 +34,7 @@ export function SelectBoardPage({
               <button
                 key={boardNumber}
                 onClick={() => onBoardSelected(boardNumber)}
+                data-testid={`select-board-${boardNumber}`}
                 className="bg-gray-200 text-gray-800 rounded-xl py-4 text-lg font-semibold hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 {boardNumber}

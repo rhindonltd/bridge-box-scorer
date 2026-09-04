@@ -16,6 +16,7 @@ export function RecommendedMovementCard({ movement, onSelect }: Props) {
     <button
       type="button"
       onClick={onSelect}
+      data-testid="movement-card"
       className="flex w-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm
         hover:border-blue-300 hover:shadow-md
         active:scale-[0.98] active:bg-blue-50

@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import http from "http";
 import { registerGameHandlers } from "@/socket/handlers/game/game.handlers";
 import { registerTimerHandlers } from "./handlers/timer/timer.handlers";
+import { registerResultsHandlers } from "./handlers/results/results.handlers";
 
 let io: Server | null = null;
 
@@ -15,6 +16,7 @@ export function startSocketServer(server: http.Server) {
   io.on("connection", (socket) => {
     registerGameHandlers(socket, getIO());
     registerTimerHandlers(socket, getIO());
+    registerResultsHandlers(socket, getIO());
   });
 
   return io;

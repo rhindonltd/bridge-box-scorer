@@ -1,35 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { useRequiredGame } from "@/context/GameContext";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { Leaderboard } from "@/components/leaderboard/Leaderboard";
-import useSWR from "swr";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { fetcher } from "@/lib/fetcher";
-import { swrKeys } from "@/swr/swr-keys";
-
-type SectionLeaderboard = OverallScoreAndParticipant & { section: string };
-
-interface LeaderboardResponse {
-  leaderboard: OverallScoreAndParticipant;
-  sections: SectionLeaderboard[];
-}
+import {
+  LeaderboardProvider,
+  useLeaderboardContext,
+} from "@/context/LeaderboardContext";
 
 type View = "combined" | string; // "combined" or a section letter
 
-export function DisplayLeaderboardPage() {
-  const { game } = useRequiredGame();
-
-  const { data, isLoading } = useSWR<LeaderboardResponse>(
-    swrKeys.leaderboard(game.gameId),
-    fetcher,
-  );
+function DisplayLeaderboardContent() {
+  const { leaderboard: combined, sections, isLoading } =
+    useLeaderboardContext();
 
   const [view, setView] = useState<View>("combined");
 
-  const combined = data?.leaderboard ?? null;
-  const sections = data?.sections ?? [];
   const multiSection = sections.length > 1;
 
   // Resolve the leaderboard for the active view.
@@ -69,9 +56,14 @@ export function DisplayLeaderboardPage() {
 
         <div className="flex-1 min-h-0">
           {active ? (
-            <Leaderboard overallScoreAndParticipant={active} />
+            <div data-testid="leaderboard-standings" className="h-full">
+              <Leaderboard overallScoreAndParticipant={active} />
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full p-6">
+            <div
+              data-testid="leaderboard-empty"
+              className="flex flex-col items-center justify-center h-full p-6"
+            >
               <div className="text-xl font-bold text-gray-900 mb-2">
                 No Results Yet
               </div>
@@ -83,6 +75,14 @@ export function DisplayLeaderboardPage() {
         </div>
       </div>
     </GamePageLayout>
+  );
+}
+
+export function DisplayLeaderboardPage() {
+  return (
+    <LeaderboardProvider>
+      <DisplayLeaderboardContent />
+    </LeaderboardProvider>
   );
 }
 

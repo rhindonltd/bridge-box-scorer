@@ -92,6 +92,7 @@ export function Traveller({
                     <tr
                       key={`${instance.roundNumber}-${instance.tableNumber}`}
                       onClick={() => onLineSelected(instance)}
+                      data-testid={`traveller-row-${instance.roundNumber}-${instance.tableNumber}`}
                       className="cursor-pointer hover:bg-blue-50 active:bg-blue-100 transition"
                     >
                       {isPair && instance.participants.type === "PAIRS" ? (

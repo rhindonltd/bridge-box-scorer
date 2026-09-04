@@ -10,4 +10,20 @@ export const Rooms = {
    */
   section: (gameId: string, section: string) =>
     `game:${gameId}:section:${section}`,
+
+  /**
+   * A room scoped to a game's leaderboard. Clients currently viewing the
+   * leaderboard join this room so the server can (a) push recomputed
+   * leaderboard snapshots to just those clients and (b) skip the recompute
+   * entirely when the room is empty.
+   */
+  leaderboard: (gameId: string) => `game:${gameId}:leaderboard`,
+
+  /**
+   * A room scoped to a single board's traveller. Clients viewing that board's
+   * traveller join this room, so a result for that board only recomputes and
+   * broadcasts to the clients actually viewing it.
+   */
+  traveller: (gameId: string, boardNumber: number) =>
+    `game:${gameId}:traveller:${boardNumber}`,
 };

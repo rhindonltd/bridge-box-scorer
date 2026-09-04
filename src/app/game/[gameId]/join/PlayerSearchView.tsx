@@ -48,7 +48,7 @@ export function PlayerSearchView({
   }
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-md" data-testid={`player-search-${label}`}>
       <label className="mb-2 block text-sm font-medium">{label}</label>
 
       <div className="relative">
@@ -60,6 +60,7 @@ export function PlayerSearchView({
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="EBU No, Club ID or Name"
+          data-testid={`player-search-input-${label}`}
           className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
         />
       </div>
@@ -74,6 +75,7 @@ export function PlayerSearchView({
             <button
               key={player.nationalId ?? index}
               onClick={() => onPlayerSelected(player)}
+              data-testid="player-search-result"
               className="flex w-full items-center gap-3 border-b p-3 text-left hover:bg-slate-50"
             >
               <User size={18} className="text-slate-400" />

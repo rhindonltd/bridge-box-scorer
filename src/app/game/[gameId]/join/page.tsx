@@ -11,7 +11,7 @@ export default function JoinGameAsPlayerRoute() {
   return (
     <SelectSeatPage
       onSeatSelected={(seat) =>
-        router.replace(`/game/${game.gameId}/${seat}/play`)
+        router.replace(`/game/${game.gameId}/play/${seat}`)
       }
     />
   );

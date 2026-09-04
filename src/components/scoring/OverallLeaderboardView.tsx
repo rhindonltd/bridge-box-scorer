@@ -32,6 +32,7 @@ export function OverallLeaderboardView({
       <ScoreTableView
         table={views[0].toTable(lines, participants, { highlightAssignmentId })}
         highlightAssignmentId={highlightAssignmentId}
+        rowTestId="leaderboard-row"
       />
     );
   }
@@ -53,6 +54,7 @@ export function OverallLeaderboardView({
           highlightAssignmentId,
         })}
         highlightAssignmentId={highlightAssignmentId}
+        rowTestId="leaderboard-row"
       />
     </div>
   );

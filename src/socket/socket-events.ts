@@ -49,4 +49,20 @@ export const SocketEvents = {
   // Client-initiated request for the current timer snapshot; the current
   // TimerState (or null) is returned on the acknowledgement callback.
   REQUEST_STATE_TIMER: "timer:requestState",
+
+  // Server initiated - Leaderboard specific
+  LEADERBOARD_SYNC: "leaderboard:sync",
+  // Client-initiated: request the current leaderboard snapshot (returned on the
+  // ack) and join the leaderboard room; matching leave event on unmount.
+  REQUEST_STATE_LEADERBOARD: "leaderboard:requestState",
+  LEAVE_LEADERBOARD: "leaderboard:leave",
+
+  // Server initiated - Traveller specific (per board)
+  TRAVELLER_SYNC: "traveller:sync",
+  // Client-initiated: request a board's traveller snapshot (returned on the
+  // ack) and join that board's traveller room; matching leave on switch/unmount.
+  REQUEST_STATE_TRAVELLER: "traveller:requestState",
+  LEAVE_TRAVELLER: "traveller:leave",
+  // Client-initiated (director): override a board result.
+  OVERRIDE_RESULT_TRAVELLER: "traveller:overrideResult",
 } as const;

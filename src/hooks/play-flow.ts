@@ -265,40 +265,16 @@ export function usePlayFlow(gameId: string, seat: string) {
    * Submit a result.
    */
   const submitResult = useCallback(
-    (result: string) => {
+    (boardNumber: number, result: string) => {
       const currentSchedule = scheduleRef.current;
 
       if (!currentSchedule) return;
 
       /*
-       * Read the current play state atomically.
-       *
-       * We need to transition to "waiting" only if we're currently
-       * in "enterContract".
-       */
-      setPlayState((prev) => {
-        if (prev.state !== "enterContract") {
-          return prev;
-        }
-
-        const round = currentSchedule.rounds[prev.roundIndex];
-
-        if (!round) {
-          return prev;
-        }
-
-        return {
-          state: "waiting",
-          roundIndex: prev.roundIndex,
-          boardIndex: prev.boardIndex,
-        };
-      });
-
-      /*
-       * The setState updater above only schedules the transition to
-       * "waiting". The socket submission is derived from the play state of
-       * the current render (captured in this callback's closure), which is
-       * the "enterContract" state we're submitting for.
+       * The board the player entered in the wizard is authoritative. Map it
+       * back to its index within the round so the waiting/board-results
+       * states track the board that was actually submitted, not a positional
+       * assumption.
        */
       if (playState.state !== "enterContract") {
         return;
@@ -310,7 +286,27 @@ export function usePlayFlow(gameId: string, seat: string) {
         return;
       }
 
-      const boardNumber = round.boards[playState.boardIndex];
+      const boardIndex = round.boards.indexOf(boardNumber);
+
+      if (boardIndex === -1) {
+        return;
+      }
+
+      /*
+       * Read the current play state atomically. We only transition to
+       * "waiting" if we're still in "enterContract" for this round.
+       */
+      setPlayState((prev) => {
+        if (prev.state !== "enterContract") {
+          return prev;
+        }
+
+        return {
+          state: "waiting",
+          roundIndex: prev.roundIndex,
+          boardIndex,
+        };
+      });
 
       const socket = getSocket();
 

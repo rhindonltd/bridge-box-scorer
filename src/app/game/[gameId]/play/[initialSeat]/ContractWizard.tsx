@@ -17,7 +17,6 @@ import { StepResult } from "@/components/contract-wizard/StepResult";
 import { StepConfirm } from "@/components/contract-wizard/StepConfirm";
 import { useBoardFlow } from "@/hooks/board-flow";
 import { BoardDropDown } from "@/components/contract-wizard/BoardDropDown";
-import { useState } from "react";
 
 interface Props {
   round: number;
@@ -26,6 +25,7 @@ interface Props {
   playedBoards: number[];
   leadCardRequired: boolean;
   onComplete: (data: {
+    board: number;
     contract: ContractCode | SpecialBoardOutcome;
     result: number;
     lead: Card | null;
@@ -54,7 +54,9 @@ export function ContractWizard({
     resultMode,
     resultValue,
     step,
+    selectedBoard,
     handleBack,
+    onBoardSelected,
     onLeadComplete,
     setLeadSuit,
     setLeadRank,
@@ -65,11 +67,16 @@ export function ContractWizard({
     onDeclarerSelected,
   } = useBoardFlow({ leadCardRequired });
 
-  const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
-
   const onSubmit = () => {
+    if (selectedBoard === null) return;
+
     if (specialOutcome) {
-      onComplete({ contract: specialOutcome, result: 0, lead: null });
+      onComplete({
+        board: selectedBoard,
+        contract: specialOutcome,
+        result: 0,
+        lead: null,
+      });
       return;
     }
 
@@ -80,7 +87,12 @@ export function ContractWizard({
 
       const numericResult = resultMode === "down" ? -resultValue : resultValue;
 
-      onComplete({ contract, result: numericResult, lead });
+      onComplete({
+        board: selectedBoard,
+        contract,
+        result: numericResult,
+        lead,
+      });
     }
   };
 
@@ -94,7 +106,7 @@ export function ContractWizard({
           roundBoards={roundBoards}
           playedBoards={playedBoards}
           selectedBoard={selectedBoard}
-          onBoardSelected={setSelectedBoard}
+          onBoardSelected={onBoardSelected}
         />
       )}
     </div>
@@ -141,7 +153,7 @@ export function ContractWizard({
         <StepBoard
           boards={roundBoards}
           playedBoards={playedBoards}
-          onBoardSelected={setSelectedBoard}
+          onBoardSelected={onBoardSelected}
         />
       );
     }

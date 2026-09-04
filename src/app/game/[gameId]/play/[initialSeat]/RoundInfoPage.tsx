@@ -32,6 +32,7 @@ export function RoundInfoPage({
       actions={
         <button
           onClick={onEnterRound}
+          data-testid="play-enter-round"
           className="w-full max-w-[360px] py-3 text-lg font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Enter Round

@@ -1,47 +1,53 @@
 import { test, expect } from "@playwright/test";
-import { enterSettingsPin } from "./fixtures/helpers";
+import { unlockSettings } from "./fixtures/settings";
 
 /**
  * Club Settings E2E Tests
  *
- * Tests the club information page and API endpoint.
- * Note: The settings section is gated by a PIN entry page (PIN: 1234).
+ * Tests the club information page (gated by the device admin key; unlocked via
+ * `unlockSettings`) and the club API endpoint (ungated).
  */
 
 test.describe("Club Settings", () => {
-  test("club settings page loads with heading", async ({ page }) => {
+  test("club settings page loads with heading", async ({ page, request }) => {
+    await unlockSettings(page, request);
     await page.goto("/settings/club");
-    await enterSettingsPin(page);
     await expect(page.getByText("Club Information")).toBeVisible({
       timeout: 10000,
     });
   });
 
-  test("club settings page shows Club Name field", async ({ page }) => {
+  test("club settings page shows Club Name field", async ({
+    page,
+    request,
+  }) => {
+    await unlockSettings(page, request);
     await page.goto("/settings/club");
-    await enterSettingsPin(page);
     await expect(page.getByLabel("Club Name")).toBeVisible({ timeout: 10000 });
   });
 
-  test("club settings page shows EBU Club Number field", async ({ page }) => {
+  test("club settings page shows EBU Club Number field", async ({
+    page,
+    request,
+  }) => {
+    await unlockSettings(page, request);
     await page.goto("/settings/club");
-    await enterSettingsPin(page);
     await expect(page.getByLabel("EBU Club Number")).toBeVisible({
       timeout: 10000,
     });
   });
 
-  test("club settings page shows Save button", async ({ page }) => {
+  test("club settings page shows Save button", async ({ page, request }) => {
+    await unlockSettings(page, request);
     await page.goto("/settings/club");
-    await enterSettingsPin(page);
     await expect(page.getByRole("button", { name: "Save" })).toBeVisible({
       timeout: 10000,
     });
   });
 
-  test("club settings page shows Back button", async ({ page }) => {
+  test("club settings page shows Back button", async ({ page, request }) => {
+    await unlockSettings(page, request);
     await page.goto("/settings/club");
-    await enterSettingsPin(page);
     await expect(page.getByRole("button", { name: "Back" })).toBeVisible({
       timeout: 10000,
     });
@@ -51,7 +57,8 @@ test.describe("Club Settings", () => {
     const response = await request.get("/api/system/club");
     expect(response.ok()).toBe(true);
     const body = await response.json();
-    expect(body).toHaveProperty("club");
+    // Responses use the success envelope: { success, result: { club } }.
+    expect(body.result).toHaveProperty("club");
   });
 
   test("POST /api/system/club saves club info", async ({ request }) => {
@@ -82,7 +89,7 @@ test.describe("Club Settings", () => {
     const response = await request.get("/api/system/club");
     expect(response.ok()).toBe(true);
     const body = await response.json();
-    expect(body.club.name).toBe("Persistence Test Club");
-    expect(body.club.clubNumber).toBe("12345");
+    expect(body.result.club.name).toBe("Persistence Test Club");
+    expect(body.result.club.clubNumber).toBe("12345");
   });
 });

@@ -5,6 +5,13 @@ import { waitForEvent, emitWithAck } from "@/socket/test/socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";
 import { registerSubmitResultHandler } from "./submit-result.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
+import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
+
+// Mock the results broadcaster so this test does not pull in the real
+// leaderboard/board compute + drizzle chain; assert it's invoked on confirm.
+vi.mock("@/socket/handlers/results/broadcast-results", () => ({
+  broadcastResultsChanged: vi.fn().mockResolvedValue(undefined),
+}));
 
 // Mock DB layer
 const mockWhere = vi.fn().mockResolvedValue(undefined);
@@ -418,6 +425,14 @@ describe("registerSubmitResultHandler (integration)", () => {
       tableNumber: 3,
       boardNumber: 9,
     });
+
+    // The results broadcaster is invoked so live leaderboard/traveller viewers
+    // get recomputed snapshots (occupancy-gated inside the broadcaster).
+    expect(broadcastResultsChanged).toHaveBeenCalledWith(
+      expect.anything(),
+      "game-6",
+      9,
+    );
 
     client2.disconnect();
   });

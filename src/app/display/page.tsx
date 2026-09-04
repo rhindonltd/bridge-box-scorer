@@ -7,7 +7,7 @@ export default function DisplayRoute() {
   const router = useRouter();
 
   function onGameSelected(gameId: string) {
-    router.push(`/game/${gameId}/display/menu`);
+    router.push(`/game/${gameId}/display`);
   }
 
   return (

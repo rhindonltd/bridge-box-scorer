@@ -10,8 +10,8 @@ export default function DownloadUsebioRoute() {
 
   return (
     <DownloadUsebioPage
-      onUsebioDownloaded={() => router.replace(`/manage/${gameId}/menu`)}
-      onCancel={() => router.replace(`/manage/${gameId}/menu`)}
+      onUsebioDownloaded={() => router.replace(`/game/${gameId}/manage`)}
+      onCancel={() => router.replace(`/game/${gameId}/manage`)}
     />
   );
 }

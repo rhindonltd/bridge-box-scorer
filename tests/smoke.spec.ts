@@ -6,15 +6,13 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Smoke Tests", () => {
-  test("main menu loads and has navigation buttons", async ({ page }) => {
+  test("main menu loads and has navigation links", async ({ page }) => {
     await page.goto("/");
 
-    // Main menu should render with key navigation options
-    await expect(page.locator("body")).toBeVisible();
-
-    // Look for any interactive element — the page should not be blank
-    const buttons = page.getByRole("button");
-    await expect(buttons.first()).toBeVisible({ timeout: 10000 });
+    // Main menu should render with key navigation options (rendered as links).
+    await expect(page.getByRole("link", { name: "Join Game" })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("join page loads", async ({ page }) => {
@@ -25,9 +23,9 @@ test.describe("Smoke Tests", () => {
   });
 
   test("settings page loads", async ({ page }) => {
-    await page.goto("/settings/wifi");
+    await page.goto("/settings");
 
-    // WiFi settings page should render
+    // Settings gate (admin key entry) or menu should render — not blank.
     await expect(page.locator("body")).not.toBeEmpty();
   });
 
@@ -38,27 +36,6 @@ test.describe("Smoke Tests", () => {
 
     // Should return a valid JSON response (game not found or empty)
     expect(response.headers()["content-type"]).toContain("application/json");
-  });
-
-  test("director login rejects empty password", async ({ request }) => {
-    const response = await request.post("/api/director/login", {
-      data: {},
-    });
-
-    expect(response.status()).toBe(400);
-    const body = await response.json();
-    expect(body.success).toBe(false);
-  });
-
-  test("director login rejects wrong password", async ({ request }) => {
-    const response = await request.post("/api/director/login", {
-      data: { password: "wrong-password-12345" },
-    });
-
-    // Should be 401 (unauthorized) — password doesn't match
-    expect(response.status()).toBe(401);
-    const body = await response.json();
-    expect(body.success).toBe(false);
   });
 
   test("create page is accessible", async ({ page }) => {

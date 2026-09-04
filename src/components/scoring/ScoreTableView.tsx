@@ -15,6 +15,11 @@ type Props = {
    * zebra striping is disabled (mirroring the previous per-table behaviour).
    */
   highlightAssignmentId?: string;
+  /**
+   * When set, each data row is given `data-testid="{rowTestId}"` so tests can
+   * count/select the rendered rows (which are otherwise keyed only by index).
+   */
+  rowTestId?: string;
 };
 
 function renderCell(cell: ScoreCell, key: number): ReactNode {
@@ -42,7 +47,11 @@ function renderCell(cell: ScoreCell, key: number): ReactNode {
  * plugin renders through, so column layout and cell content are driven by
  * plugin data rather than bespoke per-scoring-type components.
  */
-export function ScoreTableView({ table, highlightAssignmentId }: Props) {
+export function ScoreTableView({
+  table,
+  highlightAssignmentId,
+  rowTestId,
+}: Props) {
   return (
     <Table
       columns={table.columns.map((c) => c.label)}
@@ -57,6 +66,7 @@ export function ScoreTableView({ table, highlightAssignmentId }: Props) {
             key={index}
             highlighted={highlighted}
             striped={highlightAssignmentId === undefined}
+            testId={rowTestId}
             cells={row.cells.map((cell, cellIndex) =>
               renderCell(cell, cellIndex),
             )}

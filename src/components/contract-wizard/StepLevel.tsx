@@ -27,6 +27,7 @@ export function StepLevel({
         </button>
         <button
           type="button"
+          data-testid="wizard-pass-out"
           className="py-3 rounded-xl text-center border-2 border-gray-300 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition text-lg font-semibold text-gray-700"
           onClick={() => onSpecialOutcome("PO")}
         >
