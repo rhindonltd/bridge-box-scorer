@@ -132,3 +132,65 @@ describe("useTimerDerived", () => {
     });
   });
 });
+
+
+describe("useTimerDerived - breaks and warning", () => {
+  it("returns the configured warning threshold", () => {
+    const state = makeState({ warningSeconds: 30 });
+    expect(useTimerDerived(state, Date.now()).warningSeconds).toBe(30);
+  });
+
+  it("defaults the warning threshold to 60 when absent", () => {
+    const state = makeState({ warningSeconds: undefined });
+    expect(useTimerDerived(state, Date.now()).warningSeconds).toBe(60);
+  });
+
+  it("shows Break title and break remaining in a break phase", () => {
+    const state = makeState({
+      phase: "break",
+      round: 2,
+      breakDurationMs: 300_000,
+      remainingMs: 300_000,
+      isRunning: false,
+    });
+    const result = useTimerDerived(state, Date.now());
+    expect(result.title).toBe("Break");
+    expect(result.remaining).toBe(300);
+    expect(result.boardLabel).toBeNull();
+  });
+
+  it("includes break time in the projected session end", () => {
+    const now = 1_700_000_000_000;
+    const withoutBreak = makeState({
+      phase: "play",
+      round: 1,
+      totalRounds: 2,
+      playDuration: 420,
+      moveDuration: 60,
+      breaks: [],
+      isRunning: false,
+    });
+    const withBreak = makeState({
+      phase: "play",
+      round: 1,
+      totalRounds: 2,
+      playDuration: 420,
+      moveDuration: 60,
+      // 10 min break after round 1 replaces the 60s move (net +540s).
+      breaks: [{ afterRound: 1, mode: "duration", durationSeconds: 600 }],
+      isRunning: false,
+    });
+
+    const endNoBreak = useTimerDerived(
+      withoutBreak,
+      now,
+    ).projectedEndDate.getTime();
+    const endWithBreak = useTimerDerived(
+      withBreak,
+      now,
+    ).projectedEndDate.getTime();
+
+    // Break (600s) replaces move (60s): projected end pushed out by 540s.
+    expect(endWithBreak - endNoBreak).toBe(540_000);
+  });
+});

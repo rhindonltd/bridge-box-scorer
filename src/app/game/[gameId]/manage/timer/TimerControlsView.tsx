@@ -504,10 +504,10 @@ export function TimerControlsView({
   return (
     <GamePageLayout
       headerTitle="Timer Controls"
-      centerContent={true}
+      centerContent={false}
       actions={controls}
     >
-      {body}
+      <div className="flex flex-col items-center gap-4 p-4">{body}</div>
     </GamePageLayout>
   );
 }
