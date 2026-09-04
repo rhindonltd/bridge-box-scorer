@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTimerSync } from "@/hooks/timer-sync";
+import { TimerProvider, useTimerContext } from "@/context/TimerContext";
 import { useTimerDerived } from "@/hooks/timer-derived";
 import { DisplayTimerPage } from "@/app/game/[gameId]/display/timer/DisplayTimerPage";
 
-/* ---------------- COMPONENT ---------------- */
+/* ---------------- INNER (consumes the timer context) ---------------- */
 
-export default function TimerPage() {
-  const { timerState, now } = useTimerSync();
+function TimerPageContent() {
+  const { timerState, now } = useTimerContext();
 
   const {
     remaining,
@@ -51,5 +51,15 @@ export default function TimerPage() {
       projectedEndDate={projectedEndDate}
       warningSeconds={warningSeconds}
     />
+  );
+}
+
+/* ---------------- COMPONENT ---------------- */
+
+export default function TimerPage() {
+  return (
+    <TimerProvider>
+      <TimerPageContent />
+    </TimerProvider>
   );
 }

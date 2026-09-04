@@ -38,6 +38,17 @@ describe("registerJoinGameHandler (unit)", () => {
     });
   });
 
+  it("joins the section room when a section is supplied", async () => {
+    registerJoinGameHandler(socket as any);
+
+    const handler = socket.on.mock.calls[0][1];
+
+    await handler({ gameId: "game-1", section: "A" }, vi.fn());
+
+    expect(socket.join).toHaveBeenCalledWith(Rooms.game("game-1"));
+    expect(socket.join).toHaveBeenCalledWith(Rooms.section("game-1", "A"));
+  });
+
   it("handles missing callback safely", async () => {
     registerJoinGameHandler(socket as any);
 

@@ -11,8 +11,9 @@ vi.mock("@/context/GameContext", () => ({
 }));
 
 let mockTimerState: unknown = null;
-vi.mock("@/hooks/timer-sync", () => ({
-  useTimerSync: () => ({
+vi.mock("@/context/TimerContext", () => ({
+  TimerProvider: ({ children }: { children: React.ReactNode }) => children,
+  useTimerContext: () => ({
     timerState: mockTimerState,
     breakProblems: [],
     now: () => Date.now(),

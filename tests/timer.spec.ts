@@ -64,17 +64,6 @@ test.describe("Timer director + display sync", () => {
     const gameId = await createGame(directorPage, `Timer Sync ${Date.now()}`);
 
     try {
-      // --- Open the display FIRST so it joins the game room before the
-      // director acts. The server does not replay timer state on join, so a
-      // late-joining display would miss the create/start broadcasts. ---
-      await displayPage.goto(`/game/${gameId}/display/timer`);
-      await displayPage.waitForLoadState("networkidle");
-      // The display sits on "Connecting…" until the first timer:sync arrives;
-      // its presence confirms the page mounted and the socket join is underway.
-      await expect(displayPage.getByText("Connecting")).toBeVisible({
-        timeout: 15000,
-      });
-
       // --- Director configures and creates a timer ---
       await directorPage.goto(`/game/${gameId}/manage/timer`);
       await directorPage.waitForLoadState("networkidle");
@@ -92,7 +81,12 @@ test.describe("Timer director + display sync", () => {
         directorPage.getByRole("button", { name: "Start" }),
       ).toBeVisible({ timeout: 15000 });
 
-      // --- Display should now have synced to the created (paused) state ---
+      // --- Display opens AFTER the timer was created and still syncs, because
+      // the TimerProvider requests current state on mount (timer:requestState),
+      // not because game:join replays anything. ---
+      await displayPage.goto(`/game/${gameId}/display/timer`);
+      await displayPage.waitForLoadState("networkidle");
+
       await expect(displayPage.getByText("Round 1 of 3")).toBeVisible({
         timeout: 15000,
       });
@@ -168,18 +162,15 @@ test.describe("Timer director + display sync", () => {
       await directorPage.getByLabel("Break 1 after round").fill("1");
       await directorPage.getByLabel("Break 1 duration minutes").fill("2");
 
-      // Open the display before creating so it is in the room for broadcasts.
-      await displayPage.goto(`/game/${gameId}/display/timer`);
-      await displayPage.waitForLoadState("networkidle");
-      await expect(displayPage.getByText("Connecting")).toBeVisible({
-        timeout: 15000,
-      });
-
       await directorPage.getByRole("button", { name: "Create" }).click();
       await expect(
         directorPage.getByRole("button", { name: "Start" }),
       ).toBeVisible({ timeout: 15000 });
 
+      // The display opens after creation and syncs because the TimerProvider
+      // requests the current state on mount (timer:requestState).
+      await displayPage.goto(`/game/${gameId}/display/timer`);
+      await displayPage.waitForLoadState("networkidle");
       await expect(displayPage.getByText("Round 1 of 3")).toBeVisible({
         timeout: 15000,
       });

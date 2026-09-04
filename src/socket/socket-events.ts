@@ -46,4 +46,7 @@ export const SocketEvents = {
   PREVIOUS_TIMER: "timer:previous",
   ADJUST_TIME_TIMER: "timer:adjustTime",
   UPDATE_CONFIG_TIMER: "timer:updateConfig",
+  // Client-initiated request for the current timer snapshot; the current
+  // TimerState (or null) is returned on the acknowledgement callback.
+  REQUEST_STATE_TIMER: "timer:requestState",
 } as const;

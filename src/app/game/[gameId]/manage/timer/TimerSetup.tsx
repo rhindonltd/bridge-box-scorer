@@ -1,7 +1,7 @@
 "use client";
 
 import { useRequiredGame } from "@/context/GameContext";
-import { useTimerSync } from "@/hooks/timer-sync";
+import { TimerProvider, useTimerContext } from "@/context/TimerContext";
 import { useEffect, useMemo, useState } from "react";
 import {
   TimerControlsView,
@@ -41,9 +41,9 @@ function msToLabel(ms: number): string {
   return `${m}m`;
 }
 
-export function TimerSetup({ embedded = false }: Props) {
+function TimerSetupContent({ embedded = false }: Props) {
   const { game } = useRequiredGame();
-  const { timerState, breakProblems } = useTimerSync();
+  const { timerState, breakProblems } = useTimerContext();
 
   const [tick, setTick] = useState(0);
 
@@ -297,5 +297,19 @@ export function TimerSetup({ embedded = false }: Props) {
       onPrevious={emitPrevious}
       onAdjustTime={emitAdjust}
     />
+  );
+}
+
+/**
+ * Director timer controls. Wraps the stateful content in a TimerProvider so the
+ * current timer state is requested on mount (and re-requested on reconnect),
+ * both for the standalone /manage/timer route and when embedded in the game
+ * setup flow's Timer tab.
+ */
+export function TimerSetup({ embedded = false }: Props) {
+  return (
+    <TimerProvider>
+      <TimerSetupContent embedded={embedded} />
+    </TimerProvider>
   );
 }
