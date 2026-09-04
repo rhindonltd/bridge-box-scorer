@@ -139,6 +139,59 @@ describe("SectionManagerContainer", () => {
     expect(screen.getByTestId("read-only").textContent).toBe("true");
   });
 
+  it("falls back to a numbered suffix when all 26 letters are used", async () => {
+    const all = Array.from({ length: 26 }, (_, i) => ({
+      section: String.fromCharCode(65 + i),
+      label: String.fromCharCode(65 + i),
+      tables: 5,
+      ordinal: i,
+      selectedMovement: null,
+    }));
+    mockUseSections.mockReturnValue({ sections: all, isLoading: false });
+
+    render(<SectionManagerContainer gameId="g1" readOnly />);
+    fireEvent.click(screen.getByRole("button", { name: "add" }));
+
+    await waitFor(() =>
+      expect(createSection).toHaveBeenCalledWith("g1", "Z26", 5),
+    );
+  });
+
+  it("reports rename errors via alert", async () => {
+    vi.mocked(renameSection).mockRejectedValueOnce(new Error("rename boom"));
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+
+    render(<SectionManagerContainer gameId="g1" />);
+    fireEvent.click(screen.getByRole("button", { name: "rename" }));
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("rename boom"));
+  });
+
+  it("reports delete errors via alert", async () => {
+    vi.mocked(deleteSection).mockRejectedValueOnce(new Error("delete boom"));
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+
+    render(<SectionManagerContainer gameId="g1" />);
+    fireEvent.click(screen.getByRole("button", { name: "delete" }));
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("delete boom"));
+  });
+
+  it("uses a generic message when a non-Error is thrown", async () => {
+    vi.mocked(createSection).mockRejectedValueOnce("not an error object");
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+
+    render(<SectionManagerContainer gameId="g1" />);
+    fireEvent.click(screen.getByRole("button", { name: "add" }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Something went wrong"),
+    );
+  });
+
   describe("single section", () => {
     const single = [
       { section: "A", label: "A", tables: 5, ordinal: 0, selectedMovement: null },

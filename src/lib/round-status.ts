@@ -85,6 +85,10 @@ export function computeRoundStatus(boards: BoardEntry[]): TableRoundStatus[] {
     let boardsEntered = 0;
     let boardsTotal = 0;
     if (currentRound > 0) {
+      /* v8 ignore next -- currentRound > 0 is only set from a round that
+         exists in byRound (see the currentRound loop above), so
+         byRound.get(currentRound) is always defined; the `?? []` fallback is
+         unreachable defensive code. */
       const currentRoundBoards = byRound.get(currentRound) ?? [];
       boardsTotal = currentRoundBoards.length;
       boardsEntered = currentRoundBoards.filter((b) => b.hasResult).length;

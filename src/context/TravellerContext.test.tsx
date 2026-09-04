@@ -130,4 +130,31 @@ describe("TravellerProvider", () => {
       boardNumber: 3,
     });
   });
+
+  it("re-requests the snapshot on reconnect", async () => {
+    render(
+      <TravellerProvider boardNumber={3}>
+        <Probe />
+      </TravellerProvider>,
+    );
+
+    await waitFor(() => expect(mockEmitWithAck).toHaveBeenCalledTimes(1));
+
+    const reconnectCall = mockOn.mock.calls.find(
+      (c) => c[0] === SocketEvents.CONNECT,
+    );
+    act(() => reconnectCall![1]());
+
+    await waitFor(() => expect(mockEmitWithAck).toHaveBeenCalledTimes(2));
+  });
+
+  it("useTravellerContext throws when used outside a provider", () => {
+    function Orphan() {
+      useTravellerContext();
+      return null;
+    }
+    expect(() => render(<Orphan />)).toThrow(
+      /must be used within a TravellerProvider/,
+    );
+  });
 });

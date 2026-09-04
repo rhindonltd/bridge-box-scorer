@@ -19,7 +19,7 @@ interface Props {
 }
 
 /** Parse "HH:MM" against a reference date, returning ms since epoch. */
-function resumeAtToMs(resumeAt: string, reference: number): number {
+export function resumeAtToMs(resumeAt: string, reference: number): number {
   const [h, m] = resumeAt.split(":").map((n) => parseInt(n, 10));
   if (Number.isNaN(h) || Number.isNaN(m)) return reference;
   const d = new Date(reference);
@@ -32,7 +32,7 @@ function resumeAtToMs(resumeAt: string, reference: number): number {
   return d.getTime();
 }
 
-function msToLabel(ms: number): string {
+export function msToLabel(ms: number): string {
   const totalMinutes = Math.round(ms / 60000);
   if (totalMinutes <= 0) return "0m";
   const h = Math.floor(totalMinutes / 60);

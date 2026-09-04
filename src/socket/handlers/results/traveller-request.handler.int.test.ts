@@ -57,4 +57,116 @@ describe("registerTravellerRequestHandler (integration)", () => {
     const room = io.sockets.adapter.rooms.get(Rooms.traveller("g1", 7));
     expect(room?.has(serverSocket!.id)).toBe(true);
   });
+
+  it("leaves the board's traveller room on traveller:leave", async () => {
+    let serverSocket: Socket | null = null;
+
+    const { client, close, io } = await createSocketTestServer((server) => {
+      server.on("connection", (socket: Socket) => {
+        serverSocket = socket;
+        registerTravellerRequestHandler(socket, server);
+      });
+    });
+    closeServer = close;
+
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TRAVELLER, {
+      gameId: "g1",
+      boardNumber: 7,
+    });
+    expect(
+      io.sockets.adapter.rooms.get(Rooms.traveller("g1", 7))?.has(
+        serverSocket!.id,
+      ),
+    ).toBe(true);
+
+    client.emit(SocketEvents.LEAVE_TRAVELLER, { gameId: "g1", boardNumber: 7 });
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(
+      io.sockets.adapter.rooms.get(Rooms.traveller("g1", 7)),
+    ).toBeUndefined();
+  });
+
+  it("ignores a traveller:leave with an invalid payload", async () => {
+    let serverSocket: Socket | null = null;
+
+    const { client, close, io } = await createSocketTestServer((server) => {
+      server.on("connection", (socket: Socket) => {
+        serverSocket = socket;
+        registerTravellerRequestHandler(socket, server);
+      });
+    });
+    closeServer = close;
+
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TRAVELLER, {
+      gameId: "g1",
+      boardNumber: 7,
+    });
+
+    client.emit(SocketEvents.LEAVE_TRAVELLER, {});
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(
+      io.sockets.adapter.rooms.get(Rooms.traveller("g1", 7))?.has(
+        serverSocket!.id,
+      ),
+    ).toBe(true);
+  });
+
+  it("returns null on the ack when the game db is missing", async () => {
+    vi.mocked(getDb).mockResolvedValue(null as any);
+
+    const { client, close } = await createSocketTestServer((server) => {
+      server.on("connection", (socket: Socket) => {
+        registerTravellerRequestHandler(socket, server);
+      });
+    });
+    closeServer = close;
+
+    const response: any = await emitWithAck(
+      client,
+      SocketEvents.REQUEST_STATE_TRAVELLER,
+      { gameId: "g1", boardNumber: 7 },
+    );
+
+    expect(response).toEqual({ success: true, data: null });
+  });
+
+  it("rejects an invalid requestState payload", async () => {
+    const { client, close } = await createSocketTestServer((server) => {
+      server.on("connection", (socket: Socket) => {
+        registerTravellerRequestHandler(socket, server);
+      });
+    });
+    closeServer = close;
+
+    const response: any = await emitWithAck(
+      client,
+      SocketEvents.REQUEST_STATE_TRAVELLER,
+      { gameId: "g1" },
+    );
+
+    expect(response).toMatchObject({ success: false, error: "Invalid payload" });
+  });
+
+  it("returns null and swallows a load error", async () => {
+    vi.mocked(getBoardInstances).mockRejectedValue(new Error("boom"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const { client, close } = await createSocketTestServer((server) => {
+      server.on("connection", (socket: Socket) => {
+        registerTravellerRequestHandler(socket, server);
+      });
+    });
+    closeServer = close;
+
+    const response: any = await emitWithAck(
+      client,
+      SocketEvents.REQUEST_STATE_TRAVELLER,
+      { gameId: "g1", boardNumber: 7 },
+    );
+
+    expect(response).toEqual({ success: true, data: null });
+    errSpy.mockRestore();
+  });
 });

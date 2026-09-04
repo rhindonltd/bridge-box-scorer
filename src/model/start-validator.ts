@@ -193,5 +193,6 @@ function seatSort(a: PairSeat, b: PairSeat): number {
   if (ta !== tb) {
     return ta - tb;
   }
+  /* v8 ignore next -- equal-seat branch (`: 0`) is unreachable: seats come from a Set, so two entries can never share the same section+table+direction */
   return a < b ? -1 : a > b ? 1 : 0;
 }

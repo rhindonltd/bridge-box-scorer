@@ -126,6 +126,10 @@ export function DirectorContractWizard({
       return;
     }
 
+    // The confirm step (6) is only reachable after level, suit and declarer
+    // have all been chosen (or via a special outcome, handled above), so the
+    // "incomplete contract" else path here is defensive and unreachable.
+    /* v8 ignore next -- unreachable: confirm requires a complete contract */
     if (level && suit && declarer !== null) {
       const contract: ContractCode = `${level}${suit}${dbl}${declarer}`;
       const lead: Card | null =
@@ -261,6 +265,7 @@ export function DirectorContractWizard({
         );
       case 7:
         return <StepAdjustedScore onSubmit={onAdjustedScoreSubmit} />;
+      /* v8 ignore next 2 -- unreachable: `step` is only ever set to 1..7 */
       default:
         return null;
     }

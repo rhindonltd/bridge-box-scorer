@@ -163,3 +163,203 @@ describe("validateBreaks / validateStateBreaks", () => {
     expect(validateStateBreaks(state, now)).toEqual([]);
   });
 });
+
+describe("projectPlayEndByRound — running phases and non-play current phase", () => {
+  it("returns an empty map when phase is null", () => {
+    const state = makeState({ phase: null as unknown as TimerState["phase"] });
+    expect(projectPlayEndByRound(state, 1_000_000).size).toBe(0);
+  });
+
+  it("uses elapsed time against playMs while running in the play phase", () => {
+    const now = 1_000_000;
+    // Running, started 100s ago; 420s play => 320s remain for round 1.
+    const state = makeState({
+      phase: "play",
+      isRunning: true,
+      phaseStartedAt: now - 100_000,
+      totalRounds: 1,
+    });
+    const map = projectPlayEndByRound(state, now);
+    expect(map.get(1)).toBe(now + 320_000);
+  });
+
+  it("uses remainingMs when the play phase is paused and remainingMs is set", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "play",
+      isRunning: false,
+      remainingMs: 120_000,
+      totalRounds: 1,
+    });
+    const map = projectPlayEndByRound(state, now);
+    // Paused with 120s left on the current play segment.
+    expect(map.get(1)).toBe(now + 120_000);
+  });
+
+  it("projects from a paused MOVE phase: current gap precedes state.round's play", () => {
+    const now = 1_000_000;
+    // Paused in a move gap before round 2, remainingMs 30s; then play 420s.
+    const state = makeState({
+      phase: "move",
+      isRunning: false,
+      remainingMs: 30_000,
+      round: 2,
+      totalRounds: 3,
+    });
+    const map = projectPlayEndByRound(state, now);
+    // Round 2 play ends after remaining move (30s) + play (420s).
+    expect(map.get(2)).toBe(now + 30_000 + 420_000);
+    // Round 3 = +move(60) +play(420).
+    expect(map.get(3)).toBe(now + 30_000 + 420_000 + 60_000 + 420_000);
+  });
+
+  it("projects from a paused MOVE phase falling back to moveMs when remainingMs is null", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "move",
+      isRunning: false,
+      remainingMs: null,
+      round: 2,
+      totalRounds: 2,
+    });
+    const map = projectPlayEndByRound(state, now);
+    // Falls back to full moveMs (60s) + play (420s).
+    expect(map.get(2)).toBe(now + 60_000 + 420_000);
+  });
+
+  it("projects from a running MOVE phase using elapsed against moveMs", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "move",
+      isRunning: true,
+      phaseStartedAt: now - 20_000, // 40s of the 60s move remain
+      round: 2,
+      totalRounds: 2,
+    });
+    const map = projectPlayEndByRound(state, now);
+    expect(map.get(2)).toBe(now + 40_000 + 420_000);
+  });
+
+  it("projects from a paused BREAK phase using breakDurationMs (line 85)", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "break",
+      isRunning: false,
+      breakDurationMs: 200_000,
+      round: 2,
+      totalRounds: 2,
+    });
+    const map = projectPlayEndByRound(state, now);
+    // Remaining break (200s) + play (420s).
+    expect(map.get(2)).toBe(now + 200_000 + 420_000);
+  });
+
+  it("projects from a paused BREAK phase falling back to remainingMs then 0", () => {
+    const now = 1_000_000;
+    // breakDurationMs null, remainingMs null => 0 remaining on the break.
+    const state = makeState({
+      phase: "break",
+      isRunning: false,
+      breakDurationMs: null,
+      remainingMs: null,
+      round: 2,
+      totalRounds: 2,
+    });
+    const map = projectPlayEndByRound(state, now);
+    expect(map.get(2)).toBe(now + 0 + 420_000);
+  });
+
+  it("projects from a running BREAK phase using elapsed against breakDurationMs", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "break",
+      isRunning: true,
+      phaseStartedAt: now - 50_000,
+      breakDurationMs: 300_000, // 250s remain
+      round: 2,
+      totalRounds: 2,
+    });
+    const map = projectPlayEndByRound(state, now);
+    expect(map.get(2)).toBe(now + 250_000 + 420_000);
+  });
+
+  it("uses a scheduled break for the gap after the current round in the non-play branch", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "move",
+      isRunning: false,
+      remainingMs: 0,
+      round: 1,
+      totalRounds: 2,
+      breaks: [durationBreak(1, 10)], // 600s break after round 1
+    });
+    const map = projectPlayEndByRound(state, now);
+    // Round 1 play ends after the current gap (0) + play (420s).
+    expect(map.get(1)).toBe(now + 0 + 420_000);
+    // Round 2 = +break(600) +play(420) instead of move.
+    expect(map.get(2)).toBe(now + 420_000 + 600_000 + 420_000);
+  });
+});
+
+describe("projectPlayEndByRound — remaining branch fallbacks", () => {
+  it("treats a running phase with no phaseStartedAt as zero elapsed", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "play",
+      isRunning: true,
+      phaseStartedAt: null, // `?? now` => elapsed 0 => full play remains
+      totalRounds: 1,
+    });
+    const map = projectPlayEndByRound(state, now);
+    expect(map.get(1)).toBe(now + 420_000);
+  });
+
+  it("running break with no breakDurationMs falls back to remainingMs", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "break",
+      isRunning: true,
+      phaseStartedAt: now, // elapsed 0
+      breakDurationMs: null,
+      remainingMs: 90_000,
+      round: 2,
+      totalRounds: 2,
+    });
+    const map = projectPlayEndByRound(state, now);
+    expect(map.get(2)).toBe(now + 90_000 + 420_000);
+  });
+
+  it("running break with neither breakDurationMs nor remainingMs falls back to 0", () => {
+    const now = 1_000_000;
+    const state = makeState({
+      phase: "break",
+      isRunning: true,
+      phaseStartedAt: now,
+      breakDurationMs: null,
+      remainingMs: null,
+      round: 2,
+      totalRounds: 2,
+    });
+    const map = projectPlayEndByRound(state, now);
+    expect(map.get(2)).toBe(now + 0 + 420_000);
+  });
+});
+
+describe("validateBreaks / validateStateBreaks — fallback branches", () => {
+  it("treats a missing breaks array as no breaks", () => {
+    const state = makeState({ breaks: undefined });
+    expect(validateBreaks(state, () => 0)).toEqual([]);
+  });
+
+  it("validateStateBreaks falls back to now when the round is not in the projection", () => {
+    const now = 1_000_000;
+    // A resume-time break after a round beyond totalRounds is never projected,
+    // so projected.get(afterRound) is undefined and `?? now` is used. With
+    // resumeAt in the future, now < resumeAt => no overrun => no problem.
+    const state = makeState({
+      totalRounds: 2,
+      breaks: [resumeBreak(99, now + 60_000)],
+    });
+    expect(validateStateBreaks(state, now)).toEqual([]);
+  });
+});

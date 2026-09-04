@@ -8,9 +8,11 @@ export async function runMigrations() {
 }
 
 // Run if called directly
+/* v8 ignore start -- CLI entry guard: only runs when executed directly via tsx, not as an imported module */
 if (require.main === module) {
   runMigrations().catch((err) => {
     console.error("Game index migration failed:", err);
     process.exit(1);
   });
 }
+/* v8 ignore stop */

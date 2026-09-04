@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 const mockUseSWR = vi.fn();
+const mockGlobalMutate = vi.fn();
 vi.mock("swr", () => ({
   default: (...args: unknown[]) => mockUseSWR(...args),
-  mutate: vi.fn(),
+  mutate: (...args: unknown[]) => mockGlobalMutate(...args),
 }));
 
 const socketOn = vi.fn();
@@ -17,7 +18,13 @@ vi.mock("@/lib/socket", () => ({
 vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
 
 import { AssignmentProvider, useAssignment } from "./AssignmentContext";
+import { SocketEvents } from "@/socket/socket-events";
 import type { Seat } from "@/model/participants";
+
+function handlerFor(event: string) {
+  const call = socketOn.mock.calls.find((c) => c[0] === event);
+  return call![1] as (payload?: { section?: string }) => void;
+}
 
 function wrapper(children: ReactNode) {
   return (
@@ -73,5 +80,79 @@ describe("AssignmentContext", () => {
     expect(socketOn).toHaveBeenCalled();
     unmount();
     expect(socketOff).toHaveBeenCalled();
+  });
+
+  it("resolves mySection to null when the initial seat is unparseable", () => {
+    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
+
+    renderHook(() => useAssignment(), {
+      wrapper: ({ children }) => (
+        <AssignmentProvider gameId="g1" initialSeat={"!!!" as Seat}>
+          {children}
+        </AssignmentProvider>
+      ),
+    });
+
+    // A section-less update still triggers revalidation, proving the provider
+    // rendered (mySection resolved to null via the catch) rather than throwing.
+    act(() => handlerFor(SocketEvents.SECTION_UPDATED)({}));
+    expect(mockGlobalMutate).toHaveBeenCalled();
+  });
+
+  it("does not retry a 404 but does retry other errors", () => {
+    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
+
+    renderHook(() => useAssignment(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    const config = mockUseSWR.mock.calls[0][2] as {
+      shouldRetryOnError: (e: Error & { status?: number }) => boolean;
+    };
+    expect(
+      config.shouldRetryOnError(
+        Object.assign(new Error("not found"), { status: 404 }),
+      ),
+    ).toBe(false);
+    expect(
+      config.shouldRetryOnError(
+        Object.assign(new Error("server"), { status: 500 }),
+      ),
+    ).toBe(true);
+  });
+
+  it("revalidates on GAME_UPDATED and CONNECT", () => {
+    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
+
+    renderHook(() => useAssignment(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    act(() => handlerFor(SocketEvents.GAME_UPDATED)());
+    act(() => handlerFor(SocketEvents.CONNECT)());
+    expect(mockGlobalMutate).toHaveBeenCalledTimes(2);
+  });
+
+  it("revalidates on a SECTION_UPDATED matching this pair's section", () => {
+    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
+
+    // initialSeat "A1NS" -> section "A".
+    renderHook(() => useAssignment(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    act(() => handlerFor(SocketEvents.SECTION_UPDATED)({ section: "A" }));
+    expect(mockGlobalMutate).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores a SECTION_UPDATED for a different section", () => {
+    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
+
+    renderHook(() => useAssignment(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    act(() => handlerFor(SocketEvents.SECTION_UPDATED)({ section: "B" }));
+    expect(mockGlobalMutate).not.toHaveBeenCalled();
   });
 });

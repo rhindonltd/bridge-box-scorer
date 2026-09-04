@@ -154,4 +154,64 @@ describe("registerCreateParticipantHandler (integration)", () => {
 
     expect(response).toMatchObject({ success: false });
   });
+
+  it("returns success: false with the db-missing error when getDb resolves null", async () => {
+    vi.mocked(createPlayer)
+      .mockResolvedValueOnce({ id: 10 } as any)
+      .mockResolvedValueOnce({ id: 11 } as any);
+    vi.mocked(createPair).mockResolvedValue(undefined);
+    vi.mocked(getDb).mockResolvedValue(null as any);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await new Promise<any>((resolve) => {
+      client.emit(
+        SocketEvents.CREATE_PARTICIPANT,
+        {
+          gameId: "game-1",
+          directorToken: "test-token",
+          newParticipant: {
+            type: "PAIR",
+            initialSeat: "A1NS",
+            player1: { firstName: "X", lastName: "Y" },
+            player2: { firstName: "A", lastName: "B" },
+          },
+        },
+        resolve,
+      );
+    });
+
+    expect(response).toMatchObject({
+      success: false,
+      error: "Game db does not exist",
+    });
+    errSpy.mockRestore();
+  });
+
+  it("maps a non-Error rejection to Unknown error", async () => {
+    vi.mocked(createPlayer).mockRejectedValue("boom");
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await new Promise<any>((resolve) => {
+      client.emit(
+        SocketEvents.CREATE_PARTICIPANT,
+        {
+          gameId: "game-1",
+          directorToken: "test-token",
+          newParticipant: {
+            type: "PAIR",
+            initialSeat: "A1NS",
+            player1: { firstName: "X", lastName: "Y" },
+            player2: { firstName: "A", lastName: "B" },
+          },
+        },
+        resolve,
+      );
+    });
+
+    expect(response).toMatchObject({
+      success: false,
+      error: "Unknown error",
+    });
+    errSpy.mockRestore();
+  });
 });

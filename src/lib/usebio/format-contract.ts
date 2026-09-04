@@ -73,6 +73,8 @@ export function formatOutcomeForUsebio(outcome: BoardOutcome): UsebioResult {
 
   const parsed = parsePlayedContract(outcome);
 
+  /* v8 ignore next -- parsePlayedContract only yields the known suits S/H/D/C/NT,
+     all present in SUIT_NAMES, so the `?? parsed.suit` fallback is unreachable. */
   const suitName = SUIT_NAMES[parsed.suit] ?? parsed.suit;
   let contract = `${parsed.level} ${suitName}`;
 

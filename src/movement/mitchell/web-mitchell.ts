@@ -72,6 +72,7 @@ function generateWebMitchellEven(
 
   validateMitchellSpec(spec);
 
+  /* v8 ignore next 3 -- defensive: generateWebMitchell only routes even table counts here, so this guard is unreachable via the public API */
   if (tables % 2 !== 0) {
     throw new Error("generateWebMitchellEven requires an even table count");
   }
@@ -149,6 +150,7 @@ function generateWebMitchellOdd(
 
   validateMitchellSpec(spec);
 
+  /* v8 ignore next 3 -- defensive: generateWebMitchell only routes odd table counts here, so this guard is unreachable via the public API */
   if (tables % 2 === 0) {
     throw new Error("generateWebMitchellOdd requires an odd table count");
   }

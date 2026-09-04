@@ -244,6 +244,11 @@ function pairMovementToTables(movement: RehydratedTable[]): {
       table: table.tableNumber,
       rounds: table.rounds.map((round) => ({
         round: round.roundNumber,
+        // Rehydrated rounds always carry a valid inclusive board range
+        // (Mitchell uses boardsForSet, DB specs use boardRangeForSet, both with
+        // a positive boardsPerRound), so boardEnd is never below boardStart;
+        // the `: []` arm is defensive only.
+        /* v8 ignore next 3 */
         boards:
           round.boardEnd >= round.boardStart
             ? rangeInclusive(round.boardStart, round.boardEnd)

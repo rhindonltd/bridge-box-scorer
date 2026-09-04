@@ -93,4 +93,66 @@ describe("deriveExpectedSeats", () => {
     expect(seats.size).toBe(0);
     expect(phantomSeat).toBeNull();
   });
+
+  it("flags a phantom seated NS and excludes it", () => {
+    // Table 1 NS pair is the phantom (movement position id 1).
+    const movement: Tables<"PAIR"> = {
+      tables: [
+        {
+          table: 1,
+          rounds: [
+            {
+              round: 1,
+              boards: [1],
+              participants: { nsId: "1", ewId: "3" },
+            },
+          ],
+        },
+      ],
+    };
+
+    const { seats, phantomSeat } = deriveExpectedSeats("A", movement, 1);
+
+    expect(phantomSeat).toBe("A1NS");
+    expect(seats.has("A1NS")).toBe(false);
+    expect(seats.has("A1EW")).toBe(true);
+    expect(seats.size).toBe(1);
+  });
+
+  it("skips a table that has no round-1 layout", () => {
+    // Table 2 only has a round 2 entry, so it is skipped entirely.
+    const movement: Tables<"PAIR"> = {
+      tables: [
+        {
+          table: 1,
+          rounds: [
+            {
+              round: 1,
+              boards: [1],
+              participants: { nsId: "1", ewId: "3" },
+            },
+          ],
+        },
+        {
+          table: 2,
+          rounds: [
+            {
+              round: 2,
+              boards: [2],
+              participants: { nsId: "2", ewId: "4" },
+            },
+          ],
+        },
+      ],
+    };
+
+    const { seats, phantomSeat } = deriveExpectedSeats("A", movement);
+
+    expect(phantomSeat).toBeNull();
+    // Only table 1 contributes seats; table 2 is skipped (no round 1).
+    expect(seats.size).toBe(2);
+    expect(seats.has("A1NS")).toBe(true);
+    expect(seats.has("A1EW")).toBe(true);
+    expect(seats.has("A2NS")).toBe(false);
+  });
 });

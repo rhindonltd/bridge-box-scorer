@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import EnterPlayerNames from "@/app/game/[gameId]/join/EnterPlayerNames";
 
 // Mock PlayerSearch — the component renders a label heading and a search input
@@ -49,5 +49,26 @@ describe("EnterPlayerNames", () => {
   it("submit button is disabled when no players selected", () => {
     render(<EnterPlayerNames seat="A1NS" onSubmitPair={vi.fn()} />);
     expect(screen.getByRole("button", { name: "Enter Pair" })).toBeDisabled();
+  });
+
+  it("submits both players once each seat is filled", () => {
+    const onSubmitPair = vi.fn();
+    render(<EnterPlayerNames seat="A1NS" onSubmitPair={onSubmitPair} />);
+
+    fireEvent.change(screen.getByLabelText("North Player"), {
+      target: { value: "Ada" },
+    });
+    fireEvent.change(screen.getByLabelText("South Player"), {
+      target: { value: "Grace" },
+    });
+
+    const submit = screen.getByRole("button", { name: "Enter Pair" });
+    expect(submit).not.toBeDisabled();
+    fireEvent.click(submit);
+
+    expect(onSubmitPair).toHaveBeenCalledWith(
+      { firstName: "Ada", lastName: "" },
+      { firstName: "Grace", lastName: "" },
+    );
   });
 });

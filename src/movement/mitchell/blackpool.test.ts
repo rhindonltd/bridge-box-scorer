@@ -199,4 +199,27 @@ describe("generateBlackpool", () => {
       }),
     ).toThrow("at most 2 revenge rounds");
   });
+
+  it("rejects a non-positive boardsPerRound", () => {
+    expect(() =>
+      generateBlackpool({
+        tables: 6,
+        rounds: 6,
+        boardsPerRound: 0,
+        blackpool: true,
+      }),
+    ).toThrow("boardsPerRound must be a positive integer");
+  });
+
+  it("rejects a negative revengeRounds", () => {
+    expect(() =>
+      generateBlackpool({
+        tables: 6,
+        rounds: 6,
+        boardsPerRound: 2,
+        blackpool: true,
+        revengeRounds: -1,
+      }),
+    ).toThrow("revengeRounds must be a non-negative integer");
+  });
 });

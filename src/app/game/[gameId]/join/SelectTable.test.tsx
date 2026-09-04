@@ -98,6 +98,21 @@ describe("SelectTable", () => {
     expect(screen.getByText("Section B")).toBeInTheDocument();
   });
 
+  it("appends the section label when it differs from the section letter", () => {
+    render(
+      <SelectTable
+        sections={[
+          { section: "A", label: "Red Room", tables: 1 },
+          { section: "B", label: "B", tables: 1 },
+        ]}
+        onSeatSelected={vi.fn()}
+        startingPositions={[]}
+      />,
+    );
+    // Section A has a distinct label -> "Section A — Red Room".
+    expect(screen.getByText(/Section A\s*—\s*Red Room/)).toBeInTheDocument();
+  });
+
   it("scopes taken seats to the correct section", () => {
     render(
       <SelectTable

@@ -163,6 +163,7 @@ function mitchellCopies(spec: MitchellMovementSpec): number {
   const copies = new Set<string>();
   for (const table of generated.tables) {
     for (const round of table.rounds) {
+      /* v8 ignore next -- defensive: the Web generator always emits a boardCopy, so the `?? "A"` fallback is unreachable */
       copies.add(round.boardCopy ?? "A");
     }
   }
@@ -235,6 +236,7 @@ export function resolveRecommendationDescriptor(
     };
   }
 
+  /* v8 ignore next 3 -- UNSUPPORTED_LABELS is currently empty (a placeholder for future entries), so this guard is unreachable */
   if (UNSUPPORTED_LABELS.has(label)) {
     return { resolved: false, reason: `unsupported movement: ${entry.movement}` };
   }

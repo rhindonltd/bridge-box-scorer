@@ -68,6 +68,8 @@ export function ContractWizard({
   } = useBoardFlow({ leadCardRequired });
 
   const onSubmit = () => {
+    /* v8 ignore next -- defensive: the confirm step (6) is only reachable
+       after a board is chosen, so selectedBoard is never null here. */
     if (selectedBoard === null) return;
 
     if (specialOutcome) {
@@ -80,6 +82,8 @@ export function ContractWizard({
       return;
     }
 
+    /* v8 ignore next -- defensive: at the confirm step a non-special contract
+       always has level, suit and declarer set, so the false branch is dead. */
     if (level && suit && declarer !== null) {
       const contract: ContractCode = `${level}${suit}${dbl}${declarer}`;
       const lead: Card | null =
@@ -205,6 +209,8 @@ export function ContractWizard({
             onSubmit={onSubmit}
           />
         );
+      /* v8 ignore next 2 -- defensive: useBoardFlow only ever produces
+         steps 0-6, all handled above, so this default is unreachable. */
       default:
         return null;
     }

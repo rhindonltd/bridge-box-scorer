@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mpPerBoardPlugin } from "./mp";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
+import type { PairTraveller } from "@/model/traveller";
 
 describe("mp per-board plugin", () => {
   it("has id MP with percentage and matchpoints views", () => {
@@ -77,5 +78,27 @@ describe("mp per-board plugin", () => {
       (topLine.nsMatchPoints / maxMP) * 100,
       5,
     );
+  });
+
+  it("percentage view yields 0% when there is a single comparison line (maxMP = 0)", () => {
+    // One line means maxMP = 2 * (1 - 1) = 0, exercising the divide-by-zero
+    // guard in the percentage view.
+    const single = {
+      type: "PAIR",
+      mode: "PAIR",
+      board: 1,
+      section: "A",
+      lines: [{ nsId: "1", ewId: "2", outcome: "3NTN=" }],
+    } as PairTraveller;
+
+    const scored = mpPerBoardPlugin.score(single);
+    const view = mpPerBoardPlugin.views.find((v) => v.id === "percentage")!;
+    const table = view.toTable(scored);
+
+    const nsPercentCell = table.rows[0].cells[4];
+    if (nsPercentCell.kind !== "number") {
+      throw new Error("expected number cell");
+    }
+    expect(nsPercentCell.value).toBe(0);
   });
 });

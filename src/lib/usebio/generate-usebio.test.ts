@@ -388,6 +388,101 @@ describe("generateUsebioXml", () => {
     });
   });
 
+  describe("adjusted scores (A<ns>/<ew> outcomes)", () => {
+    // Two lines on the same board so results.length - 1 > 0 (a non-zero max),
+    // giving meaningful matchpoints / percentages for the adjusted rows.
+    function makeAdjustedData(
+      scoringType: UsebioGameData["scoringType"],
+      nsPercent: number,
+      ewPercent: number,
+    ): UsebioGameData {
+      const data = makeBasicGameData();
+      data.scoringType = scoringType;
+      data.boardResults = [
+        {
+          table: 1,
+          board: 1,
+          round: 1,
+          nsPairNumber: "1NS",
+          ewPairNumber: "1EW",
+          outcome: `A${nsPercent}/${ewPercent}` as any,
+          lead: null,
+        },
+        {
+          table: 2,
+          board: 1,
+          round: 1,
+          nsPairNumber: "2NS",
+          ewPairNumber: "2EW",
+          outcome: "3NTN=",
+          lead: null,
+        },
+      ];
+      return data;
+    }
+
+    it("emits an artificial/adjusted MP result with percentage-based matchpoints", () => {
+      const xml = generateUsebioXml(makeAdjustedData("MP", 60, 40));
+      // Blank contract fields + zero score + Adjusted marker.
+      expect(xml).toContain("<ARTIFICIAL_SCORE>Adjusted</ARTIFICIAL_SCORE>");
+      expect(xml).toContain("<SCORE>0</SCORE>");
+      // maxMp = 2 * (2 - 1) = 2. NS 60% -> round(0.6*2)=1, EW 40% -> round(0.4*2)=1.
+      expect(xml).toContain("<NS_MATCH_POINTS>1</NS_MATCH_POINTS>");
+      expect(xml).toContain("<EW_MATCH_POINTS>1</EW_MATCH_POINTS>");
+    });
+
+    it("emits AVE+ (>50%) as +3 IMPs and AVE- (<50%) as -3 IMPs for IMP scoring", () => {
+      const xml = generateUsebioXml(makeAdjustedData("IMP", 60, 40));
+      expect(xml).toContain("<NS_IMPS>3</NS_IMPS>");
+      expect(xml).toContain("<EW_IMPS>-3</EW_IMPS>");
+      expect(xml).toContain("<ARTIFICIAL_SCORE>Adjusted</ARTIFICIAL_SCORE>");
+    });
+
+    it("emits AVE (50%) as 0 IMPs for XIMP scoring", () => {
+      const xml = generateUsebioXml(makeAdjustedData("XIMP", 50, 50));
+      expect(xml).toContain("<NS_IMPS>0</NS_IMPS>");
+      expect(xml).toContain("<EW_IMPS>0</EW_IMPS>");
+    });
+
+    it("accumulates adjusted MP scores into the overall ranking", () => {
+      const xml = generateUsebioXml(makeAdjustedData("MP", 60, 40));
+      const ranking = xml.split("<RANKING>")[1].split("</RANKING>")[0];
+      // The adjusted-score pairs still appear in the ranking.
+      expect(ranking).toContain('PAIR_NUMBER="1NS"');
+      expect(ranking).toContain('PAIR_NUMBER="1EW"');
+    });
+
+    it("accumulates adjusted IMP/XIMP scores into the overall ranking", () => {
+      const xml = generateUsebioXml(makeAdjustedData("IMP", 60, 40));
+      const ranking = xml.split("<RANKING>")[1].split("</RANKING>")[0];
+      expect(ranking).toContain('PAIR_NUMBER="1NS"');
+      expect(ranking).toContain('PAIR_NUMBER="1EW"');
+    });
+
+    it("adds zero to max for a lone adjusted MP result (single line on a board)", () => {
+      // A board with a single result -> maxMp = 2 * (1 - 1) = 0, exercising the
+      // `maxMp > 0 ? maxMp : 0` false branch in the ranking accumulation.
+      const data = makeBasicGameData();
+      data.scoringType = "MP";
+      data.boardResults = [
+        {
+          table: 1,
+          board: 1,
+          round: 1,
+          nsPairNumber: "1NS",
+          ewPairNumber: "1EW",
+          outcome: "A60/40" as any,
+          lead: null,
+        },
+      ];
+      const xml = generateUsebioXml(data);
+      // With max 0, the ranking percentage is the "0.00" fallback.
+      const ranking = xml.split("<RANKING>")[1].split("</RANKING>")[0];
+      expect(ranking).toContain('PAIR_NUMBER="1NS"');
+      expect(ranking).toContain('PERCENTAGE="0.00"');
+    });
+  });
+
   describe("multi-section output", () => {
     function makeMultiSectionData(): UsebioGameData {
       return {

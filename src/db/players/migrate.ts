@@ -8,9 +8,11 @@ export async function runPlayersMigrations() {
 }
 
 // Run if called directly
+/* v8 ignore start -- CLI entry guard: only runs when executed directly via tsx, not as an imported module */
 if (require.main === module) {
   runPlayersMigrations().catch((err) => {
     console.error("Player migration failed:", err);
     process.exit(1);
   });
 }
+/* v8 ignore stop */

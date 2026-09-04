@@ -68,4 +68,48 @@ describe("BoardDropDown", () => {
     fireEvent.click(board2!);
     expect(onBoardSelected).not.toHaveBeenCalled();
   });
+
+  it("closes the list when clicking outside", () => {
+    render(
+      <div>
+        <BoardDropDown
+          roundBoards={[1, 2, 3]}
+          playedBoards={[]}
+          selectedBoard={1}
+          onBoardSelected={vi.fn()}
+        />
+        <button type="button">outside</button>
+      </div>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Board 1/ }));
+    expect(screen.getAllByRole("button").length).toBeGreaterThan(2);
+
+    // Mousedown outside the dropdown ref closes the list.
+    fireEvent.mouseDown(screen.getByRole("button", { name: "outside" }));
+
+    // Only the trigger and the outside button remain.
+    expect(
+      screen.getAllByRole("button").filter((b) => /^Board \d/.test(b.textContent ?? "")),
+    ).toHaveLength(1);
+  });
+
+  it("keeps the list open when clicking inside the dropdown", () => {
+    render(
+      <BoardDropDown
+        roundBoards={[1, 2, 3]}
+        playedBoards={[]}
+        selectedBoard={1}
+        onBoardSelected={vi.fn()}
+      />,
+    );
+
+    const trigger = screen.getByRole("button", { name: /Board 1/ });
+    fireEvent.click(trigger);
+    expect(screen.getAllByRole("button").length).toBeGreaterThan(1);
+
+    // Mousedown on an element contained by the dropdown ref keeps it open.
+    fireEvent.mouseDown(trigger);
+    expect(screen.getAllByRole("button").length).toBeGreaterThan(1);
+  });
 });

@@ -30,6 +30,13 @@ describe("outcomeToScore", () => {
     // Board 1 = None. 4SN-1 = -50
     expect(outcomeToScore(1, "4SN-1" as BoardOutcome)).toBe(-50);
   });
+
+  it("returns null for an outcome that is not a valid played-contract code", () => {
+    // Neither PO/NP nor a well-formed contract code (e.g. a corrupt/blank
+    // stored result) falls through the isPlayedContractCode guard to null.
+    expect(outcomeToScore(1, "GARBAGE" as BoardOutcome)).toBeNull();
+    expect(outcomeToScore(1, "" as BoardOutcome)).toBeNull();
+  });
 });
 
 describe("prepare", () => {

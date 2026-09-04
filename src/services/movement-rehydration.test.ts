@@ -1,6 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { rehydrateSelectedMovement } from "./movement-rehydration";
 import { SelectedMovement } from "@/model/selected-movement";
+
+vi.mock("@/db/movements/queries/get-movement", () => ({
+  getPairMovement: vi.fn(),
+}));
+
+vi.mock("@/db/movements/queries/get-movement-spec", () => ({
+  getPairMovementSpecById: vi.fn(),
+}));
+
+import { getPairMovement } from "@/db/movements/queries/get-movement";
+import { getPairMovementSpecById } from "@/db/movements/queries/get-movement-spec";
 
 type MitchellSpec = Extract<
   SelectedMovement,
@@ -72,5 +83,80 @@ describe("rehydrateSelectedMovement — Mitchell variants", () => {
     const secondHalf = result.movement.find((t) => t.tableNumber === 14);
     expect(firstHalf?.rounds.every((r) => r.boardCopy === "A")).toBe(true);
     expect(secondHalf?.rounds.every((r) => r.boardCopy === "B")).toBe(true);
+  });
+});
+
+describe("rehydrateSelectedMovement — SPEC source", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  function specSelection(): SelectedMovement {
+    return { source: "SPEC", specId: 42, boardsPerRound: 2 };
+  }
+
+  const movementRows = [
+    {
+      id: 1,
+      movementId: 42,
+      tableNumber: 1,
+      rounds: [
+        { roundNumber: 1, ns: "1", ew: "2", boardSet: 1 },
+        { roundNumber: 2, ns: "1", ew: "3", boardSet: 2 },
+      ],
+    },
+  ];
+
+  it("expands board sets into concrete ranges and exposes a positive missing pair", async () => {
+    vi.mocked(getPairMovement).mockResolvedValue(movementRows as any);
+    vi.mocked(getPairMovementSpecById).mockResolvedValue({
+      missingPair: 3,
+    } as any);
+
+    const result = await rehydrateSelectedMovement(specSelection());
+
+    expect(result.isStandardMitchell).toBe(false);
+    expect(result.missingPair).toBe("3");
+    expect(result.movement).toHaveLength(1);
+    expect(result.movement[0].rounds).toEqual([
+      {
+        roundNumber: 1,
+        ns: "1",
+        ew: "2",
+        boardStart: 1,
+        boardEnd: 2,
+        boardCopy: "A",
+      },
+      {
+        roundNumber: 2,
+        ns: "1",
+        ew: "3",
+        boardStart: 3,
+        boardEnd: 4,
+        boardCopy: "A",
+      },
+    ]);
+  });
+
+  it("returns a null missing pair when the spec has none (0 / missing)", async () => {
+    vi.mocked(getPairMovement).mockResolvedValue(movementRows as any);
+    // missingPair === 0 exercises the `> 0` false branch.
+    vi.mocked(getPairMovementSpecById).mockResolvedValue({
+      missingPair: 0,
+    } as any);
+
+    const result = await rehydrateSelectedMovement(specSelection());
+
+    expect(result.missingPair).toBeNull();
+  });
+
+  it("returns a null missing pair when the spec is not found", async () => {
+    vi.mocked(getPairMovement).mockResolvedValue(movementRows as any);
+    // spec == null exercises the `!= null` false branch.
+    vi.mocked(getPairMovementSpecById).mockResolvedValue(undefined as any);
+
+    const result = await rehydrateSelectedMovement(specSelection());
+
+    expect(result.missingPair).toBeNull();
   });
 });

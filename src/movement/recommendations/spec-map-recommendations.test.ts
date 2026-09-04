@@ -1,6 +1,41 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { recommendationsFromSpecMap } from "./spec-map-recommendations";
 import { PairMovementSpec } from "@/db/movements/schema";
+
+// Extend the real snapshot with a synthetic table (key "99") that repeats the
+// same MITCHELL descriptor under two boards buckets, so the de-duplication skip
+// branch is exercised. The real snapshot is preserved so every other test still
+// runs against genuine data.
+vi.mock("./recommendation-spec-map.json", async () => {
+  const actual = (
+    await vi.importActual<{ default: Record<string, unknown> }>(
+      "./recommendation-spec-map.json",
+    )
+  ).default;
+
+  const duplicated = {
+    type: "MITCHELL",
+    subtype: "STANDARD",
+    tables: 5,
+    rounds: 5,
+    boardsPerRound: 4,
+    arrowSwitches: 0,
+    copies: 1,
+    pros: [],
+    cons: [],
+  };
+
+  return {
+    default: {
+      ...actual,
+      "99": {
+        // Same descriptor under two buckets -> identical descriptorKey.
+        "20": [duplicated],
+        "24": [duplicated],
+      },
+    },
+  };
+});
 
 function dbSpec(overrides: Partial<PairMovementSpec>): PairMovementSpec {
   return {
@@ -103,5 +138,16 @@ describe("recommendationsFromSpecMap", () => {
     expect(weave).toBeDefined();
     // Must pick the 8-round spec (id 100), never the 7-round decoy (id 200).
     expect(weave?.specRef).toMatchObject({ source: "db", id: 100 });
+  });
+
+  it("skips a descriptor already seen under an earlier boards bucket", () => {
+    // The synthetic table 99 lists the same MITCHELL descriptor under both the
+    // 20 and 24 boards buckets; it must be surfaced exactly once.
+    const movements = recommendationsFromSpecMap(99, []);
+
+    const standard = movements.filter(
+      (m) => m.family === "MITCHELL" && m.rounds === 5,
+    );
+    expect(standard).toHaveLength(1);
   });
 });

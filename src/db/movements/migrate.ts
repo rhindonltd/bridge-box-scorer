@@ -8,9 +8,11 @@ export async function runMovementsMigrations() {
 }
 
 // Run if called directly
+/* v8 ignore start -- CLI entry guard: only runs when executed directly via tsx, not as an imported module */
 if (require.main === module) {
   runMovementsMigrations().catch((err) => {
     console.error("Movement migration failed:", err);
     process.exit(1);
   });
 }
+/* v8 ignore stop */

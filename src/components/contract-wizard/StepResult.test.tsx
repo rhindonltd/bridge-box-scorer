@@ -24,4 +24,14 @@ describe("StepResult", () => {
     fireEvent.click(screen.getByRole("button", { name: "-1" }));
     expect(onResultComplete).toHaveBeenCalledWith("down", 1);
   });
+
+  it("switches back to 'made' mode after selecting 'down'", () => {
+    const onResultComplete = vi.fn();
+    render(<StepResult level={3} onResultComplete={onResultComplete} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Down" }));
+    fireEvent.click(screen.getByRole("button", { name: "Made" }));
+    fireEvent.click(screen.getByRole("button", { name: "+1" }));
+    expect(onResultComplete).toHaveBeenCalledWith("made", 1);
+  });
 });

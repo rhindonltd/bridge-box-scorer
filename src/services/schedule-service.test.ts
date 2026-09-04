@@ -305,5 +305,130 @@ describe("schedule-service", () => {
       expect(result!.side).toBe("EW");
       expect(result!.assignmentId).toBe("assign-2");
     });
+
+    it("skips participants with a missing player or blank seat, and assignments with no seat", async () => {
+      let selectCallCount = 0;
+
+      const mockDb = {
+        select: vi.fn().mockImplementation(() => {
+          selectCallCount++;
+          if (selectCallCount === 1) {
+            return {
+              from: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                  get: vi
+                    .fn()
+                    .mockResolvedValue({ id: "assign-1", initialSeat: "1NS" }),
+                }),
+              }),
+            };
+          } else if (selectCallCount === 2) {
+            return {
+              from: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([
+                  {
+                    roundNumber: 1,
+                    tableNumber: 1,
+                    boardNumber: 1,
+                    ns: "assign-1",
+                    ew: "assign-2",
+                    status: "NOT_PLAYED",
+                  },
+                ]),
+              }),
+            };
+          } else if (selectCallCount === 3) {
+            // Assignment rows: one has a null initialSeat, exercising the
+            // `initialSeat ? ... : undefined` false branch (lines 84-85).
+            return {
+              from: vi.fn().mockResolvedValue([
+                { id: "assign-1", initialSeat: "1NS" },
+                { id: "assign-2", initialSeat: "1EW" },
+                { id: "assign-3", initialSeat: null },
+              ]),
+            };
+          } else if (selectCallCount === 4) {
+            // Participants exercising the line-74 guard false branches:
+            //  - player1 id references a missing player (p1 undefined)
+            //  - blank initialSeat
+            //  - a fully valid one so the truthy branch is still hit
+            return {
+              from: vi.fn().mockResolvedValue([
+                { initialSeat: "1NS", player1: 1, player2: 2 },
+                { initialSeat: "1EW", player1: 999, player2: 4 },
+                { initialSeat: "", player1: 1, player2: 2 },
+              ]),
+            };
+          } else if (selectCallCount === 5) {
+            return {
+              from: vi.fn().mockResolvedValue([
+                { id: 1, firstName: "Alice", lastName: "Smith" },
+                { id: 2, firstName: "Bob", lastName: "Jones" },
+                { id: 4, firstName: "Dave", lastName: "Wilson" },
+              ]),
+            };
+          } else {
+            return {
+              from: vi.fn().mockResolvedValue([{ roundNumber: 1 }]),
+            };
+          }
+        }),
+      } as unknown as Db;
+
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+
+      const result = await getSchedule(mockDb, "1NS");
+
+      expect(result).not.toBeNull();
+      // NS pair (assign-1 -> 1NS) resolves both players; EW pair (assign-2 ->
+      // 1EW) has a missing player1 so it is dropped -> E/W stay null.
+      expect(result!.rounds[0].players.N).toMatchObject({ firstName: "Alice" });
+      expect(result!.rounds[0].players.E).toBeNull();
+      expect(result!.rounds[0].players.W).toBeNull();
+    });
+
+    it("reports zero total rounds when the game has no boards at all", async () => {
+      let selectCallCount = 0;
+
+      const mockDb = {
+        select: vi.fn().mockImplementation(() => {
+          selectCallCount++;
+          if (selectCallCount === 1) {
+            return {
+              from: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                  get: vi
+                    .fn()
+                    .mockResolvedValue({ id: "assign-1", initialSeat: "1NS" }),
+                }),
+              }),
+            };
+          } else if (selectCallCount === 2) {
+            // This pair has no board rows.
+            return {
+              from: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([]),
+              }),
+            };
+          } else if (selectCallCount === 3) {
+            return { from: vi.fn().mockResolvedValue([]) };
+          } else if (selectCallCount === 4) {
+            return { from: vi.fn().mockResolvedValue([]) };
+          } else if (selectCallCount === 5) {
+            return { from: vi.fn().mockResolvedValue([]) };
+          } else {
+            // No game boards at all -> allRoundNumbers.size === 0 -> totalRounds 0.
+            return { from: vi.fn().mockResolvedValue([]) };
+          }
+        }),
+      } as unknown as Db;
+
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+
+      const result = await getSchedule(mockDb, "1NS");
+
+      expect(result).not.toBeNull();
+      expect(result!.rounds).toHaveLength(0);
+    });
   });
 });

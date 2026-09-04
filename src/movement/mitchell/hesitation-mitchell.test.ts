@@ -233,4 +233,15 @@ describe("generateHesitationMitchell validation", () => {
       }),
     ).toThrow("at least 3 tables");
   });
+
+  it("rejects a non-positive boardsPerRound", () => {
+    expect(() =>
+      generateHesitationMitchell({
+        tables: 7,
+        rounds: 8,
+        boardsPerRound: 0,
+        hesitation: true,
+      }),
+    ).toThrow("boardsPerRound must be a positive integer");
+  });
 });

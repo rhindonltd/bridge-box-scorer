@@ -158,13 +158,21 @@ export function generateUsebioXml(data: UsebioGameData): string {
         if (data.scoringType === "MP") {
           // For MP: assign matchpoints as percentage of maximum
           const maxMp = 2 * (results.length - 1);
+          // `adj` is always non-null here because isAdjustedScore() and
+          // parseAdjustedScore() share the same regex, so the `: 0` fallbacks
+          // below are unreachable defensive code.
+          /* v8 ignore next */
           const nsMp = adj ? Math.round((adj.ns / 100) * maxMp) : 0;
+          /* v8 ignore next */
           const ewMp = adj ? Math.round((adj.ew / 100) * maxMp) : 0;
           resultEl.ele("NS_MATCH_POINTS").txt(String(nsMp));
           resultEl.ele("EW_MATCH_POINTS").txt(String(ewMp));
         } else {
-          // For IMP/XIMP: AVE+ = +3, AVE = 0, AVE- = -3
+          // For IMP/XIMP: AVE+ = +3, AVE = 0, AVE- = -3. `adj` is always
+          // non-null here (see above), so the `: 0` fallbacks are unreachable.
+          /* v8 ignore next */
           const nsImps = adj ? adjustedImps(adj.ns) : 0;
+          /* v8 ignore next */
           const ewImps = adj ? adjustedImps(adj.ew) : 0;
           resultEl.ele("NS_IMPS").txt(String(nsImps));
           resultEl.ele("EW_IMPS").txt(String(ewImps));
@@ -384,6 +392,8 @@ function computeOverallRanking(data: UsebioGameData): RankEntry[] {
     for (const result of results) {
       if (!isAdjustedScore(result.outcome)) continue;
       const adj = parseAdjustedScore(result.outcome);
+      /* v8 ignore next -- unreachable: isAdjustedScore() passing guarantees
+         parseAdjustedScore() returns non-null (shared regex). */
       if (!adj) continue;
 
       if (data.scoringType === "MP") {

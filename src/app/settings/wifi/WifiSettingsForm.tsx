@@ -43,6 +43,7 @@ export function WifiSettingsForm({
   };
 
   const handleTestClick = async () => {
+    /* v8 ignore next -- defensive guard: the Test button is disabled without a selected network, so this is unreachable via the UI */
     if (!selectedSSID) return;
     if (!onTestConnection) return;
 

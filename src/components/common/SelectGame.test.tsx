@@ -81,6 +81,21 @@ describe("SelectGame", () => {
     expect(buttons).toHaveLength(2);
   });
 
+  it("falls back to the raw date string when it is unparseable", () => {
+    const games = [
+      {
+        gameId: "id-x",
+        eventName: "Game X",
+        eventDate: "not-a-date",
+        tables: 3,
+      },
+    ] as any;
+    render(
+      <SelectGame headerTitle="Title" games={games} onGameSelected={vi.fn()} />,
+    );
+    expect(screen.getByText("not-a-date")).toBeInTheDocument();
+  });
+
   it("applies button styling classes", () => {
     render(
       <SelectGame

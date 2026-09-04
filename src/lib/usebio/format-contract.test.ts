@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { formatOutcomeForUsebio, formatLeadForUsebio } from "./format-contract";
+import {
+  formatOutcomeForUsebio,
+  formatLeadForUsebio,
+  isAdjustedScore,
+  parseAdjustedScore,
+} from "./format-contract";
 
 describe("formatOutcomeForUsebio", () => {
   describe("played contracts", () => {
@@ -102,6 +107,16 @@ describe("formatOutcomeForUsebio", () => {
     });
   });
 
+  describe("adjusted score outcomes (A<ns>/<ew> format)", () => {
+    it("returns empty fields for an adjusted score", () => {
+      expect(formatOutcomeForUsebio("A60/40" as any)).toEqual({
+        contract: "",
+        declarer: "",
+        result: "",
+      });
+    });
+  });
+
   describe("director override outcomes (line 51 branch)", () => {
     it("returns empty fields for AVE (average) outcome", () => {
       expect(formatOutcomeForUsebio("AVE" as any)).toEqual({
@@ -126,6 +141,31 @@ describe("formatOutcomeForUsebio", () => {
         result: "",
       });
     });
+  });
+});
+
+describe("isAdjustedScore", () => {
+  it("returns true for a well-formed adjusted score", () => {
+    expect(isAdjustedScore("A60/40")).toBe(true);
+    expect(isAdjustedScore("A100/0")).toBe(true);
+  });
+
+  it("returns false for non-adjusted outcomes", () => {
+    expect(isAdjustedScore("3NTN=")).toBe(false);
+    expect(isAdjustedScore("PO")).toBe(false);
+    expect(isAdjustedScore("AVE")).toBe(false);
+  });
+});
+
+describe("parseAdjustedScore", () => {
+  it("parses NS and EW percentages from an adjusted score", () => {
+    expect(parseAdjustedScore("A60/40")).toEqual({ ns: 60, ew: 40 });
+    expect(parseAdjustedScore("A100/0")).toEqual({ ns: 100, ew: 0 });
+  });
+
+  it("returns null for a non-adjusted outcome", () => {
+    expect(parseAdjustedScore("3NTN=")).toBeNull();
+    expect(parseAdjustedScore("AVE")).toBeNull();
   });
 });
 

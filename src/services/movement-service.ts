@@ -76,6 +76,9 @@ export async function getMovementWithProgress(db: Db, section?: string) {
         .sort(([a], [b]) => a - b)
         .map(([roundNumber, data]) => {
           const key = `${tableNumber}-${roundNumber}`;
+          /* v8 ignore next -- boardCountMap is built from the same rows and
+             keyed identically to tableMap, so every (table,round) present here
+             always has a counts entry; the ?? fallback is defensive only. */
           const counts = boardCountMap.get(key) ?? { played: 0, total: 0 };
 
           let hasPreviousGap = false;

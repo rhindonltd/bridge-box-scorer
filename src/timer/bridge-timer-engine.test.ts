@@ -608,3 +608,371 @@ describe("BridgeTimerEngine - updateConfig live edits", () => {
     expect(engine.getState().warningSeconds).toBe(45);
   });
 });
+
+describe("BridgeTimerEngine - running-state and edge branches", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("getRemainingMs falls back to 0 for a break with no breakDurationMs", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({ phase: "break", breakDurationMs: null }),
+    );
+    // Paused, remainingMs null -> getPhaseDurationMs() -> breakDurationMs ?? 0.
+    expect(engine.getRemainingMs()).toBe(0);
+  });
+
+  it("adjustTime re-anchors a RUNNING play phase (paused-equivalent remaining)", () => {
+    const now = Date.now();
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "play",
+        isRunning: true,
+        phaseStartedAt: now - 120_000, // 300s remain of 420s
+        playDuration: 420,
+      }),
+    );
+
+    engine.adjustTime(60_000);
+
+    const state = engine.getState();
+    // Running -> remainingMs cleared, phaseStartedAt re-anchored.
+    expect(state.remainingMs).toBeNull();
+    expect(state.isRunning).toBe(true);
+    // 300s remaining + 60s = 360s.
+    expect(engine.getRemainingMs(now)).toBe(360_000);
+  });
+
+  it("adjustTime re-anchors a RUNNING move phase and grows future move duration", () => {
+    const now = Date.now();
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "move",
+        round: 2,
+        isRunning: true,
+        phaseStartedAt: now - 20_000, // 40s remain of 60s
+        moveDuration: 60,
+      }),
+    );
+
+    engine.adjustTime(30_000, true);
+
+    const state = engine.getState();
+    expect(state.moveDuration).toBe(90);
+    expect(state.remainingMs).toBeNull();
+    // 40s remaining + 30s = 70s against the new 90s duration.
+    expect(engine.getRemainingMs(now)).toBe(70_000);
+  });
+
+  it("adjustTime grows a RUNNING break's duration and re-anchors it", () => {
+    const now = Date.now();
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "break",
+        round: 2,
+        isRunning: true,
+        phaseStartedAt: now - 100_000, // 200s remain of 300s
+        breakDurationMs: 300_000,
+      }),
+    );
+
+    engine.adjustTime(60_000);
+
+    const state = engine.getState();
+    expect(state.breakDurationMs).toBe(360_000);
+    expect(state.remainingMs).toBeNull();
+    // 200s remaining + 60s = 260s.
+    expect(engine.getRemainingMs(now)).toBe(260_000);
+  });
+
+  it("previousPhase from finished preserves the running state (auto-start)", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "finished",
+        round: 5,
+        totalRounds: 5,
+        isRunning: true,
+      }),
+    );
+
+    engine.previousPhase();
+
+    const state = engine.getState();
+    expect(state.phase).toBe("play");
+    expect(state.round).toBe(5);
+    expect(state.isRunning).toBe(true);
+  });
+
+  it("previousPhase from a break steps back to the previous round's play (auto-start)", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "break",
+        round: 3,
+        breakDurationMs: 600_000,
+        remainingMs: 600_000,
+        isRunning: true,
+      }),
+    );
+
+    engine.previousPhase();
+
+    const state = engine.getState();
+    expect(state.phase).toBe("play");
+    expect(state.round).toBe(2);
+    expect(state.isRunning).toBe(true);
+  });
+
+  it("previousPhase from a move at round 1 clamps the round to 1", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({ phase: "move", round: 1 }),
+    );
+
+    engine.previousPhase();
+
+    // Math.max(1, round - 1) keeps it at round 1.
+    expect(engine.getState().round).toBe(1);
+    expect(engine.getState().phase).toBe("play");
+  });
+
+  it("previousPhase from play into a preceding break preserves running state", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "play",
+        round: 3,
+        isRunning: true,
+        phaseStartedAt: Date.now(),
+        breaks: [durationBreak(2, 8)],
+      }),
+    );
+
+    engine.previousPhase();
+
+    const state = engine.getState();
+    expect(state.phase).toBe("break");
+    expect(state.breakDurationMs).toBe(480_000);
+    expect(state.isRunning).toBe(true);
+  });
+
+  it("updateConfig recomputes a paused MOVE phase against the new move duration", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "move",
+        round: 2,
+        remainingMs: 30_000, // 30s remain of 60s -> 30s elapsed
+        moveDuration: 60,
+      }),
+    );
+
+    // New move duration 90s; elapsed 30s -> remaining 60s.
+    engine.updateConfig(3, 5, 420, 90);
+
+    expect(engine.getState().remainingMs).toBe(60_000);
+    expect(engine.getState().moveDuration).toBe(90);
+  });
+
+  it("updateConfig recomputes a RUNNING move phase, re-anchoring phaseStartedAt", () => {
+    const now = Date.now();
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "move",
+        round: 2,
+        isRunning: true,
+        phaseStartedAt: now - 20_000, // 20s elapsed
+        moveDuration: 60,
+      }),
+    );
+
+    // New move duration 90s; elapsed 20s -> remaining 70s.
+    engine.updateConfig(3, 5, 420, 90);
+
+    expect(engine.getRemainingMs(now)).toBe(70_000);
+    expect(engine.getState().moveDuration).toBe(90);
+  });
+
+  it("updateConfig keeps existing durations when play/move durations are null", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "play",
+        remainingMs: 300_000,
+        playDuration: 420,
+        moveDuration: 60,
+      }),
+    );
+
+    // Pass null durations -> `?? this.state.*Duration` fallbacks and the
+    // `!= null` guards both take their false branch (durations unchanged).
+    engine.updateConfig(
+      3,
+      5,
+      null as unknown as number,
+      null as unknown as number,
+    );
+
+    const state = engine.getState();
+    expect(state.playDuration).toBe(420);
+    expect(state.moveDuration).toBe(60);
+  });
+
+  it("updateConfig on a break phase leaves the frozen break duration untouched", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "break",
+        round: 2,
+        breakDurationMs: 300_000,
+        remainingMs: 300_000,
+      }),
+    );
+
+    engine.updateConfig(3, 5, 480, 90);
+
+    // Break duration is not recomputed by updateConfig.
+    expect(engine.getState().breakDurationMs).toBe(300_000);
+    expect(engine.getState().remainingMs).toBe(300_000);
+    expect(engine.getState().playDuration).toBe(480);
+  });
+});
+
+describe("BridgeTimerEngine - restartPhase / nextPhase edge branches", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("restartPhase does nothing when finished", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({ phase: "finished", round: 5, totalRounds: 5 }),
+    );
+    engine.restartPhase();
+    expect(engine.getState().phase).toBe("finished");
+  });
+
+  it("restartPhase recomputes a break phase's duration from its scheduled break", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "break",
+        round: 2, // break follows round 1
+        breakDurationMs: 100_000,
+        remainingMs: 100_000,
+        breaks: [durationBreak(1, 10)],
+      }),
+    );
+
+    engine.restartPhase();
+
+    const state = engine.getState();
+    // Recomputed to the full 10-minute break.
+    expect(state.breakDurationMs).toBe(600_000);
+    expect(state.remainingMs).toBe(600_000);
+  });
+
+  it("restartPhase falls back to 0 for a break phase with no scheduled break", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "break",
+        round: 2,
+        breakDurationMs: 100_000,
+        remainingMs: 100_000,
+        breaks: [], // no break after round 1 -> gap is a move -> duration 0
+      }),
+    );
+
+    engine.restartPhase();
+
+    const state = engine.getState();
+    expect(state.breakDurationMs).toBe(0);
+    expect(state.remainingMs).toBe(0);
+  });
+
+  it("restartPhase restarts a MOVE phase to its full move duration", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({ phase: "move", round: 2, remainingMs: 10_000 }),
+    );
+
+    engine.restartPhase();
+
+    expect(engine.getState().remainingMs).toBe(60_000);
+  });
+
+  it("nextPhase play->move auto-starts when running (no break scheduled)", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "play",
+        round: 1,
+        isRunning: true,
+        phaseStartedAt: Date.now(),
+        breaks: [],
+      }),
+    );
+
+    engine.nextPhase();
+
+    const state = engine.getState();
+    expect(state.phase).toBe("move");
+    expect(state.round).toBe(2);
+    expect(state.isRunning).toBe(true);
+  });
+
+  it("adjustTime on a RUNNING break with no breakDurationMs treats it as 0", () => {
+    const now = Date.now();
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "break",
+        round: 2,
+        isRunning: true,
+        phaseStartedAt: now,
+        breakDurationMs: null,
+        remainingMs: null,
+      }),
+    );
+
+    engine.adjustTime(60_000);
+
+    // (breakDurationMs ?? 0) + 60_000 = 60_000.
+    expect(engine.getState().breakDurationMs).toBe(60_000);
+  });
+
+  it("previousPhase from the first play while paused restarts without auto-starting", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({ phase: "play", round: 1, isRunning: false }),
+    );
+
+    engine.previousPhase();
+
+    const state = engine.getState();
+    expect(state.round).toBe(1);
+    expect(state.phase).toBe("play");
+    expect(state.isRunning).toBe(false);
+  });
+
+  it("updateConfig on a MOVE phase keeps the move duration when null is passed", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "move",
+        round: 2,
+        remainingMs: 30_000,
+        moveDuration: 60,
+      }),
+    );
+
+    // moveDuration null -> newDuration uses `?? this.state.moveDuration` (60).
+    engine.updateConfig(
+      3,
+      5,
+      420,
+      null as unknown as number,
+    );
+
+    // Elapsed 30s against unchanged 60s duration -> remaining stays 30s.
+    expect(engine.getState().remainingMs).toBe(30_000);
+    expect(engine.getState().moveDuration).toBe(60);
+  });
+});

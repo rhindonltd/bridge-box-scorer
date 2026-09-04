@@ -43,7 +43,8 @@ export function useTimerDerived(state: TimerState | null, now: number) {
           ? playMs
           : state.phase === "move"
             ? moveMs
-            : (state.remainingMs ?? 0));
+            : /* v8 ignore next -- unreachable: the outer `state.remainingMs ??` only reaches here when remainingMs is nullish, so this inner `?? 0` always uses 0 */
+              (state.remainingMs ?? 0));
     } else {
       const elapsed = clock - state.phaseStartedAt!;
       const phaseDurationMs =

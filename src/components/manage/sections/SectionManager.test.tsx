@@ -134,6 +134,27 @@ describe("SectionManager", () => {
     expect(screen.queryByText("+")).not.toBeInTheDocument();
   });
 
+  it("summarises a non-Mitchell selected movement generically", () => {
+    const props = noopProps();
+    const withSpec: ClientSection[] = [
+      {
+        section: "A",
+        label: "A",
+        tables: 8,
+        ordinal: 0,
+        selectedMovement: {
+          source: "SPEC",
+          specId: 42,
+          boardsPerRound: 3,
+        },
+      },
+      { section: "B", label: "B", tables: 6, ordinal: 1, selectedMovement: null },
+    ];
+    render(<SectionManager sections={withSpec} {...props} />);
+
+    expect(screen.getByText("Movement selected")).toBeInTheDocument();
+  });
+
   it("is read-only: no add/delete, shows static values", () => {
     const props = noopProps();
     render(<SectionManager sections={sections()} readOnly {...props} />);

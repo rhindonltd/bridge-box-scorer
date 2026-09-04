@@ -44,6 +44,7 @@ export function ShowTablesPage({ tabs }: Props) {
   const [starting, setStarting] = useState(false);
 
   async function handleStartGame() {
+    /* v8 ignore next -- `starting` re-entrancy guard: the Start button is disabled while starting, so this operand is unreachable via the UI */
     if (!canStart || starting) return;
     setStarting(true);
     try {

@@ -127,4 +127,61 @@ describe("useBoardFlow", () => {
     act(() => result.current.handleBack());
     expect(result.current.step).toBe(1);
   });
+
+  it("handleBack from the suit step (2) returns to the level step (1)", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: true }),
+    );
+
+    // onLevelSelected lands on the suit step (2).
+    act(() => result.current.onLevelSelected(3));
+    expect(result.current.step).toBe(2);
+
+    act(() => result.current.handleBack());
+    expect(result.current.step).toBe(1);
+  });
+
+  it("handleBack steps from the declarer step (3) back to the suit step (2)", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: true }),
+    );
+
+    act(() => result.current.onLevelSelected(3));
+    act(() => result.current.onSuitSelected("NT"));
+    // onSuitSelected lands on the declarer step (3).
+    expect(result.current.step).toBe(3);
+
+    act(() => result.current.handleBack()); // 3 -> 2
+    expect(result.current.step).toBe(2);
+  });
+
+  it("handleBack steps from the lead step (4) back to the declarer step (3)", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: true }),
+    );
+
+    act(() => result.current.onLevelSelected(3));
+    act(() => result.current.onSuitSelected("NT"));
+    act(() => result.current.onDeclarerSelected("N", ""));
+    // leadCardRequired -> lead step (4).
+    expect(result.current.step).toBe(4);
+
+    act(() => result.current.handleBack()); // 4 -> 3
+    expect(result.current.step).toBe(3);
+  });
+
+  it("handleBack from result entry (5) returns to declarer (3) when no lead is required", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: false }),
+    );
+
+    act(() => result.current.onLevelSelected(4));
+    act(() => result.current.onSuitSelected("S"));
+    act(() => result.current.onDeclarerSelected("S", ""));
+    expect(result.current.step).toBe(5);
+
+    // No lead step -> back from result entry goes to declarer (3).
+    act(() => result.current.handleBack());
+    expect(result.current.step).toBe(3);
+  });
 });

@@ -51,6 +51,21 @@ describe("ScoreTableView", () => {
     expect(screen.getByText("420")).toBeInTheDocument();
   });
 
+  it("highlights the matching row when highlightAssignmentId is provided", () => {
+    render(
+      <ScoreTableView
+        table={table()}
+        highlightAssignmentId="A1"
+        rowTestId="row"
+      />,
+    );
+
+    const rows = screen.getAllByTestId("row");
+    // Row 0 has highlightIds ["A1"] -> highlighted; row 1 has ["A2"] -> not.
+    expect(rows[0]).toHaveClass("bg-blue-100", "font-semibold");
+    expect(rows[1]).not.toHaveClass("bg-blue-100");
+  });
+
   it("renders contract cells via BoardResult (suit symbol for suited contracts)", () => {
     const { container } = render(<ScoreTableView table={table()} />);
     expect(container.textContent).toContain("♠"); // 4S

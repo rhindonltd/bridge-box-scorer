@@ -64,4 +64,32 @@ describe("CreateGamePage", () => {
       expect(mockReplace).toHaveBeenCalledWith("/game/new-game/create"),
     );
   });
+
+  it("toggles the lead-card requirement and submits it", async () => {
+    render(<CreateGamePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "No" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ leadCardRequired: false }),
+    );
+  });
+
+  it("shows an error and re-enables the button when creation fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mockCreateGame.mockRejectedValue(new Error("boom"));
+
+    render(<CreateGamePage />);
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Failed to create game. Please try again.");
+    expect(mockReplace).not.toHaveBeenCalled();
+    // Button back to enabled/default label after failure.
+    expect(
+      screen.getByRole("button", { name: "Create Game" }),
+    ).not.toBeDisabled();
+  });
 });
