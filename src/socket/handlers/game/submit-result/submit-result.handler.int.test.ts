@@ -125,18 +125,17 @@ describe("registerSubmitResultHandler (integration)", () => {
       update: mockUpdate,
       select: mockSelect,
     } as any);
-    // Restore the stateful default for findBoardSubmissions.
-    vi.mocked(findBoardSubmissions).mockImplementation(
-      async (
-        gameId: string,
-        section: string,
-        tableNumber: number,
-        roundNumber: number,
-      ) =>
-        submissionStore.get(
-          storeKey(gameId, section, tableNumber, roundNumber),
-        ) ?? [],
-    );
+    // Restore the stateful default for findBoardSubmissions. The handler only
+    // reads `side`/`boardNumber`/`result` off each row, so the minimal
+    // FakeSubmission shape is sufficient; cast to the real signature for TS.
+    vi.mocked(findBoardSubmissions).mockImplementation((async (
+      gameId: string,
+      section: string,
+      tableNumber: number,
+      roundNumber: number,
+    ) =>
+      submissionStore.get(storeKey(gameId, section, tableNumber, roundNumber)) ??
+      []) as unknown as typeof findBoardSubmissions);
   });
 
   afterEach(async () => {

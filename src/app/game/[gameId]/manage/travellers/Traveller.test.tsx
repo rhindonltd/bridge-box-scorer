@@ -29,16 +29,18 @@ function pairInstance(overrides: Partial<BoardInstance> = {}): BoardInstance {
   return {
     roundNumber: 1,
     tableNumber: 2,
+    boardNumber: 5,
     participants: {
       type: "PAIRS",
-      ns: 3,
-      ew: 4,
+      ns: "3",
+      ew: "4",
       nsNames: "Alice & Bob",
       ewNames: "Carol & Dave",
     },
-    currentResult: { level: 3, suit: "NT" },
-    ...(overrides as object),
-  } as BoardInstance;
+    currentResult: "3NTN=",
+    status: "CONFIRMED",
+    ...overrides,
+  };
 }
 
 describe("Traveller", () => {
@@ -113,13 +115,13 @@ describe("Traveller", () => {
     const instance = pairInstance({
       participants: {
         type: "PAIRS",
-        ns: 1,
-        ew: 2,
+        ns: "1",
+        ew: "2",
         nsNames: undefined,
         ewNames: undefined,
       },
       currentResult: null,
-    } as Partial<BoardInstance>);
+    });
 
     render(
       <Traveller
