@@ -11,17 +11,12 @@ export const swrKeys = {
     return `/api/games/${gameId}/assignment/${participantId}`;
   },
 
-  leaderboard: (gameId: string) => `/api/games/${gameId}/leaderboard`,
-
   startCheck: (gameId: string) => `/api/games/${gameId}/start-check`,
 
   sections: (gameId: string) => `/api/games/${gameId}/sections`,
 
   schedule: (gameId: string, seat: string) =>
     `/api/games/${gameId}/schedule/${seat}`,
-
-  boardInstances: (gameId: string, boardNumber: number) =>
-    `/api/games/${gameId}/boards/${boardNumber}`,
 
   boards: (gameId: string) => `/api/games/${gameId}/boards`,
 

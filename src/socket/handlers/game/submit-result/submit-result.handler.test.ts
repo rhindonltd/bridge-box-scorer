@@ -34,6 +34,10 @@ vi.mock("@/db/games/tables/boards", () => ({
   },
 }));
 
+vi.mock("@/socket/handlers/results/broadcast-results", () => ({
+  broadcastResultsChanged: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/db/games/actions/create-submission", () => ({
   createBoardSubmission: vi.fn(),
 }));

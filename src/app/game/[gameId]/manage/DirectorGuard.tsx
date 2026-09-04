@@ -20,7 +20,7 @@ export function DirectorGuard({ gameId, children }: Props) {
 
   useEffect(() => {
     if (!authorized) {
-      router.replace("/manage/select-game");
+      router.replace("/manage");
     }
   }, [authorized, router]);
 

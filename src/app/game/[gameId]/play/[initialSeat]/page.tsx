@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import useSWR from "swr";
 import { useParams } from "next/navigation";
-import { fetcher } from "@/lib/fetcher";
-import { swrKeys } from "@/swr/swr-keys";
 import { useRequiredGame } from "@/context/GameContext";
+import {
+  TravellerProvider,
+  useTravellerContext,
+} from "@/context/TravellerContext";
 import { ContractWizard } from "@/app/game/[gameId]/play/[initialSeat]/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { parseContract } from "@/model/contract";
@@ -21,7 +22,6 @@ import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
-import { BoardInstance } from "@/model/participants";
 
 export default function PlayPage() {
   const params = useParams<{ initialSeat: string }>();
@@ -186,17 +186,47 @@ function BoardResultsLoader({
 }) {
   const [viewingBoard, setViewingBoard] = useState(boardNumber);
 
-  const { data } = useSWR<{ instances: BoardInstance[] }>(
-    swrKeys.boardInstances(gameId, viewingBoard),
-    fetcher,
+  // The traveller for the board being viewed comes live from the traveller
+  // context; switching boards re-keys the provider so it requests/joins the
+  // new board's room.
+  return (
+    <TravellerProvider boardNumber={viewingBoard}>
+      <BoardResultsContent
+        gameId={gameId}
+        scoringType={scoringType}
+        viewingBoard={viewingBoard}
+        playedBoards={playedBoards}
+        lastBoardOfRound={lastBoardOfRound}
+        onBoardSelected={setViewingBoard}
+        onNext={onNext}
+      />
+    </TravellerProvider>
   );
+}
+
+function BoardResultsContent({
+  gameId,
+  scoringType,
+  viewingBoard,
+  playedBoards,
+  lastBoardOfRound,
+  onBoardSelected,
+  onNext,
+}: {
+  gameId: string;
+  scoringType: ScoringType;
+  viewingBoard: number;
+  playedBoards: number[];
+  lastBoardOfRound: boolean;
+  onBoardSelected: (board: number) => void;
+  onNext: () => void;
+}) {
+  const { instances } = useTravellerContext();
 
   const scoredBoard = useMemo<ScoredBoard | null>(() => {
-    if (!data?.instances) return null;
-
     const mode = "PAIR";
 
-    const lines = data.instances
+    const lines = instances
       .filter((i) => i.currentResult != null)
       .map((i) => ({
         nsId: i.participants.ns,
@@ -215,7 +245,7 @@ function BoardResultsLoader({
     };
 
     return scoreBoard(traveller, scoringType);
-  }, [data, gameId, scoringType, viewingBoard]);
+  }, [instances, gameId, scoringType, viewingBoard]);
 
   if (!scoredBoard) {
     return (
@@ -231,7 +261,7 @@ function BoardResultsLoader({
       playedBoards={playedBoards}
       lastBoardOfRound={lastBoardOfRound}
       scoredBoard={scoredBoard}
-      onBoardSelected={setViewingBoard}
+      onBoardSelected={onBoardSelected}
       onNext={onNext}
     />
   );

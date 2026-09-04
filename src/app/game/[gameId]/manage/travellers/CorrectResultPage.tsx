@@ -8,8 +8,14 @@ import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { getDirectorToken } from "@/lib/director-token";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
+import { emitWithAck } from "@/lib/socket";
+import { SocketEvents } from "@/socket/socket-events";
 import { SelectBoardPage } from "@/app/game/[gameId]/manage/travellers/SelectBoardPage";
 import { Traveller } from "./Traveller";
+import {
+  TravellerProvider,
+  useTravellerContext,
+} from "@/context/TravellerContext";
 import {
   DirectorContractWizard,
   DirectorWizardResult,
@@ -18,6 +24,34 @@ import { BoardInstance } from "@/model/participants";
 
 interface CorrectResultPageProps {
   onResultCorrected: () => void;
+}
+
+/**
+ * The traveller view for the correction wizard. Reads the board's instances
+ * live from the shared traveller context (same data path as the display /
+ * play-page traveller), so a director's own override — or a concurrent result —
+ * updates the list without a refetch.
+ */
+function CorrectResultTraveller({
+  boardNumber,
+  onLineSelected,
+  onBack,
+}: {
+  boardNumber: number;
+  onLineSelected: (instance: BoardInstance) => void;
+  onBack: () => void;
+}) {
+  const { instances, isLoading } = useTravellerContext();
+
+  return (
+    <Traveller
+      boardNumber={boardNumber}
+      instances={instances}
+      isLoading={isLoading}
+      onLineSelected={onLineSelected}
+      onBack={onBack}
+    />
+  );
 }
 
 export function CorrectResultPage({
@@ -41,7 +75,8 @@ export function CorrectResultPage({
   });
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch the board list only while on the selectBoard step.
+  // The board list is a property of the movement (1..highest board in play),
+  // effectively static once the movement is set, so it stays on HTTP/SWR.
   const { data: boardsData, isLoading: boardsLoading } = useSWR<{
     boards: number[];
   }>(
@@ -49,17 +84,6 @@ export function CorrectResultPage({
     fetcher,
   );
   const boards = boardsData?.boards ?? [];
-
-  // Fetch board instances only while viewing a traveller.
-  const { data: instancesData, isLoading: instancesLoading } = useSWR<{
-    instances: BoardInstance[];
-  }>(
-    wizardStep.step === "viewTraveller"
-      ? swrKeys.boardInstances(game.gameId, wizardStep.boardNumber)
-      : null,
-    fetcher,
-  );
-  const instances = instancesData?.instances ?? [];
 
   function handleBoardSelected(boardNumber: number) {
     setWizardStep({ step: "viewTraveller", boardNumber });
@@ -126,30 +150,20 @@ export function CorrectResultPage({
     setError(null);
 
     try {
-      const res = await fetch(
-        `/api/games/${game.gameId}/boards/${boardNumber}/override`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roundNumber,
-            tableNumber,
-            result,
-            directorToken: getDirectorToken(game.gameId),
-          }),
-        },
-      );
-
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Failed to save override");
-        setWizardStep({ step: "selectBoard" });
-        return;
-      }
+      await emitWithAck(SocketEvents.OVERRIDE_RESULT_TRAVELLER, {
+        gameId: game.gameId,
+        directorToken: getDirectorToken(game.gameId),
+        boardNumber,
+        roundNumber,
+        tableNumber,
+        result,
+      });
 
       onResultCorrected();
-    } catch {
-      setError("Network error. Please try again.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to save override",
+      );
       setWizardStep({ step: "selectBoard" });
     }
   }
@@ -173,13 +187,13 @@ export function CorrectResultPage({
 
     case "viewTraveller":
       return (
-        <Traveller
-          boardNumber={wizardStep.boardNumber}
-          instances={instances}
-          isLoading={instancesLoading}
-          onLineSelected={handleLineSelected}
-          onBack={() => setWizardStep({ step: "selectBoard" })}
-        />
+        <TravellerProvider boardNumber={wizardStep.boardNumber}>
+          <CorrectResultTraveller
+            boardNumber={wizardStep.boardNumber}
+            onLineSelected={handleLineSelected}
+            onBack={() => setWizardStep({ step: "selectBoard" })}
+          />
+        </TravellerProvider>
       );
 
     case "enterContract":

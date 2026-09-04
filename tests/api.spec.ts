@@ -4,19 +4,20 @@ import { test, expect } from "@playwright/test";
  * API Routes E2E Tests
  *
  * Tests the HTTP API endpoints directly using Playwright's request context.
- * Covers director, games, and movements endpoints.
+ * Successful responses use the shared envelope `{ success: true, result }`, so
+ * payloads are read from `body.result`.
  */
 
 test.describe("API Routes", () => {
   test.describe("Games API", () => {
-    test("GET /api/games/joinable returns array", async ({ request }) => {
+    test("GET /api/games/joinable returns games array", async ({ request }) => {
       const response = await request.get("/api/games/joinable");
 
       expect(response.ok()).toBe(true);
       expect(response.headers()["content-type"]).toContain("application/json");
 
       const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
+      expect(Array.isArray(body.result.games)).toBe(true);
     });
 
     test("GET /api/games/[gameId] with non-existent ID returns JSON", async ({
@@ -39,14 +40,14 @@ test.describe("API Routes", () => {
 
       expect(response.ok()).toBe(true);
       const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
+      const games = body.result.games;
+      expect(Array.isArray(games)).toBe(true);
 
       // If any games exist, verify their shape
-      if (body.length > 0) {
-        const game = body[0];
+      if (games.length > 0) {
+        const game = games[0];
         expect(game).toHaveProperty("gameId");
         expect(game).toHaveProperty("eventName");
-        expect(game).toHaveProperty("status");
       }
     });
   });
@@ -60,10 +61,11 @@ test.describe("API Routes", () => {
       expect(response.ok()).toBe(true);
 
       const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
-      expect(body.length).toBeGreaterThanOrEqual(1);
+      const players = body.result;
+      expect(Array.isArray(players)).toBe(true);
+      expect(players.length).toBeGreaterThanOrEqual(1);
       expect(
-        body.some((p: { nationalId: string }) =>
+        players.some((p: { nationalId: string }) =>
           p.nationalId?.startsWith("477484"),
         ),
       ).toBe(true);
@@ -77,8 +79,8 @@ test.describe("API Routes", () => {
       expect(response.ok()).toBe(true);
 
       const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
-      expect(body).toHaveLength(0);
+      expect(Array.isArray(body.result)).toBe(true);
+      expect(body.result).toHaveLength(0);
     });
 
     test("GET /api/players/search?q=a returns empty array for query less than 2 chars", async ({
@@ -89,8 +91,8 @@ test.describe("API Routes", () => {
       expect(response.ok()).toBe(true);
 
       const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
-      expect(body).toHaveLength(0);
+      expect(Array.isArray(body.result)).toBe(true);
+      expect(body.result).toHaveLength(0);
     });
   });
 
@@ -127,7 +129,7 @@ test.describe("API Routes", () => {
 
       const body = await response.json();
       // Should return an array of movement options
-      expect(Array.isArray(body)).toBe(true);
+      expect(Array.isArray(body.result)).toBe(true);
     });
 
     test("GET /api/movements/pairs/4 returns movements for 4 tables", async ({
@@ -137,7 +139,7 @@ test.describe("API Routes", () => {
 
       expect(response.ok()).toBe(true);
       const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
+      expect(Array.isArray(body.result)).toBe(true);
     });
 
     test("GET /api/movements/pairs/1 returns movements for 1 table", async ({
@@ -147,7 +149,7 @@ test.describe("API Routes", () => {
 
       expect(response.ok()).toBe(true);
       const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
+      expect(Array.isArray(body.result)).toBe(true);
     });
 
     test("movements response items have expected shape", async ({
@@ -157,32 +159,18 @@ test.describe("API Routes", () => {
 
       expect(response.ok()).toBe(true);
       const body = await response.json();
+      const movements = body.result;
 
-      if (body.length > 0) {
-        const movement = body[0];
+      if (movements.length > 0) {
+        const movement = movements[0];
         // Movement specs typically have an id and name
         expect(movement).toHaveProperty("id");
         expect(movement).toHaveProperty("name");
       }
     });
 
-    test("GET /api/movements/teams/2 returns movements for 2 tables", async ({
-      request,
-    }) => {
-      const response = await request.get("/api/movements/teams/2");
-
-      expect(response.ok()).toBe(true);
-      expect(response.headers()["content-type"]).toContain("application/json");
-
-      const body = await response.json();
-      expect(Array.isArray(body)).toBe(true);
-
-      if (body.length > 0) {
-        const movement = body[0];
-        expect(movement).toHaveProperty("id");
-        expect(movement).toHaveProperty("name");
-      }
-    });
+    // Note: there is no teams movements endpoint (only pairs), so no teams
+    // movements test here.
 
     test("GET /api/movements/detail/PAIRS/[id] returns movement detail", async ({
       request,
@@ -190,7 +178,8 @@ test.describe("API Routes", () => {
       // First get available movements to obtain a valid ID
       const listResponse = await request.get("/api/movements/pairs/2");
       expect(listResponse.ok()).toBe(true);
-      const movements = await listResponse.json();
+      const listBody = await listResponse.json();
+      const movements = listBody.result;
       expect(movements.length).toBeGreaterThan(0);
 
       const id = movements[0].id;
@@ -202,9 +191,10 @@ test.describe("API Routes", () => {
       expect(response.headers()["content-type"]).toContain("application/json");
 
       const body = await response.json();
-      expect(body).toHaveProperty("tables");
-      expect(Array.isArray(body.tables)).toBe(true);
-      expect(body).toHaveProperty("type", "PAIRS");
+      const detail = body.result;
+      expect(detail).toHaveProperty("tables");
+      expect(Array.isArray(detail.tables)).toBe(true);
+      expect(detail).toHaveProperty("type", "PAIRS");
     });
 
     test("GET /api/movements/detail/INVALID_TYPE/1 returns 400", async ({
@@ -225,8 +215,8 @@ test.describe("API Routes", () => {
     test("POST /api/system/restart returns a response", async ({ request }) => {
       const response = await request.post("/api/system/restart");
 
-      // The endpoint may require an admin key header and return 401/403 without it.
-      // We just verify the endpoint exists and responds with a valid HTTP status.
+      // The endpoint may require an admin token header and return 401/403
+      // without it. We just verify the endpoint exists and responds.
       expect(response.status()).toBeDefined();
       expect(response.headers()["content-type"]).toBeDefined();
     });

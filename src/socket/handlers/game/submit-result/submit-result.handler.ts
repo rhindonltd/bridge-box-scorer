@@ -10,6 +10,7 @@ import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
 import { BoardSubmission } from "@/db/games/tables/submissions";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
+import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
 
 export function registerSubmitResultHandler(socket: Socket, io: Server) {
   socket.on(
@@ -138,6 +139,10 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             tableNumber,
             boardNumber: confirmedBoardNumber,
           });
+
+          // Push recomputed leaderboard / traveller snapshots to any clients
+          // currently viewing them (occupancy-gated inside the broadcaster).
+          await broadcastResultsChanged(io, gameId, confirmedBoardNumber);
         } else {
           // Mismatch — keep pending, notify both sides
           io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_MISMATCH, {

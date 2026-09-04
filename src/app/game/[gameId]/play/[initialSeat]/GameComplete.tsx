@@ -1,24 +1,16 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import useSWR from "swr";
 import { Leaderboard } from "@/components/leaderboard/Leaderboard";
-import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { fetcher } from "@/lib/fetcher";
-import { swrKeys } from "@/swr/swr-keys";
 import { useAssignment } from "@/context/AssignmentContext";
+import {
+  LeaderboardProvider,
+  useLeaderboardContext,
+} from "@/context/LeaderboardContext";
 
-export function GameComplete() {
-  const params = useParams<{ gameId: string }>();
-  const gameId = params.gameId;
+function GameCompleteContent() {
   const { assignment } = useAssignment();
-
-  const { data, isLoading } = useSWR<{
-    leaderboard: OverallScoreAndParticipant;
-  }>(gameId ? swrKeys.leaderboard(gameId) : null, fetcher);
-
-  const leaderboardData = data?.leaderboard ?? null;
+  const { leaderboard, isLoading } = useLeaderboardContext();
 
   if (isLoading) {
     return (
@@ -31,9 +23,9 @@ export function GameComplete() {
   return (
     <GamePageLayout headerTitle="Game Complete">
       <div className="flex-1 min-h-0">
-        {leaderboardData ? (
+        {leaderboard ? (
           <Leaderboard
-            overallScoreAndParticipant={leaderboardData}
+            overallScoreAndParticipant={leaderboard}
             highlightAssignmentId={assignment?.id}
           />
         ) : (
@@ -48,5 +40,13 @@ export function GameComplete() {
         )}
       </div>
     </GamePageLayout>
+  );
+}
+
+export function GameComplete() {
+  return (
+    <LeaderboardProvider>
+      <GameCompleteContent />
+    </LeaderboardProvider>
   );
 }

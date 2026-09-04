@@ -19,9 +19,13 @@ vi.mock("@/components/leaderboard/Leaderboard", () => ({
   },
 }));
 
-const mockUseSWR = vi.fn();
-vi.mock("swr", () => ({
-  default: (key: string) => mockUseSWR(key),
+// The display consumes the leaderboard context; the provider is a passthrough
+// and the hook returns the mocked snapshot.
+const mockContext = vi.fn();
+vi.mock("@/context/LeaderboardContext", () => ({
+  LeaderboardProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
+  useLeaderboardContext: () => mockContext(),
 }));
 
 import { DisplayLeaderboardPage } from "./DisplayLeaderboardPage";
@@ -44,8 +48,9 @@ describe("DisplayLeaderboardPage", () => {
   });
 
   it("shows only the combined leaderboard when there is a single section", () => {
-    mockUseSWR.mockReturnValue({
-      data: { leaderboard: combined(), sections: [sectionLb("A")] },
+    mockContext.mockReturnValue({
+      leaderboard: combined(),
+      sections: [sectionLb("A")],
       isLoading: false,
     });
 
@@ -59,11 +64,9 @@ describe("DisplayLeaderboardPage", () => {
   });
 
   it("offers combined + per-section tabs when multiple sections exist", () => {
-    mockUseSWR.mockReturnValue({
-      data: {
-        leaderboard: combined(),
-        sections: [sectionLb("A"), sectionLb("B")],
-      },
+    mockContext.mockReturnValue({
+      leaderboard: combined(),
+      sections: [sectionLb("A"), sectionLb("B")],
       isLoading: false,
     });
 
@@ -79,11 +82,9 @@ describe("DisplayLeaderboardPage", () => {
   });
 
   it("switches to a section's leaderboard when its tab is clicked", () => {
-    mockUseSWR.mockReturnValue({
-      data: {
-        leaderboard: combined(),
-        sections: [sectionLb("A"), sectionLb("B")],
-      },
+    mockContext.mockReturnValue({
+      leaderboard: combined(),
+      sections: [sectionLb("A"), sectionLb("B")],
       isLoading: false,
     });
 
@@ -97,8 +98,9 @@ describe("DisplayLeaderboardPage", () => {
   });
 
   it("shows an empty state when there is no leaderboard yet", () => {
-    mockUseSWR.mockReturnValue({
-      data: { leaderboard: null, sections: [] },
+    mockContext.mockReturnValue({
+      leaderboard: null,
+      sections: [],
       isLoading: false,
     });
 
