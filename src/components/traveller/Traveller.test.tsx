@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 const mockPlugin = { id: "MP", score: vi.fn(), views: [] };
-const mockGetPerBoardPlugin = vi.fn(() => mockPlugin);
+const mockGetPerBoardPlugin = vi.fn((_pluginId: string) => mockPlugin);
 vi.mock("@/scoring/plugins/registry", () => ({
-  getPerBoardPlugin: (...args: unknown[]) => mockGetPerBoardPlugin(...args),
+  getPerBoardPlugin: (pluginId: string) => mockGetPerBoardPlugin(pluginId),
 }));
 
 // Stub the presentational child so we assert only the Traveller's wiring.

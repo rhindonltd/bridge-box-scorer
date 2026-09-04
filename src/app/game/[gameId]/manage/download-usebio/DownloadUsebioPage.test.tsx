@@ -43,7 +43,7 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
 import { DownloadUsebioPage } from "./DownloadUsebioPage";
 
 describe("DownloadUsebioPage", () => {
-  let clickSpy: ReturnType<typeof vi.fn>;
+  let clickSpy: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,7 +56,7 @@ describe("DownloadUsebioPage", () => {
     });
 
     // Spy on anchor click so the jsdom navigation doesn't error.
-    clickSpy = vi.fn();
+    clickSpy = vi.fn<() => void>();
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(clickSpy);
   });
 
