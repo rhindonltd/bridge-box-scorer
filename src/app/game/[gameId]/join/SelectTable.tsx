@@ -66,6 +66,7 @@ export default function SelectTable({
                         return (
                           <button
                             key={direction}
+                            data-testid={`seat-${seatFor(s.section, table, direction)}`}
                             onClick={() =>
                               onSeatSelected(seatFor(s.section, table, direction))
                             }

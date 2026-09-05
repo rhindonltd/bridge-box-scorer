@@ -1,6 +1,6 @@
 "use client";
 
-import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { PageLayout } from "@/components/layout/PageLayout";
 
 interface ClaimDirectorCodeViewProps {
   gameName: string;
@@ -22,7 +22,7 @@ export function ClaimDirectorCodeView({
   onCancel,
 }: ClaimDirectorCodeViewProps) {
   return (
-    <GamePageLayout
+    <PageLayout
       headerTitle="Claim Director Code"
       centerContent={true}
       actions={
@@ -86,6 +86,6 @@ export function ClaimDirectorCodeView({
           )}
         </form>
       </div>
-    </GamePageLayout>
+    </PageLayout>
   );
 }

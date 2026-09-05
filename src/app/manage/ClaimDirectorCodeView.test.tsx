@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-vi.mock("@/components/layout/GamePageLayout", () => ({
-  GamePageLayout: ({
+vi.mock("@/components/layout/PageLayout", () => ({
+  PageLayout: ({
     actions,
     children,
   }: {

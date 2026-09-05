@@ -73,7 +73,10 @@ export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
           <>
             {/* Code display */}
             <div className="bg-gray-100 border-2 border-gray-300 rounded-2xl px-8 py-6 mb-4">
-              <div className="text-4xl font-mono font-bold tracking-[0.3em] text-center text-gray-900">
+              <div
+                data-testid="share-code"
+                className="text-4xl font-mono font-bold tracking-[0.3em] text-center text-gray-900"
+              >
                 {code}
               </div>
             </div>

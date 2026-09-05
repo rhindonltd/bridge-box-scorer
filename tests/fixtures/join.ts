@@ -87,3 +87,55 @@ export async function seatTwoTableField(
   await seatPair(page, gameId, 1, "NS", jacquelineCollier, davidCollier);
   await seatPair(page, gameId, 1, "EW", celiaOram, denisKing);
 }
+
+/**
+ * Seat one pair at an explicit SECTION-QUALIFIED seat (e.g. "B1NS"), using the
+ * seat button's stable `data-testid="seat-{seat}"`. Unlike {@link seatPair}
+ * (which locates the direction button by position), this targets the exact
+ * seat regardless of how many sections/tables precede it — required for
+ * multi-section games where NS/EW labels repeat across sections.
+ *
+ * @returns the play route the app navigated to, e.g. `/game/{id}/play/B1NS`.
+ */
+export async function seatPairBySeat(
+  page: Page,
+  gameId: string,
+  seat: string,
+  ebu1: string,
+  ebu2: string,
+): Promise<string> {
+  await page.goto(`/game/${gameId}/join`);
+
+  const seatButton = page.getByTestId(`seat-${seat}`);
+  await expect(seatButton).toBeVisible({ timeout: 15000 });
+  await seatButton.click();
+
+  // The seat suffix determines the two name labels.
+  const isNS = seat.endsWith("NS");
+  const label1 = isNS ? "North" : "East";
+  const label2 = isNS ? "South" : "West";
+
+  await fillSeat(page, label1, ebu1);
+  await fillSeat(page, label2, ebu2);
+
+  await page.getByRole("button", { name: "Enter Pair" }).click();
+  await page.waitForURL(/\/game\/.+\/play\//, { timeout: 15000 });
+  return page.url();
+}
+
+/**
+ * Seat a full two-table field in a specific section using explicit seats.
+ * Reuses the four seeded players (no distinct-player constraint).
+ */
+export async function seatTwoTableSection(
+  page: Page,
+  gameId: string,
+  section: string,
+): Promise<void> {
+  const { jacquelineCollier, davidCollier, celiaOram, denisKing } = SEEDED_EBU;
+
+  await seatPairBySeat(page, gameId, `${section}1NS`, jacquelineCollier, davidCollier);
+  await seatPairBySeat(page, gameId, `${section}1EW`, celiaOram, denisKing);
+  await seatPairBySeat(page, gameId, `${section}2NS`, jacquelineCollier, davidCollier);
+  await seatPairBySeat(page, gameId, `${section}2EW`, celiaOram, denisKing);
+}
