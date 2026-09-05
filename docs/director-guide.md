@@ -1,202 +1,238 @@
 # Director Guide
 
-This guide explains how to use Bridge Box Scorer as a director. You will use this app to create games, manage movements, control the timer, and correct results if needed.
+This guide explains how to run a session as a director: creating a game,
+arranging tables and sections, choosing movements, running the timer,
+correcting results, and exporting to USEBIO.
 
-## Creating a Game
+You direct from your own phone or tablet, connected to the Bridge Box's
+network — the same way players connect. Whoever creates a game becomes its
+director on that device; to let a co-director help from another device, you
+share a code (see [Sharing director access](#sharing-director-access)).
 
-### Step 1: Open the create game form
+---
 
-From the main menu, tap **Create New Game**.
+## Creating a game
 
-![Main menu](screenshots/main-menu.png)
+### Step 1: Open the create form
+
+From the home screen, tap **Create New Game**.
 
 ### Step 2: Fill in the details
 
-You will see a form with the following fields:
+| Field                   | Description                                                        |
+| ----------------------- | ----------------------------------------------------------------- |
+| **Event Name**          | The name of your event (e.g. "Monday Pairs").                     |
+| **Director Name**       | Your name.                                                        |
+| **Event Type**          | **Pairs** or **Teams**.                                           |
+| **Date Played**         | The date of the session.                                          |
+| **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
 
-| Field             | Description                                                       |
-| ----------------- | ----------------------------------------------------------------- |
-| **Event Name**    | The name of your event (e.g. "Monday Pairs", "Club Championship") |
-| **Director Name** | Your name                                                         |
-| **Event Type**    | Choose "Pairs" or "Teams"                                         |
-| **Tables**        | How many tables you expect (you can add or remove tables later)   |
+Tap **Create Game**.
 
-Tap **Next** when done.
+> **No PIN to set.** Whoever creates the game automatically becomes its
+> director on the phone or tablet they used — there is no director PIN to
+> choose. Director access stays on that phone or tablet; to let someone else
+> direct, you share a code (see below). The number of tables, sections, and the
+> movement are all chosen on the next screen, not on this form.
 
-![Create game form](screenshots/create-game.png)
-
-### Step 3: Tables view
-
-You will now see the **tables view**. This shows each table with the four seats. As players join and sit down, their names will appear here.
-
-From this screen you can:
-
-- **Add a table** — if more players arrive
-- **Remove a table** — if a table is no longer needed (only possible if the last table is empty)
-- **Evict a pair** — if someone sat in the wrong seat (tap on them and confirm)
-
-![Tables view](screenshots/tables-view.png)
-
-### Step 4: Select a movement
-
-When all players are seated, tap **Select Movement**. You will see the available movements for your number of tables.
-
-#### Generated Movements (Mitchell)
-
-At the top you will see automatically generated Mitchell movements. You can adjust the **boards per round** using the stepper control.
-
-- **Standard Mitchell** — for an odd number of tables
-- **Mitchell Share and Relay** — for an even number of tables
-- **Skip Mitchell** — for an even number of tables (alternative)
-
-#### Database Movements (Howell etc.)
-
-Below the generated movements, you will see other movement options stored in the database, such as Howell movements.
-
-Each movement card shows:
-
-- The movement name
-- Number of rounds
-- Boards per round
-- Total boards
-
-Tap a movement to see its full detail — a table showing which pairs sit where in each round and which boards they play.
-
-Tap **Select** to confirm your choice.
-
-![Movement selection](screenshots/movement-selection.png)
+You are taken to the **setup** screen for the new game.
 
 ---
 
-## Managing a Game
+## Setting up the game
 
-### Accessing the Director Menu
+Setup has three tabs. You can move between them freely, and you don't have to
+finish them in order.
 
-To manage a game that is already running:
+```
+Tables  →  Movements  →  Timer
+```
 
-1. From the main menu, tap **Manage Games**
-2. Select your game from the list
-3. If this is your first time managing this game on this device, you will need to enter the **share code** (see below)
-4. You will see the **Director Menu**
+### Tables tab
 
-![Director menu](screenshots/director-menu.png)
+This shows each table with its four seats. As players sit down and enter their
+names, they appear here.
 
-### Director Menu Options
+From this tab you can:
 
-| Option                 | What it does                                             |
-| ---------------------- | -------------------------------------------------------- |
-| **Create/Amend Timer** | Set up and control the round timer                       |
-| **Travellers**         | View all results entered so far (by board)               |
-| **Change Game Status** | Change the game status (e.g. mark as complete)           |
-| **Movement**           | View or change the movement                              |
-| **Download USEBIO**    | Export results in USEBIO format for uploading to the EBU |
-| **Delete Game**        | Permanently delete the game (cannot be undone)           |
+- **Resize a section** — use the **Tables** stepper to change how many tables
+  a section has.
+- **Add or remove a table** — a table can only be removed if it is the last
+  one and is empty.
+- **Evict a pair** — if someone sat in the wrong place, tap them and confirm
+  "Evict this pair from the table?".
+
+The app also checks the setup and flags anything that would stop the game
+starting. If a table isn't full, it shows which seat will **sit out** each
+round so the movement still works.
+
+When you're ready, tap **Start Game**.
+
+### Movements tab
+
+Here you choose the movement — the schedule of who plays whom, at which table,
+on which boards.
+
+- **Single section (the common case):** you go straight to the movement
+  picker. An amber **"Add Section"** banner lets you split the game into
+  multiple sections if you need to.
+- **Multiple sections:** you get a section manager where you can add, rename,
+  and delete sections, and choose a movement **for each section**
+  independently.
+
+The movement picker shows the recommended movements for your table count,
+**grouped by how many boards a pair plays** (which effectively determines
+session length). Each option is a card showing the movement name, number of
+rounds, boards per round, boards per set, and a short note of pros and cons.
+
+Tap the card whose session length and board count suit your event to select it
+for the section.
+
+### Timer tab (optional)
+
+You can set up the round timer here before you start, but it is never required
+to start a game. The controls are the same as the standalone timer described in
+[The timer](#the-timer).
 
 ---
 
-## The Timer
+## Managing a running game
 
-The timer helps players know how long they have left in each round.
+### Opening the director menu
 
-### Setting Up the Timer
+1. From the home screen, tap **Manage Games**.
+2. Tap your game in the list.
+3. If you created the game on this device, you go straight to the **Manage
+   Game Menu**.
+4. If you are managing from a **different** device for the first time, you are
+   asked for a **share code** — enter it to claim director access (see
+   [Sharing director access](#sharing-director-access)).
 
-From the Director Menu, tap **Create/Amend Timer**. You will see:
+### The Manage Game Menu
 
-- **Boards per Round** — how many boards in each round
-- **Total Rounds** — the total number of rounds
-- **Timing Mode** — either "Per Round" (one timer per round) or "Per Board" (time per board × boards = round time)
-- **Play Duration** — minutes and seconds for the playing period
-- **Move Duration** — minutes and seconds for the changeover period
+| Option                     | What it does                                                              |
+| -------------------------- | ------------------------------------------------------------------------- |
+| **Set Up Game**            | Returns to the Tables / Movements / Timer setup tabs.                     |
+| **Travellers**             | View results by board and correct any that were entered wrong.            |
+| **Movement**               | View or change the movement.                                              |
+| **Share Director Access**  | Generate a code so a co-director can manage from another device.          |
+| **Download USEBIO**        | Export the results as a USEBIO XML file for the EBU or a scoring program. |
+| **Delete Game** *(red)*    | Permanently delete the game. This cannot be undone.                       |
 
-The app shows you:
+The **timer** is reached through **Set Up Game → Timer tab** rather than being
+its own menu item.
 
-- **Session Length** — total estimated time for the whole session
-- **Preview End** — estimated finish time based on current time
+---
+
+## The timer
+
+The timer shows players how long is left in each phase and, on the
+[Room Display](room-display-guide.md), a large countdown for the whole room.
+
+### Setting it up
+
+The timer configuration has:
+
+- **Boards / Round** and **Total Rounds**.
+- **Timing Mode** — **Per Round** (one play period per round) or **Per Board**
+  (play time per board × boards = the round's play time).
+- **Play Duration** — minutes and seconds for playing.
+- **Move Duration** — minutes and seconds for the changeover between rounds.
+- **Warning at** — how many seconds before the end of play the display should
+  turn red as a warning.
+- **Breaks** — see below.
+
+Before you create the timer, the panel previews the **session length** and an
+estimated **finish time**.
 
 Tap **Create** to start the timer session.
 
-### Controlling the Timer
+### Breaks
 
-Once created, you can:
+Tap **+ Add break** to schedule a break **after a given round**. Each break is
+either:
 
-- **Start** — begins the countdown
-- **Pause** — pauses the timer (e.g. for a director ruling)
-- **Apply Changes** — updates the timer settings without resetting
+- **Duration** — a fixed number of minutes, or
+- **Resume at time** — a wall-clock time (HH:MM) to resume; the app shows the
+  approximate break length.
 
-### The Timer Display
+If a break is set to resume before play could realistically finish, the app
+flags it as an invalid break so you can fix it.
 
-Players can view the timer by going to Join Game → Show Timer. The display shows:
+### Controlling a running timer
 
-- A large countdown clock
-- The current round number
-- Whether it is playing time or changeover time
-- The projected end time of the session
+Once a timer session exists you get:
 
-The timer display has a black background with large white numbers, designed to be visible across the room.
+- **Apply Changes** — update the running timer with your edited settings
+  without resetting it.
+- **Start / Pause** — one button that toggles depending on the current state.
+- **‹ Prev** and **Next ›** — move to the previous or next phase.
+- **Adjust current phase** — **−1m / −15s / +15s / +1m** buttons, with a
+  checkbox **"Apply to all subsequent phases of this type"** to apply the
+  same adjustment to every future phase of that kind.
 
----
-
-## Correcting Results
-
-If a mistake was entered, you can correct it:
-
-1. From the Director Menu, tap **Travellers**
-2. Select the **board number** you want to correct
-3. You will see all instances of that board (each table/round where it was played)
-4. Tap the instance you want to correct
-5. Enter the correct contract and result
-6. Submit the correction
-
-Corrected results will show an "overridden" badge.
-
-![Select board](screenshots/select-board.png)
+The status panel shows the current phase, time remaining, current round, and
+the projected end time.
 
 ---
 
-## Sharing Director Access
+## Correcting results
 
-If you need another person to help direct (e.g. a co-director), you can share access:
+If a board was entered incorrectly, you can override it:
 
-1. From the tables view, tap **Share Director Access**
-2. A 6-character code will appear on your screen
-3. Give this code to the other director
-4. They go to Manage Games → select your game → enter the code
-5. The code expires after 5 minutes — generate a new one if needed
-
-The other director will then have full access to manage the game from their device.
+1. From the Manage Game Menu, tap **Travellers**.
+2. Choose the **board number** to correct.
+3. You see every instance of that board (each table/round it was played at),
+   live. Tap the line you want to fix.
+4. Enter the correct result step by step, the same way players enter one
+   (contract, or **Pass Out** / **Not Played**). You also get an extra
+   **Adjusted Score** option for assigning a result such as a percentage split
+   (for example 60/40).
+5. The correction is saved, and anyone viewing that board sees the updated
+   result.
 
 ---
 
-## Downloading Results
+## Sharing director access
+
+If a co-director needs to help manage the game from their own phone or tablet,
+share access with a short code:
+
+1. From the Manage Game Menu, tap **Share Director Access**.
+2. A short share code appears on screen.
+3. The other person opens **Manage Games**, taps the same game, and enters the
+   code on the **Claim Director Code** screen.
+4. They now have full director access to that game from their device.
+
+Director access is stored per device and per game, so several games can be
+directed from the same device at once, and a co-director keeps access on their
+own device.
+
+---
+
+## Downloading results (USEBIO)
 
 At the end of the session:
 
-1. Go to the Director Menu
-2. Tap **Download USEBIO**
-3. The file will be saved in the standard USEBIO XML format
-4. Upload this file to the EBU website or your scoring program
+1. Open the Manage Game Menu and tap **Download USEBIO**.
+2. The results are exported as a standard **USEBIO XML** file.
+3. Upload that file to the EBU or import it into your scoring program.
 
 ---
 
-## Settings (WiFi)
+## Tips for directors
 
-If your Bridge Box device needs to connect to a different WiFi network:
+- **Set up before players arrive** — create the game and open the Tables tab so
+  players can sit down straight away.
+- **Odd number of pairs?** A sit-out is handled for you — the app shows which
+  seat sits out each round, so you can start with a half table.
+- **Use sections** for large events — each section gets its own tables and
+  movement, and the leaderboard shows both per-section and combined standings.
+- **Share access** so a co-director can help — they manage from their own phone
+  after claiming your share code.
+- **Export at the end** — remember to download the USEBIO file before deleting
+  or reusing the game.
 
-1. Tap the **Settings** cog icon (top right of the main menu)
-2. Enter the device PIN when prompted
-3. Select a WiFi network from the dropdown
-4. Enter the WiFi password
-5. Tap **Test Connection** to verify it works
-6. If successful, tap **Save & Apply**
-
-The device will restart its network connection. This may take a moment.
-
----
-
-## Tips for Directors
-
-- **Set up before players arrive** — create the game and have the tables ready so players can sit down straight away
-- **Check the timer** — make sure the timer is configured before starting play
-- **Use Share Director Access** — if you need to leave the room, another person can manage from their phone
-- **Monitor from Manage Games** — you can check results during play without disturbing players
-- **USEBIO export** — remember to download at the end so you can submit to the EBU
+For the shared-screen timer and leaderboard, see the
+[Room Display Guide](room-display-guide.md). For the Bridge Box's WiFi, club
+details, and admin key, see the [Settings Guide](settings-guide.md).

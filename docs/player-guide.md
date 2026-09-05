@@ -1,123 +1,147 @@
 # Player Guide
 
-This guide explains how to use Bridge Box Scorer as a player. You will use this app to enter contract and result information after each board.
+This guide explains how to use Bridge Box Scorer as a player. You enter the
+contract and result for each board at your table, and scores update live for
+everyone.
 
-## Joining a Game
-
-### Step 1: Select your game
-
-When you open the app, tap **Join Game** on the main menu.
-
-![Main menu](screenshots/main-menu.png)
-
-You will see a menu with three options:
-
-- **Join As Player** — tap this to enter scores
-- **Show Timer** — displays the round timer on your screen
-- **Show Leaderboard** — shows current rankings
-
-Tap **Join As Player**.
-
-### Step 2: Select the game
-
-You will see a list of games that are currently open for players to join. Tap the game your director has set up.
-
-![Select game](screenshots/select-game.png)
-
-### Step 3: Choose your seat
-
-You will see a diagram of the tables. Each table shows four seats: North (N), South (S), East (E), and West (W).
-
-Tap the seat where you are sitting. Occupied seats will already show player names.
-
-![Select seat](screenshots/select-seat.png)
-
-### Step 4: Enter your names
-
-A panel will slide up from the bottom of the screen. Enter the names for both players in your pair. You can search for registered players by typing part of their name.
-
-Tap **Submit** when done.
+You will need a phone or tablet connected to the **Bridge Box's network**. Your
+director will tell you which network to join and the address to open (or it may
+already be on your screen).
 
 ---
 
-## Playing a Round
+## Joining a game
 
-### Round Information
+### Step 1: Open the game list
 
-At the start of each round, you will see a summary showing:
+On the home screen, tap **Join Game**. You see a list of games that are open to
+join, each showing its **event name**, the **date**, and how many **tables** it
+has. Tap the game your director has set up. (If the list is empty, no game has
+been created yet — check with your director.)
 
-- Your table number and round number
-- The boards you will play
-- The names of all four players at the table
+### Step 2: Choose your seat
+
+You will see the tables laid out as cards. Each table card is split into two
+buttons:
+
+- **NS** — the North–South pair
+- **EW** — the East–West pair
+
+Tap the button for the pair you are sitting in. A direction that someone has
+already taken is greyed out and cannot be chosen, and a table where both pairs
+are seated is dimmed.
+
+> **Playing in a section?** Some games are split into sections (for example a
+> large event divided into Section A and Section B). If yours is, each section
+> has its own heading and its own set of tables — make sure you pick your table
+> under the right section. If the game isn't split, there's no section heading;
+> you just see the tables.
+
+### Step 3: Enter your names
+
+A panel slides up showing your table number and two name fields:
+
+- For an **NS** seat, the fields are **North** and **South**.
+- For an **EW** seat, the fields are **East** and **West**.
+
+Start typing a name to search for a registered player, then tap a match to
+fill it in. Fill in both players, then tap **Enter Pair**.
+
+You are now seated and ready to play.
+
+---
+
+## Playing a round
+
+The app walks you through the session one round at a time. It automatically
+starts you at the first round that still needs results, so if you rejoin
+part-way through you won't have to skip past finished rounds.
+
+### Round information
+
+At the start of each round you see a summary:
+
+- Your **table** and **round** number
+- The **board(s)** you will play this round
+- The **four players** at the table
 
 Tap **Enter Round** when you are ready to start entering results.
 
-![Round info](screenshots/round-info.png)
+> **Sitting out?** If your pair sits out a round (common with certain
+> movements and table counts), you will see a **sit-out** screen instead. Tap
+> continue and the app tells you where to go next.
 
-### Entering a Contract
+### Entering a board
 
-For each board, you will enter the contract that was played. The screen shows:
+For each board you build up the contract step by step. A board selector at the
+top lets you switch between the boards in the round.
 
-- **Board selector** — at the top right, shows which board you are entering. You can switch between boards using the dropdown.
-- **Pass Out / Not Played** — buttons on the left for boards where no contract was reached or the board was not played.
-- **Contract display** — shows what you have selected so far.
+1. **Choose the board** you are entering.
+2. **Level** — tap the contract level (1–7). This step also has two shortcut
+   buttons:
+   - **Pass Out** — the board was passed out (nobody bid).
+   - **Not Played** — the board was not played for some reason.
+     Either shortcut jumps straight to the confirmation step.
+3. **Suit** — Clubs, Diamonds, Hearts, Spades, or No Trumps.
+4. **Declarer & double** — who played the hand (N/S/E/W) and whether it was
+   undoubled, **doubled (X)**, or **redoubled (XX)**.
+5. **Opening lead** *(only if your director turned this on)* — tap the suit of
+   the card led, then its rank.
+6. **Result** — tap **Made** or **Down**, then how many tricks:
+   - **Made**: exactly making, or +1, +2, … for overtricks.
+   - **Down**: −1, −2, … for undertricks.
+7. **Confirm** — check the summary and tap **Submit**.
 
-Below these controls are four sections:
+You can use the back arrow at any step to change an earlier choice.
 
-| Section      | What to enter                                                 |
-| ------------ | ------------------------------------------------------------- |
-| **Level**    | The number of the contract (1–7)                              |
-| **Suit**     | The suit (Spades, Hearts, Diamonds, Clubs, or No Trumps)      |
-| **Declarer** | Who played the hand (N, S, E, or W)                           |
-| **Double**   | Whether it was doubled (X), redoubled (XX), or neither (None) |
+### Waiting for the other pair
 
-Tap one button in each section to build the contract.
+After you submit, you may see **Waiting for confirmation**. The board is only
+recorded once *both* pairs at the table submit — this is the built-in check
+that catches entry mistakes. As soon as the other pair enters the same board
+and result, it is confirmed.
 
-![Enter contract](screenshots/enter-contract.png)
+### If the results don't match
 
-### Entering the Opening Lead (if required)
+If the two pairs enter different contracts, results, or board numbers, you see
+a **Results don't match** screen showing what each side entered. Talk to the
+other pair, agree the correct result, then tap **Re-enter** to fix it. Only one
+side needs to correct their entry for the board to confirm.
 
-If your director has set the game to record opening leads, you will also see an **Opening Lead** section. Tap the suit of the card led, then tap the rank (A, K, Q, J, 10, 9, etc.).
+### Seeing the board result
 
-### Entering the Result
+Once a board is confirmed, you see its **traveller** — a table of every result
+for that board played around the room, scored using the game's scoring method.
+You can flip back through the boards you have already played in this round.
 
-The **Result** section has two parts:
+Tap **Next** to move on to the next board.
 
-1. **Made / Down** — tap whether the contract was made or went down
-2. **Number** — tap how many tricks over or under:
-   - If **Made**: +0 means exactly made, +1 means made with one overtrick, etc.
-   - If **Down**: -1 means down one, -2 means down two, etc.
+### Moving on
 
-### Submitting
-
-Once you have entered the contract and result (and opening lead if required), the **Submit** button at the bottom will turn green. Tap it to submit.
-
-### Waiting for Confirmation
-
-After submitting, you may see a "Waiting for confirmation" screen. This means the pair at the other end of the table needs to enter their result too. Once both sides agree, the result is recorded.
-
-### Result Mismatch
-
-If the two pairs enter different results, you will see a **Results Don't Match** screen showing what each side entered. Discuss with the other pair, then tap **Re-enter Result** to correct it.
+When you finish the last board of a round, the app shows a **move** screen
+telling you which table and direction to go to for the next round. Tap continue
+when you have moved. After the final round you see the **leaderboard**, with
+your own pair highlighted.
 
 ---
 
-## Viewing Results
+## Viewing scores
 
-### Board Traveller
-
-After a result is confirmed, you will briefly see the **traveller** for that board — a table showing all the results for that board across the room.
-
-### Leaderboard
-
-At the end of the game (or via the Join menu), you can view the **leaderboard** showing overall rankings.
+- **During play**, you see each board's traveller right after it confirms.
+- **At the end**, your final screen shows the overall leaderboard with your
+  pair highlighted.
+- **Throughout the session**, your director can also put the leaderboard on a
+  shared screen for the room. See the [Room Display Guide](room-display-guide.md).
 
 ---
 
 ## Tips
 
-- If you make a mistake before submitting, simply tap different buttons to change your selection
-- The contract display at the top always shows your current selection
-- If a board was passed out (all four players passed), tap **Pass Out**
-- If a board was not played for any reason, tap **Not Played**
-- You can switch between boards using the dropdown at the top right
+- Nothing is final until both pairs agree — if you spot a mistake before the
+  other pair confirms, you can re-enter it.
+- The contract summary always reflects your current choices; tap back to
+  change anything.
+- Use **Pass Out** for a passed-out board and **Not Played** if a board wasn't
+  played.
+- If you get lost, the round and move screens always tell you where you should
+  be.
