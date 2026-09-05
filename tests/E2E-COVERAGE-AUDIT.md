@@ -38,8 +38,9 @@ Existing test files consulted: `smoke.spec.ts`, `api.spec.ts`,
 journeys `leaderboard-live.journey.ts`, `traveller-live.journey.ts`,
 `request-on-mount.journey.ts`, `played-contract.journey.ts`,
 `mismatch.journey.ts`, `sit-out.journey.ts`,
-`contract-variants.journey.ts`. Fixtures: `game-create`, `game-setup`, `join`,
-`play`, `director-override`, `delete-game`, `settings`.
+`contract-variants.journey.ts`, `director-override.journey.ts`,
+`share-code.journey.ts`, `multi-section.journey.ts`. Fixtures: `game-create`,
+`game-setup`, `join`, `play`, `director-override`, `delete-game`, `settings`.
 
 ### Test tooling that already exists (fixtures)
 
@@ -52,14 +53,18 @@ scaffolding:
   (`fixtures/game-setup.ts`).
 - Set up a started two-table game, optionally lead-off
   (`journeys/support.ts` `setUpStartedTwoTableGame`).
-- Seat a two-table field via EBU player search (`fixtures/join.ts`).
+- Set up a started TWO-SECTION game (section CRUD + per-section movement +
+  seat both sections) (`journeys/support.ts` `setUpStartedTwoSectionGame`).
+- Seat a two-table field via EBU player search (`fixtures/join.ts`); seat an
+  explicit section-qualified seat (`seatPairBySeat`, `seatTwoTableSection`).
 - Enter a Pass Out and confirm a board via both sides (`fixtures/play.ts`).
 - Enter a full played contract (incl. doubling and made/down results) and
   confirm it via both sides (`fixtures/play.ts` — `enterPlayedContract`,
   `confirmBoardPlayedContract`, `enterContractRaw`, `ContractSpec`).
 - Enter a "Not Played" outcome and confirm it via both sides
   (`fixtures/play.ts` — `enterNotPlayed`, `confirmBoardNotPlayed`).
-- Open a director traveller and override a row to 1NT
+- Open a director traveller and override a row to 1NT, to any played contract
+  (`overrideRowToContract`), or to an adjusted score (`overrideRowToAdjusted`)
   (`fixtures/director-override.ts`).
 - Delete a game (`fixtures/delete-game.ts`).
 - Seed a valid admin session token to unlock settings
@@ -278,18 +283,22 @@ scaffolding:
   (`traveller-live.journey.ts`).
 - [x] Director's open traveller updates live to the confirmed result
   (`traveller-live.journey.ts`).
-- [x] (PARTIAL) Director override of a row → 1NT, propagated live to a mounted
-  player Board Results page (`traveller-live.journey.ts`,
-  `fixtures/director-override.ts`). Only the Pass Out → 1NT override is
-  exercised.
-- [ ] Select-board → traveller flow with tappable rows and empty state
-  ("No results for this board yet").
-- [ ] Director override of a **played contract** (level/suit/declarer/doubling/
-  result) via `DirectorContractWizard` (which skips board-select, starts at
-  Level) — **GAP**.
-- [ ] Adjusted-score override presets: AVE (50/50), AVE+/AVE− (60/40),
-  AVE−/AVE+ (40/60), AVE+/AVE+ (60/60), AVE−/AVE− (40/40) — **GAP**.
-- [ ] Adjusted-score custom NS%/EW% numeric entry — **GAP**.
+- [x] Director override of a row → 1NT, propagated live to a mounted player
+  Board Results page (`traveller-live.journey.ts`,
+  `fixtures/director-override.ts`).
+- [x] Director override of a **played contract** — a suited, doubled contract
+  (3♠ X by North) via `DirectorContractWizard`, propagated live to the player
+  (`director-override.journey.ts`, `fixtures/director-override.ts`
+  `overrideRowToContract`).
+- [x] (PARTIAL) Adjusted-score override — custom NS%/EW% (60/40) entered and
+  the director traveller renders "Adj 60%/40%"
+  (`director-override.journey.ts`, `overrideRowToAdjusted`). Note: an adjusted
+  score has no matchpoint score, so it shows in the DIRECTOR traveller, not the
+  player's scored (MP) traveller. Preset buttons not separately exercised.
+- [ ] Adjusted-score presets (AVE 50/50, 60/40, …) as distinct button clicks.
+- [x] Select-board → traveller flow with tappable rows (exercised throughout
+  the override journeys via `openDirectorTraveller`).
+- [ ] Empty-state "No results for this board yet" on the director traveller.
 - [ ] `OVERRIDE_RESULT_TRAVELLER` "Saving override…" spinner and error banner
   path.
 - [ ] Override propagates to OTHER viewers (leaderboard + another traveller
@@ -394,17 +403,25 @@ scaffolding:
 
 ## 17. Share director access
 
-- [ ] Share code generated on mount (`GENERATE_SHARE_CODE`).
+- [x] Share code generated on mount and readable (`share-code.journey.ts`;
+  a `data-testid="share-code"` was added to the code element).
 - [ ] 5-minute countdown shown as mm:ss.
 - [ ] Expiry → "Code expired." with a regenerate button.
 - [ ] "Generate New Code" produces a fresh code.
 - [ ] Generation error line shown when generation fails.
-- [ ] Claim input: uppercase, 6-char, submit disabled until length ≥ 6.
-- [ ] Valid claim → mints a director session → navigates to `/game/{id}/manage`.
-- [ ] Claim errors: "Invalid code", "Code has already been used", "Code has
-  expired".
-- [ ] Full co-director round-trip: generate on device A, claim on device B, B
-  can then manage the game.
+- [x] Claim input: uppercase, 6-char, submit disabled until length ≥ 6
+  (unit-tested in `ClaimDirectorCodeView.test.tsx`; exercised in the journey).
+- [x] Valid claim → mints a director session → navigates to `/game/{id}/manage`
+  (`share-code.journey.ts`).
+- [x] (PARTIAL) Claim error "Invalid code" (`share-code.journey.ts`).
+  "Already used" / "expired" variants not separately exercised.
+- [x] Full co-director round-trip: generate on device A, claim on device B, B
+  can then manage the game (director-only actions visible)
+  (`share-code.journey.ts`).
+- [x] **Bug found & fixed via this journey:** selecting a non-director game on
+  `/manage` crashed with "useGame must be used within GameProvider" because
+  `ClaimDirectorCodeView` used `GamePageLayout` (whose header calls
+  `useRequiredGame`) outside a `GameProvider`. Switched it to `PageLayout`.
 
 ---
 
@@ -555,15 +572,19 @@ scaffolding:
 
 ## 23. Multi-section behaviour (cross-cutting)
 
-All GAPS — every journey uses a single section.
-
-- [ ] Setup: per-section table counts and per-section movement selection.
-- [ ] Leaderboard: Combined + per-section tabs.
-- [ ] Timer display: `SectionChooser` for a multi-section game.
+- [x] Setup: section CRUD — add a second section, rename it, delete it
+  (`multi-section.journey.ts`); per-section movement selection via the
+  SectionManager "Set Movement" picker (`support.ts` `setUpStartedTwoSectionGame`).
+- [x] Leaderboard: Combined + per-section (Section A / Section B) tabs, each
+  showing its own standings (`multi-section.journey.ts`).
+- [x] Timer display: `SectionChooser` ("Choose a section") for a multi-section
+  game (`multi-section.journey.ts`).
+- [x] Section-scoped seats ("A1NS" vs "B1NS") do not collide: a board is
+  confirmed in EACH section and both appear in standings
+  (`multi-section.journey.ts`; seating via `seatPairBySeat`, enabled by a
+  `data-testid="seat-{seat}"` added to `SelectTable`).
 - [ ] Timer manage: `TimerSectionPicker` + "Apply to all sections".
 - [ ] Sit-out messaging when one section is a pair short.
-- [ ] Section-scoped seats (e.g. "A1NS" vs "B1NS") do not collide on
-  submissions.
 
 ---
 
@@ -623,11 +644,21 @@ Ordered by impact on confidence in the core product.
 - Residual (low priority): enumerate the FULL made/down result ranges, and
   cover the board dropdown in the entry wizard (distinct from Board Results).
 
-**P2 — Director corrections & shared/multi-section operation:**
-- Director override of a played contract (not just Pass Out → 1NT).
-- Adjusted-score overrides (presets + custom NS%/EW%).
-- Share-code full co-director round-trip (generate on A, claim on B, manage).
-- Multi-section behaviour across setup, leaderboard tabs, and timer.
+**P2 — Director corrections & shared/multi-section operation — LARGELY CLOSED**
+(`director-override.journey.ts`, `share-code.journey.ts`,
+`multi-section.journey.ts`):
+- [x] Director override of a played contract (suited + doubled), live to the
+  player.
+- [x] Adjusted-score override (custom NS%/EW%), shown in the director traveller.
+- [x] Share-code full co-director round-trip (generate on A, claim on B,
+  manage) + invalid-code rejection. **Surfaced and fixed a production crash**
+  in the claim flow (`ClaimDirectorCodeView` used `GamePageLayout` outside a
+  `GameProvider`).
+- [x] Multi-section: section CRUD, two-section seat→play, combined + per-section
+  leaderboard tabs, and the timer section chooser.
+- Remaining P2 follow-ups: adjusted-score PRESET buttons, override propagation
+  to other viewers, the share-code countdown/expiry/regenerate states, and
+  timer "Apply to all sections" in a multi-section game.
 
 **P3 — Setup & timer depth:**
 - Movement-type coverage: Mitchell, Howell, American Whist.
