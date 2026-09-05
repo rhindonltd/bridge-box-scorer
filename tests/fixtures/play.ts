@@ -267,3 +267,65 @@ export async function enterContractRaw(
 ): Promise<void> {
   await enterPlayedContract(page, gameId, seat, boardNumber, spec, opts);
 }
+
+/**
+ * Enter a "Not Played" (NP) special outcome for a single seat on a board.
+ *
+ * Mirrors {@link enterPassOut} but selects the "Not Played" button on the level
+ * step, which short-circuits the wizard straight to Confirm. NP is submitted as
+ * the result code "NP" (handled like "PO" server-side).
+ */
+export async function enterNotPlayed(
+  page: Page,
+  gameId: string,
+  seat: string,
+  boardNumber: number,
+): Promise<void> {
+  await page.goto(`/game/${gameId}/play/${seat}`);
+
+  const enterRound = page.getByTestId("play-enter-round");
+  await expect(enterRound).toBeVisible({ timeout: 15000 });
+  await enterRound.click();
+
+  const boardButton = page.getByTestId(`wizard-board-${boardNumber}`);
+  await expect(boardButton).toBeVisible({ timeout: 15000 });
+  await boardButton.click();
+
+  // "Not Played" sits on the level step next to "Pass Out"; it has no test id,
+  // but the label is unique on that step.
+  const notPlayed = page.getByRole("button", { name: "Not Played", exact: true });
+  await expect(notPlayed).toBeVisible();
+  await notPlayed.click();
+
+  const submit = page.getByTestId("wizard-submit");
+  await expect(submit).toBeVisible();
+  await submit.click();
+}
+
+/**
+ * Confirm a board by entering matching "Not Played" outcomes from both sides of
+ * a table, mirroring {@link confirmBoardPassOut}. Waits for the NS page to reach
+ * "Board Results" so callers know the confirmation fired.
+ */
+export async function confirmBoardNotPlayed(
+  nsPage: Page,
+  ewPage: Page,
+  gameId: string,
+  table: number,
+  boardNumber: number,
+  section = "A",
+): Promise<void> {
+  const nsSeat = `${section}${table}NS`;
+  const ewSeat = `${section}${table}EW`;
+
+  await enterNotPlayed(nsPage, gameId, nsSeat, boardNumber);
+  await expect(nsPage.getByText("Waiting for confirmation")).toBeVisible({
+    timeout: 15000,
+  });
+
+  await enterNotPlayed(ewPage, gameId, ewSeat, boardNumber);
+
+  await expect(nsPage.getByText("Board Results")).toBeVisible({
+    timeout: 15000,
+  });
+}

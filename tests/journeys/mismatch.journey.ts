@@ -75,19 +75,20 @@ test.describe("Dual-side mismatch and re-enter", () => {
         ewPage.getByText("Results Don't Match"),
       ).toBeVisible({ timeout: 15000 });
 
-      // Re-enter on both sides with a matching result (4♥=). The board then
-      // confirms and both reach Board Results.
-      await nsPage
-        .getByRole("button", { name: "Re-enter Result" })
-        .click();
-      await ewPage
-        .getByRole("button", { name: "Re-enter Result" })
-        .click();
+      // Re-enter on both sides with a matching result (4♥=). Both mismatch
+      // screens offer "Re-enter Result", which reopens the wizard at board
+      // select.
+      await nsPage.getByRole("button", { name: "Re-enter Result" }).click();
+      await ewPage.getByRole("button", { name: "Re-enter Result" }).click();
 
+      // NS re-enters first. Because EW's original "+1" is still pending, the
+      // server re-compares and NS is bounced straight back to the mismatch
+      // screen — the pending submissions still differ. (Re-submitting a side
+      // replaces that side's pending entry; it does not confirm on its own.)
       await reenterMatching(nsPage, FOUR_HEARTS_MADE);
-      await expect(nsPage.getByText("Waiting for confirmation")).toBeVisible({
-        timeout: 15000,
-      });
+
+      // EW then re-enters the matching "=" result. Now both pending submissions
+      // agree, the board confirms, and both tablets land on Board Results.
       await reenterMatching(ewPage, FOUR_HEARTS_MADE);
 
       await expect(nsPage.getByText("Board Results")).toBeVisible({

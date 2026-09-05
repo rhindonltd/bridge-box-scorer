@@ -36,7 +36,9 @@ Existing test files consulted: `smoke.spec.ts`, `api.spec.ts`,
 `game-api.spec.ts`, `club-settings.spec.ts`, `settings.spec.ts`,
 `settings-menu.spec.ts`, `results-live.spec.ts`, `timer.spec.ts`, and the
 journeys `leaderboard-live.journey.ts`, `traveller-live.journey.ts`,
-`request-on-mount.journey.ts`. Fixtures: `game-create`, `game-setup`, `join`,
+`request-on-mount.journey.ts`, `played-contract.journey.ts`,
+`mismatch.journey.ts`, `sit-out.journey.ts`,
+`contract-variants.journey.ts`. Fixtures: `game-create`, `game-setup`, `join`,
 `play`, `director-override`, `delete-game`, `settings`.
 
 ### Test tooling that already exists (fixtures)
@@ -44,11 +46,19 @@ journeys `leaderboard-live.journey.ts`, `traveller-live.journey.ts`,
 These helpers exist and can be reused to build new coverage without new
 scaffolding:
 
-- Create a game (`fixtures/game-create.ts`).
+- Create a game, optionally with opening-lead recording off
+  (`fixtures/game-create.ts` — `recordOpeningLead`).
 - Set table count, pick first recommended movement, start game
   (`fixtures/game-setup.ts`).
+- Set up a started two-table game, optionally lead-off
+  (`journeys/support.ts` `setUpStartedTwoTableGame`).
 - Seat a two-table field via EBU player search (`fixtures/join.ts`).
 - Enter a Pass Out and confirm a board via both sides (`fixtures/play.ts`).
+- Enter a full played contract (incl. doubling and made/down results) and
+  confirm it via both sides (`fixtures/play.ts` — `enterPlayedContract`,
+  `confirmBoardPlayedContract`, `enterContractRaw`, `ContractSpec`).
+- Enter a "Not Played" outcome and confirm it via both sides
+  (`fixtures/play.ts` — `enterNotPlayed`, `confirmBoardNotPlayed`).
 - Open a director traveller and override a row to 1NT
   (`fixtures/director-override.ts`).
 - Delete a game (`fixtures/delete-game.ts`).
@@ -192,19 +202,23 @@ scaffolding:
 - [x] Step 1: level selection (exercised via `enterPlayedContract`).
 - [x] Step 1: special outcome "Pass Out" (PO) short-circuits to Confirm
   (`fixtures/play.ts` `enterPassOut`).
-- [ ] Step 1: special outcome "Not Played" (NP) short-circuits to Confirm.
+- [x] Step 1: special outcome "Not Played" (NP) short-circuits to Confirm and
+  confirms via both sides (`contract-variants.journey.ts`,
+  `fixtures/play.ts` `confirmBoardNotPlayed`). Note: an NP board has no
+  matchpoint score, so it renders no scored traveller row.
 - [x] Step 2: suit selection (exercised for a suited contract, 4♥).
 - [x] Step 3: declarer selection (North exercised).
-- [ ] (PARTIAL) Step 3: doubling toggle — the helper supports X / XX, but no
-  journey currently enters a doubled or redoubled contract. Undoubled only.
+- [x] Step 3: doubling toggle — doubled (X) and redoubled (XX) contracts are
+  entered and shown in the traveller (`contract-variants.journey.ts`).
 - [x] Step 4: opening lead shown when `leadCardRequired` — walked in the
   lead-ON variant of `played-contract.journey.ts`.
 - [x] Step 4: lead step absent when recording is OFF — the lead-OFF variant
   (created via `recordOpeningLead:false`) reaches confirm with no lead step,
   proving the wizard skips it (`played-contract.journey.ts`).
 - [x] (PARTIAL) Step 5: Made result — `=` (making exactly) and `+1` exercised
-  (mismatch journey uses 4♥+1). Full range not enumerated.
-- [ ] Step 5: Down result range (`-1` … up to `6 + level`), mapped negative.
+  (mismatch journey uses 4♥+1). Full made range not enumerated.
+- [x] (PARTIAL) Step 5: Down result — `-2` exercised via a redoubled 3NT going
+  down (`contract-variants.journey.ts`). Full down range not enumerated.
 - [x] Step 6: Confirm + Submit for a played contract (`wizard-submit`).
 - [ ] Board dropdown (sub-header) switches the board being entered after step 0.
 
@@ -221,15 +235,18 @@ scaffolding:
 - [x] `mismatch` state rendered — both variants (`mismatch.journey.ts`).
 - [x] Re-enter path from mismatch returns to contract entry and re-confirms
   (`mismatch.journey.ts`).
-- [x] (PARTIAL) `boardResults` reached after confirmation ("Board Results"
-  visible). Board-selector paging through already-played boards is NOT tested.
-- [ ] `BoardSelector` pages through played boards in the round.
+- [x] `boardResults` reached after confirmation ("Board Results" visible).
+- [x] `BoardSelector` pages back to an earlier played board in the round: with
+  two boards confirmed, the "Board 2" dropdown selects "Board 1" and the
+  traveller re-renders (`contract-variants.journey.ts`).
 - [x] (PARTIAL) `moveInfo` advanced during the play-to-completion walk
   (`played-contract.journey.ts`). The "Move to Table N" content is not asserted.
-- [x] `gameComplete`: reached by playing one table's whole schedule; "Game
-  Complete" renders (`played-contract.journey.ts`).
-- [ ] (PARTIAL) Game-complete final leaderboard with the player's own row
-  highlighted — completion is asserted but the highlighted-row rendering is not.
+- [x] `gameComplete`: reached by playing the whole game; "Game Complete"
+  renders (`played-contract.journey.ts`).
+- [x] Game-complete final leaderboard highlights the finishing pair's OWN row:
+  the row with `data-highlighted="true"` contains that pair's assignment id
+  (`played-contract.journey.ts`; assertion enabled by a `data-highlighted`
+  attribute added to `TableRow`).
 - [ ] Play page resolves to the first incomplete round (skips confirmed rounds
   and sit-outs) on mount.
 
@@ -599,9 +616,12 @@ Ordered by impact on confidence in the core product.
   the re-enter path.
 - [x] Sit-out round screen and sit-out submission rejection.
 - [x] Game-complete screen reached by playing a table's full schedule.
-- Remaining P1 follow-ups: a doubled/redoubled contract, the Down result range,
-  the Not-Played special outcome, `BoardSelector` paging, and asserting the
-  game-complete leaderboard's own-row highlight.
+- [x] Follow-ups now closed (`contract-variants.journey.ts`,
+  `played-contract.journey.ts`): doubled (X) and redoubled (XX) contracts, a
+  Down result (`-2`), the Not-Played (NP) outcome, `BoardSelector` paging, and
+  the game-complete own-row highlight.
+- Residual (low priority): enumerate the FULL made/down result ranges, and
+  cover the board dropdown in the entry wizard (distinct from Board Results).
 
 **P2 — Director corrections & shared/multi-section operation:**
 - Director override of a played contract (not just Pass Out → 1NT).

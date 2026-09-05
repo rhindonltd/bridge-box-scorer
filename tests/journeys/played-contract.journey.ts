@@ -156,6 +156,23 @@ test.describe("Played contract entry, confirmation and completion", () => {
       await expect(nsPage.getByText("Game Complete")).toBeVisible({
         timeout: 15000,
       });
+
+      // The Game Complete screen shows the final leaderboard with the pair's
+      // OWN row highlighted (GameComplete passes highlightAssignmentId). The
+      // pair's assignment id comes from its schedule; the highlighted row
+      // carries data-highlighted="true" and its Pair cell shows that id.
+      const scheduleRes = await request.get(
+        `/api/games/${gameId}/schedule/A1NS`,
+      );
+      expect(scheduleRes.ok()).toBeTruthy();
+      const assignmentId: string = (await scheduleRes.json()).result
+        .assignmentId;
+
+      const highlightedRow = nsPage.locator(
+        '[data-testid="leaderboard-row"][data-highlighted="true"]',
+      );
+      await expect(highlightedRow).toHaveCount(1, { timeout: 15000 });
+      await expect(highlightedRow).toContainText(assignmentId);
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

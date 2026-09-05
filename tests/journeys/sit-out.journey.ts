@@ -58,87 +58,270 @@ async function setUpOnePairShortGame(
 test.describe("Sit-out flow", () => {
   test("a one-pair-short game shows the sit-out screen and refuses sit-out submissions", async ({
     browser,
+    request,
   }) => {
     test.setTimeout(120_000);
 
     const { directorPage, gameId } = await setUpOnePairShortGame(
       browser,
-      `Sit Out ${Date.now()}`,
+      // Deliberately avoid the words "Sit Out" in the event name so it can't
+      // collide with the sit-out heading locators below.
+      `Short Field ${Date.now()}`,
     );
 
-    // The three seated seats. One of these draws the sit-out in round 1
-    // (exactly one seat sits out per round); we scan them to find it.
-    const seatedSeats = ["A1NS", "A1EW", "A2NS"];
+    // Discover which seat sits out and in which round, straight from the
+    // schedule — the movement decides this, we don't assume it.
+    const { seat: sitOutSeat, round: sitOutRound } = await findSitOutSeat(
+      request,
+      gameId,
+      ["A1NS", "A1EW", "A2NS"],
+    );
 
-    const seatPages: Record<string, Page> = {};
-    for (const seat of seatedSeats) {
-      seatPages[seat] = await newParticipant(browser);
-    }
+    // The play flow skips sit-out (and completed) rounds when resolving the
+    // FIRST screen on mount, so a fresh load never lands on a sit-out. The
+    // SitOutPage is reached in-session: after the player finishes the rounds
+    // BEFORE the sit-out and continues, the flow lands on the sit-out round.
+    // We therefore live-play the sitting-out pair up to its sit-out round.
+    const sitOutPlayer = await newParticipant(browser);
+    const partnerSeat = tablePartnerSeat(sitOutSeat); // opponent sharing its table
+    const partnerPlayer = await newParticipant(browser);
 
     try {
-      // Find whichever seated pair is sitting out this round: its play page
-      // shows the "Sit Out" screen instead of "Enter Round".
-      let sitOutPage: Page | null = null;
-      for (const seat of seatedSeats) {
-        const page = seatPages[seat];
-        await page.goto(`/game/${gameId}/play/${seat}`);
-        // Either "Enter Round" (playing) or a Sit Out heading appears.
-        await expect(
-          page
-            .getByTestId("play-enter-round")
-            .or(page.getByText(/Sit Out/)),
-        ).toBeVisible({ timeout: 15000 });
+      // The board lists for the rounds the sitting pair plays BEFORE its
+      // sit-out come straight from its schedule, so we drive those exact
+      // boards in order rather than guessing from the (schedule-lagged) UI.
+      const playerRounds = await seatSchedule(request, gameId, sitOutSeat);
+      const roundsBeforeSitOut = playerRounds.filter(
+        (r) => r.round < sitOutRound && !r.sitOut,
+      );
 
-        if (await page.getByText(/Sit Out/).isVisible()) {
-          sitOutPage = page;
-          break;
-        }
-      }
+      await playRoundsUpToSitOut(
+        sitOutPlayer,
+        partnerPlayer,
+        gameId,
+        sitOutSeat,
+        partnerSeat,
+        roundsBeforeSitOut,
+      );
 
-      // Exactly one seated pair should be sitting out in round 1.
-      expect(sitOutPage, "expected one seated pair to have a sit-out").not.toBeNull();
+      // Now the sitting-out pair's page shows the SitOutPage. Its heading
+      // ("Sit Out at Table N") is unique to that screen.
+      const sitOutHeading = /Sit Out at Table/;
+      await expect(sitOutPlayer.getByText(sitOutHeading)).toBeVisible({
+        timeout: 15000,
+      });
 
-      // The Sit Out screen offers Continue, which advances the flow (to the
-      // next round's move/round info) without error.
-      await sitOutPage!
+      // Continue advances past the sit-out without error.
+      await sitOutPlayer
         .getByRole("button", { name: "Continue", exact: true })
         .click();
-      await expect(sitOutPage!.getByText(/Sit Out/)).toBeHidden({
+      await expect(sitOutPlayer.getByText(sitOutHeading)).toBeHidden({
         timeout: 15000,
       });
 
       // The server rejects a result submitted against a sit-out board. The
-      // normal UI never offers a sit-out board for entry, so we assert the ack
-      // over a direct socket connection from the test process. Table 2 sits
-      // out in round 1 (its EW seat is the empty one), so its boards are
-      // SIT_OUT this round.
-      const ack = await submitAgainstSitOutBoard(gameId);
+      // normal UI never offers a sit-out board for entry, so we discover a real
+      // SIT_OUT board instance from the boards API and assert the rejection ack
+      // over a direct socket connection from the test process.
+      const ack = await submitAgainstSitOutBoard(request, gameId);
       expect(ack.success).toBe(false);
       expect((ack.error ?? "").toLowerCase()).toContain("sit-out");
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      for (const seat of seatedSeats) {
-        await seatPages[seat].context().close();
-      }
+      await sitOutPlayer.context().close();
+      await partnerPlayer.context().close();
     }
   });
 });
 
+type RoundInfo = {
+  round: number;
+  table: number | null;
+  sitOut: boolean;
+  boards: number[];
+};
+
+/** Fetch a seat's schedule rounds (round/table/sitOut/boards). */
+async function seatSchedule(
+  request: import("@playwright/test").APIRequestContext,
+  gameId: string,
+  seat: string,
+): Promise<RoundInfo[]> {
+  const res = await request.get(`/api/games/${gameId}/schedule/${seat}`);
+  expect(res.ok()).toBeTruthy();
+  const rounds = (await res.json()).result.rounds as Array<{
+    roundNumber: number;
+    tableNumber: number | null;
+    sitOut?: boolean;
+    boards: number[];
+  }>;
+  return rounds.map((r) => ({
+    round: r.roundNumber,
+    table: r.tableNumber,
+    sitOut: r.sitOut ?? false,
+    boards: r.boards,
+  }));
+}
+
 /**
- * Open a direct socket.io connection from the test process and try to submit a
- * result against the sitting-out table's boards until the server reports the
- * sit-out rejection (or the candidates are exhausted). Returns the rejecting
- * ack, or `{success:true}` if no board rejected (which fails the assertion).
+ * Among the candidate seats, pick one whose sit-out round is >= 2 (so there is
+ * at least one playable round before it, making the SitOutPage reachable via
+ * the in-session flow) and minimal. Returns that seat and its sit-out round.
+ */
+async function findSitOutSeat(
+  request: import("@playwright/test").APIRequestContext,
+  gameId: string,
+  candidates: string[],
+): Promise<{ seat: string; round: number }> {
+  let best: { seat: string; round: number } | null = null;
+  for (const seat of candidates) {
+    const rounds = await seatSchedule(request, gameId, seat);
+    const sitOut = rounds.find((r) => r.sitOut && r.round >= 2);
+    if (sitOut && (best === null || sitOut.round < best.round)) {
+      best = { seat, round: sitOut.round };
+    }
+  }
+  if (!best) {
+    throw new Error("no seated pair sits out in round >= 2");
+  }
+  return best;
+}
+
+/** The opposite direction seat at the same table (e.g. A1NS <-> A1EW). */
+function tablePartnerSeat(seat: string): string {
+  return seat.endsWith("NS")
+    ? seat.replace(/NS$/, "EW")
+    : seat.replace(/EW$/, "NS");
+}
+
+/**
+ * Live-play the sitting-out pair through every round BEFORE its sit-out round,
+ * keeping its page mounted so the flow transitions into the SitOutPage (which
+ * a fresh load would skip). For each such round, both the pair and its
+ * round-opponent enter matching Pass Outs for every board, then advance.
  *
- * Table 2's EW seat is the empty one, so table 2 sits out in round 1 and its
- * boards have status SIT_OUT; submitting any of them must be refused.
+ * The pairs share a table within a round, so the opponent is the same-table
+ * opposite-direction seat. This helper assumes the pre-sit-out rounds are not
+ * themselves sit-outs for this pair (true for the minimal case, e.g. A1EW which
+ * plays round 1 then sits out round 2).
+ */
+async function playRoundsUpToSitOut(
+  player: Page,
+  partner: Page,
+  gameId: string,
+  seat: string,
+  partnerSeat: string,
+  rounds: RoundInfo[],
+): Promise<void> {
+  await player.goto(`/game/${gameId}/play/${seat}`);
+  await partner.goto(`/game/${gameId}/play/${partnerSeat}`);
+
+  // Play each round before the sit-out, driving that round's exact board list
+  // (from the schedule) in order. The play flow advances board-by-board via
+  // its own state, so we pick each specific board rather than the first
+  // enabled one (the board-select step's "played" flags can lag the schedule).
+  for (const round of rounds) {
+    await enterRoundToBoardSelect(player);
+    await enterRoundToBoardSelect(partner);
+
+    for (const board of round.boards) {
+      // Player enters this board, then the partner enters the same board.
+      await passOutSpecificBoard(player, board);
+      await passOutSpecificBoard(partner, board);
+
+      // Player confirms -> Board Results; advance to the next board/round.
+      await expect(player.getByText("Board Results")).toBeVisible({
+        timeout: 15000,
+      });
+      await player.getByTestId("board-results-next").click();
+      if (
+        await partner
+          .getByTestId("board-results-next")
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await partner.getByTestId("board-results-next").click();
+      }
+    }
+
+    // After the last board of the round, the player is on the move-info screen.
+    // Continue moves into the next round (the sit-out on the final iteration).
+    const cont = player.getByRole("button", { name: "Continue", exact: true });
+    await expect(cont).toBeVisible({ timeout: 15000 });
+    await cont.click();
+    const pcont = partner.getByRole("button", { name: "Continue", exact: true });
+    if (await pcont.isVisible().catch(() => false)) await pcont.click();
+  }
+}
+
+/** Click "Enter Round" and wait for the board-select step to render. */
+async function enterRoundToBoardSelect(page: Page): Promise<void> {
+  const enterRound = page.getByTestId("play-enter-round");
+  await expect(enterRound).toBeVisible({ timeout: 15000 });
+  await enterRound.click();
+  await expect(
+    page.locator('[data-testid^="wizard-board-"]').first(),
+  ).toBeVisible({ timeout: 15000 });
+}
+
+/**
+ * Enter a Pass Out for a SPECIFIC board. Waits for the board-select step, picks
+ * that board, then Pass Out -> Submit. The player flow reopens the board-select
+ * step for each board of the round, so we always target the intended board.
+ */
+async function passOutSpecificBoard(page: Page, board: number): Promise<void> {
+  const boardButton = page.getByTestId(`wizard-board-${board}`);
+  await expect(boardButton).toBeVisible({ timeout: 15000 });
+  await boardButton.click();
+  await page.getByTestId("wizard-pass-out").click();
+  await page.getByTestId("wizard-submit").click();
+}
+
+/**
+ * Discover a real SIT_OUT board instance from the boards API, then submit a
+ * result against it over a direct socket connection and return the ack. The
+ * server must refuse it with "This board is a sit-out".
+ *
+ * Which table sits out in which round is decided by the movement's phantom
+ * rotation, so we don't assume it — we scan the board instances for one whose
+ * status is SIT_OUT and target that exact (round, table, board).
  */
 async function submitAgainstSitOutBoard(
+  request: import("@playwright/test").APIRequestContext,
   gameId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const socket: Socket = ioClient("http://localhost:3000");
+  // Find a SIT_OUT instance.
+  const boardsRes = await request.get(`/api/games/${gameId}/boards`);
+  const boardNumbers: number[] = (await boardsRes.json()).result.boards;
 
+  let target:
+    | { roundNumber: number; tableNumber: number; boardNumber: number }
+    | null = null;
+  for (const boardNumber of boardNumbers) {
+    const res = await request.get(`/api/games/${gameId}/boards/${boardNumber}`);
+    const rows: Array<{
+      roundNumber: number;
+      tableNumber: number;
+      boardNumber: number;
+      status: string | null;
+    }> = (await res.json()).result.instances;
+    const sitOut = rows.find((r) => r.status === "SIT_OUT");
+    if (sitOut) {
+      target = {
+        roundNumber: sitOut.roundNumber,
+        tableNumber: sitOut.tableNumber,
+        boardNumber: sitOut.boardNumber,
+      };
+      break;
+    }
+  }
+
+  if (!target) {
+    throw new Error("no SIT_OUT board instance found for the short field");
+  }
+
+  const socket: Socket = ioClient("http://localhost:3000");
   try {
     await new Promise<void>((resolve, reject) => {
       const t = setTimeout(() => reject(new Error("socket connect timeout")), 10_000);
@@ -148,29 +331,20 @@ async function submitAgainstSitOutBoard(
       });
     });
 
-    const submit = (boardNumber: number) =>
-      new Promise<{ success: boolean; error?: string }>((resolve) => {
-        socket.emit(
-          "game:submitResult",
-          {
-            gameId,
-            seat: "A2NS",
-            roundNumber: 1,
-            tableNumber: 2,
-            boardNumber,
-            result: "PO",
-          },
-          (res: { success: boolean; error?: string }) => resolve(res),
-        );
-      });
-
-    for (let board = 1; board <= 12; board++) {
-      const res = await submit(board);
-      if (!res.success && (res.error ?? "").toLowerCase().includes("sit")) {
-        return res;
-      }
-    }
-    return { success: true };
+    return await new Promise<{ success: boolean; error?: string }>((resolve) => {
+      socket.emit(
+        "game:submitResult",
+        {
+          gameId,
+          seat: `A${target!.tableNumber}NS`,
+          roundNumber: target!.roundNumber,
+          tableNumber: target!.tableNumber,
+          boardNumber: target!.boardNumber,
+          result: "PO",
+        },
+        (res: { success: boolean; error?: string }) => resolve(res),
+      );
+    });
   } finally {
     socket.disconnect();
   }
