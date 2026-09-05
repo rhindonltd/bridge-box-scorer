@@ -19,10 +19,48 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onShareDirectorAccessClick: fn(),
     onDownloadUsebioClick: fn(),
     onDeleteGameClick: fn(),
+    showSetUpGame: true,
+    showTravellers: false,
+    showMovement: false,
+    showDownloadUsebio: false,
+    downloadUsebioDisabled: false,
   },
 };
 
 export default meta;
 type Story = StoryObj<typeof ManageGameMenuPage>;
 
-export const Default: Story = {};
+/** Before the game starts: only Set Up Game (plus the always-on options). */
+export const NotStarted: Story = {
+  args: {
+    showSetUpGame: true,
+    showTravellers: false,
+    showMovement: false,
+    showDownloadUsebio: false,
+  },
+};
+
+/**
+ * Game started but results still outstanding: Travellers and Movement are
+ * available; Download USEBIO is shown but disabled until every result is in.
+ */
+export const StartedResultsIncomplete: Story = {
+  args: {
+    showSetUpGame: false,
+    showTravellers: true,
+    showMovement: true,
+    showDownloadUsebio: true,
+    downloadUsebioDisabled: true,
+  },
+};
+
+/** All results in: Download USEBIO is available. */
+export const StartedResultsComplete: Story = {
+  args: {
+    showSetUpGame: false,
+    showTravellers: true,
+    showMovement: true,
+    showDownloadUsebio: true,
+    downloadUsebioDisabled: false,
+  },
+};

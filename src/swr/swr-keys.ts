@@ -20,6 +20,8 @@ export const swrKeys = {
 
   boards: (gameId: string) => `/api/games/${gameId}/boards`,
 
+  resultsSummary: (gameId: string) => `/api/games/${gameId}/results-summary`,
+
   club: () => "/api/system/club",
 
   playerSearch: (query: string) =>
