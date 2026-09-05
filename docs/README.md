@@ -1,31 +1,62 @@
 # Bridge Box Scorer — User Guide
 
-Welcome to Bridge Box Scorer, an app for running duplicate bridge sessions at your club. This guide will help you get started whether you are a **player** entering scores at the table or a **director** managing the game.
+Welcome to Bridge Box Scorer, an app for running duplicate bridge sessions at
+your club. It runs on the **Bridge Box** — a small appliance you plug in at the
+venue. When switched on, the Bridge Box creates its own local network; players
+and directors connect their phones or tablets to that network to use the app.
+The director manages the game while players enter their own results at the
+table, and scores update live for everyone.
+
+This guide is organised by what you are trying to do.
 
 ## Who are you?
 
-- **[Player Guide](player-guide.md)** — How to join a game, enter contracts and results, and view scores
-- **[Director Guide](director-guide.md)** — How to create and manage games, set up movements, control the timer, and correct results
+- **[Player Guide](player-guide.md)** — Join a game, take your seat, enter
+  contracts and results, and see how a board scored.
+- **[Director Guide](director-guide.md)** — Create and set up a game, arrange
+  tables and sections, choose movements, run the timer, correct results, and
+  export to USEBIO.
+- **[Room Display Guide](room-display-guide.md)** — Put the session timer or
+  the live leaderboard on a big screen for the room.
+- **[Settings Guide](settings-guide.md)** — Device settings: WiFi, club
+  information, and the admin key.
+- **[Concepts & Glossary](concepts.md)** — Plain-English reference for the
+  terms used throughout the app (sections, movements, travellers, scoring
+  methods, director access, and the timer).
 
-## Quick Start
+## The home screen
 
-### For Players
+When you open the app you land on the main menu, which has four buttons and a
+settings cog (top-right):
 
-1. Open the app on your tablet or phone
-2. Tap **Join Game**
-3. Select your game from the list
-4. Choose your seat (table and direction)
-5. Enter your names and you're ready to play
+| Button              | Who uses it | What it does                                                            |
+| ------------------- | ----------- | ----------------------------------------------------------------------- |
+| **Join Game**       | Players     | Pick a game and take a seat to start entering results.                  |
+| **Create New Game** | Directors   | Set up a brand-new session.                                             |
+| **Manage Games**    | Directors   | Open a game you are running to set it up, control it, or fix results.   |
+| **Room Display**    | Anyone      | Show the timer or leaderboard on a shared screen.                       |
+| **⚙ Settings** (cog) | Device owner | WiFi, club information, and the admin key for the Bridge Box.           |
 
-### For Directors
+## Quick start
 
-1. Open the app
-2. Tap **Create New Game**
-3. Fill in the event details (name, type, number of tables)
-4. Wait for players to sit down
-5. Select a movement
-6. The game begins automatically
+### For players
 
-## Need Help?
+1. Tap **Join Game** on the home screen.
+2. Tap your game in the list.
+3. Tap the **table and direction** (NS or EW) where you are sitting.
+4. Enter both players' names and tap **Enter Pair**.
+5. Play begins. Enter each board's contract and result as you go.
 
-If you get stuck, ask your director for assistance. The app is designed to guide you through each step.
+### For directors
+
+1. Tap **Create New Game** and fill in the event details.
+2. On the **Tables** tab, wait for players to sit down (or add/adjust tables).
+3. On the **Movements** tab, pick a movement for the section.
+4. (Optional) On the **Timer** tab, set up the round timer.
+5. Tap **Start Game**.
+
+## Need help?
+
+If you get stuck as a player, ask your director. The app guides you through one
+step at a time, and nothing is final until both pairs at a table agree on a
+result.
