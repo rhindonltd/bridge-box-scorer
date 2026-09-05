@@ -18,12 +18,28 @@ export interface CreatedGame {
 
 export async function createGame(
   page: Page,
-  opts: { eventName: string; directorName?: string },
+  opts: {
+    eventName: string;
+    directorName?: string;
+    /**
+     * Whether the game records opening leads. Defaults to true (the app's
+     * default). When false, the "Record Opening Lead" toggle is switched off
+     * so the ContractWizard omits its opening-lead step.
+     */
+    recordOpeningLead?: boolean;
+  },
 ): Promise<CreatedGame> {
   await page.goto("/create");
 
   await page.getByLabel("Event Name").fill(opts.eventName);
   await page.getByLabel("Director Name").fill(opts.directorName ?? "E2E Director");
+
+  // "Record Opening Lead" is a two-button toggle (No / Yes), defaulting to Yes.
+  // Only click when the caller wants it off, to keep the default path untouched.
+  if (opts.recordOpeningLead === false) {
+    await page.getByRole("button", { name: "No", exact: true }).click();
+  }
+
   await page.getByRole("button", { name: "Create Game", exact: true }).click();
 
   await page.waitForURL(/\/game\/.+\/create/, { timeout: 15000 });

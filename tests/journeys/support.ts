@@ -23,10 +23,14 @@ import { seatTwoTableField } from "../fixtures/join";
 export async function setUpStartedTwoTableGame(
   browser: Browser,
   eventName: string,
+  opts: { recordOpeningLead?: boolean } = {},
 ): Promise<{ directorPage: Page; gameId: string }> {
   const directorPage = await newParticipant(browser);
 
-  const { gameId } = await createGame(directorPage, { eventName });
+  const { gameId } = await createGame(directorPage, {
+    eventName,
+    recordOpeningLead: opts.recordOpeningLead,
+  });
   await setTableCount(directorPage, 2);
   await pickFirstMovement(directorPage);
   await seatTwoTableField(directorPage, gameId);

@@ -1,0 +1,635 @@
+# E2E Test Coverage Audit — Bridge Box Scorer
+
+## Purpose
+
+This document is a comprehensive audit of end-to-end (E2E) test coverage for the
+Bridge Box Scorer app. It inventories **all** functionality that E2E tests
+should cover — user-facing browser/journey flows and Playwright request-context
+API + socket-level behaviours — and marks each item as covered, a gap, or
+partially covered. It is intended to double as a working TODO for closing the
+holes.
+
+Scope is everything under `tests/`: the Playwright browser specs
+(`*.spec.ts`), the multi-device journeys (`tests/journeys/*.journey.ts`), and
+the request-context API/socket tests.
+
+## Legend
+
+- `- [x]` — **Covered**: an existing test exercises this behaviour.
+- `- [ ]` — **Gap**: no test currently exercises this behaviour.
+- `- [ ]` prefixed with `(PARTIAL)` — **Partially covered**: some aspect is
+  tested but meaningful scenarios are missing; the note says what is and isn't
+  covered.
+
+## How coverage was assessed
+
+Every spec, journey, and fixture in `tests/` was read and mapped against the
+full application surface:
+
+- All routes under `src/app` (root, `create`, `join`, `manage`, `game`,
+  `display`, `settings` and their sub-routes).
+- All HTTP `route.ts` handlers under `src/app/api`.
+- All Socket.IO events and handlers under `src/socket`
+  (`socket-events.ts`, `socket-event-map.ts`, `handlers/`, `middleware/`).
+
+Existing test files consulted: `smoke.spec.ts`, `api.spec.ts`,
+`game-api.spec.ts`, `club-settings.spec.ts`, `settings.spec.ts`,
+`settings-menu.spec.ts`, `results-live.spec.ts`, `timer.spec.ts`, and the
+journeys `leaderboard-live.journey.ts`, `traveller-live.journey.ts`,
+`request-on-mount.journey.ts`. Fixtures: `game-create`, `game-setup`, `join`,
+`play`, `director-override`, `delete-game`, `settings`.
+
+### Test tooling that already exists (fixtures)
+
+These helpers exist and can be reused to build new coverage without new
+scaffolding:
+
+- Create a game (`fixtures/game-create.ts`).
+- Set table count, pick first recommended movement, start game
+  (`fixtures/game-setup.ts`).
+- Seat a two-table field via EBU player search (`fixtures/join.ts`).
+- Enter a Pass Out and confirm a board via both sides (`fixtures/play.ts`).
+- Open a director traveller and override a row to 1NT
+  (`fixtures/director-override.ts`).
+- Delete a game (`fixtures/delete-game.ts`).
+- Seed a valid admin session token to unlock settings
+  (`fixtures/settings.ts`).
+
+---
+
+## 1. App entry & navigation
+
+- [x] Main menu renders with a "Join Game" navigation link (`smoke.spec.ts`).
+- [ ] Main menu shows all primary links: Join, Create, Manage, Display.
+- [ ] Main menu Settings cog navigates to `/settings`.
+- [x] `/join` page loads (body not empty) (`smoke.spec.ts`).
+- [x] `/create` page is reachable (URL matches `/create`) (`smoke.spec.ts`).
+- [x] `/settings` page loads (body not empty) (`smoke.spec.ts`).
+- [ ] `/manage` game selector loads (fetches all games, not just joinable).
+- [ ] `/display` game selector loads.
+- [ ] `SelectGame` empty state renders "No games have been created yet." when
+  no games exist.
+- [ ] `SelectGame` loading spinner shown while the list loads.
+- [ ] `SelectGame` rows show event name, formatted date, table count.
+- [ ] Selecting a game from `/join` navigates to `/game/{id}/join`.
+- [ ] Selecting a game from `/display` navigates to `/game/{id}/display`.
+- [ ] Selecting a game from `/manage` as the local director → `/game/{id}/manage`.
+- [ ] Selecting a game from `/manage` when NOT the director shows the inline
+  `ClaimDirectorCode` path.
+- [ ] `not-found` (unknown route / unknown game) renders the not-found screen.
+- [ ] `error` boundary renders when a page throws.
+- [ ] Joinable-games list live-updates over `SocketEvents.JOINABLE_GAMES`.
+- [ ] Joinable-games list re-fetches on socket reconnect.
+
+---
+
+## 2. Game creation (`/create`)
+
+- [ ] Event Name field accepts input.
+- [ ] Director Name field accepts input.
+- [ ] Event Type selector offers Pairs and Teams.
+- [ ] Date Played defaults to today and is editable.
+- [ ] "Record Opening Lead" toggle (default Yes) can be switched.
+- [ ] Create with valid input → navigates to `/game/{id}/create`
+  (implicitly exercised by journey setup, but not asserted as a create-form
+  test on its own).
+- [ ] (PARTIAL) Create is driven by fixtures (`fixtures/game-create.ts`) inside
+  journeys, but there is no dedicated test of the create FORM behaviour
+  (fields, toggle, event type). Only the resulting navigation is relied upon.
+- [ ] No-validation edge: blank Event Name / Director Name are accepted (submit
+  succeeds).
+- [ ] Create failure shows the inline red error "Failed to create game. Please
+  try again." and re-enables the button.
+- [ ] Submit button shows "Creating…" while in flight.
+
+---
+
+## 3. Director setup — Tables
+
+- [ ] NumberStepper increments/decrements table count and emits `UPDATE_TABLES`.
+- [ ] (PARTIAL) `fixtures/game-setup.ts` drives the stepper to a target count,
+  but no test asserts the resize behaviour or the seating grid re-render.
+- [ ] Evict pair: confirm dialog → `EVICT_PARTICIPANT` removes the pair.
+- [ ] Evict failure shows the alert.
+- [ ] Remove-table rule: table removal only allowed when `tables > 1` and the
+  last table is unoccupied.
+- [ ] Start-check problems list (amber, bulleted) shown when the game cannot
+  start.
+- [ ] One-pair-short → "One pair short — {seat} will sit out each round."
+- [x] (PARTIAL) Start Game succeeds once movement + full seating are valid
+  (`fixtures/game-setup.ts` `startGame`; used by every live journey). The
+  disabled→enabled gating itself is asserted only via `toBeEnabled` before
+  click, not the disabled state or the problem messages.
+- [ ] Participants live-sync over `SocketEvents.PARTICIPANTS` as pairs are
+  seated/evicted.
+
+---
+
+## 4. Director setup — Sections
+
+- [ ] Add Section creates a new section with the next free letter.
+- [ ] Rename Section updates the section label.
+- [ ] Delete Section removes a section.
+- [ ] Delete control hidden when only one section exists.
+- [ ] Single-section vs multi-section rendering differences (headings/labels
+  hidden in single-section).
+- [ ] Per-section movement summary text ("Mitchell — N tables, M rounds" /
+  "No movement selected").
+- [ ] Single-section movement picker shows the amber "Add Section" banner.
+
+---
+
+## 5. Director setup — Movement
+
+- [x] (PARTIAL) First recommended movement is selectable
+  (`fixtures/game-setup.ts` `pickFirstMovement`; used by journeys). Only the
+  first card is ever chosen; the movement TYPE is whatever comes first.
+- [ ] Mitchell (generated) movement selection persists.
+- [ ] Howell (seeded spec) movement selection persists.
+- [ ] American Whist (seeded spec) movement selection persists.
+- [ ] Recommendations are grouped by boards-a-pair-plays.
+- [ ] Empty state: "No recommended movements are available for this table count
+  yet."
+- [ ] Movement selection failure shows the alert.
+- [x] `GET /api/movements/pairs/{1,2,4}` returns a movement array
+  (`api.spec.ts`).
+- [x] Movement list item shape has `id` and `name` (`api.spec.ts`).
+- [x] `GET /api/movements/detail/PAIRS/{id}` returns detail with `tables`,
+  `type: "PAIRS"` (`api.spec.ts`).
+- [x] `GET /api/movements/detail/INVALID_TYPE/1` returns 400 (`api.spec.ts`).
+- [ ] `GET /api/movements/pairs/0` (or non-positive) returns 400 "Invalid table
+  count".
+- [ ] `GET /api/movements/detail/PAIRS/{unknown-id}` returns 404 "Movement not
+  found".
+
+---
+
+## 6. Player join & seating
+
+- [x] (PARTIAL) Seat a two-table pairs field via the join UI
+  (`fixtures/join.ts` `seatTwoTableField`; used by journeys). This exercises
+  table/direction pick, EBU search by number, result select, and Enter Pair.
+- [ ] `SelectTable` shows sections/tables with occupied seats reflected live.
+- [ ] Tapping a free seat opens the `EnterPlayerNames` sheet with the correct
+  labels (North/South for NS, East/West for EW).
+- [ ] EBU `PlayerSearch` "Searching…" state while a query is in flight.
+- [ ] EBU search result list renders matches.
+- [ ] Selected player shows the green card with EBU id and an X to clear.
+- [ ] "Enter Pair" disabled until both players are chosen.
+- [ ] `createParticipant` (type PAIR) succeeds and navigates to the play seat.
+- [ ] Occupied-seat live sync over `SocketEvents.PARTICIPANTS` in the seating
+  view.
+
+---
+
+## 7. Player play — ContractWizard
+
+- [x] Pass Out entry via the wizard (`fixtures/play.ts` `enterPassOut`).
+- [x] Real played contract entry: full walk level → suit → declarer → (lead) →
+  made/down → confirm → submit (`played-contract.journey.ts`,
+  `fixtures/play.ts` `enterPlayedContract`; e.g. 4♥ by North making).
+- [x] Step 0: board selection (`wizard-board-{n}`; played boards disabled).
+- [x] Step 1: level selection (exercised via `enterPlayedContract`).
+- [x] Step 1: special outcome "Pass Out" (PO) short-circuits to Confirm
+  (`fixtures/play.ts` `enterPassOut`).
+- [ ] Step 1: special outcome "Not Played" (NP) short-circuits to Confirm.
+- [x] Step 2: suit selection (exercised for a suited contract, 4♥).
+- [x] Step 3: declarer selection (North exercised).
+- [ ] (PARTIAL) Step 3: doubling toggle — the helper supports X / XX, but no
+  journey currently enters a doubled or redoubled contract. Undoubled only.
+- [x] Step 4: opening lead shown when `leadCardRequired` — walked in the
+  lead-ON variant of `played-contract.journey.ts`.
+- [x] Step 4: lead step absent when recording is OFF — the lead-OFF variant
+  (created via `recordOpeningLead:false`) reaches confirm with no lead step,
+  proving the wizard skips it (`played-contract.journey.ts`).
+- [x] (PARTIAL) Step 5: Made result — `=` (making exactly) and `+1` exercised
+  (mismatch journey uses 4♥+1). Full range not enumerated.
+- [ ] Step 5: Down result range (`-1` … up to `6 + level`), mapped negative.
+- [x] Step 6: Confirm + Submit for a played contract (`wizard-submit`).
+- [ ] Board dropdown (sub-header) switches the board being entered after step 0.
+
+---
+
+## 8. Player play — flow states
+
+- [x] (PARTIAL) `roundInfo`: "Enter Round" advances (`play-enter-round`,
+  exercised throughout). Player/board detail on the screen is not asserted.
+- [x] Sit-out round → `SitOutPage` ("Sit Out", Continue advances)
+  (`sit-out.journey.ts`).
+- [x] (PARTIAL) `waiting` → `WaitingForConfirmation` shown after the first side
+  submits (asserted in `traveller-live.journey.ts` / `fixtures/play.ts`).
+- [x] `mismatch` state rendered — both variants (`mismatch.journey.ts`).
+- [x] Re-enter path from mismatch returns to contract entry and re-confirms
+  (`mismatch.journey.ts`).
+- [x] (PARTIAL) `boardResults` reached after confirmation ("Board Results"
+  visible). Board-selector paging through already-played boards is NOT tested.
+- [ ] `BoardSelector` pages through played boards in the round.
+- [x] (PARTIAL) `moveInfo` advanced during the play-to-completion walk
+  (`played-contract.journey.ts`). The "Move to Table N" content is not asserted.
+- [x] `gameComplete`: reached by playing one table's whole schedule; "Game
+  Complete" renders (`played-contract.journey.ts`).
+- [ ] (PARTIAL) Game-complete final leaderboard with the player's own row
+  highlighted — completion is asserted but the highlighted-row rendering is not.
+- [ ] Play page resolves to the first incomplete round (skips confirmed rounds
+  and sit-outs) on mount.
+
+---
+
+## 9. Dual-side confirmation & disputes
+
+- [x] Match → confirm: matching Pass Outs from both sides confirm the board and
+  emit `BOARD_CONFIRMED`; NS page flips from waiting to Board Results
+  (`fixtures/play.ts` `confirmBoardPassOut`, used by journeys).
+- [x] Mismatch variant A — different BOARD numbers entered by the two sides
+  ("different boards" copy) (`mismatch.journey.ts`).
+- [x] Mismatch variant B — same board, different RESULT ("different results"
+  copy) (`mismatch.journey.ts`).
+- [x] Mismatch shows NS-entered vs EW-entered contracts (`mismatch.journey.ts`).
+- [x] "Re-enter Result" returns to contract entry, and matching re-entry
+  confirms the board (`mismatch.journey.ts`).
+- [x] Sit-out submission rejected with "This board is a sit-out"
+  (`sit-out.journey.ts`, asserted over a direct socket ack).
+- [x] (PARTIAL) Partial submission: NS stays in "Waiting for confirmation"
+  until EW submits (asserted implicitly in every confirm/mismatch flow). A
+  duplicate-submission edge is not separately tested.
+
+---
+
+## 10. Director result correction / overrides
+
+- [x] Director opens a board's traveller before play; row shows "—"
+  (`traveller-live.journey.ts`).
+- [x] Director's open traveller updates live to the confirmed result
+  (`traveller-live.journey.ts`).
+- [x] (PARTIAL) Director override of a row → 1NT, propagated live to a mounted
+  player Board Results page (`traveller-live.journey.ts`,
+  `fixtures/director-override.ts`). Only the Pass Out → 1NT override is
+  exercised.
+- [ ] Select-board → traveller flow with tappable rows and empty state
+  ("No results for this board yet").
+- [ ] Director override of a **played contract** (level/suit/declarer/doubling/
+  result) via `DirectorContractWizard` (which skips board-select, starts at
+  Level) — **GAP**.
+- [ ] Adjusted-score override presets: AVE (50/50), AVE+/AVE− (60/40),
+  AVE−/AVE+ (40/60), AVE+/AVE+ (60/60), AVE−/AVE− (40/40) — **GAP**.
+- [ ] Adjusted-score custom NS%/EW% numeric entry — **GAP**.
+- [ ] `OVERRIDE_RESULT_TRAVELLER` "Saving override…" spinner and error banner
+  path.
+- [ ] Override propagates to OTHER viewers (leaderboard + another traveller
+  viewer), not only the acting director.
+
+---
+
+## 11. Real-time correctness
+
+- [x] Request-on-mount: a leaderboard opened before any result resolves past
+  the spinner and renders its header (`results-live.spec.ts`).
+- [x] Request-on-mount: a late-opened leaderboard and a late-opened director
+  traveller show already-confirmed results (`request-on-mount.journey.ts`).
+- [x] (PARTIAL) Occupancy-gated broadcasts implicitly exercised (a mounted
+  display receives the live push in `leaderboard-live.journey.ts`). The
+  no-viewer/no-compute optimisation itself is not directly asserted.
+- [ ] Reconnect re-fetch: contexts re-request state on `SocketEvents.CONNECT`
+  after a socket drop.
+- [ ] `game:join` does NOT replay feature state (joining is a dumb room-join).
+- [ ] `useSocketSWRSync` merges a mapped socket event into the SWR cache
+  without revalidation.
+
+---
+
+## 12. Timer — config
+
+- [x] (PARTIAL) `timer:create` via the setup UI (total rounds, play/move
+  durations) then Start becomes available (`timer.spec.ts`). Config is done in
+  the manage/timer route, not the create-flow Timer tab.
+- [ ] Timer configured in the `/create` Timer tab (config-only; cannot start
+  from setup).
+- [ ] `timer:saveConfig` persists a "configured but not started" state.
+- [x] Breaks: adding a break and configuring after-round + duration shows the
+  break screen on the display (`timer.spec.ts`).
+- [ ] Invalid break-timing alert ("Break timing is invalid") with per-break
+  overrun detail.
+- [ ] Session-length preview reflects config.
+- [ ] Multi-section "Apply to all sections" writes config to every section.
+
+---
+
+## 13. Timer — live controls
+
+- [x] Start / Pause toggle propagates to the display (PAUSED shown/hidden)
+  (`timer.spec.ts`).
+- [x] Resume after pause (`timer.spec.ts`).
+- [x] Next phase advances (Move for Round 2 shown) (`timer.spec.ts`).
+- [x] Previous phase steps back into a round's play (`timer.spec.ts`).
+- [ ] Previous-restart (`restart: true`) restarts the current phase rather than
+  stepping back.
+- [ ] Adjust time ±(1m/15s) on the current phase.
+- [ ] Adjust time with "apply to all subsequent phases of this type".
+- [ ] `updateConfig` / "Apply Changes" on a running timer.
+- [ ] Promote-on-start: a timer configured before start begins automatically at
+  game start.
+- [ ] Live status panel (phase, remaining, round, projected end) values.
+
+---
+
+## 14. Timer — display
+
+- [x] Display syncs to a timer created AFTER the display opened (request-on-
+  mount, not `game:join` replay) (`timer.spec.ts`).
+- [x] Round label ("Round 1 of 3") and PAUSED state render (`timer.spec.ts`).
+- [x] Countdown shows MM:SS while running (`timer.spec.ts`).
+- [ ] "Connecting…" placeholder before the first timer state arrives.
+- [ ] 1-second local countdown tick between server syncs.
+- [ ] Multi-section `SectionChooser` ("Choose a section") + "← Sections" back.
+- [ ] Single-section skips the chooser.
+- [ ] `serverNow` clock-offset correction keeps the display accurate.
+
+---
+
+## 15. Leaderboard display
+
+- [x] Empty state: standings table renders with zero rows before any board is
+  played (`leaderboard-live.journey.ts`).
+- [x] Standings gain rows live when a board is confirmed
+  (`leaderboard-live.journey.ts`).
+- [x] `leaderboard-standings` / `leaderboard-row` test hooks render
+  (`leaderboard-live.journey.ts`, `request-on-mount.journey.ts`).
+- [ ] `leaderboard-empty` ("No Results Yet") explicit empty-state copy.
+- [ ] Combined vs per-section pill tabs (multi-section); default Combined.
+- [ ] Single-section hides the tabs.
+- [ ] Pairs plugin leaderboard view rendering.
+- [ ] Team leaderboards: `TEAM_MATCH` variant.
+- [ ] Team leaderboards: `TEAM_OVERALL` variant.
+
+---
+
+## 16. Traveller display
+
+- [x] Traveller row renders the confirmed result live on confirm
+  (`traveller-live.journey.ts`).
+- [x] Traveller row updates live on director override
+  (`traveller-live.journey.ts`).
+- [ ] Traveller empty state ("No results for this board yet").
+- [ ] Scored traveller rendering (per-board scoring plugin) with the player's
+  own row highlighted.
+
+---
+
+## 17. Share director access
+
+- [ ] Share code generated on mount (`GENERATE_SHARE_CODE`).
+- [ ] 5-minute countdown shown as mm:ss.
+- [ ] Expiry → "Code expired." with a regenerate button.
+- [ ] "Generate New Code" produces a fresh code.
+- [ ] Generation error line shown when generation fails.
+- [ ] Claim input: uppercase, 6-char, submit disabled until length ≥ 6.
+- [ ] Valid claim → mints a director session → navigates to `/game/{id}/manage`.
+- [ ] Claim errors: "Invalid code", "Code has already been used", "Code has
+  expired".
+- [ ] Full co-director round-trip: generate on device A, claim on device B, B
+  can then manage the game.
+
+---
+
+## 18. Delete game
+
+- [x] (PARTIAL) Delete via the manage menu (Delete Game → Yes, Delete Game) is
+  used for journey cleanup (`fixtures/delete-game.ts`). It is best-effort
+  teardown, not an assertion that deletion succeeded.
+- [ ] Confirmation screen names the event being deleted.
+- [ ] On success the director token is cleared and the app navigates away.
+- [ ] Delete failure shows the inline error ("Failed to delete game" / "Network
+  error. Please try again.").
+- [ ] Buttons show "Deleting…" and disable while in flight.
+- [ ] `DELETE /api/games/{id}/delete` is director-authed (token in JSON body);
+  unauthorized without a valid token.
+
+---
+
+## 19. USEBIO export
+
+- [x] `GET /api/games/nonexistent/usebio` returns 404 + JSON content-type
+  (`api.spec.ts`).
+- [ ] USEBIO download happy path: confirm club info, POST club, GET usebio,
+  download the XML blob (filename from `Content-Disposition`, fallback
+  `results.xml`).
+- [ ] Required-field validation: "Both club name and number are required".
+- [ ] "Download USEBIO" hidden until the game has started.
+- [ ] "Download USEBIO" disabled until all results are in (`allResultsIn`).
+- [ ] API 400 when club info is not configured ("Club info not configured…").
+- [ ] `GET /usebio` is director-authed (token in the JSON body on a GET).
+
+---
+
+## 20. Settings & device
+
+- [x] Settings menu heading + WiFi/Club links visible and navigate
+  (`settings-menu.spec.ts`).
+- [x] Club page UI: heading, Club Name, EBU Club Number, Save, Back
+  (`club-settings.spec.ts`).
+- [x] `GET /api/system/club` returns club data shape (`club-settings.spec.ts`).
+- [x] `POST /api/system/club` saves; missing field → 400; save persists on GET
+  (`club-settings.spec.ts`).
+- [x] WiFi page UI: heading, network selector, password field, Test Connection,
+  Save & Apply disabled initially, Test disabled without a network, dropdown
+  placeholder (`settings.spec.ts`).
+- [ ] Admin-key gate (`AdminKeyEntry`) blocks settings until unlocked.
+  (Tests currently seed the token via `fixtures/settings.ts` `unlockSettings`,
+  bypassing the gate UI — the gate itself is untested.)
+- [ ] Admin-key verify success mints a token
+  (`POST /api/system/admin-key/verify`).
+- [ ] Admin-key verify wrong key → 401 "Incorrect admin key".
+- [ ] Update admin key (`POST /api/system/admin-key`); < 4 chars → 400.
+- [ ] WiFi scan (`POST /api/system/wifi/scan`) returns SSID list.
+- [ ] WiFi test success (`POST /api/system/wifi/test` → `{connected:true}`).
+- [ ] WiFi test failure returns HTTP 200 with `{success:false}` (test outcome,
+  not server error).
+- [ ] Save & Apply becomes enabled only after a successful test of the SAME
+  SSID.
+- [ ] WiFi restarting page shown after save.
+- [ ] Save WiFi (`POST /api/system/wifi`) is admin-gated.
+- [ ] Network read (`GET /api/system/network`) returns current/saved SSID.
+- [x] `POST /api/system/restart` responds (`api.spec.ts`).
+- [ ] `POST /api/system/reset-wifi` admin route.
+- [ ] `POST /api/system/reboot` admin route.
+
+---
+
+## 21. Auth & authorization
+
+- [ ] Director-only socket events reject a missing/invalid token with
+  `{success:false,error:"Unauthorized"}` (e.g. `game:start`,
+  `game:evictParticipant`, `game:updateTables`, section events,
+  `game:generateShareCode`, `traveller:overrideResult`, timer mutations).
+- [ ] HTTP director routes return 401 without a valid `directorToken` in the
+  body (`DELETE /delete`, `GET /usebio`).
+- [ ] Admin routes return 401 without a valid `x-admin-token` header.
+- [ ] **SECURITY GAP** — `game:submitResult` has NO director auth: any
+  connected client can submit results. Worth an explicit test.
+- [ ] **SECURITY GAP** — `game:createParticipant` has NO director auth: any
+  client can add participants.
+- [ ] **SECURITY GAP** — `POST /api/system/club` is NOT admin-gated despite
+  being a device setting.
+- [ ] `game:claimDirectorCode` is intentionally unauthenticated (claimant has
+  no token yet) — assert it works without a token but rejects bad codes.
+
+---
+
+## 22. HTTP API contract tests
+
+### Games
+
+- [x] `GET /api/games/joinable` returns a games array + correct shape
+  (`api.spec.ts`).
+- [x] `GET /api/games/[id]` unknown → 404 "Game not found" (`api.spec.ts`,
+  `smoke.spec.ts`).
+- [ ] `GET /api/games/[id]` existing → returns the game.
+- [ ] `GET /api/games/all` returns all games.
+- [ ] `GET /api/games/[id]/participants` returns pairs.
+- [ ] `GET /api/games/[id]/movement?section=` returns movement (with optional
+  section).
+- [ ] `GET /api/games/[id]/sections` returns section list with movement.
+- [x] `GET /api/games/nonexistent/boards` → 404 (`game-api.spec.ts`).
+- [ ] `GET /api/games/[id]/boards` existing → distinct board numbers.
+- [x] `GET /api/games/nonexistent/boards/1` → 404 (`game-api.spec.ts`).
+- [ ] `GET /api/games/[id]/boards/[n]` existing → instances.
+- [ ] `GET /api/games/[id]/boards/[non-int]` → 400 "Invalid board number".
+- [x] `GET /api/games/nonexistent/movement` → 404 (`game-api.spec.ts`).
+- [x] `GET /api/games/nonexistent/schedule/1NS` → 404 (`game-api.spec.ts`).
+- [ ] `GET /api/games/[id]/schedule/[seat]` existing → schedule; unknown seat →
+  404 "Schedule not found".
+- [ ] `GET /api/games/[id]/results-summary`.
+- [ ] `GET /api/games/[id]/start-check`.
+- [ ] `GET /api/games/[id]/usebio` director-authed happy path (see §19).
+- [ ] `DELETE /api/games/[id]/delete` director-authed (see §18).
+
+### Movements
+
+- [x] `GET /api/movements/pairs/{1,2,4}` + item shape (`api.spec.ts`).
+- [x] `GET /api/movements/detail/PAIRS/{id}` (`api.spec.ts`).
+- [x] `GET /api/movements/detail/INVALID_TYPE/1` → 400 (`api.spec.ts`).
+- [ ] `GET /api/movements/pairs/{invalid}` → 400 "Invalid table count".
+- [ ] `GET /api/movements/detail/PAIRS/{unknown}` → 404 "Movement not found".
+
+### Players
+
+- [x] `GET /api/players/search?q={ebu}` matches by EBU number (`api.spec.ts`).
+- [x] `GET /api/players/search?q={no-match}` → empty array (`api.spec.ts`).
+- [x] `GET /api/players/search?q=a` (< 2 chars) → empty array (`api.spec.ts`).
+- [ ] `GET /api/players/search?q={non-digit}` → empty (name search is absent;
+  only digit queries hit the DB).
+
+### System
+
+- [x] `GET /api/system/club` (`club-settings.spec.ts`).
+- [x] `POST /api/system/club` save / 400 / persistence (`club-settings.spec.ts`).
+- [x] `POST /api/system/restart` responds (`api.spec.ts`).
+- [ ] `POST /api/system/admin-key/verify` success (token) / 401 wrong key /
+  400 invalid.
+- [ ] `POST /api/system/admin-key` update / 400 < 4 chars / 401 without token.
+- [ ] `GET /api/system/network`.
+- [ ] `POST /api/system/wifi/scan`.
+- [ ] `POST /api/system/wifi` (admin-gated) / 400 invalid.
+- [ ] `POST /api/system/wifi/test` success + failure-as-200.
+- [ ] `POST /api/system/reset-wifi` (admin-gated).
+- [ ] `POST /api/system/reboot` (admin-gated).
+
+---
+
+## 23. Multi-section behaviour (cross-cutting)
+
+All GAPS — every journey uses a single section.
+
+- [ ] Setup: per-section table counts and per-section movement selection.
+- [ ] Leaderboard: Combined + per-section tabs.
+- [ ] Timer display: `SectionChooser` for a multi-section game.
+- [ ] Timer manage: `TimerSectionPicker` + "Apply to all sections".
+- [ ] Sit-out messaging when one section is a pair short.
+- [ ] Section-scoped seats (e.g. "A1NS" vs "B1NS") do not collide on
+  submissions.
+
+---
+
+## 24. Teams vs Pairs
+
+- [ ] Event Type "Teams" selectable at create.
+- [ ] ContractWizard header shows "Team {id}" for a team assignment (vs "Pair
+  {id}").
+- [ ] `TEAM_MATCH` leaderboard rendering.
+- [ ] `TEAM_OVERALL` leaderboard rendering.
+- [ ] **SPEC-vs-IMPLEMENTATION GAP** — team play/seating is not distinctly
+  implemented; the flow is pair-oriented and the director traveller hardcodes
+  `isPair = true`. A true teams journey cannot be authored until the team play
+  path exists. **No full teams UI, cannot E2E yet.**
+
+---
+
+## 25. Scoring types (MP / IMP / Cross-IMP)
+
+- [ ] **GAP** — scoring type is NOT selectable in the create UI. It surfaces
+  only via the traveller/leaderboard rendering plugins (`scoreBoard`,
+  `getOverallPlugin`). Covering MP vs IMP vs Cross-IMP rendering would require
+  **seeded games per scoring type**, since there is no UI to select it.
+
+---
+
+## 26. Cloud / subscription features
+
+- [ ] **GAP (no UI, cannot E2E yet)** — Publish event results to the cloud.
+- [ ] **GAP (no UI, cannot E2E yet)** — Receive software/appliance updates.
+- [ ] **GAP (no UI, cannot E2E yet)** — Back up appliance data.
+
+No front-end routes or components exist under `src/app` for these; only local
+system APIs (wifi/network/reboot/restart/reset-wifi/club/admin-key) are present.
+These are additive subscription features described in the product spec and are
+blocked on missing UI.
+
+---
+
+## Gaps summary (prioritized)
+
+Ordered by impact on confidence in the core product.
+
+**P1 — Core player play — LARGELY CLOSED** (`played-contract.journey.ts`,
+`mismatch.journey.ts`, `sit-out.journey.ts`):
+- [x] Real played-contract entry through the full ContractWizard (level → suit
+  → declarer → lead → made/down → confirm → submit), with opening lead both ON
+  and OFF.
+- [x] Both mismatch variants (different board; same board different result) and
+  the re-enter path.
+- [x] Sit-out round screen and sit-out submission rejection.
+- [x] Game-complete screen reached by playing a table's full schedule.
+- Remaining P1 follow-ups: a doubled/redoubled contract, the Down result range,
+  the Not-Played special outcome, `BoardSelector` paging, and asserting the
+  game-complete leaderboard's own-row highlight.
+
+**P2 — Director corrections & shared/multi-section operation:**
+- Director override of a played contract (not just Pass Out → 1NT).
+- Adjusted-score overrides (presets + custom NS%/EW%).
+- Share-code full co-director round-trip (generate on A, claim on B, manage).
+- Multi-section behaviour across setup, leaderboard tabs, and timer.
+
+**P3 — Setup & timer depth:**
+- Movement-type coverage: Mitchell, Howell, American Whist.
+- Section CRUD (add/rename/delete) and single-vs-multi rendering.
+- Table evict / resize and remove-table rules.
+- Timer `saveConfig`, `adjustTime` (± and apply-to-future), `updateConfig`,
+  previous-restart, and promote-on-start.
+- Reconnect re-fetch of live contexts.
+
+**P4 — Device / settings happy paths:**
+- Admin-key gate + verify (success and wrong key), update admin key.
+- WiFi scan → test → save gating (test-of-same-SSID enables Save), restart.
+- USEBIO happy-path download (validation, blob, disabled-until-all-results-in).
+
+**P5 — Security / authorization:**
+- Un-authed `game:submitResult` and `game:createParticipant` (any client can
+  act).
+- Un-gated `POST /api/system/club`.
+- Positive/negative auth on director socket events and HTTP director/admin
+  routes.
+
+**P6 — Spec-only, blocked on missing UI:**
+- Teams play/seating (pair-oriented implementation only).
+- Scoring-type selection (MP/IMP/Cross-IMP) — no create-UI selector.
+- Cloud/subscription: publish results, software updates, backups.
