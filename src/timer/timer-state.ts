@@ -67,6 +67,47 @@ export type TimerState = {
   breakDurationMs?: number | null;
 };
 
+/**
+ * Configuration for a timer, independent of any running state. This is what a
+ * director edits during game setup: phase lengths, breaks, and warning
+ * threshold. It carries no live/running fields.
+ */
+export interface TimerConfig {
+  boardsPerRound: number;
+  totalRounds: number;
+  playDuration: number;
+  moveDuration: number;
+  breaks?: BreakConfig[];
+  warningSeconds?: number;
+}
+
+/**
+ * Build a "configured but not started" timer state from a {@link TimerConfig}.
+ *
+ * This represents a timer the director has set up during game setup but which
+ * has not begun running: `phase` is `null` and `isRunning` is false, so the
+ * scheduler will never advance it and clients render it as not-yet-started. It
+ * is promoted to a live, running state when the game is started.
+ */
+export function buildConfiguredTimerState(config: TimerConfig): TimerState {
+  return {
+    version: 1,
+    phase: null,
+    board: 1,
+    round: 1,
+    boardsPerRound: config.boardsPerRound,
+    totalRounds: config.totalRounds,
+    playDuration: config.playDuration,
+    moveDuration: config.moveDuration,
+    breaks: config.breaks ?? [],
+    warningSeconds: config.warningSeconds,
+    isRunning: false,
+    phaseStartedAt: null,
+    remainingMs: null,
+    breakDurationMs: null,
+  };
+}
+
 /** Default warning threshold (seconds) when a state has none configured. */
 export const DEFAULT_WARNING_SECONDS = 60;
 

@@ -3,10 +3,11 @@ import { render, screen, act, waitFor } from "@testing-library/react";
 
 const mockOn = vi.fn();
 const mockOff = vi.fn();
+const mockEmit = vi.fn();
 const mockEmitWithAck = vi.fn();
 
 vi.mock("@/lib/socket", () => ({
-  getSocket: () => ({ on: mockOn, off: mockOff }),
+  getSocket: () => ({ on: mockOn, off: mockOff, emit: mockEmit }),
   emitWithAck: (...args: unknown[]) => mockEmitWithAck(...args),
 }));
 
@@ -29,6 +30,7 @@ const snapshot = {
   isRunning: false,
   phaseStartedAt: null,
   remainingMs: 300_000,
+  section: "A",
   serverNow: Date.now(),
   breakProblems: [],
 };
@@ -51,9 +53,9 @@ describe("TimerProvider", () => {
     mockEmitWithAck.mockResolvedValue(null);
   });
 
-  it("requests the timer snapshot on mount", async () => {
+  it("requests the section's timer snapshot on mount", async () => {
     render(
-      <TimerProvider>
+      <TimerProvider section="A">
         <Probe />
       </TimerProvider>,
     );
@@ -61,14 +63,14 @@ describe("TimerProvider", () => {
     await waitFor(() =>
       expect(mockEmitWithAck).toHaveBeenCalledWith(
         SocketEvents.REQUEST_STATE_TIMER,
-        { gameId: "g1" },
+        { gameId: "g1", section: "A" },
       ),
     );
   });
 
   it("subscribes to timer:sync and reconnect", () => {
     render(
-      <TimerProvider>
+      <TimerProvider section="A">
         <Probe />
       </TimerProvider>,
     );
@@ -87,7 +89,7 @@ describe("TimerProvider", () => {
     mockEmitWithAck.mockResolvedValue(snapshot);
 
     render(
-      <TimerProvider>
+      <TimerProvider section="A">
         <Probe />
       </TimerProvider>,
     );
@@ -98,14 +100,13 @@ describe("TimerProvider", () => {
     expect(screen.getByTestId("connected").textContent).toBe("true");
   });
 
-  it("applies live timer:sync events on top", async () => {
+  it("applies live timer:sync events for its own section", async () => {
     render(
-      <TimerProvider>
+      <TimerProvider section="A">
         <Probe />
       </TimerProvider>,
     );
 
-    // Find the timer:sync listener that was registered.
     const syncCall = mockOn.mock.calls.find(
       (c) => c[0] === SocketEvents.TIMER_SYNC,
     );
@@ -123,9 +124,51 @@ describe("TimerProvider", () => {
     expect(screen.getByTestId("round").textContent).toBe("3");
   });
 
+  it("ignores timer:sync events for a different section", async () => {
+    mockEmitWithAck.mockResolvedValue(snapshot);
+
+    render(
+      <TimerProvider section="A">
+        <Probe />
+      </TimerProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("round").textContent).toBe("2"),
+    );
+
+    const handler = mockOn.mock.calls.find(
+      (c) => c[0] === SocketEvents.TIMER_SYNC,
+    )![1];
+
+    // A sync for section B must not change section A's state.
+    act(() => {
+      handler({ ...snapshot, section: "B", round: 9, phase: "move" });
+    });
+
+    // Still showing A's values.
+    expect(screen.getByTestId("round").textContent).toBe("2");
+    expect(screen.getByTestId("phase").textContent).toBe("play");
+  });
+
+  it("leaves the section timer room on unmount", () => {
+    const { unmount } = render(
+      <TimerProvider section="A">
+        <Probe />
+      </TimerProvider>,
+    );
+
+    unmount();
+
+    expect(mockEmit).toHaveBeenCalledWith(SocketEvents.LEAVE_TIMER, {
+      gameId: "g1",
+      section: "A",
+    });
+  });
+
   it("re-requests the snapshot on reconnect", async () => {
     render(
-      <TimerProvider>
+      <TimerProvider section="A">
         <Probe />
       </TimerProvider>,
     );
@@ -151,7 +194,7 @@ describe("TimerProvider", () => {
     mockEmitWithAck.mockResolvedValue({ ...snapshot, serverNow: fixed + 5_000 });
 
     render(
-      <TimerProvider>
+      <TimerProvider section="A">
         <Probe />
       </TimerProvider>,
     );
@@ -171,7 +214,7 @@ describe("TimerProvider", () => {
     );
 
     const { unmount } = render(
-      <TimerProvider>
+      <TimerProvider section="A">
         <Probe />
       </TimerProvider>,
     );

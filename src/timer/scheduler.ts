@@ -1,20 +1,38 @@
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
 import { TimerState } from "@/timer/timer-state";
+import { SectionLetter } from "@/model/participants";
 
 type SchedulerDeps = {
-  updateTimerState: (gameId: string, timerState: TimerState) => Promise<void>;
+  updateTimerState: (
+    gameId: string,
+    section: SectionLetter,
+    timerState: TimerState,
+  ) => Promise<void>;
 
-  broadcast: (gameId: string, timerState: TimerState) => void;
+  broadcast: (
+    gameId: string,
+    section: SectionLetter,
+    timerState: TimerState,
+  ) => void;
 };
 
 type ScheduledGame = {
   timeout: NodeJS.Timeout;
 };
 
+/**
+ * Scheduled phase transitions keyed by `${gameId}:${section}` so each section's
+ * timer advances independently.
+ */
 const scheduledGames = new Map<string, ScheduledGame>();
 
-export function cancelGameSchedule(gameId: string) {
-  const existing = scheduledGames.get(gameId);
+function scheduleKey(gameId: string, section: SectionLetter): string {
+  return `${gameId}:${section}`;
+}
+
+export function cancelGameSchedule(gameId: string, section: SectionLetter) {
+  const key = scheduleKey(gameId, section);
+  const existing = scheduledGames.get(key);
 
   if (!existing) {
     return;
@@ -22,15 +40,16 @@ export function cancelGameSchedule(gameId: string) {
 
   clearTimeout(existing.timeout);
 
-  scheduledGames.delete(gameId);
+  scheduledGames.delete(key);
 }
 
 export function scheduleGame(
   gameId: string,
+  section: SectionLetter,
   engine: BridgeTimerEngine,
   deps: SchedulerDeps,
 ) {
-  cancelGameSchedule(gameId);
+  cancelGameSchedule(gameId, section);
 
   const state = engine.getState();
 
@@ -50,19 +69,19 @@ export function scheduleGame(
   const timeout = setTimeout(async () => {
     engine.nextPhase();
 
-    await deps.updateTimerState(gameId, engine.getState());
+    await deps.updateTimerState(gameId, section, engine.getState());
 
-    deps.broadcast(gameId, engine.getState());
+    deps.broadcast(gameId, section, engine.getState());
 
     /**
      * If the engine auto-continued
      * into the next phase,
      * schedule the next transition.
      */
-    scheduleGame(gameId, engine, deps);
+    scheduleGame(gameId, section, engine, deps);
   }, delay);
 
-  scheduledGames.set(gameId, {
+  scheduledGames.set(scheduleKey(gameId, section), {
     timeout,
   });
 }

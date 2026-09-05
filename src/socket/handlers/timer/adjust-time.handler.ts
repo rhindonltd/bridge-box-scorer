@@ -30,20 +30,25 @@ export function registerAdjustTimeHandler(socket: Socket, io: Server) {
       return;
     }
 
-    const { gameId, directorToken, deltaSeconds, applyToFutureSameType } =
-      parsed.data;
+    const {
+      gameId,
+      section,
+      directorToken,
+      deltaSeconds,
+      applyToFutureSameType,
+    } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
     try {
-      const engine = await getEngine(gameId);
+      const engine = await getEngine(gameId, section);
       if (!engine) return;
 
       engine.adjustTime(deltaSeconds * 1000, applyToFutureSameType ?? false);
 
-      await updateTimerState(gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+      await updateTimerState(gameId, section, engine.getState());
+      broadcast(gameId, section, engine.getState());
 
-      scheduleGame(gameId, engine, { updateTimerState, broadcast });
+      scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
     } catch (err) {
       console.error(`Failed to adjust timer time for game ${gameId}:`, err);
     }

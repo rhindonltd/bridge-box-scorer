@@ -20,19 +20,19 @@ export function registerStartTimerHandler(socket: Socket, io: Server) {
       return;
     }
 
-    const { gameId, directorToken } = parsed.data;
+    const { gameId, section, directorToken } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
     try {
-      const engine = await getEngine(gameId);
+      const engine = await getEngine(gameId, section);
       if (!engine) return;
 
       engine.start();
 
-      await updateTimerState(gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+      await updateTimerState(gameId, section, engine.getState());
+      broadcast(gameId, section, engine.getState());
 
-      scheduleGame(gameId, engine, { updateTimerState, broadcast });
+      scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
     } catch (err) {
       console.error(`Failed to start timer for game ${gameId}:`, err);
     }

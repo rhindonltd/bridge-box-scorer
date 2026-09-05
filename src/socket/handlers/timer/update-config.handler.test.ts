@@ -89,6 +89,7 @@ describe("registerUpdateConfigHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-5",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 4,
       totalRounds: 6,
@@ -100,14 +101,15 @@ describe("registerUpdateConfigHandler", () => {
       breaks: undefined,
       warningSeconds: undefined,
     });
-    expect(updateTimerState).toHaveBeenCalledWith("game-5", mockState);
-    expect(io.to).toHaveBeenCalledWith("game:game-5");
+    expect(updateTimerState).toHaveBeenCalledWith("game-5", "A", mockState);
+    expect(io.to).toHaveBeenCalledWith("game:game-5:timer:A");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
     );
     expect(scheduleGame).toHaveBeenCalledWith(
       "game-5",
+      "A",
       mockEngine,
       expect.objectContaining({
         updateTimerState,
@@ -128,6 +130,7 @@ describe("registerUpdateConfigHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-5",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 4,
       totalRounds: 6,
@@ -191,6 +194,7 @@ describe("registerUpdateConfigHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-5",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 4,
       totalRounds: 6,

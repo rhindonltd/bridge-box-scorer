@@ -90,9 +90,20 @@ for the section.
 
 ### Timer tab (optional)
 
-You can set up the round timer here before you start, but it is never required
-to start a game. The controls are the same as the standalone timer described in
-[The timer](#the-timer).
+Here you set up the round timer **before** the game starts: phase lengths,
+breaks, and the warning time. Tap **Save** to keep your settings. Setting up a
+timer is never required to start a game.
+
+Before the game starts you can only configure the timer here — you cannot run
+it. If you have saved a timer, it begins automatically when you tap **Start
+Game**, and from then on you control it (start, pause, adjust) from the Manage
+Game Menu. See [The timer](#the-timer).
+
+Each **section** has its own timer, so sections running at different speeds can
+be timed independently. When your game has more than one section, a section
+selector appears at the top of the Timer tab — pick a section, then set its
+timer. If every section runs to the same timing, set one up and tap **Apply to
+all sections** to copy it to them all.
 
 ---
 
@@ -119,8 +130,9 @@ to start a game. The controls are the same as the standalone timer described in
 | **Download USEBIO**        | Export the results as a USEBIO XML file for the EBU or a scoring program. |
 | **Delete Game** *(red)*    | Permanently delete the game. This cannot be undone.                       |
 
-The **timer** is reached through **Set Up Game → Timer tab** rather than being
-its own menu item.
+The **timer** is reached through **Set Up Game → Timer tab**. Before the game
+starts this shows the timer setup (configure and **Save**); once the game is in
+progress the same place shows the live timer controls (start, pause, adjust).
 
 ---
 
@@ -128,10 +140,13 @@ its own menu item.
 
 The timer shows players how long is left in each phase and, on the
 [Room Display](room-display-guide.md), a large countdown for the whole room.
+Each section has its own timer.
 
 ### Setting it up
 
-The timer configuration has:
+Before the game starts, set the timer up on the **Timer** tab. In a
+multi-section game, first choose the section from the selector at the top; the
+settings below apply to the chosen section. The configuration has:
 
 - **Boards / Round** and **Total Rounds**.
 - **Timing Mode** — **Per Round** (one play period per round) or **Per Board**
@@ -142,10 +157,13 @@ The timer configuration has:
   turn red as a warning.
 - **Breaks** — see below.
 
-Before you create the timer, the panel previews the **session length** and an
-estimated **finish time**.
+The panel previews the **session length** and an estimated **finish time**.
 
-Tap **Create** to start the timer session.
+Tap **Save** to keep the settings for this section. In a multi-section game,
+**Apply to all sections** saves the current settings to every section at once
+(you can still adjust any section afterwards). The timer does not start yet: it
+begins running automatically when you tap **Start Game**. You can come back and
+change the settings any time before you start.
 
 ### Breaks
 
@@ -161,7 +179,10 @@ flags it as an invalid break so you can fix it.
 
 ### Controlling a running timer
 
-Once a timer session exists you get:
+Once the game has started, open **Set Up Game → Timer** from the Manage Game
+Menu to control the live timer. In a multi-section game, pick the section from
+the selector at the top; the controls below act on that section's timer. You
+get:
 
 - **Apply Changes** — update the running timer with your edited settings
   without resetting it.

@@ -29,11 +29,11 @@ export function registerPreviousHandler(socket: Socket, io: Server) {
       return;
     }
 
-    const { gameId, directorToken, restart } = parsed.data;
+    const { gameId, section, directorToken, restart } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
     try {
-      const engine = await getEngine(gameId);
+      const engine = await getEngine(gameId, section);
       if (!engine) return;
 
       if (restart) {
@@ -42,10 +42,10 @@ export function registerPreviousHandler(socket: Socket, io: Server) {
         engine.previousPhase();
       }
 
-      await updateTimerState(gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+      await updateTimerState(gameId, section, engine.getState());
+      broadcast(gameId, section, engine.getState());
 
-      scheduleGame(gameId, engine, { updateTimerState, broadcast });
+      scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
     } catch (err) {
       console.error(`Failed to step timer back for game ${gameId}:`, err);
     }

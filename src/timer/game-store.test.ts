@@ -22,7 +22,7 @@ describe("game-store", () => {
     it("creates a new engine with correct initial state", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      const engine = await createEngine("game-1", 3, 5, 420, 60);
+      const engine = await createEngine("game-1", "A", 3, 5, 420, 60);
 
       expect(engine).toBeDefined();
       expect(engine.getState()).toMatchObject({
@@ -41,10 +41,11 @@ describe("game-store", () => {
     it("persists the timer state to the database", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      await createEngine("game-2", 2, 4, 300, 45);
+      await createEngine("game-2", "A", 2, 4, 300, 45);
 
       expect(updateTimerState).toHaveBeenCalledWith(
         "game-2",
+        "A",
         expect.objectContaining({
           version: 1,
           phase: "play",
@@ -59,8 +60,8 @@ describe("game-store", () => {
     it("caches the engine so getEngine returns it", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      const created = await createEngine("cached-1", 3, 5, 420, 60);
-      const fetched = await getEngine("cached-1");
+      const created = await createEngine("cached-1", "A", 3, 5, 420, 60);
+      const fetched = await getEngine("cached-1", "A");
 
       expect(fetched).toBe(created);
       expect(findTimerState).not.toHaveBeenCalled();
@@ -71,7 +72,7 @@ describe("game-store", () => {
     it("returns null if no engine exists in cache and DB returns null", async () => {
       vi.mocked(findTimerState).mockResolvedValue(null);
 
-      const engine = await getEngine("nonexistent");
+      const engine = await getEngine("nonexistent", "A");
 
       expect(engine).toBeNull();
     });
@@ -93,7 +94,7 @@ describe("game-store", () => {
 
       vi.mocked(findTimerState).mockResolvedValue(dbState);
 
-      const engine = await getEngine("db-game");
+      const engine = await getEngine("db-game", "A");
 
       expect(engine).not.toBeNull();
       expect(engine!.getState()).toMatchObject({
@@ -108,12 +109,12 @@ describe("game-store", () => {
     it("returns the map of all created engines", async () => {
       vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-      await createEngine("all-engines-1", 3, 5, 420, 60);
+      await createEngine("all-engines-1", "A", 3, 5, 420, 60);
 
       const allEngines = getAllEngines();
 
       expect(allEngines).toBeInstanceOf(Map);
-      expect(allEngines.has("all-engines-1")).toBe(true);
+      expect(allEngines.has("all-engines-1:A")).toBe(true);
     });
   });
 });

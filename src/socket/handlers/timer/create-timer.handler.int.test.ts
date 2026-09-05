@@ -25,7 +25,9 @@ import { createEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateTimerHandler } from "./create-timer.handler";
+import { registerRequestStateHandler } from "./request-state.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
+import { emitWithAck } from "@/socket/test/socket-helpers";
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
 import { TimerState } from "@/timer/timer-state";
 
@@ -69,16 +71,21 @@ describe("registerCreateTimerHandler (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerCreateTimerHandler(socket, io);
       });
     });
     closeServer = close;
 
-    // Join the game room first so we receive the broadcast
+    // Join the game and the section-A timer room so we receive the broadcast.
     await new Promise<void>((resolve) => {
       client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
         resolve(),
       );
+    });
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
+      gameId: "game-1",
+      section: "A",
     });
 
     const syncPromise = waitForEvent(client, "timer:sync");
@@ -86,6 +93,7 @@ describe("registerCreateTimerHandler (integration)", () => {
     client.emit(SocketEvents.CREATE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 5,
@@ -131,6 +139,7 @@ describe("registerCreateTimerHandler (integration)", () => {
     client.emit(SocketEvents.CREATE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "bad-token",
       boardsPerRound: 3,
       totalRounds: 5,

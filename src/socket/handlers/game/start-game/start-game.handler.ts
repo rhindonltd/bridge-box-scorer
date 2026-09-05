@@ -6,6 +6,7 @@ import { assertDirector } from "@/socket/middleware/director-auth";
 import { startGame } from "@/services/start-game-service";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { StartProblem } from "@/model/start-validator";
+import { promoteTimerAtGameStart } from "@/timer/promote-timer";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
@@ -49,6 +50,10 @@ export function registerStartGameHandler(socket: Socket, io: Server) {
           });
           return;
         }
+
+        // If the director configured a timer during setup, start it running
+        // now. Best-effort: never blocks the game from starting.
+        await promoteTimerAtGameStart(gameId, io);
 
         const updatedGame = await findGameById(gameId);
         io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, {

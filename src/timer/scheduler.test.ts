@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { scheduleGame } from "./scheduler";
+import { scheduleGame, cancelGameSchedule } from "./scheduler";
 import { BridgeTimerEngine } from "./bridge-timer-engine";
 import type { TimerState } from "./timer-state";
 
@@ -41,13 +41,21 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("g1", engine, deps);
+    scheduleGame("g1", "A", engine, deps);
 
     // Advance past the delay (remaining + 1000ms)
     await vi.advanceTimersByTimeAsync(4000);
 
-    expect(deps.updateTimerState).toHaveBeenCalled();
-    expect(deps.broadcast).toHaveBeenCalledWith("g1", expect.any(Object));
+    expect(deps.updateTimerState).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      expect.any(Object),
+    );
+    expect(deps.broadcast).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      expect.any(Object),
+    );
   });
 
   it("does not schedule if engine is not running", () => {
@@ -61,7 +69,7 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("g1", engine, deps);
+    scheduleGame("g1", "A", engine, deps);
 
     vi.advanceTimersByTime(10000);
 
@@ -75,7 +83,7 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("g1", engine, deps);
+    scheduleGame("g1", "A", engine, deps);
 
     vi.advanceTimersByTime(100000);
 
@@ -93,14 +101,14 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("g1", engine, deps);
+    scheduleGame("g1", "A", engine, deps);
 
     vi.advanceTimersByTime(100000);
 
     expect(deps.updateTimerState).not.toHaveBeenCalled();
   });
 
-  it("cancels a previous schedule when called again for same game", async () => {
+  it("cancels a previous schedule when called again for same game+section", async () => {
     const engine = makeEngine({
       playDuration: 10,
       isRunning: true,
@@ -111,7 +119,7 @@ describe("scheduleGame", () => {
       broadcast: vi.fn(),
     };
 
-    scheduleGame("g2", engine, deps);
+    scheduleGame("g2", "A", engine, deps);
 
     // Schedule again (should cancel previous)
     const engine2 = makeEngine({
@@ -119,12 +127,47 @@ describe("scheduleGame", () => {
       isRunning: true,
       phaseStartedAt: Date.now(),
     });
-    scheduleGame("g2", engine2, deps);
+    scheduleGame("g2", "A", engine2, deps);
 
     // Advance enough for second but not first
     await vi.advanceTimersByTimeAsync(7000);
 
     // Should have been called from the second schedule
     expect(deps.updateTimerState).toHaveBeenCalled();
+  });
+
+  it("schedules sections of the same game independently", async () => {
+    const deps = {
+      updateTimerState: vi.fn().mockResolvedValue(undefined),
+      broadcast: vi.fn(),
+    };
+
+    // Section A: short play so it fires soon; Section B: long play.
+    const engineA = makeEngine({
+      playDuration: 2,
+      isRunning: true,
+      phaseStartedAt: Date.now(),
+    });
+    const engineB = makeEngine({
+      playDuration: 60,
+      isRunning: true,
+      phaseStartedAt: Date.now(),
+    });
+
+    scheduleGame("g3", "A", engineA, deps);
+    scheduleGame("g3", "B", engineB, deps);
+
+    // Cancelling B must not affect A's pending fire.
+    cancelGameSchedule("g3", "B");
+
+    await vi.advanceTimersByTimeAsync(4000);
+
+    // Only A fired.
+    expect(deps.updateTimerState).toHaveBeenCalledTimes(1);
+    expect(deps.updateTimerState).toHaveBeenCalledWith(
+      "g3",
+      "A",
+      expect.any(Object),
+    );
   });
 });

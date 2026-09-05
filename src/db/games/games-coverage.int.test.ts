@@ -73,7 +73,7 @@ describe("games db: coverage gaps", () => {
   });
 
   describe("timer state", () => {
-    it("inserts then updates and reads back the timer state", async () => {
+    it("inserts then updates and reads back a section's timer state", async () => {
       const { updateTimerState } = await import(
         "@/db/games/actions/update-timer-state"
       );
@@ -82,16 +82,44 @@ describe("games db: coverage gaps", () => {
       );
 
       // No timer row yet.
-      expect(await findTimerState(harness.gameId)).toBeNull();
+      expect(await findTimerState(harness.gameId, "A")).toBeNull();
 
       const state = timerState();
-      await updateTimerState(harness.gameId, state);
-      expect(await findTimerState(harness.gameId)).toEqual(state);
+      await updateTimerState(harness.gameId, "A", state);
+      expect(await findTimerState(harness.gameId, "A")).toEqual(state);
 
       // Upsert overwrites the existing row.
       const updated = { ...state, round: 3, board: 5 };
-      await updateTimerState(harness.gameId, updated);
-      expect(await findTimerState(harness.gameId)).toEqual(updated);
+      await updateTimerState(harness.gameId, "A", updated);
+      expect(await findTimerState(harness.gameId, "A")).toEqual(updated);
+    });
+
+    it("keeps each section's timer state independent", async () => {
+      const { updateTimerState } = await import(
+        "@/db/games/actions/update-timer-state"
+      );
+      const { findTimerState, findAllTimerStates } = await import(
+        "@/db/games/queries/find-timer-state"
+      );
+
+      const stateA = { ...timerState(), totalRounds: 8 };
+      const stateB = { ...timerState(), totalRounds: 11, round: 4 };
+
+      await updateTimerState(harness.gameId, "A", stateA);
+      await updateTimerState(harness.gameId, "B", stateB);
+
+      // Reading one section never returns the other's state.
+      expect(await findTimerState(harness.gameId, "A")).toEqual(stateA);
+      expect(await findTimerState(harness.gameId, "B")).toEqual(stateB);
+
+      // A section with no saved timer stays null.
+      expect(await findTimerState(harness.gameId, "C")).toBeNull();
+
+      // findAllTimerStates returns every section keyed by letter.
+      const all = await findAllTimerStates(harness.gameId);
+      expect(all.size).toBe(2);
+      expect(all.get("A")).toEqual(stateA);
+      expect(all.get("B")).toEqual(stateB);
     });
 
     it("updateTimerState throws when the game db does not exist", async () => {
@@ -99,7 +127,7 @@ describe("games db: coverage gaps", () => {
         "@/db/games/actions/update-timer-state"
       );
       await expect(
-        updateTimerState(missingGameId, timerState()),
+        updateTimerState(missingGameId, "A", timerState()),
       ).rejects.toThrow(/Game db does not exist/);
     });
 
@@ -107,7 +135,7 @@ describe("games db: coverage gaps", () => {
       const { findTimerState } = await import(
         "@/db/games/queries/find-timer-state"
       );
-      await expect(findTimerState(missingGameId)).rejects.toThrow(
+      await expect(findTimerState(missingGameId, "A")).rejects.toThrow(
         /Game db does not exist/,
       );
     });

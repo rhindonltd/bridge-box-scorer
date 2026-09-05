@@ -68,13 +68,14 @@ describe("registerAdjustTimeHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-a",
+      section: "A",
       directorToken: "test-token",
       deltaSeconds: 60,
       applyToFutureSameType: true,
     });
 
     expect(mockEngine.adjustTime).toHaveBeenCalledWith(60_000, true);
-    expect(updateTimerState).toHaveBeenCalledWith("game-a", mockState);
+    expect(updateTimerState).toHaveBeenCalledWith("game-a", "A", mockState);
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
@@ -96,6 +97,7 @@ describe("registerAdjustTimeHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-a",
+      section: "A",
       directorToken: "test-token",
       deltaSeconds: -15,
     });
@@ -111,6 +113,7 @@ describe("registerAdjustTimeHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-a",
+      section: "A",
       directorToken: "test-token",
       deltaSeconds: 12.5,
     });

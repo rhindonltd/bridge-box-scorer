@@ -61,7 +61,7 @@ describe("registerRequestStateHandler (integration)", () => {
     const response: any = await emitWithAck(
       client,
       SocketEvents.REQUEST_STATE_TIMER,
-      { gameId: "game-rs" },
+      { gameId: "game-rs", section: "A" },
     );
 
     expect(response).toEqual({ success: true, data: null });
@@ -80,6 +80,7 @@ describe("registerRequestStateHandler (integration)", () => {
     client.emit(SocketEvents.CREATE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-rs",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 5,
@@ -91,7 +92,7 @@ describe("registerRequestStateHandler (integration)", () => {
     const response: any = await emitWithAck(
       client,
       SocketEvents.REQUEST_STATE_TIMER,
-      { gameId: "game-rs" },
+      { gameId: "game-rs", section: "A" },
     );
 
     expect(response.success).toBe(true);

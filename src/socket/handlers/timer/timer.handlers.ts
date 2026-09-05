@@ -8,6 +8,7 @@ import { registerUpdateConfigHandler } from "./update-config.handler";
 import { registerPreviousHandler } from "./previous.handler";
 import { registerAdjustTimeHandler } from "./adjust-time.handler";
 import { registerRequestStateHandler } from "./request-state.handler";
+import { registerSaveConfigHandler } from "./save-config.handler";
 
 export function registerTimerHandlers(socket: Socket, io: Server) {
   registerCreateTimerHandler(socket, io);
@@ -18,4 +19,5 @@ export function registerTimerHandlers(socket: Socket, io: Server) {
   registerPreviousHandler(socket, io);
   registerAdjustTimeHandler(socket, io);
   registerRequestStateHandler(socket, io);
+  registerSaveConfigHandler(socket, io);
 }

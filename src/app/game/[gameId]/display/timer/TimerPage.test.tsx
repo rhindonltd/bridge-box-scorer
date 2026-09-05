@@ -1,6 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 
+vi.mock("@/context/GameContext", () => ({
+  useRequiredGame: () => ({ game: { gameId: "g1" } }),
+}));
+
+let mockSections: { section: string; label: string }[] = [
+  { section: "A", label: "A" },
+];
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: mockSections, isLoading: false }),
+}));
+
 let mockTimerState: unknown = null;
 vi.mock("@/context/TimerContext", () => ({
   TimerProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -29,6 +40,7 @@ describe("TimerPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTimerState = null;
+    mockSections = [{ section: "A", label: "A" }];
     mockDerived.mockReturnValue({
       remaining: 120,
       phase: "play",
@@ -65,5 +77,36 @@ describe("TimerPage", () => {
       vi.advanceTimersByTime(1000);
     });
     expect(screen.getByTestId("display-timer")).toBeInTheDocument();
+  });
+
+  it("shows a section chooser for a multi-section game", () => {
+    mockSections = [
+      { section: "A", label: "A" },
+      { section: "B", label: "B" },
+    ];
+    mockTimerState = { phase: "play" };
+
+    render(<TimerPage />);
+
+    // No timer yet — the chooser is shown instead.
+    expect(screen.getByText("Choose a section")).toBeInTheDocument();
+    expect(screen.queryByTestId("display-timer")).toBeNull();
+  });
+
+  it("shows the chosen section's timer after picking a section", () => {
+    mockSections = [
+      { section: "A", label: "A" },
+      { section: "B", label: "B" },
+    ];
+    mockTimerState = { phase: "play" };
+
+    render(<TimerPage />);
+
+    act(() => {
+      screen.getByRole("button", { name: /Section B/ }).click();
+    });
+
+    expect(screen.getByTestId("display-timer")).toBeInTheDocument();
+    expect(screen.queryByText("Choose a section")).toBeNull();
   });
 });

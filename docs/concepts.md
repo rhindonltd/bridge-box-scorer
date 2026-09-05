@@ -18,8 +18,8 @@ step-by-step instructions.
 
 - **Section** — an independent group of tables within a game (e.g. "Section A").
   A game can have one section (the common case) or several for a large event.
-- Each section has its **own tables** and its **own movement**, chosen
-  independently.
+- Each section has its **own tables**, its **own movement**, and its **own
+  timer**, chosen independently.
 - Section headings only appear in the app when a game has **more than one**
   section; single-section games just show the tables.
 - The leaderboard shows **each section** ranked separately, plus a **combined**
@@ -95,7 +95,9 @@ step-by-step instructions.
   director-set number of seconds before play ends).
 - **Breaks** — scheduled after a given round, set either by a fixed **duration**
   or by a **resume-at** clock time.
-- Every device shows the same countdown, so all screens stay in step.
+- **Per section** — each section runs its own timer, so sections can be timed
+  independently. Every device shows the same countdown for a given section, so
+  all screens stay in step.
 
 ## Devices and settings
 

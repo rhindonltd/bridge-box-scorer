@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Socket } from "socket.io";
 import { createSocketTestServer } from "@/socket/test/socket-test-harness";
-import { waitForEvent } from "@/socket/test/socket-helpers";
+import { waitForEvent, emitWithAck } from "@/socket/test/socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";
 
 // ---- mocks ----
@@ -26,6 +26,7 @@ import { getEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerPauseTimerHandler } from "./pause-timer.handler";
+import { registerRequestStateHandler } from "./request-state.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
 import { TimerState } from "@/timer/timer-state";
@@ -35,7 +36,6 @@ describe("registerPauseTimerHandler (integration)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: valid director session
     vi.mocked(findLoginSession).mockReturnValue({
       token: "test-token",
       role: "DIRECTOR",
@@ -47,7 +47,19 @@ describe("registerPauseTimerHandler (integration)", () => {
     await closeServer?.();
   });
 
-  it("pauses timer and broadcasts timer:sync to the game room", async () => {
+  async function joinTimerRoom(client: Parameters<typeof waitForEvent>[0]) {
+    await new Promise<void>((resolve) => {
+      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
+        resolve(),
+      );
+    });
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
+      gameId: "game-1",
+      section: "A",
+    });
+  }
+
+  it("pauses timer and broadcasts timer:sync to the section timer room", async () => {
     const timerState: TimerState = {
       version: 1,
       phase: "play",
@@ -70,22 +82,20 @@ describe("registerPauseTimerHandler (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerPauseTimerHandler(socket, io);
       });
     });
     closeServer = close;
 
-    await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
-        resolve(),
-      );
-    });
+    await joinTimerRoom(client);
 
     const syncPromise = waitForEvent(client, "timer:sync");
 
     client.emit(SocketEvents.PAUSE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
     });
 
@@ -96,6 +106,7 @@ describe("registerPauseTimerHandler (integration)", () => {
       round: 1,
       isRunning: false,
       phaseStartedAt: null,
+      section: "A",
     });
     expect(syncPayload).toHaveProperty("serverNow");
     expect((syncPayload as any).remainingMs).toBeGreaterThan(0);
@@ -107,16 +118,14 @@ describe("registerPauseTimerHandler (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerPauseTimerHandler(socket, io);
       });
     });
     closeServer = close;
 
-    await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
-        resolve(),
-      );
-    });
+    await joinTimerRoom(client);
+    vi.mocked(getEngine).mockClear();
 
     const syncPromise = waitForEvent(client, "timer:sync", 500).catch(
       () => "timeout",
@@ -125,6 +134,7 @@ describe("registerPauseTimerHandler (integration)", () => {
     client.emit(SocketEvents.PAUSE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "bad-token",
     });
 
@@ -139,16 +149,13 @@ describe("registerPauseTimerHandler (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerPauseTimerHandler(socket, io);
       });
     });
     closeServer = close;
 
-    await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
-        resolve(),
-      );
-    });
+    await joinTimerRoom(client);
 
     const syncPromise = waitForEvent(client, "timer:sync", 500).catch(
       () => "timeout",
@@ -157,6 +164,7 @@ describe("registerPauseTimerHandler (integration)", () => {
     client.emit(SocketEvents.PAUSE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
     });
 

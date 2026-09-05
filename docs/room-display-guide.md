@@ -20,6 +20,11 @@ Anyone can open a display; it is read-only and does not need director access.
 
 ## The timer display
 
+Each section has its own timer. If the game has more than one section, the
+timer display first asks you to **choose a section**; the countdown then shows
+that section's timer. A **← Sections** button lets you switch to a different
+section. Single-section games skip this step and show the timer straight away.
+
 A full-screen countdown designed to be read from across the room:
 
 - A very large **MM:SS** countdown on a black background.

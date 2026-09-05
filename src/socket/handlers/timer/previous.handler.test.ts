@@ -69,12 +69,13 @@ describe("registerPreviousHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-p",
+      section: "A",
       directorToken: "test-token",
     });
 
     expect(mockEngine.previousPhase).toHaveBeenCalled();
     expect(mockEngine.restartPhase).not.toHaveBeenCalled();
-    expect(updateTimerState).toHaveBeenCalledWith("game-p", mockState);
+    expect(updateTimerState).toHaveBeenCalledWith("game-p", "A", mockState);
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
@@ -97,6 +98,7 @@ describe("registerPreviousHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-p",
+      section: "A",
       directorToken: "test-token",
       restart: true,
     });
@@ -131,6 +133,7 @@ describe("registerPreviousHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-p",
+      section: "A",
       directorToken: "test-token",
     });
 

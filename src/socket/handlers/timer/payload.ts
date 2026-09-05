@@ -30,6 +30,8 @@ export const timerConfigExtras = {
 export const directorTimerFields = {
   gameType: z.enum(GameTypes),
   gameId: z.string().min(1),
+  /** The section whose timer this event targets. */
+  section: z.string().min(1),
   directorToken: z.string().min(1),
 };
 
