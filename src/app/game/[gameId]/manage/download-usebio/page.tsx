@@ -2,6 +2,7 @@
 
 import { DownloadUsebioPage } from "@/app/game/[gameId]/manage/download-usebio/DownloadUsebioPage";
 import { useParams, useRouter } from "next/navigation";
+import { ResultsCompleteGuard } from "@/app/game/[gameId]/manage/StateGuards";
 
 export default function DownloadUsebioRoute() {
   const params = useParams<{ gameId: string }>();
@@ -9,9 +10,11 @@ export default function DownloadUsebioRoute() {
   const gameId = params.gameId;
 
   return (
-    <DownloadUsebioPage
-      onUsebioDownloaded={() => router.replace(`/game/${gameId}/manage`)}
-      onCancel={() => router.replace(`/game/${gameId}/manage`)}
-    />
+    <ResultsCompleteGuard gameId={gameId}>
+      <DownloadUsebioPage
+        onUsebioDownloaded={() => router.replace(`/game/${gameId}/manage`)}
+        onCancel={() => router.replace(`/game/${gameId}/manage`)}
+      />
+    </ResultsCompleteGuard>
   );
 }
