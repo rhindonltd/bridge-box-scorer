@@ -28,7 +28,11 @@ export function TableRow({
       : "hover:bg-gray-100";
 
   return (
-    <tr className={`${rowClass} ${className}`} data-testid={testId}>
+    <tr
+      className={`${rowClass} ${className}`}
+      data-testid={testId}
+      data-highlighted={highlighted ? "true" : undefined}
+    >
       {cells.map((cell, index) => {
         const isLast = index === cells.length - 1;
         // The top-corner radii are only meant to soften the very first row.
