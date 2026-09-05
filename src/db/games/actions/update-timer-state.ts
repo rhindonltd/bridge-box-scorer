@@ -3,8 +3,18 @@ import "server-only";
 import { getDb } from "@/db/games";
 import { TimerState } from "@/timer/timer-state";
 import { metadata } from "@/db/games/tables/metadata";
+import { SectionLetter } from "@/model/participants";
+import { timerKey } from "@/db/games/queries/find-timer-state";
 
-export async function updateTimerState(gameId: string, timerState: TimerState) {
+/**
+ * Persist a single section's timer state, keyed by `timer:{section}` in the
+ * game's metadata. Upserts so re-saving overwrites the section's config/state.
+ */
+export async function updateTimerState(
+  gameId: string,
+  section: SectionLetter,
+  timerState: TimerState,
+) {
   const db = await getDb(gameId);
 
   if (!db) {
@@ -14,7 +24,7 @@ export async function updateTimerState(gameId: string, timerState: TimerState) {
   await db
     .insert(metadata)
     .values({
-      key: "timer",
+      key: timerKey(section),
       value: JSON.stringify(timerState),
     })
     .onConflictDoUpdate({

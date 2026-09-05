@@ -81,18 +81,20 @@ describe("registerNextRoundHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-3",
+      section: "A",
       directorToken: "test-token",
     });
 
     expect(mockEngine.nextPhase).toHaveBeenCalled();
-    expect(updateTimerState).toHaveBeenCalledWith("game-3", mockState);
-    expect(io.to).toHaveBeenCalledWith("game:game-3");
+    expect(updateTimerState).toHaveBeenCalledWith("game-3", "A", mockState);
+    expect(io.to).toHaveBeenCalledWith("game:game-3:timer:A");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
     );
     expect(scheduleGame).toHaveBeenCalledWith(
       "game-3",
+      "A",
       mockEngine,
       expect.objectContaining({
         updateTimerState,
@@ -113,6 +115,7 @@ describe("registerNextRoundHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-3",
+      section: "A",
       directorToken: "test-token",
     });
 
@@ -168,6 +171,7 @@ describe("registerNextRoundHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-3",
+      section: "A",
       directorToken: "test-token",
     });
 

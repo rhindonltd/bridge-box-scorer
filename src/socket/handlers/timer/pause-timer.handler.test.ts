@@ -78,13 +78,14 @@ describe("registerPauseTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-2",
+      section: "A",
       directorToken: "test-token",
     });
 
     expect(mockEngine.pause).toHaveBeenCalled();
-    expect(cancelGameSchedule).toHaveBeenCalledWith("game-2");
-    expect(updateTimerState).toHaveBeenCalledWith("game-2", mockState);
-    expect(io.to).toHaveBeenCalledWith("game:game-2");
+    expect(cancelGameSchedule).toHaveBeenCalledWith("game-2", "A");
+    expect(updateTimerState).toHaveBeenCalledWith("game-2", "A", mockState);
+    expect(io.to).toHaveBeenCalledWith("game:game-2:timer:A");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
@@ -103,6 +104,7 @@ describe("registerPauseTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-2",
+      section: "A",
       directorToken: "test-token",
     });
 
@@ -158,6 +160,7 @@ describe("registerPauseTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-2",
+      section: "A",
       directorToken: "test-token",
     });
 

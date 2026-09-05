@@ -25,7 +25,9 @@ import { getEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerUpdateConfigHandler } from "./update-config.handler";
+import { registerRequestStateHandler } from "./request-state.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
+import { emitWithAck } from "@/socket/test/socket-helpers";
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
 import { TimerState } from "@/timer/timer-state";
 
@@ -69,6 +71,7 @@ describe("registerUpdateConfigHandler (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerUpdateConfigHandler(socket, io);
       });
     });
@@ -79,12 +82,17 @@ describe("registerUpdateConfigHandler (integration)", () => {
         resolve(),
       );
     });
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
+      gameId: "game-1",
+      section: "A",
+    });
 
     const syncPromise = waitForEvent(client, "timer:sync");
 
     client.emit(SocketEvents.UPDATE_CONFIG_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 4,
       totalRounds: 7,
@@ -127,6 +135,7 @@ describe("registerUpdateConfigHandler (integration)", () => {
     client.emit(SocketEvents.UPDATE_CONFIG_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "bad-token",
       boardsPerRound: 4,
       totalRounds: 7,
@@ -163,6 +172,7 @@ describe("registerUpdateConfigHandler (integration)", () => {
     client.emit(SocketEvents.UPDATE_CONFIG_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 4,
       totalRounds: 7,

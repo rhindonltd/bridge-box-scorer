@@ -16,8 +16,19 @@ export interface TimerConfigViewProps extends TimerConfigHandlers {
   /** Projected end time for the preview panel. */
   previewEnd: string;
   breakProblems: BreakProblem[];
-  /** Persist the current configuration (does not start the timer). */
+  /** Persist the current configuration for this section (does not start it). */
   onSave: () => void;
+  /**
+   * When provided, show an "Apply to all sections" action that saves the
+   * current configuration to every section. Only meaningful for multi-section
+   * games.
+   */
+  onApplyToAll?: () => void;
+  /**
+   * Optional content rendered above the config (e.g. a section selector for
+   * multi-section games).
+   */
+  headerSlot?: React.ReactNode;
   /**
    * When true, render without the outer GamePageLayout so the screen can be
    * embedded (e.g. beneath the setup flow's tab bar).
@@ -42,6 +53,8 @@ export function TimerConfigView({
   onRemoveBreak,
   onBreakChange,
   onSave,
+  onApplyToAll,
+  headerSlot,
   embedded = false,
 }: TimerConfigViewProps) {
   const saveButton = (
@@ -52,6 +65,14 @@ export function TimerConfigView({
       >
         Save
       </button>
+      {onApplyToAll && (
+        <button
+          onClick={onApplyToAll}
+          className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400`}
+        >
+          Apply to all sections
+        </button>
+      )}
     </div>
   );
 
@@ -88,6 +109,7 @@ export function TimerConfigView({
 
   const body = (
     <>
+      {headerSlot}
       {status}
       {breakProblemPrompt}
       <TimerConfigFields config={config} onConfigChange={onConfigChange} />

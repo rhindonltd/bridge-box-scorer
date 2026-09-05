@@ -13,7 +13,7 @@ import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerRequestStateHandler } from "./request-state.handler";
 
 function createMockSocket() {
-  return { data: {}, id: "test", on: vi.fn() } as any;
+  return { data: {}, id: "test", on: vi.fn(), join: vi.fn(), leave: vi.fn() } as any;
 }
 
 function createMockIo() {
@@ -61,7 +61,7 @@ describe("registerRequestStateHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "game-1" }, cb);
+    await handler({ gameId: "game-1", section: "A" }, cb);
 
     expect(cb).toHaveBeenCalledWith({
       success: true,
@@ -82,7 +82,7 @@ describe("registerRequestStateHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "game-1" }, cb);
+    await handler({ gameId: "game-1", section: "A" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: true, data: null });
   });
@@ -94,7 +94,7 @@ describe("registerRequestStateHandler", () => {
     registerRequestStateHandler(socket, createMockIo());
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameId: "game-1" }, vi.fn());
+    await handler({ gameId: "game-1", section: "A" }, vi.fn());
 
     expect(findLoginSession).not.toHaveBeenCalled();
   });
@@ -122,7 +122,7 @@ describe("registerRequestStateHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    await handler({ gameId: "game-1" }, cb);
+    await handler({ gameId: "game-1", section: "A" }, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: true, data: null });
   });
@@ -134,6 +134,6 @@ describe("registerRequestStateHandler", () => {
     registerRequestStateHandler(socket, createMockIo());
 
     const handler = socket.on.mock.calls[0][1];
-    await expect(handler({ gameId: "game-1" }, undefined)).resolves.not.toThrow();
+    await expect(handler({ gameId: "game-1", section: "A" }, undefined)).resolves.not.toThrow();
   });
 });

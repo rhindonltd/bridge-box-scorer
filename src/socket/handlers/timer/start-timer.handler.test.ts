@@ -78,18 +78,20 @@ describe("registerStartTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
     });
 
     expect(mockEngine.start).toHaveBeenCalled();
-    expect(updateTimerState).toHaveBeenCalledWith("game-1", mockState);
-    expect(io.to).toHaveBeenCalledWith("game:game-1");
+    expect(updateTimerState).toHaveBeenCalledWith("game-1", "A", mockState);
+    expect(io.to).toHaveBeenCalledWith("game:game-1:timer:A");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
     );
     expect(scheduleGame).toHaveBeenCalledWith(
       "game-1",
+      "A",
       mockEngine,
       expect.objectContaining({
         updateTimerState,
@@ -110,6 +112,7 @@ describe("registerStartTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
     });
 
@@ -183,6 +186,7 @@ describe("registerStartTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
     });
 

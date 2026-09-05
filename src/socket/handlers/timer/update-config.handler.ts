@@ -36,6 +36,7 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
 
     const {
       gameId,
+      section,
       directorToken,
       boardsPerRound,
       totalRounds,
@@ -47,7 +48,7 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
     if (!assertDirector(directorToken, gameId)) return;
 
     try {
-      const engine = await getEngine(gameId);
+      const engine = await getEngine(gameId, section);
       if (!engine) return;
 
       engine.updateConfig(boardsPerRound, totalRounds, playDuration, moveDuration, {
@@ -55,10 +56,10 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
         warningSeconds,
       });
 
-      await updateTimerState(gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+      await updateTimerState(gameId, section, engine.getState());
+      broadcast(gameId, section, engine.getState());
 
-      scheduleGame(gameId, engine, { updateTimerState, broadcast });
+      scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
     } catch (err) {
       console.error(`Failed to update timer config for game ${gameId}:`, err);
     }

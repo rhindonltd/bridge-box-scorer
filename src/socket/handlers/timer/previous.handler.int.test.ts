@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Socket } from "socket.io";
 import { createSocketTestServer } from "@/socket/test/socket-test-harness";
-import { waitForEvent } from "@/socket/test/socket-helpers";
+import { waitForEvent, emitWithAck } from "@/socket/test/socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";
 
 vi.mock("@/timer/game-store", () => ({
@@ -25,6 +25,7 @@ import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { scheduleGame } from "@/timer/scheduler";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerPreviousHandler } from "./previous.handler";
+import { registerRequestStateHandler } from "./request-state.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
 
 describe("registerPreviousHandler (integration)", () => {
@@ -56,6 +57,7 @@ describe("registerPreviousHandler (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerPreviousHandler(socket, io);
       });
     });
@@ -64,12 +66,17 @@ describe("registerPreviousHandler (integration)", () => {
     await new Promise<void>((resolve) => {
       client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () => resolve());
     });
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
+      gameId: "game-1",
+      section: "A",
+    });
 
     const syncPromise = waitForEvent(client, "timer:sync");
 
     client.emit(SocketEvents.PREVIOUS_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
     });
 
@@ -122,6 +129,7 @@ describe("registerPreviousHandler (integration)", () => {
     client.emit(SocketEvents.PREVIOUS_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
     });
 

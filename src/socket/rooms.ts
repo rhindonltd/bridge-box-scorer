@@ -12,6 +12,14 @@ export const Rooms = {
     `game:${gameId}:section:${section}`,
 
   /**
+   * A room scoped to a single section's timer. Clients viewing that section's
+   * timer (director controls or the Room Display) join this room so the
+   * server broadcasts each section's timer only to the clients watching it.
+   */
+  timer: (gameId: string, section: string) =>
+    `game:${gameId}:timer:${section}`,
+
+  /**
    * A room scoped to a game's leaderboard. Clients currently viewing the
    * leaderboard join this room so the server can (a) push recomputed
    * leaderboard snapshots to just those clients and (b) skip the recompute

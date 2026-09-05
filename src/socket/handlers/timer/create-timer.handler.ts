@@ -10,6 +10,7 @@ import { timerConfigExtras, toBreakConfigs } from "./payload";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
+  section: z.string().min(1),
   directorToken: z.string().min(1),
   boardsPerRound: z.number().int().positive(),
   totalRounds: z.number().int().positive(),
@@ -30,6 +31,7 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
 
     const {
       gameId,
+      section,
       directorToken,
       boardsPerRound,
       totalRounds,
@@ -43,6 +45,7 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
     try {
       const engine = await createEngine(
         gameId,
+        section,
         boardsPerRound,
         totalRounds,
         playDuration,
@@ -50,10 +53,10 @@ export function registerCreateTimerHandler(socket: Socket, io: Server) {
         { breaks: toBreakConfigs(breaks), warningSeconds },
       );
 
-      await updateTimerState(gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+      await updateTimerState(gameId, section, engine.getState());
+      broadcast(gameId, section, engine.getState());
 
-      scheduleGame(gameId, engine, { updateTimerState, broadcast });
+      scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
     } catch (err) {
       console.error(`Failed to create timer for game ${gameId}:`, err);
     }

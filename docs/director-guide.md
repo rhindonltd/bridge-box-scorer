@@ -99,6 +99,12 @@ it. If you have saved a timer, it begins automatically when you tap **Start
 Game**, and from then on you control it (start, pause, adjust) from the Manage
 Game Menu. See [The timer](#the-timer).
 
+Each **section** has its own timer, so sections running at different speeds can
+be timed independently. When your game has more than one section, a section
+selector appears at the top of the Timer tab — pick a section, then set its
+timer. If every section runs to the same timing, set one up and tap **Apply to
+all sections** to copy it to them all.
+
 ---
 
 ## Managing a running game
@@ -134,11 +140,13 @@ progress the same place shows the live timer controls (start, pause, adjust).
 
 The timer shows players how long is left in each phase and, on the
 [Room Display](room-display-guide.md), a large countdown for the whole room.
+Each section has its own timer.
 
 ### Setting it up
 
-Before the game starts, set the timer up on the **Timer** tab. The configuration
-has:
+Before the game starts, set the timer up on the **Timer** tab. In a
+multi-section game, first choose the section from the selector at the top; the
+settings below apply to the chosen section. The configuration has:
 
 - **Boards / Round** and **Total Rounds**.
 - **Timing Mode** — **Per Round** (one play period per round) or **Per Board**
@@ -151,9 +159,11 @@ has:
 
 The panel previews the **session length** and an estimated **finish time**.
 
-Tap **Save** to keep your settings. The timer does not start yet: it begins
-running automatically when you tap **Start Game**. You can come back and change
-the settings any time before you start.
+Tap **Save** to keep the settings for this section. In a multi-section game,
+**Apply to all sections** saves the current settings to every section at once
+(you can still adjust any section afterwards). The timer does not start yet: it
+begins running automatically when you tap **Start Game**. You can come back and
+change the settings any time before you start.
 
 ### Breaks
 
@@ -170,7 +180,9 @@ flags it as an invalid break so you can fix it.
 ### Controlling a running timer
 
 Once the game has started, open **Set Up Game → Timer** from the Manage Game
-Menu to control the live timer. You get:
+Menu to control the live timer. In a multi-section game, pick the section from
+the selector at the top; the controls below act on that section's timer. You
+get:
 
 - **Apply Changes** — update the running timer with your edited settings
   without resetting it.

@@ -30,6 +30,14 @@ vi.mock("@/lib/director-token", () => ({
   getDirectorToken: () => "token",
 }));
 
+// Section list drives the section picker. Default: a single section A.
+let mockSections: { section: string; label: string }[] = [
+  { section: "A", label: "A" },
+];
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: mockSections, isLoading: false }),
+}));
+
 import {
   TimerSetup,
   TimerManager,
@@ -41,6 +49,7 @@ describe("TimerSetup (config screen)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTimerState = null;
+    mockSections = [{ section: "A", label: "A" }];
   });
 
   it("saves the current config with timer:saveConfig and shows no run controls", () => {
@@ -444,5 +453,91 @@ describe("timer config helpers", () => {
     expect(d2.getDate()).toBe(2);
     expect(d2.getHours()).toBe(8);
     expect(nextDay).toBeGreaterThan(noon);
+  });
+});
+
+describe("per-section timer UI", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockTimerState = null;
+  });
+
+  it("shows no section picker or Apply-to-all for a single-section game", () => {
+    mockSections = [{ section: "A", label: "A" }];
+    render(<TimerSetup />);
+
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Apply to all sections" }),
+    ).toBeNull();
+  });
+
+  it("saves config for the selected section", () => {
+    mockSections = [
+      { section: "A", label: "A" },
+      { section: "B", label: "B" },
+    ];
+    render(<TimerSetup />);
+
+    // Defaults to the first section.
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mockEmit).toHaveBeenCalledWith(
+      SocketEvents.SAVE_CONFIG_TIMER,
+      expect.objectContaining({ section: "A" }),
+    );
+
+    // Switch to section B and save again.
+    fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mockEmit).toHaveBeenCalledWith(
+      SocketEvents.SAVE_CONFIG_TIMER,
+      expect.objectContaining({ section: "B" }),
+    );
+  });
+
+  it("Apply to all sections saves the config to every section", () => {
+    mockSections = [
+      { section: "A", label: "A" },
+      { section: "B", label: "B" },
+      { section: "C", label: "C" },
+    ];
+    render(<TimerSetup />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Apply to all sections" }),
+    );
+
+    const saved = mockEmit.mock.calls
+      .filter((c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER)
+      .map((c) => c[1].section);
+    expect(saved).toEqual(["A", "B", "C"]);
+  });
+
+  it("live controls target the selected section", () => {
+    mockSections = [
+      { section: "A", label: "A" },
+      { section: "B", label: "B" },
+    ];
+    mockTimerState = {
+      phase: "play",
+      round: 1,
+      totalRounds: 8,
+      board: 1,
+      boardsPerRound: 3,
+      isRunning: false,
+      playDuration: 120,
+      moveDuration: 90,
+      phaseStartedAt: null,
+      remainingMs: null,
+    };
+
+    render(<TimerManager started={true} />);
+
+    fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+    expect(mockEmit).toHaveBeenCalledWith(
+      SocketEvents.START_TIMER,
+      expect.objectContaining({ section: "B" }),
+    );
   });
 });

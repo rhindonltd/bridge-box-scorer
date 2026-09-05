@@ -450,12 +450,18 @@ describe("Multi-client Socket.IO scenarios", () => {
 
       await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "g1" });
       await emitWithAck(player, SocketEvents.JOIN_GAME, { gameId: "g1" });
+      // The player watches section A's timer (joins that timer room).
+      await emitWithAck(player, SocketEvents.REQUEST_STATE_TIMER, {
+        gameId: "g1",
+        section: "A",
+      });
 
       const syncPromise = waitForEvent(player, SocketEvents.TIMER_SYNC);
 
       client.emit(SocketEvents.START_TIMER, {
         gameType: "PAIRS",
         gameId: "g1",
+        section: "A",
         directorToken: "tok",
       });
 
@@ -464,6 +470,7 @@ describe("Multi-client Socket.IO scenarios", () => {
         phase: "play",
         round: 1,
         isRunning: true,
+        section: "A",
         serverNow: expect.any(Number),
       });
     });

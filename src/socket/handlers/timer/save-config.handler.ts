@@ -9,6 +9,7 @@ import { buildConfiguredTimerState } from "@/timer/timer-state";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
+  section: z.string().min(1),
   directorToken: z.string().min(1),
   boardsPerRound: z.number().int().positive(),
   totalRounds: z.number().int().positive(),
@@ -38,6 +39,7 @@ export function registerSaveConfigHandler(socket: Socket, io: Server) {
 
     const {
       gameId,
+      section,
       directorToken,
       boardsPerRound,
       totalRounds,
@@ -58,8 +60,8 @@ export function registerSaveConfigHandler(socket: Socket, io: Server) {
         warningSeconds,
       });
 
-      await updateTimerState(gameId, timerState);
-      broadcast(gameId, timerState);
+      await updateTimerState(gameId, section, timerState);
+      broadcast(gameId, section, timerState);
     } catch (err) {
       console.error(`Failed to save timer config for game ${gameId}:`, err);
     }

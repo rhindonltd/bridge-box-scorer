@@ -15,6 +15,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { useRequiredGame } from "@/context/GameContext";
 
 type TimerSyncPayload = TimerState & {
+  section: string;
   serverNow: number;
   breakProblems?: BreakProblem[];
 };
@@ -36,7 +37,14 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
  * broadcast, then applies live `timer:sync` events on top. This keeps `game:join`
  * dumb: initial timer state is a timer concern, not a room-join concern.
  */
-export function TimerProvider({ children }: { children: ReactNode }) {
+export function TimerProvider({
+  section,
+  children,
+}: {
+  /** The section whose timer this provider tracks. */
+  section: string;
+  children: ReactNode;
+}) {
   const { game } = useRequiredGame();
   const gameId = game.gameId;
 
@@ -55,7 +63,11 @@ export function TimerProvider({ children }: { children: ReactNode }) {
 
     function apply(payload: TimerSyncPayload | null) {
       if (cancelled || !payload) return;
-      const { serverNow, breakProblems: problems, ...state } = payload;
+      // Defensive: ignore syncs for a different section (the room already
+      // scopes delivery, but a shared socket could receive multiple sections).
+      if (payload.section !== section) return;
+      const { serverNow, breakProblems: problems, section: _s, ...state } =
+        payload;
       setTimerState(state);
       setBreakProblems(problems ?? []);
       offsetRef.current = serverNow - Date.now();
@@ -65,7 +77,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       try {
         const snapshot = await emitWithAck<TimerSyncPayload | null>(
           SocketEvents.REQUEST_STATE_TIMER,
-          { gameId },
+          { gameId, section },
         );
         apply(snapshot);
       } catch {
@@ -91,8 +103,10 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       socket.off(SocketEvents.TIMER_SYNC, handleSync);
       socket.off(SocketEvents.CONNECT, handleReconnect);
+      // Leave this section's timer room so we stop receiving its updates.
+      socket.emit(SocketEvents.LEAVE_TIMER, { gameId, section });
     };
-  }, [gameId]);
+  }, [gameId, section]);
 
   return (
     <TimerContext.Provider

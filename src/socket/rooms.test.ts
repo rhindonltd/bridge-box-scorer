@@ -33,4 +33,14 @@ describe("Rooms", () => {
       expect(Rooms.section("g1", "A")).not.toBe(Rooms.section("g1", "B"));
     });
   });
+
+  describe("timer", () => {
+    it("returns a timer room scoped to a game's section", () => {
+      expect(Rooms.timer("abc123", "A")).toBe("game:abc123:timer:A");
+    });
+
+    it("distinguishes sections' timers within the same game", () => {
+      expect(Rooms.timer("g1", "A")).not.toBe(Rooms.timer("g1", "B"));
+    });
+  });
 });

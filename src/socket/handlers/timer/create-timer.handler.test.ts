@@ -80,6 +80,7 @@ describe("registerCreateTimerHandler", () => {
     await handler({
       gameType: "PAIRS",
       gameId: "game-4",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 5,
@@ -87,18 +88,19 @@ describe("registerCreateTimerHandler", () => {
       moveDuration: 60,
     });
 
-    expect(createEngine).toHaveBeenCalledWith("game-4", 3, 5, 420, 60, {
+    expect(createEngine).toHaveBeenCalledWith("game-4", "A", 3, 5, 420, 60, {
       breaks: undefined,
       warningSeconds: undefined,
     });
-    expect(updateTimerState).toHaveBeenCalledWith("game-4", mockState);
-    expect(io.to).toHaveBeenCalledWith("game:game-4");
+    expect(updateTimerState).toHaveBeenCalledWith("game-4", "A", mockState);
+    expect(io.to).toHaveBeenCalledWith("game:game-4:timer:A");
     expect(io._emit).toHaveBeenCalledWith(
       "timer:sync",
       expect.objectContaining(mockState),
     );
     expect(scheduleGame).toHaveBeenCalledWith(
       "game-4",
+      "A",
       mockEngine,
       expect.objectContaining({
         updateTimerState,

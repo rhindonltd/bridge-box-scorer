@@ -20,20 +20,20 @@ export function registerPauseTimerHandler(socket: Socket, io: Server) {
       return;
     }
 
-    const { gameId, directorToken } = parsed.data;
+    const { gameId, section, directorToken } = parsed.data;
     if (!assertDirector(directorToken, gameId)) return;
 
     try {
-      const engine = await getEngine(gameId);
+      const engine = await getEngine(gameId, section);
       if (!engine) return;
 
       engine.pause();
 
       // Explicitly cancel any scheduled phase transition since we're now paused
-      cancelGameSchedule(gameId);
+      cancelGameSchedule(gameId, section);
 
-      await updateTimerState(gameId, engine.getState());
-      broadcast(gameId, engine.getState());
+      await updateTimerState(gameId, section, engine.getState());
+      broadcast(gameId, section, engine.getState());
     } catch (err) {
       console.error(`Failed to pause timer for game ${gameId}:`, err);
     }

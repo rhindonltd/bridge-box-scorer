@@ -25,6 +25,11 @@ export interface TimerLiveViewProps extends TimerConfigHandlers {
   onAdjustTime: (deltaSeconds: number) => void;
   adjustApplyToFuture: boolean;
   onAdjustApplyToFutureChange: (value: boolean) => void;
+  /**
+   * Optional content rendered above the status (e.g. a section selector for
+   * multi-section games).
+   */
+  headerSlot?: React.ReactNode;
 }
 
 function formatTime(totalSeconds: number) {
@@ -55,6 +60,7 @@ export function TimerLiveView({
   onAdjustTime,
   adjustApplyToFuture,
   onAdjustApplyToFutureChange,
+  headerSlot,
 }: TimerLiveViewProps) {
   const controls = (
     <div className="flex flex-col gap-3 w-full max-w-md">
@@ -196,6 +202,7 @@ export function TimerLiveView({
       actions={controls}
     >
       <div className="flex flex-col items-center gap-4 p-4">
+        {headerSlot}
         {status}
         {breakProblemPrompt}
         <TimerConfigFields config={config} onConfigChange={onConfigChange} />

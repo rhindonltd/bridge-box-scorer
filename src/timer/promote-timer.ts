@@ -1,45 +1,37 @@
 import "server-only";
 
 import { Server } from "socket.io";
-import { findTimerState } from "@/db/games/queries/find-timer-state";
+import {
+  findAllTimerStates,
+  findTimerState,
+} from "@/db/games/queries/find-timer-state";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { createEngine } from "@/timer/game-store";
 import { scheduleGame } from "@/timer/scheduler";
+import { SectionLetter } from "@/model/participants";
+import { TimerState } from "@/timer/timer-state";
 import { makeTimerBroadcaster } from "@/socket/handlers/timer/broadcast-timer";
 
 /**
- * Promote a game's saved timer configuration into a live, running timer.
- *
- * Called when a game is started. If the director saved a timer configuration
- * during setup (a "configured but not started" state — `phase: null`,
- * `isRunning: false`), this builds a fresh running engine from that config,
- * persists it, broadcasts the running state, and schedules its first phase
- * transition. If no timer was configured, or a live timer already exists (the
- * timer has already been started), this is a no-op.
- *
- * Timer promotion is best-effort: failures are logged and swallowed so a timer
- * problem can never block a game from starting.
+ * Promote a single section's saved timer configuration into a live, running
+ * timer. Best-effort: failures are logged and swallowed so one section's timer
+ * problem can never block a game — or another section's timer — from starting.
  */
-export async function promoteTimerAtGameStart(
+async function promoteSection(
   gameId: string,
-  io: Server,
+  section: SectionLetter,
+  saved: TimerState,
+  broadcast: ReturnType<typeof makeTimerBroadcaster>,
 ): Promise<void> {
+  // Already live (running or a real phase in progress): a timer that has been
+  // started must not be reset. A configured-but-not-started timer has a null
+  // phase; anything else means it is already a live timer.
+  if (saved.phase !== null || saved.isRunning) return;
+
   try {
-    const saved = await findTimerState(gameId);
-
-    // No configuration saved: the timer is optional, so there is nothing to
-    // start.
-    if (!saved) return;
-
-    // Already live (running or a real phase in progress): a timer that has been
-    // started must not be reset by game start. A configured-but-not-started
-    // timer has a null phase; anything else means it is already a live timer.
-    if (saved.phase !== null || saved.isRunning) return;
-
-    const broadcast = makeTimerBroadcaster(io);
-
     const engine = await createEngine(
       gameId,
+      section,
       saved.boardsPerRound,
       saved.totalRounds,
       saved.playDuration,
@@ -50,13 +42,48 @@ export async function promoteTimerAtGameStart(
     // Begin running immediately: the game has started, so the clock starts too.
     engine.start();
 
-    await updateTimerState(gameId, engine.getState());
-    broadcast(gameId, engine.getState());
-    scheduleGame(gameId, engine, { updateTimerState, broadcast });
+    await updateTimerState(gameId, section, engine.getState());
+    broadcast(gameId, section, engine.getState());
+    scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
   } catch (err) {
     console.error(
-      `Failed to promote timer at game start for game ${gameId}:`,
+      `Failed to promote timer for game ${gameId} section ${section}:`,
       err,
     );
   }
 }
+
+/**
+ * Promote every section's saved timer configuration into a live, running timer
+ * when a game is started.
+ *
+ * Each section is handled independently: sections the director configured
+ * during setup (a "configured but not started" state — `phase: null`,
+ * `isRunning: false`) begin running; sections with no saved timer, or whose
+ * timer is already live, are left untouched. One section failing never affects
+ * the others or the game start itself.
+ */
+export async function promoteTimerAtGameStart(
+  gameId: string,
+  io: Server,
+): Promise<void> {
+  try {
+    const saved = await findAllTimerStates(gameId);
+    if (saved.size === 0) return;
+
+    const broadcast = makeTimerBroadcaster(io);
+
+    for (const [section, state] of saved) {
+      await promoteSection(gameId, section, state, broadcast);
+    }
+  } catch (err) {
+    console.error(
+      `Failed to promote timers at game start for game ${gameId}:`,
+      err,
+    );
+  }
+}
+
+// Re-exported so existing single-section callers/tests that only need one
+// section can still read a section's state directly.
+export { findTimerState };

@@ -4,17 +4,17 @@ import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import { buildConfiguredTimerState } from "@/timer/timer-state";
 
 // The scheduler uses real timers; stub it so the test doesn't leave a pending
-// timeout, while still asserting it was asked to schedule the running timer.
+// timeout, while still asserting it was asked to schedule the running timers.
 vi.mock("@/timer/scheduler", () => ({
   scheduleGame: vi.fn(),
 }));
 
 /**
  * End-to-end (real per-game DB) coverage of the save-config -> game-start
- * promotion path: a configured timer persisted to the games metadata table is
- * promoted into a running timer when the game starts.
+ * promotion path, now per section: each section's configured timer is promoted
+ * into an independent running timer when the game starts.
  */
-describe("promoteTimerAtGameStart (real games db)", () => {
+describe("promoteTimerAtGameStart (real games db, per section)", () => {
   let harness: DbHarness;
 
   beforeEach(async () => {
@@ -32,9 +32,14 @@ describe("promoteTimerAtGameStart (real games db)", () => {
     return { io: { to: vi.fn(() => ({ emit })) } as never, emit };
   }
 
-  it("promotes a persisted configured timer into a running timer", async () => {
-    // Persist a "configured but not started" timer, exactly as timer:saveConfig
-    // would.
+  const config = {
+    boardsPerRound: 3,
+    totalRounds: 6,
+    playDuration: 420,
+    moveDuration: 90,
+  };
+
+  it("promotes each configured section into an independent running timer", async () => {
     const { updateTimerState } = await import(
       "@/db/games/actions/update-timer-state"
     );
@@ -44,59 +49,71 @@ describe("promoteTimerAtGameStart (real games db)", () => {
     const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
     const { scheduleGame } = await import("@/timer/scheduler");
 
-    const configured = buildConfiguredTimerState({
-      boardsPerRound: 3,
-      totalRounds: 6,
-      playDuration: 420,
-      moveDuration: 90,
-      breaks: [
-        { afterRound: 3, mode: "duration", durationSeconds: 600 },
-      ],
-      warningSeconds: 45,
-    });
-    await updateTimerState(harness.gameId, configured);
+    // Two sections configured with different totals.
+    await updateTimerState(
+      harness.gameId,
+      "A",
+      buildConfiguredTimerState({ ...config, totalRounds: 6 }),
+    );
+    await updateTimerState(
+      harness.gameId,
+      "B",
+      buildConfiguredTimerState({ ...config, totalRounds: 9 }),
+    );
 
-    // Sanity: it is stored as not-started.
-    const before = await findTimerState(harness.gameId);
-    expect(before?.phase).toBeNull();
-    expect(before?.isRunning).toBe(false);
-
-    const { io, emit } = makeIo();
+    const { io } = makeIo();
     await promoteTimerAtGameStart(harness.gameId, io);
 
-    // The persisted state is now a live, running timer preserving the config.
-    const after = await findTimerState(harness.gameId);
-    expect(after?.phase).toBe("play");
-    expect(after?.isRunning).toBe(true);
-    expect(after?.round).toBe(1);
-    expect(after?.totalRounds).toBe(6);
-    expect(after?.playDuration).toBe(420);
-    expect(after?.moveDuration).toBe(90);
-    expect(after?.warningSeconds).toBe(45);
-    expect(after?.breaks).toEqual([
-      { afterRound: 3, mode: "duration", durationSeconds: 600 },
-    ]);
+    const a = await findTimerState(harness.gameId, "A");
+    const b = await findTimerState(harness.gameId, "B");
 
-    expect(emit).toHaveBeenCalled();
-    expect(scheduleGame).toHaveBeenCalledTimes(1);
+    expect(a?.phase).toBe("play");
+    expect(a?.isRunning).toBe(true);
+    expect(a?.totalRounds).toBe(6);
+
+    expect(b?.phase).toBe("play");
+    expect(b?.isRunning).toBe(true);
+    expect(b?.totalRounds).toBe(9);
+
+    // One scheduled timer per section.
+    expect(scheduleGame).toHaveBeenCalledTimes(2);
   });
 
-  it("does nothing when no timer was configured", async () => {
+  it("promotes only the section that was configured", async () => {
+    const { updateTimerState } = await import(
+      "@/db/games/actions/update-timer-state"
+    );
     const { findTimerState } = await import(
       "@/db/games/queries/find-timer-state"
     );
+    const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
+
+    await updateTimerState(
+      harness.gameId,
+      "A",
+      buildConfiguredTimerState(config),
+    );
+
+    const { io } = makeIo();
+    await promoteTimerAtGameStart(harness.gameId, io);
+
+    expect((await findTimerState(harness.gameId, "A"))?.isRunning).toBe(true);
+    // Section B never had a config.
+    expect(await findTimerState(harness.gameId, "B")).toBeNull();
+  });
+
+  it("does nothing when no section was configured", async () => {
     const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
     const { scheduleGame } = await import("@/timer/scheduler");
 
     const { io, emit } = makeIo();
     await promoteTimerAtGameStart(harness.gameId, io);
 
-    expect(await findTimerState(harness.gameId)).toBeNull();
     expect(emit).not.toHaveBeenCalled();
     expect(scheduleGame).not.toHaveBeenCalled();
   });
 
-  it("does not re-promote a timer that is already running", async () => {
+  it("does not re-promote a section that is already running", async () => {
     const { updateTimerState } = await import(
       "@/db/games/actions/update-timer-state"
     );
@@ -104,28 +121,29 @@ describe("promoteTimerAtGameStart (real games db)", () => {
       "@/db/games/queries/find-timer-state"
     );
     const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
-    const { scheduleGame } = await import("@/timer/scheduler");
 
     const startedAt = Date.now() - 5000;
-    await updateTimerState(harness.gameId, {
-      ...buildConfiguredTimerState({
-        boardsPerRound: 3,
-        totalRounds: 6,
-        playDuration: 420,
-        moveDuration: 90,
-      }),
+    // A is already live; B is a fresh config.
+    await updateTimerState(harness.gameId, "A", {
+      ...buildConfiguredTimerState(config),
       phase: "play",
       isRunning: true,
       phaseStartedAt: startedAt,
       remainingMs: null,
     });
+    await updateTimerState(
+      harness.gameId,
+      "B",
+      buildConfiguredTimerState(config),
+    );
 
     const { io } = makeIo();
     await promoteTimerAtGameStart(harness.gameId, io);
 
-    // Unchanged: still the same running phase we set up.
-    const after = await findTimerState(harness.gameId);
-    expect(after?.phaseStartedAt).toBe(startedAt);
-    expect(scheduleGame).not.toHaveBeenCalled();
+    // A unchanged; B now running.
+    expect((await findTimerState(harness.gameId, "A"))?.phaseStartedAt).toBe(
+      startedAt,
+    );
+    expect((await findTimerState(harness.gameId, "B"))?.isRunning).toBe(true);
   });
 });

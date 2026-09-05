@@ -21,7 +21,9 @@ import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { scheduleGame } from "@/timer/scheduler";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerSaveConfigHandler } from "./save-config.handler";
+import { registerRequestStateHandler } from "./request-state.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
+import { emitWithAck } from "@/socket/test/socket-helpers";
 
 describe("registerSaveConfigHandler (integration)", () => {
   let closeServer: () => Promise<void>;
@@ -45,6 +47,7 @@ describe("registerSaveConfigHandler (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerSaveConfigHandler(socket, io);
       });
     });
@@ -55,12 +58,17 @@ describe("registerSaveConfigHandler (integration)", () => {
         resolve(),
       );
     });
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
+      gameId: "game-1",
+      section: "A",
+    });
 
     const syncPromise = waitForEvent(client, "timer:sync");
 
     client.emit(SocketEvents.SAVE_CONFIG_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 5,
@@ -110,6 +118,7 @@ describe("registerSaveConfigHandler (integration)", () => {
     client.emit(SocketEvents.SAVE_CONFIG_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
+      section: "A",
       directorToken: "bad-token",
       boardsPerRound: 3,
       totalRounds: 5,

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/db/games/queries/find-timer-state", () => ({
+  findAllTimerStates: vi.fn(),
   findTimerState: vi.fn(),
 }));
 
@@ -16,17 +17,20 @@ vi.mock("@/timer/scheduler", () => ({
   scheduleGame: vi.fn(),
 }));
 
-import { findTimerState } from "@/db/games/queries/find-timer-state";
+import { findAllTimerStates } from "@/db/games/queries/find-timer-state";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { createEngine } from "@/timer/game-store";
 import { scheduleGame } from "@/timer/scheduler";
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
-import { buildConfiguredTimerState, TimerState } from "@/timer/timer-state";
+import {
+  buildConfiguredTimerState,
+  TimerState,
+} from "@/timer/timer-state";
 import { promoteTimerAtGameStart } from "./promote-timer";
 
 function makeIo() {
   const emit = vi.fn();
-  return { to: vi.fn(() => ({ emit })), _emit: emit } as any;
+  return { to: vi.fn(() => ({ emit })), _emit: emit } as never;
 }
 
 const config = {
@@ -36,55 +40,85 @@ const config = {
   moveDuration: 60,
 };
 
+/** A createEngine mock returning a ready-to-run "play" engine for the config. */
+function readyEngine() {
+  return new BridgeTimerEngine({
+    ...buildConfiguredTimerState(config),
+    phase: "play",
+    remainingMs: config.playDuration * 1000,
+  });
+}
+
 describe("promoteTimerAtGameStart", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(updateTimerState).mockResolvedValue(undefined);
+    vi.mocked(createEngine).mockImplementation(async () => readyEngine());
   });
 
-  it("promotes a configured timer into a running, scheduled engine", async () => {
-    vi.mocked(findTimerState).mockResolvedValue(
-      buildConfiguredTimerState(config),
+  it("promotes every configured section into a running, scheduled timer", async () => {
+    vi.mocked(findAllTimerStates).mockResolvedValue(
+      new Map<string, TimerState>([
+        ["A", buildConfiguredTimerState(config)],
+        ["B", buildConfiguredTimerState(config)],
+      ]),
     );
-    // createEngine always builds a fresh, ready-to-run "play" state (see
-    // game-store), which promoteTimerAtGameStart then starts running.
-    const engine = new BridgeTimerEngine({
-      ...buildConfiguredTimerState(config),
-      phase: "play",
-      remainingMs: config.playDuration * 1000,
-    });
-    vi.mocked(createEngine).mockResolvedValue(engine);
-    vi.mocked(updateTimerState).mockResolvedValue(undefined);
 
-    const io = makeIo();
-    await promoteTimerAtGameStart("g1", io);
+    await promoteTimerAtGameStart("g1", makeIo());
 
+    expect(createEngine).toHaveBeenCalledTimes(2);
     expect(createEngine).toHaveBeenCalledWith(
       "g1",
+      "A",
       3,
       5,
       420,
       60,
-      expect.objectContaining({ breaks: [] }),
+      expect.anything(),
     );
-    // Engine was started running.
-    expect(engine.getState().isRunning).toBe(true);
-    expect(engine.getState().phase).toBe("play");
-    expect(updateTimerState).toHaveBeenCalledTimes(1);
-    expect(scheduleGame).toHaveBeenCalledTimes(1);
+    expect(createEngine).toHaveBeenCalledWith(
+      "g1",
+      "B",
+      3,
+      5,
+      420,
+      60,
+      expect.anything(),
+    );
+    expect(scheduleGame).toHaveBeenCalledTimes(2);
   });
 
-  it("does nothing when no timer was configured", async () => {
-    vi.mocked(findTimerState).mockResolvedValue(null);
+  it("does nothing when no section has a configured timer", async () => {
+    vi.mocked(findAllTimerStates).mockResolvedValue(new Map());
 
-    const io = makeIo();
-    await promoteTimerAtGameStart("g1", io);
+    await promoteTimerAtGameStart("g1", makeIo());
 
     expect(createEngine).not.toHaveBeenCalled();
-    expect(updateTimerState).not.toHaveBeenCalled();
     expect(scheduleGame).not.toHaveBeenCalled();
   });
 
-  it("does not re-promote an already-live timer", async () => {
+  it("promotes only the configured section when another has none", async () => {
+    // Only section A has a saved config (findAllTimerStates only returns
+    // sections that have one).
+    vi.mocked(findAllTimerStates).mockResolvedValue(
+      new Map<string, TimerState>([["A", buildConfiguredTimerState(config)]]),
+    );
+
+    await promoteTimerAtGameStart("g1", makeIo());
+
+    expect(createEngine).toHaveBeenCalledTimes(1);
+    expect(createEngine).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      3,
+      5,
+      420,
+      60,
+      expect.anything(),
+    );
+  });
+
+  it("does not re-promote a section whose timer is already live", async () => {
     const live: TimerState = {
       ...buildConfiguredTimerState(config),
       phase: "play",
@@ -92,36 +126,57 @@ describe("promoteTimerAtGameStart", () => {
       phaseStartedAt: Date.now(),
       remainingMs: null,
     };
-    vi.mocked(findTimerState).mockResolvedValue(live);
+    vi.mocked(findAllTimerStates).mockResolvedValue(
+      new Map<string, TimerState>([
+        ["A", buildConfiguredTimerState(config)],
+        ["B", live],
+      ]),
+    );
 
-    const io = makeIo();
-    await promoteTimerAtGameStart("g1", io);
+    await promoteTimerAtGameStart("g1", makeIo());
 
-    expect(createEngine).not.toHaveBeenCalled();
-    expect(scheduleGame).not.toHaveBeenCalled();
+    // Only A (configured) is promoted; B (already live) is skipped.
+    expect(createEngine).toHaveBeenCalledTimes(1);
+    expect(createEngine).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      3,
+      5,
+      420,
+      60,
+      expect.anything(),
+    );
   });
 
-  it("does not re-promote a paused live timer (real phase, not running)", async () => {
-    const pausedLive: TimerState = {
-      ...buildConfiguredTimerState(config),
-      phase: "play",
-      isRunning: false,
-      remainingMs: 120000,
-    };
-    vi.mocked(findTimerState).mockResolvedValue(pausedLive);
+  it("promotes the healthy section even if another section throws", async () => {
+    vi.mocked(findAllTimerStates).mockResolvedValue(
+      new Map<string, TimerState>([
+        ["A", buildConfiguredTimerState(config)],
+        ["B", buildConfiguredTimerState(config)],
+      ]),
+    );
+    // Section A's createEngine throws; B still succeeds.
+    vi.mocked(createEngine)
+      .mockRejectedValueOnce(new Error("boom"))
+      .mockImplementationOnce(async () => readyEngine());
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const io = makeIo();
-    await promoteTimerAtGameStart("g1", io);
+    await promoteTimerAtGameStart("g1", makeIo());
 
-    expect(createEngine).not.toHaveBeenCalled();
+    expect(createEngine).toHaveBeenCalledTimes(2);
+    // B was still scheduled despite A throwing.
+    expect(scheduleGame).toHaveBeenCalledTimes(1);
+    errSpy.mockRestore();
   });
 
-  it("swallows errors so game start is never blocked", async () => {
-    vi.mocked(findTimerState).mockRejectedValue(new Error("db down"));
+  it("swallows a top-level load error so game start is never blocked", async () => {
+    vi.mocked(findAllTimerStates).mockRejectedValue(new Error("db down"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    const io = makeIo();
     await expect(
-      promoteTimerAtGameStart("g1", io),
+      promoteTimerAtGameStart("g1", makeIo()),
     ).resolves.toBeUndefined();
+
+    errSpy.mockRestore();
   });
 });

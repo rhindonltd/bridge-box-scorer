@@ -26,7 +26,9 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateTimerHandler } from "./create-timer.handler";
+import { registerRequestStateHandler } from "./request-state.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
+import { emitWithAck } from "@/socket/test/socket-helpers";
 
 describe("timer break-problem broadcast (integration)", () => {
   let closeServer: () => Promise<void>;
@@ -49,6 +51,7 @@ describe("timer break-problem broadcast (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerCreateTimerHandler(socket, io);
       });
     });
@@ -59,12 +62,17 @@ describe("timer break-problem broadcast (integration)", () => {
         resolve(),
       );
     });
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
+      gameId: "game-bp",
+      section: "A",
+    });
 
     const syncPromise = waitForEvent(client, "timer:sync");
 
     client.emit(SocketEvents.CREATE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-bp",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 3,
@@ -81,6 +89,7 @@ describe("timer break-problem broadcast (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
         registerCreateTimerHandler(socket, io);
       });
     });
@@ -91,6 +100,10 @@ describe("timer break-problem broadcast (integration)", () => {
         resolve(),
       );
     });
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
+      gameId: "game-bp",
+      section: "A",
+    });
 
     const syncPromise = waitForEvent(client, "timer:sync");
 
@@ -99,6 +112,7 @@ describe("timer break-problem broadcast (integration)", () => {
     client.emit(SocketEvents.CREATE_TIMER, {
       gameType: "PAIRS",
       gameId: "game-bp",
+      section: "A",
       directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 3,
