@@ -139,3 +139,22 @@ export async function seatTwoTableSection(
   await seatPairBySeat(page, gameId, `${section}2NS`, jacquelineCollier, davidCollier);
   await seatPairBySeat(page, gameId, `${section}2EW`, celiaOram, denisKing);
 }
+
+/**
+ * Seat every seat of an N-table single-section (section "A") field using the
+ * seeded players (reused across tables — there is no distinct-player
+ * constraint). Uses explicit section-qualified seats so it works for any table
+ * count, not just two.
+ */
+export async function seatSingleSectionField(
+  page: Page,
+  gameId: string,
+  tables: number,
+): Promise<void> {
+  const { jacquelineCollier, davidCollier, celiaOram, denisKing } = SEEDED_EBU;
+
+  for (let table = 1; table <= tables; table++) {
+    await seatPairBySeat(page, gameId, `A${table}NS`, jacquelineCollier, davidCollier);
+    await seatPairBySeat(page, gameId, `A${table}EW`, celiaOram, denisKing);
+  }
+}

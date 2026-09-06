@@ -60,6 +60,37 @@ export async function pickFirstMovement(page: Page): Promise<void> {
 }
 
 /**
+ * Open the Movement tab and select the first recommended movement card whose
+ * name contains `nameSubstring` (case-insensitive). Returns the selected card's
+ * full name. Throws if no matching card is offered for the current table count.
+ *
+ * The movement card's name is in its `<h3>`; recommendations are filtered by
+ * table count, so callers must set a table count that offers the wanted family.
+ */
+export async function pickMovementByName(
+  page: Page,
+  nameSubstring: string,
+): Promise<string> {
+  await page.getByRole("tab", { name: "Movement" }).click();
+  const cards = page.getByTestId("movement-card");
+  await expect(cards.first()).toBeVisible({ timeout: 15000 });
+
+  const needle = nameSubstring.toLowerCase();
+  const count = await cards.count();
+  for (let i = 0; i < count; i++) {
+    const card = cards.nth(i);
+    const name = (await card.locator("h3").textContent())?.trim() ?? "";
+    if (name.toLowerCase().includes(needle)) {
+      await card.click();
+      return name;
+    }
+  }
+  throw new Error(
+    `No recommended movement matching "${nameSubstring}" for this table count`,
+  );
+}
+
+/**
  * Start the game from the Tables tab. Requires a valid movement and full
  * seating; the Start Game button stays disabled until both hold. Starting is
  * director-authorised, so this must run in the game-creating context.
