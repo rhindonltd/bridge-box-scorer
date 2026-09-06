@@ -1,18 +1,19 @@
-"use client";
+import { redirect } from "next/navigation";
+import { isGameCompleted } from "@/db/game-index/queries/is-game-completed";
+import JoinGameAsPlayer from "@/app/game/[gameId]/join/JoinGameAsPlayer";
 
-import { useRouter } from "next/navigation";
-import { useRequiredGame } from "@/context/GameContext";
-import { SelectSeatPage } from "@/app/game/[gameId]/join/SelectSeatPage";
+export default async function JoinGameAsPlayerRoute({
+  params,
+}: {
+  params: Promise<{ gameId: string }>;
+}) {
+  const { gameId } = await params;
 
-export default function JoinGameAsPlayerRoute() {
-  const { game } = useRequiredGame();
-  const router = useRouter();
+  // A completed game has nothing left to join, so anyone arriving at the join
+  // URL directly is sent to that game's leaderboard instead.
+  if (await isGameCompleted(gameId)) {
+    redirect(`/game/${gameId}/display/leaderboard`);
+  }
 
-  return (
-    <SelectSeatPage
-      onSeatSelected={(seat) =>
-        router.replace(`/game/${game.gameId}/play/${seat}`)
-      }
-    />
-  );
+  return <JoinGameAsPlayer />;
 }

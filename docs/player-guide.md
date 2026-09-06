@@ -16,8 +16,13 @@ already be on your screen).
 
 On the home screen, tap **Join Game**. You see a list of games that are open to
 join, each showing its **event name**, the **date**, and how many **tables** it
-has. Tap the game your director has set up. (If the list is empty, no game has
-been created yet — check with your director.)
+has. Tap the game your director has set up. (If the list is empty, no game is
+open to join yet — check with your director.)
+
+Once a game has finished, it drops off this list. If you open a link to a game
+that has already finished — whether it is a link to join or a link back to your
+seat — you go straight to its **leaderboard** rather than the seat picker or
+play screen.
 
 ### Step 2: Choose your seat
 
