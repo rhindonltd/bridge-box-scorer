@@ -39,7 +39,9 @@ journeys `leaderboard-live.journey.ts`, `traveller-live.journey.ts`,
 `request-on-mount.journey.ts`, `played-contract.journey.ts`,
 `mismatch.journey.ts`, `sit-out.journey.ts`,
 `contract-variants.journey.ts`, `director-override.journey.ts`,
-`share-code.journey.ts`, `multi-section.journey.ts`. Fixtures: `game-create`,
+`share-code.journey.ts`, `multi-section.journey.ts`,
+`movement-types.journey.ts`, `table-management.journey.ts`,
+`timer.journey.ts`, `reconnect.journey.ts`. Fixtures: `game-create`,
 `game-setup`, `join`, `play`, `director-override`, `delete-game`, `settings`.
 
 ### Test tooling that already exists (fixtures)
@@ -56,7 +58,9 @@ scaffolding:
 - Set up a started TWO-SECTION game (section CRUD + per-section movement +
   seat both sections) (`journeys/support.ts` `setUpStartedTwoSectionGame`).
 - Seat a two-table field via EBU player search (`fixtures/join.ts`); seat an
-  explicit section-qualified seat (`seatPairBySeat`, `seatTwoTableSection`).
+  explicit section-qualified seat (`seatPairBySeat`, `seatTwoTableSection`); or
+  seat a full N-table single section (`seatSingleSectionField`).
+- Pick a recommended movement by name (`game-setup.ts` `pickMovementByName`).
 - Enter a Pass Out and confirm a board via both sides (`fixtures/play.ts`).
 - Enter a full played contract (incl. doubling and made/down results) and
   confirm it via both sides (`fixtures/play.ts` — `enterPlayedContract`,
@@ -121,13 +125,14 @@ scaffolding:
 
 ## 3. Director setup — Tables
 
-- [ ] NumberStepper increments/decrements table count and emits `UPDATE_TABLES`.
-- [ ] (PARTIAL) `fixtures/game-setup.ts` drives the stepper to a target count,
-  but no test asserts the resize behaviour or the seating grid re-render.
-- [ ] Evict pair: confirm dialog → `EVICT_PARTICIPANT` removes the pair.
+- [x] NumberStepper increments/decrements table count (emits `UPDATE_TABLES`);
+  the count changes up and back down (`table-management.journey.ts`).
+- [x] Evict pair: confirm dialog → `EVICT_PARTICIPANT` frees the seat
+  (`table-management.journey.ts`).
 - [ ] Evict failure shows the alert.
-- [ ] Remove-table rule: table removal only allowed when `tables > 1` and the
-  last table is unoccupied.
+- [x] Remove-table rule: shrinking a section that still seats a pair on the
+  last table is rejected (count stays); the guard is server-enforced
+  (`table-management.journey.ts`).
 - [ ] Start-check problems list (amber, bulleted) shown when the game cannot
   start.
 - [ ] One-pair-short → "One pair short — {seat} will sit out each round."
@@ -156,12 +161,17 @@ scaffolding:
 
 ## 5. Director setup — Movement
 
-- [x] (PARTIAL) First recommended movement is selectable
-  (`fixtures/game-setup.ts` `pickFirstMovement`; used by journeys). Only the
-  first card is ever chosen; the movement TYPE is whatever comes first.
-- [ ] Mitchell (generated) movement selection persists.
-- [ ] Howell (seeded spec) movement selection persists.
-- [ ] American Whist (seeded spec) movement selection persists.
+- [x] First recommended movement is selectable (`fixtures/game-setup.ts`
+  `pickFirstMovement`; used by journeys).
+- [x] Standard Mitchell (generated, 3 tables) selected by name, seated, started
+  and played (`movement-types.journey.ts`, `pickMovementByName`).
+- [x] Howell (2-table Full Howell) selected by name, seated, started and played
+  (`movement-types.journey.ts`).
+- [ ] **American Whist — NOT selectable via the picker.** It is absent from the
+  recommendation spec map (`recommendation-spec-map.json`), so the movement
+  picker never offers it at any table count (verified 2–8 tables + the full
+  map). This is a product gap, not a test gap: there is no UI path to select
+  American Whist, so it cannot be E2E-tested through setup.
 - [ ] Recommendations are grouped by boards-a-pair-plays.
 - [ ] Empty state: "No recommended movements are available for this table count
   yet."
@@ -315,8 +325,9 @@ scaffolding:
 - [x] (PARTIAL) Occupancy-gated broadcasts implicitly exercised (a mounted
   display receives the live push in `leaderboard-live.journey.ts`). The
   no-viewer/no-compute optimisation itself is not directly asserted.
-- [ ] Reconnect re-fetch: contexts re-request state on `SocketEvents.CONNECT`
-  after a socket drop.
+- [x] Reconnect re-fetch: a leaderboard display dropped via `context.setOffline`
+  and restored recovers its standings (request-on-`connect`) and resumes live
+  updates (`reconnect.journey.ts`).
 - [ ] `game:join` does NOT replay feature state (joining is a dumb room-join).
 - [ ] `useSocketSWRSync` merges a mapped socket event into the SWR cache
   without revalidation.
@@ -325,14 +336,13 @@ scaffolding:
 
 ## 12. Timer — config
 
-- [x] (PARTIAL) `timer:create` via the setup UI (total rounds, play/move
-  durations) then Start becomes available (`timer.spec.ts`). Config is done in
-  the manage/timer route, not the create-flow Timer tab.
-- [ ] Timer configured in the `/create` Timer tab (config-only; cannot start
-  from setup).
-- [ ] `timer:saveConfig` persists a "configured but not started" state.
-- [x] Breaks: adding a break and configuring after-round + duration shows the
-  break screen on the display (`timer.spec.ts`).
+- [x] `timer:saveConfig` persists a "configured but not started" state, then
+  **promote-on-start** turns it into a live timer at game start (the display,
+  opened after start, shows "Round 1 of 3") (`timer.journey.ts`).
+- [ ] Timer configured in the `/create` Timer tab (config-only) — the
+  `/manage/timer` config path is covered; the create-flow tab is not separately.
+- [ ] Breaks: adding a break shows the break screen on the display (was covered
+  by the removed `timer.spec.ts`; not yet re-added to `timer.journey.ts`).
 - [ ] Invalid break-timing alert ("Break timing is invalid") with per-break
   overrun detail.
 - [ ] Session-length preview reflects config.
@@ -343,17 +353,24 @@ scaffolding:
 ## 13. Timer — live controls
 
 - [x] Start / Pause toggle propagates to the display (PAUSED shown/hidden)
-  (`timer.spec.ts`).
-- [x] Resume after pause (`timer.spec.ts`).
-- [x] Next phase advances (Move for Round 2 shown) (`timer.spec.ts`).
-- [x] Previous phase steps back into a round's play (`timer.spec.ts`).
-- [ ] Previous-restart (`restart: true`) restarts the current phase rather than
-  stepping back.
-- [ ] Adjust time ±(1m/15s) on the current phase.
-- [ ] Adjust time with "apply to all subsequent phases of this type".
-- [ ] `updateConfig` / "Apply Changes" on a running timer.
-- [ ] Promote-on-start: a timer configured before start begins automatically at
-  game start.
+  (`timer.journey.ts`).
+- [x] Next phase advances (Move for Round 2 shown) (`timer.journey.ts`).
+- [x] Previous phase steps back into a round's play, via the "‹ Prev" button
+  (`timer.journey.ts`). NOTE: the live "‹ Prev" button only ever sends
+  `previousPhase`; the handler's documented two-step "first press restarts the
+  phase" (`restart: true` → `restartPhase`) is **not wired to any UI button**,
+  so previous-restart is unreachable through the UI (engine `restartPhase` is
+  unit-tested in `bridge-timer-engine.test.ts`). `restartPhase` resets only the
+  current phase to full time — not a whole-timer reset.
+- [x] Adjust time (+1m) changes the displayed remaining on the running/paused
+  timer (`timer.journey.ts`).
+- [ ] Adjust time with "apply to all subsequent phases of this type" checkbox.
+- [x] `updateConfig` / "Apply Changes": changing play duration applies to the
+  next play phase (round 2 shows the new 00:20) (`timer.journey.ts`). NOTE: the
+  CURRENT phase keeps its already-adjusted remaining — updateConfig affects
+  subsequent phases, which the test asserts.
+- [x] Promote-on-start: a timer configured (saved) before start begins at game
+  start (`timer.journey.ts`).
 - [ ] Live status panel (phase, remaining, round, projected end) values.
 
 ---
@@ -660,13 +677,25 @@ Ordered by impact on confidence in the core product.
   to other viewers, the share-code countdown/expiry/regenerate states, and
   timer "Apply to all sections" in a multi-section game.
 
-**P3 — Setup & timer depth:**
-- Movement-type coverage: Mitchell, Howell, American Whist.
-- Section CRUD (add/rename/delete) and single-vs-multi rendering.
-- Table evict / resize and remove-table rules.
-- Timer `saveConfig`, `adjustTime` (± and apply-to-future), `updateConfig`,
-  previous-restart, and promote-on-start.
-- Reconnect re-fetch of live contexts.
+**P3 — Setup & timer depth — LARGELY CLOSED** (`movement-types.journey.ts`,
+`table-management.journey.ts`, `timer.journey.ts`, `reconnect.journey.ts`;
+section CRUD was closed in P2's `multi-section.journey.ts`):
+- [x] Movement-type coverage: Mitchell and Howell selected by name, seated,
+  started and played. **American Whist is not offered by the recommendation
+  picker at all (product gap) — no UI path to select it.**
+- [x] Section CRUD (add/rename/delete) and single-vs-multi rendering
+  (`multi-section.journey.ts`, P2).
+- [x] Table evict, resize, and the remove-table (shrink) guard.
+- [x] Timer `saveConfig` + promote-on-start, live start/pause, next/previous
+  (via "‹ Prev"), `adjustTime` (+1m), and `updateConfig` ("Apply Changes",
+  applied to the next phase). **`restart:true` (previous's first step) is not
+  wired to any UI and stays engine-unit-tested only.**
+- [x] Reconnect re-fetch of a live context (leaderboard) after an offline drop.
+- Remaining P3 follow-ups: the "apply to future phases" adjust checkbox, the
+  break-screen flow in the new timer journey, invalid-break-timing alert, and
+  the session-length/status-panel previews.
+- **Also: replaced the stale `tests/timer.spec.ts`** (drove a removed
+  Create/Start UI and was failing) with `timer.journey.ts` on the current flow.
 
 **P4 — Device / settings happy paths:**
 - Admin-key gate + verify (success and wrong key), update admin key.
