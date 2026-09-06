@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec } from "@/db/movements/schema";
 import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedMovementCard";
 import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
 import { recommendationsFromSpecMap } from "@/movement/recommendations/spec-map-recommendations";
+import { MovementDetailView } from "@/components/movement/MovementDetailView";
+import { MovementByTable } from "@/movement/movementData";
+import { generateMitchell } from "@/movement/mitchell/mitchell";
 import {
   setSectionMitchellMovement,
   setSectionMovementSpec,
@@ -37,9 +40,11 @@ interface Props {
 }
 
 /**
- * Per-section movement picker. Shows the curated recommendations for the
- * section's table count, grouped by how many boards a pair plays, and persists
- * the chosen movement via SET_SECTION_MOVEMENT.
+ * Per-section movement picker. Two-stage flow: the director browses the curated
+ * recommendations for the section's table count (grouped by how many boards a
+ * pair plays), clicks one to preview its full table/round breakdown, then
+ * confirms with "Select Movement" — which persists it via SET_SECTION_MOVEMENT.
+ * Clicking a card only previews; nothing is committed until the confirm button.
  */
 export function SectionMovementPicker({
   gameId,
@@ -80,22 +85,44 @@ export function SectionMovementPicker({
       .map(([boardsPerPair, movements]) => ({ boardsPerPair, movements }));
   }, [recommendations]);
 
-  async function choose(movement: RecommendedMovement) {
-    try {
-      if (movement.specRef.source === "generated") {
-        await setSectionMitchellMovement(gameId, section, movement.specRef.spec);
-      } else {
-        await setSectionMovementSpec(
-          gameId,
-          section,
-          movement.specRef.id,
-          movement.boardsPerRound,
-        );
-      }
-      onDone?.();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to set movement");
-    }
+  // The movement being previewed. Selecting a card sets this; it is only
+  // persisted once the director confirms with "Select Movement".
+  const [preview, setPreview] = useState<RecommendedMovement | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  if (preview) {
+    return (
+      <MovementPreview
+        movement={preview}
+        saving={saving}
+        onBack={() => setPreview(null)}
+        onConfirm={async () => {
+          setSaving(true);
+          try {
+            if (preview.specRef.source === "generated") {
+              await setSectionMitchellMovement(
+                gameId,
+                section,
+                preview.specRef.spec,
+              );
+            } else {
+              await setSectionMovementSpec(
+                gameId,
+                section,
+                preview.specRef.id,
+                preview.boardsPerRound,
+              );
+            }
+            setPreview(null);
+            onDone?.();
+          } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to set movement");
+          } finally {
+            setSaving(false);
+          }
+        }}
+      />
+    );
   }
 
   return (
@@ -158,7 +185,7 @@ export function SectionMovementPicker({
                     <RecommendedMovementCard
                       key={`${movement.source}-${movement.name}-${index}`}
                       movement={movement}
-                      onSelect={() => choose(movement)}
+                      onSelect={() => setPreview(movement)}
                     />
                   ))}
                 </div>
@@ -166,6 +193,92 @@ export function SectionMovementPicker({
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Full table/round breakdown for a single recommended movement, with a
+ * "Select Movement" action that locks the choice in. Generated Mitchells are
+ * previewed client-side; seeded (DB) specs are fetched from the detail API.
+ */
+function MovementPreview({
+  movement,
+  saving,
+  onBack,
+  onConfirm,
+}: {
+  movement: RecommendedMovement;
+  saving: boolean;
+  onBack: () => void;
+  onConfirm: () => void;
+}) {
+  // DB-based movements need their full layout fetched. Generated Mitchells are
+  // computed locally from the spec, so no request is made for them.
+  const { data: detail } = useSWR<{
+    success: boolean;
+    result: { type: string; tables: MovementByTable[] };
+  }>(
+    movement.specRef.source === "db"
+      ? `/api/movements/detail/PAIRS/${movement.specRef.id}`
+      : null,
+    fetcher,
+  );
+
+  const previewTables = useMemo<MovementByTable[] | null>(() => {
+    if (movement.specRef.source === "generated") {
+      try {
+        const generated = generateMitchell(movement.specRef.spec);
+        return generated.tables.map((t) => ({
+          tableNumber: t.table,
+          rounds: t.rounds.map((r) => ({
+            roundNumber: r.round,
+            ns: r.participants.nsId,
+            ew: r.participants.ewId,
+            boardStart: r.boards[0],
+            boardEnd: r.boards[r.boards.length - 1],
+          })),
+        }));
+      } catch {
+        return null;
+      }
+    }
+    return detail?.result?.tables ?? null;
+  }, [movement, detail]);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center gap-3 px-4 pt-4">
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm font-medium text-blue-600 hover:underline"
+        >
+          ← Back to movements
+        </button>
+        <h2 className="text-lg font-bold text-gray-800">{movement.name}</h2>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {previewTables ? (
+          <MovementDetailView tables={previewTables} />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+          </div>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t p-3">
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={saving || !previewTables}
+          className="w-full rounded-xl bg-green-700 py-3 text-lg font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {saving ? "Selecting…" : "Select Movement"}
+        </button>
       </div>
     </div>
   );

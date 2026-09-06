@@ -148,7 +148,7 @@ describe("SectionMovementPicker", () => {
     ).toBeInTheDocument();
   });
 
-  it("persists a generated Mitchell and calls onDone", async () => {
+  it("previews a movement on card click without persisting, then persists on Select Movement", async () => {
     mockRecommendations.mockReturnValue([generatedRec()]);
     const onDone = vi.fn();
     render(
@@ -160,7 +160,13 @@ describe("SectionMovementPicker", () => {
       />,
     );
 
+    // Clicking the card opens the preview; nothing is committed yet.
     fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    expect(setSectionMitchellMovement).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
+
+    // The confirm action locks the choice in.
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
 
     await waitFor(() =>
       expect(setSectionMitchellMovement).toHaveBeenCalledWith("g1", "A", {
@@ -173,7 +179,30 @@ describe("SectionMovementPicker", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
-  it("persists a seeded (db) spec by id + boardsPerRound and calls onDone", async () => {
+  it("persists a seeded (db) spec by id + boardsPerRound after previewing and confirming", async () => {
+    // The preview fetches the movement's detail layout; supply a minimal one so
+    // the Select Movement button is enabled.
+    mockUseSWR.mockImplementation((key: string) => {
+      if (typeof key === "string" && key.includes("/detail/")) {
+        return {
+          data: {
+            success: true,
+            result: {
+              type: "PAIRS",
+              tables: [
+                {
+                  tableNumber: 1,
+                  rounds: [
+                    { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 4 },
+                  ],
+                },
+              ],
+            },
+          },
+        };
+      }
+      return { data: [] };
+    });
     mockRecommendations.mockReturnValue([dbRec()]);
     const onDone = vi.fn();
     render(
@@ -186,11 +215,30 @@ describe("SectionMovementPicker", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Howell" }));
+    expect(setSectionMovementSpec).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
 
     await waitFor(() =>
       expect(setSectionMovementSpec).toHaveBeenCalledWith("g1", "B", 42, 4),
     );
     expect(onDone).toHaveBeenCalled();
+  });
+
+  it("returns to the movement list from the preview via the back control", () => {
+    mockRecommendations.mockReturnValue([generatedRec()]);
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    expect(
+      screen.getByRole("button", { name: /select movement/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /back to movements/i }));
+
+    // Back on the list: the card is shown again and nothing was persisted.
+    expect(screen.getByRole("button", { name: "Mitchell" })).toBeInTheDocument();
+    expect(setSectionMitchellMovement).not.toHaveBeenCalled();
   });
 
   it("shows a back control that calls onDone when provided", () => {
@@ -239,11 +287,12 @@ describe("SectionMovementPicker", () => {
     expect(onAddSection).toHaveBeenCalledTimes(1);
   });
 
-  it("does not throw when a movement is chosen with no onDone", async () => {
+  it("does not throw when a movement is confirmed with no onDone", async () => {
     mockRecommendations.mockReturnValue([generatedRec()]);
     render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
 
     await waitFor(() =>
       expect(setSectionMitchellMovement).toHaveBeenCalledWith("g1", "A", {
@@ -273,6 +322,7 @@ describe("SectionMovementPicker", () => {
 
     render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
     fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
 
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith("Failed to set movement"),
@@ -298,6 +348,7 @@ describe("SectionMovementPicker", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("shrink guard"));
     expect(onDone).not.toHaveBeenCalled();
