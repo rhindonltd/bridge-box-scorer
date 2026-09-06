@@ -20,27 +20,27 @@ export function DownloadUsebioPage({
 }: DownloadUsebioPageProps) {
   const { game } = useRequiredGame();
 
-  // Edited values are null until the user types; the displayed value falls
-  // back to the fetched club record. This avoids mirroring fetched data into
-  // state via an effect.
-  const [nameEdit, setNameEdit] = useState<string | null>(null);
-  const [clubNumberEdit, setClubNumberEdit] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    data,
-    isLoading: loading,
-    mutate,
-  } = useSWR<{ club: Club | null }>(swrKeys.club(), fetcher);
+  // Club info is read-only here — it is configured (admin-gated) in Settings.
+  const { data, isLoading: loading } = useSWR<{ club: Club | null }>(
+    swrKeys.club(),
+    fetcher,
+  );
 
-  const name = nameEdit ?? data?.club?.name ?? "";
-  const clubNumber = clubNumberEdit ?? data?.club?.clubNumber ?? "";
+  const club = data?.club ?? null;
+  const clubConfigured = !!club?.name?.trim() && !!club?.clubNumber?.trim();
 
   async function handleDownload(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !clubNumber.trim()) {
-      setError("Both club name and number are required");
+
+    // Club info is a device setting configured (admin-gated) in Settings; it is
+    // not editable here. Without it the USEBIO export cannot be produced.
+    if (!clubConfigured) {
+      setError(
+        "Club name and EBU number must be set in Settings before exporting.",
+      );
       return;
     }
 
@@ -48,25 +48,6 @@ export function DownloadUsebioPage({
     setError(null);
 
     try {
-      // Save club info first
-      const saveRes = await fetch("/api/system/club", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          clubNumber: clubNumber.trim(),
-        }),
-      });
-
-      if (!saveRes.ok) {
-        setError("Failed to save club info");
-        setSaving(false);
-        return;
-      }
-
-      // Revalidate the shared club cache so other views reflect the save.
-      await mutate();
-
       // Fetch the USEBIO file and trigger download via blob URL. The export is
       // director-authed; the token travels in the `x-director-token` header
       // (this is a GET, so it can't carry a JSON body).
@@ -119,7 +100,7 @@ export function DownloadUsebioPage({
           <button
             type="submit"
             form="download-usebio-form"
-            disabled={saving}
+            disabled={saving || !clubConfigured}
             className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {saving ? "Preparing..." : "Download USEBIO"}
@@ -136,57 +117,51 @@ export function DownloadUsebioPage({
         </div>
       }
     >
-      <form
-        onSubmit={handleDownload}
-        className="px-6"
-        id="download-usebio-form"
-      >
-        <p className="text-sm text-gray-600 mb-4">
-          Confirm your club details before downloading. These will be included
-          in the USEBIO file.
-        </p>
-
-        <div className="space-y-4 flex-1">
-          <div>
-            <label
-              htmlFor="club-name"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Club Name
-            </label>
-            <input
-              id="club-name"
-              type="text"
-              value={name}
-              onChange={(e) => setNameEdit(e.target.value)}
-              placeholder="e.g. Anytown Bridge Club"
-              className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="club-number"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              EBU Club Number
-            </label>
-            <input
-              id="club-number"
-              type="text"
-              value={clubNumber}
-              onChange={(e) => setClubNumberEdit(e.target.value)}
-              placeholder="e.g. 12345"
-              className="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {error && (
-            <p role="alert" className="text-red-600 text-base text-center">
-              {error}
+      <form onSubmit={handleDownload} className="px-6" id="download-usebio-form">
+        {clubConfigured ? (
+          <>
+            <p className="text-sm text-gray-600 mb-4">
+              These club details will be included in the USEBIO file. To change
+              them, edit Club Information in Settings.
             </p>
-          )}
-        </div>
+
+            <dl className="space-y-4">
+              <div>
+                <dt className="block text-sm font-medium text-gray-700 mb-1">
+                  Club Name
+                </dt>
+                <dd
+                  data-testid="usebio-club-name"
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-900"
+                >
+                  {club!.name}
+                </dd>
+              </div>
+
+              <div>
+                <dt className="block text-sm font-medium text-gray-700 mb-1">
+                  EBU Club Number
+                </dt>
+                <dd
+                  data-testid="usebio-club-number"
+                  className="w-full p-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-900"
+                >
+                  {club!.clubNumber}
+                </dd>
+              </div>
+            </dl>
+          </>
+        ) : (
+          <p role="alert" className="text-red-600 text-base">
+            Club name and EBU number must be set in Settings before exporting.
+          </p>
+        )}
+
+        {error && (
+          <p role="alert" className="text-red-600 text-base text-center mt-4">
+            {error}
+          </p>
+        )}
       </form>
     </GamePageLayout>
   );

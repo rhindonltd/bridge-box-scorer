@@ -27,27 +27,22 @@ export function withDirectorRoute(
     if (headerToken) {
       directorToken = headerToken;
     } else {
+      // No header token: look for one in the JSON body. Any failure to find a
+      // token here (no/invalid body, or a body without a token) means the
+      // caller presented no director credentials, which is Unauthorized (401)
+      // — not a malformed-request 400.
       let rawBody: unknown;
       try {
         rawBody = await context.req.json();
       } catch {
-        return NextResponse.json(
-          { success: false, error: "Invalid JSON body" },
-          { status: 400 },
-        );
+        rawBody = null;
       }
 
       const parsed = directorBodySchema.safeParse(rawBody);
-
-      if (!parsed.success) {
-        return NextResponse.json(
-          { success: false, error: "Missing or invalid director token" },
-          { status: 400 },
-        );
+      if (parsed.success) {
+        body = parsed.data;
+        directorToken = parsed.data.directorToken;
       }
-
-      body = parsed.data;
-      directorToken = parsed.data.directorToken;
     }
 
     if (!validateDirectorToken(directorToken, context.gameId)) {

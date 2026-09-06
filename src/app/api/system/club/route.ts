@@ -3,13 +3,17 @@ import { findClub } from "@/db/system/queries/find-club";
 import { upsertClub } from "@/db/system/actions/upsert-club";
 import { z } from "zod";
 import { withBasicRoute } from "@/lib/api/basicRoute";
+import { withAdminRoute } from "@/lib/api/adminRoute";
 import { success } from "@/lib/api/success";
 
+// Reading club info is public (it feeds the USEBIO export and displays), but
+// writing it is a device setting and requires the admin token — consistent
+// with the other device settings (wifi, admin-key).
 export const GET = withBasicRoute(async () => {
   return success({ club: await findClub() });
 });
 
-export const POST = withBasicRoute(async ({ req }) => {
+export const POST = withAdminRoute(async ({ req }) => {
   const body = await req.json();
 
   const schema = z.object({

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { unlockSettings } from "./fixtures/settings";
+import { unlockSettings, fetchAdminToken } from "./fixtures/settings";
 
 /**
  * Club Settings E2E Tests
@@ -61,8 +61,12 @@ test.describe("Club Settings", () => {
     expect(body.result).toHaveProperty("club");
   });
 
-  test("POST /api/system/club saves club info", async ({ request }) => {
+  test("POST /api/system/club saves club info (admin-gated)", async ({
+    request,
+  }) => {
+    const token = await fetchAdminToken(request);
     const response = await request.post("/api/system/club", {
+      headers: { "x-admin-token": token },
       data: { name: "E2E Test Club", clubNumber: "99999" },
     });
     expect(response.ok()).toBe(true);
@@ -71,7 +75,9 @@ test.describe("Club Settings", () => {
   });
 
   test("POST /api/system/club rejects missing fields", async ({ request }) => {
+    const token = await fetchAdminToken(request);
     const response = await request.post("/api/system/club", {
+      headers: { "x-admin-token": token },
       data: { name: "Test Club" },
     });
     expect(response.status()).toBe(400);
@@ -79,13 +85,24 @@ test.describe("Club Settings", () => {
     expect(body.success).toBe(false);
   });
 
+  test("POST /api/system/club is rejected without an admin token", async ({
+    request,
+  }) => {
+    const response = await request.post("/api/system/club", {
+      data: { name: "Unauthorised Club", clubNumber: "00000" },
+    });
+    expect(response.status()).toBe(401);
+  });
+
   test("saved club info persists on GET", async ({ request }) => {
-    // Save
+    const token = await fetchAdminToken(request);
+    // Save (admin-gated)
     await request.post("/api/system/club", {
+      headers: { "x-admin-token": token },
       data: { name: "Persistence Test Club", clubNumber: "12345" },
     });
 
-    // Read back
+    // Read back (GET is public)
     const response = await request.get("/api/system/club");
     expect(response.ok()).toBe(true);
     const body = await response.json();

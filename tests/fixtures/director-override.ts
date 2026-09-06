@@ -167,3 +167,29 @@ export async function overrideRowToAdjusted(
 
   await page.waitForURL(/\/game\/[^/]+\/manage$/, { timeout: 15000 });
 }
+
+/**
+ * Override a traveller row to an ADJUSTED score via one of the wizard's PRESET
+ * buttons (e.g. "AVE+ / AVE-  (60/40)"). Presets submit immediately (no custom
+ * step), so this taps the preset whose "(ns/ew)" fragment matches. Waits for
+ * the redirect back to the manage menu.
+ *
+ * The preset labels carry a double space before the parenthesis, so this
+ * matches on the "(ns/ew)" fragment rather than the full label.
+ */
+export async function overrideRowToAdjustedPreset(
+  page: Page,
+  rowTestId: string,
+  { nsPercent, ewPercent }: { nsPercent: number; ewPercent: number },
+): Promise<void> {
+  await page.getByTestId(rowTestId).click();
+
+  await page.getByRole("button", { name: "Adjusted Score", exact: true }).click();
+
+  // Tap the preset whose parenthetical split matches, e.g. "(60/40)".
+  await page
+    .getByRole("button", { name: new RegExp(`\\(${nsPercent}/${ewPercent}\\)`) })
+    .click();
+
+  await page.waitForURL(/\/game\/[^/]+\/manage$/, { timeout: 15000 });
+}

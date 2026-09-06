@@ -3,7 +3,12 @@ import { testApiHandler } from "next-test-api-route-handler";
 
 const del = vi.fn(() => ({ where: vi.fn() }));
 
+// The route deletes the game row from the game-index database (getDb from
+// @/db/game-index, called synchronously), then removes the per-game .db file.
+// `withGameRoute` (under withDirectorRoute) still resolves a per-game db via
+// @/db/games#getDb, so that must be mocked truthy for the route to proceed.
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
+vi.mock("@/db/game-index", () => ({ getDb: vi.fn() }));
 vi.mock("@/socket/middleware/director-auth", () => ({
   validateDirectorToken: vi.fn(),
 }));
@@ -13,7 +18,8 @@ vi.mock("fs", () => ({
 }));
 
 import fs from "fs";
-import { getDb } from "@/db/games";
+import { getDb as getGamesDb } from "@/db/games";
+import { getDb as getIndexDb } from "@/db/game-index";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import * as appHandler from "./route";
 
@@ -22,7 +28,10 @@ const body = JSON.stringify({ directorToken: "tok" });
 describe("DELETE /api/games/[gameId]/delete", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getDb).mockResolvedValue({ delete: del } as never);
+    // withGameRoute resolves a (truthy) per-game db before the handler runs.
+    vi.mocked(getGamesDb).mockResolvedValue({} as never);
+    // getIndexDb() is synchronous in the route, so return the db directly.
+    vi.mocked(getIndexDb).mockReturnValue({ delete: del } as never);
     vi.mocked(validateDirectorToken).mockReturnValue(true);
   });
 

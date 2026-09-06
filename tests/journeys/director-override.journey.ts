@@ -6,6 +6,7 @@ import {
   openDirectorTraveller,
   overrideRowToContract,
   overrideRowToAdjusted,
+  overrideRowToAdjustedPreset,
 } from "../fixtures/director-override";
 import { newParticipant, setUpStartedTwoTableGame } from "./support";
 
@@ -122,6 +123,71 @@ test.describe("Director overrides", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
+      await nsPage.context().close();
+      await ewPage.context().close();
+    }
+  });
+
+  test("an adjusted-score PRESET applies and propagates to a second director viewer", async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+
+    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+      browser,
+      `Director Adjusted Preset ${Date.now()}`,
+      { recordOpeningLead: false },
+    );
+
+    // A second director-authorised viewer: reuse the director's storageState
+    // (which holds the director token for this game) in a fresh context, then
+    // open the same board's traveller as a live observer.
+    const viewerContext = await browser.newContext({
+      ...test.info().project.use,
+      storageState: await directorPage.context().storageState(),
+    });
+    const viewerPage = await viewerContext.newPage();
+
+    const nsPage = await newParticipant(browser);
+    const ewPage = await newParticipant(browser);
+    const board = 1;
+    const table = 1;
+
+    try {
+      await enterPassOut(nsPage, gameId, `A${table}NS`, board);
+      await expect(nsPage.getByText("Waiting for confirmation")).toBeVisible();
+      await enterPassOut(ewPage, gameId, `A${table}EW`, board);
+      await expect(nsPage.getByText("Board Results")).toBeVisible({
+        timeout: 15000,
+      });
+
+      // The second director viewer opens the same board's traveller and stays
+      // mounted; the row shows the table-entered Pass Out first.
+      await openDirectorTraveller(viewerPage, gameId, board);
+      await expect(
+        viewerPage.getByTestId(`traveller-row-1-${table}`),
+      ).toContainText("PO", { timeout: 15000 });
+
+      // The first director applies the "AVE+ / AVE-  (60/40)" PRESET (which
+      // submits immediately, no custom entry).
+      await openDirectorTraveller(directorPage, gameId, board);
+      await overrideRowToAdjustedPreset(
+        directorPage,
+        `traveller-row-1-${table}`,
+        { nsPercent: 60, ewPercent: 40 },
+      );
+
+      // The still-mounted second viewer's traveller updates live to the
+      // adjusted rendering — no reload.
+      await expect(
+        viewerPage
+          .getByTestId(`traveller-row-1-${table}`)
+          .getByText(/Adj\s*60%\/40%/),
+      ).toBeVisible({ timeout: 15000 });
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await viewerContext.close();
       await nsPage.context().close();
       await ewPage.context().close();
     }

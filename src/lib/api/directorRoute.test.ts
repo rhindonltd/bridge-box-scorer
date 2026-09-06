@@ -91,29 +91,33 @@ describe("withDirectorRoute", () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it("returns 400 for an unparseable JSON body", async () => {
+  it("returns 401 when there is no token and the body is unparseable", async () => {
+    // No token is extracted, so validation is called with undefined -> false.
+    vi.mocked(validateDirectorToken).mockReturnValue(false);
     const res = await withDirectorRoute(async () => NextResponse.json({}))(
       makeReq(null, { badJson: true }),
       ctx({ gameId: "g1" }),
     );
 
-    expect(res.status).toBe(400);
+    // No credentials presented (header absent, body unparseable) -> 401.
+    expect(res.status).toBe(401);
     await expect(res.json()).resolves.toEqual({
       success: false,
-      error: "Invalid JSON body",
+      error: "Unauthorized",
     });
   });
 
-  it("returns 400 when the director token is missing from the body", async () => {
+  it("returns 401 when the director token is missing from the body", async () => {
+    vi.mocked(validateDirectorToken).mockReturnValue(false);
     const res = await withDirectorRoute(async () => NextResponse.json({}))(
       makeReq({ notAToken: true }),
       ctx({ gameId: "g1" }),
     );
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
     await expect(res.json()).resolves.toEqual({
       success: false,
-      error: "Missing or invalid director token",
+      error: "Unauthorized",
     });
   });
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { Club } from "@/db/system/schema";
 import { fetcher } from "@/lib/fetcher";
+import { getAdminToken } from "@/lib/admin-token";
 import { swrKeys } from "@/swr/swr-keys";
 
 export default function ClubSettingsPage() {
@@ -39,7 +40,10 @@ export default function ClubSettingsPage() {
     try {
       const res = await fetch("/api/system/club", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": getAdminToken() ?? "",
+        },
         body: JSON.stringify({
           name: name.trim(),
           clubNumber: clubNumber.trim(),

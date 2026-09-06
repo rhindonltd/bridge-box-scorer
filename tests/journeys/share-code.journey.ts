@@ -110,4 +110,112 @@ test.describe("Share director access round-trip", () => {
       await deviceB.context().close();
     }
   });
+
+  test("the share-access page shows a mm:ss countdown and regenerates on demand", async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+
+    const eventName = `Share Code Countdown ${Date.now()}`;
+    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+      browser,
+      eventName,
+      { recordOpeningLead: false },
+    );
+
+    try {
+      await directorPage.goto(`/game/${gameId}/manage/share-access`);
+      const codeEl = directorPage.getByTestId("share-code");
+      await expect(codeEl).toBeVisible({ timeout: 15000 });
+      const firstCode = (await codeEl.textContent())?.trim() ?? "";
+      expect(firstCode).toMatch(/^[A-Z0-9]{6}$/);
+
+      // The countdown starts at 5:00 and ticks down in mm:ss form (seconds
+      // zero-padded). It begins at "Expires in 5:00" and moves to 4:5x within
+      // a couple of seconds.
+      await expect(
+        directorPage.getByText(/Expires in 5:00/),
+      ).toBeVisible({ timeout: 5000 });
+      await expect(
+        directorPage.getByText(/Expires in 4:5\d/),
+      ).toBeVisible({ timeout: 5000 });
+
+      // "Generate New Code" issues a fresh, different code and resets the
+      // countdown.
+      await directorPage
+        .getByRole("button", { name: "Generate New Code" })
+        .click();
+      await expect(codeEl).toBeVisible({ timeout: 15000 });
+      await expect
+        .poll(async () => (await codeEl.textContent())?.trim(), {
+          timeout: 15000,
+        })
+        .not.toBe(firstCode);
+      const secondCode = (await codeEl.textContent())?.trim() ?? "";
+      expect(secondCode).toMatch(/^[A-Z0-9]{6}$/);
+      await expect(
+        directorPage.getByText(/Expires in [45]:\d{2}/),
+      ).toBeVisible({ timeout: 5000 });
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+    }
+  });
+
+  test("a share code cannot be claimed twice", async ({ browser }) => {
+    test.setTimeout(120_000);
+
+    const eventName = `Share Code Reuse ${Date.now()}`;
+    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+      browser,
+      eventName,
+      { recordOpeningLead: false },
+    );
+
+    const deviceB = await newParticipant(browser);
+    const deviceC = await newParticipant(browser);
+
+    try {
+      // Device A generates a code.
+      await directorPage.goto(`/game/${gameId}/manage/share-access`);
+      const codeEl = directorPage.getByTestId("share-code");
+      await expect(codeEl).toBeVisible({ timeout: 15000 });
+      const code = (await codeEl.textContent())?.trim() ?? "";
+      expect(code).toMatch(/^[A-Z0-9]{6}$/);
+
+      // Device B claims it successfully (marks it used).
+      await deviceB.goto("/manage");
+      await deviceB
+        .getByRole("button", { name: new RegExp(eventName) })
+        .click();
+      const inputB = deviceB.locator("#share-code");
+      await expect(inputB).toBeVisible({ timeout: 15000 });
+      await inputB.fill(code);
+      await deviceB.getByRole("button", { name: "Claim Access" }).click();
+      await deviceB.waitForURL(new RegExp(`/game/${gameId}/manage$`), {
+        timeout: 15000,
+      });
+
+      // Device C tries the SAME code: it has already been used, so the claim is
+      // rejected and Device C stays on the claim screen.
+      await deviceC.goto("/manage");
+      await deviceC
+        .getByRole("button", { name: new RegExp(eventName) })
+        .click();
+      const inputC = deviceC.locator("#share-code");
+      await expect(inputC).toBeVisible({ timeout: 15000 });
+      await inputC.fill(code);
+      await deviceC.getByRole("button", { name: "Claim Access" }).click();
+
+      await expect(
+        deviceC.getByText("Code has already been used"),
+      ).toBeVisible({ timeout: 15000 });
+      await expect(deviceC).toHaveURL(/\/manage$/);
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await deviceB.context().close();
+      await deviceC.context().close();
+    }
+  });
 });
