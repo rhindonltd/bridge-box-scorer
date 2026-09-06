@@ -55,9 +55,14 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn((...args: any[]) => args),
 }));
 
+vi.mock("@/socket/middleware/participant-auth", () => ({
+  assertPlayer: vi.fn(),
+}));
+
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
+import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { registerSubmitResultHandler } from "./submit-result.handler";
 
 function makeSocket() {
@@ -80,6 +85,8 @@ function submission(
 describe("registerSubmitResultHandler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: token is valid. assertPlayer resolves true and does not touch cb.
+    vi.mocked(assertPlayer).mockResolvedValue(true);
     vi.mocked(createBoardSubmission).mockResolvedValue(undefined as any);
     vi.mocked(deleteBoardSubmissions).mockResolvedValue(undefined as any);
     // Default: only one side has submitted, so no confirm/mismatch yet.
@@ -117,6 +124,7 @@ describe("registerSubmitResultHandler", () => {
       {
         gameId: "g1",
         seat: "A1NS",
+        token: "tok",
         roundNumber: 2,
         tableNumber: 3,
         boardNumber: 3,
@@ -144,6 +152,7 @@ describe("registerSubmitResultHandler", () => {
       {
         gameId: "g1",
         seat: "A1NS",
+        token: "tok",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
@@ -185,6 +194,7 @@ describe("registerSubmitResultHandler", () => {
       {
         gameId: "g3",
         seat: "A1EW",
+        token: "tok",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
@@ -232,6 +242,7 @@ describe("registerSubmitResultHandler", () => {
       {
         gameId: "g4",
         seat: "A1EW",
+        token: "tok",
         roundNumber: 2,
         tableNumber: 1,
         boardNumber: 3,
@@ -268,6 +279,7 @@ describe("registerSubmitResultHandler", () => {
       {
         gameId: "g5",
         seat: "A2EW",
+        token: "tok",
         roundNumber: 1,
         tableNumber: 2,
         boardNumber: 2,
@@ -302,6 +314,7 @@ describe("registerSubmitResultHandler", () => {
       {
         gameId: "g6",
         seat: "A1NS",
+        token: "tok",
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
@@ -314,5 +327,41 @@ describe("registerSubmitResultHandler", () => {
       success: false,
       error: "Failed to submit result",
     });
+  });
+
+  it("rejects when assertPlayer fails and stores/broadcasts nothing", async () => {
+    // Simulate a wrong/missing token: assertPlayer rejects via the callback.
+    vi.mocked(assertPlayer).mockImplementation(
+      async (_gameId, _seat, _token, cb?: any) => {
+        cb?.({ success: false, error: "Unauthorized" });
+        return false;
+      },
+    );
+
+    const socket = makeSocket();
+    const io = makeIo();
+    registerSubmitResultHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler(
+      {
+        gameId: "g7",
+        seat: "A1NS",
+        token: "wrong",
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: 1,
+        result: "3NTN=",
+      },
+      cb,
+    );
+
+    expect(assertPlayer).toHaveBeenCalledWith("g7", "A1NS", "wrong", cb);
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
+    // Nothing stored, nothing broadcast.
+    expect(createBoardSubmission).not.toHaveBeenCalled();
+    expect(io._emit).not.toHaveBeenCalled();
   });
 });

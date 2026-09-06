@@ -45,6 +45,9 @@ export type SocketEventMap = {
     gameId: string;
     gameType: string;
     seat: string;
+    // Player token issued to this seat at join time; verified server-side to
+    // prove the submission came from the seat's owner.
+    token: string;
     roundNumber: number;
     tableNumber: number;
     boardNumber: number;

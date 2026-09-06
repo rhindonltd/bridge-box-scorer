@@ -11,6 +11,7 @@ import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
 import { BoardSubmission } from "@/db/games/tables/submissions";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
 import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
+import { assertPlayer } from "@/socket/middleware/participant-auth";
 
 export function registerSubmitResultHandler(socket: Socket, io: Server) {
   socket.on(
@@ -19,6 +20,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
       {
         gameId,
         seat,
+        token,
         roundNumber,
         tableNumber,
         boardNumber,
@@ -26,6 +28,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
       }: {
         gameId: string;
         seat: string;
+        token: string;
         roundNumber: number;
         tableNumber: number;
         boardNumber: number;
@@ -34,6 +37,13 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
       cb,
     ) => {
       try {
+        // Verify the submission carries the seat's player token before any
+        // read or write. Rejects (with a warning log) if it came from someone
+        // who does not hold this seat.
+        if (!(await assertPlayer(gameId, seat, token, cb))) {
+          return;
+        }
+
         // The seat is section-qualified (e.g. "A1NS"); its section scopes every
         // board / submission lookup so sections sharing a table number don't
         // collide.
