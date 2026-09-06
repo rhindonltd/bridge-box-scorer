@@ -15,26 +15,42 @@ export function withDirectorRoute(
   ) => Promise<NextResponse>,
 ) {
   return withGameRoute(async (context) => {
-    let rawBody: unknown;
-    try {
-      rawBody = await context.req.json();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
-        { status: 400 },
-      );
+    // The director token may arrive in the `x-director-token` header (used by
+    // GET downloads like USEBIO, which have no request body) or in the JSON
+    // body (used by mutating calls such as DELETE). Prefer the header; fall
+    // back to the body only when the header is absent.
+    const headerToken = context.req.headers.get("x-director-token");
+
+    let body: Record<string, unknown> = {};
+    let directorToken: string | undefined;
+
+    if (headerToken) {
+      directorToken = headerToken;
+    } else {
+      let rawBody: unknown;
+      try {
+        rawBody = await context.req.json();
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Invalid JSON body" },
+          { status: 400 },
+        );
+      }
+
+      const parsed = directorBodySchema.safeParse(rawBody);
+
+      if (!parsed.success) {
+        return NextResponse.json(
+          { success: false, error: "Missing or invalid director token" },
+          { status: 400 },
+        );
+      }
+
+      body = parsed.data;
+      directorToken = parsed.data.directorToken;
     }
 
-    const parsed = directorBodySchema.safeParse(rawBody);
-
-    if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: "Missing or invalid director token" },
-        { status: 400 },
-      );
-    }
-
-    if (!validateDirectorToken(parsed.data.directorToken, context.gameId)) {
+    if (!validateDirectorToken(directorToken, context.gameId)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 },
@@ -43,7 +59,7 @@ export function withDirectorRoute(
 
     return handler({
       ...context,
-      body: parsed.data,
+      body,
     });
   });
 }

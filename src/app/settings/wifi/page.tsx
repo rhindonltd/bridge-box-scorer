@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { Network } from "@/model/network";
 import { WifiSettingsForm } from "@/app/settings/wifi/WifiSettingsForm";
+import { WifiUnavailablePage } from "@/app/settings/wifi/WifiUnavailablePage";
 import { getAdminToken } from "@/lib/admin-token";
 import { postFetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
@@ -14,11 +15,13 @@ export default function WifiSettings() {
   const [message, setMessage] = useState<string | null>(null);
 
   // The scan endpoint is a POST (it shells out to nmcli) that returns
-  // { ssids } inside the success envelope.
-  const { data, error } = useSWR<{ ssids: Network[] }>(
-    swrKeys.wifiScan(),
-    postFetcher,
-  );
+  // { available, ssids } inside the success envelope. `available` is false on
+  // devices without WiFi management (no nmcli), in which case we show a
+  // dedicated "can't change WiFi here" page instead of the picker.
+  const { data, error, isLoading } = useSWR<{
+    available: boolean;
+    ssids: Network[];
+  }>(swrKeys.wifiScan(), postFetcher);
 
   const networks = [...(data?.ssids ?? [])].sort((a, b) => b.signal - a.signal);
 
@@ -79,6 +82,12 @@ export default function WifiSettings() {
       setLoading(false);
     }
   };
+
+  // Once the scan resolves, a device without WiFi management shows the
+  // dedicated unavailable page rather than the (empty) picker.
+  if (!isLoading && !error && data?.available === false) {
+    return <WifiUnavailablePage />;
+  }
 
   return (
     <WifiSettingsForm

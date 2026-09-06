@@ -3,10 +3,22 @@ import fs from "fs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { success } from "@/lib/api/success";
+import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
 
 const WIFI_CONFIG = "/home/bridgebox/bridge-box/wifi.json";
 
 export const POST = withAdminRoute(async ({ req }) => {
+  // No WiFi management on this device: refuse the save with a clear reason.
+  if (!(await isWifiManagementAvailable())) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "WiFi management not available on this device",
+      },
+      { status: 200 },
+    );
+  }
+
   const body = await req.json();
 
   const schema = z.object({

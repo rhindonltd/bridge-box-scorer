@@ -6,6 +6,7 @@ import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { Club } from "@/db/system/schema";
 import { fetcher } from "@/lib/fetcher";
+import { getDirectorToken } from "@/lib/director-token";
 import { swrKeys } from "@/swr/swr-keys";
 
 interface DownloadUsebioPageProps {
@@ -66,8 +67,12 @@ export function DownloadUsebioPage({
       // Revalidate the shared club cache so other views reflect the save.
       await mutate();
 
-      // Fetch the USEBIO file and trigger download via blob URL
-      const usebioRes = await fetch(`/api/games/${game.gameId}/usebio`);
+      // Fetch the USEBIO file and trigger download via blob URL. The export is
+      // director-authed; the token travels in the `x-director-token` header
+      // (this is a GET, so it can't carry a JSON body).
+      const usebioRes = await fetch(`/api/games/${game.gameId}/usebio`, {
+        headers: { "x-director-token": getDirectorToken(game.gameId) ?? "" },
+      });
       if (!usebioRes.ok) {
         const errData = await usebioRes.json().catch(() => null);
         setError(errData?.error ?? "Failed to generate USEBIO file");

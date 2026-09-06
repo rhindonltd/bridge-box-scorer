@@ -7,6 +7,11 @@ vi.mock("fs", async (importActual) => {
 });
 vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
 
+const { isWifiManagementAvailable } = vi.hoisted(() => ({
+  isWifiManagementAvailable: vi.fn(),
+}));
+vi.mock("@/lib/system/wifi-availability", () => ({ isWifiManagementAvailable }));
+
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { POST } from "./route";
 
@@ -24,6 +29,7 @@ describe("POST /api/system/wifi", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(validateAdminToken).mockResolvedValue(true);
+    vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
   });
 
   it("writes the wifi config for an authorised admin", async () => {
@@ -44,6 +50,17 @@ describe("POST /api/system/wifi", () => {
     vi.mocked(validateAdminToken).mockResolvedValue(false);
     const res = await POST(req({ ssid: "x", password: "y" }, null));
     expect(res.status).toBe(401);
+    expect(writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it("returns success:false (200) and writes nothing when WiFi is unavailable", async () => {
+    vi.mocked(isWifiManagementAvailable).mockResolvedValue(false);
+    const res = await POST(req({ ssid: "HomeNet", password: "secret" }));
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      error: "WiFi management not available on this device",
+    });
     expect(writeFileSync).not.toHaveBeenCalled();
   });
 });

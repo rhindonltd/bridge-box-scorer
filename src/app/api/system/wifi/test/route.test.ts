@@ -7,6 +7,11 @@ vi.mock("child_process", async (importActual) => {
 });
 vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
 
+const { isWifiManagementAvailable } = vi.hoisted(() => ({
+  isWifiManagementAvailable: vi.fn(),
+}));
+vi.mock("@/lib/system/wifi-availability", () => ({ isWifiManagementAvailable }));
+
 import { execFile as mockExecFile } from "child_process";
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { POST } from "./route";
@@ -44,6 +49,7 @@ describe("POST /api/system/wifi/test", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(validateAdminToken).mockResolvedValue(true);
+    vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
   });
 
   it("returns connected:true when the profile comes up, and tears it down", async () => {
@@ -85,6 +91,18 @@ describe("POST /api/system/wifi/test", () => {
     vi.mocked(validateAdminToken).mockResolvedValue(false);
     const res = await POST(req({ ssid: "x", password: "y" }, null));
     expect(res.status).toBe(401);
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
+
+  it("returns success:false (200) when WiFi management is unavailable", async () => {
+    vi.mocked(isWifiManagementAvailable).mockResolvedValue(false);
+    const res = await POST(req({ ssid: "x", password: "y" }));
+    expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      error: "WiFi management not available on this device",
+    });
+    // nmcli is never invoked when management is unavailable.
     expect(mockExecFile).not.toHaveBeenCalled();
   });
 });
