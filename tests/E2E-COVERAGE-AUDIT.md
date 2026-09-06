@@ -41,8 +41,10 @@ journeys `leaderboard-live.journey.ts`, `traveller-live.journey.ts`,
 `contract-variants.journey.ts`, `director-override.journey.ts`,
 `share-code.journey.ts`, `multi-section.journey.ts`,
 `movement-types.journey.ts`, `table-management.journey.ts`,
-`timer.journey.ts`, `reconnect.journey.ts`. Fixtures: `game-create`,
-`game-setup`, `join`, `play`, `director-override`, `delete-game`, `settings`.
+`timer.journey.ts`, `reconnect.journey.ts`, `admin-key.journey.ts`,
+`wifi-settings.journey.ts`, `usebio.journey.ts`. Fixtures: `game-create`,
+`game-setup`, `join`, `play`, `director-override`, `delete-game`, `settings`,
+`complete-game`.
 
 ### Test tooling that already exists (fixtures)
 
@@ -61,6 +63,9 @@ scaffolding:
   explicit section-qualified seat (`seatPairBySeat`, `seatTwoTableSection`); or
   seat a full N-table single section (`seatSingleSectionField`).
 - Pick a recommended movement by name (`game-setup.ts` `pickMovementByName`).
+- Confirm every board of a started game (all results in) via a direct socket
+  (`fixtures/complete-game.ts` `confirmEntireGame`).
+- Derive the device admin key + mint an admin token (`fixtures/settings.ts`).
 - Enter a Pass Out and confirm a board via both sides (`fixtures/play.ts`).
 - Enter a full played contract (incl. doubling and made/down results) and
   confirm it via both sides (`fixtures/play.ts` — `enterPlayedContract`,
@@ -459,16 +464,24 @@ scaffolding:
 
 ## 19. USEBIO export
 
-- [x] `GET /api/games/nonexistent/usebio` returns 404 + JSON content-type
-  (`api.spec.ts`).
-- [ ] USEBIO download happy path: confirm club info, POST club, GET usebio,
-  download the XML blob (filename from `Content-Disposition`, fallback
-  `results.xml`).
-- [ ] Required-field validation: "Both club name and number are required".
-- [ ] "Download USEBIO" hidden until the game has started.
-- [ ] "Download USEBIO" disabled until all results are in (`allResultsIn`).
+- [x] `GET /api/games/nonexistent/usebio` returns 404 (`api.spec.ts`,
+  `usebio.journey.ts`).
+- [x] USEBIO download happy path: complete the game, confirm club info, download
+  the XML blob (filename ends `.xml`, non-empty content)
+  (`usebio.journey.ts`, using `fixtures/complete-game.ts`).
+- [x] Required-field validation: "Both club name and number are required"
+  (`usebio.journey.ts`).
+- [ ] "Download USEBIO" hidden until the game has started / disabled until all
+  results are in (`allResultsIn`) — enforced at the manage menu; the journey
+  completes the game before downloading rather than asserting the disabled state.
 - [ ] API 400 when club info is not configured ("Club info not configured…").
-- [ ] `GET /usebio` is director-authed (token in the JSON body on a GET).
+- [x] `GET /usebio` is director-authed — **bug found & fixed via this journey.**
+  The route used `withDirectorRoute` (token in the JSON body), but the client
+  does a GET with no body, so the download always failed with "Invalid JSON
+  body". `withDirectorRoute` now also accepts the token via the
+  `x-director-token` HEADER, and the download page sends it. Verified in
+  `directorRoute.test.ts` (header + body paths) and end-to-end in
+  `usebio.journey.ts`.
 
 ---
 
@@ -484,21 +497,26 @@ scaffolding:
 - [x] WiFi page UI: heading, network selector, password field, Test Connection,
   Save & Apply disabled initially, Test disabled without a network, dropdown
   placeholder (`settings.spec.ts`).
-- [ ] Admin-key gate (`AdminKeyEntry`) blocks settings until unlocked.
-  (Tests currently seed the token via `fixtures/settings.ts` `unlockSettings`,
-  bypassing the gate UI — the gate itself is untested.)
-- [ ] Admin-key verify success mints a token
-  (`POST /api/system/admin-key/verify`).
-- [ ] Admin-key verify wrong key → 401 "Incorrect admin key".
-- [ ] Update admin key (`POST /api/system/admin-key`); < 4 chars → 400.
-- [ ] WiFi scan (`POST /api/system/wifi/scan`) returns SSID list.
-- [ ] WiFi test success (`POST /api/system/wifi/test` → `{connected:true}`).
-- [ ] WiFi test failure returns HTTP 200 with `{success:false}` (test outcome,
-  not server error).
-- [ ] Save & Apply becomes enabled only after a successful test of the SAME
-  SSID.
+- [x] Admin-key gate (`AdminKeyEntry`) blocks settings until unlocked: the real
+  (MAC-derived) key unlocks it; a wrong key shows "Incorrect admin key" and
+  stays gated (`admin-key.journey.ts`).
+- [x] Admin-key verify success mints a token; wrong key → 401; missing → 400
+  (`admin-key.journey.ts`).
+- [x] Update admin key (`POST /api/system/admin-key`): a full change cycle
+  (change → new key verifies, old rejected → restore original) plus < 4 chars →
+  400 and no-token → 401 (`admin-key.journey.ts`, guarded restore).
+- [x] WiFi capability: `POST /api/system/wifi/scan` returns `{ available, ssids }`;
+  on a device without `nmcli` the UI shows a "WiFi can't be changed" page
+  (`wifi-settings.journey.ts`, `settings.spec.ts`). **Product improvement made
+  here:** scan/test/save now degrade gracefully (200 + `available:false` /
+  clear error) instead of a 500 when `nmcli` is absent.
+- [ ] WiFi test SUCCESS + Save-gating (test-of-same-SSID enables Save) — needs a
+  real WiFi association; only reachable on an `nmcli` host (the picker test is
+  skipped without it). The scan-availability, unavailable-page, and gated-Save
+  (disabled) states are covered.
 - [ ] WiFi restarting page shown after save.
-- [ ] Save WiFi (`POST /api/system/wifi`) is admin-gated.
+- [x] Save WiFi (`POST /api/system/wifi`) is admin-gated; returns 200
+  `{success:false}` when WiFi management is unavailable (route unit tests).
 - [ ] Network read (`GET /api/system/network`) returns current/saved SSID.
 - [x] `POST /api/system/restart` responds (`api.spec.ts`).
 - [ ] `POST /api/system/reset-wifi` admin route.
@@ -697,10 +715,20 @@ section CRUD was closed in P2's `multi-section.journey.ts`):
 - **Also: replaced the stale `tests/timer.spec.ts`** (drove a removed
   Create/Start UI and was failing) with `timer.journey.ts` on the current flow.
 
-**P4 — Device / settings happy paths:**
-- Admin-key gate + verify (success and wrong key), update admin key.
-- WiFi scan → test → save gating (test-of-same-SSID enables Save), restart.
-- USEBIO happy-path download (validation, blob, disabled-until-all-results-in).
+**P4 — Device / settings happy paths — LARGELY CLOSED**
+(`admin-key.journey.ts`, `wifi-settings.journey.ts`, `usebio.journey.ts`):
+- [x] Admin-key gate + verify (real key unlock, wrong key, 401/400) and a full
+  update-and-restore cycle.
+- [x] WiFi capability-aware UI (unavailable page without `nmcli`; picker + gated
+  Save with it). **Two product changes made:** WiFi routes now degrade
+  gracefully (`available:false`, 200s) instead of 500s; the UI shows a clear
+  "can't change WiFi here" page.
+- [x] USEBIO happy-path download (complete game → club info → XML blob) +
+  required-field validation. **Fixed a production bug**: the director-authed GET
+  now accepts the token via `x-director-token` header (was unusable via body).
+- Remaining P4 follow-ups: WiFi test-success/Save-gating on a real `nmcli` host,
+  the restarting page, `GET /api/system/network`, and USEBIO "disabled until all
+  results in" as a distinct assertion.
 
 **P5 — Security / authorization:**
 - Un-authed `game:submitResult` and `game:createParticipant` (any client can

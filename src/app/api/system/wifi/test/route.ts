@@ -4,6 +4,7 @@ import { promisify } from "util";
 import { z } from "zod";
 import { withAdminRoute } from "@/lib/api/adminRoute";
 import { success } from "@/lib/api/success";
+import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
 
 const execFileAsync = promisify(execFile);
 
@@ -53,6 +54,17 @@ async function deleteTestProfile() {
  * error). Genuine server/auth failures are surfaced by the wrapper as 4xx/5xx.
  */
 export const POST = withAdminRoute(async ({ req }) => {
+  // No WiFi management on this device: report it as a (non-error) test outcome.
+  if (!(await isWifiManagementAvailable())) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "WiFi management not available on this device",
+      },
+      { status: 200 },
+    );
+  }
+
   const body = await req.json();
 
   const schema = z.object({

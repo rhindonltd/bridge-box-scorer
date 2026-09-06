@@ -18,8 +18,12 @@ type DirectorHandlerContext = GameRouteContext & { body: Record<string, unknown>
 
 const fakeDb = { marker: "db" } as never;
 
-function makeReq(body: unknown, { badJson = false } = {}): any {
+function makeReq(
+  body: unknown,
+  { badJson = false, headerToken = null }: { badJson?: boolean; headerToken?: string | null } = {},
+): any {
   return {
+    headers: { get: (name: string) => (name === "x-director-token" ? headerToken : null) },
     json: badJson
       ? vi.fn(async () => {
           throw new Error("bad json");
@@ -56,6 +60,35 @@ describe("withDirectorRoute", () => {
       extra: 1,
     });
     await expect(res.json()).resolves.toEqual({ ok: true });
+  });
+
+  it("accepts the token from the x-director-token header (no body needed)", async () => {
+    const handler = vi.fn(async (_context: DirectorHandlerContext) =>
+      NextResponse.json({ ok: true }),
+    );
+    const req = makeReq(undefined, { badJson: true, headerToken: "tok" });
+
+    const res = await withDirectorRoute(handler)(req, ctx({ gameId: "g1" }));
+
+    // Header path is used; the body is never parsed.
+    expect(req.json).not.toHaveBeenCalled();
+    expect(validateDirectorToken).toHaveBeenCalledWith("tok", "g1");
+    expect(handler).toHaveBeenCalledOnce();
+    expect(handler.mock.calls[0][0].body).toEqual({});
+    await expect(res.json()).resolves.toEqual({ ok: true });
+  });
+
+  it("returns 401 when the header token is invalid for the game", async () => {
+    vi.mocked(validateDirectorToken).mockReturnValue(false);
+    const handler = vi.fn();
+
+    const res = await withDirectorRoute(handler)(
+      makeReq(undefined, { badJson: true, headerToken: "wrong" }),
+      ctx({ gameId: "g1" }),
+    );
+
+    expect(res.status).toBe(401);
+    expect(handler).not.toHaveBeenCalled();
   });
 
   it("returns 400 for an unparseable JSON body", async () => {
