@@ -85,8 +85,11 @@ The movement picker shows the recommended movements for your table count,
 session length). Each option is a card showing the movement name, number of
 rounds, boards per round, boards per set, and a short note of pros and cons.
 
-Tap the card whose session length and board count suit your event to select it
-for the section.
+Tap the card whose session length and board count suit your event to open its
+details — the full round-by-round and table-by-table breakdown of who plays
+whom on which boards. If it's the one you want, tap **Select Movement** to lock
+it in for the section; otherwise tap back to return to the list and compare
+another.
 
 ### Timer tab (optional)
 
