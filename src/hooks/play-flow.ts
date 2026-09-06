@@ -6,6 +6,7 @@ import { getSocket } from "../lib/socket";
 import { SocketEvents } from "../socket/socket-events";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
+import { getPlayerToken } from "@/lib/player-token";
 
 export interface RoundSchedule {
   roundNumber: number;
@@ -311,9 +312,15 @@ export function usePlayFlow(gameId: string, seat: string) {
 
       const socket = getSocket();
 
+      // Attach the seat's player token so the server can verify the submission
+      // came from this seat's owner. `seat` is the initial seat, which is also
+      // the key the token was stored under at join time.
+      const token = getPlayerToken(gameId)?.token ?? "";
+
       socket.emit(SocketEvents.SUBMIT_RESULT, {
         gameId,
         seat,
+        token,
         roundNumber: round.roundNumber,
         tableNumber: round.tableNumber,
         boardNumber,

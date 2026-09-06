@@ -113,12 +113,23 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn((...args: any[]) => args),
 }));
 
+// Participant auth is exercised in its own unit + int tests. Here we mock it so
+// this handler test stays focused on the dual-confirm / broadcast behaviour;
+// dedicated cases below flip it to the rejecting path.
+vi.mock("@/socket/middleware/participant-auth", () => ({
+  assertPlayer: vi.fn(),
+}));
+
+import { assertPlayer } from "@/socket/middleware/participant-auth";
+
 describe("registerSubmitResultHandler (integration)", () => {
   let closeServer: () => Promise<void>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     submissionStore.clear();
+    // Default: valid token. assertPlayer accepts and leaves the callback alone.
+    vi.mocked(assertPlayer).mockResolvedValue(true);
     // Restore the default db (mockResolvedValue overrides in some tests persist
     // across cases since clearAllMocks does not reset implementations).
     vi.mocked(getDb).mockResolvedValue({
@@ -167,6 +178,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-1",
       gameType: "PAIRS",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 1,
@@ -205,6 +217,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-1",
       gameType: "PAIRS",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 7,
@@ -216,6 +229,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-1",
       gameType: "PAIRS",
       seat: "A1EW",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 7,
@@ -258,6 +272,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-2",
       gameType: "PAIRS",
       seat: "A2NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 2,
       boardNumber: 3,
@@ -269,6 +284,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-2",
       gameType: "PAIRS",
       seat: "A2EW",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 2,
       boardNumber: 3,
@@ -311,6 +327,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-3",
       gameType: "PAIRS",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 1,
@@ -322,6 +339,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-3",
       gameType: "PAIRS",
       seat: "A1EW",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 2,
@@ -359,6 +377,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-4",
       gameType: "PAIRS",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 2,
       tableNumber: 1,
       boardNumber: 5,
@@ -370,6 +389,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-4",
       gameType: "PAIRS",
       seat: "A1EW",
+      token: "tok",
       roundNumber: 2,
       tableNumber: 1,
       boardNumber: 5,
@@ -383,6 +403,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-4",
       gameType: "PAIRS",
       seat: "A1EW",
+      token: "tok",
       roundNumber: 2,
       tableNumber: 1,
       boardNumber: 5,
@@ -421,6 +442,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-6",
       gameType: "PAIRS",
       seat: "A3NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 3,
       boardNumber: 9,
@@ -431,6 +453,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-6",
       gameType: "PAIRS",
       seat: "A3EW",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 3,
       boardNumber: 9,
@@ -476,6 +499,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-7",
       gameType: "PAIRS",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 3,
       tableNumber: 1,
       boardNumber: 10,
@@ -486,6 +510,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       gameId: "game-7",
       gameType: "PAIRS",
       seat: "A1EW",
+      token: "tok",
       roundNumber: 3,
       tableNumber: 1,
       boardNumber: 10,
@@ -526,6 +551,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-so",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 1,
@@ -566,6 +592,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-ns2",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 3,
@@ -602,6 +629,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-nodb",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 4,
@@ -620,6 +648,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     const result = await emitWithAck(client2, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-nodb",
       seat: "A1EW",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 4,
@@ -660,6 +689,7 @@ describe("registerSubmitResultHandler (integration)", () => {
     const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
       gameId: "game-err",
       seat: "A1NS",
+      token: "tok",
       roundNumber: 1,
       tableNumber: 1,
       boardNumber: 1,
@@ -671,5 +701,60 @@ describe("registerSubmitResultHandler (integration)", () => {
       error: "Failed to submit result",
     });
     errSpy.mockRestore();
+  });
+
+  it("rejects when the token is invalid and stores nothing", async () => {
+    // Simulate a wrong/missing token: assertPlayer rejects via the callback.
+    vi.mocked(assertPlayer).mockImplementation((async (
+      _gameId: string,
+      _seat: string,
+      _token: unknown,
+      cb?: (r: { success: false; error: string }) => void,
+    ) => {
+      cb?.({ success: false, error: "Unauthorized" });
+      return false;
+    }) as unknown as typeof assertPlayer);
+
+    const { createBoardSubmission } = await import(
+      "@/db/games/actions/create-submission"
+    );
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerJoinGameHandler(socket);
+        registerSubmitResultHandler(socket, io);
+      });
+    });
+    closeServer = close;
+
+    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "game-auth" });
+
+    let confirmed = false;
+    let mismatched = false;
+    client.on(SocketEvents.BOARD_CONFIRMED, () => {
+      confirmed = true;
+    });
+    client.on(SocketEvents.BOARD_MISMATCH, () => {
+      mismatched = true;
+    });
+
+    const result = await emitWithAck(client, SocketEvents.SUBMIT_RESULT, {
+      gameId: "game-auth",
+      gameType: "PAIRS",
+      seat: "A1NS",
+      token: "wrong",
+      roundNumber: 1,
+      tableNumber: 1,
+      boardNumber: 1,
+      result: "3NTN=",
+    });
+
+    expect(result).toEqual({ success: false, error: "Unauthorized" });
+
+    // Nothing stored and nothing broadcast for an unauthorized submission.
+    await new Promise((r) => setTimeout(r, 100));
+    expect(createBoardSubmission).not.toHaveBeenCalled();
+    expect(confirmed).toBe(false);
+    expect(mismatched).toBe(false);
   });
 });

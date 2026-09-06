@@ -15,6 +15,11 @@ vi.mock("../lib/socket", () => ({
 
 vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
 
+const mockGetPlayerToken = vi.fn();
+vi.mock("@/lib/player-token", () => ({
+  getPlayerToken: (...args: unknown[]) => mockGetPlayerToken(...args),
+}));
+
 import { usePlayFlow } from "./play-flow";
 import { SocketEvents } from "../socket/socket-events";
 
@@ -43,6 +48,10 @@ function withSchedule(schedule: unknown) {
 describe("usePlayFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetPlayerToken.mockReturnValue({
+      startingPosition: "A1NS",
+      token: "tok-1",
+    });
   });
 
   it("is in the loading state until a schedule arrives", () => {
@@ -97,17 +106,39 @@ describe("usePlayFlow", () => {
 
     act(() => result.current.submitResult(1, "3NTN="));
 
-    // Transitions to waiting and emits the submission for board 1.
+    // Transitions to waiting and emits the submission for board 1, carrying
+    // the seat's player token read from the token store.
     expect(result.current.playState.state).toBe("waiting");
+    expect(mockGetPlayerToken).toHaveBeenCalledWith("g1");
     expect(socketEmit).toHaveBeenCalledWith(
       SocketEvents.SUBMIT_RESULT,
       expect.objectContaining({
         gameId: "g1",
         seat: "A1NS",
+        token: "tok-1",
         roundNumber: 1,
         boardNumber: 1,
         result: "3NTN=",
       }),
+    );
+  });
+
+  it("emits an empty token when no player token is stored", () => {
+    mockGetPlayerToken.mockReturnValue(null);
+    withSchedule({
+      assignmentId: "A1",
+      side: "NS",
+      rounds: [round(1, [1, 2])],
+    });
+
+    const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+    act(() => result.current.handleEnterRound());
+    act(() => result.current.submitResult(1, "3NTN="));
+
+    expect(socketEmit).toHaveBeenCalledWith(
+      SocketEvents.SUBMIT_RESULT,
+      expect.objectContaining({ token: "" }),
     );
   });
 
