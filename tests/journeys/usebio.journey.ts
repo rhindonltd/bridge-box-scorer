@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmEntireGame } from "../fixtures/complete-game";
+import { fetchAdminToken } from "../fixtures/settings";
 import { setUpStartedTwoTableGame } from "./support";
 
 /**
@@ -32,17 +33,19 @@ test.describe("USEBIO export", () => {
       // download only then; the export needs results to serialise).
       await confirmEntireGame(request, gameId);
 
-      // Set club info up-front via the API so the download screen prefills and
-      // validation passes. (The club record is device-wide.)
+      // Configure club info (admin-gated) so the export has the details it
+      // needs. The USEBIO screen shows them read-only.
+      const adminToken = await fetchAdminToken(request);
       const clubRes = await request.post("/api/system/club", {
+        headers: { "x-admin-token": adminToken },
         data: { name: "E2E Bridge Club", clubNumber: "12345" },
       });
       expect(clubRes.ok()).toBe(true);
 
       await directorPage.goto(`/game/${gameId}/manage/download-usebio`);
 
-      // The prefilled club fields are shown.
-      await expect(directorPage.getByLabel("Club Name")).toHaveValue(
+      // The configured club details are shown read-only on the export screen.
+      await expect(directorPage.getByTestId("usebio-club-name")).toHaveText(
         "E2E Bridge Club",
         { timeout: 15000 },
       );
@@ -85,24 +88,23 @@ test.describe("USEBIO export", () => {
     try {
       await confirmEntireGame(request, gameId);
 
-      // Clear the club record so the fields start empty.
+      // Clear the club record (admin-gated) so it is not configured.
+      const adminToken = await fetchAdminToken(request);
       await request.post("/api/system/club", {
+        headers: { "x-admin-token": adminToken },
         data: { name: "", clubNumber: "" },
       });
 
       await directorPage.goto(`/game/${gameId}/manage/download-usebio`);
 
-      // With both fields empty, downloading is rejected with the required
-      // message (no download is triggered).
-      await expect(directorPage.getByLabel("Club Name")).toHaveValue("", {
-        timeout: 15000,
-      });
-      await directorPage
-        .getByRole("button", { name: "Download USEBIO" })
-        .click();
+      // With club not configured, the screen points to Settings and the
+      // Download button is disabled (club is not editable here).
       await expect(
-        directorPage.getByText("Both club name and number are required"),
+        directorPage.getByText(/must be set in Settings/i),
       ).toBeVisible({ timeout: 15000 });
+      await expect(
+        directorPage.getByRole("button", { name: "Download USEBIO" }),
+      ).toBeDisabled();
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

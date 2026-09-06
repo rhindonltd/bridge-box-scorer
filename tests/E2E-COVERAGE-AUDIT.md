@@ -42,9 +42,9 @@ journeys `leaderboard-live.journey.ts`, `traveller-live.journey.ts`,
 `share-code.journey.ts`, `multi-section.journey.ts`,
 `movement-types.journey.ts`, `table-management.journey.ts`,
 `timer.journey.ts`, `reconnect.journey.ts`, `admin-key.journey.ts`,
-`wifi-settings.journey.ts`, `usebio.journey.ts`. Fixtures: `game-create`,
-`game-setup`, `join`, `play`, `director-override`, `delete-game`, `settings`,
-`complete-game`.
+`wifi-settings.journey.ts`, `usebio.journey.ts`,
+`authorization.journey.ts`. Fixtures: `game-create`, `game-setup`, `join`,
+`play`, `director-override`, `delete-game`, `settings`, `complete-game`.
 
 ### Test tooling that already exists (fixtures)
 
@@ -73,7 +73,8 @@ scaffolding:
 - Enter a "Not Played" outcome and confirm it via both sides
   (`fixtures/play.ts` — `enterNotPlayed`, `confirmBoardNotPlayed`).
 - Open a director traveller and override a row to 1NT, to any played contract
-  (`overrideRowToContract`), or to an adjusted score (`overrideRowToAdjusted`)
+  (`overrideRowToContract`), to an adjusted score via custom NS%/EW%
+  (`overrideRowToAdjusted`) or via a PRESET button (`overrideRowToAdjustedPreset`)
   (`fixtures/director-override.ts`).
 - Delete a game (`fixtures/delete-game.ts`).
 - Seed a valid admin session token to unlock settings
@@ -84,47 +85,62 @@ scaffolding:
 ## 1. App entry & navigation
 
 - [x] Main menu renders with a "Join Game" navigation link (`smoke.spec.ts`).
-- [ ] Main menu shows all primary links: Join, Create, Manage, Display.
-- [ ] Main menu Settings cog navigates to `/settings`.
+- [x] Main menu shows all primary links: Join, Create, Manage, Display
+  (`navigation.journey.ts`).
+- [x] Main menu Settings cog navigates to `/settings` (`navigation.journey.ts`).
 - [x] `/join` page loads (body not empty) (`smoke.spec.ts`).
 - [x] `/create` page is reachable (URL matches `/create`) (`smoke.spec.ts`).
 - [x] `/settings` page loads (body not empty) (`smoke.spec.ts`).
-- [ ] `/manage` game selector loads (fetches all games, not just joinable).
-- [ ] `/display` game selector loads.
+- [x] `/manage` game selector loads and lists a created game
+  (`navigation.journey.ts`).
+- [x] `/display` game selector loads and lists a created game
+  (`navigation.journey.ts`).
 - [ ] `SelectGame` empty state renders "No games have been created yet." when
-  no games exist.
-- [ ] `SelectGame` loading spinner shown while the list loads.
+  no games exist. (Not E2E-forced: the shared server always has games; the
+  empty state is unit-covered.)
+- [ ] `SelectGame` loading spinner shown while the list loads. (Transient;
+  unit-covered.)
 - [ ] `SelectGame` rows show event name, formatted date, table count.
-- [ ] Selecting a game from `/join` navigates to `/game/{id}/join`.
-- [ ] Selecting a game from `/display` navigates to `/game/{id}/display`.
-- [ ] Selecting a game from `/manage` as the local director → `/game/{id}/manage`.
-- [ ] Selecting a game from `/manage` when NOT the director shows the inline
-  `ClaimDirectorCode` path.
-- [ ] `not-found` (unknown route / unknown game) renders the not-found screen.
-- [ ] `error` boundary renders when a page throws.
-- [ ] Joinable-games list live-updates over `SocketEvents.JOINABLE_GAMES`.
-- [ ] Joinable-games list re-fetches on socket reconnect.
+  (Selection-by-name is exercised; the per-row shape is unit-covered.)
+- [x] Selecting a game from `/join` navigates to `/game/{id}/join`
+  (`navigation.journey.ts`).
+- [x] Selecting a game from `/display` navigates to `/game/{id}/display`
+  (`navigation.journey.ts`).
+- [x] Selecting a game from `/manage` as the local director → `/game/{id}/manage`
+  (`navigation.journey.ts`; also `share-code.journey.ts`).
+- [x] Selecting a game from `/manage` when NOT the director shows the inline
+  `ClaimDirectorCode` path (`share-code.journey.ts`).
+- [x] `not-found` (unknown route / unknown game) renders the not-found screen
+  (`navigation.journey.ts`; reached via `/game/{unknown}/manage`, which calls
+  `notFound()`).
+- [x] `error` boundary renders when a page throws (`src/app/error.test.tsx`,
+  unit test). NOTE: there is no clean UI path that throws into the boundary —
+  unknown games call `notFound()`, not `throw` — so this is unit-tested rather
+  than E2E-driven.
+- [x] Joinable-games list live-updates over `SocketEvents.JOINABLE_GAMES`
+  (`navigation.journey.ts`).
+- [x] Joinable-games list re-fetches on socket reconnect
+  (`navigation.journey.ts`, via `context.setOffline`).
 
 ---
 
 ## 2. Game creation (`/create`)
 
-- [ ] Event Name field accepts input.
-- [ ] Director Name field accepts input.
-- [ ] Event Type selector offers Pairs and Teams.
-- [ ] Date Played defaults to today and is editable.
-- [ ] "Record Opening Lead" toggle (default Yes) can be switched.
-- [ ] Create with valid input → navigates to `/game/{id}/create`
-  (implicitly exercised by journey setup, but not asserted as a create-form
-  test on its own).
-- [ ] (PARTIAL) Create is driven by fixtures (`fixtures/game-create.ts`) inside
-  journeys, but there is no dedicated test of the create FORM behaviour
-  (fields, toggle, event type). Only the resulting navigation is relied upon.
-- [ ] No-validation edge: blank Event Name / Director Name are accepted (submit
-  succeeds).
-- [ ] Create failure shows the inline red error "Failed to create game. Please
-  try again." and re-enables the button.
-- [ ] Submit button shows "Creating…" while in flight.
+- [x] Event Name field accepts input (`create-form.journey.ts`).
+- [x] Director Name field accepts input (`create-form.journey.ts`).
+- [x] Event Type selector offers Pairs and Teams (`create-form.journey.ts`).
+- [x] Date Played defaults to today and is editable (`create-form.journey.ts`).
+- [x] "Record Opening Lead" toggle (default Yes) can be switched
+  (`create-form.journey.ts`; the toggle exposes `aria-pressed`).
+- [x] Create with valid input → navigates to `/game/{id}/create`
+  (`create-form.journey.ts`; also every journey's setup).
+- [x] No-validation edge: blank Event Name / Director Name are accepted (submit
+  succeeds) (`create-form.journey.ts`).
+- [x] Create failure shows the inline red error and re-enables the button
+  (`create-form.journey.ts`). Create is a SOCKET ack (not HTTP), so the failure
+  path aborts the `**/socket.io/**` transport via `page.route`, timing out the
+  emit into the inline error.
+- [ ] Submit button shows "Creating…" while in flight. (Transient; not forced.)
 
 ---
 
@@ -145,22 +161,30 @@ scaffolding:
   (`fixtures/game-setup.ts` `startGame`; used by every live journey). The
   disabled→enabled gating itself is asserted only via `toBeEnabled` before
   click, not the disabled state or the problem messages.
-- [ ] Participants live-sync over `SocketEvents.PARTICIPANTS` as pairs are
-  seated/evicted.
+- [x] Participants live-sync over `SocketEvents.PARTICIPANTS` as pairs are
+  seated: a seat taken in one context becomes disabled live in another
+  already-open join page (`seating-detail.journey.ts`); eviction frees the seat
+  (`table-management.journey.ts`).
 
 ---
 
 ## 4. Director setup — Sections
 
-- [ ] Add Section creates a new section with the next free letter.
-- [ ] Rename Section updates the section label.
-- [ ] Delete Section removes a section.
-- [ ] Delete control hidden when only one section exists.
-- [ ] Single-section vs multi-section rendering differences (headings/labels
-  hidden in single-section).
-- [ ] Per-section movement summary text ("Mitchell — N tables, M rounds" /
-  "No movement selected").
-- [ ] Single-section movement picker shows the amber "Add Section" banner.
+- [x] Add Section creates a new section with the next free letter
+  (`sections-setup.journey.ts`; also `multi-section.journey.ts`).
+- [x] Rename Section updates the section label (`sections-setup.journey.ts`,
+  via the per-section "Label" field).
+- [x] Delete Section removes a section (`sections-setup.journey.ts`, with the
+  confirm dialog → back to single section).
+- [x] Delete control hidden when only one section exists
+  (`sections-setup.journey.ts`).
+- [x] Single-section vs multi-section rendering differences (no "Section A"
+  heading in single-section; the list appears once a section is added)
+  (`sections-setup.journey.ts`).
+- [x] Per-section movement summary text ("No movement selected" until chosen;
+  a movement description once picked) (`sections-setup.journey.ts`).
+- [x] Single-section movement picker shows the amber "Add Section" banner
+  (`sections-setup.journey.ts`).
 
 ---
 
@@ -187,10 +211,10 @@ scaffolding:
 - [x] `GET /api/movements/detail/PAIRS/{id}` returns detail with `tables`,
   `type: "PAIRS"` (`api.spec.ts`).
 - [x] `GET /api/movements/detail/INVALID_TYPE/1` returns 400 (`api.spec.ts`).
-- [ ] `GET /api/movements/pairs/0` (or non-positive) returns 400 "Invalid table
-  count".
-- [ ] `GET /api/movements/detail/PAIRS/{unknown-id}` returns 404 "Movement not
-  found".
+- [x] `GET /api/movements/pairs/0` (or non-positive) returns 400 "Invalid table
+  count" (`api-contract.spec.ts`).
+- [x] `GET /api/movements/detail/PAIRS/{unknown-id}` returns 404 "Movement not
+  found" (`api-contract.spec.ts`).
 
 ---
 
@@ -199,16 +223,23 @@ scaffolding:
 - [x] (PARTIAL) Seat a two-table pairs field via the join UI
   (`fixtures/join.ts` `seatTwoTableField`; used by journeys). This exercises
   table/direction pick, EBU search by number, result select, and Enter Pair.
-- [ ] `SelectTable` shows sections/tables with occupied seats reflected live.
-- [ ] Tapping a free seat opens the `EnterPlayerNames` sheet with the correct
-  labels (North/South for NS, East/West for EW).
-- [ ] EBU `PlayerSearch` "Searching…" state while a query is in flight.
-- [ ] EBU search result list renders matches.
-- [ ] Selected player shows the green card with EBU id and an X to clear.
-- [ ] "Enter Pair" disabled until both players are chosen.
-- [ ] `createParticipant` (type PAIR) succeeds and navigates to the play seat.
-- [ ] Occupied-seat live sync over `SocketEvents.PARTICIPANTS` in the seating
-  view.
+- [x] `SelectTable` shows sections/tables with occupied seats reflected live
+  (`seating-detail.journey.ts`).
+- [x] Tapping a free seat opens the `EnterPlayerNames` sheet with the correct
+  labels (North/South for NS, East/West for EW) (`seating-detail.journey.ts`).
+- [x] EBU `PlayerSearch` result list renders matches (`player-search-result`)
+  and a below-threshold (<2 char) query shows none (`seating-detail.journey.ts`).
+  The transient "Searching…" state is racy against the 250ms debounce, so the
+  test asserts the settled result list rather than the flash.
+- [x] Selected player shows the green card with EBU id and an X to clear
+  (`seating-detail.journey.ts`).
+- [x] "Enter Pair" disabled until both players are chosen
+  (`seating-detail.journey.ts`).
+- [x] `createParticipant` (type PAIR) succeeds and navigates to the play seat
+  (`fixtures/join.ts`; used throughout).
+- [x] Occupied-seat live sync over `SocketEvents.PARTICIPANTS` in the seating
+  view — a seat taken in one context disables it in another without a reload
+  (`seating-detail.journey.ts`).
 
 ---
 
@@ -240,7 +271,9 @@ scaffolding:
 - [x] (PARTIAL) Step 5: Down result — `-2` exercised via a redoubled 3NT going
   down (`contract-variants.journey.ts`). Full down range not enumerated.
 - [x] Step 6: Confirm + Submit for a played contract (`wizard-submit`).
-- [ ] Board dropdown (sub-header) switches the board being entered after step 0.
+- [x] Board dropdown (sub-header) switches the board being entered after step 0
+  (`play-flow.journey.ts`; the `BoardDropDown` appears once past the board-
+  select step and re-selects a different board).
 
 ---
 
@@ -267,8 +300,10 @@ scaffolding:
   the row with `data-highlighted="true"` contains that pair's assignment id
   (`played-contract.journey.ts`; assertion enabled by a `data-highlighted`
   attribute added to `TableRow`).
-- [ ] Play page resolves to the first incomplete round (skips confirmed rounds
-  and sit-outs) on mount.
+- [x] Play page resolves to the first incomplete round (skips confirmed rounds
+  and sit-outs) on mount: after confirming all of round 1, a reload lands on
+  round 2's round-info, not round 1 (`play-flow.journey.ts`). Sit-out skipping
+  is exercised in `sit-out.journey.ts`.
 
 ---
 
@@ -310,14 +345,21 @@ scaffolding:
   (`director-override.journey.ts`, `overrideRowToAdjusted`). Note: an adjusted
   score has no matchpoint score, so it shows in the DIRECTOR traveller, not the
   player's scored (MP) traveller. Preset buttons not separately exercised.
-- [ ] Adjusted-score presets (AVE 50/50, 60/40, …) as distinct button clicks.
+- [x] Adjusted-score presets (AVE 50/50, 60/40, …) as distinct button clicks:
+  the "AVE+ / AVE-  (60/40)" preset is applied and renders "Adj 60%/40%"
+  (`director-override.journey.ts`, `overrideRowToAdjustedPreset`).
 - [x] Select-board → traveller flow with tappable rows (exercised throughout
   the override journeys via `openDirectorTraveller`).
 - [ ] Empty-state "No results for this board yet" on the director traveller.
+  NOT reachable E2E for a started game (every board has round instances,
+  rendered as "—"); unit-covered in `Traveller.test.tsx`.
 - [ ] `OVERRIDE_RESULT_TRAVELLER` "Saving override…" spinner and error banner
-  path.
-- [ ] Override propagates to OTHER viewers (leaderboard + another traveller
-  viewer), not only the acting director.
+  path. (Transient/failure-injection only; not forced.)
+- [x] Override propagates to OTHER viewers: a second director-authorised
+  traveller viewer (own context) sees the row update live when a different
+  director applies an override (`director-override.journey.ts`); propagation to
+  a player's mounted traveller and to the leaderboard is covered in
+  `traveller-live.journey.ts` / `played-contract.journey.ts`.
 
 ---
 
@@ -333,9 +375,17 @@ scaffolding:
 - [x] Reconnect re-fetch: a leaderboard display dropped via `context.setOffline`
   and restored recovers its standings (request-on-`connect`) and resumes live
   updates (`reconnect.journey.ts`).
-- [ ] `game:join` does NOT replay feature state (joining is a dumb room-join).
-- [ ] `useSocketSWRSync` merges a mapped socket event into the SWR cache
-  without revalidation.
+- [x] `game:join` does NOT replay feature state (joining is a dumb room-join):
+  over a direct socket, joining a game with existing results pushes no
+  `leaderboard:sync`/`traveller:sync`/`game:participants`, while a subsequent
+  `leaderboard:requestState` returns the snapshot on its ack
+  (`realtime-internals.journey.ts`).
+- [x] `useSocketSWRSync` merges a mapped socket event into the SWR cache
+  without revalidation — unit-tested (`src/hooks/socket-swr-sync.test.ts`); its
+  live effect is exercised end to end (the seating occupied-seat sync in
+  `seating-detail.journey.ts` and the leaderboard/traveller live journeys). It
+  is a client-only React hook with no independently server-observable
+  behaviour, so it is not re-driven as its own E2E.
 
 ---
 
@@ -346,12 +396,17 @@ scaffolding:
   opened after start, shows "Round 1 of 3") (`timer.journey.ts`).
 - [ ] Timer configured in the `/create` Timer tab (config-only) — the
   `/manage/timer` config path is covered; the create-flow tab is not separately.
-- [ ] Breaks: adding a break shows the break screen on the display (was covered
-  by the removed `timer.spec.ts`; not yet re-added to `timer.journey.ts`).
+- [x] Breaks: adding a break shows the break screen on the display
+  ("Break" / "Next round starts at") (`timer.journey.ts`).
 - [ ] Invalid break-timing alert ("Break timing is invalid") with per-break
-  overrun detail.
-- [ ] Session-length preview reflects config.
-- [ ] Multi-section "Apply to all sections" writes config to every section.
+  overrun detail. Timing-fragile in a browser (depends on wall-clock projection
+  of a resume-time break against the live schedule); unit-covered in
+  `src/timer/breaks.test.ts`, `TimerConfigView.test.tsx`, `TimerLiveView.test.tsx`.
+- [x] Session-length preview reflects config ("Session Length" / "Not started
+  yet") (`timer.journey.ts`).
+- [x] Multi-section "Apply to all sections" writes config to every section:
+  setting a distinctive value on Section A and applying it copies to Section B
+  (verified by switching to B's tab) (`timer.journey.ts`).
 
 ---
 
@@ -369,14 +424,18 @@ scaffolding:
   current phase to full time — not a whole-timer reset.
 - [x] Adjust time (+1m) changes the displayed remaining on the running/paused
   timer (`timer.journey.ts`).
-- [ ] Adjust time with "apply to all subsequent phases of this type" checkbox.
+- [x] Adjust time with "apply to all subsequent phases of this type" checkbox:
+  checking it and adding +1m carries the adjustment to a later same-type (play)
+  phase (round 2 play shows 01:MM) (`timer.journey.ts`).
 - [x] `updateConfig` / "Apply Changes": changing play duration applies to the
   next play phase (round 2 shows the new 00:20) (`timer.journey.ts`). NOTE: the
   CURRENT phase keeps its already-adjusted remaining — updateConfig affects
   subsequent phases, which the test asserts.
 - [x] Promote-on-start: a timer configured (saved) before start begins at game
   start (`timer.journey.ts`).
-- [ ] Live status panel (phase, remaining, round, projected end) values.
+- [x] Live status panel (phase, remaining, round) values render on the director
+  live view (Status/Remaining/Round labels, "paused", MM:SS)
+  (`timer.journey.ts`).
 
 ---
 
@@ -386,11 +445,15 @@ scaffolding:
   mount, not `game:join` replay) (`timer.spec.ts`).
 - [x] Round label ("Round 1 of 3") and PAUSED state render (`timer.spec.ts`).
 - [x] Countdown shows MM:SS while running (`timer.spec.ts`).
-- [ ] "Connecting…" placeholder before the first timer state arrives.
-- [ ] 1-second local countdown tick between server syncs.
-- [ ] Multi-section `SectionChooser` ("Choose a section") + "← Sections" back.
-- [ ] Single-section skips the chooser.
+- [x] "Connecting…" placeholder before the first timer state arrives
+  (`timer.journey.ts`).
+- [ ] 1-second local countdown tick between server syncs. (Implicit in the
+  running-timer MM:SS assertions; not asserted as a discrete tick.)
+- [x] Multi-section `SectionChooser` ("Choose a section"); choosing a section
+  leaves the chooser (`timer.journey.ts`, `multi-section.journey.ts`).
+- [x] Single-section skips the chooser (`timer.journey.ts`).
 - [ ] `serverNow` clock-offset correction keeps the display accurate.
+  (Internal timing detail; not E2E-observable in a stable way.)
 
 ---
 
@@ -402,12 +465,18 @@ scaffolding:
   (`leaderboard-live.journey.ts`).
 - [x] `leaderboard-standings` / `leaderboard-row` test hooks render
   (`leaderboard-live.journey.ts`, `request-on-mount.journey.ts`).
-- [ ] `leaderboard-empty` ("No Results Yet") explicit empty-state copy.
-- [ ] Combined vs per-section pill tabs (multi-section); default Combined.
-- [ ] Single-section hides the tabs.
-- [ ] Pairs plugin leaderboard view rendering.
-- [ ] Team leaderboards: `TEAM_MATCH` variant.
-- [ ] Team leaderboards: `TEAM_OVERALL` variant.
+- [ ] `leaderboard-empty` ("No Results Yet") explicit empty-state copy. NOT
+  reachable E2E for a STARTED game (the snapshot is non-null with zero rows, so
+  `leaderboard-standings` renders, not `leaderboard-empty`); unit-covered in
+  `DisplayLeaderboardPage.test.tsx`.
+- [x] Combined vs per-section pill tabs (multi-section); default Combined
+  (aria-pressed) and switching sections moves the pressed tab live
+  (`display-detail.journey.ts`).
+- [x] Single-section hides the tabs (`display-detail.journey.ts`).
+- [x] Pairs plugin leaderboard view rendering (`leaderboard-standings` rows via
+  the pairs plugin) (`display-detail.journey.ts`, `played-contract.journey.ts`).
+- [ ] Team leaderboards: `TEAM_MATCH` variant. (Blocked: no teams UI — see §24.)
+- [ ] Team leaderboards: `TEAM_OVERALL` variant. (Blocked: no teams UI.)
 
 ---
 
@@ -417,9 +486,13 @@ scaffolding:
   (`traveller-live.journey.ts`).
 - [x] Traveller row updates live on director override
   (`traveller-live.journey.ts`).
-- [ ] Traveller empty state ("No results for this board yet").
-- [ ] Scored traveller rendering (per-board scoring plugin) with the player's
-  own row highlighted.
+- [ ] Traveller empty state ("No results for this board yet"). NOT reachable
+  E2E for a started game (boards have round instances); unit-covered in
+  `Traveller.test.tsx`.
+- [x] Scored traveller rendering (per-board scoring plugin) with the player's
+  own row highlighted: a player's Board Results traveller highlights their own
+  pair row (`data-highlighted="true"` carrying the assignment id)
+  (`display-detail.journey.ts`).
 
 ---
 
@@ -427,16 +500,25 @@ scaffolding:
 
 - [x] Share code generated on mount and readable (`share-code.journey.ts`;
   a `data-testid="share-code"` was added to the code element).
-- [ ] 5-minute countdown shown as mm:ss.
-- [ ] Expiry → "Code expired." with a regenerate button.
-- [ ] "Generate New Code" produces a fresh code.
-- [ ] Generation error line shown when generation fails.
+- [x] 5-minute countdown shown as mm:ss ("Expires in 5:00" ticking to 4:5x)
+  (`share-code.journey.ts`).
+- [ ] Expiry → "Code expired." with a regenerate button. NOT forced E2E: the
+  5-minute `expiresAt` is a real product constant (`create-share-code.ts`), so
+  reaching expiry (or the client countdown hitting zero) would need a
+  test-only short-expiry seam. The expiry REJECTION is int-covered
+  (`system.int.test.ts` → "Code has expired").
+- [x] "Generate New Code" produces a fresh code (a new, distinct 6-char code
+  with the countdown reset) (`share-code.journey.ts`).
+- [ ] Generation error line shown when generation fails. (Failure-injection
+  only; not forced.)
 - [x] Claim input: uppercase, 6-char, submit disabled until length ≥ 6
   (unit-tested in `ClaimDirectorCodeView.test.tsx`; exercised in the journey).
 - [x] Valid claim → mints a director session → navigates to `/game/{id}/manage`
   (`share-code.journey.ts`).
-- [x] (PARTIAL) Claim error "Invalid code" (`share-code.journey.ts`).
-  "Already used" / "expired" variants not separately exercised.
+- [x] Claim error "Invalid code" (`share-code.journey.ts`).
+- [x] Claim error "Code has already been used": a code claimed once by device B
+  is rejected for device C (`share-code.journey.ts`). The "expired" variant is
+  int-covered (`system.int.test.ts`), see the expiry note above.
 - [x] Full co-director round-trip: generate on device A, claim on device B, B
   can then manage the game (director-only actions visible)
   (`share-code.journey.ts`).
@@ -449,16 +531,27 @@ scaffolding:
 
 ## 18. Delete game
 
-- [x] (PARTIAL) Delete via the manage menu (Delete Game → Yes, Delete Game) is
-  used for journey cleanup (`fixtures/delete-game.ts`). It is best-effort
-  teardown, not an assertion that deletion succeeded.
-- [ ] Confirmation screen names the event being deleted.
-- [ ] On success the director token is cleared and the app navigates away.
-- [ ] Delete failure shows the inline error ("Failed to delete game" / "Network
-  error. Please try again.").
-- [ ] Buttons show "Deleting…" and disable while in flight.
-- [ ] `DELETE /api/games/{id}/delete` is director-authed (token in JSON body);
-  unauthorized without a valid token.
+- [x] Delete via the manage menu (Delete Game → Yes, Delete Game) succeeds
+  (`delete-game.journey.ts`; also `fixtures/delete-game.ts` for cleanup).
+- [x] Confirmation screen names the event being deleted ("Are you sure you want
+  to delete {name}?") (`delete-game.journey.ts`; scoped to the prompt text
+  because the event name also appears in the header).
+- [x] On success the director token is cleared and the app navigates away
+  (`delete-game.journey.ts`).
+- [x] Delete failure shows the inline error ("Failed to delete game")
+  (`delete-game.journey.ts`, via a `page.route` 500 fulfilment).
+- [ ] Buttons show "Deleting…" and disable while in flight. (Transient; not
+  forced.)
+- [x] `DELETE /api/games/{id}/delete` is director-authed (token in JSON body);
+  unauthorized without a valid token (`authorization.journey.ts`).
+- [x] **Production bug found & fixed via this journey:** the DELETE route
+  deleted the game row using the PER-GAME db (resolved by
+  `withGameRoute`/`withDirectorRoute`), but the game row lives in the
+  game-INDEX database — so the delete threw and returned 500, and deletion
+  never actually happened (the best-effort cleanup fixture masked it). Fixed the
+  route to use `getDb` from `@/db/game-index` for the index-row delete, keeping
+  the per-game `.db` file unlink. Its co-located unit test was updated to mock
+  the game-index db (`route.test.ts`).
 
 ---
 
@@ -492,8 +585,8 @@ scaffolding:
 - [x] Club page UI: heading, Club Name, EBU Club Number, Save, Back
   (`club-settings.spec.ts`).
 - [x] `GET /api/system/club` returns club data shape (`club-settings.spec.ts`).
-- [x] `POST /api/system/club` saves; missing field → 400; save persists on GET
-  (`club-settings.spec.ts`).
+- [x] `POST /api/system/club` (admin-gated) saves with `x-admin-token`; missing
+  field → 400; no token → 401; save persists on GET (`club-settings.spec.ts`).
 - [x] WiFi page UI: heading, network selector, password field, Test Connection,
   Save & Apply disabled initially, Test disabled without a network, dropdown
   placeholder (`settings.spec.ts`).
@@ -517,30 +610,44 @@ scaffolding:
 - [ ] WiFi restarting page shown after save.
 - [x] Save WiFi (`POST /api/system/wifi`) is admin-gated; returns 200
   `{success:false}` when WiFi management is unavailable (route unit tests).
-- [ ] Network read (`GET /api/system/network`) returns current/saved SSID.
+- [x] Network read (`GET /api/system/network`) returns the wifi/network shape;
+  on a no-`nmcli` host it degrades to 200 `{ wifi: { available:false, … } }`
+  (`api-contract.spec.ts`; route unit test). **Product change:** the route now
+  guards with `isWifiManagementAvailable()` instead of 500-ing without `nmcli`.
 - [x] `POST /api/system/restart` responds (`api.spec.ts`).
-- [ ] `POST /api/system/reset-wifi` admin route.
-- [ ] `POST /api/system/reboot` admin route.
+- [x] `POST /api/system/reset-wifi` admin route rejects without a token
+  (`api-contract.spec.ts`).
+- [x] `POST /api/system/reboot` admin route rejects without a token
+  (`api-contract.spec.ts`).
 
 ---
 
 ## 21. Auth & authorization
 
-- [ ] Director-only socket events reject a missing/invalid token with
-  `{success:false,error:"Unauthorized"}` (e.g. `game:start`,
-  `game:evictParticipant`, `game:updateTables`, section events,
-  `game:generateShareCode`, `traveller:overrideResult`, timer mutations).
-- [ ] HTTP director routes return 401 without a valid `directorToken` in the
-  body (`DELETE /delete`, `GET /usebio`).
-- [ ] Admin routes return 401 without a valid `x-admin-token` header.
-- [ ] **SECURITY GAP** — `game:submitResult` has NO director auth: any
-  connected client can submit results. Worth an explicit test.
-- [ ] **SECURITY GAP** — `game:createParticipant` has NO director auth: any
-  client can add participants.
-- [ ] **SECURITY GAP** — `POST /api/system/club` is NOT admin-gated despite
-  being a device setting.
-- [ ] `game:claimDirectorCode` is intentionally unauthenticated (claimant has
-  no token yet) — assert it works without a token but rejects bad codes.
+- [x] Director-only socket events reject an invalid token with
+  `{success:false,error:"Unauthorized"}` and accept the real one
+  (`authorization.journey.ts`: `game:generateShareCode`,
+  `game:evictParticipant`, `game:updateTables`). A MISSING token is rejected by
+  payload validation first (still non-success).
+- [x] HTTP director routes return 401 without a valid director token —
+  `GET /usebio` (no/invalid `x-director-token`) and `DELETE /delete`
+  (`authorization.journey.ts`). **Hardened `withDirectorRoute`**: absence of any
+  credential now returns 401 (was 400 on the empty-body parse for GETs).
+- [x] Admin routes return 401 without a valid `x-admin-token` header
+  (`authorization.journey.ts`: `POST /system/club`, `POST /system/admin-key`;
+  also `admin-key.journey.ts`).
+- [x] `game:submitResult` is intentionally OPEN (players submit their own
+  results; integrity is dual-side confirmation, not director auth). Asserted
+  and documented (`authorization.journey.ts`).
+- [x] `game:createParticipant` is intentionally OPEN (players seat themselves).
+  Asserted and documented (`authorization.journey.ts`).
+- [x] **`POST /api/system/club` is now ADMIN-GATED** (was a gap). The club
+  settings page sends `x-admin-token`; the USEBIO export page is now READ-ONLY
+  for club info (configured in Settings) and blocks download until it is set.
+  Verified in `authorization.journey.ts`, `club-settings.spec.ts`, and the
+  route/page unit tests.
+- [x] `game:claimDirectorCode` works without a token (claimant has none yet)
+  and rejects a bad code (`authorization.journey.ts`).
 
 ---
 
@@ -552,56 +659,70 @@ scaffolding:
   (`api.spec.ts`).
 - [x] `GET /api/games/[id]` unknown → 404 "Game not found" (`api.spec.ts`,
   `smoke.spec.ts`).
-- [ ] `GET /api/games/[id]` existing → returns the game.
-- [ ] `GET /api/games/all` returns all games.
-- [ ] `GET /api/games/[id]/participants` returns pairs.
-- [ ] `GET /api/games/[id]/movement?section=` returns movement (with optional
-  section).
-- [ ] `GET /api/games/[id]/sections` returns section list with movement.
+- [x] `GET /api/games/[id]` existing → returns the game (`api-contract.spec.ts`).
+- [ ] `GET /api/games/all` returns all games. (Covered indirectly by the
+  `/manage` selector journey; no dedicated contract assertion.)
+- [x] `GET /api/games/[id]/participants` returns pairs (`api-contract.spec.ts`).
+- [x] `GET /api/games/[id]/movement?section=` returns movement
+  (`api-contract.spec.ts`).
+- [x] `GET /api/games/[id]/sections` returns section list
+  (`api-contract.spec.ts`).
 - [x] `GET /api/games/nonexistent/boards` → 404 (`game-api.spec.ts`).
-- [ ] `GET /api/games/[id]/boards` existing → distinct board numbers.
+- [x] `GET /api/games/[id]/boards` existing → distinct board numbers
+  (`api-contract.spec.ts`).
 - [x] `GET /api/games/nonexistent/boards/1` → 404 (`game-api.spec.ts`).
-- [ ] `GET /api/games/[id]/boards/[n]` existing → instances.
-- [ ] `GET /api/games/[id]/boards/[non-int]` → 400 "Invalid board number".
+- [x] `GET /api/games/[id]/boards/[n]` existing → instances
+  (`api-contract.spec.ts`).
+- [x] `GET /api/games/[id]/boards/[non-int]` → 400 "Invalid board number"
+  (`api-contract.spec.ts`).
 - [x] `GET /api/games/nonexistent/movement` → 404 (`game-api.spec.ts`).
 - [x] `GET /api/games/nonexistent/schedule/1NS` → 404 (`game-api.spec.ts`).
-- [ ] `GET /api/games/[id]/schedule/[seat]` existing → schedule; unknown seat →
-  404 "Schedule not found".
+- [x] `GET /api/games/[id]/schedule/[seat]` existing → schedule
+  (`api-contract.spec.ts`; also read by `display-detail`/`play-flow` journeys).
 - [ ] `GET /api/games/[id]/results-summary`.
 - [ ] `GET /api/games/[id]/start-check`.
-- [ ] `GET /api/games/[id]/usebio` director-authed happy path (see §19).
-- [ ] `DELETE /api/games/[id]/delete` director-authed (see §18).
+- [x] `GET /api/games/[id]/usebio` director-authed happy path (see §19).
+- [x] `DELETE /api/games/[id]/delete` director-authed (see §18).
 
 ### Movements
 
 - [x] `GET /api/movements/pairs/{1,2,4}` + item shape (`api.spec.ts`).
 - [x] `GET /api/movements/detail/PAIRS/{id}` (`api.spec.ts`).
 - [x] `GET /api/movements/detail/INVALID_TYPE/1` → 400 (`api.spec.ts`).
-- [ ] `GET /api/movements/pairs/{invalid}` → 400 "Invalid table count".
-- [ ] `GET /api/movements/detail/PAIRS/{unknown}` → 404 "Movement not found".
+- [x] `GET /api/movements/pairs/{invalid}` → 400 "Invalid table count"
+  (`api-contract.spec.ts`).
+- [x] `GET /api/movements/detail/PAIRS/{unknown}` → 404 "Movement not found"
+  (`api-contract.spec.ts`).
 
 ### Players
 
 - [x] `GET /api/players/search?q={ebu}` matches by EBU number (`api.spec.ts`).
 - [x] `GET /api/players/search?q={no-match}` → empty array (`api.spec.ts`).
 - [x] `GET /api/players/search?q=a` (< 2 chars) → empty array (`api.spec.ts`).
-- [ ] `GET /api/players/search?q={non-digit}` → empty (name search is absent;
-  only digit queries hit the DB).
+- [x] `GET /api/players/search?q={non-digit}` → empty (name search is absent;
+  only digit queries hit the DB) (`api-contract.spec.ts`).
 
 ### System
 
 - [x] `GET /api/system/club` (`club-settings.spec.ts`).
-- [x] `POST /api/system/club` save / 400 / persistence (`club-settings.spec.ts`).
+- [x] `POST /api/system/club` admin-gated: save (200) / 400 / 401-no-token /
+  persistence (`club-settings.spec.ts`).
 - [x] `POST /api/system/restart` responds (`api.spec.ts`).
-- [ ] `POST /api/system/admin-key/verify` success (token) / 401 wrong key /
-  400 invalid.
-- [ ] `POST /api/system/admin-key` update / 400 < 4 chars / 401 without token.
-- [ ] `GET /api/system/network`.
-- [ ] `POST /api/system/wifi/scan`.
-- [ ] `POST /api/system/wifi` (admin-gated) / 400 invalid.
-- [ ] `POST /api/system/wifi/test` success + failure-as-200.
-- [ ] `POST /api/system/reset-wifi` (admin-gated).
-- [ ] `POST /api/system/reboot` (admin-gated).
+- [x] `POST /api/system/admin-key/verify` success (token) / 401 wrong key /
+  400 invalid (`api-contract.spec.ts`; also `admin-key.journey.ts`).
+- [x] `POST /api/system/admin-key` update / 400 < 4 chars / 401 without token
+  (`api-contract.spec.ts`; also `admin-key.journey.ts`).
+- [x] `GET /api/system/network` (`api-contract.spec.ts`).
+- [x] `POST /api/system/wifi/scan` returns `{ available, ssids }`
+  (`api-contract.spec.ts`).
+- [x] `POST /api/system/wifi` (admin-gated) rejects without a token
+  (`api-contract.spec.ts`).
+- [x] `POST /api/system/wifi/test` returns `success:false` (200) when WiFi mgmt
+  is unavailable (`api-contract.spec.ts`).
+- [x] `POST /api/system/reset-wifi` (admin-gated) rejects without a token
+  (`api-contract.spec.ts`).
+- [x] `POST /api/system/reboot` (admin-gated) rejects without a token
+  (`api-contract.spec.ts`).
 
 ---
 
@@ -618,8 +739,9 @@ scaffolding:
   confirmed in EACH section and both appear in standings
   (`multi-section.journey.ts`; seating via `seatPairBySeat`, enabled by a
   `data-testid="seat-{seat}"` added to `SelectTable`).
-- [ ] Timer manage: `TimerSectionPicker` + "Apply to all sections".
-- [ ] Sit-out messaging when one section is a pair short.
+- [x] Timer manage: `TimerSectionPicker` (per-section tabs) + "Apply to all
+  sections" copies config across sections (`timer.journey.ts`).
+- [x] Sit-out messaging when one section is a pair short (`sit-out.journey.ts`).
 
 ---
 
@@ -676,8 +798,10 @@ Ordered by impact on confidence in the core product.
   `played-contract.journey.ts`): doubled (X) and redoubled (XX) contracts, a
   Down result (`-2`), the Not-Played (NP) outcome, `BoardSelector` paging, and
   the game-complete own-row highlight.
-- Residual (low priority): enumerate the FULL made/down result ranges, and
-  cover the board dropdown in the entry wizard (distinct from Board Results).
+- [x] Board dropdown in the entry wizard switches the board mid-flow, and the
+  play page resolves to the first incomplete round on reload
+  (`play-flow.journey.ts`).
+- Residual (low priority): enumerate the FULL made/down result ranges.
 
 **P2 — Director corrections & shared/multi-section operation — LARGELY CLOSED**
 (`director-override.journey.ts`, `share-code.journey.ts`,
@@ -691,9 +815,12 @@ Ordered by impact on confidence in the core product.
   `GameProvider`).
 - [x] Multi-section: section CRUD, two-section seat→play, combined + per-section
   leaderboard tabs, and the timer section chooser.
-- Remaining P2 follow-ups: adjusted-score PRESET buttons, override propagation
-  to other viewers, the share-code countdown/expiry/regenerate states, and
-  timer "Apply to all sections" in a multi-section game.
+- [x] Adjusted-score PRESET buttons and override propagation to a second
+  (director) viewer (`director-override.journey.ts`).
+- [x] Share-code countdown (mm:ss), "Generate New Code", and claim-twice
+  ("already used") (`share-code.journey.ts`). Expiry stays int-covered (5-min
+  product constant; no test-only seam added).
+- [x] Timer "Apply to all sections" in a multi-section game (`timer.journey.ts`).
 
 **P3 — Setup & timer depth — LARGELY CLOSED** (`movement-types.journey.ts`,
 `table-management.journey.ts`, `timer.journey.ts`, `reconnect.journey.ts`;
@@ -709,9 +836,12 @@ section CRUD was closed in P2's `multi-section.journey.ts`):
   applied to the next phase). **`restart:true` (previous's first step) is not
   wired to any UI and stays engine-unit-tested only.**
 - [x] Reconnect re-fetch of a live context (leaderboard) after an offline drop.
-- Remaining P3 follow-ups: the "apply to future phases" adjust checkbox, the
-  break-screen flow in the new timer journey, invalid-break-timing alert, and
-  the session-length/status-panel previews.
+- [x] The "apply to future phases" adjust checkbox, the break-screen flow, and
+  the session-length + live status-panel previews (`timer.journey.ts`).
+- [x] Section CRUD + single/multi rendering, in a dedicated setup journey
+  (`sections-setup.journey.ts`) in addition to `multi-section.journey.ts`.
+- Remaining P3 follow-up: the invalid-break-timing alert stays unit-covered
+  (timing-fragile in a browser).
 - **Also: replaced the stale `tests/timer.spec.ts`** (drove a removed
   Create/Start UI and was failing) with `timer.journey.ts` on the current flow.
 
@@ -726,18 +856,64 @@ section CRUD was closed in P2's `multi-section.journey.ts`):
 - [x] USEBIO happy-path download (complete game → club info → XML blob) +
   required-field validation. **Fixed a production bug**: the director-authed GET
   now accepts the token via `x-director-token` header (was unusable via body).
-- Remaining P4 follow-ups: WiFi test-success/Save-gating on a real `nmcli` host,
-  the restarting page, `GET /api/system/network`, and USEBIO "disabled until all
-  results in" as a distinct assertion.
+- [x] Full API-contract coverage of the games existing-reads, movements 400/404,
+  players non-digit, and all `system` routes incl. `GET /api/system/network`
+  (`api-contract.spec.ts`, 22 tests).
+- Remaining P4 follow-ups (all environment- or state-gated, not code gaps):
+  WiFi test-success/Save-gating on a real `nmcli` host, the restarting page,
+  and USEBIO "disabled until all results in" as a distinct assertion.
 
-**P5 — Security / authorization:**
-- Un-authed `game:submitResult` and `game:createParticipant` (any client can
-  act).
-- Un-gated `POST /api/system/club`.
-- Positive/negative auth on director socket events and HTTP director/admin
-  routes.
+**P5 — Security / authorization — CLOSED** (`authorization.journey.ts`):
+- [x] Positive/negative auth on director socket events (Unauthorized on a bad
+  token; success on the real one).
+- [x] HTTP director routes 401 without a token (`/usebio`, `/delete`); admin
+  routes 401 without `x-admin-token`.
+- [x] `game:submitResult` / `game:createParticipant` are intentionally OPEN
+  (players act without a director token) — asserted and documented as by-design
+  (integrity is dual-side confirmation).
+- [x] `game:claimDirectorCode` works unauthenticated, rejects bad codes.
+- **Production hardening done here:** (1) `POST /api/system/club` is now
+  admin-gated, with the USEBIO page made read-only for club info (configured in
+  Settings); (2) `withDirectorRoute` returns 401 (not 400) when no credential
+  is presented, so missing-token GETs are a clean Unauthorized.
 
-**P6 — Spec-only, blocked on missing UI:**
-- Teams play/seating (pair-oriented implementation only).
+**P6 — Blocked on missing UI / environment (cannot E2E) — the only remaining
+open items:**
+- Teams play/seating (pair-oriented implementation only; no teams UI).
 - Scoring-type selection (MP/IMP/Cross-IMP) — no create-UI selector.
-- Cloud/subscription: publish results, software updates, backups.
+- American Whist — not offered by the recommendation picker at any table count.
+- Cloud/subscription: publish results, software updates, backups (no UI).
+- WiFi test-SUCCESS + Save-gating — needs a real `nmcli`/WiFi association host.
+- Timer `restart:true` (previous-phase first-step) — not wired to any UI button;
+  engine-unit-tested only.
+
+**Deliberately unit/integration-covered (not forced into E2E):**
+- Error boundary (`src/app/error.test.tsx`) — no clean UI throw path.
+- Leaderboard/traveller empty states — not reachable for a STARTED game.
+- Invalid break-timing alert — timing-fragile; `src/timer/breaks.test.ts` et al.
+- Share-code expiry — 5-min product constant; `system.int.test.ts`.
+- `useSocketSWRSync` — client-only hook; `socket-swr-sync.test.ts`.
+
+---
+
+## Closure note (this pass)
+
+Thirteen work packages closed the testable gaps above. New E2E files:
+`tests/api-contract.spec.ts`, and journeys `create-form`, `navigation`,
+`delete-game`, `sections-setup`, `seating-detail`, `display-detail`,
+`play-flow`, `realtime-internals`; plus extensions to `timer`,
+`director-override`, and `share-code`. New unit test: `src/app/error.test.tsx`.
+
+**Production changes made to let tests pass correctly (not test-only hacks):**
+1. `src/app/api/games/[gameId]/delete/route.ts` — deleted the game-index row via
+   the wrong (per-game) db → 500; now uses `getDb` from `@/db/game-index` for the
+   row delete, keeping the per-game `.db` unlink. Delete now actually works. Its
+   unit test (`route.test.ts`) was updated to mock the game-index db.
+2. `src/app/api/system/network/route.ts` — guarded with
+   `isWifiManagementAvailable()` so a host without `nmcli` returns
+   `200 { wifi: { available:false, … } }` instead of a 500 (mirrors wifi/scan).
+   Route unit test updated.
+
+**Verification:** `npx tsc --noEmit` clean; `npx eslint .` clean; `npm test`
+2165 unit tests pass; `npm run journey:phone` and `journey:tablet` each 70
+passed / 1 skipped; `api-contract.spec.ts` 22 passed under Mobile Chrome.
