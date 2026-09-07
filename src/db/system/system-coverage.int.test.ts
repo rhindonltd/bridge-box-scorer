@@ -157,7 +157,12 @@ describe("system db: coverage gaps", () => {
       existsSync: () => true,
       mkdirSync: () => undefined,
     }));
-    vi.doMock("better-sqlite3", () => ({ default: class FakeDatabase {} }));
+    vi.doMock("better-sqlite3", () => ({
+      default: class FakeDatabase {
+        pragma() {}
+        close() {}
+      },
+    }));
     vi.doMock("drizzle-orm/better-sqlite3", () => ({
       drizzle: () => ({
         select: () => ({

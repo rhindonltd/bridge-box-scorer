@@ -1,9 +1,9 @@
 import "server-only";
 
-import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import path from "path";
 import fs from "fs";
+import { openDatabase } from "@/db/open-database";
 
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
@@ -20,7 +20,7 @@ export async function getDb() {
   if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
   const dbFile = path.join(dataDir, "system.db");
-  const sqlite = new Database(dbFile);
+  const sqlite = openDatabase(dbFile);
   dbInstance = drizzle(sqlite);
 
   return dbInstance;

@@ -29,3 +29,21 @@ function getIO(): Server {
 
   return io;
 }
+
+/**
+ * Close the Socket.IO server (disconnecting all clients) as part of graceful
+ * shutdown. Resolves once the server has fully closed. Safe to call when the
+ * server was never started.
+ */
+export function closeSocketServer(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!io) {
+      resolve();
+      return;
+    }
+    io.close(() => {
+      io = null;
+      resolve();
+    });
+  });
+}

@@ -7,7 +7,7 @@
     "dev": "tsx watch --require ./scripts/allow-server-only.cjs server.ts",
     "prebuild": "npx tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/migrate.ts",
     "build": "next build",
-    "start": "NODE_ENV=production tsx --require ./scripts/allow-server-only.cjs server.ts",
+    "start": "NODE_ENV=production exec tsx --require ./scripts/allow-server-only.cjs server.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
