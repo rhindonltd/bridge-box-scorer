@@ -6,10 +6,10 @@ import {
   pickMovementByName,
   startGame,
 } from "../fixtures/game-setup";
-import { seatSingleSectionField } from "../fixtures/join";
+import { seatSingleSectionFieldOnDevices } from "../fixtures/join";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { deleteGame } from "../fixtures/delete-game";
-import { newParticipant } from "./support";
+import { closeSeatDevices, newParticipant } from "./support";
 
 /**
  * Movement-type coverage (pure UI, no socket seam).
@@ -40,23 +40,29 @@ async function playMovement(
   movementName: string,
 ): Promise<void> {
   const directorPage = await newParticipant(browser);
-  const nsPage = await newParticipant(browser);
-  const ewPage = await newParticipant(browser);
 
   const { gameId } = await createGame(directorPage, {
     eventName,
     recordOpeningLead: false,
   });
 
+  let seats: Record<string, import("@playwright/test").Page> = {};
   try {
     await setTableCount(directorPage, tables);
     const chosen = await pickMovementByName(directorPage, movementName);
     expect(chosen.toLowerCase()).toContain(movementName.toLowerCase());
 
-    await seatSingleSectionField(directorPage, gameId, tables);
+    // Seat every pair from its own device so the playing pair holds its token.
+    seats = await seatSingleSectionFieldOnDevices(
+      () => newParticipant(browser),
+      gameId,
+      tables,
+    );
     await startGame(directorPage, gameId);
 
     // The movement materialised into a schedule: a board can be confirmed.
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
     await confirmBoardPassOut(nsPage, ewPage, gameId, 1, 1);
     await expect(nsPage.getByText("Board Results")).toBeVisible({
       timeout: 15000,
@@ -64,8 +70,7 @@ async function playMovement(
   } finally {
     await deleteGame(directorPage, gameId);
     await directorPage.context().close();
-    await nsPage.context().close();
-    await ewPage.context().close();
+    await closeSeatDevices(seats);
   }
 }
 

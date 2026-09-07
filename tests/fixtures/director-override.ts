@@ -22,9 +22,19 @@ export async function openDirectorTraveller(
   gameId: string,
   boardNumber: number,
 ): Promise<void> {
-  await page.goto(`/game/${gameId}/manage/travellers`);
+  const travellersUrl = `/game/${gameId}/manage/travellers`;
+
+  // The travellers page is behind a StartedGuard that redirects to /manage
+  // until the game-started state has loaded. Immediately after start, the
+  // director page's cached state can briefly still read "not started", bouncing
+  // this navigation. Retry until the travellers UI actually renders. Swallow
+  // the "interrupted by another navigation" error the bounce throws.
   const boardButton = page.getByTestId(`select-board-${boardNumber}`);
-  await expect(boardButton).toBeVisible({ timeout: 15000 });
+  await expect(async () => {
+    await page.goto(travellersUrl).catch(() => {});
+    await expect(boardButton).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 20000 });
+
   await boardButton.click();
   await expect(
     page.getByText("Tap a row to adjust the result"),

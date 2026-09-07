@@ -4,7 +4,11 @@ import { createGame } from "../fixtures/game-create";
 import { setTableCount } from "../fixtures/game-setup";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { deleteGame } from "../fixtures/delete-game";
-import { newParticipant, setUpStartedTwoSectionGame } from "./support";
+import {
+  closeSeatDevices,
+  newParticipant,
+  setUpStartedTwoSectionGame,
+} from "./support";
 
 /**
  * Multi-section journeys (pure UI, no socket seam).
@@ -74,15 +78,15 @@ test.describe("Multi-section play and displays", () => {
   }) => {
     test.setTimeout(180_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoSectionGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoSectionGame(
       browser,
       `Two Sections ${Date.now()}`,
     );
 
-    const nsA = await newParticipant(browser);
-    const ewA = await newParticipant(browser);
-    const nsB = await newParticipant(browser);
-    const ewB = await newParticipant(browser);
+    const nsA = seats["A1NS"];
+    const ewA = seats["A1EW"];
+    const nsB = seats["B1NS"];
+    const ewB = seats["B1EW"];
     const displayPage = await newParticipant(browser);
 
     try {
@@ -130,11 +134,8 @@ test.describe("Multi-section play and displays", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsA.context().close();
-      await ewA.context().close();
-      await nsB.context().close();
-      await ewB.context().close();
       await displayPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

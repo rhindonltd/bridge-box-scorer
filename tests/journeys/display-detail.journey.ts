@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
 import {
+  closeSeatDevices,
   newParticipant,
   setUpStartedTwoTableGame,
   setUpStartedTwoSectionGame,
@@ -100,13 +101,13 @@ test.describe("Leaderboard & traveller display detail", () => {
     request,
   }) => {
     test.setTimeout(90_000);
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Display Own Row ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // Confirm board 1 at table 1 so the NS pair lands on Board Results with a
@@ -134,8 +135,7 @@ test.describe("Leaderboard & traveller display detail", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

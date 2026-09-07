@@ -3,7 +3,7 @@ import { io as ioClient, Socket } from "socket.io-client";
 
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import { closeSeatDevices, setUpStartedTwoTableGame } from "./support";
 
 /**
  * Real-time internals journey (direct socket client, no browser page).
@@ -54,13 +54,13 @@ test.describe("Real-time internals: game:join does not replay feature state", ()
 
     // A started game with one confirmed board, so a leaderboard snapshot
     // genuinely exists to (not) be replayed on join.
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Realtime Join ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     let socket: Socket | null = null;
     try {
@@ -102,8 +102,7 @@ test.describe("Real-time internals: game:join does not replay feature state", ()
       if (socket) socket.disconnect();
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

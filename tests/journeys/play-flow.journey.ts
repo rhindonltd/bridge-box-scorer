@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
 import { enterPassOut, confirmBoardPassOut } from "../fixtures/play";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import { closeSeatDevices, setUpStartedTwoTableGame } from "./support";
 
 /**
  * Play-flow mount & board-dropdown journey (pure UI, no socket seam).
@@ -27,12 +27,12 @@ test.describe("Play flow mount & board dropdown", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Play Board Dropdown ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
 
     try {
       // Read round 1's board numbers from the schedule so the test adapts to
@@ -74,7 +74,7 @@ test.describe("Play flow mount & board dropdown", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
@@ -84,13 +84,13 @@ test.describe("Play flow mount & board dropdown", () => {
   }) => {
     test.setTimeout(120_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Play Reload Resolve ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // Confirm EVERY board of round 1 at table 1 (both sides), so round 1 is
@@ -135,8 +135,7 @@ test.describe("Play flow mount & board dropdown", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

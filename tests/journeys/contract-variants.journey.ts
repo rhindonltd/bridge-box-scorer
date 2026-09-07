@@ -6,7 +6,7 @@ import {
   confirmBoardNotPlayed,
   confirmBoardPlayedContract,
 } from "../fixtures/play";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import { closeSeatDevices, setUpStartedTwoTableGame } from "./support";
 
 /**
  * Contract-variant journeys (pure UI, no socket seam).
@@ -26,13 +26,13 @@ test.describe("Contract variants and board paging", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Doubled ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // 4♥ X by North, making exactly.
@@ -60,8 +60,7 @@ test.describe("Contract variants and board paging", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
@@ -70,13 +69,13 @@ test.describe("Contract variants and board paging", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Redoubled Down ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // 3NT XX by North, down 2 -> code "3NTXXN-2".
@@ -108,8 +107,7 @@ test.describe("Contract variants and board paging", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
@@ -118,13 +116,13 @@ test.describe("Contract variants and board paging", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Not Played ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // Both sides select "Not Played" (the level-step short-circuit) and the
@@ -145,8 +143,7 @@ test.describe("Contract variants and board paging", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
@@ -155,13 +152,13 @@ test.describe("Contract variants and board paging", () => {
   }) => {
     test.setTimeout(120_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Board Paging ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // Board 1: a hearts contract; board 2: a spades contract, so the two
@@ -208,8 +205,7 @@ test.describe("Contract variants and board paging", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

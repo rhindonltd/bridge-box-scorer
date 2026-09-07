@@ -184,20 +184,19 @@ describe("SectionMovementPicker", () => {
     // the Select Movement button is enabled.
     mockUseSWR.mockImplementation((key: string) => {
       if (typeof key === "string" && key.includes("/detail/")) {
+        // The shared fetcher unwraps the `{ result }` envelope, so the hook
+        // receives the inner `{ type, tables }` payload directly.
         return {
           data: {
-            success: true,
-            result: {
-              type: "PAIRS",
-              tables: [
-                {
-                  tableNumber: 1,
-                  rounds: [
-                    { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 4 },
-                  ],
-                },
-              ],
-            },
+            type: "PAIRS",
+            tables: [
+              {
+                tableNumber: 1,
+                rounds: [
+                  { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 4 },
+                ],
+              },
+            ],
           },
         };
       }

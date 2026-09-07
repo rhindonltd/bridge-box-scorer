@@ -215,11 +215,10 @@ function MovementPreview({
   onConfirm: () => void;
 }) {
   // DB-based movements need their full layout fetched. Generated Mitchells are
-  // computed locally from the spec, so no request is made for them.
-  const { data: detail } = useSWR<{
-    success: boolean;
-    result: { type: string; tables: MovementByTable[] };
-  }>(
+  // computed locally from the spec, so no request is made for them. The shared
+  // fetcher already unwraps the `{ result }` success envelope, so `detail` is
+  // the inner `{ type, tables }` payload.
+  const { data: detail } = useSWR<{ type: string; tables: MovementByTable[] }>(
     movement.specRef.source === "db"
       ? `/api/movements/detail/PAIRS/${movement.specRef.id}`
       : null,
@@ -244,7 +243,7 @@ function MovementPreview({
         return null;
       }
     }
-    return detail?.result?.tables ?? null;
+    return detail?.tables ?? null;
   }, [movement, detail]);
 
   return (

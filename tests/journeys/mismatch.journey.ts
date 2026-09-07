@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
 import { ContractSpec, enterContractRaw } from "../fixtures/play";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import { closeSeatDevices, setUpStartedTwoTableGame } from "./support";
 
 /**
  * Dual-side mismatch journey (pure UI, no socket seam).
@@ -39,14 +39,14 @@ test.describe("Dual-side mismatch and re-enter", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Result Mismatch ${Date.now()}`,
       { recordOpeningLead: false },
     );
 
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // NS enters 4♥= ; EW enters 4♥+1 on the SAME board 1.
@@ -100,22 +100,21 @@ test.describe("Dual-side mismatch and re-enter", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
   test("different boards -> board mismatch screen", async ({ browser }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Board Mismatch ${Date.now()}`,
       { recordOpeningLead: false },
     );
 
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // NS enters board 1; EW enters board 2 (a different board in the round).
@@ -144,8 +143,7 @@ test.describe("Dual-side mismatch and re-enter", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });
