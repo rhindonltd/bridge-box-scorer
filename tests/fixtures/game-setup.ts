@@ -51,12 +51,34 @@ export async function setTableCount(page: Page, target: number): Promise<void> {
 
 /**
  * Open the Movement tab and select the first recommended movement card.
+ *
+ * Clicking a card only PREVIEWS it; the choice is not committed until the
+ * "Select Movement" confirm button on the preview screen is pressed. Both
+ * clicks are required, otherwise no movement is persisted and the game never
+ * becomes startable.
  */
 export async function pickFirstMovement(page: Page): Promise<void> {
   await page.getByRole("tab", { name: "Movement" }).click();
   const firstCard = page.getByTestId("movement-card").first();
   await expect(firstCard).toBeVisible({ timeout: 15000 });
   await firstCard.click();
+  await confirmMovementSelection(page);
+}
+
+/**
+ * Confirm the previewed movement via the "Select Movement" button and wait for
+ * the preview screen to close (the button flips to "Selecting…" while the save
+ * is in flight, then the picker returns to the movement list).
+ */
+async function confirmMovementSelection(page: Page): Promise<void> {
+  // The preview fetches its table/round layout before the confirm button
+  // enables, so wait for enabled (not just visible) before clicking.
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Selecting/ }),
+  ).toHaveCount(0, { timeout: 15000 });
 }
 
 /**
@@ -82,6 +104,7 @@ export async function pickMovementByName(
     const name = (await card.locator("h3").textContent())?.trim() ?? "";
     if (name.toLowerCase().includes(needle)) {
       await card.click();
+      await confirmMovementSelection(page);
       return name;
     }
   }

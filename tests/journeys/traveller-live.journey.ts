@@ -6,7 +6,7 @@ import {
   openDirectorTraveller,
   overrideRowToOneNotrump,
 } from "../fixtures/director-override";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import { closeSeatDevices, setUpStartedTwoTableGame } from "./support";
 
 /**
  * Live traveller journey with a director override (pure UI, no socket seam).
@@ -21,13 +21,13 @@ import { newParticipant, setUpStartedTwoTableGame } from "./support";
  */
 test.describe("Traveller live updates and director override", () => {
   test("row updates live on confirm and on override", async ({ browser }) => {
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Traveller Live ${Date.now()}`,
     );
 
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     const board = 1;
     const table = 1;
@@ -74,8 +74,7 @@ test.describe("Traveller live updates and director override", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

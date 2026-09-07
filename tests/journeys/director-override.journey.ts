@@ -8,7 +8,7 @@ import {
   overrideRowToAdjusted,
   overrideRowToAdjustedPreset,
 } from "../fixtures/director-override";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import { closeSeatDevices, setUpStartedTwoTableGame } from "./support";
 
 /**
  * Director override journeys (pure UI, no socket seam).
@@ -29,14 +29,14 @@ test.describe("Director overrides", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Director Contract Override ${Date.now()}`,
       { recordOpeningLead: false },
     );
 
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
     const board = 1;
     const table = 1;
 
@@ -74,8 +74,7 @@ test.describe("Director overrides", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
@@ -84,14 +83,14 @@ test.describe("Director overrides", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Director Adjusted Override ${Date.now()}`,
       { recordOpeningLead: false },
     );
 
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
     const board = 1;
     const table = 1;
 
@@ -123,8 +122,7 @@ test.describe("Director overrides", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
@@ -133,7 +131,7 @@ test.describe("Director overrides", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Director Adjusted Preset ${Date.now()}`,
       { recordOpeningLead: false },
@@ -148,8 +146,8 @@ test.describe("Director overrides", () => {
     });
     const viewerPage = await viewerContext.newPage();
 
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
     const board = 1;
     const table = 1;
 
@@ -188,8 +186,7 @@ test.describe("Director overrides", () => {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
       await viewerContext.close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

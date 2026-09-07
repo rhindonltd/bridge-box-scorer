@@ -3,7 +3,11 @@ import { test, expect } from "@playwright/test";
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { openDirectorTraveller } from "../fixtures/director-override";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import {
+  closeSeatDevices,
+  newParticipant,
+  setUpStartedTwoTableGame,
+} from "./support";
 
 /**
  * Request-on-mount journey (pure UI, no socket seam).
@@ -17,13 +21,13 @@ test.describe("Results request-on-mount", () => {
   test("late-opened leaderboard and traveller show existing results", async ({
     browser,
   }) => {
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Request On Mount ${Date.now()}`,
     );
 
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // Confirm board 1 at table 1 BEFORE any display/traveller is open, so
@@ -50,8 +54,7 @@ test.describe("Results request-on-mount", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

@@ -12,21 +12,45 @@ export async function newParticipant(browser: Browser): Promise<Page> {
 }
 
 /**
- * Set up a started two-table Howell pairs game end to end through the UI:
- * create, two tables, first recommended movement, seat all four pairs, start.
- * Returns the director page (authorised for start/override/delete) and gameId.
+ * Close every per-pair device context in a seats map (as returned by the
+ * setup helpers). Each pair page owns its own context, so closing the pages'
+ * contexts tears down all the simulated devices in one call.
  */
+export async function closeSeatDevices(
+  seats: Record<string, Page>,
+): Promise<void> {
+  for (const page of Object.values(seats)) {
+    await page.context().close();
+  }
+}
+
 import { expect } from "@playwright/test";
 import { io as ioClient } from "socket.io-client";
 import { createGame } from "../fixtures/game-create";
 import { setTableCount, pickFirstMovement, startGame } from "../fixtures/game-setup";
-import { seatTwoTableField, seatTwoTableSection } from "../fixtures/join";
+import {
+  seatTwoTableFieldOnDevices,
+  seatTwoTableSectionOnDevices,
+} from "../fixtures/join";
 
+/**
+ * Set up a started two-table Howell pairs game end to end through the UI.
+ *
+ * Each pair joins from its OWN device context (mirroring reality: every pair
+ * has their own phone), so each seat's player token lives on the page that will
+ * later submit results. `seats` maps each section-qualified seat (e.g. "A1NS")
+ * to that pair's page — use these to drive play so submissions are authorised.
+ * `directorPage` is a separate context authorised for start/override/delete.
+ */
 export async function setUpStartedTwoTableGame(
   browser: Browser,
   eventName: string,
   opts: { recordOpeningLead?: boolean } = {},
-): Promise<{ directorPage: Page; gameId: string }> {
+): Promise<{
+  directorPage: Page;
+  gameId: string;
+  seats: Record<string, Page>;
+}> {
   const directorPage = await newParticipant(browser);
 
   const { gameId } = await createGame(directorPage, {
@@ -35,10 +59,13 @@ export async function setUpStartedTwoTableGame(
   });
   await setTableCount(directorPage, 2);
   await pickFirstMovement(directorPage);
-  await seatTwoTableField(directorPage, gameId);
+  const seats = await seatTwoTableFieldOnDevices(
+    () => newParticipant(browser),
+    gameId,
+  );
   await startGame(directorPage, gameId);
 
-  return { directorPage, gameId };
+  return { directorPage, gameId, seats };
 }
 
 /**
@@ -57,7 +84,11 @@ export async function setUpStartedTwoTableGame(
 export async function setUpStartedTwoSectionGame(
   browser: Browser,
   eventName: string,
-): Promise<{ directorPage: Page; gameId: string }> {
+): Promise<{
+  directorPage: Page;
+  gameId: string;
+  seats: Record<string, Page>;
+}> {
   const directorPage = await newParticipant(browser);
 
   const { gameId, directorToken } = await createGame(directorPage, {
@@ -83,12 +114,13 @@ export async function setUpStartedTwoSectionGame(
   await pickMovementForSection(directorPage, "A");
   await pickMovementForSection(directorPage, "B");
 
-  // Seat both sections and start.
-  await seatTwoTableSection(directorPage, gameId, "A");
-  await seatTwoTableSection(directorPage, gameId, "B");
+  // Seat both sections, each pair from its own device, and start.
+  const makePage = () => newParticipant(browser);
+  const seatsA = await seatTwoTableSectionOnDevices(makePage, gameId, "A");
+  const seatsB = await seatTwoTableSectionOnDevices(makePage, gameId, "B");
   await startGame(directorPage, gameId);
 
-  return { directorPage, gameId };
+  return { directorPage, gameId, seats: { ...seatsA, ...seatsB } };
 }
 
 /**
@@ -143,7 +175,18 @@ async function pickMovementForSection(page: Page, section: string): Promise<void
   const index = section.charCodeAt(0) - "A".charCodeAt(0);
   await setButtons.nth(index).click();
 
+  // Clicking a card only PREVIEWS it; the choice is committed by the
+  // "Select Movement" button (enabled once the preview layout loads). Without
+  // this confirm the picker stays on the preview and the section list (and its
+  // other sections) never re-renders.
   const firstCard = page.getByTestId("movement-card").first();
   await expect(firstCard).toBeVisible({ timeout: 15000 });
   await firstCard.click();
+
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Selecting/ }),
+  ).toHaveCount(0, { timeout: 15000 });
 }

@@ -7,7 +7,11 @@ import {
   enterPlayedContract,
 } from "../fixtures/play";
 import { confirmEntireGame } from "../fixtures/complete-game";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import {
+  closeSeatDevices,
+  newParticipant,
+  setUpStartedTwoTableGame,
+} from "./support";
 
 /**
  * Played-contract journey (pure UI, no socket seam).
@@ -35,14 +39,16 @@ test.describe("Played contract entry, confirmation and completion", () => {
     test.setTimeout(90_000);
 
     // Lead recording ON (the app default): the wizard includes the lead step.
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Played Contract ${Date.now()}`,
     );
 
     const displayPage = await newParticipant(browser);
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    // Each pair plays from its OWN device (the page that joined that seat, so
+    // it holds that seat's player token for authorised submission).
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // A leaderboard display mounted before any result: empty standings.
@@ -82,8 +88,7 @@ test.describe("Played contract entry, confirmation and completion", () => {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
       await displayPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
@@ -93,14 +98,14 @@ test.describe("Played contract entry, confirmation and completion", () => {
     test.setTimeout(90_000);
 
     // Lead recording OFF: the wizard must go declarer -> result with no lead.
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Played No Lead ${Date.now()}`,
       { recordOpeningLead: false },
     );
 
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // enterPlayedContract with leadCardRequired:false never looks for the
@@ -124,59 +129,48 @@ test.describe("Played contract entry, confirmation and completion", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 
-  test("playing the whole game drives a pair to the Game Complete screen", async ({
+  test("opening a completed game's play URL lands on the final leaderboard", async ({
     browser,
     request,
   }) => {
     test.setTimeout(120_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Play To Complete ${Date.now()}`,
       { recordOpeningLead: false },
     );
 
-    const nsPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
 
     try {
       // Confirm every non-sit-out board instance in the game (both sides) so
-      // every pair's schedule is complete. A Howell rotates opponents each
-      // round, so following one pair through the UI is brittle; instead we
-      // confirm the whole board set deterministically, then assert the UI.
+      // the whole game is complete. A Howell rotates opponents each round, so
+      // following one pair through the UI is brittle; instead we confirm the
+      // whole board set deterministically, then assert the UI.
       await confirmEntireGame(request, gameId);
 
-      // The round-1 NS pair keeps its URL seat all game; once its schedule is
-      // fully confirmed the play page resolves straight to Game Complete.
+      // Once the whole game is complete there is nothing left to play, so
+      // opening the pair's play URL redirects straight to the leaderboard
+      // (see the completed-game redirect) showing the final standings.
       await nsPage.goto(`/game/${gameId}/play/A1NS`);
-      await expect(nsPage.getByText("Game Complete")).toBeVisible({
+      await expect(nsPage).toHaveURL(
+        new RegExp(`/game/${gameId}/display/leaderboard$`),
+        { timeout: 15000 },
+      );
+
+      // The final standings render: one row per seated pair (four pairs).
+      await expect(nsPage.getByTestId("leaderboard-row")).toHaveCount(4, {
         timeout: 15000,
       });
-
-      // The Game Complete screen shows the final leaderboard with the pair's
-      // OWN row highlighted (GameComplete passes highlightAssignmentId). The
-      // pair's assignment id comes from its schedule; the highlighted row
-      // carries data-highlighted="true" and its Pair cell shows that id.
-      const scheduleRes = await request.get(
-        `/api/games/${gameId}/schedule/A1NS`,
-      );
-      expect(scheduleRes.ok()).toBeTruthy();
-      const assignmentId: string = (await scheduleRes.json()).result
-        .assignmentId;
-
-      const highlightedRow = nsPage.locator(
-        '[data-testid="leaderboard-row"][data-highlighted="true"]',
-      );
-      await expect(highlightedRow).toHaveCount(1, { timeout: 15000 });
-      await expect(highlightedRow).toContainText(assignmentId);
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await nsPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

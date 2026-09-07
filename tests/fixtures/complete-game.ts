@@ -1,5 +1,7 @@
 import { APIRequestContext, expect } from "@playwright/test";
 import { io as ioClient, Socket } from "socket.io-client";
+import Database from "better-sqlite3";
+import path from "node:path";
 
 /**
  * Confirm every playable board instance in a started game by submitting a
@@ -13,12 +15,19 @@ import { io as ioClient, Socket } from "socket.io-client";
  * (round/table/status) and confirm the non-sit-out ones. Submitting from both
  * the NS and EW seat of a table/round matches server-side and flips the board
  * to CONFIRMED, exactly as two tablets would.
+ *
+ * `game:submitResult` is player-authorised: each submission must carry the
+ * seat's secret token (issued at join). We read those secrets directly from the
+ * game's SQLite file (the seating already happened through the UI before this
+ * runs) and attach the matching token to every submission.
  */
 export async function confirmEntireGame(
   request: APIRequestContext,
   gameId: string,
   section = "A",
 ): Promise<void> {
+  const seatSecrets = readSeatSecrets(gameId);
+
   const boardsRes = await request.get(`/api/games/${gameId}/boards`);
   expect(boardsRes.ok()).toBeTruthy();
   const boardNumbers: number[] = (await boardsRes.json()).result.boards;
@@ -60,11 +69,16 @@ export async function confirmEntireGame(
 
     const submit = (seat: string, inst: Instance) =>
       new Promise<{ success: boolean; error?: string }>((resolve) => {
+        const token = seatSecrets.get(seat);
+        if (!token) {
+          throw new Error(`No secret token found for seat ${seat}`);
+        }
         socket.emit(
           "game:submitResult",
           {
             gameId,
             seat,
+            token,
             roundNumber: inst.roundNumber,
             tableNumber: inst.tableNumber,
             boardNumber: inst.boardNumber,
@@ -75,10 +89,39 @@ export async function confirmEntireGame(
       });
 
     for (const inst of instances) {
-      await submit(`${section}${inst.tableNumber}NS`, inst);
-      await submit(`${section}${inst.tableNumber}EW`, inst);
+      // Submit both seats of a single instance back-to-back so the board
+      // confirms (and its pending submissions clear) before the next one.
+      const ns = await submit(`${section}${inst.tableNumber}NS`, inst);
+      expect(ns.success, `NS submit failed: ${ns.error}`).toBeTruthy();
+      const ew = await submit(`${section}${inst.tableNumber}EW`, inst);
+      expect(ew.success, `EW submit failed: ${ew.error}`).toBeTruthy();
     }
   } finally {
     socket.disconnect();
+  }
+}
+
+/**
+ * Read every seat's secret token straight from the game's SQLite file, keyed by
+ * the section-qualified initial seat (e.g. "A1NS"). This mirrors how the
+ * participant-auth middleware looks up the seat secret server-side.
+ */
+function readSeatSecrets(gameId: string): Map<string, string> {
+  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dbFile = path.join(dataDir, `${gameId}.db`);
+
+  const db = new Database(dbFile, { readonly: true });
+  try {
+    const rows = db
+      .prepare("SELECT initial_seat AS seat, secret_key AS secret FROM participant")
+      .all() as Array<{ seat: string; secret: string }>;
+
+    const map = new Map<string, string>();
+    for (const row of rows) {
+      map.set(row.seat, row.secret);
+    }
+    return map;
+  } finally {
+    db.close();
   }
 }

@@ -2,7 +2,11 @@ import { test, expect } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import {
+  closeSeatDevices,
+  newParticipant,
+  setUpStartedTwoTableGame,
+} from "./support";
 
 /**
  * Reconnect recovery journey (pure UI, no socket seam).
@@ -21,15 +25,15 @@ test.describe("Reconnect recovery", () => {
   }) => {
     test.setTimeout(90_000);
 
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Reconnect ${Date.now()}`,
       { recordOpeningLead: false },
     );
 
     const displayPage = await newParticipant(browser);
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // Confirm a board so there are standings to recover.
@@ -63,8 +67,7 @@ test.describe("Reconnect recovery", () => {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
       await displayPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

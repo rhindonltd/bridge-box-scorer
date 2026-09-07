@@ -2,7 +2,11 @@ import { test, expect } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import {
+  closeSeatDevices,
+  newParticipant,
+  setUpStartedTwoTableGame,
+} from "./support";
 
 /**
  * Live leaderboard journey (pure UI, no socket seam).
@@ -16,14 +20,14 @@ test.describe("Leaderboard live updates", () => {
   test("empty display fills with standings when a board is confirmed", async ({
     browser,
   }) => {
-    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Leaderboard Live ${Date.now()}`,
     );
 
     const displayPage = await newParticipant(browser);
-    const nsPage = await newParticipant(browser);
-    const ewPage = await newParticipant(browser);
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
 
     try {
       // Open the display BEFORE any result exists: the standings table renders
@@ -45,8 +49,7 @@ test.describe("Leaderboard live updates", () => {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
       await displayPage.context().close();
-      await nsPage.context().close();
-      await ewPage.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });

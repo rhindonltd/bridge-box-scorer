@@ -158,3 +158,93 @@ export async function seatSingleSectionField(
     await seatPairBySeat(page, gameId, `A${table}EW`, celiaOram, denisKing);
   }
 }
+
+/**
+ * A device factory: returns a fresh, isolated browser page (its own context,
+ * localStorage and socket) — one per simulated pair, matching how each pair
+ * uses their own phone in the room.
+ */
+export type MakePage = () => Promise<Page>;
+
+/** The four section-A seats of a two-table field, in seating order. */
+const TWO_TABLE_SEATS = ["A1NS", "A1EW", "A2NS", "A2EW"] as const;
+
+/**
+ * Seat a full two-table (section "A") field, giving EACH pair its OWN device.
+ *
+ * This mirrors reality: a pair joins on their own phone, so the seat's player
+ * token is stored on that device and stays with them for the whole session
+ * (including result submission, which is player-authorised). Seating everyone
+ * from one shared page would leave a single overwritten token and no token on
+ * the pages that actually play.
+ *
+ * @returns a map from section-qualified seat (e.g. "A1NS") to that pair's page.
+ */
+export async function seatTwoTableFieldOnDevices(
+  makePage: MakePage,
+  gameId: string,
+): Promise<Record<string, Page>> {
+  return seatSeatsOnDevices(makePage, gameId, [...TWO_TABLE_SEATS]);
+}
+
+/**
+ * Seat a full two-table field for a specific section, one device per pair.
+ *
+ * @returns a map from section-qualified seat (e.g. "B1NS") to that pair's page.
+ */
+export async function seatTwoTableSectionOnDevices(
+  makePage: MakePage,
+  gameId: string,
+  section: string,
+): Promise<Record<string, Page>> {
+  const seats = [
+    `${section}1NS`,
+    `${section}1EW`,
+    `${section}2NS`,
+    `${section}2EW`,
+  ];
+  return seatSeatsOnDevices(makePage, gameId, seats);
+}
+
+/**
+ * Seat every seat of an N-table single-section (section "A") field, one device
+ * per pair.
+ *
+ * @returns a map from section-qualified seat (e.g. "A1NS") to that pair's page.
+ */
+export async function seatSingleSectionFieldOnDevices(
+  makePage: MakePage,
+  gameId: string,
+  tables: number,
+): Promise<Record<string, Page>> {
+  const seats: string[] = [];
+  for (let table = 1; table <= tables; table++) {
+    seats.push(`A${table}NS`, `A${table}EW`);
+  }
+  return seatSeatsOnDevices(makePage, gameId, seats);
+}
+
+/**
+ * Seat an explicit list of section-qualified seats, each from its own device,
+ * reusing the four seeded players (there is no distinct-player constraint).
+ * Returns the seat -> page map so callers can drive play from the same device
+ * that joined (and therefore holds that seat's token).
+ */
+export async function seatSeatsOnDevices(
+  makePage: MakePage,
+  gameId: string,
+  seats: string[],
+): Promise<Record<string, Page>> {
+  const { jacquelineCollier, davidCollier, celiaOram, denisKing } = SEEDED_EBU;
+
+  const pages: Record<string, Page> = {};
+  for (const seat of seats) {
+    const page = await makePage();
+    const isNS = seat.endsWith("NS");
+    const ebu1 = isNS ? jacquelineCollier : celiaOram;
+    const ebu2 = isNS ? davidCollier : denisKing;
+    await seatPairBySeat(page, gameId, seat, ebu1, ebu2);
+    pages[seat] = page;
+  }
+  return pages;
+}

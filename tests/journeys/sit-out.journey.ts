@@ -1,11 +1,13 @@
 import { test, expect, Browser, Page } from "@playwright/test";
 import { io as ioClient, Socket } from "socket.io-client";
+import Database from "better-sqlite3";
+import path from "node:path";
 
 import { createGame } from "../fixtures/game-create";
 import { setTableCount, pickFirstMovement, startGame } from "../fixtures/game-setup";
-import { seatPair, SEEDED_EBU } from "../fixtures/join";
+import { seatSeatsOnDevices } from "../fixtures/join";
 import { deleteGame } from "../fixtures/delete-game";
-import { newParticipant } from "./support";
+import { closeSeatDevices, newParticipant } from "./support";
 
 /**
  * Sit-out journey (pure UI, no socket seam).
@@ -32,7 +34,12 @@ import { newParticipant } from "./support";
 async function setUpOnePairShortGame(
   browser: Browser,
   eventName: string,
-): Promise<{ directorPage: Page; gameId: string; emptySeat: string }> {
+): Promise<{
+  directorPage: Page;
+  gameId: string;
+  emptySeat: string;
+  seats: Record<string, Page>;
+}> {
   const directorPage = await newParticipant(browser);
 
   const { gameId } = await createGame(directorPage, {
@@ -42,17 +49,18 @@ async function setUpOnePairShortGame(
   await setTableCount(directorPage, 2);
   await pickFirstMovement(directorPage);
 
-  const { jacquelineCollier, davidCollier, celiaOram, denisKing } = SEEDED_EBU;
-
-  // Seat three of the four seats: table 1 NS + EW, and table 2 NS. Table 2 EW
-  // is left empty, so "A2EW" becomes the sit-out seat.
-  await seatPair(directorPage, gameId, 0, "NS", jacquelineCollier, davidCollier);
-  await seatPair(directorPage, gameId, 0, "EW", celiaOram, denisKing);
-  await seatPair(directorPage, gameId, 1, "NS", jacquelineCollier, davidCollier);
+  // Seat three of the four seats, each from its OWN device (so each pair holds
+  // its own token to submit results). Table 1 NS + EW and table 2 NS are
+  // filled; table 2 EW is left empty, so "A2EW" becomes the sit-out seat.
+  const seats = await seatSeatsOnDevices(() => newParticipant(browser), gameId, [
+    "A1NS",
+    "A1EW",
+    "A2NS",
+  ]);
 
   await startGame(directorPage, gameId);
 
-  return { directorPage, gameId, emptySeat: "A2EW" };
+  return { directorPage, gameId, emptySeat: "A2EW", seats };
 }
 
 test.describe("Sit-out flow", () => {
@@ -62,7 +70,7 @@ test.describe("Sit-out flow", () => {
   }) => {
     test.setTimeout(120_000);
 
-    const { directorPage, gameId } = await setUpOnePairShortGame(
+    const { directorPage, gameId, seats } = await setUpOnePairShortGame(
       browser,
       // Deliberately avoid the words "Sit Out" in the event name so it can't
       // collide with the sit-out heading locators below.
@@ -70,21 +78,24 @@ test.describe("Sit-out flow", () => {
     );
 
     // Discover which seat sits out and in which round, straight from the
-    // schedule — the movement decides this, we don't assume it.
+    // schedule — the movement decides this, we don't assume it. Restrict to
+    // table-1 seats so the sitting pair's same-table partner is a SEATED pair
+    // (table 2's EW is the empty seat).
     const { seat: sitOutSeat, round: sitOutRound } = await findSitOutSeat(
       request,
       gameId,
-      ["A1NS", "A1EW", "A2NS"],
+      ["A1NS", "A1EW"],
     );
 
     // The play flow skips sit-out (and completed) rounds when resolving the
     // FIRST screen on mount, so a fresh load never lands on a sit-out. The
     // SitOutPage is reached in-session: after the player finishes the rounds
     // BEFORE the sit-out and continues, the flow lands on the sit-out round.
-    // We therefore live-play the sitting-out pair up to its sit-out round.
-    const sitOutPlayer = await newParticipant(browser);
+    // We therefore live-play the sitting-out pair up to its sit-out round, each
+    // pair driving its OWN device (the one that joined its seat).
     const partnerSeat = tablePartnerSeat(sitOutSeat); // opponent sharing its table
-    const partnerPlayer = await newParticipant(browser);
+    const sitOutPlayer = seats[sitOutSeat];
+    const partnerPlayer = seats[partnerSeat];
 
     try {
       // The board lists for the rounds the sitting pair plays BEFORE its
@@ -129,8 +140,7 @@ test.describe("Sit-out flow", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await sitOutPlayer.context().close();
-      await partnerPlayer.context().close();
+      await closeSeatDevices(seats);
     }
   });
 });
@@ -331,12 +341,20 @@ async function submitAgainstSitOutBoard(
       });
     });
 
+    // Submit as the sit-out table's NS pair (a seated seat). The result
+    // submission is player-authorised, so attach that seat's real token — this
+    // makes the submission pass auth and reach the sit-out guard we're testing
+    // (otherwise it would be rejected as "Unauthorized" before that check).
+    const seat = `A${target!.tableNumber}NS`;
+    const token = readSeatSecret(gameId, seat);
+
     return await new Promise<{ success: boolean; error?: string }>((resolve) => {
       socket.emit(
         "game:submitResult",
         {
           gameId,
-          seat: `A${target!.tableNumber}NS`,
+          seat,
+          token,
           roundNumber: target!.roundNumber,
           tableNumber: target!.tableNumber,
           boardNumber: target!.boardNumber,
@@ -347,5 +365,27 @@ async function submitAgainstSitOutBoard(
     });
   } finally {
     socket.disconnect();
+  }
+}
+
+/**
+ * Read a single seat's secret token straight from the game's SQLite file,
+ * mirroring how the participant-auth middleware looks up the seat secret
+ * server-side. Used to authorise a direct-socket submission from the test.
+ */
+function readSeatSecret(gameId: string, seat: string): string {
+  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dbFile = path.join(dataDir, `${gameId}.db`);
+  const db = new Database(dbFile, { readonly: true });
+  try {
+    const row = db
+      .prepare("SELECT secret_key AS secret FROM participant WHERE initial_seat = ?")
+      .get(seat) as { secret: string } | undefined;
+    if (!row) {
+      throw new Error(`No participant secret found for seat ${seat}`);
+    }
+    return row.secret;
+  } finally {
+    db.close();
   }
 }
