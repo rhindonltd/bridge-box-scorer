@@ -6,6 +6,14 @@
   --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Lock the app to a light colour scheme. The app has no dark-mode styles, so
+   without this mobile browsers (notably iOS Safari) auto-darken unstyled
+   backgrounds and default text when the OS is in dark mode. Declaring the
+   scheme stops that reinterpretation and keeps rendering consistent. */
+html {
+  color-scheme: light;
+}
+
 /* Base font-size: 16px on phones, 18px on tablets and larger screens.
    Since Tailwind uses rem units, this scales everything proportionally. */
 html {
