@@ -1,10 +1,10 @@
 import "server-only";
 
-import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import path from "path";
 import fs from "fs";
 import * as schema from "./schema";
+import { openDatabase } from "@/db/open-database";
 
 export type Db = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -22,7 +22,7 @@ export async function createDb(gameId: string): Promise<Db> {
 
   const dbFile = path.join(dataDir, `${gameId}.db`);
 
-  const dbInstance = drizzle(new Database(dbFile), { schema });
+  const dbInstance = drizzle(openDatabase(dbFile), { schema });
   dbInstances.set(gameId, dbInstance);
 
   return dbInstance;
@@ -48,7 +48,7 @@ export async function getDb(gameId: string): Promise<Db | null> {
     return null;
   }
 
-  const dbInstance = drizzle(new Database(dbFile), { schema });
+  const dbInstance = drizzle(openDatabase(dbFile), { schema });
   dbInstances.set(gameId, dbInstance);
 
   return dbInstance;

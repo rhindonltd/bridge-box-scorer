@@ -84,7 +84,10 @@ describe.each([
       mkdirSync: () => undefined,
     }));
     vi.doMock("better-sqlite3", () => ({
-      default: class FakeDatabase {},
+      default: class FakeDatabase {
+        pragma() {}
+        close() {}
+      },
     }));
 
     const mod = await importIndex();
@@ -150,7 +153,10 @@ describe("games index module", () => {
     vi.resetModules();
 
     vi.doMock("better-sqlite3", () => ({
-      default: class FakeDatabase {},
+      default: class FakeDatabase {
+        pragma() {}
+        close() {}
+      },
     }));
 
     const games = await import("@/db/games");

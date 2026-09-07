@@ -10,7 +10,10 @@ const { mockGet, mockSelect, mockDrizzle } = vi.hoisted(() => {
 });
 
 vi.mock("better-sqlite3", () => ({
-  default: class MockDatabase {},
+  default: class MockDatabase {
+    pragma() {}
+    close() {}
+  },
 }));
 
 vi.mock("drizzle-orm/better-sqlite3", () => ({
