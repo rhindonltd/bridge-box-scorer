@@ -5,9 +5,10 @@
   "scripts": {
     "postinstall": "node scripts/link-ts6.mjs",
     "dev": "tsx watch --require ./scripts/allow-server-only.cjs server.ts",
-    "prebuild": "npx tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/migrate.ts",
-    "build": "next build",
-    "start": "NODE_ENV=production exec tsx --require ./scripts/allow-server-only.cjs server.ts",
+    "prebuild": "npx tsx --require ./scripts/allow-server-only.cjs --env-file-if-exists=.env src/scripts/migrate.ts",
+    "build": "next build && npm run build:server",
+    "build:server": "node scripts/build-server.mjs",
+    "start": "node -r ./scripts/allow-server-only.cjs dist/server.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
