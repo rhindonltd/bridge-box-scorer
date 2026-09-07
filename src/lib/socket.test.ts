@@ -122,7 +122,7 @@ describe("socket", () => {
   });
 });
 
-describe("getSocket url fallback", () => {
+describe("getSocket connection target", () => {
   const ORIGINAL_URL = process.env.NEXT_PUBLIC_APP_URL;
 
   beforeEach(() => {
@@ -140,7 +140,8 @@ describe("getSocket url fallback", () => {
     }
   });
 
-  it("uses NEXT_PUBLIC_APP_URL when it is set", async () => {
+  it("connects to the current origin in the browser, ignoring NEXT_PUBLIC_APP_URL", async () => {
+    // jsdom provides `window`, so this exercises the browser branch.
     process.env.NEXT_PUBLIC_APP_URL = "https://box.local:4000";
 
     const ioMock = vi.fn(() => mockSocket);
@@ -149,18 +150,46 @@ describe("getSocket url fallback", () => {
     const { getSocket: freshGetSocket } = await import("./socket");
     freshGetSocket();
 
-    expect(ioMock).toHaveBeenCalledWith("https://box.local:4000");
+    // No URL argument => socket.io-client defaults to window.location origin.
+    expect(ioMock).toHaveBeenCalledWith();
   });
 
-  it("falls back to http://localhost:3000 when the env var is unset", async () => {
+  it("falls back to NEXT_PUBLIC_APP_URL outside the browser", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://box.local:4000";
+
+    const ioMock = vi.fn(() => mockSocket);
+    vi.doMock("socket.io-client", () => ({ io: ioMock }));
+
+    const originalWindow = globalThis.window;
+    // Simulate a non-browser (SSR) context.
+    // @ts-expect-error -- deliberately removing window for this test
+    delete globalThis.window;
+
+    try {
+      const { getSocket: freshGetSocket } = await import("./socket");
+      freshGetSocket();
+      expect(ioMock).toHaveBeenCalledWith("https://box.local:4000");
+    } finally {
+      globalThis.window = originalWindow;
+    }
+  });
+
+  it("falls back to http://localhost:3000 outside the browser when the env var is unset", async () => {
     delete process.env.NEXT_PUBLIC_APP_URL;
 
     const ioMock = vi.fn(() => mockSocket);
     vi.doMock("socket.io-client", () => ({ io: ioMock }));
 
-    const { getSocket: freshGetSocket } = await import("./socket");
-    freshGetSocket();
+    const originalWindow = globalThis.window;
+    // @ts-expect-error -- deliberately removing window for this test
+    delete globalThis.window;
 
-    expect(ioMock).toHaveBeenCalledWith("http://localhost:3000");
+    try {
+      const { getSocket: freshGetSocket } = await import("./socket");
+      freshGetSocket();
+      expect(ioMock).toHaveBeenCalledWith("http://localhost:3000");
+    } finally {
+      globalThis.window = originalWindow;
+    }
   });
 });

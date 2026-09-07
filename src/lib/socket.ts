@@ -5,8 +5,18 @@ let socket: Socket;
 
 export function getSocket() {
   if (!socket) {
-    const url = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    socket = io(url);
+    // Connect back to the origin that served the page. On the appliance,
+    // clients reach the app over the local WiFi network by the appliance's
+    // own host/IP, which is exactly window.location.origin — not a fixed
+    // build-time URL. Passing no URL lets socket.io-client default to the
+    // current origin in the browser. Fall back to the configured/localhost
+    // URL only for non-browser contexts (e.g. SSR).
+    if (typeof window !== "undefined") {
+      socket = io();
+    } else {
+      const url = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      socket = io(url);
+    }
   }
 
   return socket;
