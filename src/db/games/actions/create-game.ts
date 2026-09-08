@@ -3,6 +3,7 @@ import "server-only";
 import { createDb, getDb } from "@/db/games";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { sections } from "@/db/games/tables/sections";
+import { resolveMigrationsFolder } from "@/db/resolve-migrations-folder";
 
 /**
  * Create and migrate a per-game database, seeding a single default section "A".
@@ -19,7 +20,7 @@ export async function createGameDb(gameId: string, tables = 1) {
   const db = await createDb(gameId);
 
   migrate(db, {
-    migrationsFolder: "./drizzle/games",
+    migrationsFolder: resolveMigrationsFolder("games"),
   });
 
   db.insert(sections)
