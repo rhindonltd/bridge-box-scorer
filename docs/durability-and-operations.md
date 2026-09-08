@@ -87,3 +87,35 @@ The commit is read at build/deploy time from `APP_COMMIT` (or `GIT_COMMIT` /
 The server binds `0.0.0.0` so it is reachable over the appliance's WiFi hotspot,
 not just localhost. The port defaults to `3000` and is configurable via `PORT`
 (matching what PM2 passes); the bind host is overridable via `HOST`.
+
+## Offline builds
+
+The appliance has a single WiFi radio, so it is either running its hotspot **or**
+connected to the internet — never both. Provisioning fetches dependencies in a
+short online window (`npm ci`) and then runs `npm run build` **with no network**
+while the hotspot is back up. `npm run build` must therefore make **no network
+calls**; only `npm ci` is allowed to use the network.
+
+To keep this true:
+
+- **Fonts are self-hosted.** Inter is loaded via `next/font/local` from committed
+  woff2 files in `src/app/fonts/` (variable font, normal + italic; licensed under
+  the SIL OFL, see `src/app/fonts/OFL.txt`). We do **not** use `next/font/google`,
+  which fetches from Google Fonts at build time and fails offline with
+  `Failed to fetch \`Inter\` from Google Fonts`.
+- **No other build-time fetches.** Avoid introducing `next/font/google`, remote
+  `next/image` sources optimised at build, or any `fetch`/network call that runs
+  during `next build` (server components, `generateStaticParams`, etc.). The
+  `prebuild` migration step only touches the local databases, which is fine.
+- The `sync:ebu-players` script does reach the network, but it is a manual,
+  on-demand tool — it is **not** part of `build`/`prebuild` and must stay that way.
+
+Verify offline-safety from a clean checkout with networking cut off after the
+install step:
+
+```bash
+rm -rf node_modules .next
+npm ci            # network allowed here (deps only)
+# now disconnect the network, then:
+npm run build     # must succeed with no internet
+```
