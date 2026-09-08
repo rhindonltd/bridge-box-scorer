@@ -1,9 +1,26 @@
 import "@/styles/globals.css";
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 
-const inter = Inter({
-  subsets: ["latin"],
+// Inter, self-hosted (SIL OFL, see src/app/fonts/OFL.txt). Served from the repo
+// via next/font/local rather than next/font/google so `next build` makes no
+// network calls — the appliance builds on-device with no internet. These are
+// the Inter *variable* woff2 files (weight axis 100-900), which cover every
+// weight the UI uses (400/500/600/700). The `--font-sans` CSS variable wiring
+// is unchanged, so rendering is identical to the previous Google-hosted setup.
+const inter = localFont({
+  src: [
+    {
+      path: "./fonts/InterVariable.woff2",
+      weight: "100 900",
+      style: "normal",
+    },
+    {
+      path: "./fonts/InterVariable-Italic.woff2",
+      weight: "100 900",
+      style: "italic",
+    },
+  ],
   variable: "--font-sans",
   display: "swap",
 });
