@@ -136,6 +136,26 @@ describe("games index module", () => {
     expect(await games.getDb(newGameId)).toBe(createdDb);
   });
 
+  it("createDb creates the games data dir when it does not exist yet", async () => {
+    // On a fresh appliance the nested games dir (e.g. /home/bridgebox/data/games)
+    // may not exist. createDb must create it before opening, otherwise
+    // better-sqlite3 throws "unable to open database file".
+    const parent = freshDir("bbs-idx-games-mkdir-");
+    const dataDir = path.join(parent, "nested-games");
+    expect(fs.existsSync(dataDir)).toBe(false);
+
+    process.env.DATABASE_GAMES_URL = dataDir;
+    vi.resetModules();
+
+    const games = await import("@/db/games");
+    const newGameId = `game-${Math.random().toString(16).slice(2)}`;
+    const createdDb = await games.createDb(newGameId);
+    expect(createdDb).toBeTruthy();
+    // mkdir branch was taken: the nested dir and the .db file now exist.
+    expect(fs.existsSync(dataDir)).toBe(true);
+    expect(fs.existsSync(path.join(dataDir, `${newGameId}.db`))).toBe(true);
+  });
+
   it("getDb falls back to the built-in games dir when the env var is unset", async () => {
     // With no env var and no db file at the default location, getDb takes the
     // `?? "<default>"` branch and returns null (file does not exist).
@@ -148,10 +168,16 @@ describe("games index module", () => {
 
   it("createDb falls back to the built-in games dir when the env var is unset", async () => {
     // Exercise createDb's `?? "<default>"` branch. The default is a real
-    // production path, so stub the sqlite driver so nothing is opened on disk.
+    // production path, so stub the filesystem + sqlite driver so nothing is
+    // created or opened on disk.
     delete process.env.DATABASE_GAMES_URL;
     vi.resetModules();
 
+    vi.doMock("fs", () => ({
+      default: { existsSync: () => true, mkdirSync: () => undefined },
+      existsSync: () => true,
+      mkdirSync: () => undefined,
+    }));
     vi.doMock("better-sqlite3", () => ({
       default: class FakeDatabase {
         pragma() {}
@@ -163,6 +189,7 @@ describe("games index module", () => {
     const db = await games.createDb("game-fallback");
     expect(db).toBeTruthy();
 
+    vi.doUnmock("fs");
     vi.doUnmock("better-sqlite3");
   });
 });

@@ -20,6 +20,12 @@ export async function createDb(gameId: string): Promise<Db> {
   const dataDir =
     process.env.DATABASE_GAMES_URL ?? "/home/bridgebox/data/games";
 
+  // better-sqlite3 creates the .db file if missing, but only when the parent
+  // directory already exists. The per-game "games" dir is a nested path
+  // (e.g. /home/bridgebox/data/games) that may not be provisioned on a fresh
+  // appliance, so create it — matching every other DB module.
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+
   const dbFile = path.join(dataDir, `${gameId}.db`);
 
   const dbInstance = drizzle(openDatabase(dbFile), { schema });
