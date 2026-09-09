@@ -30,9 +30,22 @@ vi.mock("@/lib/director-token", () => ({
   getDirectorToken: () => "token",
 }));
 
-// Section list drives the section picker. Default: a single section A.
-let mockSections: { section: string; label: string }[] = [
-  { section: "A", label: "A" },
+// A MITCHELL movement resolves its round structure inline (no fetch), so the
+// timer config renders with derived boards/round (3) and total rounds (8).
+const mitchellMovement = {
+  source: "MITCHELL" as const,
+  mitchell: { tables: 4, rounds: 8, boardsPerRound: 3 },
+};
+
+// Section list drives the section picker. Default: a single section A with a
+// selected movement so the timer config is enabled.
+type MockSection = {
+  section: string;
+  label: string;
+  selectedMovement: typeof mitchellMovement | null;
+};
+let mockSections: MockSection[] = [
+  { section: "A", label: "A", selectedMovement: mitchellMovement },
 ];
 vi.mock("@/hooks/sections", () => ({
   useSections: () => ({ sections: mockSections, isLoading: false }),
@@ -49,7 +62,9 @@ describe("TimerSetup (config screen)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTimerState = null;
-    mockSections = [{ section: "A", label: "A" }];
+    mockSections = [
+      { section: "A", label: "A", selectedMovement: mitchellMovement },
+    ];
   });
 
   it("saves the current config with timer:saveConfig and shows no run controls", () => {
@@ -76,12 +91,9 @@ describe("TimerSetup (config screen)", () => {
     );
   });
 
-  it("reflects config edits in the save payload", () => {
+  it("reflects editable config edits in the save payload", () => {
     render(<TimerSetup />);
 
-    fireEvent.change(screen.getByLabelText("Total Rounds"), {
-      target: { value: "10" },
-    });
     fireEvent.change(screen.getByLabelText("Play minutes"), {
       target: { value: "7" },
     });
@@ -91,9 +103,37 @@ describe("TimerSetup (config screen)", () => {
     expect(mockEmit).toHaveBeenCalledWith(
       SocketEvents.SAVE_CONFIG_TIMER,
       expect.objectContaining({
-        totalRounds: 10,
+        // Structure comes from the selected movement (read-only).
+        totalRounds: 8,
+        boardsPerRound: 3,
         playDuration: 420,
       }),
+    );
+  });
+
+  it("derives boards/round and total rounds from the movement (read-only)", () => {
+    render(<TimerSetup />);
+
+    const boards = screen.getByLabelText("Boards / Round");
+    const rounds = screen.getByLabelText("Total Rounds");
+    expect(boards).toHaveValue(3);
+    expect(rounds).toHaveValue(8);
+    expect(boards).toHaveAttribute("readonly");
+    expect(rounds).toHaveAttribute("readonly");
+  });
+
+  it("disables the timer config and prompts when the section has no movement", () => {
+    mockSections = [{ section: "A", label: "A", selectedMovement: null }];
+    render(<TimerSetup />);
+
+    expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
+    expect(screen.queryByLabelText("Total Rounds")).toBeNull();
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(mockEmit).not.toHaveBeenCalledWith(
+      SocketEvents.SAVE_CONFIG_TIMER,
+      expect.anything(),
     );
   });
 
@@ -109,12 +149,9 @@ describe("TimerSetup (config screen)", () => {
     );
   });
 
-  it("routes every config field through the onConfigChange switch", () => {
+  it("routes the editable config fields through the onConfigChange switch", () => {
     render(<TimerSetup />);
 
-    fireEvent.change(screen.getByLabelText("Boards / Round"), {
-      target: { value: "4" },
-    });
     fireEvent.change(screen.getByLabelText("Play seconds"), {
       target: { value: "10" },
     });
@@ -135,10 +172,11 @@ describe("TimerSetup (config screen)", () => {
       (c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER,
     );
     expect(call![1]).toMatchObject({
-      boardsPerRound: 4,
+      // Boards/round is derived from the movement (3), not edited here.
+      boardsPerRound: 3,
       warningSeconds: 45,
-      // per board: play (2m10s = 130s) * 4 boards = 520
-      playDuration: 520,
+      // per board: play (2m10s = 130s) * 3 boards = 390
+      playDuration: 390,
       // move 2m20s = 140s
       moveDuration: 140,
     });
@@ -164,13 +202,15 @@ describe("TimerSetup (config screen)", () => {
 
     render(<TimerSetup />);
 
-    expect(screen.getByLabelText("Total Rounds")).toHaveValue(11);
-    expect(screen.getByLabelText("Boards / Round")).toHaveValue(2);
+    // Durations/warning seed from the saved state...
     expect(screen.getByLabelText("Play minutes")).toHaveValue(5);
     expect(screen.getByLabelText("Move minutes")).toHaveValue(2);
     expect(
       screen.getByLabelText("Warning at (seconds before end of play)"),
     ).toHaveValue(30);
+    // ...but the structure comes from the movement, overriding the saved 11/2.
+    expect(screen.getByLabelText("Total Rounds")).toHaveValue(8);
+    expect(screen.getByLabelText("Boards / Round")).toHaveValue(3);
   });
 
   it("renders without the page header when embedded", () => {
@@ -232,20 +272,36 @@ describe("TimerSetup (config screen)", () => {
   });
 
   it("adds a break when totalRounds is 1 (afterRound clamps to 1)", () => {
+    // A one-round movement drives totalRounds = 1 (the field is read-only).
+    mockSections = [
+      {
+        section: "A",
+        label: "A",
+        selectedMovement: {
+          source: "MITCHELL",
+          mitchell: { tables: 4, rounds: 1, boardsPerRound: 3 },
+        },
+      },
+    ];
     render(<TimerSetup />);
-    fireEvent.change(screen.getByLabelText("Total Rounds"), {
-      target: { value: "1" },
-    });
     fireEvent.click(screen.getByRole("button", { name: "+ Add break" }));
     expect(screen.getByLabelText("Break 1 after round")).toBeInTheDocument();
   });
 
   it("formats a session length in minutes and seconds", () => {
+    // 2-round movement: 2 * 1m play + 1 * 30s move = 2m 30s.
+    mockSections = [
+      {
+        section: "A",
+        label: "A",
+        selectedMovement: {
+          source: "MITCHELL",
+          mitchell: { tables: 4, rounds: 2, boardsPerRound: 3 },
+        },
+      },
+    ];
     render(<TimerSetup />);
 
-    fireEvent.change(screen.getByLabelText("Total Rounds"), {
-      target: { value: "2" },
-    });
     fireEvent.change(screen.getByLabelText("Play minutes"), {
       target: { value: "1" },
     });
@@ -263,11 +319,19 @@ describe("TimerSetup (config screen)", () => {
   });
 
   it("formats a session length in seconds only", () => {
+    // 1-round movement: a single 30s play phase, no moves.
+    mockSections = [
+      {
+        section: "A",
+        label: "A",
+        selectedMovement: {
+          source: "MITCHELL",
+          mitchell: { tables: 4, rounds: 1, boardsPerRound: 3 },
+        },
+      },
+    ];
     render(<TimerSetup />);
 
-    fireEvent.change(screen.getByLabelText("Total Rounds"), {
-      target: { value: "1" },
-    });
     fireEvent.change(screen.getByLabelText("Play minutes"), {
       target: { value: "0" },
     });
@@ -282,11 +346,18 @@ describe("TimerSetup (config screen)", () => {
     const noon = new Date("2024-06-01T12:00:00").getTime();
     const nowSpy = vi.spyOn(Date, "now").mockReturnValue(noon);
 
+    mockSections = [
+      {
+        section: "A",
+        label: "A",
+        selectedMovement: {
+          source: "MITCHELL",
+          mitchell: { tables: 4, rounds: 2, boardsPerRound: 3 },
+        },
+      },
+    ];
     render(<TimerSetup />);
 
-    fireEvent.change(screen.getByLabelText("Total Rounds"), {
-      target: { value: "2" },
-    });
     fireEvent.change(screen.getByLabelText("Play minutes"), {
       target: { value: "0" },
     });
@@ -329,6 +400,9 @@ describe("TimerManager (routes by started state)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTimerState = null;
+    mockSections = [
+      { section: "A", label: "A", selectedMovement: mitchellMovement },
+    ];
   });
 
   it("shows the config screen when the game has not started", () => {
@@ -460,10 +534,15 @@ describe("per-section timer UI", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockTimerState = null;
+    mockSections = [
+      { section: "A", label: "A", selectedMovement: mitchellMovement },
+    ];
   });
 
   it("shows no section picker or Apply-to-all for a single-section game", () => {
-    mockSections = [{ section: "A", label: "A" }];
+    mockSections = [
+      { section: "A", label: "A", selectedMovement: mitchellMovement },
+    ];
     render(<TimerSetup />);
 
     expect(screen.queryByRole("tab")).toBeNull();
@@ -474,8 +553,8 @@ describe("per-section timer UI", () => {
 
   it("saves config for the selected section", () => {
     mockSections = [
-      { section: "A", label: "A" },
-      { section: "B", label: "B" },
+      { section: "A", label: "A", selectedMovement: mitchellMovement },
+      { section: "B", label: "B", selectedMovement: mitchellMovement },
     ];
     render(<TimerSetup />);
 
@@ -497,9 +576,9 @@ describe("per-section timer UI", () => {
 
   it("Apply to all sections saves the config to every section", () => {
     mockSections = [
-      { section: "A", label: "A" },
-      { section: "B", label: "B" },
-      { section: "C", label: "C" },
+      { section: "A", label: "A", selectedMovement: mitchellMovement },
+      { section: "B", label: "B", selectedMovement: mitchellMovement },
+      { section: "C", label: "C", selectedMovement: mitchellMovement },
     ];
     render(<TimerSetup />);
 
@@ -515,8 +594,8 @@ describe("per-section timer UI", () => {
 
   it("live controls target the selected section", () => {
     mockSections = [
-      { section: "A", label: "A" },
-      { section: "B", label: "B" },
+      { section: "A", label: "A", selectedMovement: mitchellMovement },
+      { section: "B", label: "B", selectedMovement: mitchellMovement },
     ];
     mockTimerState = {
       phase: "play",

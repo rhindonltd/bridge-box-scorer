@@ -129,4 +129,40 @@ describe("TimerConfigView", () => {
     expect(screen.queryByText("Timer Setup")).toBeNull();
     expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
   });
+
+  it("shows the structure fields read-only when locked", () => {
+    render(<TimerConfigView {...makeProps({ lockedStructure: true })} />);
+
+    expect(screen.getByLabelText("Boards / Round")).toHaveAttribute("readonly");
+    expect(screen.getByLabelText("Total Rounds")).toHaveAttribute("readonly");
+    expect(
+      screen.getByText(/come from the selected movement/i),
+    ).toBeInTheDocument();
+  });
+
+  it("prompts to select a movement and disables saving when none is selected", () => {
+    const onSave = vi.fn();
+    render(<TimerConfigView {...makeProps({ noMovement: true, onSave })} />);
+
+    expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
+    // Config fields are replaced by the prompt.
+    expect(screen.queryByLabelText("Boards / Round")).toBeNull();
+
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save).toBeDisabled();
+    fireEvent.click(save);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("disables Apply to all sections when no movement is selected", () => {
+    render(
+      <TimerConfigView
+        {...makeProps({ noMovement: true, onApplyToAll: vi.fn() })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Apply to all sections" }),
+    ).toBeDisabled();
+  });
 });

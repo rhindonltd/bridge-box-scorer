@@ -10,6 +10,7 @@ import { TimerStatus } from "./timer-view-types";
 import { useTimerConfigState } from "./useTimerConfigState";
 import { useTimerDerived } from "@/hooks/timer-derived";
 import { useSections, ClientSection } from "@/hooks/sections";
+import { useMovementRoundInfo } from "@/hooks/movement-round-info";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { SocketEvents } from "@/socket/socket-events";
@@ -39,13 +40,33 @@ function TimerConfigContainer({
   const { game } = useRequiredGame();
   const { timerState, breakProblems } = useTimerContext();
 
+  // Rounds and boards-per-round are derived from this section's selected
+  // movement rather than entered by hand. With no movement, the config is
+  // disabled and the director is prompted to choose one first.
+  const { sections } = useSections(game.gameId);
+  const selectedMovement =
+    sections.find((s) => s.section === section)?.selectedMovement ?? null;
+  const { info: movementInfo } = useMovementRoundInfo(
+    selectedMovement,
+    game.gameType,
+  );
+  const derived = movementInfo
+    ? {
+        boardsPerRound: movementInfo.boardsPerRound,
+        totalRounds: movementInfo.rounds,
+      }
+    : undefined;
+
   const {
     config,
     configHandlers,
     emitConfigFields,
+    structureLocked,
     sessionLength,
     previewEnd,
-  } = useTimerConfigState(timerState);
+  } = useTimerConfigState(timerState, derived);
+
+  const noMovement = selectedMovement == null;
 
   function saveFor(targetSection: string) {
     getSocket().emit(SocketEvents.SAVE_CONFIG_TIMER, {
@@ -67,6 +88,8 @@ function TimerConfigContainer({
       breakProblems={breakProblems}
       sessionLength={sessionLength}
       previewEnd={previewEnd}
+      lockedStructure={structureLocked}
+      noMovement={noMovement}
       onSave={() => saveFor(section)}
       onApplyToAll={
         multiSection
