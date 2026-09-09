@@ -24,6 +24,15 @@ vi.mock("./ShowTablesPage", () => ({
   ),
 }));
 
+vi.mock("./StartGameScreen", () => ({
+  StartGameScreen: ({ menu }: { menu?: React.ReactNode }) => (
+    <div>
+      {menu}
+      <div>start-game-view</div>
+    </div>
+  ),
+}));
+
 vi.mock("@/components/manage/sections/MovementStep", () => ({
   MovementStep: () => <div>sections-view</div>,
 }));
@@ -170,5 +179,34 @@ describe("SetupGamePage setup menu", () => {
 
     expect(screen.queryByText("manage-sections-view")).toBeNull();
     expect(mockGoTo).toHaveBeenCalledWith("movements");
+  });
+
+  it("navigates to the start step when the Start Game item is chosen", async () => {
+    render(<SetupGamePage />);
+
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Start Game" }));
+    expect(mockGoTo).toHaveBeenCalledWith("start");
+  });
+
+  it("renders the Start Game view on the start step", async () => {
+    currentStep = "start";
+    render(<SetupGamePage />);
+
+    expect(screen.getByText("start-game-view")).toBeInTheDocument();
+    await openSetupMenu();
+    expect(
+      screen.getByRole("menuitem", { name: "Start Game" }),
+    ).toHaveAttribute("aria-current", "true");
+  });
+
+  it("shows Start Game in the menu even for a single-section game", async () => {
+    mockSectionCount = 1;
+    render(<SetupGamePage />);
+
+    await openSetupMenu();
+    expect(
+      screen.getByRole("menuitem", { name: "Start Game" }),
+    ).toBeInTheDocument();
   });
 });

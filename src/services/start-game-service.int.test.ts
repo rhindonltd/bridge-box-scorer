@@ -154,9 +154,8 @@ describe("checkStart (multi-section)", () => {
     const result = await checkStart("g1", {} as any);
 
     expect(result.canStart).toBe(false);
-    expect(result.problems.some((p) => p.message.startsWith("Section B:"))).toBe(
-      true,
-    );
+    // Problems are tagged with the section they belong to (Section B is short).
+    expect(result.problems.some((p) => p.section === "B")).toBe(true);
   });
 });
 

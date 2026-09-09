@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import type { Pair } from "@/model/participants";
 
 // ---- mocks ----
@@ -72,18 +72,6 @@ vi.mock("@/lib/director-token", () => ({
   getDirectorToken: () => "token",
 }));
 
-const mockUseStartCheck = vi.fn();
-vi.mock("@/hooks/start-check", () => ({
-  useStartCheck: () => mockUseStartCheck(),
-}));
-
-const mockStartGame = vi.fn(async (...args: unknown[]) => {
-  void args;
-});
-vi.mock("@/lib/game-service", () => ({
-  startGame: (...args: unknown[]) => mockStartGame(...args),
-}));
-
 vi.mock("@/lib/fetcher", () => ({
   fetcher: vi.fn(),
 }));
@@ -115,138 +103,10 @@ describe("ShowTablesPage", () => {
       { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
     ];
     currentSelected = "A";
-    mockUseStartCheck.mockReturnValue({
-      canStart: false,
-      problems: [],
-      sitOutSeat: null,
-    });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-  });
-
-  it("disables Start Game and shows reasons when not valid", () => {
-    mockUseStartCheck.mockReturnValue({
-      canStart: false,
-      problems: [
-        {
-          code: "MULTIPLE_EMPTY_POSITIONS",
-          message: "More than one pair is missing.",
-        },
-      ],
-      sitOutSeat: null,
-    });
-
-    render(<ShowTablesPage />);
-
-    const startButton = screen.getByRole("button", { name: "Start Game" });
-    expect(startButton).toBeDisabled();
-    expect(
-      screen.getByText("More than one pair is missing."),
-    ).toBeInTheDocument();
-  });
-
-  it("enables Start Game and starts the game when valid", async () => {
-    mockUseStartCheck.mockReturnValue({
-      canStart: true,
-      problems: [],
-      sitOutSeat: null,
-    });
-
-    render(<ShowTablesPage />);
-
-    const startButton = screen.getByRole("button", { name: "Start Game" });
-    expect(startButton).toBeEnabled();
-
-    fireEvent.click(startButton);
-
-    await waitFor(() => expect(mockStartGame).toHaveBeenCalledWith("g1"));
-    await waitFor(() => expect(mockMutateGame).toHaveBeenCalled());
-  });
-
-  it("alerts and recovers when starting the game throws", async () => {
-    mockUseStartCheck.mockReturnValue({
-      canStart: true,
-      problems: [],
-      sitOutSeat: null,
-    });
-    mockStartGame.mockRejectedValueOnce(new Error("nope"));
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-
-    render(<ShowTablesPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
-
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("nope"));
-  });
-
-  it("alerts a generic message when the start error is not an Error", async () => {
-    mockUseStartCheck.mockReturnValue({
-      canStart: true,
-      problems: [],
-      sitOutSeat: null,
-    });
-    mockStartGame.mockRejectedValueOnce("bad");
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-
-    render(<ShowTablesPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
-
-    await waitFor(() =>
-      expect(alertSpy).toHaveBeenCalledWith("Failed to start game"),
-    );
-  });
-
-  it("ignores start clicks when the game cannot start", () => {
-    mockUseStartCheck.mockReturnValue({
-      canStart: false,
-      problems: [],
-      sitOutSeat: null,
-    });
-
-    render(<ShowTablesPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
-    expect(mockStartGame).not.toHaveBeenCalled();
-  });
-
-  it("ignores a second start click while a start is already in flight", async () => {
-    mockUseStartCheck.mockReturnValue({
-      canStart: true,
-      problems: [],
-      sitOutSeat: null,
-    });
-    // Keep the first start pending so `starting` stays true.
-    let resolveStart: () => void = () => {};
-    mockStartGame.mockImplementationOnce(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveStart = resolve;
-        }),
-    );
-
-    render(<ShowTablesPage />);
-    const startButton = screen.getByRole("button", { name: "Start Game" });
-
-    fireEvent.click(startButton);
-    // Second click while starting === true should be ignored.
-    fireEvent.click(startButton);
-
-    expect(mockStartGame).toHaveBeenCalledTimes(1);
-
-    resolveStart();
-    await waitFor(() => expect(mockMutateGame).toHaveBeenCalled());
-  });
-
-  it("shows the sit-out note when one pair short", () => {
-    mockUseStartCheck.mockReturnValue({
-      canStart: true,
-      problems: [],
-      sitOutSeat: "A3EW",
-    });
-
-    render(<ShowTablesPage />);
-
-    expect(screen.getByText(/A3EW will sit out/)).toBeInTheDocument();
   });
 
   it("renders the setup menu passed via the menu slot", () => {

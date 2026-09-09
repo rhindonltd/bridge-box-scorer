@@ -1,6 +1,7 @@
 "use client";
 
 import { ShowTablesPage } from "@/app/game/[gameId]/create/ShowTablesPage";
+import { StartGameScreen } from "@/app/game/[gameId]/create/StartGameScreen";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
@@ -11,7 +12,12 @@ import { TimerSetup } from "@/app/game/[gameId]/manage/timer/TimerSetup";
 import { useSections } from "@/hooks/sections";
 
 /** The ordered steps of the game setup flow. */
-export type SetupStep = "tables" | "movements" | "timer" | "manage-sections";
+export type SetupStep =
+  | "tables"
+  | "movements"
+  | "timer"
+  | "manage-sections"
+  | "start";
 
 const setupGameFlow = createFlow(
   {
@@ -22,8 +28,10 @@ const setupGameFlow = createFlow(
     timer: {},
     // Section rename/delete (and add). Reachable any time from the menu.
     "manage-sections": {},
+    // Start-check issues + the Start Game action.
+    start: {},
   },
-  ["tables", "movements", "timer", "manage-sections"] as const,
+  ["tables", "movements", "timer", "manage-sections", "start"] as const,
 );
 
 export function SetupGamePage() {
@@ -61,6 +69,11 @@ export function SetupGamePage() {
           },
         ]
       : []),
+    {
+      label: "Start Game",
+      onSelect: () => goTo("start"),
+      active: activeStep === "start",
+    },
   ];
 
   const menu = <HeaderMenu items={menuItems} label="Setup menu" />;
@@ -74,7 +87,7 @@ export function SetupGamePage() {
     // step fills the remaining height and owns its own scrolling so the pills
     // stay pinned while only the recommendations scroll.
     return (
-      <GamePageLayout headerTitle="Sections & Movements" headerRight={menu}>
+      <GamePageLayout headerTitle="Movement" headerRight={menu}>
         <MovementStep gameId={game.gameId} />
       </GamePageLayout>
     );
@@ -98,6 +111,12 @@ export function SetupGamePage() {
     // here), so this screen is no longer available — fall back to Movement.
     goTo("movements");
     return null;
+  }
+
+  if (step === "start") {
+    // Start-check issues (grouped by section) + the Start Game action. This
+    // screen owns its own layout (header + pinned Start Game button).
+    return <StartGameScreen menu={menu} />;
   }
 
   // Optional timer configuration. Reuses the shared TimerSetup embedded;

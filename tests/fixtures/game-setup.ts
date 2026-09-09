@@ -3,9 +3,9 @@ import { Page, expect } from "@playwright/test";
 /**
  * Pure-UI game setup helpers, driven through the director setup menu at
  * `/game/{id}/create`: Tables (table count + seating overview), Movement
- * (recommended movement picker) and the Start Game action. The three views are
+ * (recommended movement picker), and the Start Game screen. The views are
  * reached from a hamburger menu in the header's top-right (aria-label
- * "Setup menu"), whose entries are Tables / Movement / Timer.
+ * "Setup menu"), whose entries include Tables / Movement / Timer / Start Game.
  *
  * A two-table game is the smallest field that yields a recommended movement
  * (a single table offers none), so the live-update journeys use two tables.
@@ -154,15 +154,16 @@ export async function pickMovementByName(
 }
 
 /**
- * Start the game from the Tables tab. Requires a valid movement and full
- * seating; the Start Game button stays disabled until both hold. Starting is
- * director-authorised, so this must run in the game-creating context.
+ * Start the game from the "Start Game" screen in the Setup menu. Requires a
+ * valid movement and full seating; the Start Game button stays disabled until
+ * both hold. Starting is director-authorised, so this must run in the
+ * game-creating context.
  */
 export async function startGame(page: Page, gameId: string): Promise<void> {
   // Seating leaves the director on the last pair's play page, so return to the
-  // setup route before driving the Tables view.
+  // setup route before opening the Start Game screen.
   await page.goto(`/game/${gameId}/create`);
-  await openSetupStep(page, "Tables");
+  await openSetupStep(page, "Start Game");
   const startButton = page.getByRole("button", { name: "Start Game" });
   await expect(startButton).toBeEnabled({ timeout: 15000 });
   await startButton.click();
