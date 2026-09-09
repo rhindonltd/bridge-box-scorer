@@ -35,7 +35,7 @@ describe("useSetupSections", () => {
   it("first add opens a two-field modal and renames existing + creates new", async () => {
     render(<Harness />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Add section/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Split into sections|Add section/ }));
 
     // Two-field modal (rename A + name B).
     const existing = screen.getByLabelText("Existing section (A)");
@@ -57,7 +57,7 @@ describe("useSetupSections", () => {
     ];
     render(<Harness />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Add section/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Split into sections|Add section/ }));
 
     expect(screen.queryByLabelText(/Existing section/)).toBeNull();
     fireEvent.change(screen.getByLabelText("New section (C)"), {
@@ -81,7 +81,7 @@ describe("useSetupSections", () => {
     fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
     expect(screen.getByTestId("selected")).toHaveTextContent("B");
 
-    fireEvent.click(screen.getByRole("button", { name: /Add section/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Split into sections|Add section/ }));
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     await waitFor(() => expect(mockCreateSection).toHaveBeenCalled());

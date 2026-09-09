@@ -38,14 +38,12 @@ test.describe("Sections setup", () => {
       await setTableCount(page, 2);
       await openMovementTab(page, gameId);
 
-      // Single-section: the Section A pill and the "+ Add section" pill show,
+      // Single-section: no "Section A" pill, just a "Split into sections" pill,
       // above the movement picker's recommendation cards.
       await expect(
-        page.getByRole("tab", { name: "Section A" }),
+        page.getByRole("button", { name: /Split into sections/ }),
       ).toBeVisible({ timeout: 15000 });
-      await expect(
-        page.getByRole("button", { name: /Add section/ }),
-      ).toBeVisible();
+      await expect(page.getByRole("tab", { name: "Section A" })).toHaveCount(0);
       await expect(page.getByTestId("movement-card").first()).toBeVisible();
     } finally {
       await deleteGame(page, gameId);

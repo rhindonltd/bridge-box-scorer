@@ -32,7 +32,11 @@ export async function openSetupStep(page: Page, name: string): Promise<void> {
  * page is already open.
  */
 export async function addSection(page: Page): Promise<void> {
-  await page.getByRole("button", { name: /Add section/ }).click();
+  // Single-section games show "Split into sections"; multi-section games show
+  // "Add section". Match either.
+  await page
+    .getByRole("button", { name: /Split into sections|Add section/ })
+    .click();
   // The modal prefills the letter name(s); accept the defaults and confirm.
   await page.getByRole("button", { name: "Add", exact: true }).click();
   await expect(
