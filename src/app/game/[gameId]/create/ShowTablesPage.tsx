@@ -21,11 +21,11 @@ import { useSections } from "@/hooks/sections";
 import { useState, type ReactNode } from "react";
 
 type Props = {
-  /** Persistent setup tab bar rendered at the top of the content area. */
-  tabs?: ReactNode;
+  /** Setup navigation menu rendered in the header's right-hand slot. */
+  menu?: ReactNode;
 };
 
-export function ShowTablesPage({ tabs }: Props) {
+export function ShowTablesPage({ menu }: Props) {
   const { game, mutateGame } = useRequiredGame();
 
   const gameId = game.gameId;
@@ -117,6 +117,7 @@ export function ShowTablesPage({ tabs }: Props) {
   return (
     <GamePageLayout
       headerTitle="Tables View"
+      headerRight={menu}
       actions={
         <div className="flex flex-col gap-2">
           {!canStart && problems.length > 0 && (
@@ -140,7 +141,6 @@ export function ShowTablesPage({ tabs }: Props) {
       }
     >
       <div className="flex h-full min-h-0 flex-col">
-        {tabs}
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
           {sections.map((s) => {
             const tables = Array.from({ length: s.tables }, (_, i) =>

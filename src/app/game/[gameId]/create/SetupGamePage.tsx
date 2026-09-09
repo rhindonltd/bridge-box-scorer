@@ -1,12 +1,15 @@
 "use client";
 
 import { ShowTablesPage } from "@/app/game/[gameId]/create/ShowTablesPage";
-import { SetupTabs, type SetupStep } from "@/app/game/[gameId]/create/SetupTabs";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { HeaderMenu, type HeaderMenuItem } from "@/components/layout/HeaderMenu";
 import { SectionManagerContainer } from "@/components/manage/sections/SectionManagerContainer";
 import { TimerSetup } from "@/app/game/[gameId]/manage/timer/TimerSetup";
+
+/** The ordered steps of the game setup flow. */
+export type SetupStep = "tables" | "movements" | "timer";
 
 const setupGameFlow = createFlow(
   {
@@ -32,20 +35,29 @@ export function SetupGamePage() {
   // of the SetupStep values.
   const activeStep = step as SetupStep;
 
-  const tabs = <SetupTabs active={activeStep} onSelect={goTo} />;
+  const menuItems: HeaderMenuItem[] = [
+    { label: "Tables", onSelect: () => goTo("tables"), active: activeStep === "tables" },
+    {
+      label: "Movement",
+      onSelect: () => goTo("movements"),
+      active: activeStep === "movements",
+    },
+    { label: "Timer", onSelect: () => goTo("timer"), active: activeStep === "timer" },
+  ];
+
+  const menu = <HeaderMenu items={menuItems} label="Setup menu" />;
 
   if (step === "tables") {
-    return <ShowTablesPage tabs={tabs} />;
+    return <ShowTablesPage menu={menu} />;
   }
 
   if (step === "movements") {
-    // Sections & per-section movement selection. The tabs stay pinned; the
-    // container fills the remaining height and owns its own scrolling so its
-    // fixed header (Add Section banner etc.) doesn't scroll away.
+    // Sections & per-section movement selection. The container fills the
+    // remaining height and owns its own scrolling so its fixed header (Add
+    // Section banner etc.) doesn't scroll away.
     return (
-      <GamePageLayout headerTitle="Sections & Movements">
+      <GamePageLayout headerTitle="Sections & Movements" headerRight={menu}>
         <div className="flex h-full min-h-0 flex-col">
-          {tabs}
           <div className="min-h-0 flex-1">
             <SectionManagerContainer gameId={game.gameId} />
           </div>
@@ -54,11 +66,10 @@ export function SetupGamePage() {
     );
   }
 
-  // Optional timer configuration. Reuses the shared TimerSetup embedded beneath
-  // the tab bar; configuring a timer here is never required to start the game.
+  // Optional timer configuration. Reuses the shared TimerSetup embedded;
+  // configuring a timer here is never required to start the game.
   return (
-    <GamePageLayout headerTitle="Timer">
-      {tabs}
+    <GamePageLayout headerTitle="Timer" headerRight={menu}>
       <TimerSetup embedded />
     </GamePageLayout>
   );

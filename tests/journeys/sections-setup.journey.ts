@@ -1,7 +1,11 @@
 import { test, expect, Page } from "@playwright/test";
 
 import { createGame } from "../fixtures/game-create";
-import { setTableCount, pickFirstMovement } from "../fixtures/game-setup";
+import {
+  setTableCount,
+  pickFirstMovement,
+  openSetupStep,
+} from "../fixtures/game-setup";
 import { deleteGame } from "../fixtures/delete-game";
 import { newParticipant } from "./support";
 
@@ -17,7 +21,7 @@ import { newParticipant } from "./support";
 
 async function openMovementTab(page: Page, gameId: string): Promise<void> {
   await page.goto(`/game/${gameId}/create`);
-  await page.getByRole("tab", { name: "Movement" }).click();
+  await openSetupStep(page, "Movement");
 }
 
 test.describe("Sections setup", () => {
