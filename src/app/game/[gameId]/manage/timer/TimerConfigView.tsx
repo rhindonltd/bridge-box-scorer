@@ -19,12 +19,6 @@ export interface TimerConfigViewProps extends TimerConfigHandlers {
   /** Persist the current configuration for this section (does not start it). */
   onSave: () => void;
   /**
-   * When provided, show an "Apply to all sections" action that saves the
-   * current configuration to every section. Only meaningful for multi-section
-   * games.
-   */
-  onApplyToAll?: () => void;
-  /**
    * Optional content rendered above the config (e.g. a section selector for
    * multi-section games).
    */
@@ -63,35 +57,21 @@ export function TimerConfigView({
   onRemoveBreak,
   onBreakChange,
   onSave,
-  onApplyToAll,
   headerSlot,
   embedded = false,
   lockedStructure = false,
   noMovement = false,
 }: TimerConfigViewProps) {
-  const disabledBtn = "opacity-50 cursor-not-allowed";
-  const saveButton = (
+  // Saving is meaningless without a movement (there's no round structure), so
+  // the Save button is hidden entirely while no movement is selected.
+  const saveButton = noMovement ? null : (
     <div className="flex flex-col gap-3 w-full max-w-md">
       <button
         onClick={onSave}
-        disabled={noMovement}
-        className={`${btnBase} bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500 ${
-          noMovement ? disabledBtn : ""
-        }`}
+        className={`${btnBase} bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500`}
       >
         Save
       </button>
-      {onApplyToAll && (
-        <button
-          onClick={onApplyToAll}
-          disabled={noMovement}
-          className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400 ${
-            noMovement ? disabledBtn : ""
-          }`}
-        >
-          Apply to all sections
-        </button>
-      )}
     </div>
   );
 

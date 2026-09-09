@@ -32,6 +32,8 @@ import {
   pickFirstMovement,
   startGame,
   openSetupStep,
+  addSection,
+  selectSection,
 } from "../fixtures/game-setup";
 import {
   seatTwoTableFieldOnDevices,
@@ -77,8 +79,8 @@ export async function setUpStartedTwoTableGame(
  * Set up a STARTED two-section pairs game (sections A and B, two tables each)
  * end to end through the UI, seating both sections and starting.
  *
- * Section CRUD is driven through the real SectionManager UI (the "Add Section"
- * banner + per-section "Set Movement"). Section B's table count is sized to 2
+ * Section B is added via the shared "+ Add section" pill + naming modal, and
+ * each section's movement is picked from its pill. Section B's table count is sized to 2
  * via the director socket service (a setup convenience — the Tables view shows
  * one stepper per section, which is press-and-hold and not the behaviour under
  * test here).
@@ -104,9 +106,9 @@ export async function setUpStartedTwoSectionGame(
   // Section A: two tables (single stepper, before a second section exists).
   await setTableCount(directorPage, 2);
 
-  // Movement view: the single-section picker shows an "Add Section" banner.
+  // Add a second section via the "+ Add section" pill + naming modal.
   await openSetupStep(directorPage, "Movement");
-  await directorPage.getByRole("button", { name: "Add Section" }).click();
+  await addSection(directorPage);
 
   // Section B now exists (default table count). Size it to 2 tables via the
   // director socket service so both sections match.
@@ -114,8 +116,8 @@ export async function setUpStartedTwoSectionGame(
   // Let the director page's sections SWR list revalidate on GAME_UPDATED.
   await directorPage.waitForTimeout(500);
 
-  // Pick the first recommended movement for each section via the SectionManager
-  // list ("Set Movement" opens the per-section picker; choose the first card).
+  // Pick the first recommended movement for each section: select its pill on
+  // the Movement view, then choose and confirm the first recommendation.
   await pickMovementForSection(directorPage, "A");
   await pickMovementForSection(directorPage, "B");
 
@@ -162,28 +164,15 @@ async function sizeSectionTables(
 }
 
 /**
- * From the setup Movement view's SectionManager list, open a section's movement
- * picker and choose the first recommended movement card.
+ * On the setup Movement view, select a section via its pill and choose the
+ * first recommended movement for it.
  */
 async function pickMovementForSection(page: Page, section: string): Promise<void> {
   await openSetupStep(page, "Movement");
-
-  // The section row shows its "Section {letter}" heading and a Set/Change
-  // Movement button. Scope the button to the section's row.
-  const heading = page.getByText(`Section ${section}`, { exact: true });
-  await expect(heading).toBeVisible({ timeout: 15000 });
-
-  // The Set/Change Movement button sits within the same section block. There is
-  // one per section; pick the one whose section we're targeting by ordinal.
-  const setButtons = page.getByRole("button", { name: /Set Movement|Change Movement/ });
-  // Sections render in order A, B, ... so index by letter offset from "A".
-  const index = section.charCodeAt(0) - "A".charCodeAt(0);
-  await setButtons.nth(index).click();
+  await selectSection(page, section);
 
   // Clicking a card only PREVIEWS it; the choice is committed by the
-  // "Select Movement" button (enabled once the preview layout loads). Without
-  // this confirm the picker stays on the preview and the section list (and its
-  // other sections) never re-renders.
+  // "Select Movement" button (enabled once the preview layout loads).
   const firstCard = page.getByTestId("movement-card").first();
   await expect(firstCard).toBeVisible({ timeout: 15000 });
   await firstCard.click();

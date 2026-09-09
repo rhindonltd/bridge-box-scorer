@@ -11,8 +11,14 @@ export interface SectionManagerProps {
   onAddSection: () => void;
   onRenameSection: (section: string, label: string) => void;
   onDeleteSection: (section: string) => void;
-  /** Open the per-section movement picker. */
-  onSelectMovement: (section: string) => void;
+  /** Open the per-section movement picker. Required when `showMovement`. */
+  onSelectMovement?: (section: string) => void;
+  /**
+   * Whether to show each section's movement summary + "Set/Change Movement"
+   * control. Defaults to true. The setup "Manage sections" screen sets this
+   * false since movement is chosen on the Movement step.
+   */
+  showMovement?: boolean;
   /** Disable editing once the game is running. */
   readOnly?: boolean;
 }
@@ -38,6 +44,7 @@ export function SectionManager({
   onRenameSection,
   onDeleteSection,
   onSelectMovement,
+  showMovement = true,
   readOnly = false,
 }: SectionManagerProps) {
   const multiSection = sections.length > 1;
@@ -58,9 +65,10 @@ export function SectionManager({
               section={s}
               readOnly={readOnly}
               multiSection={multiSection}
+              showMovement={showMovement}
               onRename={(label) => onRenameSection(s.section, label)}
               onDelete={() => onDeleteSection(s.section)}
-              onSelectMovement={() => onSelectMovement(s.section)}
+              onSelectMovement={() => onSelectMovement?.(s.section)}
               canDelete={sections.length > 1}
             />
           </li>
@@ -89,6 +97,7 @@ function SectionRow({
   readOnly,
   canDelete,
   multiSection,
+  showMovement,
   onRename,
   onDelete,
   onSelectMovement,
@@ -96,6 +105,8 @@ function SectionRow({
   section: ClientSection;
   readOnly: boolean;
   canDelete: boolean;
+  /** Whether to show the movement summary + Set/Change Movement control. */
+  showMovement: boolean;
   /**
    * Whether the game has more than one section. In a single-section game there
    * is no meaningful section distinction, so the "Section X" heading and the
@@ -154,19 +165,25 @@ function SectionRow({
         <span className="text-lg font-bold">{section.tables}</span>
       </div>
 
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm text-gray-600">{movementSummary(section)}</span>
-        {!readOnly && (
-          <Button
-            value={section.selectedMovement ? "Change Movement" : "Set Movement"}
-            onClick={onSelectMovement}
-            bgColour="bg-gray-100"
-            textColour="text-gray-900"
-            hoverColour="hover:bg-gray-200"
-            className="max-w-[180px]"
-          />
-        )}
-      </div>
+      {showMovement && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-gray-600">
+            {movementSummary(section)}
+          </span>
+          {!readOnly && (
+            <Button
+              value={
+                section.selectedMovement ? "Change Movement" : "Set Movement"
+              }
+              onClick={onSelectMovement}
+              bgColour="bg-gray-100"
+              textColour="text-gray-900"
+              hoverColour="hover:bg-gray-200"
+              className="max-w-[180px]"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

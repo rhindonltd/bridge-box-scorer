@@ -122,19 +122,14 @@ describe("TimerSetup (config screen)", () => {
     expect(rounds).toHaveAttribute("readonly");
   });
 
-  it("disables the timer config and prompts when the section has no movement", () => {
+  it("disables the timer config and hides Save when the section has no movement", () => {
     mockSections = [{ section: "A", label: "A", selectedMovement: null }];
     render(<TimerSetup />);
 
     expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
     expect(screen.queryByLabelText("Total Rounds")).toBeNull();
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
-
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(mockEmit).not.toHaveBeenCalledWith(
-      SocketEvents.SAVE_CONFIG_TIMER,
-      expect.anything(),
-    );
+    // Save is hidden entirely while no movement is selected.
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });
 
   it("uses per-board timing to multiply the play duration when saving", () => {
@@ -539,13 +534,18 @@ describe("per-section timer UI", () => {
     ];
   });
 
-  it("shows no section picker or Apply-to-all for a single-section game", () => {
+  it("shows the section pill and no Apply-to-all for a single-section game", () => {
     mockSections = [
       { section: "A", label: "A", selectedMovement: mitchellMovement },
     ];
     render(<TimerSetup />);
 
-    expect(screen.queryByRole("tab")).toBeNull();
+    // The single section is shown as a pill (plus the Add section affordance).
+    expect(screen.getByRole("tab", { name: "Section A" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Add section/ }),
+    ).toBeInTheDocument();
+    // Apply-to-all has been removed in favour of per-section pills.
     expect(
       screen.queryByRole("button", { name: "Apply to all sections" }),
     ).toBeNull();
@@ -572,24 +572,6 @@ describe("per-section timer UI", () => {
       SocketEvents.SAVE_CONFIG_TIMER,
       expect.objectContaining({ section: "B" }),
     );
-  });
-
-  it("Apply to all sections saves the config to every section", () => {
-    mockSections = [
-      { section: "A", label: "A", selectedMovement: mitchellMovement },
-      { section: "B", label: "B", selectedMovement: mitchellMovement },
-      { section: "C", label: "C", selectedMovement: mitchellMovement },
-    ];
-    render(<TimerSetup />);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Apply to all sections" }),
-    );
-
-    const saved = mockEmit.mock.calls
-      .filter((c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER)
-      .map((c) => c[1].section);
-    expect(saved).toEqual(["A", "B", "C"]);
   });
 
   it("live controls target the selected section", () => {

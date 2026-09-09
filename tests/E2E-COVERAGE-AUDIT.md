@@ -170,21 +170,20 @@ scaffolding:
 
 ## 4. Director setup — Sections
 
-- [x] Add Section creates a new section with the next free letter
-  (`sections-setup.journey.ts`; also `multi-section.journey.ts`).
-- [x] Rename Section updates the section label (`sections-setup.journey.ts`,
-  via the per-section "Label" field).
-- [x] Delete Section removes a section (`sections-setup.journey.ts`, with the
-  confirm dialog → back to single section).
+- [x] "+ Add section" pill + naming modal creates a new section with the next
+  free letter (`sections-setup.journey.ts`; also `multi-section.journey.ts`;
+  fixture `game-setup.ts` `addSection`).
+- [x] Rename Section updates the section label on the "Manage sections" screen
+  (`sections-setup.journey.ts`, `multi-section.journey.ts`, via the "Label"
+  field).
+- [x] Delete Section removes a section on "Manage sections"
+  (`sections-setup.journey.ts`, with the confirm dialog → back to single
+  section).
 - [x] Delete control hidden when only one section exists
   (`sections-setup.journey.ts`).
-- [x] Single-section vs multi-section rendering differences (no "Section A"
-  heading in single-section; the list appears once a section is added)
-  (`sections-setup.journey.ts`).
-- [x] Per-section movement summary text ("No movement selected" until chosen;
-  a movement description once picked) (`sections-setup.journey.ts`).
-- [x] Single-section movement picker shows the amber "Add Section" banner
-  (`sections-setup.journey.ts`).
+- [x] Section pills shown on all setup pages; the selected section drives the
+  Tables grid / Movement picker / Timer config (`sections-setup.journey.ts`).
+- [x] Per-section movement selection via the pills (`sections-setup.journey.ts`).
 
 ---
 
@@ -728,9 +727,10 @@ scaffolding:
 
 ## 23. Multi-section behaviour (cross-cutting)
 
-- [x] Setup: section CRUD — add a second section, rename it, delete it
-  (`multi-section.journey.ts`); per-section movement selection via the
-  SectionManager "Set Movement" picker (`support.ts` `setUpStartedTwoSectionGame`).
+- [x] Setup: section CRUD — add a second section via the pill+modal, rename and
+  delete it on "Manage sections" (`multi-section.journey.ts`); per-section
+  movement selection via the section pills (`support.ts`
+  `setUpStartedTwoSectionGame`).
 - [x] Leaderboard: Combined + per-section (Section A / Section B) tabs, each
   showing its own standings (`multi-section.journey.ts`).
 - [x] Timer display: `SectionChooser` ("Choose a section") for a multi-section

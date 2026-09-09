@@ -5,12 +5,13 @@ import { TimerProvider, useTimerContext } from "@/context/TimerContext";
 import { useEffect, useState } from "react";
 import { TimerConfigView } from "./TimerConfigView";
 import { TimerLiveView } from "./TimerLiveView";
-import { TimerSectionPicker } from "./TimerSectionPicker";
 import { TimerStatus } from "./timer-view-types";
 import { useTimerConfigState } from "./useTimerConfigState";
 import { useTimerDerived } from "@/hooks/timer-derived";
-import { useSections, ClientSection } from "@/hooks/sections";
+import { useSections } from "@/hooks/sections";
 import { useMovementRoundInfo } from "@/hooks/movement-round-info";
+import { SectionPills } from "@/components/manage/sections/SectionPills";
+import { useSetupSections } from "@/components/manage/sections/useSetupSections";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { SocketEvents } from "@/socket/socket-events";
@@ -21,21 +22,19 @@ export { resumeAtToMs, msToLabel } from "./useTimerConfigState";
 
 /**
  * Timer configuration container for a single section (setup / not-yet-started).
- * Emits `timer:saveConfig` for its section on Save, and — when the game has
- * more than one section — an "Apply to all sections" that saves the current
- * config to every section.
+ * Emits `timer:saveConfig` for its section on Save. Section navigation is
+ * handled by the shared pills rendered above (passed in as `headerSlot`), so
+ * the director configures each section directly rather than copying config
+ * across them.
  */
 function TimerConfigContainer({
   section,
   embedded = false,
   headerSlot,
-  allSections,
 }: {
   section: string;
   embedded?: boolean;
   headerSlot?: React.ReactNode;
-  /** All section letters, used by "Apply to all sections". */
-  allSections: string[];
 }) {
   const { game } = useRequiredGame();
   const { timerState, breakProblems } = useTimerContext();
@@ -68,17 +67,15 @@ function TimerConfigContainer({
 
   const noMovement = selectedMovement == null;
 
-  function saveFor(targetSection: string) {
+  function save() {
     getSocket().emit(SocketEvents.SAVE_CONFIG_TIMER, {
       gameType: game.gameType,
       gameId: game.gameId,
-      section: targetSection,
+      section,
       directorToken: getDirectorToken(game.gameId),
       ...emitConfigFields,
     });
   }
-
-  const multiSection = allSections.length > 1;
 
   return (
     <TimerConfigView
@@ -90,12 +87,7 @@ function TimerConfigContainer({
       previewEnd={previewEnd}
       lockedStructure={structureLocked}
       noMovement={noMovement}
-      onSave={() => saveFor(section)}
-      onApplyToAll={
-        multiSection
-          ? () => allSections.forEach((s) => saveFor(s))
-          : undefined
-      }
+      onSave={save}
       {...configHandlers}
     />
   );
@@ -192,93 +184,68 @@ function useTicker(setTick: (t: number) => void) {
 }
 
 /**
- * Choose the section to operate on. Single-section games have no picker and use
- * that one section; multi-section games default to the first and let the
- * director switch. Returns null while sections are still loading.
- */
-function useSelectedSection(gameId: string): {
-  sections: ClientSection[];
-  selected: string | null;
-  setSelected: (s: string) => void;
-} {
-  const { sections } = useSections(gameId);
-  const [selected, setSelected] = useState<string | null>(null);
-
-  // Default to the first section once sections load; keep the director's choice
-  // otherwise. If the selected section disappears, fall back to the first.
-  const first = sections[0]?.section ?? null;
-  const stillPresent =
-    selected != null && sections.some((s) => s.section === selected);
-  const effective = stillPresent ? selected : first;
-
-  return { sections, selected: effective, setSelected };
-}
-
-/**
  * Timer setup entry point for the game-creation flow's Timer tab. Config-only:
- * the timer cannot be started from setup, only configured. Multi-section games
- * get a section selector; single-section games show that one section directly.
+ * the timer cannot be started from setup, only configured. Section navigation
+ * (and adding sections) uses the shared section pills, so the director
+ * configures each section's timer one at a time.
  */
 export function TimerSetup({ embedded = false }: { embedded?: boolean }) {
   const { game } = useRequiredGame();
-  const { sections, selected, setSelected } = useSelectedSection(game.gameId);
+  const { selected, pills, modal } = useSetupSections(game.gameId);
 
   if (!selected) return null;
 
-  const allSections = sections.map((s) => s.section);
-  const picker =
-    sections.length > 1 ? (
-      <TimerSectionPicker
-        sections={sections}
-        selected={selected}
-        onSelect={setSelected}
-      />
-    ) : undefined;
-
   return (
-    <TimerProvider section={selected} key={selected}>
-      <TimerConfigContainer
-        section={selected}
-        embedded={embedded}
-        headerSlot={picker}
-        allSections={allSections}
-      />
-    </TimerProvider>
+    <>
+      <TimerProvider section={selected} key={selected}>
+        <TimerConfigContainer
+          section={selected}
+          embedded={embedded}
+          headerSlot={pills}
+        />
+      </TimerProvider>
+      {modal}
+    </>
   );
 }
 
 /**
  * Timer management for the standalone /manage/timer route. Shows the live
  * control screen when the game is in progress, and the configuration screen
- * before it has started. Multi-section games get a section selector.
+ * before it has started.
+ *
+ * Before the game starts, sections can still be added (shared pills with the
+ * "+ Add section" affordance). Once it is running, sections are fixed, so the
+ * live screen shows plain section pills with no add affordance.
  */
 export function TimerManager({ started }: { started: boolean }) {
   const { game } = useRequiredGame();
-  const { sections, selected, setSelected } = useSelectedSection(game.gameId);
+  const setup = useSetupSections(game.gameId);
+  const { sections, selected, setSelected } = setup;
 
   if (!selected) return null;
 
-  const allSections = sections.map((s) => s.section);
-  const picker =
-    sections.length > 1 ? (
-      <TimerSectionPicker
+  if (started) {
+    const livePills = (
+      <SectionPills
         sections={sections}
         selected={selected}
         onSelect={setSelected}
       />
-    ) : undefined;
+    );
+    return (
+      <TimerProvider section={selected} key={selected}>
+        <TimerLiveContainer section={selected} headerSlot={livePills} />
+      </TimerProvider>
+    );
+  }
 
   return (
-    <TimerProvider section={selected} key={selected}>
-      {started ? (
-        <TimerLiveContainer section={selected} headerSlot={picker} />
-      ) : (
-        <TimerConfigContainer
-          section={selected}
-          headerSlot={picker}
-          allSections={allSections}
-        />
-      )}
-    </TimerProvider>
+    <>
+      <TimerProvider section={selected} key={selected}>
+        <TimerConfigContainer section={selected} headerSlot={setup.pills} />
+      </TimerProvider>
+      {setup.modal}
+    </>
   );
 }
