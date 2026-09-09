@@ -23,7 +23,8 @@ import { getDb as getIndexDb } from "@/db/game-index";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import * as appHandler from "./route";
 
-const body = JSON.stringify({ directorToken: "tok" });
+// The director token travels in the `x-director-token` header (no body).
+const headers = { "x-director-token": "tok" };
 
 describe("DELETE /api/games/[gameId]/delete", () => {
   beforeEach(() => {
@@ -40,7 +41,7 @@ describe("DELETE /api/games/[gameId]/delete", () => {
       appHandler,
       params: { gameId: "g1" },
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "DELETE", body });
+        const res = await fetch({ method: "DELETE", headers });
         expect(res.status).toBe(200);
         expect(del).toHaveBeenCalled();
         await expect(res.json()).resolves.toEqual({
@@ -59,7 +60,7 @@ describe("DELETE /api/games/[gameId]/delete", () => {
       appHandler,
       params: { gameId: "g1" },
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "DELETE", body });
+        const res = await fetch({ method: "DELETE", headers });
         expect(res.status).toBe(200);
         expect(fs.existsSync).toHaveBeenCalledWith("/tmp/games-dir/g1.db");
         expect(fs.unlinkSync).toHaveBeenCalledWith("/tmp/games-dir/g1.db");
@@ -77,7 +78,7 @@ describe("DELETE /api/games/[gameId]/delete", () => {
       appHandler,
       params: { gameId: "g1" },
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "DELETE", body });
+        const res = await fetch({ method: "DELETE", headers });
         expect(res.status).toBe(200);
         expect(fs.existsSync).toHaveBeenCalledWith(
           "/home/bridgebox/data/games/g1.db",
@@ -96,7 +97,7 @@ describe("DELETE /api/games/[gameId]/delete", () => {
       appHandler,
       params: { gameId: "g1" },
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "DELETE", body });
+        const res = await fetch({ method: "DELETE", headers });
         expect(res.status).toBe(401);
         expect(del).not.toHaveBeenCalled();
       },
