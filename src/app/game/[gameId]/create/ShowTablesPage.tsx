@@ -15,6 +15,7 @@ import { getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import NumberStepper from "@/components/common/NumberStepper";
 import { useSetupSections } from "@/components/manage/sections/useSetupSections";
+import { useStationaryPairs } from "@/hooks/stationary-pairs";
 import { type ReactNode } from "react";
 
 type Props = {
@@ -41,6 +42,13 @@ export function ShowTablesPage({ menu }: Props) {
   // table-count stepper is pinned above the scroll area.
   const currentSection = sections.find((s) => s.section === selected);
 
+  // Stationary pair positions for the selected section's movement (empty until
+  // a movement is chosen / loaded), used to highlight them for the director.
+  const stationaryPairs = useStationaryPairs(
+    currentSection?.selectedMovement ?? null,
+    game.gameType,
+  );
+
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
     (p) => ({
@@ -56,6 +64,9 @@ export function ShowTablesPage({ menu }: Props) {
     const nsParticipant = pairs?.find((it) => it.initialSeat === nsSeat);
     const ewParticipant = pairs?.find((it) => it.initialSeat === ewSeat);
 
+    // NS/EW stationarity applies to both compass points of that pair.
+    const dirs = stationaryPairs.get(tableNumber);
+
     return {
       tableNumber,
       players: {
@@ -69,6 +80,12 @@ export function ShowTablesPage({ menu }: Props) {
         S: nsParticipant ? nsSeat : null,
         E: ewParticipant ? ewSeat : null,
         W: ewParticipant ? ewSeat : null,
+      },
+      stationary: {
+        N: dirs?.ns ?? false,
+        S: dirs?.ns ?? false,
+        E: dirs?.ew ?? false,
+        W: dirs?.ew ?? false,
       },
     };
   }

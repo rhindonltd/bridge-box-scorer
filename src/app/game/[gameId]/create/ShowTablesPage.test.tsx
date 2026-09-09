@@ -76,6 +76,12 @@ vi.mock("@/lib/fetcher", () => ({
   fetcher: vi.fn(),
 }));
 
+// Stationary-pair highlighting: default to none; a test overrides it.
+let mockStationary = new Map<number, { ns: boolean; ew: boolean }>();
+vi.mock("@/hooks/stationary-pairs", () => ({
+  useStationaryPairs: () => mockStationary,
+}));
+
 import { SocketEvents } from "@/socket/socket-events";
 import { fetcher } from "@/lib/fetcher";
 import { ShowTablesPage } from "./ShowTablesPage";
@@ -103,6 +109,7 @@ describe("ShowTablesPage", () => {
       { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
     ];
     currentSelected = "A";
+    mockStationary = new Map();
   });
 
   afterEach(() => {
@@ -229,6 +236,16 @@ describe("ShowTablesPage", () => {
 
     expect(screen.getByTestId("section-pills")).toBeInTheDocument();
     expect(screen.getByTestId("section-modal")).toBeInTheDocument();
+  });
+
+  it("highlights stationary pairs from the movement", () => {
+    // Table 1 has a stationary NS pair; the grid should show its badges.
+    mockStationary = new Map([[1, { ns: true, ew: false }]]);
+
+    render(<ShowTablesPage />);
+
+    // North + South of the stationary NS pair -> two "Stationary" badges.
+    expect(screen.getAllByText("Stationary")).toHaveLength(2);
   });
 
   it("shows only the selected section's grid and stepper", () => {
