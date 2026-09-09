@@ -8,6 +8,7 @@ import { HeaderMenu, type HeaderMenuItem } from "@/components/layout/HeaderMenu"
 import { MovementStep } from "@/components/manage/sections/MovementStep";
 import { ManageSectionsScreen } from "@/components/manage/sections/ManageSectionsScreen";
 import { TimerSetup } from "@/app/game/[gameId]/manage/timer/TimerSetup";
+import { useSections } from "@/hooks/sections";
 
 /** The ordered steps of the game setup flow. */
 export type SetupStep = "tables" | "movements" | "timer" | "manage-sections";
@@ -38,6 +39,11 @@ export function SetupGamePage() {
   // of the SetupStep values.
   const activeStep = step as SetupStep;
 
+  // "Manage sections" (rename/delete) is only meaningful once the event has
+  // more than one section; a single-section game splits via the pills instead.
+  const { sections } = useSections(game.gameId);
+  const multiSection = sections.length > 1;
+
   const menuItems: HeaderMenuItem[] = [
     { label: "Tables", onSelect: () => goTo("tables"), active: activeStep === "tables" },
     {
@@ -46,11 +52,15 @@ export function SetupGamePage() {
       active: activeStep === "movements",
     },
     { label: "Timer", onSelect: () => goTo("timer"), active: activeStep === "timer" },
-    {
-      label: "Manage sections",
-      onSelect: () => goTo("manage-sections"),
-      active: activeStep === "manage-sections",
-    },
+    ...(multiSection
+      ? [
+          {
+            label: "Manage sections",
+            onSelect: () => goTo("manage-sections"),
+            active: activeStep === "manage-sections",
+          },
+        ]
+      : []),
   ];
 
   const menu = <HeaderMenu items={menuItems} label="Setup menu" />;
@@ -70,9 +80,10 @@ export function SetupGamePage() {
     );
   }
 
-  if (step === "manage-sections") {
+  if (step === "manage-sections" && multiSection) {
     // Rename / delete / add sections. Movement is chosen on the Movement step,
-    // so this list shows no movement controls.
+    // so this list shows no movement controls. Only reachable while the event
+    // has more than one section.
     return (
       <GamePageLayout headerTitle="Manage Sections" headerRight={menu}>
         <div className="flex h-full min-h-0 flex-col">
@@ -80,6 +91,13 @@ export function SetupGamePage() {
         </div>
       </GamePageLayout>
     );
+  }
+
+  if (step === "manage-sections") {
+    // The event dropped back to a single section (e.g. a section was deleted
+    // here), so this screen is no longer available — fall back to Movement.
+    goTo("movements");
+    return null;
   }
 
   // Optional timer configuration. Reuses the shared TimerSetup embedded;

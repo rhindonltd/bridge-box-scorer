@@ -32,6 +32,17 @@ vi.mock("@/components/manage/sections/ManageSectionsScreen", () => ({
   ManageSectionsScreen: () => <div>manage-sections-view</div>,
 }));
 
+// Section count drives whether the "Manage sections" menu item appears.
+let mockSectionCount = 2;
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({
+    sections: Array.from({ length: mockSectionCount }, (_, i) => ({
+      section: String.fromCharCode(65 + i),
+    })),
+    isLoading: false,
+  }),
+}));
+
 vi.mock("@/app/game/[gameId]/manage/timer/TimerSetup", () => ({
   TimerSetup: ({ embedded }: { embedded?: boolean }) => (
     <div>timer-view {embedded ? "embedded" : "standalone"}</div>
@@ -65,6 +76,7 @@ describe("SetupGamePage setup menu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentStep = "tables";
+    mockSectionCount = 2;
   });
 
   it("renders the setup menu and Tables view on the tables step", async () => {
@@ -137,5 +149,26 @@ describe("SetupGamePage setup menu", () => {
     expect(
       screen.getByRole("menuitem", { name: "Manage sections" }),
     ).toHaveAttribute("aria-current", "true");
+  });
+
+  it("hides the Manage sections item for a single-section game", async () => {
+    mockSectionCount = 1;
+    render(<SetupGamePage />);
+
+    await openSetupMenu();
+    expect(
+      screen.queryByRole("menuitem", { name: "Manage sections" }),
+    ).toBeNull();
+    // The other items remain.
+    expect(screen.getByRole("menuitem", { name: "Tables" })).toBeInTheDocument();
+  });
+
+  it("redirects away from manage-sections when the game is single-section", () => {
+    mockSectionCount = 1;
+    currentStep = "manage-sections";
+    render(<SetupGamePage />);
+
+    expect(screen.queryByText("manage-sections-view")).toBeNull();
+    expect(mockGoTo).toHaveBeenCalledWith("movements");
   });
 });

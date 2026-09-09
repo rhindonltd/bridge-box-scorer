@@ -540,10 +540,10 @@ describe("per-section timer UI", () => {
     ];
     render(<TimerSetup />);
 
-    // The single section is shown as a pill (plus the Add section affordance).
-    expect(screen.getByRole("tab", { name: "Section A" })).toBeInTheDocument();
+    // Single-section: no "Section A" pill, just a "Split into sections" pill.
+    expect(screen.queryByRole("tab", { name: "Section A" })).toBeNull();
     expect(
-      screen.getByRole("button", { name: /Add section/ }),
+      screen.getByRole("button", { name: /Split into sections/ }),
     ).toBeInTheDocument();
     // Apply-to-all has been removed in favour of per-section pills.
     expect(

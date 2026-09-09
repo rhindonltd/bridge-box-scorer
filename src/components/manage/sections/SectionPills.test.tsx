@@ -53,4 +53,36 @@ describe("SectionPills", () => {
     fireEvent.click(screen.getByRole("button", { name: /Add section/ }));
     expect(onAddSection).toHaveBeenCalledTimes(1);
   });
+
+  it("hides the section pill and shows 'Split into sections' for a single section", () => {
+    const onAddSection = vi.fn();
+    render(
+      <SectionPills
+        sections={[{ section: "A", label: "A" }]}
+        selected="A"
+        onSelect={vi.fn()}
+        onAddSection={onAddSection}
+      />,
+    );
+
+    // No "Section A" tab when there's only one section.
+    expect(screen.queryByRole("tab")).toBeNull();
+    // A single "Split into sections" pill opens the add flow.
+    const split = screen.getByRole("button", { name: /Split into sections/ });
+    fireEvent.click(split);
+    expect(onAddSection).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders nothing interactive for a single section on a live screen (no add)", () => {
+    render(
+      <SectionPills
+        sections={[{ section: "A", label: "A" }]}
+        selected="A"
+        onSelect={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
 });

@@ -28,42 +28,49 @@ export function SectionPills({
   onSelect,
   onAddSection,
 }: Props) {
+  // A single section has no meaningful choice to make, so hide the "Section A"
+  // pill. When adding is allowed, show just a "Split into sections" affordance
+  // instead; otherwise (e.g. a running game) show nothing.
+  const singleSection = sections.length < 2;
+  const addPill = onAddSection && (
+    <button
+      type="button"
+      onClick={onAddSection}
+      className={`${pillBase} flex items-center gap-1 border border-dashed border-gray-400 bg-white text-gray-700 hover:bg-gray-100`}
+    >
+      <Plus size={14} aria-hidden="true" />
+      {singleSection ? "Split into sections" : "Add section"}
+    </button>
+  );
+
   return (
     <div
       role="tablist"
       aria-label="Section"
       className="flex w-full max-w-md flex-wrap gap-2"
     >
-      {sections.map((s) => {
-        const active = s.section === selected;
-        return (
-          <button
-            key={s.section}
-            role="tab"
-            aria-selected={active}
-            onClick={() => onSelect(s.section)}
-            className={`${pillBase} ${
-              active
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-            }`}
-          >
-            Section{" "}
-            {s.section === s.label ? s.section : `${s.section} — ${s.label}`}
-          </button>
-        );
-      })}
+      {!singleSection &&
+        sections.map((s) => {
+          const active = s.section === selected;
+          return (
+            <button
+              key={s.section}
+              role="tab"
+              aria-selected={active}
+              onClick={() => onSelect(s.section)}
+              className={`${pillBase} ${
+                active
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+              }`}
+            >
+              Section{" "}
+              {s.section === s.label ? s.section : `${s.section} — ${s.label}`}
+            </button>
+          );
+        })}
 
-      {onAddSection && (
-        <button
-          type="button"
-          onClick={onAddSection}
-          className={`${pillBase} flex items-center gap-1 border border-dashed border-gray-400 bg-white text-gray-700 hover:bg-gray-100`}
-        >
-          <Plus size={14} aria-hidden="true" />
-          Add section
-        </button>
-      )}
+      {addPill}
     </div>
   );
 }

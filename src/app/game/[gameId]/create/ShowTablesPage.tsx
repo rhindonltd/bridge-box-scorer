@@ -145,26 +145,13 @@ export function ShowTablesPage({ menu }: Props) {
       }
     >
       <div className="flex h-full min-h-0 flex-col">
-        {/* Section pills pick which section is shown; the selected section's
-            table-count stepper is pinned in a centred bar below them. Both stay
-            put while the seating grid scrolls. */}
-        <div className="flex shrink-0 flex-col items-center gap-3 border-b border-gray-200 bg-gray-100 px-4 py-3">
+        {/* Section pills pick which section is shown, pinned in a grey bar
+            (matching the Movement step). */}
+        <div className="flex shrink-0 justify-center border-b border-gray-200 bg-gray-50 px-4 py-3">
           {pills}
-          {currentSection && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">Tables:</span>
-              <NumberStepper
-                min={1}
-                value={currentSection.tables}
-                onChange={(tables) =>
-                  handleResizeSection(currentSection.section, tables)
-                }
-              />
-            </div>
-          )}
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {currentSection &&
             (() => {
               const tables = Array.from(
@@ -177,11 +164,33 @@ export function ShowTablesPage({ menu }: Props) {
                 (lastTable.players.N !== null || lastTable.players.E !== null);
 
               return (
-                <DirectorTableControls
-                  tables={tables}
-                  onEvict={handleEvict}
-                  canRemoveTable={currentSection.tables > 1 && !lastTableOccupied}
-                />
+                // Light-grey card with a "{n} tables" header that carries the
+                // +/- stepper — mirroring the movement picker's "{n} boards"
+                // grouping card.
+                <section className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                  <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-100 px-4 py-2">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">
+                      {currentSection.tables}{" "}
+                      {currentSection.tables === 1 ? "table" : "tables"}
+                    </h2>
+                    <NumberStepper
+                      min={1}
+                      value={currentSection.tables}
+                      onChange={(t) =>
+                        handleResizeSection(currentSection.section, t)
+                      }
+                    />
+                  </div>
+                  <div className="p-3">
+                    <DirectorTableControls
+                      tables={tables}
+                      onEvict={handleEvict}
+                      canRemoveTable={
+                        currentSection.tables > 1 && !lastTableOccupied
+                      }
+                    />
+                  </div>
+                </section>
               );
             })()}
         </div>

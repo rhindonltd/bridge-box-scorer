@@ -120,14 +120,18 @@ export function TimerConfigView({
     </div>
   );
 
-  const body = noMovement ? (
-    <>
+  // The section pills sit in a pinned grey bar at the top, matching the
+  // Movement step. Rendered only when a headerSlot is supplied.
+  const pillsBar = headerSlot ? (
+    <div className="flex shrink-0 justify-center border-b border-gray-200 bg-gray-50 px-4 py-3">
       {headerSlot}
-      {noMovementPrompt}
-    </>
+    </div>
+  ) : null;
+
+  const body = noMovement ? (
+    <>{noMovementPrompt}</>
   ) : (
     <>
-      {headerSlot}
       {status}
       {breakProblemPrompt}
       <TimerConfigFields
@@ -146,9 +150,12 @@ export function TimerConfigView({
 
   if (embedded) {
     return (
-      <div className="flex flex-col items-center gap-4 p-4">
-        {body}
-        {saveButton}
+      <div className="flex flex-col">
+        {pillsBar}
+        <div className="flex flex-col items-center gap-4 p-4">
+          {body}
+          {saveButton}
+        </div>
       </div>
     );
   }
@@ -159,6 +166,7 @@ export function TimerConfigView({
       centerContent={false}
       actions={saveButton}
     >
+      {pillsBar}
       <div className="flex flex-col items-center gap-4 p-4">{body}</div>
     </GamePageLayout>
   );
