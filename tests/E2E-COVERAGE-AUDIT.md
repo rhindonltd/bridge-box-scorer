@@ -154,13 +154,15 @@ scaffolding:
 - [x] Remove-table rule: shrinking a section that still seats a pair on the
   last table is rejected (count stays); the guard is server-enforced
   (`table-management.journey.ts`).
-- [ ] Start-check problems list (amber, bulleted) shown when the game cannot
-  start.
-- [ ] One-pair-short → "One pair short — {seat} will sit out each round."
+- Start-check problems, the one-pair-short sit-out note, and the Start Game
+  action now live on the dedicated "Start Game" hamburger screen (no longer on
+  the Tables view). The problems-grouped-by-section list, ready state, sit-out
+  note, disabled/enabled gating and start/error paths are covered by
+  `StartGameScreen` unit tests.
 - [x] (PARTIAL) Start Game succeeds once movement + full seating are valid
-  (`fixtures/game-setup.ts` `startGame`; used by every live journey). The
-  disabled→enabled gating itself is asserted only via `toBeEnabled` before
-  click, not the disabled state or the problem messages.
+  (`fixtures/game-setup.ts` `startGame`, via the Start Game screen; used by
+  every live journey). The disabled→enabled gating is asserted via
+  `toBeEnabled` before click.
 - [x] Participants live-sync over `SocketEvents.PARTICIPANTS` as pairs are
   seated: a seat taken in one context becomes disabled live in another
   already-open join page (`seating-detail.journey.ts`); eviction frees the seat

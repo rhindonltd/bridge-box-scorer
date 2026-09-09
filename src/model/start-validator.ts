@@ -18,6 +18,12 @@ export interface StartProblem {
   message: string;
   /** Seats implicated in the problem, when relevant. */
   seats?: PairSeat[];
+  /**
+   * The section this problem belongs to, for grouping in the UI. Set by the
+   * aggregate flattening; absent for problems produced before section context
+   * is known (e.g. "no sections at all").
+   */
+  section?: string;
 }
 
 export interface StartValidationResult {

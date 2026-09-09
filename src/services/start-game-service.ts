@@ -182,9 +182,9 @@ async function resolveAllSections(
 /**
  * Flatten a per-section aggregate into the flat StartValidationResult shape the
  * start-check API and client currently consume. `canStart` is the all-or-nothing
- * aggregate; problems are prefixed with their section label so the UI can show
- * which section is blocking. `sitOutSeat` is null at the aggregate level (each
- * section's sit-out is already applied internally on start).
+ * aggregate; each problem is tagged with its `section` so the UI can group by
+ * section. `sitOutSeat` is null at the aggregate level (each section's sit-out
+ * is already applied internally on start).
  */
 function flattenAggregate(
   aggregate: AllSectionsValidationResult,
@@ -204,16 +204,12 @@ function flattenAggregate(
     };
   }
 
-  // Only qualify problems with their section label for multi-section events;
-  // a single-section game has no meaningful section distinction to show.
-  const multiSection = aggregate.sections.length > 1;
-
+  // Tag each problem with its section so the UI can group by section. The
+  // message stays plain (the grouping shows which section); the section field
+  // is the structured source of truth.
   for (const s of aggregate.sections) {
     for (const p of s.validation.problems) {
-      problems.push({
-        ...p,
-        message: multiSection ? `Section ${s.section}: ${p.message}` : p.message,
-      });
+      problems.push({ ...p, section: s.section });
     }
   }
 
