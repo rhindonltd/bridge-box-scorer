@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { buildRounds, type MovementByTable } from "./movementData";
+import {
+  buildRounds,
+  generatedToMovementByTable,
+  type MovementByTable,
+} from "./movementData";
+import { generateMitchell } from "./mitchell/mitchell";
 
 describe("buildRounds", () => {
   it("returns an empty array for no tables", () => {
@@ -78,5 +83,50 @@ describe("buildRounds", () => {
       total: 2,
       hasPreviousGap: true,
     });
+  });
+});
+
+describe("generatedToMovementByTable", () => {
+  it("maps a standard Mitchell with no board copies", () => {
+    const tables = generatedToMovementByTable(
+      generateMitchell({ tables: 5, rounds: 5, boardsPerRound: 2 }),
+    );
+
+    expect(tables).toHaveLength(5);
+    // Round 1 board ranges come straight from the generator's board lists.
+    expect(tables[0].rounds[0]).toMatchObject({
+      roundNumber: 1,
+      boardStart: 1,
+      boardEnd: 2,
+    });
+    // Standard Mitchell is single-copy: no boardCopy is set on any round.
+    for (const table of tables) {
+      for (const round of table.rounds) {
+        expect(round.boardCopy).toBeUndefined();
+      }
+    }
+  });
+
+  it("carries board copy labels through for a Web Mitchell", () => {
+    const tables = generatedToMovementByTable(
+      generateMitchell({
+        tables: 8,
+        rounds: 4,
+        boardsPerRound: 3,
+        web: true,
+      }),
+    );
+
+    const copies = new Set<string | undefined>();
+    for (const table of tables) {
+      for (const round of table.rounds) {
+        copies.add(round.boardCopy);
+      }
+    }
+
+    // An even-table Web plays on two physical copies (A and B).
+    expect(copies).toContain("A");
+    expect(copies).toContain("B");
+    expect(copies.has(undefined)).toBe(false);
   });
 });

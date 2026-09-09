@@ -15,7 +15,7 @@ import { getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import NumberStepper from "@/components/common/NumberStepper";
 import { useSetupSections } from "@/components/manage/sections/useSetupSections";
-import { useStationaryPairs } from "@/hooks/stationary-pairs";
+import { useMovementResolution } from "@/hooks/stationary-pairs";
 import { type ReactNode } from "react";
 
 type Props = {
@@ -42,11 +42,15 @@ export function ShowTablesPage({ menu }: Props) {
   // table-count stepper is pinned above the scroll area.
   const currentSection = sections.find((s) => s.section === selected);
 
-  // Stationary pair positions for the selected section's movement (empty until
-  // a movement is chosen / loaded), used to highlight them for the director.
-  const stationaryPairs = useStationaryPairs(
+  // Resolve the selected section's movement into per-table setup facts:
+  // stationary pair positions and board placement (round-1 boards, copy,
+  // share/relay). Both are empty until a movement is chosen/loaded, and both
+  // are suppressed when the section's table count doesn't match the movement's
+  // — so a resized section never shows stale guidance.
+  const { stationary: stationaryPairs, placement } = useMovementResolution(
     currentSection?.selectedMovement ?? null,
     game.gameType,
+    currentSection?.tables ?? 0,
   );
 
   useSocketSWRSync(
@@ -87,6 +91,9 @@ export function ShowTablesPage({ menu }: Props) {
         E: dirs?.ew ?? false,
         W: dirs?.ew ?? false,
       },
+      // Board setup facts for this table (undefined when no movement is
+      // resolved for the section, or the table count doesn't match).
+      placement: placement.get(tableNumber),
     };
   }
 

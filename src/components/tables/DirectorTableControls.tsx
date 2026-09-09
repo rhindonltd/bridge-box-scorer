@@ -34,6 +34,20 @@ export interface DirectorTable {
     E: boolean;
     W: boolean;
   };
+  /**
+   * Board setup facts for the start of the movement (round 1): which boards to
+   * place at this table, on which physical copy, and any board share/relay with
+   * another table. Omitted when no movement is resolved for the section (or the
+   * movement's table count doesn't match), in which case the card shows no board
+   * setup guidance.
+   */
+  placement?: {
+    boardStart: number;
+    boardEnd: number;
+    boardCopy?: string;
+    sharesWith?: number[];
+    relayWith?: number;
+  };
 }
 
 interface Props {
@@ -82,6 +96,49 @@ function EvictablePlayerCard({
         >
           &times;
         </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The board setup guidance shown under a table's number: which boards to place
+ * there for round 1 (with the physical copy where relevant), and any board
+ * share or relay with another table. Renders nothing when the section has no
+ * resolved movement for this table.
+ */
+function TablePlacementNote({
+  placement,
+}: {
+  placement?: DirectorTable["placement"];
+}) {
+  if (!placement) return null;
+
+  const { boardStart, boardEnd, boardCopy, sharesWith, relayWith } = placement;
+
+  const boardsLabel =
+    boardStart === boardEnd
+      ? `Board ${boardStart}`
+      : `Boards ${boardStart}\u2013${boardEnd}`;
+  const withCopy =
+    boardCopy != null ? `${boardsLabel} (Copy ${boardCopy})` : boardsLabel;
+
+  return (
+    <div className="flex flex-col items-center gap-0.5 text-center">
+      <div className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-800">
+        {withCopy}
+      </div>
+      {sharesWith && sharesWith.length > 0 && (
+        <div className="text-[11px] font-medium text-gray-600">
+          {sharesWith.length === 1
+            ? `Shares with table ${sharesWith[0]}`
+            : `Shares with tables ${sharesWith.join(", ")}`}
+        </div>
+      )}
+      {relayWith != null && (
+        <div className="text-[11px] font-medium text-gray-600">
+          Relay {"\u2192"} table {relayWith}
+        </div>
       )}
     </div>
   );
@@ -136,11 +193,14 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                     />
                   }
                   center={
-                    <div className="flex flex-col items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg">
-                      <div className="text-[10px] font-bold">Table</div>
-                      <div className="text-xl font-bold">
-                        {table.tableNumber}
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="flex flex-col items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg">
+                        <div className="text-[10px] font-bold">Table</div>
+                        <div className="text-xl font-bold">
+                          {table.tableNumber}
+                        </div>
                       </div>
+                      <TablePlacementNote placement={table.placement} />
                     </div>
                   }
                 />

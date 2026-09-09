@@ -62,6 +62,16 @@ From this tab you can:
 - **Evict a pair** — if someone sat in the wrong place, tap them and confirm
   "Evict this pair from the table?".
 
+Once you've chosen a movement for the section, each table also shows the
+**boards to put out there** at the start — for example "Boards 1–3". This is a
+setup aid so you can walk the room and lay the boards out on the right tables.
+Where a movement needs more than one physical set of the same boards, the copy
+is named too ("Boards 1–3 (Copy A)"). If two tables start on the same boards it
+notes "Shares with table 2", and where boards are passed between two tables it
+notes a "Relay". If you resize the section so it no longer matches the movement
+you picked, this board guidance (and the stationary-pair markers) disappear
+until the counts line up again.
+
 The app also checks the setup and flags anything that would stop the game
 starting. If a table isn't full, it shows which seat will **sit out** each
 round so the movement still works.
