@@ -74,4 +74,60 @@ describe("DirectorTableControls", () => {
     fireEvent.click(evictNorth);
     expect(onEvict).toHaveBeenCalledWith("A1NS");
   });
+
+  it("marks stationary positions with a Stationary badge (even when empty)", () => {
+    const withStationary: DirectorTable[] = [
+      {
+        ...tables()[0],
+        // NS is stationary here (North + South); EW is not.
+        stationary: { N: true, S: true, E: false, W: false },
+      },
+    ];
+
+    render(
+      <DirectorTableControls
+        tables={withStationary}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+
+    // North (occupied) and South (occupied) are stationary -> two badges.
+    // East is empty but not stationary -> no badge there.
+    expect(screen.getAllByText("Stationary")).toHaveLength(2);
+  });
+
+  it("shows a Stationary badge on an empty stationary seat", () => {
+    const withStationary: DirectorTable[] = [
+      {
+        tableNumber: 1,
+        players: { N: null, S: null, E: null, W: null },
+        seats: { N: null, S: null, E: null, W: null },
+        stationary: { N: true, S: true, E: false, W: false },
+      },
+    ];
+
+    render(
+      <DirectorTableControls
+        tables={withStationary}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+
+    // Both NS compass positions show the badge despite being unoccupied.
+    expect(screen.getAllByText("Stationary")).toHaveLength(2);
+  });
+
+  it("renders no Stationary badge when no stationary info is provided", () => {
+    render(
+      <DirectorTableControls
+        tables={tables()}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+
+    expect(screen.queryByText("Stationary")).not.toBeInTheDocument();
+  });
 });

@@ -23,6 +23,17 @@ export interface DirectorTable {
     E: Seat | null;
     W: Seat | null;
   };
+  /**
+   * Which compass positions belong to a stationary pair (stay at this table for
+   * the whole movement). Purely informational for the director. N/S share the
+   * NS pair and E/W share the EW pair, so they are flagged together.
+   */
+  stationary?: {
+    N: boolean;
+    S: boolean;
+    E: boolean;
+    W: boolean;
+  };
 }
 
 interface Props {
@@ -36,15 +47,32 @@ function EvictablePlayerCard({
   player,
   seat,
   onEvict,
+  stationary = false,
 }: {
   label: string;
   player: Omit<Player, "id"> | null;
   seat: Seat | null;
   onEvict: (seat: Seat) => void;
+  /** Highlight this position as stationary for the selected movement. */
+  stationary?: boolean;
 }) {
   return (
-    <div className="relative">
+    <div
+      className={
+        stationary
+          ? "relative rounded-lg ring-2 ring-amber-400 ring-offset-1"
+          : "relative"
+      }
+    >
       <PlayerCard label={label} player={player} />
+      {stationary && (
+        <span
+          className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-950"
+          title="This pair stays at this table for the whole movement"
+        >
+          Stationary
+        </span>
+      )}
       {player && seat && (
         <button
           onClick={() => onEvict(seat)}
@@ -77,6 +105,7 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                       player={table.players.N}
                       seat={table.seats.N}
                       onEvict={onEvict}
+                      stationary={table.stationary?.N}
                     />
                   }
                   south={
@@ -85,6 +114,7 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                       player={table.players.S}
                       seat={table.seats.S}
                       onEvict={onEvict}
+                      stationary={table.stationary?.S}
                     />
                   }
                   east={
@@ -93,6 +123,7 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                       player={table.players.E}
                       seat={table.seats.E}
                       onEvict={onEvict}
+                      stationary={table.stationary?.E}
                     />
                   }
                   west={
@@ -101,6 +132,7 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                       player={table.players.W}
                       seat={table.seats.W}
                       onEvict={onEvict}
+                      stationary={table.stationary?.W}
                     />
                   }
                   center={
