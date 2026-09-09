@@ -140,29 +140,13 @@ describe("TimerConfigView", () => {
     ).toBeInTheDocument();
   });
 
-  it("prompts to select a movement and disables saving when none is selected", () => {
-    const onSave = vi.fn();
-    render(<TimerConfigView {...makeProps({ noMovement: true, onSave })} />);
+  it("prompts to select a movement and hides Save when none is selected", () => {
+    render(<TimerConfigView {...makeProps({ noMovement: true })} />);
 
     expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
     // Config fields are replaced by the prompt.
     expect(screen.queryByLabelText("Boards / Round")).toBeNull();
-
-    const save = screen.getByRole("button", { name: "Save" });
-    expect(save).toBeDisabled();
-    fireEvent.click(save);
-    expect(onSave).not.toHaveBeenCalled();
-  });
-
-  it("disables Apply to all sections when no movement is selected", () => {
-    render(
-      <TimerConfigView
-        {...makeProps({ noMovement: true, onApplyToAll: vi.fn() })}
-      />,
-    );
-
-    expect(
-      screen.getByRole("button", { name: "Apply to all sections" }),
-    ).toBeDisabled();
+    // Save is hidden entirely (not merely disabled).
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });
 });

@@ -24,6 +24,30 @@ export async function openSetupStep(page: Page, name: string): Promise<void> {
   await page.getByRole("menuitem", { name }).click();
 }
 
+/**
+ * Add a section via the shared "+ Add section" pill and its naming modal. Works
+ * from any setup page (Tables / Movement / Timer). The modal accepts the
+ * prefilled letter names, so this creates the next section (and, on the first
+ * add, keeps the existing section's default name). Assumes the current setup
+ * page is already open.
+ */
+export async function addSection(page: Page): Promise<void> {
+  await page.getByRole("button", { name: /Add section/ }).click();
+  // The modal prefills the letter name(s); accept the defaults and confirm.
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Add", exact: true }),
+  ).toHaveCount(0, { timeout: 15000 });
+}
+
+/** Switch to a section via its pill (e.g. "Section B"). */
+export async function selectSection(
+  page: Page,
+  section: string,
+): Promise<void> {
+  await page.getByRole("tab", { name: new RegExp(`Section ${section}`) }).click();
+}
+
 async function readTableCount(page: Page): Promise<number> {
   const value = await page.evaluate(() => {
     const minus = [...document.querySelectorAll("button")].find(

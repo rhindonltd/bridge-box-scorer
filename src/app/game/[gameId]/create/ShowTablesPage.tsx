@@ -17,7 +17,7 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import NumberStepper from "@/components/common/NumberStepper";
 import { useStartCheck } from "@/hooks/start-check";
 import { startGame } from "@/lib/game-service";
-import { useSections } from "@/hooks/sections";
+import { useSetupSections } from "@/components/manage/sections/useSetupSections";
 import { useState, type ReactNode } from "react";
 
 type Props = {
@@ -38,11 +38,11 @@ export function ShowTablesPage({ menu }: Props) {
   };
 
   const { data: pairs } = useSWR<Pair[], Error>(key, pairsFetcher);
-  const { sections } = useSections(gameId);
+  const { sections, selected, pills, modal } = useSetupSections(gameId);
 
-  // When there is exactly one section, its table-count stepper represents the
-  // whole view and is pinned above the scroll area rather than shown inline.
-  const singleSection = sections.length === 1 ? sections[0] : undefined;
+  // The Tables view shows one section at a time (selected via the pills); its
+  // table-count stepper is pinned above the scroll area.
+  const currentSection = sections.find((s) => s.section === selected);
 
   const { canStart, problems, sitOutSeat } = useStartCheck(gameId);
   const [starting, setStarting] = useState(false);
@@ -145,63 +145,48 @@ export function ShowTablesPage({ menu }: Props) {
       }
     >
       <div className="flex h-full min-h-0 flex-col">
-        {/* For a single section the table-count stepper applies to the whole
-            view, so pin it in a centred bar above the scroll area (matching the
-            "Running more than one section?" banner). With multiple sections each
-            section owns its own stepper inline next to its heading. */}
-        {singleSection && (
-          <div className="flex shrink-0 items-center justify-center gap-2 border-b border-gray-200 bg-gray-100 px-4 py-3">
-            <span className="text-sm font-medium text-gray-700">Tables:</span>
-            <NumberStepper
-              min={1}
-              value={singleSection.tables}
-              onChange={(tables) =>
-                handleResizeSection(singleSection.section, tables)
-              }
-            />
-          </div>
-        )}
+        {/* Section pills pick which section is shown; the selected section's
+            table-count stepper is pinned in a centred bar below them. Both stay
+            put while the seating grid scrolls. */}
+        <div className="flex shrink-0 flex-col items-center gap-3 border-b border-gray-200 bg-gray-100 px-4 py-3">
+          {pills}
+          {currentSection && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Tables:</span>
+              <NumberStepper
+                min={1}
+                value={currentSection.tables}
+                onChange={(tables) =>
+                  handleResizeSection(currentSection.section, tables)
+                }
+              />
+            </div>
+          )}
+        </div>
 
         <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
-          {sections.map((s) => {
-            const tables = Array.from({ length: s.tables }, (_, i) =>
-              createTable(s.section, i + 1),
-            );
-            const lastTable = tables[tables.length - 1];
-            const lastTableOccupied =
-              !!lastTable &&
-              (lastTable.players.N !== null || lastTable.players.E !== null);
+          {currentSection &&
+            (() => {
+              const tables = Array.from(
+                { length: currentSection.tables },
+                (_, i) => createTable(currentSection.section, i + 1),
+              );
+              const lastTable = tables[tables.length - 1];
+              const lastTableOccupied =
+                !!lastTable &&
+                (lastTable.players.N !== null || lastTable.players.E !== null);
 
-            return (
-              <div key={s.section} className="flex flex-col">
-                {sections.length > 1 && (
-                  <div className="flex items-center justify-between px-4 pt-4">
-                    <h2 className="text-lg font-bold text-gray-800">
-                      Section {s.section}
-                      {s.label !== s.section ? ` — ${s.label}` : ""}
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Tables:</span>
-                      <NumberStepper
-                        min={1}
-                        value={s.tables}
-                        onChange={(tables) =>
-                          handleResizeSection(s.section, tables)
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
+              return (
                 <DirectorTableControls
                   tables={tables}
                   onEvict={handleEvict}
-                  canRemoveTable={s.tables > 1 && !lastTableOccupied}
+                  canRemoveTable={currentSection.tables > 1 && !lastTableOccupied}
                 />
-              </div>
-            );
-          })}
+              );
+            })()}
         </div>
       </div>
+      {modal}
     </GamePageLayout>
   );
 }

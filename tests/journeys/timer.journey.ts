@@ -6,6 +6,7 @@ import {
   pickFirstMovement,
   startGame,
   openSetupStep,
+  addSection,
 } from "../fixtures/game-setup";
 import { seatTwoTableField } from "../fixtures/join";
 import { deleteGame } from "../fixtures/delete-game";
@@ -389,9 +390,9 @@ test.describe("Timer config (multi-section): section picker & Apply to all", () 
     });
     try {
       await setTableCount(page, 2);
-      // Add a second section through the Movement view's SectionManager.
+      // Add a second section via the "+ Add section" pill + naming modal.
       await openSetupStep(page, "Movement");
-      await page.getByRole("button", { name: "Add Section" }).click();
+      await addSection(page);
       // Let the sections list settle.
       await page.waitForTimeout(500);
 

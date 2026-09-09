@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { createGame } from "../fixtures/game-create";
-import { setTableCount, openSetupStep } from "../fixtures/game-setup";
+import { setTableCount, openSetupStep, addSection } from "../fixtures/game-setup";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { deleteGame } from "../fixtures/delete-game";
 import {
@@ -36,21 +36,22 @@ test.describe("Multi-section setup CRUD", () => {
     try {
       await setTableCount(directorPage, 2);
 
-      // Movement view -> single-section picker with the "Add Section" banner.
+      // Add a second section via the "+ Add section" pill + naming modal.
       await openSetupStep(directorPage, "Movement");
-      await directorPage.getByRole("button", { name: "Add Section" }).click();
+      await addSection(directorPage);
 
-      // Now multi-section: the SectionManager lists Section A and Section B.
+      // Both sections now appear as pills.
       await expect(
-        directorPage.getByText("Section A", { exact: true }),
+        directorPage.getByRole("tab", { name: /Section A/ }),
       ).toBeVisible({ timeout: 15000 });
       await expect(
-        directorPage.getByText("Section B", { exact: true }),
+        directorPage.getByRole("tab", { name: /Section B/ }),
       ).toBeVisible();
 
-      // Rename section B via its Label field (commits on blur). The
-      // SectionManager keeps the label in its "Label" textbox (the combined
-      // "Section B — Afternoon" heading only appears on join/leaderboard).
+      // Rename / delete live on the "Manage sections" screen.
+      await openSetupStep(directorPage, "Manage sections");
+
+      // Rename section B via its Label field (commits on blur).
       const labelFields = directorPage.getByLabel("Label");
       await labelFields.nth(1).fill("Afternoon");
       await labelFields.nth(1).blur();

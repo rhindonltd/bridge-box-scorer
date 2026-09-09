@@ -39,7 +39,9 @@ vi.mock("@/hooks/socket-swr-sync", () => ({
   },
 }));
 
-// Sections list is configurable per test.
+// Sections list + current selection are configurable per test. useSetupSections
+// is mocked so the page's own grid/stepper/start behaviour is under test; the
+// pills and add-section modal are covered by their own suites.
 let currentSections = [
   {
     section: "A",
@@ -49,8 +51,16 @@ let currentSections = [
     selectedMovement: null,
   },
 ];
-vi.mock("@/hooks/sections", () => ({
-  useSections: () => ({ sections: currentSections, isLoading: false }),
+let currentSelected = "A";
+const mockSetSelected = vi.fn();
+vi.mock("@/components/manage/sections/useSetupSections", () => ({
+  useSetupSections: () => ({
+    sections: currentSections,
+    selected: currentSelected,
+    setSelected: mockSetSelected,
+    pills: <div data-testid="section-pills" />,
+    modal: <div data-testid="section-modal" />,
+  }),
 }));
 
 const mockEmit = vi.fn();
@@ -104,6 +114,7 @@ describe("ShowTablesPage", () => {
     currentSections = [
       { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
     ];
+    currentSelected = "A";
     mockUseStartCheck.mockReturnValue({
       canStart: false,
       problems: [],
@@ -353,21 +364,31 @@ describe("ShowTablesPage", () => {
     ).toBe(false);
   });
 
-  it("renders section headings and labels when multiple sections exist", () => {
+  it("renders the section pills and add-section modal", () => {
+    render(<ShowTablesPage />);
+
+    expect(screen.getByTestId("section-pills")).toBeInTheDocument();
+    expect(screen.getByTestId("section-modal")).toBeInTheDocument();
+  });
+
+  it("shows only the selected section's grid and stepper", () => {
     currentSections = [
-      { section: "A", label: "A", tables: 1, ordinal: 0, selectedMovement: null },
-      {
-        section: "B",
-        label: "Blue",
-        tables: 1,
-        ordinal: 1,
-        selectedMovement: null,
-      },
+      { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
+      { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
     ];
+    currentSelected = "B";
 
     render(<ShowTablesPage />);
 
-    expect(screen.getByText("Section A")).toBeInTheDocument();
-    expect(screen.getByText(/Section B — Blue/)).toBeInTheDocument();
+    // The stepper reflects section B's table count, and resizing targets B.
+    const increment = screen.getByRole("button", { name: "+" });
+    fireEvent.mouseDown(increment);
+    fireEvent.mouseUp(increment);
+
+    expect(mockEmit).toHaveBeenCalledWith(
+      SocketEvents.UPDATE_TABLES,
+      expect.objectContaining({ section: "B", tables: 5 }),
+      expect.any(Function),
+    );
   });
 });

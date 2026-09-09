@@ -24,8 +24,12 @@ vi.mock("./ShowTablesPage", () => ({
   ),
 }));
 
-vi.mock("@/components/manage/sections/SectionManagerContainer", () => ({
-  SectionManagerContainer: () => <div>sections-view</div>,
+vi.mock("@/components/manage/sections/MovementStep", () => ({
+  MovementStep: () => <div>sections-view</div>,
+}));
+
+vi.mock("@/components/manage/sections/ManageSectionsScreen", () => ({
+  ManageSectionsScreen: () => <div>manage-sections-view</div>,
 }));
 
 vi.mock("@/app/game/[gameId]/manage/timer/TimerSetup", () => ({
@@ -112,5 +116,26 @@ describe("SetupGamePage setup menu", () => {
       "aria-current",
       "true",
     );
+  });
+
+  it("navigates to manage-sections when the Manage sections item is chosen", async () => {
+    render(<SetupGamePage />);
+
+    await openSetupMenu();
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Manage sections" }),
+    );
+    expect(mockGoTo).toHaveBeenCalledWith("manage-sections");
+  });
+
+  it("renders the manage-sections view on the manage-sections step", async () => {
+    currentStep = "manage-sections";
+    render(<SetupGamePage />);
+
+    expect(screen.getByText("manage-sections-view")).toBeInTheDocument();
+    await openSetupMenu();
+    expect(
+      screen.getByRole("menuitem", { name: "Manage sections" }),
+    ).toHaveAttribute("aria-current", "true");
   });
 });

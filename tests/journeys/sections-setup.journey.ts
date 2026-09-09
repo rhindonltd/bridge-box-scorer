@@ -3,8 +3,9 @@ import { test, expect, Page } from "@playwright/test";
 import { createGame } from "../fixtures/game-create";
 import {
   setTableCount,
-  pickFirstMovement,
   openSetupStep,
+  addSection,
+  selectSection,
 } from "../fixtures/game-setup";
 import { deleteGame } from "../fixtures/delete-game";
 import { newParticipant } from "./support";
@@ -12,11 +13,9 @@ import { newParticipant } from "./support";
 /**
  * Sections setup UI journey.
  *
- * Drives the SectionManager on the setup Movement tab: a single-section game
- * shows the movement picker with an "Add Section" banner; adding a section
- * reveals the multi-section list where sections can be renamed and deleted
- * (delete hidden when only one section remains), each showing a movement
- * summary and a Set/Change Movement control.
+ * The Movement step shows the shared section pills (with a "+ Add section"
+ * pill) above the per-section movement picker. Section rename/delete lives on
+ * the separate "Manage sections" screen, reached from the Setup menu.
  */
 
 async function openMovementTab(page: Page, gameId: string): Promise<void> {
@@ -25,7 +24,7 @@ async function openMovementTab(page: Page, gameId: string): Promise<void> {
 }
 
 test.describe("Sections setup", () => {
-  test("single-section shows the movement picker with an Add Section banner", async ({
+  test("single-section shows the pills and the movement picker", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
@@ -39,13 +38,14 @@ test.describe("Sections setup", () => {
       await setTableCount(page, 2);
       await openMovementTab(page, gameId);
 
-      // Single-section: the picker's "Add Section" banner is shown, and there
-      // is no per-section "Section A" heading / label editor.
+      // Single-section: the Section A pill and the "+ Add section" pill show,
+      // above the movement picker's recommendation cards.
       await expect(
-        page.getByRole("button", { name: "Add Section" }),
+        page.getByRole("tab", { name: "Section A" }),
       ).toBeVisible({ timeout: 15000 });
-      await expect(page.getByText("Section A", { exact: true })).toHaveCount(0);
-      // Movement cards are offered (the picker itself).
+      await expect(
+        page.getByRole("button", { name: /Add section/ }),
+      ).toBeVisible();
       await expect(page.getByTestId("movement-card").first()).toBeVisible();
     } finally {
       await deleteGame(page, gameId);
@@ -53,7 +53,7 @@ test.describe("Sections setup", () => {
     }
   });
 
-  test("adding a section reveals the list; rename and delete work", async ({
+  test("adding a section reveals a pill; rename and delete work on Manage sections", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
@@ -67,23 +67,18 @@ test.describe("Sections setup", () => {
       await setTableCount(page, 2);
       await openMovementTab(page, gameId);
 
-      // Add a second section -> the multi-section list shows Section A and B.
-      await page.getByRole("button", { name: "Add Section" }).click();
-      await expect(page.getByText("Section A", { exact: true })).toBeVisible({
-        timeout: 15000,
-      });
-      await expect(page.getByText("Section B", { exact: true })).toBeVisible();
-
-      // Each section shows a movement summary (none chosen yet) and a Set
-      // Movement control.
+      // Add a second section via the pill + naming modal -> a Section B pill.
+      await addSection(page);
       await expect(
-        page.getByText("No movement selected").first(),
-      ).toBeVisible();
+        page.getByRole("tab", { name: /Section A/ }),
+      ).toBeVisible({ timeout: 15000 });
       await expect(
-        page.getByRole("button", { name: /Set Movement|Change Movement/ }).first(),
+        page.getByRole("tab", { name: /Section B/ }),
       ).toBeVisible();
 
-      // Rename section B via its Label field (commits on blur).
+      // Rename / delete happen on the Manage sections screen.
+      await openSetupStep(page, "Manage sections");
+
       const labels = page.getByLabel("Label");
       await labels.nth(1).fill("Evening");
       await labels.nth(1).blur();
@@ -105,7 +100,7 @@ test.describe("Sections setup", () => {
     }
   });
 
-  test("per-section movement summary reflects a chosen Mitchell", async ({
+  test("a movement can be chosen per section via the pills", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
@@ -116,27 +111,26 @@ test.describe("Sections setup", () => {
     });
 
     try {
-      // Single-section: pick the first movement, then the picker returns and
-      // the summary should reflect a selected movement (not "No movement
-      // selected"). pickFirstMovement selects the first recommended card.
-      await setTableCount(page, 3);
-      await pickFirstMovement(page);
-
-      // Re-open the Movement tab; with a movement chosen the single-section
-      // picker still shows (its "Change"/selected state), and adding a section
-      // surfaces the summary line.
+      await setTableCount(page, 2);
       await openMovementTab(page, gameId);
-      await page.getByRole("button", { name: "Add Section" }).click();
+      await addSection(page);
 
-      // Section A now has a movement summary that is not the "none" text.
-      await expect(page.getByText("Section A", { exact: true })).toBeVisible({
-        timeout: 15000,
-      });
-      // At least one section still needs a movement ("No movement selected"),
-      // and section A's summary is a movement description (contains "tables"
-      // for a Mitchell, or "Movement selected").
+      // Pick the first recommended movement for section A.
+      await selectSection(page, "A");
+      const cardA = page.getByTestId("movement-card").first();
+      await expect(cardA).toBeVisible({ timeout: 15000 });
+      await cardA.click();
+      const confirmA = page.getByRole("button", { name: "Select Movement" });
+      await expect(confirmA).toBeEnabled({ timeout: 15000 });
+      await confirmA.click();
       await expect(
-        page.getByText(/tables|Movement selected/).first(),
+        page.getByRole("button", { name: /Select Movement|Selecting/ }),
+      ).toHaveCount(0, { timeout: 15000 });
+
+      // Switch to section B and confirm its own recommendations are offered.
+      await selectSection(page, "B");
+      await expect(
+        page.getByTestId("movement-card").first(),
       ).toBeVisible({ timeout: 15000 });
     } finally {
       await deleteGame(page, gameId);

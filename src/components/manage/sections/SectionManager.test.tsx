@@ -69,6 +69,18 @@ describe("SectionManager", () => {
     expect(props.onRenameSection).not.toHaveBeenCalled();
   });
 
+  it("hides the movement summary and picker when showMovement is false", () => {
+    const props = noopProps();
+    render(
+      <SectionManager sections={sections()} showMovement={false} {...props} />,
+    );
+
+    expect(screen.queryByText("Change Movement")).not.toBeInTheDocument();
+    expect(screen.queryByText("Set Movement")).not.toBeInTheDocument();
+    // Section rename/delete controls remain.
+    expect(screen.getAllByLabelText("Label").length).toBeGreaterThan(0);
+  });
+
   it("opens the movement picker for a section", () => {
     const props = noopProps();
     render(<SectionManager sections={sections()} {...props} />);
