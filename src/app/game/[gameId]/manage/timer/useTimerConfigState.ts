@@ -68,7 +68,16 @@ function breakConfigToDraft(b: BreakConfig): BreakDraft {
  * from it once on first load. Seeding is intentionally one-shot so live edits
  * are never clobbered by subsequent state syncs.
  */
-export function useTimerConfigState(seedFrom?: TimerState | null) {
+export function useTimerConfigState(
+  seedFrom?: TimerState | null,
+  /**
+   * When provided, `boardsPerRound` and `totalRounds` are authoritative (they
+   * come from the section's selected movement) and become read-only: they track
+   * these values and `onConfigChange` ignores edits to them. Omit to keep both
+   * fields editable (the live/adjust screen).
+   */
+  derived?: { boardsPerRound: number; totalRounds: number },
+) {
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -99,8 +108,12 @@ export function useTimerConfigState(seedFrom?: TimerState | null) {
   // clobbered by subsequent syncs.
   const [seeded, setSeeded] = useState(false);
   if (!seeded && seedFrom) {
-    setBoardsPerRound(seedFrom.boardsPerRound);
-    setTotalRounds(seedFrom.totalRounds);
+    // When derived values are supplied they own the structure fields, so don't
+    // seed those two from the persisted state (durations/breaks still seed).
+    if (!derived) {
+      setBoardsPerRound(seedFrom.boardsPerRound);
+      setTotalRounds(seedFrom.totalRounds);
+    }
     // Durations are stored as total seconds; the form always presents play in
     // per-round terms.
     setPlayMinutes(Math.floor(seedFrom.playDuration / 60));
@@ -113,6 +126,16 @@ export function useTimerConfigState(seedFrom?: TimerState | null) {
     }
     setBreaks((seedFrom.breaks ?? []).map(breakConfigToDraft));
     setSeeded(true);
+  }
+
+  // Derived structure values are authoritative: keep the two fields in sync
+  // with the selected movement (adjusting during render if they diverge, e.g.
+  // when the movement changes). This wins over any seeded value.
+  if (derived && derived.boardsPerRound !== boardsPerRound) {
+    setBoardsPerRound(derived.boardsPerRound);
+  }
+  if (derived && derived.totalRounds !== totalRounds) {
+    setTotalRounds(derived.totalRounds);
   }
 
   const enteredPlaySeconds = playMinutes * 60 + playSeconds;
@@ -198,9 +221,13 @@ export function useTimerConfigState(seedFrom?: TimerState | null) {
   function onConfigChange(field: keyof TimerConfig, value: number | string) {
     switch (field) {
       case "boardsPerRound":
+        // Locked when derived from the selected movement.
+        if (derived) break;
         setBoardsPerRound(value as number);
         break;
       case "totalRounds":
+        // Locked when derived from the selected movement.
+        if (derived) break;
         setTotalRounds(value as number);
         break;
       case "playMinutes":
@@ -254,6 +281,8 @@ export function useTimerConfigState(seedFrom?: TimerState | null) {
     tick,
     config,
     configHandlers: { onConfigChange, onAddBreak, onRemoveBreak, onBreakChange },
+    /** True when boards/round and total rounds are derived and read-only. */
+    structureLocked: derived != null,
     adjustApplyToFuture,
     setAdjustApplyToFuture,
     /** Domain payload fields for CREATE/SAVE/UPDATE config emits. */

@@ -5,6 +5,11 @@ import { TimerConfig } from "./timer-view-types";
 interface Props {
   config: TimerConfig;
   onConfigChange: (field: keyof TimerConfig, value: number | string) => void;
+  /**
+   * When true, Boards / Round and Total Rounds are derived from the selected
+   * movement and shown read-only (the director cannot edit them here).
+   */
+  lockedStructure?: boolean;
 }
 
 /**
@@ -12,7 +17,15 @@ interface Props {
  * timing mode, play/move durations, and the warning threshold. Shared by the
  * config screen and the live screen's "Apply Changes" editing.
  */
-export function TimerConfigFields({ config, onConfigChange }: Props) {
+export function TimerConfigFields({
+  config,
+  onConfigChange,
+  lockedStructure = false,
+}: Props) {
+  const lockedInputClass = lockedStructure
+    ? "cursor-not-allowed bg-gray-100 text-gray-600 border-gray-200"
+    : "bg-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+
   return (
     <div className="grid grid-cols-2 gap-4 w-full max-w-md">
       <div className="flex flex-col gap-1">
@@ -26,7 +39,9 @@ export function TimerConfigFields({ config, onConfigChange }: Props) {
           onChange={(e) =>
             onConfigChange("boardsPerRound", Number(e.target.value))
           }
-          className="p-2 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          readOnly={lockedStructure}
+          aria-readonly={lockedStructure || undefined}
+          className={`p-2 border-2 rounded-xl ${lockedInputClass}`}
         />
       </div>
 
@@ -41,9 +56,17 @@ export function TimerConfigFields({ config, onConfigChange }: Props) {
           onChange={(e) =>
             onConfigChange("totalRounds", Number(e.target.value))
           }
-          className="p-2 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          readOnly={lockedStructure}
+          aria-readonly={lockedStructure || undefined}
+          className={`p-2 border-2 rounded-xl ${lockedInputClass}`}
         />
       </div>
+
+      {lockedStructure && (
+        <p className="col-span-2 -mt-2 text-xs text-gray-500">
+          Boards per round and total rounds come from the selected movement.
+        </p>
+      )}
 
       <fieldset className="col-span-2 flex gap-6">
         <legend className="sr-only">Timing Mode</legend>

@@ -34,6 +34,16 @@ export interface TimerConfigViewProps extends TimerConfigHandlers {
    * embedded (e.g. beneath the setup flow's tab bar).
    */
   embedded?: boolean;
+  /**
+   * When true, Boards / Round and Total Rounds are shown read-only (derived
+   * from the section's selected movement).
+   */
+  lockedStructure?: boolean;
+  /**
+   * When true, no movement is selected for this section: the config is disabled
+   * and the director is prompted to choose a movement first.
+   */
+  noMovement?: boolean;
 }
 
 /**
@@ -56,19 +66,28 @@ export function TimerConfigView({
   onApplyToAll,
   headerSlot,
   embedded = false,
+  lockedStructure = false,
+  noMovement = false,
 }: TimerConfigViewProps) {
+  const disabledBtn = "opacity-50 cursor-not-allowed";
   const saveButton = (
     <div className="flex flex-col gap-3 w-full max-w-md">
       <button
         onClick={onSave}
-        className={`${btnBase} bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500`}
+        disabled={noMovement}
+        className={`${btnBase} bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500 ${
+          noMovement ? disabledBtn : ""
+        }`}
       >
         Save
       </button>
       {onApplyToAll && (
         <button
           onClick={onApplyToAll}
-          className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400`}
+          disabled={noMovement}
+          className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400 ${
+            noMovement ? disabledBtn : ""
+          }`}
         >
           Apply to all sections
         </button>
@@ -107,12 +126,35 @@ export function TimerConfigView({
       </div>
     ) : null;
 
-  const body = (
+  const noMovementPrompt = (
+    <div
+      role="note"
+      className="w-full max-w-md rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"
+    >
+      <div className="font-semibold">Select a movement first</div>
+      <p className="mt-1">
+        The timer takes its number of rounds and boards per round from the
+        movement. Choose a movement for this section, then come back to set up
+        the timer.
+      </p>
+    </div>
+  );
+
+  const body = noMovement ? (
+    <>
+      {headerSlot}
+      {noMovementPrompt}
+    </>
+  ) : (
     <>
       {headerSlot}
       {status}
       {breakProblemPrompt}
-      <TimerConfigFields config={config} onConfigChange={onConfigChange} />
+      <TimerConfigFields
+        config={config}
+        onConfigChange={onConfigChange}
+        lockedStructure={lockedStructure}
+      />
       <TimerBreaksEditor
         breaks={config.breaks}
         onAddBreak={onAddBreak}

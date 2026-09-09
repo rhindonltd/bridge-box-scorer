@@ -69,3 +69,23 @@ export const Embedded: Story = {
     embedded: true,
   },
 };
+
+/** Rounds and boards/round are derived from the movement, shown read-only. */
+export const LockedStructure: Story = {
+  args: {
+    config,
+    sessionLength: "26m 30s",
+    previewEnd: "20:26",
+    lockedStructure: true,
+  },
+};
+
+/** No movement selected for the section: config disabled with a prompt. */
+export const NoMovement: Story = {
+  args: {
+    config,
+    sessionLength: "26m 30s",
+    previewEnd: "20:26",
+    noMovement: true,
+  },
+};
