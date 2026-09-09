@@ -52,7 +52,8 @@ export async function createGame(
 
   // The setup page hydrates asynchronously; wait for it to leave the
   // "Loading game..." state before returning so callers can act immediately.
-  await expect(page.getByRole("tab", { name: "Tables" })).toBeVisible({
+  // The header hamburger ("Setup menu") is present once the setup page renders.
+  await expect(page.getByRole("button", { name: "Setup menu" })).toBeVisible({
     timeout: 15000,
   });
 

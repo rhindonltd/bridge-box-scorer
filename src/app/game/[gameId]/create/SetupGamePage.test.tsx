@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 // ---- mocks ----
 
@@ -15,9 +16,9 @@ vi.mock("@/hooks/flow", () => ({
 }));
 
 vi.mock("./ShowTablesPage", () => ({
-  ShowTablesPage: ({ tabs }: { tabs?: React.ReactNode }) => (
+  ShowTablesPage: ({ menu }: { menu?: React.ReactNode }) => (
     <div>
-      {tabs}
+      {menu}
       <div>tables-view</div>
     </div>
   ),
@@ -33,65 +34,83 @@ vi.mock("@/app/game/[gameId]/manage/timer/TimerSetup", () => ({
   ),
 }));
 
+// Render both the header slot and the body so the setup menu is reachable
+// regardless of which step owns the layout.
 vi.mock("@/components/layout/GamePageLayout", () => ({
-  GamePageLayout: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
+  GamePageLayout: ({
+    headerRight,
+    children,
+  }: {
+    headerRight?: React.ReactNode;
+    children: React.ReactNode;
+  }) => (
+    <div>
+      {headerRight}
+      {children}
+    </div>
   ),
 }));
 
 import { SetupGamePage } from "./SetupGamePage";
 
-describe("SetupGamePage tab bar", () => {
+async function openSetupMenu() {
+  await userEvent.click(screen.getByRole("button", { name: "Setup menu" }));
+}
+
+describe("SetupGamePage setup menu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentStep = "tables";
   });
 
-  it("renders the tab bar on the tables step", () => {
+  it("renders the setup menu and Tables view on the tables step", async () => {
     render(<SetupGamePage />);
 
-    expect(screen.getByRole("tablist")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Tables" })).toHaveAttribute(
-      "aria-selected",
+    expect(screen.getByText("tables-view")).toBeInTheDocument();
+    await openSetupMenu();
+    expect(screen.getByRole("menuitem", { name: "Tables" })).toHaveAttribute(
+      "aria-current",
       "true",
     );
-    expect(screen.getByText("tables-view")).toBeInTheDocument();
   });
 
-  it("navigates to the movements step when the Movement tab is clicked", () => {
+  it("navigates to the movements step when the Movement item is chosen", async () => {
     render(<SetupGamePage />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Movement" }));
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Movement" }));
     expect(mockGoTo).toHaveBeenCalledWith("movements");
   });
 
-  it("shows the sections view and tab bar on the movements step", () => {
+  it("shows the sections view and marks Movement active on the movements step", async () => {
     currentStep = "movements";
     render(<SetupGamePage />);
 
     expect(screen.getByText("sections-view")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Movement" })).toHaveAttribute(
-      "aria-selected",
+    await openSetupMenu();
+    expect(screen.getByRole("menuitem", { name: "Movement" })).toHaveAttribute(
+      "aria-current",
       "true",
     );
   });
 
-  it("navigates to the timer step when the Timer tab is clicked", () => {
+  it("navigates to the timer step when the Timer item is chosen", async () => {
     render(<SetupGamePage />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Timer" }));
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Timer" }));
     expect(mockGoTo).toHaveBeenCalledWith("timer");
   });
 
-  it("renders the embedded timer view and tab bar on the timer step", () => {
+  it("renders the embedded timer view and marks Timer active on the timer step", async () => {
     currentStep = "timer";
     render(<SetupGamePage />);
 
     expect(screen.getByText(/timer-view/)).toHaveTextContent("embedded");
-    expect(screen.getByRole("tab", { name: "Timer" })).toHaveAttribute(
-      "aria-selected",
+    await openSetupMenu();
+    expect(screen.getByRole("menuitem", { name: "Timer" })).toHaveAttribute(
+      "aria-current",
       "true",
     );
-    expect(screen.getByRole("tablist")).toBeInTheDocument();
   });
 });

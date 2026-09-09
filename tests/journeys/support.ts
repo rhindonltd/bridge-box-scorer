@@ -27,7 +27,12 @@ export async function closeSeatDevices(
 import { expect } from "@playwright/test";
 import { io as ioClient } from "socket.io-client";
 import { createGame } from "../fixtures/game-create";
-import { setTableCount, pickFirstMovement, startGame } from "../fixtures/game-setup";
+import {
+  setTableCount,
+  pickFirstMovement,
+  startGame,
+  openSetupStep,
+} from "../fixtures/game-setup";
 import {
   seatTwoTableFieldOnDevices,
   seatTwoTableSectionOnDevices,
@@ -99,8 +104,8 @@ export async function setUpStartedTwoSectionGame(
   // Section A: two tables (single stepper, before a second section exists).
   await setTableCount(directorPage, 2);
 
-  // Movement tab: the single-section picker shows an "Add Section" banner.
-  await directorPage.getByRole("tab", { name: "Movement" }).click();
+  // Movement view: the single-section picker shows an "Add Section" banner.
+  await openSetupStep(directorPage, "Movement");
   await directorPage.getByRole("button", { name: "Add Section" }).click();
 
   // Section B now exists (default table count). Size it to 2 tables via the
@@ -157,11 +162,11 @@ async function sizeSectionTables(
 }
 
 /**
- * From the setup Movement tab's SectionManager list, open a section's movement
+ * From the setup Movement view's SectionManager list, open a section's movement
  * picker and choose the first recommended movement card.
  */
 async function pickMovementForSection(page: Page, section: string): Promise<void> {
-  await page.getByRole("tab", { name: "Movement" }).click();
+  await openSetupStep(page, "Movement");
 
   // The section row shows its "Section {letter}" heading and a Set/Change
   // Movement button. Scope the button to the section's row.

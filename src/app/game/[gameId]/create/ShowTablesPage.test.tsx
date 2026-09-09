@@ -238,9 +238,9 @@ describe("ShowTablesPage", () => {
     expect(screen.getByText(/A3EW will sit out/)).toBeInTheDocument();
   });
 
-  it("renders the setup tab bar passed via the tabs slot", () => {
-    render(<ShowTablesPage tabs={<div>tab bar</div>} />);
-    expect(screen.getByText("tab bar")).toBeInTheDocument();
+  it("renders the setup menu passed via the menu slot", () => {
+    render(<ShowTablesPage menu={<div>setup menu</div>} />);
+    expect(screen.getByText("setup menu")).toBeInTheDocument();
   });
 
   it("maps participants into occupied tables and exposes a sync selector", () => {

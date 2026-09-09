@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 import { createGame } from "../fixtures/game-create";
-import { setTableCount } from "../fixtures/game-setup";
+import { setTableCount, openSetupStep } from "../fixtures/game-setup";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { deleteGame } from "../fixtures/delete-game";
 import {
@@ -36,8 +36,8 @@ test.describe("Multi-section setup CRUD", () => {
     try {
       await setTableCount(directorPage, 2);
 
-      // Movement tab -> single-section picker with the "Add Section" banner.
-      await directorPage.getByRole("tab", { name: "Movement" }).click();
+      // Movement view -> single-section picker with the "Add Section" banner.
+      await openSetupStep(directorPage, "Movement");
       await directorPage.getByRole("button", { name: "Add Section" }).click();
 
       // Now multi-section: the SectionManager lists Section A and Section B.

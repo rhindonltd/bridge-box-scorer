@@ -1,7 +1,11 @@
 import { test, expect, Page } from "@playwright/test";
 
 import { createGame } from "../fixtures/game-create";
-import { setTableCount, pickFirstMovement } from "../fixtures/game-setup";
+import {
+  setTableCount,
+  pickFirstMovement,
+  openSetupStep,
+} from "../fixtures/game-setup";
 import { seatPair, SEEDED_EBU } from "../fixtures/join";
 import { deleteGame } from "../fixtures/delete-game";
 import { newParticipant } from "./support";
@@ -17,10 +21,10 @@ import { newParticipant } from "./support";
 
 const MINUS = "\u2212"; // the NumberStepper decrement glyph (U+2212)
 
-/** Open the setup Tables tab for a game. */
+/** Open the setup Tables view for a game. */
 async function openTablesTab(page: Page, gameId: string): Promise<void> {
   await page.goto(`/game/${gameId}/create`);
-  await page.getByRole("tab", { name: "Tables" }).click();
+  await openSetupStep(page, "Tables");
 }
 
 /**

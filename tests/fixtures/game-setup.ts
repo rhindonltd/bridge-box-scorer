@@ -1,9 +1,11 @@
 import { Page, expect } from "@playwright/test";
 
 /**
- * Pure-UI game setup helpers, driven through the director setup tabs at
+ * Pure-UI game setup helpers, driven through the director setup menu at
  * `/game/{id}/create`: Tables (table count + seating overview), Movement
- * (recommended movement picker) and the Start Game action.
+ * (recommended movement picker) and the Start Game action. The three views are
+ * reached from a hamburger menu in the header's top-right (aria-label
+ * "Setup menu"), whose entries are Tables / Movement / Timer.
  *
  * A two-table game is the smallest field that yields a recommended movement
  * (a single table offers none), so the live-update journeys use two tables.
@@ -11,6 +13,16 @@ import { Page, expect } from "@playwright/test";
 
 // The NumberStepper decrement glyph is a MINUS SIGN (U+2212), not a hyphen.
 const MINUS = "\u2212";
+
+/**
+ * Open the header hamburger ("Setup menu") and switch to the named setup view
+ * (Tables / Movement / Timer). Replaces the old segmented tab bar, so callers
+ * that previously clicked a `tab` now go through this menu.
+ */
+export async function openSetupStep(page: Page, name: string): Promise<void> {
+  await page.getByRole("button", { name: "Setup menu" }).click();
+  await page.getByRole("menuitem", { name }).click();
+}
 
 async function readTableCount(page: Page): Promise<number> {
   const value = await page.evaluate(() => {
@@ -34,7 +46,7 @@ async function readTableCount(page: Page): Promise<number> {
  * exactly as a director would (there is no direct text entry).
  */
 export async function setTableCount(page: Page, target: number): Promise<void> {
-  await page.getByRole("tab", { name: "Tables" }).click();
+  await openSetupStep(page, "Tables");
   await expect(page.getByRole("button", { name: MINUS, exact: true })).toBeVisible();
 
   for (let guard = 0; guard < 20; guard++) {
@@ -58,7 +70,7 @@ export async function setTableCount(page: Page, target: number): Promise<void> {
  * becomes startable.
  */
 export async function pickFirstMovement(page: Page): Promise<void> {
-  await page.getByRole("tab", { name: "Movement" }).click();
+  await openSetupStep(page, "Movement");
   const firstCard = page.getByTestId("movement-card").first();
   await expect(firstCard).toBeVisible({ timeout: 15000 });
   await firstCard.click();
@@ -93,7 +105,7 @@ export async function pickMovementByName(
   page: Page,
   nameSubstring: string,
 ): Promise<string> {
-  await page.getByRole("tab", { name: "Movement" }).click();
+  await openSetupStep(page, "Movement");
   const cards = page.getByTestId("movement-card");
   await expect(cards.first()).toBeVisible({ timeout: 15000 });
 
@@ -120,9 +132,9 @@ export async function pickMovementByName(
  */
 export async function startGame(page: Page, gameId: string): Promise<void> {
   // Seating leaves the director on the last pair's play page, so return to the
-  // setup route before driving the Tables tab.
+  // setup route before driving the Tables view.
   await page.goto(`/game/${gameId}/create`);
-  await page.getByRole("tab", { name: "Tables" }).click();
+  await openSetupStep(page, "Tables");
   const startButton = page.getByRole("button", { name: "Start Game" });
   await expect(startButton).toBeEnabled({ timeout: 15000 });
   await startButton.click();

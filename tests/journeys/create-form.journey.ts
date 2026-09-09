@@ -66,7 +66,7 @@ test.describe("Create game form", () => {
       await page.getByRole("button", { name: "Create Game", exact: true }).click();
       await page.waitForURL(/\/game\/.+\/create/, { timeout: 15000 });
       gameId = await extractGameId(page);
-      await expect(page.getByRole("tab", { name: "Tables" })).toBeVisible({
+      await expect(page.getByRole("button", { name: "Setup menu" })).toBeVisible({
         timeout: 15000,
       });
     } finally {
@@ -88,7 +88,7 @@ test.describe("Create game form", () => {
       await page.getByRole("button", { name: "Create Game", exact: true }).click();
       await page.waitForURL(/\/game\/.+\/create/, { timeout: 15000 });
       gameId = await extractGameId(page);
-      await expect(page.getByRole("tab", { name: "Tables" })).toBeVisible({
+      await expect(page.getByRole("button", { name: "Setup menu" })).toBeVisible({
         timeout: 15000,
       });
     } finally {
