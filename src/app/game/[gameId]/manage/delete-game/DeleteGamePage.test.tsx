@@ -81,9 +81,11 @@ describe("DeleteGamePage", () => {
       "/api/games/g1/delete",
       expect.objectContaining({
         method: "DELETE",
-        body: JSON.stringify({ directorToken: "tok-123" }),
+        headers: { "x-director-token": "tok-123" },
       }),
     );
+    // The DELETE carries no request body — the token travels in the header.
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty("body");
     expect(mockClearDirectorToken).toHaveBeenCalledWith("g1");
   });
 

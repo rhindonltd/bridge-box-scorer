@@ -26,10 +26,7 @@ export function DeleteGamePage({
     try {
       const res = await fetch(`/api/games/${game.gameId}/delete`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          directorToken: getDirectorToken(game.gameId),
-        }),
+        headers: { "x-director-token": getDirectorToken(game.gameId) ?? "" },
       });
 
       if (res.ok) {

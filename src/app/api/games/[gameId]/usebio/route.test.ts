@@ -17,16 +17,13 @@ import { findClub } from "@/db/system/queries/find-club";
 import { generateUsebio } from "@/services/usebio-service";
 import { GET } from "./route";
 
-// NOTE: this route is exported as GET but is wrapped in withDirectorRoute,
-// which reads a JSON body (the director token). Browsers/undici forbid a body
-// on a real GET, so we invoke the exported handler directly with a Request
-// that carries a JSON body — exercising the full route -> withDirectorRoute ->
-// handler wiring without NTARH's strict GET/body rejection.
+// The director token travels in the `x-director-token` header, so this is a
+// plain GET with no body — exercising the route -> withDirectorRoute -> handler
+// wiring the way the client actually calls it.
 function invoke(gameId: string) {
   const req = new Request("http://localhost/api/games/g1/usebio", {
-    method: "POST", // Request() also forbids GET+body; the wrapper ignores method.
-    body: JSON.stringify({ directorToken: "tok" }),
-    headers: { "content-type": "application/json" },
+    method: "GET",
+    headers: { "x-director-token": "tok" },
   });
   return GET(req, { params: Promise.resolve({ gameId }) } as never);
 }
