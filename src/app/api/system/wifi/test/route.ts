@@ -5,6 +5,7 @@ import { z } from "zod";
 import { withAdminRoute } from "@/lib/api/adminRoute";
 import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
+import { writeTestResult } from "@/lib/system/wifi-config";
 
 const execFileAsync = promisify(execFile);
 
@@ -86,6 +87,19 @@ export const POST = withAdminRoute(async ({ req }) => {
   // Ensure no stale profile from a previous interrupted test lingers.
   await deleteTestProfile();
 
+  // Mark the test in-progress BEFORE we bring the profile up. On a single-radio
+  // appliance, `connection up` drops the hosted AP, so the client that made
+  // this request loses its connection and will never see the HTTP response
+  // below. It reconnects once the AP returns and reads this persisted outcome
+  // instead. Recording "in progress" first lets the client tell "still testing"
+  // from "done" during that window.
+  writeTestResult({
+    ssid,
+    connected: false,
+    at: new Date().toISOString(),
+    inProgress: true,
+  });
+
   try {
     // Create a non-autoconnecting WiFi profile for the target network. This
     // only writes an in-memory/keyfile profile; it does not activate anything.
@@ -118,10 +132,26 @@ export const POST = withAdminRoute(async ({ req }) => {
     // credentials are wrong or the network is unreachable.
     await nmcli(["connection", "up", TEST_PROFILE]);
 
+    // Persist success so the (now-disconnected) client can read it once the AP
+    // is back. The direct response below may never reach the client.
+    writeTestResult({
+      ssid,
+      connected: true,
+      at: new Date().toISOString(),
+      inProgress: false,
+    });
+
     return success({ connected: true });
   } catch {
     // Association failed (bad password, out of range, etc.). This is a valid
     // test outcome, not a server error, so return 200 with success: false.
+    writeTestResult({
+      ssid,
+      connected: false,
+      at: new Date().toISOString(),
+      inProgress: false,
+    });
+
     return NextResponse.json(
       { success: false, error: "Failed to connect to the network" },
       { status: 200 },

@@ -604,10 +604,28 @@ scaffolding:
   (`wifi-settings.journey.ts`, `settings.spec.ts`). **Product improvement made
   here:** scan/test/save now degrade gracefully (200 + `available:false` /
   clear error) instead of a 500 when `nmcli` is absent.
-- [ ] WiFi test SUCCESS + Save-gating (test-of-same-SSID enables Save) — needs a
-  real WiFi association; only reachable on an `nmcli` host (the picker test is
-  skipped without it). The scan-availability, unavailable-page, and gated-Save
-  (disabled) states are covered.
+- [x] WiFi scan is a forced active rescan (`nmcli … device wifi list --rescan
+  yes`) that briefly interrupts the appliance's own hotspot on a single-radio
+  box to get a complete list; a transient busy failure is retried once, and the
+  appliance's own AP SSID is filtered out (`scan/route.test.ts`,
+  `wifi-scan.test.ts`). The picker shows a persistent interruption warning and a
+  manual Rescan control (`wifi-settings.journey.ts` under the `nmcli` guard,
+  `WifiSettingsForm.test.tsx`).
+- [x] WiFi test is disconnect-safe: the test route persists its outcome
+  (`in-progress` → `connected`/failed) so the client — which loses its
+  connection when the test drops the AP — reads the result via
+  `GET /api/system/wifi/test/status` after the hotspot returns
+  (`test/route.test.ts`, `test/status/route.test.ts`). The client shows a
+  full-screen "device will reconnect automatically" state and polls
+  `/api/system/network` back to life (`wifi-recovery.test.ts`).
+- [ ] WiFi test SUCCESS end-to-end + Save-gating (real association →
+  test-of-same-SSID enables Save) — still needs a real `nmcli`/WiFi host, since
+  it requires an actual disconnect/reconnect cycle that CI cannot perform.
+  **Manual verification:** on an appliance, select a real network, enter its
+  password, tap Test, confirm the "reconnecting" screen appears, the device
+  drops and rejoins the BridgeBox WiFi, the result shows success, and Save &
+  Apply then enables. The scan-availability, unavailable-page, warning/Rescan,
+  and gated-Save (disabled) states are covered automatically.
 - [ ] WiFi restarting page shown after save.
 - [x] Save WiFi (`POST /api/system/wifi`) is admin-gated; returns 200
   `{success:false}` when WiFi management is unavailable (route unit tests).

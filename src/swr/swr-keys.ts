@@ -31,4 +31,6 @@ export const swrKeys = {
     `/api/players/search?q=${encodeURIComponent(query)}`,
 
   wifiScan: () => "/api/system/wifi/scan",
+
+  wifiTestStatus: () => "/api/system/wifi/test/status",
 };

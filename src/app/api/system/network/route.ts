@@ -1,24 +1,11 @@
 import { exec } from "child_process";
 import { promisify } from "util";
-import fs from "fs";
 import { withBasicRoute } from "@/lib/api/basicRoute";
 import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
+import { readSavedSSID } from "@/lib/system/wifi-config";
 
 const execAsync = promisify(exec);
-
-const WIFI_CONFIG = "/home/bridgebox/bridge-box/wifi.json";
-
-/** Read the saved WiFi SSID from the on-disk config, if present. */
-function readSavedSSID(): string | null {
-  if (!fs.existsSync(WIFI_CONFIG)) return null;
-  try {
-    const savedConfig = JSON.parse(fs.readFileSync(WIFI_CONFIG, "utf-8"));
-    return savedConfig?.ssid ?? null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * GET /api/system/network
