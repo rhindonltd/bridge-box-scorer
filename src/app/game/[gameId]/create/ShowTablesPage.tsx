@@ -21,9 +21,11 @@ import { type ReactNode } from "react";
 type Props = {
   /** Setup navigation menu rendered in the header's right-hand slot. */
   menu?: ReactNode;
+  /** Navigate to the movement-selection step (e.g. from the movement banner). */
+  onEditMovement?: () => void;
 };
 
-export function ShowTablesPage({ menu }: Props) {
+export function ShowTablesPage({ menu, onEditMovement }: Props) {
   const { game, mutateGame } = useRequiredGame();
 
   const gameId = game.gameId;
@@ -47,11 +49,29 @@ export function ShowTablesPage({ menu }: Props) {
   // share/relay). Both are empty until a movement is chosen/loaded, and both
   // are suppressed when the section's table count doesn't match the movement's
   // — so a resized section never shows stale guidance.
-  const { stationary: stationaryPairs, placement } = useMovementResolution(
+  const {
+    stationary: stationaryPairs,
+    placement,
+    movementTables,
+  } = useMovementResolution(
     currentSection?.selectedMovement ?? null,
     game.gameType,
     currentSection?.tables ?? 0,
   );
+
+  // Movement warning for the currently-selected section:
+  //  - no movement chosen yet, or
+  //  - a movement is chosen but its table count no longer matches the section
+  //    as laid out (resized away from the movement's size).
+  // `movementTables` is 0 when nothing is resolved (no movement, or a SPEC
+  // lookup still loading), so we only flag a mismatch once it is known (> 0).
+  const noMovement = !!currentSection && currentSection.selectedMovement == null;
+  const invalidMovement =
+    !!currentSection &&
+    currentSection.selectedMovement != null &&
+    movementTables > 0 &&
+    movementTables !== currentSection.tables;
+  const showMovementWarning = noMovement || invalidMovement;
 
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
@@ -125,6 +145,27 @@ export function ShowTablesPage({ menu }: Props) {
   return (
     <GamePageLayout headerTitle="Tables" headerRight={menu}>
       <div className="flex h-full min-h-0 flex-col">
+        {/* Yellow, clickable warning pinned under the header when the selected
+            section has no movement, or a movement that no longer fits its table
+            count. Tapping it jumps to the movement-selection step. */}
+        {showMovementWarning && (
+          <button
+            type="button"
+            onClick={() => onEditMovement?.()}
+            data-testid="movement-warning-banner"
+            className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-yellow-300 bg-yellow-50 px-4 py-3 text-left text-sm font-medium text-yellow-900 hover:bg-yellow-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"
+          >
+            <span>
+              {noMovement
+                ? "Select a movement for this section."
+                : "This section’s movement no longer fits its table count. Update the movement."}
+            </span>
+            <span aria-hidden="true" className="shrink-0 font-semibold">
+              →
+            </span>
+          </button>
+        )}
+
         {/* Section pills pick which section is shown, pinned in a grey bar
             (matching the Movement step). */}
         <div className="flex shrink-0 justify-center border-b border-gray-200 bg-gray-50 px-4 py-3">

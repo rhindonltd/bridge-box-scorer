@@ -306,6 +306,61 @@ describe("ShowTablesPage", () => {
     expect(screen.queryByText(/Relay/)).not.toBeInTheDocument();
   });
 
+  it("shows a 'select a movement' banner when the section has no movement", () => {
+    // Default section has selectedMovement: null.
+    const onEditMovement = vi.fn();
+    render(<ShowTablesPage onEditMovement={onEditMovement} />);
+
+    const banner = screen.getByTestId("movement-warning-banner");
+    expect(banner).toHaveTextContent("Select a movement for this section.");
+
+    fireEvent.click(banner);
+    expect(onEditMovement).toHaveBeenCalledOnce();
+  });
+
+  it("shows an 'update the movement' banner when the movement no longer fits the table count", () => {
+    currentSections = [
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: { source: "MITCHELL" } as never,
+      },
+    ];
+    // Movement resolves to a different table count than the section (2).
+    mockMovementTables = 3;
+
+    const onEditMovement = vi.fn();
+    render(<ShowTablesPage onEditMovement={onEditMovement} />);
+
+    const banner = screen.getByTestId("movement-warning-banner");
+    expect(banner).toHaveTextContent("no longer fits its table count");
+
+    fireEvent.click(banner);
+    expect(onEditMovement).toHaveBeenCalledOnce();
+  });
+
+  it("hides the banner when a movement is selected and fits the table count", () => {
+    currentSections = [
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: { source: "MITCHELL" } as never,
+      },
+    ];
+    // Movement matches the section's table count.
+    mockMovementTables = 2;
+
+    render(<ShowTablesPage />);
+
+    expect(
+      screen.queryByTestId("movement-warning-banner"),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows only the selected section's grid and stepper", () => {
     currentSections = [
       { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
