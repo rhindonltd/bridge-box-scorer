@@ -13,7 +13,7 @@ import { Pair, Seat, seatFor } from "@/model/participants";
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import NumberStepper from "@/components/common/NumberStepper";
+import { StepperInput } from "@/components/common/StepperInput";
 import { useSetupSections } from "@/components/manage/sections/useSetupSections";
 import { useMovementResolution } from "@/hooks/stationary-pairs";
 import { type ReactNode } from "react";
@@ -153,13 +153,16 @@ export function ShowTablesPage({ menu }: Props) {
                       {currentSection.tables}{" "}
                       {currentSection.tables === 1 ? "table" : "tables"}
                     </h2>
-                    <NumberStepper
-                      min={1}
-                      value={currentSection.tables}
-                      onChange={(t) =>
-                        handleResizeSection(currentSection.section, t)
-                      }
-                    />
+                    <div className="w-32">
+                      <StepperInput
+                        label="Tables"
+                        min={1}
+                        value={currentSection.tables}
+                        onChange={(t) =>
+                          handleResizeSection(currentSection.section, t)
+                        }
+                      />
+                    </div>
                   </div>
                   <div className="p-3">
                     <DirectorTableControls

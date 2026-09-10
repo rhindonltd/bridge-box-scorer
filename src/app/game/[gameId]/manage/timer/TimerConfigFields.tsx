@@ -1,6 +1,7 @@
 "use client";
 
-import { DurationStepperInput } from "./DurationStepperInput";
+import { PillToggle } from "@/components/common/PillToggle";
+import { StepperInput } from "@/components/common/StepperInput";
 import { TimerConfig } from "./timer-view-types";
 
 interface Props {
@@ -21,7 +22,7 @@ interface Props {
  * from a movement. Shared by the config screen and the live screen's "Apply
  * Changes" editing.
  *
- * Numeric fields use {@link DurationStepperInput}, a single segmented control
+ * Numeric fields use {@link StepperInput}, a single segmented control
  * (−/+ around a text field) that is reliable on touch and lets the box be
  * cleared while typing instead of snapping back to a sticky zero.
  */
@@ -43,7 +44,7 @@ export function TimerConfigFields({
             >
               Boards / Round
             </label>
-            <DurationStepperInput
+            <StepperInput
               id="boards-per-round"
               label="Boards / Round"
               value={config.boardsPerRound}
@@ -58,7 +59,7 @@ export function TimerConfigFields({
             >
               Total Rounds
             </label>
-            <DurationStepperInput
+            <StepperInput
               id="total-rounds"
               label="Total Rounds"
               value={config.totalRounds}
@@ -72,6 +73,12 @@ export function TimerConfigFields({
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium text-gray-600">Timing</span>
         <PillToggle
+          name="timingMode"
+          legend="Timing Mode"
+          options={[
+            { value: "perRound", label: "Per Round" },
+            { value: "perBoard", label: "Per Board" },
+          ]}
           value={config.timingMode}
           onChange={(mode) => onConfigChange("timingMode", mode)}
         />
@@ -109,7 +116,7 @@ export function TimerConfigFields({
           Warning at (seconds before end of play)
         </label>
         <div className="max-w-[14rem]">
-          <DurationStepperInput
+          <StepperInput
             id="warning-seconds"
             label="Warning at (seconds before end of play)"
             value={config.warningSeconds}
@@ -120,51 +127,6 @@ export function TimerConfigFields({
         </div>
       </div>
     </div>
-  );
-}
-
-interface PillToggleProps {
-  value: TimerConfig["timingMode"];
-  onChange: (mode: TimerConfig["timingMode"]) => void;
-}
-
-/**
- * Segmented pill control for the play/board timing mode. Uses real radio inputs
- * (visually hidden) so it stays keyboard- and screen-reader accessible while
- * presenting as two pills.
- */
-function PillToggle({ value, onChange }: PillToggleProps) {
-  const pill = (active: boolean) =>
-    `flex-1 cursor-pointer rounded-lg px-4 py-2 text-center text-sm font-medium transition ${
-      active
-        ? "bg-white text-blue-700 shadow-sm"
-        : "text-gray-600 hover:text-gray-800"
-    }`;
-
-  return (
-    <fieldset className="flex gap-1 rounded-xl bg-gray-100 p-1">
-      <legend className="sr-only">Timing Mode</legend>
-      <label className={pill(value === "perRound")}>
-        <input
-          type="radio"
-          name="timingMode"
-          className="sr-only"
-          checked={value === "perRound"}
-          onChange={() => onChange("perRound")}
-        />
-        Per Round
-      </label>
-      <label className={pill(value === "perBoard")}>
-        <input
-          type="radio"
-          name="timingMode"
-          className="sr-only"
-          checked={value === "perBoard"}
-          onChange={() => onChange("perBoard")}
-        />
-        Per Board
-      </label>
-    </fieldset>
   );
 }
 
@@ -197,7 +159,7 @@ function DurationField({
       <span className="text-sm font-medium text-gray-600">{label}</span>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <DurationStepperInput
+          <StepperInput
             label={minutesLabel}
             value={minutes}
             min={0}
@@ -207,7 +169,7 @@ function DurationField({
           <span className="pl-1 text-xs text-gray-400">min</span>
         </div>
         <div className="flex flex-col gap-1">
-          <DurationStepperInput
+          <StepperInput
             label={secondsLabel}
             value={seconds}
             min={0}

@@ -130,6 +130,7 @@ export function TimerConfigView({
       />
       <TimerBreaksEditor
         breaks={config.breaks}
+        totalRounds={config.totalRounds}
         onAddBreak={onAddBreak}
         onRemoveBreak={onRemoveBreak}
         onBreakChange={onBreakChange}
@@ -138,17 +139,24 @@ export function TimerConfigView({
   );
 
   if (embedded) {
+    // Fill the height given by the setup layout: the pills bar stays pinned at
+    // the top while only the config body scrolls (mirrors the Movement step).
     return (
-      <div className="flex flex-col">
+      <div className="flex h-full min-h-0 flex-col">
         {pillsBar}
-        <div className="flex flex-col items-center gap-4 p-4">{body}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="flex flex-col items-center gap-4 p-4">{body}</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <GamePageLayout headerTitle="Timer Setup" centerContent={false}>
-      {pillsBar}
+    <GamePageLayout
+      headerTitle="Timer Setup"
+      centerContent={false}
+      subHeader={pillsBar}
+    >
       <div className="flex flex-col items-center gap-4 p-4">{body}</div>
     </GamePageLayout>
   );

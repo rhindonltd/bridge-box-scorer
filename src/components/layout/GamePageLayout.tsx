@@ -12,6 +12,11 @@ interface Props {
   backAction?: () => void;
   backHref?: string;
   headerRight?: React.ReactNode;
+  /**
+   * Optional content pinned directly beneath the header, above the scrollable
+   * body (e.g. section pills that should stay visible while the body scrolls).
+   */
+  subHeader?: React.ReactNode;
   /** Fixed-bottom action buttons. Omit to hide the action bar. */
   actions?: React.ReactNode;
   /** When true, content area centres children vertically and horizontally (for menu-only pages). */
@@ -25,6 +30,7 @@ export function GamePageLayout({
   backAction,
   backHref,
   headerRight,
+  subHeader,
   actions,
   centerContent = false,
   children,
@@ -38,6 +44,9 @@ export function GamePageLayout({
         backHref={backHref}
         headerRight={headerRight}
       />
+
+      {/* Optional pinned sub-header (stays put while the body scrolls) */}
+      {subHeader && <div className="shrink-0">{subHeader}</div>}
 
       {centerContent ? (
         <CenteredContent>{children}</CenteredContent>

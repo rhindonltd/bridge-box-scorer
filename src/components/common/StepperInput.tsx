@@ -44,7 +44,7 @@ interface Props {
  * The middle element is a real `<input type="number">` so existing tests that
  * drive it via `fireEvent.change` and read `toHaveValue` continue to work.
  */
-export function DurationStepperInput({
+export function StepperInput({
   label,
   value,
   onChange,
