@@ -130,4 +130,121 @@ describe("DirectorTableControls", () => {
 
     expect(screen.queryByText("Stationary")).not.toBeInTheDocument();
   });
+
+  it("shows a board range for a table's placement", () => {
+    const withPlacement: DirectorTable[] = [
+      { ...tables()[0], placement: { boardStart: 1, boardEnd: 3 } },
+    ];
+
+    render(
+      <DirectorTableControls
+        tables={withPlacement}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+
+    expect(screen.getByText("Boards 1\u20133")).toBeInTheDocument();
+  });
+
+  it("shows a single board (not a range) when start equals end", () => {
+    const withPlacement: DirectorTable[] = [
+      { ...tables()[0], placement: { boardStart: 5, boardEnd: 5 } },
+    ];
+
+    render(
+      <DirectorTableControls
+        tables={withPlacement}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+
+    expect(screen.getByText("Board 5")).toBeInTheDocument();
+  });
+
+  it("appends the physical copy when the movement uses copies", () => {
+    const withPlacement: DirectorTable[] = [
+      {
+        ...tables()[0],
+        placement: { boardStart: 1, boardEnd: 3, boardCopy: "B" },
+      },
+    ];
+
+    render(
+      <DirectorTableControls
+        tables={withPlacement}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+
+    expect(screen.getByText("Boards 1\u20133 (Copy B)")).toBeInTheDocument();
+  });
+
+  it("shows a share note (singular and plural)", () => {
+    const single: DirectorTable[] = [
+      {
+        ...tables()[0],
+        placement: { boardStart: 1, boardEnd: 2, sharesWith: [2] },
+      },
+    ];
+
+    const { rerender } = render(
+      <DirectorTableControls
+        tables={single}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+    expect(screen.getByText("Shares with table 2")).toBeInTheDocument();
+
+    const multi: DirectorTable[] = [
+      {
+        ...tables()[0],
+        placement: { boardStart: 1, boardEnd: 2, sharesWith: [2, 3] },
+      },
+    ];
+    rerender(
+      <DirectorTableControls
+        tables={multi}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+    expect(screen.getByText("Shares with tables 2, 3")).toBeInTheDocument();
+  });
+
+  it("shows a relay note", () => {
+    const withRelay: DirectorTable[] = [
+      {
+        ...tables()[0],
+        placement: { boardStart: 1, boardEnd: 2, relayWith: 4 },
+      },
+    ];
+
+    render(
+      <DirectorTableControls
+        tables={withRelay}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+
+    expect(screen.getByText("Relay \u2192 table 4")).toBeInTheDocument();
+  });
+
+  it("renders no board placement when the table has none", () => {
+    render(
+      <DirectorTableControls
+        tables={tables()}
+        onEvict={vi.fn()}
+        canRemoveTable={false}
+      />,
+    );
+
+    expect(screen.queryByText(/^Boards? /)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Shares with/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Relay/)).not.toBeInTheDocument();
+  });
 });

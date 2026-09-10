@@ -76,10 +76,28 @@ vi.mock("@/lib/fetcher", () => ({
   fetcher: vi.fn(),
 }));
 
-// Stationary-pair highlighting: default to none; a test overrides it.
+// Movement resolution: stationary highlighting + board placement. Default to
+// empty; tests override. `mockMovementTables` is reported back so the page can
+// reason about mismatches, but the hook itself applies the gate, so tests just
+// set the maps they expect.
 let mockStationary = new Map<number, { ns: boolean; ew: boolean }>();
+let mockPlacement = new Map<
+  number,
+  {
+    boardStart: number;
+    boardEnd: number;
+    boardCopy?: string;
+    sharesWith?: number[];
+    relayWith?: number;
+  }
+>();
+let mockMovementTables = 0;
 vi.mock("@/hooks/stationary-pairs", () => ({
-  useStationaryPairs: () => mockStationary,
+  useMovementResolution: () => ({
+    stationary: mockStationary,
+    placement: mockPlacement,
+    movementTables: mockMovementTables,
+  }),
 }));
 
 import { SocketEvents } from "@/socket/socket-events";
@@ -110,6 +128,8 @@ describe("ShowTablesPage", () => {
     ];
     currentSelected = "A";
     mockStationary = new Map();
+    mockPlacement = new Map();
+    mockMovementTables = 0;
   });
 
   afterEach(() => {
@@ -246,6 +266,44 @@ describe("ShowTablesPage", () => {
 
     // North + South of the stationary NS pair -> two "Stationary" badges.
     expect(screen.getAllByText("Stationary")).toHaveLength(2);
+  });
+
+  it("shows each table's board placement when a movement is resolved", () => {
+    mockMovementTables = 2;
+    mockPlacement = new Map([
+      [1, { boardStart: 1, boardEnd: 2 }],
+      [2, { boardStart: 3, boardEnd: 4 }],
+    ]);
+
+    render(<ShowTablesPage />);
+
+    expect(screen.getByText("Boards 1–2")).toBeInTheDocument();
+    expect(screen.getByText("Boards 3–4")).toBeInTheDocument();
+  });
+
+  it("shows copy, share, and relay notes on the placement", () => {
+    mockMovementTables = 2;
+    mockPlacement = new Map([
+      [1, { boardStart: 1, boardEnd: 3, boardCopy: "A", sharesWith: [2] }],
+      [2, { boardStart: 1, boardEnd: 3, boardCopy: "A", relayWith: 1 }],
+    ]);
+
+    render(<ShowTablesPage />);
+
+    // Copy label appears alongside the boards.
+    expect(screen.getAllByText("Boards 1–3 (Copy A)").length).toBeGreaterThan(0);
+    // Share and relay lines.
+    expect(screen.getByText("Shares with table 2")).toBeInTheDocument();
+    expect(screen.getByText("Relay → table 1")).toBeInTheDocument();
+  });
+
+  it("shows no board placement when the movement is not resolved", () => {
+    // Empty placement map (no movement / table-count mismatch).
+    render(<ShowTablesPage />);
+
+    expect(screen.queryByText(/^Boards? /)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Shares with/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Relay/)).not.toBeInTheDocument();
   });
 
   it("shows only the selected section's grid and stepper", () => {

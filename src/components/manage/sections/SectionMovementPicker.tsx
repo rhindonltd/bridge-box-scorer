@@ -8,7 +8,10 @@ import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedM
 import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
 import { recommendationsFromSpecMap } from "@/movement/recommendations/spec-map-recommendations";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
-import { MovementByTable } from "@/movement/movementData";
+import {
+  MovementByTable,
+  generatedToMovementByTable,
+} from "@/movement/movementData";
 import { generateMitchell } from "@/movement/mitchell/mitchell";
 import {
   setSectionMitchellMovement,
@@ -228,17 +231,9 @@ function MovementPreview({
   const previewTables = useMemo<MovementByTable[] | null>(() => {
     if (movement.specRef.source === "generated") {
       try {
-        const generated = generateMitchell(movement.specRef.spec);
-        return generated.tables.map((t) => ({
-          tableNumber: t.table,
-          rounds: t.rounds.map((r) => ({
-            roundNumber: r.round,
-            ns: r.participants.nsId,
-            ew: r.participants.ewId,
-            boardStart: r.boards[0],
-            boardEnd: r.boards[r.boards.length - 1],
-          })),
-        }));
+        return generatedToMovementByTable(
+          generateMitchell(movement.specRef.spec),
+        );
       } catch {
         return null;
       }
