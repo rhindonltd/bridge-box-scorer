@@ -67,84 +67,98 @@ describe("TimerSetup (config screen)", () => {
     ];
   });
 
-  it("saves the current config with timer:saveConfig and shows no run controls", () => {
+  it("auto-saves config edits with timer:saveConfig and shows no run controls", async () => {
     render(<TimerSetup />);
 
-    // Config-only: no Create/Start/Pause on the setup screen.
+    // Config-only: no Create/Start/Pause and no Save button on the setup screen.
     expect(screen.queryByRole("button", { name: "Create" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Start" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    // Editing any field triggers a (debounced) auto-save carrying the config.
+    fireEvent.change(
+      screen.getByLabelText("Warning at (seconds before end of play)"),
+      { target: { value: "45" } },
+    );
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.SAVE_CONFIG_TIMER,
-      expect.objectContaining({
-        gameId: "g1",
-        gameType: "PAIRS",
-        directorToken: "token",
-        boardsPerRound: 3,
-        totalRounds: 8,
-        // defaults: play 2m0s = 120s (perRound), move 1m30s = 90s
-        playDuration: 120,
-        moveDuration: 90,
-      }),
+    await waitFor(() =>
+      expect(mockEmit).toHaveBeenLastCalledWith(
+        SocketEvents.SAVE_CONFIG_TIMER,
+        expect.objectContaining({
+          gameId: "g1",
+          gameType: "PAIRS",
+          directorToken: "token",
+          boardsPerRound: 3,
+          totalRounds: 8,
+          // defaults: play 2m0s = 120s (perRound), move 1m30s = 90s
+          playDuration: 120,
+          moveDuration: 90,
+          warningSeconds: 45,
+        }),
+      ),
     );
   });
 
-  it("reflects editable config edits in the save payload", () => {
+  it("reflects editable config edits in the auto-save payload", async () => {
     render(<TimerSetup />);
 
     fireEvent.change(screen.getByLabelText("Play minutes"), {
       target: { value: "7" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.SAVE_CONFIG_TIMER,
-      expect.objectContaining({
-        // Structure comes from the selected movement (read-only).
-        totalRounds: 8,
-        boardsPerRound: 3,
-        playDuration: 420,
-      }),
+    await waitFor(() =>
+      expect(mockEmit).toHaveBeenLastCalledWith(
+        SocketEvents.SAVE_CONFIG_TIMER,
+        expect.objectContaining({
+          // Structure comes from the selected movement (read-only).
+          totalRounds: 8,
+          boardsPerRound: 3,
+          playDuration: 420,
+        }),
+      ),
     );
   });
 
-  it("derives boards/round and total rounds from the movement (read-only)", () => {
+  it("shows movement-derived boards/round and total rounds in the summary (not as inputs)", () => {
     render(<TimerSetup />);
 
-    const boards = screen.getByLabelText("Boards / Round");
-    const rounds = screen.getByLabelText("Total Rounds");
-    expect(boards).toHaveValue(3);
-    expect(rounds).toHaveValue(8);
-    expect(boards).toHaveAttribute("readonly");
-    expect(rounds).toHaveAttribute("readonly");
+    // Structure is derived from the movement, so it is shown read-only in the
+    // summary panel rather than as editable inputs.
+    expect(screen.queryByLabelText("Boards / Round")).toBeNull();
+    expect(screen.queryByLabelText("Total Rounds")).toBeNull();
+
+    const boardsRow = screen.getByText("Boards / Round").closest("div")!;
+    expect(boardsRow).toHaveTextContent("3");
+    const roundsRow = screen.getByText("Rounds").closest("div")!;
+    expect(roundsRow).toHaveTextContent("8");
   });
 
-  it("disables the timer config and hides Save when the section has no movement", () => {
+  it("disables the timer config and emits nothing when the section has no movement", () => {
     mockSections = [{ section: "A", label: "A", selectedMovement: null }];
     render(<TimerSetup />);
 
     expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
     expect(screen.queryByLabelText("Total Rounds")).toBeNull();
-    // Save is hidden entirely while no movement is selected.
-    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+    // No config to save while no movement is selected.
+    expect(
+      mockEmit.mock.calls.some((c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER),
+    ).toBe(false);
   });
 
-  it("uses per-board timing to multiply the play duration when saving", () => {
+  it("uses per-board timing to multiply the play duration on auto-save", async () => {
     render(<TimerSetup />);
 
-    fireEvent.click(screen.getByLabelText("Per Board"));
     // default play 2m = 120s, boardsPerRound 3 -> 360s per round.
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.SAVE_CONFIG_TIMER,
-      expect.objectContaining({ playDuration: 360 }),
+    fireEvent.click(screen.getByLabelText("Per Board"));
+    await waitFor(() =>
+      expect(mockEmit).toHaveBeenLastCalledWith(
+        SocketEvents.SAVE_CONFIG_TIMER,
+        expect.objectContaining({ playDuration: 360 }),
+      ),
     );
   });
 
-  it("routes the editable config fields through the onConfigChange switch", () => {
+  it("routes the editable config fields through the onConfigChange switch", async () => {
     render(<TimerSetup />);
 
     fireEvent.change(screen.getByLabelText("Play seconds"), {
@@ -162,18 +176,20 @@ describe("TimerSetup (config screen)", () => {
     );
     fireEvent.click(screen.getByLabelText("Per Board"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    const call = mockEmit.mock.calls.find(
-      (c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER,
-    );
-    expect(call![1]).toMatchObject({
-      // Boards/round is derived from the movement (3), not edited here.
-      boardsPerRound: 3,
-      warningSeconds: 45,
-      // per board: play (2m10s = 130s) * 3 boards = 390
-      playDuration: 390,
-      // move 2m20s = 140s
-      moveDuration: 140,
+    // The burst of edits debounces into a single save with the final values.
+    await waitFor(() => {
+      const call = mockEmit.mock.calls
+        .filter((c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER)
+        .at(-1);
+      expect(call![1]).toMatchObject({
+        // Boards/round is derived from the movement (3), not edited here.
+        boardsPerRound: 3,
+        warningSeconds: 45,
+        // per board: play (2m10s = 130s) * 3 boards = 390
+        playDuration: 390,
+        // move 2m20s = 140s
+        moveDuration: 140,
+      });
     });
   });
 
@@ -203,16 +219,21 @@ describe("TimerSetup (config screen)", () => {
     expect(
       screen.getByLabelText("Warning at (seconds before end of play)"),
     ).toHaveValue(30);
-    // ...but the structure comes from the movement, overriding the saved 11/2.
-    expect(screen.getByLabelText("Total Rounds")).toHaveValue(8);
-    expect(screen.getByLabelText("Boards / Round")).toHaveValue(3);
+    // ...but the structure comes from the movement, overriding the saved 11/2,
+    // and is shown in the summary panel rather than as inputs.
+    const roundsRow = screen.getByText("Rounds").closest("div")!;
+    expect(roundsRow).toHaveTextContent("8");
+    const boardsRow = screen.getByText("Boards / Round").closest("div")!;
+    expect(boardsRow).toHaveTextContent("3");
   });
 
   it("renders without the page header when embedded", () => {
     render(<TimerSetup embedded />);
 
     expect(screen.queryByText("Timer Setup")).toBeNull();
-    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    // Config card is present; no Save button (auto-save).
+    expect(screen.getByText("Session Length")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });
 
   it("adds, edits (duration + resume) and removes breaks, feeding them to the payload", () => {
@@ -244,10 +265,10 @@ describe("TimerSetup (config screen)", () => {
         vi.advanceTimersByTime(1000);
       });
 
-      fireEvent.click(screen.getByRole("button", { name: "Save" }));
-      const saveCall = mockEmit.mock.calls.find(
-        (c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER,
-      );
+      // Auto-save fires as breaks are edited; inspect the latest save payload.
+      const saveCall = mockEmit.mock.calls
+        .filter((c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER)
+        .at(-1);
       expect(saveCall).toBeTruthy();
       expect(saveCall![1].breaks).toHaveLength(1);
       expect(saveCall![1].breaks[0]).toMatchObject({
@@ -402,8 +423,10 @@ describe("TimerManager (routes by started state)", () => {
 
   it("shows the config screen when the game has not started", () => {
     render(<TimerManager started={false} />);
-    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    // Config screen: summary panel, no Apply Changes and no Save button.
+    expect(screen.getByText("Session Length")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Apply Changes" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });
 
   it("shows the live controls when the game is in progress", () => {
@@ -551,26 +574,32 @@ describe("per-section timer UI", () => {
     ).toBeNull();
   });
 
-  it("saves config for the selected section", () => {
+  it("auto-saves config for the selected section", async () => {
     mockSections = [
       { section: "A", label: "A", selectedMovement: mitchellMovement },
       { section: "B", label: "B", selectedMovement: mitchellMovement },
     ];
     render(<TimerSetup />);
 
-    // Defaults to the first section.
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.SAVE_CONFIG_TIMER,
-      expect.objectContaining({ section: "A" }),
+    // Defaults to the first section: editing a field auto-saves for section A.
+    fireEvent.click(screen.getByLabelText("Per Board"));
+
+    // Switching sections unmounts the A container, flushing its pending save.
+    fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
+    await waitFor(() =>
+      expect(mockEmit).toHaveBeenCalledWith(
+        SocketEvents.SAVE_CONFIG_TIMER,
+        expect.objectContaining({ section: "A" }),
+      ),
     );
 
-    // Switch to section B and save again.
-    fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.SAVE_CONFIG_TIMER,
-      expect.objectContaining({ section: "B" }),
+    // Editing section B auto-saves for section B.
+    fireEvent.click(screen.getByLabelText("Per Board"));
+    await waitFor(() =>
+      expect(mockEmit).toHaveBeenLastCalledWith(
+        SocketEvents.SAVE_CONFIG_TIMER,
+        expect.objectContaining({ section: "B" }),
+      ),
     );
   });
 

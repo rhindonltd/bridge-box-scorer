@@ -6,18 +6,13 @@ import { TimerConfigFields } from "./TimerConfigFields";
 import { TimerBreaksEditor } from "./TimerBreaksEditor";
 import { TimerConfig, TimerConfigHandlers } from "./timer-view-types";
 
-const btnBase =
-  "py-4 rounded-xl text-lg font-semibold active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
-
 export interface TimerConfigViewProps extends TimerConfigHandlers {
   config: TimerConfig;
-  /** Human-readable total session length for the preview panel. */
+  /** Human-readable total session length for the summary panel. */
   sessionLength: string;
-  /** Projected end time for the preview panel. */
+  /** Projected session end time for the summary panel. */
   previewEnd: string;
   breakProblems: BreakProblem[];
-  /** Persist the current configuration for this section (does not start it). */
-  onSave: () => void;
   /**
    * Optional content rendered above the config (e.g. a section selector for
    * multi-section games).
@@ -42,7 +37,8 @@ export interface TimerConfigViewProps extends TimerConfigHandlers {
 
 /**
  * Timer configuration screen. Lets the director set phase lengths, breaks and
- * the warning threshold, and save them. It deliberately exposes no run controls
+ * the warning threshold; changes are saved automatically by the container as
+ * they are made (no Save button). It deliberately exposes no run controls
  * (start/pause/next/adjust) and no live status: the timer only begins when the
  * game is started. Used on the setup Timer tab and on /manage/timer before the
  * game has started.
@@ -56,25 +52,11 @@ export function TimerConfigView({
   onAddBreak,
   onRemoveBreak,
   onBreakChange,
-  onSave,
   headerSlot,
   embedded = false,
   lockedStructure = false,
   noMovement = false,
 }: TimerConfigViewProps) {
-  // Saving is meaningless without a movement (there's no round structure), so
-  // the Save button is hidden entirely while no movement is selected.
-  const saveButton = noMovement ? null : (
-    <div className="flex flex-col gap-3 w-full max-w-md">
-      <button
-        onClick={onSave}
-        className={`${btnBase} bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500`}
-      >
-        Save
-      </button>
-    </div>
-  );
-
   const status = (
     <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
       <div className="flex justify-between mb-2">
@@ -90,7 +72,7 @@ export function TimerConfigView({
         <span>{sessionLength}</span>
       </div>
       <div className="flex justify-between mt-2">
-        <span className="text-gray-500">Preview End</span>
+        <span className="text-gray-500">Session End</span>
         <span>{previewEnd}</span>
       </div>
     </div>
@@ -159,20 +141,13 @@ export function TimerConfigView({
     return (
       <div className="flex flex-col">
         {pillsBar}
-        <div className="flex flex-col items-center gap-4 p-4">
-          {body}
-          {saveButton}
-        </div>
+        <div className="flex flex-col items-center gap-4 p-4">{body}</div>
       </div>
     );
   }
 
   return (
-    <GamePageLayout
-      headerTitle="Timer Setup"
-      centerContent={false}
-      actions={saveButton}
-    >
+    <GamePageLayout headerTitle="Timer Setup" centerContent={false}>
       {pillsBar}
       <div className="flex flex-col items-center gap-4 p-4">{body}</div>
     </GamePageLayout>

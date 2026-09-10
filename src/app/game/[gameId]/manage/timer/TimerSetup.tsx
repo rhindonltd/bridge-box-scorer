@@ -2,7 +2,7 @@
 
 import { useRequiredGame } from "@/context/GameContext";
 import { TimerProvider, useTimerContext } from "@/context/TimerContext";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TimerConfigView } from "./TimerConfigView";
 import { TimerLiveView } from "./TimerLiveView";
 import { TimerStatus } from "./timer-view-types";
@@ -19,6 +19,12 @@ import { SocketEvents } from "@/socket/socket-events";
 // Re-exported for existing consumers/tests; the implementations now live with
 // the shared config-state hook.
 export { resumeAtToMs, msToLabel } from "./useTimerConfigState";
+
+/**
+ * How long to wait after the last config edit before auto-saving. A burst of
+ * edits (holding a stepper, typing digits) collapses into a single save.
+ */
+const AUTOSAVE_DEBOUNCE_MS = 400;
 
 /**
  * Timer configuration container for a single section (setup / not-yet-started).
@@ -63,19 +69,68 @@ function TimerConfigContainer({
     structureLocked,
     sessionLength,
     previewEnd,
+    configSignature,
   } = useTimerConfigState(timerState, derived);
 
   const noMovement = selectedMovement == null;
 
-  function save() {
+  // Auto-save (debounced): persist the section's config after edits settle (no
+  // Save button). The config screen never starts the timer, so this is a plain
+  // `timer:saveConfig`. We skip the very first committed value (the initial
+  // seed / defaults) and never emit while no movement is selected, since the
+  // round structure is undefined then. The signature excludes tick-derived
+  // values so resume-time breaks don't trigger a save every second.
+  //
+  // A burst of edits (e.g. holding a stepper, or typing several digits)
+  // collapses into a single save `AUTOSAVE_DEBOUNCE_MS` after the last change.
+  // The debounce reads `emitConfigFields`/`section` from refs so it always
+  // sends the latest values, and any pending save is flushed synchronously on
+  // unmount (e.g. when switching sections) so nothing is lost.
+  const emitKey = noMovement ? null : configSignature;
+  const lastEmitted = useRef<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef<{ section: string; fields: typeof emitConfigFields } | null>(
+    null,
+  );
+
+  const flushSave = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    const pending = pendingRef.current;
+    if (!pending) return;
+    pendingRef.current = null;
     getSocket().emit(SocketEvents.SAVE_CONFIG_TIMER, {
       gameType: game.gameType,
       gameId: game.gameId,
-      section,
+      section: pending.section,
       directorToken: getDirectorToken(game.gameId),
-      ...emitConfigFields,
+      ...pending.fields,
     });
-  }
+  }, [game.gameType, game.gameId]);
+
+  useEffect(() => {
+    if (emitKey == null) return;
+    // First observed value for this section is the seed; don't echo it back.
+    if (lastEmitted.current === null) {
+      lastEmitted.current = emitKey;
+      return;
+    }
+    if (emitKey === lastEmitted.current) return;
+    lastEmitted.current = emitKey;
+
+    // Queue the latest values and (re)start the debounce window.
+    pendingRef.current = { section, fields: emitConfigFields };
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(flushSave, AUTOSAVE_DEBOUNCE_MS);
+    // emitConfigFields is captured via emitKey; other deps are stable per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emitKey]);
+
+  // Flush any pending save on unmount (covers section switches, which remount
+  // this container via a `key`, and navigating away).
+  useEffect(() => flushSave, [flushSave]);
 
   return (
     <TimerConfigView
@@ -87,7 +142,6 @@ function TimerConfigContainer({
       previewEnd={previewEnd}
       lockedStructure={structureLocked}
       noMovement={noMovement}
-      onSave={save}
       {...configHandlers}
     />
   );

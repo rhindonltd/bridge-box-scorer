@@ -16,7 +16,6 @@ const meta: Meta<typeof TimerConfigView> = {
     onAddBreak: fn(),
     onRemoveBreak: fn(),
     onBreakChange: fn(),
-    onSave: fn(),
   },
 };
 

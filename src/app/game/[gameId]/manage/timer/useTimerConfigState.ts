@@ -218,6 +218,24 @@ export function useTimerConfigState(
     breaks: breaksWithComputed,
   };
 
+  // A stable signature of the user-controlled configuration, excluding any
+  // tick-derived values (a resume-time break's `resumeAtMs`/`computedLength`
+  // recompute every second and would otherwise cause spurious auto-saves).
+  // Used by the config container to detect real edits worth persisting.
+  const configSignature = JSON.stringify({
+    boardsPerRound,
+    totalRounds,
+    playDuration: effectivePlayDuration,
+    moveDuration,
+    timingMode,
+    warningSeconds,
+    breaks: breaks.map((b) =>
+      b.mode === "duration"
+        ? { afterRound: b.afterRound, mode: b.mode, durationMinutes: b.durationMinutes }
+        : { afterRound: b.afterRound, mode: b.mode, resumeAt: b.resumeAt },
+    ),
+  });
+
   function onConfigChange(field: keyof TimerConfig, value: number | string) {
     switch (field) {
       case "boardsPerRound":
@@ -283,6 +301,11 @@ export function useTimerConfigState(
     configHandlers: { onConfigChange, onAddBreak, onRemoveBreak, onBreakChange },
     /** True when boards/round and total rounds are derived and read-only. */
     structureLocked: derived != null,
+    /**
+     * Stable JSON signature of the user-controlled config (no tick-derived
+     * churn), for detecting edits that should be auto-saved.
+     */
+    configSignature,
     adjustApplyToFuture,
     setAdjustApplyToFuture,
     /** Domain payload fields for CREATE/SAVE/UPDATE config emits. */

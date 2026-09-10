@@ -25,7 +25,7 @@ export function TimerBreaksEditor({
   onBreakChange,
 }: Props) {
   return (
-    <div className="w-full max-w-md flex flex-col gap-3">
+    <div className="flex w-full max-w-md flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700">Breaks</span>
         <button
@@ -44,7 +44,7 @@ export function TimerBreaksEditor({
       {breaks.map((b, index) => (
         <div
           key={index}
-          className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3"
+          className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3"
         >
           <div className="flex items-center gap-2">
             <label className="text-sm text-gray-600">After round</label>
