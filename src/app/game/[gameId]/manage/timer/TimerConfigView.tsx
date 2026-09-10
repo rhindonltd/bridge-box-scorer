@@ -77,7 +77,14 @@ export function TimerConfigView({
 
   const status = (
     <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
-      <div className="text-gray-500 mb-2">Not started yet</div>
+      <div className="flex justify-between mb-2">
+        <span className="text-gray-500">Boards / Round</span>
+        <span>{config.boardsPerRound}</span>
+      </div>
+      <div className="flex justify-between mb-2">
+        <span className="text-gray-500">Rounds</span>
+        <span>{config.totalRounds}</span>
+      </div>
       <div className="flex justify-between">
         <span className="text-gray-500">Session Length</span>
         <span>{sessionLength}</span>
