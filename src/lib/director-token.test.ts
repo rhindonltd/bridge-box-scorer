@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   setDirectorToken,
   getDirectorToken,
   clearDirectorToken,
   isDirectorFor,
+  verifyDirectorTokenWithServer,
 } from "./director-token";
 
 describe("director-token", () => {
@@ -68,6 +69,58 @@ describe("director-token", () => {
       localStorage.setItem("director:game-1", "token-abc");
       localStorage.removeItem("director:game-1");
       expect(isDirectorFor("game-1")).toBe(false);
+    });
+  });
+
+  describe("verifyDirectorTokenWithServer", () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("returns false without calling the server when no token is stored", async () => {
+      const fetchSpy = vi.fn();
+      vi.stubGlobal("fetch", fetchSpy);
+
+      await expect(verifyDirectorTokenWithServer("game-1")).resolves.toBe(
+        false,
+      );
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it("returns true and keeps the token when the server confirms it", async () => {
+      setDirectorToken("game-1", "good");
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: true, status: 200 }),
+      );
+
+      await expect(verifyDirectorTokenWithServer("game-1")).resolves.toBe(true);
+      expect(getDirectorToken("game-1")).toBe("good");
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/games/game-1/director/validate",
+        expect.objectContaining({ headers: { "x-director-token": "good" } }),
+      );
+    });
+
+    it("clears the stale token and returns false on a 401", async () => {
+      setDirectorToken("game-1", "stale");
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: false, status: 401 }),
+      );
+
+      await expect(verifyDirectorTokenWithServer("game-1")).resolves.toBe(
+        false,
+      );
+      expect(getDirectorToken("game-1")).toBeNull();
+    });
+
+    it("returns false but keeps the token on a transient network error", async () => {
+      setDirectorToken("game-1", "maybe-valid");
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+      await expect(verifyDirectorTokenWithServer("game-1")).resolves.toBe(
+        false,
+      );
+      expect(getDirectorToken("game-1")).toBe("maybe-valid");
     });
   });
 });

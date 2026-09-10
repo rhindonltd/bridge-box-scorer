@@ -40,6 +40,41 @@ export function hasAdminToken(): boolean {
 }
 
 /**
+ * Verify the stored admin token against the server.
+ *
+ * The presence of a token in localStorage is NOT proof of authorization — a
+ * stale, expired, or bogus value would otherwise bypass the admin gate. This
+ * asks the server whether the token maps to a live ADMIN session. On a definite
+ * "no" (HTTP 401) the stale token is cleared so the user is re-prompted.
+ *
+ * Returns true only when the server confirms the token. Network/other errors
+ * return false without clearing the token (it may be a transient failure rather
+ * than an invalid token).
+ */
+export async function verifyAdminTokenWithServer(): Promise<boolean> {
+  const token = getAdminToken();
+  if (!token) return false;
+
+  try {
+    const res = await fetch("/api/system/admin-key/validate", {
+      headers: { "x-admin-token": token },
+      cache: "no-store",
+    });
+
+    if (res.status === 401) {
+      // Definitively not authorized — drop the stale token.
+      clearAdminToken();
+      return false;
+    }
+
+    return res.ok;
+  } catch {
+    // Transient failure; don't clear a possibly-valid token.
+    return false;
+  }
+}
+
+/**
  * Subscribe to admin-token changes. Listens both to same-tab changes (via a
  * custom event dispatched by the setters above) and cross-tab changes (via the
  * browser `storage` event). Intended for use with `useSyncExternalStore`.

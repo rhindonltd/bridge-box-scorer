@@ -38,5 +38,10 @@ export const swrKeys = {
 
   wifiDiagnostics: () => "/api/system/wifi/diagnostics",
 
+  adminKeyValidate: () => "/api/system/admin-key/validate",
+
+  directorValidate: (gameId: string) =>
+    `/api/games/${gameId}/director/validate`,
+
   wifiTestStatus: () => "/api/system/wifi/test/status",
 };
