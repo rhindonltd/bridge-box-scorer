@@ -599,18 +599,26 @@ scaffolding:
 - [x] Update admin key (`POST /api/system/admin-key`): a full change cycle
   (change → new key verifies, old rejected → restore original) plus < 4 chars →
   400 and no-token → 401 (`admin-key.journey.ts`, guarded restore).
-- [x] WiFi capability: `POST /api/system/wifi/scan` returns `{ available, ssids }`;
-  on a device without `nmcli` the UI shows a "WiFi can't be changed" page
+- [x] WiFi capability: `GET /api/system/network` reports `wifi.available`; on a
+  device without `nmcli` the UI shows a "WiFi can't be changed" page
   (`wifi-settings.journey.ts`, `settings.spec.ts`). **Product improvement made
-  here:** scan/test/save now degrade gracefully (200 + `available:false` /
-  clear error) instead of a 500 when `nmcli` is absent.
-- [x] WiFi scan is a forced active rescan (`nmcli … device wifi list --rescan
-  yes`) that briefly interrupts the appliance's own hotspot on a single-radio
-  box to get a complete list; a transient busy failure is retried once, and the
-  appliance's own AP SSID is filtered out (`scan/route.test.ts`,
-  `wifi-scan.test.ts`). The picker shows a persistent interruption warning and a
-  manual Rescan control (`wifi-settings.journey.ts` under the `nmcli` guard,
-  `WifiSettingsForm.test.tsx`).
+  here:** network/test/save degrade gracefully (200 + `available:false` / clear
+  error) instead of a 500 when `nmcli` is absent, and the scan is now an
+  explicit admin-gated action rather than an anonymous read run on load.
+- [x] WiFi scan is an explicit, admin-gated, disruptive operation. On a
+  single-radio appliance the radio cannot scan while hosting the hotspot
+  ("Scanning not allowed while unavailable or activating"), so the scan brings
+  the hosted AP connection down, forces a scan while the radio is free, then
+  brings the AP back up in a `finally` — so it never runs automatically (that
+  would drop every connected device) and is triggered only by the "Scan for
+  networks" button. The outcome is persisted (`in-progress` → networks/failed)
+  and the client reads it via `GET /api/system/wifi/scan/status` after
+  reconnecting; the appliance's own AP SSID is filtered out (`scan/route.test.ts`,
+  `scan/status/route.test.ts`, `wifi-scan.test.ts`). The picker shows a
+  persistent interruption warning, an explicit Scan/Rescan control, and a
+  "no networks yet" empty state (`wifi-settings.journey.ts` under the `nmcli`
+  guard, `WifiSettingsForm.test.tsx`). Capability is read from
+  `GET /api/system/network`, not a scan.
 - [x] WiFi test is disconnect-safe: the test route persists its outcome
   (`in-progress` → `connected`/failed) so the client — which loses its
   connection when the test drops the AP — reads the result via
@@ -618,14 +626,17 @@ scaffolding:
   (`test/route.test.ts`, `test/status/route.test.ts`). The client shows a
   full-screen "device will reconnect automatically" state and polls
   `/api/system/network` back to life (`wifi-recovery.test.ts`).
-- [ ] WiFi test SUCCESS end-to-end + Save-gating (real association →
-  test-of-same-SSID enables Save) — still needs a real `nmcli`/WiFi host, since
-  it requires an actual disconnect/reconnect cycle that CI cannot perform.
-  **Manual verification:** on an appliance, select a real network, enter its
-  password, tap Test, confirm the "reconnecting" screen appears, the device
-  drops and rejoins the BridgeBox WiFi, the result shows success, and Save &
-  Apply then enables. The scan-availability, unavailable-page, warning/Rescan,
-  and gated-Save (disabled) states are covered automatically.
+- [ ] WiFi scan/test SUCCESS end-to-end + Save-gating (real AP-down/scan/AP-up
+  and real association → test-of-same-SSID enables Save) — still needs a real
+  `nmcli`/WiFi host, since both require an actual disconnect/reconnect cycle that
+  CI cannot perform. **Manual verification:** on an appliance, open WiFi
+  settings, tap "Scan for networks", confirm the "scanning / reconnecting"
+  screen appears, the device drops and rejoins the BridgeBox WiFi, and the
+  picker populates with nearby networks (excluding the box's own). Then select a
+  network, enter its password, tap Test, confirm the reconnect cycle, the result
+  shows success, and Save & Apply then enables. The availability, unavailable-
+  page, warning, explicit-Scan/empty-state, and gated-Save (disabled) states are
+  covered automatically.
 - [ ] WiFi restarting page shown after save.
 - [x] Save WiFi (`POST /api/system/wifi`) is admin-gated; returns 200
   `{success:false}` when WiFi management is unavailable (route unit tests).
@@ -732,7 +743,8 @@ scaffolding:
 - [x] `POST /api/system/admin-key` update / 400 < 4 chars / 401 without token
   (`api-contract.spec.ts`; also `admin-key.journey.ts`).
 - [x] `GET /api/system/network` (`api-contract.spec.ts`).
-- [x] `POST /api/system/wifi/scan` returns `{ available, ssids }`
+- [x] `POST /api/system/wifi/scan` is admin-gated (401 without a token); the
+  disruptive scan persists results read via `GET /api/system/wifi/scan/status`
   (`api-contract.spec.ts`).
 - [x] `POST /api/system/wifi` (admin-gated) rejects without a token
   (`api-contract.spec.ts`).

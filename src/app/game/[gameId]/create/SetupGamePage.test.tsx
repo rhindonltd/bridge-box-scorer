@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 
 // ---- mocks ----
 
+const mockPush = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({ game: { gameId: "g1" } }),
 }));
@@ -208,5 +213,17 @@ describe("SetupGamePage setup menu", () => {
     expect(
       screen.getByRole("menuitem", { name: "Start Game" }),
     ).toBeInTheDocument();
+  });
+
+  it("returns to the main menu when the Return to main menu item is chosen", async () => {
+    render(<SetupGamePage />);
+
+    await openSetupMenu();
+    await userEvent.click(
+      screen.getByRole("menuitem", { name: "Return to main menu" }),
+    );
+    expect(mockPush).toHaveBeenCalledWith("/");
+    // It leaves the flow rather than navigating within it.
+    expect(mockGoTo).not.toHaveBeenCalled();
   });
 });

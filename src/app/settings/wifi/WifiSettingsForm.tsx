@@ -13,7 +13,10 @@ export type Props = {
   networks: Network[];
   onTestConnection?: (ssid: string, password: string) => Promise<boolean>; // returns success
   onSaveWifi?: (ssid: string, password: string) => void;
-  onRescan?: () => void;
+  /** Trigger a (disruptive) scan for nearby networks. */
+  onScan?: () => void;
+  /** Whether a scan has ever produced results (drives the empty state). */
+  hasScanned?: boolean;
   testing?: boolean;
   loading?: boolean;
   scanning?: boolean;
@@ -24,7 +27,8 @@ export function WifiSettingsForm({
   networks,
   onTestConnection,
   onSaveWifi,
-  onRescan,
+  onScan,
+  hasScanned = false,
   testing = false,
   loading = false,
   scanning = false,
@@ -84,21 +88,26 @@ export function WifiSettingsForm({
           <label className="block text-sm font-medium">Network</label>
           <button
             type="button"
-            onClick={() => onRescan?.()}
+            onClick={() => onScan?.()}
             disabled={scanning || testing}
+            data-testid="wifi-scan-button"
             className={`text-sm font-medium ${
               scanning || testing
                 ? "text-gray-400 cursor-not-allowed"
                 : "text-blue-600 hover:text-blue-700"
             }`}
           >
-            {scanning ? "Scanning…" : "Rescan"}
+            {scanning ? "Scanning…" : hasScanned ? "Rescan" : "Scan for networks"}
           </button>
         </div>
 
-        {scanning && (
-          <p className="mb-2 text-sm text-gray-600" data-testid="wifi-scanning">
-            Scanning… WiFi may briefly disconnect.
+        {!hasScanned && !scanning && (
+          <p
+            className="mb-2 text-sm text-gray-600"
+            data-testid="wifi-no-scan-yet"
+          >
+            No networks yet. Tap “Scan for networks” to search. Scanning briefly
+            interrupts the Bridge Box&apos;s WiFi.
           </p>
         )}
 

@@ -20,6 +20,12 @@ export const WIFI_TEST_RESULT_PATH = path.join(
   "wifi-test-result.json",
 );
 
+/** Path to the last WiFi scan result. */
+export const WIFI_SCAN_RESULT_PATH = path.join(
+  WIFI_CONFIG_DIR,
+  "wifi-scan-result.json",
+);
+
 /** Read the saved WiFi SSID from the on-disk config, if present. */
 export function readSavedSSID(): string | null {
   if (!fs.existsSync(WIFI_CONFIG_PATH)) return null;
@@ -65,6 +71,54 @@ export function readTestResult(): WifiTestResult | null {
   if (!fs.existsSync(WIFI_TEST_RESULT_PATH)) return null;
   try {
     return JSON.parse(fs.readFileSync(WIFI_TEST_RESULT_PATH, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+/** A single scanned network. */
+export type ScannedNetwork = {
+  ssid: string;
+  signal: number;
+};
+
+/**
+ * The persisted outcome of the most recent WiFi scan.
+ *
+ * Scanning on a single-radio appliance takes the hosted hotspot down to free
+ * the radio, so the client that triggered the scan is disconnected and cannot
+ * receive the scan's HTTP response. It reconnects once the hotspot returns and
+ * reads this instead. `inProgress` lets it tell "still scanning" from "done".
+ */
+export type WifiScanResult = {
+  networks: ScannedNetwork[];
+  /** ISO-8601 timestamp of when the scan finished. */
+  at: string;
+  /** True while a scan is running (set before the AP drops, cleared after). */
+  inProgress: boolean;
+  /** True when the scan itself failed (nmcli error). */
+  failed?: boolean;
+};
+
+/**
+ * Persist the WiFi scan outcome so a client whose connection dropped during the
+ * (AP-interrupting) scan can read it after the appliance's hotspot returns.
+ * Best-effort: a missing file simply reads back as "no scan yet".
+ */
+export function writeScanResult(result: WifiScanResult): void {
+  try {
+    fs.mkdirSync(WIFI_CONFIG_DIR, { recursive: true });
+    fs.writeFileSync(WIFI_SCAN_RESULT_PATH, JSON.stringify(result), "utf-8");
+  } catch {
+    // Best-effort; a missing result file reads back as "no scan".
+  }
+}
+
+/** Read the last persisted WiFi scan result, or null when none exists. */
+export function readScanResult(): WifiScanResult | null {
+  if (!fs.existsSync(WIFI_SCAN_RESULT_PATH)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(WIFI_SCAN_RESULT_PATH, "utf-8"));
   } catch {
     return null;
   }

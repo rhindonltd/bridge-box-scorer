@@ -1,28 +1,29 @@
-import { withBasicRoute } from "@/lib/api/basicRoute";
+import { NextResponse } from "next/server";
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { withAdminRoute } from "@/lib/api/adminRoute";
 import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
 import { parseWifiScan } from "@/lib/system/wifi-scan";
-import { getOwnApSsid } from "@/lib/system/wifi-ap";
+import {
+  getOwnAp,
+  bringConnectionDown,
+  bringConnectionUp,
+} from "@/lib/system/wifi-ap";
+import { writeScanResult } from "@/lib/system/wifi-config";
 
 const execFileAsync = promisify(execFile);
 
-/** Short pause between a failed (busy) scan and the single retry. */
-const RETRY_DELAY_MS = 1500;
-
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** How long to let the radio settle after freeing it before scanning. */
+const SETTLE_MS = 1000;
 
 /**
  * Run a forced WiFi scan and return the raw nmcli stdout.
  *
- * `--rescan yes` forces NetworkManager to actively scan regardless of how fresh
- * its cached AP list is. On the Bridge Box's single radio this briefly
- * interrupts the hosted hotspot to get a complete picture of nearby networks —
- * that disruption is intentional and the UI warns the user about it.
- *
- * ssid/security/signal are read in nmcli terminal mode so the output parses
- * cleanly line-by-line.
+ * This only works once the radio is free to scan (i.e. not hosting an AP).
+ * `--rescan yes` forces a fresh scan regardless of cache age.
  */
 async function runScan(): Promise<string> {
   const { stdout } = await execFileAsync("nmcli", [
@@ -41,34 +42,84 @@ async function runScan(): Promise<string> {
 /**
  * POST /api/system/wifi/scan
  *
- * Lists nearby WiFi networks via nmcli, forcing a fresh scan. On a device
- * without WiFi management (no nmcli), returns `{ available: false, ssids: [] }`
- * (HTTP 200) so the UI can show a "WiFi can't be changed on this device" page
- * rather than a broken or empty network picker.
+ * Scans for nearby WiFi networks. On the Bridge Box the single radio hosts the
+ * hotspot and NetworkManager refuses to scan an interface that is hosting an
+ * AP ("Scanning not allowed while unavailable or activating"). So to get a real
+ * list we must:
+ *   1. bring the hosted AP connection down (frees the radio — this drops every
+ *      connected device, including the director's),
+ *   2. force a scan while the radio is free,
+ *   3. bring the AP back up (always, in a finally) so the hotspot returns.
  *
- * The scan forces an active rescan (`--rescan yes`), which on a single-radio
- * appliance briefly interrupts the hotspot. Because that scan can transiently
- * fail while the radio is busy hosting the AP, a single retry is attempted
- * after a short delay. The appliance's own AP SSID is excluded from the results
- * so the picker only lists joinable networks.
+ * Because step 1 disconnects the caller, the HTTP response below usually never
+ * reaches them. The outcome is persisted via {@link writeScanResult}; the
+ * client reconnects once the AP is back and reads it from
+ * `GET /api/system/wifi/scan/status`. `inProgress` is written up-front so a
+ * client that reconnects mid-scan can tell "still scanning" from "done".
+ *
+ * Admin-gated (a disruptive device operation). On a device without WiFi
+ * management it returns 200 `{ available:false }` without touching the radio.
  */
-export const POST = withBasicRoute(async () => {
+export const POST = withAdminRoute(async () => {
   if (!(await isWifiManagementAvailable())) {
-    return success({ available: false, ssids: [] });
+    return NextResponse.json(
+      { success: false, error: "WiFi management not available on this device" },
+      { status: 200 },
+    );
   }
 
-  let stdout: string;
+  const ap = await getOwnAp();
+
+  // Mark in-progress BEFORE the AP drops so a reconnecting client sees it.
+  writeScanResult({
+    networks: [],
+    at: new Date().toISOString(),
+    inProgress: true,
+  });
+
+  let apWasDown = false;
   try {
-    stdout = await runScan();
+    // Free the radio if we're hosting an AP. Without this, the scan below
+    // returns an empty/stale list on a single-radio box.
+    if (ap) {
+      await bringConnectionDown(ap.connectionName);
+      apWasDown = true;
+      // Let the interface settle into station mode before scanning.
+      await delay(SETTLE_MS);
+    }
+
+    const stdout = await runScan();
+    const networks = parseWifiScan(stdout, { excludeSSID: ap?.ssid ?? null });
+
+    writeScanResult({
+      networks,
+      at: new Date().toISOString(),
+      inProgress: false,
+    });
+
+    return success({ available: true, networks });
   } catch {
-    // The radio was likely busy (a scan interrupts the hosted AP). Give it a
-    // moment and try once more before giving up.
-    await delay(RETRY_DELAY_MS);
-    stdout = await runScan();
+    writeScanResult({
+      networks: [],
+      at: new Date().toISOString(),
+      inProgress: false,
+      failed: true,
+    });
+
+    return NextResponse.json(
+      { success: false, error: "WiFi scan failed" },
+      { status: 200 },
+    );
+  } finally {
+    // Always restore the hotspot so the appliance comes back online, even if
+    // the scan threw.
+    if (apWasDown && ap) {
+      try {
+        await bringConnectionUp(ap.connectionName);
+      } catch {
+        // If this fails the box may need a reboot to restore the AP; nothing
+        // more we can safely do from here.
+      }
+    }
   }
-
-  const excludeSSID = await getOwnApSsid();
-  const ssids = parseWifiScan(stdout, { excludeSSID });
-
-  return success({ available: true, ssids });
 });

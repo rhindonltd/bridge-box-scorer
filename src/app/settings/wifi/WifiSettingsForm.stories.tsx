@@ -23,15 +23,26 @@ type Story = StoryObj<typeof WifiSettingsForm>;
 export const Default: Story = {
   args: {
     networks,
+    hasScanned: true,
     message: null,
     testing: false,
     loading: false,
+    onScan: () => alert("Scanning for networks…"),
     onTestConnection: async (ssid, password) => {
       alert(`Testing ${ssid} with password ${password}`);
       return ssid === "Home WiFi"; // only Home WiFi "succeeds" in story
     },
     onSaveWifi: (ssid, password) =>
       alert(`Saving ${ssid} with password ${password}`),
+  },
+};
+
+/** No scan has run yet — the picker is empty and prompts a scan. */
+export const NotYetScanned: Story = {
+  args: {
+    networks: [],
+    hasScanned: false,
+    onScan: () => alert("Scanning for networks…"),
   },
 };
 
