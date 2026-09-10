@@ -4,15 +4,25 @@ import fs from "fs";
 import path from "path";
 
 /**
- * Directory holding the appliance's WiFi state files. Overridable via env for
- * tests / non-default installs; defaults to the on-box location the network
- * route reads.
+ * Path to the committed WiFi config the app writes to hand a chosen network to
+ * provisioning. Provisioning reads THIS exact path during its online window and
+ * connects the box to it, so it must match the provisioning contract:
+ * `/home/bridgebox/wifi.json`. Overridable via env for tests / non-default
+ * installs.
+ *
+ * Note this is deliberately NOT inside {@link WIFI_CONFIG_DIR}: that directory
+ * holds the app's own scratch state (scan/test result files), which
+ * provisioning does not read.
+ */
+export const WIFI_CONFIG_PATH =
+  process.env.WIFI_CONFIG_PATH ?? "/home/bridgebox/wifi.json";
+
+/**
+ * Directory holding the app's own WiFi scratch state (scan/test result files).
+ * Overridable via env for tests / non-default installs.
  */
 export const WIFI_CONFIG_DIR =
   process.env.WIFI_CONFIG_DIR ?? "/home/bridgebox/bridge-box";
-
-/** Path to the saved WiFi config written by the save route. */
-export const WIFI_CONFIG_PATH = path.join(WIFI_CONFIG_DIR, "wifi.json");
 
 /** Path to the last WiFi connection-test result. */
 export const WIFI_TEST_RESULT_PATH = path.join(
@@ -40,13 +50,24 @@ export function readSavedSSID(): string | null {
 /** The persisted outcome of the most recent WiFi connection test. */
 export type WifiTestResult = {
   ssid: string;
+  /**
+   * True when the box associated with the network (credentials valid). This is
+   * what gates Save — a correct password associates even if there's no route
+   * out to the internet.
+   */
   connected: boolean;
+  /**
+   * True only when the box both associated AND reached the internet. Undefined
+   * on older results. Lets the UI distinguish "connected + internet" from
+   * "connected but no internet".
+   */
+  internet?: boolean;
   /** ISO-8601 timestamp of when the test finished. */
   at: string;
   /**
-   * True while a test is running. The test route sets this before it brings
-   * the AP-interrupting connection up, and clears it once the result is
-   * written, so a client that reconnects can tell "still testing" from "done".
+   * True while a test is running. The test route sets this before the
+   * (AP-interrupting) test runs and clears it once the result is written, so a
+   * client that reconnects can tell "still testing" from "done".
    */
   inProgress: boolean;
 };

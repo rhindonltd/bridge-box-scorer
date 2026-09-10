@@ -4,8 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
-
-const WIFI_CONFIG = "/home/bridgebox/bridge-box/wifi.json";
+import { WIFI_CONFIG_PATH } from "@/lib/system/wifi-config";
 
 export const POST = withAdminRoute(async ({ req }) => {
   // No WiFi management on this device: refuse the save with a clear reason.
@@ -38,7 +37,7 @@ export const POST = withAdminRoute(async ({ req }) => {
     );
   }
 
-  fs.writeFileSync(WIFI_CONFIG, JSON.stringify(parsed.data, null, 2));
+  fs.writeFileSync(WIFI_CONFIG_PATH, JSON.stringify(parsed.data, null, 2));
 
   return success({ message: "WiFi saved. Restart required." });
 });

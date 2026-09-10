@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { execFile } = vi.hoisted(() => ({ execFile: vi.fn() }));
-vi.mock("child_process", async (importActual) => {
-  const actual = await importActual<typeof import("child_process")>();
-  return { ...actual, execFile, default: { ...actual, execFile } };
-});
 vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
 
 const { isWifiManagementAvailable } = vi.hoisted(() => ({
@@ -12,31 +7,19 @@ const { isWifiManagementAvailable } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/system/wifi-availability", () => ({ isWifiManagementAvailable }));
 
+const { runWifiCtl } = vi.hoisted(() => ({ runWifiCtl: vi.fn() }));
+vi.mock("@/lib/system/wifi-ctl", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/system/wifi-ctl")>();
+  return { ...actual, runWifiCtl };
+});
+
 const { writeTestResult } = vi.hoisted(() => ({ writeTestResult: vi.fn() }));
 vi.mock("@/lib/system/wifi-config", () => ({ writeTestResult }));
 
-import { execFile as mockExecFile } from "child_process";
 import { validateAdminToken } from "@/db/system/queries/admin-key";
+import { WifiCtlBusyError } from "@/lib/system/wifi-ctl";
+import { runWifiCtl as mockRunWifiCtl } from "@/lib/system/wifi-ctl";
 import { POST } from "./route";
-
-/**
- * The route uses promisify(execFile). Drive the node-style callback: resolve
- * for every nmcli call unless the args match a "reject" predicate.
- */
-function setExec(shouldReject: (args: string[]) => boolean) {
-  vi.mocked(mockExecFile).mockImplementation(((
-    _cmd: string,
-    args: string[],
-    cb: unknown,
-  ) => {
-    const callback = cb as (e: unknown, r?: unknown) => void;
-    if (shouldReject(args)) {
-      callback(new Error("nmcli failed"));
-    } else {
-      callback(null, { stdout: "", stderr: "" });
-    }
-  }) as never);
-}
 
 function req(body: unknown, token: string | null = "tok") {
   const headers = new Headers({ "content-type": "application/json" });
@@ -55,46 +38,56 @@ describe("POST /api/system/wifi/test", () => {
     vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
   });
 
-  it("returns connected:true when the profile comes up, and tears it down", async () => {
-    setExec(() => false); // everything succeeds
+  it("passes ssid/password to wifi-ctl test-connect and reports success on ok", async () => {
+    vi.mocked(mockRunWifiCtl).mockResolvedValue(
+      "TEST_RESULT: ok (connected + internet)\n",
+    );
 
     const res = await POST(req({ ssid: "HomeNet", password: "secret" }));
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({
       success: true,
-      result: { connected: true },
+      result: { connected: true, internet: true },
     });
+    expect(mockRunWifiCtl).toHaveBeenCalledWith("test-connect", [
+      "HomeNet",
+      "secret",
+    ]);
+  });
 
-    // Cleanup: the throwaway test profile is deleted (at least once).
-    const calls = vi.mocked(mockExecFile).mock.calls as unknown[][];
-    const deleteCalls = calls.filter((c) =>
-      (c[1] as string[]).includes("delete"),
+  it("passes the hidden flag through as the third arg", async () => {
+    vi.mocked(mockRunWifiCtl).mockResolvedValue("TEST_RESULT: ok (x)");
+
+    await POST(req({ ssid: "Hidden", password: "pw", hidden: true }));
+
+    expect(mockRunWifiCtl).toHaveBeenCalledWith("test-connect", [
+      "Hidden",
+      "pw",
+      "yes",
+    ]);
+  });
+
+  it("treats connected-no-internet as connected (Save allowed) but internet:false", async () => {
+    vi.mocked(mockRunWifiCtl).mockResolvedValue(
+      "TEST_RESULT: connected-no-internet (associated but no route out)",
     );
-    expect(deleteCalls.length).toBeGreaterThanOrEqual(1);
-  });
 
-  it("persists in-progress before the AP-dropping connection, then a connected result", async () => {
-    setExec(() => false); // everything succeeds
-
-    await POST(req({ ssid: "HomeNet", password: "secret" }));
-
-    // First write marks the test in-progress (before the AP drops); the last
-    // write records the final connected outcome the reconnecting client reads.
-    const calls = vi.mocked(writeTestResult).mock.calls.map((c) => c[0]);
-    expect(calls[0]).toMatchObject({
-      ssid: "HomeNet",
-      inProgress: true,
-      connected: false,
+    const res = await POST(req({ ssid: "HomeNet", password: "secret" }));
+    await expect(res.json()).resolves.toEqual({
+      success: true,
+      result: { connected: true, internet: false },
     });
-    expect(calls.at(-1)).toMatchObject({
-      ssid: "HomeNet",
-      inProgress: false,
+    expect(vi.mocked(writeTestResult).mock.calls.at(-1)?.[0]).toMatchObject({
       connected: true,
+      internet: false,
+      inProgress: false,
     });
   });
 
-  it("returns success:false (200) when bringing the profile up fails", async () => {
-    setExec((args) => args.includes("up"));
+  it("reports failure when the helper says failed", async () => {
+    vi.mocked(mockRunWifiCtl).mockResolvedValue(
+      "TEST_RESULT: failed (could not connect — check password/SSID)",
+    );
 
     const res = await POST(req({ ssid: "HomeNet", password: "wrong" }));
     expect(res.status).toBe(200);
@@ -102,32 +95,42 @@ describe("POST /api/system/wifi/test", () => {
       success: false,
       error: "Failed to connect to the network",
     });
-  });
-
-  it("persists a failed (not connected) result when the profile fails to come up", async () => {
-    setExec((args) => args.includes("up"));
-
-    await POST(req({ ssid: "HomeNet", password: "wrong" }));
-
-    const calls = vi.mocked(writeTestResult).mock.calls.map((c) => c[0]);
-    expect(calls.at(-1)).toMatchObject({
-      ssid: "HomeNet",
-      inProgress: false,
+    expect(vi.mocked(writeTestResult).mock.calls.at(-1)?.[0]).toMatchObject({
       connected: false,
+      inProgress: false,
     });
   });
 
-  it("returns 400 for an invalid body", async () => {
-    setExec(() => false);
-    const res = await POST(req({ password: "x" }));
-    expect(res.status).toBe(400);
+  it("persists in-progress before the test, then the final result", async () => {
+    vi.mocked(mockRunWifiCtl).mockResolvedValue("TEST_RESULT: ok (x)");
+
+    await POST(req({ ssid: "HomeNet", password: "secret" }));
+
+    const writes = vi.mocked(writeTestResult).mock.calls.map((c) => c[0]);
+    expect(writes[0]).toMatchObject({ inProgress: true, connected: false });
+    expect(writes.at(-1)).toMatchObject({ inProgress: false, connected: true });
   });
 
-  it("returns 401 for an invalid token", async () => {
+  it("reports a retriable busy result when a provisioning window holds the lock", async () => {
+    vi.mocked(mockRunWifiCtl).mockRejectedValue(new WifiCtlBusyError());
+
+    const res = await POST(req({ ssid: "HomeNet", password: "secret" }));
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.busy).toBe(true);
+  });
+
+  it("returns 400 for an invalid body", async () => {
+    const res = await POST(req({ password: "x" }));
+    expect(res.status).toBe(400);
+    expect(mockRunWifiCtl).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 for an invalid token and never calls the helper", async () => {
     vi.mocked(validateAdminToken).mockResolvedValue(false);
     const res = await POST(req({ ssid: "x", password: "y" }, null));
     expect(res.status).toBe(401);
-    expect(mockExecFile).not.toHaveBeenCalled();
+    expect(mockRunWifiCtl).not.toHaveBeenCalled();
   });
 
   it("returns success:false (200) when WiFi management is unavailable", async () => {
@@ -138,7 +141,6 @@ describe("POST /api/system/wifi/test", () => {
       success: false,
       error: "WiFi management not available on this device",
     });
-    // nmcli is never invoked when management is unavailable.
-    expect(mockExecFile).not.toHaveBeenCalled();
+    expect(mockRunWifiCtl).not.toHaveBeenCalled();
   });
 });

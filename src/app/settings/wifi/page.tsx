@@ -125,7 +125,12 @@ export default function WifiSettings() {
       const res = await fetch(swrKeys.wifiTestStatus(), { cache: "no-store" });
       const body = await res.json();
       const result = body?.result?.result as
-        | { ssid: string; connected: boolean; inProgress: boolean }
+        | {
+            ssid: string;
+            connected: boolean;
+            internet?: boolean;
+            inProgress: boolean;
+          }
         | null;
 
       const connected =
@@ -134,9 +139,17 @@ export default function WifiSettings() {
         result.connected &&
         !result.inProgress;
 
-      setMessage(
-        connected ? "✅ Connection successful" : "❌ Failed to connect",
-      );
+      if (connected) {
+        // Associated (credentials valid) — Save is allowed. Distinguish a full
+        // connection from one with no route out to the internet.
+        setMessage(
+          result?.internet === false
+            ? "✅ Connected (no internet access detected)"
+            : "✅ Connection successful",
+        );
+      } else {
+        setMessage("❌ Failed to connect");
+      }
       return connected;
     } catch {
       setMessage("❌ Error testing connection");

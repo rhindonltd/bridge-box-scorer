@@ -605,27 +605,34 @@ scaffolding:
   here:** network/test/save degrade gracefully (200 + `available:false` / clear
   error) instead of a 500 when `nmcli` is absent, and the scan is now an
   explicit admin-gated action rather than an anonymous read run on load.
-- [x] WiFi scan is an explicit, admin-gated, disruptive operation. On a
-  single-radio appliance the radio cannot scan while hosting the hotspot
-  ("Scanning not allowed while unavailable or activating"), so the scan brings
-  the hosted AP connection down, forces a scan while the radio is free, then
-  brings the AP back up in a `finally` — so it never runs automatically (that
-  would drop every connected device) and is triggered only by the "Scan for
-  networks" button. The outcome is persisted (`in-progress` → networks/failed)
-  and the client reads it via `GET /api/system/wifi/scan/status` after
-  reconnecting; the appliance's own AP SSID is filtered out (`scan/route.test.ts`,
-  `scan/status/route.test.ts`, `wifi-scan.test.ts`). The picker shows a
-  persistent interruption warning, an explicit Scan/Rescan control, and a
-  "no networks yet" empty state (`wifi-settings.journey.ts` under the `nmcli`
-  guard, `WifiSettingsForm.test.tsx`). Capability is read from
+- [x] WiFi scan is an explicit, admin-gated, disruptive operation delegated to
+  the provisioning-owned sudo helper (`sudo -n /usr/local/bridgebox/bin/wifi-ctl.sh
+  scan`). The app runs unprivileged and NetworkManager only lets root change
+  networking, so the helper (not the app) takes the network lock, drops the
+  hotspot on the single radio, runs `nmcli device wifi list --rescan yes`, prints
+  its raw output verbatim, and restores the hotspot. The app parses that output
+  and persists the outcome (`in-progress` → networks/failed); the scan never
+  runs automatically and is triggered only by the "Scan for networks" button.
+  The client reads results via `GET /api/system/wifi/scan/status` after
+  reconnecting; the appliance's own AP SSID is filtered out via a read-only
+  lookup (`wifi-ctl.test.ts`, `scan/route.test.ts`, `scan/status/route.test.ts`,
+  `wifi-scan.test.ts`). A helper "busy" (provisioning window holds the lock)
+  surfaces as a retriable result. Capability is read from
   `GET /api/system/network`, not a scan.
-- [x] WiFi test is disconnect-safe: the test route persists its outcome
-  (`in-progress` → `connected`/failed) so the client — which loses its
-  connection when the test drops the AP — reads the result via
-  `GET /api/system/wifi/test/status` after the hotspot returns
+- [x] WiFi test is disconnect-safe and delegated to the helper
+  (`wifi-ctl.sh test-connect "<ssid>" "<password>" [yes]`), which does the whole
+  add → up → verify → down → delete and prints a `TEST_RESULT:` line. The app
+  parses it (`ok` / `connected-no-internet` both associate → Save allowed, with
+  `internet` distinguishing them; `failed` → not connected) and persists the
+  outcome so the client — which loses its connection when the hotspot drops —
+  reads it via `GET /api/system/wifi/test/status` after the hotspot returns
   (`test/route.test.ts`, `test/status/route.test.ts`). The client shows a
   full-screen "device will reconnect automatically" state and polls
   `/api/system/network` back to life (`wifi-recovery.test.ts`).
+- Note: committing a chosen network is a plain write of `wifi.json` (no direct
+  activation); provisioning connects on its next online window. Read-only nmcli
+  (`network`, `diagnostics`) and the `command -v nmcli` availability check are
+  unchanged and need no privilege.
 - [ ] WiFi scan/test SUCCESS end-to-end + Save-gating (real AP-down/scan/AP-up
   and real association → test-of-same-SSID enables Save) — still needs a real
   `nmcli`/WiFi host, since both require an actual disconnect/reconnect cycle that

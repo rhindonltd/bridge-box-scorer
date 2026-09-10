@@ -38,7 +38,7 @@ describe("POST /api/system/reset-wifi", () => {
 
     const res = await POST(req("tok"));
     expect(res.status).toBe(200);
-    expect(unlinkSync).toHaveBeenCalled();
+    expect(unlinkSync).toHaveBeenCalledWith("/home/bridgebox/wifi.json");
     expect(exec).toHaveBeenCalledWith("sudo systemctl restart bridge-box");
   });
 

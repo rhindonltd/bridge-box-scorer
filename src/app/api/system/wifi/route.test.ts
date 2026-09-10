@@ -32,10 +32,12 @@ describe("POST /api/system/wifi", () => {
     vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
   });
 
-  it("writes the wifi config for an authorised admin", async () => {
+  it("writes the wifi config to the provisioning path for an authorised admin", async () => {
     const res = await POST(req({ ssid: "HomeNet", password: "secret" }));
     expect(res.status).toBe(200);
     expect(writeFileSync).toHaveBeenCalledOnce();
+    // Provisioning reads this exact path during its online window.
+    expect(writeFileSync.mock.calls[0][0]).toBe("/home/bridgebox/wifi.json");
     const written = JSON.parse(writeFileSync.mock.calls[0][1] as string);
     expect(written).toEqual({ ssid: "HomeNet", password: "secret" });
   });
