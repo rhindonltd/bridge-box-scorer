@@ -70,9 +70,10 @@ export const Embedded: Story = {
 };
 
 /**
- * Embedded with the section pills as a pinned sub-header. The pills bar stays
- * fixed at the top while the config body scrolls beneath it. Rendered in a
- * short, bounded box so the scroll/pin behaviour is visible.
+ * Embedded with the section pills as a sticky header. The pills bar stays fixed
+ * at the top of the surrounding scroll container while the config body scrolls
+ * beneath it. The decorator mimics the setup flow's single scroll region
+ * (GamePageLayout's ScrollableContent) in a short, bounded box.
  */
 export const EmbeddedWithPinnedPills: Story = {
   args: {
@@ -94,7 +95,7 @@ export const EmbeddedWithPinnedPills: Story = {
   },
   decorators: [
     (Story) => (
-      <div className="h-[420px] overflow-hidden border border-gray-300">
+      <div className="h-[420px] overflow-y-auto border border-gray-300">
         <Story />
       </div>
     ),
