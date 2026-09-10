@@ -4,7 +4,7 @@ import { runNmcli } from "@/lib/system/nmcli";
 
 /** The appliance's own hosted access point, as NetworkManager sees it. */
 export type OwnAp = {
-  /** Connection profile name, e.g. used with `nmcli connection up/down`. */
+  /** Connection profile name. */
   connectionName: string;
   /** The AP's SSID (the network name clients connect to). */
   ssid: string;
@@ -15,9 +15,9 @@ export type OwnAp = {
  *
  * On the Bridge Box the single WiFi radio hosts a hotspot. NetworkManager
  * exposes it as an active connection whose `802-11-wireless.mode` is `ap`. We
- * need both its connection name (to bring it down/up around a scan, since a
- * single radio cannot scan while hosting the AP) and its SSID (to hide the
- * appliance's own network from the picker).
+ * read its SSID so the picker can hide the appliance's own network. This is a
+ * read-only nmcli lookup (no privilege needed); taking the hotspot down for a
+ * scan is handled by the privileged wifi-ctl helper, not here.
  *
  * Returns null when nothing is hosting an AP or the lookup fails. Any nmcli
  * error is logged (not thrown) so a lookup problem is visible in the server
@@ -70,16 +70,4 @@ export async function getOwnAp(): Promise<OwnAp | null> {
   }
 
   return null;
-}
-
-/** Bring the given connection profile down (frees the radio to scan). */
-export async function bringConnectionDown(
-  connectionName: string,
-): Promise<void> {
-  await runNmcli(["connection", "down", connectionName]);
-}
-
-/** Bring the given connection profile back up (restores the hotspot). */
-export async function bringConnectionUp(connectionName: string): Promise<void> {
-  await runNmcli(["connection", "up", connectionName]);
 }

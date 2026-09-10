@@ -1,67 +1,60 @@
 import { NextResponse } from "next/server";
-import { execFile } from "child_process";
-import { promisify } from "util";
 import { z } from "zod";
 import { withAdminRoute } from "@/lib/api/adminRoute";
 import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
 import { writeTestResult } from "@/lib/system/wifi-config";
+import { runWifiCtl, WifiCtlBusyError } from "@/lib/system/wifi-ctl";
 
-const execFileAsync = promisify(execFile);
-
-// Name of the throwaway connection profile used purely to validate credentials.
-const TEST_PROFILE = "bridge-box-wifi-test";
-
-async function nmcli(args: string[]) {
-  // ssid/password are passed as argument-array elements (never interpolated
-  // into a shell string) to avoid command injection.
-  return execFileAsync("nmcli", args);
-}
+/** Outcome parsed from the helper's `TEST_RESULT:` line. */
+type TestOutcome = "ok" | "connected-no-internet" | "failed";
 
 /**
- * Deletes the temporary test profile if it exists. Safe to call unconditionally;
- * ignores the "unknown connection" error when the profile was never created.
+ * Parse the helper's stdout for its `TEST_RESULT:` line. The helper prints one
+ * of:
+ *   TEST_RESULT: ok (connected + internet)
+ *   TEST_RESULT: connected-no-internet (associated but no route out)
+ *   TEST_RESULT: failed (could not connect — check password/SSID)
  */
-async function deleteTestProfile() {
-  try {
-    await nmcli(["connection", "delete", TEST_PROFILE]);
-  } catch {
-    // Profile didn't exist (or was already removed) — nothing to clean up.
-  }
+function parseTestResult(stdout: string): TestOutcome {
+  const line = stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => l.startsWith("TEST_RESULT:"));
+
+  if (!line) return "failed";
+  if (line.includes("connected-no-internet")) return "connected-no-internet";
+  if (/TEST_RESULT:\s*ok\b/.test(line)) return "ok";
+  return "failed";
 }
 
 /**
  * POST /api/system/wifi/test
  *
- * Validates whether the device can associate with the given WiFi network using
- * the supplied credentials, WITHOUT committing to it: the currently active
- * connection is left untouched and no persistent profile is added. Requires a
- * valid admin token.
+ * Validates whether the box can associate with the given WiFi network using the
+ * supplied credentials, without committing to it. The app runs unprivileged, so
+ * the privileged work is delegated to the provisioning-owned sudo helper:
  *
- * How it stays non-committal:
- *   - A throwaway profile (`bridge-box-wifi-test`) is created with
- *     `autoconnect no` so NetworkManager will never auto-select it later.
- *   - The test brings that profile up only long enough to confirm association,
- *     then immediately brings it down and deletes it in a finally block.
- *   - Because the profile is torn down, NetworkManager falls back to the
- *     previously active connection.
+ *   wifi-ctl.sh test-connect "<ssid>" "<password>" [yes]
  *
- * Response shape:
- *   200 { success: true,  result: { connected: true } }   -> credentials work
- *   200 { success: false, error: string }                 -> could not connect
+ * The helper adds a throwaway `bridge-box-wifi-test` profile, brings it up to
+ * check association, then always tears it down and restores the hotspot — so
+ * there is no separate teardown here in the normal path. It prints a
+ * `TEST_RESULT:` line we parse for pass/fail.
  *
- * The client keys off the top-level `success` boolean, so a failed connection
- * is reported as `success: false` with a 200 (a test result, not a server
- * error). Genuine server/auth failures are surfaced by the wrapper as 4xx/5xx.
+ * Because the helper drops the hotspot during the test, the caller is
+ * disconnected and this HTTP response usually never reaches them. The outcome
+ * is persisted via {@link writeTestResult}; the client reconnects and reads it
+ * from `GET /api/system/wifi/test/status`. `inProgress` is written up-front.
+ *
+ * Response shape (for the rare case the response does reach the caller):
+ *   200 { success: true,  result: { connected, internet } }
+ *   200 { success: false, error, busy? }
  */
 export const POST = withAdminRoute(async ({ req }) => {
-  // No WiFi management on this device: report it as a (non-error) test outcome.
   if (!(await isWifiManagementAvailable())) {
     return NextResponse.json(
-      {
-        success: false,
-        error: "WiFi management not available on this device",
-      },
+      { success: false, error: "WiFi management not available on this device" },
       { status: 200 },
     );
   }
@@ -71,6 +64,7 @@ export const POST = withAdminRoute(async ({ req }) => {
   const schema = z.object({
     ssid: z.string().min(1),
     password: z.string(),
+    hidden: z.boolean().optional(),
   });
 
   const parsed = schema.safeParse(body);
@@ -82,17 +76,10 @@ export const POST = withAdminRoute(async ({ req }) => {
     );
   }
 
-  const { ssid, password } = parsed.data;
+  const { ssid, password, hidden } = parsed.data;
 
-  // Ensure no stale profile from a previous interrupted test lingers.
-  await deleteTestProfile();
-
-  // Mark the test in-progress BEFORE we bring the profile up. On a single-radio
-  // appliance, `connection up` drops the hosted AP, so the client that made
-  // this request loses its connection and will never see the HTTP response
-  // below. It reconnects once the AP returns and reads this persisted outcome
-  // instead. Recording "in progress" first lets the client tell "still testing"
-  // from "done" during that window.
+  // Mark in-progress BEFORE the helper drops the hotspot so a reconnecting
+  // client can tell "still testing" from "done".
   writeTestResult({
     ssid,
     connected: false,
@@ -101,50 +88,49 @@ export const POST = withAdminRoute(async ({ req }) => {
   });
 
   try {
-    // Create a non-autoconnecting WiFi profile for the target network. This
-    // only writes an in-memory/keyfile profile; it does not activate anything.
-    await nmcli([
-      "connection",
-      "add",
-      "type",
-      "wifi",
-      "con-name",
-      TEST_PROFILE,
-      "ssid",
-      ssid,
-      "autoconnect",
-      "no",
-    ]);
+    // `yes` third arg only for a hidden SSID; omit otherwise.
+    const args = hidden ? [ssid, password, "yes"] : [ssid, password];
+    const stdout = await runWifiCtl("test-connect", args);
+    const outcome = parseTestResult(stdout);
 
-    // Attach the credentials (WPA-PSK). Passing via modify keeps the password
-    // out of the `add` invocation and mirrors how NetworkManager expects it.
-    await nmcli([
-      "connection",
-      "modify",
-      TEST_PROFILE,
-      "wifi-sec.key-mgmt",
-      "wpa-psk",
-      "wifi-sec.psk",
-      password,
-    ]);
+    // Association (a correct password) counts as connected and gates Save;
+    // "connected-no-internet" still associated, just without a route out.
+    const connected = outcome === "ok" || outcome === "connected-no-internet";
+    const internet = outcome === "ok";
 
-    // Attempt to bring the profile up. nmcli exits non-zero (throwing) if the
-    // credentials are wrong or the network is unreachable.
-    await nmcli(["connection", "up", TEST_PROFILE]);
-
-    // Persist success so the (now-disconnected) client can read it once the AP
-    // is back. The direct response below may never reach the client.
     writeTestResult({
       ssid,
-      connected: true,
+      connected,
+      internet,
       at: new Date().toISOString(),
       inProgress: false,
     });
 
-    return success({ connected: true });
-  } catch {
-    // Association failed (bad password, out of range, etc.). This is a valid
-    // test outcome, not a server error, so return 200 with success: false.
+    if (connected) {
+      return success({ connected, internet });
+    }
+    return NextResponse.json(
+      { success: false, error: "Failed to connect to the network" },
+      { status: 200 },
+    );
+  } catch (err) {
+    if (err instanceof WifiCtlBusyError) {
+      // A provisioning window holds the lock; retriable, not a failure.
+      writeTestResult({
+        ssid,
+        connected: false,
+        at: new Date().toISOString(),
+        inProgress: false,
+      });
+      return NextResponse.json(
+        { success: false, error: err.message, busy: true },
+        { status: 200 },
+      );
+    }
+
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error("WiFi test failed:", reason);
+
     writeTestResult({
       ssid,
       connected: false,
@@ -156,9 +142,5 @@ export const POST = withAdminRoute(async ({ req }) => {
       { success: false, error: "Failed to connect to the network" },
       { status: 200 },
     );
-  } finally {
-    // Always tear the test profile down so the device reverts to its previous
-    // connection and nothing about this test persists.
-    await deleteTestProfile();
   }
 });
