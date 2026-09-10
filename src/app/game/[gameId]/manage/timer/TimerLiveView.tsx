@@ -208,6 +208,7 @@ export function TimerLiveView({
         <TimerConfigFields config={config} onConfigChange={onConfigChange} />
         <TimerBreaksEditor
           breaks={config.breaks}
+          totalRounds={config.totalRounds}
           onAddBreak={onAddBreak}
           onRemoveBreak={onRemoveBreak}
           onBreakChange={onBreakChange}

@@ -174,9 +174,9 @@ describe("ShowTablesPage", () => {
   it("resizes a section through the number stepper", () => {
     render(<ShowTablesPage />);
 
-    const increment = screen.getByRole("button", { name: "+" });
-    fireEvent.mouseDown(increment);
-    fireEvent.mouseUp(increment);
+    const increment = screen.getByRole("button", { name: "Increase Tables" });
+    fireEvent.pointerDown(increment);
+    fireEvent.pointerUp(increment);
 
     expect(mockEmit).toHaveBeenCalledWith(
       SocketEvents.UPDATE_TABLES,
@@ -316,9 +316,10 @@ describe("ShowTablesPage", () => {
     render(<ShowTablesPage />);
 
     // The stepper reflects section B's table count, and resizing targets B.
-    const increment = screen.getByRole("button", { name: "+" });
-    fireEvent.mouseDown(increment);
-    fireEvent.mouseUp(increment);
+    expect(screen.getByLabelText("Tables")).toHaveValue(4);
+    const increment = screen.getByRole("button", { name: "Increase Tables" });
+    fireEvent.pointerDown(increment);
+    fireEvent.pointerUp(increment);
 
     expect(mockEmit).toHaveBeenCalledWith(
       SocketEvents.UPDATE_TABLES,
