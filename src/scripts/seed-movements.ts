@@ -1,23 +1,25 @@
-import {
-  createPairMovementRoundSpec,
-  createTeamMovementRoundSpec,
-} from "@/db/movements/actions/create-movement-round-spec";
-import {
-  createPairMovementSpec,
-  createTeamMovementSpec,
-} from "@/db/movements/actions/create-movement-spec";
-import {
-  createPairMovementTableSpec,
-  createTeamMovementTableSpec,
-} from "@/db/movements/actions/create-movement-table-spec";
-import { generatePairsMovements } from "@/movement/pairsMovements";
-import { boardSetFor, Movement } from "@/movement/shared";
-import { generateTeamsMovements } from "@/movement/teamsMovements";
+import "server-only";
 
+import { runMovementsMigrations } from "@/db/movements/migrate";
+import { refreshMovements } from "@/db/movements/actions/refresh-movements";
+
+/**
+ * DEPRECATED: retained for backward compatibility with the `seed-movements`
+ * npm script. Prefer `sync-movements.ts` (the standalone, appliance-oriented
+ * entry compiled to dist/sync-movements.js).
+ *
+ * The former append-only seed has been replaced by the shared, idempotent
+ * `refreshMovements` action: it migrates the movements database first, then
+ * wipes and re-seeds the catalogue from PSMovements.txt / TSMovements.txt.
+ * Re-running no longer duplicates rows.
+ */
 async function main() {
   try {
-    await seedMovements();
-    console.log("✅ Seed complete!");
+    await runMovementsMigrations();
+    const { pairs, teams } = await refreshMovements();
+    console.log(
+      `✅ Seed complete — ${pairs} pair movements, ${teams} team movements.`,
+    );
   } catch (err) {
     console.error(err);
     process.exit(1);
@@ -25,82 +27,3 @@ async function main() {
 }
 
 main();
-
-async function seedMovements() {
-  await seedPairMovements(generatePairsMovements());
-
-  console.log("✅ Pairs movements seeded!");
-
-  await seedTeamMovements(generateTeamsMovements());
-
-  console.log("✅ Teams movements seeded!");
-}
-
-async function seedPairMovements(movements: Movement<"PAIR">[]) {
-  for (const movement of movements) {
-    // 1️⃣ Insert movement
-    const movementId = await createPairMovementSpec({
-      name: movement.name,
-      type: movement.type.toString(),
-      tables: movement.tables,
-      boards: movement.boards,
-      boardsPerRound: movement.boardsPerRound,
-      rounds: movement.rounds,
-      missingPair: movement.missingParticipant ?? null,
-    });
-
-    // 2️⃣ Insert tables
-    for (const table of movement.tableData) {
-      const tableId = await createPairMovementTableSpec({
-        movementId,
-        tableNumber: table.table,
-      });
-
-      // 3️⃣ Insert rounds
-      for (const round of table.rounds) {
-        const idx = table.rounds.indexOf(round);
-        await createPairMovementRoundSpec({
-          tableId,
-          roundNumber: idx + 1,
-          ns: round.participants.nsId,
-          ew: round.participants.ewId,
-          boardSet: boardSetFor(round.boards[0], movement.boardsPerRound),
-        });
-      }
-    }
-  }
-}
-
-async function seedTeamMovements(movements: Movement<"PAIR">[]) {
-  for (const movement of movements) {
-    // 1️⃣ Insert movement
-    const movementId = await createTeamMovementSpec({
-      name: movement.name,
-      type: movement.type.toString(),
-      tables: movement.tables,
-      boards: movement.boards,
-      boardsPerRound: movement.boardsPerRound,
-      rounds: movement.rounds,
-    });
-
-    // 2️⃣ Insert tables
-    for (const table of movement.tableData) {
-      const tableId = await createTeamMovementTableSpec({
-        movementId,
-        tableNumber: table.table,
-      });
-
-      // 3️⃣ Insert rounds
-      for (const round of table.rounds) {
-        const idx = table.rounds.indexOf(round);
-        await createTeamMovementRoundSpec({
-          tableId,
-          roundNumber: idx + 1,
-          ns: round.participants.nsId,
-          ew: round.participants.ewId,
-          boardSet: boardSetFor(round.boards[0], movement.boardsPerRound),
-        });
-      }
-    }
-  }
-}

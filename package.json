@@ -30,6 +30,8 @@
     "generate_system_migration": "npx drizzle-kit generate --config=drizzle.config.system.ts",
     "run_system_migration": "npx drizzle-kit migrate --config=drizzle.config.system.ts",
     "sync:ebu-players": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/sync-ebu-players.ts",
+    "sync:movements": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/sync-movements.ts",
+    "build:sync-movements": "node scripts/build-sync-movements.mjs",
     "seed-movements": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/seed-movements.ts",
     "seed-admin-key": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/seed-admin-key.ts"
   },
