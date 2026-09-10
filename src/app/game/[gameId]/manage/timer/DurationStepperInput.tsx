@@ -11,6 +11,13 @@ interface Props {
   onChange: (value: number) => void;
   min?: number;
   max?: number;
+  /** Amount the −/+ buttons change the value by. Defaults to 1. */
+  step?: number;
+  /**
+   * When true, stepping past `max` wraps to `min` and vice versa (used for the
+   * seconds field, which cycles 0 → 15 → 30 → 45 → 0). Requires a finite `max`.
+   */
+  wrap?: boolean;
   /** Optional short suffix rendered inside the field (e.g. "m", "s"). */
   suffix?: string;
   disabled?: boolean;
@@ -25,10 +32,14 @@ interface Props {
 }
 
 /**
- * A compact number field with −/+ stepper buttons on either side. Designed for
- * touch: the steppers give a reliable way to change values on mobile, and the
- * text field can be cleared while typing (it shows empty rather than a sticky
- * zero) and commits a clamped number on blur.
+ * A compact number field presented as a single segmented control: a −/+ pair
+ * flanks a centred text field inside one shared rounded border, so it reads as
+ * one control rather than three separate boxes.
+ *
+ * Designed for touch: the steppers give a reliable way to change values on
+ * mobile (press-and-hold auto-repeats), and the text field can be cleared while
+ * typing (it shows empty rather than a sticky zero) and commits a clamped
+ * number on blur.
  *
  * The middle element is a real `<input type="number">` so existing tests that
  * drive it via `fireEvent.change` and read `toHaveValue` continue to work.
@@ -39,6 +50,8 @@ export function DurationStepperInput({
   onChange,
   min = 0,
   max = Infinity,
+  step = 1,
+  wrap = false,
   suffix,
   disabled = false,
   readOnly = false,
@@ -59,17 +72,29 @@ export function DurationStepperInput({
     onChange(next);
   };
 
-  const step = (delta: number) => {
-    setDraft(null);
-    commit(value + delta);
+  // Compute the next value for a −/+ press. With `wrap` (and a finite max) the
+  // value cycles between min and max in `step` increments; otherwise it just
+  // moves by `step` and clamps at the ends.
+  const nextValue = (direction: 1 | -1) => {
+    if (wrap && Number.isFinite(max)) {
+      const span = max - min + step; // e.g. 45 - 0 + 15 = 60 → wraps 0..45
+      const offset = ((value - min + direction * step) % span + span) % span;
+      return min + offset;
+    }
+    return clamp(value + direction * step);
   };
 
-  const startAdjusting = (delta: number) => {
+  const stepBy = (direction: 1 | -1) => {
+    setDraft(null);
+    commit(nextValue(direction));
+  };
+
+  const startAdjusting = (direction: 1 | -1) => {
     let speed = 300;
-    step(delta); // immediate
+    stepBy(direction); // immediate
     timeoutRef.current = setTimeout(() => {
       const tick = () => {
-        step(delta);
+        stepBy(direction);
         speed = Math.max(60, speed - 30);
         intervalRef.current = setTimeout(tick, speed);
       };
@@ -86,10 +111,7 @@ export function DurationStepperInput({
 
   const displayValue = draft ?? String(value);
 
-  const btnClass =
-    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-gray-300 bg-white text-2xl leading-none text-gray-700 select-none active:scale-95 transition disabled:opacity-40 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500";
-
-  const inputEl = (
+  const input = (
     <div className="relative flex-1">
       <input
         id={id}
@@ -123,34 +145,38 @@ export function DurationStepperInput({
           }
           setDraft(null);
         }}
-        className={`h-11 w-full min-w-0 rounded-xl border-2 px-3 ${
-          suffix ? "pr-7" : ""
-        } text-center text-lg tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
-          readOnly
-            ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-600"
-            : "border-gray-300 bg-white focus:border-blue-500"
-        } disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-600`}
+        className={`h-11 w-full min-w-0 bg-transparent px-1 ${
+          suffix ? "pr-5" : ""
+        } text-center text-lg font-medium tabular-nums text-gray-900 focus:outline-none [appearance:textfield] disabled:text-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
       />
       {suffix ? (
-        <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-sm text-gray-400">
+        <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sm text-gray-400">
           {suffix}
         </span>
       ) : null}
     </div>
   );
 
-  // Read-only structural values have no steppers to change them.
+  // Read-only structural values have no steppers to change them: render the
+  // value in a plain bordered field.
   if (readOnly) {
-    return <div className="flex items-stretch">{inputEl}</div>;
+    return (
+      <div className="flex h-11 items-center rounded-xl border-2 border-gray-200 bg-gray-100">
+        {input}
+      </div>
+    );
   }
 
+  const stepBtn =
+    "flex h-11 w-11 shrink-0 items-center justify-center text-2xl leading-none text-gray-600 select-none transition active:bg-gray-100 disabled:opacity-30 disabled:active:bg-transparent focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700";
+
   return (
-    <div className="flex items-stretch gap-2">
+    <div className="flex h-11 items-stretch overflow-hidden rounded-xl border-2 border-gray-300 bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500">
       <button
         type="button"
         aria-label={`Decrease ${label}`}
-        className={btnClass}
-        disabled={disabled || value <= min}
+        className={`${stepBtn} border-r border-gray-200`}
+        disabled={disabled || (!wrap && value <= min)}
         onPointerDown={(e) => {
           e.preventDefault();
           startAdjusting(-1);
@@ -162,13 +188,13 @@ export function DurationStepperInput({
         −
       </button>
 
-      {inputEl}
+      {input}
 
       <button
         type="button"
         aria-label={`Increase ${label}`}
-        className={btnClass}
-        disabled={disabled || value >= max}
+        className={`${stepBtn} border-l border-gray-200`}
+        disabled={disabled || (!wrap && value >= max)}
         onPointerDown={(e) => {
           e.preventDefault();
           startAdjusting(1);

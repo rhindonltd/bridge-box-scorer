@@ -49,7 +49,6 @@ function makeProps(
     onAddBreak: vi.fn(),
     onRemoveBreak: vi.fn(),
     onBreakChange: vi.fn(),
-    onSave: vi.fn(),
     ...overrides,
   };
 }
@@ -57,14 +56,12 @@ function makeProps(
 describe("TimerConfigView", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("shows the preview panel and a Save button, and fires onSave", () => {
-    const onSave = vi.fn();
-    render(<TimerConfigView {...makeProps({ onSave })} />);
+  it("shows the summary panel and no Save button (changes auto-save)", () => {
+    render(<TimerConfigView {...makeProps()} />);
 
-    expect(screen.getByText("Not started yet")).toBeInTheDocument();
     expect(screen.getByText("Session Length")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(onSave).toHaveBeenCalled();
+    expect(screen.getByText("Session End")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });
 
   it("does not render any run controls or live status", () => {
@@ -127,26 +124,30 @@ describe("TimerConfigView", () => {
   it("renders embedded without the page header", () => {
     render(<TimerConfigView {...makeProps({ embedded: true })} />);
     expect(screen.queryByText("Timer Setup")).toBeNull();
-    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    // The config card is present; there is no Save button (auto-save).
+    expect(screen.getByText("Session Length")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   });
 
-  it("shows the structure fields read-only when locked", () => {
+  it("omits editable structure inputs when locked (shown in the summary instead)", () => {
     render(<TimerConfigView {...makeProps({ lockedStructure: true })} />);
 
-    expect(screen.getByLabelText("Boards / Round")).toHaveAttribute("readonly");
-    expect(screen.getByLabelText("Total Rounds")).toHaveAttribute("readonly");
-    expect(
-      screen.getByText(/come from the selected movement/i),
-    ).toBeInTheDocument();
+    // Derived structure is presented read-only in the summary panel, not as
+    // editable inputs in the config card.
+    expect(screen.queryByLabelText("Boards / Round")).toBeNull();
+    expect(screen.queryByLabelText("Total Rounds")).toBeNull();
+    // The summary panel still surfaces the values.
+    const boardsRow = screen.getByText("Boards / Round").closest("div")!;
+    expect(boardsRow).toHaveTextContent("3");
   });
 
-  it("prompts to select a movement and hides Save when none is selected", () => {
+  it("prompts to select a movement when none is selected", () => {
     render(<TimerConfigView {...makeProps({ noMovement: true })} />);
 
     expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
     // Config fields are replaced by the prompt.
     expect(screen.queryByLabelText("Boards / Round")).toBeNull();
-    // Save is hidden entirely (not merely disabled).
-    expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+    // No summary panel either while there is no movement.
+    expect(screen.queryByText("Session Length")).toBeNull();
   });
 });
