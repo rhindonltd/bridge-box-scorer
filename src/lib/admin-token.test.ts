@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import {
   setAdminToken,
@@ -6,6 +6,7 @@ import {
   clearAdminToken,
   hasAdminToken,
   subscribeAdminToken,
+  verifyAdminTokenWithServer,
 } from "./admin-token";
 
 describe("admin token store", () => {
@@ -88,5 +89,57 @@ describe("admin token store", () => {
       globalThis.window = originalWindow;
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("verifyAdminTokenWithServer", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("returns false without calling the server when no token is stored", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await expect(verifyAdminTokenWithServer()).resolves.toBe(false);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns true and keeps the token when the server confirms it", async () => {
+    setAdminToken("good");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+
+    await expect(verifyAdminTokenWithServer()).resolves.toBe(true);
+    expect(getAdminToken()).toBe("good");
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/system/admin-key/validate",
+      expect.objectContaining({
+        headers: { "x-admin-token": "good" },
+      }),
+    );
+  });
+
+  it("clears the stale token and returns false on a 401", async () => {
+    setAdminToken("stale");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 401 }),
+    );
+
+    await expect(verifyAdminTokenWithServer()).resolves.toBe(false);
+    // The stale token is dropped so the user is re-prompted.
+    expect(getAdminToken()).toBeNull();
+  });
+
+  it("returns false but keeps the token on a transient network error", async () => {
+    setAdminToken("maybe-valid");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+    await expect(verifyAdminTokenWithServer()).resolves.toBe(false);
+    // A transient failure must not throw away a possibly-valid token.
+    expect(getAdminToken()).toBe("maybe-valid");
   });
 });

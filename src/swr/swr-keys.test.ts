@@ -56,6 +56,16 @@ describe("swrKeys", () => {
     expect(swrKeys.wifiDiagnostics()).toBe("/api/system/wifi/diagnostics");
   });
 
+  it("adminKeyValidate returns static path", () => {
+    expect(swrKeys.adminKeyValidate()).toBe("/api/system/admin-key/validate");
+  });
+
+  it("directorValidate embeds the gameId", () => {
+    expect(swrKeys.directorValidate("g1")).toBe(
+      "/api/games/g1/director/validate",
+    );
+  });
+
   it("wifiTestStatus returns static path", () => {
     expect(swrKeys.wifiTestStatus()).toBe("/api/system/wifi/test/status");
   });

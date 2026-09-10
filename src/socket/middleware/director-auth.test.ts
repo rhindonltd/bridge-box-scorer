@@ -53,14 +53,16 @@ describe("validateDirectorToken", () => {
     expect(validateDirectorToken("valid-token", "game-1")).toBe(false);
   });
 
-  it("returns true when session gameId is null (global director)", () => {
+  it("returns false when session gameId is null (no global director)", () => {
+    // A director token must be bound to a concrete game; a null-gameId session
+    // must not act as a master key for every game.
     vi.mocked(findLoginSession).mockReturnValue({
       token: "valid-token",
       role: "DIRECTOR",
       gameId: null,
     } as any);
 
-    expect(validateDirectorToken("valid-token", "game-1")).toBe(true);
+    expect(validateDirectorToken("valid-token", "game-1")).toBe(false);
   });
 
   it("returns false when findLoginSession throws", () => {

@@ -7,7 +7,7 @@ import { WifiSettingsForm } from "@/app/settings/wifi/WifiSettingsForm";
 import { WifiUnavailablePage } from "@/app/settings/wifi/WifiUnavailablePage";
 import { WifiTestingPage } from "@/app/settings/wifi/WifiTestingPage";
 import { WifiScanningPage } from "@/app/settings/wifi/WifiScanningPage";
-import { getAdminToken } from "@/lib/admin-token";
+import { getAdminToken, clearAdminToken } from "@/lib/admin-token";
 import { fetcher } from "@/lib/fetcher";
 import { waitForApReachable } from "@/lib/wifi-recovery";
 import { swrKeys } from "@/swr/swr-keys";
@@ -152,7 +152,7 @@ export default function WifiSettings() {
     setMessage("Saving WiFi settings...");
     try {
       const adminToken = getAdminToken() ?? "";
-      await fetch("/api/system/wifi", {
+      const saveRes = await fetch("/api/system/wifi", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -160,6 +160,19 @@ export default function WifiSettings() {
         },
         body: JSON.stringify({ ssid, password }),
       });
+
+      if (saveRes.status === 401) {
+        // Stale/invalid admin token — clear it so the settings gate re-prompts
+        // instead of rebooting on a save that didn't take.
+        clearAdminToken();
+        setMessage("Session expired. Please re-enter the admin key.");
+        return;
+      }
+      if (!saveRes.ok) {
+        setMessage("Failed to save WiFi");
+        return;
+      }
+
       await fetch("/api/system/reboot", {
         method: "POST",
         headers: { "x-admin-token": adminToken },

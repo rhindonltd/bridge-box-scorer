@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { Club } from "@/db/system/schema";
 import { fetcher } from "@/lib/fetcher";
-import { getAdminToken } from "@/lib/admin-token";
+import { getAdminToken, clearAdminToken } from "@/lib/admin-token";
 import { swrKeys } from "@/swr/swr-keys";
 
 export default function ClubSettingsPage() {
@@ -54,6 +54,12 @@ export default function ClubSettingsPage() {
         // Revalidate the shared club cache so other views reflect the save.
         await mutate();
         setMessage("✅ Club info saved");
+      } else if (res.status === 401) {
+        // The admin token is stale/invalid. Clear it so the settings gate
+        // re-prompts for the admin key rather than leaving the user on a page
+        // whose saves silently fail.
+        clearAdminToken();
+        setMessage("Session expired. Please re-enter the admin key.");
       } else {
         const data = await res.json();
         setMessage(data.error ?? "Failed to save");
