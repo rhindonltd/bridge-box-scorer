@@ -84,7 +84,9 @@ export function SetupGamePage() {
   const menu = <HeaderMenu items={menuItems} label="Setup menu" />;
 
   if (step === "tables") {
-    return <ShowTablesPage menu={menu} />;
+    return (
+      <ShowTablesPage menu={menu} onEditMovement={() => goTo("movements")} />
+    );
   }
 
   if (step === "movements") {
