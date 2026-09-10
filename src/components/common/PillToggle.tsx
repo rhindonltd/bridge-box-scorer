@@ -29,7 +29,7 @@ export function PillToggle<T extends string>({
   onChange,
 }: Props<T>) {
   const pillClass = (active: boolean) =>
-    `flex-1 cursor-pointer rounded-lg px-4 py-2 text-center text-sm font-medium transition ${
+    `relative flex-1 cursor-pointer rounded-lg px-4 py-2 text-center text-sm font-medium transition ${
       active
         ? "bg-white text-blue-700 shadow-sm"
         : "text-gray-600 hover:text-gray-800"
@@ -40,10 +40,18 @@ export function PillToggle<T extends string>({
       <legend className="sr-only">{legend}</legend>
       {options.map((option) => (
         <label key={option.value} className={pillClass(value === option.value)}>
+          {/*
+           * The radio is hidden but kept in-flow *inside* its own pill (absolute
+           * inset-0, transparent) rather than the usual `sr-only` clip. `sr-only`
+           * positions the input far from the pill, so focusing it on click made
+           * the browser scroll the container to that off-screen spot — yanking
+           * the whole form off the top. Covering the visible pill keeps any
+           * focus scroll-into-view a no-op.
+           */}
           <input
             type="radio"
             name={name}
-            className="sr-only"
+            className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
             checked={value === option.value}
             onChange={() => onChange(option.value)}
           />
