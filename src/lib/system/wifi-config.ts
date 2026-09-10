@@ -98,6 +98,12 @@ export type WifiScanResult = {
   inProgress: boolean;
   /** True when the scan itself failed (nmcli error). */
   failed?: boolean;
+  /**
+   * A human-readable reason the scan failed (e.g. the nmcli stderr). Present
+   * only when `failed` is true. Surfaced in the UI to aid diagnosis of
+   * permission / hostapd / PATH problems.
+   */
+  error?: string;
 };
 
 /**

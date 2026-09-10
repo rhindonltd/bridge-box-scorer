@@ -52,6 +52,10 @@ describe("swrKeys", () => {
     expect(swrKeys.wifiScanStatus()).toBe("/api/system/wifi/scan/status");
   });
 
+  it("wifiDiagnostics returns static path", () => {
+    expect(swrKeys.wifiDiagnostics()).toBe("/api/system/wifi/diagnostics");
+  });
+
   it("wifiTestStatus returns static path", () => {
     expect(swrKeys.wifiTestStatus()).toBe("/api/system/wifi/test/status");
   });

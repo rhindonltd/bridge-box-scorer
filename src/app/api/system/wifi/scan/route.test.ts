@@ -102,25 +102,31 @@ describe("POST /api/system/wifi/scan", () => {
     expect(firstWriteOrder).toBeLessThan(downOrder);
   });
 
-  it("restores the AP and persists a failed result when the scan errors", async () => {
+  it("restores the AP and persists the real failure reason when the scan errors", async () => {
+    // Simulate nmcli exiting non-zero with a permission-style stderr.
     vi.mocked(mockExecFile).mockImplementation(((
       _cmd: string,
       _args: string[],
       cb: unknown,
     ) => {
-      (cb as ExecCallback)(new Error("Scanning not allowed"));
+      const err = Object.assign(new Error("Command failed"), {
+        stderr: "Error: Not authorized to control networking.",
+        code: 4,
+      });
+      (cb as (e: unknown) => void)(err);
     }) as never);
 
     const res = await POST(req());
     const body = await res.json();
 
     expect(body.success).toBe(false);
+    // The real nmcli reason is surfaced in the response and the persisted result.
+    expect(body.error).toContain("Not authorized to control networking");
     // AP is still brought back up even though the scan failed.
     expect(bringConnectionUp).toHaveBeenCalledWith("BridgeBox-AP");
-    expect(vi.mocked(writeScanResult).mock.calls.at(-1)?.[0]).toMatchObject({
-      inProgress: false,
-      failed: true,
-    });
+    const persisted = vi.mocked(writeScanResult).mock.calls.at(-1)?.[0];
+    expect(persisted).toMatchObject({ inProgress: false, failed: true });
+    expect(persisted?.error).toContain("Not authorized to control networking");
   });
 
   it("scans without down/up when no AP is hosted (e.g. wired uplink)", async () => {
