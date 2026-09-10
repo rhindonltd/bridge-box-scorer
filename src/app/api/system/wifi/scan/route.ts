@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { execFile } from "child_process";
-import { promisify } from "util";
 import { withAdminRoute } from "@/lib/api/adminRoute";
 import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
@@ -10,9 +8,8 @@ import {
   bringConnectionDown,
   bringConnectionUp,
 } from "@/lib/system/wifi-ap";
+import { runNmcli } from "@/lib/system/nmcli";
 import { writeScanResult } from "@/lib/system/wifi-config";
-
-const execFileAsync = promisify(execFile);
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -26,7 +23,7 @@ const SETTLE_MS = 1000;
  * `--rescan yes` forces a fresh scan regardless of cache age.
  */
 async function runScan(): Promise<string> {
-  const { stdout } = await execFileAsync("nmcli", [
+  return runNmcli([
     "-t",
     "-f",
     "SSID,SECURITY,SIGNAL",
@@ -36,7 +33,6 @@ async function runScan(): Promise<string> {
     "--rescan",
     "yes",
   ]);
-  return stdout;
 }
 
 /**
@@ -56,6 +52,11 @@ async function runScan(): Promise<string> {
  * client reconnects once the AP is back and reads it from
  * `GET /api/system/wifi/scan/status`. `inProgress` is written up-front so a
  * client that reconnects mid-scan can tell "still scanning" from "done".
+ *
+ * On failure the underlying nmcli error (stderr) is logged AND persisted into
+ * the scan result's `error` field, so a permission / hostapd / PATH problem is
+ * diagnosable from the UI and server logs rather than showing a generic
+ * failure.
  *
  * Admin-gated (a disruptive device operation). On a device without WiFi
  * management it returns 200 `{ available:false }` without touching the radio.
@@ -98,16 +99,22 @@ export const POST = withAdminRoute(async () => {
     });
 
     return success({ available: true, networks });
-  } catch {
+  } catch (err) {
+    // Preserve the real reason (nmcli stderr / message) so it can be diagnosed
+    // instead of surfacing a generic "scan failed".
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error("WiFi scan failed:", reason);
+
     writeScanResult({
       networks: [],
       at: new Date().toISOString(),
       inProgress: false,
       failed: true,
+      error: reason,
     });
 
     return NextResponse.json(
-      { success: false, error: "WiFi scan failed" },
+      { success: false, error: reason },
       { status: 200 },
     );
   } finally {
@@ -116,9 +123,10 @@ export const POST = withAdminRoute(async () => {
     if (apWasDown && ap) {
       try {
         await bringConnectionUp(ap.connectionName);
-      } catch {
-        // If this fails the box may need a reboot to restore the AP; nothing
-        // more we can safely do from here.
+      } catch (err) {
+        // If this fails the box may need a reboot to restore the AP; log it so
+        // the failure to restore the hotspot is at least visible.
+        console.error("WiFi scan: failed to restore AP:", err);
       }
     }
   }

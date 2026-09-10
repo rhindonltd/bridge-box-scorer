@@ -17,6 +17,7 @@ type ScanResult = {
   at: string;
   inProgress: boolean;
   failed?: boolean;
+  error?: string;
 } | null;
 
 export default function WifiSettings() {
@@ -73,7 +74,13 @@ export default function WifiSettings() {
       const result = body?.result?.result as ScanResult;
 
       if (result?.failed) {
-        setMessage("❌ Scan failed. Please try again.");
+        // Surface the real reason (e.g. an nmcli permission error) to aid
+        // diagnosis, falling back to a generic message.
+        setMessage(
+          result.error
+            ? `❌ Scan failed: ${result.error}`
+            : "❌ Scan failed. Please try again.",
+        );
         return;
       }
 

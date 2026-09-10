@@ -36,5 +36,7 @@ export const swrKeys = {
 
   wifiScanStatus: () => "/api/system/wifi/scan/status",
 
+  wifiDiagnostics: () => "/api/system/wifi/diagnostics",
+
   wifiTestStatus: () => "/api/system/wifi/test/status",
 };
