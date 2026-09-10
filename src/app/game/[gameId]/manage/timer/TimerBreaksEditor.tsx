@@ -56,10 +56,16 @@ export function TimerBreaksEditor({
           key={index}
           className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3"
         >
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-600">After round</label>
-            <div className="w-32">
+          <div className="flex items-center justify-between gap-3">
+            <label
+              className="shrink-0 text-sm text-gray-600"
+              htmlFor={`break-${index}-after-round`}
+            >
+              After round
+            </label>
+            <div className="w-40 shrink-0">
               <StepperInput
+                id={`break-${index}-after-round`}
                 label={`Break ${index + 1} after round`}
                 value={b.afterRound}
                 min={1}
@@ -67,14 +73,6 @@ export function TimerBreaksEditor({
                 onChange={(v) => onBreakChange(index, "afterRound", v)}
               />
             </div>
-            <button
-              type="button"
-              onClick={() => onRemoveBreak(index)}
-              aria-label={`Remove break ${index + 1}`}
-              className="ml-auto rounded-lg bg-red-100 px-3 py-1 text-sm font-medium text-red-800 hover:bg-red-200"
-            >
-              Remove
-            </button>
           </div>
 
           <PillToggle
@@ -118,6 +116,17 @@ export function TimerBreaksEditor({
               )}
             </div>
           )}
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => onRemoveBreak(index)}
+              aria-label={`Remove break ${index + 1}`}
+              className="rounded-lg bg-red-100 px-3 py-1 text-sm font-medium text-red-800 hover:bg-red-200"
+            >
+              Remove
+            </button>
+          </div>
         </div>
       ))}
     </div>
