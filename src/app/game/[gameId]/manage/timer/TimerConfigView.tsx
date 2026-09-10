@@ -110,20 +110,11 @@ export function TimerConfigView({
   );
 
   // The section pills sit in a pinned grey bar at the top, matching the
-  // Movement step. Rendered only when a headerSlot is supplied.
-  //
-  // Non-embedded: rendered via GamePageLayout's `subHeader` slot (outside the
-  // scroll region). Embedded (setup Timer tab): rendered `sticky` at the top of
-  // the shared scroll container so it stays put without introducing a second,
-  // nested scroll area.
+  // Movement step. Rendered only when a headerSlot is supplied. Embedded: it's
+  // a fixed row above an inner scroll area (below). Non-embedded: passed to
+  // GamePageLayout's `subHeader` slot (outside the scroll region).
   const pillsBar = headerSlot ? (
     <div className="flex shrink-0 justify-center border-b border-gray-200 bg-gray-50 px-4 py-3">
-      {headerSlot}
-    </div>
-  ) : null;
-
-  const stickyPillsBar = headerSlot ? (
-    <div className="sticky top-0 z-10 flex justify-center border-b border-gray-200 bg-gray-50 px-4 py-3">
       {headerSlot}
     </div>
   ) : null;
@@ -150,15 +141,18 @@ export function TimerConfigView({
   );
 
   if (embedded) {
-    // Embedded under the setup flow's own GamePageLayout, which already
-    // provides a single scroll container. We must NOT add a second nested
-    // scroll region here (that caused only the top of the screen to scroll);
-    // instead the pills bar is `sticky` so it pins to the top of that shared
-    // scroll area while the body scrolls normally beneath it.
+    // Fill the height handed down by the setup flow's GamePageLayout and own
+    // the scrolling here: the pills bar is a fixed (shrink-0) row and only the
+    // body below it scrolls, so the pills stay pinned. This mirrors the
+    // Movement step's layout. (A `sticky` bar inside GamePageLayout's own
+    // scroll region did not hold because that region's immediate child is a
+    // flex column, which breaks sticky.)
     return (
-      <div className="flex flex-col">
-        {stickyPillsBar}
-        <div className="flex flex-col items-center gap-4 p-4">{body}</div>
+      <div className="flex h-full min-h-0 flex-col">
+        {pillsBar}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="flex flex-col items-center gap-4 p-4">{body}</div>
+        </div>
       </div>
     );
   }
