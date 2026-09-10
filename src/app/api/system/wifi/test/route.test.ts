@@ -12,6 +12,9 @@ const { isWifiManagementAvailable } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/system/wifi-availability", () => ({ isWifiManagementAvailable }));
 
+const { writeTestResult } = vi.hoisted(() => ({ writeTestResult: vi.fn() }));
+vi.mock("@/lib/system/wifi-config", () => ({ writeTestResult }));
+
 import { execFile as mockExecFile } from "child_process";
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { POST } from "./route";
@@ -70,6 +73,26 @@ describe("POST /api/system/wifi/test", () => {
     expect(deleteCalls.length).toBeGreaterThanOrEqual(1);
   });
 
+  it("persists in-progress before the AP-dropping connection, then a connected result", async () => {
+    setExec(() => false); // everything succeeds
+
+    await POST(req({ ssid: "HomeNet", password: "secret" }));
+
+    // First write marks the test in-progress (before the AP drops); the last
+    // write records the final connected outcome the reconnecting client reads.
+    const calls = vi.mocked(writeTestResult).mock.calls.map((c) => c[0]);
+    expect(calls[0]).toMatchObject({
+      ssid: "HomeNet",
+      inProgress: true,
+      connected: false,
+    });
+    expect(calls.at(-1)).toMatchObject({
+      ssid: "HomeNet",
+      inProgress: false,
+      connected: true,
+    });
+  });
+
   it("returns success:false (200) when bringing the profile up fails", async () => {
     setExec((args) => args.includes("up"));
 
@@ -78,6 +101,19 @@ describe("POST /api/system/wifi/test", () => {
     await expect(res.json()).resolves.toEqual({
       success: false,
       error: "Failed to connect to the network",
+    });
+  });
+
+  it("persists a failed (not connected) result when the profile fails to come up", async () => {
+    setExec((args) => args.includes("up"));
+
+    await POST(req({ ssid: "HomeNet", password: "wrong" }));
+
+    const calls = vi.mocked(writeTestResult).mock.calls.map((c) => c[0]);
+    expect(calls.at(-1)).toMatchObject({
+      ssid: "HomeNet",
+      inProgress: false,
+      connected: false,
     });
   });
 

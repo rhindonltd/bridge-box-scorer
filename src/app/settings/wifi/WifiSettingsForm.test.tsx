@@ -141,4 +141,24 @@ describe("WifiSettingsForm UI", () => {
     expect(screen.getByText("Saving...")).toBeInTheDocument();
     expect(screen.getByText("Applying changes")).toBeInTheDocument();
   });
+
+  it("always shows the WiFi-interruption warning", () => {
+    render(<WifiSettingsForm networks={networks} />);
+    expect(screen.getByTestId("wifi-interruption-warning")).toBeInTheDocument();
+  });
+
+  it("calls onRescan when the Rescan button is clicked", async () => {
+    const onRescan = vi.fn();
+    render(<WifiSettingsForm networks={networks} onRescan={onRescan} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /Rescan/i }));
+    expect(onRescan).toHaveBeenCalledOnce();
+  });
+
+  it("shows a scanning state and disables Rescan while scanning", () => {
+    render(<WifiSettingsForm networks={networks} scanning />);
+
+    expect(screen.getByTestId("wifi-scanning")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Scanning/i })).toBeDisabled();
+  });
 });

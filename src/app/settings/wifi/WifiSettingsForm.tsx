@@ -13,8 +13,10 @@ export type Props = {
   networks: Network[];
   onTestConnection?: (ssid: string, password: string) => Promise<boolean>; // returns success
   onSaveWifi?: (ssid: string, password: string) => void;
+  onRescan?: () => void;
   testing?: boolean;
   loading?: boolean;
+  scanning?: boolean;
   message?: string | null;
 };
 
@@ -22,8 +24,10 @@ export function WifiSettingsForm({
   networks,
   onTestConnection,
   onSaveWifi,
+  onRescan,
   testing = false,
   loading = false,
+  scanning = false,
   message = null,
 }: Props) {
   const [selectedSSID, setSelectedSSID] = useState<Network | null>(null);
@@ -65,7 +69,39 @@ export function WifiSettingsForm({
   return (
     <PageLayout headerTitle="Wifi Settings">
       <>
-        <label className="block text-sm font-medium mb-1">Network</label>
+        {/* Both scanning and testing briefly interrupt the box's own WiFi on a
+            single-radio appliance, so warn the director up front. */}
+        <p
+          className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800"
+          data-testid="wifi-interruption-warning"
+        >
+          Scanning for and testing WiFi networks briefly interrupts the Bridge
+          Box&apos;s own WiFi. Connected devices may drop for a few seconds and
+          will reconnect automatically.
+        </p>
+
+        <div className="mb-1 flex items-center justify-between">
+          <label className="block text-sm font-medium">Network</label>
+          <button
+            type="button"
+            onClick={() => onRescan?.()}
+            disabled={scanning || testing}
+            className={`text-sm font-medium ${
+              scanning || testing
+                ? "text-gray-400 cursor-not-allowed"
+                : "text-blue-600 hover:text-blue-700"
+            }`}
+          >
+            {scanning ? "Scanning…" : "Rescan"}
+          </button>
+        </div>
+
+        {scanning && (
+          <p className="mb-2 text-sm text-gray-600" data-testid="wifi-scanning">
+            Scanning… WiFi may briefly disconnect.
+          </p>
+        )}
+
         <Menu as="div" className="relative mb-4">
           <Menu.Button className="w-full p-2 border border-gray-300 rounded text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
             {selectedSSID ? (

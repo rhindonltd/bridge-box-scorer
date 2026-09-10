@@ -16,6 +16,13 @@ import { newParticipant } from "./support";
  * These assertions match whichever the host actually is, so the journey passes
  * on both. WiFi settings are behind the admin-key gate; `unlockSettings` seeds
  * a valid admin token first.
+ *
+ * On the appliance the single WiFi radio hosts the hotspot, so both scanning
+ * (forced `--rescan yes`) and testing a connection briefly interrupt that
+ * hotspot. The picker therefore carries a persistent interruption warning and a
+ * manual Rescan control; the disruptive test itself (real association +
+ * disconnect/reconnect) needs a real `nmcli`/WiFi host and is verified
+ * manually — see tests/E2E-COVERAGE-AUDIT.md.
  */
 
 function hasNmcli(): boolean {
@@ -83,6 +90,16 @@ test.describe("WiFi settings screen (capability-aware)", () => {
       await expect(
         page.getByRole("button", { name: "Test Connection" }),
       ).toBeVisible();
+
+      // The screen warns that scanning/testing briefly interrupt the box's own
+      // WiFi (both force the single radio off the hosted AP momentarily).
+      await expect(
+        page.getByTestId("wifi-interruption-warning"),
+      ).toBeVisible();
+
+      // A manual Rescan control forces a fresh (disruptive) scan.
+      await expect(page.getByRole("button", { name: "Rescan" })).toBeVisible();
+
       // Save & Apply stays disabled until a successful test of the selected
       // network (test-of-same-SSID gating).
       await expect(
