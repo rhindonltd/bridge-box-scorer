@@ -147,18 +147,33 @@ describe("WifiSettingsForm UI", () => {
     expect(screen.getByTestId("wifi-interruption-warning")).toBeInTheDocument();
   });
 
-  it("calls onRescan when the Rescan button is clicked", async () => {
-    const onRescan = vi.fn();
-    render(<WifiSettingsForm networks={networks} onRescan={onRescan} />);
+  it("calls onScan when the scan button is clicked", async () => {
+    const onScan = vi.fn();
+    render(<WifiSettingsForm networks={networks} onScan={onScan} hasScanned />);
 
-    await userEvent.click(screen.getByRole("button", { name: /Rescan/i }));
-    expect(onRescan).toHaveBeenCalledOnce();
+    await userEvent.click(screen.getByTestId("wifi-scan-button"));
+    expect(onScan).toHaveBeenCalledOnce();
   });
 
-  it("shows a scanning state and disables Rescan while scanning", () => {
+  it("labels the scan button 'Scan for networks' before any scan", () => {
+    render(<WifiSettingsForm networks={[]} />);
+
+    expect(
+      screen.getByRole("button", { name: /Scan for networks/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("wifi-no-scan-yet")).toBeInTheDocument();
+  });
+
+  it("labels the scan button 'Rescan' once a scan has produced results", () => {
+    render(<WifiSettingsForm networks={networks} hasScanned />);
+
+    expect(screen.getByRole("button", { name: /Rescan/i })).toBeInTheDocument();
+    expect(screen.queryByTestId("wifi-no-scan-yet")).toBeNull();
+  });
+
+  it("shows a scanning label and disables the scan button while scanning", () => {
     render(<WifiSettingsForm networks={networks} scanning />);
 
-    expect(screen.getByTestId("wifi-scanning")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Scanning/i })).toBeDisabled();
   });
 });

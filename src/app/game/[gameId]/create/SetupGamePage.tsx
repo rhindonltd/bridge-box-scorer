@@ -2,6 +2,7 @@
 
 import { ShowTablesPage } from "@/app/game/[gameId]/create/ShowTablesPage";
 import { StartGameScreen } from "@/app/game/[gameId]/create/StartGameScreen";
+import { useRouter } from "next/navigation";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
@@ -36,6 +37,7 @@ const setupGameFlow = createFlow(
 
 export function SetupGamePage() {
   const { game } = useRequiredGame();
+  const router = useRouter();
 
   const { step, goTo } = useFlow(
     setupGameFlow,
@@ -74,6 +76,9 @@ export function SetupGamePage() {
       onSelect: () => goTo("start"),
       active: activeStep === "start",
     },
+    // Leaves the setup flow entirely. Not a setup step, so it never shows as
+    // the active selection.
+    { label: "Return to main menu", onSelect: () => router.push("/") },
   ];
 
   const menu = <HeaderMenu items={menuItems} label="Setup menu" />;

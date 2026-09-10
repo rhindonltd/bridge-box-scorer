@@ -1,29 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// execFile is consumed via promisify(execFile); make the mock invoke the
-// node-style callback so the promisified form resolves/rejects as expected.
+// execFile is consumed via promisify(execFile); drive the node-style callback.
 const { execFile } = vi.hoisted(() => ({ execFile: vi.fn() }));
 vi.mock("child_process", async (importActual) => {
   const actual = await importActual<typeof import("child_process")>();
   return { ...actual, execFile, default: { ...actual, execFile } };
 });
 
-// The route first checks WiFi-management availability; control it per-test.
+vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
+
 const { isWifiManagementAvailable } = vi.hoisted(() => ({
   isWifiManagementAvailable: vi.fn(),
 }));
 vi.mock("@/lib/system/wifi-availability", () => ({ isWifiManagementAvailable }));
 
-// Control the appliance's own AP SSID (excluded from results) per-test.
-const { getOwnApSsid } = vi.hoisted(() => ({ getOwnApSsid: vi.fn() }));
-vi.mock("@/lib/system/wifi-ap", () => ({ getOwnApSsid }));
+const { getOwnAp, bringConnectionDown, bringConnectionUp } = vi.hoisted(() => ({
+  getOwnAp: vi.fn(),
+  bringConnectionDown: vi.fn(),
+  bringConnectionUp: vi.fn(),
+}));
+vi.mock("@/lib/system/wifi-ap", () => ({
+  getOwnAp,
+  bringConnectionDown,
+  bringConnectionUp,
+}));
+
+const { writeScanResult } = vi.hoisted(() => ({ writeScanResult: vi.fn() }));
+vi.mock("@/lib/system/wifi-config", () => ({ writeScanResult }));
 
 import { execFile as mockExecFile } from "child_process";
+import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { POST } from "./route";
 
 type ExecCallback = (e: unknown, r?: { stdout: string; stderr: string }) => void;
 
-/** Resolve every execFile call with the given stdout. */
+/** Resolve the scan (execFile) with the given stdout. */
 function mockScanStdout(stdout: string) {
   vi.mocked(mockExecFile).mockImplementation(((
     _cmd: string,
@@ -34,45 +45,29 @@ function mockScanStdout(stdout: string) {
   }) as never);
 }
 
-const req = () =>
-  new Request("http://localhost/api/system/wifi/scan", {
+const req = (token: string | null = "tok") => {
+  const headers = new Headers();
+  if (token) headers.set("x-admin-token", token);
+  return new Request("http://localhost/api/system/wifi/scan", {
     method: "POST",
+    headers,
   }) as never;
+};
 
 describe("POST /api/system/wifi/scan", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getOwnApSsid).mockResolvedValue(null);
+    vi.mocked(validateAdminToken).mockResolvedValue(true);
+    vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
+    vi.mocked(getOwnAp).mockResolvedValue({
+      connectionName: "BridgeBox-AP",
+      ssid: "BridgeBox",
+    });
+    vi.mocked(bringConnectionDown).mockResolvedValue(undefined);
+    vi.mocked(bringConnectionUp).mockResolvedValue(undefined);
   });
 
-  it("forces a fresh scan (--rescan yes) and parses the ssid list", async () => {
-    vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
-    mockScanStdout(
-      ["HomeNet:WPA2:80", "HomeNet:WPA2:70", "Cafe:--:55", ":WPA2:40"].join(
-        "\n",
-      ),
-    );
-
-    const res = await POST(req());
-    const body = await res.json();
-
-    expect(body.success).toBe(true);
-    expect(body.result.available).toBe(true);
-    const ssids = body.result.ssids.map((s: { ssid: string }) => s.ssid);
-    expect(ssids).toContain("HomeNet");
-    expect(ssids).toContain("Cafe");
-    expect(ssids).not.toContain("");
-    expect(ssids.filter((s: string) => s === "HomeNet")).toHaveLength(1);
-
-    // The scan is a forced active rescan.
-    const scanArgs = vi.mocked(mockExecFile).mock.calls[0][1] as string[];
-    expect(scanArgs).toContain("--rescan");
-    expect(scanArgs[scanArgs.indexOf("--rescan") + 1]).toBe("yes");
-  });
-
-  it("excludes the appliance's own AP SSID from the results", async () => {
-    vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
-    vi.mocked(getOwnApSsid).mockResolvedValue("BridgeBox");
+  it("brings the AP down, scans, brings it back up, and excludes the own AP", async () => {
     mockScanStdout(
       ["BridgeBox:WPA2:99", "HomeNet:WPA2:80", "Cafe:--:55"].join("\n"),
     );
@@ -80,49 +75,86 @@ describe("POST /api/system/wifi/scan", () => {
     const res = await POST(req());
     const body = await res.json();
 
-    const ssids = body.result.ssids.map((s: { ssid: string }) => s.ssid);
-    expect(ssids).not.toContain("BridgeBox");
-    expect(ssids).toEqual(["HomeNet", "Cafe"]);
+    expect(body.success).toBe(true);
+    const ssids = body.result.networks.map((n: { ssid: string }) => n.ssid);
+    expect(ssids).toEqual(["HomeNet", "Cafe"]); // own AP filtered out
+
+    // Disruptive sequence: AP down before the scan, AP up after.
+    expect(bringConnectionDown).toHaveBeenCalledWith("BridgeBox-AP");
+    expect(bringConnectionUp).toHaveBeenCalledWith("BridgeBox-AP");
   });
 
-  it("retries the scan once when the radio is transiently busy", async () => {
-    vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
+  it("persists in-progress before the AP drops, then the final networks", async () => {
+    mockScanStdout("HomeNet:WPA2:80");
 
-    let call = 0;
+    await POST(req());
+
+    const writes = vi.mocked(writeScanResult).mock.calls.map((c) => c[0]);
+    expect(writes[0]).toMatchObject({ inProgress: true, networks: [] });
+    expect(writes.at(-1)).toMatchObject({
+      inProgress: false,
+      networks: [{ ssid: "HomeNet", signal: 80 }],
+    });
+    // The in-progress write happens before the AP is brought down.
+    const downOrder = vi.mocked(bringConnectionDown).mock.invocationCallOrder[0];
+    const firstWriteOrder =
+      vi.mocked(writeScanResult).mock.invocationCallOrder[0];
+    expect(firstWriteOrder).toBeLessThan(downOrder);
+  });
+
+  it("restores the AP and persists a failed result when the scan errors", async () => {
     vi.mocked(mockExecFile).mockImplementation(((
       _cmd: string,
       _args: string[],
       cb: unknown,
     ) => {
-      call += 1;
-      if (call === 1) {
-        (cb as ExecCallback)(new Error("Device or resource busy"));
-      } else {
-        (cb as ExecCallback)(null, { stdout: "HomeNet:WPA2:80", stderr: "" });
-      }
+      (cb as ExecCallback)(new Error("Scanning not allowed"));
     }) as never);
 
     const res = await POST(req());
     const body = await res.json();
 
-    expect(body.success).toBe(true);
-    expect(body.result.ssids.map((s: { ssid: string }) => s.ssid)).toEqual([
-      "HomeNet",
-    ]);
-    // First (failed) scan + retry = at least two scan invocations.
-    expect(vi.mocked(mockExecFile).mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(body.success).toBe(false);
+    // AP is still brought back up even though the scan failed.
+    expect(bringConnectionUp).toHaveBeenCalledWith("BridgeBox-AP");
+    expect(vi.mocked(writeScanResult).mock.calls.at(-1)?.[0]).toMatchObject({
+      inProgress: false,
+      failed: true,
+    });
   });
 
-  it("reports available:false with no ssids when WiFi management is absent", async () => {
-    vi.mocked(isWifiManagementAvailable).mockResolvedValue(false);
+  it("scans without down/up when no AP is hosted (e.g. wired uplink)", async () => {
+    vi.mocked(getOwnAp).mockResolvedValue(null);
+    mockScanStdout("HomeNet:WPA2:80");
 
     const res = await POST(req());
     const body = await res.json();
 
     expect(body.success).toBe(true);
-    expect(body.result.available).toBe(false);
-    expect(body.result.ssids).toEqual([]);
-    // nmcli is never invoked when management is unavailable.
+    expect(bringConnectionDown).not.toHaveBeenCalled();
+    expect(bringConnectionUp).not.toHaveBeenCalled();
+    expect(body.result.networks.map((n: { ssid: string }) => n.ssid)).toEqual([
+      "HomeNet",
+    ]);
+  });
+
+  it("returns 401 without a valid admin token and never touches the radio", async () => {
+    vi.mocked(validateAdminToken).mockResolvedValue(false);
+
+    const res = await POST(req(null));
+    expect(res.status).toBe(401);
+    expect(bringConnectionDown).not.toHaveBeenCalled();
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
+
+  it("reports available:false without scanning when WiFi management is absent", async () => {
+    vi.mocked(isWifiManagementAvailable).mockResolvedValue(false);
+
+    const res = await POST(req());
+    const body = await res.json();
+
+    expect(body.success).toBe(false);
+    expect(bringConnectionDown).not.toHaveBeenCalled();
     expect(mockExecFile).not.toHaveBeenCalled();
   });
 });

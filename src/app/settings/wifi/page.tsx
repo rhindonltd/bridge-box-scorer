@@ -6,39 +6,93 @@ import { Network } from "@/model/network";
 import { WifiSettingsForm } from "@/app/settings/wifi/WifiSettingsForm";
 import { WifiUnavailablePage } from "@/app/settings/wifi/WifiUnavailablePage";
 import { WifiTestingPage } from "@/app/settings/wifi/WifiTestingPage";
+import { WifiScanningPage } from "@/app/settings/wifi/WifiScanningPage";
 import { getAdminToken } from "@/lib/admin-token";
-import { postFetcher } from "@/lib/fetcher";
+import { fetcher } from "@/lib/fetcher";
 import { waitForApReachable } from "@/lib/wifi-recovery";
 import { swrKeys } from "@/swr/swr-keys";
+
+type ScanResult = {
+  networks: Network[];
+  at: string;
+  inProgress: boolean;
+  failed?: boolean;
+} | null;
 
 export default function WifiSettings() {
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testingSSID, setTestingSSID] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Networks from the most recent scan this session. Seeded from the last
+  // persisted scan (below) so reopening the screen shows prior results.
+  const [networks, setNetworks] = useState<Network[] | null>(null);
 
-  // The scan endpoint is a POST (it shells out to nmcli) that returns
-  // { available, ssids } inside the success envelope. `available` is false on
-  // devices without WiFi management (no nmcli), in which case we show a
-  // dedicated "can't change WiFi here" page instead of the picker.
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{
-    available: boolean;
-    ssids: Network[];
-  }>(swrKeys.wifiScan(), postFetcher);
+  // Capability check WITHOUT scanning: the network endpoint reports whether the
+  // device can manage WiFi (has nmcli). We no longer auto-scan on mount — a
+  // scan takes the hotspot down and would drop every connected device — so this
+  // is how we decide whether to show the "can't change WiFi here" page.
+  const { data: net, isLoading: netLoading } = useSWR<{
+    wifi: { available: boolean };
+  }>(swrKeys.network(), fetcher);
 
-  const networks = [...(data?.ssids ?? [])].sort((a, b) => b.signal - a.signal);
+  // Last persisted scan result (read-only; does not trigger a scan).
+  const { data: lastScan } = useSWR<{ result: ScanResult }>(
+    swrKeys.wifiScanStatus(),
+    fetcher,
+  );
 
-  const scanFailedMessage = error ? "Failed to load WiFi networks" : null;
+  // Prefer this session's fresh scan; otherwise fall back to the last persisted
+  // scan so the picker isn't empty when reopening the screen.
+  const displayNetworks: Network[] = [
+    ...(networks ?? lastScan?.result?.networks ?? []),
+  ].sort((a, b) => b.signal - a.signal);
 
-  const handleRescan = () => {
-    void mutate();
+  const hasScanned = networks !== null || !!lastScan?.result;
+
+  // Kick off a disruptive scan: bring the AP down, scan, bring it back — which
+  // drops THIS device. Mirror the test flow: fire the request, show a
+  // reconnect screen, wait for the box to return, then read persisted results.
+  const handleScan = async () => {
+    setScanning(true);
+    setMessage(null);
+
+    try {
+      void fetch(swrKeys.wifiScan(), {
+        method: "POST",
+        headers: { "x-admin-token": getAdminToken() ?? "" },
+      }).catch(() => {
+        // Expected: the connection drops while the AP is down.
+      });
+
+      await waitForApReachable();
+
+      const res = await fetch(swrKeys.wifiScanStatus(), { cache: "no-store" });
+      const body = await res.json();
+      const result = body?.result?.result as ScanResult;
+
+      if (result?.failed) {
+        setMessage("❌ Scan failed. Please try again.");
+        return;
+      }
+
+      setNetworks(result?.networks ?? []);
+      if ((result?.networks ?? []).length === 0) {
+        setMessage("No networks found. Try scanning again.");
+      }
+    } catch {
+      setMessage("❌ Error scanning for networks");
+    } finally {
+      setScanning(false);
+    }
   };
 
   // Testing brings up a client connection, which on a single-radio appliance
   // drops the hosted hotspot — so THIS device loses its connection to the box
-  // and never sees the test's HTTP response. Instead we: kick off the test,
-  // show a full-screen "reconnecting" state, wait for the box's WiFi to return,
-  // then read the persisted test outcome to learn whether it connected.
+  // and never sees the test's HTTP response. Kick off the test, show a
+  // full-screen reconnect state, wait for the box's WiFi to return, then read
+  // the persisted test outcome.
   const handleTest = async (
     ssid: string,
     password: string,
@@ -48,8 +102,6 @@ export default function WifiSettings() {
     setMessage(null);
 
     try {
-      // Fire-and-forget: this request likely never returns to us because the AP
-      // drops mid-request. The outcome is persisted server-side and read below.
       void fetch("/api/system/wifi/test", {
         method: "POST",
         headers: {
@@ -61,8 +113,6 @@ export default function WifiSettings() {
         // Expected: the connection drops while the AP is down.
       });
 
-      // Wait for the appliance's hotspot to come back and this device to
-      // reconnect, then read the persisted test result.
       await waitForApReachable();
 
       const res = await fetch(swrKeys.wifiTestStatus(), { cache: "no-store" });
@@ -72,7 +122,10 @@ export default function WifiSettings() {
         | null;
 
       const connected =
-        !!result && result.ssid === ssid && result.connected && !result.inProgress;
+        !!result &&
+        result.ssid === ssid &&
+        result.connected &&
+        !result.inProgress;
 
       setMessage(
         connected ? "✅ Connection successful" : "❌ Failed to connect",
@@ -115,28 +168,33 @@ export default function WifiSettings() {
     }
   };
 
-  // Once the scan resolves, a device without WiFi management shows the
-  // dedicated unavailable page rather than the (empty) picker.
-  if (!isLoading && !error && data?.available === false) {
+  // A device without WiFi management shows the dedicated unavailable page
+  // rather than the picker.
+  if (!netLoading && net?.wifi.available === false) {
     return <WifiUnavailablePage />;
   }
 
-  // While a test is in flight the app is (or is about to be) disconnected from
-  // the box; show a dedicated screen that explains the expected reconnect.
+  // While a scan or test is in flight the app is (or is about to be)
+  // disconnected from the box; show a dedicated screen that explains the
+  // expected reconnect.
+  if (scanning) {
+    return <WifiScanningPage />;
+  }
   if (testing && testingSSID) {
     return <WifiTestingPage ssid={testingSSID} />;
   }
 
   return (
     <WifiSettingsForm
-      networks={networks}
+      networks={displayNetworks}
+      hasScanned={hasScanned}
+      scanning={scanning}
       testing={testing}
       loading={loading}
-      scanning={isValidating}
-      message={message ?? scanFailedMessage}
+      message={message}
+      onScan={handleScan}
       onTestConnection={handleTest}
       onSaveWifi={handleSave}
-      onRescan={handleRescan}
     />
   );
 }

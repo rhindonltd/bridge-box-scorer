@@ -179,14 +179,22 @@ test.describe("API contract — players", () => {
 });
 
 test.describe("API contract — system / device", () => {
-  test("POST /api/system/wifi/scan returns { available, ssids }", async ({
+  test("POST /api/system/wifi/scan is admin-gated", async ({ request }) => {
+    // Scanning is disruptive (it takes the hotspot down), so it now requires an
+    // admin token rather than being an anonymous read.
+    const res = await request.post("/api/system/wifi/scan");
+    expect(res.status()).toBe(401);
+  });
+
+  test("GET /api/system/wifi/scan/status returns a { result } envelope", async ({
     request,
   }) => {
-    const res = await request.post("/api/system/wifi/scan");
+    const res = await request.get("/api/system/wifi/scan/status");
     expect(res.ok()).toBe(true);
-    const result = (await res.json()).result;
-    expect(typeof result.available).toBe("boolean");
-    expect(Array.isArray(result.ssids)).toBe(true);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    // `result` is either null (no scan yet) or the persisted scan shape.
+    expect(body.result).toHaveProperty("result");
   });
 
   test("GET /api/system/network responds 200 with a wifi availability shape", async ({

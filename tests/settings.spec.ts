@@ -6,10 +6,11 @@ import { unlockSettings } from "./fixtures/settings";
  * Settings E2E Tests — WiFi
  *
  * The WiFi settings screen is capability-aware: on a device WITHOUT WiFi
- * management (no `nmcli`, e.g. dev machines / CI) the scan endpoint reports
- * `available: false` and the UI shows a "WiFi settings can't be changed on this
- * device" page instead of the network picker. On a device WITH `nmcli` it shows
- * the picker (network selector, password, Test/Save).
+ * management (no `nmcli`, e.g. dev machines / CI) `GET /api/system/network`
+ * reports `available: false` and the UI shows a "WiFi settings can't be changed
+ * on this device" page instead of the network picker. On a device WITH `nmcli`
+ * it shows the picker (network selector, password, Test/Save). Scanning is an
+ * explicit, disruptive action and never runs automatically.
  *
  * These tests assert whichever behaviour matches the host, so they pass on both
  * kinds of machine. The settings section is gated by the device admin key;
@@ -50,14 +51,23 @@ test.describe("WiFi settings", () => {
     ).toHaveCount(0);
   });
 
-  test("scan API reports availability", async ({ request }) => {
-    const res = await request.post("/api/system/wifi/scan");
+  test("network API reports WiFi-management availability", async ({
+    request,
+  }) => {
+    // Capability is read from the network endpoint; the scan is disruptive and
+    // never runs on load.
+    const res = await request.get("/api/system/network");
     expect(res.ok()).toBe(true);
     const body = await res.json();
     expect(body.success).toBe(true);
-    expect(typeof body.result.available).toBe("boolean");
-    expect(body.result.available).toBe(NMCLI);
-    expect(Array.isArray(body.result.ssids)).toBe(true);
+    expect(typeof body.result.wifi.available).toBe("boolean");
+    expect(body.result.wifi.available).toBe(NMCLI);
+  });
+
+  test("scan API is admin-gated", async ({ request }) => {
+    // Scanning is a disruptive device operation and requires an admin token.
+    const res = await request.post("/api/system/wifi/scan");
+    expect(res.status()).toBe(401);
   });
 
   test.describe("with WiFi management available", () => {
