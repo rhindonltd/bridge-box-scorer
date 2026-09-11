@@ -70,10 +70,7 @@ vi.mock("@/components/manage/sections/useSetupSections", () => ({
   }),
 }));
 
-const mockEmit = vi.fn();
-vi.mock("@/lib/socket", () => ({
-  getSocket: () => ({ emit: mockEmit }),
-}));
+
 
 vi.mock("@/lib/director-token", () => ({
   getDirectorToken: () => "token",
@@ -87,6 +84,12 @@ vi.mock("@/lib/fetcher", () => ({
 const mockUpdateSectionTables = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/section-service", () => ({
   updateSectionTables: (...args: unknown[]) => mockUpdateSectionTables(...args),
+}));
+
+// Eviction now goes through the HTTP participant-service.
+const mockEvictParticipant = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/participant-service", () => ({
+  evictParticipant: (...args: unknown[]) => mockEvictParticipant(...args),
 }));
 
 // Movement resolution: stationary highlighting + board placement. Default to
@@ -113,7 +116,6 @@ vi.mock("@/hooks/stationary-pairs", () => ({
   }),
 }));
 
-import { SocketEvents } from "@/socket/socket-events";
 import { fetcher } from "@/lib/fetcher";
 import { ShowTablesPage } from "./ShowTablesPage";
 
@@ -141,6 +143,7 @@ describe("ShowTablesPage", () => {
     ];
     currentSelected = "A";
     mockUpdateSectionTables.mockResolvedValue(undefined);
+    mockEvictParticipant.mockResolvedValue(undefined);
     mockStationary = new Map();
     mockPlacement = new Map();
     mockMovementTables = 0;
@@ -216,47 +219,31 @@ describe("ShowTablesPage", () => {
     );
   });
 
-  it("evicts a pair after confirmation and alerts on failure", () => {
+  it("evicts a pair after confirmation via the HTTP service", async () => {
     currentPairs = [pairAt("A1NS")];
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
     render(<ShowTablesPage />);
 
     fireEvent.click(screen.getByLabelText("Evict North player"));
     expect(confirmSpy).toHaveBeenCalled();
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.EVICT_PARTICIPANT,
-      expect.objectContaining({ gameId: "g1", directorToken: "token" }),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(mockEvictParticipant).toHaveBeenCalledWith("g1", "A1NS"),
     );
-
-    // Simulate a failed eviction ack.
-    const evictCall = mockEmit.mock.calls.find(
-      (c) => c[0] === SocketEvents.EVICT_PARTICIPANT,
-    )!;
-    const ack = evictCall[2] as (r: {
-      success: boolean;
-      error?: string;
-    }) => void;
-    ack({ success: false, error: "cannot evict" });
-    expect(alertSpy).toHaveBeenCalledWith("cannot evict");
   });
 
-  it("does nothing on a successful eviction ack", () => {
+  it("alerts when the eviction fails", async () => {
     currentPairs = [pairAt("A1NS")];
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    mockEvictParticipant.mockRejectedValueOnce(new Error("cannot evict"));
 
     render(<ShowTablesPage />);
     fireEvent.click(screen.getByLabelText("Evict North player"));
 
-    const evictCall = mockEmit.mock.calls.find(
-      (c) => c[0] === SocketEvents.EVICT_PARTICIPANT,
-    )!;
-    const ack = evictCall[2] as (r: { success: boolean }) => void;
-    ack({ success: true });
-    expect(alertSpy).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("cannot evict"),
+    );
   });
 
   it("does not evict when the director cancels the confirm", () => {
@@ -266,11 +253,7 @@ describe("ShowTablesPage", () => {
     render(<ShowTablesPage />);
     fireEvent.click(screen.getByLabelText("Evict North player"));
 
-    expect(
-      mockEmit.mock.calls.some(
-        (c) => c[0] === SocketEvents.EVICT_PARTICIPANT,
-      ),
-    ).toBe(false);
+    expect(mockEvictParticipant).not.toHaveBeenCalled();
   });
 
   it("renders the section pills and add-section modal", () => {

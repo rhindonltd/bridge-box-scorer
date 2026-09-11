@@ -149,7 +149,8 @@ scaffolding:
 - [x] NumberStepper increments/decrements table count (HTTP `PUT
   /api/games/[id]/sections/[section]/tables`); the count changes up and back
   down (`table-management.journey.ts`).
-- [x] Evict pair: confirm dialog → `EVICT_PARTICIPANT` frees the seat
+- [x] Evict pair: confirm dialog → HTTP `DELETE
+  /api/games/[id]/participants/[seat]` frees the seat
   (`table-management.journey.ts`).
 - [ ] Evict failure shows the alert.
 - [x] Remove-table rule: shrinking a section that still seats a pair on the
@@ -664,9 +665,9 @@ scaffolding:
 
 - [x] Director-only socket events reject an invalid token with
   `{success:false,error:"Unauthorized"}` and accept the real one
-  (`authorization.journey.ts`: `game:generateShareCode`,
-  `game:evictParticipant`). A MISSING token is rejected by
-  payload validation first (still non-success).
+  (`authorization.journey.ts`: `game:generateShareCode`). A MISSING token is
+  rejected by payload validation first (still non-success). Participant
+  eviction is now an HTTP route; its 401 is covered by the route test.
 - [x] HTTP director routes return 401 without a valid director token —
   `GET /usebio` (no/invalid `x-director-token`) and `DELETE /delete`
   (`authorization.journey.ts`). **Hardened `withDirectorRoute`**: absence of any

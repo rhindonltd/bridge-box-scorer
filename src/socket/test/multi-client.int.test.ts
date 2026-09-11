@@ -97,7 +97,6 @@ import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { createPlayer } from "@/db/games/actions/create-player";
 import { createParticipant as createPairParticipant } from "@/db/games/actions/create-participant";
 import { findPairs } from "@/db/games/queries/find-pairs";
-import { deleteParticipant as deletePairParticipant } from "@/db/games/actions/delete-participant";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
 import { createShareCode } from "@/db/system/actions/create-share-code";
 import { validateAndClaimShareCode } from "@/db/system/queries/validate-share-code";
@@ -244,44 +243,9 @@ describe("Multi-client Socket.IO scenarios", () => {
   // PUT /api/games/[gameId]/sections/[section]/tables; its GAME_UPDATED
   // broadcast is covered by the section-broadcast unit test and the route test.
 
-  /* ----------------------------------------------------------
-     EVICTION — player sees updated participant list
-  ---------------------------------------------------------- */
-  describe("Eviction broadcasts", () => {
-    it("all players in room see updated PARTICIPANTS after eviction", async () => {
-      vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok",
-        role: "DIRECTOR",
-        gameId: "g1",
-      } as any);
-      vi.mocked(findGameById).mockResolvedValue({
-        gameId: "g1",
-        gameType: "PAIRS",
-      } as any);
-      vi.mocked(deletePairParticipant).mockResolvedValue(undefined);
-      vi.mocked(findPairs).mockResolvedValue([]); // empty after eviction
-
-      const { client, close, addClient } = await createFullServer();
-      closeServer = close;
-
-      const player = await addClient();
-      extraClients.push(player);
-
-      await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "g1" });
-      await emitWithAck(player, SocketEvents.JOIN_GAME, { gameId: "g1" });
-
-      const broadcast = waitForEvent(player, SocketEvents.PARTICIPANTS);
-
-      await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
-        gameId: "g1",
-        seat: "A1NS",
-        directorToken: "tok",
-      });
-
-      const received = await broadcast;
-      expect(received).toEqual({ participants: [] });
-    });
-  });
+  // Eviction moved to the HTTP DELETE .../participants/[seat] route; its
+  // PARTICIPANTS broadcast is covered by the participant-broadcast unit test
+  // and the route test.
 
   /* ----------------------------------------------------------
      DIRECTOR HANDOFF — full flow across two clients
@@ -431,7 +395,9 @@ describe("Multi-client Socket.IO scenarios", () => {
         gameId: "g1",
         gameType: "PAIRS",
       } as any);
-      vi.mocked(deletePairParticipant).mockResolvedValue(undefined);
+      // CREATE_PARTICIPANT is used as the broadcast trigger for this test.
+      vi.mocked(createPlayer).mockResolvedValue({ id: 1 } as any);
+      vi.mocked(createPairParticipant).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
 
       const { client, close, addClient } = await createFullServer();
@@ -452,10 +418,17 @@ describe("Multi-client Socket.IO scenarios", () => {
         1000,
       );
 
-      await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
+      // A CREATE_PARTICIPANT (still a socket event) broadcasts PARTICIPANTS to
+      // the room — used here purely as a broadcast trigger to prove membership.
+      const newParticipant = {
+        type: "PAIR",
+        initialSeat: "A1NS",
+        player1: { firstName: "P1", lastName: "L1" },
+        player2: { firstName: "P2", lastName: "L2" },
+      };
+      await emitWithAck(client, SocketEvents.CREATE_PARTICIPANT, {
         gameId: "g1",
-        seat: "A1NS",
-        directorToken: "tok",
+        newParticipant,
       });
 
       expect(await firstBroadcast).toMatchObject({ participants: [] });
@@ -471,10 +444,9 @@ describe("Multi-client Socket.IO scenarios", () => {
 
       vi.mocked(findPairs).mockResolvedValue([{ type: "PAIR" }] as any);
 
-      await emitWithAck(client, SocketEvents.EVICT_PARTICIPANT, {
+      await emitWithAck(client, SocketEvents.CREATE_PARTICIPANT, {
         gameId: "g1",
-        seat: "2NS",
-        directorToken: "tok",
+        newParticipant,
       });
 
       expect(await secondBroadcast).toBe("timeout");

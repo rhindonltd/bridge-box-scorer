@@ -33,7 +33,7 @@ testability, not throughput.
 | `DELETE_SECTION` | Delete a section | Director | Setup | **HTTP write** ✅ done | Destructive, director-only; status codes + guard errors. |
 | `SET_SECTION_MOVEMENT` | Choose a section's movement | Director | Setup | **HTTP write** ✅ done | Setup-time; validation-heavy. Emits `SECTION_UPDATED` + `GAME_UPDATED` and clears the section timer on change. |
 | `UPDATE_TABLES` | Resize a section's table count | Director | Setup | **HTTP write** ✅ done | Setup-time; shrink guard maps to a 4xx. |
-| `EVICT_PARTICIPANT` | Remove a seated pair | Director | Setup (mild live) | **HTTP write** | Director-only; others revalidate via `PARTICIPANTS`. |
+| `EVICT_PARTICIPANT` | Remove a seated pair | Director | Setup (mild live) | **HTTP write** ✅ done | Director-only; others revalidate via `PARTICIPANTS`. `DELETE /api/games/[id]/participants/[seat]`; broadcasts via shared `broadcastParticipants`. |
 | `START_GAME` | Materialize movement + start | Director | Setup→live boundary | **HTTP write** | Heavy one-shot; all-or-nothing validation → status code. |
 | `GENERATE_SHARE_CODE` | Mint a co-director share code | Director | No | **HTTP write** | Request/response returning a code. |
 | `CLAIM_DIRECTOR_CODE` | Claim a share code → token | Would-be director | No | **HTTP write** | Auth exchange; returns a token. |
@@ -76,8 +76,18 @@ director-only, all funnelling through `broadcastSections`. Implementation:
 - Client `src/lib/section-service.ts` uses `fetch` (same function signatures).
 - The socket write handlers and their now-unused event constants were removed.
 
+### Participant eviction (done)
+
+`EVICT_PARTICIPANT` → `DELETE /api/games/[gameId]/participants/[seat]`
+(`withDirectorRoute`). Shared broadcaster `broadcastParticipants(gameId, io?)`
+(`src/socket/broadcast/participant-broadcast.ts`) is reused by the remaining
+socket `CREATE_PARTICIPANT` handler (which passes its own `io`) and the new
+route (which falls back to `getIO()`). Errors are classified via
+`src/lib/api/client-error.ts` — `ClientError` → 400, anything else → logged 500.
+Client `src/lib/participant-service.ts` `evictParticipant`.
+
 ### Next candidates
 
-`EVICT_PARTICIPANT`, `START_GAME`, `GENERATE_SHARE_CODE`,
-`CLAIM_DIRECTOR_CODE`, `CREATE_GAME` — each follows the same shape (route +
-shared broadcaster + `fetch` client).
+`START_GAME`, `GENERATE_SHARE_CODE`, `CLAIM_DIRECTOR_CODE`, `CREATE_GAME` — each
+follows the same shape (route + shared broadcaster + `fetch` client, using the
+`ClientError`/`respondToActionError` helper for 400 vs 500).

@@ -6,7 +6,9 @@ export const SocketEvents = {
   // Client initiated - Game specific
   JOIN_GAME: "game:join",
   CREATE_PARTICIPANT: "game:createParticipant",
-  EVICT_PARTICIPANT: "game:evictParticipant",
+  // NOTE: participant eviction is an HTTP route
+  // (DELETE /api/games/[gameId]/participants/[seat]), not a socket event; it
+  // broadcasts PARTICIPANTS from that route.
   SELECT_MOVEMENT: "game:selectMovement",
   START_GAME: "game:start",
   // NOTE: table resize and section create/rename/delete/movement are HTTP
