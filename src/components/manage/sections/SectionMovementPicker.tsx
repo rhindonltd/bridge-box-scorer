@@ -359,7 +359,7 @@ function MovementPreviewContent({
   return (
     <>
       <div className="shrink-0 border-b px-4 py-3">
-        <Dialog.Title className="text-lg font-bold text-gray-800">
+        <Dialog.Title className="text-md font-bold text-gray-800 bg-gray-200">
           {movement.name}
         </Dialog.Title>
       </div>
@@ -379,7 +379,7 @@ function MovementPreviewContent({
           type="button"
           onClick={onClose}
           disabled={saving}
-          className="flex-1 rounded-xl bg-gray-100 py-3 text-lg font-bold text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex-1 rounded-xl bg-gray-100 py-3 text-md font-bold text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Close
         </button>
@@ -387,7 +387,7 @@ function MovementPreviewContent({
           type="button"
           onClick={onConfirm}
           disabled={saving || !previewTables}
-          className="flex-1 rounded-xl bg-green-700 py-3 text-lg font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex-1 rounded-xl bg-green-700 py-3 text-md font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? "Selecting…" : "Select Movement"}
         </button>
