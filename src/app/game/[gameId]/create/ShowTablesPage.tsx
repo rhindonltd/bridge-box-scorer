@@ -228,7 +228,7 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
                     <div className="w-32">
                       <StepperInput
                         label="Tables"
-                        min={1}
+                        min={2}
                         value={currentSection.tables}
                         onChange={(t) =>
                           handleResizeSection(currentSection.section, t)
