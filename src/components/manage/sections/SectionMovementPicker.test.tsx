@@ -287,20 +287,26 @@ describe("SectionMovementPicker", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
-  it("returns to the movement list from the preview via the back control", () => {
+  it("opens a popup on card click and closes it via Close without persisting", async () => {
     mockRecommendations.mockReturnValue([generatedRec()]);
     render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
 
+    // Clicking a card opens the preview popup (a dialog) with a Select action.
     fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /select movement/i }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /back to movements/i }));
+    // Close dismisses the popup; nothing is persisted.
+    fireEvent.click(screen.getByRole("button", { name: /^close$/i }));
 
-    // Back on the list: the card is shown again and nothing was persisted.
-    expect(screen.getByRole("button", { name: "Mitchell" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
     expect(setSectionMitchellMovement).not.toHaveBeenCalled();
+    // The list is still there.
+    expect(screen.getByRole("button", { name: "Mitchell" })).toBeInTheDocument();
   });
 
   it("shows a back control that calls onDone when provided", () => {

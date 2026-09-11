@@ -20,8 +20,8 @@ export function MovementTable({ table }: { table: MovementByTable }) {
   }
 
   return (
-    <div className="border rounded-lg shadow-sm overflow-x-auto mb-2">
-      <div className="bg-blue-600 text-white px-3 py-1.5 font-semibold text-center">
+    <div className="border rounded-lg shadow-sm overflow-x-auto">
+      <div className="bg-grey-600 text-white px-3 py-1.5 font-semibold text-center">
         Table {table.tableNumber}
       </div>
       <table className="w-full table-auto border-collapse text-center text-sm">
