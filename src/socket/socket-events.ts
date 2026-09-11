@@ -39,6 +39,10 @@ export const SocketEvents = {
 
   // Server initiated - Timer specific
   TIMER_SYNC: "timer:sync",
+  // Server initiated: a section's timer has been cleared (e.g. its movement
+  // changed, invalidating the derived round structure). Clients drop their
+  // current timer state and fall back to the unconfigured/empty view.
+  TIMER_CLEARED: "timer:cleared",
   CREATE_TIMER: "timer:create",
   START_TIMER: "timer:start",
   PAUSE_TIMER: "timer:pause",

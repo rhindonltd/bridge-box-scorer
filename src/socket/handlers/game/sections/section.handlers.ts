@@ -7,10 +7,17 @@ import { createSection } from "@/db/games/actions/create-section";
 import { renameSection } from "@/db/games/actions/rename-section";
 import { deleteSection } from "@/db/games/actions/delete-section";
 import { setSectionMovement } from "@/db/games/actions/set-section-movement";
+import { getSectionMovement } from "@/db/games/queries/get-section-movement";
+import { clearTimerState } from "@/db/games/actions/clear-timer-state";
+import { clearEngine } from "@/timer/game-store";
+import { broadcastTimerCleared } from "@/socket/handlers/timer/broadcast-timer";
 import { findSections } from "@/db/games/queries/find-sections";
 import { getDb } from "@/db/games";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
-import { SelectedMovement } from "@/model/selected-movement";
+import {
+  SelectedMovement,
+  selectedMovementsEqual,
+} from "@/model/selected-movement";
 
 type Cb = (res: { success: boolean; error?: string }) => void;
 
@@ -157,7 +164,25 @@ export function registerSectionHandlers(socket: Socket, io: Server) {
           selected = null;
         }
 
+        // Compare against the current selection so we only clear the timer when
+        // the movement actually changes (a no-op re-select must not wipe a
+        // carefully configured timer).
+        const db = await getDb(gameId);
+        const previous = db
+          ? await getSectionMovement(db, section)
+          : null;
+
         await setSectionMovement(gameId, section, selected);
+
+        // The timer's round structure (rounds, boards per round) is derived
+        // from the movement, so a movement change makes any saved timer stale.
+        // Drop the persisted state and the in-memory engine, and tell any open
+        // timer view for this section to reset.
+        if (!selectedMovementsEqual(previous, selected)) {
+          await clearTimerState(gameId, section);
+          clearEngine(gameId, section);
+          broadcastTimerCleared(io, gameId, section);
+        }
 
         // A section's movement change only affects that section's clients.
         io.to(Rooms.section(gameId, section)).emit(
