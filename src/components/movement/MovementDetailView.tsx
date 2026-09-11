@@ -16,7 +16,7 @@ export function MovementDetailView({ tables }: Props) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex justify-center w-full flex-row p-3 bg-gray-50 border-b gap-2 shrink-0 px-4 pt-2">
+      <div className="flex justify-center w-full flex-row p-3 bg-gray-50 border-b border-gray-200 gap-2 shrink-0 px-4 pt-2">
         <button
           onClick={() => setViewMode("byRound")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
