@@ -4,14 +4,35 @@ import { registerGameHandlers } from "@/socket/handlers/game/game.handlers";
 import { registerTimerHandlers } from "./handlers/timer/timer.handlers";
 import { registerResultsHandlers } from "./handlers/results/results.handlers";
 
-let io: Server | null = null;
+// The Socket.IO server is stored on `globalThis`, NOT a module-level variable.
+//
+// The app runs as two separate bundles that each get their own copy of this
+// module: the custom server (`server.ts` → `dist/server.js`, which calls
+// `startSocketServer`) and the Next.js route handlers (`.next/server`, which
+// call `getIO()` to broadcast after an HTTP mutation). A module-level `let`
+// would live once per bundle, so a route handler would never see the instance
+// the server created and every HTTP-route broadcast would silently no-op.
+// `globalThis` is process-wide and shared across both bundles, so the single
+// running process has one shared instance.
+const IO_KEY = "__bridgeBoxIO" as const;
+
+type IOGlobal = typeof globalThis & { [IO_KEY]?: Server | null };
+
+function getStoredIO(): Server | null {
+  return (globalThis as IOGlobal)[IO_KEY] ?? null;
+}
+
+function setStoredIO(server: Server | null): void {
+  (globalThis as IOGlobal)[IO_KEY] = server;
+}
 
 export function startSocketServer(server: http.Server) {
-  io = new Server(server, {
+  const io = new Server(server, {
     cors: {
       origin: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     },
   });
+  setStoredIO(io);
 
   io.on("connection", (socket) => {
     registerGameHandlers(socket, requireIO());
@@ -26,16 +47,18 @@ export function startSocketServer(server: http.Server) {
  * The initialized Socket.IO server, or null if it hasn't started yet.
  *
  * Non-socket code (e.g. HTTP API routes that mutate then broadcast) uses this
- * to reach the live server. It is a module singleton shared across the single
- * custom-server process. Returns null rather than throwing so callers can
- * treat "no live server" (e.g. during a unit test) as a no-op broadcast.
+ * to reach the live server. It reads from a process-wide `globalThis` slot so
+ * it works across the separate server / Next.js bundles (see note above).
+ * Returns null rather than throwing so callers can treat "no live server"
+ * (e.g. in a unit test) as a no-op broadcast.
  */
 export function getIO(): Server | null {
-  return io;
+  return getStoredIO();
 }
 
 /** Internal variant that asserts the server is initialized (connection setup). */
 function requireIO(): Server {
+  const io = getStoredIO();
   if (!io) {
     throw new Error("Socket.io not initialized");
   }
@@ -50,12 +73,13 @@ function requireIO(): Server {
  */
 export function closeSocketServer(): Promise<void> {
   return new Promise((resolve) => {
+    const io = getStoredIO();
     if (!io) {
       resolve();
       return;
     }
     io.close(() => {
-      io = null;
+      setStoredIO(null);
       resolve();
     });
   });
