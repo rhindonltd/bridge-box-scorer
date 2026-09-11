@@ -5,7 +5,11 @@ import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec } from "@/db/movements/schema";
 import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedMovementCard";
-import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
+import {
+  RecommendedMovement,
+  RecommendedMovementSpecRef,
+} from "@/movement/recommendations/recommendation-types";
+import { SelectedMovement } from "@/model/selected-movement";
 import { recommendationsFromSpecMap } from "@/movement/recommendations/spec-map-recommendations";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import {
@@ -18,11 +22,52 @@ import {
   setSectionMovementSpec,
 } from "@/lib/section-service";
 
+/**
+ * Whether a recommendation resolves to the same concrete movement as the
+ * section's persisted selection.
+ *
+ * - Seeded (DB) specs match on their numeric id.
+ * - Generated Mitchells match on the defining spec fields (size, rounds,
+ *   boards-per-round, arrow switches, and the variant flag), which together
+ *   uniquely identify the movement a recommendation produces.
+ */
+function movementMatchesSelection(
+  specRef: RecommendedMovementSpecRef,
+  selected: SelectedMovement | null,
+): boolean {
+  if (!selected) return false;
+
+  if (selected.source === "SPEC") {
+    return specRef.source === "db" && specRef.id === selected.specId;
+  }
+
+  if (specRef.source !== "generated") return false;
+
+  const a = specRef.spec;
+  const b = selected.mitchell;
+  return (
+    a.tables === b.tables &&
+    a.rounds === b.rounds &&
+    a.boardsPerRound === b.boardsPerRound &&
+    (a.arrowSwitchRounds ?? 0) === (b.arrowSwitchRounds ?? 0) &&
+    !!a.skip === !!b.skip &&
+    !!a.shareAndRelay === !!b.shareAndRelay &&
+    !!a.hesitation === !!b.hesitation &&
+    !!a.web === !!b.web
+  );
+}
+
 interface Props {
   gameId: string;
   section: string;
   /** The section's table count — movements are sized to it. */
   tables: number;
+  /**
+   * The movement currently persisted for this section (null until one is
+   * chosen). Used to highlight the matching recommendation card so the
+   * director can see their current choice.
+   */
+  selectedMovement?: SelectedMovement | null;
   /**
    * Whether the game has more than one section. When false, the "Section X"
    * sub-heading is omitted since there's no section distinction to show.
@@ -31,9 +76,15 @@ interface Props {
   /**
    * Return control to the caller (e.g. back to the sections list). When
    * omitted, the picker is the root view (single-section setup) and no back
-   * control is shown.
+   * control is shown. Also invoked after a movement is confirmed.
    */
   onDone?: () => void;
+  /**
+   * Invoked after a movement is successfully confirmed (in addition to
+   * `onDone`). Lets the setup flow move on — e.g. back to the Tables step —
+   * without adding a "Back to sections" control.
+   */
+  onSelected?: () => void;
   /**
    * When provided, show an "Add Section" button that converts a single-section
    * game into a multi-section one. Only meaningful for the single-section
@@ -53,8 +104,10 @@ export function SectionMovementPicker({
   gameId,
   section,
   tables,
+  selectedMovement = null,
   multiSection = true,
   onDone,
+  onSelected,
   onAddSection,
 }: Props) {
   // Seeded specs for this table count, used to resolve a SPEC recommendation's
@@ -118,6 +171,7 @@ export function SectionMovementPicker({
             }
             setPreview(null);
             onDone?.();
+            onSelected?.();
           } catch (err) {
             alert(err instanceof Error ? err.message : "Failed to set movement");
           } finally {
@@ -188,6 +242,10 @@ export function SectionMovementPicker({
                     <RecommendedMovementCard
                       key={`${movement.source}-${movement.name}-${index}`}
                       movement={movement}
+                      selected={movementMatchesSelection(
+                        movement.specRef,
+                        selectedMovement,
+                      )}
                       onSelect={() => setPreview(movement)}
                     />
                   ))}

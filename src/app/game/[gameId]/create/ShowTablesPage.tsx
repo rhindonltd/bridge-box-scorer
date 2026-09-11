@@ -16,6 +16,7 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { StepperInput } from "@/components/common/StepperInput";
 import { useSetupSections } from "@/components/manage/sections/useSetupSections";
 import { useMovementResolution } from "@/hooks/stationary-pairs";
+import { useSelectedMovementName } from "@/hooks/selected-movement-name";
 import { type ReactNode } from "react";
 
 type Props = {
@@ -72,6 +73,14 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
     movementTables > 0 &&
     movementTables !== currentSection.tables;
   const showMovementWarning = noMovement || invalidMovement;
+
+  // Display name of the section's selected movement (null when none is chosen
+  // or a SPEC lookup is still loading). Shown as a clickable summary so the
+  // director sees their choice and can jump back to change it.
+  const selectedMovementName = useSelectedMovementName(
+    currentSection?.selectedMovement ?? null,
+    game.gameType,
+  );
 
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
@@ -171,6 +180,28 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
         <div className="flex shrink-0 justify-center border-b border-gray-200 bg-gray-50 px-4 py-3">
           {pills}
         </div>
+
+        {/* Selected-movement summary. Shown when the section has a movement that
+            still fits (no warning) and its name has resolved. Tapping it jumps
+            to the movement-selection step to change the choice. */}
+        {!showMovementWarning && selectedMovementName && (
+          <button
+            type="button"
+            onClick={() => onEditMovement?.()}
+            data-testid="selected-movement-summary"
+            className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <span>
+              <span className="text-gray-500">Movement: </span>
+              <span className="font-semibold text-gray-900">
+                {selectedMovementName}
+              </span>
+            </span>
+            <span className="shrink-0 text-xs font-medium text-blue-600">
+              Change
+            </span>
+          </button>
+        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {currentSection &&

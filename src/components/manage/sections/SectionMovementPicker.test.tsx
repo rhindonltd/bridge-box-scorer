@@ -25,10 +25,16 @@ vi.mock("@/app/game/[gameId]/create/RecommendedMovementCard", () => ({
   RecommendedMovementCard: ({
     movement,
     onSelect,
+    selected,
   }: {
     movement: { name: string };
     onSelect: () => void;
-  }) => <button onClick={onSelect}>{movement.name}</button>,
+    selected?: boolean;
+  }) => (
+    <button onClick={onSelect} data-selected={selected ? "true" : "false"}>
+      {movement.name}
+    </button>
+  ),
 }));
 
 import {
@@ -129,6 +135,63 @@ describe("SectionMovementPicker", () => {
       .map((h) => h.textContent)
       .filter((t) => t?.includes("boards"));
     expect(groupHeadings).toEqual(["16 boards", "24 boards"]);
+  });
+
+  it("highlights the card matching a SPEC selection and no others", () => {
+    mockRecommendations.mockReturnValue([dbRec(), generatedRec()]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={8}
+        selectedMovement={{ source: "SPEC", specId: 42, boardsPerRound: 4 }}
+      />,
+    );
+
+    // dbRec has specRef.id 42 -> selected; the generated Mitchell is not.
+    expect(screen.getByText("Howell")).toHaveAttribute("data-selected", "true");
+    expect(screen.getByText("Mitchell")).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
+  });
+
+  it("highlights the card matching a generated Mitchell selection", () => {
+    mockRecommendations.mockReturnValue([dbRec(), generatedRec()]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={8}
+        selectedMovement={{
+          source: "MITCHELL",
+          mitchell: { tables: 8, rounds: 8, boardsPerRound: 2 },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Mitchell")).toHaveAttribute(
+      "data-selected",
+      "true",
+    );
+    expect(screen.getByText("Howell")).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
+  });
+
+  it("highlights nothing when the section has no selected movement", () => {
+    mockRecommendations.mockReturnValue([dbRec(), generatedRec()]);
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
+
+    expect(screen.getByText("Howell")).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
+    expect(screen.getByText("Mitchell")).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
   });
 
   it("groups multiple movements sharing the same boards-a-pair count together", () => {
@@ -300,6 +363,49 @@ describe("SectionMovementPicker", () => {
         boardsPerRound: 2,
       }),
     );
+  });
+
+  it("calls onSelected after a movement is confirmed", async () => {
+    mockRecommendations.mockReturnValue([generatedRec()]);
+    const onSelected = vi.fn();
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={8}
+        onSelected={onSelected}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() => expect(onSelected).toHaveBeenCalledOnce());
+  });
+
+  it("does not call onSelected when persisting fails", async () => {
+    mockRecommendations.mockReturnValue([generatedRec()]);
+    vi.mocked(setSectionMitchellMovement).mockRejectedValueOnce(
+      new Error("boom"),
+    );
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+    const onSelected = vi.fn();
+
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={8}
+        onSelected={onSelected}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("boom"));
+    expect(onSelected).not.toHaveBeenCalled();
   });
 
   it("handles SWR returning no data yet", () => {

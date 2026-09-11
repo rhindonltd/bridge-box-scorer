@@ -6,7 +6,7 @@ import {
   wrapValue,
 } from "./mitchell-utils";
 
-import { Table, Tables } from "../../model/movement";
+import { Table, Tables } from "@/model/movement";
 
 export interface WebMitchellMovementSpec extends MitchellMovementSpec {
   web: true;

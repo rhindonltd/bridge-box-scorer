@@ -115,7 +115,7 @@ describe("scoreContract", () => {
       expect(score).toBe(930);
     });
 
-    it("scores redoubled overtricks: 1NTXX+1 non-vul as +960", () => {
+    it("scores redoubled overtricks: 1NTXX+1 non-vul as +760", () => {
       // base: 40 redoubled: 160 -> game bonus 300, insult 100,
       // overtrick XX non-vul: 200
       // Total: 160 + 300 + 100 + 200 = 760
@@ -127,7 +127,7 @@ describe("scoreContract", () => {
       expect(score).toBe(760);
     });
 
-    it("scores redoubled overtricks vulnerable: 1NTXX+1 vul as +960", () => {
+    it("scores redoubled overtricks vulnerable: 1NTXX+1 vul as +1160", () => {
       // trickValue(NT,1) = 30*1+10 = 40. Redoubled * 4 = 160.
       // gameBonus(160,true) = 500. slamBonus(1,true) = 0.
       // insult XX = 100. overtrick XX vul = 1*400 = 400

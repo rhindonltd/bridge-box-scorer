@@ -4,6 +4,11 @@ import { RecommendedMovement } from "@/movement/recommendations/recommendation-t
 type Props = {
   movement: RecommendedMovement;
   onSelect: () => void;
+  /**
+   * Whether this card is the section's currently-selected movement. When true
+   * the card is highlighted so the director can see their choice at a glance.
+   */
+  selected?: boolean;
 };
 
 /**
@@ -11,20 +16,39 @@ type Props = {
  * stats plus a short pros/cons summary so the director can decide quickly.
  * Presentation-only: selection is delegated to `onSelect`.
  */
-export function RecommendedMovementCard({ movement, onSelect }: Props) {
+export function RecommendedMovementCard({
+  movement,
+  onSelect,
+  selected = false,
+}: Props) {
   return (
     <button
       type="button"
       onClick={onSelect}
       data-testid="movement-card"
-      className="flex w-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm
-        hover:border-blue-300 hover:shadow-md
-        active:scale-[0.98] active:bg-blue-50
+      data-selected={selected}
+      aria-pressed={selected}
+      className={`flex w-full flex-col overflow-hidden rounded-xl border text-left shadow-sm
         transition-all duration-150
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+        ${
+          selected
+            ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-offset-1"
+            : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md active:scale-[0.98] active:bg-blue-50"
+        }`}
     >
-      <div className="border-b border-gray-200 bg-gray-50 px-4 py-2.5">
+      <div
+        className={`flex items-center justify-between gap-2 border-b px-4 py-2.5 ${
+          selected ? "border-blue-200 bg-blue-100" : "border-gray-200 bg-gray-50"
+        }`}
+      >
         <h3 className="text-base font-bold text-gray-900">{movement.name}</h3>
+        {selected && (
+          <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-blue-700">
+            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+            Selected
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100 text-center">

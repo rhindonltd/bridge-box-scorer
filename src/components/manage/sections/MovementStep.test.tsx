@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 let mockSections = [
   { section: "A", label: "A", tables: 4, selectedMovement: null },
@@ -19,12 +19,17 @@ vi.mock("./SectionMovementPicker", () => ({
   SectionMovementPicker: ({
     section,
     tables,
+    onSelected,
   }: {
     section: string;
     tables: number;
+    onSelected?: () => void;
   }) => (
     <div>
-      picker section={section} tables={tables}
+      <span>
+        picker section={section} tables={tables}
+      </span>
+      <button onClick={() => onSelected?.()}>confirm-movement</button>
     </div>
   ),
 }));
@@ -57,5 +62,15 @@ describe("MovementStep", () => {
     expect(
       screen.getByText(/picker section=B tables=6/),
     ).toBeInTheDocument();
+  });
+
+  it("forwards onMovementSelected to the picker's onSelected", () => {
+    const onMovementSelected = vi.fn();
+    render(
+      <MovementStep gameId="g1" onMovementSelected={onMovementSelected} />,
+    );
+
+    fireEvent.click(screen.getByText("confirm-movement"));
+    expect(onMovementSelected).toHaveBeenCalledOnce();
   });
 });

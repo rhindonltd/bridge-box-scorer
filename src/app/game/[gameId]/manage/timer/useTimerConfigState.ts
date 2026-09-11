@@ -27,6 +27,52 @@ export function msToLabel(ms: number): string {
   return `${m}m`;
 }
 
+/** Format a ms-since-epoch timestamp as the local "HH:MM" a time input wants. */
+export function msToResumeAt(ms: number): string {
+  const d = new Date(ms);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+/**
+ * Walk the session timeline from `start`, returning the ms-since-epoch at which
+ * each round's play finishes (keyed by round number).
+ *
+ * Between rounds the cursor advances by either a configured break (a fixed
+ * duration, or the gap up to its resume time) or, when no break sits there, the
+ * move time. This is the single source of truth for the per-round timeline and
+ * the session end; the earliest legal resume time for a break after round N is
+ * simply the play-end of round N.
+ */
+export function computePlayEndByRound(params: {
+  start: number;
+  totalRounds: number;
+  playMs: number;
+  moveMs: number;
+  breaks: BreakConfig[];
+}): Map<number, number> {
+  const { start, totalRounds, playMs, moveMs, breaks } = params;
+  const map = new Map<number, number>();
+  let cursor = start;
+  for (let round = 1; round <= totalRounds; round++) {
+    cursor += playMs;
+    map.set(round, cursor);
+    if (round < totalRounds) {
+      const brk = breaks.find((b) => b.afterRound === round);
+      if (brk) {
+        cursor +=
+          brk.mode === "duration"
+            ? brk.durationSeconds * 1000
+            : Math.max(0, brk.resumeAtMs - cursor);
+      } else {
+        cursor += moveMs;
+      }
+    }
+  }
+  return map;
+}
+
 function formatDuration(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -163,29 +209,17 @@ export function useTimerConfigState(
     );
   }, [breaks, tick]);
 
-  const playEndByRound = useMemo(() => {
-    const map = new Map<number, number>();
-    const start = tick;
-    const playMs = effectivePlayDuration * 1000;
-    const moveMs = moveDuration * 1000;
-    let cursor = start;
-    for (let round = 1; round <= totalRounds; round++) {
-      cursor += playMs;
-      map.set(round, cursor);
-      if (round < totalRounds) {
-        const brk = breakConfigs.find((b) => b.afterRound === round);
-        if (brk) {
-          cursor +=
-            brk.mode === "duration"
-              ? brk.durationSeconds * 1000
-              : Math.max(0, brk.resumeAtMs - cursor);
-        } else {
-          cursor += moveMs;
-        }
-      }
-    }
-    return map;
-  }, [tick, effectivePlayDuration, moveDuration, totalRounds, breakConfigs]);
+  const playEndByRound = useMemo(
+    () =>
+      computePlayEndByRound({
+        start: tick,
+        totalRounds,
+        playMs: effectivePlayDuration * 1000,
+        moveMs: moveDuration * 1000,
+        breaks: breakConfigs,
+      }),
+    [tick, effectivePlayDuration, moveDuration, totalRounds, breakConfigs],
+  );
 
   const breaksWithComputed: BreakDraft[] = breaks.map((b) => {
     if (b.mode !== "resumeTime") {
@@ -197,13 +231,22 @@ export function useTimerConfigState(
     return { ...b, computedLength: msToLabel(resumeMs - priorPlayEnd) };
   });
 
-  const totalSessionSeconds =
-    totalRounds * effectivePlayDuration +
-    Math.max(0, totalRounds - 1) * moveDuration;
+  // The session finishes at the end of the final round's play. `playEndByRound`
+  // already walks the whole timeline from `tick`, inserting each configured
+  // break (a fixed duration, or the gap up to a resume time) in place of the
+  // move time between rounds — so its last entry is the true finish time,
+  // breaks included. Deriving the length and preview end from it keeps them
+  // consistent with the per-round timeline and, unlike the previous
+  // play+move-only formula, no longer omits break time.
+  const sessionEndMs = playEndByRound.get(totalRounds) ?? tick;
+  const totalSessionSeconds = Math.max(
+    0,
+    Math.round((sessionEndMs - tick) / 1000),
+  );
 
   const previewEndDate = useMemo(
-    () => new Date(tick + totalSessionSeconds * 1000),
-    [tick, totalSessionSeconds],
+    () => new Date(sessionEndMs),
+    [sessionEndMs],
   );
 
   const config: TimerConfig = {
@@ -285,13 +328,68 @@ export function useTimerConfigState(
     setBreaks((prev) => prev.filter((_, i) => i !== index));
   }
 
+  /**
+   * Earliest legal resume time for a break placed after `afterRound`, as an
+   * "HH:MM" string. That moment is when round `afterRound`'s play finishes, so
+   * a resume any earlier would run into play still in progress. The timeline is
+   * computed from the *other* breaks (the one being edited is excluded) so its
+   * own resume time doesn't feed back into its own earliest bound.
+   */
+  function earliestResumeAt(
+    afterRound: number,
+    otherBreaks: BreakConfig[],
+  ): string {
+    const ends = computePlayEndByRound({
+      start: tick,
+      totalRounds,
+      playMs: effectivePlayDuration * 1000,
+      moveMs: moveDuration * 1000,
+      breaks: otherBreaks,
+    });
+    const endMs = ends.get(afterRound) ?? tick;
+    return msToResumeAt(endMs);
+  }
+
+  /**
+   * True when a resume-time break's chosen time is missing or lands before the
+   * earliest legal moment (i.e. before play for its round has finished).
+   */
+  function resumeIsIllegal(afterRound: string, earliest: string): boolean {
+    if (!afterRound) return true;
+    // Compare as "HH:MM" within the same day; both are produced/normalised the
+    // same way so lexical comparison is safe.
+    return afterRound < earliest;
+  }
+
   function onBreakChange(
     index: number,
     field: keyof BreakDraft,
     value: number | string,
   ) {
     setBreaks((prev) =>
-      prev.map((b, i) => (i === index ? { ...b, [field]: value } : b)),
+      prev.map((b, i) => {
+        if (i !== index) return b;
+
+        const updated = { ...b, [field]: value } as BreakDraft;
+
+        // When the break is (or becomes) a resume-time break, ensure it has a
+        // legal time. On selecting "Resume at time", or moving the break to a
+        // different round, an empty or now-too-early time is snapped to the
+        // earliest possible moment for the updated round.
+        const becomesResume = field === "mode" && value === "resumeTime";
+        const roundChangedWhileResume =
+          field === "afterRound" && updated.mode === "resumeTime";
+
+        if (becomesResume || roundChangedWhileResume) {
+          const otherBreaks = breakConfigs.filter((_, j) => j !== index);
+          const earliest = earliestResumeAt(updated.afterRound, otherBreaks);
+          if (resumeIsIllegal(updated.resumeAt, earliest)) {
+            updated.resumeAt = earliest;
+          }
+        }
+
+        return updated;
+      }),
     );
   }
 
