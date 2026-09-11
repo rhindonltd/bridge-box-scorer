@@ -6,6 +6,7 @@ import { emitWithAck, waitForEvent } from "@/socket/test/socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";
 import { registerSectionHandlers } from "./section.handlers";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
+import { registerRequestStateHandler } from "@/socket/handlers/timer/request-state.handler";
 
 vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
@@ -31,6 +32,20 @@ vi.mock("@/db/games/queries/find-sections", () => ({
   findSections: vi.fn(),
 }));
 
+vi.mock("@/db/games/queries/get-section-movement", () => ({
+  getSectionMovement: vi.fn(),
+}));
+
+vi.mock("@/db/games/actions/clear-timer-state", () => ({
+  clearTimerState: vi.fn(),
+}));
+
+vi.mock("@/timer/game-store", () => ({
+  clearEngine: vi.fn(),
+  // Used by the timer request-state handler (to join the timer room in tests).
+  getEngine: vi.fn(async () => null),
+}));
+
 vi.mock("@/db/games", () => ({
   getDb: vi.fn(async () => ({})),
 }));
@@ -41,6 +56,9 @@ import { createSection } from "@/db/games/actions/create-section";
 import { renameSection } from "@/db/games/actions/rename-section";
 import { deleteSection } from "@/db/games/actions/delete-section";
 import { findSections } from "@/db/games/queries/find-sections";
+import { getSectionMovement } from "@/db/games/queries/get-section-movement";
+import { clearTimerState } from "@/db/games/actions/clear-timer-state";
+import { clearEngine } from "@/timer/game-store";
 import { getDb } from "@/db/games";
 
 describe("registerSectionHandlers (integration)", () => {
@@ -61,6 +79,10 @@ describe("registerSectionHandlers (integration)", () => {
     vi.mocked(createSection).mockResolvedValue(undefined);
     vi.mocked(renameSection).mockResolvedValue(undefined as any);
     vi.mocked(deleteSection).mockResolvedValue(undefined as any);
+    // Default: no previous movement, so setting one is a change.
+    vi.mocked(getSectionMovement).mockResolvedValue(null);
+    vi.mocked(clearTimerState).mockResolvedValue(undefined);
+    vi.mocked(clearEngine).mockReturnValue(false);
     vi.mocked(getDb).mockResolvedValue({} as any);
   });
 
@@ -116,6 +138,76 @@ describe("registerSectionHandlers (integration)", () => {
     const event = await bReceived;
     expect(event).toMatchObject({ gameId: "g1", section: "B" });
     expect(aGotSectionUpdate).toBe(false);
+  });
+
+  it("clears the section's timer and broadcasts TIMER_CLEARED when the movement changes", async () => {
+    // A movement was already selected; the incoming one differs.
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SPEC",
+      specId: 1,
+      boardsPerRound: 3,
+    });
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerJoinGameHandler(socket);
+        registerRequestStateHandler(socket, io);
+        registerSectionHandlers(socket, io);
+      });
+    });
+    closeServer = close;
+
+    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "g1" });
+    // Join section A's timer room so the cleared broadcast reaches this client.
+    await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
+      gameId: "g1",
+      section: "A",
+    });
+
+    const cleared = waitForEvent(client, SocketEvents.TIMER_CLEARED);
+
+    const result = await emitWithAck(client, SocketEvents.SET_SECTION_MOVEMENT, {
+      gameId: "g1",
+      section: "A",
+      mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
+      directorToken: "tok",
+    });
+
+    expect(result).toMatchObject({ success: true });
+    expect(clearTimerState).toHaveBeenCalledWith("g1", "A");
+    expect(clearEngine).toHaveBeenCalledWith("g1", "A");
+
+    const event: any = await cleared;
+    expect(event).toMatchObject({ section: "A" });
+  });
+
+  it("does not clear the timer when the movement is unchanged", async () => {
+    // The stored movement matches the incoming one exactly.
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "MITCHELL",
+      mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
+    });
+
+    const { client, close } = await createSocketTestServer((io) => {
+      io.on("connection", (socket: Socket) => {
+        registerJoinGameHandler(socket);
+        registerSectionHandlers(socket, io);
+      });
+    });
+    closeServer = close;
+
+    await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "g1" });
+
+    const result = await emitWithAck(client, SocketEvents.SET_SECTION_MOVEMENT, {
+      gameId: "g1",
+      section: "A",
+      mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
+      directorToken: "tok",
+    });
+
+    expect(result).toMatchObject({ success: true });
+    expect(clearTimerState).not.toHaveBeenCalled();
+    expect(clearEngine).not.toHaveBeenCalled();
   });
 
   it("rejects a non-director", async () => {

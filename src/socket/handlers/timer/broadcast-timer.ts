@@ -41,3 +41,18 @@ export function makeTimerBroadcaster(io: Server) {
     );
   };
 }
+
+/**
+ * Tell a section's timer room that its timer has been cleared, so any connected
+ * client drops its stale state. The payload carries `section` so a client on a
+ * shared socket can ignore clears for other sections.
+ */
+export function broadcastTimerCleared(
+  io: Server,
+  gameId: string,
+  section: SectionLetter,
+) {
+  io.to(Rooms.timer(gameId, section)).emit(SocketEvents.TIMER_CLEARED, {
+    section,
+  });
+}

@@ -90,6 +90,16 @@ export function TimerProvider({
     const handleSync = (payload: TimerSyncPayload) => apply(payload);
     socket.on(SocketEvents.TIMER_SYNC, handleSync);
 
+    // The section's timer was cleared server-side (e.g. its movement changed,
+    // invalidating the derived round structure). Drop our state so the config
+    // view falls back to defaults / the empty state.
+    const handleCleared = (payload: { section: string }) => {
+      if (cancelled || payload.section !== section) return;
+      setTimerState(null);
+      setBreakProblems([]);
+    };
+    socket.on(SocketEvents.TIMER_CLEARED, handleCleared);
+
     // Initial load, and re-load on reconnect (recovers state missed while
     // disconnected).
     const handleReconnect = () => {
@@ -102,6 +112,7 @@ export function TimerProvider({
     return () => {
       cancelled = true;
       socket.off(SocketEvents.TIMER_SYNC, handleSync);
+      socket.off(SocketEvents.TIMER_CLEARED, handleCleared);
       socket.off(SocketEvents.CONNECT, handleReconnect);
       // Leave this section's timer room so we stop receiving its updates.
       socket.emit(SocketEvents.LEAVE_TIMER, { gameId, section });

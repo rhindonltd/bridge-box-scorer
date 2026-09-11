@@ -53,6 +53,44 @@ export function serializeSelectedMovement(
 }
 
 /**
+ * Structural equality for two (possibly null) selected movements. Used to
+ * decide whether a movement selection actually changed — e.g. so a no-op
+ * re-selection doesn't needlessly clear the section's derived timer.
+ *
+ * Both are null: equal. One null: not equal. SPEC compares id + boards per
+ * round; MITCHELL compares the defining spec fields (and normalises the
+ * optional variant flags so an absent flag equals an explicit false).
+ */
+export function selectedMovementsEqual(
+  a: SelectedMovement | null,
+  b: SelectedMovement | null,
+): boolean {
+  if (a === null || b === null) return a === b;
+  if (a.source !== b.source) return false;
+
+  if (a.source === "SPEC" && b.source === "SPEC") {
+    return a.specId === b.specId && a.boardsPerRound === b.boardsPerRound;
+  }
+
+  if (a.source === "MITCHELL" && b.source === "MITCHELL") {
+    const x = a.mitchell;
+    const y = b.mitchell;
+    return (
+      x.tables === y.tables &&
+      x.rounds === y.rounds &&
+      x.boardsPerRound === y.boardsPerRound &&
+      (x.arrowSwitchRounds ?? 0) === (y.arrowSwitchRounds ?? 0) &&
+      !!x.skip === !!y.skip &&
+      !!x.shareAndRelay === !!y.shareAndRelay &&
+      !!x.hesitation === !!y.hesitation &&
+      !!x.web === !!y.web
+    );
+  }
+
+  return false;
+}
+
+/**
  * Parse the DB column value into a typed SelectedMovement. Returns null for
  * null/empty/invalid input so callers always get a well-typed result and a
  * corrupt/legacy value never throws at the boundary.

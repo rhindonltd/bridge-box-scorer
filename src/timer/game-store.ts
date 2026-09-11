@@ -67,6 +67,16 @@ export async function getEngine(gameId: string, section: SectionLetter) {
   return null;
 }
 
+/**
+ * Drop any in-memory engine for a section so a later `getEngine` re-reads from
+ * persisted state (or returns null when it has been cleared). Used when a
+ * section's timer is cleared — e.g. its movement changed — so the stale engine
+ * doesn't keep serving the old config. Returns true when an engine was removed.
+ */
+export function clearEngine(gameId: string, section: SectionLetter): boolean {
+  return gameMap.delete(engineKey(gameId, section));
+}
+
 export function getAllEngines() {
   return gameMap;
 }
