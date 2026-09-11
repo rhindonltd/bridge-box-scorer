@@ -67,6 +67,24 @@ export async function startGame(gameId: string): Promise<void> {
   }
 }
 
+/**
+ * Mint a short, single-use director share code for a game (director-only).
+ * Returns the code; throws with the server's error message on failure.
+ */
+export async function generateShareCode(gameId: string): Promise<string> {
+  const res = await fetch(`/api/games/${gameId}/share-code`, {
+    method: "POST",
+    headers: { "x-director-token": getDirectorToken(gameId) ?? "" },
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error ?? "Failed to generate code");
+  }
+
+  return (data.result as { code: string }).code;
+}
+
 export async function createParticipant(
   gameId: string,
   newParticipant: NewParticipant,

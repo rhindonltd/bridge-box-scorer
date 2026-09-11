@@ -1,9 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSocket } from "@/lib/socket";
-import { SocketEvents } from "@/socket/socket-events";
-import { getDirectorToken } from "@/lib/director-token";
+import { generateShareCode } from "@/lib/game-service";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {
@@ -22,17 +20,11 @@ export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
     setCode(null);
     setExpiresIn(300);
 
-    getSocket().emit(
-      SocketEvents.GENERATE_SHARE_CODE,
-      { gameId, directorToken: getDirectorToken(gameId) },
-      (res: { success: boolean; code?: string; error?: string }) => {
-        if (res.success && res.code) {
-          setCode(res.code);
-        } else {
-          setError(res.error ?? "Failed to generate code");
-        }
-      },
-    );
+    generateShareCode(gameId)
+      .then((newCode) => setCode(newCode))
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Failed to generate code"),
+      );
   }, [gameId]);
 
   // Generate on mount

@@ -1,50 +1,19 @@
 import { Server, Socket } from "socket.io";
 import { SocketEvents } from "@/socket/socket-events";
-import { assertDirector } from "@/socket/middleware/director-auth";
-import { createShareCode } from "@/db/system/actions/create-share-code";
 import { validateAndClaimShareCode } from "@/db/system/queries/validate-share-code";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
 import { z } from "zod";
-
-const generateSchema = z.object({
-  gameId: z.string().min(1),
-  directorToken: z.string().min(1),
-});
 
 const claimSchema = z.object({
   code: z.string().min(1),
 });
 
+// NOTE: generating a share code is an HTTP route (POST
+// /api/games/[gameId]/share-code), not a socket event — it's a director-only
+// one-shot mutation whose result (the code) goes back to the caller only.
+// Claiming a code stays on the socket: the claimer has no director token yet,
+// so it can't ride the director-authed HTTP path.
 export function registerShareCodeHandlers(socket: Socket, _io: Server) {
-  /**
-   * GENERATE_SHARE_CODE — current director requests a share code.
-   * Requires director auth for the game.
-   */
-  socket.on(
-    SocketEvents.GENERATE_SHARE_CODE,
-    async (
-      payload: unknown,
-      cb?: (res: { success: boolean; code?: string; error?: string }) => void,
-    ) => {
-      const parsed = generateSchema.safeParse(payload);
-      if (!parsed.success) {
-        cb?.({ success: false, error: "Invalid payload" });
-        return;
-      }
-
-      const { gameId, directorToken } = parsed.data;
-      if (!assertDirector(directorToken, gameId, cb)) return;
-
-      try {
-        const code = await createShareCode(gameId);
-        cb?.({ success: true, code });
-      } catch (err) {
-        console.error("Failed to generate share code:", err);
-        cb?.({ success: false, error: "Failed to generate code" });
-      }
-    },
-  );
-
   /**
    * CLAIM_DIRECTOR_CODE — anyone submits a share code to become a director.
    * No auth required (that's the point — they don't have a token yet).

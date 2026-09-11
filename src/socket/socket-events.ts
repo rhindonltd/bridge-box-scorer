@@ -19,7 +19,9 @@ export const SocketEvents = {
   // resulting live updates broadcast GAME_UPDATED / SECTION_UPDATED /
   // TIMER_CLEARED from those routes.
   LEAVE_GAME: "game:leave",
-  GENERATE_SHARE_CODE: "game:generateShareCode",
+  // NOTE: generating a director share code is an HTTP route (POST
+  // /api/games/[gameId]/share-code), not a socket event. Claiming a code stays
+  // on the socket because the claimer has no director token yet.
   CLAIM_DIRECTOR_CODE: "game:claimDirectorCode",
 
   // Server initiated - Global

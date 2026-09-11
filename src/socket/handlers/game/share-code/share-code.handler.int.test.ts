@@ -9,10 +9,6 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-vi.mock("@/db/system/actions/create-share-code", () => ({
-  createShareCode: vi.fn(),
-}));
-
 vi.mock("@/db/system/queries/validate-share-code", () => ({
   validateAndClaimShareCode: vi.fn(),
 }));
@@ -22,7 +18,6 @@ vi.mock("@/db/system/actions/create-login-session", () => ({
 }));
 
 import { findLoginSession } from "@/db/system/queries/find-login-session";
-import { createShareCode } from "@/db/system/actions/create-share-code";
 import { validateAndClaimShareCode } from "@/db/system/queries/validate-share-code";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
 
@@ -40,52 +35,6 @@ describe("registerShareCodeHandlers (integration)", () => {
 
   afterEach(async () => {
     await closeServer?.();
-  });
-
-  describe("GENERATE_SHARE_CODE", () => {
-    it("returns a code when director is authenticated", async () => {
-      vi.mocked(createShareCode).mockResolvedValue("ABC123");
-
-      const { client, close } = await createSocketTestServer((io) => {
-        io.on("connection", (socket: Socket) => {
-          registerShareCodeHandlers(socket, io);
-        });
-      });
-      closeServer = close;
-
-      const result = await emitWithAck(
-        client,
-        SocketEvents.GENERATE_SHARE_CODE,
-        {
-          gameId: "game-1",
-          directorToken: "test-token",
-        },
-      );
-
-      expect(result).toEqual({ success: true, code: "ABC123" });
-    });
-
-    it("rejects invalid director token", async () => {
-      vi.mocked(findLoginSession).mockReturnValue(null as any);
-
-      const { client, close } = await createSocketTestServer((io) => {
-        io.on("connection", (socket: Socket) => {
-          registerShareCodeHandlers(socket, io);
-        });
-      });
-      closeServer = close;
-
-      const result = await emitWithAck(
-        client,
-        SocketEvents.GENERATE_SHARE_CODE,
-        {
-          gameId: "game-1",
-          directorToken: "bad-token",
-        },
-      );
-
-      expect(result).toMatchObject({ success: false });
-    });
   });
 
   describe("CLAIM_DIRECTOR_CODE", () => {

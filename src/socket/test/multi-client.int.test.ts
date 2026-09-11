@@ -11,6 +11,10 @@ vi.mock("@/db/game-index/actions/create-game", () => ({
   createBridgeGame: vi.fn(),
 }));
 
+vi.mock("@/db/game-index/actions/set-selected-movement", () => ({
+  setSelectedMovement: vi.fn(),
+}));
+
 vi.mock("@/db/games/actions/create-game", () => ({
   createGameDb: vi.fn(),
 }));
@@ -49,10 +53,6 @@ vi.mock("@/db/games/actions/delete-participant", () => ({
 
 vi.mock("@/db/system/actions/create-login-session", () => ({
   createLoginSession: vi.fn(),
-}));
-
-vi.mock("@/db/system/actions/create-share-code", () => ({
-  createShareCode: vi.fn(),
 }));
 
 vi.mock("@/db/system/queries/validate-share-code", () => ({
@@ -95,7 +95,6 @@ import { createPlayer } from "@/db/games/actions/create-player";
 import { createParticipant as createPairParticipant } from "@/db/games/actions/create-participant";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
-import { createShareCode } from "@/db/system/actions/create-share-code";
 import { validateAndClaimShareCode } from "@/db/system/queries/validate-share-code";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { getEngine } from "@/timer/game-store";
@@ -226,31 +225,23 @@ describe("Multi-client Socket.IO scenarios", () => {
      DIRECTOR HANDOFF — full flow across two clients
   ---------------------------------------------------------- */
   describe("Director handoff flow", () => {
-    it("director generates code, second user claims it and becomes director", async () => {
-      vi.mocked(findLoginSession).mockReturnValue({
-        token: "dir-tok",
-        role: "DIRECTOR",
-        gameId: "g1",
-      } as any);
-      vi.mocked(createShareCode).mockResolvedValue("X9K4MP");
+    it("second user claims a share code and can then act as director", async () => {
+      // Generating the share code is an HTTP route (POST
+      // /api/games/[id]/share-code) covered by its own route + unit tests, so
+      // this socket-only flow starts from a claimable code and proves the
+      // handoff: the claimer receives a director token and can then perform a
+      // director-authed socket action.
       vi.mocked(validateAndClaimShareCode).mockResolvedValue({
         valid: true,
         gameId: "g1",
       });
       vi.mocked(createLoginSession).mockResolvedValue(undefined);
+      vi.mocked(findGameById).mockResolvedValue({ gameId: "g1" } as any);
 
-      const { client, close, addClient } = await createFullServer();
+      const { close, addClient } = await createFullServer();
       closeServer = close;
 
-      // Step 1: Director generates code
-      const genResult = await emitWithAck<{ success: boolean; code?: string }>(
-        client,
-        SocketEvents.GENERATE_SHARE_CODE,
-        { gameId: "g1", directorToken: "dir-tok" },
-      );
-      expect(genResult).toEqual({ success: true, code: "X9K4MP" });
-
-      // Step 2: Second user connects and claims the code
+      // Step 1: Second user connects and claims the code.
       const newDirector = await addClient();
       extraClients.push(newDirector);
 
@@ -266,23 +257,27 @@ describe("Multi-client Socket.IO scenarios", () => {
         directorToken: expect.any(String),
       });
 
-      // Step 3: Verify the new director can now perform a director-authed
-      // socket action. (Section/table mutations moved to HTTP, so we prove the
-      // handoff with another director-only socket event: generating a share
-      // code.) Mock findLoginSession to accept the new token.
+      // Step 2: Verify the new director can now perform a director-authed
+      // socket action. Section/table/share-code mutations moved to HTTP, so we
+      // prove the handoff with a director-only socket event that remains:
+      // selecting a movement. Mock findLoginSession to accept the new token.
       vi.mocked(findLoginSession).mockReturnValue({
         token: claimResult.directorToken!,
         role: "DIRECTOR",
         gameId: "g1",
       } as any);
-      vi.mocked(createShareCode).mockResolvedValue("Y2M7QR");
 
       await emitWithAck(newDirector, SocketEvents.JOIN_GAME, { gameId: "g1" });
 
       const actionResult = await emitWithAck<{ success: boolean }>(
         newDirector,
-        SocketEvents.GENERATE_SHARE_CODE,
-        { gameId: "g1", directorToken: claimResult.directorToken },
+        SocketEvents.SELECT_MOVEMENT,
+        {
+          gameId: "g1",
+          type: "PAIRS",
+          mitchell: { tables: 4, rounds: 4, boardsPerRound: 2 },
+          directorToken: claimResult.directorToken,
+        },
       );
 
       expect(actionResult).toMatchObject({ success: true });

@@ -35,7 +35,7 @@ testability, not throughput.
 | `UPDATE_TABLES` | Resize a section's table count | Director | Setup | **HTTP write** ✅ done | Setup-time; shrink guard maps to a 4xx. |
 | `EVICT_PARTICIPANT` | Remove a seated pair | Director | Setup (mild live) | **HTTP write** ✅ done | Director-only; others revalidate via `PARTICIPANTS`. `DELETE /api/games/[id]/participants/[seat]`; broadcasts via shared `broadcastParticipants`. |
 | `START_GAME` | Materialize movement + start | Director | Setup→live boundary | **HTTP write** ✅ done | `POST /api/games/[id]/start`; 409 + `problems` when not startable, else promotes the timer and broadcasts `GAME_UPDATED` via `broadcastGameStarted`. |
-| `GENERATE_SHARE_CODE` | Mint a co-director share code | Director | No | **HTTP write** | Request/response returning a code. |
+| `GENERATE_SHARE_CODE` | Mint a co-director share code | Director | No | **HTTP write** ✅ done | `POST /api/games/[id]/share-code`; returns `{ code }` to the caller only (no broadcast). Infra failures → 500. |
 | `CLAIM_DIRECTOR_CODE` | Claim a share code → token | Would-be director | No | **HTTP write** | Auth exchange; returns a token. |
 | `SAVE_CONFIG_TIMER` | Persist a not-started timer config | Director | Setup | **HTTP write** (borderline) | Setup-time persistence; no live consumers until start. Could stay socket for symmetry. |
 | `CREATE_TIMER` | Create/initialize a timer | Director | Live-ish | **Either** | HTTP if it only initializes state; socket if coupled to the live broadcaster. |
@@ -105,8 +105,20 @@ the `startGame` service server-side; returns **409** with the blocking
 (`src/socket/broadcast/game-broadcast.ts`). Infra failures → 500. Client
 `game-service.startGame` uses `fetch` and throws the server message on failure.
 
+### Generating a share code (done)
+
+`GENERATE_SHARE_CODE` → `POST /api/games/[gameId]/share-code`
+(`withDirectorRoute`). Mints a single-use code via `createShareCode` and returns
+`{ code }` to the caller only — there is nothing to broadcast. Infra failures →
+500 via `respondToActionError`. Client `game-service.generateShareCode` uses
+`fetch` and throws the server message on failure. `CLAIM_DIRECTOR_CODE` stays on
+the socket: the claimer has no director token yet, so it can't ride the
+director-authed HTTP path.
+
 ### Next candidates
 
-`GENERATE_SHARE_CODE`, `CLAIM_DIRECTOR_CODE` — each follows the same shape
-(route + shared broadcaster + `fetch` client, using the
-`ClientError`/`respondToActionError` helper for 400 vs 500).
+`CLAIM_DIRECTOR_CODE` is the remaining share-code event. It's an unauthenticated
+auth exchange (no director token yet), so if migrated it would use
+`withBasicRoute` and return the minted token in the body, following the
+`ClientError`/`respondToActionError` shape for 400 vs 500 — mirroring
+`POST /api/games`.

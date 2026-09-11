@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SocketEvents } from "@/socket/socket-events";
 
-vi.mock("@/db/system/actions/create-share-code", () => ({
-  createShareCode: vi.fn(),
-}));
-
 vi.mock("@/db/system/queries/validate-share-code", () => ({
   validateAndClaimShareCode: vi.fn(),
 }));
@@ -13,14 +9,8 @@ vi.mock("@/db/system/actions/create-login-session", () => ({
   createLoginSession: vi.fn(),
 }));
 
-vi.mock("@/db/system/queries/find-login-session", () => ({
-  findLoginSession: vi.fn(),
-}));
-
-import { createShareCode } from "@/db/system/actions/create-share-code";
 import { validateAndClaimShareCode } from "@/db/system/queries/validate-share-code";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
-import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerShareCodeHandlers } from "./share-code.handler";
 
 function makeSocket() {
@@ -36,99 +26,12 @@ describe("registerShareCodeHandlers", () => {
     vi.clearAllMocks();
   });
 
-  it("registers handlers for both events", () => {
+  it("registers a handler for the claim event", () => {
     const socket = makeSocket();
     registerShareCodeHandlers(socket, makeIo());
 
     const events = socket.on.mock.calls.map((c: any) => c[0]);
-    expect(events).toContain(SocketEvents.GENERATE_SHARE_CODE);
     expect(events).toContain(SocketEvents.CLAIM_DIRECTOR_CODE);
-  });
-
-  describe("GENERATE_SHARE_CODE", () => {
-    it("generates a code for an authorized director", async () => {
-      vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok",
-        role: "DIRECTOR",
-        gameId: "g1",
-      } as any);
-      vi.mocked(createShareCode).mockResolvedValue("K7M2PX");
-
-      const socket = makeSocket();
-      registerShareCodeHandlers(socket, makeIo());
-
-      const handler = socket.on.mock.calls.find(
-        (c: any) => c[0] === SocketEvents.GENERATE_SHARE_CODE,
-      )![1];
-
-      const cb = vi.fn();
-      await handler({ gameId: "g1", directorToken: "tok" }, cb);
-
-      expect(createShareCode).toHaveBeenCalledWith("g1");
-      expect(cb).toHaveBeenCalledWith({ success: true, code: "K7M2PX" });
-    });
-
-    it("rejects non-directors", async () => {
-      vi.mocked(findLoginSession).mockReturnValue(null);
-
-      const socket = makeSocket();
-      registerShareCodeHandlers(socket, makeIo());
-
-      const handler = socket.on.mock.calls.find(
-        (c: any) => c[0] === SocketEvents.GENERATE_SHARE_CODE,
-      )![1];
-
-      const cb = vi.fn();
-      await handler({ gameId: "g1", directorToken: "bad" }, cb);
-
-      expect(createShareCode).not.toHaveBeenCalled();
-      expect(cb).toHaveBeenCalledWith({
-        success: false,
-        error: "Unauthorized",
-      });
-    });
-
-    it("rejects invalid payload (missing gameId)", async () => {
-      const socket = makeSocket();
-      registerShareCodeHandlers(socket, makeIo());
-
-      const handler = socket.on.mock.calls.find(
-        (c: any) => c[0] === SocketEvents.GENERATE_SHARE_CODE,
-      )![1];
-
-      const cb = vi.fn();
-      await handler({ directorToken: "tok" }, cb);
-
-      expect(cb).toHaveBeenCalledWith({
-        success: false,
-        error: "Invalid payload",
-      });
-      expect(createShareCode).not.toHaveBeenCalled();
-    });
-
-    it("returns error when createShareCode throws", async () => {
-      vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok",
-        role: "DIRECTOR",
-        gameId: "g1",
-      } as any);
-      vi.mocked(createShareCode).mockRejectedValue(new Error("DB error"));
-
-      const socket = makeSocket();
-      registerShareCodeHandlers(socket, makeIo());
-
-      const handler = socket.on.mock.calls.find(
-        (c: any) => c[0] === SocketEvents.GENERATE_SHARE_CODE,
-      )![1];
-
-      const cb = vi.fn();
-      await handler({ gameId: "g1", directorToken: "tok" }, cb);
-
-      expect(cb).toHaveBeenCalledWith({
-        success: false,
-        error: "Failed to generate code",
-      });
-    });
   });
 
   describe("CLAIM_DIRECTOR_CODE", () => {
