@@ -39,15 +39,18 @@ export function MovementDetailView({ tables }: Props) {
         </button>
       </div>
 
-      {/* Content */}
+      {/* Content: pad the scroll area so cards clear the screen edges, and
+          stack them with a consistent gap rather than per-card margins. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {viewMode === "byTable"
-          ? tables.map((table) => (
-              <MovementTable key={table.tableNumber} table={table} />
-            ))
-          : buildRounds(tables).map((round) => (
-              <MovementRound key={round.roundNumber} round={round} />
-            ))}
+        <div className="flex flex-col gap-3 p-4">
+          {viewMode === "byTable"
+            ? tables.map((table) => (
+                <MovementTable key={table.tableNumber} table={table} />
+              ))
+            : buildRounds(tables).map((round) => (
+                <MovementRound key={round.roundNumber} round={round} />
+              ))}
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { PairMovementSpec } from "@/db/movements/schema";
@@ -94,11 +95,12 @@ interface Props {
 }
 
 /**
- * Per-section movement picker. Two-stage flow: the director browses the curated
- * recommendations for the section's table count (grouped by how many boards a
- * pair plays), clicks one to preview its full table/round breakdown, then
- * confirms with "Select Movement" — which persists it via SET_SECTION_MOVEMENT.
- * Clicking a card only previews; nothing is committed until the confirm button.
+ * Per-section movement picker. The director browses the curated recommendations
+ * for the section's table count (grouped by how many boards a pair plays), then
+ * clicks one to open a popup showing its full table/round breakdown. From that
+ * popup they either Close (dismiss without changing anything) or Select Movement
+ * — which persists it via SET_SECTION_MOVEMENT. Clicking a card only previews;
+ * nothing is committed until the confirm button.
  */
 export function SectionMovementPicker({
   gameId,
@@ -141,45 +143,32 @@ export function SectionMovementPicker({
       .map(([boardsPerPair, movements]) => ({ boardsPerPair, movements }));
   }, [recommendations]);
 
-  // The movement being previewed. Selecting a card sets this; it is only
-  // persisted once the director confirms with "Select Movement".
+  // The movement being previewed in the popup. Selecting a card sets this; it
+  // is only persisted once the director confirms with "Select Movement".
   const [preview, setPreview] = useState<RecommendedMovement | null>(null);
   const [saving, setSaving] = useState(false);
 
-  if (preview) {
-    return (
-      <MovementPreview
-        movement={preview}
-        saving={saving}
-        onBack={() => setPreview(null)}
-        onConfirm={async () => {
-          setSaving(true);
-          try {
-            if (preview.specRef.source === "generated") {
-              await setSectionMitchellMovement(
-                gameId,
-                section,
-                preview.specRef.spec,
-              );
-            } else {
-              await setSectionMovementSpec(
-                gameId,
-                section,
-                preview.specRef.id,
-                preview.boardsPerRound,
-              );
-            }
-            setPreview(null);
-            onDone?.();
-            onSelected?.();
-          } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to set movement");
-          } finally {
-            setSaving(false);
-          }
-        }}
-      />
-    );
+  async function handleConfirm(movement: RecommendedMovement) {
+    setSaving(true);
+    try {
+      if (movement.specRef.source === "generated") {
+        await setSectionMitchellMovement(gameId, section, movement.specRef.spec);
+      } else {
+        await setSectionMovementSpec(
+          gameId,
+          section,
+          movement.specRef.id,
+          movement.boardsPerRound,
+        );
+      }
+      setPreview(null);
+      onDone?.();
+      onSelected?.();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to set movement");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -255,24 +244,92 @@ export function SectionMovementPicker({
           </div>
         )}
       </div>
+
+      <MovementPreviewDialog
+        movement={preview}
+        saving={saving}
+        onClose={() => {
+          if (!saving) setPreview(null);
+        }}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 }
 
 /**
- * Full table/round breakdown for a single recommended movement, with a
- * "Select Movement" action that locks the choice in. Generated Mitchells are
- * previewed client-side; seeded (DB) specs are fetched from the detail API.
+ * Popup showing the full table/round breakdown for the previewed movement, with
+ * a Close action (dismiss) and a "Select Movement" action (persist and close).
+ * Open when `movement` is non-null. The details content — including its data
+ * fetch — is mounted only while open, so no request runs for a closed dialog.
  */
-function MovementPreview({
+function MovementPreviewDialog({
   movement,
   saving,
-  onBack,
+  onClose,
+  onConfirm,
+}: {
+  movement: RecommendedMovement | null;
+  saving: boolean;
+  onClose: () => void;
+  onConfirm: (movement: RecommendedMovement) => void;
+}) {
+  return (
+    <Transition show={movement != null} as={Fragment}>
+      <Dialog onClose={onClose} className="relative z-50">
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-150"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-100"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-150"
+            enterFrom="opacity-0 scale-95"
+            enterTo="opacity-100 scale-100"
+            leave="ease-in duration-100"
+            leaveFrom="opacity-100 scale-100"
+            leaveTo="opacity-0 scale-95"
+          >
+            <Dialog.Panel className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+              {movement && (
+                <MovementPreviewContent
+                  movement={movement}
+                  saving={saving}
+                  onClose={onClose}
+                  onConfirm={() => onConfirm(movement)}
+                />
+              )}
+            </Dialog.Panel>
+          </Transition.Child>
+        </div>
+      </Dialog>
+    </Transition>
+  );
+}
+
+/**
+ * Contents of the movement-preview popup. Generated Mitchells are previewed
+ * client-side; seeded (DB) specs are fetched from the detail API. Mounted only
+ * while the dialog is open so its fetch is scoped to an open popup.
+ */
+function MovementPreviewContent({
+  movement,
+  saving,
+  onClose,
   onConfirm,
 }: {
   movement: RecommendedMovement;
   saving: boolean;
-  onBack: () => void;
+  onClose: () => void;
   onConfirm: () => void;
 }) {
   // DB-based movements need their full layout fetched. Generated Mitchells are
@@ -300,38 +357,41 @@ function MovementPreview({
   }, [movement, detail]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center gap-3 px-4 pt-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-sm font-medium text-blue-600 hover:underline"
-        >
-          ← Back to movements
-        </button>
-        <h2 className="text-lg font-bold text-gray-800">{movement.name}</h2>
+    <>
+      <div className="shrink-0 border-b px-4 py-3">
+        <Dialog.Title className="text-lg font-bold text-gray-800">
+          {movement.name}
+        </Dialog.Title>
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
         {previewTables ? (
           <MovementDetailView tables={previewTables} />
         ) : (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full min-h-40 items-center justify-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
           </div>
         )}
       </div>
 
-      <div className="shrink-0 border-t p-3">
+      <div className="flex shrink-0 gap-3 border-t p-3">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={saving}
+          className="flex-1 rounded-xl bg-gray-100 py-3 text-lg font-bold text-gray-900 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Close
+        </button>
         <button
           type="button"
           onClick={onConfirm}
           disabled={saving || !previewTables}
-          className="w-full rounded-xl bg-green-700 py-3 text-lg font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex-1 rounded-xl bg-green-700 py-3 text-lg font-bold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? "Selecting…" : "Select Movement"}
         </button>
       </div>
-    </div>
+    </>
   );
 }
