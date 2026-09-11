@@ -90,9 +90,6 @@ vi.mock("@/timer/scheduler", () => ({
   cancelGameSchedule: vi.fn(),
 }));
 
-import { createBridgeGame } from "@/db/game-index/actions/create-game";
-import { createGameDb } from "@/db/games/actions/create-game";
-import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { createPlayer } from "@/db/games/actions/create-player";
 import { createParticipant as createPairParticipant } from "@/db/games/actions/create-participant";
@@ -141,30 +138,8 @@ describe("Multi-client Socket.IO scenarios", () => {
   /* ----------------------------------------------------------
      GAME CREATION — broadcast to all connected clients
   ---------------------------------------------------------- */
-  describe("Game creation broadcasts", () => {
-    it("all connected clients receive JOINABLE_GAMES when a game is created", async () => {
-      const game = { gameId: "g1", gameType: "PAIRS", eventName: "Monday" };
-      vi.mocked(createBridgeGame).mockResolvedValue(game as any);
-      vi.mocked(createGameDb).mockResolvedValue(undefined);
-      vi.mocked(createLoginSession).mockResolvedValue(undefined);
-      vi.mocked(findJoinableGames).mockResolvedValue([game] as any);
-
-      const { client, close, addClient } = await createFullServer();
-      closeServer = close;
-
-      const player1 = await addClient();
-      const player2 = await addClient();
-      extraClients.push(player1, player2);
-
-      const p1Broadcast = waitForEvent(player1, SocketEvents.JOINABLE_GAMES);
-      const p2Broadcast = waitForEvent(player2, SocketEvents.JOINABLE_GAMES);
-
-      await emitWithAck(client, SocketEvents.CREATE_GAME, { name: "Monday" });
-
-      expect(await p1Broadcast).toEqual({ joinableGames: [game] });
-      expect(await p2Broadcast).toEqual({ joinableGames: [game] });
-    });
-  });
+  // Game creation moved to POST /api/games; its global JOINABLE_GAMES broadcast
+  // is covered by the joinable-broadcast unit test and the route test.
 
   /* ----------------------------------------------------------
      ROOM-SCOPED BROADCASTS — only room members receive events

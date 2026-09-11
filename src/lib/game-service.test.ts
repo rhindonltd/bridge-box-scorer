@@ -31,25 +31,46 @@ describe("game-service", () => {
   });
 
   describe("createGame", () => {
-    it("emits CREATE_GAME, stores director token in localStorage, and returns the game", async () => {
-      const fakeGame = { id: "g1", gameId: "g1", name: "Test Game" };
-      mockEmitWithAck.mockResolvedValue({
-        success: true,
-        game: fakeGame,
-        directorToken: "tok-123",
+    it("POSTs /api/games, stores the director token, and returns the game", async () => {
+      const fakeGame = { gameId: "g1", eventName: "Test Game" };
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          result: { game: fakeGame, directorToken: "tok-123" },
+        }),
       });
+      vi.stubGlobal("fetch", fetchMock);
 
-      const newGame = { name: "Test Game" } as any;
+      const newGame = { eventName: "Test Game" } as any;
       const result = await createGame(newGame);
 
-      expect(mockEmitWithAck).toHaveBeenCalledWith(
-        SocketEvents.CREATE_GAME,
-        newGame,
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/games",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify(newGame),
+        }),
       );
       expect(result).toEqual(fakeGame);
-
-      // Should store the director token in localStorage via setDirectorToken
       expect(setDirectorToken).toHaveBeenCalledWith("g1", "tok-123");
+
+      vi.unstubAllGlobals();
+    });
+
+    it("throws the server error message when creation fails", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ success: false, error: "Bad game" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(createGame({ eventName: "x" } as any)).rejects.toThrow(
+        "Bad game",
+      );
+      expect(setDirectorToken).not.toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
     });
   });
 

@@ -1,6 +1,7 @@
 export const SocketEvents = {
   // Client initiated - Global
-  CREATE_GAME: "create-game",
+  // NOTE: game creation is an HTTP route (POST /api/games), not a socket event;
+  // it broadcasts JOINABLE_GAMES globally from that route.
   CONNECT: "connect",
 
   // Client initiated - Game specific

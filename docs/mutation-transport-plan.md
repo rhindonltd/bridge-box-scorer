@@ -27,7 +27,7 @@ testability, not throughput.
 
 | Mutation (event) | What it does | Actor | Live? | Recommended | Why |
 |---|---|---|---|---|---|
-| `CREATE_GAME` | Create a new game | Director (pre-token) | No | **HTTP write** | One-shot; returns an id + issues the director token. |
+| `CREATE_GAME` | Create a new game | Director (pre-token) | No | **HTTP write** ✅ done | `POST /api/games` (201, no auth); returns `{ game, directorToken }` and broadcasts `JOINABLE_GAMES` via shared `broadcastJoinableGames`. |
 | `CREATE_SECTION` | Add a section | Director | Setup | **HTTP write** ✅ done | Director-only; wants route validation (duplicate letter) + 4xx. |
 | `RENAME_SECTION` | Rename a section | Director | Setup | **HTTP write** ✅ done | Pure setup, low frequency. |
 | `DELETE_SECTION` | Delete a section | Director | Setup | **HTTP write** ✅ done | Destructive, director-only; status codes + guard errors. |
@@ -86,8 +86,17 @@ route (which falls back to `getIO()`). Errors are classified via
 `src/lib/api/client-error.ts` — `ClientError` → 400, anything else → logged 500.
 Client `src/lib/participant-service.ts` `evictParticipant`.
 
+### Game creation (done)
+
+`CREATE_GAME` → `POST /api/games` (`withBasicRoute`, no auth — anyone can
+create). Validates the body (`ClientError` → 400), provisions the game DB,
+creates the director login session, returns `201 { game, directorToken }`
+(client stores the token), and broadcasts globally via
+`broadcastJoinableGames(io?)` (`src/socket/broadcast/joinable-broadcast.ts`).
+Client `game-service.createGame` uses `fetch`.
+
 ### Next candidates
 
-`START_GAME`, `GENERATE_SHARE_CODE`, `CLAIM_DIRECTOR_CODE`, `CREATE_GAME` — each
-follows the same shape (route + shared broadcaster + `fetch` client, using the
+`START_GAME`, `GENERATE_SHARE_CODE`, `CLAIM_DIRECTOR_CODE` — each follows the
+same shape (route + shared broadcaster + `fetch` client, using the
 `ClientError`/`respondToActionError` helper for 400 vs 500).
