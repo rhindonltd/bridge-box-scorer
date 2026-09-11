@@ -23,6 +23,8 @@ import { MovementByTable } from "@/movement/movementData";
  *
  * Response shape:
  * {
+ *   type,
+ *   name,
  *   tables: [{ tableNumber, rounds: [{ roundNumber, ns/ew, boardStart, boardEnd }] }]
  * }
  */
@@ -43,6 +45,7 @@ export async function GET(
 
   try {
     let tables: MovementByTable[];
+    let name: string;
 
     switch (movementType) {
       case "PAIRS": {
@@ -57,6 +60,7 @@ export async function GET(
           );
         }
         tables = toMovementByTable(movement, spec.boardsPerRound);
+        name = spec.name;
         break;
       }
       case "TEAMS": {
@@ -71,6 +75,7 @@ export async function GET(
           );
         }
         tables = toMovementByTable(movement, spec.boardsPerRound);
+        name = spec.name;
         break;
       }
       default:
@@ -82,7 +87,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      result: { type: movementType, tables },
+      result: { type: movementType, name, tables },
     });
   } catch (error) {
     console.error(error);

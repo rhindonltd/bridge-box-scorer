@@ -17,9 +17,16 @@ vi.mock("@/context/GameContext", () => ({
 let currentPairs: Pair[] = [];
 let capturedFetcher: ((url: string) => Promise<Pair[]>) | null = null;
 vi.mock("swr", () => ({
-  default: (_key: string, fetcher: (url: string) => Promise<Pair[]>) => {
-    capturedFetcher = fetcher;
-    return { data: currentPairs };
+  default: (key: string | null, fetcher: (url: string) => Promise<Pair[]>) => {
+    // The page mounts more than one useSWR (pairs + the selected-movement-name
+    // lookup, which passes a null key when no SPEC movement is chosen). Only the
+    // pairs subscription carries a live string key here, so capture that one's
+    // fetcher and back it with the configured pairs data.
+    if (key != null) {
+      capturedFetcher = fetcher;
+      return { data: currentPairs };
+    }
+    return { data: undefined };
   },
 }));
 
@@ -359,6 +366,55 @@ describe("ShowTablesPage", () => {
     expect(
       screen.queryByTestId("movement-warning-banner"),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the selected movement name summary when a movement fits", () => {
+    currentSections = [
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: {
+          source: "MITCHELL",
+          mitchell: { tables: 2, rounds: 2, boardsPerRound: 2 },
+        } as never,
+      },
+    ];
+    mockMovementTables = 2;
+
+    const onEditMovement = vi.fn();
+    render(<ShowTablesPage onEditMovement={onEditMovement} />);
+
+    const summary = screen.getByTestId("selected-movement-summary");
+    expect(summary).toHaveTextContent("Standard Mitchell");
+
+    fireEvent.click(summary);
+    expect(onEditMovement).toHaveBeenCalledOnce();
+  });
+
+  it("hides the movement summary while a warning is shown", () => {
+    currentSections = [
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: {
+          source: "MITCHELL",
+          mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
+        } as never,
+      },
+    ];
+    // Movement resolves to a different table count -> warning, not summary.
+    mockMovementTables = 3;
+
+    render(<ShowTablesPage />);
+
+    expect(
+      screen.queryByTestId("selected-movement-summary"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("movement-warning-banner")).toBeInTheDocument();
   });
 
   it("shows only the selected section's grid and stepper", () => {

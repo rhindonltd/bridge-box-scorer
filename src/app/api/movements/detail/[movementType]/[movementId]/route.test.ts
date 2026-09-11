@@ -26,6 +26,7 @@ describe("GET /api/movements/detail/[movementType]/[movementId]", () => {
   it("returns PAIRS movement detail with computed board ranges", async () => {
     vi.mocked(getPairMovementSpecById).mockResolvedValue({
       id: 1,
+      name: "3 Table Howell",
       boardsPerRound: 2,
     } as never);
     vi.mocked(getPairMovement).mockResolvedValue([
@@ -44,6 +45,7 @@ describe("GET /api/movements/detail/[movementType]/[movementId]", () => {
         const body = await res.json();
         expect(body.success).toBe(true);
         expect(body.result.type).toBe("PAIRS");
+        expect(body.result.name).toBe("3 Table Howell");
         expect(body.result.tables[0].tableNumber).toBe(1);
         expect(body.result.tables[0].rounds[0]).toMatchObject({
           roundNumber: 1,

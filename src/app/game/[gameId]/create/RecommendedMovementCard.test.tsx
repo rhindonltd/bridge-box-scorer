@@ -113,6 +113,28 @@ describe("RecommendedMovementCard", () => {
     expect(screen.queryByText("One stationary pair only")).not.toBeInTheDocument();
   });
 
+  it("shows a Selected badge and marks the card when selected", () => {
+    render(
+      <RecommendedMovementCard
+        movement={movement}
+        onSelect={vi.fn()}
+        selected
+      />,
+    );
+    expect(screen.getByText("Selected")).toBeInTheDocument();
+    expect(screen.getByRole("button")).toHaveAttribute("data-selected", "true");
+    expect(screen.getByRole("button")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("shows no Selected badge when not selected", () => {
+    render(<RecommendedMovementCard movement={movement} onSelect={vi.fn()} />);
+    expect(screen.queryByText("Selected")).not.toBeInTheDocument();
+    expect(screen.getByRole("button")).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
+  });
+
   it("calls onSelect when clicked", () => {
     const onSelect = vi.fn();
     render(
