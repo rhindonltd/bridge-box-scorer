@@ -1,12 +1,11 @@
 import { Server, Socket } from "socket.io";
 
 import { SocketEvents } from "@/socket/socket-events";
-import { Rooms } from "@/socket/rooms";
 
 import { createPlayer } from "@/db/games/actions/create-player";
 
 import { createParticipant as createPair } from "@/db/games/actions/create-participant";
-import { findPairs } from "@/db/games/queries/find-pairs";
+import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 
 import { NewParticipant } from "@/model/participants";
 import { getDb } from "@/db/games";
@@ -44,9 +43,7 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
           throw new Error("Game db does not exist");
         }
 
-        io.to(Rooms.game(gameId)).emit(SocketEvents.PARTICIPANTS, {
-          participants: await findPairs(db),
-        });
+        await broadcastParticipants(gameId, io);
         cb({
           data: { key },
           success: true,

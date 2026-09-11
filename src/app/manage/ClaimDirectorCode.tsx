@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getSocket } from "@/lib/socket";
-import { SocketEvents } from "@/socket/socket-events";
-import { setDirectorToken } from "@/lib/director-token";
+import { claimDirectorCode } from "@/lib/game-service";
 import { ClaimDirectorCodeView } from "@/app/manage/ClaimDirectorCodeView";
 
 interface Props {
@@ -29,25 +27,12 @@ export function ClaimDirectorCode({
     setError(null);
     setLoading(true);
 
-    getSocket().emit(
-      SocketEvents.CLAIM_DIRECTOR_CODE,
-      { code: code.trim().toUpperCase() },
-      (res: {
-        success: boolean;
-        directorToken?: string;
-        gameId?: string;
-        error?: string;
-      }) => {
-        setLoading(false);
-
-        if (res.success && res.directorToken && res.gameId) {
-          setDirectorToken(res.gameId, res.directorToken);
-          onSuccess();
-        } else {
-          setError(res.error ?? "Failed to claim code");
-        }
-      },
-    );
+    claimDirectorCode(code.trim().toUpperCase())
+      .then(() => onSuccess())
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Failed to claim code"),
+      )
+      .finally(() => setLoading(false));
   }
 
   return (

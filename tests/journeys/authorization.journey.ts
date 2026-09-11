@@ -79,23 +79,9 @@ test.describe("Authorization: director socket events", () => {
       const missing = await emit(socket, "game:generateShareCode", { gameId });
       expect(missing.success).toBe(false);
 
-      // evictParticipant and updateTables are director-gated too.
-      const evict = await emit(socket, "game:evictParticipant", {
-        gameId,
-        seat: "A1NS",
-        directorToken: "garbage-token",
-      });
-      expect(evict.success).toBe(false);
-      expect(evict.error).toBe("Unauthorized");
-
-      const tables = await emit(socket, "game:updateTables", {
-        gameId,
-        section: "A",
-        tables: 3,
-        directorToken: "garbage-token",
-      });
-      expect(tables.success).toBe(false);
-      expect(tables.error).toBe("Unauthorized");
+      // Participant eviction, table resize and section management moved to HTTP
+      // routes; their 401s are covered by the HTTP director-route auth checks,
+      // not this socket path.
 
       // Positive control: the real director token authorises the event.
       const ok = await emit<{ success: boolean; code?: string }>(

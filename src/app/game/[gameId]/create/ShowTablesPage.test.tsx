@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import type { Pair } from "@/model/participants";
 
 // ---- mocks ----
@@ -70,10 +70,7 @@ vi.mock("@/components/manage/sections/useSetupSections", () => ({
   }),
 }));
 
-const mockEmit = vi.fn();
-vi.mock("@/lib/socket", () => ({
-  getSocket: () => ({ emit: mockEmit }),
-}));
+
 
 vi.mock("@/lib/director-token", () => ({
   getDirectorToken: () => "token",
@@ -81,6 +78,18 @@ vi.mock("@/lib/director-token", () => ({
 
 vi.mock("@/lib/fetcher", () => ({
   fetcher: vi.fn(),
+}));
+
+// Table resize now goes through the HTTP section-service.
+const mockUpdateSectionTables = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/section-service", () => ({
+  updateSectionTables: (...args: unknown[]) => mockUpdateSectionTables(...args),
+}));
+
+// Eviction now goes through the HTTP participant-service.
+const mockEvictParticipant = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/participant-service", () => ({
+  evictParticipant: (...args: unknown[]) => mockEvictParticipant(...args),
 }));
 
 // Movement resolution: stationary highlighting + board placement. Default to
@@ -107,7 +116,6 @@ vi.mock("@/hooks/stationary-pairs", () => ({
   }),
 }));
 
-import { SocketEvents } from "@/socket/socket-events";
 import { fetcher } from "@/lib/fetcher";
 import { ShowTablesPage } from "./ShowTablesPage";
 
@@ -134,6 +142,8 @@ describe("ShowTablesPage", () => {
       { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
     ];
     currentSelected = "A";
+    mockUpdateSectionTables.mockResolvedValue(undefined);
+    mockEvictParticipant.mockResolvedValue(undefined);
     mockStationary = new Map();
     mockPlacement = new Map();
     mockMovementTables = 0;
@@ -178,70 +188,62 @@ describe("ShowTablesPage", () => {
     expect(fetcher).toHaveBeenCalledWith("/api/pairs");
   });
 
-  it("resizes a section through the number stepper", () => {
+  it("resizes a section through the number stepper (HTTP) and refreshes", async () => {
     render(<ShowTablesPage />);
 
     const increment = screen.getByRole("button", { name: "Increase Tables" });
     fireEvent.pointerDown(increment);
     fireEvent.pointerUp(increment);
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.UPDATE_TABLES,
-      expect.objectContaining({
-        gameId: "g1",
-        section: "A",
-        tables: 3,
-        directorToken: "token",
-      }),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(mockUpdateSectionTables).toHaveBeenCalledWith("g1", "A", 3),
     );
-    // The ack callback triggers a game refresh.
-    const ack = mockEmit.mock.calls[0][2] as () => void;
-    ack();
-    expect(mockMutateGame).toHaveBeenCalled();
+    await waitFor(() => expect(mockMutateGame).toHaveBeenCalled());
   });
 
-  it("evicts a pair after confirmation and alerts on failure", () => {
+  it("alerts when a resize is rejected (e.g. shrink guard)", async () => {
+    mockUpdateSectionTables.mockRejectedValueOnce(
+      new Error("Cannot remove a table with seated participants"),
+    );
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+
+    render(<ShowTablesPage />);
+    const increment = screen.getByRole("button", { name: "Increase Tables" });
+    fireEvent.pointerDown(increment);
+    fireEvent.pointerUp(increment);
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith(
+        "Cannot remove a table with seated participants",
+      ),
+    );
+  });
+
+  it("evicts a pair after confirmation via the HTTP service", async () => {
     currentPairs = [pairAt("A1NS")];
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
-    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
     render(<ShowTablesPage />);
 
     fireEvent.click(screen.getByLabelText("Evict North player"));
     expect(confirmSpy).toHaveBeenCalled();
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.EVICT_PARTICIPANT,
-      expect.objectContaining({ gameId: "g1", directorToken: "token" }),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(mockEvictParticipant).toHaveBeenCalledWith("g1", "A1NS"),
     );
-
-    // Simulate a failed eviction ack.
-    const evictCall = mockEmit.mock.calls.find(
-      (c) => c[0] === SocketEvents.EVICT_PARTICIPANT,
-    )!;
-    const ack = evictCall[2] as (r: {
-      success: boolean;
-      error?: string;
-    }) => void;
-    ack({ success: false, error: "cannot evict" });
-    expect(alertSpy).toHaveBeenCalledWith("cannot evict");
   });
 
-  it("does nothing on a successful eviction ack", () => {
+  it("alerts when the eviction fails", async () => {
     currentPairs = [pairAt("A1NS")];
     vi.spyOn(window, "confirm").mockReturnValue(true);
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    mockEvictParticipant.mockRejectedValueOnce(new Error("cannot evict"));
 
     render(<ShowTablesPage />);
     fireEvent.click(screen.getByLabelText("Evict North player"));
 
-    const evictCall = mockEmit.mock.calls.find(
-      (c) => c[0] === SocketEvents.EVICT_PARTICIPANT,
-    )!;
-    const ack = evictCall[2] as (r: { success: boolean }) => void;
-    ack({ success: true });
-    expect(alertSpy).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("cannot evict"),
+    );
   });
 
   it("does not evict when the director cancels the confirm", () => {
@@ -251,11 +253,7 @@ describe("ShowTablesPage", () => {
     render(<ShowTablesPage />);
     fireEvent.click(screen.getByLabelText("Evict North player"));
 
-    expect(
-      mockEmit.mock.calls.some(
-        (c) => c[0] === SocketEvents.EVICT_PARTICIPANT,
-      ),
-    ).toBe(false);
+    expect(mockEvictParticipant).not.toHaveBeenCalled();
   });
 
   it("renders the section pills and add-section modal", () => {
@@ -417,7 +415,7 @@ describe("ShowTablesPage", () => {
     expect(screen.getByTestId("movement-warning-banner")).toBeInTheDocument();
   });
 
-  it("shows only the selected section's grid and stepper", () => {
+  it("shows only the selected section's grid and stepper", async () => {
     currentSections = [
       { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
       { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
@@ -432,10 +430,8 @@ describe("ShowTablesPage", () => {
     fireEvent.pointerDown(increment);
     fireEvent.pointerUp(increment);
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.UPDATE_TABLES,
-      expect.objectContaining({ section: "B", tables: 5 }),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(mockUpdateSectionTables).toHaveBeenCalledWith("g1", "B", 5),
     );
   });
 });

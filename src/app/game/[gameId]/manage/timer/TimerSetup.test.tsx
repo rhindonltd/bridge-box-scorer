@@ -30,6 +30,20 @@ vi.mock("@/lib/director-token", () => ({
   getDirectorToken: () => "token",
 }));
 
+const mockSaveTimerConfig = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/timer-service", () => ({
+  saveTimerConfig: (...args: unknown[]) => mockSaveTimerConfig(...args),
+}));
+
+/** Latest fields passed to saveTimerConfig(gameId, section, fields). */
+function lastSave() {
+  return mockSaveTimerConfig.mock.calls.at(-1);
+}
+/** Saves recorded for a given section. */
+function savesForSection(section: string) {
+  return mockSaveTimerConfig.mock.calls.filter((c) => c[1] === section);
+}
+
 // A MITCHELL movement resolves its round structure inline (no fetch), so the
 // timer config renders with derived boards/round (3) and total rounds (8).
 const mitchellMovement = {
@@ -67,7 +81,7 @@ describe("TimerSetup (config screen)", () => {
     ];
   });
 
-  it("auto-saves config edits with timer:saveConfig and shows no run controls", async () => {
+  it("auto-saves config edits (PUT via the service) and shows no run controls", async () => {
     render(<TimerSetup />);
 
     // Config-only: no Create/Start/Pause and no Save button on the setup screen.
@@ -82,12 +96,10 @@ describe("TimerSetup (config screen)", () => {
     );
 
     await waitFor(() =>
-      expect(mockEmit).toHaveBeenLastCalledWith(
-        SocketEvents.SAVE_CONFIG_TIMER,
+      expect(mockSaveTimerConfig).toHaveBeenLastCalledWith(
+        "g1",
+        "A",
         expect.objectContaining({
-          gameId: "g1",
-          gameType: "PAIRS",
-          directorToken: "token",
           boardsPerRound: 3,
           totalRounds: 8,
           // defaults: play 2m0s = 120s (perRound), move 1m30s = 90s
@@ -107,8 +119,9 @@ describe("TimerSetup (config screen)", () => {
     });
 
     await waitFor(() =>
-      expect(mockEmit).toHaveBeenLastCalledWith(
-        SocketEvents.SAVE_CONFIG_TIMER,
+      expect(mockSaveTimerConfig).toHaveBeenLastCalledWith(
+        "g1",
+        "A",
         expect.objectContaining({
           // Structure comes from the selected movement (read-only).
           totalRounds: 8,
@@ -140,9 +153,7 @@ describe("TimerSetup (config screen)", () => {
     expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
     expect(screen.queryByLabelText("Total Rounds")).toBeNull();
     // No config to save while no movement is selected.
-    expect(
-      mockEmit.mock.calls.some((c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER),
-    ).toBe(false);
+    expect(mockSaveTimerConfig).not.toHaveBeenCalled();
   });
 
   it("uses per-board timing to multiply the play duration on auto-save", async () => {
@@ -151,8 +162,9 @@ describe("TimerSetup (config screen)", () => {
     // default play 2m = 120s, boardsPerRound 3 -> 360s per round.
     fireEvent.click(screen.getByLabelText("Per Board"));
     await waitFor(() =>
-      expect(mockEmit).toHaveBeenLastCalledWith(
-        SocketEvents.SAVE_CONFIG_TIMER,
+      expect(mockSaveTimerConfig).toHaveBeenLastCalledWith(
+        "g1",
+        "A",
         expect.objectContaining({ playDuration: 360 }),
       ),
     );
@@ -178,10 +190,8 @@ describe("TimerSetup (config screen)", () => {
 
     // The burst of edits debounces into a single save with the final values.
     await waitFor(() => {
-      const call = mockEmit.mock.calls
-        .filter((c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER)
-        .at(-1);
-      expect(call![1]).toMatchObject({
+      const call = lastSave();
+      expect(call![2]).toMatchObject({
         // Boards/round is derived from the movement (3), not edited here.
         boardsPerRound: 3,
         warningSeconds: 45,
@@ -266,12 +276,10 @@ describe("TimerSetup (config screen)", () => {
       });
 
       // Auto-save fires as breaks are edited; inspect the latest save payload.
-      const saveCall = mockEmit.mock.calls
-        .filter((c) => c[0] === SocketEvents.SAVE_CONFIG_TIMER)
-        .at(-1);
+      const saveCall = lastSave();
       expect(saveCall).toBeTruthy();
-      expect(saveCall![1].breaks).toHaveLength(1);
-      expect(saveCall![1].breaks[0]).toMatchObject({
+      expect(saveCall![2].breaks).toHaveLength(1);
+      expect(saveCall![2].breaks[0]).toMatchObject({
         afterRound: 2,
         mode: "resumeTime",
       });
@@ -587,20 +595,15 @@ describe("per-section timer UI", () => {
     // Switching sections unmounts the A container, flushing its pending save.
     fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
     await waitFor(() =>
-      expect(mockEmit).toHaveBeenCalledWith(
-        SocketEvents.SAVE_CONFIG_TIMER,
-        expect.objectContaining({ section: "A" }),
-      ),
+      expect(savesForSection("A").length).toBeGreaterThan(0),
     );
 
     // Editing section B auto-saves for section B.
     fireEvent.click(screen.getByLabelText("Per Board"));
-    await waitFor(() =>
-      expect(mockEmit).toHaveBeenLastCalledWith(
-        SocketEvents.SAVE_CONFIG_TIMER,
-        expect.objectContaining({ section: "B" }),
-      ),
-    );
+    await waitFor(() => {
+      const call = lastSave();
+      expect(call![1]).toBe("B");
+    });
   });
 
   it("live controls target the selected section", () => {

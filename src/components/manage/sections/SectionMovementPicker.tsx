@@ -359,7 +359,7 @@ function MovementPreviewContent({
   return (
     <>
       <div className="shrink-0 border-b border-gray-200">
-        <Dialog.Title className="text-md font-bold text-gray-800 bg-gray-300">
+        <Dialog.Title className="text-md font-bold text-gray-800 bg-gray-300 p-4">
           {movement.name}
         </Dialog.Title>
       </div>

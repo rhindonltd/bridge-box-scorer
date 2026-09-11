@@ -167,9 +167,9 @@ export async function startGame(page: Page, gameId: string): Promise<void> {
   const startButton = page.getByRole("button", { name: "Start Game" });
   await expect(startButton).toBeEnabled({ timeout: 15000 });
   await startButton.click();
-  // handleStartGame emits START_GAME (acked) then revalidates the game; the
+  // handleStartGame POSTs /api/games/[id]/start then revalidates the game; the
   // button flips to "Starting…" while in flight. Wait for it to settle back so
-  // the START_GAME ack has resolved before players enter the round.
+  // the request has resolved before players enter the round.
   await expect(
     page.getByRole("button", { name: "Starting", exact: false }),
   ).toHaveCount(0, { timeout: 15000 });

@@ -6,17 +6,32 @@ import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
 import { setPlayerToken } from "./player-token";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 
+/**
+ * Create a game over HTTP. The creator becomes the game's director; the
+ * returned token is stored locally so subsequent director-only calls
+ * authenticate. Throws with the server's error message on failure.
+ */
 export async function createGame(game: NewBridgeGame): Promise<BridgeGame> {
-  const response = await emitWithAck<{
-    success: boolean;
+  const res = await fetch("/api/games", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(game),
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error ?? "Failed to create game");
+  }
+
+  const { game: created, directorToken } = data.result as {
     game: BridgeGame;
     directorToken: string;
-  }>(SocketEvents.CREATE_GAME, game);
+  };
 
-  // Store the director token in localStorage keyed by gameId
-  setDirectorToken(response.game.gameId, response.directorToken);
+  // Store the director token in localStorage keyed by gameId.
+  setDirectorToken(created.gameId, directorToken);
 
-  return response.game;
+  return created;
 }
 
 export async function selectMovement(gameId: string, id: number, type: string) {
@@ -41,10 +56,61 @@ export async function selectMitchellMovement(
 }
 
 export async function startGame(gameId: string): Promise<void> {
-  await emitWithAck(SocketEvents.START_GAME, {
-    gameId,
-    directorToken: getDirectorToken(gameId),
+  const res = await fetch(`/api/games/${gameId}/start`, {
+    method: "POST",
+    headers: { "x-director-token": getDirectorToken(gameId) ?? "" },
   });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to start game");
+  }
+}
+
+/**
+ * Claim a director share code. No auth (the caller has no token yet) — the code
+ * is the credential. On success the minted director token is stored locally
+ * keyed by the resolved gameId, which is returned. Throws with the server's
+ * error message (e.g. invalid/expired/used code) on failure.
+ */
+export async function claimDirectorCode(code: string): Promise<string> {
+  const res = await fetch("/api/director-codes/claim", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error ?? "Failed to claim code");
+  }
+
+  const { directorToken, gameId } = data.result as {
+    directorToken: string;
+    gameId: string;
+  };
+
+  setDirectorToken(gameId, directorToken);
+
+  return gameId;
+}
+
+/**
+ * Mint a short, single-use director share code for a game (director-only).
+ * Returns the code; throws with the server's error message on failure.
+ */
+export async function generateShareCode(gameId: string): Promise<string> {
+  const res = await fetch(`/api/games/${gameId}/share-code`, {
+    method: "POST",
+    headers: { "x-director-token": getDirectorToken(gameId) ?? "" },
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error ?? "Failed to generate code");
+  }
+
+  return (data.result as { code: string }).code;
 }
 
 export async function createParticipant(

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { createSocketTestServer } from "@/socket/test/socket-test-harness";
 import { waitForEvent } from "@/socket/test/socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";
@@ -25,7 +25,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
-import { registerCreateTimerHandler } from "./create-timer.handler";
+import { seedLiveTimer } from "./test-support/seed-live-timer";
 import { registerRequestStateHandler } from "./request-state.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
 import { emitWithAck } from "@/socket/test/socket-helpers";
@@ -48,11 +48,12 @@ describe("timer break-problem broadcast (integration)", () => {
   });
 
   it("broadcasts an empty breakProblems array for a valid duration break", async () => {
+    let server!: Server;
     const { client, close } = await createSocketTestServer((io) => {
+      server = io;
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
         registerRequestStateHandler(socket, io);
-        registerCreateTimerHandler(socket, io);
       });
     });
     closeServer = close;
@@ -69,11 +70,9 @@ describe("timer break-problem broadcast (integration)", () => {
 
     const syncPromise = waitForEvent(client, "timer:sync");
 
-    client.emit(SocketEvents.CREATE_TIMER, {
-      gameType: "PAIRS",
+    await seedLiveTimer(server, {
       gameId: "game-bp",
       section: "A",
-      directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 3,
       playDuration: 420,
@@ -86,11 +85,12 @@ describe("timer break-problem broadcast (integration)", () => {
   });
 
   it("broadcasts a breakProblem when a resume-time break resumes before play can finish", async () => {
+    let server!: Server;
     const { client, close } = await createSocketTestServer((io) => {
+      server = io;
       io.on("connection", (socket: Socket) => {
         registerJoinGameHandler(socket);
         registerRequestStateHandler(socket, io);
-        registerCreateTimerHandler(socket, io);
       });
     });
     closeServer = close;
@@ -109,11 +109,9 @@ describe("timer break-problem broadcast (integration)", () => {
 
     // Round 1 play is 420s, but the break after round 1 is set to resume only
     // 10s from now — impossible, so it must be flagged.
-    client.emit(SocketEvents.CREATE_TIMER, {
-      gameType: "PAIRS",
+    await seedLiveTimer(server, {
       gameId: "game-bp",
       section: "A",
-      directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 3,
       playDuration: 420,

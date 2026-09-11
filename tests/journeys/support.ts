@@ -25,7 +25,6 @@ export async function closeSeatDevices(
 }
 
 import { expect } from "@playwright/test";
-import { io as ioClient } from "socket.io-client";
 import { createGame } from "../fixtures/game-create";
 import {
   setTableCount,
@@ -131,10 +130,9 @@ export async function setUpStartedTwoSectionGame(
 }
 
 /**
- * Size a section's table count via the director socket service, over a direct
- * socket connection from the test (Node) process. This is a setup convenience:
- * the Tables view renders one press-and-hold stepper per section, which is not
- * the behaviour under test in the multi-section journey.
+ * Size a section's table count via the HTTP tables route, from the test (Node)
+ * process. This is a setup convenience: the Tables view renders one stepper per
+ * section, which is not the behaviour under test in the multi-section journey.
  */
 async function sizeSectionTables(
   gameId: string,
@@ -142,24 +140,19 @@ async function sizeSectionTables(
   section: string,
   tables: number,
 ): Promise<void> {
-  const socket = ioClient("http://localhost:3000");
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error("socket connect timeout")), 10_000);
-      socket.on("connect", () => {
-        clearTimeout(t);
-        resolve();
-      });
-    });
-    await new Promise<void>((resolve) => {
-      socket.emit(
-        "game:updateTables",
-        { gameId, section, tables, directorToken },
-        () => resolve(),
-      );
-    });
-  } finally {
-    socket.disconnect();
+  const res = await fetch(
+    `http://localhost:3000/api/games/${gameId}/sections/${section}/tables`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "x-director-token": directorToken,
+      },
+      body: JSON.stringify({ tables }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to size section ${section}: ${res.status}`);
   }
 }
 
