@@ -95,10 +95,10 @@ export function SetupGamePage() {
     // stay pinned while only the recommendations scroll.
     return (
       <GamePageLayout headerTitle="Movement" headerRight={menu}>
-        <MovementStep
-          gameId={game.gameId}
-          onMovementSelected={() => goTo("tables")}
-        />
+        {/* Selecting a movement stays on the Movement screen: the popup closes
+            and the (now highlighted) selection remains visible, rather than
+            jumping to another step. */}
+        <MovementStep gameId={game.gameId} />
       </GamePageLayout>
     );
   }

@@ -5,11 +5,6 @@ import { SectionMovementPicker } from "./SectionMovementPicker";
 
 interface Props {
   gameId: string;
-  /**
-   * Invoked after a movement is confirmed for the current section. The setup
-   * flow uses this to return to the Tables step.
-   */
-  onMovementSelected?: () => void;
 }
 
 /**
@@ -19,7 +14,7 @@ interface Props {
  * pills; renaming/deleting lives on the separate "Manage sections" screen. The
  * body is the per-section movement picker for the currently-selected section.
  */
-export function MovementStep({ gameId, onMovementSelected }: Props) {
+export function MovementStep({ gameId }: Props) {
   const { sections, selected, pills, modal } = useSetupSections(gameId);
 
   const current = sections.find((s) => s.section === selected);
@@ -38,7 +33,6 @@ export function MovementStep({ gameId, onMovementSelected }: Props) {
             section={current.section}
             tables={current.tables}
             selectedMovement={current.selectedMovement}
-            onSelected={onMovementSelected}
             // The selected section is already shown by the pills, so the picker
             // omits its own "Section X" heading.
             multiSection={false}
