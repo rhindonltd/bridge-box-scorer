@@ -197,13 +197,22 @@ export function useTimerConfigState(
     return { ...b, computedLength: msToLabel(resumeMs - priorPlayEnd) };
   });
 
-  const totalSessionSeconds =
-    totalRounds * effectivePlayDuration +
-    Math.max(0, totalRounds - 1) * moveDuration;
+  // The session finishes at the end of the final round's play. `playEndByRound`
+  // already walks the whole timeline from `tick`, inserting each configured
+  // break (a fixed duration, or the gap up to a resume time) in place of the
+  // move time between rounds — so its last entry is the true finish time,
+  // breaks included. Deriving the length and preview end from it keeps them
+  // consistent with the per-round timeline and, unlike the previous
+  // play+move-only formula, no longer omits break time.
+  const sessionEndMs = playEndByRound.get(totalRounds) ?? tick;
+  const totalSessionSeconds = Math.max(
+    0,
+    Math.round((sessionEndMs - tick) / 1000),
+  );
 
   const previewEndDate = useMemo(
-    () => new Date(tick + totalSessionSeconds * 1000),
-    [tick, totalSessionSeconds],
+    () => new Date(sessionEndMs),
+    [sessionEndMs],
   );
 
   const config: TimerConfig = {
