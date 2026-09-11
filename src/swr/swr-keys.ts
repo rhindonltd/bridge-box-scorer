@@ -7,10 +7,6 @@ export const swrKeys = {
     return `/api/games/${gameId}`;
   },
 
-  assignment: (gameId: string, participantId: string) => {
-    return `/api/games/${gameId}/assignment/${participantId}`;
-  },
-
   startCheck: (gameId: string) => `/api/games/${gameId}/start-check`,
 
   sections: (gameId: string) => `/api/games/${gameId}/sections`,

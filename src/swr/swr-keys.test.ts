@@ -14,10 +14,6 @@ describe("swrKeys", () => {
     expect(swrKeys.game("abc")).toBe("/api/games/abc");
   });
 
-  it("assignment returns correct API path", () => {
-    expect(swrKeys.assignment("g1", "p1")).toBe("/api/games/g1/assignment/p1");
-  });
-
   it("startCheck returns correct API path", () => {
     expect(swrKeys.startCheck("g1")).toBe("/api/games/g1/start-check");
   });
