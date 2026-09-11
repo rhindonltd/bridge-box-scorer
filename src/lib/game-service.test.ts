@@ -104,16 +104,38 @@ describe("game-service", () => {
   });
 
   describe("startGame", () => {
-    it("emits START_GAME with gameId and directorToken", async () => {
-      mockEmitWithAck.mockResolvedValue({ success: true });
+    it("POSTs /api/games/[id]/start with the director-token header", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, result: {} }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
 
       const { startGame } = await import("./game-service");
       await startGame("g1");
 
-      expect(mockEmitWithAck).toHaveBeenCalledWith(SocketEvents.START_GAME, {
-        gameId: "g1",
-        directorToken: "stored-token",
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/games/g1/start",
+        expect.objectContaining({
+          method: "POST",
+          headers: { "x-director-token": "stored-token" },
+        }),
+      );
+
+      vi.unstubAllGlobals();
+    });
+
+    it("throws the server error message when the game cannot start", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ success: false, error: "Game cannot be started" }),
       });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const { startGame } = await import("./game-service");
+      await expect(startGame("g1")).rejects.toThrow("Game cannot be started");
+
+      vi.unstubAllGlobals();
     });
   });
 

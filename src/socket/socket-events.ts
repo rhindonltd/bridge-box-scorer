@@ -11,7 +11,9 @@ export const SocketEvents = {
   // (DELETE /api/games/[gameId]/participants/[seat]), not a socket event; it
   // broadcasts PARTICIPANTS from that route.
   SELECT_MOVEMENT: "game:selectMovement",
-  START_GAME: "game:start",
+  // NOTE: starting a game is an HTTP route (POST /api/games/[gameId]/start),
+  // not a socket event; it promotes the timer and broadcasts GAME_UPDATED from
+  // that route.
   // NOTE: table resize and section create/rename/delete/movement are HTTP
   // routes (src/app/api/games/[gameId]/sections/*), not socket events. The
   // resulting live updates broadcast GAME_UPDATED / SECTION_UPDATED /

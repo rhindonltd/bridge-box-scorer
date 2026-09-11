@@ -21,11 +21,6 @@ export type SocketEventMap = {
     };
   };
 
-  [SocketEvents.START_GAME]: {
-    gameId: string;
-    directorToken: string;
-  };
-
   [SocketEvents.JOINABLE_GAMES]: {
     joinableGames: BridgeGame[];
   };

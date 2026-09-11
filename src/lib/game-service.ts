@@ -56,10 +56,15 @@ export async function selectMitchellMovement(
 }
 
 export async function startGame(gameId: string): Promise<void> {
-  await emitWithAck(SocketEvents.START_GAME, {
-    gameId,
-    directorToken: getDirectorToken(gameId),
+  const res = await fetch(`/api/games/${gameId}/start`, {
+    method: "POST",
+    headers: { "x-director-token": getDirectorToken(gameId) ?? "" },
   });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to start game");
+  }
 }
 
 export async function createParticipant(

@@ -34,7 +34,7 @@ testability, not throughput.
 | `SET_SECTION_MOVEMENT` | Choose a section's movement | Director | Setup | **HTTP write** ✅ done | Setup-time; validation-heavy. Emits `SECTION_UPDATED` + `GAME_UPDATED` and clears the section timer on change. |
 | `UPDATE_TABLES` | Resize a section's table count | Director | Setup | **HTTP write** ✅ done | Setup-time; shrink guard maps to a 4xx. |
 | `EVICT_PARTICIPANT` | Remove a seated pair | Director | Setup (mild live) | **HTTP write** ✅ done | Director-only; others revalidate via `PARTICIPANTS`. `DELETE /api/games/[id]/participants/[seat]`; broadcasts via shared `broadcastParticipants`. |
-| `START_GAME` | Materialize movement + start | Director | Setup→live boundary | **HTTP write** | Heavy one-shot; all-or-nothing validation → status code. |
+| `START_GAME` | Materialize movement + start | Director | Setup→live boundary | **HTTP write** ✅ done | `POST /api/games/[id]/start`; 409 + `problems` when not startable, else promotes the timer and broadcasts `GAME_UPDATED` via `broadcastGameStarted`. |
 | `GENERATE_SHARE_CODE` | Mint a co-director share code | Director | No | **HTTP write** | Request/response returning a code. |
 | `CLAIM_DIRECTOR_CODE` | Claim a share code → token | Would-be director | No | **HTTP write** | Auth exchange; returns a token. |
 | `SAVE_CONFIG_TIMER` | Persist a not-started timer config | Director | Setup | **HTTP write** (borderline) | Setup-time persistence; no live consumers until start. Could stay socket for symmetry. |
@@ -95,8 +95,18 @@ creates the director login session, returns `201 { game, directorToken }`
 `broadcastJoinableGames(io?)` (`src/socket/broadcast/joinable-broadcast.ts`).
 Client `game-service.createGame` uses `fetch`.
 
+### Starting a game (done)
+
+`START_GAME` → `POST /api/games/[gameId]/start` (`withDirectorRoute`). Re-runs
+the `startGame` service server-side; returns **409** with the blocking
+`problems` when not startable. On success it promotes any setup-configured timer
+(`promoteTimerAtGameStart`, only when `getIO()` is live) and broadcasts
+`GAME_UPDATED { game }` via `broadcastGameStarted(gameId, io?)`
+(`src/socket/broadcast/game-broadcast.ts`). Infra failures → 500. Client
+`game-service.startGame` uses `fetch` and throws the server message on failure.
+
 ### Next candidates
 
-`START_GAME`, `GENERATE_SHARE_CODE`, `CLAIM_DIRECTOR_CODE` — each follows the
-same shape (route + shared broadcaster + `fetch` client, using the
+`GENERATE_SHARE_CODE`, `CLAIM_DIRECTOR_CODE` — each follows the same shape
+(route + shared broadcaster + `fetch` client, using the
 `ClientError`/`respondToActionError` helper for 400 vs 500).
