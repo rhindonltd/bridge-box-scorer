@@ -48,18 +48,22 @@ export const SocketEvents = {
   // changed, invalidating the derived round structure). Clients drop their
   // current timer state and fall back to the unconfigured/empty view.
   TIMER_CLEARED: "timer:cleared",
-  CREATE_TIMER: "timer:create",
+  // NOTE: there is no ad-hoc "create timer" event. A timer is created and
+  // started only via `promoteTimerAtGameStart` when the game starts (which
+  // builds the engine, starts it, and schedules its phases). Timer setup writes
+  // a config via HTTP (see the timer-config route); the controls below operate
+  // on an already-live timer.
   START_TIMER: "timer:start",
   PAUSE_TIMER: "timer:pause",
   NEXT_ROUND_TIMER: "timer:nextRound",
   PREVIOUS_TIMER: "timer:previous",
   ADJUST_TIME_TIMER: "timer:adjustTime",
   UPDATE_CONFIG_TIMER: "timer:updateConfig",
-  // Client-initiated (director): save a timer configuration during game setup
-  // without starting it. Persists a "configured but not started" timer state
-  // (phase null, not running) that is promoted to a live timer when the game
-  // starts.
-  SAVE_CONFIG_TIMER: "timer:saveConfig",
+  // NOTE: saving a timer configuration during setup is an HTTP route (PUT
+  // /api/games/[gameId]/sections/[section]/timer/config), not a socket event.
+  // It persists the "configured but not started" state (phase null, not
+  // running, promoted to a live timer at game start) and broadcasts
+  // `timer:sync` via the shared timer broadcaster.
   // Client-initiated request for a section's current timer snapshot; the
   // current TimerState (or null) is returned on the acknowledgement callback,
   // and the socket joins that section's timer room for live updates.

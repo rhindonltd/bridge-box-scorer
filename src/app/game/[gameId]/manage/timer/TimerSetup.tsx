@@ -15,6 +15,7 @@ import { useSetupSections } from "@/components/manage/sections/useSetupSections"
 import { getSocket } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { SocketEvents } from "@/socket/socket-events";
+import { saveTimerConfig } from "@/lib/timer-service";
 
 // Re-exported for existing consumers/tests; the implementations now live with
 // the shared config-state hook.
@@ -28,7 +29,8 @@ const AUTOSAVE_DEBOUNCE_MS = 400;
 
 /**
  * Timer configuration container for a single section (setup / not-yet-started).
- * Emits `timer:saveConfig` for its section on Save. Section navigation is
+ * Auto-saves its section's config via PUT
+ * `/api/games/[id]/sections/[section]/timer/config`. Section navigation is
  * handled by the shared pills rendered above (passed in as `headerSlot`), so
  * the director configures each section directly rather than copying config
  * across them.
@@ -75,8 +77,8 @@ function TimerConfigContainer({
   const noMovement = selectedMovement == null;
 
   // Auto-save (debounced): persist the section's config after edits settle (no
-  // Save button). The config screen never starts the timer, so this is a plain
-  // `timer:saveConfig`. We skip the very first committed value (the initial
+  // Save button). The config screen never starts the timer, so this just PUTs
+  // the section's timer config. We skip the very first committed value (the initial
   // seed / defaults) and never emit while no movement is selected, since the
   // round structure is undefined then. The signature excludes tick-derived
   // values so resume-time breaks don't trigger a save every second.
@@ -101,14 +103,12 @@ function TimerConfigContainer({
     const pending = pendingRef.current;
     if (!pending) return;
     pendingRef.current = null;
-    getSocket().emit(SocketEvents.SAVE_CONFIG_TIMER, {
-      gameType: game.gameType,
-      gameId: game.gameId,
-      section: pending.section,
-      directorToken: getDirectorToken(game.gameId),
-      ...pending.fields,
-    });
-  }, [game.gameType, game.gameId]);
+    // Fire-and-forget auto-save. This also runs from the unmount flush (e.g.
+    // switching sections), so we never await it; a failure just logs.
+    void saveTimerConfig(game.gameId, pending.section, pending.fields).catch(
+      (err) => console.error("Failed to save timer config:", err),
+    );
+  }, [game.gameId]);
 
   useEffect(() => {
     if (emitKey == null) return;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { createSocketTestServer } from "@/socket/test/socket-test-harness";
 import { emitWithAck } from "@/socket/test/socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";
@@ -25,13 +25,8 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
-import { registerCreateTimerHandler } from "./create-timer.handler";
+import { seedLiveTimer } from "./test-support/seed-live-timer";
 import { registerRequestStateHandler } from "./request-state.handler";
-
-/** Small delay to let a fire-and-forget emit be processed server-side. */
-function tick(ms = 100) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 describe("registerRequestStateHandler (integration)", () => {
   let closeServer: () => Promise<void>;
@@ -68,26 +63,25 @@ describe("registerRequestStateHandler (integration)", () => {
   });
 
   it("acks the current snapshot after the timer is created", async () => {
+    let server!: Server;
     const { client, close } = await createSocketTestServer((io) => {
+      server = io;
       io.on("connection", (socket: Socket) => {
-        registerCreateTimerHandler(socket, io);
         registerRequestStateHandler(socket, io);
       });
     });
     closeServer = close;
 
-    // CREATE_TIMER is fire-and-forget (no ack); emit then let it process.
-    client.emit(SocketEvents.CREATE_TIMER, {
-      gameType: "PAIRS",
+    // Seed a live engine-backed timer directly (there is no production event
+    // that creates one ad hoc; game start promotes the saved config).
+    await seedLiveTimer(server, {
       gameId: "game-rs",
       section: "A",
-      directorToken: "test-token",
       boardsPerRound: 3,
       totalRounds: 5,
       playDuration: 420,
       moveDuration: 60,
     });
-    await tick();
 
     const response: any = await emitWithAck(
       client,

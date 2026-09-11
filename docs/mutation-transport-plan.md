@@ -37,8 +37,8 @@ testability, not throughput.
 | `START_GAME` | Materialize movement + start | Director | Setup→live boundary | **HTTP write** ✅ done | `POST /api/games/[id]/start`; 409 + `problems` when not startable, else promotes the timer and broadcasts `GAME_UPDATED` via `broadcastGameStarted`. |
 | `GENERATE_SHARE_CODE` | Mint a co-director share code | Director | No | **HTTP write** ✅ done | `POST /api/games/[id]/share-code`; returns `{ code }` to the caller only (no broadcast). Infra failures → 500. |
 | `CLAIM_DIRECTOR_CODE` | Claim a share code → token | Would-be director | No | **HTTP write** ✅ done | `POST /api/director-codes/claim` (`withBasicRoute`, unauthenticated — the code is the credential). Invalid/expired/used code → 400; returns `{ directorToken, gameId }`. |
-| `SAVE_CONFIG_TIMER` | Persist a not-started timer config | Director | Setup | **HTTP write** (borderline) | Setup-time persistence; no live consumers until start. Could stay socket for symmetry. |
-| `CREATE_TIMER` | Create/initialize a timer | Director | Live-ish | **Either** | HTTP if it only initializes state; socket if coupled to the live broadcaster. |
+| `SAVE_CONFIG_TIMER` | Persist a not-started timer config | Director | Setup | **HTTP write** ✅ done | `PUT /api/games/[id]/sections/[section]/timer/config`; persists the configured (not-started) state and broadcasts `timer:sync` via `broadcastTimerConfigSaved`. Client auto-saves fire-and-forget. |
+| `CREATE_TIMER` | Create/initialize a timer | Director | Live-ish | **Removed** ✅ | Dead in production — no UI emitted it. A timer comes to life only via `promoteTimerAtGameStart` at game start. Handler + event deleted; tests seed a live timer via a test-support helper. |
 | `CREATE_PARTICIPANT` | Player seats themselves | Player | **Yes** | **Keep socket** | High-frequency concurrent seat-taking; live seat-disable relies on immediate `PARTICIPANTS` fan-out. |
 | `SUBMIT_RESULT` | Enter/confirm a board result | Player | **Yes (hot path)** | **Keep socket** | Core live loop: dual-side confirm, mismatch, leaderboard/traveller pushes. |
 | `OVERRIDE_RESULT_TRAVELLER` | Director corrects a result | Director | **Yes** | **Keep socket** | Shares `broadcastResultsChanged` with `SUBMIT_RESULT`. |
@@ -124,9 +124,49 @@ Both share-code events are now HTTP routes; the socket handler is gone.
 The route is top-level (not game-scoped by URL) because the claimer doesn't know
 the `gameId` — the code resolves it.
 
-### Next candidates
+### Saving a timer config (done)
 
-The remaining socket writes are the timer setup events (`SAVE_CONFIG_TIMER`,
-`CREATE_TIMER`) and the live hot paths (`CREATE_PARTICIPANT`, `SUBMIT_RESULT`,
-`OVERRIDE_RESULT_TRAVELLER`, and the live timer controls), which stay on the
-socket by design. See the decision table above.
+`SAVE_CONFIG_TIMER` → `PUT /api/games/[gameId]/sections/[section]/timer/config`
+(`withDirectorRoute`). Builds a "configured but not started" state via
+`buildConfiguredTimerState`, persists it with `updateTimerState`, and broadcasts
+`timer:sync` to the section's timer room via `broadcastTimerConfigSaved`
+(`src/socket/broadcast/timer-broadcast.ts`, optional `io` → `getIO()` fallback).
+It never starts an engine or schedules phases — the config is promoted to a live
+timer only at game start. Bad body → 400; infra failures → 500.
+
+The client (`TimerSetup`) auto-saves on a debounce and flushes on unmount
+(section switch / navigation), so `timer-service.saveTimerConfig` is called
+fire-and-forget: the container doesn't await it and just logs a failure. This
+was the one borderline case in the table — it landed on HTTP because it's pure
+setup-time persistence with no live consumers until start, and the `timer:sync`
+echo it needs is exactly what the shared broadcaster provides.
+
+### Removing CREATE_TIMER (done)
+
+`CREATE_TIMER` was the last "either" candidate, but tracing its callers showed
+it had no production emitter: timer setup uses the config route
+(`SAVE_CONFIG_TIMER`), and a timer only comes to life via
+`promoteTimerAtGameStart` when the game starts (which builds the engine, starts
+it, and schedules its phases — exactly what `CREATE_TIMER` did, plus
+`engine.start()`). So rather than pick a transport, the event was deleted:
+handler, registration, and the `CREATE_TIMER` constant are gone. The two
+integration tests that used it as a shortcut to seed a running timer now call a
+small test-support helper (`seedLiveTimer`) that creates the engine and
+broadcasts directly.
+
+### Remaining on the socket (by design)
+
+Everything still on the socket is a live or near-live concern:
+
+- **Live timer controls** — `START_TIMER`, `PAUSE_TIMER`, `NEXT_ROUND_TIMER`,
+  `PREVIOUS_TIMER`, `ADJUST_TIME_TIMER`, `UPDATE_CONFIG_TIMER`: instant, ordered
+  control of a running timer, driving scheduler-backed `timer:sync` broadcasts.
+- **Live hot paths** — `CREATE_PARTICIPANT` (concurrent seat-taking with
+  immediate `PARTICIPANTS` fan-out), `SUBMIT_RESULT` (dual-side confirm /
+  mismatch / leaderboard + traveller pushes), and `OVERRIDE_RESULT_TRAVELLER`
+  (shares `broadcastResultsChanged` with `SUBMIT_RESULT`).
+- **Room/snapshot request events** — `JOIN_GAME`, `LEAVE_GAME`, the
+  `*:requestState` / `*:leave` pairs for timer/leaderboard/traveller.
+
+With the director/setup/one-shot mutations migrated and `CREATE_TIMER` removed,
+the socket write surface is now exactly the live-collaboration core.
