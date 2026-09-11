@@ -139,6 +139,50 @@ describe("game-service", () => {
     });
   });
 
+  describe("claimDirectorCode", () => {
+    it("POSTs the code, stores the token, and returns the gameId", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          result: { directorToken: "new-tok", gameId: "g9" },
+        }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const { claimDirectorCode } = await import("./game-service");
+      const gameId = await claimDirectorCode("ABC123");
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/director-codes/claim",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ code: "ABC123" }),
+        }),
+      );
+      expect(gameId).toBe("g9");
+      expect(setDirectorToken).toHaveBeenCalledWith("g9", "new-tok");
+
+      vi.unstubAllGlobals();
+    });
+
+    it("throws the server error and stores nothing when the claim fails", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ success: false, error: "Code has expired" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const { claimDirectorCode } = await import("./game-service");
+      await expect(claimDirectorCode("OLDCOD")).rejects.toThrow(
+        "Code has expired",
+      );
+      expect(setDirectorToken).not.toHaveBeenCalled();
+
+      vi.unstubAllGlobals();
+    });
+  });
+
   describe("createParticipant", () => {
     it("emits CREATE_PARTICIPANT and stores the returned key as the player token", async () => {
       mockEmitWithAck.mockResolvedValue({ success: true, key: "p-key-123" });

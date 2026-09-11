@@ -68,6 +68,34 @@ export async function startGame(gameId: string): Promise<void> {
 }
 
 /**
+ * Claim a director share code. No auth (the caller has no token yet) — the code
+ * is the credential. On success the minted director token is stored locally
+ * keyed by the resolved gameId, which is returned. Throws with the server's
+ * error message (e.g. invalid/expired/used code) on failure.
+ */
+export async function claimDirectorCode(code: string): Promise<string> {
+  const res = await fetch("/api/director-codes/claim", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error ?? "Failed to claim code");
+  }
+
+  const { directorToken, gameId } = data.result as {
+    directorToken: string;
+    gameId: string;
+  };
+
+  setDirectorToken(gameId, directorToken);
+
+  return gameId;
+}
+
+/**
  * Mint a short, single-use director share code for a game (director-only).
  * Returns the code; throws with the server's error message on failure.
  */

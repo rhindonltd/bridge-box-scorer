@@ -1,14 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-const mockEmit = vi.fn();
-vi.mock("@/lib/socket", () => ({
-  getSocket: () => ({ emit: mockEmit }),
-}));
-
-const mockSetDirectorToken = vi.fn();
-vi.mock("@/lib/director-token", () => ({
-  setDirectorToken: (...args: unknown[]) => mockSetDirectorToken(...args),
+const mockClaimDirectorCode = vi.fn();
+vi.mock("@/lib/game-service", () => ({
+  claimDirectorCode: (...args: unknown[]) => mockClaimDirectorCode(...args),
 }));
 
 // Render the view as simple controls so we can drive the logic.
@@ -42,10 +37,11 @@ vi.mock("@/app/manage/ClaimDirectorCodeView", () => ({
   ),
 }));
 
-import { SocketEvents } from "@/socket/socket-events";
 import { ClaimDirectorCode } from "./ClaimDirectorCode";
 
-function renderComponent(overrides: Partial<Parameters<typeof ClaimDirectorCode>[0]> = {}) {
+function renderComponent(
+  overrides: Partial<Parameters<typeof ClaimDirectorCode>[0]> = {},
+) {
   const props = {
     gameId: "g1",
     gameName: "Tuesday",
@@ -63,10 +59,11 @@ describe("ClaimDirectorCode", () => {
   it("does nothing when the code is blank", () => {
     renderComponent();
     fireEvent.click(screen.getByText("submit"));
-    expect(mockEmit).not.toHaveBeenCalled();
+    expect(mockClaimDirectorCode).not.toHaveBeenCalled();
   });
 
-  it("claims the code, stores the token and reports success", () => {
+  it("claims the code (trimmed + uppercased) and reports success", async () => {
+    mockClaimDirectorCode.mockResolvedValue("g1");
     const props = renderComponent();
 
     fireEvent.change(screen.getByLabelText("code"), {
@@ -74,22 +71,15 @@ describe("ClaimDirectorCode", () => {
     });
     fireEvent.click(screen.getByText("submit"));
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.CLAIM_DIRECTOR_CODE,
-      { code: "ABC123" },
-      expect.any(Function),
-    );
+    expect(mockClaimDirectorCode).toHaveBeenCalledWith("ABC123");
     expect(screen.getByTestId("loading")).toHaveTextContent("true");
 
-    const ack = mockEmit.mock.calls[0][2] as (r: unknown) => void;
-    act(() => ack({ success: true, directorToken: "tok", gameId: "g1" }));
-
-    expect(mockSetDirectorToken).toHaveBeenCalledWith("g1", "tok");
-    expect(props.onSuccess).toHaveBeenCalled();
+    await waitFor(() => expect(props.onSuccess).toHaveBeenCalled());
     expect(screen.getByTestId("loading")).toHaveTextContent("false");
   });
 
-  it("shows the server error when the claim fails", () => {
+  it("shows the server error when the claim fails", async () => {
+    mockClaimDirectorCode.mockRejectedValue(new Error("Nope"));
     renderComponent();
 
     fireEvent.change(screen.getByLabelText("code"), {
@@ -97,13 +87,14 @@ describe("ClaimDirectorCode", () => {
     });
     fireEvent.click(screen.getByText("submit"));
 
-    const ack = mockEmit.mock.calls[0][2] as (r: unknown) => void;
-    act(() => ack({ success: false, error: "Nope" }));
-
-    expect(screen.getByTestId("error")).toHaveTextContent("Nope");
+    await waitFor(() =>
+      expect(screen.getByTestId("error")).toHaveTextContent("Nope"),
+    );
+    expect(screen.getByTestId("loading")).toHaveTextContent("false");
   });
 
-  it("falls back to a default error when none is provided", () => {
+  it("falls back to a default error when the rejection is not an Error", async () => {
+    mockClaimDirectorCode.mockRejectedValue("boom");
     renderComponent();
 
     fireEvent.change(screen.getByLabelText("code"), {
@@ -111,11 +102,10 @@ describe("ClaimDirectorCode", () => {
     });
     fireEvent.click(screen.getByText("submit"));
 
-    const ack = mockEmit.mock.calls[0][2] as (r: unknown) => void;
-    act(() => ack({ success: true })); // missing token/gameId -> treated as failure
-
-    expect(screen.getByTestId("error")).toHaveTextContent(
-      "Failed to claim code",
+    await waitFor(() =>
+      expect(screen.getByTestId("error")).toHaveTextContent(
+        "Failed to claim code",
+      ),
     );
   });
 

@@ -36,7 +36,7 @@ testability, not throughput.
 | `EVICT_PARTICIPANT` | Remove a seated pair | Director | Setup (mild live) | **HTTP write** ✅ done | Director-only; others revalidate via `PARTICIPANTS`. `DELETE /api/games/[id]/participants/[seat]`; broadcasts via shared `broadcastParticipants`. |
 | `START_GAME` | Materialize movement + start | Director | Setup→live boundary | **HTTP write** ✅ done | `POST /api/games/[id]/start`; 409 + `problems` when not startable, else promotes the timer and broadcasts `GAME_UPDATED` via `broadcastGameStarted`. |
 | `GENERATE_SHARE_CODE` | Mint a co-director share code | Director | No | **HTTP write** ✅ done | `POST /api/games/[id]/share-code`; returns `{ code }` to the caller only (no broadcast). Infra failures → 500. |
-| `CLAIM_DIRECTOR_CODE` | Claim a share code → token | Would-be director | No | **HTTP write** | Auth exchange; returns a token. |
+| `CLAIM_DIRECTOR_CODE` | Claim a share code → token | Would-be director | No | **HTTP write** ✅ done | `POST /api/director-codes/claim` (`withBasicRoute`, unauthenticated — the code is the credential). Invalid/expired/used code → 400; returns `{ directorToken, gameId }`. |
 | `SAVE_CONFIG_TIMER` | Persist a not-started timer config | Director | Setup | **HTTP write** (borderline) | Setup-time persistence; no live consumers until start. Could stay socket for symmetry. |
 | `CREATE_TIMER` | Create/initialize a timer | Director | Live-ish | **Either** | HTTP if it only initializes state; socket if coupled to the live broadcaster. |
 | `CREATE_PARTICIPANT` | Player seats themselves | Player | **Yes** | **Keep socket** | High-frequency concurrent seat-taking; live seat-disable relies on immediate `PARTICIPANTS` fan-out. |
@@ -105,20 +105,28 @@ the `startGame` service server-side; returns **409** with the blocking
 (`src/socket/broadcast/game-broadcast.ts`). Infra failures → 500. Client
 `game-service.startGame` uses `fetch` and throws the server message on failure.
 
-### Generating a share code (done)
+### Director share codes (done)
 
-`GENERATE_SHARE_CODE` → `POST /api/games/[gameId]/share-code`
-(`withDirectorRoute`). Mints a single-use code via `createShareCode` and returns
-`{ code }` to the caller only — there is nothing to broadcast. Infra failures →
-500 via `respondToActionError`. Client `game-service.generateShareCode` uses
-`fetch` and throws the server message on failure. `CLAIM_DIRECTOR_CODE` stays on
-the socket: the claimer has no director token yet, so it can't ride the
-director-authed HTTP path.
+Both share-code events are now HTTP routes; the socket handler is gone.
+
+- **Generate** — `GENERATE_SHARE_CODE` → `POST /api/games/[gameId]/share-code`
+  (`withDirectorRoute`). Mints a single-use code via `createShareCode` and
+  returns `{ code }` to the caller only — nothing to broadcast. Infra failures →
+  500. Client: `game-service.generateShareCode`.
+- **Claim** — `CLAIM_DIRECTOR_CODE` → `POST /api/director-codes/claim`
+  (`withBasicRoute`, unauthenticated — the caller has no token yet, so the code
+  itself is the credential). Validates and claims via `validateAndClaimShareCode`;
+  an invalid/expired/already-used code is a `ClientError` → 400 with the reason.
+  On success it mints a director login session and returns
+  `{ directorToken, gameId }`, which the client stores keyed by `gameId`. Infra
+  failures → 500. Client: `game-service.claimDirectorCode`.
+
+The route is top-level (not game-scoped by URL) because the claimer doesn't know
+the `gameId` — the code resolves it.
 
 ### Next candidates
 
-`CLAIM_DIRECTOR_CODE` is the remaining share-code event. It's an unauthenticated
-auth exchange (no director token yet), so if migrated it would use
-`withBasicRoute` and return the minted token in the body, following the
-`ClientError`/`respondToActionError` shape for 400 vs 500 — mirroring
-`POST /api/games`.
+The remaining socket writes are the timer setup events (`SAVE_CONFIG_TIMER`,
+`CREATE_TIMER`) and the live hot paths (`CREATE_PARTICIPANT`, `SUBMIT_RESULT`,
+`OVERRIDE_RESULT_TRAVELLER`, and the live timer controls), which stay on the
+socket by design. See the decision table above.

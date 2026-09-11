@@ -19,10 +19,9 @@ export const SocketEvents = {
   // resulting live updates broadcast GAME_UPDATED / SECTION_UPDATED /
   // TIMER_CLEARED from those routes.
   LEAVE_GAME: "game:leave",
-  // NOTE: generating a director share code is an HTTP route (POST
-  // /api/games/[gameId]/share-code), not a socket event. Claiming a code stays
-  // on the socket because the claimer has no director token yet.
-  CLAIM_DIRECTOR_CODE: "game:claimDirectorCode",
+  // NOTE: director share codes are HTTP routes, not socket events — generating
+  // (POST /api/games/[gameId]/share-code, director-only) and claiming (POST
+  // /api/director-codes/claim, unauthenticated — the code is the credential).
 
   // Server initiated - Global
   JOINABLE_GAMES: "joinable-games",
