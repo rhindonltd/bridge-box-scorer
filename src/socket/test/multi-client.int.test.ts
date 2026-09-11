@@ -94,8 +94,6 @@ import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
 import { findJoinableGames } from "@/db/game-index/queries/find-joinable-games";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { updateSectionTables } from "@/db/games/actions/update-section-tables";
-import { findSections } from "@/db/games/queries/find-sections";
 import { createPlayer } from "@/db/games/actions/create-player";
 import { createParticipant as createPairParticipant } from "@/db/games/actions/create-participant";
 import { findPairs } from "@/db/games/queries/find-pairs";
@@ -242,48 +240,9 @@ describe("Multi-client Socket.IO scenarios", () => {
   /* ----------------------------------------------------------
      TABLE COUNT UPDATE — broadcast to game room
   ---------------------------------------------------------- */
-  describe("Table count update broadcasts", () => {
-    it("players in room see GAME_UPDATED when director changes table count", async () => {
-      const game = { gameId: "g1", gameType: "PAIRS", tables: 4 };
-      const updatedGame = { ...game, tables: 5 };
-
-      vi.mocked(findLoginSession).mockReturnValue({
-        token: "tok",
-        role: "DIRECTOR",
-        gameId: "g1",
-      } as any);
-      vi.mocked(findGameById)
-        .mockResolvedValueOnce(game as any)
-        .mockResolvedValueOnce(updatedGame as any);
-      vi.mocked(findSections).mockResolvedValue([
-        { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
-      ] as any);
-      vi.mocked(updateSectionTables).mockResolvedValue(undefined);
-      vi.mocked(findPairs).mockResolvedValue([]);
-
-      const { client, close, addClient } = await createFullServer();
-      closeServer = close;
-
-      const player = await addClient();
-      extraClients.push(player);
-
-      // Both join the game room
-      await emitWithAck(client, SocketEvents.JOIN_GAME, { gameId: "g1" });
-      await emitWithAck(player, SocketEvents.JOIN_GAME, { gameId: "g1" });
-
-      const broadcast = waitForEvent(player, SocketEvents.GAME_UPDATED);
-
-      await emitWithAck(client, SocketEvents.UPDATE_TABLES, {
-        gameId: "g1",
-        section: "A",
-        tables: 5,
-        directorToken: "tok",
-      });
-
-      const received = await broadcast;
-      expect(received).toMatchObject({ game: { tables: 5 } });
-    });
-  });
+  // Table resize moved to the HTTP route
+  // PUT /api/games/[gameId]/sections/[section]/tables; its GAME_UPDATED
+  // broadcast is covered by the section-broadcast unit test and the route test.
 
   /* ----------------------------------------------------------
      EVICTION — player sees updated participant list
@@ -368,44 +327,26 @@ describe("Multi-client Socket.IO scenarios", () => {
         directorToken: expect.any(String),
       });
 
-      // Step 3: Verify the new director can now perform director actions
-      // (Mock findLoginSession to accept the new token)
+      // Step 3: Verify the new director can now perform a director-authed
+      // socket action. (Section/table mutations moved to HTTP, so we prove the
+      // handoff with another director-only socket event: generating a share
+      // code.) Mock findLoginSession to accept the new token.
       vi.mocked(findLoginSession).mockReturnValue({
         token: claimResult.directorToken!,
         role: "DIRECTOR",
         gameId: "g1",
       } as any);
-      vi.mocked(findGameById)
-        .mockResolvedValueOnce({
-          gameId: "g1",
-          gameType: "PAIRS",
-          tables: 3,
-        } as any)
-        .mockResolvedValueOnce({
-          gameId: "g1",
-          gameType: "PAIRS",
-          tables: 4,
-        } as any);
-      vi.mocked(findSections).mockResolvedValue([
-        { section: "A", label: "A", tables: 3, selectedMovement: null, ordinal: 0 },
-      ] as any);
-      vi.mocked(updateSectionTables).mockResolvedValue(undefined);
-      vi.mocked(findPairs).mockResolvedValue([]);
+      vi.mocked(createShareCode).mockResolvedValue("Y2M7QR");
 
       await emitWithAck(newDirector, SocketEvents.JOIN_GAME, { gameId: "g1" });
 
-      const updateResult = await emitWithAck<{ success: boolean }>(
+      const actionResult = await emitWithAck<{ success: boolean }>(
         newDirector,
-        SocketEvents.UPDATE_TABLES,
-        {
-          gameId: "g1",
-          section: "A",
-          tables: 4,
-          directorToken: claimResult.directorToken,
-        },
+        SocketEvents.GENERATE_SHARE_CODE,
+        { gameId: "g1", directorToken: claimResult.directorToken },
       );
 
-      expect(updateResult).toMatchObject({ success: true });
+      expect(actionResult).toMatchObject({ success: true });
     });
   });
 

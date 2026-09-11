@@ -5,12 +5,13 @@ import { registerSelectMovementHandler } from "@/socket/handlers/game/select-mov
 import { registerStartGameHandler } from "@/socket/handlers/game/start-game/start-game.handler";
 import { registerLeaveGameHandler } from "@/socket/handlers/game/leave-game/leave-game.handler";
 import { registerCreateParticipantHandler } from "./create-participant/create-participant";
-import { registerUpdateTablesHandler } from "./update-tables/update-tables.handler";
 import { registerEvictParticipantHandler } from "./evict-participant/evict-participant.handler";
 import { registerShareCodeHandlers } from "./share-code/share-code.handler";
 import { registerSubmitResultHandler } from "./submit-result/submit-result.handler";
-import { registerSectionHandlers } from "./sections/section.handlers";
 
+// Section management (create/rename/delete/movement) and per-section table
+// resize are HTTP routes (see src/app/api/games/[gameId]/sections/*), not socket
+// events; the resulting live updates are broadcast from those routes.
 export function registerGameHandlers(socket: Socket, io: Server) {
   registerCreateGameHandler(socket, io);
   registerCreateParticipantHandler(socket, io);
@@ -19,8 +20,6 @@ export function registerGameHandlers(socket: Socket, io: Server) {
   registerLeaveGameHandler(socket);
   registerSelectMovementHandler(socket, io);
   registerStartGameHandler(socket, io);
-  registerUpdateTablesHandler(socket, io);
-  registerSectionHandlers(socket, io);
   registerShareCodeHandlers(socket, io);
   registerSubmitResultHandler(socket, io);
 }

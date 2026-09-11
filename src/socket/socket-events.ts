@@ -9,11 +9,10 @@ export const SocketEvents = {
   EVICT_PARTICIPANT: "game:evictParticipant",
   SELECT_MOVEMENT: "game:selectMovement",
   START_GAME: "game:start",
-  UPDATE_TABLES: "game:updateTables",
-  CREATE_SECTION: "game:createSection",
-  RENAME_SECTION: "game:renameSection",
-  DELETE_SECTION: "game:deleteSection",
-  SET_SECTION_MOVEMENT: "game:setSectionMovement",
+  // NOTE: table resize and section create/rename/delete/movement are HTTP
+  // routes (src/app/api/games/[gameId]/sections/*), not socket events. The
+  // resulting live updates broadcast GAME_UPDATED / SECTION_UPDATED /
+  // TIMER_CLEARED from those routes.
   LEAVE_GAME: "game:leave",
   GENERATE_SHARE_CODE: "game:generateShareCode",
   CLAIM_DIRECTOR_CODE: "game:claimDirectorCode",

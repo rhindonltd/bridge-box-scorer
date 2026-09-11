@@ -14,15 +14,28 @@ export function startSocketServer(server: http.Server) {
   });
 
   io.on("connection", (socket) => {
-    registerGameHandlers(socket, getIO());
-    registerTimerHandlers(socket, getIO());
-    registerResultsHandlers(socket, getIO());
+    registerGameHandlers(socket, requireIO());
+    registerTimerHandlers(socket, requireIO());
+    registerResultsHandlers(socket, requireIO());
   });
 
   return io;
 }
 
-function getIO(): Server {
+/**
+ * The initialized Socket.IO server, or null if it hasn't started yet.
+ *
+ * Non-socket code (e.g. HTTP API routes that mutate then broadcast) uses this
+ * to reach the live server. It is a module singleton shared across the single
+ * custom-server process. Returns null rather than throwing so callers can
+ * treat "no live server" (e.g. during a unit test) as a no-op broadcast.
+ */
+export function getIO(): Server | null {
+  return io;
+}
+
+/** Internal variant that asserts the server is initialized (connection setup). */
+function requireIO(): Server {
   if (!io) {
     throw new Error("Socket.io not initialized");
   }

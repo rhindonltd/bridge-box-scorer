@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import type { Pair } from "@/model/participants";
 
 // ---- mocks ----
@@ -83,6 +83,12 @@ vi.mock("@/lib/fetcher", () => ({
   fetcher: vi.fn(),
 }));
 
+// Table resize now goes through the HTTP section-service.
+const mockUpdateSectionTables = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/section-service", () => ({
+  updateSectionTables: (...args: unknown[]) => mockUpdateSectionTables(...args),
+}));
+
 // Movement resolution: stationary highlighting + board placement. Default to
 // empty; tests override. `mockMovementTables` is reported back so the page can
 // reason about mismatches, but the hook itself applies the gate, so tests just
@@ -134,6 +140,7 @@ describe("ShowTablesPage", () => {
       { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
     ];
     currentSelected = "A";
+    mockUpdateSectionTables.mockResolvedValue(undefined);
     mockStationary = new Map();
     mockPlacement = new Map();
     mockMovementTables = 0;
@@ -178,27 +185,35 @@ describe("ShowTablesPage", () => {
     expect(fetcher).toHaveBeenCalledWith("/api/pairs");
   });
 
-  it("resizes a section through the number stepper", () => {
+  it("resizes a section through the number stepper (HTTP) and refreshes", async () => {
     render(<ShowTablesPage />);
 
     const increment = screen.getByRole("button", { name: "Increase Tables" });
     fireEvent.pointerDown(increment);
     fireEvent.pointerUp(increment);
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.UPDATE_TABLES,
-      expect.objectContaining({
-        gameId: "g1",
-        section: "A",
-        tables: 3,
-        directorToken: "token",
-      }),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(mockUpdateSectionTables).toHaveBeenCalledWith("g1", "A", 3),
     );
-    // The ack callback triggers a game refresh.
-    const ack = mockEmit.mock.calls[0][2] as () => void;
-    ack();
-    expect(mockMutateGame).toHaveBeenCalled();
+    await waitFor(() => expect(mockMutateGame).toHaveBeenCalled());
+  });
+
+  it("alerts when a resize is rejected (e.g. shrink guard)", async () => {
+    mockUpdateSectionTables.mockRejectedValueOnce(
+      new Error("Cannot remove a table with seated participants"),
+    );
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+
+    render(<ShowTablesPage />);
+    const increment = screen.getByRole("button", { name: "Increase Tables" });
+    fireEvent.pointerDown(increment);
+    fireEvent.pointerUp(increment);
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith(
+        "Cannot remove a table with seated participants",
+      ),
+    );
   });
 
   it("evicts a pair after confirmation and alerts on failure", () => {
@@ -417,7 +432,7 @@ describe("ShowTablesPage", () => {
     expect(screen.getByTestId("movement-warning-banner")).toBeInTheDocument();
   });
 
-  it("shows only the selected section's grid and stepper", () => {
+  it("shows only the selected section's grid and stepper", async () => {
     currentSections = [
       { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
       { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
@@ -432,10 +447,8 @@ describe("ShowTablesPage", () => {
     fireEvent.pointerDown(increment);
     fireEvent.pointerUp(increment);
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      SocketEvents.UPDATE_TABLES,
-      expect.objectContaining({ section: "B", tables: 5 }),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(mockUpdateSectionTables).toHaveBeenCalledWith("g1", "B", 5),
     );
   });
 });

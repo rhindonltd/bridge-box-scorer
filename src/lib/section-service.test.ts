@@ -1,15 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-vi.mock("@/lib/socket", () => ({
-  emitWithAck: vi.fn(async () => ({ success: true })),
-}));
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/director-token", () => ({
   getDirectorToken: vi.fn(() => "director-tok"),
 }));
 
-import { emitWithAck } from "@/lib/socket";
-import { SocketEvents } from "@/socket/socket-events";
 import {
   createSection,
   renameSection,
@@ -19,72 +13,82 @@ import {
   setSectionMitchellMovement,
 } from "./section-service";
 
-const emit = vi.mocked(emitWithAck);
+const okResponse = { ok: true, json: async () => ({ success: true, result: {} }) };
 
-describe("section-service emitters", () => {
+describe("section-service (HTTP)", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchMock = vi.fn().mockResolvedValue(okResponse);
+    vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("createSection emits CREATE_SECTION with the director token", async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function lastCall() {
+    const [url, init] = fetchMock.mock.calls[0];
+    return { url, init, body: init.body ? JSON.parse(init.body) : undefined };
+  }
+
+  it("createSection POSTs to /sections with the header and body", async () => {
     await createSection("g1", "A", 8, "North");
-    expect(emit).toHaveBeenCalledWith(SocketEvents.CREATE_SECTION, {
-      gameId: "g1",
-      section: "A",
-      label: "North",
-      tables: 8,
-      directorToken: "director-tok",
-    });
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections");
+    expect(init.method).toBe("POST");
+    expect(init.headers["x-director-token"]).toBe("director-tok");
+    expect(body).toEqual({ section: "A", label: "North", tables: 8 });
   });
 
-  it("renameSection emits RENAME_SECTION", async () => {
+  it("renameSection PATCHes /sections/[section]", async () => {
     await renameSection("g1", "A", "Red Room");
-    expect(emit).toHaveBeenCalledWith(SocketEvents.RENAME_SECTION, {
-      gameId: "g1",
-      section: "A",
-      label: "Red Room",
-      directorToken: "director-tok",
-    });
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A");
+    expect(init.method).toBe("PATCH");
+    expect(body).toEqual({ label: "Red Room" });
   });
 
-  it("deleteSection emits DELETE_SECTION", async () => {
+  it("deleteSection DELETEs /sections/[section] with no body", async () => {
     await deleteSection("g1", "B");
-    expect(emit).toHaveBeenCalledWith(SocketEvents.DELETE_SECTION, {
-      gameId: "g1",
-      section: "B",
-      directorToken: "director-tok",
-    });
+    const { url, init } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/B");
+    expect(init.method).toBe("DELETE");
+    expect(init.body).toBeUndefined();
   });
 
-  it("updateSectionTables emits UPDATE_TABLES", async () => {
+  it("updateSectionTables PUTs /sections/[section]/tables", async () => {
     await updateSectionTables("g1", "A", 12);
-    expect(emit).toHaveBeenCalledWith(SocketEvents.UPDATE_TABLES, {
-      gameId: "g1",
-      section: "A",
-      tables: 12,
-      directorToken: "director-tok",
-    });
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/tables");
+    expect(init.method).toBe("PUT");
+    expect(body).toEqual({ tables: 12 });
   });
 
-  it("setSectionMovementSpec emits SET_SECTION_MOVEMENT with spec id + boardsPerRound", async () => {
+  it("setSectionMovementSpec PUTs /sections/[section]/movement with id + boardsPerRound", async () => {
     await setSectionMovementSpec("g1", "A", 42, 2);
-    expect(emit).toHaveBeenCalledWith(SocketEvents.SET_SECTION_MOVEMENT, {
-      gameId: "g1",
-      section: "A",
-      id: 42,
-      boardsPerRound: 2,
-      directorToken: "director-tok",
-    });
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/movement");
+    expect(init.method).toBe("PUT");
+    expect(body).toEqual({ id: 42, boardsPerRound: 2 });
   });
 
-  it("setSectionMitchellMovement emits SET_SECTION_MOVEMENT with the mitchell spec", async () => {
+  it("setSectionMitchellMovement PUTs /sections/[section]/movement with the mitchell spec", async () => {
     const mitchell = { tables: 8, rounds: 8, boardsPerRound: 2 };
     await setSectionMitchellMovement("g1", "A", mitchell);
-    expect(emit).toHaveBeenCalledWith(SocketEvents.SET_SECTION_MOVEMENT, {
-      gameId: "g1",
-      section: "A",
-      mitchell,
-      directorToken: "director-tok",
+    const { body } = lastCall();
+    expect(body).toEqual({ mitchell });
+  });
+
+  it("throws the server error message on a non-ok response", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => ({ success: false, error: "Section A already exists" }),
     });
+
+    await expect(createSection("g1", "A", 8)).rejects.toThrow(
+      "Section A already exists",
+    );
   });
 });

@@ -14,7 +14,8 @@ import { newParticipant } from "./support";
  * Director table-management journey (pure UI, no socket seam).
  *
  * On the setup Tables view the director can resize a section (NumberStepper ->
- * UPDATE_TABLES), evict a seated pair (confirm dialog -> EVICT_PARTICIPANT),
+ * HTTP PUT .../sections/[section]/tables), evict a seated pair (confirm dialog
+ * -> EVICT_PARTICIPANT),
  * and is prevented from removing a table that still seats a pair (the shrink
  * guard is server-enforced and surfaced as an alert).
  */

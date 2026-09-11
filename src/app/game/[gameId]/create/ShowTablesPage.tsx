@@ -15,6 +15,7 @@ import { getDirectorToken } from "@/lib/director-token";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { StepperInput } from "@/components/common/StepperInput";
 import { useSetupSections } from "@/components/manage/sections/useSetupSections";
+import { updateSectionTables } from "@/lib/section-service";
 import { useMovementResolution } from "@/hooks/stationary-pairs";
 import { useSelectedMovementName } from "@/hooks/selected-movement-name";
 import { type ReactNode } from "react";
@@ -126,17 +127,14 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
     };
   }
 
-  function handleResizeSection(section: string, tables: number) {
-    getSocket().emit(
-      SocketEvents.UPDATE_TABLES,
-      {
-        gameId,
-        section,
-        tables,
-        directorToken: getDirectorToken(gameId),
-      },
-      () => mutateGame(),
-    );
+  async function handleResizeSection(section: string, tables: number) {
+    try {
+      await updateSectionTables(gameId, section, tables);
+      await mutateGame();
+    } catch (err) {
+      // The per-section shrink guard surfaces a user-facing message.
+      alert(err instanceof Error ? err.message : "Failed to update tables");
+    }
   }
 
   function handleEvict(seat: Seat) {
