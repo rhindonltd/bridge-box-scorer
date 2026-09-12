@@ -5,10 +5,11 @@ import DirectorTableControls, {
 } from "@/components/tables/DirectorTableControls";
 import { useRequiredGame } from "@/context/GameContext";
 import { fetcher } from "@/lib/fetcher";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
+import { ClientSection } from "@/hooks/sections";
 import { Pair, Seat, seatFor } from "@/model/participants";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { StepperInput } from "@/components/common/StepperInput";
@@ -27,7 +28,8 @@ type Props = {
 };
 
 export function ShowTablesPage({ menu, onEditMovement }: Props) {
-  const { game, mutateGame } = useRequiredGame();
+  const { game } = useRequiredGame();
+  const { mutate } = useSWRConfig();
 
   const gameId = game.gameId;
 
@@ -127,11 +129,32 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
   }
 
   async function handleResizeSection(section: string, tables: number) {
+    const sectionsKey = swrKeys.sections(gameId);
+
+    // Optimistically reflect the new table count in the sections cache so the
+    // grid updates instantly instead of flickering at the old size until the
+    // server round-trip + broadcast lands. `revalidate: false` keeps our
+    // optimistic value until we choose to reconcile.
+    void mutate(
+      sectionsKey,
+      (current?: { sections: ClientSection[] }) =>
+        current
+          ? {
+              sections: current.sections.map((s) =>
+                s.section === section ? { ...s, tables } : s,
+              ),
+            }
+          : current,
+      { revalidate: false },
+    );
+
     try {
       await updateSectionTables(gameId, section, tables);
-      await mutateGame();
+      // Success: the server broadcasts the authoritative section list, which
+      // revalidates this key and reconciles any difference.
     } catch (err) {
-      // The per-section shrink guard surfaces a user-facing message.
+      // Roll back to the server's truth and surface the shrink-guard message.
+      void mutate(sectionsKey);
       alert(err instanceof Error ? err.message : "Failed to update tables");
     }
   }

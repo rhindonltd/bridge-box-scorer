@@ -7,6 +7,7 @@ import { respondToActionError } from "@/lib/api/client-error";
 import { sectionFromUrl } from "@/lib/api/section-param";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { buildConfiguredTimerState } from "@/timer/timer-state";
+import { clearEngine } from "@/timer/game-store";
 import { broadcastTimerConfigSaved } from "@/socket/broadcast/timer-broadcast";
 import { breakConfigSchema, toBreakConfigs } from "@/socket/handlers/timer/payload";
 
@@ -62,6 +63,11 @@ export const PUT = withDirectorRoute(async ({ gameId, req }) => {
     });
 
     await updateTimerState(gameId, section, timerState);
+    // Drop any cached in-memory engine for this section so the next snapshot
+    // read (timer:requestState → getEngine) rebuilds from the freshly-saved
+    // state rather than serving a stale engine. Safe: a configured-but-not-
+    // started timer has no running engine/schedule to preserve.
+    clearEngine(gameId, section);
     broadcastTimerConfigSaved(gameId, section, timerState);
 
     return success({});
