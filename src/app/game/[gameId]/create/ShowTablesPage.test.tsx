@@ -4,18 +4,18 @@ import type { Pair } from "@/model/participants";
 
 // ---- mocks ----
 
-const mockMutateGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
     game: { gameId: "g1", tables: 2 },
-    mutateGame: mockMutateGame,
   }),
 }));
 
 // SWR returns whatever the current test sets as pairs data, and captures the
-// component's fetcher so a test can exercise it directly.
+// component's fetcher so a test can exercise it directly. `useSWRConfig().mutate`
+// is captured so the optimistic table-resize update can be asserted.
 let currentPairs: Pair[] = [];
 let capturedFetcher: ((url: string) => Promise<Pair[]>) | null = null;
+const mockMutate = vi.fn();
 vi.mock("swr", () => ({
   default: (key: string | null, fetcher: (url: string) => Promise<Pair[]>) => {
     // The page mounts more than one useSWR (pairs + the selected-movement-name
@@ -28,6 +28,7 @@ vi.mock("swr", () => ({
     }
     return { data: undefined };
   },
+  useSWRConfig: () => ({ mutate: mockMutate }),
 }));
 
 // Capture the sync selector so a test can invoke it directly.
@@ -188,7 +189,7 @@ describe("ShowTablesPage", () => {
     expect(fetcher).toHaveBeenCalledWith("/api/pairs");
   });
 
-  it("resizes a section through the number stepper (HTTP) and refreshes", async () => {
+  it("resizes a section through the number stepper (HTTP) with an optimistic cache update", async () => {
     render(<ShowTablesPage />);
 
     const increment = screen.getByRole("button", { name: "Increase Tables" });
@@ -198,7 +199,22 @@ describe("ShowTablesPage", () => {
     await waitFor(() =>
       expect(mockUpdateSectionTables).toHaveBeenCalledWith("g1", "A", 3),
     );
-    await waitFor(() => expect(mockMutateGame).toHaveBeenCalled());
+
+    // Optimistic update: the sections cache is patched immediately (before the
+    // server round-trip) with revalidate: false so the grid doesn't flicker.
+    const optimistic = mockMutate.mock.calls.find(
+      (c) => c[0] === "/api/games/g1/sections" && typeof c[1] === "function",
+    );
+    expect(optimistic).toBeTruthy();
+    const updater = optimistic![1] as (d: {
+      sections: { section: string; tables: number }[];
+    }) => { sections: { section: string; tables: number }[] };
+    expect(
+      updater({
+        sections: [{ section: "A", tables: 2 } as never],
+      }).sections[0],
+    ).toMatchObject({ section: "A", tables: 3 });
+    expect(optimistic![2]).toMatchObject({ revalidate: false });
   });
 
   it("alerts when a resize is rejected (e.g. shrink guard)", async () => {
@@ -217,6 +233,14 @@ describe("ShowTablesPage", () => {
         "Cannot remove a table with seated participants",
       ),
     );
+
+    // On failure the optimistic value is rolled back by revalidating the
+    // sections key (a bare mutate with no data/options).
+    expect(
+      mockMutate.mock.calls.some(
+        (c) => c[0] === "/api/games/g1/sections" && c.length === 1,
+      ),
+    ).toBe(true);
   });
 
   it("evicts a pair after confirmation via the HTTP service", async () => {

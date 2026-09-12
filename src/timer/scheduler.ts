@@ -23,8 +23,24 @@ type ScheduledGame = {
 /**
  * Scheduled phase transitions keyed by `${gameId}:${section}` so each section's
  * timer advances independently.
+ *
+ * Stored on `globalThis`, NOT a module-level `const`: game start
+ * (`promoteTimerAtGameStart`) schedules from the Next.js route bundle while the
+ * live controls (start/pause/next/…) run in the custom-server bundle, and both
+ * must operate on the same set of timeouts. A module-local map would live once
+ * per bundle. (Same rationale as the engine store in `@/timer/game-store` and
+ * the Socket.IO server in `@/socket/websocket`.)
  */
-const scheduledGames = new Map<string, ScheduledGame>();
+const SCHEDULED_KEY = "__bridgeBoxScheduledGames" as const;
+
+type ScheduledGlobal = typeof globalThis & {
+  [SCHEDULED_KEY]?: Map<string, ScheduledGame>;
+};
+
+function scheduledGames(): Map<string, ScheduledGame> {
+  const g = globalThis as ScheduledGlobal;
+  return (g[SCHEDULED_KEY] ??= new Map<string, ScheduledGame>());
+}
 
 function scheduleKey(gameId: string, section: SectionLetter): string {
   return `${gameId}:${section}`;
@@ -32,7 +48,8 @@ function scheduleKey(gameId: string, section: SectionLetter): string {
 
 export function cancelGameSchedule(gameId: string, section: SectionLetter) {
   const key = scheduleKey(gameId, section);
-  const existing = scheduledGames.get(key);
+  const games = scheduledGames();
+  const existing = games.get(key);
 
   if (!existing) {
     return;
@@ -40,7 +57,7 @@ export function cancelGameSchedule(gameId: string, section: SectionLetter) {
 
   clearTimeout(existing.timeout);
 
-  scheduledGames.delete(key);
+  games.delete(key);
 }
 
 export function scheduleGame(
@@ -81,7 +98,7 @@ export function scheduleGame(
     scheduleGame(gameId, section, engine, deps);
   }, delay);
 
-  scheduledGames.set(scheduleKey(gameId, section), {
+  scheduledGames().set(scheduleKey(gameId, section), {
     timeout,
   });
 }
