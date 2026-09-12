@@ -156,10 +156,8 @@ describe("registerCreateParticipantHandler (integration)", () => {
   });
 
   it("returns success: false with the db-missing error when getDb resolves null", async () => {
-    vi.mocked(createPlayer)
-      .mockResolvedValueOnce({ id: 10 } as any)
-      .mockResolvedValueOnce({ id: 11 } as any);
-    vi.mocked(createPair).mockResolvedValue(undefined);
+    // getDb resolves null, so creation never runs — no createPlayer queuing
+    // here (leftover once-values would leak into the next test).
     vi.mocked(getDb).mockResolvedValue(null as any);
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 

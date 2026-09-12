@@ -8,8 +8,10 @@ const meta: Meta<typeof PlayerSearchView> = {
   parameters: { layout: "centered" },
   tags: ["autodocs"],
   args: {
+    guestOption: null,
     onQueryChange: fn(),
     onPlayerSelected: fn(),
+    onGuestSelected: fn(),
     onClear: fn(),
   },
 };
@@ -57,6 +59,30 @@ export const WithResults: Story = {
       { firstName: "Bob", lastName: "Smithson", nationalId: "654321" },
       { firstName: "Carol", lastName: "Blacksmith", nationalId: null },
     ],
+    loading: false,
+  },
+};
+
+export const WithResultsAndGuest: Story = {
+  args: {
+    label: "Player 1",
+    value: null,
+    query: "Smith",
+    results: [
+      { firstName: "Alice", lastName: "Smith", nationalId: "123456" },
+    ],
+    guestOption: { firstName: "Smith", lastName: "", nationalId: null },
+    loading: false,
+  },
+};
+
+export const GuestOnly: Story = {
+  args: {
+    label: "Player 1",
+    value: null,
+    query: "Jamie Guest",
+    results: [],
+    guestOption: { firstName: "Jamie", lastName: "Guest", nationalId: null },
     loading: false,
   },
 };

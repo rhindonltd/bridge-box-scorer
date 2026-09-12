@@ -15,10 +15,12 @@ vi.mock("@/app/game/[gameId]/join/PlayerSearchView", () => ({
   PlayerSearchView: ({
     query,
     results,
+    guestOption,
     loading,
     value,
     onQueryChange,
     onPlayerSelected,
+    onGuestSelected,
     onClear,
   }: any) => (
     <div>
@@ -26,6 +28,13 @@ vi.mock("@/app/game/[gameId]/join/PlayerSearchView", () => ({
       <div data-testid="results-count">{results.length}</div>
       <div data-testid="loading">{String(loading)}</div>
       <div data-testid="value">{value ? value.firstName : "none"}</div>
+      <div data-testid="guest">
+        {guestOption
+          ? `${guestOption.firstName}|${guestOption.lastName}|${String(
+              guestOption.nationalId,
+            )}`
+          : "none"}
+      </div>
       <input
         data-testid="input"
         value={query}
@@ -34,6 +43,10 @@ vi.mock("@/app/game/[gameId]/join/PlayerSearchView", () => ({
       <button
         data-testid="select"
         onClick={() => onPlayerSelected({ firstName: "Ada", lastName: "L" })}
+      />
+      <button
+        data-testid="select-guest"
+        onClick={() => guestOption && onGuestSelected(guestOption)}
       />
       <button data-testid="clear" onClick={onClear} />
     </div>
@@ -128,5 +141,46 @@ describe("PlayerSearch", () => {
       />,
     );
     expect(screen.getByTestId("value")).toHaveTextContent("Grace");
+  });
+
+  it("offers the typed name as a guest (first/last split, no national id)", () => {
+    render(<PlayerSearch label="North" value={null} onChange={vi.fn()} />);
+
+    type("Alice Smith");
+    // No debounce needed: the guest option is derived from the live query.
+    expect(screen.getByTestId("guest")).toHaveTextContent("Alice|Smith|null");
+  });
+
+  it("treats a single word as a first name with an empty last name", () => {
+    render(<PlayerSearch label="North" value={null} onChange={vi.fn()} />);
+    type("Madonna");
+    expect(screen.getByTestId("guest")).toHaveTextContent("Madonna||null");
+  });
+
+  it("does not offer a guest for a purely numeric query (an id lookup)", () => {
+    render(<PlayerSearch label="North" value={null} onChange={vi.fn()} />);
+    type("123456");
+    expect(screen.getByTestId("guest")).toHaveTextContent("none");
+  });
+
+  it("does not offer a guest until the query is at least 2 chars", () => {
+    render(<PlayerSearch label="North" value={null} onChange={vi.fn()} />);
+    type("A");
+    expect(screen.getByTestId("guest")).toHaveTextContent("none");
+  });
+
+  it("selecting the guest clears the query and calls onChange with the guest", () => {
+    const onChange = vi.fn();
+    render(<PlayerSearch label="North" value={null} onChange={onChange} />);
+
+    type("Bob Jones");
+    fireEvent.click(screen.getByTestId("select-guest"));
+
+    expect(onChange).toHaveBeenCalledWith({
+      firstName: "Bob",
+      lastName: "Jones",
+      nationalId: null,
+    });
+    expect(screen.getByTestId("query")).toHaveTextContent("");
   });
 });
