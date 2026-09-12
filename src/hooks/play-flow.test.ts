@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 const mockUseSWR = vi.fn();
+const mockMutate = vi.fn();
 vi.mock("swr", () => ({
   default: (...args: unknown[]) => mockUseSWR(...args),
+  mutate: (...args: unknown[]) => mockMutate(...args),
 }));
 
 const socketOn = vi.fn();
@@ -45,6 +47,12 @@ function withSchedule(schedule: unknown) {
   mockUseSWR.mockReturnValue({ data: schedule });
 }
 
+/** Simulate the schedule fetch failing with a given HTTP status. */
+function withScheduleError(status: number) {
+  const error = Object.assign(new Error("fetch failed"), { status });
+  mockUseSWR.mockReturnValue({ data: undefined, error });
+}
+
 describe("usePlayFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -58,6 +66,38 @@ describe("usePlayFlow", () => {
     withSchedule(undefined);
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
     expect(result.current.playState.state).toBe("loading");
+    // No schedule and no error yet: this is the brief initial load, not the
+    // "waiting for the game to start" state.
+    expect(result.current.waitingToStart).toBe(false);
+  });
+
+  it("reports waitingToStart when the schedule 404s (game not started)", () => {
+    withScheduleError(404);
+    const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+    expect(result.current.schedule).toBeNull();
+    expect(result.current.waitingToStart).toBe(true);
+  });
+
+  it("does not treat a non-404 schedule error as waiting-to-start", () => {
+    withScheduleError(500);
+    const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+    expect(result.current.waitingToStart).toBe(false);
+  });
+
+  it("revalidates the schedule when the game is updated (e.g. started)", () => {
+    withScheduleError(404);
+    renderHook(() => usePlayFlow("g1", "A1NS"));
+
+    const call = socketOn.mock.calls.find(
+      (c) => c[0] === SocketEvents.GAME_UPDATED,
+    );
+    expect(call).toBeTruthy();
+
+    // Firing GAME_UPDATED revalidates the seat's schedule SWR key so a waiting
+    // player advances into play without a manual refresh.
+    const handler = call![1] as () => void;
+    handler();
+    expect(mockMutate).toHaveBeenCalledWith("/api/games/g1/schedule/A1NS");
   });
 
   it("starts at the first incomplete round", () => {

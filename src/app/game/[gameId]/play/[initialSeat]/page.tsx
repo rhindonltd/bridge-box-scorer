@@ -22,6 +22,8 @@ import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
+import { WaitingToStartPage } from "@/app/game/[gameId]/play/[initialSeat]/WaitingToStartPage";
+import { Seat } from "@/model/participants";
 
 export default function PlayPage() {
   const params = useParams<{ initialSeat: string }>();
@@ -31,6 +33,7 @@ export default function PlayPage() {
   const {
     schedule,
     playState,
+    waitingToStart,
     handleSitOutContinue,
     handleMoveInfoContinue,
     handleBoardResultsNext,
@@ -38,6 +41,13 @@ export default function PlayPage() {
     handleEnterRound,
     submitResult,
   } = usePlayFlow(game.gameId, seat);
+
+  // Seated, but the director hasn't started the game yet: show a friendly
+  // waiting screen (it revalidates and advances automatically at start) rather
+  // than an indefinite spinner.
+  if (waitingToStart) {
+    return <WaitingToStartPage gameId={game.gameId} seat={seat as Seat} />;
+  }
 
   if (!schedule) {
     return (

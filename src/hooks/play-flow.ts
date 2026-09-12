@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 import { getSocket } from "../lib/socket";
 import { SocketEvents } from "../socket/socket-events";
 import { fetcher } from "@/lib/fetcher";
@@ -113,14 +113,51 @@ export function usePlayFlow(gameId: string, seat: string) {
   /*
    * Fetch the schedule via SWR. The route returns the Schedule object
    * directly (unwrapped from the success envelope by `fetcher`).
+   *
+   * Before the director starts the game there is no assignment for this seat,
+   * so the route responds 404 and `error.status` is 404. That is the expected
+   * "seated, waiting for the game to start" state (not a failure), so we don't
+   * retry on 404 — a `GAME_UPDATED` broadcast at start revalidates instead.
    */
-  const { data: fetchedSchedule } = useSWR<Schedule>(
-    swrKeys.schedule(gameId, seat),
+  const scheduleKey = swrKeys.schedule(gameId, seat);
+  const { data: fetchedSchedule, error: scheduleError } = useSWR<Schedule>(
+    scheduleKey,
     fetcher,
+    {
+      shouldRetryOnError: (error: Error & { status?: number }) =>
+        error.status !== 404,
+    },
   );
 
   const schedule =
     fetchedSchedule && fetchedSchedule.rounds ? fetchedSchedule : null;
+
+  // The seat has no schedule yet because the game hasn't been started
+  // (materialization creates the assignment rows the schedule needs). Distinct
+  // from the brief initial load, where there is neither data nor error yet.
+  const waitingToStart =
+    !schedule &&
+    (scheduleError as (Error & { status?: number }) | undefined)?.status ===
+      404;
+
+  /*
+   * When the director starts the game, boards/assignments are materialized and
+   * a `GAME_UPDATED` broadcast goes to the game room. Revalidate the schedule
+   * then (and on reconnect) so a waiting player advances into play without a
+   * manual refresh.
+   */
+  useEffect(() => {
+    const socket = getSocket();
+    const revalidate = () => {
+      void globalMutate(scheduleKey);
+    };
+    socket.on(SocketEvents.GAME_UPDATED, revalidate);
+    socket.on(SocketEvents.CONNECT, revalidate);
+    return () => {
+      socket.off(SocketEvents.GAME_UPDATED, revalidate);
+      socket.off(SocketEvents.CONNECT, revalidate);
+    };
+  }, [scheduleKey]);
 
   /*
    * Keep the latest schedule in a ref so socket event handlers don't
@@ -464,6 +501,7 @@ export function usePlayFlow(gameId: string, seat: string) {
   return {
     schedule,
     playState,
+    waitingToStart,
 
     handleSitOutContinue,
     handleMoveInfoContinue,
