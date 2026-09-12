@@ -23,6 +23,7 @@ import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
 import { WaitingToStartPage } from "@/app/game/[gameId]/play/[initialSeat]/WaitingToStartPage";
+import { ChangeDeviceButton } from "@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceButton";
 import { Seat } from "@/model/participants";
 
 export default function PlayPage() {
@@ -57,125 +58,146 @@ export default function PlayPage() {
     );
   }
 
-  switch (playState.state) {
-    case "loading":
-      return (
-        <div className="h-dvh flex items-center justify-center bg-gray-100">
-          <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-        </div>
-      );
+  // Live game: whatever the current play state, keep a persistent "Change
+  // device" affordance available so a player can hand their seat to another
+  // device at any time (e.g. a battery swap). Leaving the table is setup-only,
+  // so it is NOT offered here.
+  // `schedule` is non-null past the guard above; capture the narrowed value so
+  // the nested render function sees it as non-null (narrowing doesn't carry
+  // into a nested function).
+  const currentSchedule = schedule;
 
-    case "roundInfo": {
-      const round = schedule.rounds[playState.roundIndex];
+  return (
+    <>
+      {renderPlayState(currentSchedule)}
+      <div className="fixed bottom-4 right-4 z-40">
+        <ChangeDeviceButton gameId={game.gameId} seat={seat} variant="icon" />
+      </div>
+    </>
+  );
 
-      // If this round is a sit-out, show the sit-out screen instead
-      if (round.sitOut) {
+  function renderPlayState(schedule: typeof currentSchedule) {
+    switch (playState.state) {
+      case "loading":
         return (
-          <SitOutPage
+          <div className="h-dvh flex items-center justify-center bg-gray-100">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+          </div>
+        );
+
+      case "roundInfo": {
+        const round = schedule.rounds[playState.roundIndex];
+
+        // If this round is a sit-out, show the sit-out screen instead
+        if (round.sitOut) {
+          return (
+            <SitOutPage
+              round={round.roundNumber}
+              tableNumber={round.tableNumber}
+              onHandleSitOutContinue={handleSitOutContinue}
+            />
+          );
+        }
+
+        return (
+          <RoundInfoPage
             round={round.roundNumber}
-            tableNumber={round.tableNumber}
-            onHandleSitOutContinue={handleSitOutContinue}
+            table={round.tableNumber!}
+            boards={round.boards}
+            players={
+              round.players as { N: Player; S: Player; E: Player; W: Player }
+            }
+            onEnterRound={handleEnterRound}
           />
         );
       }
 
-      return (
-        <RoundInfoPage
-          round={round.roundNumber}
-          table={round.tableNumber!}
-          boards={round.boards}
-          players={
-            round.players as { N: Player; S: Player; E: Player; W: Player }
-          }
-          onEnterRound={handleEnterRound}
-        />
-      );
+      case "enterContract": {
+        const round = schedule.rounds[playState.roundIndex];
+        const playedBoards = round.boardStatuses
+          .filter((b) => b.status === "CONFIRMED")
+          .map((b) => b.boardNumber);
+        return (
+          <ContractWizard
+            round={round.roundNumber}
+            table={round.tableNumber!}
+            roundBoards={round.boards}
+            playedBoards={playedBoards}
+            leadCardRequired={game.leadCardRequired}
+            onComplete={(data) => {
+              if (data.contract === "PO" || data.contract === "NP") {
+                submitResult(data.board, data.contract);
+              } else {
+                const parsed = parseContract(data.contract);
+                const fullResult = buildPlayedContractCode(
+                  parsed.level,
+                  parsed.suit,
+                  parsed.doubling,
+                  parsed.declarer,
+                  data.result,
+                );
+                submitResult(data.board, fullResult);
+              }
+            }}
+          />
+        );
+      }
+
+      case "waiting": {
+        const round = schedule.rounds[playState.roundIndex];
+        const boardNumber = round.boards[playState.boardIndex];
+        return <WaitingForConfirmation boardNumber={boardNumber} />;
+      }
+
+      case "mismatch": {
+        return (
+          <ResultMismatch
+            nsBoardNumber={playState.nsBoardNumber}
+            nsResult={playState.nsResult}
+            ewBoardNumber={playState.ewBoardNumber}
+            ewResult={playState.ewResult}
+            onReenter={handleReenter}
+          />
+        );
+      }
+
+      case "boardResults": {
+        const round = schedule.rounds[playState.roundIndex];
+        const boardNumber = round.boards[playState.boardIndex];
+        const lastBoardOfRound =
+          playState.boardIndex === round.boards.length - 1;
+
+        // All boards played so far in this round (up to and including current)
+        const playedBoards = round.boards.slice(0, playState.boardIndex + 1);
+
+        return (
+          <BoardResultsLoader
+            gameId={game.gameId}
+            scoringType={game.scoringType}
+            boardNumber={boardNumber}
+            playedBoards={playedBoards}
+            lastBoardOfRound={lastBoardOfRound}
+            onNext={handleBoardResultsNext}
+          />
+        );
+      }
+
+      case "moveInfo": {
+        const roundSchedule = schedule.rounds[playState.nextRoundIndex];
+
+        return (
+          <MoveInfoPage
+            roundNumber={roundSchedule.roundNumber}
+            tableNumber={roundSchedule.tableNumber!}
+            sitOut={roundSchedule.sitOut ?? false}
+            onMoveInfoContinue={handleMoveInfoContinue}
+          />
+        );
+      }
+
+      case "gameComplete":
+        return <GameComplete />;
     }
-
-    case "enterContract": {
-      const round = schedule.rounds[playState.roundIndex];
-      const playedBoards = round.boardStatuses
-        .filter((b) => b.status === "CONFIRMED")
-        .map((b) => b.boardNumber);
-      return (
-        <ContractWizard
-          round={round.roundNumber}
-          table={round.tableNumber!}
-          roundBoards={round.boards}
-          playedBoards={playedBoards}
-          leadCardRequired={game.leadCardRequired}
-          onComplete={(data) => {
-            if (data.contract === "PO" || data.contract === "NP") {
-              submitResult(data.board, data.contract);
-            } else {
-              const parsed = parseContract(data.contract);
-              const fullResult = buildPlayedContractCode(
-                parsed.level,
-                parsed.suit,
-                parsed.doubling,
-                parsed.declarer,
-                data.result,
-              );
-              submitResult(data.board, fullResult);
-            }
-          }}
-        />
-      );
-    }
-
-    case "waiting": {
-      const round = schedule.rounds[playState.roundIndex];
-      const boardNumber = round.boards[playState.boardIndex];
-      return <WaitingForConfirmation boardNumber={boardNumber} />;
-    }
-
-    case "mismatch": {
-      return (
-        <ResultMismatch
-          nsBoardNumber={playState.nsBoardNumber}
-          nsResult={playState.nsResult}
-          ewBoardNumber={playState.ewBoardNumber}
-          ewResult={playState.ewResult}
-          onReenter={handleReenter}
-        />
-      );
-    }
-
-    case "boardResults": {
-      const round = schedule.rounds[playState.roundIndex];
-      const boardNumber = round.boards[playState.boardIndex];
-      const lastBoardOfRound = playState.boardIndex === round.boards.length - 1;
-
-      // All boards played so far in this round (up to and including current)
-      const playedBoards = round.boards.slice(0, playState.boardIndex + 1);
-
-      return (
-        <BoardResultsLoader
-          gameId={game.gameId}
-          scoringType={game.scoringType}
-          boardNumber={boardNumber}
-          playedBoards={playedBoards}
-          lastBoardOfRound={lastBoardOfRound}
-          onNext={handleBoardResultsNext}
-        />
-      );
-    }
-
-    case "moveInfo": {
-      const roundSchedule = schedule.rounds[playState.nextRoundIndex];
-
-      return (
-        <MoveInfoPage
-          roundNumber={roundSchedule.roundNumber}
-          tableNumber={roundSchedule.tableNumber!}
-          sitOut={roundSchedule.sitOut ?? false}
-          onMoveInfoContinue={handleMoveInfoContinue}
-        />
-      );
-    }
-
-    case "gameComplete":
-      return <GameComplete />;
   }
 }
 

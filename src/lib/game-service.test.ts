@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createGame, selectMovement, createParticipant } from "./game-service";
+import {
+  createGame,
+  selectMovement,
+  createParticipant,
+  leaveTable,
+  generateSeatTransferCode,
+  claimSeatTransfer,
+} from "./game-service";
 import { SocketEvents } from "@/socket/socket-events";
 
 vi.mock("@/lib/socket", () => ({
@@ -16,11 +23,17 @@ vi.mock("@/lib/director-token", () => ({
 
 vi.mock("./player-token", () => ({
   setPlayerToken: vi.fn(),
+  getPlayerToken: vi.fn(() => ({ startingPosition: "A1NS", token: "seat-tok" })),
+  clearPlayerToken: vi.fn(),
 }));
 
 import { emitWithAck, emitEvent } from "@/lib/socket";
 import { setDirectorToken } from "@/lib/director-token";
-import { setPlayerToken } from "./player-token";
+import {
+  setPlayerToken,
+  getPlayerToken,
+  clearPlayerToken,
+} from "./player-token";
 
 const mockEmitWithAck = vi.mocked(emitWithAck);
 const mockEmitEvent = vi.mocked(emitEvent);
@@ -198,6 +211,72 @@ describe("game-service", () => {
         startingPosition: "1NS",
         token: "p-key-123",
       });
+    });
+  });
+
+  describe("leaveTable", () => {
+    it("emits LEAVE_TABLE with the seat token and clears the local token", async () => {
+      mockEmitWithAck.mockResolvedValue({ success: true });
+
+      await leaveTable("g1", "A1NS");
+
+      expect(getPlayerToken).toHaveBeenCalledWith("g1");
+      expect(mockEmitWithAck).toHaveBeenCalledWith(SocketEvents.LEAVE_TABLE, {
+        gameId: "g1",
+        seat: "A1NS",
+        token: "seat-tok",
+      });
+      expect(clearPlayerToken).toHaveBeenCalledWith("g1");
+    });
+
+    it("does not clear the token when the server rejects", async () => {
+      mockEmitWithAck.mockRejectedValue(new Error("already started"));
+
+      await expect(leaveTable("g1", "A1NS")).rejects.toThrow("already started");
+      expect(clearPlayerToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("generateSeatTransferCode", () => {
+    it("emits CREATE_SEAT_TRANSFER with the seat token and returns the code", async () => {
+      mockEmitWithAck.mockResolvedValue({ code: "ABC234" });
+
+      const code = await generateSeatTransferCode("g1", "A1NS");
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.CREATE_SEAT_TRANSFER,
+        { gameId: "g1", seat: "A1NS", token: "seat-tok" },
+      );
+      expect(code).toBe("ABC234");
+    });
+  });
+
+  describe("claimSeatTransfer", () => {
+    it("emits CLAIM_SEAT_TRANSFER, stores the rotated token, returns game + seat", async () => {
+      mockEmitWithAck.mockResolvedValue({
+        gameId: "g9",
+        seat: "B2EW",
+        token: "rotated-tok",
+      });
+
+      const result = await claimSeatTransfer("ABC234");
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.CLAIM_SEAT_TRANSFER,
+        { code: "ABC234" },
+      );
+      expect(setPlayerToken).toHaveBeenCalledWith("g9", {
+        startingPosition: "B2EW",
+        token: "rotated-tok",
+      });
+      expect(result).toEqual({ gameId: "g9", seat: "B2EW" });
+    });
+
+    it("throws the server error and stores nothing when the code is invalid", async () => {
+      mockEmitWithAck.mockRejectedValue(new Error("Invalid code"));
+
+      await expect(claimSeatTransfer("ZZZZZZ")).rejects.toThrow("Invalid code");
+      expect(setPlayerToken).not.toHaveBeenCalled();
     });
   });
 });

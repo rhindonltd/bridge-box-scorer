@@ -36,6 +36,11 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
   ),
 }));
 
+// The seat-transfer claim affordance is covered by its own test; stub it here.
+vi.mock("@/app/game/[gameId]/join/ClaimSeatTransfer", () => ({
+  ClaimSeatTransfer: () => <div data-testid="claim-seat-transfer" />,
+}));
+
 // SelectTable stub: exposes a button that selects seat A1NS.
 vi.mock("@/app/game/[gameId]/join/SelectTable", () => ({
   default: ({

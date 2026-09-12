@@ -1,7 +1,13 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { parseSeat, Seat } from "@/model/participants";
 import { PairDirection } from "@/model/common";
 import { useSections } from "@/hooks/sections";
+import { leaveTable } from "@/lib/game-service";
+import { ChangeDeviceButton } from "@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceButton";
 
 interface Props {
   gameId: string;
@@ -23,6 +29,30 @@ const DIRECTION_LABEL: Record<PairDirection, string> = {
  */
 export function WaitingToStartPage({ gameId, seat }: Props) {
   const { sections } = useSections(gameId);
+  const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleLeave() {
+    if (
+      !window.confirm(
+        "Leave this table? Your seat will be freed for someone else.",
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setLeaving(true);
+    try {
+      await leaveTable(gameId, seat);
+      router.replace(`/game/${gameId}/join`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not leave the table.",
+      );
+      setLeaving(false);
+    }
+  }
 
   let section: string | null = null;
   let tableNumber: number | null = null;
@@ -78,6 +108,24 @@ export function WaitingToStartPage({ gameId, seat }: Props) {
           Keep this screen open — it will move on by itself as soon as the game
           starts. No need to refresh.
         </p>
+
+        {error && (
+          <p role="alert" className="mt-4 text-sm font-medium text-red-700">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
+          <ChangeDeviceButton gameId={gameId} seat={seat} />
+          <button
+            type="button"
+            onClick={handleLeave}
+            disabled={leaving}
+            className="w-full rounded-xl border border-gray-300 bg-white px-6 py-3 text-base font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {leaving ? "Leaving…" : "Leave table"}
+          </button>
+        </div>
       </div>
     </GamePageLayout>
   );

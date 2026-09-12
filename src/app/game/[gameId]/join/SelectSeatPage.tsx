@@ -12,6 +12,7 @@ import useSWR from "swr";
 import { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
 import SelectTable from "@/app/game/[gameId]/join/SelectTable";
+import { ClaimSeatTransfer } from "@/app/game/[gameId]/join/ClaimSeatTransfer";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useSections } from "@/hooks/sections";
 
@@ -81,6 +82,11 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
           startingPositions={data ?? []}
         />
 
+        {/* Take over a seat already entered on another device. */}
+        <div className="mt-6 flex justify-center">
+          <ClaimSeatTransfer />
+        </div>
+
         {/* Backdrop */}
         {selectedSeat && (
           <div
@@ -104,10 +110,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
           {selectedSeat && (
             <>
               {submitError && (
-                <div
-                  role="alert"
-                  className="mx-auto mt-4 w-full max-w-xl px-4"
-                >
+                <div role="alert" className="mx-auto mt-4 w-full max-w-xl px-4">
                   <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
                     {submitError}
                   </div>

@@ -3,6 +3,8 @@ import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-g
 import { registerSelectMovementHandler } from "@/socket/handlers/game/select-movement/select-movement.handler";
 import { registerLeaveGameHandler } from "@/socket/handlers/game/leave-game/leave-game.handler";
 import { registerCreateParticipantHandler } from "./create-participant/create-participant";
+import { registerLeaveTableHandler } from "./leave-table/leave-table.handler";
+import { registerSeatTransferHandlers } from "./seat-transfer/seat-transfer.handler";
 import { registerSubmitResultHandler } from "./submit-result/submit-result.handler";
 
 // Director-only / one-shot mutations that are HTTP routes rather than socket
@@ -16,9 +18,13 @@ import { registerSubmitResultHandler } from "./submit-result/submit-result.handl
 // Their resulting live updates (JOINABLE_GAMES / GAME_UPDATED / SECTION_UPDATED /
 // TIMER_CLEARED / PARTICIPANTS / timer promotion) are broadcast from those
 // routes. Player self-seating (CREATE_PARTICIPANT) stays on the socket as a
-// live hot path.
+// live hot path — as are a player leaving their seat before start
+// (LEAVE_TABLE) and moving their seat to another device (CREATE_SEAT_TRANSFER /
+// CLAIM_SEAT_TRANSFER), all authed by the seat's own token.
 export function registerGameHandlers(socket: Socket, io: Server) {
   registerCreateParticipantHandler(socket, io);
+  registerLeaveTableHandler(socket, io);
+  registerSeatTransferHandlers(socket, io);
   registerJoinGameHandler(socket);
   registerLeaveGameHandler(socket);
   registerSelectMovementHandler(socket, io);

@@ -37,3 +37,17 @@ export const shareCodes = sqliteTable("share_codes", {
 
 export type ShareCode = typeof shareCodes.$inferSelect;
 export type NewShareCode = typeof shareCodes.$inferInsert;
+
+/* seat_transfer_codes — short-lived codes for a player moving their seat to
+ * another device. Like share_codes but bound to a specific seat: claiming
+ * rotates that seat's secret so only the new device retains access. */
+export const seatTransferCodes = sqliteTable("seat_transfer_codes", {
+  code: text("code").primaryKey(),
+  gameId: text("game_id").notNull(),
+  seat: text("seat").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  used: integer("used").notNull().default(0),
+});
+
+export type SeatTransferCode = typeof seatTransferCodes.$inferSelect;
+export type NewSeatTransferCode = typeof seatTransferCodes.$inferInsert;

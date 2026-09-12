@@ -15,6 +15,13 @@
       "when": 1788430147420,
       "tag": "0001_wandering_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789203170252,
+      "tag": "0002_curly_red_skull",
+      "breakpoints": true
     }
   ]
 }

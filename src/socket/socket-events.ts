@@ -7,6 +7,17 @@ export const SocketEvents = {
   // Client initiated - Game specific
   JOIN_GAME: "game:join",
   CREATE_PARTICIPANT: "game:createParticipant",
+  // Player-authed (the seat's own token), setup-only: a seated player vacates
+  // their seat before the game starts, freeing it. Broadcasts PARTICIPANTS.
+  // (Director eviction is a separate director-authed HTTP DELETE.)
+  LEAVE_TABLE: "game:leaveTable",
+  // Player-authed seat handoff to another device (available any time). The old
+  // device mints a short transfer code (CREATE_SEAT_TRANSFER); the new device
+  // claims it (CLAIM_SEAT_TRANSFER, unauthenticated — the code is the
+  // credential), which ROTATES the seat's secret so only the new device owns
+  // the seat. Backed by the seatTransferCodes table (system db).
+  CREATE_SEAT_TRANSFER: "game:createSeatTransfer",
+  CLAIM_SEAT_TRANSFER: "game:claimSeatTransfer",
   // NOTE: participant eviction is an HTTP route
   // (DELETE /api/games/[gameId]/participants/[seat]), not a socket event; it
   // broadcasts PARTICIPANTS from that route.
