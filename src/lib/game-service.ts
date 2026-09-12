@@ -3,7 +3,11 @@ import { SocketEvents } from "@/socket/socket-events";
 import { emitWithAck, emitEvent } from "@/lib/socket";
 import { NewParticipant } from "@/model/participants";
 import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
-import { setPlayerToken } from "./player-token";
+import {
+  setPlayerToken,
+  getPlayerToken,
+  clearPlayerToken,
+} from "./player-token";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 
 /**
@@ -126,4 +130,59 @@ export async function createParticipant(
     startingPosition: newParticipant.initialSeat,
     token: response.key,
   });
+}
+
+/**
+ * Leave (vacate) the seat this device holds, before the game starts. Authed by
+ * the seat's own token. On success the local player token is cleared so this
+ * device no longer claims the seat. Throws the server's message on failure
+ * (e.g. the game has already started).
+ */
+export async function leaveTable(gameId: string, seat: string): Promise<void> {
+  await emitWithAck<{ success: boolean }>(SocketEvents.LEAVE_TABLE, {
+    gameId,
+    seat,
+    token: getPlayerToken(gameId)?.token ?? "",
+  });
+
+  clearPlayerToken(gameId);
+}
+
+/**
+ * Mint a short, single-use code that another device can claim to take over this
+ * seat (a "change device" handoff). Authed by the seat's own token. Returns the
+ * code; throws the server's message on failure.
+ */
+export async function generateSeatTransferCode(
+  gameId: string,
+  seat: string,
+): Promise<string> {
+  const response = await emitWithAck<{ code: string }>(
+    SocketEvents.CREATE_SEAT_TRANSFER,
+    { gameId, seat, token: getPlayerToken(gameId)?.token ?? "" },
+  );
+
+  return response.code;
+}
+
+/**
+ * Claim a seat-transfer code on a new device. No auth — the code is the
+ * credential. On success the seat's secret has been rotated to a fresh token
+ * (invalidating the old device); that token is stored locally and the resolved
+ * game + seat are returned so the caller can route into play. Throws the
+ * server's message on failure (invalid/expired/used code, or the seat is no
+ * longer occupied).
+ */
+export async function claimSeatTransfer(
+  code: string,
+): Promise<{ gameId: string; seat: string }> {
+  const { gameId, seat, token } = await emitWithAck<{
+    gameId: string;
+    seat: string;
+    token: string;
+  }>(SocketEvents.CLAIM_SEAT_TRANSFER, { code });
+
+  setPlayerToken(gameId, { startingPosition: seat, token });
+
+  return { gameId, seat };
 }

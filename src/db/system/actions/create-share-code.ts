@@ -2,6 +2,7 @@ import "server-only";
 
 import { getDb } from "@/db/system";
 import { shareCodes } from "@/db/system/schema";
+import { generateShortCode, CODE_TTL_MS } from "@/db/system/short-code";
 
 /**
  * Generates a 6-character alphanumeric share code for director handoff.
@@ -10,8 +11,8 @@ import { shareCodes } from "@/db/system/schema";
 export async function createShareCode(gameId: string): Promise<string> {
   const db = await getDb();
 
-  const code = generateCode();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  const code = generateShortCode();
+  const expiresAt = new Date(Date.now() + CODE_TTL_MS).toISOString();
 
   await db.insert(shareCodes).values({
     code,
@@ -20,15 +21,5 @@ export async function createShareCode(gameId: string): Promise<string> {
     used: 0,
   });
 
-  return code;
-}
-
-function generateCode(): string {
-  // 6 uppercase alphanumeric characters (no ambiguous chars: 0/O, 1/I/L)
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
   return code;
 }
