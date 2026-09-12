@@ -17,7 +17,14 @@ export default function EnterPlayerNames({ seat, onSubmitPair }: Props) {
   const player1Label = parsedSeat.direction === "NS" ? "North" : "East";
   const player2Label = parsedSeat.direction === "NS" ? "South" : "West";
 
-  const canSubmit = player1 !== null && player2 !== null;
+  // The same EBU number can't be both players of a pair (guests, with no
+  // national id, are exempt). Caught here for instant feedback; the server also
+  // enforces it — and additionally rejects a number already seated elsewhere.
+  const sameNationalId =
+    player1?.nationalId != null &&
+    player1.nationalId === player2?.nationalId;
+
+  const canSubmit = player1 !== null && player2 !== null && !sameNationalId;
 
   return (
     <div className="w-full">
@@ -43,6 +50,13 @@ export default function EnterPlayerNames({ seat, onSubmitPair }: Props) {
             onChange={setPlayer2}
           />
         </div>
+
+        {sameNationalId && (
+          <p role="alert" className="text-sm font-medium text-red-700">
+            Both players have the same EBU number ({player1!.nationalId}). Each
+            player can only take one seat.
+          </p>
+        )}
 
         <button
           disabled={!canSubmit}

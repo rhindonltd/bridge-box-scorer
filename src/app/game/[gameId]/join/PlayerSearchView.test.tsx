@@ -16,9 +16,11 @@ const baseProps = {
   value: null,
   query: "",
   results: [] as NewPlayer[],
+  guestOption: null as NewPlayer | null,
   loading: false,
   onQueryChange: vi.fn(),
   onPlayerSelected: vi.fn(),
+  onGuestSelected: vi.fn(),
   onClear: vi.fn(),
 };
 
@@ -86,5 +88,49 @@ describe("PlayerSearchView", () => {
     expect(onPlayerSelected).toHaveBeenCalledWith(
       expect.objectContaining({ firstName: "Ada" }),
     );
+  });
+
+  it("offers a guest option and selects it", () => {
+    const onGuestSelected = vi.fn();
+    const guest = player({ firstName: "Bob", lastName: "Jones", nationalId: null });
+    render(
+      <PlayerSearchView
+        {...baseProps}
+        query="Bob Jones"
+        guestOption={guest}
+        onGuestSelected={onGuestSelected}
+      />,
+    );
+
+    const guestBtn = screen.getByTestId("player-search-guest");
+    expect(guestBtn).toHaveTextContent("Add guest:");
+    expect(guestBtn).toHaveTextContent("Bob Jones");
+    expect(guestBtn).toHaveTextContent("No EBU number");
+
+    fireEvent.click(guestBtn);
+    expect(onGuestSelected).toHaveBeenCalledWith(guest);
+  });
+
+  it("shows the guest option even when there are no database matches", () => {
+    render(
+      <PlayerSearchView
+        {...baseProps}
+        query="Nobody Known"
+        results={[]}
+        guestOption={player({
+          firstName: "Nobody",
+          lastName: "Known",
+          nationalId: null,
+        })}
+      />,
+    );
+    expect(screen.getByTestId("player-search-guest")).toBeInTheDocument();
+    expect(screen.queryAllByTestId("player-search-result")).toHaveLength(0);
+  });
+
+  it("shows no dropdown when there are neither results nor a guest option", () => {
+    render(<PlayerSearchView {...baseProps} query="a" />);
+    expect(screen.queryByTestId("player-search-guest")).not.toBeInTheDocument();
+    expect(screen.queryAllByTestId("player-search-result")).toHaveLength(0);
   });
 });

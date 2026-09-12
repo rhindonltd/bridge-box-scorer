@@ -25,6 +25,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   const gameId = game.gameId;
 
   const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const key = swrKeys.pairs(gameId);
 
@@ -47,16 +48,27 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   );
 
   const handleSeatSelected = (seat: PairSeat) => {
+    setSubmitError(null);
     setSelectedSeat(seat);
   };
 
   async function handlePairSubmitted(player1: NewPlayer, player2: NewPlayer) {
-    await createParticipant(gameId, {
-      type: "PAIR",
-      initialSeat: selectedSeat!,
-      player1,
-      player2,
-    }).then(() => onSeatSelected(selectedSeat!));
+    setSubmitError(null);
+    try {
+      await createParticipant(gameId, {
+        type: "PAIR",
+        initialSeat: selectedSeat!,
+        player1,
+        player2,
+      });
+      onSeatSelected(selectedSeat!);
+    } catch (err) {
+      // e.g. an EBU number already seated elsewhere in the event. Keep the
+      // sheet open so the entry can be corrected.
+      setSubmitError(
+        err instanceof Error ? err.message : "Could not seat this pair.",
+      );
+    }
   }
 
   return (
@@ -90,10 +102,22 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
                   `}
         >
           {selectedSeat && (
-            <EnterPlayerNames
-              seat={selectedSeat}
-              onSubmitPair={handlePairSubmitted}
-            />
+            <>
+              {submitError && (
+                <div
+                  role="alert"
+                  className="mx-auto mt-4 w-full max-w-xl px-4"
+                >
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">
+                    {submitError}
+                  </div>
+                </div>
+              )}
+              <EnterPlayerNames
+                seat={selectedSeat}
+                onSubmitPair={handlePairSubmitted}
+              />
+            </>
           )}
         </div>
       </>

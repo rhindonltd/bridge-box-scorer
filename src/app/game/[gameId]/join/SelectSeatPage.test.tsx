@@ -139,6 +139,26 @@ describe("SelectSeatPage", () => {
     await waitFor(() => expect(onSeatSelected).toHaveBeenCalledWith("A1NS"));
   });
 
+  it("shows the server error and keeps the sheet open when seating is rejected", async () => {
+    const onSeatSelected = vi.fn();
+    mockCreateParticipant.mockRejectedValue(
+      new Error("A player with EBU number 123456 is already seated in this event."),
+    );
+    render(<SelectSeatPage onSeatSelected={onSeatSelected} />);
+
+    fireEvent.click(screen.getByTestId("pick-seat"));
+    fireEvent.click(screen.getByTestId("submit-pair"));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "already seated in this event",
+      ),
+    );
+    // Navigation did not happen; the sheet stays open to fix the entry.
+    expect(onSeatSelected).not.toHaveBeenCalled();
+    expect(screen.getByTestId("sheet-seat")).toBeInTheDocument();
+  });
+
   it("wires up the participants socket->SWR sync", () => {
     render(<SelectSeatPage onSeatSelected={vi.fn()} />);
     expect(mockUseSocketSWRSync).toHaveBeenCalled();

@@ -1,16 +1,23 @@
 "use client";
 
 import { NewPlayer } from "@/db/games/tables/players";
-import { Search, User, X } from "lucide-react";
+import { Search, User, UserPlus, X } from "lucide-react";
 
 export interface PlayerSearchViewProps {
   label: string;
   value: NewPlayer | null;
   query: string;
   results: NewPlayer[];
+  /**
+   * The typed text offered as a guest player (no EBU number), or null when the
+   * query isn't usable as a name. Rendered as a selectable option so players
+   * not in the database can still be seated.
+   */
+  guestOption: NewPlayer | null;
   loading: boolean;
   onQueryChange: (query: string) => void;
   onPlayerSelected: (player: NewPlayer) => void;
+  onGuestSelected: (player: NewPlayer) => void;
   onClear: () => void;
 }
 
@@ -19,9 +26,11 @@ export function PlayerSearchView({
   value,
   query,
   results,
+  guestOption,
   loading,
   onQueryChange,
   onPlayerSelected,
+  onGuestSelected,
   onClear,
 }: PlayerSearchViewProps) {
   if (value) {
@@ -69,7 +78,7 @@ export function PlayerSearchView({
         <div className="mt-2 text-sm text-slate-500">Searching...</div>
       )}
 
-      {results.length > 0 && (
+      {(results.length > 0 || guestOption) && (
         <div className="mt-2 overflow-hidden rounded-xl border bg-white shadow-lg">
           {results.map((player, index) => (
             <button
@@ -91,6 +100,27 @@ export function PlayerSearchView({
               </div>
             </button>
           ))}
+
+          {/* Add the typed name as a guest (no EBU number). Kept last, below any
+              database matches, so a real match is still the obvious first pick. */}
+          {guestOption && (
+            <button
+              onClick={() => onGuestSelected(guestOption)}
+              data-testid="player-search-guest"
+              className="flex w-full items-center gap-3 p-3 text-left hover:bg-slate-50"
+            >
+              <UserPlus size={18} className="text-blue-500" />
+              <div>
+                <div className="font-medium">
+                  Add guest:{" "}
+                  <span className="text-slate-900">
+                    {guestOption.firstName} {guestOption.lastName}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-500">No EBU number</div>
+              </div>
+            </button>
+          )}
         </div>
       )}
     </div>
