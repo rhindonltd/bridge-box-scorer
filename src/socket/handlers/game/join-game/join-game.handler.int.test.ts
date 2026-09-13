@@ -21,7 +21,7 @@ describe("registerJoinGameHandler (integration)", () => {
     });
 
     io.on("connection", (socket) => {
-      registerJoinGameHandler(socket);
+      registerJoinGameHandler(socket, io);
     });
 
     await new Promise<void>((resolve) => {

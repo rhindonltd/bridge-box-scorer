@@ -136,6 +136,39 @@ describe("scheduleGame", () => {
     expect(deps.updateTimerState).toHaveBeenCalled();
   });
 
+  it("catches a rejecting updateTimerState in the fired timeout and does not reschedule", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const engine = makeEngine({
+      playDuration: 2,
+      isRunning: true,
+      phaseStartedAt: Date.now(),
+    });
+    const deps = {
+      updateTimerState: vi.fn().mockRejectedValue(new Error("db write failed")),
+      broadcast: vi.fn(),
+    };
+
+    scheduleGame("g-fail", "A", engine, deps);
+
+    // Firing the transition rejects inside the async callback. It must be
+    // caught (no unhandled rejection propagating out of advancing timers) and
+    // logged.
+    await vi.advanceTimersByTimeAsync(4000);
+
+    expect(deps.updateTimerState).toHaveBeenCalledTimes(1);
+    // Broadcast never runs because the update rejected first.
+    expect(deps.broadcast).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalled();
+
+    // The failed section's schedule was cleared, so advancing further does not
+    // fire another transition.
+    deps.updateTimerState.mockResolvedValue(undefined);
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(deps.updateTimerState).toHaveBeenCalledTimes(1);
+
+    errSpy.mockRestore();
+  });
+
   it("schedules sections of the same game independently", async () => {
     const deps = {
       updateTimerState: vi.fn().mockResolvedValue(undefined),

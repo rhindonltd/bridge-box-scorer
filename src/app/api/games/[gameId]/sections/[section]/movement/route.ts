@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
+import { respondToActionError } from "@/lib/api/client-error";
 import { setSectionMovement } from "@/db/games/actions/set-section-movement";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { getDb } from "@/db/games";
@@ -60,12 +61,11 @@ export const PUT = withDirectorRoute(async ({ gameId, req }) => {
     await setSectionMovement(gameId, section, selected);
 
     await broadcastSectionMovementChanged(gameId, section, previous, selected);
+    return success({});
   } catch (err) {
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : "Unknown error" },
-      { status: 400 },
+    return respondToActionError(
+      err,
+      `Failed to set movement for section ${section} in game ${gameId}:`,
     );
   }
-
-  return success({});
 });

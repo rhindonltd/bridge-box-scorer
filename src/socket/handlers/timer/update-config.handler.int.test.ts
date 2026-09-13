@@ -70,7 +70,7 @@ describe("registerUpdateConfigHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerUpdateConfigHandler(socket, io);
       });
@@ -116,7 +116,7 @@ describe("registerUpdateConfigHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerUpdateConfigHandler(socket, io);
       });
     });
@@ -153,7 +153,7 @@ describe("registerUpdateConfigHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerUpdateConfigHandler(socket, io);
       });
     });

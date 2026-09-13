@@ -25,8 +25,8 @@ export function registerGameHandlers(socket: Socket, io: Server) {
   registerCreateParticipantHandler(socket, io);
   registerLeaveTableHandler(socket, io);
   registerSeatTransferHandlers(socket, io);
-  registerJoinGameHandler(socket);
-  registerLeaveGameHandler(socket);
+  registerJoinGameHandler(socket, io);
+  registerLeaveGameHandler(socket, io);
   registerSelectMovementHandler(socket, io);
   registerSubmitResultHandler(socket, io);
 }

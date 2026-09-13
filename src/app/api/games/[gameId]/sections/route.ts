@@ -4,6 +4,7 @@ import { z } from "zod";
 import { withGameRoute } from "@/lib/api/gameRoute";
 import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
+import { respondToActionError } from "@/lib/api/client-error";
 import { createSection } from "@/db/games/actions/create-section";
 import { findSections } from "@/db/games/queries/find-sections";
 import { parseSelectedMovement } from "@/model/selected-movement";
@@ -50,13 +51,12 @@ export const POST = withDirectorRoute(async ({ gameId, req }) => {
 
   try {
     await createSection(gameId, { section, label, tables });
+    await broadcastSections(gameId);
+    return success({});
   } catch (err) {
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : "Unknown error" },
-      { status: 400 },
+    return respondToActionError(
+      err,
+      `Failed to create section in game ${gameId}:`,
     );
   }
-
-  await broadcastSections(gameId);
-  return success({});
 });

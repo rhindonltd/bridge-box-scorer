@@ -18,7 +18,9 @@ export const POST = withAdminRoute(async ({ req }) => {
     );
   }
 
-  const body = await req.json();
+  // Malformed JSON is a client error (400), not a 500: `.catch(() => null)`
+  // yields null, which fails the schema below.
+  const body = await req.json().catch(() => null);
 
   const schema = z.object({
     ssid: z.string(),

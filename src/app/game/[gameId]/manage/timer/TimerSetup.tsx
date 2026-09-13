@@ -12,7 +12,7 @@ import { useSections } from "@/hooks/sections";
 import { useMovementRoundInfo } from "@/hooks/movement-round-info";
 import { SectionPills } from "@/components/manage/sections/SectionPills";
 import { useSetupSections } from "@/components/manage/sections/useSetupSections";
-import { getSocket } from "@/lib/socket";
+import { emitWithAck } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { SocketEvents } from "@/socket/socket-events";
 import { saveTimerConfig } from "@/lib/timer-service";
@@ -175,31 +175,29 @@ function TimerLiveContainer({
     setAdjustApplyToFuture,
   } = useTimerConfigState(timerState);
 
-  function emitSimple(event: string) {
-    getSocket().emit(event, {
+  // Timer controls are acknowledged: the server validates, mutates the live
+  // engine, and acks success/failure. We surface failures (unauthorized, no
+  // live timer, internal error) rather than firing and forgetting, so a control
+  // that silently didn't take effect is visible instead of leaving the director
+  // guessing.
+  function runControl(event: string, extra?: Record<string, unknown>) {
+    void emitWithAck(event, {
       gameType: game.gameType,
       gameId: game.gameId,
       section,
       directorToken: getDirectorToken(game.gameId),
+      ...extra,
+    }).catch((err) => {
+      console.error(`Timer control ${event} failed:`, err);
     });
   }
 
   function onApplyChanges() {
-    getSocket().emit(SocketEvents.UPDATE_CONFIG_TIMER, {
-      gameType: game.gameType,
-      gameId: game.gameId,
-      section,
-      directorToken: getDirectorToken(game.gameId),
-      ...emitConfigFields,
-    });
+    runControl(SocketEvents.UPDATE_CONFIG_TIMER, emitConfigFields);
   }
 
   function onAdjustTime(deltaSeconds: number) {
-    getSocket().emit(SocketEvents.ADJUST_TIME_TIMER, {
-      gameType: game.gameType,
-      gameId: game.gameId,
-      section,
-      directorToken: getDirectorToken(game.gameId),
+    runControl(SocketEvents.ADJUST_TIME_TIMER, {
       deltaSeconds,
       applyToFutureSameType: adjustApplyToFuture,
     });
@@ -212,10 +210,10 @@ function TimerLiveContainer({
       config={config}
       breakProblems={breakProblems}
       onApplyChanges={onApplyChanges}
-      onStart={() => emitSimple(SocketEvents.START_TIMER)}
-      onPause={() => emitSimple(SocketEvents.PAUSE_TIMER)}
-      onNext={() => emitSimple(SocketEvents.NEXT_ROUND_TIMER)}
-      onPrevious={() => emitSimple(SocketEvents.PREVIOUS_TIMER)}
+      onStart={() => runControl(SocketEvents.START_TIMER)}
+      onPause={() => runControl(SocketEvents.PAUSE_TIMER)}
+      onNext={() => runControl(SocketEvents.NEXT_ROUND_TIMER)}
+      onPrevious={() => runControl(SocketEvents.PREVIOUS_TIMER)}
       onAdjustTime={onAdjustTime}
       adjustApplyToFuture={adjustApplyToFuture}
       onAdjustApplyToFutureChange={setAdjustApplyToFuture}

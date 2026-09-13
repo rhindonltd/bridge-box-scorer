@@ -13,12 +13,16 @@ vi.mock("@/db/games/queries/get-section-movement", () => ({
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSectionMovementChanged: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { setSectionMovement } from "@/db/games/actions/set-section-movement";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { broadcastSectionMovementChanged } from "@/socket/broadcast/section-broadcast";
+import { logger } from "@/lib/log";
 import { PUT } from "./route";
 
 function invoke(
@@ -96,12 +100,17 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
     expect(setSectionMovement).not.toHaveBeenCalled();
   });
 
-  it("returns 400 with the action's message on failure", async () => {
-    vi.mocked(setSectionMovement).mockRejectedValue(new Error("Invalid movement"));
+  it("returns 500 (generic, logged) when persisting the movement fails", async () => {
+    const errSpy = vi.mocked(logger.error);
+    vi.mocked(setSectionMovement).mockRejectedValue(new Error("db exploded"));
     const res = await invoke("g1", "A", {
       mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
     });
-    expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toMatchObject({ error: "Invalid movement" });
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toMatchObject({
+      error: "Internal server error",
+    });
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockClear();
   });
 });

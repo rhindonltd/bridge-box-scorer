@@ -3,8 +3,9 @@ import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
 import { scheduleGame } from "@/timer/scheduler";
 import { Server, Socket } from "socket.io";
-import { assertDirector } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { z } from "zod";
+import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 import { makeTimerBroadcaster } from "./broadcast-timer";
 import { directorTimerFields } from "./payload";
 
@@ -13,19 +14,16 @@ const payloadSchema = z.object(directorTimerFields);
 export function registerStartTimerHandler(socket: Socket, io: Server) {
   const broadcast = makeTimerBroadcaster(io);
 
-  socket.on(SocketEvents.START_TIMER, async (payload: unknown) => {
-    const parsed = payloadSchema.safeParse(payload);
-    if (!parsed.success) {
-      console.warn("Invalid START_TIMER payload:", parsed.error.message);
-      return;
-    }
+  registerHandler(socket, io, SocketEvents.START_TIMER, {
+    schema: payloadSchema,
+    handler: async ({ payload, ack }) => {
+      const { gameId, section, directorToken } = payload;
+      if (!validateDirectorToken(directorToken, gameId)) {
+        throw new HandlerError("Unauthorized");
+      }
 
-    const { gameId, section, directorToken } = parsed.data;
-    if (!assertDirector(directorToken, gameId)) return;
-
-    try {
       const engine = await getEngine(gameId, section);
-      if (!engine) return;
+      if (!engine) throw new HandlerError("Timer not found");
 
       engine.start();
 
@@ -33,8 +31,8 @@ export function registerStartTimerHandler(socket: Socket, io: Server) {
       broadcast(gameId, section, engine.getState());
 
       scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
-    } catch (err) {
-      console.error(`Failed to start timer for game ${gameId}:`, err);
-    }
+
+      ack({ success: true, data: undefined });
+    },
   });
 }

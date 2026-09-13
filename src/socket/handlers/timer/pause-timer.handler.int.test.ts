@@ -81,7 +81,7 @@ describe("registerPauseTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerPauseTimerHandler(socket, io);
       });
@@ -117,7 +117,7 @@ describe("registerPauseTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerPauseTimerHandler(socket, io);
       });
@@ -148,7 +148,7 @@ describe("registerPauseTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerPauseTimerHandler(socket, io);
       });

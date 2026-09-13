@@ -53,7 +53,12 @@ describe("registerSeatTransferHandlers", () => {
         cb,
       );
 
-      expect(assertPlayer).toHaveBeenCalledWith("g1", "A1NS", "tok", cb);
+      expect(assertPlayer).toHaveBeenCalledWith(
+        "g1",
+        "A1NS",
+        "tok",
+        expect.any(Function),
+      );
       expect(createSeatTransferCode).toHaveBeenCalledWith("g1", "A1NS");
       expect(cb).toHaveBeenCalledWith({
         success: true,
@@ -87,7 +92,10 @@ describe("registerSeatTransferHandlers", () => {
         cb,
       );
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "boom" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Internal error",
+      });
       errSpy.mockRestore();
     });
   });
@@ -152,7 +160,10 @@ describe("registerSeatTransferHandlers", () => {
         cb,
       );
 
-      expect(cb).toHaveBeenCalledWith({ success: false, error: "db down" });
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Internal error",
+      });
       errSpy.mockRestore();
     });
   });

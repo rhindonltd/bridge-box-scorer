@@ -4,6 +4,9 @@ import { testApiHandler } from "next-test-api-route-handler";
 vi.mock("@/db/movements/queries", () => ({
   getPairMovementSpecsForTables: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getPairMovementSpecsForTables } from "@/db/movements/queries";
 import * as appHandler from "./route";

@@ -1,18 +1,19 @@
-import { Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
+import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
+import { registerHandler } from "@/socket/handlers/handler-wrapper";
 
-export function registerLeaveGameHandler(socket: Socket) {
-  socket.on(
-    SocketEvents.LEAVE_GAME,
-    async ({ gameId }: { gameId: string }, cb) => {
-      try {
-        socket.leave(Rooms.game(gameId));
+const payloadSchema = z.object({
+  gameId: z.string().min(1),
+});
 
-        cb?.({ success: true });
-      } catch {
-        cb?.({ success: false });
-      }
+export function registerLeaveGameHandler(socket: Socket, io: Server) {
+  registerHandler(socket, io, SocketEvents.LEAVE_GAME, {
+    schema: payloadSchema,
+    handler: async ({ payload, ack }) => {
+      socket.leave(Rooms.game(payload.gameId));
+      ack({ success: true, data: undefined });
     },
-  );
+  });
 }

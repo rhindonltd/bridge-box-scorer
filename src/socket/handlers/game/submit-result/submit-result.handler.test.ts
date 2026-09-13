@@ -62,6 +62,7 @@ vi.mock("@/socket/middleware/participant-auth", () => ({
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
+import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { registerSubmitResultHandler } from "./submit-result.handler";
 
@@ -172,7 +173,7 @@ describe("registerSubmitResultHandler", () => {
         result: "3NTN=",
       }),
     );
-    expect(cb).toHaveBeenCalledWith({ success: true });
+    expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
     // Only one side submitted, so no board event.
     expect(io._emit).not.toHaveBeenCalled();
   });
@@ -203,7 +204,7 @@ describe("registerSubmitResultHandler", () => {
       cb,
     );
 
-    expect(cb).toHaveBeenCalledWith({ success: true });
+    expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
     expect(io._emit).toHaveBeenCalledWith(
       SocketEvents.BOARD_CONFIRMED,
       expect.objectContaining({
@@ -329,6 +330,47 @@ describe("registerSubmitResultHandler", () => {
     });
   });
 
+  it("acks success exactly once even if the downstream broadcast throws", async () => {
+    // Both sides agree → the handler confirms then broadcasts. If the broadcast
+    // fails AFTER the submitter was already acked, it must be logged but must
+    // NOT re-ack the submitter (previously produced a success+failure double ack).
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      submission("NS", 1, "4HS+1"),
+      submission("EW", 1, "4HS+1"),
+    ] as any);
+    vi.mocked(broadcastResultsChanged).mockRejectedValueOnce(
+      new Error("broadcast blew up"),
+    );
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const socket = makeSocket();
+    const io = makeIo();
+    registerSubmitResultHandler(socket, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler(
+      {
+        gameId: "g8",
+        seat: "A1EW",
+        token: "tok",
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: 1,
+        result: "4HS+1",
+      },
+      cb,
+    );
+
+    // Exactly one ack, and it is the success one.
+    expect(cb).toHaveBeenCalledTimes(1);
+    expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
+    // The downstream failure was logged, not re-acked.
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
   it("rejects when assertPlayer fails and stores/broadcasts nothing", async () => {
     // Simulate a wrong/missing token: assertPlayer rejects via the callback.
     vi.mocked(assertPlayer).mockImplementation(
@@ -358,7 +400,12 @@ describe("registerSubmitResultHandler", () => {
       cb,
     );
 
-    expect(assertPlayer).toHaveBeenCalledWith("g7", "A1NS", "wrong", cb);
+    expect(assertPlayer).toHaveBeenCalledWith(
+      "g7",
+      "A1NS",
+      "wrong",
+      expect.any(Function),
+    );
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
     // Nothing stored, nothing broadcast.
     expect(createBoardSubmission).not.toHaveBeenCalled();

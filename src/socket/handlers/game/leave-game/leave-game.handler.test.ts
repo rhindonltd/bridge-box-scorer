@@ -5,6 +5,7 @@ import { registerLeaveGameHandler } from "@/socket/handlers/game/leave-game/leav
 
 describe("registerLeaveGameHandler (unit)", () => {
   let socket: any;
+  const io = {} as any;
 
   beforeEach(() => {
     socket = {
@@ -14,7 +15,7 @@ describe("registerLeaveGameHandler (unit)", () => {
   });
 
   it("registers LEAVE_GAME handler", () => {
-    registerLeaveGameHandler(socket as any);
+    registerLeaveGameHandler(socket as any, io);
 
     expect(socket.on).toHaveBeenCalledWith(
       SocketEvents.LEAVE_GAME,
@@ -23,7 +24,7 @@ describe("registerLeaveGameHandler (unit)", () => {
   });
 
   it("leaves correct room and returns success", async () => {
-    registerLeaveGameHandler(socket as any);
+    registerLeaveGameHandler(socket as any, io);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
@@ -34,11 +35,12 @@ describe("registerLeaveGameHandler (unit)", () => {
 
     expect(cb).toHaveBeenCalledWith({
       success: true,
+      data: undefined,
     });
   });
 
   it("handles missing callback safely", async () => {
-    registerLeaveGameHandler(socket as any);
+    registerLeaveGameHandler(socket as any, io);
 
     const handler = socket.on.mock.calls[0][1];
 
@@ -49,18 +51,19 @@ describe("registerLeaveGameHandler (unit)", () => {
     expect(socket.leave).toHaveBeenCalled();
   });
 
-  it("calls cb with success: false when leave throws", async () => {
+  it("acks a generic failure when leave throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     socket.leave = vi.fn().mockImplementation(() => {
       throw new Error("leave failed");
     });
 
-    registerLeaveGameHandler(socket as any);
+    registerLeaveGameHandler(socket as any, io);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
     await handler({ gameId: "game-1" }, cb);
 
-    expect(cb).toHaveBeenCalledWith({ success: false });
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal error" });
   });
 });

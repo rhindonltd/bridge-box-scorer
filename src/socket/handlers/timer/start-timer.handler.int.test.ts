@@ -82,7 +82,7 @@ describe("registerStartTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerStartTimerHandler(socket, io);
       });
@@ -131,7 +131,7 @@ describe("registerStartTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerStartTimerHandler(socket, io);
       });
@@ -169,7 +169,7 @@ describe("registerStartTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerStartTimerHandler(socket, io);
       });
@@ -202,7 +202,7 @@ describe("registerStartTimerHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerStartTimerHandler(socket, io);
       });

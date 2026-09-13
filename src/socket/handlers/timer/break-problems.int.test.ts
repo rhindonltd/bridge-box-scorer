@@ -52,7 +52,7 @@ describe("timer break-problem broadcast (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       server = io;
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
       });
     });
@@ -89,7 +89,7 @@ describe("timer break-problem broadcast (integration)", () => {
     const { client, close } = await createSocketTestServer((io) => {
       server = io;
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
       });
     });

@@ -6,6 +6,9 @@ vi.mock("@/db/system/queries/validate-share-code", () => ({
 vi.mock("@/db/system/actions/create-login-session", () => ({
   createLoginSession: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { validateAndClaimShareCode } from "@/db/system/queries/validate-share-code";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
@@ -88,7 +91,6 @@ describe("POST /api/director-codes/claim", () => {
   });
 
   it("returns 500 when validateAndClaimShareCode throws (infra failure)", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(validateAndClaimShareCode).mockRejectedValue(
       new Error("DB error"),
     );
@@ -99,6 +101,5 @@ describe("POST /api/director-codes/claim", () => {
     await expect(res.json()).resolves.toMatchObject({
       error: "Internal server error",
     });
-    errSpy.mockRestore();
   });
 });

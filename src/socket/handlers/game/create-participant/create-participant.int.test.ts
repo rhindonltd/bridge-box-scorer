@@ -178,14 +178,16 @@ describe("registerCreateParticipantHandler (integration)", () => {
       );
     });
 
+    // Infra failures are no longer leaked to the client; the wrapper acks a
+    // generic error and logs the detail server-side.
     expect(response).toMatchObject({
       success: false,
-      error: "Game db does not exist",
+      error: "Internal error",
     });
     errSpy.mockRestore();
   });
 
-  it("maps a non-Error rejection to Unknown error", async () => {
+  it("maps an unexpected rejection to a generic internal error", async () => {
     vi.mocked(createPlayer).mockRejectedValue("boom");
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -208,7 +210,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
 
     expect(response).toMatchObject({
       success: false,
-      error: "Unknown error",
+      error: "Internal error",
     });
     errSpy.mockRestore();
   });

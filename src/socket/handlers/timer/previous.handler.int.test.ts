@@ -56,7 +56,7 @@ describe("registerPreviousHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerPreviousHandler(socket, io);
       });
@@ -101,7 +101,7 @@ describe("registerPreviousHandler (integration)", () => {
 
     await vi.waitFor(() =>
       expect(warnSpy).toHaveBeenCalledWith(
-        "Invalid PREVIOUS_TIMER payload:",
+        "Invalid timer:previous payload:",
         expect.any(String),
       ),
     );
@@ -135,7 +135,7 @@ describe("registerPreviousHandler (integration)", () => {
 
     await vi.waitFor(() =>
       expect(errSpy).toHaveBeenCalledWith(
-        "Failed to step timer back for game game-1:",
+        "Error handling timer:previous:",
         expect.any(Error),
       ),
     );

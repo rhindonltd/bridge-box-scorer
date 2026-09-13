@@ -10,6 +10,9 @@ vi.mock("@/db/games/actions/update-timer-state", () => ({
 vi.mock("@/socket/broadcast/timer-broadcast", () => ({
   broadcastTimerConfigSaved: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
@@ -117,7 +120,6 @@ describe("PUT /api/games/[gameId]/sections/[section]/timer/config", () => {
   });
 
   it("returns 500 when updateTimerState throws", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(updateTimerState).mockRejectedValue(new Error("DB error"));
 
     const res = await invoke("g1", "A", validBody);
@@ -127,6 +129,5 @@ describe("PUT /api/games/[gameId]/sections/[section]/timer/config", () => {
       error: "Internal server error",
     });
     expect(broadcastTimerConfigSaved).not.toHaveBeenCalled();
-    errSpy.mockRestore();
   });
 });

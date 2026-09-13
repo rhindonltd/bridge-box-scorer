@@ -1,4 +1,5 @@
 import { Server, Socket } from "socket.io";
+import { z } from "zod";
 
 import { SocketEvents } from "@/socket/socket-events";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
@@ -6,6 +7,13 @@ import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { deleteParticipant } from "@/db/games/actions/delete-participant";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { PairSeat } from "@/model/participants";
+import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+
+const payloadSchema = z.object({
+  gameId: z.string().min(1),
+  seat: z.string().min(1),
+  token: z.string().optional(),
+});
 
 /**
  * LEAVE_TABLE — a seated player vacates their seat before the game starts,
@@ -19,43 +27,26 @@ import { PairSeat } from "@/model/participants";
  * free again.
  */
 export function registerLeaveTableHandler(socket: Socket, io: Server) {
-  socket.on(
-    SocketEvents.LEAVE_TABLE,
-    async (
-      {
-        gameId,
-        seat,
-        token,
-      }: { gameId: string; seat: string; token?: string },
-      cb?: (res: { success: boolean; error?: string }) => void,
-    ) => {
-      if (!(await assertPlayer(gameId, seat, token, cb))) {
+  registerHandler(socket, io, SocketEvents.LEAVE_TABLE, {
+    schema: payloadSchema,
+    handler: async ({ payload, ack }) => {
+      const { gameId, seat, token } = payload;
+
+      // assertPlayer acks its own {success:false,error:"Unauthorized"} via the
+      // guarded ack, then we stop.
+      if (!(await assertPlayer(gameId, seat, token, ack))) {
         return;
       }
 
-      try {
-        if (await isGameStarted(gameId)) {
-          cb?.({
-            success: false,
-            error:
-              "The game has already started; you can no longer leave your seat.",
-          });
-          return;
-        }
-
-        await deleteParticipant(gameId, seat as PairSeat);
-        await broadcastParticipants(gameId, io);
-        cb?.({ success: true });
-      } catch (err) {
-        console.error(
-          `Failed to leave table at seat ${seat} in game ${gameId}`,
-          err,
+      if (await isGameStarted(gameId)) {
+        throw new HandlerError(
+          "The game has already started; you can no longer leave your seat.",
         );
-        cb?.({
-          success: false,
-          error: err instanceof Error ? err.message : "Unknown error",
-        });
       }
+
+      await deleteParticipant(gameId, seat as PairSeat);
+      await broadcastParticipants(gameId, io);
+      ack({ success: true, data: undefined });
     },
-  );
+  });
 }

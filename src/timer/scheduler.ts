@@ -84,18 +84,32 @@ export function scheduleGame(
   const delay = Math.max(0, engine.getRemainingMs() + 1000);
 
   const timeout = setTimeout(async () => {
-    engine.nextPhase();
+    // This runs `delay` ms later, detached from any caller: nothing awaits the
+    // promise this async callback returns. A throw here (e.g. updateTimerState
+    // rejecting on a transient DB error) would otherwise be an unhandled
+    // rejection — historically a process-crash risk. Catch it, log with
+    // context, and clear this section's schedule rather than rescheduling into
+    // a broken state; other sections keep running.
+    try {
+      engine.nextPhase();
 
-    await deps.updateTimerState(gameId, section, engine.getState());
+      await deps.updateTimerState(gameId, section, engine.getState());
 
-    deps.broadcast(gameId, section, engine.getState());
+      deps.broadcast(gameId, section, engine.getState());
 
-    /**
-     * If the engine auto-continued
-     * into the next phase,
-     * schedule the next transition.
-     */
-    scheduleGame(gameId, section, engine, deps);
+      /**
+       * If the engine auto-continued
+       * into the next phase,
+       * schedule the next transition.
+       */
+      scheduleGame(gameId, section, engine, deps);
+    } catch (err) {
+      console.error(
+        `Timer transition failed for game ${gameId} section ${section}; clearing its schedule:`,
+        err,
+      );
+      cancelGameSchedule(gameId, section);
+    }
   }, delay);
 
   scheduledGames().set(scheduleKey(gameId, section), {

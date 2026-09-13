@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/log";
 
 /**
  * A user-facing error in a request: something the caller got wrong (bad input,
@@ -25,7 +26,7 @@ export function respondToActionError(err: unknown, context: string): NextRespons
     );
   }
 
-  console.error(context, err);
+  logger.error({ err, context }, "Unhandled action error");
   return NextResponse.json(
     { success: false, error: "Internal server error" },
     { status: 500 },

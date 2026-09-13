@@ -1,18 +1,17 @@
+import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
-import { Server, Socket } from "socket.io";
-import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { scheduleGame } from "@/timer/scheduler";
-import { assertDirector } from "@/socket/middleware/director-auth";
+import { Server, Socket } from "socket.io";
+import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { z } from "zod";
+import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 import { makeTimerBroadcaster } from "./broadcast-timer";
 import { directorTimerFields } from "./payload";
 
 /**
- * "Previous" is a two-step control. The first press restarts the current phase;
- * a second press (while the phase is already at full duration) steps back to
- * the previous phase. The `restart` flag lets the client request the restart
- * step explicitly; when false the handler steps to the previous phase.
+ * `restart` steps the current phase back to its start; otherwise the handler
+ * steps to the previous phase.
  */
 const payloadSchema = z.object({
   ...directorTimerFields,
@@ -22,19 +21,16 @@ const payloadSchema = z.object({
 export function registerPreviousHandler(socket: Socket, io: Server) {
   const broadcast = makeTimerBroadcaster(io);
 
-  socket.on(SocketEvents.PREVIOUS_TIMER, async (payload: unknown) => {
-    const parsed = payloadSchema.safeParse(payload);
-    if (!parsed.success) {
-      console.warn("Invalid PREVIOUS_TIMER payload:", parsed.error.message);
-      return;
-    }
+  registerHandler(socket, io, SocketEvents.PREVIOUS_TIMER, {
+    schema: payloadSchema,
+    handler: async ({ payload, ack }) => {
+      const { gameId, section, directorToken, restart } = payload;
+      if (!validateDirectorToken(directorToken, gameId)) {
+        throw new HandlerError("Unauthorized");
+      }
 
-    const { gameId, section, directorToken, restart } = parsed.data;
-    if (!assertDirector(directorToken, gameId)) return;
-
-    try {
       const engine = await getEngine(gameId, section);
-      if (!engine) return;
+      if (!engine) throw new HandlerError("Timer not found");
 
       if (restart) {
         engine.restartPhase();
@@ -46,8 +42,8 @@ export function registerPreviousHandler(socket: Socket, io: Server) {
       broadcast(gameId, section, engine.getState());
 
       scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
-    } catch (err) {
-      console.error(`Failed to step timer back for game ${gameId}:`, err);
-    }
+
+      ack({ success: true, data: undefined });
+    },
   });
 }

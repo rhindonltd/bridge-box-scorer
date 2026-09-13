@@ -56,7 +56,7 @@ describe("registerAdjustTimeHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerRequestStateHandler(socket, io);
         registerAdjustTimeHandler(socket, io);
       });
@@ -137,7 +137,7 @@ describe("registerAdjustTimeHandler (integration)", () => {
     // Give the async handler time to hit the catch.
     await vi.waitFor(() =>
       expect(errSpy).toHaveBeenCalledWith(
-        "Failed to adjust timer time for game game-1:",
+        "Error handling timer:adjustTime:",
         expect.any(Error),
       ),
     );

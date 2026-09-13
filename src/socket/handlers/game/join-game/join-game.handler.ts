@@ -1,6 +1,13 @@
-import { Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
+import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
+import { registerHandler } from "@/socket/handlers/handler-wrapper";
+
+const payloadSchema = z.object({
+  gameId: z.string().min(1),
+  section: z.string().min(1).optional(),
+});
 
 /**
  * Join a game's room, and — when the client supplies its section — also the
@@ -12,24 +19,19 @@ import { Rooms } from "@/socket/rooms";
  * feature-scoped request (see `timer:requestState`) rather than having every
  * join replay every feature's state.
  */
-export function registerJoinGameHandler(socket: Socket) {
-  socket.on(
-    SocketEvents.JOIN_GAME,
-    async (
-      { gameId, section }: { gameId: string; section?: string },
-      cb,
-    ) => {
-      try {
-        socket.join(Rooms.game(gameId));
+export function registerJoinGameHandler(socket: Socket, io: Server) {
+  registerHandler(socket, io, SocketEvents.JOIN_GAME, {
+    schema: payloadSchema,
+    handler: async ({ payload, ack }) => {
+      const { gameId, section } = payload;
 
-        if (section) {
-          socket.join(Rooms.section(gameId, section));
-        }
+      socket.join(Rooms.game(gameId));
 
-        cb?.({ success: true });
-      } catch {
-        cb?.({ success: false });
+      if (section) {
+        socket.join(Rooms.section(gameId, section));
       }
+
+      ack({ success: true, data: undefined });
     },
-  );
+  });
 }

@@ -21,9 +21,11 @@ vi.mock("@/context/TimerContext", () => ({
   }),
 }));
 
-const mockEmit = vi.fn();
+// Timer controls emit via emitWithAck (awaiting the server's ack). Resolve it so
+// runControl's `.catch` never fires in tests.
+const mockEmitWithAck = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/socket", () => ({
-  getSocket: () => ({ emit: mockEmit }),
+  emitWithAck: (...args: unknown[]) => mockEmitWithAck(...args),
 }));
 
 vi.mock("@/lib/director-token", () => ({
@@ -454,14 +456,14 @@ describe("TimerManager (routes by started state)", () => {
     render(<TimerManager started={true} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Apply Changes" }));
-    expect(mockEmit).toHaveBeenCalledWith(
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.UPDATE_CONFIG_TIMER,
       expect.objectContaining({ gameId: "g1" }),
     );
 
     // Running -> primary action is Pause.
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));
-    expect(mockEmit).toHaveBeenCalledWith(
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.PAUSE_TIMER,
       expect.objectContaining({ gameId: "g1", directorToken: "token" }),
     );
@@ -484,25 +486,25 @@ describe("TimerManager (routes by started state)", () => {
     render(<TimerManager started={true} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
-    expect(mockEmit).toHaveBeenCalledWith(
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.START_TIMER,
       expect.objectContaining({ gameId: "g1", directorToken: "token" }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Next phase" }));
-    expect(mockEmit).toHaveBeenCalledWith(
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.NEXT_ROUND_TIMER,
       expect.objectContaining({ gameId: "g1", directorToken: "token" }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Previous phase" }));
-    expect(mockEmit).toHaveBeenCalledWith(
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.PREVIOUS_TIMER,
       expect.objectContaining({ gameId: "g1", directorToken: "token" }),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "+1m" }));
-    expect(mockEmit).toHaveBeenCalledWith(
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.ADJUST_TIME_TIMER,
       expect.objectContaining({
         gameId: "g1",
@@ -517,7 +519,7 @@ describe("TimerManager (routes by started state)", () => {
       }),
     );
     fireEvent.click(screen.getByRole("button", { name: "−15s" }));
-    expect(mockEmit).toHaveBeenCalledWith(
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.ADJUST_TIME_TIMER,
       expect.objectContaining({
         deltaSeconds: -15,
@@ -628,7 +630,7 @@ describe("per-section timer UI", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
-    expect(mockEmit).toHaveBeenCalledWith(
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.START_TIMER,
       expect.objectContaining({ section: "B" }),
     );
