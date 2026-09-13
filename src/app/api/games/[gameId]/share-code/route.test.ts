@@ -7,6 +7,9 @@ vi.mock("@/socket/middleware/director-auth", () => ({
 vi.mock("@/db/system/actions/create-share-code", () => ({
   createShareCode: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
@@ -59,7 +62,6 @@ describe("POST /api/games/[gameId]/share-code", () => {
   });
 
   it("returns 500 when createShareCode throws", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(createShareCode).mockRejectedValue(new Error("DB error"));
 
     const res = await invoke("g1");
@@ -68,6 +70,5 @@ describe("POST /api/games/[gameId]/share-code", () => {
     await expect(res.json()).resolves.toMatchObject({
       error: "Internal server error",
     });
-    errSpy.mockRestore();
   });
 });

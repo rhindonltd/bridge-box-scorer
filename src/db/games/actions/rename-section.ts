@@ -3,6 +3,7 @@ import "server-only";
 import { getDb } from "@/db/games";
 import { sections } from "@/db/games/tables/sections";
 import { eq } from "drizzle-orm";
+import { ClientError } from "@/lib/api/client-error";
 
 /**
  * Update a section's display label. The section letter (primary key) is not
@@ -26,7 +27,7 @@ export async function renameSection(
     .get();
 
   if (!existing) {
-    throw new Error(`Section ${section} does not exist`);
+    throw new ClientError(`Section ${section} does not exist`);
   }
 
   await db

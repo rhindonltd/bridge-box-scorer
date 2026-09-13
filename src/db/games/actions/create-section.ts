@@ -2,6 +2,7 @@ import "server-only";
 
 import { getDb } from "@/db/games";
 import { sections } from "@/db/games/tables/sections";
+import { ClientError } from "@/lib/api/client-error";
 
 export interface CreateSectionInput {
   section: string;
@@ -28,7 +29,7 @@ export async function createSection(
   const existing = await db.select().from(sections);
 
   if (existing.some((s) => s.section === input.section)) {
-    throw new Error(`Section ${input.section} already exists`);
+    throw new ClientError(`Section ${input.section} already exists`);
   }
 
   const ordinal =

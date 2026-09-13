@@ -10,6 +10,9 @@ vi.mock("@/db/system/actions/create-login-session", () => ({
 vi.mock("@/socket/broadcast/joinable-broadcast", () => ({
   broadcastJoinableGames: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
@@ -81,7 +84,6 @@ describe("POST /api/games", () => {
   });
 
   it("returns 500 and does not broadcast when creation fails (server error)", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(createBridgeGame).mockRejectedValue(new Error("db exploded"));
 
     const res = await invoke(validBody);
@@ -91,6 +93,5 @@ describe("POST /api/games", () => {
       error: "Internal server error",
     });
     expect(broadcastJoinableGames).not.toHaveBeenCalled();
-    errSpy.mockRestore();
   });
 });

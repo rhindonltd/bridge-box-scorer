@@ -4,6 +4,7 @@ import { getDb } from "@/db/games";
 import { sections } from "@/db/games/tables/sections";
 import { eq } from "drizzle-orm";
 import { highestOccupiedTableInSection } from "@/db/games/queries/highest-occupied-table";
+import { ClientError } from "@/lib/api/client-error";
 
 /**
  * Change the number of tables in a section. Growing is always allowed. Shrinking
@@ -29,13 +30,13 @@ export async function updateSectionTables(
     .get();
 
   if (!existing) {
-    throw new Error(`Section ${section} does not exist`);
+    throw new ClientError(`Section ${section} does not exist`);
   }
 
   if (tables < existing.tables) {
     const highest = await highestOccupiedTableInSection(db, section);
     if (highest > tables) {
-      throw new Error(
+      throw new ClientError(
         `Cannot reduce section ${section} to ${tables} tables: table ${highest} has seated participants. Evict them first.`,
       );
     }

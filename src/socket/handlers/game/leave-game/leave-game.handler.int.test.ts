@@ -22,8 +22,8 @@ describe("registerLeaveGameHandler (integration)", () => {
     });
 
     io.on("connection", (socket) => {
-      registerJoinGameHandler(socket);
-      registerLeaveGameHandler(socket);
+      registerJoinGameHandler(socket, io);
+      registerLeaveGameHandler(socket, io);
     });
 
     await new Promise<void>((resolve) => {

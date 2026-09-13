@@ -12,6 +12,9 @@ vi.mock("@/socket/broadcast/game-broadcast", () => ({
   broadcastGameStarted: vi.fn(),
 }));
 vi.mock("@/socket/websocket", () => ({ getIO: vi.fn() }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
@@ -104,7 +107,6 @@ describe("POST /api/games/[gameId]/start", () => {
   });
 
   it("returns 500 when the start service throws (infra failure)", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(startGame).mockRejectedValue(new Error("Game db does not exist"));
 
     const res = await invoke("g1");
@@ -114,6 +116,5 @@ describe("POST /api/games/[gameId]/start", () => {
       error: "Internal server error",
     });
     expect(broadcastGameStarted).not.toHaveBeenCalled();
-    errSpy.mockRestore();
   });
 });

@@ -1,4 +1,5 @@
 import { Server, Socket } from "socket.io";
+import { z } from "zod";
 
 import { SocketEvents } from "@/socket/socket-events";
 
@@ -10,21 +11,25 @@ import { findSeatedNationalIds } from "@/db/games/queries/find-seated-national-i
 
 import { NewParticipant } from "@/model/participants";
 import { getDb } from "@/db/games";
+import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+
+// `newParticipant` carries a nested player/seat structure validated by the
+// domain model; keep it as a passthrough here and rely on the typed shape.
+const payloadSchema = z.object({
+  gameId: z.string().min(1),
+  newParticipant: z.custom<NewParticipant>(),
+});
 
 export function registerCreateParticipantHandler(socket: Socket, io: Server) {
-  socket.on(
+  registerHandler<z.infer<typeof payloadSchema>, { key: string }>(
+    socket,
+    io,
     SocketEvents.CREATE_PARTICIPANT,
-    async (
-      {
-        gameId,
-        newParticipant,
-      }: {
-        gameId: string;
-        newParticipant: NewParticipant;
-      },
-      cb,
-    ) => {
-      try {
+    {
+      schema: payloadSchema,
+      handler: async ({ payload, ack }) => {
+        const { gameId, newParticipant } = payload;
+
         const db = await getDb(gameId);
 
         if (!db) {
@@ -39,11 +44,9 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
         const id2 = newParticipant.player2.nationalId ?? null;
 
         if (id1 && id2 && id1 === id2) {
-          cb({
-            error: `The same EBU number (${id1}) can't be entered for both players.`,
-            success: false,
-          });
-          return;
+          throw new HandlerError(
+            `The same EBU number (${id1}) can't be entered for both players.`,
+          );
         }
 
         // Only hit the database when there's an EBU number to check against
@@ -53,11 +56,9 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
           const seated = await findSeatedNationalIds(db);
           const clash = incomingIds.find((id) => seated.has(id));
           if (clash) {
-            cb({
-              error: `A player with EBU number ${clash} is already seated in this event.`,
-              success: false,
-            });
-            return;
+            throw new HandlerError(
+              `A player with EBU number ${clash} is already seated in this event.`,
+            );
           }
         }
 
@@ -75,17 +76,8 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
         });
 
         await broadcastParticipants(gameId, io);
-        cb({
-          data: { key },
-          success: true,
-        });
-      } catch (err) {
-        console.error(`Failed to create participant for game ${gameId}`, err);
-        cb({
-          error: err instanceof Error ? err.message : "Unknown error",
-          success: false,
-        });
-      }
+        ack({ success: true, data: { key } });
+      },
     },
   );
 }

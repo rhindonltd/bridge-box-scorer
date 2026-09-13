@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
+import { respondToActionError } from "@/lib/api/client-error";
 import { updateSectionTables } from "@/db/games/actions/update-section-tables";
 import { findSections } from "@/db/games/queries/find-sections";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
@@ -35,13 +36,12 @@ export const PUT = withDirectorRoute(async ({ gameId, db, req }) => {
 
   try {
     await updateSectionTables(gameId, section, parsed.data.tables);
+    await broadcastSections(gameId);
+    return success({});
   } catch (err) {
-    return NextResponse.json(
-      { success: false, error: err instanceof Error ? err.message : "Unknown error" },
-      { status: 400 },
+    return respondToActionError(
+      err,
+      `Failed to update tables for section ${section} in game ${gameId}:`,
     );
   }
-
-  await broadcastSections(gameId);
-  return success({});
 });

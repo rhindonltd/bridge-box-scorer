@@ -5,6 +5,7 @@ import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-g
 
 describe("registerJoinGameHandler (unit)", () => {
   let socket: any;
+  const io = {} as any;
 
   beforeEach(() => {
     socket = {
@@ -14,7 +15,7 @@ describe("registerJoinGameHandler (unit)", () => {
   });
 
   it("registers JOIN_GAME handler", () => {
-    registerJoinGameHandler(socket as any);
+    registerJoinGameHandler(socket as any, io);
 
     expect(socket.on).toHaveBeenCalledWith(
       SocketEvents.JOIN_GAME,
@@ -23,7 +24,7 @@ describe("registerJoinGameHandler (unit)", () => {
   });
 
   it("joins correct room and returns success", async () => {
-    registerJoinGameHandler(socket as any);
+    registerJoinGameHandler(socket as any, io);
 
     const handler = socket.on.mock.calls[0][1];
 
@@ -35,11 +36,12 @@ describe("registerJoinGameHandler (unit)", () => {
 
     expect(cb).toHaveBeenCalledWith({
       success: true,
+      data: undefined,
     });
   });
 
   it("joins the section room when a section is supplied", async () => {
-    registerJoinGameHandler(socket as any);
+    registerJoinGameHandler(socket as any, io);
 
     const handler = socket.on.mock.calls[0][1];
 
@@ -49,8 +51,24 @@ describe("registerJoinGameHandler (unit)", () => {
     expect(socket.join).toHaveBeenCalledWith(Rooms.section("game-1", "A"));
   });
 
+  it("rejects an invalid payload", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    registerJoinGameHandler(socket as any, io);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+
+    await handler({ gameId: "" }, cb);
+
+    expect(socket.join).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Invalid request",
+    });
+  });
+
   it("handles missing callback safely", async () => {
-    registerJoinGameHandler(socket as any);
+    registerJoinGameHandler(socket as any, io);
 
     const handler = socket.on.mock.calls[0][1];
 
@@ -61,18 +79,19 @@ describe("registerJoinGameHandler (unit)", () => {
     expect(socket.join).toHaveBeenCalled();
   });
 
-  it("calls cb with success: false when join throws", async () => {
+  it("acks a generic failure when join throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     socket.join = vi.fn().mockImplementation(() => {
       throw new Error("join failed");
     });
 
-    registerJoinGameHandler(socket as any);
+    registerJoinGameHandler(socket as any, io);
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
 
     await handler({ gameId: "game-1" }, cb);
 
-    expect(cb).toHaveBeenCalledWith({ success: false });
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal error" });
   });
 });

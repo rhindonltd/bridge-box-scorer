@@ -79,7 +79,8 @@ describe("registerSelectMovementHandler (integration)", () => {
     });
   });
 
-  it("handles errors gracefully and returns success: false", async () => {
+  it("handles errors gracefully and acks a generic failure", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(setSelectedMovement).mockRejectedValueOnce(new Error("boom"));
 
     const result = await new Promise<any>((resolve) => {
@@ -96,6 +97,7 @@ describe("registerSelectMovementHandler (integration)", () => {
       );
     });
 
-    expect(result).toEqual({ success: false });
+    expect(result).toEqual({ success: false, error: "Internal error" });
+    errSpy.mockRestore();
   });
 });

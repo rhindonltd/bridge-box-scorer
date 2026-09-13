@@ -13,12 +13,17 @@ vi.mock("@/db/games/actions/delete-section", () => ({
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSections: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { renameSection } from "@/db/games/actions/rename-section";
 import { deleteSection } from "@/db/games/actions/delete-section";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { ClientError } from "@/lib/api/client-error";
+import { logger } from "@/lib/log";
 import { PATCH, DELETE } from "./route";
 
 function req(
@@ -75,16 +80,33 @@ describe("PATCH /api/games/[gameId]/sections/[section]", () => {
     expect(renameSection).not.toHaveBeenCalled();
   });
 
-  it("returns 400 with the action's message on failure", async () => {
-    vi.mocked(renameSection).mockRejectedValue(new Error("Section not found"));
+  it("returns 400 with the reason on a precondition failure (ClientError)", async () => {
+    vi.mocked(renameSection).mockRejectedValue(
+      new ClientError("Section A does not exist"),
+    );
     const res = await PATCH(
       req("PATCH", "g1", "A", { label: "Room A" }),
       params("g1"),
     );
     expect(res.status).toBe(400);
     await expect(res.json()).resolves.toMatchObject({
-      error: "Section not found",
+      error: "Section A does not exist",
     });
+  });
+
+  it("returns 500 (generic, logged) on an internal failure", async () => {
+    const errSpy = vi.mocked(logger.error);
+    vi.mocked(renameSection).mockRejectedValue(new Error("db exploded"));
+    const res = await PATCH(
+      req("PATCH", "g1", "A", { label: "Room A" }),
+      params("g1"),
+    );
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toMatchObject({
+      error: "Internal server error",
+    });
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockClear();
   });
 });
 
@@ -110,14 +132,26 @@ describe("DELETE /api/games/[gameId]/sections/[section]", () => {
     expect(deleteSection).not.toHaveBeenCalled();
   });
 
-  it("returns 400 with the action's message (e.g. last section)", async () => {
+  it("returns 400 with the reason on a precondition failure (ClientError)", async () => {
     vi.mocked(deleteSection).mockRejectedValue(
-      new Error("Cannot delete the last section"),
+      new ClientError("Cannot delete section A: it has seated participants."),
     );
     const res = await DELETE(req("DELETE", "g1", "A"), params("g1"));
     expect(res.status).toBe(400);
     await expect(res.json()).resolves.toMatchObject({
-      error: "Cannot delete the last section",
+      error: "Cannot delete section A: it has seated participants.",
     });
+  });
+
+  it("returns 500 (generic, logged) on an internal failure", async () => {
+    const errSpy = vi.mocked(logger.error);
+    vi.mocked(deleteSection).mockRejectedValue(new Error("db exploded"));
+    const res = await DELETE(req("DELETE", "g1", "A"), params("g1"));
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toMatchObject({
+      error: "Internal server error",
+    });
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockClear();
   });
 });

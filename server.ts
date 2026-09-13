@@ -2,6 +2,7 @@ import next from "next";
 import { createServer } from "http";
 import { startSocketServer, closeSocketServer } from "@/socket/websocket"; // ensures DB is initialized
 import { closeAllDatabases } from "@/db/open-database";
+import { logger } from "@/lib/log";
 
 // Port is configurable via env (matches what PM2 passes) and defaults to 3000.
 const port = Number(process.env.PORT) || 3000;
@@ -17,7 +18,7 @@ async function main() {
 
   const server = createServer((req, res) => {
     handle(req, res).catch((err) => {
-      console.error("Error handling request:", err);
+      logger.error({ err, url: req.url }, "Error handling request");
       res.statusCode = 500;
       res.end("Internal Server Error");
     });
@@ -26,12 +27,12 @@ async function main() {
   startSocketServer(server);
 
   server.on("error", (err) => {
-    console.error("HTTP server error:", err);
+    logger.fatal({ err }, "HTTP server error");
     process.exit(1);
   });
 
   server.listen(port, host, () => {
-    console.log(`Next.js + Socket.IO server running on http://${host}:${port}`);
+    logger.info({ host, port }, "Next.js + Socket.IO server listening");
   });
 
   /**
@@ -42,14 +43,14 @@ async function main() {
    * the reload.
    */
   let shuttingDown = false;
-  async function shutdown(signal: string) {
+  async function shutdown(signal: string, exitCode = 0) {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log(`Received ${signal}, shutting down gracefully...`);
+    logger.info({ signal }, "Shutting down gracefully");
 
     // Hard cap: if something hangs, exit anyway so the supervisor can restart.
     const forceExit = setTimeout(() => {
-      console.error("Graceful shutdown timed out, forcing exit.");
+      logger.error("Graceful shutdown timed out, forcing exit");
       process.exit(1);
     }, 10_000);
     forceExit.unref();
@@ -58,11 +59,11 @@ async function main() {
       await new Promise<void>((resolve) => server.close(() => resolve()));
       await closeSocketServer();
       closeAllDatabases();
-      console.log("Shutdown complete.");
+      logger.info("Shutdown complete");
       clearTimeout(forceExit);
-      process.exit(0);
+      process.exit(exitCode);
     } catch (err) {
-      console.error("Error during shutdown:", err);
+      logger.error({ err }, "Error during shutdown");
       clearTimeout(forceExit);
       process.exit(1);
     }
@@ -70,9 +71,30 @@ async function main() {
 
   process.on("SIGINT", () => void shutdown("SIGINT"));
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
+
+  // Last-resort process-level safety nets.
+  //
+  // uncaughtException: the process state is unknowable after an uncaught throw,
+  // so log it and shut down cleanly (WAL checkpoint + close DBs) with a
+  // non-zero exit. The systemd unit is expected to restart on failure
+  // (Restart=on-failure); see docs/durability-and-operations.md.
+  process.on("uncaughtException", (err) => {
+    logger.fatal({ err }, "Uncaught exception");
+    // shutdown() force-exits after 10s if close hangs; pass a non-zero code so
+    // the supervisor treats it as a failure and restarts.
+    void shutdown("uncaughtException", 1);
+  });
+
+  // unhandledRejection: usually a single dropped async op (a transient DB write
+  // during a broadcast/timer tick) rather than a corrupt process. Log and keep
+  // serving — crashing the whole appliance mid-session would be worse. The
+  // scheduler now catches its own transitions, so this is a genuine backstop.
+  process.on("unhandledRejection", (reason) => {
+    logger.error({ err: reason }, "Unhandled promise rejection");
+  });
 }
 
 main().catch((err) => {
-  console.error("Failed to start server:", err);
+  logger.fatal({ err }, "Failed to start server");
   process.exit(1);
 });

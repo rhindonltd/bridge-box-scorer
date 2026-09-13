@@ -13,12 +13,17 @@ vi.mock("@/db/games/queries/find-sections", () => ({
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSections: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { updateSectionTables } from "@/db/games/actions/update-section-tables";
 import { findSections } from "@/db/games/queries/find-sections";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { logger } from "@/lib/log";
+import { ClientError } from "@/lib/api/client-error";
 import { PUT } from "./route";
 
 function invoke(
@@ -74,14 +79,26 @@ describe("PUT /api/games/[gameId]/sections/[section]/tables", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 400 with the shrink-guard message on failure", async () => {
+  it("returns 400 with the shrink-guard reason (ClientError)", async () => {
     vi.mocked(updateSectionTables).mockRejectedValue(
-      new Error("Cannot remove a table with seated participants"),
+      new ClientError("Cannot remove a table with seated participants"),
     );
     const res = await invoke("g1", "A", { tables: 1 });
     expect(res.status).toBe(400);
     await expect(res.json()).resolves.toMatchObject({
       error: "Cannot remove a table with seated participants",
     });
+  });
+
+  it("returns 500 (generic, logged) on an internal failure", async () => {
+    const errSpy = vi.mocked(logger.error);
+    vi.mocked(updateSectionTables).mockRejectedValue(new Error("db exploded"));
+    const res = await invoke("g1", "A", { tables: 6 });
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toMatchObject({
+      error: "Internal server error",
+    });
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockClear();
   });
 });

@@ -4,6 +4,7 @@ import { getDb } from "@/db/games";
 import { sections } from "@/db/games/tables/sections";
 import { eq } from "drizzle-orm";
 import { highestOccupiedTableInSection } from "@/db/games/queries/highest-occupied-table";
+import { ClientError } from "@/lib/api/client-error";
 
 /**
  * Delete a section. Rejected when the section still has seated participants —
@@ -26,12 +27,12 @@ export async function deleteSection(
     .get();
 
   if (!existing) {
-    throw new Error(`Section ${section} does not exist`);
+    throw new ClientError(`Section ${section} does not exist`);
   }
 
   const highest = await highestOccupiedTableInSection(db, section);
   if (highest > 0) {
-    throw new Error(
+    throw new ClientError(
       `Cannot delete section ${section}: it has seated participants. Evict them first.`,
     );
   }

@@ -9,6 +9,9 @@ vi.mock("@/db/movements/queries/get-movement-spec", () => ({
   getPairMovementSpecById: vi.fn(),
   getTeamMovementSpecById: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import {
   getPairMovement,
@@ -124,7 +127,6 @@ describe("GET /api/movements/detail/[movementType]/[movementId]", () => {
   });
 
   it("returns 500 when a query rejects", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(getPairMovementSpecById).mockRejectedValue(new Error("boom"));
     vi.mocked(getPairMovement).mockResolvedValue([] as never);
 

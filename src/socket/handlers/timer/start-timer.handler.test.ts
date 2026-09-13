@@ -75,14 +75,20 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({
-      gameType: "PAIRS",
-      gameId: "game-1",
-      section: "A",
-      directorToken: "test-token",
-    });
+    const cb = vi.fn();
+    await handler(
+      {
+        gameType: "PAIRS",
+        gameId: "game-1",
+        section: "A",
+        directorToken: "test-token",
+      },
+      cb,
+    );
 
     expect(mockEngine.start).toHaveBeenCalled();
+    // The control is acknowledged so the client's emitWithAck resolves.
+    expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
     expect(updateTimerState).toHaveBeenCalledWith("game-1", "A", mockState);
     expect(io.to).toHaveBeenCalledWith("game:game-1:timer:A");
     expect(io._emit).toHaveBeenCalledWith(
@@ -109,15 +115,24 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({
-      gameType: "PAIRS",
-      gameId: "game-1",
-      section: "A",
-      directorToken: "test-token",
-    });
+    const cb = vi.fn();
+    await handler(
+      {
+        gameType: "PAIRS",
+        gameId: "game-1",
+        section: "A",
+        directorToken: "test-token",
+      },
+      cb,
+    );
 
     expect(updateTimerState).not.toHaveBeenCalled();
     expect(scheduleGame).not.toHaveBeenCalled();
+    // A missing live timer is acked as a user-facing failure.
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Timer not found",
+    });
   });
 
   it("does nothing if directorToken is invalid", async () => {
@@ -129,44 +144,62 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({
-      gameType: "PAIRS",
-      gameId: "game-1",
-      directorToken: "bad-token",
-    });
+    const cb = vi.fn();
+    await handler(
+      {
+        gameType: "PAIRS",
+        gameId: "game-1",
+        section: "A",
+        directorToken: "bad-token",
+      },
+      cb,
+    );
 
     expect(getEngine).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Unauthorized" });
   });
 
-  it("does nothing if payload is invalid (missing gameType)", async () => {
+  it("rejects an invalid payload (missing gameType) without touching the engine", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const socket = createMockSocket();
     const io = createMockIo();
 
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({ gameId: "game-1", directorToken: "test-token" });
+    const cb = vi.fn();
+    await handler({ gameId: "game-1", section: "A", directorToken: "t" }, cb);
 
     expect(getEngine).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Invalid request",
+    });
   });
 
-  it("does nothing if payload is invalid (empty gameId)", async () => {
+  it("rejects an invalid payload (empty gameId) without touching the engine", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const socket = createMockSocket();
     const io = createMockIo();
 
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    await handler({
-      gameType: "PAIRS",
-      gameId: "",
-      directorToken: "test-token",
-    });
+    const cb = vi.fn();
+    await handler(
+      { gameType: "PAIRS", gameId: "", section: "A", directorToken: "t" },
+      cb,
+    );
 
     expect(getEngine).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Invalid request",
+    });
   });
 
-  it("handles engine.start() throwing gracefully", async () => {
+  it("acks a generic failure when engine.start() throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
     const mockEngine = {
       start: vi.fn(() => {
         throw new Error("engine error");
@@ -182,14 +215,22 @@ describe("registerStartTimerHandler", () => {
     registerStartTimerHandler(socket, io);
 
     const handler = socket.on.mock.calls[0][1];
-    // Should not throw
-    await handler({
-      gameType: "PAIRS",
-      gameId: "game-1",
-      section: "A",
-      directorToken: "test-token",
-    });
+    const cb = vi.fn();
+    // Should not throw; the wrapper catches and acks a generic failure.
+    await handler(
+      {
+        gameType: "PAIRS",
+        gameId: "game-1",
+        section: "A",
+        directorToken: "test-token",
+      },
+      cb,
+    );
 
     expect(updateTimerState).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Internal error",
+    });
   });
 });

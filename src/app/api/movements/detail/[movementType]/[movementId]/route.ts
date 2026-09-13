@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { withBasicRoute } from "@/lib/api/basicRoute";
+import { success } from "@/lib/api/success";
 import {
   getPairMovement,
   getTeamMovement,
@@ -28,11 +30,11 @@ import { MovementByTable } from "@/movement/movementData";
  *   tables: [{ tableNumber, rounds: [{ roundNumber, ns/ew, boardStart, boardEnd }] }]
  * }
  */
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ movementType: string; movementId: string }> },
-) {
-  const { movementType, movementId } = await params;
+export const GET = withBasicRoute<{
+  movementType: string;
+  movementId: string;
+}>(async ({ params }) => {
+  const { movementType, movementId } = params;
 
   const movementIdNo = Number(movementId);
 
@@ -43,60 +45,52 @@ export async function GET(
     );
   }
 
-  try {
-    let tables: MovementByTable[];
-    let name: string;
+  // Unexpected query failures fall through to withBasicRoute's try/catch → 500.
+  // The explicit 400/404 branches below are part of the endpoint contract and
+  // return directly.
+  let tables: MovementByTable[];
+  let name: string;
 
-    switch (movementType) {
-      case "PAIRS": {
-        const [movement, spec] = await Promise.all([
-          getPairMovement(movementIdNo),
-          getPairMovementSpecById(movementIdNo),
-        ]);
-        if (!spec) {
-          return NextResponse.json(
-            { success: false, error: "Movement not found" },
-            { status: 404 },
-          );
-        }
-        tables = toMovementByTable(movement, spec.boardsPerRound);
-        name = spec.name;
-        break;
-      }
-      case "TEAMS": {
-        const [movement, spec] = await Promise.all([
-          getTeamMovement(movementIdNo),
-          getTeamMovementSpecById(movementIdNo),
-        ]);
-        if (!spec) {
-          return NextResponse.json(
-            { success: false, error: "Movement not found" },
-            { status: 404 },
-          );
-        }
-        tables = toMovementByTable(movement, spec.boardsPerRound);
-        name = spec.name;
-        break;
-      }
-      default:
+  switch (movementType) {
+    case "PAIRS": {
+      const [movement, spec] = await Promise.all([
+        getPairMovement(movementIdNo),
+        getPairMovementSpecById(movementIdNo),
+      ]);
+      if (!spec) {
         return NextResponse.json(
-          { success: false, error: `Unknown movement type: ${movementType}` },
-          { status: 400 },
+          { success: false, error: "Movement not found" },
+          { status: 404 },
         );
+      }
+      tables = toMovementByTable(movement, spec.boardsPerRound);
+      name = spec.name;
+      break;
     }
-
-    return NextResponse.json({
-      success: true,
-      result: { type: movementType, name, tables },
-    });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 },
-    );
+    case "TEAMS": {
+      const [movement, spec] = await Promise.all([
+        getTeamMovement(movementIdNo),
+        getTeamMovementSpecById(movementIdNo),
+      ]);
+      if (!spec) {
+        return NextResponse.json(
+          { success: false, error: "Movement not found" },
+          { status: 404 },
+        );
+      }
+      tables = toMovementByTable(movement, spec.boardsPerRound);
+      name = spec.name;
+      break;
+    }
+    default:
+      return NextResponse.json(
+        { success: false, error: `Unknown movement type: ${movementType}` },
+        { status: 400 },
+      );
   }
-}
+
+  return success({ type: movementType, name, tables });
+});
 
 /**
  * Expand stored board-set indices into concrete board ranges for the preview,

@@ -13,12 +13,17 @@ vi.mock("@/db/games/queries/find-sections", () => ({
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSections: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { createSection } from "@/db/games/actions/create-section";
 import { findSections } from "@/db/games/queries/find-sections";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { ClientError } from "@/lib/api/client-error";
+import { logger } from "@/lib/log";
 import { GET, POST } from "./route";
 
 function invoke(gameId: string, body: unknown, token: string | null = "tok") {
@@ -62,9 +67,9 @@ describe("POST /api/games/[gameId]/sections", () => {
     expect(createSection).not.toHaveBeenCalled();
   });
 
-  it("returns 400 with the action's message when the section is a duplicate", async () => {
+  it("returns 400 with the reason when the section is a duplicate (ClientError)", async () => {
     vi.mocked(createSection).mockRejectedValue(
-      new Error("Section B already exists"),
+      new ClientError("Section B already exists"),
     );
     const res = await invoke("g1", { section: "B", tables: 3 });
     expect(res.status).toBe(400);
@@ -73,6 +78,20 @@ describe("POST /api/games/[gameId]/sections", () => {
       error: "Section B already exists",
     });
     expect(broadcastSections).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 (generic, logged) on an internal failure", async () => {
+    const errSpy = vi.mocked(logger.error);
+    vi.mocked(createSection).mockRejectedValue(new Error("db exploded"));
+    const res = await invoke("g1", { section: "B", tables: 3 });
+    expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toMatchObject({
+      success: false,
+      error: "Internal server error",
+    });
+    expect(broadcastSections).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockClear();
   });
 
   it("returns 404 when the game does not exist", async () => {

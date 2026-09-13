@@ -156,7 +156,7 @@ describe("registerSubmitResultHandler (integration)", () => {
   it("single submission returns success but does not broadcast", async () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -185,7 +185,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       result: "3NTN=",
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ success: true, data: undefined });
 
     // Wait a tick to confirm no events were emitted
     await new Promise((r) => setTimeout(r, 100));
@@ -196,7 +196,7 @@ describe("registerSubmitResultHandler (integration)", () => {
   it("matching submissions from both sides emit BOARD_CONFIRMED", async () => {
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -254,7 +254,7 @@ describe("registerSubmitResultHandler (integration)", () => {
   it("mismatching results emit BOARD_MISMATCH", async () => {
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -309,7 +309,7 @@ describe("registerSubmitResultHandler (integration)", () => {
   it("different board numbers emit BOARD_MISMATCH", async () => {
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -361,7 +361,7 @@ describe("registerSubmitResultHandler (integration)", () => {
   it("after mismatch, re-submission with correct result confirms", async () => {
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -422,7 +422,7 @@ describe("registerSubmitResultHandler (integration)", () => {
   it("BOARD_RESULT_UPDATED is also emitted on confirmation", async () => {
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -482,7 +482,7 @@ describe("registerSubmitResultHandler (integration)", () => {
   it("DB update is called with confirmedResult on match", async () => {
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -540,7 +540,7 @@ describe("registerSubmitResultHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -576,7 +576,7 @@ describe("registerSubmitResultHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -599,7 +599,7 @@ describe("registerSubmitResultHandler (integration)", () => {
       result: "3NTN=",
     });
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ success: true, data: undefined });
     await new Promise((r) => setTimeout(r, 100));
     expect(confirmed).toBe(false);
     expect(mockUpdate).not.toHaveBeenCalled();
@@ -614,7 +614,7 @@ describe("registerSubmitResultHandler (integration)", () => {
 
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -655,11 +655,13 @@ describe("registerSubmitResultHandler (integration)", () => {
       result: "3NTN=",
     });
 
-    expect(result).toEqual({ success: true });
+    // The submitter is acked success; the confirm-time db-missing failure is a
+    // downstream fan-out error that is logged, not re-acked.
+    expect(result).toEqual({ success: true, data: undefined });
     await new Promise((r) => setTimeout(r, 100));
     expect(confirmed).toBe(false);
     expect(errSpy).toHaveBeenCalledWith(
-      "Submit result error:",
+      "Error handling game:submitResult:",
       expect.any(Error),
     );
 
@@ -678,7 +680,7 @@ describe("registerSubmitResultHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });
@@ -721,7 +723,7 @@ describe("registerSubmitResultHandler (integration)", () => {
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
-        registerJoinGameHandler(socket);
+        registerJoinGameHandler(socket, io);
         registerSubmitResultHandler(socket, io);
       });
     });

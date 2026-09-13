@@ -3,8 +3,9 @@ import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
 import { scheduleGame } from "@/timer/scheduler";
 import { Server, Socket } from "socket.io";
-import { assertDirector } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { z } from "zod";
+import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 import { makeTimerBroadcaster } from "./broadcast-timer";
 import {
   directorTimerFields,
@@ -24,44 +25,44 @@ const payloadSchema = z.object({
 export function registerUpdateConfigHandler(socket: Socket, io: Server) {
   const broadcast = makeTimerBroadcaster(io);
 
-  socket.on(SocketEvents.UPDATE_CONFIG_TIMER, async (payload: unknown) => {
-    const parsed = payloadSchema.safeParse(payload);
-    if (!parsed.success) {
-      console.warn(
-        "Invalid UPDATE_CONFIG_TIMER payload:",
-        parsed.error.message,
-      );
-      return;
-    }
-
-    const {
-      gameId,
-      section,
-      directorToken,
-      boardsPerRound,
-      totalRounds,
-      playDuration,
-      moveDuration,
-      breaks,
-      warningSeconds,
-    } = parsed.data;
-    if (!assertDirector(directorToken, gameId)) return;
-
-    try {
-      const engine = await getEngine(gameId, section);
-      if (!engine) return;
-
-      engine.updateConfig(boardsPerRound, totalRounds, playDuration, moveDuration, {
-        breaks: toBreakConfigs(breaks),
+  registerHandler(socket, io, SocketEvents.UPDATE_CONFIG_TIMER, {
+    schema: payloadSchema,
+    handler: async ({ payload, ack }) => {
+      const {
+        gameId,
+        section,
+        directorToken,
+        boardsPerRound,
+        totalRounds,
+        playDuration,
+        moveDuration,
+        breaks,
         warningSeconds,
-      });
+      } = payload;
+      if (!validateDirectorToken(directorToken, gameId)) {
+        throw new HandlerError("Unauthorized");
+      }
+
+      const engine = await getEngine(gameId, section);
+      if (!engine) throw new HandlerError("Timer not found");
+
+      engine.updateConfig(
+        boardsPerRound,
+        totalRounds,
+        playDuration,
+        moveDuration,
+        {
+          breaks: toBreakConfigs(breaks),
+          warningSeconds,
+        },
+      );
 
       await updateTimerState(gameId, section, engine.getState());
       broadcast(gameId, section, engine.getState());
 
       scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
-    } catch (err) {
-      console.error(`Failed to update timer config for game ${gameId}:`, err);
-    }
+
+      ack({ success: true, data: undefined });
+    },
   });
 }

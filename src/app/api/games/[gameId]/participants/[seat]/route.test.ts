@@ -10,6 +10,9 @@ vi.mock("@/db/games/actions/delete-participant", () => ({
 vi.mock("@/socket/broadcast/participant-broadcast", () => ({
   broadcastParticipants: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
@@ -64,7 +67,6 @@ describe("DELETE /api/games/[gameId]/participants/[seat]", () => {
   });
 
   it("returns 500 when the action fails unexpectedly (server error)", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(deleteParticipant).mockRejectedValue(new Error("db exploded"));
 
     const res = await invoke("g1", "A1NS");
@@ -74,6 +76,5 @@ describe("DELETE /api/games/[gameId]/participants/[seat]", () => {
       error: "Internal server error",
     });
     expect(broadcastParticipants).not.toHaveBeenCalled();
-    errSpy.mockRestore();
   });
 });

@@ -62,10 +62,15 @@ describe("registerLeaveTableHandler", () => {
       cb,
     );
 
-    expect(assertPlayer).toHaveBeenCalledWith("g1", "A1NS", "tok", cb);
+    expect(assertPlayer).toHaveBeenCalledWith(
+      "g1",
+      "A1NS",
+      "tok",
+      expect.any(Function),
+    );
     expect(deleteParticipant).toHaveBeenCalledWith("g1", "A1NS");
     expect(broadcastParticipants).toHaveBeenCalledWith("g1", io);
-    expect(cb).toHaveBeenCalledWith({ success: true });
+    expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
   });
 
   it("does nothing when the player token is not authorised", async () => {
@@ -115,9 +120,11 @@ describe("registerLeaveTableHandler", () => {
       cb,
     );
 
+    // Infra failures no longer leak the raw message; the wrapper acks a generic
+    // error and logs the detail server-side.
     expect(cb).toHaveBeenCalledWith({
       success: false,
-      error: "db error",
+      error: "Internal error",
     });
     errSpy.mockRestore();
   });

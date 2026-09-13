@@ -3,6 +3,7 @@ import http from "http";
 import { registerGameHandlers } from "@/socket/handlers/game/game.handlers";
 import { registerTimerHandlers } from "./handlers/timer/timer.handlers";
 import { registerResultsHandlers } from "./handlers/results/results.handlers";
+import { logger } from "@/lib/log";
 
 // The Socket.IO server is stored on `globalThis`, NOT a module-level variable.
 //
@@ -34,7 +35,26 @@ export function startSocketServer(server: http.Server) {
   });
   setStoredIO(io);
 
+  // Low-level engine failures (bad handshakes, transport errors) surface here
+  // before a Socket instance exists. Logged at debug — noisy and usually benign
+  // (e.g. a client's transport upgrade failing over) but useful when diagnosing
+  // connectivity problems on the appliance's local network.
+  io.engine.on("connection_error", (err) => {
+    // `errorCode` (not `code`) so this Socket.IO status code isn't caught by the
+    // secret-`code` redaction rule.
+    logger.debug(
+      { errorCode: err.code, message: err.message, context: err.context },
+      "Socket.IO engine connection error",
+    );
+  });
+
   io.on("connection", (socket) => {
+    logger.debug({ socketId: socket.id }, "Socket connected");
+
+    socket.on("disconnect", (reason) => {
+      logger.debug({ socketId: socket.id, reason }, "Socket disconnected");
+    });
+
     registerGameHandlers(socket, requireIO());
     registerTimerHandlers(socket, requireIO());
     registerResultsHandlers(socket, requireIO());

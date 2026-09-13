@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Db, getDb } from "@/db/games";
+import { logger } from "@/lib/log";
 
 const boardNumberSchema = z.coerce.number().int().min(1);
 
@@ -22,8 +23,11 @@ export function withGameRoute(
   handler: (context: GameRouteContext) => Promise<NextResponse>,
 ) {
   return async (req: Request, { params }: { params: Promise<RouteParams> }) => {
+    let gameId: string | undefined;
     try {
-      const { gameId, boardNumber, seat } = await params;
+      const resolved = await params;
+      gameId = resolved.gameId;
+      const { boardNumber, seat } = resolved;
 
       let parsedBoardNumber: number | null = null;
       if (boardNumber !== undefined) {
@@ -46,7 +50,7 @@ export function withGameRoute(
         );
       }
 
-      return handler({
+      return await handler({
         req,
         gameId,
         boardNumber: parsedBoardNumber,
@@ -54,7 +58,10 @@ export function withGameRoute(
         db,
       });
     } catch (error) {
-      console.error(error);
+      logger.error(
+        { err: error, gameId, method: req.method },
+        "Unhandled error in game route",
+      );
 
       return NextResponse.json(
         { success: false, error: "Internal server error" },

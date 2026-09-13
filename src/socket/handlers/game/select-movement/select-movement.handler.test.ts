@@ -102,7 +102,7 @@ describe("registerSelectMovementHandler (unit)", () => {
       SocketEvents.GAME_UPDATED,
       expect.objectContaining({ game: expect.any(Object) }),
     );
-    expect(cb).toHaveBeenCalledWith({ success: true });
+    expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
   });
 
   it("persists a MITCHELL selection", async () => {
@@ -129,7 +129,7 @@ describe("registerSelectMovementHandler (unit)", () => {
       source: "MITCHELL",
       mitchell,
     });
-    expect(cb).toHaveBeenCalledWith({ success: true });
+    expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
   });
 
   it("re-selecting overwrites the previous selection", async () => {
@@ -193,7 +193,8 @@ describe("registerSelectMovementHandler (unit)", () => {
     expect(setSelectedMovement).not.toHaveBeenCalled();
   });
 
-  it("returns success: false when persisting throws", async () => {
+  it("acks a generic failure when persisting throws", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const socket = makeDirectorSocket();
     const { io } = makeIo();
     registerSelectMovementHandler(socket as any, io as any);
@@ -214,7 +215,8 @@ describe("registerSelectMovementHandler (unit)", () => {
       cb,
     );
 
-    expect(cb).toHaveBeenCalledWith({ success: false });
+    expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal error" });
+    errSpy.mockRestore();
   });
 
   it("returns error when no movement specified (no id and no mitchell)", async () => {
