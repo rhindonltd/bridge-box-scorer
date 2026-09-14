@@ -16,6 +16,7 @@ const bodySchema = z.object({
   totalRounds: z.number().int().positive(),
   playDuration: z.number().int().positive(),
   moveDuration: z.number().int().positive(),
+  timingMode: z.enum(["perRound", "perBoard"]).optional(),
   breaks: z.array(breakConfigSchema).optional(),
   warningSeconds: z.number().int().nonnegative().optional(),
 });
@@ -48,6 +49,7 @@ export const PUT = withDirectorRoute(async ({ gameId, req }) => {
     totalRounds,
     playDuration,
     moveDuration,
+    timingMode,
     breaks,
     warningSeconds,
   } = parsed.data;
@@ -58,6 +60,7 @@ export const PUT = withDirectorRoute(async ({ gameId, req }) => {
       totalRounds,
       playDuration,
       moveDuration,
+      timingMode,
       breaks: toBreakConfigs(breaks),
       warningSeconds,
     });

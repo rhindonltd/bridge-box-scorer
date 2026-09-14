@@ -39,6 +39,16 @@ export type TimerState = {
   moveDuration: number;
 
   /**
+   * How the director entered the play duration. `playDuration` is always the
+   * effective per-round total the engine runs on; this field records only
+   * whether that total was typed directly ("perRound") or derived from a
+   * per-board figure ("perBoard"), so the setup form can restore the correct
+   * toggle and re-derive the per-board input on reload. Optional for backwards
+   * compatibility with previously-persisted timer state (absent → per-round).
+   */
+  timingMode?: "perRound" | "perBoard";
+
+  /**
    * Scheduled breaks, keyed by the round they follow. A break replaces the
    * move phase for that gap. Optional for backwards compatibility with
    * previously-persisted timer state.
@@ -79,6 +89,12 @@ export interface TimerConfig {
   moveDuration: number;
   breaks?: BreakConfig[];
   warningSeconds?: number;
+  /**
+   * How the play duration was entered ("perRound" total vs a "perBoard" figure
+   * multiplied up). Recorded so the setup form can restore the toggle on
+   * reload. Optional; absent means per-round.
+   */
+  timingMode?: "perRound" | "perBoard";
 }
 
 /**
@@ -99,6 +115,7 @@ export function buildConfiguredTimerState(config: TimerConfig): TimerState {
     totalRounds: config.totalRounds,
     playDuration: config.playDuration,
     moveDuration: config.moveDuration,
+    timingMode: config.timingMode,
     breaks: config.breaks ?? [],
     warningSeconds: config.warningSeconds,
     isRunning: false,

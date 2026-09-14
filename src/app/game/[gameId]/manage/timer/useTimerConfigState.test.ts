@@ -104,6 +104,78 @@ describe("useTimerConfigState", () => {
     });
   });
 
+  describe("timing mode seeding", () => {
+    it("defaults to per-round when the persisted state has no timing mode", () => {
+      const { result } = renderHook(() =>
+        useTimerConfigState(seedState({ timingMode: undefined })),
+      );
+
+      expect(result.current.config.timingMode).toBe("perRound");
+    });
+
+    it("restores per-board mode from the persisted state on seed", () => {
+      const { result } = renderHook(() =>
+        useTimerConfigState(seedState({ timingMode: "perBoard" })),
+      );
+
+      expect(result.current.config.timingMode).toBe("perBoard");
+    });
+
+    it("re-derives the per-board play input from the stored per-round total", () => {
+      // Stored playDuration is the effective per-round total (150s) for 5
+      // boards/round, so the per-board figure the director entered was 30s.
+      const { result } = renderHook(() =>
+        useTimerConfigState(
+          seedState({
+            timingMode: "perBoard",
+            boardsPerRound: 5,
+            playDuration: 150,
+          }),
+        ),
+      );
+
+      expect(result.current.config.timingMode).toBe("perBoard");
+      expect(result.current.config.playMinutes).toBe(0);
+      expect(result.current.config.playSeconds).toBe(30);
+      // The effective (persisted) total is unchanged: 30s * 5 boards = 150s.
+      expect(result.current.emitConfigFields.playDuration).toBe(150);
+    });
+
+    it("re-derives per-board play against the derived boards/round when locked", () => {
+      // Persisted boards/round (4) differs from the movement-derived value (5);
+      // the derived value wins when reversing the multiply. 200 / 5 = 40s.
+      const { result } = renderHook(() =>
+        useTimerConfigState(
+          seedState({
+            timingMode: "perBoard",
+            boardsPerRound: 4,
+            playDuration: 200,
+          }),
+          { boardsPerRound: 5, totalRounds: 7 },
+        ),
+      );
+
+      expect(result.current.config.timingMode).toBe("perBoard");
+      expect(result.current.config.playMinutes).toBe(0);
+      expect(result.current.config.playSeconds).toBe(40);
+      // Effective total re-multiplies against the derived boards/round.
+      expect(result.current.emitConfigFields.playDuration).toBe(200);
+    });
+
+    it("seeds the play input directly from the total in per-round mode", () => {
+      const { result } = renderHook(() =>
+        useTimerConfigState(
+          seedState({ timingMode: "perRound", playDuration: 150 }),
+        ),
+      );
+
+      expect(result.current.config.timingMode).toBe("perRound");
+      expect(result.current.config.playMinutes).toBe(2);
+      expect(result.current.config.playSeconds).toBe(30);
+      expect(result.current.emitConfigFields.playDuration).toBe(150);
+    });
+  });
+
   describe("resume-time auto-fill", () => {
     afterEach(() => {
       vi.useRealTimers();
