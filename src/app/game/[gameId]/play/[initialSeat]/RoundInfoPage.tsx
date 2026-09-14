@@ -16,6 +16,8 @@ interface Props {
     W: Player;
   };
   onEnterRound: () => void;
+  /** Right-hand header content (the play header menu). */
+  headerRight?: React.ReactNode;
 }
 
 export function RoundInfoPage({
@@ -24,10 +26,12 @@ export function RoundInfoPage({
   boards,
   players,
   onEnterRound,
+  headerRight,
 }: Props) {
   return (
     <GamePageLayout
       headerTitle={`Table ${table}, Round ${round}`}
+      headerRight={headerRight}
       centerContent={true}
       actions={
         <button

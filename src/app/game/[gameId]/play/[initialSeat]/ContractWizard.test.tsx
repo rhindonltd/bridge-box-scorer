@@ -7,11 +7,6 @@ vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({ game: mockGame() }),
 }));
 
-const mockAssignment = vi.fn();
-vi.mock("@/context/AssignmentContext", () => ({
-  useAssignment: () => ({ assignment: mockAssignment() }),
-}));
-
 // --- Step stubs: each exposes buttons that fire the wizard callbacks. ---
 
 vi.mock("@/components/contract-wizard/StepBoard", () => ({
@@ -130,19 +125,27 @@ describe("ContractWizard", () => {
       sessionName: "Evening",
       sectionName: "A",
     });
-    mockAssignment.mockReturnValue({ type: "PAIR", id: "3" });
   });
 
   function back() {
     fireEvent.click(screen.getByRole("button", { name: "Go back" }));
   }
 
-  it("renders the header with event/session/section and assignment", () => {
-    render(<ContractWizard {...baseProps} />);
+  it("renders the header with event/session/section and the headerRight slot", () => {
+    render(
+      <ContractWizard
+        {...baseProps}
+        headerRight={<span data-testid="play-menu">menu</span>}
+      />,
+    );
     expect(screen.getByText("Table 3, Round 2")).toBeInTheDocument();
     expect(screen.getByText("Monday Pairs")).toBeInTheDocument();
     expect(screen.getByText(/Evening/)).toBeInTheDocument();
-    expect(screen.getByText("Pair 3")).toBeInTheDocument();
+    // The pair number is no longer inline in the header; the header-right slot
+    // (the play menu) takes its place. Pair details live behind that menu.
+    expect(screen.getByTestId("play-menu")).toBeInTheDocument();
+    expect(screen.queryByText(/^Pair /)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Team /)).not.toBeInTheDocument();
     // Step 0: no back button, no board dropdown yet.
     expect(
       screen.queryByRole("button", { name: "Go back" }),
@@ -150,28 +153,14 @@ describe("ContractWizard", () => {
     expect(screen.queryByTestId("board-dropdown")).not.toBeInTheDocument();
   });
 
-  it("renders session-only sub text and Team label", () => {
+  it("renders session-only sub text", () => {
     mockGame.mockReturnValue({
       eventName: "Teams",
       sessionName: "Morning",
       sectionName: "",
     });
-    mockAssignment.mockReturnValue({ type: "TEAM", id: "9" });
     render(<ContractWizard {...baseProps} />);
     expect(screen.getByText("Morning")).toBeInTheDocument();
-    expect(screen.getByText("Team 9")).toBeInTheDocument();
-  });
-
-  it("renders no sub text and no assignment badge when absent", () => {
-    mockGame.mockReturnValue({
-      eventName: "Plain",
-      sessionName: "",
-      sectionName: "",
-    });
-    mockAssignment.mockReturnValue(null);
-    render(<ContractWizard {...baseProps} />);
-    expect(screen.getByText("Plain")).toBeInTheDocument();
-    expect(screen.queryByText(/Pair|Team/)).not.toBeInTheDocument();
   });
 
   it("drives a full played contract and submits (no lead required)", () => {

@@ -128,6 +128,16 @@ telling you which table and direction to go to for the next round. Tap continue
 when you have moved. After the final round you see the **leaderboard**, with
 your own pair highlighted.
 
+### The play menu
+
+Every play screen has a **menu** button in the top-right corner. Tap it for:
+
+- **Change device** — shows a short code you can enter on another device to
+  move your seat there (handy if your phone is running low on battery). Once the
+  code is used, this device is signed out of the seat.
+- **Pair details** — shows your pair number, which direction you're playing,
+  and both players' names.
+
 ---
 
 ## Viewing scores

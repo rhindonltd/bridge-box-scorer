@@ -75,4 +75,14 @@ describe("BoardResultsPage", () => {
     const root = container.firstChild as HTMLElement;
     expect(root).toHaveClass("flex-1", "flex", "flex-col");
   });
+
+  it("renders the headerRight slot content", () => {
+    render(
+      <BoardResultsPage
+        {...baseProps}
+        headerRight={<span data-testid="play-menu">menu</span>}
+      />,
+    );
+    expect(screen.getByTestId("play-menu")).toBeInTheDocument();
+  });
 });

@@ -39,7 +39,7 @@ const meta: Meta<typeof DirectorContractWizard> = {
         }}
       >
         <AssignmentContext.Provider
-          value={{ assignment: mockAssignment, isLoading: false }}
+          value={{ assignment: mockAssignment, pair: null, isLoading: false }}
         >
           <div style={{ height: "100dvh" }} className="flex flex-col">
             <Story />

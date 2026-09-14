@@ -6,7 +6,6 @@ import { ContractCode } from "@/model/contract";
 import { Card } from "@/model/common";
 import { SpecialBoardOutcome } from "@/model/result";
 import { useRequiredGame } from "@/context/GameContext";
-import { useAssignment } from "@/context/AssignmentContext";
 
 import { StepBoard } from "@/components/contract-wizard/StepBoard";
 import { StepLevel } from "@/components/contract-wizard/StepLevel";
@@ -30,6 +29,8 @@ interface Props {
     result: number;
     lead: Card | null;
   }) => void;
+  /** Right-hand header content (the play header menu). */
+  headerRight?: React.ReactNode;
 }
 
 export function ContractWizard({
@@ -39,9 +40,9 @@ export function ContractWizard({
   playedBoards,
   leadCardRequired,
   onComplete,
+  headerRight,
 }: Props) {
   const { game } = useRequiredGame();
-  const { assignment } = useAssignment();
 
   const {
     level,
@@ -140,11 +141,7 @@ export function ContractWizard({
             </div>
           )}
         </div>
-        {assignment && (
-          <span className="text-base font-semibold">
-            {assignment.type === "PAIR" ? "Pair" : "Team"} {assignment.id}
-          </span>
-        )}
+        {headerRight}
       </div>
     </div>
   );

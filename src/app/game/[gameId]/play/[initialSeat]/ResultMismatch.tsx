@@ -8,6 +8,8 @@ interface Props {
   ewBoardNumber: number;
   ewResult: string;
   onReenter: () => void;
+  /** Right-hand header content (the play header menu). */
+  headerRight?: React.ReactNode;
 }
 
 export function ResultMismatch({
@@ -16,12 +18,14 @@ export function ResultMismatch({
   ewBoardNumber,
   ewResult,
   onReenter,
+  headerRight,
 }: Props) {
   const boardMismatch = nsBoardNumber !== ewBoardNumber;
 
   return (
     <GamePageLayout
       headerTitle={boardMismatch ? "Mismatch" : `Board ${nsBoardNumber}`}
+      headerRight={headerRight}
       centerContent={true}
       actions={
         <button

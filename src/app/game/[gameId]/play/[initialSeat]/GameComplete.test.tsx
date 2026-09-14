@@ -19,13 +19,16 @@ vi.mock("@/context/AssignmentContext", () => ({
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
+    headerRight,
     children,
   }: {
     headerTitle: string;
+    headerRight?: React.ReactNode;
     children: React.ReactNode;
   }) => (
     <div>
       <div data-testid="header">{headerTitle}</div>
+      <div data-testid="header-right">{headerRight}</div>
       {children}
     </div>
   ),
@@ -70,5 +73,11 @@ describe("GameComplete", () => {
       screen.getByText("All rounds have been played. Thank you!"),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("leaderboard")).not.toBeInTheDocument();
+  });
+
+  it("renders the headerRight slot content", () => {
+    mockUseLeaderboard.mockReturnValue({ leaderboard: null, isLoading: false });
+    render(<GameComplete headerRight={<span data-testid="play-menu">menu</span>} />);
+    expect(screen.getByTestId("play-menu")).toBeInTheDocument();
   });
 });

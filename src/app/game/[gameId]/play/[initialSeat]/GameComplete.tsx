@@ -8,7 +8,11 @@ import {
   useLeaderboardContext,
 } from "@/context/LeaderboardContext";
 
-function GameCompleteContent() {
+function GameCompleteContent({
+  headerRight,
+}: {
+  headerRight?: React.ReactNode;
+}) {
   const { assignment } = useAssignment();
   const { leaderboard, isLoading } = useLeaderboardContext();
 
@@ -21,7 +25,7 @@ function GameCompleteContent() {
   }
 
   return (
-    <GamePageLayout headerTitle="Game Complete">
+    <GamePageLayout headerTitle="Game Complete" headerRight={headerRight}>
       <div className="flex-1 min-h-0">
         {leaderboard ? (
           <Leaderboard
@@ -43,10 +47,15 @@ function GameCompleteContent() {
   );
 }
 
-export function GameComplete() {
+export function GameComplete({
+  headerRight,
+}: {
+  /** Right-hand header content (the play header menu). */
+  headerRight?: React.ReactNode;
+}) {
   return (
     <LeaderboardProvider>
-      <GameCompleteContent />
+      <GameCompleteContent headerRight={headerRight} />
     </LeaderboardProvider>
   );
 }

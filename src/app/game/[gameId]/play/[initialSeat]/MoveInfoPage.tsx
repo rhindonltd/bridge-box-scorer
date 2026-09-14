@@ -5,6 +5,8 @@ interface Props {
   tableNumber: number;
   sitOut: boolean;
   onMoveInfoContinue: () => void;
+  /** Right-hand header content (the play header menu). */
+  headerRight?: React.ReactNode;
 }
 
 export function MoveInfoPage({
@@ -12,12 +14,14 @@ export function MoveInfoPage({
   tableNumber,
   sitOut,
   onMoveInfoContinue,
+  headerRight,
 }: Props) {
   // If the next round is a sit-out, skip the "move to table" screen
   if (sitOut) {
     return (
       <GamePageLayout
         headerTitle="Move Info"
+        headerRight={headerRight}
         centerContent={true}
         actions={
           <button
@@ -40,6 +44,7 @@ export function MoveInfoPage({
   return (
     <GamePageLayout
       headerTitle="Move Info"
+      headerRight={headerRight}
       centerContent={true}
       actions={
         <button

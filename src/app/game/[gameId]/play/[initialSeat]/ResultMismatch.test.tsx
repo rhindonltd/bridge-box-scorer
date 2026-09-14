@@ -6,15 +6,18 @@ import { ResultMismatch } from "@/app/game/[gameId]/play/[initialSeat]/ResultMis
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
+    headerRight,
     actions,
     children,
   }: {
     headerTitle: string;
+    headerRight?: React.ReactNode;
     actions?: React.ReactNode;
     children: React.ReactNode;
   }) => (
     <div>
       <div data-testid="header">{headerTitle}</div>
+      <div data-testid="header-right">{headerRight}</div>
       {children}
       <div data-testid="actions">{actions}</div>
     </div>
@@ -69,5 +72,19 @@ describe("ResultMismatch", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Board 5:/)).toBeInTheDocument();
     expect(screen.getByText(/Board 6:/)).toBeInTheDocument();
+  });
+
+  it("renders the headerRight slot content", () => {
+    render(
+      <ResultMismatch
+        nsBoardNumber={5}
+        nsResult="3NTN="
+        ewBoardNumber={5}
+        ewResult="3NTN+1"
+        onReenter={vi.fn()}
+        headerRight={<span data-testid="play-menu">menu</span>}
+      />,
+    );
+    expect(screen.getByTestId("play-menu")).toBeInTheDocument();
   });
 });
