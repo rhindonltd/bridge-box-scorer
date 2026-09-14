@@ -7,14 +7,34 @@ import { Direction, Rank, Suit } from "../model/common";
 
 type Props = {
   leadCardRequired: boolean;
+  /** All boards for the round. */
+  roundBoards: number[];
+  /** Boards already confirmed (not selectable). */
+  playedBoards: number[];
 };
 
-export function useBoardFlow({ leadCardRequired }: Props) {
-  // Step state
-  const [step, setStep] = useState(0);
+export function useBoardFlow({
+  leadCardRequired,
+  roundBoards,
+  playedBoards,
+}: Props) {
+  // The boards still available for selection.
+  const selectableBoards = roundBoards.filter(
+    (b) => !playedBoards.includes(b),
+  );
+
+  // When only one board is selectable, skip the board-selection screen and
+  // go straight to result entry with that board pre-selected.
+  const autoSelectedBoard =
+    selectableBoards.length === 1 ? selectableBoards[0] : null;
+
+  // Step state — start on result entry (step 1) when a board is auto-selected.
+  const [step, setStep] = useState(autoSelectedBoard !== null ? 1 : 0);
 
   // Board state — the board the player has chosen to enter on step 0.
-  const [selectedBoard, setSelectedBoard] = useState<number | null>(null);
+  const [selectedBoard, setSelectedBoard] = useState<number | null>(
+    autoSelectedBoard,
+  );
 
   // Contract state
   const [level, setLevel] = useState<Level | null>(null);
@@ -85,6 +105,11 @@ export function useBoardFlow({ leadCardRequired }: Props) {
   const handleBack = () => {
     switch (step) {
       case 1:
+        // When the board was auto-selected (only one selectable), there is no
+        // board-selection screen to go back to, so stay put.
+        if (autoSelectedBoard !== null) {
+          break;
+        }
         setSelectedBoard(null);
         setStep(0);
         break;
@@ -118,6 +143,9 @@ export function useBoardFlow({ leadCardRequired }: Props) {
     resultValue,
     step,
     selectedBoard,
+    // True when there was only one selectable board and it was auto-selected,
+    // so the board-selection screen is skipped.
+    boardAutoSelected: autoSelectedBoard !== null,
 
     handleBack,
     onBoardSelected,

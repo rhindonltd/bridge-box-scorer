@@ -3,10 +3,13 @@ import { renderHook, act } from "@testing-library/react";
 
 import { useBoardFlow } from "./board-flow";
 
+// A round with several selectable boards, so the flow starts on board selection.
+const multiBoard = { roundBoards: [1, 2, 3], playedBoards: [] as number[] };
+
 describe("useBoardFlow", () => {
   it("starts at step 0 with empty contract state", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
     expect(result.current.step).toBe(0);
     expect(result.current.level).toBeNull();
@@ -15,7 +18,7 @@ describe("useBoardFlow", () => {
 
   it("records the selected board and advances to the level step", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     expect(result.current.selectedBoard).toBeNull();
@@ -27,7 +30,7 @@ describe("useBoardFlow", () => {
 
   it("clears the selected board when stepping back from level to board", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     act(() => result.current.onBoardSelected(2));
@@ -38,9 +41,64 @@ describe("useBoardFlow", () => {
     expect(result.current.selectedBoard).toBeNull();
   });
 
+  it("auto-selects the only board and starts on the level step", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({
+        leadCardRequired: true,
+        roundBoards: [7],
+        playedBoards: [],
+      }),
+    );
+
+    expect(result.current.selectedBoard).toBe(7);
+    expect(result.current.step).toBe(1);
+    expect(result.current.boardAutoSelected).toBe(true);
+  });
+
+  it("auto-selects when only one board remains unplayed", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({
+        leadCardRequired: true,
+        roundBoards: [1, 2, 3],
+        playedBoards: [1, 2],
+      }),
+    );
+
+    expect(result.current.selectedBoard).toBe(3);
+    expect(result.current.step).toBe(1);
+    expect(result.current.boardAutoSelected).toBe(true);
+  });
+
+  it("does not go back to board selection when the board was auto-selected", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({
+        leadCardRequired: true,
+        roundBoards: [5],
+        playedBoards: [],
+      }),
+    );
+
+    expect(result.current.step).toBe(1);
+
+    act(() => result.current.handleBack());
+    // Stays on the level step; there is no board-selection screen to return to.
+    expect(result.current.step).toBe(1);
+    expect(result.current.selectedBoard).toBe(5);
+  });
+
+  it("does not auto-select when several boards are still selectable", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
+    );
+
+    expect(result.current.selectedBoard).toBeNull();
+    expect(result.current.step).toBe(0);
+    expect(result.current.boardAutoSelected).toBe(false);
+  });
+
   it("walks the played-contract path including the lead step when required", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     act(() => result.current.onLevelSelected(3));
@@ -69,7 +127,7 @@ describe("useBoardFlow", () => {
 
   it("skips the lead step when lead card is not required", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: false }),
+      useBoardFlow({ leadCardRequired: false, ...multiBoard }),
     );
 
     act(() => result.current.onLevelSelected(4));
@@ -82,7 +140,7 @@ describe("useBoardFlow", () => {
 
   it("routes a special outcome straight to the result summary step", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     act(() => result.current.onLevelSelected(3));
@@ -95,7 +153,7 @@ describe("useBoardFlow", () => {
 
   it("handleBack steps backwards through the played path", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     // Advance to step 6 via the played path.
@@ -117,7 +175,7 @@ describe("useBoardFlow", () => {
 
   it("handleBack from the summary returns to step 1 for a special outcome", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     act(() => result.current.onLevelSelected(3));
@@ -130,7 +188,7 @@ describe("useBoardFlow", () => {
 
   it("handleBack from the suit step (2) returns to the level step (1)", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     // onLevelSelected lands on the suit step (2).
@@ -143,7 +201,7 @@ describe("useBoardFlow", () => {
 
   it("handleBack steps from the declarer step (3) back to the suit step (2)", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     act(() => result.current.onLevelSelected(3));
@@ -157,7 +215,7 @@ describe("useBoardFlow", () => {
 
   it("handleBack steps from the lead step (4) back to the declarer step (3)", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: true }),
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
     );
 
     act(() => result.current.onLevelSelected(3));
@@ -172,7 +230,7 @@ describe("useBoardFlow", () => {
 
   it("handleBack from result entry (5) returns to declarer (3) when no lead is required", () => {
     const { result } = renderHook(() =>
-      useBoardFlow({ leadCardRequired: false }),
+      useBoardFlow({ leadCardRequired: false, ...multiBoard }),
     );
 
     act(() => result.current.onLevelSelected(4));

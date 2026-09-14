@@ -81,7 +81,9 @@ Tap **Enter Round** when you are ready to start entering results.
 For each board you build up the contract step by step. A board selector at the
 top lets you switch between the boards in the round.
 
-1. **Choose the board** you are entering.
+1. **Choose the board** you are entering. When there is only one board left to
+   enter this round, it is picked for you and this step is skipped, taking you
+   straight to the level.
 2. **Level** — tap the contract level (1–7). This step also has two shortcut
    buttons:
    - **Pass Out** — the board was passed out (nobody bid).
