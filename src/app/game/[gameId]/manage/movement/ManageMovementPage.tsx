@@ -1,6 +1,7 @@
 "use client";
 
 import { useRequiredGame } from "@/context/GameContext";
+import { Spinner } from "@/components/common/Spinner";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { useEffect, useState } from "react";
@@ -75,7 +76,7 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
       <PageLayout headerTitle="Movement Details" backHref={backHref}>
         {selector}
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+          <Spinner />
         </div>
       </PageLayout>
     );

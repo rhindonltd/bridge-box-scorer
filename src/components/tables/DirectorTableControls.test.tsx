@@ -39,7 +39,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={tables()}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 
@@ -54,7 +53,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={tables()}
         onEvict={onEvict}
-        canRemoveTable
       />,
     );
 
@@ -88,7 +86,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={withStationary}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 
@@ -111,7 +108,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={withStationary}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 
@@ -124,7 +120,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={tables()}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 
@@ -140,7 +135,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={withPlacement}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 
@@ -156,7 +150,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={withPlacement}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 
@@ -175,7 +168,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={withPlacement}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 
@@ -194,7 +186,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={single}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
     expect(screen.getByText("Shares with table 2")).toBeInTheDocument();
@@ -209,7 +200,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={multi}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
     expect(screen.getByText("Shares with tables 2, 3")).toBeInTheDocument();
@@ -227,7 +217,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={withRelay}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 
@@ -239,7 +228,6 @@ describe("DirectorTableControls", () => {
       <DirectorTableControls
         tables={tables()}
         onEvict={vi.fn()}
-        canRemoveTable={false}
       />,
     );
 

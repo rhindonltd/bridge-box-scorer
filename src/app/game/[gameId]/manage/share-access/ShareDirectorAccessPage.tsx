@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Spinner } from "@/components/common/Spinner";
 import { generateShareCode } from "@/lib/game-service";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
@@ -98,7 +99,7 @@ export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
             </button>
           </>
         ) : (
-          <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+          <Spinner />
         )}
       </>
     </GamePageLayout>

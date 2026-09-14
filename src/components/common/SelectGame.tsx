@@ -1,4 +1,5 @@
 import { PageLayout } from "@/components/layout/PageLayout";
+import { Spinner } from "@/components/common/Spinner";
 import { BridgeGame } from "@/db/game-index/schema";
 
 interface Props {
@@ -19,7 +20,7 @@ export function SelectGame({
       <div className="flex-1 overflow-y-auto">
         {isLoading && (
           <div className="flex justify-center py-12">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+            <Spinner />
           </div>
         )}
 

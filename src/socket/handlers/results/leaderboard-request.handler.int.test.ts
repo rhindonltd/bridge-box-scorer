@@ -10,15 +10,11 @@ vi.mock("@/db/games", () => ({
 }));
 
 vi.mock("@/services/leaderboard-service", () => ({
-  computeLeaderboard: vi.fn(),
-  computeSectionLeaderboards: vi.fn(),
+  buildLeaderboards: vi.fn(),
 }));
 
 import { getDb } from "@/db/games";
-import {
-  computeLeaderboard,
-  computeSectionLeaderboards,
-} from "@/services/leaderboard-service";
+import { buildLeaderboards } from "@/services/leaderboard-service";
 import { registerLeaderboardRequestHandler } from "./leaderboard-request.handler";
 
 describe("registerLeaderboardRequestHandler (integration)", () => {
@@ -27,8 +23,10 @@ describe("registerLeaderboardRequestHandler (integration)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getDb).mockResolvedValue({} as any);
-    vi.mocked(computeLeaderboard).mockResolvedValue({ type: "MP" } as any);
-    vi.mocked(computeSectionLeaderboards).mockResolvedValue([] as any);
+    vi.mocked(buildLeaderboards).mockResolvedValue({
+      leaderboard: { type: "MP" },
+      sections: [],
+    } as any);
   });
 
   afterEach(async () => {
@@ -155,7 +153,7 @@ describe("registerLeaderboardRequestHandler (integration)", () => {
   });
 
   it("returns null and swallows a compute error", async () => {
-    vi.mocked(computeLeaderboard).mockRejectedValue(new Error("boom"));
+    vi.mocked(buildLeaderboards).mockRejectedValue(new Error("boom"));
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { client, close } = await createSocketTestServer((server) => {

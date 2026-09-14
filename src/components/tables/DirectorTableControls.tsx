@@ -53,7 +53,6 @@ export interface DirectorTable {
 interface Props {
   tables: DirectorTable[];
   onEvict: (seat: Seat) => void;
-  canRemoveTable: boolean;
 }
 
 function EvictablePlayerCard({
@@ -146,9 +145,8 @@ function TablePlacementNote({
 
 export default function DirectorTableControls({ tables, onEvict }: Props) {
   return (
-    <>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {tables.map((table) => (
             <div
               key={table.tableNumber}
@@ -207,8 +205,7 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
               </div>
             </div>
           ))}
-        </div>
       </div>
-    </>
+    </div>
   );
 }

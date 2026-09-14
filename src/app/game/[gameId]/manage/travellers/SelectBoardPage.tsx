@@ -1,6 +1,7 @@
 "use client";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { Spinner } from "@/components/common/Spinner";
 
 interface SelectBoardPageProps {
   boards: number[];
@@ -18,7 +19,7 @@ export function SelectBoardPage({
       <div className="flex-1 min-h-0 overflow-y-auto">
         {isLoading && (
           <div className="flex justify-center py-12">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+            <Spinner />
           </div>
         )}
 

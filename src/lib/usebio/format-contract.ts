@@ -2,17 +2,10 @@ import { BoardOutcome } from "@/model/score";
 import { isPlayedContractCode, parsePlayedContract } from "@/model/result";
 
 /**
- * USEBIO suit names: "S", "H", "D", "C", "NT"
- * USEBIO contract format: "4 S", "3 NT", "6 H x" (space-separated, x/xx suffix for doubles)
+ * USEBIO contract format: "4 S", "3 NT", "6 H x" (space-separated, x/xx suffix
+ * for doubles). USEBIO's suit tokens ("S", "H", "D", "C", "NT") are identical
+ * to our own suit codes, so no mapping is needed.
  */
-
-const SUIT_NAMES: Record<string, string> = {
-  S: "S",
-  H: "H",
-  D: "D",
-  C: "C",
-  NT: "NT",
-};
 
 export type UsebioResult = {
   /** Contract in USEBIO format: "4 S", "3 NT x", "PASS" */
@@ -73,10 +66,7 @@ export function formatOutcomeForUsebio(outcome: BoardOutcome): UsebioResult {
 
   const parsed = parsePlayedContract(outcome);
 
-  /* v8 ignore next -- parsePlayedContract only yields the known suits S/H/D/C/NT,
-     all present in SUIT_NAMES, so the `?? parsed.suit` fallback is unreachable. */
-  const suitName = SUIT_NAMES[parsed.suit] ?? parsed.suit;
-  let contract = `${parsed.level} ${suitName}`;
+  let contract = `${parsed.level} ${parsed.suit}`;
 
   if (parsed.doubling === "X") {
     contract += " x";

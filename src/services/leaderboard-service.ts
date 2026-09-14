@@ -86,55 +86,47 @@ function scoreBoardsToOverall(
   ) as OverallScore;
 }
 
+type Pairs = Awaited<ReturnType<typeof findPairs>>;
+
 /**
- * Compute the combined leaderboard: all sections' results for a given board
- * number are pooled into one traveller and scored together, producing a single
- * ranking across the whole game. This is the default leaderboard and preserves
- * the pre-sections behaviour (bucketing purely by board number).
+ * Pure combined leaderboard: pool all sections' results per board number into
+ * one traveller and score them together, producing a single ranking across the
+ * whole game (bucketing purely by board number, preserving the pre-sections
+ * behaviour). Operates on already-read board/pair rows.
  */
-export async function computeLeaderboard(
-  db: Db,
+function computeCombined(
+  boardRows: Board[],
+  pairs: Pairs,
   gameId: string,
-): Promise<LeaderboardResult> {
-  const game = await findGameById(gameId);
-  const scoringType = game!.scoringType;
-
-  const allBoardRows = (await db.select().from(boards)) as Board[];
-
-  const overallScore = scoreBoardsToOverall(allBoardRows, scoringType, gameId);
-
+  scoringType: ScoringType,
+): LeaderboardResult {
+  const overallScore = scoreBoardsToOverall(boardRows, scoringType, gameId);
   return {
     type: overallScore.type,
     overallScore,
-    participants: (await findPairs(db)).map(toParticipant),
+    participants: pairs.map(toParticipant),
   };
 }
 
 /**
- * Compute one leaderboard per section. Each section is scored independently:
- * only that section's board rows are pooled, and only that section's
- * participants are returned. Sections are returned in ascending letter order.
+ * Pure per-section leaderboards: each section is scored independently (only its
+ * own board rows are pooled and only its own participants returned), in
+ * ascending letter order. Operates on already-read board/pair rows.
  */
-export async function computeSectionLeaderboards(
-  db: Db,
-  gameId: string,
-): Promise<SectionLeaderboard[]> {
-  const game = await findGameById(gameId);
-  const scoringType = game!.scoringType;
-
-  const allBoardRows = (await db.select().from(boards)) as Board[];
-  const allPairs = await findPairs(db);
-
-  // Group board rows and participants by section.
+function computeSections(
+  boardRows: Board[],
+  pairs: Pairs,
+  scoringType: ScoringType,
+): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
-  for (const row of allBoardRows) {
+  for (const row of boardRows) {
     const arr = rowsBySection.get(row.section) ?? [];
     arr.push(row);
     rowsBySection.set(row.section, arr);
   }
 
-  const pairsBySection = new Map<string, typeof allPairs>();
-  for (const pair of allPairs) {
+  const pairsBySection = new Map<string, Pairs>();
+  for (const pair of pairs) {
     const { section } = parseSeat(pair.initialSeat);
     const arr = pairsBySection.get(section) ?? [];
     arr.push(pair);
@@ -158,4 +150,72 @@ export async function computeSectionLeaderboards(
       participants: (pairsBySection.get(section) ?? []).map(toParticipant),
     };
   });
+}
+
+/** Read the scoring type, all board rows and all pairs for a game in one go. */
+async function readLeaderboardInputs(
+  db: Db,
+  gameId: string,
+): Promise<{ scoringType: ScoringType; boardRows: Board[]; pairs: Pairs }> {
+  const game = await findGameById(gameId);
+  const [boardRows, pairs] = await Promise.all([
+    db.select().from(boards) as Promise<Board[]>,
+    findPairs(db),
+  ]);
+  return { scoringType: game!.scoringType, boardRows, pairs };
+}
+
+/**
+ * Read the game's scoring type, board rows and pairs ONCE, then compute both
+ * the combined and per-section leaderboards from that single read. This is the
+ * entry point to use when both are needed (e.g. the leaderboard snapshot),
+ * avoiding the duplicate full-table reads that calling the two `compute*`
+ * functions separately would incur.
+ */
+export async function buildLeaderboards(
+  db: Db,
+  gameId: string,
+): Promise<{ leaderboard: LeaderboardResult; sections: SectionLeaderboard[] }> {
+  const { scoringType, boardRows, pairs } = await readLeaderboardInputs(
+    db,
+    gameId,
+  );
+  return {
+    leaderboard: computeCombined(boardRows, pairs, gameId, scoringType),
+    sections: computeSections(boardRows, pairs, scoringType),
+  };
+}
+
+/**
+ * Compute the combined leaderboard: all sections' results for a given board
+ * number are pooled into one traveller and scored together, producing a single
+ * ranking across the whole game. Reads once and computes only the combined
+ * result (for callers that need just it).
+ */
+export async function computeLeaderboard(
+  db: Db,
+  gameId: string,
+): Promise<LeaderboardResult> {
+  const { scoringType, boardRows, pairs } = await readLeaderboardInputs(
+    db,
+    gameId,
+  );
+  return computeCombined(boardRows, pairs, gameId, scoringType);
+}
+
+/**
+ * Compute one leaderboard per section. Each section is scored independently:
+ * only that section's board rows are pooled, and only that section's
+ * participants are returned. Sections are returned in ascending letter order.
+ * Reads once and computes only the per-section result.
+ */
+export async function computeSectionLeaderboards(
+  db: Db,
+  gameId: string,
+): Promise<SectionLeaderboard[]> {
+  const { scoringType, boardRows, pairs } = await readLeaderboardInputs(
+    db,
+    gameId,
+  );
+  return computeSections(boardRows, pairs, scoringType);
 }

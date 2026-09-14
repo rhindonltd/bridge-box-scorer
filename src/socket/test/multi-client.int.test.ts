@@ -35,12 +35,8 @@ vi.mock("@/db/games/queries/find-sections", () => ({
   findSections: vi.fn(),
 }));
 
-vi.mock("@/db/games/actions/create-player", () => ({
-  createPlayer: vi.fn(),
-}));
-
-vi.mock("@/db/games/actions/create-participant", () => ({
-  createParticipant: vi.fn(),
+vi.mock("@/db/games/actions/create-pair-with-players", () => ({
+  createPairWithPlayers: vi.fn(),
 }));
 
 vi.mock("@/db/games/queries/find-pairs", () => ({
@@ -83,8 +79,7 @@ vi.mock("@/timer/scheduler", () => ({
 }));
 
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { createPlayer } from "@/db/games/actions/create-player";
-import { createParticipant as createPairParticipant } from "@/db/games/actions/create-participant";
+import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { getEngine } from "@/timer/game-store";
@@ -140,8 +135,7 @@ describe("Multi-client Socket.IO scenarios", () => {
         role: "DIRECTOR",
         gameId: "g1",
       } as any);
-      vi.mocked(createPlayer).mockResolvedValue({ id: 1 } as any);
-      vi.mocked(createPairParticipant).mockResolvedValue(undefined);
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([
         { type: "PAIR", initialSeat: "A1NS" },
       ] as any);
@@ -333,8 +327,7 @@ describe("Multi-client Socket.IO scenarios", () => {
         gameType: "PAIRS",
       } as any);
       // CREATE_PARTICIPANT is used as the broadcast trigger for this test.
-      vi.mocked(createPlayer).mockResolvedValue({ id: 1 } as any);
-      vi.mocked(createPairParticipant).mockResolvedValue(undefined);
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
 
       const { client, close, addClient } = await createFullServer();

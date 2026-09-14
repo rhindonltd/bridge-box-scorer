@@ -11,8 +11,9 @@ vi.mock("@/db/games", () => ({
 }));
 
 vi.mock("@/services/leaderboard-service", () => ({
-  computeLeaderboard: vi.fn().mockResolvedValue({ type: "MP" }),
-  computeSectionLeaderboards: vi.fn().mockResolvedValue([]),
+  buildLeaderboards: vi
+    .fn()
+    .mockResolvedValue({ leaderboard: { type: "MP" }, sections: [] }),
 }));
 
 vi.mock("@/services/board-service", () => ({

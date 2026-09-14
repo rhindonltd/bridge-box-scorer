@@ -151,17 +151,20 @@ async function resolveAllSections(
     seatsBySection.set(section, list);
   }
 
-  const resolutions: SectionResolution[] = [];
-  for (const s of sections) {
-    const selected = await getSectionMovement(db, s.section);
-    const seatedSeats = seatsBySection.get(s.section) ?? [];
-    const resolved = await resolveSectionStart(
-      s.section,
-      selected,
-      seatedSeats,
-    );
-    resolutions.push({ section: s.section, resolved });
-  }
+  // Sections are independent, so resolve them concurrently (each reads its own
+  // movement and rehydrates it). Promise.all preserves `sections` order.
+  const resolutions: SectionResolution[] = await Promise.all(
+    sections.map(async (s) => {
+      const selected = await getSectionMovement(db, s.section);
+      const seatedSeats = seatsBySection.get(s.section) ?? [];
+      const resolved = await resolveSectionStart(
+        s.section,
+        selected,
+        seatedSeats,
+      );
+      return { section: s.section, resolved };
+    }),
+  );
 
   // Each section is already resolved to a StartValidationResult; aggregate
   // them all-or-nothing (matching validateSections' contract).

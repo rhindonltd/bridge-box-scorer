@@ -8,12 +8,8 @@ import { Rooms } from "@/socket/rooms";
 
 // ---- mock DB layer ----
 
-vi.mock("@/db/games/actions/create-player", () => ({
-  createPlayer: vi.fn(),
-}));
-
-vi.mock("@/db/games/actions/create-participant", () => ({
-  createParticipant: vi.fn(),
+vi.mock("@/db/games/actions/create-pair-with-players", () => ({
+  createPairWithPlayers: vi.fn(),
 }));
 
 vi.mock("@/db/games/queries/find-pairs", () => ({
@@ -28,8 +24,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import { createPlayer } from "@/db/games/actions/create-player";
-import { createParticipant as createPair } from "@/db/games/actions/create-participant";
+import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { getDb } from "@/db/games";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
@@ -73,10 +68,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
   });
 
   it("creates a PAIR participant and emits PARTICIPANTS", async () => {
-    vi.mocked(createPlayer)
-      .mockResolvedValueOnce({ id: 10 } as any)
-      .mockResolvedValueOnce({ id: 11 } as any);
-    vi.mocked(createPair).mockResolvedValue(undefined);
+    vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
     vi.mocked(findPairs).mockResolvedValue([
       {
         type: "PAIR",
@@ -132,8 +124,8 @@ describe("registerCreateParticipantHandler (integration)", () => {
     ]);
   });
 
-  it("returns success: false when createPlayer throws", async () => {
-    vi.mocked(createPlayer).mockRejectedValue(new Error("db error"));
+  it("returns success: false when creating the pair throws", async () => {
+    vi.mocked(createPairWithPlayers).mockRejectedValue(new Error("db error"));
 
     const response = await new Promise<any>((resolve) => {
       client.emit(
@@ -156,8 +148,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
   });
 
   it("returns success: false with the db-missing error when getDb resolves null", async () => {
-    // getDb resolves null, so creation never runs — no createPlayer queuing
-    // here (leftover once-values would leak into the next test).
+    // getDb resolves null, so creation never runs.
     vi.mocked(getDb).mockResolvedValue(null as any);
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -188,7 +179,7 @@ describe("registerCreateParticipantHandler (integration)", () => {
   });
 
   it("maps an unexpected rejection to a generic internal error", async () => {
-    vi.mocked(createPlayer).mockRejectedValue("boom");
+    vi.mocked(createPairWithPlayers).mockRejectedValue("boom");
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const response = await new Promise<any>((resolve) => {

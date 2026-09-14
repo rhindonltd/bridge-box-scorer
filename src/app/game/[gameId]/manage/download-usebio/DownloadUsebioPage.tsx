@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/common/Spinner";
 import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
@@ -86,7 +87,7 @@ export function DownloadUsebioPage({
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-white">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+        <Spinner />
       </div>
     );
   }

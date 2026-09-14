@@ -11,16 +11,13 @@ import {
 } from "@/lib/section-service";
 import { SectionManager } from "./SectionManager";
 import { SectionModal, SectionModalResult } from "./SectionModal";
+import { reportError } from "@/lib/report-error";
 
 /** Table count a newly added section starts with. */
 const DEFAULT_SECTION_TABLES = 5;
 
 interface Props {
   gameId: string;
-}
-
-function reportError(err: unknown) {
-  alert(err instanceof Error ? err.message : "Something went wrong");
 }
 
 /**

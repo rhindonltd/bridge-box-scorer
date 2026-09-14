@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/common/Spinner";
 import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { parseContract } from "@/model/contract";
@@ -221,7 +222,7 @@ export function CorrectResultPage({
       return (
         <div className="min-h-dvh flex items-center justify-center bg-white">
           <div className="flex flex-col items-center gap-4">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+            <Spinner />
             <span className="text-gray-600">Saving override...</span>
           </div>
         </div>

@@ -4,10 +4,7 @@ import { Server } from "socket.io";
 import { getDb } from "@/db/games";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
-import {
-  computeLeaderboard,
-  computeSectionLeaderboards,
-} from "@/services/leaderboard-service";
+import { buildLeaderboards } from "@/services/leaderboard-service";
 import { getBoardInstances } from "@/services/board-service";
 import type { Db } from "@/db/games";
 
@@ -22,11 +19,9 @@ function roomSize(io: Server, room: string): number {
  * `leaderboard:sync` snapshot, so consumers handle them identically.
  */
 export async function buildLeaderboardPayload(db: Db, gameId: string) {
-  const [leaderboard, sections] = await Promise.all([
-    computeLeaderboard(db, gameId),
-    computeSectionLeaderboards(db, gameId),
-  ]);
-  return { leaderboard, sections };
+  // Single read of game/boards/pairs, computing both leaderboards from it —
+  // rather than two separate full-table reads.
+  return buildLeaderboards(db, gameId);
 }
 
 /**

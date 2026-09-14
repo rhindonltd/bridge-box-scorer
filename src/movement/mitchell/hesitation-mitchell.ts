@@ -88,7 +88,7 @@ export function generateHesitationMitchell(
   // through a slot ring that includes the relay position(s). For an odd table
   // count a single relay sits half way; for an even table count there is a
   // double relay and table 1 shares its boards with the last table.
-  const slotForTable = buildHesitationSlots(tables, boardSets);
+  const slotForTable = buildHesitationSlots(tables);
   const boardSetByTableRound: number[][] = [];
   for (let t = 1; t <= tables; t++) {
     const slot = slotForTable[t];
@@ -115,10 +115,7 @@ export function generateHesitationMitchell(
  *   slots = [T1 .. T(T/2), RELAY, RELAY, T(T/2+1) .. T(T-1)] and table T shares
  *   table 1's slot (they play the same boards each round).
  */
-function buildHesitationSlots(
-  tables: number,
-  boardSets: number,
-): Record<number, number> {
+function buildHesitationSlots(tables: number): Record<number, number> {
   const slots: Record<number, number> = {};
 
   if (tables % 2 === 1) {
@@ -145,9 +142,6 @@ function buildHesitationSlots(
   }
   // The last table shares table 1's boards (same slot).
   slots[tables] = slots[1];
-
-  // Sanity: the highest non-shared slot must be boardSets - 1.
-  void boardSets;
 
   return slots;
 }

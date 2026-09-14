@@ -5,6 +5,7 @@ import {
   ParticipantsByMode,
   TravellerParticipantMode,
 } from "@/model/participants";
+import { boardsForSet } from "./mitchell/mitchell-utils";
 
 // ---- Types ----
 
@@ -117,14 +118,12 @@ export function buildTables<M extends TravellerParticipantMode>(
   }));
 }
 
-export const boardSetToBoardList = (
-  boardSet: number,
-  boardsPerRound: number,
-): number[] => {
-  const start = (boardSet - 1) * boardsPerRound + 1;
-
-  return Array.from({ length: boardsPerRound }, (_, i) => start + i);
-};
+/**
+ * Expand a 1-based board-set index into its board numbers. Alias of
+ * {@link boardsForSet} (the Mitchell family's name for the same operation),
+ * kept as a single implementation so the two can't drift.
+ */
+export const boardSetToBoardList = boardsForSet;
 
 /**
  * Inverse of {@link boardSetToBoardList}: recover the 1-based board-set index
