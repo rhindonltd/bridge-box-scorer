@@ -10,13 +10,10 @@ import {
 import { OverallScoringPlugin, OverallView } from "@/scoring/plugins/types";
 import { registerOverallPlugin } from "@/scoring/plugins/registry";
 import { pairNameLines } from "./pair-names";
+import { rankCell } from "./overall-view";
 
 type MpScored = ScoredTravellerOfType<"PAIR_MP">;
 type MpOverall = PairMatchpointOverallScore;
-
-function rankCell(row: MpOverall["lines"][number]) {
-  return textCell(row.tied ? `${row.rank}=` : `${row.rank}`);
-}
 
 const mpView: OverallView<MpOverall> = {
   id: "matchpoints",

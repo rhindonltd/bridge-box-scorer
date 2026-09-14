@@ -1,7 +1,5 @@
 import { MovementFamily, movementTypeToFamily } from "./recommendation-types";
 import { MovementDescriptor, MitchellSubtype } from "./movement-descriptor";
-import { generateMitchell } from "@/movement/mitchell/mitchell";
-import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 
 /**
  * A single recommendation as authored in scripts/recommendations.json.
@@ -145,47 +143,18 @@ function resolveSpec(
 }
 
 /**
- * Number of physical copies of each board set a generated Mitchell movement
- * needs, read authoritatively from the generator's per-round board-copy labels.
- * An even-table Web uses two copies (A/B); every other Mitchell family is
- * single-copy.
+ * Number of physical board-set copies a generated Mitchell subtype needs. Only
+ * the Web family duplicates its board sets (two copies, A/B — an even-table Web
+ * splits the room into two halves playing the same sets on different decks);
+ * every other Mitchell family plays a single copy.
  *
- * Only the Web family uses duplicate copies, so we only build the movement to
- * count them for a Web. Building other families here would be wasteful and, for
- * some curated combinations (e.g. an even-table arrow-switch offered as a
- * share-and-relay at rounds < tables), the generator would reject the spec even
- * though the copy count is trivially one.
+ * This is derivable from the subtype alone, so the recommendation layer no
+ * longer depends on the movement generator just to count copies. (The Web
+ * subtype is only ever produced for even table counts — see
+ * resolveRecommendationDescriptor — where the count is always two.)
  */
-function mitchellCopies(spec: MitchellMovementSpec): number {
-  if (!spec.web) return 1;
-
-  const generated = generateMitchell(spec);
-  const copies = new Set<string>();
-  for (const table of generated.tables) {
-    for (const round of table.rounds) {
-      /* v8 ignore next -- defensive: the Web generator always emits a boardCopy, so the `?? "A"` fallback is unreachable */
-      copies.add(round.boardCopy ?? "A");
-    }
-  }
-  return copies.size;
-}
-
-/** Build the MitchellMovementSpec a subtype maps to, for generating/copies. */
-function specForSubtype(
-  entry: RecommendationEntryInput,
-  subtype: MitchellSubtype,
-  arrowSwitches: number,
-): MitchellMovementSpec {
-  return {
-    tables: entry.tables,
-    rounds: entry.rounds,
-    boardsPerRound: entry.boardsPerRound,
-    ...(arrowSwitches > 0 ? { arrowSwitchRounds: arrowSwitches } : {}),
-    ...(subtype === "SHARE_AND_RELAY" ? { shareAndRelay: true } : {}),
-    ...(subtype === "SKIP" ? { skip: true } : {}),
-    ...(subtype === "HESITATION" ? { hesitation: true } : {}),
-    ...(subtype === "WEB" ? { web: true } : {}),
-  };
+function copiesForSubtype(subtype: MitchellSubtype): number {
+  return subtype === "WEB" ? 2 : 1;
 }
 
 function mitchellDescriptor(
@@ -200,7 +169,7 @@ function mitchellDescriptor(
     rounds: entry.rounds,
     boardsPerRound: entry.boardsPerRound,
     arrowSwitches,
-    copies: mitchellCopies(specForSubtype(entry, subtype, arrowSwitches)),
+    copies: copiesForSubtype(subtype),
     pros: entry.pros,
     cons: entry.cons,
   };

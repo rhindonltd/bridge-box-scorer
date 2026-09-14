@@ -121,21 +121,7 @@ export async function materializePairLikeMovement(
   gameId: string,
 ) {
   const { boardRows, assignmentRows } = buildSectionRows(section, movement);
-
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
-
-  db.transaction((tx) => {
-    if (boardRows.length > 0) {
-      tx.insert(boards).values(boardRows).run();
-    }
-    if (assignmentRows.length > 0) {
-      tx.insert(assignments).values(assignmentRows).run();
-    }
-  });
+  await insertSectionRows(gameId, boardRows, assignmentRows);
 }
 
 /**
@@ -155,6 +141,19 @@ export async function materializeSections(
     assignmentRows.push(...rows.assignmentRows);
   }
 
+  await insertSectionRows(gameId, boardRows, assignmentRows);
+}
+
+/**
+ * Insert the given board and assignment rows into the game's database in a
+ * single transaction. Shared by the single-section and all-sections
+ * materializers so the transaction shape lives in one place.
+ */
+async function insertSectionRows(
+  gameId: string,
+  boardRows: NewBoard[],
+  assignmentRows: Assignment[],
+) {
   const db = await getDb(gameId);
 
   if (!db) {

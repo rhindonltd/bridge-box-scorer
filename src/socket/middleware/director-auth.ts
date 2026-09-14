@@ -1,4 +1,5 @@
 import { findLoginSession } from "@/db/system/queries/find-login-session";
+import { rejectUnauthorized, UnauthorizedCallback } from "./auth-guard";
 
 /**
  * Validates a director token for a specific game.
@@ -43,10 +44,9 @@ export function validateDirectorToken(
 export function assertDirector(
   directorToken: string | undefined | null,
   gameId: string,
-  cb?: (response: { success: false; error: string }) => void,
+  cb?: UnauthorizedCallback,
 ): boolean {
   if (validateDirectorToken(directorToken, gameId)) return true;
 
-  cb?.({ success: false, error: "Unauthorized" });
-  return false;
+  return rejectUnauthorized(cb);
 }

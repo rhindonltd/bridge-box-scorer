@@ -1,12 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useRequiredGame } from "@/context/GameContext";
-import {
-  TravellerProvider,
-  useTravellerContext,
-} from "@/context/TravellerContext";
+import { TravellerProvider } from "@/context/TravellerContext";
 import { ContractWizard } from "@/app/game/[gameId]/play/[initialSeat]/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { parseContract } from "@/model/contract";
@@ -15,195 +12,211 @@ import { ResultMismatch } from "@/app/game/[gameId]/play/[initialSeat]/ResultMis
 import { RoundInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/RoundInfoPage";
 import { GameComplete } from "@/app/game/[gameId]/play/[initialSeat]/GameComplete";
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
-import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { ScoringType } from "@/db/games/types/scoring-type";
-import { Traveller } from "@/model/traveller";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
+import type { PlayState, Schedule } from "@/hooks/play-state-machine";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
 import { WaitingToStartPage } from "@/app/game/[gameId]/play/[initialSeat]/WaitingToStartPage";
 import { PlayHeaderMenu } from "@/app/game/[gameId]/play/[initialSeat]/PlayHeaderMenu";
 import { Seat } from "@/model/participants";
+import { FullScreenSpinner } from "@/components/common/Spinner";
+import { useScoredBoard } from "./useScoredBoard";
 
 export default function PlayPage() {
   const params = useParams<{ initialSeat: string }>();
   const seat = params.initialSeat;
 
   const { game } = useRequiredGame();
-  const {
-    schedule,
-    playState,
-    waitingToStart,
-    handleSitOutContinue,
-    handleMoveInfoContinue,
-    handleBoardResultsNext,
-    handleReenter,
-    handleEnterRound,
-    submitResult,
-  } = usePlayFlow(game.gameId, seat);
+  const flow = usePlayFlow(game.gameId, seat);
 
   // Seated, but the director hasn't started the game yet: show a friendly
   // waiting screen (it revalidates and advances automatically at start) rather
   // than an indefinite spinner.
-  if (waitingToStart) {
+  if (flow.waitingToStart) {
     return <WaitingToStartPage gameId={game.gameId} seat={seat as Seat} />;
   }
 
-  if (!schedule) {
-    return (
-      <div className="h-dvh flex items-center justify-center bg-gray-100">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-      </div>
-    );
+  if (!flow.schedule) {
+    return <FullScreenSpinner />;
   }
 
-  // Live game: every play screen shares a header whose right-hand slot holds
-  // the play menu (Change device, Pair details, and future actions). A player
-  // can hand their seat to another device at any time (e.g. a battery swap) via
-  // that menu. Leaving the table is setup-only, so it is NOT offered here.
-  // `schedule` is non-null past the guard above; capture the narrowed value so
-  // the nested render function sees it as non-null (narrowing doesn't carry
-  // into a nested function).
-  const currentSchedule = schedule;
+  return (
+    <PlayStateRouter
+      schedule={flow.schedule}
+      playState={flow.playState}
+      gameId={game.gameId}
+      seat={seat}
+      scoringType={game.scoringType}
+      leadCardRequired={game.leadCardRequired}
+      handlers={flow}
+    />
+  );
+}
 
-  const headerRight = <PlayHeaderMenu gameId={game.gameId} seat={seat} />;
+/** The handler callbacks the play screens fire, as returned by usePlayFlow. */
+type PlayHandlers = Pick<
+  ReturnType<typeof usePlayFlow>,
+  | "handleSitOutContinue"
+  | "handleMoveInfoContinue"
+  | "handleBoardResultsNext"
+  | "handleReenter"
+  | "handleEnterRound"
+  | "submitResult"
+>;
 
-  return renderPlayState(currentSchedule);
+/**
+ * Maps the current {@link PlayState} to its screen. Every live play screen
+ * shares a header whose right-hand slot holds the play menu (Change device,
+ * Pair details, …). A player can hand their seat to another device at any time
+ * via that menu; leaving the table is setup-only, so it is NOT offered here.
+ */
+function PlayStateRouter({
+  schedule,
+  playState,
+  gameId,
+  seat,
+  scoringType,
+  leadCardRequired,
+  handlers,
+}: {
+  schedule: Schedule;
+  playState: PlayState;
+  gameId: string;
+  seat: string;
+  scoringType: ScoringType;
+  leadCardRequired: boolean;
+  handlers: PlayHandlers;
+}) {
+  const headerRight = <PlayHeaderMenu gameId={gameId} seat={seat} />;
 
-  function renderPlayState(schedule: typeof currentSchedule) {
-    switch (playState.state) {
-      case "loading":
+  switch (playState.state) {
+    case "loading":
+      return <FullScreenSpinner />;
+
+    case "roundInfo": {
+      const round = schedule.rounds[playState.roundIndex];
+
+      // If this round is a sit-out, show the sit-out screen instead.
+      if (round.sitOut) {
         return (
-          <div className="h-dvh flex items-center justify-center bg-gray-100">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-          </div>
-        );
-
-      case "roundInfo": {
-        const round = schedule.rounds[playState.roundIndex];
-
-        // If this round is a sit-out, show the sit-out screen instead
-        if (round.sitOut) {
-          return (
-            <SitOutPage
-              round={round.roundNumber}
-              tableNumber={round.tableNumber}
-              onHandleSitOutContinue={handleSitOutContinue}
-              headerRight={headerRight}
-            />
-          );
-        }
-
-        return (
-          <RoundInfoPage
+          <SitOutPage
             round={round.roundNumber}
-            table={round.tableNumber!}
-            boards={round.boards}
-            players={
-              round.players as { N: Player; S: Player; E: Player; W: Player }
-            }
-            onEnterRound={handleEnterRound}
+            tableNumber={round.tableNumber}
+            onHandleSitOutContinue={handlers.handleSitOutContinue}
             headerRight={headerRight}
           />
         );
       }
 
-      case "enterContract": {
-        const round = schedule.rounds[playState.roundIndex];
-        const playedBoards = round.boardStatuses
-          .filter((b) => b.status === "CONFIRMED")
-          .map((b) => b.boardNumber);
-        return (
-          <ContractWizard
-            round={round.roundNumber}
-            table={round.tableNumber!}
-            roundBoards={round.boards}
-            playedBoards={playedBoards}
-            leadCardRequired={game.leadCardRequired}
-            headerRight={headerRight}
-            onComplete={(data) => {
-              if (data.contract === "PO" || data.contract === "NP") {
-                submitResult(data.board, data.contract);
-              } else {
-                const parsed = parseContract(data.contract);
-                const fullResult = buildPlayedContractCode(
-                  parsed.level,
-                  parsed.suit,
-                  parsed.doubling,
-                  parsed.declarer,
-                  data.result,
-                );
-                submitResult(data.board, fullResult);
-              }
-            }}
-          />
-        );
-      }
-
-      case "waiting": {
-        const round = schedule.rounds[playState.roundIndex];
-        const boardNumber = round.boards[playState.boardIndex];
-        return (
-          <WaitingForConfirmation
-            boardNumber={boardNumber}
-            headerRight={headerRight}
-          />
-        );
-      }
-
-      case "mismatch": {
-        return (
-          <ResultMismatch
-            nsBoardNumber={playState.nsBoardNumber}
-            nsResult={playState.nsResult}
-            ewBoardNumber={playState.ewBoardNumber}
-            ewResult={playState.ewResult}
-            onReenter={handleReenter}
-            headerRight={headerRight}
-          />
-        );
-      }
-
-      case "boardResults": {
-        const round = schedule.rounds[playState.roundIndex];
-        const boardNumber = round.boards[playState.boardIndex];
-        const lastBoardOfRound =
-          playState.boardIndex === round.boards.length - 1;
-
-        // All boards played so far in this round (up to and including current)
-        const playedBoards = round.boards.slice(0, playState.boardIndex + 1);
-
-        return (
-          <BoardResultsLoader
-            gameId={game.gameId}
-            scoringType={game.scoringType}
-            boardNumber={boardNumber}
-            playedBoards={playedBoards}
-            lastBoardOfRound={lastBoardOfRound}
-            onNext={handleBoardResultsNext}
-            headerRight={headerRight}
-          />
-        );
-      }
-
-      case "moveInfo": {
-        const roundSchedule = schedule.rounds[playState.nextRoundIndex];
-
-        return (
-          <MoveInfoPage
-            roundNumber={roundSchedule.roundNumber}
-            tableNumber={roundSchedule.tableNumber!}
-            sitOut={roundSchedule.sitOut ?? false}
-            onMoveInfoContinue={handleMoveInfoContinue}
-            headerRight={headerRight}
-          />
-        );
-      }
-
-      case "gameComplete":
-        return <GameComplete headerRight={headerRight} />;
+      return (
+        <RoundInfoPage
+          round={round.roundNumber}
+          table={round.tableNumber!}
+          boards={round.boards}
+          players={
+            round.players as { N: Player; S: Player; E: Player; W: Player }
+          }
+          onEnterRound={handlers.handleEnterRound}
+          headerRight={headerRight}
+        />
+      );
     }
+
+    case "enterContract": {
+      const round = schedule.rounds[playState.roundIndex];
+      const playedBoards = round.boardStatuses
+        .filter((b) => b.status === "CONFIRMED")
+        .map((b) => b.boardNumber);
+      return (
+        <ContractWizard
+          round={round.roundNumber}
+          table={round.tableNumber!}
+          roundBoards={round.boards}
+          playedBoards={playedBoards}
+          leadCardRequired={leadCardRequired}
+          headerRight={headerRight}
+          onComplete={(data) => {
+            if (data.contract === "PO" || data.contract === "NP") {
+              handlers.submitResult(data.board, data.contract);
+            } else {
+              const parsed = parseContract(data.contract);
+              const fullResult = buildPlayedContractCode(
+                parsed.level,
+                parsed.suit,
+                parsed.doubling,
+                parsed.declarer,
+                data.result,
+              );
+              handlers.submitResult(data.board, fullResult);
+            }
+          }}
+        />
+      );
+    }
+
+    case "waiting": {
+      const round = schedule.rounds[playState.roundIndex];
+      const boardNumber = round.boards[playState.boardIndex];
+      return (
+        <WaitingForConfirmation
+          boardNumber={boardNumber}
+          headerRight={headerRight}
+        />
+      );
+    }
+
+    case "mismatch":
+      return (
+        <ResultMismatch
+          nsBoardNumber={playState.nsBoardNumber}
+          nsResult={playState.nsResult}
+          ewBoardNumber={playState.ewBoardNumber}
+          ewResult={playState.ewResult}
+          onReenter={handlers.handleReenter}
+          headerRight={headerRight}
+        />
+      );
+
+    case "boardResults": {
+      const round = schedule.rounds[playState.roundIndex];
+      const boardNumber = round.boards[playState.boardIndex];
+      const lastBoardOfRound =
+        playState.boardIndex === round.boards.length - 1;
+
+      // All boards played so far in this round (up to and including current).
+      const playedBoards = round.boards.slice(0, playState.boardIndex + 1);
+
+      return (
+        <BoardResultsLoader
+          gameId={gameId}
+          scoringType={scoringType}
+          boardNumber={boardNumber}
+          playedBoards={playedBoards}
+          lastBoardOfRound={lastBoardOfRound}
+          onNext={handlers.handleBoardResultsNext}
+          headerRight={headerRight}
+        />
+      );
+    }
+
+    case "moveInfo": {
+      const roundSchedule = schedule.rounds[playState.nextRoundIndex];
+
+      return (
+        <MoveInfoPage
+          roundNumber={roundSchedule.roundNumber}
+          tableNumber={roundSchedule.tableNumber!}
+          sitOut={roundSchedule.sitOut ?? false}
+          onMoveInfoContinue={handlers.handleMoveInfoContinue}
+          headerRight={headerRight}
+        />
+      );
+    }
+
+    case "gameComplete":
+      return <GameComplete headerRight={headerRight} />;
   }
 }
 
@@ -264,38 +277,10 @@ function BoardResultsContent({
   onNext: () => void;
   headerRight?: React.ReactNode;
 }) {
-  const { instances } = useTravellerContext();
-
-  const scoredBoard = useMemo<ScoredBoard | null>(() => {
-    const mode = "PAIR";
-
-    const lines = instances
-      .filter((i) => i.currentResult != null)
-      .map((i) => ({
-        nsId: i.participants.ns,
-        ewId: i.participants.ew,
-        outcome: i.currentResult,
-      }));
-
-    if (lines.length === 0) return null;
-
-    const traveller: Traveller = {
-      type: mode,
-      mode,
-      board: viewingBoard,
-      section: gameId,
-      lines: lines as Traveller["lines"],
-    };
-
-    return scoreBoard(traveller, scoringType);
-  }, [instances, gameId, scoringType, viewingBoard]);
+  const scoredBoard = useScoredBoard(gameId, viewingBoard, scoringType);
 
   if (!scoredBoard) {
-    return (
-      <div className="h-dvh flex items-center justify-center bg-gray-100">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
-      </div>
-    );
+    return <FullScreenSpinner />;
   }
 
   return (

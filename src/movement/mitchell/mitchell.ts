@@ -23,33 +23,46 @@ import { generateWebMitchell } from "./web-mitchell";
  * through the game start flow. Wiring selection / rehydration / UI is a
  * deliberate follow-up.
  */
+/**
+ * The variant discriminant flags, in the order they are checked. The first flag
+ * present on the spec selects its generator; when none is present a Standard
+ * Mitchell is produced. Adding a variant is one entry here (plus its generator)
+ * rather than another arm in an if-chain.
+ */
+type VariantFlag =
+  | "skip"
+  | "shareAndRelay"
+  | "blackpool"
+  | "hesitation"
+  | "doubleHesitation"
+  | "web";
+
+const VARIANT_GENERATORS: {
+  flag: VariantFlag;
+  generate: (spec: MitchellMovementSpec) => Tables<"PAIR">;
+}[] = [
+  { flag: "skip", generate: (s) => generateSkipMitchell({ ...s, skip: true }) },
+  {
+    flag: "shareAndRelay",
+    generate: (s) => generateShareAndRelayMitchell({ ...s, shareAndRelay: true }),
+  },
+  {
+    flag: "blackpool",
+    generate: (s) => generateBlackpool({ ...s, blackpool: true }),
+  },
+  {
+    flag: "hesitation",
+    generate: (s) => generateHesitationMitchell({ ...s, hesitation: true }),
+  },
+  {
+    flag: "doubleHesitation",
+    generate: (s) =>
+      generateDoubleHesitationMitchell({ ...s, doubleHesitation: true }),
+  },
+  { flag: "web", generate: (s) => generateWebMitchell({ ...s, web: true }) },
+];
+
 export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
-  if (spec.skip) {
-    return generateSkipMitchell({ ...spec, skip: true });
-  }
-
-  if (spec.shareAndRelay) {
-    return generateShareAndRelayMitchell({ ...spec, shareAndRelay: true });
-  }
-
-  if (spec.blackpool) {
-    return generateBlackpool({ ...spec, blackpool: true });
-  }
-
-  if (spec.hesitation) {
-    return generateHesitationMitchell({ ...spec, hesitation: true });
-  }
-
-  if (spec.doubleHesitation) {
-    return generateDoubleHesitationMitchell({
-      ...spec,
-      doubleHesitation: true,
-    });
-  }
-
-  if (spec.web) {
-    return generateWebMitchell({ ...spec, web: true });
-  }
-
-  return generateStandardMitchell(spec);
+  const variant = VARIANT_GENERATORS.find(({ flag }) => spec[flag]);
+  return variant ? variant.generate(spec) : generateStandardMitchell(spec);
 }
