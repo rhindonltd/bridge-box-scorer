@@ -104,8 +104,9 @@ describe("TimerSetup (config screen)", () => {
         expect.objectContaining({
           boardsPerRound: 3,
           totalRounds: 8,
-          // defaults: play 2m0s = 120s (perRound), move 1m30s = 90s
-          playDuration: 120,
+          // defaults: play 7m30s = 450s per board (perBoard) * 3 boards = 1350s,
+          // move 1m30s = 90s
+          playDuration: 1350,
           moveDuration: 90,
           warningSeconds: 45,
         }),
@@ -117,7 +118,7 @@ describe("TimerSetup (config screen)", () => {
     render(<TimerSetup />);
 
     fireEvent.change(screen.getByLabelText("Play minutes"), {
-      target: { value: "7" },
+      target: { value: "8" },
     });
 
     await waitFor(() =>
@@ -128,7 +129,9 @@ describe("TimerSetup (config screen)", () => {
           // Structure comes from the selected movement (read-only).
           totalRounds: 8,
           boardsPerRound: 3,
-          playDuration: 420,
+          // Default is Per Board with 30s of play seconds; setting minutes to 8
+          // gives 8m30s = 510s per board * 3 boards = 1530s.
+          playDuration: 1530,
         }),
       ),
     );
@@ -158,16 +161,18 @@ describe("TimerSetup (config screen)", () => {
     expect(mockSaveTimerConfig).not.toHaveBeenCalled();
   });
 
-  it("uses per-board timing to multiply the play duration on auto-save", async () => {
+  it("switching to per-round timing stores the entered play time as the round total", async () => {
     render(<TimerSetup />);
 
-    // default play 2m = 120s, boardsPerRound 3 -> 360s per round.
-    fireEvent.click(screen.getByLabelText("Per Board"));
+    // Default is Per Board (play 7m30s = 450s per board). Switching to Per
+    // Round stores the entered play time directly, without multiplying by
+    // boards/round: 450s.
+    fireEvent.click(screen.getByLabelText("Per Round"));
     await waitFor(() =>
       expect(mockSaveTimerConfig).toHaveBeenLastCalledWith(
         "g1",
         "A",
-        expect.objectContaining({ playDuration: 360 }),
+        expect.objectContaining({ timingMode: "perRound", playDuration: 450 }),
       ),
     );
   });
@@ -188,7 +193,6 @@ describe("TimerSetup (config screen)", () => {
       screen.getByLabelText("Warning at (seconds before end of play)"),
       { target: { value: "45" } },
     );
-    fireEvent.click(screen.getByLabelText("Per Board"));
 
     // The burst of edits debounces into a single save with the final values.
     await waitFor(() => {
@@ -197,8 +201,8 @@ describe("TimerSetup (config screen)", () => {
         // Boards/round is derived from the movement (3), not edited here.
         boardsPerRound: 3,
         warningSeconds: 45,
-        // per board: play (2m10s = 130s) * 3 boards = 390
-        playDuration: 390,
+        // Per Board (the default): play (7m10s = 430s) * 3 boards = 1290
+        playDuration: 1290,
         // move 2m20s = 140s
         moveDuration: 140,
       });
@@ -328,6 +332,8 @@ describe("TimerSetup (config screen)", () => {
     ];
     render(<TimerSetup />);
 
+    // Per Round so play time is taken as the whole round's play, not per board.
+    fireEvent.click(screen.getByLabelText("Per Round"));
     fireEvent.change(screen.getByLabelText("Play minutes"), {
       target: { value: "1" },
     });
@@ -358,6 +364,8 @@ describe("TimerSetup (config screen)", () => {
     ];
     render(<TimerSetup />);
 
+    // Per Round so play time is taken as the whole round's play, not per board.
+    fireEvent.click(screen.getByLabelText("Per Round"));
     fireEvent.change(screen.getByLabelText("Play minutes"), {
       target: { value: "0" },
     });
@@ -592,7 +600,8 @@ describe("per-section timer UI", () => {
     render(<TimerSetup />);
 
     // Defaults to the first section: editing a field auto-saves for section A.
-    fireEvent.click(screen.getByLabelText("Per Board"));
+    // (Per Board is the default, so toggle to Per Round to register a change.)
+    fireEvent.click(screen.getByLabelText("Per Round"));
 
     // Switching sections unmounts the A container, flushing its pending save.
     fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
@@ -601,7 +610,7 @@ describe("per-section timer UI", () => {
     );
 
     // Editing section B auto-saves for section B.
-    fireEvent.click(screen.getByLabelText("Per Board"));
+    fireEvent.click(screen.getByLabelText("Per Round"));
     await waitFor(() => {
       const call = lastSave();
       expect(call![1]).toBe("B");
