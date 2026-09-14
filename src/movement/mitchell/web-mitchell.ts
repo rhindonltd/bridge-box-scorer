@@ -1,12 +1,11 @@
 import {
-  boardsForSet,
-  getPairIds,
+  buildMitchell,
   MitchellMovementSpec,
   validateMitchellSpec,
   wrapValue,
 } from "./mitchell-utils";
 
-import { Table, Tables } from "@/model/movement";
+import { Tables } from "@/model/movement";
 
 export interface WebMitchellMovementSpec extends MitchellMovementSpec {
   web: true;
@@ -68,7 +67,7 @@ function ewDistance(round: number, rounds: number): number {
 function generateWebMitchellEven(
   spec: WebMitchellMovementSpec,
 ): Tables<"PAIR"> {
-  const { tables, rounds, boardsPerRound, arrowSwitchRounds = 0 } = spec;
+  const { tables, rounds } = spec;
 
   validateMitchellSpec(spec);
 
@@ -78,66 +77,35 @@ function generateWebMitchellEven(
   }
 
   const half = tables / 2;
+  const inFirstHalf = (tableNumber: number) => tableNumber <= half;
 
-  const result: Table<"PAIR">[] = [];
-
-  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
-    const roundsList = [];
-
-    const inFirstHalf = tableNumber <= half;
-
-    // The two halves play the same board sets on different physical copies:
-    // the first half on copy A, the second on copy B.
-    const boardCopy = inFirstHalf ? "A" : "B";
-
-    for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
+  return buildMitchell(
+    spec,
+    { tables, rounds },
+    {
       // NS stationary; EW move up one table per round, with a half-way skip.
-      const ewTable = wrapValue(
-        tableNumber - ewDistance(roundNumber, rounds),
-        tables,
-      );
+      ewTable: (tableNumber, roundNumber) =>
+        wrapValue(tableNumber - ewDistance(roundNumber, rounds), tables),
 
       /*
        * There are `rounds` distinct board sets. Sets ascend across the first
        * half of the tables and descend, mirrored, across the second half, so
        * the two halves share the same sets (played on duplicate copies).
        */
-      const boardSet = inFirstHalf
-        ? wrapValue(tableNumber + (roundNumber - 1), rounds)
-        : wrapValue(
-            wrapValue(half - (tableNumber - half), rounds) - (roundNumber - 1),
-            rounds,
-          );
+      boardSet: (tableNumber, roundNumber) =>
+        inFirstHalf(tableNumber)
+          ? wrapValue(tableNumber + (roundNumber - 1), rounds)
+          : wrapValue(
+              wrapValue(half - (tableNumber - half), rounds) -
+                (roundNumber - 1),
+              rounds,
+            ),
 
-      const boards = boardsForSet(boardSet, boardsPerRound);
-
-      const { nsId, ewId } = getPairIds(
-        tableNumber,
-        ewTable,
-        tables,
-        arrowSwitchRounds,
-        roundNumber,
-        rounds,
-      );
-
-      roundsList.push({
-        round: roundNumber,
-        boards,
-        boardCopy,
-        participants: {
-          nsId,
-          ewId,
-        },
-      });
-    }
-
-    result.push({
-      table: tableNumber,
-      rounds: roundsList,
-    });
-  }
-
-  return { tables: result };
+      // The two halves play the same board sets on different physical copies:
+      // the first half on copy A, the second on copy B.
+      boardCopy: (tableNumber) => (inFirstHalf(tableNumber) ? "A" : "B"),
+    },
+  );
 }
 
 /** Physical-copy labels, assigned by band for the odd-table Web. */
@@ -146,7 +114,7 @@ const COPY_LABELS = ["A", "B", "C", "D"];
 function generateWebMitchellOdd(
   spec: WebMitchellMovementSpec,
 ): Tables<"PAIR"> {
-  const { tables, rounds, boardsPerRound, arrowSwitchRounds = 0 } = spec;
+  const { tables, rounds } = spec;
 
   validateMitchellSpec(spec);
 
@@ -155,54 +123,29 @@ function generateWebMitchellOdd(
     throw new Error("generateWebMitchellOdd requires an odd table count");
   }
 
-  const result: Table<"PAIR">[] = [];
-
-  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
-    const roundsList = [];
-
-    // Copies are assigned by band (tables 1..rounds = A, next rounds = B, ...)
-    // so the simultaneous plays of a set number use different physical decks.
-    const boardCopy = COPY_LABELS[Math.floor((tableNumber - 1) / rounds)] ?? "A";
-
-    for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
+  return buildMitchell(
+    spec,
+    { tables, rounds },
+    {
       // NS stationary; EW move up one table per round.
-      const ewTable = wrapValue(tableNumber - (roundNumber - 1), tables);
+      ewTable: (tableNumber, roundNumber) =>
+        wrapValue(tableNumber - (roundNumber - 1), tables),
 
       /*
        * "Rainbow" set assignment: each EW pair plays `rounds` distinct set
        * numbers across the session, so no pair ever replays a board while
        * every set is in play every round.
        */
-      const tableOffset = (((tableNumber - roundNumber) % tables) + tables) % tables;
-      const boardSet = ((roundNumber - 1 + tableOffset) % rounds) + 1;
+      boardSet: (tableNumber, roundNumber) => {
+        const tableOffset =
+          (((tableNumber - roundNumber) % tables) + tables) % tables;
+        return ((roundNumber - 1 + tableOffset) % rounds) + 1;
+      },
 
-      const boards = boardsForSet(boardSet, boardsPerRound);
-
-      const { nsId, ewId } = getPairIds(
-        tableNumber,
-        ewTable,
-        tables,
-        arrowSwitchRounds,
-        roundNumber,
-        rounds,
-      );
-
-      roundsList.push({
-        round: roundNumber,
-        boards,
-        boardCopy,
-        participants: {
-          nsId,
-          ewId,
-        },
-      });
-    }
-
-    result.push({
-      table: tableNumber,
-      rounds: roundsList,
-    });
-  }
-
-  return { tables: result };
+      // Copies are assigned by band (tables 1..rounds = A, next rounds = B, ...)
+      // so the simultaneous plays of a set number use different physical decks.
+      boardCopy: (tableNumber) =>
+        COPY_LABELS[Math.floor((tableNumber - 1) / rounds)] ?? "A",
+    },
+  );
 }

@@ -1,11 +1,11 @@
 import {
-  boardsForSet,
-  getPairIds,
+  assertPositiveBoardsPerRound,
+  buildMitchell,
   MitchellMovementSpec,
   wrapValue,
 } from "./mitchell-utils";
 
-import { Table, Tables } from "../../model/movement";
+import { Tables } from "../../model/movement";
 
 export interface BlackpoolMovementSpec extends MitchellMovementSpec {
   blackpool: true;
@@ -43,12 +43,7 @@ export interface BlackpoolMovementSpec extends MitchellMovementSpec {
 export function generateBlackpool(
   spec: BlackpoolMovementSpec,
 ): Tables<"PAIR"> {
-  const {
-    tables,
-    boardsPerRound,
-    arrowSwitchRounds = 0,
-    revengeRounds = 0,
-  } = spec;
+  const { tables, revengeRounds = 0 } = spec;
 
   validateBlackpoolSpec(spec);
 
@@ -58,41 +53,18 @@ export function generateBlackpool(
   // Ring position (0-based) of each playing table within the T+2 slot ring.
   const ringPositionOfTable = buildRingPositions(tables);
 
-  const result: Table<"PAIR">[] = [];
-
-  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
-    const roundsList = [];
-    const ringPos = ringPositionOfTable[tableNumber];
-
-    for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
+  return buildMitchell(
+    spec,
+    { tables, rounds },
+    {
       // EW moves down one table each round (normal Mitchell circulation).
-      const ewTable = wrapValue(tableNumber - (roundNumber - 1), tables);
-
+      ewTable: (tableNumber, roundNumber) =>
+        wrapValue(tableNumber - (roundNumber - 1), tables),
       // Board set advances one slot per round through the T+2 ring.
-      const boardSet = wrapValue(ringPos + roundNumber, boardSets);
-
-      const boards = boardsForSet(boardSet, boardsPerRound);
-
-      const { nsId, ewId } = getPairIds(
-        tableNumber,
-        ewTable,
-        tables,
-        arrowSwitchRounds,
-        roundNumber,
-        rounds,
-      );
-
-      roundsList.push({
-        round: roundNumber,
-        boards,
-        participants: { nsId, ewId },
-      });
-    }
-
-    result.push({ table: tableNumber, rounds: roundsList });
-  }
-
-  return { tables: result };
+      boardSet: (tableNumber, roundNumber) =>
+        wrapValue(ringPositionOfTable[tableNumber] + roundNumber, boardSets),
+    },
+  );
 }
 
 /**
@@ -136,9 +108,7 @@ function validateBlackpoolSpec(spec: BlackpoolMovementSpec): void {
     throw new Error("Blackpool requires at least 2 tables");
   }
 
-  if (!Number.isInteger(boardsPerRound) || boardsPerRound < 1) {
-    throw new Error("boardsPerRound must be a positive integer");
-  }
+  assertPositiveBoardsPerRound(boardsPerRound);
 
   if (!Number.isInteger(revengeRounds) || revengeRounds < 0) {
     throw new Error("revengeRounds must be a non-negative integer");

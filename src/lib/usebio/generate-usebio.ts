@@ -90,6 +90,83 @@ function adjustedImps(percent: number): number {
 }
 
 /* ============================================================
+   SCORING-TYPE DESCRIPTORS
+
+   The one place USEBIO branches on scoring type. Each descriptor knows how to
+   turn a board's scorable lines into normalised { ns, ew } numbers, how to
+   value an adjusted score, and whether its scores contribute to a MAX (only MP
+   ranks as a percentage of a per-board maximum; IMP/XIMP accumulate raw IMPs).
+   Adding a scoring type is one entry here rather than edits scattered across
+   the board loop, computeBoardScores, and the ranking accumulator.
+============================================================ */
+
+type ScoreResult = { ns: number; ew: number };
+
+interface UsebioScoreDescriptor {
+  /** Score a board's scorable (non-adjusted) lines to { ns, ew } per line. */
+  scoreLines: (board: number, lines: PairScoringLine[]) => LineScore[];
+  /** Value an adjusted score for a board with `lineCount` results on it. */
+  adjusted: (adj: { ns: number; ew: number }, lineCount: number) => ScoreResult;
+  /** Whether a line's ns+ew contributes to the ranking MAX (MP only). */
+  contributesToMax: boolean;
+}
+
+type PairScoringLine = { outcome: BoardOutcome; nsId: string; ewId: string };
+type LineScore = { nsId: string; ewId: string; ns: number; ew: number };
+
+const SCORE_DESCRIPTORS: Record<string, UsebioScoreDescriptor> = {
+  MP: {
+    scoreLines: (board, lines) =>
+      scorePairMP(board, lines).map((l) => ({
+        nsId: l.nsId,
+        ewId: l.ewId,
+        ns: l.nsMatchPoints,
+        ew: l.ewMatchPoints,
+      })),
+    adjusted: (adj, lineCount) => {
+      // MP: assign matchpoints as a percentage of the per-board maximum.
+      const maxMp = 2 * (lineCount - 1);
+      return {
+        ns: Math.round((adj.ns / 100) * maxMp),
+        ew: Math.round((adj.ew / 100) * maxMp),
+      };
+    },
+    contributesToMax: true,
+  },
+  IMP: {
+    scoreLines: (board, lines) =>
+      scorePairIMP(board, lines).map((l) => ({
+        nsId: l.nsId,
+        ewId: l.ewId,
+        ns: l.nsImps,
+        ew: l.ewImps,
+      })),
+    adjusted: (adj) => ({ ns: adjustedImps(adj.ns), ew: adjustedImps(adj.ew) }),
+    contributesToMax: false,
+  },
+  XIMP: {
+    scoreLines: (board, lines) =>
+      scorePairXIMP(board, lines).map((l) => ({
+        nsId: l.nsId,
+        ewId: l.ewId,
+        ns: l.nsCrossImps,
+        ew: l.ewCrossImps,
+      })),
+    adjusted: (adj) => ({ ns: adjustedImps(adj.ns), ew: adjustedImps(adj.ew) }),
+    contributesToMax: false,
+  },
+};
+
+/**
+ * Resolve the descriptor for a scoring type, falling back to MP for an
+ * unrecognised value (mirrors the `?? "MP"` fallback on the header's
+ * BOARD_SCORING_METHOD, so malformed data still produces valid XML).
+ */
+function scoreDescriptorFor(scoringType: ScoringType): UsebioScoreDescriptor {
+  return SCORE_DESCRIPTORS[scoringType] ?? SCORE_DESCRIPTORS.MP;
+}
+
+/* ============================================================
    GENERATOR
 ============================================================ */
 
@@ -155,28 +232,15 @@ export function generateUsebioXml(data: UsebioGameData): string {
         resultEl.ele("RESULT_FIELD").txt("");
         resultEl.ele("SCORE").txt("0");
 
-        if (data.scoringType === "MP") {
-          // For MP: assign matchpoints as percentage of maximum
-          const maxMp = 2 * (results.length - 1);
-          // `adj` is always non-null here because isAdjustedScore() and
-          // parseAdjustedScore() share the same regex, so the `: 0` fallbacks
-          // below are unreachable defensive code.
-          /* v8 ignore next */
-          const nsMp = adj ? Math.round((adj.ns / 100) * maxMp) : 0;
-          /* v8 ignore next */
-          const ewMp = adj ? Math.round((adj.ew / 100) * maxMp) : 0;
-          resultEl.ele("NS_MATCH_POINTS").txt(String(nsMp));
-          resultEl.ele("EW_MATCH_POINTS").txt(String(ewMp));
-        } else {
-          // For IMP/XIMP: AVE+ = +3, AVE = 0, AVE- = -3. `adj` is always
-          // non-null here (see above), so the `: 0` fallbacks are unreachable.
-          /* v8 ignore next */
-          const nsImps = adj ? adjustedImps(adj.ns) : 0;
-          /* v8 ignore next */
-          const ewImps = adj ? adjustedImps(adj.ew) : 0;
-          resultEl.ele("NS_IMPS").txt(String(nsImps));
-          resultEl.ele("EW_IMPS").txt(String(ewImps));
-        }
+        // `adj` is always non-null here because isAdjustedScore() and
+        // parseAdjustedScore() share the same regex; `?? { ns: 0, ew: 0 }` is
+        // unreachable defensive code.
+        /* v8 ignore next */
+        const line = scoreDescriptorFor(data.scoringType).adjusted(
+          adj ?? { ns: 0, ew: 0 },
+          results.length,
+        );
+        appendLineScore(resultEl, data.scoringType, line);
         resultEl.ele("ARTIFICIAL_SCORE").txt("Adjusted");
       } else {
         const formatted = formatOutcomeForUsebio(result.outcome);
@@ -191,13 +255,7 @@ export function generateUsebioXml(data: UsebioGameData): string {
         resultEl.ele("SCORE").txt(String(score ?? 0));
 
         if (lineScore) {
-          if (data.scoringType === "MP") {
-            resultEl.ele("NS_MATCH_POINTS").txt(String(lineScore.ns));
-            resultEl.ele("EW_MATCH_POINTS").txt(String(lineScore.ew));
-          } else {
-            resultEl.ele("NS_IMPS").txt(String(lineScore.ns));
-            resultEl.ele("EW_IMPS").txt(String(lineScore.ew));
-          }
+          appendLineScore(resultEl, data.scoringType, lineScore);
         }
       }
     }
@@ -270,55 +328,73 @@ function resultKey(r: UsebioBoardResult): string {
   return `${r.board}-${r.nsPairNumber}-${r.ewPairNumber}`;
 }
 
-type ScoreResult = { ns: number; ew: number };
+/**
+ * Write a line's NS/EW score onto a RESULT element using the USEBIO element
+ * names for the scoring type (match points for MP, IMPs for IMP/XIMP). Shared
+ * by the normal-result and adjusted-score branches.
+ */
+function appendLineScore(
+  resultEl: ReturnType<ReturnType<typeof create>["ele"]>,
+  scoringType: ScoringType,
+  line: ScoreResult,
+): void {
+  if (scoringType === "MP") {
+    resultEl.ele("NS_MATCH_POINTS").txt(String(line.ns));
+    resultEl.ele("EW_MATCH_POINTS").txt(String(line.ew));
+  } else {
+    resultEl.ele("NS_IMPS").txt(String(line.ns));
+    resultEl.ele("EW_IMPS").txt(String(line.ew));
+  }
+}
+
+/** Running per-pair totals used to build the overall ranking. */
+type PairTotals = { total: number; max: number; direction: string };
 
 /**
- * Computes per-line scores for a board, excluding adjusted scores from the computation.
- * Returns MP for MP scoring, or IMPs for IMP/XIMP scoring.
+ * Add a pair's contribution for one board into the totals map, creating the
+ * entry on first sight. `maxDelta` is only added for scoring types that rank as
+ * a percentage of a maximum (MP); IMP/XIMP pass 0. Collapses the four
+ * copy-pasted get-or-create-then-add blocks the ranking previously had.
+ */
+function accumulate(
+  totals: Map<string, PairTotals>,
+  pairId: string,
+  direction: "NS" | "EW",
+  scoreDelta: number,
+  maxDelta: number,
+): void {
+  const entry = totals.get(pairId) ?? { total: 0, max: 0, direction };
+  entry.total += scoreDelta;
+  entry.max += maxDelta > 0 ? maxDelta : 0;
+  totals.set(pairId, entry);
+}
+
+/**
+ * Computes per-line scores for a board, excluding adjusted scores from the
+ * computation. Returns MP for MP scoring, or IMPs for IMP/XIMP scoring,
+ * normalised to { ns, ew } via the scoring-type descriptor.
  */
 function computeBoardScores(
   board: number,
   results: UsebioBoardResult[],
   scoringType: ScoringType,
 ): Map<string, ScoreResult> {
-  // Filter out adjusted scores — they don't participate in normal scoring
-  const scorableResults = results.filter((r) => !isAdjustedScore(r.outcome));
-
-  const lines = scorableResults.map((r) => ({
-    outcome: r.outcome,
-    nsId: r.nsPairNumber,
-    ewId: r.ewPairNumber,
-  }));
+  // Filter out adjusted scores — they don't participate in normal scoring.
+  const lines: PairScoringLine[] = results
+    .filter((r) => !isAdjustedScore(r.outcome))
+    .map((r) => ({
+      outcome: r.outcome,
+      nsId: r.nsPairNumber,
+      ewId: r.ewPairNumber,
+    }));
 
   const map = new Map<string, ScoreResult>();
-
-  if (scoringType === "MP") {
-    const scored = scorePairMP(board, lines);
-    for (const line of scored) {
-      map.set(`${board}-${line.nsId}-${line.ewId}`, {
-        ns: line.nsMatchPoints,
-        ew: line.ewMatchPoints,
-      });
-    }
-  } else if (scoringType === "IMP") {
-    const scored = scorePairIMP(board, lines);
-    for (const line of scored) {
-      map.set(`${board}-${line.nsId}-${line.ewId}`, {
-        ns: line.nsImps,
-        ew: line.ewImps,
-      });
-    }
-  } else {
-    // XIMP
-    const scored = scorePairXIMP(board, lines);
-    for (const line of scored) {
-      map.set(`${board}-${line.nsId}-${line.ewId}`, {
-        ns: line.nsCrossImps,
-        ew: line.ewCrossImps,
-      });
-    }
+  for (const line of scoreDescriptorFor(scoringType).scoreLines(board, lines)) {
+    map.set(`${board}-${line.nsId}-${line.ewId}`, {
+      ns: line.ns,
+      ew: line.ew,
+    });
   }
-
   return map;
 }
 
@@ -332,63 +408,26 @@ type RankEntry = {
 };
 
 function computeOverallRanking(data: UsebioGameData): RankEntry[] {
-  const totals = new Map<
-    string,
-    { total: number; max: number; direction: string }
-  >();
+  const totals = new Map<string, PairTotals>();
+  const descriptor = scoreDescriptorFor(data.scoringType);
 
   const boardGroups = groupBy(data.boardResults, (r) => r.board);
 
   for (const [boardNum, results] of boardGroups) {
     const scoredLines = computeBoardScores(boardNum, results, data.scoringType);
 
-    // Handle normally scored lines
+    // Normally scored lines. For MP the per-board maximum a pair can earn is
+    // ns+ew (they split the same pot); IMP/XIMP have no such maximum.
     for (const [key, lineScore] of scoredLines) {
-      const parts = key.split("-");
-      const nsId = parts[1];
-      const ewId = parts[2];
-
-      if (data.scoringType === "MP") {
-        const maxForBoard = lineScore.ns + lineScore.ew;
-
-        const nsEntry = totals.get(nsId) ?? {
-          total: 0,
-          max: 0,
-          direction: "NS",
-        };
-        nsEntry.total += lineScore.ns;
-        nsEntry.max += maxForBoard > 0 ? maxForBoard : 0;
-        totals.set(nsId, nsEntry);
-
-        const ewEntry = totals.get(ewId) ?? {
-          total: 0,
-          max: 0,
-          direction: "EW",
-        };
-        ewEntry.total += lineScore.ew;
-        ewEntry.max += maxForBoard > 0 ? maxForBoard : 0;
-        totals.set(ewId, ewEntry);
-      } else {
-        // IMP/XIMP — accumulate IMPs
-        const nsEntry = totals.get(nsId) ?? {
-          total: 0,
-          max: 0,
-          direction: "NS",
-        };
-        nsEntry.total += lineScore.ns;
-        totals.set(nsId, nsEntry);
-
-        const ewEntry = totals.get(ewId) ?? {
-          total: 0,
-          max: 0,
-          direction: "EW",
-        };
-        ewEntry.total += lineScore.ew;
-        totals.set(ewId, ewEntry);
-      }
+      const [, nsId, ewId] = key.split("-");
+      const maxForBoard = descriptor.contributesToMax
+        ? lineScore.ns + lineScore.ew
+        : 0;
+      accumulate(totals, nsId, "NS", lineScore.ns, maxForBoard);
+      accumulate(totals, ewId, "EW", lineScore.ew, maxForBoard);
     }
 
-    // Handle adjusted scores
+    // Adjusted scores, valued via the same descriptor as the board loop.
     for (const result of results) {
       if (!isAdjustedScore(result.outcome)) continue;
       const adj = parseAdjustedScore(result.outcome);
@@ -396,49 +435,12 @@ function computeOverallRanking(data: UsebioGameData): RankEntry[] {
          parseAdjustedScore() returns non-null (shared regex). */
       if (!adj) continue;
 
-      if (data.scoringType === "MP") {
-        const maxMp = 2 * (results.length - 1);
-        const nsMp = Math.round((adj.ns / 100) * maxMp);
-        const ewMp = Math.round((adj.ew / 100) * maxMp);
-
-        const nsEntry = totals.get(result.nsPairNumber) ?? {
-          total: 0,
-          max: 0,
-          direction: "NS",
-        };
-        nsEntry.total += nsMp;
-        nsEntry.max += maxMp > 0 ? maxMp : 0;
-        totals.set(result.nsPairNumber, nsEntry);
-
-        const ewEntry = totals.get(result.ewPairNumber) ?? {
-          total: 0,
-          max: 0,
-          direction: "EW",
-        };
-        ewEntry.total += ewMp;
-        ewEntry.max += maxMp > 0 ? maxMp : 0;
-        totals.set(result.ewPairNumber, ewEntry);
-      } else {
-        // IMP/XIMP: AVE+ = +3, AVE = 0, AVE- = -3
-        const nsImps = adjustedImps(adj.ns);
-        const ewImps = adjustedImps(adj.ew);
-
-        const nsEntry = totals.get(result.nsPairNumber) ?? {
-          total: 0,
-          max: 0,
-          direction: "NS",
-        };
-        nsEntry.total += nsImps;
-        totals.set(result.nsPairNumber, nsEntry);
-
-        const ewEntry = totals.get(result.ewPairNumber) ?? {
-          total: 0,
-          max: 0,
-          direction: "EW",
-        };
-        ewEntry.total += ewImps;
-        totals.set(result.ewPairNumber, ewEntry);
-      }
+      const line = descriptor.adjusted(adj, results.length);
+      const maxForBoard = descriptor.contributesToMax
+        ? 2 * (results.length - 1)
+        : 0;
+      accumulate(totals, result.nsPairNumber, "NS", line.ns, maxForBoard);
+      accumulate(totals, result.ewPairNumber, "EW", line.ew, maxForBoard);
     }
   }
 

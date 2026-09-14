@@ -9,11 +9,12 @@ import { BoardOutcome } from "@/model/score";
 import { parseSeat, PairSeat } from "@/model/participants";
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
-import { BoardSubmission } from "@/db/games/tables/submissions";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
+import { confirmBoardResult } from "@/db/games/actions/set-board-result";
 import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import { reconcileSubmissions } from "./reconcile-submissions";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),
@@ -101,91 +102,72 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         // single-ack guard means a failure there is logged, never re-acked.
         ack({ success: true, data: undefined });
 
-        // Check if both sides have submitted
-        const boardSubmissions: BoardSubmission[] = await findBoardSubmissions(
-          gameId,
-          section,
-          tableNumber,
-          roundNumber,
-        );
-
-        if (boardSubmissions.length != 2) {
-          return;
-        }
-
-        const ns = boardSubmissions.find((s) => s.side === "NS");
-        const ew = boardSubmissions.find((s) => s.side === "EW");
-
-        if (!ns || !ew) {
-          return;
-        }
-
-        const matches =
-          ns.boardNumber === ew.boardNumber && ns.result === ew.result;
-
-        if (matches) {
-          // Match — confirm
-          const confirmedBoardNumber = boardSubmissions[0].boardNumber;
-          const confirmedResult = boardSubmissions[0].result;
-
-          // Write to database (reuse the db resolved above).
-          if (!db) {
-            throw new Error("Game db does not exist");
-          }
-
-          await db
-            .update(pairsBoards)
-            .set({
-              confirmedResult: confirmedResult as BoardOutcome,
-              status: "CONFIRMED",
-            })
-            .where(
-              and(
-                eq(pairsBoards.section, section),
-                eq(pairsBoards.roundNumber, roundNumber),
-                eq(pairsBoards.tableNumber, tableNumber),
-                eq(pairsBoards.boardNumber, confirmedBoardNumber),
-              ),
-            );
-
-          io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {
-            gameId,
-            roundNumber,
-            tableNumber,
-            boardNumber: confirmedBoardNumber,
-            result: confirmedResult,
-          });
-
-          // Clear pending for this board
-          await deleteBoardSubmissions(
+        // Reconcile the two sides' pending submissions. The dual-side
+        // confirmation rule lives in a pure helper; this handler only reacts to
+        // its verdict (persist + broadcast).
+        const outcome = reconcileSubmissions(
+          await findBoardSubmissions(
             gameId,
             section,
             tableNumber,
             roundNumber,
-          );
+          ),
+        );
 
-          io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
-            gameId,
-            roundNumber,
-            tableNumber,
-            boardNumber: confirmedBoardNumber,
-          });
+        if (outcome.status === "pending") {
+          return;
+        }
 
-          // Push recomputed leaderboard / traveller snapshots to any clients
-          // currently viewing them (occupancy-gated inside the broadcaster).
-          await broadcastResultsChanged(io, gameId, confirmedBoardNumber);
-        } else {
-          // Mismatch — keep pending, notify both sides
+        if (outcome.status === "mismatch") {
+          // Keep pending, notify both sides.
           io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_MISMATCH, {
             gameId,
             roundNumber,
             tableNumber,
-            nsBoardNumber: ns.boardNumber,
-            nsResult: ns.result,
-            ewBoardNumber: ew.boardNumber,
-            ewResult: ew.result,
+            nsBoardNumber: outcome.ns.boardNumber,
+            nsResult: outcome.ns.result,
+            ewBoardNumber: outcome.ew.boardNumber,
+            ewResult: outcome.ew.result,
           });
+          return;
         }
+
+        // Confirmed: both sides agree. Persist the confirmed result (reuse the
+        // db resolved above), clear the pending submissions, and broadcast.
+        if (!db) {
+          throw new Error("Game db does not exist");
+        }
+
+        const { boardNumber: confirmedBoardNumber, result: confirmedResult } =
+          outcome;
+
+        await confirmBoardResult(
+          db,
+          { section, roundNumber, tableNumber, boardNumber: confirmedBoardNumber },
+          confirmedResult as BoardOutcome,
+        );
+
+        io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {
+          gameId,
+          roundNumber,
+          tableNumber,
+          boardNumber: confirmedBoardNumber,
+          result: confirmedResult,
+        });
+
+        // Clear pending for this board.
+        await deleteBoardSubmissions(gameId, section, tableNumber, roundNumber);
+
+        io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
+          gameId,
+          roundNumber,
+          tableNumber,
+          boardNumber: confirmedBoardNumber,
+        });
+
+        // Push recomputed leaderboard / traveller snapshots to any clients
+        // currently viewing them (occupancy-gated inside the broadcaster).
+        await broadcastResultsChanged(io, gameId, confirmedBoardNumber);
       },
     },
   );

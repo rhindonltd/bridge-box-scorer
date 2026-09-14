@@ -7,103 +7,16 @@ import { SocketEvents } from "../socket/socket-events";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import { getPlayerToken } from "@/lib/player-token";
+import {
+  initialPlayState,
+  playReducer,
+  type PlayAction,
+  type PlayState,
+  type Schedule,
+} from "./play-state-machine";
 
-export interface RoundSchedule {
-  roundNumber: number;
-  tableNumber: number;
-  boards: number[];
-  boardStatuses: {
-    boardNumber: number;
-    status: string;
-  }[];
-  players: {
-    N: {
-      id: number;
-      firstName: string;
-      lastName: string;
-      nationalId: string | null;
-    } | null;
-    S: {
-      id: number;
-      firstName: string;
-      lastName: string;
-      nationalId: string | null;
-    } | null;
-    E: {
-      id: number;
-      firstName: string;
-      lastName: string;
-      nationalId: string | null;
-    } | null;
-    W: {
-      id: number;
-      firstName: string;
-      lastName: string;
-      nationalId: string | null;
-    } | null;
-  };
-  sitOut?: boolean;
-}
-
-interface Schedule {
-  assignmentId: string;
-  side: "NS" | "EW";
-  rounds: RoundSchedule[];
-}
-
-type PlayState =
-  | { state: "loading" }
-  | { state: "roundInfo"; roundIndex: number }
-  | { state: "enterContract"; roundIndex: number; boardIndex: number }
-  | { state: "waiting"; roundIndex: number; boardIndex: number }
-  | {
-      state: "mismatch";
-      roundIndex: number;
-      boardIndex: number;
-      nsBoardNumber: number;
-      nsResult: string;
-      ewBoardNumber: number;
-      ewResult: string;
-    }
-  | { state: "boardResults"; roundIndex: number; boardIndex: number }
-  | { state: "moveInfo"; nextRoundIndex: number }
-  | { state: "gameComplete" };
-
-/*
- * Given a freshly loaded schedule, find the first incomplete round.
- * Returns the play state the flow should start in.
- */
-function initialPlayState(schedule: Schedule): PlayState {
-  let startRoundIndex = 0;
-
-  for (let i = 0; i < schedule.rounds.length; i++) {
-    const round = schedule.rounds[i];
-
-    if (round.sitOut) {
-      startRoundIndex = i + 1;
-      continue;
-    }
-
-    const roundComplete = round.boardStatuses.every(
-      (b) => b.status === "CONFIRMED",
-    );
-
-    if (roundComplete) {
-      startRoundIndex = i + 1;
-      continue;
-    }
-
-    // First incomplete round.
-    startRoundIndex = i;
-    break;
-  }
-
-  if (startRoundIndex >= schedule.rounds.length) {
-    return { state: "gameComplete" };
-  }
-
-  return { state: "roundInfo", roundIndex: startRoundIndex };
-}
+// Re-exported for existing consumers that import these types from the hook.
+export type { RoundSchedule, SeatPlayer } from "./play-state-machine";
 
 export function usePlayFlow(gameId: string, seat: string) {
   const [playState, setPlayState] = useState<PlayState>({
@@ -141,6 +54,25 @@ export function usePlayFlow(gameId: string, seat: string) {
       404;
 
   /*
+   * Keep the latest schedule in a ref so socket event handlers and the
+   * action dispatcher don't need to be recreated whenever schedule changes.
+   */
+  const scheduleRef = useRef<Schedule | null>(null);
+
+  useEffect(() => {
+    scheduleRef.current = schedule;
+  }, [schedule]);
+
+  /*
+   * Drive the pure play-flow state machine. Every transition goes through the
+   * reducer against the latest schedule; the reducer returns the state
+   * unchanged when an action does not apply, so callers can dispatch freely.
+   */
+  const dispatch = useCallback((action: PlayAction) => {
+    setPlayState((prev) => playReducer(prev, action, scheduleRef.current));
+  }, []);
+
+  /*
    * When the director starts the game, boards/assignments are materialized and
    * a `GAME_UPDATED` broadcast goes to the game room. Revalidate the schedule
    * then (and on reconnect) so a waiting player advances into play without a
@@ -158,16 +90,6 @@ export function usePlayFlow(gameId: string, seat: string) {
       socket.off(SocketEvents.CONNECT, revalidate);
     };
   }, [scheduleKey]);
-
-  /*
-   * Keep the latest schedule in a ref so socket event handlers don't
-   * need to be recreated whenever schedule changes.
-   */
-  const scheduleRef = useRef<Schedule | null>(null);
-
-  useEffect(() => {
-    scheduleRef.current = schedule;
-  }, [schedule]);
 
   /*
    * Initialise the play state once per (gameId, seat). Background SWR
@@ -199,10 +121,9 @@ export function usePlayFlow(gameId: string, seat: string) {
   /*
    * Socket listeners.
    *
-   * This effect intentionally has an empty dependency array.
-   * The socket listeners are registered once for this hook instance.
-   *
-   * scheduleRef.current gives the handlers access to the latest schedule.
+   * This effect intentionally has an empty dependency array; the listeners are
+   * registered once for this hook instance and dispatch through the stable
+   * `dispatch` callback (which reads the latest schedule via scheduleRef).
    */
   useEffect(() => {
     const socket = getSocket();
@@ -212,40 +133,7 @@ export function usePlayFlow(gameId: string, seat: string) {
       tableNumber: number;
       boardNumber: number;
     }) => {
-      const currentSchedule = scheduleRef.current;
-
-      if (!currentSchedule) return;
-
-      setPlayState((prev) => {
-        if (prev.state !== "waiting" && prev.state !== "mismatch") {
-          return prev;
-        }
-
-        const round = currentSchedule.rounds[prev.roundIndex];
-
-        if (!round) {
-          return prev;
-        }
-
-        if (
-          payload.roundNumber !== round.roundNumber ||
-          payload.tableNumber !== round.tableNumber
-        ) {
-          return prev;
-        }
-
-        const boardNumber = round.boards[prev.boardIndex];
-
-        if (payload.boardNumber !== boardNumber) {
-          return prev;
-        }
-
-        return {
-          state: "boardResults",
-          roundIndex: prev.roundIndex,
-          boardIndex: prev.boardIndex,
-        };
-      });
+      dispatch({ type: "boardConfirmed", ...payload });
     };
 
     const onMismatch = (payload: {
@@ -256,38 +144,7 @@ export function usePlayFlow(gameId: string, seat: string) {
       ewBoardNumber: number;
       ewResult: string;
     }) => {
-      const currentSchedule = scheduleRef.current;
-
-      if (!currentSchedule) return;
-
-      setPlayState((prev) => {
-        if (prev.state !== "waiting") {
-          return prev;
-        }
-
-        const round = currentSchedule.rounds[prev.roundIndex];
-
-        if (!round) {
-          return prev;
-        }
-
-        if (
-          payload.roundNumber !== round.roundNumber ||
-          payload.tableNumber !== round.tableNumber
-        ) {
-          return prev;
-        }
-
-        return {
-          state: "mismatch",
-          roundIndex: prev.roundIndex,
-          boardIndex: prev.boardIndex,
-          nsBoardNumber: payload.nsBoardNumber,
-          nsResult: payload.nsResult,
-          ewBoardNumber: payload.ewBoardNumber,
-          ewResult: payload.ewResult,
-        };
-      });
+      dispatch({ type: "boardMismatch", ...payload });
     };
 
     socket.on(SocketEvents.BOARD_CONFIRMED, onConfirmed);
@@ -297,64 +154,38 @@ export function usePlayFlow(gameId: string, seat: string) {
       socket.off(SocketEvents.BOARD_CONFIRMED, onConfirmed);
       socket.off(SocketEvents.BOARD_MISMATCH, onMismatch);
     };
-  }, []);
+  }, [dispatch]);
 
   /*
-   * Submit a result.
+   * Submit a result. The board the player entered in the wizard is
+   * authoritative. We run the pure reducer to decide the transition, then —
+   * only when it actually moves to "waiting" (round present and the board
+   * belongs to it) — emit the submission and commit the new state. Keeping the
+   * emit out of the state updater keeps the updater pure.
    */
   const submitResult = useCallback(
     (boardNumber: number, result: string) => {
       const currentSchedule = scheduleRef.current;
-
       if (!currentSchedule) return;
 
-      /*
-       * The board the player entered in the wizard is authoritative. Map it
-       * back to its index within the round so the waiting/board-results
-       * states track the board that was actually submitted, not a positional
-       * assumption.
-       */
-      if (playState.state !== "enterContract") {
-        return;
-      }
+      const next = playReducer(
+        playState,
+        { type: "submit", boardNumber },
+        currentSchedule,
+      );
 
-      const round = currentSchedule.rounds[playState.roundIndex];
+      // The transition was rejected (wrong phase, missing round, or a board
+      // outside this round): do not emit or change state.
+      if (next.state !== "waiting") return;
 
-      if (!round) {
-        return;
-      }
-
-      const boardIndex = round.boards.indexOf(boardNumber);
-
-      if (boardIndex === -1) {
-        return;
-      }
-
-      /*
-       * Read the current play state atomically. We only transition to
-       * "waiting" if we're still in "enterContract" for this round.
-       */
-      setPlayState((prev) => {
-        /* v8 ignore next 3 -- defensive atomic re-check: the outer guard above already returned unless playState is "enterContract", and React runs this updater synchronously against that same state, so prev is always "enterContract" here */
-        if (prev.state !== "enterContract") {
-          return prev;
-        }
-
-        return {
-          state: "waiting",
-          roundIndex: prev.roundIndex,
-          boardIndex,
-        };
-      });
-
-      const socket = getSocket();
+      const round = currentSchedule.rounds[next.roundIndex];
 
       // Attach the seat's player token so the server can verify the submission
       // came from this seat's owner. `seat` is the initial seat, which is also
       // the key the token was stored under at join time.
       const token = getPlayerToken(gameId)?.token ?? "";
 
-      socket.emit(SocketEvents.SUBMIT_RESULT, {
+      getSocket().emit(SocketEvents.SUBMIT_RESULT, {
         gameId,
         seat,
         token,
@@ -363,140 +194,32 @@ export function usePlayFlow(gameId: string, seat: string) {
         boardNumber,
         result,
       });
+
+      setPlayState(next);
     },
     [gameId, seat, playState],
   );
 
-  /*
-   * Enter a round.
-   */
-  const handleEnterRound = useCallback(() => {
-    setPlayState((prev) => {
-      if (prev.state !== "roundInfo") {
-        return prev;
-      }
-
-      return {
-        state: "enterContract",
-        roundIndex: prev.roundIndex,
-        boardIndex: 0,
-      };
-    });
-  }, []);
-
-  /*
-   * Re-enter a mismatched result.
-   */
-  const handleReenter = useCallback(() => {
-    setPlayState((prev) => {
-      if (prev.state !== "mismatch") {
-        return prev;
-      }
-
-      return {
-        state: "enterContract",
-        roundIndex: prev.roundIndex,
-        boardIndex: prev.boardIndex,
-      };
-    });
-  }, []);
-
-  /*
-   * Move from board results to the next board/round.
-   */
-  const handleBoardResultsNext = useCallback(() => {
-    const currentSchedule = scheduleRef.current;
-
-    if (!currentSchedule) return;
-
-    setPlayState((prev) => {
-      if (prev.state !== "boardResults") {
-        return prev;
-      }
-
-      const round = currentSchedule.rounds[prev.roundIndex];
-
-      if (!round) {
-        return prev;
-      }
-
-      const nextBoardIndex = prev.boardIndex + 1;
-
-      /*
-       * More boards in this round.
-       */
-      if (nextBoardIndex < round.boards.length) {
-        return {
-          state: "enterContract",
-          roundIndex: prev.roundIndex,
-          boardIndex: nextBoardIndex,
-        };
-      }
-
-      /*
-       * Round complete.
-       */
-      const nextRoundIndex = prev.roundIndex + 1;
-
-      if (nextRoundIndex < currentSchedule.rounds.length) {
-        return {
-          state: "moveInfo",
-          nextRoundIndex,
-        };
-      }
-
-      /*
-       * Last round.
-       */
-      return {
-        state: "gameComplete",
-      };
-    });
-  }, []);
-
-  /*
-   * Continue after move information.
-   */
-  const handleMoveInfoContinue = useCallback(() => {
-    setPlayState((prev) => {
-      if (prev.state !== "moveInfo") {
-        return prev;
-      }
-
-      return {
-        state: "roundInfo",
-        roundIndex: prev.nextRoundIndex,
-      };
-    });
-  }, []);
-
-  /*
-   * Continue after a sit-out.
-   */
-  const handleSitOutContinue = useCallback(() => {
-    const currentSchedule = scheduleRef.current;
-
-    if (!currentSchedule) return;
-
-    setPlayState((prev) => {
-      if (prev.state !== "roundInfo") {
-        return prev;
-      }
-
-      const nextRoundIndex = prev.roundIndex + 1;
-
-      if (nextRoundIndex < currentSchedule.rounds.length) {
-        return {
-          state: "moveInfo",
-          nextRoundIndex,
-        };
-      }
-
-      return {
-        state: "gameComplete",
-      };
-    });
-  }, []);
+  const handleEnterRound = useCallback(
+    () => dispatch({ type: "enterRound" }),
+    [dispatch],
+  );
+  const handleReenter = useCallback(
+    () => dispatch({ type: "reenter" }),
+    [dispatch],
+  );
+  const handleBoardResultsNext = useCallback(
+    () => dispatch({ type: "boardResultsNext" }),
+    [dispatch],
+  );
+  const handleMoveInfoContinue = useCallback(
+    () => dispatch({ type: "moveInfoContinue" }),
+    [dispatch],
+  );
+  const handleSitOutContinue = useCallback(
+    () => dispatch({ type: "sitOutContinue" }),
+    [dispatch],
+  );
 
   return {
     schedule,

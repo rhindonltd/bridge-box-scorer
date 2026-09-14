@@ -12,6 +12,54 @@ export class BridgeTimerEngine {
     return { ...this.state };
   }
 
+  // --- Shared low-level state mutations ---------------------------------
+  //
+  // Every phase transition manipulates the same four runtime fields
+  // (isRunning / phaseStartedAt / remainingMs / breakDurationMs). Centralising
+  // them here keeps each transition method describing *what* it does rather
+  // than re-implementing the field bookkeeping by hand.
+
+  /**
+   * Clear the runtime fields to the "paused, not yet started" baseline. When
+   * `clearBreakDuration` is true the frozen break length is dropped too (used
+   * whenever we leave, or step away from, a break phase).
+   */
+  private clearRuntimeFields(clearBreakDuration = true) {
+    this.state.isRunning = false;
+    this.state.phaseStartedAt = null;
+    this.state.remainingMs = null;
+    if (clearBreakDuration) {
+      this.state.breakDurationMs = null;
+    }
+  }
+
+  /**
+   * Back-date `phaseStartedAt` so that a running countdown reports exactly
+   * `remainingMs` against the current phase duration. This is the "pretend we
+   * started earlier" trick, shared by start/adjust/config so the arithmetic
+   * lives in one place.
+   */
+  private reanchorTo(remainingMs: number) {
+    this.state.remainingMs = null;
+    this.state.phaseStartedAt =
+      Date.now() - (this.getPhaseDurationMs() - remainingMs);
+  }
+
+  /**
+   * Resolve the break duration (ms) for the gap after `afterRound`, or null
+   * when that gap is not a break. `priorPlayEndMs` is the wall-clock time the
+   * preceding play ended (governs resume-time breaks); defaults to now.
+   */
+  private breakDurationAfter(
+    afterRound: number,
+    priorPlayEndMs = Date.now(),
+  ): number | null {
+    const gap = gapPhaseAfterRound(this.state, afterRound);
+    return gap.kind === "break"
+      ? resolveBreakDurationMs(gap.config, priorPlayEndMs)
+      : null;
+  }
+
   /**
    * Duration (ms) of the current phase. For a break, this is the resolved
    * break duration frozen when the break was entered (stored in
@@ -62,17 +110,7 @@ export class BridgeTimerEngine {
     const remaining = this.state.remainingMs ?? this.getPhaseDurationMs();
 
     this.state.isRunning = true;
-
-    /**
-     * Pretend we started earlier so that:
-     *
-     * remaining =
-     * duration - (now - phaseStartedAt)
-     */
-    this.state.phaseStartedAt =
-      Date.now() - (this.getPhaseDurationMs() - remaining);
-
-    this.state.remainingMs = null;
+    this.reanchorTo(remaining);
   }
 
   pause() {
@@ -89,12 +127,7 @@ export class BridgeTimerEngine {
   reset() {
     this.state.phase = "play";
     this.state.round = 1;
-
-    this.state.isRunning = false;
-
-    this.state.phaseStartedAt = null;
-    this.state.remainingMs = null;
-    this.state.breakDurationMs = null;
+    this.clearRuntimeFields();
   }
 
   /**
@@ -104,22 +137,30 @@ export class BridgeTimerEngine {
    * ended — used to derive the length of resume-time breaks. Defaults to now.
    */
   private enterBreak(afterRound: number, priorPlayEndMs = Date.now()) {
-    const gap = gapPhaseAfterRound(this.state, afterRound);
-
     // Caller must have confirmed a break exists after this round, so the gap is
-    // always a break here; the `: 0` arm is defensive only.
+    // always a break here; the `?? 0` arm is defensive only.
     const durationMs =
-      gap.kind === "break"
-        ? resolveBreakDurationMs(gap.config, priorPlayEndMs)
-        : /* v8 ignore next -- enterBreak is only called after nextPhase confirms a break */ 0;
+      this.breakDurationAfter(afterRound, priorPlayEndMs) ??
+      /* v8 ignore next -- enterBreak is only called after nextPhase confirms a break */ 0;
 
     this.state.phase = "break";
     this.state.round += 1;
 
-    this.state.phaseStartedAt = null;
+    this.clearRuntimeFields();
     this.state.breakDurationMs = durationMs;
     this.state.remainingMs = durationMs;
-    this.state.isRunning = false;
+  }
+
+  /** Transition into the play phase of the round already advanced to. */
+  private enterPlay() {
+    this.state.phase = "play";
+    this.clearRuntimeFields();
+  }
+
+  /** Transition into the terminal finished phase. */
+  private finish() {
+    this.state.phase = "finished";
+    this.clearRuntimeFields(false);
   }
 
   nextPhase() {
@@ -129,12 +170,7 @@ export class BridgeTimerEngine {
     if (this.state.phase === "move" || this.state.phase === "break") {
       // Gap phase (move or break) always leads into the play phase for the
       // round we already advanced to when the gap was entered.
-      this.state.phase = "play";
-
-      this.state.phaseStartedAt = null;
-      this.state.remainingMs = null;
-      this.state.breakDurationMs = null;
-      this.state.isRunning = false;
+      this.enterPlay();
 
       if (shouldContinue) {
         this.start();
@@ -144,19 +180,12 @@ export class BridgeTimerEngine {
 
     // phase === "play"
     if (this.state.round >= this.state.totalRounds) {
-      this.state.phase = "finished";
-
-      this.state.isRunning = false;
-      this.state.phaseStartedAt = null;
-      this.state.remainingMs = null;
-
+      this.finish();
       return;
     }
 
     // A break scheduled after the current round replaces the move gap.
-    const gap = gapPhaseAfterRound(this.state, this.state.round);
-
-    if (gap.kind === "break") {
+    if (this.breakDurationAfter(this.state.round) != null) {
       this.enterBreak(this.state.round, priorPlayEndMs);
 
       if (shouldContinue) {
@@ -167,10 +196,7 @@ export class BridgeTimerEngine {
 
     this.state.round += 1;
     this.state.phase = "move";
-
-    this.state.phaseStartedAt = null;
-    this.state.remainingMs = null;
-    this.state.isRunning = false;
+    this.clearRuntimeFields();
 
     if (shouldContinue) {
       this.start();
@@ -179,22 +205,13 @@ export class BridgeTimerEngine {
 
   skipRound() {
     if (this.state.round >= this.state.totalRounds) {
-      this.state.phase = "finished";
-
-      this.state.isRunning = false;
-      this.state.phaseStartedAt = null;
-      this.state.remainingMs = null;
-
+      this.finish();
       return;
     }
 
     this.state.round += 1;
-
     this.state.phase = "move";
-
-    this.state.isRunning = false;
-    this.state.phaseStartedAt = null;
-    this.state.remainingMs = null;
+    this.clearRuntimeFields();
   }
 
   /**
@@ -211,11 +228,7 @@ export class BridgeTimerEngine {
 
     if (this.state.phase === "break") {
       // Recompute the break length as if the preceding play had just ended.
-      const gap = gapPhaseAfterRound(this.state, this.state.round - 1);
-      const durationMs =
-        gap.kind === "break"
-          ? resolveBreakDurationMs(gap.config, Date.now())
-          : 0;
+      const durationMs = this.breakDurationAfter(this.state.round - 1) ?? 0;
       this.state.breakDurationMs = durationMs;
       this.state.remainingMs = durationMs;
       return;
@@ -234,9 +247,7 @@ export class BridgeTimerEngine {
    */
   previousPhase() {
     const shouldContinue = this.state.isRunning;
-    this.state.isRunning = false;
-    this.state.phaseStartedAt = null;
-    this.state.remainingMs = null;
+    this.clearRuntimeFields(false);
 
     if (this.state.phase === "finished") {
       // Step back into the final round's play.
@@ -269,13 +280,12 @@ export class BridgeTimerEngine {
     // Step back into the gap (break or move) that precedes this play. That gap
     // is the one after the previous round.
     const previousRound = this.state.round - 1;
-    const gap = gapPhaseAfterRound(this.state, previousRound);
+    const breakDurationMs = this.breakDurationAfter(previousRound);
 
-    if (gap.kind === "break") {
-      const durationMs = resolveBreakDurationMs(gap.config, Date.now());
+    if (breakDurationMs != null) {
       this.state.phase = "break";
-      this.state.breakDurationMs = durationMs;
-      this.state.remainingMs = durationMs;
+      this.state.breakDurationMs = breakDurationMs;
+      this.state.remainingMs = breakDurationMs;
     } else {
       this.state.phase = "move";
       this.state.breakDurationMs = null;
@@ -311,20 +321,14 @@ export class BridgeTimerEngine {
       );
       this.state.breakDurationMs = newBreakDuration;
       if (this.state.isRunning) {
-        this.state.remainingMs = null;
-        this.state.phaseStartedAt =
-          Date.now() - (newBreakDuration - newRemaining);
+        this.reanchorTo(newRemaining);
       } else {
         this.state.remainingMs = newRemaining;
       }
       return;
     }
 
-    if (this.state.isRunning) {
-      // Re-anchor phaseStartedAt so the running countdown reflects the new
-      // remaining against the (possibly changed) phase duration.
-      this.state.remainingMs = null;
-    } else {
+    if (!this.state.isRunning) {
       this.state.remainingMs = newRemaining;
     }
 
@@ -341,10 +345,9 @@ export class BridgeTimerEngine {
     }
 
     if (this.state.isRunning) {
-      // Back-date phaseStartedAt against the (new) phase duration so the
-      // running remaining equals newRemaining.
-      this.state.phaseStartedAt =
-        Date.now() - (this.getPhaseDurationMs() - newRemaining);
+      // Re-anchor against the (possibly changed) phase duration so the running
+      // remaining equals newRemaining.
+      this.reanchorTo(newRemaining);
     }
   }
 
@@ -394,9 +397,15 @@ export class BridgeTimerEngine {
       } else if (this.state.isRunning && this.state.phaseStartedAt != null) {
         const elapsedMs = Date.now() - this.state.phaseStartedAt;
         const newRemaining = Math.max(0, newDuration * 1000 - elapsedMs);
-        // Re-anchor against the new duration.
-        this.state.phaseStartedAt =
-          Date.now() - (newDuration * 1000 - newRemaining);
+        // Re-anchor against the new duration. playDuration/moveDuration are
+        // written below, but the reanchor formula reads the *new* duration via
+        // getPhaseDurationMs, so apply the stored duration first for this path.
+        if (this.state.phase === "play" && playDuration != null) {
+          this.state.playDuration = playDuration;
+        } else if (this.state.phase === "move" && moveDuration != null) {
+          this.state.moveDuration = moveDuration;
+        }
+        this.reanchorTo(newRemaining);
       }
     }
 
