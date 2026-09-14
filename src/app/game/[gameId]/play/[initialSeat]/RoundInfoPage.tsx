@@ -32,6 +32,7 @@ export function RoundInfoPage({
     <GamePageLayout
       headerTitle={`Table ${table}, Round ${round}`}
       headerRight={headerRight}
+      hideBack
       centerContent={true}
       actions={
         <button

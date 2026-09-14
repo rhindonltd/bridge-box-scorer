@@ -1,14 +1,38 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+const mockOnBack = vi.fn();
+vi.mock("@/hooks/useBackNavigation", () => ({
+  useBackNavigation: (fallback?: string) => {
+    mockFallback = fallback;
+    return { onBack: mockOnBack };
+  },
+}));
+let mockFallback: string | undefined;
 
 import { HeaderBar } from "./HeaderBar";
 
 describe("HeaderBar", () => {
-  it("renders only the title when no optional props are supplied", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFallback = undefined;
+  });
+
+  it("renders a default back button (pop the stack) when no back props are supplied", () => {
     render(<HeaderBar headerTitle="Settings" />);
 
     expect(screen.getByText("Settings")).toBeInTheDocument();
-    // No back affordance rendered.
+    fireEvent.click(screen.getByLabelText("Go back"));
+    expect(mockOnBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes backFallbackHref to the back-navigation hook", () => {
+    render(<HeaderBar headerTitle="Settings" backFallbackHref="/settings" />);
+    expect(mockFallback).toBe("/settings");
+  });
+
+  it("hides the back arrow when hideBack is set", () => {
+    render(<HeaderBar headerTitle="Root" hideBack />);
     expect(screen.queryByLabelText("Go back")).not.toBeInTheDocument();
   });
 
@@ -24,6 +48,20 @@ describe("HeaderBar", () => {
     render(<HeaderBar headerTitle="Game" backAction={backAction} />);
 
     fireEvent.click(screen.getByLabelText("Go back"));
+    expect(backAction).toHaveBeenCalled();
+    expect(mockOnBack).not.toHaveBeenCalled();
+  });
+
+  it("renders exactly one back control and prefers backAction over backHref", () => {
+    const backAction = vi.fn();
+    render(
+      <HeaderBar headerTitle="Game" backAction={backAction} backHref="/home" />,
+    );
+
+    const controls = screen.getAllByLabelText("Go back");
+    expect(controls).toHaveLength(1);
+    // The single control is the button (backAction), not a link.
+    fireEvent.click(controls[0]);
     expect(backAction).toHaveBeenCalled();
   });
 

@@ -7,6 +7,8 @@ type Props = {
   headerTitle: string;
   backAction?: () => void;
   backHref?: string;
+  hideBack?: boolean;
+  backFallbackHref?: string;
   headerRight?: React.ReactNode;
 };
 
@@ -14,6 +16,8 @@ export function GameHeaderBar({
   headerTitle,
   backAction,
   backHref,
+  hideBack,
+  backFallbackHref,
   headerRight,
 }: Props) {
   const { game } = useRequiredGame();
@@ -39,6 +43,8 @@ export function GameHeaderBar({
       headerRight={headerRight}
       backHref={backHref}
       backAction={backAction}
+      hideBack={hideBack}
+      backFallbackHref={backFallbackHref}
     />
   );
 }

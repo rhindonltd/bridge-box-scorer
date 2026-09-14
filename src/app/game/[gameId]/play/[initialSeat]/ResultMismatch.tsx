@@ -26,6 +26,7 @@ export function ResultMismatch({
     <GamePageLayout
       headerTitle={boardMismatch ? "Mismatch" : `Board ${nsBoardNumber}`}
       headerRight={headerRight}
+      hideBack
       centerContent={true}
       actions={
         <button

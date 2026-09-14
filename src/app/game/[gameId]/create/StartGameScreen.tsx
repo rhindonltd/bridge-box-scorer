@@ -68,6 +68,7 @@ export function StartGameScreen({ menu }: Props) {
     <GamePageLayout
       headerTitle="Start Game"
       headerRight={menu}
+      hideBack
       actions={
         <Button
           value={starting ? "Starting…" : "Start Game"}

@@ -11,7 +11,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
  */
 export function WifiTestingPage({ ssid }: { ssid: string }) {
   return (
-    <PageLayout headerTitle="Testing WiFi" centerContent={true}>
+    <PageLayout headerTitle="Testing WiFi" centerContent={true} hideBack>
       <div
         className="flex-1 flex flex-col items-center justify-center px-6 text-center"
         data-testid="wifi-testing"

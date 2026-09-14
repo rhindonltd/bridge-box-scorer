@@ -9,6 +9,12 @@ vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({ game: mockGame() }),
 }));
 
+// HeaderBar's default back arrow uses the router-backed hook; stub it so this
+// test stays focused on GameHeaderBar's subtitle logic.
+vi.mock("@/hooks/useBackNavigation", () => ({
+  useBackNavigation: () => ({ onBack: vi.fn() }),
+}));
+
 beforeEach(() => {
   mockGame.mockReset();
 });

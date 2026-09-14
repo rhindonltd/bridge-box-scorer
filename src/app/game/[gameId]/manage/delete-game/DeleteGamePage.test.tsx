@@ -20,12 +20,17 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
     headerTitle,
     actions,
     children,
+    backAction,
   }: {
     headerTitle: string;
     actions?: React.ReactNode;
     children: React.ReactNode;
+    backAction?: () => void;
   }) => (
     <div>
+      {backAction && (
+        <button aria-label="Go back" onClick={backAction} type="button" />
+      )}
       <h1>{headerTitle}</h1>
       {children}
       <div>{actions}</div>
@@ -57,6 +62,13 @@ describe("DeleteGamePage", () => {
     const onCancel = vi.fn();
     render(<DeleteGamePage onGameDeleted={vi.fn()} onCancel={onCancel} />);
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onCancel).toHaveBeenCalled();
+  });
+
+  it("wires the header back arrow to onCancel", () => {
+    const onCancel = vi.fn();
+    render(<DeleteGamePage onGameDeleted={vi.fn()} onCancel={onCancel} />);
+    fireEvent.click(screen.getByLabelText("Go back"));
     expect(onCancel).toHaveBeenCalled();
   });
 

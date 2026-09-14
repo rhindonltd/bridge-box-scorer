@@ -22,6 +22,7 @@ export function MoveInfoPage({
       <GamePageLayout
         headerTitle="Move Info"
         headerRight={headerRight}
+        hideBack
         centerContent={true}
         actions={
           <button
@@ -45,6 +46,7 @@ export function MoveInfoPage({
     <GamePageLayout
       headerTitle="Move Info"
       headerRight={headerRight}
+      hideBack
       centerContent={true}
       actions={
         <button

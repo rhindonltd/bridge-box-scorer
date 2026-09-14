@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { AppNavigationTracker } from "@/components/layout/AppNavigationTracker";
 
 // Inter, self-hosted (SIL OFL, see src/app/fonts/OFL.txt). Served from the repo
 // via next/font/local rather than next/font/google so `next build` makes no
@@ -44,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="bg-gray-100 overflow-hidden">
+        <AppNavigationTracker />
         <div className="mx-auto max-w-2xl h-dvh bg-white flex flex-col overflow-hidden">
           {children}
         </div>

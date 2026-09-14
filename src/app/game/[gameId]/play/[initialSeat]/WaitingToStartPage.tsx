@@ -71,7 +71,7 @@ export function WaitingToStartPage({ gameId, seat }: Props) {
   const showSection = sections.length > 1 && section != null;
 
   return (
-    <GamePageLayout headerTitle="You're seated" centerContent={true}>
+    <GamePageLayout headerTitle="You're seated" centerContent={true} hideBack>
       <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
         <div
           className="mb-6 h-3 w-3 animate-pulse rounded-full bg-blue-600"

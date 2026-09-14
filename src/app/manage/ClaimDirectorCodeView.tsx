@@ -25,6 +25,7 @@ export function ClaimDirectorCodeView({
     <PageLayout
       headerTitle="Claim Director Code"
       centerContent={true}
+      backAction={onCancel}
       actions={
         <>
           <button

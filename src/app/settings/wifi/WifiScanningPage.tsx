@@ -10,7 +10,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
  */
 export function WifiScanningPage() {
   return (
-    <PageLayout headerTitle="Scanning WiFi" centerContent={true}>
+    <PageLayout headerTitle="Scanning WiFi" centerContent={true} hideBack>
       <div
         className="flex-1 flex flex-col items-center justify-center px-6 text-center"
         data-testid="wifi-scanning-page"

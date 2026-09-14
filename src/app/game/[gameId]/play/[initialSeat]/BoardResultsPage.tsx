@@ -30,6 +30,7 @@ export function BoardResultsPage({
     <GamePageLayout
       headerTitle="Board Results"
       headerRight={headerRight}
+      hideBack
       actions={
         <button
           onClick={onNext}

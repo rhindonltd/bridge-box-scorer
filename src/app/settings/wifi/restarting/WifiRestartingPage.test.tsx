@@ -15,4 +15,9 @@ describe("WifiRestartingPage", () => {
       screen.getByText("If disconnected, reconnect to BridgeBox WiFi"),
     ).toBeInTheDocument();
   });
+
+  it("hides the back arrow (transient screen the user must keep open)", () => {
+    render(<WifiRestartingPage seconds={7} status="Restarting WiFi" />);
+    expect(screen.queryByLabelText("Go back")).not.toBeInTheDocument();
+  });
 });
