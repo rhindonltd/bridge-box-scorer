@@ -56,6 +56,7 @@ export function ContractWizard({
     resultValue,
     step,
     selectedBoard,
+    boardAutoSelected,
     handleBack,
     onBoardSelected,
     onLeadComplete,
@@ -66,7 +67,7 @@ export function ContractWizard({
     onSpecialOutcome,
     onSuitSelected,
     onDeclarerSelected,
-  } = useBoardFlow({ leadCardRequired });
+  } = useBoardFlow({ leadCardRequired, roundBoards, playedBoards });
 
   const onSubmit = () => {
     /* v8 ignore next -- defensive: the confirm step (6) is only reachable
@@ -121,7 +122,7 @@ export function ContractWizard({
 
   const header = (
     <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-center gap-2 shrink-0">
-      {step > 0 && (
+      {step > 0 && !(step === 1 && boardAutoSelected) && (
         <button
           onClick={handleBack}
           className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
