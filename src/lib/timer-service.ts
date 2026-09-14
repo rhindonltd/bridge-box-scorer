@@ -7,6 +7,12 @@ export interface TimerConfigFields {
   totalRounds: number;
   playDuration: number;
   moveDuration: number;
+  /**
+   * How the play duration was entered ("perRound" total vs a "perBoard" figure
+   * multiplied up). Persisted so the setup form can restore the toggle and the
+   * per-board input on reload. Optional; absent means per-round.
+   */
+  timingMode?: "perRound" | "perBoard";
   warningSeconds?: number;
   breaks?: BreakConfig[];
 }

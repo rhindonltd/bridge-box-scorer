@@ -38,6 +38,7 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
         moveDuration,
         breaks,
         warningSeconds,
+        timingMode,
       } = payload;
       if (!validateDirectorToken(directorToken, gameId)) {
         throw new HandlerError("Unauthorized");
@@ -54,6 +55,7 @@ export function registerUpdateConfigHandler(socket: Socket, io: Server) {
         {
           breaks: toBreakConfigs(breaks),
           warningSeconds,
+          timingMode,
         },
       );
 

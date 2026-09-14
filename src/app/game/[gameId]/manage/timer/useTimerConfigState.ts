@@ -160,13 +160,25 @@ export function useTimerConfigState(
       setBoardsPerRound(seedFrom.boardsPerRound);
       setTotalRounds(seedFrom.totalRounds);
     }
-    // Durations are stored as total seconds; the form always presents play in
-    // per-round terms.
-    setPlayMinutes(Math.floor(seedFrom.playDuration / 60));
-    setPlaySeconds(seedFrom.playDuration % 60);
+    // Restore the timing mode the director chose (absent → per-round, for
+    // states persisted before the mode was tracked).
+    const seededMode = seedFrom.timingMode ?? "perRound";
+    setTimingMode(seededMode);
+
+    // `playDuration` is always the effective per-round total. The form presents
+    // play per-board when the director chose that mode, so divide the stored
+    // total back down by the section's boards-per-round to recover what they
+    // originally entered. Derived boards-per-round (from the selected movement)
+    // wins over any persisted value, so prefer it when reversing.
+    const seededBoardsPerRound = derived?.boardsPerRound ?? seedFrom.boardsPerRound;
+    const seededPlaySeconds =
+      seededMode === "perBoard" && seededBoardsPerRound > 0
+        ? Math.round(seedFrom.playDuration / seededBoardsPerRound)
+        : seedFrom.playDuration;
+    setPlayMinutes(Math.floor(seededPlaySeconds / 60));
+    setPlaySeconds(seededPlaySeconds % 60);
     setMoveMinutes(Math.floor(seedFrom.moveDuration / 60));
     setMoveSeconds(seedFrom.moveDuration % 60);
-    setTimingMode("perRound");
     if (seedFrom.warningSeconds != null) {
       setWarningSeconds(seedFrom.warningSeconds);
     }
@@ -412,6 +424,7 @@ export function useTimerConfigState(
       totalRounds,
       playDuration: effectivePlayDuration,
       moveDuration,
+      timingMode,
       warningSeconds,
       breaks: breakConfigs,
     },

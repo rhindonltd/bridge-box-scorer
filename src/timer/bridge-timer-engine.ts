@@ -356,6 +356,7 @@ export class BridgeTimerEngine {
     options?: {
       breaks?: TimerState["breaks"];
       warningSeconds?: number;
+      timingMode?: TimerState["timingMode"];
     },
   ) {
     this.state.boardsPerRound = boardsPerRound;
@@ -367,6 +368,10 @@ export class BridgeTimerEngine {
 
     if (options && typeof options.warningSeconds === "number") {
       this.state.warningSeconds = options.warningSeconds;
+    }
+
+    if (options && options.timingMode !== undefined) {
+      this.state.timingMode = options.timingMode;
     }
 
     const currentDuration =
