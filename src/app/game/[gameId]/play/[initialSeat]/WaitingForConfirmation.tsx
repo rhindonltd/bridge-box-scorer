@@ -2,11 +2,17 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {
   boardNumber: number;
+  /** Right-hand header content (the play header menu). */
+  headerRight?: React.ReactNode;
 }
 
-export function WaitingForConfirmation({ boardNumber }: Props) {
+export function WaitingForConfirmation({ boardNumber, headerRight }: Props) {
   return (
-    <GamePageLayout headerTitle={`Board ${boardNumber}`} centerContent={true}>
+    <GamePageLayout
+      headerTitle={`Board ${boardNumber}`}
+      headerRight={headerRight}
+      centerContent={true}
+    >
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4" />
         <div className="text-xl font-semibold text-gray-900">

@@ -4,12 +4,15 @@ interface Props {
   round: number;
   tableNumber?: number | null;
   onHandleSitOutContinue: () => void;
+  /** Right-hand header content (the play header menu). */
+  headerRight?: React.ReactNode;
 }
 
 export function SitOutPage({
   round,
   tableNumber,
   onHandleSitOutContinue,
+  headerRight,
 }: Props) {
   const heading =
     tableNumber != null ? `Sit Out at Table ${tableNumber}` : "Sit Out";
@@ -17,6 +20,7 @@ export function SitOutPage({
   return (
     <GamePageLayout
       headerTitle={`Round ${round}`}
+      headerRight={headerRight}
       centerContent={true}
       actions={
         <button

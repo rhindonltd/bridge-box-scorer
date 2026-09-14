@@ -23,7 +23,7 @@ import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
 import { WaitingToStartPage } from "@/app/game/[gameId]/play/[initialSeat]/WaitingToStartPage";
-import { ChangeDeviceButton } from "@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceButton";
+import { PlayHeaderMenu } from "@/app/game/[gameId]/play/[initialSeat]/PlayHeaderMenu";
 import { Seat } from "@/model/participants";
 
 export default function PlayPage() {
@@ -58,23 +58,18 @@ export default function PlayPage() {
     );
   }
 
-  // Live game: whatever the current play state, keep a persistent "Change
-  // device" affordance available so a player can hand their seat to another
-  // device at any time (e.g. a battery swap). Leaving the table is setup-only,
-  // so it is NOT offered here.
+  // Live game: every play screen shares a header whose right-hand slot holds
+  // the play menu (Change device, Pair details, and future actions). A player
+  // can hand their seat to another device at any time (e.g. a battery swap) via
+  // that menu. Leaving the table is setup-only, so it is NOT offered here.
   // `schedule` is non-null past the guard above; capture the narrowed value so
   // the nested render function sees it as non-null (narrowing doesn't carry
   // into a nested function).
   const currentSchedule = schedule;
 
-  return (
-    <>
-      {renderPlayState(currentSchedule)}
-      <div className="fixed bottom-4 right-4 z-40">
-        <ChangeDeviceButton gameId={game.gameId} seat={seat} variant="icon" />
-      </div>
-    </>
-  );
+  const headerRight = <PlayHeaderMenu gameId={game.gameId} seat={seat} />;
+
+  return renderPlayState(currentSchedule);
 
   function renderPlayState(schedule: typeof currentSchedule) {
     switch (playState.state) {
@@ -95,6 +90,7 @@ export default function PlayPage() {
               round={round.roundNumber}
               tableNumber={round.tableNumber}
               onHandleSitOutContinue={handleSitOutContinue}
+              headerRight={headerRight}
             />
           );
         }
@@ -108,6 +104,7 @@ export default function PlayPage() {
               round.players as { N: Player; S: Player; E: Player; W: Player }
             }
             onEnterRound={handleEnterRound}
+            headerRight={headerRight}
           />
         );
       }
@@ -124,6 +121,7 @@ export default function PlayPage() {
             roundBoards={round.boards}
             playedBoards={playedBoards}
             leadCardRequired={game.leadCardRequired}
+            headerRight={headerRight}
             onComplete={(data) => {
               if (data.contract === "PO" || data.contract === "NP") {
                 submitResult(data.board, data.contract);
@@ -146,7 +144,12 @@ export default function PlayPage() {
       case "waiting": {
         const round = schedule.rounds[playState.roundIndex];
         const boardNumber = round.boards[playState.boardIndex];
-        return <WaitingForConfirmation boardNumber={boardNumber} />;
+        return (
+          <WaitingForConfirmation
+            boardNumber={boardNumber}
+            headerRight={headerRight}
+          />
+        );
       }
 
       case "mismatch": {
@@ -157,6 +160,7 @@ export default function PlayPage() {
             ewBoardNumber={playState.ewBoardNumber}
             ewResult={playState.ewResult}
             onReenter={handleReenter}
+            headerRight={headerRight}
           />
         );
       }
@@ -178,6 +182,7 @@ export default function PlayPage() {
             playedBoards={playedBoards}
             lastBoardOfRound={lastBoardOfRound}
             onNext={handleBoardResultsNext}
+            headerRight={headerRight}
           />
         );
       }
@@ -191,12 +196,13 @@ export default function PlayPage() {
             tableNumber={roundSchedule.tableNumber!}
             sitOut={roundSchedule.sitOut ?? false}
             onMoveInfoContinue={handleMoveInfoContinue}
+            headerRight={headerRight}
           />
         );
       }
 
       case "gameComplete":
-        return <GameComplete />;
+        return <GameComplete headerRight={headerRight} />;
     }
   }
 }
@@ -208,6 +214,7 @@ function BoardResultsLoader({
   playedBoards,
   lastBoardOfRound,
   onNext,
+  headerRight,
 }: {
   gameId: string;
   scoringType: ScoringType;
@@ -215,6 +222,7 @@ function BoardResultsLoader({
   playedBoards: number[];
   lastBoardOfRound: boolean;
   onNext: () => void;
+  headerRight?: React.ReactNode;
 }) {
   const [viewingBoard, setViewingBoard] = useState(boardNumber);
 
@@ -231,6 +239,7 @@ function BoardResultsLoader({
         lastBoardOfRound={lastBoardOfRound}
         onBoardSelected={setViewingBoard}
         onNext={onNext}
+        headerRight={headerRight}
       />
     </TravellerProvider>
   );
@@ -244,6 +253,7 @@ function BoardResultsContent({
   lastBoardOfRound,
   onBoardSelected,
   onNext,
+  headerRight,
 }: {
   gameId: string;
   scoringType: ScoringType;
@@ -252,6 +262,7 @@ function BoardResultsContent({
   lastBoardOfRound: boolean;
   onBoardSelected: (board: number) => void;
   onNext: () => void;
+  headerRight?: React.ReactNode;
 }) {
   const { instances } = useTravellerContext();
 
@@ -295,6 +306,7 @@ function BoardResultsContent({
       scoredBoard={scoredBoard}
       onBoardSelected={onBoardSelected}
       onNext={onNext}
+      headerRight={headerRight}
     />
   );
 }

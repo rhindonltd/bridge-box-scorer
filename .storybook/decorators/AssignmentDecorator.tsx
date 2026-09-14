@@ -5,7 +5,9 @@ import { Assignment } from "@/model/participants";
 export const withAssignment = (assignment: Assignment) => {
   function AssignmentDecorator({ children }: { children: React.ReactNode }) {
     return (
-      <AssignmentContext.Provider value={{ assignment, isLoading: false }}>
+      <AssignmentContext.Provider
+        value={{ assignment, pair: null, isLoading: false }}
+      >
         {children}
       </AssignmentContext.Provider>
     );

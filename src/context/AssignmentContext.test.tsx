@@ -2,12 +2,37 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { ReactNode } from "react";
 
-const mockUseSWR = vi.fn();
+// The provider now calls useSWR twice: once for the schedule (keyed by seat)
+// and once for the game-wide pair list. Route each call by its key so tests can
+// control them independently; default both to "no data".
+let scheduleResult: { data: unknown; isLoading: boolean } = {
+  data: undefined,
+  isLoading: false,
+};
+let pairsResult: { data: unknown; isLoading: boolean } = {
+  data: undefined,
+  isLoading: false,
+};
+const mockUseSWR = vi.fn((key: string, ..._rest: unknown[]) => {
+  if (typeof key === "string" && key.includes("/participants")) {
+    return pairsResult;
+  }
+  return scheduleResult;
+});
 const mockGlobalMutate = vi.fn();
 vi.mock("swr", () => ({
-  default: (...args: unknown[]) => mockUseSWR(...args),
+  default: (key: string, ...rest: unknown[]) => mockUseSWR(key, ...rest),
   mutate: (...args: unknown[]) => mockGlobalMutate(...args),
 }));
+
+/** Set the schedule SWR return value (keyed by seat). */
+function setSchedule(data: unknown, isLoading = false) {
+  scheduleResult = { data, isLoading };
+}
+/** Set the pair-list SWR return value (game-wide participants). */
+function setPairs(data: unknown, isLoading = false) {
+  pairsResult = { data, isLoading };
+}
 
 const socketOn = vi.fn();
 const socketOff = vi.fn();
@@ -34,23 +59,30 @@ function wrapper(children: ReactNode) {
   );
 }
 
+function makePlayer(
+  id: number,
+  firstName: string,
+  lastName: string,
+  nationalId: string | null = null,
+) {
+  return { id, firstName, lastName, nationalId };
+}
+
 describe("AssignmentContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setSchedule(undefined);
+    setPairs(undefined);
   });
 
   it("throws when used outside a provider", () => {
-    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
     expect(() => renderHook(() => useAssignment())).toThrow(
       /must be used within AssignmentProvider/,
     );
   });
 
   it("resolves a PAIR assignment from the schedule assignmentId", () => {
-    mockUseSWR.mockReturnValue({
-      data: { assignmentId: "A5", side: "NS", rounds: [] },
-      isLoading: false,
-    });
+    setSchedule({ assignmentId: "A5", side: "NS", rounds: [] });
 
     const { result } = renderHook(() => useAssignment(), {
       wrapper: ({ children }) => wrapper(children),
@@ -61,8 +93,6 @@ describe("AssignmentContext", () => {
   });
 
   it("resolves a null assignment when no movement has been selected (no data)", () => {
-    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
-
     const { result } = renderHook(() => useAssignment(), {
       wrapper: ({ children }) => wrapper(children),
     });
@@ -71,8 +101,6 @@ describe("AssignmentContext", () => {
   });
 
   it("subscribes to GAME_UPDATED / SECTION_UPDATED / CONNECT and cleans up", () => {
-    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
-
     const { unmount } = renderHook(() => useAssignment(), {
       wrapper: ({ children }) => wrapper(children),
     });
@@ -83,8 +111,6 @@ describe("AssignmentContext", () => {
   });
 
   it("resolves mySection to null when the initial seat is unparseable", () => {
-    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
-
     renderHook(() => useAssignment(), {
       wrapper: ({ children }) => (
         <AssignmentProvider gameId="g1" initialSeat={"!!!" as Seat}>
@@ -100,13 +126,15 @@ describe("AssignmentContext", () => {
   });
 
   it("does not retry a 404 but does retry other errors", () => {
-    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
-
     renderHook(() => useAssignment(), {
       wrapper: ({ children }) => wrapper(children),
     });
 
-    const config = mockUseSWR.mock.calls[0][2] as {
+    // The schedule useSWR (keyed by seat) carries the retry config.
+    const scheduleCall = (
+      mockUseSWR.mock.calls as unknown as unknown[][]
+    ).find((c) => !String(c[0]).includes("/participants"))!;
+    const config = scheduleCall[2] as {
       shouldRetryOnError: (e: Error & { status?: number }) => boolean;
     };
     expect(
@@ -122,20 +150,18 @@ describe("AssignmentContext", () => {
   });
 
   it("revalidates on GAME_UPDATED and CONNECT", () => {
-    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
-
     renderHook(() => useAssignment(), {
       wrapper: ({ children }) => wrapper(children),
     });
 
+    // CONNECT is subscribed by both the schedule and the pair-list effects, so
+    // a single CONNECT triggers two revalidations; count only GAME_UPDATED here.
+    mockGlobalMutate.mockClear();
     act(() => handlerFor(SocketEvents.GAME_UPDATED)());
-    act(() => handlerFor(SocketEvents.CONNECT)());
-    expect(mockGlobalMutate).toHaveBeenCalledTimes(2);
+    expect(mockGlobalMutate).toHaveBeenCalledTimes(1);
   });
 
   it("revalidates on a SECTION_UPDATED matching this pair's section", () => {
-    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
-
     // initialSeat "A1NS" -> section "A".
     renderHook(() => useAssignment(), {
       wrapper: ({ children }) => wrapper(children),
@@ -146,13 +172,82 @@ describe("AssignmentContext", () => {
   });
 
   it("ignores a SECTION_UPDATED for a different section", () => {
-    mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
-
     renderHook(() => useAssignment(), {
       wrapper: ({ children }) => wrapper(children),
     });
 
     act(() => handlerFor(SocketEvents.SECTION_UPDATED)({ section: "B" }));
     expect(mockGlobalMutate).not.toHaveBeenCalled();
+  });
+
+  describe("seated pair", () => {
+    it("resolves this seat's pair (players + side) from the participant list", () => {
+      setPairs({
+        pairs: [
+          {
+            type: "PAIR",
+            initialSeat: "A1NS",
+            player1: makePlayer(1, "Ann", "Smith", "1001"),
+            player2: makePlayer(2, "Ben", "Jones", null),
+          },
+          {
+            type: "PAIR",
+            initialSeat: "A1EW",
+            player1: makePlayer(3, "Cy", "Doe"),
+            player2: makePlayer(4, "Di", "Fox"),
+          },
+        ],
+      });
+
+      const { result } = renderHook(() => useAssignment(), {
+        wrapper: ({ children }) => wrapper(children),
+      });
+
+      // Seat "A1NS" -> side NS, and its own two players.
+      expect(result.current.pair).toEqual({
+        side: "NS",
+        players: [
+          makePlayer(1, "Ann", "Smith", "1001"),
+          makePlayer(2, "Ben", "Jones", null),
+        ],
+      });
+    });
+
+    it("is null while the pair list is loading", () => {
+      const { result } = renderHook(() => useAssignment(), {
+        wrapper: ({ children }) => wrapper(children),
+      });
+
+      expect(result.current.pair).toBeNull();
+    });
+
+    it("is null when this seat has no participant record", () => {
+      setPairs({
+        pairs: [
+          {
+            type: "PAIR",
+            initialSeat: "A2EW",
+            player1: makePlayer(3, "Cy", "Doe"),
+            player2: makePlayer(4, "Di", "Fox"),
+          },
+        ],
+      });
+
+      const { result } = renderHook(() => useAssignment(), {
+        wrapper: ({ children }) => wrapper(children),
+      });
+
+      expect(result.current.pair).toBeNull();
+    });
+
+    it("revalidates the pair list on PARTICIPANTS", () => {
+      renderHook(() => useAssignment(), {
+        wrapper: ({ children }) => wrapper(children),
+      });
+
+      mockGlobalMutate.mockClear();
+      act(() => handlerFor(SocketEvents.PARTICIPANTS)());
+      expect(mockGlobalMutate).toHaveBeenCalledTimes(1);
+    });
   });
 });

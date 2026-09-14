@@ -10,10 +10,22 @@ interface Props {
   /** The seat this device holds (section-qualified, e.g. "A3NS"). */
   seat: string;
   /**
-   * Render style. "button" (default) is a standalone button for the waiting
-   * screen; "menuitem" is a compact header affordance for the live play page.
+   * Render style for the built-in trigger:
+   * - "button" (default): a standalone full-width button for the waiting screen.
+   * - "icon": a compact icon affordance.
+   * - "none": render no trigger at all — only the dialog. Use with the
+   *   controlled `open`/`onOpenChange` props when something else (e.g. a header
+   *   menu item) opens the dialog.
    */
-  variant?: "button" | "icon";
+  variant?: "button" | "icon" | "none";
+  /**
+   * Controlled open state. When provided, the dialog's visibility is driven by
+   * the parent and `onOpenChange` is called on open/close; when omitted, the
+   * component manages its own open state (uncontrolled).
+   */
+  open?: boolean;
+  /** Notified when the dialog wants to open (true) or close (false). */
+  onOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -21,13 +33,31 @@ interface Props {
  * for this seat (see ChangeDeviceView). Available any time — before start (from
  * the waiting screen) and during play (from the play header) — so a player can
  * hand their seat to another device, e.g. a battery swap.
+ *
+ * Can be used uncontrolled (renders its own button/icon trigger and manages
+ * open state) or controlled (parent supplies `open`/`onOpenChange`, typically
+ * with `variant="none"` so the parent's own control opens it).
  */
 export function ChangeDeviceButton({
   gameId,
   seat,
   variant = "button",
+  open: openProp,
+  onOpenChange,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Controlled when an `open` prop is supplied; otherwise fall back to internal
+  // state so existing callers keep working unchanged.
+  const isControlled = openProp !== undefined;
+  const open = isControlled ? openProp : internalOpen;
+
+  const setOpen = (next: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(next);
+    }
+    onOpenChange?.(next);
+  };
 
   return (
     <>
@@ -40,7 +70,7 @@ export function ChangeDeviceButton({
         >
           <Smartphone size={20} />
         </button>
-      ) : (
+      ) : variant === "none" ? null : (
         <button
           type="button"
           onClick={() => setOpen(true)}

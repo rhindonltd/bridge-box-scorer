@@ -6,15 +6,18 @@ import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPag
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
+    headerRight,
     actions,
     children,
   }: {
     headerTitle: string;
+    headerRight?: React.ReactNode;
     actions?: React.ReactNode;
     children: React.ReactNode;
   }) => (
     <div>
       <div data-testid="header">{headerTitle}</div>
+      <div data-testid="header-right">{headerRight}</div>
       {children}
       <div data-testid="actions">{actions}</div>
     </div>
@@ -22,6 +25,32 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
 }));
 
 describe("MoveInfoPage", () => {
+  it("renders the headerRight slot in both the move and sit-out layouts", () => {
+    const menu = <span data-testid="play-menu">menu</span>;
+
+    const { rerender } = render(
+      <MoveInfoPage
+        roundNumber={3}
+        tableNumber={4}
+        sitOut={false}
+        onMoveInfoContinue={vi.fn()}
+        headerRight={menu}
+      />,
+    );
+    expect(screen.getByTestId("play-menu")).toBeInTheDocument();
+
+    rerender(
+      <MoveInfoPage
+        roundNumber={5}
+        tableNumber={2}
+        sitOut={true}
+        onMoveInfoContinue={vi.fn()}
+        headerRight={menu}
+      />,
+    );
+    expect(screen.getByTestId("play-menu")).toBeInTheDocument();
+  });
+
   it("shows the destination table when not sitting out", () => {
     const onContinue = vi.fn();
     render(

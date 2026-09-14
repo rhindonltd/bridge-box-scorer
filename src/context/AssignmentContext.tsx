@@ -1,6 +1,7 @@
 "use client";
 
-import { Assignment, Seat, parseSeat } from "@/model/participants";
+import { Assignment, Pair, Seat, parseSeat } from "@/model/participants";
+import { Player } from "@/db/games/tables/players";
 
 import {
   createContext,
@@ -15,6 +16,17 @@ import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { fetcher } from "@/lib/fetcher";
+
+/**
+ * This seated pair's own identity, independent of any round: the two players
+ * that sat down together, and which side (NS/EW) this seat plays. Sourced from
+ * the participant record for the initial seat, so it is available in every play
+ * state (before start, mid-round, sit-out, game complete).
+ */
+export interface SeatedPair {
+  players: [Player, Player];
+  side: "NS" | "EW";
+}
 
 /*
  * The schedule endpoint is keyed by `initialSeat` and, when a movement
@@ -32,6 +44,11 @@ interface ScheduleResponse {
 
 interface ContextType {
   assignment: Assignment | null;
+  /**
+   * This seat's own pair (its two players and side), or null while the pair
+   * list is loading or if this seat has no participant record yet.
+   */
+  pair: SeatedPair | null;
   isLoading: boolean;
 }
 
@@ -71,6 +88,12 @@ export function AssignmentProvider({
       error.status !== 404,
   });
 
+  // This seat's own pair (its two players), independent of the movement/round.
+  // The participants list is game-wide; we pick out this seat's row. It is
+  // available before the game starts and in every play state.
+  const pairsKey = swrKeys.pairs(gameId);
+  const { data: pairsData } = useSWR<{ pairs: Pair[] }>(pairsKey, fetcher);
+
   /*
    * The director can change the movement mid-session, which re-derives every
    * pair's assignment id. Revalidate the schedule whenever the game updates
@@ -101,6 +124,25 @@ export function AssignmentProvider({
     };
   }, [socket, key, mySection]);
 
+  /*
+   * The participant list changes when players seat/leave/are evicted (broadcast
+   * as PARTICIPANTS). Revalidate the pair list then (and on reconnect) so this
+   * seat's own pair stays current.
+   */
+  useEffect(() => {
+    const revalidatePairs = () => {
+      void globalMutate(pairsKey);
+    };
+
+    socket.on(SocketEvents.PARTICIPANTS, revalidatePairs);
+    socket.on(SocketEvents.CONNECT, revalidatePairs);
+
+    return () => {
+      socket.off(SocketEvents.PARTICIPANTS, revalidatePairs);
+      socket.off(SocketEvents.CONNECT, revalidatePairs);
+    };
+  }, [socket, pairsKey]);
+
   const assignment = useMemo<Assignment | null>(() => {
     if (!data?.assignmentId) {
       return null;
@@ -109,10 +151,27 @@ export function AssignmentProvider({
     return { type: "PAIR", id: data.assignmentId };
   }, [data]);
 
+  const pair = useMemo<SeatedPair | null>(() => {
+    const mine = pairsData?.pairs.find((p) => p.initialSeat === initialSeat);
+    if (!mine) {
+      return null;
+    }
+
+    let side: "NS" | "EW";
+    try {
+      side = parseSeat(initialSeat).direction;
+    } catch {
+      return null;
+    }
+
+    return { players: [mine.player1, mine.player2], side };
+  }, [pairsData, initialSeat]);
+
   return (
     <AssignmentContext.Provider
       value={{
         assignment,
+        pair,
         isLoading,
       }}
     >

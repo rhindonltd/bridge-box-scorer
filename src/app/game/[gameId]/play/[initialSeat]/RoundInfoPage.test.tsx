@@ -84,4 +84,14 @@ describe("RoundInfoPage", () => {
       "justify-center",
     );
   });
+
+  it("renders the headerRight slot content", () => {
+    render(
+      <RoundInfoPage
+        {...baseProps}
+        headerRight={<span data-testid="play-menu">menu</span>}
+      />,
+    );
+    expect(screen.getByTestId("play-menu")).toBeInTheDocument();
+  });
 });

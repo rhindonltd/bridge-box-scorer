@@ -6,13 +6,16 @@ import { WaitingForConfirmation } from "@/app/game/[gameId]/play/[initialSeat]/W
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
+    headerRight,
     children,
   }: {
     headerTitle: string;
+    headerRight?: React.ReactNode;
     children: React.ReactNode;
   }) => (
     <div>
       <div data-testid="header">{headerTitle}</div>
+      <div data-testid="header-right">{headerRight}</div>
       {children}
     </div>
   ),
@@ -28,5 +31,15 @@ describe("WaitingForConfirmation", () => {
         "The other pair needs to enter their result for this board.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("renders the headerRight slot content", () => {
+    render(
+      <WaitingForConfirmation
+        boardNumber={7}
+        headerRight={<span data-testid="play-menu">menu</span>}
+      />,
+    );
+    expect(screen.getByTestId("play-menu")).toBeInTheDocument();
   });
 });

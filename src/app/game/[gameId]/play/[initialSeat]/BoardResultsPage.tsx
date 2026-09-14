@@ -11,6 +11,8 @@ interface Props {
   scoredBoard: ScoredBoard;
   onBoardSelected: (board: number) => void;
   onNext: () => void;
+  /** Right-hand header content (the play header menu). */
+  headerRight?: React.ReactNode;
 }
 
 export function BoardResultsPage({
@@ -20,12 +22,14 @@ export function BoardResultsPage({
   scoredBoard,
   onBoardSelected,
   onNext,
+  headerRight,
 }: Props) {
   const { assignment } = useAssignment();
 
   return (
     <GamePageLayout
       headerTitle="Board Results"
+      headerRight={headerRight}
       actions={
         <button
           onClick={onNext}
