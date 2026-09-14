@@ -3,8 +3,7 @@ import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { getDb } from "@/db/games";
-import { SocketResponse } from "@/socket/socket-response";
-import { logger } from "@/lib/log";
+import { registerHandler } from "@/socket/handlers/handler-wrapper";
 import { buildTravellerPayload } from "./broadcast-results";
 
 const payloadSchema = z.object({
@@ -23,34 +22,37 @@ type TravellerSnapshot = Awaited<
  * `traveller:sync` updates. Requesting implies "I am now viewing this board's
  * traveller"; a matching `traveller:leave` removes the socket on unmount or
  * board switch. No director auth — reading a traveller is public.
+ *
+ * A failure computing the traveller is treated as "no snapshot yet"
+ * (`{ success: true, data: null }`), not an error, so the handler owns its own
+ * try/catch rather than letting the wrapper turn it into a failure ack.
  */
-export function registerTravellerRequestHandler(socket: Socket, _io: Server) {
-  socket.on(
+export function registerTravellerRequestHandler(socket: Socket, io: Server) {
+  registerHandler<z.infer<typeof payloadSchema>, TravellerSnapshot>(
+    socket,
+    io,
     SocketEvents.REQUEST_STATE_TRAVELLER,
-    async (
-      payload: unknown,
-      cb?: (response: SocketResponse<TravellerSnapshot>) => void,
-    ) => {
-      const parsed = payloadSchema.safeParse(payload);
-      if (!parsed.success) {
-        cb?.({ success: false, error: "Invalid payload" });
-        return;
-      }
+    {
+      schema: payloadSchema,
+      handler: async ({ payload, ack, log }) => {
+        const { gameId, boardNumber } = payload;
 
-      const { gameId, boardNumber } = parsed.data;
-
-      try {
         socket.join(Rooms.traveller(gameId, boardNumber));
 
-        const db = await getDb(gameId);
-        const snapshot = db
-          ? await buildTravellerPayload(db, boardNumber)
-          : null;
-        cb?.({ success: true, data: snapshot });
-      } catch (err) {
-        logger.error({ err, gameId, boardNumber }, "Failed to load traveller");
-        cb?.({ success: true, data: null });
-      }
+        try {
+          const db = await getDb(gameId);
+          const snapshot = db
+            ? await buildTravellerPayload(db, boardNumber)
+            : null;
+          ack({ success: true, data: snapshot });
+        } catch (err) {
+          log.error(
+            { err, gameId, boardNumber },
+            "Failed to load traveller",
+          );
+          ack({ success: true, data: null });
+        }
+      },
     },
   );
 

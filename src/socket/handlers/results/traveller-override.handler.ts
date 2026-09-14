@@ -5,8 +5,7 @@ import { getDb } from "@/db/games";
 import { BoardOutcome } from "@/model/score";
 import { overrideBoardResult } from "@/db/games/actions/set-board-result";
 import { assertDirector } from "@/socket/middleware/director-auth";
-import { SocketResponse } from "@/socket/socket-response";
-import { logger } from "@/lib/log";
+import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 import { broadcastResultsChanged } from "./broadcast-results";
 
 const payloadSchema = z.object({
@@ -26,52 +25,46 @@ const payloadSchema = z.object({
  * `/boards/[boardNumber]/override` route.
  */
 export function registerTravellerOverrideHandler(socket: Socket, io: Server) {
-  socket.on(
+  registerHandler<z.infer<typeof payloadSchema>, null>(
+    socket,
+    io,
     SocketEvents.OVERRIDE_RESULT_TRAVELLER,
-    async (
-      payload: unknown,
-      cb?: (response: SocketResponse<null>) => void,
-    ) => {
-      const parsed = payloadSchema.safeParse(payload);
-      if (!parsed.success) {
-        cb?.({ success: false, error: "Invalid payload" });
-        return;
-      }
+    {
+      schema: payloadSchema,
+      handler: async ({ payload, ack, log }) => {
+        const {
+          gameId,
+          directorToken,
+          boardNumber,
+          roundNumber,
+          tableNumber,
+          result,
+        } = payload;
 
-      const {
-        gameId,
-        directorToken,
-        boardNumber,
-        roundNumber,
-        tableNumber,
-        result,
-      } = parsed.data;
+        // assertDirector acks its own Unauthorized failure via the guarded ack.
+        if (!assertDirector(directorToken, gameId, ack)) return;
 
-      if (!assertDirector(directorToken, gameId, cb)) return;
-
-      try {
         const db = await getDb(gameId);
         if (!db) {
-          cb?.({ success: false, error: "Game not found" });
+          ack({ success: false, error: "Game not found" });
           return;
         }
 
-        await overrideBoardResult(
-          db,
-          { roundNumber, tableNumber, boardNumber },
-          result as BoardOutcome,
-        );
+        try {
+          await overrideBoardResult(
+            db,
+            { roundNumber, tableNumber, boardNumber },
+            result as BoardOutcome,
+          );
+        } catch (err) {
+          log.error({ err, gameId, boardNumber }, "Failed to override result");
+          throw new HandlerError("Failed to override result");
+        }
 
-        cb?.({ success: true, data: null });
+        ack({ success: true, data: null });
 
         await broadcastResultsChanged(io, gameId, boardNumber);
-      } catch (err) {
-        logger.error(
-          { err, gameId, boardNumber },
-          "Failed to override result",
-        );
-        cb?.({ success: false, error: "Failed to override result" });
-      }
+      },
     },
   );
 }

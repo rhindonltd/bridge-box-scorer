@@ -3,16 +3,15 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useRef,
   useState,
   ReactNode,
 } from "react";
 import { TimerState } from "@/timer/timer-state";
 import { BreakProblem } from "@/timer/breaks";
-import { getSocket, emitWithAck } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { useRequiredGame } from "@/context/GameContext";
+import { useFeatureSnapshot } from "@/hooks/use-feature-snapshot";
 
 type TimerSyncPayload = TimerState & {
   section: string;
@@ -57,12 +56,22 @@ export function TimerProvider({
     return Date.now() + offsetRef.current;
   }
 
-  useEffect(() => {
-    const socket = getSocket();
-    let cancelled = false;
+  // The section's timer was cleared server-side (e.g. its movement changed,
+  // invalidating the derived round structure). Drop our state so the config
+  // view falls back to defaults / the empty state.
+  const handleCleared = (payload: { section: string }) => {
+    if (payload.section !== section) return;
+    setTimerState(null);
+    setBreakProblems([]);
+  };
 
-    function apply(payload: TimerSyncPayload | null) {
-      if (cancelled || !payload) return;
+  useFeatureSnapshot<TimerSyncPayload, TimerSyncPayload>({
+    requestEvent: SocketEvents.REQUEST_STATE_TIMER,
+    syncEvent: SocketEvents.TIMER_SYNC,
+    leaveEvent: SocketEvents.LEAVE_TIMER,
+    params: { gameId, section },
+    apply: (payload) => {
+      if (!payload) return;
       // Defensive: ignore syncs for a different section (the room already
       // scopes delivery, but a shared socket could receive multiple sections).
       if (payload.section !== section) return;
@@ -71,53 +80,10 @@ export function TimerProvider({
       setTimerState(state);
       setBreakProblems(problems ?? []);
       offsetRef.current = serverNow - Date.now();
-    }
-
-    async function requestSnapshot() {
-      try {
-        const snapshot = await emitWithAck<TimerSyncPayload | null>(
-          SocketEvents.REQUEST_STATE_TIMER,
-          { gameId, section },
-        );
-        apply(snapshot);
-      } catch {
-        // No snapshot available yet; the display stays in its connecting/empty
-        // state until the first live event arrives.
-      }
-    }
-
-    // Live updates.
-    const handleSync = (payload: TimerSyncPayload) => apply(payload);
-    socket.on(SocketEvents.TIMER_SYNC, handleSync);
-
-    // The section's timer was cleared server-side (e.g. its movement changed,
-    // invalidating the derived round structure). Drop our state so the config
-    // view falls back to defaults / the empty state.
-    const handleCleared = (payload: { section: string }) => {
-      if (cancelled || payload.section !== section) return;
-      setTimerState(null);
-      setBreakProblems([]);
-    };
-    socket.on(SocketEvents.TIMER_CLEARED, handleCleared);
-
-    // Initial load, and re-load on reconnect (recovers state missed while
-    // disconnected).
-    const handleReconnect = () => {
-      void requestSnapshot();
-    };
-    socket.on(SocketEvents.CONNECT, handleReconnect);
-
-    void requestSnapshot();
-
-    return () => {
-      cancelled = true;
-      socket.off(SocketEvents.TIMER_SYNC, handleSync);
-      socket.off(SocketEvents.TIMER_CLEARED, handleCleared);
-      socket.off(SocketEvents.CONNECT, handleReconnect);
-      // Leave this section's timer room so we stop receiving its updates.
-      socket.emit(SocketEvents.LEAVE_TIMER, { gameId, section });
-    };
-  }, [gameId, section]);
+    },
+    extraListeners: [[SocketEvents.TIMER_CLEARED, handleCleared]],
+    deps: [gameId, section],
+  });
 
   return (
     <TimerContext.Provider

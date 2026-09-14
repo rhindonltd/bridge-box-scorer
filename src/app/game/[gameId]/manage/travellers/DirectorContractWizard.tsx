@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
 
-import { ContractCode, ContractSuit, Doubling, Level } from "@/model/contract";
+import {
+  ContractCode,
+  ContractSuit,
+  Doubling,
+  Level,
+  buildContractCode,
+} from "@/model/contract";
 import { Card, Direction, Rank, Suit } from "@/model/common";
 import { SpecialBoardOutcome } from "@/model/result";
-import { useRequiredGame } from "@/context/GameContext";
 
 import { StepLevel } from "@/components/contract-wizard/StepLevel";
 import { StepSuit } from "@/components/contract-wizard/StepSuit";
@@ -15,6 +19,7 @@ import { StepOpeningLead } from "@/components/contract-wizard/StepOpeningLead";
 import { StepResult } from "@/components/contract-wizard/StepResult";
 import { StepConfirm } from "@/components/contract-wizard/StepConfirm";
 import { StepAdjustedScore } from "@/components/contract-wizard/StepAdjustedScore";
+import { WizardShell } from "@/components/contract-wizard/WizardShell";
 
 export type DirectorWizardResult =
   | {
@@ -41,7 +46,10 @@ interface DirectorContractWizardProps {
 /**
  * A variant of ContractWizard for director use.
  * Skips the board selection step (board is pre-selected from the traveller).
- * Does not require AssignmentContext.
+ * Does not require AssignmentContext. Shares the {@link WizardShell} chrome and
+ * the {@link buildContractCode} assembly with the player wizard; the state
+ * machine differs (starts at Level, has an adjusted-score step) so it is kept
+ * inline here rather than forced onto the player's `useBoardFlow`.
  */
 export function DirectorContractWizard({
   boardNumber,
@@ -51,8 +59,6 @@ export function DirectorContractWizard({
   onComplete,
   onBack,
 }: DirectorContractWizardProps) {
-  const { game } = useRequiredGame();
-
   // Steps: 1=Level, 2=Suit, 3=Declarer, 4=OpeningLead, 5=Result, 6=Confirm, 7=AdjustedScore
   const [step, setStep] = useState(1);
 
@@ -131,7 +137,7 @@ export function DirectorContractWizard({
     // "incomplete contract" else path here is defensive and unreachable.
     /* v8 ignore next -- unreachable: confirm requires a complete contract */
     if (level && suit && declarer !== null) {
-      const contract: ContractCode = `${level}${suit}${dbl}${declarer}`;
+      const contract = buildContractCode(level, suit, dbl, declarer);
       const lead: Card | null =
         leadSuit && leadRank ? (`${leadSuit}${leadRank}` as Card) : null;
 
@@ -171,46 +177,6 @@ export function DirectorContractWizard({
         break;
     }
   };
-
-  // --- Sub-header (blue bar) ---
-
-  const subHeader = (
-    <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
-      <span className="font-bold text-lg">
-        Table {table}, Round {round}
-      </span>
-      <span className="px-4 py-2 text-lg font-bold bg-white text-blue-900 rounded-lg border-2 border-blue-300 shadow-sm">
-        Board {boardNumber}
-      </span>
-    </div>
-  );
-
-  // --- Header (grey bar) ---
-
-  const header = (
-    <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-center gap-2 shrink-0">
-      <button
-        onClick={handleBack}
-        className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
-        aria-label="Go back"
-      >
-        <ArrowLeft size={20} />
-      </button>
-      <div className="flex-1 flex items-start justify-between min-w-0">
-        <div className="truncate">
-          <div className="font-semibold">{game.eventName}</div>
-          {(game.sessionName || game.sectionName) && (
-            <div className="text-sm text-gray-600">
-              {game.sessionName}
-              {game.sessionName && game.sectionName && ", "}
-              {game.sectionName}
-            </div>
-          )}
-        </div>
-        <span className="text-base font-semibold text-gray-600">Director</span>
-      </div>
-    </div>
-  );
 
   // --- Step rendering ---
 
@@ -272,10 +238,21 @@ export function DirectorContractWizard({
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      {header}
-      {subHeader}
+    <WizardShell
+      round={round}
+      table={table}
+      headerRight={
+        <span className="text-base font-semibold text-gray-600">Director</span>
+      }
+      showBack
+      onBack={handleBack}
+      subHeaderRight={
+        <span className="px-4 py-2 text-lg font-bold bg-white text-blue-900 rounded-lg border-2 border-blue-300 shadow-sm">
+          Board {boardNumber}
+        </span>
+      }
+    >
       {renderStep()}
-    </div>
+    </WizardShell>
   );
 }

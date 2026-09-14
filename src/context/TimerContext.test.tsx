@@ -5,10 +5,12 @@ const mockOn = vi.fn();
 const mockOff = vi.fn();
 const mockEmit = vi.fn();
 const mockEmitWithAck = vi.fn();
+const mockEmitEvent = vi.fn();
 
 vi.mock("@/lib/socket", () => ({
   getSocket: () => ({ on: mockOn, off: mockOff, emit: mockEmit }),
   emitWithAck: (...args: unknown[]) => mockEmitWithAck(...args),
+  emitEvent: (...args: unknown[]) => mockEmitEvent(...args),
 }));
 
 vi.mock("@/context/GameContext", () => ({
@@ -160,7 +162,7 @@ describe("TimerProvider", () => {
 
     unmount();
 
-    expect(mockEmit).toHaveBeenCalledWith(SocketEvents.LEAVE_TIMER, {
+    expect(mockEmitEvent).toHaveBeenCalledWith(SocketEvents.LEAVE_TIMER, {
       gameId: "g1",
       section: "A",
     });

@@ -39,3 +39,13 @@ export function parseContract(code: ContractCode) {
 export function isCall(bid: BidCode): bid is CallCode {
   return CALL_REGEX.test(bid);
 }
+
+/** Assemble a full contract code from its parts (e.g. `3` `NT` `X` `N` → `3NTXN`). */
+export function buildContractCode(
+  level: Level,
+  suit: ContractSuit,
+  doubling: Doubling,
+  declarer: Direction,
+): ContractCode {
+  return `${level}${suit}${doubling}${declarer}`;
+}

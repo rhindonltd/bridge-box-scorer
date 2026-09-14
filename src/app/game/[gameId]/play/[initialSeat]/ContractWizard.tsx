@@ -1,11 +1,8 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-
-import { ContractCode } from "@/model/contract";
+import { ContractCode, buildContractCode } from "@/model/contract";
 import { Card } from "@/model/common";
 import { SpecialBoardOutcome } from "@/model/result";
-import { useRequiredGame } from "@/context/GameContext";
 
 import { StepBoard } from "@/components/contract-wizard/StepBoard";
 import { StepLevel } from "@/components/contract-wizard/StepLevel";
@@ -14,6 +11,7 @@ import { StepDeclarer } from "@/components/contract-wizard/StepDeclarer";
 import { StepOpeningLead } from "@/components/contract-wizard/StepOpeningLead";
 import { StepResult } from "@/components/contract-wizard/StepResult";
 import { StepConfirm } from "@/components/contract-wizard/StepConfirm";
+import { WizardShell } from "@/components/contract-wizard/WizardShell";
 import { useBoardFlow } from "@/hooks/board-flow";
 import { BoardDropDown } from "@/components/contract-wizard/BoardDropDown";
 
@@ -42,8 +40,6 @@ export function ContractWizard({
   onComplete,
   headerRight,
 }: Props) {
-  const { game } = useRequiredGame();
-
   const {
     level,
     suit,
@@ -87,7 +83,7 @@ export function ContractWizard({
     /* v8 ignore next -- defensive: at the confirm step a non-special contract
        always has level, suit and declarer set, so the false branch is dead. */
     if (level && suit && declarer !== null) {
-      const contract: ContractCode = `${level}${suit}${dbl}${declarer}`;
+      const contract = buildContractCode(level, suit, dbl, declarer);
       const lead: Card | null =
         leadSuit && leadRank ? (`${leadSuit}${leadRank}` as Card) : null;
 
@@ -101,51 +97,6 @@ export function ContractWizard({
       });
     }
   };
-
-  const subHeader = (
-    <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
-      <span className="font-bold text-lg">
-        Table {table}, Round {round}
-      </span>
-      {step !== 0 && (
-        <BoardDropDown
-          roundBoards={roundBoards}
-          playedBoards={playedBoards}
-          selectedBoard={selectedBoard}
-          onBoardSelected={onBoardSelected}
-        />
-      )}
-    </div>
-  );
-
-  // --- Header (grey bar) ---
-
-  const header = (
-    <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-center gap-2 shrink-0">
-      {step > 0 && !(step === 1 && boardAutoSelected) && (
-        <button
-          onClick={handleBack}
-          className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
-          aria-label="Go back"
-        >
-          <ArrowLeft size={20} />
-        </button>
-      )}
-      <div className="flex-1 flex items-start justify-between min-w-0">
-        <div className="truncate">
-          <div className="font-semibold">{game.eventName}</div>
-          {(game.sessionName || game.sectionName) && (
-            <div className="text-sm text-gray-600">
-              {game.sessionName}
-              {game.sessionName && game.sectionName && ", "}
-              {game.sectionName}
-            </div>
-          )}
-        </div>
-        {headerRight}
-      </div>
-    </div>
-  );
 
   // --- Step rendering ---
 
@@ -215,10 +166,26 @@ export function ContractWizard({
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      {header}
-      {subHeader}
+    <WizardShell
+      round={round}
+      table={table}
+      headerRight={headerRight}
+      // The back arrow is hidden on step 0 (nothing to go back to) and on the
+      // auto-selected first result step (no board-selection screen behind it).
+      showBack={step > 0 && !(step === 1 && boardAutoSelected)}
+      onBack={handleBack}
+      subHeaderRight={
+        step !== 0 ? (
+          <BoardDropDown
+            roundBoards={roundBoards}
+            playedBoards={playedBoards}
+            selectedBoard={selectedBoard}
+            onBoardSelected={onBoardSelected}
+          />
+        ) : undefined
+      }
+    >
       {renderStep()}
-    </div>
+    </WizardShell>
   );
 }
