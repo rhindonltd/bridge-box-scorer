@@ -7,6 +7,7 @@ import { boards } from "@/db/games/tables/boards";
 import { BoardOutcome } from "@/model/score";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { SocketResponse } from "@/socket/socket-response";
+import { logger } from "@/lib/log";
 import { broadcastResultsChanged } from "./broadcast-results";
 
 const payloadSchema = z.object({
@@ -74,9 +75,9 @@ export function registerTravellerOverrideHandler(socket: Socket, io: Server) {
 
         await broadcastResultsChanged(io, gameId, boardNumber);
       } catch (err) {
-        console.error(
-          `Failed to override result for game ${gameId} board ${boardNumber}:`,
-          err,
+        logger.error(
+          { err, gameId, boardNumber },
+          "Failed to override result",
         );
         cb?.({ success: false, error: "Failed to override result" });
       }

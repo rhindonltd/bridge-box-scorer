@@ -97,14 +97,6 @@ export function generateMitchellOptions(
       continue;
     }
 
-    console.log({
-      tables,
-      boardsPerPlayer,
-      boardsPerRound,
-      rounds,
-      calculatedBoards: rounds * boardsPerRound,
-    });
-
     if (isOddNumberOfTables) {
       return [
         {

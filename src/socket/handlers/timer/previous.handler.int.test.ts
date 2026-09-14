@@ -86,9 +86,7 @@ describe("registerPreviousHandler (integration)", () => {
     expect(scheduleGame).toHaveBeenCalled();
   });
 
-  it("ignores an invalid payload (no engine lookup)", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
+  it("rejects an invalid payload (no engine lookup)", async () => {
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
         registerPreviousHandler(socket, io);
@@ -96,20 +94,17 @@ describe("registerPreviousHandler (integration)", () => {
     });
     closeServer = close;
 
-    // Missing gameId / directorToken fails the schema.
-    client.emit(SocketEvents.PREVIOUS_TIMER, { restart: 123 });
+    // Missing gameId / directorToken fails the schema, so the handler is acked
+    // an "Invalid request" failure and never looks up an engine.
+    const res = await emitWithAck(client, SocketEvents.PREVIOUS_TIMER, {
+      restart: 123,
+    });
 
-    await vi.waitFor(() =>
-      expect(warnSpy).toHaveBeenCalledWith(
-        "Invalid timer:previous payload:",
-        expect.any(String),
-      ),
-    );
+    expect(res).toEqual({ success: false, error: "Invalid request" });
     expect(getEngine).not.toHaveBeenCalled();
-    warnSpy.mockRestore();
   });
 
-  it("logs and swallows an error when persistence fails (catch block)", async () => {
+  it("acks a generic failure when persistence fails (catch block)", async () => {
     const engine = {
       previousPhase: vi.fn(),
       restartPhase: vi.fn(),
@@ -117,7 +112,6 @@ describe("registerPreviousHandler (integration)", () => {
     };
     vi.mocked(getEngine).mockResolvedValue(engine as any);
     vi.mocked(updateTimerState).mockRejectedValue(new Error("db down"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
@@ -126,20 +120,14 @@ describe("registerPreviousHandler (integration)", () => {
     });
     closeServer = close;
 
-    client.emit(SocketEvents.PREVIOUS_TIMER, {
+    const res = await emitWithAck(client, SocketEvents.PREVIOUS_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
       section: "A",
       directorToken: "test-token",
     });
 
-    await vi.waitFor(() =>
-      expect(errSpy).toHaveBeenCalledWith(
-        "Error handling timer:previous:",
-        expect.any(Error),
-      ),
-    );
+    expect(res).toEqual({ success: false, error: "Internal error" });
     expect(scheduleGame).not.toHaveBeenCalled();
-    errSpy.mockRestore();
   });
 });

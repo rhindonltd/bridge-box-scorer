@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import type { Logger } from "pino";
 import { Db, getDb } from "@/db/games";
-import { logger } from "@/lib/log";
+import {
+  resolveCorrelationId,
+  requestLogger,
+  withCorrelationHeader,
+} from "@/lib/api/correlation";
 
 const boardNumberSchema = z.coerce.number().int().min(1);
 
@@ -17,12 +22,16 @@ export type GameRouteContext = {
   boardNumber: number | null;
   seat: string | null;
   db: Db;
+  /** Request-scoped logger bound to this request's correlation id. */
+  log: Logger;
 };
 
 export function withGameRoute(
   handler: (context: GameRouteContext) => Promise<NextResponse>,
 ) {
   return async (req: Request, { params }: { params: Promise<RouteParams> }) => {
+    const correlationId = resolveCorrelationId(req);
+    const log = requestLogger(correlationId);
     let gameId: string | undefined;
     try {
       const resolved = await params;
@@ -33,9 +42,12 @@ export function withGameRoute(
       if (boardNumber !== undefined) {
         const result = boardNumberSchema.safeParse(boardNumber);
         if (!result.success) {
-          return NextResponse.json(
-            { success: false, error: "Invalid board number" },
-            { status: 400 },
+          return withCorrelationHeader(
+            NextResponse.json(
+              { success: false, error: "Invalid board number" },
+              { status: 400 },
+            ),
+            correlationId,
           );
         }
         parsedBoardNumber = result.data;
@@ -44,28 +56,36 @@ export function withGameRoute(
       const db = await getDb(gameId);
 
       if (!db) {
-        return NextResponse.json(
-          { success: false, error: "Game not found" },
-          { status: 404 },
+        return withCorrelationHeader(
+          NextResponse.json(
+            { success: false, error: "Game not found" },
+            { status: 404 },
+          ),
+          correlationId,
         );
       }
 
-      return await handler({
+      const res = await handler({
         req,
         gameId,
         boardNumber: parsedBoardNumber,
         seat: seat ?? null,
         db,
+        log,
       });
+      return withCorrelationHeader(res, correlationId);
     } catch (error) {
-      logger.error(
+      log.error(
         { err: error, gameId, method: req.method },
         "Unhandled error in game route",
       );
 
-      return NextResponse.json(
-        { success: false, error: "Internal server error" },
-        { status: 500 },
+      return withCorrelationHeader(
+        NextResponse.json(
+          { success: false, error: "Internal server error" },
+          { status: 500 },
+        ),
+        correlationId,
       );
     }
   };

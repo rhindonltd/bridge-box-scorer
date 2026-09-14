@@ -1,4 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+const mockLog = vi.hoisted(() => ({
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+}));
+vi.mock("@/lib/log", () => ({
+  logger: mockLog,
+  childLogger: () => mockLog,
+}));
+
 import { scheduleGame, cancelGameSchedule } from "./scheduler";
 import { BridgeTimerEngine } from "./bridge-timer-engine";
 import type { TimerState } from "./timer-state";
@@ -137,7 +148,7 @@ describe("scheduleGame", () => {
   });
 
   it("catches a rejecting updateTimerState in the fired timeout and does not reschedule", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockLog.error.mockClear();
     const engine = makeEngine({
       playDuration: 2,
       isRunning: true,
@@ -158,15 +169,13 @@ describe("scheduleGame", () => {
     expect(deps.updateTimerState).toHaveBeenCalledTimes(1);
     // Broadcast never runs because the update rejected first.
     expect(deps.broadcast).not.toHaveBeenCalled();
-    expect(errSpy).toHaveBeenCalled();
+    expect(mockLog.error).toHaveBeenCalled();
 
     // The failed section's schedule was cleared, so advancing further does not
     // fire another transition.
     deps.updateTimerState.mockResolvedValue(undefined);
     await vi.advanceTimersByTimeAsync(10000);
     expect(deps.updateTimerState).toHaveBeenCalledTimes(1);
-
-    errSpy.mockRestore();
   });
 
   it("schedules sections of the same game independently", async () => {

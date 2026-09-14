@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from "vitest";
 // pino output during the test run.
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }));
 
 import { ClientError, respondToActionError } from "./client-error";

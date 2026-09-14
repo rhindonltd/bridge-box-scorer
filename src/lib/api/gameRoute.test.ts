@@ -4,11 +4,31 @@ import { NextResponse } from "next/server";
 vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 import { getDb } from "@/db/games";
 import { withGameRoute, type GameRouteContext } from "./gameRoute";
 
 const fakeDb = { marker: "db" } as never;
+
+/**
+ * Minimal request: the wrapper only reads `headers.get` (for the correlation
+ * id) and `method`.
+ */
+function req(): never {
+  return {
+    method: "GET",
+    headers: { get: () => null },
+  } as never;
+}
 
 function ctx(params: Record<string, string | undefined>) {
   return { params: Promise.resolve(params) } as never;
@@ -27,7 +47,7 @@ describe("withGameRoute", () => {
       return NextResponse.json({ ok: true });
     });
 
-    const res = await route({} as never, ctx({ gameId: "g1", boardNumber: "3", seat: "A1NS" }));
+    const res = await route(req(), ctx({ gameId: "g1", boardNumber: "3", seat: "A1NS" }));
 
     expect(getDb).toHaveBeenCalledWith("g1");
     expect(received!).toMatchObject({
@@ -44,7 +64,7 @@ describe("withGameRoute", () => {
     await withGameRoute(async (c) => {
       received = c;
       return NextResponse.json({ ok: true });
-    })({} as never, ctx({ gameId: "g1" }));
+    })(req(), ctx({ gameId: "g1" }));
 
     expect(received!.boardNumber).toBeNull();
     expect(received!.seat).toBeNull();
@@ -53,7 +73,7 @@ describe("withGameRoute", () => {
   it("returns 400 for an invalid board number", async () => {
     const handler = vi.fn();
     const res = await withGameRoute(handler)(
-      {} as never,
+      req(),
       ctx({ gameId: "g1", boardNumber: "not-a-number" }),
     );
 
@@ -69,7 +89,7 @@ describe("withGameRoute", () => {
     vi.mocked(getDb).mockResolvedValue(null);
     const handler = vi.fn();
 
-    const res = await withGameRoute(handler)({} as never, ctx({ gameId: "ghost" }));
+    const res = await withGameRoute(handler)(req(), ctx({ gameId: "ghost" }));
 
     expect(res.status).toBe(404);
     expect(handler).not.toHaveBeenCalled();
@@ -83,7 +103,7 @@ describe("withGameRoute", () => {
     vi.mocked(getDb).mockRejectedValue(new Error("db error"));
 
     const res = await withGameRoute(async () => NextResponse.json({ ok: true }))(
-      {} as never,
+      req(),
       ctx({ gameId: "g1" }),
     );
 

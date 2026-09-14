@@ -1,6 +1,7 @@
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
 import { TimerState } from "@/timer/timer-state";
 import { SectionLetter } from "@/model/participants";
+import { logger } from "@/lib/log";
 
 type SchedulerDeps = {
   updateTimerState: (
@@ -104,9 +105,9 @@ export function scheduleGame(
        */
       scheduleGame(gameId, section, engine, deps);
     } catch (err) {
-      console.error(
-        `Timer transition failed for game ${gameId} section ${section}; clearing its schedule:`,
-        err,
+      logger.error(
+        { err, gameId, section },
+        "Timer transition failed; clearing its schedule",
       );
       cancelGameSchedule(gameId, section);
     }

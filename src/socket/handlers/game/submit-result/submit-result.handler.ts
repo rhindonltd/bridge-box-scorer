@@ -34,7 +34,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
     SocketEvents.SUBMIT_RESULT,
     {
       schema: payloadSchema,
-      handler: async ({ payload, ack }) => {
+      handler: async ({ payload, ack, log }) => {
         const {
           gameId,
           seat,
@@ -92,7 +92,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             result,
           });
         } catch (err) {
-          console.error("Failed to store board submission:", err);
+          log.error({ err, gameId, seat }, "Failed to store board submission");
           throw new HandlerError("Failed to submit result");
         }
 

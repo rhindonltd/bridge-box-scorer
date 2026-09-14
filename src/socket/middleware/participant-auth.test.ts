@@ -4,6 +4,17 @@ vi.mock("@/db/games/queries/find-participant-secret", () => ({
   findParticipantSecret: vi.fn(),
 }));
 
+const mockLog = vi.hoisted(() => ({
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+}));
+vi.mock("@/lib/log", () => ({
+  logger: mockLog,
+  childLogger: () => mockLog,
+}));
+
 import { findParticipantSecret } from "@/db/games/queries/find-participant-secret";
 import { validatePlayerToken, assertPlayer } from "./participant-auth";
 
@@ -64,7 +75,6 @@ describe("validatePlayerToken", () => {
 describe("assertPlayer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   it("returns true for a valid token", async () => {
@@ -89,12 +99,12 @@ describe("assertPlayer", () => {
       success: false,
       error: "Unauthorized",
     });
-    expect(console.warn).toHaveBeenCalledTimes(1);
+    expect(mockLog.warn).toHaveBeenCalledTimes(1);
     // The warning names the game and seat but never the token value.
-    const warnArg = vi.mocked(console.warn).mock.calls[0][0] as string;
-    expect(warnArg).toContain("game-1");
-    expect(warnArg).toContain("A1NS");
-    expect(warnArg).not.toContain("wrong");
+    const [fields, msg] = mockLog.warn.mock.calls[0];
+    expect(fields).toEqual({ gameId: "game-1", seat: "A1NS" });
+    expect(JSON.stringify(fields)).not.toContain("wrong");
+    expect(msg).toContain("invalid token");
   });
 
   it("does not invoke the callback or warn for a valid token", async () => {
@@ -104,6 +114,6 @@ describe("assertPlayer", () => {
     await assertPlayer("game-1", "A1NS", "secret-abc", cb);
 
     expect(cb).not.toHaveBeenCalled();
-    expect(console.warn).not.toHaveBeenCalled();
+    expect(mockLog.warn).not.toHaveBeenCalled();
   });
 });

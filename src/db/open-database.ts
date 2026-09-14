@@ -1,6 +1,7 @@
 import "server-only";
 
 import Database from "better-sqlite3";
+import { logger } from "@/lib/log";
 
 /**
  * Shared SQLite "open a database" helper.
@@ -62,13 +63,13 @@ export function closeAllDatabases(): void {
       // on-disk .db is fully up to date and the -wal file does not keep growing.
       sqlite.pragma("wal_checkpoint(TRUNCATE)");
     } catch (err) {
-      console.error("WAL checkpoint failed during shutdown:", err);
+      logger.error({ err }, "WAL checkpoint failed during shutdown");
     }
 
     try {
       sqlite.close();
     } catch (err) {
-      console.error("Failed to close a database during shutdown:", err);
+      logger.error({ err }, "Failed to close a database during shutdown");
     }
 
     openConnections.delete(sqlite);

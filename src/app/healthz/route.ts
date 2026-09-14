@@ -4,6 +4,7 @@ import { getDb as getGameIndexDb } from "@/db/game-index";
 import { getDb as getPlayersDb } from "@/db/players";
 import { getDb as getSystemDb } from "@/db/system";
 import { getVersionInfo } from "@/lib/version";
+import { logger } from "@/lib/log";
 
 /**
  * GET /healthz
@@ -40,21 +41,21 @@ export async function GET() {
   try {
     probe(getGameIndexDb());
   } catch (err) {
-    console.error("healthz: game-index probe failed:", err);
+    logger.error({ err, db: "game-index" }, "healthz probe failed");
     checks["game-index"] = "error";
   }
 
   try {
     probe(await getPlayersDb());
   } catch (err) {
-    console.error("healthz: players probe failed:", err);
+    logger.error({ err, db: "players" }, "healthz probe failed");
     checks.players = "error";
   }
 
   try {
     probe(await getSystemDb());
   } catch (err) {
-    console.error("healthz: system probe failed:", err);
+    logger.error({ err, db: "system" }, "healthz probe failed");
     checks.system = "error";
   }
 

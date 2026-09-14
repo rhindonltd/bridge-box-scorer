@@ -610,7 +610,6 @@ describe("registerSubmitResultHandler (integration)", () => {
     // stored, and at confirm time the `if (!db) throw` guard fires and is
     // caught, reporting a generic failure.
     vi.mocked(getDb).mockResolvedValue(null as any);
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { client, close, addClient } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
@@ -656,17 +655,13 @@ describe("registerSubmitResultHandler (integration)", () => {
     });
 
     // The submitter is acked success; the confirm-time db-missing failure is a
-    // downstream fan-out error that is logged, not re-acked.
+    // downstream fan-out error that is logged (via the wrapper) and NOT
+    // re-acked, so the observable effect is that confirmation never completes.
     expect(result).toEqual({ success: true, data: undefined });
     await new Promise((r) => setTimeout(r, 100));
     expect(confirmed).toBe(false);
-    expect(errSpy).toHaveBeenCalledWith(
-      "Error handling game:submitResult:",
-      expect.any(Error),
-    );
 
     client2.disconnect();
-    errSpy.mockRestore();
   });
 
   it("reports failure when persisting the submission throws (catch block)", async () => {

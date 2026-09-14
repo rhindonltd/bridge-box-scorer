@@ -14,6 +14,7 @@ vi.mock("@/socket/broadcast/game-broadcast", () => ({
 vi.mock("@/socket/websocket", () => ({ getIO: vi.fn() }));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }));
 
 import { getDb } from "@/db/games";
