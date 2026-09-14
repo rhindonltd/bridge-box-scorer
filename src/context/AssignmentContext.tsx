@@ -3,19 +3,13 @@
 import { Assignment, Pair, Seat, parseSeat } from "@/model/participants";
 import { Player } from "@/db/games/tables/players";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  ReactNode,
-  useMemo,
-} from "react";
+import { createContext, useContext, ReactNode, useMemo } from "react";
 
-import useSWR, { mutate as globalMutate } from "swr";
-import { getSocket } from "@/lib/socket";
+import useSWR from "swr";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
 import { fetcher } from "@/lib/fetcher";
+import { useSocketRevalidate } from "@/hooks/use-socket-revalidate";
 
 /**
  * This seated pair's own identity, independent of any round: the two players
@@ -65,8 +59,6 @@ export function AssignmentProvider({
   initialSeat: Seat;
   children: ReactNode;
 }) {
-  const socket = getSocket();
-
   const key = swrKeys.schedule(gameId, initialSeat);
 
   // This pair's section, derived from its (section-qualified) initial seat.
@@ -97,51 +89,33 @@ export function AssignmentProvider({
   /*
    * The director can change the movement mid-session, which re-derives every
    * pair's assignment id. Revalidate the schedule whenever the game updates
-   * (and on reconnect) so the assignment id stays in sync.
+   * (and on reconnect) so the assignment id stays in sync. A section-scoped
+   * update only concerns this pair when it names this pair's section (the
+   * server also scopes the emit to the section room, so this is a
+   * belt-and-braces guard).
    */
-  useEffect(() => {
-    const revalidate = () => {
-      void globalMutate(key);
-    };
-
-    // A section-scoped update only concerns this pair when it names this
-    // pair's section (the server also scopes the emit to the section room, so
-    // this is a belt-and-braces guard).
-    const revalidateForSection = (payload?: { section?: string }) => {
-      if (!payload?.section || payload.section === mySection) {
-        void globalMutate(key);
-      }
-    };
-
-    socket.on(SocketEvents.GAME_UPDATED, revalidate);
-    socket.on(SocketEvents.SECTION_UPDATED, revalidateForSection);
-    socket.on(SocketEvents.CONNECT, revalidate);
-
-    return () => {
-      socket.off(SocketEvents.GAME_UPDATED, revalidate);
-      socket.off(SocketEvents.SECTION_UPDATED, revalidateForSection);
-      socket.off(SocketEvents.CONNECT, revalidate);
-    };
-  }, [socket, key, mySection]);
+  useSocketRevalidate(
+    key,
+    [
+      SocketEvents.GAME_UPDATED,
+      {
+        event: SocketEvents.SECTION_UPDATED,
+        when: (payload) => {
+          const section = (payload as { section?: string } | undefined)
+            ?.section;
+          return !section || section === mySection;
+        },
+      },
+    ],
+    [key, mySection],
+  );
 
   /*
    * The participant list changes when players seat/leave/are evicted (broadcast
    * as PARTICIPANTS). Revalidate the pair list then (and on reconnect) so this
    * seat's own pair stays current.
    */
-  useEffect(() => {
-    const revalidatePairs = () => {
-      void globalMutate(pairsKey);
-    };
-
-    socket.on(SocketEvents.PARTICIPANTS, revalidatePairs);
-    socket.on(SocketEvents.CONNECT, revalidatePairs);
-
-    return () => {
-      socket.off(SocketEvents.PARTICIPANTS, revalidatePairs);
-      socket.off(SocketEvents.CONNECT, revalidatePairs);
-    };
-  }, [socket, pairsKey]);
+  useSocketRevalidate(pairsKey, [SocketEvents.PARTICIPANTS], [pairsKey]);
 
   const assignment = useMemo<Assignment | null>(() => {
     if (!data?.assignmentId) {

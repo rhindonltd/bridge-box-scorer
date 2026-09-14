@@ -106,7 +106,7 @@ describe("registerTravellerOverrideHandler (integration)", () => {
       {},
     );
 
-    expect(response).toMatchObject({ success: false, error: "Invalid payload" });
+    expect(response).toMatchObject({ success: false, error: "Invalid request" });
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 

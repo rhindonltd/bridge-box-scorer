@@ -146,7 +146,7 @@ describe("registerTravellerRequestHandler (integration)", () => {
       { gameId: "g1" },
     );
 
-    expect(response).toMatchObject({ success: false, error: "Invalid payload" });
+    expect(response).toMatchObject({ success: false, error: "Invalid request" });
   });
 
   it("returns null and swallows a load error", async () => {

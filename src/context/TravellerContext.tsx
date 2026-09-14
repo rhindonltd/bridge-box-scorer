@@ -1,16 +1,10 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { BoardInstance } from "@/model/participants";
-import { getSocket, emitWithAck, emitEvent } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { useRequiredGame } from "@/context/GameContext";
+import { useFeatureSnapshot } from "@/hooks/use-feature-snapshot";
 
 interface TravellerSnapshot {
   instances: BoardInstance[];
@@ -53,44 +47,17 @@ export function TravellerProvider({
     instances: BoardInstance[];
   } | null>(null);
 
-  useEffect(() => {
-    const socket = getSocket();
-    let cancelled = false;
-
-    function apply(data: TravellerSnapshot | null) {
-      if (cancelled || !data) return;
+  useFeatureSnapshot<TravellerSnapshot, TravellerSnapshot>({
+    requestEvent: SocketEvents.REQUEST_STATE_TRAVELLER,
+    syncEvent: SocketEvents.TRAVELLER_SYNC,
+    leaveEvent: SocketEvents.LEAVE_TRAVELLER,
+    params: { gameId, boardNumber },
+    apply: (data) => {
+      if (!data) return;
       setLoaded({ board: boardNumber, instances: data.instances });
-    }
-
-    async function requestSnapshot() {
-      try {
-        const data = await emitWithAck<TravellerSnapshot | null>(
-          SocketEvents.REQUEST_STATE_TRAVELLER,
-          { gameId, boardNumber },
-        );
-        apply(data);
-      } catch {
-        // No snapshot yet; the view stays in its loading/empty state.
-      }
-    }
-
-    const handleSync = (data: TravellerSnapshot) => apply(data);
-    socket.on(SocketEvents.TRAVELLER_SYNC, handleSync);
-
-    const handleReconnect = () => {
-      void requestSnapshot();
-    };
-    socket.on(SocketEvents.CONNECT, handleReconnect);
-
-    void requestSnapshot();
-
-    return () => {
-      cancelled = true;
-      socket.off(SocketEvents.TRAVELLER_SYNC, handleSync);
-      socket.off(SocketEvents.CONNECT, handleReconnect);
-      emitEvent(SocketEvents.LEAVE_TRAVELLER, { gameId, boardNumber });
-    };
-  }, [gameId, boardNumber]);
+    },
+    deps: [gameId, boardNumber],
+  });
 
   const isForCurrentBoard = loaded?.board === boardNumber;
   const instances = isForCurrentBoard ? loaded!.instances : [];

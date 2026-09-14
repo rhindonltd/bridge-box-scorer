@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
+import useSWR from "swr";
 import { getSocket } from "../lib/socket";
 import { SocketEvents } from "../socket/socket-events";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import { getPlayerToken } from "@/lib/player-token";
+import { useSocketRevalidate } from "./use-socket-revalidate";
 import {
   initialPlayState,
   playReducer,
@@ -78,18 +79,7 @@ export function usePlayFlow(gameId: string, seat: string) {
    * then (and on reconnect) so a waiting player advances into play without a
    * manual refresh.
    */
-  useEffect(() => {
-    const socket = getSocket();
-    const revalidate = () => {
-      void globalMutate(scheduleKey);
-    };
-    socket.on(SocketEvents.GAME_UPDATED, revalidate);
-    socket.on(SocketEvents.CONNECT, revalidate);
-    return () => {
-      socket.off(SocketEvents.GAME_UPDATED, revalidate);
-      socket.off(SocketEvents.CONNECT, revalidate);
-    };
-  }, [scheduleKey]);
+  useSocketRevalidate(scheduleKey, [SocketEvents.GAME_UPDATED], [scheduleKey]);
 
   /*
    * Initialise the play state once per (gameId, seat). Background SWR

@@ -151,7 +151,7 @@ describe("registerLeaderboardRequestHandler (integration)", () => {
       {},
     );
 
-    expect(response).toMatchObject({ success: false, error: "Invalid payload" });
+    expect(response).toMatchObject({ success: false, error: "Invalid request" });
   });
 
   it("returns null and swallows a compute error", async () => {

@@ -1,16 +1,10 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { getSocket, emitWithAck, emitEvent } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { useRequiredGame } from "@/context/GameContext";
+import { useFeatureSnapshot } from "@/hooks/use-feature-snapshot";
 
 export type SectionLeaderboard = OverallScoreAndParticipant & {
   section: string;
@@ -46,45 +40,18 @@ export function LeaderboardProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<LeaderboardSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const socket = getSocket();
-    let cancelled = false;
-
-    function apply(data: LeaderboardSnapshot | null) {
-      if (cancelled) return;
+  useFeatureSnapshot<LeaderboardSnapshot, LeaderboardSnapshot>({
+    requestEvent: SocketEvents.REQUEST_STATE_LEADERBOARD,
+    syncEvent: SocketEvents.LEADERBOARD_SYNC,
+    leaveEvent: SocketEvents.LEAVE_LEADERBOARD,
+    params: { gameId },
+    apply: (data) => {
       if (data) setSnapshot(data);
       setIsLoading(false);
-    }
-
-    async function requestSnapshot() {
-      try {
-        const data = await emitWithAck<LeaderboardSnapshot | null>(
-          SocketEvents.REQUEST_STATE_LEADERBOARD,
-          { gameId },
-        );
-        apply(data);
-      } catch {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    const handleSync = (data: LeaderboardSnapshot) => apply(data);
-    socket.on(SocketEvents.LEADERBOARD_SYNC, handleSync);
-
-    const handleReconnect = () => {
-      void requestSnapshot();
-    };
-    socket.on(SocketEvents.CONNECT, handleReconnect);
-
-    void requestSnapshot();
-
-    return () => {
-      cancelled = true;
-      socket.off(SocketEvents.LEADERBOARD_SYNC, handleSync);
-      socket.off(SocketEvents.CONNECT, handleReconnect);
-      emitEvent(SocketEvents.LEAVE_LEADERBOARD, { gameId });
-    };
-  }, [gameId]);
+    },
+    onRequestError: () => setIsLoading(false),
+    deps: [gameId],
+  });
 
   return (
     <LeaderboardContext.Provider
