@@ -1,10 +1,9 @@
 import { Server, Socket } from "socket.io";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
 import { SocketEvents } from "@/socket/socket-events";
 import { getDb } from "@/db/games";
-import { boards } from "@/db/games/tables/boards";
 import { BoardOutcome } from "@/model/score";
+import { overrideBoardResult } from "@/db/games/actions/set-board-result";
 import { assertDirector } from "@/socket/middleware/director-auth";
 import { SocketResponse } from "@/socket/socket-response";
 import { logger } from "@/lib/log";
@@ -57,19 +56,11 @@ export function registerTravellerOverrideHandler(socket: Socket, io: Server) {
           return;
         }
 
-        await db
-          .update(boards)
-          .set({
-            directorOverrideResult: result as BoardOutcome,
-            status: "OVERRIDDEN",
-          })
-          .where(
-            and(
-              eq(boards.roundNumber, roundNumber),
-              eq(boards.tableNumber, tableNumber),
-              eq(boards.boardNumber, boardNumber),
-            ),
-          );
+        await overrideBoardResult(
+          db,
+          { roundNumber, tableNumber, boardNumber },
+          result as BoardOutcome,
+        );
 
         cb?.({ success: true, data: null });
 

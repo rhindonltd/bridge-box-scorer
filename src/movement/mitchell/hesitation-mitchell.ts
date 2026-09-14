@@ -1,4 +1,8 @@
-import { MitchellMovementSpec, wrapValue } from "./mitchell-utils";
+import {
+  assertPositiveBoardsPerRound,
+  MitchellMovementSpec,
+  wrapValue,
+} from "./mitchell-utils";
 import {
   buildPivotLayout,
   layoutToTables,
@@ -157,7 +161,5 @@ function validateHesitationMitchellSpec(
     throw new Error("Hesitation Mitchell requires at least 3 tables");
   }
 
-  if (!Number.isInteger(boardsPerRound) || boardsPerRound < 1) {
-    throw new Error("boardsPerRound must be a positive integer");
-  }
+  assertPositiveBoardsPerRound(boardsPerRound);
 }

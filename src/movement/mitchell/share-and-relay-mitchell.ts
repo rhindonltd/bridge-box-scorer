@@ -1,12 +1,11 @@
 import {
-  boardsForSet,
-  getPairIds,
+  buildMitchell,
   MitchellMovementSpec,
   validateMitchellSpec,
   wrapValue,
 } from "./mitchell-utils";
 
-import { Table, Tables } from "../../model/movement";
+import { Tables } from "../../model/movement";
 
 export interface ShareAndRelayMovementSpec extends MitchellMovementSpec {
   shareAndRelay: true;
@@ -15,9 +14,9 @@ export interface ShareAndRelayMovementSpec extends MitchellMovementSpec {
 export function generateShareAndRelayMitchell(
   spec: ShareAndRelayMovementSpec,
 ): Tables<"PAIR"> {
-  const { tables, rounds, boardsPerRound, arrowSwitchRounds = 0 } = spec;
-
   validateMitchellSpec(spec);
+
+  const { tables, rounds } = spec;
 
   if (tables % 2 !== 0) {
     throw new Error(
@@ -31,27 +30,21 @@ export function generateShareAndRelayMitchell(
     );
   }
 
-  const result: Table<"PAIR">[] = [];
-
-  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
-    const roundsList = [];
-
-    for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
-      /*
-       * EW movement is the same as a normal Mitchell:
-       * EW moves down one table each round.
-       */
-      const ewTable = wrapValue(tableNumber - (roundNumber - 1), tables);
+  return buildMitchell(
+    spec,
+    { tables, rounds },
+    {
+      // EW movement is the same as a normal Mitchell: EW moves down one table
+      // each round.
+      ewTable: (tableNumber, roundNumber) =>
+        wrapValue(tableNumber - (roundNumber - 1), tables),
 
       /*
        * Board movement:
        *
-       * The first table and last table share boards.
-       *
-       * There is a relay halfway through the movement,
-       * so one board set is absent from the playing tables.
-       *
-       * For round 1:
+       * The first table and last table share boards. There is a relay halfway
+       * through the movement, so one board set is absent from the playing
+       * tables. For round 1:
        *
        *   Table 1       -> set 1
        *   Table 2       -> set 2
@@ -63,53 +56,14 @@ export function generateShareAndRelayMitchell(
        *   Table N-1     -> set N
        *   Table N       -> set 1
        *
-       * Each subsequent round advances the board sets by one.
+       * Each subsequent round advances the board sets by one. The second half
+       * of the room is shifted by one to leave the relay board set between the
+       * two halves.
        */
-
-      let boardSet: number;
-
-      if (tableNumber <= tables / 2) {
-        // First half of the room.
-        boardSet = wrapValue(tableNumber + roundNumber - 1, tables);
-      } else {
-        // Second half of the room.
-        //
-        // The last table shares the first table's boards.
-        // The remaining tables are shifted by one to leave
-        // the relay board set between the two halves.
-        boardSet = wrapValue(tableNumber + roundNumber, tables);
-      }
-
-      const boards = boardsForSet(boardSet, boardsPerRound);
-
-      /*
-       * Pair numbering and arrow switching are shared
-       * by all Mitchell movements.
-       */
-      const { nsId, ewId } = getPairIds(
-        tableNumber,
-        ewTable,
-        tables,
-        arrowSwitchRounds,
-        roundNumber,
-        rounds,
-      );
-
-      roundsList.push({
-        round: roundNumber,
-        boards,
-        participants: {
-          nsId,
-          ewId,
-        },
-      });
-    }
-
-    result.push({
-      table: tableNumber,
-      rounds: roundsList,
-    });
-  }
-
-  return { tables: result };
+      boardSet: (tableNumber, roundNumber) =>
+        tableNumber <= tables / 2
+          ? wrapValue(tableNumber + roundNumber - 1, tables)
+          : wrapValue(tableNumber + roundNumber, tables),
+    },
+  );
 }

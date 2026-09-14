@@ -1,3 +1,5 @@
+import { Table, Tables } from "@/model/movement";
+
 export interface MitchellMovementSpec {
   tables: number;
   rounds: number;
@@ -36,6 +38,17 @@ export function boardsForSet(set: number, perRound: number): number[] {
   return Array.from({ length: perRound }, (_, i) => start + i);
 }
 
+/**
+ * Shared guard used by every Mitchell-family validator: boards-per-round must
+ * be a positive integer. Kept here so the identical check isn't copy-pasted
+ * into each variant's own validator.
+ */
+export function assertPositiveBoardsPerRound(boardsPerRound: number): void {
+  if (!Number.isInteger(boardsPerRound) || boardsPerRound < 1) {
+    throw new Error("boardsPerRound must be a positive integer");
+  }
+}
+
 export function validateMitchellSpec(spec: MitchellMovementSpec): void {
   const { tables, rounds, boardsPerRound } = spec;
 
@@ -51,9 +64,76 @@ export function validateMitchellSpec(spec: MitchellMovementSpec): void {
     throw new Error("A Mitchell cannot have more rounds than tables");
   }
 
-  if (!Number.isInteger(boardsPerRound) || boardsPerRound < 1) {
-    throw new Error("boardsPerRound must be a positive integer");
+  assertPositiveBoardsPerRound(boardsPerRound);
+}
+
+/**
+ * The per-variant assignment functions that distinguish one table-based
+ * Mitchell from another. Everything else (the table×round double loop, board
+ * lookup, pair numbering, arrow switching) is identical across variants and
+ * lives in {@link buildMitchell}.
+ */
+export interface MitchellAssignments {
+  /** Physical table the EW pair sits at in this (table, round). */
+  ewTable: (tableNumber: number, roundNumber: number) => number;
+  /** 1-based board-set number played at this (table, round). */
+  boardSet: (tableNumber: number, roundNumber: number) => number;
+  /** Optional physical copy label (Web only); omitted → no boardCopy emitted. */
+  boardCopy?: (tableNumber: number, roundNumber: number) => string;
+}
+
+/**
+ * Template for the table-based Mitchell generators (standard, skip, share &
+ * relay, blackpool, web). It owns the shared scaffold — the table×round double
+ * loop, board-set → board-number lookup, pair numbering and arrow switching —
+ * so each variant only supplies the two (occasionally three) functions in
+ * {@link MitchellAssignments} that actually make it distinct.
+ *
+ * `rounds` and `tables` govern loop extents. Most variants use `spec.rounds`,
+ * but some (e.g. Blackpool with revenge rounds) run a different number of
+ * rounds than the spec's, so it is passed explicitly.
+ */
+export function buildMitchell(
+  spec: MitchellMovementSpec,
+  loop: { tables: number; rounds: number },
+  assignments: MitchellAssignments,
+): Tables<"PAIR"> {
+  const { boardsPerRound, arrowSwitchRounds = 0 } = spec;
+  const { tables, rounds } = loop;
+
+  const result: Table<"PAIR">[] = [];
+
+  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
+    const roundsList = [];
+
+    for (let roundNumber = 1; roundNumber <= rounds; roundNumber++) {
+      const ewTable = assignments.ewTable(tableNumber, roundNumber);
+      const boardSet = assignments.boardSet(tableNumber, roundNumber);
+      const boards = boardsForSet(boardSet, boardsPerRound);
+
+      const { nsId, ewId } = getPairIds(
+        tableNumber,
+        ewTable,
+        tables,
+        arrowSwitchRounds,
+        roundNumber,
+        rounds,
+      );
+
+      roundsList.push({
+        round: roundNumber,
+        boards,
+        ...(assignments.boardCopy
+          ? { boardCopy: assignments.boardCopy(tableNumber, roundNumber) }
+          : {}),
+        participants: { nsId, ewId },
+      });
+    }
+
+    result.push({ table: tableNumber, rounds: roundsList });
   }
+
+  return { tables: result };
 }
 
 export function getPairIds(
