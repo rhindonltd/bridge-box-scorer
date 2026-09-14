@@ -137,12 +137,16 @@ export function useTimerConfigState(
 
   const [boardsPerRound, setBoardsPerRound] = useState(3);
   const [totalRounds, setTotalRounds] = useState(8);
-  const [playMinutes, setPlayMinutes] = useState(2);
-  const [playSeconds, setPlaySeconds] = useState(0);
+  // Defaults for a fresh config (no persisted state yet): once a director
+  // selects a movement, the timer starts out at 7:30 of play per board and a
+  // 1:30 changeover, in Per Board timing mode. These are overridden by any
+  // saved config via the one-shot seed below.
+  const [playMinutes, setPlayMinutes] = useState(7);
+  const [playSeconds, setPlaySeconds] = useState(30);
   const [moveMinutes, setMoveMinutes] = useState(1);
   const [moveSeconds, setMoveSeconds] = useState(30);
   const [timingMode, setTimingMode] = useState<"perRound" | "perBoard">(
-    "perRound",
+    "perBoard",
   );
   const [warningSeconds, setWarningSeconds] = useState(60);
   const [breaks, setBreaks] = useState<BreakDraft[]>([]);

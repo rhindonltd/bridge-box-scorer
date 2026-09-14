@@ -170,6 +170,10 @@ settings below apply to the chosen section. The configuration has:
   turn red as a warning.
 - **Breaks** — see below.
 
+When you pick a movement, the timer starts from a sensible default: **7 minutes
+30 seconds of play per board** with a **1 minute 30 second** changeover. Adjust
+any of these to suit your event.
+
 The panel previews the **session length** and an estimated **finish time**.
 
 Tap **Save** to keep the settings for this section. In a multi-section game,
