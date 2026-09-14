@@ -3,12 +3,8 @@ import { SocketEvents } from "@/socket/socket-events";
 
 // ---- mocks ----
 
-vi.mock("@/db/games/actions/create-player", () => ({
-  createPlayer: vi.fn(),
-}));
-
-vi.mock("@/db/games/actions/create-participant", () => ({
-  createParticipant: vi.fn(),
+vi.mock("@/db/games/actions/create-pair-with-players", () => ({
+  createPairWithPlayers: vi.fn(),
 }));
 
 vi.mock("@/db/games/queries/find-pairs", () => ({
@@ -23,8 +19,7 @@ vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
-import { createPlayer } from "@/db/games/actions/create-player";
-import { createParticipant as createPair } from "@/db/games/actions/create-participant";
+import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findSeatedNationalIds } from "@/db/games/queries/find-seated-national-ids";
 import { getDb } from "@/db/games";
@@ -62,7 +57,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
   });
 
   describe("PAIR participant", () => {
-    it("creates two players + pair, emits PARTICIPANTS, returns key", async () => {
+    it("creates the pair (players + participant) transactionally, emits PARTICIPANTS, returns key", async () => {
       const socket = makeDirectorSocket();
       const emitFn = vi.fn();
       const io = makeIo(emitFn);
@@ -71,10 +66,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       const handler = socket.on.mock.calls[0][1];
       const cb = vi.fn();
 
-      vi.mocked(createPlayer)
-        .mockResolvedValueOnce({ id: 10 } as any)
-        .mockResolvedValueOnce({ id: 11 } as any);
-      vi.mocked(createPair).mockResolvedValue(undefined);
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
 
       await handler(
@@ -90,22 +82,15 @@ describe("registerCreateParticipantHandler (unit)", () => {
         cb,
       );
 
-      expect(createPlayer).toHaveBeenCalledTimes(2);
-      expect(createPlayer).toHaveBeenNthCalledWith(1, "game-1", {
-        firstName: "P1",
-        lastName: "L1",
-      });
-      expect(createPlayer).toHaveBeenNthCalledWith(2, "game-1", {
-        firstName: "P2",
-        lastName: "L2",
-      });
-
-      expect(createPair).toHaveBeenCalledWith(
+      // Both players and the participant row are created in one call so a
+      // failure can't orphan players.
+      expect(createPairWithPlayers).toHaveBeenCalledWith(
         "game-1",
         expect.objectContaining({
           initialSeat: "A1NS",
-          player1: 10,
-          player2: 11,
+          player1: { firstName: "P1", lastName: "L1" },
+          player2: { firstName: "P2", lastName: "L2" },
+          secretKey: expect.any(String),
         }),
       );
 
@@ -128,7 +113,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       const handler = socket.on.mock.calls[0][1];
       const cb = vi.fn();
 
-      vi.mocked(createPlayer).mockRejectedValue(new Error("fail"));
+      vi.mocked(createPairWithPlayers).mockRejectedValue(new Error("fail"));
 
       await handler(
         {
@@ -190,8 +175,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
         }),
       );
       // No rows created for a rejected pair.
-      expect(createPlayer).not.toHaveBeenCalled();
-      expect(createPair).not.toHaveBeenCalled();
+      expect(createPairWithPlayers).not.toHaveBeenCalled();
     });
 
     it("rejects an EBU number already seated elsewhere in the event", async () => {
@@ -215,7 +199,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
           error: expect.stringContaining("999999"),
         }),
       );
-      expect(createPlayer).not.toHaveBeenCalled();
+      expect(createPairWithPlayers).not.toHaveBeenCalled();
     });
 
     it("allows two guests (no EBU number) at the same table", async () => {
@@ -225,23 +209,15 @@ describe("registerCreateParticipantHandler (unit)", () => {
       const handler = socket.on.mock.calls[0][1];
       const cb = vi.fn();
 
-      vi.mocked(createPlayer)
-        .mockResolvedValueOnce({ id: 1 } as any)
-        .mockResolvedValueOnce({ id: 2 } as any);
-      vi.mocked(createPair).mockResolvedValue(undefined);
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
 
-      await seatPair(
-        handler,
-        cb,
-        { nationalId: null },
-        { nationalId: null },
-      );
+      await seatPair(handler, cb, { nationalId: null }, { nationalId: null });
 
       expect(cb).toHaveBeenCalledWith(
         expect.objectContaining({ success: true }),
       );
-      expect(createPair).toHaveBeenCalled();
+      expect(createPairWithPlayers).toHaveBeenCalled();
     });
 
     it("allows distinct EBU numbers not already seated", async () => {
@@ -251,10 +227,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       const handler = socket.on.mock.calls[0][1];
       const cb = vi.fn();
 
-      vi.mocked(createPlayer)
-        .mockResolvedValueOnce({ id: 1 } as any)
-        .mockResolvedValueOnce({ id: 2 } as any);
-      vi.mocked(createPair).mockResolvedValue(undefined);
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
       vi.mocked(findPairs).mockResolvedValue([]);
 
       await seatPair(
@@ -267,7 +240,7 @@ describe("registerCreateParticipantHandler (unit)", () => {
       expect(cb).toHaveBeenCalledWith(
         expect.objectContaining({ success: true }),
       );
-      expect(createPair).toHaveBeenCalled();
+      expect(createPairWithPlayers).toHaveBeenCalled();
     });
   });
 });

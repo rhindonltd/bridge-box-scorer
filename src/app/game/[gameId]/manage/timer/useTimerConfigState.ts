@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BreakConfig, TimerState } from "@/timer/timer-state";
-import { BreakDraft, TimerConfig } from "./timer-view-types";
-import {
-  breakConfigToDraft,
-  computePlayEndByRound,
-  formatDuration,
-  msToLabel,
-  msToResumeAt,
-  resumeAtToMs,
-} from "./timer-format";
+import { TimerState } from "@/timer/timer-state";
+import { TimerConfig } from "./timer-view-types";
+import { computePlayEndByRound, formatDuration } from "./timer-format";
+import { useBreakEditor } from "./useBreakEditor";
 
 // Re-exported for existing consumers/tests that import these from the hook
 // module. The implementations now live in the framework-free `timer-format`.
@@ -66,8 +60,25 @@ export function useTimerConfigState(
     "perBoard",
   );
   const [warningSeconds, setWarningSeconds] = useState(60);
-  const [breaks, setBreaks] = useState<BreakDraft[]>([]);
   const [adjustApplyToFuture, setAdjustApplyToFuture] = useState(false);
+
+  const enteredPlaySeconds = playMinutes * 60 + playSeconds;
+  const moveDuration = moveMinutes * 60 + moveSeconds;
+
+  const effectivePlayDuration =
+    timingMode === "perRound"
+      ? enteredPlaySeconds
+      : enteredPlaySeconds * boardsPerRound;
+
+  // Breaks are a self-contained editing concern; the break editor owns the list
+  // and its operations, driven by the live session timeline computed here.
+  const breakEditor = useBreakEditor({
+    tick,
+    totalRounds,
+    effectivePlayDuration,
+    moveDuration,
+  });
+  const { breakConfigs } = breakEditor;
 
   // One-shot seed from a persisted timer state (e.g. a saved config). Applied
   // during render the first time a state becomes available — the React-endorsed
@@ -103,7 +114,7 @@ export function useTimerConfigState(
     if (seedFrom.warningSeconds != null) {
       setWarningSeconds(seedFrom.warningSeconds);
     }
-    setBreaks((seedFrom.breaks ?? []).map(breakConfigToDraft));
+    breakEditor.seedBreaks(seedFrom.breaks ?? []);
     setSeeded(true);
   }
 
@@ -117,31 +128,6 @@ export function useTimerConfigState(
     setTotalRounds(derived.totalRounds);
   }
 
-  const enteredPlaySeconds = playMinutes * 60 + playSeconds;
-  const moveDuration = moveMinutes * 60 + moveSeconds;
-
-  const effectivePlayDuration =
-    timingMode === "perRound"
-      ? enteredPlaySeconds
-      : enteredPlaySeconds * boardsPerRound;
-
-  const breakConfigs: BreakConfig[] = useMemo(() => {
-    const reference = tick;
-    return breaks.map((b) =>
-      b.mode === "duration"
-        ? {
-            afterRound: b.afterRound,
-            mode: "duration",
-            durationSeconds: Math.max(0, Math.round(b.durationMinutes * 60)),
-          }
-        : {
-            afterRound: b.afterRound,
-            mode: "resumeTime",
-            resumeAtMs: resumeAtToMs(b.resumeAt, reference),
-          },
-    );
-  }, [breaks, tick]);
-
   const playEndByRound = useMemo(
     () =>
       computePlayEndByRound({
@@ -154,15 +140,7 @@ export function useTimerConfigState(
     [tick, effectivePlayDuration, moveDuration, totalRounds, breakConfigs],
   );
 
-  const breaksWithComputed: BreakDraft[] = breaks.map((b) => {
-    if (b.mode !== "resumeTime") {
-      return { ...b, computedLength: null };
-    }
-    const reference = tick;
-    const priorPlayEnd = playEndByRound.get(b.afterRound) ?? reference;
-    const resumeMs = resumeAtToMs(b.resumeAt, reference);
-    return { ...b, computedLength: msToLabel(resumeMs - priorPlayEnd) };
-  });
+  const breaksWithComputed = breakEditor.withComputedLengths(playEndByRound);
 
   // The session finishes at the end of the final round's play. `playEndByRound`
   // already walks the whole timeline from `tick`, inserting each configured
@@ -205,11 +183,7 @@ export function useTimerConfigState(
     moveDuration,
     timingMode,
     warningSeconds,
-    breaks: breaks.map((b) =>
-      b.mode === "duration"
-        ? { afterRound: b.afterRound, mode: b.mode, durationMinutes: b.durationMinutes }
-        : { afterRound: b.afterRound, mode: b.mode, resumeAt: b.resumeAt },
-    ),
+    breaks: breakEditor.signatureParts,
   });
 
   function onConfigChange(field: keyof TimerConfig, value: number | string) {
@@ -245,91 +219,15 @@ export function useTimerConfigState(
     }
   }
 
-  function onAddBreak() {
-    setBreaks((prev) => [
-      ...prev,
-      {
-        afterRound: Math.min(totalRounds - 1 || 1, prev.length + 1),
-        mode: "duration",
-        durationMinutes: 10,
-        resumeAt: "",
-      },
-    ]);
-  }
-
-  function onRemoveBreak(index: number) {
-    setBreaks((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  /**
-   * Earliest legal resume time for a break placed after `afterRound`, as an
-   * "HH:MM" string. That moment is when round `afterRound`'s play finishes, so
-   * a resume any earlier would run into play still in progress. The timeline is
-   * computed from the *other* breaks (the one being edited is excluded) so its
-   * own resume time doesn't feed back into its own earliest bound.
-   */
-  function earliestResumeAt(
-    afterRound: number,
-    otherBreaks: BreakConfig[],
-  ): string {
-    const ends = computePlayEndByRound({
-      start: tick,
-      totalRounds,
-      playMs: effectivePlayDuration * 1000,
-      moveMs: moveDuration * 1000,
-      breaks: otherBreaks,
-    });
-    const endMs = ends.get(afterRound) ?? tick;
-    return msToResumeAt(endMs);
-  }
-
-  /**
-   * True when a resume-time break's chosen time is missing or lands before the
-   * earliest legal moment (i.e. before play for its round has finished).
-   */
-  function resumeIsIllegal(afterRound: string, earliest: string): boolean {
-    if (!afterRound) return true;
-    // Compare as "HH:MM" within the same day; both are produced/normalised the
-    // same way so lexical comparison is safe.
-    return afterRound < earliest;
-  }
-
-  function onBreakChange(
-    index: number,
-    field: keyof BreakDraft,
-    value: number | string,
-  ) {
-    setBreaks((prev) =>
-      prev.map((b, i) => {
-        if (i !== index) return b;
-
-        const updated = { ...b, [field]: value } as BreakDraft;
-
-        // When the break is (or becomes) a resume-time break, ensure it has a
-        // legal time. On selecting "Resume at time", or moving the break to a
-        // different round, an empty or now-too-early time is snapped to the
-        // earliest possible moment for the updated round.
-        const becomesResume = field === "mode" && value === "resumeTime";
-        const roundChangedWhileResume =
-          field === "afterRound" && updated.mode === "resumeTime";
-
-        if (becomesResume || roundChangedWhileResume) {
-          const otherBreaks = breakConfigs.filter((_, j) => j !== index);
-          const earliest = earliestResumeAt(updated.afterRound, otherBreaks);
-          if (resumeIsIllegal(updated.resumeAt, earliest)) {
-            updated.resumeAt = earliest;
-          }
-        }
-
-        return updated;
-      }),
-    );
-  }
-
   return {
     tick,
     config,
-    configHandlers: { onConfigChange, onAddBreak, onRemoveBreak, onBreakChange },
+    configHandlers: {
+      onConfigChange,
+      onAddBreak: breakEditor.onAddBreak,
+      onRemoveBreak: breakEditor.onRemoveBreak,
+      onBreakChange: breakEditor.onBreakChange,
+    },
     /** True when boards/round and total rounds are derived and read-only. */
     structureLocked: derived != null,
     /**

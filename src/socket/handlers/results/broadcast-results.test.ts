@@ -5,8 +5,7 @@ vi.mock("@/db/games", () => ({
 }));
 
 vi.mock("@/services/leaderboard-service", () => ({
-  computeLeaderboard: vi.fn(),
-  computeSectionLeaderboards: vi.fn(),
+  buildLeaderboards: vi.fn(),
 }));
 
 vi.mock("@/services/board-service", () => ({
@@ -14,10 +13,7 @@ vi.mock("@/services/board-service", () => ({
 }));
 
 import { getDb } from "@/db/games";
-import {
-  computeLeaderboard,
-  computeSectionLeaderboards,
-} from "@/services/leaderboard-service";
+import { buildLeaderboards } from "@/services/leaderboard-service";
 import { getBoardInstances } from "@/services/board-service";
 import { broadcastResultsChanged } from "./broadcast-results";
 import { Rooms } from "@/socket/rooms";
@@ -44,8 +40,10 @@ describe("broadcastResultsChanged", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getDb).mockResolvedValue({} as any);
-    vi.mocked(computeLeaderboard).mockResolvedValue({ type: "MP" } as any);
-    vi.mocked(computeSectionLeaderboards).mockResolvedValue([] as any);
+    vi.mocked(buildLeaderboards).mockResolvedValue({
+      leaderboard: { type: "MP" },
+      sections: [],
+    } as any);
     vi.mocked(getBoardInstances).mockResolvedValue([{ boardNumber: 3 }] as any);
   });
 
@@ -54,7 +52,7 @@ describe("broadcastResultsChanged", () => {
 
     await broadcastResultsChanged(io, "g1", 3);
 
-    expect(computeLeaderboard).toHaveBeenCalled();
+    expect(buildLeaderboards).toHaveBeenCalled();
     expect(io.to).toHaveBeenCalledWith(Rooms.leaderboard("g1"));
     expect(io._emit).toHaveBeenCalledWith(
       SocketEvents.LEADERBOARD_SYNC,
@@ -100,7 +98,7 @@ describe("broadcastResultsChanged", () => {
 
     await broadcastResultsChanged(io, "g1", 3);
 
-    expect(computeLeaderboard).not.toHaveBeenCalled();
+    expect(buildLeaderboards).not.toHaveBeenCalled();
     expect(io._emit).not.toHaveBeenCalled();
   });
 });

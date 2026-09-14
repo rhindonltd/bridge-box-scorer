@@ -1,4 +1,5 @@
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { Spinner } from "@/components/common/Spinner";
 
 interface Props {
   boardNumber: number;
@@ -14,7 +15,7 @@ export function WaitingForConfirmation({ boardNumber, headerRight }: Props) {
       centerContent={true}
     >
       <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4" />
+        <Spinner size="lg" className="mb-4" />
         <div className="text-xl font-semibold text-gray-900">
           Waiting for confirmation
         </div>

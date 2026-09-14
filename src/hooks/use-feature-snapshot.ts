@@ -41,6 +41,12 @@ export interface FeatureSnapshotConfig<TSnapshot, TSync> {
    * Extra socket listeners to register for the mount's lifetime, beyond the
    * standard sync + reconnect wiring. Given as [event, handler] pairs so the
    * hook can register and clean them up.
+   *
+   * IMPORTANT: these handlers are captured once when the effect runs (keyed on
+   * `deps`), so a handler must only close over values that are present in
+   * `deps`. A handler closing over state NOT listed in `deps` would silently
+   * capture a stale value. (The timer context's `timer:cleared` handler is safe
+   * because it closes over `section`, which is in its `deps`.)
    */
   extraListeners?: [event: string, handler: (...args: never[]) => void][];
   /**

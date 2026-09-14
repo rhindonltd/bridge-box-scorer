@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Spinner } from "@/components/common/Spinner";
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { Leaderboard } from "@/components/leaderboard/Leaderboard";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
@@ -28,7 +29,7 @@ function DisplayLeaderboardContent() {
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+        <Spinner />
       </div>
     );
   }

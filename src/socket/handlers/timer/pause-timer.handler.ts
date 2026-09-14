@@ -1,38 +1,22 @@
-import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { SocketEvents } from "@/socket/socket-events";
-import { getEngine } from "@/timer/game-store";
-import { cancelGameSchedule } from "@/timer/scheduler";
 import { Server, Socket } from "socket.io";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { z } from "zod";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
-import { makeTimerBroadcaster } from "./broadcast-timer";
+import { registerHandler } from "@/socket/handlers/handler-wrapper";
+import { makeDirectorTimerRunner } from "./with-director-timer";
 import { directorTimerFields } from "./payload";
 
 const payloadSchema = z.object(directorTimerFields);
 
 export function registerPauseTimerHandler(socket: Socket, io: Server) {
-  const broadcast = makeTimerBroadcaster(io);
+  const runCommand = makeDirectorTimerRunner(io);
 
   registerHandler(socket, io, SocketEvents.PAUSE_TIMER, {
     schema: payloadSchema,
     handler: async ({ payload, ack }) => {
-      const { gameId, section, directorToken } = payload;
-      if (!validateDirectorToken(directorToken, gameId)) {
-        throw new HandlerError("Unauthorized");
-      }
-
-      const engine = await getEngine(gameId, section);
-      if (!engine) throw new HandlerError("Timer not found");
-
-      engine.pause();
-
-      // Explicitly cancel any scheduled phase transition since we're now paused.
-      cancelGameSchedule(gameId, section);
-
-      await updateTimerState(gameId, section, engine.getState());
-      broadcast(gameId, section, engine.getState());
-
+      // Pausing cancels any pending phase transition rather than re-arming one.
+      await runCommand(payload, (engine) => engine.pause(), {
+        reschedule: false,
+      });
       ack({ success: true, data: undefined });
     },
   });

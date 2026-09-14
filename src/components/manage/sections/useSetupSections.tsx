@@ -9,12 +9,10 @@ import { ClientSection } from "@/hooks/sections";
 import { SectionPills } from "./SectionPills";
 import { SectionModal, SectionModalResult } from "./SectionModal";
 
+import { reportError } from "@/lib/report-error";
+
 /** Table count a newly added section starts with. */
 const DEFAULT_SECTION_TABLES = 5;
-
-function reportError(err: unknown) {
-  alert(err instanceof Error ? err.message : "Something went wrong");
-}
 
 /**
  * Shared section UX for the setup pages (Tables, Movement, Timer). Owns the

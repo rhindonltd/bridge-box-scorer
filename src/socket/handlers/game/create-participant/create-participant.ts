@@ -3,9 +3,7 @@ import { z } from "zod";
 
 import { SocketEvents } from "@/socket/socket-events";
 
-import { createPlayer } from "@/db/games/actions/create-player";
-
-import { createParticipant as createPair } from "@/db/games/actions/create-participant";
+import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { findSeatedNationalIds } from "@/db/games/queries/find-seated-national-ids";
 
@@ -64,14 +62,12 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
 
         const key = crypto.randomUUID();
 
-        // PAIR
-        const player1 = (await createPlayer(gameId, newParticipant.player1)).id;
-        const player2 = (await createPlayer(gameId, newParticipant.player2)).id;
-
-        await createPair(gameId, {
+        // Create both player rows and the pair in one transaction so a failure
+        // can't leave orphaned player rows behind.
+        await createPairWithPlayers(gameId, {
           initialSeat: newParticipant.initialSeat,
-          player1,
-          player2,
+          player1: newParticipant.player1,
+          player2: newParticipant.player2,
           secretKey: key,
         });
 

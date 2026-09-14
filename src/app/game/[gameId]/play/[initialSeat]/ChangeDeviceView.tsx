@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Spinner } from "@/components/common/Spinner";
 import { generateSeatTransferCode } from "@/lib/game-service";
 
 interface Props {
@@ -117,7 +118,7 @@ export function ChangeDeviceView({ gameId, seat }: Props) {
           </button>
         </>
       ) : (
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <Spinner />
       )}
 
       <p className="mt-6 text-xs text-gray-500">

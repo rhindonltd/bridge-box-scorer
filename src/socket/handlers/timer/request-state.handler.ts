@@ -3,8 +3,7 @@ import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
 import { Rooms } from "@/socket/rooms";
-import { SocketResponse } from "@/socket/socket-response";
-import { logger } from "@/lib/log";
+import { registerHandler } from "@/socket/handlers/handler-wrapper";
 import { buildTimerSyncPayload } from "./broadcast-timer";
 
 const payloadSchema = z.object({
@@ -21,41 +20,36 @@ type TimerSnapshot = ReturnType<typeof buildTimerSyncPayload> | null;
  * when no timer exists for that section. Used by the TimerProvider to load
  * initial state on mount / reconnect. No director auth: reading timer state is
  * public. A matching `timer:leave` leaves the room on unmount / section change.
+ *
+ * A failure loading the engine is treated as "no snapshot yet"
+ * (`{ success: true, data: null }`), not an error, so the client can still
+ * render its connecting/empty state — hence the handler owns its own try/catch
+ * rather than letting the wrapper turn it into a failure ack.
  */
-export function registerRequestStateHandler(socket: Socket, _io: Server) {
-  socket.on(
+export function registerRequestStateHandler(socket: Socket, io: Server) {
+  registerHandler<z.infer<typeof payloadSchema>, TimerSnapshot>(
+    socket,
+    io,
     SocketEvents.REQUEST_STATE_TIMER,
-    async (
-      payload: unknown,
-      cb?: (response: SocketResponse<TimerSnapshot>) => void,
-    ) => {
-      const parsed = payloadSchema.safeParse(payload);
-      if (!parsed.success) {
-        logger.warn(
-          { issues: parsed.error.message },
-          "Invalid REQUEST_STATE_TIMER payload",
-        );
-        cb?.({ success: false, error: "Invalid payload" });
-        return;
-      }
+    {
+      schema: payloadSchema,
+      handler: async ({ payload, ack, log }) => {
+        const { gameId, section } = payload;
 
-      const { gameId, section } = parsed.data;
-
-      try {
         // Join first so a push that races the ack still reaches this client.
         socket.join(Rooms.timer(gameId, section));
 
-        const engine = await getEngine(gameId, section);
-        const snapshot = engine
-          ? buildTimerSyncPayload(section, engine.getState())
-          : null;
-        cb?.({ success: true, data: snapshot });
-      } catch (err) {
-        logger.error({ err, gameId, section }, "Failed to load timer state");
-        // Treat an unavailable timer as "no snapshot" rather than a hard error
-        // so the client can still render its connecting/empty state.
-        cb?.({ success: true, data: null });
-      }
+        try {
+          const engine = await getEngine(gameId, section);
+          const snapshot = engine
+            ? buildTimerSyncPayload(section, engine.getState())
+            : null;
+          ack({ success: true, data: snapshot });
+        } catch (err) {
+          log.error({ err, gameId, section }, "Failed to load timer state");
+          ack({ success: true, data: null });
+        }
+      },
     },
   );
 
