@@ -46,6 +46,31 @@ export const WithBackButton: Story = {
   },
 };
 
+export const DefaultBack: Story = {
+  args: {
+    headerTitle: "Manage Games",
+    headerSubtitle: "Default back arrow (pops the navigation stack)",
+    children: (
+      <div className="p-6">
+        <p>No backHref set — the arrow pops the stack.</p>
+      </div>
+    ),
+  },
+};
+
+export const HideBack: Story = {
+  args: {
+    headerTitle: "Home",
+    headerSubtitle: "No back arrow (hideBack)",
+    hideBack: true,
+    children: (
+      <div className="p-6">
+        <p>Root screen — no back arrow.</p>
+      </div>
+    ),
+  },
+};
+
 export const WithSubHeader: Story = {
   args: {
     headerTitle: "Select Table",

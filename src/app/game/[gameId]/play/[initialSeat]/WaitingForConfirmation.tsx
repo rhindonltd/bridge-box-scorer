@@ -12,6 +12,7 @@ export function WaitingForConfirmation({ boardNumber, headerRight }: Props) {
     <GamePageLayout
       headerTitle={`Board ${boardNumber}`}
       headerRight={headerRight}
+      hideBack
       centerContent={true}
     >
       <div className="flex-1 flex flex-col items-center justify-center p-6">

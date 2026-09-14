@@ -10,11 +10,13 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
     children,
+    hideBack,
   }: {
     headerTitle: string;
     children: React.ReactNode;
+    hideBack?: boolean;
   }) => (
-    <div>
+    <div data-hide-back={String(!!hideBack)}>
       <h1>{headerTitle}</h1>
       {children}
     </div>
@@ -133,5 +135,12 @@ describe("WaitingToStartPage", () => {
   it("renders the change-device affordance", () => {
     render(<WaitingToStartPage gameId="g1" seat={"A3NS" as Seat} />);
     expect(screen.getByTestId("change-device-button")).toBeInTheDocument();
+  });
+
+  it("hides the header back arrow (play-flow screen, not a stack)", () => {
+    const { container } = render(
+      <WaitingToStartPage gameId="g1" seat={"A3NS" as Seat} />,
+    );
+    expect(container.firstChild).toHaveAttribute("data-hide-back", "true");
   });
 });

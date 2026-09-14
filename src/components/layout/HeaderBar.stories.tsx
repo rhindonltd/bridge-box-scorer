@@ -59,6 +59,21 @@ export const WithSubTitleAndHeaderRight: Story = {
   },
 };
 
+export const DefaultBack: Story = {
+  args: {
+    headerTitle: "Settings",
+    headerSubtitle: "Default back arrow (pops the navigation stack)",
+  },
+};
+
+export const HideBack: Story = {
+  args: {
+    headerTitle: "Home",
+    headerSubtitle: "No back arrow (hideBack)",
+    hideBack: true,
+  },
+};
+
 export const WithBackButton: Story = {
   args: {
     headerTitle: "Manage Games",

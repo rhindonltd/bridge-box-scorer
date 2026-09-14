@@ -51,6 +51,7 @@ export function DeleteGamePage({
     <GamePageLayout
       headerTitle="Delete Game"
       centerContent={true}
+      backAction={onCancel}
       actions={
         <div className="flex flex-col gap-3 pt-4">
           <button

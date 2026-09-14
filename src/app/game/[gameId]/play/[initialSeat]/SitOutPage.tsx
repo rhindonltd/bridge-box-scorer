@@ -21,6 +21,7 @@ export function SitOutPage({
     <GamePageLayout
       headerTitle={`Round ${round}`}
       headerRight={headerRight}
+      hideBack
       centerContent={true}
       actions={
         <button

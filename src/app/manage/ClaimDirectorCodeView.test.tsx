@@ -5,11 +5,16 @@ vi.mock("@/components/layout/PageLayout", () => ({
   PageLayout: ({
     actions,
     children,
+    backAction,
   }: {
     actions: React.ReactNode;
     children: React.ReactNode;
+    backAction?: () => void;
   }) => (
     <div>
+      {backAction && (
+        <button aria-label="Go back" onClick={backAction} type="button" />
+      )}
       <div>{actions}</div>
       <div>{children}</div>
     </div>
@@ -76,5 +81,13 @@ describe("ClaimDirectorCodeView", () => {
   it("renders an error message when present", () => {
     render(<ClaimDirectorCodeView {...baseProps} error="Bad code" />);
     expect(screen.getByRole("alert")).toHaveTextContent("Bad code");
+  });
+
+  it("wires the header back arrow to onCancel", () => {
+    const onCancel = vi.fn();
+    render(<ClaimDirectorCodeView {...baseProps} onCancel={onCancel} />);
+
+    fireEvent.click(screen.getByLabelText("Go back"));
+    expect(onCancel).toHaveBeenCalled();
   });
 });

@@ -26,7 +26,7 @@ function GameCompleteContent({
   }
 
   return (
-    <GamePageLayout headerTitle="Game Complete" headerRight={headerRight}>
+    <GamePageLayout headerTitle="Game Complete" headerRight={headerRight} hideBack>
       <div className="flex-1 min-h-0">
         {leaderboard ? (
           <Leaderboard

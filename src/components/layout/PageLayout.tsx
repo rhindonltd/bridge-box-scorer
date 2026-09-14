@@ -10,8 +10,23 @@ interface PageLayoutProps {
   headerSubtitle?: string;
   /** Right-aligned content in the header (e.g., "Pair 3") */
   headerRight?: React.ReactNode;
-  /** URL to navigate to when back arrow is tapped. Omit to hide back arrow. */
+  /**
+   * URL to navigate to when the back arrow is tapped. Takes precedence over the
+   * default "pop the stack" behaviour, but not over `backAction`.
+   */
   backHref?: string;
+  /** Custom back handler. Highest precedence for the back arrow. */
+  backAction?: () => void;
+  /**
+   * Hide the back arrow entirely (root/landing screens, transient states). By
+   * default every page shows a back arrow that pops the navigation stack.
+   */
+  hideBack?: boolean;
+  /**
+   * Where the default back behaviour navigates when there is no in-app history.
+   * Defaults to `/`. Only used when neither `backAction` nor `backHref` is set.
+   */
+  backFallbackHref?: string;
   /** Fixed-bottom action buttons. Omit to hide the action bar. */
   actions?: React.ReactNode;
   /** When true, content area centres children vertically and horizontally (for menu-only pages). */
@@ -25,6 +40,9 @@ export function PageLayout({
   headerSubtitle,
   headerRight,
   backHref,
+  backAction,
+  hideBack,
+  backFallbackHref,
   actions,
   centerContent = false,
   children,
@@ -35,6 +53,9 @@ export function PageLayout({
       <HeaderBar
         headerTitle={headerTitle}
         backHref={backHref}
+        backAction={backAction}
+        hideBack={hideBack}
+        backFallbackHref={backFallbackHref}
         headerSubtitle={headerSubtitle}
         headerRight={headerRight}
       />

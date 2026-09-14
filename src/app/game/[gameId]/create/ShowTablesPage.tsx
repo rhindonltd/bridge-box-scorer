@@ -152,7 +152,7 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
   }
 
   return (
-    <GamePageLayout headerTitle="Tables" headerRight={menu}>
+    <GamePageLayout headerTitle="Tables" headerRight={menu} hideBack>
       <div className="flex h-full min-h-0 flex-col">
         {/* Yellow, clickable warning pinned under the header when the selected
             section has no movement, or a movement that no longer fits its table

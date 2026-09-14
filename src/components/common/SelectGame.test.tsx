@@ -77,7 +77,10 @@ describe("SelectGame", () => {
         onGameSelected={vi.fn()}
       />,
     );
-    const buttons = screen.getAllByRole("button");
+    // Exclude the header's default back arrow; count only the game buttons.
+    const buttons = screen
+      .getAllByRole("button")
+      .filter((b) => b.getAttribute("aria-label") !== "Go back");
     expect(buttons).toHaveLength(2);
   });
 
