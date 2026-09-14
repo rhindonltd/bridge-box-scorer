@@ -12,6 +12,7 @@ vi.mock("@/socket/broadcast/joinable-broadcast", () => ({
 }));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }));
 
 import { createBridgeGame } from "@/db/game-index/actions/create-game";

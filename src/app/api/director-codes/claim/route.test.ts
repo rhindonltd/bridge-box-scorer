@@ -8,6 +8,7 @@ vi.mock("@/db/system/actions/create-login-session", () => ({
 }));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }));
 
 import { validateAndClaimShareCode } from "@/db/system/queries/validate-share-code";

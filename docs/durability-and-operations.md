@@ -70,6 +70,54 @@ does not cover. The JSON body also reports the running version/commit:
 { "status": "ok", "version": "0.1.0", "commit": null, "checks": { "game-index": "ok", "players": "ok", "system": "ok" } }
 ```
 
+## Logging
+
+The server logs through a single structured logger (pino, `src/lib/log.ts`).
+All server-side code — HTTP route handlers, the Socket.IO handlers, the timer
+engine/scheduler, and process lifecycle in `server.ts` — logs through it; direct
+`console.*` in server code is banned by lint (`no-console`). CLI scripts, DB
+migrations, tests and client-side React components are exempt (see the ESLint
+overrides).
+
+**Format & level.** In production (`NODE_ENV=production`) each line is a single
+JSON object on stdout, ready for `journald`/log shipping. In development it is
+pretty-printed and colourised. The level comes from `LOG_LEVEL` (`fatal`,
+`error`, `warn`, `info`, `debug`, `trace`), defaulting to `info`. Set
+`LOG_LEVEL=debug` to see verbose diagnostics (e.g. socket connect/disconnect,
+engine connection errors); leave it at `info` in normal operation.
+
+**Reading logs on the appliance.** The server runs under systemd, so its stdout
+is captured by the journal:
+
+```bash
+journalctl -u bridge-box -f                 # follow live
+journalctl -u bridge-box --since "1 hour ago"
+```
+
+To pretty-print archived JSON logs off the box, pipe through `pino-pretty`.
+
+**Correlation ids.** Every HTTP request and every socket event is stamped with a
+`correlationId` (a UUID) carried on a request/event-scoped child logger, so all
+log lines for one request or event share the same id. For HTTP, the id is read
+from an incoming `x-correlation-id` header if present (otherwise minted) and
+echoed back on the response's `x-correlation-id` header — so a client-reported id
+can be traced straight to its server logs.
+
+**Redaction.** Secrets are redacted from log output regardless of where they
+appear (top level, common wrapper objects, request headers): player/director
+tokens, secret keys, the `x-admin-token` header, EBU/national ids, and seat
+transfer codes are replaced with `[redacted]`. Prefer logging identifiers
+(gameId, section, seat) over raw payloads, and never log a token value.
+
+**Error handling contract.** Unhandled errors are logged with the full error
+under `err` (stack included) but never leaked to clients: HTTP routes return a
+generic `500 Internal server error`, and socket handlers ack a generic
+`"Internal error"`. User-facing precondition failures are distinct (`ClientError`
+→ HTTP 400 with a safe message; `HandlerError` → socket ack with a safe message)
+and are not logged as errors. Process-level `uncaughtException` is logged
+`fatal`, triggers graceful shutdown, and exits non-zero so systemd restarts it;
+`unhandledRejection` is logged at `error` and the process keeps serving.
+
 ## Version visibility
 
 The running version/commit is surfaced two ways so an operator can confirm a

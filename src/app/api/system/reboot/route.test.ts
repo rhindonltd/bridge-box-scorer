@@ -6,6 +6,15 @@ vi.mock("child_process", async (importActual) => {
   return { ...actual, exec, default: { ...actual, exec } };
 });
 vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { POST } from "./route";
@@ -31,7 +40,10 @@ describe("POST /api/system/reboot", () => {
   it("runs the reboot script for an authorised admin", async () => {
     const res = await POST(req("tok"));
     expect(res.status).toBe(200);
-    expect(exec).toHaveBeenCalledWith("sudo /usr/local/bridgebox/bin/reboot.sh");
+    expect(exec).toHaveBeenCalledWith(
+      "sudo /usr/local/bridgebox/bin/reboot.sh",
+      expect.any(Function),
+    );
     await expect(res.json()).resolves.toEqual({
       success: true,
       result: { message: "Rebooting device..." },

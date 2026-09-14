@@ -14,6 +14,15 @@ vi.mock("fs", async (importActual) => {
   return { ...actual, existsSync, unlinkSync, default: { ...actual, existsSync, unlinkSync } };
 });
 vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { POST } from "./route";
@@ -39,7 +48,10 @@ describe("POST /api/system/reset-wifi", () => {
     const res = await POST(req("tok"));
     expect(res.status).toBe(200);
     expect(unlinkSync).toHaveBeenCalledWith("/home/bridgebox/wifi.json");
-    expect(exec).toHaveBeenCalledWith("sudo systemctl restart bridge-box");
+    expect(exec).toHaveBeenCalledWith(
+      "sudo systemctl restart bridge-box",
+      expect.any(Function),
+    );
   });
 
   it("skips deletion when no config file exists but still restarts", async () => {

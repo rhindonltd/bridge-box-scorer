@@ -11,6 +11,7 @@ import { scheduleGame } from "@/timer/scheduler";
 import { SectionLetter } from "@/model/participants";
 import { TimerState } from "@/timer/timer-state";
 import { makeTimerBroadcaster } from "@/socket/handlers/timer/broadcast-timer";
+import { logger } from "@/lib/log";
 
 /**
  * Promote a single section's saved timer configuration into a live, running
@@ -46,10 +47,7 @@ async function promoteSection(
     broadcast(gameId, section, engine.getState());
     scheduleGame(gameId, section, engine, { updateTimerState, broadcast });
   } catch (err) {
-    console.error(
-      `Failed to promote timer for game ${gameId} section ${section}:`,
-      err,
-    );
+    logger.error({ err, gameId, section }, "Failed to promote timer");
   }
 }
 
@@ -77,10 +75,7 @@ export async function promoteTimerAtGameStart(
       await promoteSection(gameId, section, state, broadcast);
     }
   } catch (err) {
-    console.error(
-      `Failed to promote timers at game start for game ${gameId}:`,
-      err,
-    );
+    logger.error({ err, gameId }, "Failed to promote timers at game start");
   }
 }
 

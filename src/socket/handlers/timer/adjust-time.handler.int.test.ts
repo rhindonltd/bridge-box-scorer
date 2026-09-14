@@ -110,14 +110,13 @@ describe("registerAdjustTimeHandler (integration)", () => {
     expect(scheduleGame).not.toHaveBeenCalled();
   });
 
-  it("logs and swallows an error when persistence fails (catch block)", async () => {
+  it("acks a generic failure when persistence fails (catch block)", async () => {
     const engine = {
       adjustTime: vi.fn(),
       getState: vi.fn(() => ({ phase: "play" })),
     };
     vi.mocked(getEngine).mockResolvedValue(engine as any);
     vi.mocked(updateTimerState).mockRejectedValue(new Error("db down"));
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {
@@ -126,7 +125,7 @@ describe("registerAdjustTimeHandler (integration)", () => {
     });
     closeServer = close;
 
-    client.emit(SocketEvents.ADJUST_TIME_TIMER, {
+    const res = await emitWithAck(client, SocketEvents.ADJUST_TIME_TIMER, {
       gameType: "PAIRS",
       gameId: "game-1",
       section: "A",
@@ -134,16 +133,8 @@ describe("registerAdjustTimeHandler (integration)", () => {
       deltaSeconds: 30,
     });
 
-    // Give the async handler time to hit the catch.
-    await vi.waitFor(() =>
-      expect(errSpy).toHaveBeenCalledWith(
-        "Error handling timer:adjustTime:",
-        expect.any(Error),
-      ),
-    );
-
+    expect(res).toEqual({ success: false, error: "Internal error" });
     // The scheduler is never reached once persistence throws.
     expect(scheduleGame).not.toHaveBeenCalled();
-    errSpy.mockRestore();
   });
 });

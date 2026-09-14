@@ -6,6 +6,15 @@ vi.mock("child_process", async (importActual) => {
   return { ...actual, exec, default: { ...actual, exec } };
 });
 vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
+vi.mock("@/lib/log", () => ({
+  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
 
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { POST } from "./route";
@@ -30,6 +39,7 @@ describe("POST /api/system/restart", () => {
     expect(res.status).toBe(200);
     expect(exec).toHaveBeenCalledWith(
       "sudo /usr/local/bridgebox/bin/restart-service.sh",
+      expect.any(Function),
     );
     await expect(res.json()).resolves.toMatchObject({ success: true });
   });

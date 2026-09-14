@@ -4,6 +4,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { getDb } from "@/db/games";
 import { SocketResponse } from "@/socket/socket-response";
+import { logger } from "@/lib/log";
 import { buildTravellerPayload } from "./broadcast-results";
 
 const payloadSchema = z.object({
@@ -47,10 +48,7 @@ export function registerTravellerRequestHandler(socket: Socket, _io: Server) {
           : null;
         cb?.({ success: true, data: snapshot });
       } catch (err) {
-        console.error(
-          `Failed to load traveller for game ${gameId} board ${boardNumber}:`,
-          err,
-        );
+        logger.error({ err, gameId, boardNumber }, "Failed to load traveller");
         cb?.({ success: true, data: null });
       }
     },

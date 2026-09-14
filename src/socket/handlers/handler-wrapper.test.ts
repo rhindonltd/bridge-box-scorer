@@ -1,5 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { z } from "zod";
+
+// The wrapper mints a per-event child logger. Capture a single shared mock
+// logger (via vi.hoisted so it exists before the hoisted vi.mock factory runs)
+// so tests can assert on its warn/error calls.
+const mockLog = vi.hoisted(() => ({
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+}));
+vi.mock("@/lib/log", () => ({
+  logger: mockLog,
+  childLogger: () => mockLog,
+}));
+
 import {
   registerHandler,
   HandlerError,
@@ -58,7 +73,6 @@ describe("registerHandler", () => {
   });
 
   it("rejects an invalid payload without running the handler", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
     const schema = z.object({ name: z.string() });
     const handler = vi.fn(async () => {});
     const listener = listenerFor({ schema, handler });
@@ -71,6 +85,7 @@ describe("registerHandler", () => {
       success: false,
       error: "Invalid request",
     });
+    expect(mockLog.warn).toHaveBeenCalled();
   });
 
   it("acks a HandlerError with its user-facing message", async () => {
@@ -91,7 +106,6 @@ describe("registerHandler", () => {
   });
 
   it("acks a generic error and logs when the handler throws unexpectedly", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const listener = listenerFor({
       handler: async () => {
         throw new Error("db exploded");
@@ -102,11 +116,10 @@ describe("registerHandler", () => {
     await listener({}, cb);
 
     expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal error" });
-    expect(errSpy).toHaveBeenCalled();
+    expect(mockLog.error).toHaveBeenCalled();
   });
 
   it("acks at most once even if the handler acks then throws downstream", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const listener = listenerFor({
       handler: async ({ ack }) => {
         ack({ success: true, data: undefined });
@@ -120,8 +133,7 @@ describe("registerHandler", () => {
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    expect(mockLog.error).toHaveBeenCalled();
   });
 
   it("tolerates a missing callback (fire-and-forget caller)", async () => {

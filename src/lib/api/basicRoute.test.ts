@@ -4,12 +4,19 @@ import { NextResponse } from "next/server";
 // Silence structured error logging on the 500 path.
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
+  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }));
 
 import { withBasicRoute, type BasicRouteContext } from "./basicRoute";
 
 function makeReq(): any {
-  return { url: "http://localhost/api/thing" };
+  // The wrapper reads `headers.get` (correlation id), `method`, and
+  // `nextUrl?.pathname`. Provide just enough of each.
+  return {
+    url: "http://localhost/api/thing",
+    method: "GET",
+    headers: { get: () => null },
+  };
 }
 
 describe("withBasicRoute", () => {

@@ -4,6 +4,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { getEngine } from "@/timer/game-store";
 import { Rooms } from "@/socket/rooms";
 import { SocketResponse } from "@/socket/socket-response";
+import { logger } from "@/lib/log";
 import { buildTimerSyncPayload } from "./broadcast-timer";
 
 const payloadSchema = z.object({
@@ -30,9 +31,9 @@ export function registerRequestStateHandler(socket: Socket, _io: Server) {
     ) => {
       const parsed = payloadSchema.safeParse(payload);
       if (!parsed.success) {
-        console.warn(
-          "Invalid REQUEST_STATE_TIMER payload:",
-          parsed.error.message,
+        logger.warn(
+          { issues: parsed.error.message },
+          "Invalid REQUEST_STATE_TIMER payload",
         );
         cb?.({ success: false, error: "Invalid payload" });
         return;
@@ -50,10 +51,7 @@ export function registerRequestStateHandler(socket: Socket, _io: Server) {
           : null;
         cb?.({ success: true, data: snapshot });
       } catch (err) {
-        console.error(
-          `Failed to load timer state for game ${gameId} section ${section}:`,
-          err,
-        );
+        logger.error({ err, gameId, section }, "Failed to load timer state");
         // Treat an unavailable timer as "no snapshot" rather than a hard error
         // so the client can still render its connecting/empty state.
         cb?.({ success: true, data: null });

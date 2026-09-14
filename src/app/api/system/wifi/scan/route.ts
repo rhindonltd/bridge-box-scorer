@@ -6,6 +6,7 @@ import { parseWifiScan } from "@/lib/system/wifi-scan";
 import { getOwnAp } from "@/lib/system/wifi-ap";
 import { runWifiCtl, WifiCtlBusyError } from "@/lib/system/wifi-ctl";
 import { writeScanResult } from "@/lib/system/wifi-config";
+import { logger } from "@/lib/log";
 
 /**
  * POST /api/system/wifi/scan
@@ -79,7 +80,7 @@ export const POST = withAdminRoute(async () => {
     }
 
     const reason = err instanceof Error ? err.message : String(err);
-    console.error("WiFi scan failed:", reason);
+    logger.error({ err }, "WiFi scan failed");
 
     writeScanResult({
       networks: [],

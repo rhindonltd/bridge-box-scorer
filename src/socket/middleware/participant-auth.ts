@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { findParticipantSecret } from "@/db/games/queries/find-participant-secret";
+import { logger } from "@/lib/log";
 
 /**
  * Constant-time comparison of two secrets. Returns false immediately when the
@@ -55,9 +56,8 @@ export async function assertPlayer(
 ): Promise<boolean> {
   if (await validatePlayerToken(gameId, seat, token)) return true;
 
-  console.warn(
-    `Rejected player mutation: invalid token for seat ${seat} in game ${gameId}`,
-  );
+  // Log the game/seat (never the token value) for director diagnostics.
+  logger.warn({ gameId, seat }, "Rejected player mutation: invalid token");
   cb?.({ success: false, error: "Unauthorized" });
   return false;
 }

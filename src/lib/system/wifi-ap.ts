@@ -1,6 +1,7 @@
 import "server-only";
 
 import { runNmcli } from "@/lib/system/nmcli";
+import { logger } from "@/lib/log";
 
 /** The appliance's own hosted access point, as NetworkManager sees it. */
 export type OwnAp = {
@@ -66,7 +67,7 @@ export async function getOwnAp(): Promise<OwnAp | null> {
   } catch (err) {
     // No AP found or nmcli unavailable — caller skips exclusion. Log so a
     // lookup failure (e.g. a permission denial) is visible.
-    console.error("getOwnAp: nmcli lookup failed", err);
+    logger.error({ err }, "getOwnAp: nmcli lookup failed");
   }
 
   return null;

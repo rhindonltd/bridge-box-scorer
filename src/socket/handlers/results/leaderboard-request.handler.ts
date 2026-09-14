@@ -4,6 +4,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { getDb } from "@/db/games";
 import { SocketResponse } from "@/socket/socket-response";
+import { logger } from "@/lib/log";
 import { buildLeaderboardPayload } from "./broadcast-results";
 
 const payloadSchema = z.object({
@@ -44,10 +45,7 @@ export function registerLeaderboardRequestHandler(socket: Socket, _io: Server) {
         const snapshot = db ? await buildLeaderboardPayload(db, gameId) : null;
         cb?.({ success: true, data: snapshot });
       } catch (err) {
-        console.error(
-          `Failed to load leaderboard for game ${gameId}:`,
-          err,
-        );
+        logger.error({ err, gameId }, "Failed to load leaderboard");
         cb?.({ success: true, data: null });
       }
     },

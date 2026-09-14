@@ -59,6 +59,20 @@ vi.mock("@/socket/middleware/participant-auth", () => ({
   assertPlayer: vi.fn(),
 }));
 
+// The wrapper mints a per-event child logger; capture a shared mock (via
+// vi.hoisted so it exists before the hoisted vi.mock factory runs) so the
+// downstream-failure test can assert the error was logged.
+const mockLog = vi.hoisted(() => ({
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+}));
+vi.mock("@/lib/log", () => ({
+  logger: mockLog,
+  childLogger: () => mockLog,
+}));
+
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
@@ -341,7 +355,6 @@ describe("registerSubmitResultHandler", () => {
     vi.mocked(broadcastResultsChanged).mockRejectedValueOnce(
       new Error("broadcast blew up"),
     );
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const socket = makeSocket();
     const io = makeIo();
@@ -366,9 +379,8 @@ describe("registerSubmitResultHandler", () => {
     // Exactly one ack, and it is the success one.
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
-    // The downstream failure was logged, not re-acked.
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
+    // The downstream failure was logged (via the wrapper), not re-acked.
+    expect(mockLog.error).toHaveBeenCalled();
   });
 
   it("rejects when assertPlayer fails and stores/broadcasts nothing", async () => {

@@ -1,6 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { Server, Socket } from "socket.io";
 import { z } from "zod";
+import type { Logger } from "pino";
 import { SocketResponse } from "@/socket/socket-response";
+import { childLogger } from "@/lib/log";
 
 /**
  * A user-facing error in a socket event: something the caller got wrong (bad
@@ -33,6 +36,13 @@ export interface HandlerContext<TPayload, TData> {
   socket: Socket;
   io: Server;
   ack: SocketAck<TData>;
+  /**
+   * Event-scoped logger bound to this event's correlation id (and the event
+   * name + socket id). Use it for any logging inside the handler so lines
+   * correlate with the wrapper's own validation / error logs for the same
+   * event invocation.
+   */
+  log: Logger;
 }
 
 export interface HandlerDefinition<TPayload, TData> {
@@ -78,6 +88,15 @@ export function registerHandler<TPayload, TData = void>(
   socket.on(
     event,
     async (rawPayload: unknown, cb?: (response: SocketResponse<TData>) => void) => {
+      // Per-event correlation id: threads this single event invocation's logs
+      // (validation, handler, error) together. Socket events are fire-and-emit,
+      // so the id lives on the child logger rather than a response header.
+      const log = childLogger({
+        correlationId: randomUUID(),
+        event,
+        socketId: socket.id,
+      });
+
       // Idempotent ack: at most one response ever reaches the caller.
       let acked = false;
       const ack: SocketAck<TData> = (response) => {
@@ -92,7 +111,10 @@ export function registerHandler<TPayload, TData = void>(
         if (!parsed.success) {
           // Log the validation issue (never the payload values, which may carry
           // tokens/secrets) for director diagnostics.
-          console.warn(`Invalid ${event} payload:`, parsed.error.message);
+          log.warn(
+            { issues: parsed.error.message },
+            "Invalid socket payload",
+          );
           ack({ success: false, error: "Invalid request" });
           return;
         }
@@ -102,13 +124,13 @@ export function registerHandler<TPayload, TData = void>(
       }
 
       try {
-        await handler({ payload, socket, io, ack });
+        await handler({ payload, socket, io, ack, log });
       } catch (err) {
         if (err instanceof HandlerError) {
           ack({ success: false, error: err.message });
           return;
         }
-        console.error(`Error handling ${event}:`, err);
+        log.error({ err }, "Error handling socket event");
         ack({ success: false, error: "Internal error" });
       }
     },

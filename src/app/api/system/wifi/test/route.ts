@@ -5,6 +5,7 @@ import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
 import { writeTestResult } from "@/lib/system/wifi-config";
 import { runWifiCtl, WifiCtlBusyError } from "@/lib/system/wifi-ctl";
+import { logger } from "@/lib/log";
 
 /** Outcome parsed from the helper's `TEST_RESULT:` line. */
 type TestOutcome = "ok" | "connected-no-internet" | "failed";
@@ -129,8 +130,7 @@ export const POST = withAdminRoute(async ({ req }) => {
       );
     }
 
-    const reason = err instanceof Error ? err.message : String(err);
-    console.error("WiFi test failed:", reason);
+    logger.error({ err }, "WiFi test failed");
 
     writeTestResult({
       ssid,
