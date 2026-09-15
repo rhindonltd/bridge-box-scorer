@@ -6,6 +6,8 @@ import { getPairMovement } from "@/db/movements/queries/get-movement";
 import { getPairMovementSpecById } from "@/db/movements/queries/get-movement-spec";
 import { generateMitchell } from "@/movement/mitchell/mitchell";
 import { boardRangeForSet } from "@/movement/shared";
+import { swissRoundOne } from "@/movement/swiss/swiss-pairing";
+import { swissRoundBoardRange } from "@/services/materialize-swiss-round";
 
 /**
  * A single round of a rehydrated movement, carrying concrete board numbers.
@@ -43,6 +45,14 @@ export interface RehydratedMovement {
   missingPair: string | null;
   /** True when the selection is a Mitchell we support sit-outs for. */
   isStandardMitchell: boolean;
+  /**
+   * True for a Swiss selection. Swiss only ever rehydrates its round 1 (a
+   * positional layout); later rounds are drawn live, never rehydrated. The
+   * start pipeline uses this to route materialization through the incremental
+   * Swiss path and to apply Swiss's own (bye) sit-out rather than the
+   * Mitchell/spec sit-out helpers.
+   */
+  isSwiss: boolean;
 }
 
 /**
@@ -85,6 +95,37 @@ export async function rehydrateSelectedMovement(
       movement: tablesToPairMovement(generated),
       missingPair: null,
       isStandardMitchell,
+      isSwiss: false,
+    };
+  }
+
+  if (selected.source === "SWISS") {
+    // Swiss rehydrates only round 1: a positional layout (table T seats pair T
+    // NS vs pair tables+T EW). Later rounds are drawn live and never rehydrated.
+    const { tables, boardsPerRound } = selected.swiss;
+    const { boardStart, boardEnd } = swissRoundBoardRange(1, boardsPerRound);
+    const movement: RehydratedTable[] = swissRoundOne(tables).map((seat) => ({
+      tableNumber: seat.tableNumber,
+      rounds: [
+        {
+          roundNumber: 1,
+          // A pair's participant id is its round-1 home seat (unqualified,
+          // e.g. "1NS"); buildSectionRows prefixes the section later. Round 1
+          // is positional so table T is exactly pair T (NS) vs pair tables+T
+          // (EW), i.e. seats "${T}NS" and "${T}EW".
+          ns: `${seat.tableNumber}NS`,
+          ew: `${seat.tableNumber}EW`,
+          boardStart,
+          boardEnd,
+          boardCopy: "A",
+        },
+      ],
+    }));
+    return {
+      movement,
+      missingPair: null,
+      isStandardMitchell: false,
+      isSwiss: true,
     };
   }
 
@@ -111,5 +152,10 @@ export async function rehydrateSelectedMovement(
       ? `${spec.missingPair}`
       : null;
 
-  return { movement: rehydrated, missingPair, isStandardMitchell: false };
+  return {
+    movement: rehydrated,
+    missingPair,
+    isStandardMitchell: false,
+    isSwiss: false,
+  };
 }

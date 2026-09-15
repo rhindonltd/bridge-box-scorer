@@ -80,10 +80,118 @@ function scoreBoardsToOverall(
     scoredBoards.push(scoreBoard(pairTraveller, scoringType));
   }
 
+  // Swiss sit-outs: credit each idle (bye) pair a compensatory result for the
+  // boards it missed, so a forced bye doesn't drag its standing down. This adds
+  // synthetic scored lines alongside the real ones before aggregation, keyed by
+  // the sit-out pair's participant id, and is a no-op when there are no
+  // SIT_OUT rows (i.e. for every non-Swiss / even-field game).
+  scoredBoards.push(
+    ...swissSitOutScoredBoards(boardMap, scoringType, scoredBoards),
+  );
+
   const overallPlugin = getOverallPlugin(getCombination(scoringType).overall);
   return overallPlugin.aggregate(
     scoredBoards.map((b) => ({ lines: b.lines })),
   ) as OverallScore;
+}
+
+/** The 60% (average-plus) award a bye pair receives under matchpoints. */
+const SIT_OUT_MP_FRACTION = 0.6;
+
+/**
+ * Build synthetic scored boards that credit Swiss sit-out (bye) pairs for the
+ * boards they missed.
+ *
+ * A SIT_OUT board row carries the sitting-out pair on its `ns` seat (its `ew`
+ * is a phantom that maps to no participant). For each such board we emit one
+ * synthetic scored line that the overall aggregator sums for that pair:
+ *   - Matchpoints: 60% of the board top. The per-board top for the round is the
+ *     same for every table, so it is read from a real (played) board that
+ *     round: `maxMatchPoints`. When no board that round has been scored yet,
+ *     the top is unknown and the bye is credited nothing (it will fill in once
+ *     the round's real results arrive).
+ *   - IMP / Cross-IMP: these have no fixed per-board maximum, so "60% of max"
+ *     is undefined; the fair, standings-protecting credit is the field average,
+ *     i.e. zero net imps. The synthetic line therefore contributes 0, which
+ *     still counts the board so the pair isn't under-boarded.
+ *
+ * The phantom opponent id is emitted on the other seat; because it matches no
+ * participant, its (zero) contribution is harmless.
+ */
+function swissSitOutScoredBoards(
+  boardMap: Map<number, Board[]>,
+  scoringType: ScoringType,
+  playedScoredBoards: ScoredBoard[],
+): ScoredBoard[] {
+  const pluginId = getCombination(scoringType).perBoard;
+
+  // Per-round matchpoint top, keyed by board number, read from a real scored
+  // line for that board (all tables share the same top on a given board).
+  const topByBoard = new Map<number, number>();
+  if (pluginId === "MP") {
+    for (const sb of playedScoredBoards) {
+      const lines = sb.lines as { maxMatchPoints?: number }[];
+      const withTop = lines.find(
+        (l) => typeof l.maxMatchPoints === "number" && l.maxMatchPoints > 0,
+      );
+      if (withTop) topByBoard.set(sb.board, withTop.maxMatchPoints!);
+    }
+  }
+
+  const synthetic: ScoredBoard[] = [];
+
+  for (const [boardNumber, rows] of boardMap) {
+    for (const row of rows) {
+      if (row.status !== "SIT_OUT") continue;
+
+      const byePair = row.ns; // sit-out pair sits on the NS seat
+      const phantom = row.ew;
+
+      if (pluginId === "MP") {
+        const top = topByBoard.get(boardNumber);
+        if (top == null) continue; // no scored sibling board yet
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            {
+              nsId: byePair,
+              ewId: phantom,
+              score: null,
+              maxMatchPoints: top,
+              nsMatchPoints: SIT_OUT_MP_FRACTION * top,
+              ewMatchPoints: 0,
+            },
+          ],
+        });
+      } else if (pluginId === "IMP") {
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            { nsId: byePair, ewId: phantom, score: null, nsImps: 0, ewImps: 0 },
+          ],
+        });
+      } else {
+        // PAIR_XIMP
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            {
+              nsId: byePair,
+              ewId: phantom,
+              score: null,
+              nsCrossImps: 0,
+              ewCrossImps: 0,
+            },
+          ],
+        });
+      }
+    }
+  }
+
+  return synthetic;
 }
 
 type Pairs = Awaited<ReturnType<typeof findPairs>>;

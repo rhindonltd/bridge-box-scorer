@@ -53,6 +53,13 @@ export interface DirectorTable {
 interface Props {
   tables: DirectorTable[];
   onEvict: (seat: Seat) => void;
+  /**
+   * Swiss only: toggle a pair's stationary flag. `ns` is true for the NS pair
+   * (North/South cards) of `tableNumber`, false for the EW pair (East/West).
+   * When omitted, positions are not clickable (non-Swiss movements have no
+   * director-set stationary pairs).
+   */
+  onToggleStationary?: (tableNumber: number, ns: boolean) => void;
 }
 
 function EvictablePlayerCard({
@@ -61,6 +68,7 @@ function EvictablePlayerCard({
   seat,
   onEvict,
   stationary = false,
+  onToggleStationary,
 }: {
   label: string;
   player: Omit<Player, "id"> | null;
@@ -68,7 +76,10 @@ function EvictablePlayerCard({
   onEvict: (seat: Seat) => void;
   /** Highlight this position as stationary for the selected movement. */
   stationary?: boolean;
+  /** When provided, the card is clickable to toggle this position stationary. */
+  onToggleStationary?: () => void;
 }) {
+  const clickable = onToggleStationary != null;
   return (
     <div
       className={
@@ -77,7 +88,23 @@ function EvictablePlayerCard({
           : "relative"
       }
     >
-      <PlayerCard label={label} player={player} />
+      {clickable ? (
+        <button
+          type="button"
+          onClick={onToggleStationary}
+          aria-pressed={stationary}
+          title={
+            stationary
+              ? "Stationary — tap to let this pair move"
+              : "Tap to keep this pair at this table (stationary)"
+          }
+          className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-lg"
+        >
+          <PlayerCard label={label} player={player} />
+        </button>
+      ) : (
+        <PlayerCard label={label} player={player} />
+      )}
       {stationary && (
         <span
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-950"
@@ -143,7 +170,11 @@ function TablePlacementNote({
   );
 }
 
-export default function DirectorTableControls({ tables, onEvict }: Props) {
+export default function DirectorTableControls({
+  tables,
+  onEvict,
+  onToggleStationary,
+}: Props) {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -161,6 +192,11 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                       seat={table.seats.N}
                       onEvict={onEvict}
                       stationary={table.stationary?.N}
+                      onToggleStationary={
+                        onToggleStationary
+                          ? () => onToggleStationary(table.tableNumber, true)
+                          : undefined
+                      }
                     />
                   }
                   south={
@@ -170,6 +206,11 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                       seat={table.seats.S}
                       onEvict={onEvict}
                       stationary={table.stationary?.S}
+                      onToggleStationary={
+                        onToggleStationary
+                          ? () => onToggleStationary(table.tableNumber, true)
+                          : undefined
+                      }
                     />
                   }
                   east={
@@ -179,6 +220,11 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                       seat={table.seats.E}
                       onEvict={onEvict}
                       stationary={table.stationary?.E}
+                      onToggleStationary={
+                        onToggleStationary
+                          ? () => onToggleStationary(table.tableNumber, false)
+                          : undefined
+                      }
                     />
                   }
                   west={
@@ -188,6 +234,11 @@ export default function DirectorTableControls({ tables, onEvict }: Props) {
                       seat={table.seats.W}
                       onEvict={onEvict}
                       stationary={table.stationary?.W}
+                      onToggleStationary={
+                        onToggleStationary
+                          ? () => onToggleStationary(table.tableNumber, false)
+                          : undefined
+                      }
                     />
                   }
                   center={

@@ -11,12 +11,15 @@ import { recommendationsFromSpecMap } from "@/movement/recommendations/spec-map-
 import {
   setSectionMitchellMovement,
   setSectionMovementSpec,
+  setSectionSwissMovement,
 } from "@/lib/section-service";
 import {
   groupByBoardsPerPair,
   movementMatchesSelection,
 } from "./movement-recommendations";
 import { MovementPreviewDialog } from "./MovementPreviewDialog";
+import { SwissSetupDialog } from "./SwissSetupDialog";
+import type { SwissMovementSpec } from "@/model/selected-movement";
 
 interface Props {
   gameId: string;
@@ -52,6 +55,12 @@ interface Props {
    * setup case.
    */
   onAddSection?: () => void;
+  /**
+   * Whether the game currently has exactly one section. Swiss Pairs is a
+   * single-pool movement (one field, drawn round by round), so its option is
+   * shown only when true.
+   */
+  singleSection?: boolean;
 }
 
 /**
@@ -71,6 +80,7 @@ export function SectionMovementPicker({
   onDone,
   onSelected,
   onAddSection,
+  singleSection = false,
 }: Props) {
   // Seeded specs for this table count, used to resolve a SPEC recommendation's
   // concrete id/type at selection time (recommendations reference specs by
@@ -94,6 +104,25 @@ export function SectionMovementPicker({
   // is only persisted once the director confirms with "Select Movement".
   const [preview, setPreview] = useState<RecommendedMovement | null>(null);
   const [saving, setSaving] = useState(false);
+  // Whether the Swiss Pairs setup dialog is open.
+  const [swissOpen, setSwissOpen] = useState(false);
+
+  const selectedSwiss =
+    selectedMovement?.source === "SWISS" ? selectedMovement.swiss : null;
+
+  async function handleConfirmSwiss(spec: SwissMovementSpec) {
+    setSaving(true);
+    try {
+      await setSectionSwissMovement(gameId, section, spec);
+      setSwissOpen(false);
+      onDone?.();
+      onSelected?.();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to set movement");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleConfirm(movement: RecommendedMovement) {
     setSaving(true);
@@ -159,6 +188,39 @@ export function SectionMovementPicker({
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {singleSection && (
+          <section className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+            <h2 className="border-b border-gray-200 bg-gray-100 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+              Swiss
+            </h2>
+            <div className="p-3">
+              <button
+                type="button"
+                onClick={() => setSwissOpen(true)}
+                data-testid="swiss-movement-option"
+                className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition hover:bg-white ${
+                  selectedSwiss
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 bg-white"
+                }`}
+              >
+                <span>
+                  <span className="block text-sm font-semibold text-gray-900">
+                    Swiss Pairs
+                  </span>
+                  <span className="block text-xs text-gray-500">
+                    Pairs are re-drawn each round by standing; you draw each
+                    round as the event runs.
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs font-medium text-blue-600">
+                  {selectedSwiss ? "Selected" : "Set up"}
+                </span>
+              </button>
+            </div>
+          </section>
+        )}
+
         {groups.length === 0 ? (
           <p className="text-gray-500 text-sm italic px-1">
             No recommended movements are available for this table count yet.
@@ -199,6 +261,17 @@ export function SectionMovementPicker({
           if (!saving) setPreview(null);
         }}
         onConfirm={handleConfirm}
+      />
+
+      <SwissSetupDialog
+        open={swissOpen}
+        tables={tables}
+        initial={selectedSwiss}
+        saving={saving}
+        onCancel={() => {
+          if (!saving) setSwissOpen(false);
+        }}
+        onConfirm={handleConfirmSwiss}
       />
     </div>
   );

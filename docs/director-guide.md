@@ -76,6 +76,11 @@ The app also checks the setup and flags anything that would stop the game
 starting. If a table isn't full, it shows which seat will **sit out** each
 round so the movement still works.
 
+For a **Swiss Pairs** section, the Tables tab lets you mark **stationary pairs**:
+tap a seat position to keep that pair at their table and direction for the whole
+event (their opponents come to them). Tap it again to let them move. Stationary
+pairs are shown with an amber "Stationary" marker.
+
 When you're ready, tap **Start Game**.
 
 ### Movements tab
@@ -100,6 +105,19 @@ details — the full round-by-round and table-by-table breakdown of who plays
 whom on which boards. If it's the one you want, tap **Select Movement** to lock
 it in for the section; otherwise tap back to return to the list and compare
 another.
+
+#### Swiss Pairs
+
+For a **single-section** game the picker also offers **Swiss Pairs** at the top.
+Swiss Pairs has no fixed schedule to preview: everyone plays the same boards
+each round, then you draw the next round from the current standings so
+close-ranked pairs meet and no pair plays the same opponents twice where it can
+be avoided. Tap **Swiss Pairs**, set the **rounds** and **boards per round**
+(the table count comes from your section), and tap **Select Movement**. You draw
+each later round during play from the game menu (see
+[Drawing the next Swiss round](#drawing-the-next-swiss-round)).
+
+Swiss Pairs is offered only when the game has a single section.
 
 ### Timer tab (optional)
 
@@ -146,6 +164,23 @@ all sections** to copy it to them all.
 The **timer** is reached through **Set Up Game → Timer tab**. Before the game
 starts this shows the timer setup (configure and **Save**); once the game is in
 progress the same place shows the live timer controls (start, pause, adjust).
+
+### Drawing the next Swiss round
+
+In a **Swiss Pairs** game, the **Movement** screen shows a **Draw Next Round**
+button. It stays disabled until **every result for the current round is in**, so
+you have time to enter any adjusted scores first. When you tap it, the app works
+out the next round from the current standings — pairing close-ranked pairs,
+avoiding repeat opponents, and honouring any stationary pairs — and the new
+round's seating appears on every device.
+
+- If a repeat pairing couldn't be avoided, or two stationary pairs had to meet,
+  the app tells you so you can adjust the seating by hand if you wish.
+- With an odd number of pairs, one pair gets a **bye** that round (chosen from
+  those near the bottom who haven't yet had one) and is credited an
+  above-average score.
+
+Repeat this each round until the event is complete.
 
 ---
 

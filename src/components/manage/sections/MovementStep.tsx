@@ -36,6 +36,9 @@ export function MovementStep({ gameId }: Props) {
             // The selected section is already shown by the pills, so the picker
             // omits its own "Section X" heading.
             multiSection={false}
+            // Swiss Pairs is a single-pool movement; only offer it when the
+            // game has exactly one section.
+            singleSection={sections.length === 1}
           />
         )}
       </div>

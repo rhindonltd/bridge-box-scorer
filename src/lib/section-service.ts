@@ -1,5 +1,6 @@
 import { getDirectorToken } from "@/lib/director-token";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
+import { SwissMovementSpec } from "@/model/selected-movement";
 
 /**
  * Director-only section management calls. These go over HTTP (not the socket):
@@ -95,5 +96,23 @@ export async function setSectionMitchellMovement(
   await directorFetch(gameId, `${sectionPath(section)}/movement`, {
     method: "PUT",
     body: { mitchell },
+  });
+}
+
+/**
+ * Set the section's movement to a Swiss Pairs movement, described by its setup
+ * parameters (tables, rounds, boards per round) plus any director-designated
+ * stationary pairs. Persisting the whole `swiss` spec replaces the section's
+ * selection, so callers editing only the stationary pairs must pass the full,
+ * updated spec (there is no partial update).
+ */
+export async function setSectionSwissMovement(
+  gameId: string,
+  section: string,
+  swiss: SwissMovementSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { swiss },
   });
 }

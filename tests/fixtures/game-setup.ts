@@ -154,6 +154,26 @@ export async function pickMovementByName(
 }
 
 /**
+ * Open the Movement tab and set up a Swiss Pairs movement. Swiss is offered
+ * only for a single-section game and is not a recommendation card, so it has
+ * its own option (`swiss-movement-option`) that opens a setup dialog. This taps
+ * it, accepts the dialog's defaults for rounds/boards-per-round, and confirms.
+ */
+export async function pickSwissMovement(page: Page): Promise<void> {
+  await openSetupStep(page, "Movement");
+  const swiss = page.getByTestId("swiss-movement-option");
+  await expect(swiss).toBeVisible({ timeout: 15000 });
+  await swiss.click();
+
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Saving/ }),
+  ).toHaveCount(0, { timeout: 15000 });
+}
+
+/**
  * Start the game from the "Start Game" screen in the Setup menu. Requires a
  * valid movement and full seating; the Start Game button stays disabled until
  * both hold. Starting is director-authorised, so this must run in the

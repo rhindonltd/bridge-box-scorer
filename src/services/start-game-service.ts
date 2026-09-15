@@ -24,6 +24,7 @@ import {
 import {
   materializeSections,
   MaterializableMovement,
+  MaterializableTable,
 } from "@/services/materialize-movement";
 import { generateStandardMitchellWithSitOut } from "@/movement/mitchell/sit-out";
 import {
@@ -54,6 +55,10 @@ function applySitOut(
   rehydrated: RehydratedMovement,
   sitOutSeat: PairSeat,
 ): MaterializableMovement {
+  if (selected.source === "SWISS") {
+    return applySwissRoundOneSitOut(rehydrated.movement, sitOutSeat);
+  }
+
   if (selected.source === "MITCHELL") {
     if (!rehydrated.isStandardMitchell) {
       throw new Error(
@@ -260,6 +265,57 @@ function pairMovementToTables(movement: RehydratedTable[]): {
 
 function rangeInclusive(start: number, end: number): number[] {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
+/**
+ * Apply a round-1 bye to a Swiss positional layout.
+ *
+ * With an odd field one seat is empty; `sitOutSeat` is that empty seat, and the
+ * pair sitting the OTHER direction at the same table is the bye pair (round 1 is
+ * positional, so each table holds exactly its two pairs). That table is emitted
+ * as a sit-out: the bye pair keeps the table with a phantom opponent and its
+ * boards are flagged SIT_OUT (played by no one). Every other table materializes
+ * normally.
+ */
+function applySwissRoundOneSitOut(
+  movement: RehydratedTable[],
+  sitOutSeat: PairSeat,
+): MaterializableMovement {
+  const { tableNumber, direction } = parseSeat(sitOutSeat);
+
+  return movement.map((table): MaterializableTable => {
+    const round = table.rounds[0];
+    const base = {
+      roundNumber: round.roundNumber,
+      boardStart: round.boardStart,
+      boardEnd: round.boardEnd,
+      boardCopy: round.boardCopy,
+    };
+
+    if (table.tableNumber !== tableNumber) {
+      return {
+        tableNumber: table.tableNumber,
+        rounds: [{ ...base, ns: round.ns, ew: round.ew }],
+      };
+    }
+
+    // The bye pair is the one sitting the opposite direction to the empty seat.
+    const byePair = direction === "NS" ? round.ew : round.ns;
+    return {
+      tableNumber: table.tableNumber,
+      rounds: [
+        {
+          ...base,
+          // Keep the bye pair on NS with a phantom opponent, flagged sit-out —
+          // matching the representation the board-history reader expects (the
+          // phantom is not a valid seat, so it is never read as a pair).
+          ns: byePair,
+          ew: "PHANTOM",
+          sitOut: true,
+        },
+      ],
+    };
+  });
 }
 
 /**

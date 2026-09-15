@@ -5,12 +5,17 @@ import { z } from "zod";
  * `games` row as opaque JSON text and only materialized into boards/assignments
  * when the game is started.
  *
- * Two variants:
+ * Three variants:
  * - SPEC: a hard-coded movement from the movements database, keyed by numeric id
  *   plus the boards-per-round chosen for it (the stored spec keeps only board-set
  *   indices, so board numbers are computed at materialize time).
  * - MITCHELL: a generated Mitchell movement, described by its spec so it can be
  *   regenerated at start time.
+ * - SWISS: a Swiss Pairs movement. Unlike the other two, its schedule is NOT
+ *   known up front: only round 1 (a purely positional pairing) is materialized
+ *   at start, and each later round is drawn live by the director from current
+ *   standings. The selection therefore carries only the setup parameters
+ *   (tables, total rounds, boards-per-round); no per-round layout is stored.
  */
 
 export const mitchellSpecSchema = z.object({
@@ -26,6 +31,28 @@ export const mitchellSpecSchema = z.object({
   web: z.boolean().optional(),
 });
 
+/**
+ * Setup parameters for a Swiss Pairs movement. There is no per-round layout:
+ * round 1 is positional and later rounds are drawn from standings, so all a
+ * Swiss selection needs is the table count, the number of rounds to play, and
+ * the boards played per round (which also fixes each round's board range).
+ */
+export const swissSpecSchema = z.object({
+  tables: z.number().int().positive(),
+  rounds: z.number().int().positive(),
+  boardsPerRound: z.number().int().positive(),
+  /**
+   * Stable ids of pairs the director has marked as stationary: they keep their
+   * round-1 table and direction for the whole event, and each round's drawn
+   * opponent comes to them. Pair ids are the Swiss stable numbering — 1..tables
+   * are the pairs that start North/South, tables+1..2*tables the pairs that
+   * start East/West. Optional and defaults to none.
+   */
+  stationaryPairs: z.array(z.number().int().positive()).optional(),
+});
+
+export type SwissMovementSpec = z.infer<typeof swissSpecSchema>;
+
 export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SPEC"),
@@ -38,6 +65,10 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("MITCHELL"),
     mitchell: mitchellSpecSchema,
+  }),
+  z.object({
+    source: z.literal("SWISS"),
+    swiss: swissSpecSchema,
   }),
 ]);
 
@@ -84,6 +115,14 @@ export function selectedMovementsEqual(
       !!x.shareAndRelay === !!y.shareAndRelay &&
       !!x.hesitation === !!y.hesitation &&
       !!x.web === !!y.web
+    );
+  }
+
+  if (a.source === "SWISS" && b.source === "SWISS") {
+    return (
+      a.swiss.tables === b.swiss.tables &&
+      a.swiss.rounds === b.swiss.rounds &&
+      a.swiss.boardsPerRound === b.swiss.boardsPerRound
     );
   }
 

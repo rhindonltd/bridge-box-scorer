@@ -54,5 +54,9 @@ export function useSelectedMovementName(
     return mitchellName(selectedMovement.mitchell);
   }
 
+  if (selectedMovement.source === "SWISS") {
+    return "Swiss Pairs";
+  }
+
   return data?.name ?? null;
 }

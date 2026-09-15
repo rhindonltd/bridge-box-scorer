@@ -14,7 +14,10 @@ import { Pair, Seat } from "@/model/participants";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { StepperInput } from "@/components/common/StepperInput";
 import { useSetupSections } from "@/components/manage/sections/useSetupSections";
-import { updateSectionTables } from "@/lib/section-service";
+import {
+  updateSectionTables,
+  setSectionSwissMovement,
+} from "@/lib/section-service";
 import { evictParticipant } from "@/lib/participant-service";
 import { useMovementResolution } from "@/hooks/stationary-pairs";
 import { useSelectedMovementName } from "@/hooks/selected-movement-name";
@@ -151,6 +154,37 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
     }
   }
 
+  // For a Swiss section, a pair can be marked stationary (stays at its table
+  // and direction for the whole event). Toggling flips the pair's id in the
+  // Swiss selection's stationaryPairs and re-saves the whole spec. Only wired
+  // when the current section's movement is Swiss.
+  const swissSpec =
+    currentSection?.selectedMovement?.source === "SWISS"
+      ? currentSection.selectedMovement.swiss
+      : null;
+
+  async function handleToggleStationary(tableNumber: number, ns: boolean) {
+    if (!currentSection || !swissSpec) return;
+
+    // NS pair at table T is id T; EW pair is id tables + T.
+    const pairId = ns ? tableNumber : swissSpec.tables + tableNumber;
+    const current = new Set(swissSpec.stationaryPairs ?? []);
+    if (current.has(pairId)) {
+      current.delete(pairId);
+    } else {
+      current.add(pairId);
+    }
+
+    try {
+      await setSectionSwissMovement(gameId, currentSection.section, {
+        ...swissSpec,
+        stationaryPairs: Array.from(current).sort((a, b) => a - b),
+      });
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update stationary");
+    }
+  }
+
   return (
     <GamePageLayout headerTitle="Tables" headerRight={menu} hideBack>
       <div className="flex h-full min-h-0 flex-col">
@@ -226,7 +260,13 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
                 </div>
               </div>
               <div className="p-3">
-                <DirectorTableControls tables={tables} onEvict={handleEvict} />
+                <DirectorTableControls
+                  tables={tables}
+                  onEvict={handleEvict}
+                  onToggleStationary={
+                    swissSpec ? handleToggleStationary : undefined
+                  }
+                />
               </div>
             </section>
           )}

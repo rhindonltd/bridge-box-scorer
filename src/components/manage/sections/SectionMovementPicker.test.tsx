@@ -11,6 +11,7 @@ vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
 vi.mock("@/lib/section-service", () => ({
   setSectionMitchellMovement: vi.fn(),
   setSectionMovementSpec: vi.fn(),
+  setSectionSwissMovement: vi.fn(),
 }));
 
 const mockRecommendations = vi.fn();
@@ -40,6 +41,7 @@ vi.mock("@/app/game/[gameId]/create/RecommendedMovementCard", () => ({
 import {
   setSectionMitchellMovement,
   setSectionMovementSpec,
+  setSectionSwissMovement,
 } from "@/lib/section-service";
 import type { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
 import { SectionMovementPicker } from "./SectionMovementPicker";
@@ -463,5 +465,65 @@ describe("SectionMovementPicker", () => {
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("shrink guard"));
     expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it("does not offer Swiss Pairs when the game is not single-section", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker gameId="g1" section="A" tables={6} />,
+    );
+    expect(
+      screen.queryByTestId("swiss-movement-option"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers Swiss Pairs for a single-section game and persists it on confirm", async () => {
+    mockRecommendations.mockReturnValue([]);
+    const onDone = vi.fn();
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        onDone={onDone}
+      />,
+    );
+
+    // The Swiss option appears; clicking it opens the setup dialog.
+    fireEvent.click(screen.getByTestId("swiss-movement-option"));
+    expect(setSectionSwissMovement).not.toHaveBeenCalled();
+
+    // Confirm with the dialog's default rounds/boards; tables comes from the
+    // section (6). Defaults are rounds 7, boards per round 3.
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() =>
+      expect(setSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
+        tables: 6,
+        rounds: 7,
+        boardsPerRound: 3,
+      }),
+    );
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it("marks the Swiss option Selected when the section already has a Swiss movement", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        selectedMovement={{
+          source: "SWISS",
+          swiss: { tables: 6, rounds: 7, boardsPerRound: 3 },
+        }}
+      />,
+    );
+    expect(screen.getByTestId("swiss-movement-option")).toHaveTextContent(
+      "Selected",
+    );
   });
 });

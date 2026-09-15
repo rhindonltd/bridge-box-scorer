@@ -10,12 +10,16 @@ import { getDb } from "@/db/games";
 import { broadcastSectionMovementChanged } from "@/socket/broadcast/section-broadcast";
 import { sectionFromUrl } from "@/lib/api/section-param";
 import { SelectedMovement } from "@/model/selected-movement";
-import { mitchellSpecSchema } from "@/model/selected-movement";
+import {
+  mitchellSpecSchema,
+  swissSpecSchema,
+} from "@/model/selected-movement";
 
 const bodySchema = z.object({
   id: z.number().int().positive().optional(),
   boardsPerRound: z.number().int().positive().optional(),
   mitchell: mitchellSpecSchema.optional(),
+  swiss: swissSpecSchema.optional(),
 });
 
 /**
@@ -34,10 +38,12 @@ export const PUT = withDirectorRoute(async ({ gameId, req }) => {
     );
   }
 
-  const { id, boardsPerRound, mitchell } = parsed.data;
+  const { id, boardsPerRound, mitchell, swiss } = parsed.data;
 
   let selected: SelectedMovement | null;
-  if (mitchell) {
+  if (swiss) {
+    selected = { source: "SWISS", swiss };
+  } else if (mitchell) {
     selected = { source: "MITCHELL", mitchell };
   } else if (id != null) {
     if (boardsPerRound == null) {
