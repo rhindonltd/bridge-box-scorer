@@ -84,6 +84,20 @@ step-by-step instructions.
   - **IMP** — International Match Points.
   - **XIMP** — Cross-IMPs.
   - Teams games use team match / overall scoring.
+- **Victory Points (VP)** — how a **Swiss Pairs** game is ranked overall. Each
+  round is turned into Victory Points on a 20-point scale, and a pair's session
+  result is the sum of its Victory Points across every round, highest total
+  first. How a round earns its points depends on the game's scoring method:
+  - On **IMPs**, each round is a head-to-head match and the margin between the
+    two pairs decides how the 20 points are shared.
+  - On **matchpoints**, each round is scored as a percentage against the whole
+    field, and that percentage sets the pair's Victory Points for the round.
+
+  The Swiss Pairs leaderboard shows each pair with a column per round, so you
+  can see the points won in each one. The round in progress shows a live
+  running estimate — it starts at 10 (an even, average result) and updates as
+  each table's results come in, so treat it as a guide that can still move until
+  the round is complete. Rounds that have not been drawn yet stay blank.
 
 ## Director access
 

@@ -26,6 +26,20 @@ export interface ImpOverallScore {
   imps: number;
 }
 
+/**
+ * Swiss Pairs overall (Victory Points) standing for one pair.
+ *
+ * Each Swiss round is a head-to-head match scored into Victory Points (VP); a
+ * pair's session result is the sum of its per-round VPs, and pairs rank
+ * highest-total-first. `vpByRound` maps a round number to that pair's VP for
+ * the round, present only for rounds the pair has a completed (fully scored)
+ * match in — a missing round renders as an empty cell.
+ */
+export interface SwissVpOverallScore {
+  totalVP: number;
+  vpByRound: Record<number, number>;
+}
+
 export interface TeamMatchLineScore {
   board: number;
   opponent: string;
@@ -55,6 +69,7 @@ interface ScoreByModeAndScoring {
     MP: MatchpointOverallScore;
     XIMP: CrossImpOverallScore;
     IMP: ImpOverallScore;
+    SWISS_VP: SwissVpOverallScore;
   };
   TEAM: {
     MATCH: TeamMatchScore;
@@ -100,6 +115,7 @@ export interface OverallScoreBase<
 export type PairMatchpointOverallScore = OverallScoreBase<"PAIR", "MP">;
 export type PairXIMPOverallScore = OverallScoreBase<"PAIR", "XIMP">;
 export type PairIMPOverallScore = OverallScoreBase<"PAIR", "IMP">;
+export type PairSwissVpOverallScore = OverallScoreBase<"PAIR", "SWISS_VP">;
 export type TeamMatchOverallScore = OverallScoreBase<"TEAM", "MATCH">;
 export type TeamOverallOverallScore = OverallScoreBase<"TEAM", "OVERALL">;
 
@@ -107,6 +123,7 @@ export type OverallScore =
   | PairMatchpointOverallScore
   | PairXIMPOverallScore
   | PairIMPOverallScore
+  | PairSwissVpOverallScore
   | TeamMatchOverallScore
   | TeamOverallOverallScore;
 
