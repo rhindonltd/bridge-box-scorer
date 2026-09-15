@@ -1,54 +1,74 @@
 import "server-only";
 
-import os from "os";
+import crypto from "crypto";
+import fs from "fs";
 import { adminKeyExists, setAdminKey } from "@/db/system/queries/admin-key";
+import { adminKeyDataDir, adminKeyFilePath } from "@/db/system/admin-key-file";
 
 /**
- * Derives the factory-default admin key from the device's primary MAC address.
- *
- * The default is the last 6 hex digits of the MAC (uppercased, no separators),
- * e.g. a MAC of `dc:a6:32:ab:cd:ef` yields `ABCDEF`. This value is printed on a
- * label attached to the device so a new owner can access the admin section.
- *
- * Returns null if no usable MAC address can be found.
+ * Alphabet for generated admin keys. Excludes visually ambiguous characters
+ * (0/O, 1/I/L) so the key printed on the device label can be typed back without
+ * confusion.
  */
-export function deriveDefaultAdminKey(): string | null {
-  const interfaces = os.networkInterfaces();
+const KEY_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name] ?? []) {
-      // Skip loopback / interfaces without a real hardware address.
-      if (iface.internal) continue;
-      if (!iface.mac || iface.mac === "00:00:00:00:00:00") continue;
+/** Number of characters in a generated admin key. */
+const KEY_LENGTH = 8;
 
-      const hex = iface.mac.replace(/[^0-9a-fA-F]/g, "").toUpperCase();
-      if (hex.length >= 6) {
-        return hex.slice(-6);
-      }
-    }
+/**
+ * Generates a random, human-friendly admin key using a CSPRNG. Rejection
+ * sampling keeps the distribution uniform across the alphabet (no modulo bias).
+ *
+ * The key is a device secret — it is not derivable from hardware identifiers
+ * such as a MAC address, so it stays stable regardless of network adapters and
+ * is not guessable by anyone who can observe the appliance's network.
+ */
+export function generateAdminKey(): string {
+  const alphabetLength = KEY_ALPHABET.length;
+  // Largest multiple of alphabetLength that fits in a byte; bytes at or above
+  // this are discarded to avoid modulo bias.
+  const cutoff = 256 - (256 % alphabetLength);
+
+  let key = "";
+  while (key.length < KEY_LENGTH) {
+    const [byte] = crypto.randomBytes(1);
+    if (byte >= cutoff) continue;
+    key += KEY_ALPHABET[byte % alphabetLength];
   }
 
-  return null;
+  return key;
 }
 
 /**
- * Factory seed: sets the admin key from the device MAC address, but only if no
- * admin key has been set yet. Idempotent and safe to run repeatedly — it never
- * overwrites a key the owner has already changed.
+ * Writes the plaintext admin key to the label file under the data directory,
+ * for the provisioning/labelling step to read once. Best-effort: the bcrypt
+ * hash in the system DB remains the source of truth, so a failure to write the
+ * label file must not abort seeding.
+ */
+function writeAdminKeyFile(key: string): void {
+  const dir = adminKeyDataDir();
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  // Owner read/write only — the plaintext key should not be world-readable.
+  fs.writeFileSync(adminKeyFilePath(), `${key}\n`, { mode: 0o600 });
+}
+
+/**
+ * Factory seed: generates a random admin key, but only if no admin key has been
+ * set yet. Idempotent and safe to run repeatedly — it never overwrites a key
+ * the owner has already changed.
  *
- * Returns the plaintext default key when it seeds one (so a caller/label tool
- * can display it), or null if a key already existed or no MAC was found.
+ * On seed it stores the bcrypt hash in the system DB and writes the plaintext
+ * to the label file (see `adminKeyFilePath`). Returns the plaintext key when it
+ * seeds one (so a caller/label tool can display it), or null if a key already
+ * existed.
  */
 export async function seedAdminKey(): Promise<string | null> {
   if (await adminKeyExists()) {
     return null;
   }
 
-  const defaultKey = deriveDefaultAdminKey();
-  if (!defaultKey) {
-    return null;
-  }
-
-  await setAdminKey(defaultKey);
-  return defaultKey;
+  const key = generateAdminKey();
+  await setAdminKey(key);
+  writeAdminKeyFile(key);
+  return key;
 }

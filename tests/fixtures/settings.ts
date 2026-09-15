@@ -1,34 +1,33 @@
-import os from "os";
+import fs from "fs";
+import path from "path";
 import { Page, APIRequestContext } from "@playwright/test";
 
 /**
- * Derive the factory-default admin key from this machine's primary MAC address,
- * mirroring the server's `deriveDefaultAdminKey` (last 6 hex digits of the first
- * non-internal MAC, uppercased). Assumes the app is factory-seeded on the same
- * machine that runs the tests, so the seeded key is derivable here too.
+ * Read the factory-seeded admin key from the plaintext label file the server
+ * writes at first-boot seed time (`seedAdminKey` -> `admin-key.txt`). Mirrors
+ * the server's data-dir resolution (`DATABASE_URL`, falling back to the
+ * appliance path) so the tests locate the same file. Assumes the app is
+ * factory-seeded on the same machine that runs the tests.
+ *
+ * Returns null if the label file does not exist (e.g. the key was seeded before
+ * this file existed, or the owner rotated it), so callers can skip gracefully.
  */
 export function deriveAdminKey(): string | null {
-  const interfaces = os.networkInterfaces();
+  const dataDir = process.env.DATABASE_URL ?? "/home/bridgebox/data";
+  const keyFile = path.join(dataDir, "admin-key.txt");
 
-  for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name] ?? []) {
-      if (iface.internal) continue;
-      if (!iface.mac || iface.mac === "00:00:00:00:00:00") continue;
-
-      const hex = iface.mac.replace(/[^0-9a-fA-F]/g, "").toUpperCase();
-      if (hex.length >= 6) {
-        return hex.slice(-6);
-      }
-    }
+  try {
+    const contents = fs.readFileSync(keyFile, "utf8").trim();
+    return contents.length > 0 ? contents : null;
+  } catch {
+    return null;
   }
-
-  return null;
 }
 
 /**
- * Verify the (MAC-derived) admin key against the server and return the minted
- * admin session token. Throws if the key can't be derived or is rejected — on a
- * factory-seeded local machine it should always succeed.
+ * Read the factory-seeded admin key, verify it against the server, and return
+ * the minted admin session token. Throws if the key can't be read or is
+ * rejected — on a factory-seeded local machine it should always succeed.
  */
 export async function fetchAdminToken(
   request: APIRequestContext,
@@ -36,7 +35,7 @@ export async function fetchAdminToken(
   const key = deriveAdminKey();
   if (!key) {
     throw new Error(
-      "Could not derive an admin key from this machine's MAC address.",
+      "Could not read the admin key label file (admin-key.txt) for this device.",
     );
   }
 
@@ -47,7 +46,7 @@ export async function fetchAdminToken(
   if (!res.ok()) {
     throw new Error(
       `Admin key verification failed (${res.status()}). The device admin key ` +
-        `may have been changed from its MAC-derived default.`,
+        `may have been changed from its factory-seeded default.`,
     );
   }
 

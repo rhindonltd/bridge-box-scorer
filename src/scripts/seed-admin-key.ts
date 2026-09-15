@@ -1,26 +1,18 @@
-import {
-  deriveDefaultAdminKey,
-  seedAdminKey,
-} from "@/db/system/seed-admin-key";
+import { seedAdminKey } from "@/db/system/seed-admin-key";
+import { adminKeyFilePath } from "@/db/system/admin-key-file";
 
 async function main() {
   const seeded = await seedAdminKey();
 
   if (seeded) {
-    console.log("✅ Admin key seeded from device MAC address.");
+    console.log("✅ Admin key generated.");
     console.log(`   Admin key (put this on the device label): ${seeded}`);
+    console.log(`   Also written to: ${adminKeyFilePath()}`);
   } else {
-    const derived = deriveDefaultAdminKey();
-    if (derived) {
-      console.log(
-        "ℹ️  Admin key already set — leaving it unchanged. (Default would " +
-          `have been ${derived}.)`,
-      );
-    } else {
-      console.log(
-        "⚠️  No admin key set and no usable MAC address found to derive one.",
-      );
-    }
+    console.log(
+      "ℹ️  Admin key already set — leaving it unchanged. To rotate it, clear " +
+        "the stored key first, then re-run this script.",
+    );
   }
 
   process.exit(0);
