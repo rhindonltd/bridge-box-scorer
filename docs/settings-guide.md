@@ -33,7 +33,9 @@ This internet connection is separate from the local network the Bridge Box
 creates for players to join — that always stays on, so players can keep entering
 results during a session even if there is no internet at the venue.
 
-1. Open **Settings → WiFi Settings**.
+1. Open **Settings → WiFi Settings**. The Bridge Box looks for nearby networks
+   automatically and fills the list. If you don't see the one you want, tap
+   **Rescan**.
 2. Pick a network from the **Network** dropdown (signal strength is shown next
    to each).
 3. Enter the network **password**.

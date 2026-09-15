@@ -150,20 +150,23 @@ describe("WifiSettingsForm UI", () => {
     expect(onScan).toHaveBeenCalledOnce();
   });
 
-  it("labels the scan button 'Scan for networks' before any scan", () => {
-    render(<WifiSettingsForm networks={[]} />);
+  it("shows a scanning hint during the initial automatic scan", () => {
+    render(<WifiSettingsForm networks={[]} scanning />);
 
-    expect(
-      screen.getByRole("button", { name: /Scan for networks/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("wifi-no-scan-yet")).toBeInTheDocument();
+    expect(screen.getByTestId("wifi-scanning-hint")).toBeInTheDocument();
   });
 
   it("labels the scan button 'Rescan' once a scan has produced results", () => {
     render(<WifiSettingsForm networks={networks} hasScanned />);
 
     expect(screen.getByRole("button", { name: /Rescan/i })).toBeInTheDocument();
-    expect(screen.queryByTestId("wifi-no-scan-yet")).toBeNull();
+    expect(screen.queryByTestId("wifi-scanning-hint")).toBeNull();
+  });
+
+  it("shows an empty state when a completed scan found no networks", () => {
+    render(<WifiSettingsForm networks={[]} hasScanned />);
+
+    expect(screen.getByTestId("wifi-no-networks")).toBeInTheDocument();
   });
 
   it("shows a scanning label and disables the scan button while scanning", () => {

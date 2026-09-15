@@ -17,9 +17,6 @@ vi.mock("@/lib/system/wifi-ctl", async (importActual) => {
   return { ...actual, runWifiCtl };
 });
 
-const { writeScanResult } = vi.hoisted(() => ({ writeScanResult: vi.fn() }));
-vi.mock("@/lib/system/wifi-config", () => ({ writeScanResult }));
-
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { WifiCtlBusyError } from "@/lib/system/wifi-ctl";
 import { POST } from "./route";
@@ -58,19 +55,6 @@ describe("POST /api/system/wifi/scan", () => {
     expect(ssids).toEqual(["HomeNet", "Cafe"]); // own AP filtered out
   });
 
-  it("persists in-progress before the scan, then the final networks", async () => {
-    vi.mocked(runWifiCtl).mockResolvedValue("HomeNet:WPA2:80");
-
-    await POST(req());
-
-    const writes = vi.mocked(writeScanResult).mock.calls.map((c) => c[0]);
-    expect(writes[0]).toMatchObject({ inProgress: true, networks: [] });
-    expect(writes.at(-1)).toMatchObject({
-      inProgress: false,
-      networks: [{ ssid: "HomeNet", signal: 80 }],
-    });
-  });
-
   it("reports a retriable busy result when a provisioning window holds the lock", async () => {
     vi.mocked(runWifiCtl).mockRejectedValue(new WifiCtlBusyError());
 
@@ -79,13 +63,9 @@ describe("POST /api/system/wifi/scan", () => {
 
     expect(body.success).toBe(false);
     expect(body.busy).toBe(true);
-    expect(vi.mocked(writeScanResult).mock.calls.at(-1)?.[0]).toMatchObject({
-      inProgress: false,
-      failed: true,
-    });
   });
 
-  it("persists the failure reason when the helper errors", async () => {
+  it("returns the failure reason when the helper errors", async () => {
     vi.mocked(runWifiCtl).mockRejectedValue(new Error("wifi-ctl scan failed"));
 
     const res = await POST(req());
@@ -93,10 +73,6 @@ describe("POST /api/system/wifi/scan", () => {
 
     expect(body.success).toBe(false);
     expect(body.error).toContain("wifi-ctl scan failed");
-    expect(vi.mocked(writeScanResult).mock.calls.at(-1)?.[0]).toMatchObject({
-      inProgress: false,
-      failed: true,
-    });
   });
 
   it("returns 401 without a valid admin token and never scans", async () => {

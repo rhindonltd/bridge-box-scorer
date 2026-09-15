@@ -21,10 +21,11 @@ import { newParticipant } from "./support";
  *
  * The appliance has a dedicated uplink WiFi adapter separate from the one
  * hosting the players' hotspot, so scanning and testing no longer take the
- * hotspot down — the device stays connected throughout. Scanning is still an
- * explicit, admin-gated action (it is not run automatically). The real scan/
- * test cycles (real association against a live network) need a real `nmcli`/
- * WiFi host and are verified manually — see tests/E2E-COVERAGE-AUDIT.md.
+ * hotspot down — the device stays connected throughout. The screen therefore
+ * scans automatically when it opens and offers a "Rescan" action; the scan is
+ * still admin-gated at the API. The real scan/test cycles (real association
+ * against a live network) need a real `nmcli`/WiFi host and are verified
+ * manually — see tests/E2E-COVERAGE-AUDIT.md.
  */
 
 function hasNmcli(): boolean {
@@ -100,13 +101,13 @@ test.describe("WiFi settings screen (capability-aware)", () => {
         page.getByRole("button", { name: "Test Connection" }),
       ).toBeVisible();
 
-      // Scanning is explicit (never automatic). Before any scan the picker is
-      // empty and offers a "Scan for networks" action; we do not trigger it in
-      // this journey to keep the run deterministic without a live network.
+      // Scanning starts automatically when the screen opens, so the picker
+      // offers a "Rescan" action rather than an initial "Scan for networks"
+      // button. (The scan runs against the live network on a real host; on CI
+      // this device has nmcli but no reachable networks.)
       await expect(
-        page.getByRole("button", { name: "Scan for networks" }),
-      ).toBeVisible();
-      await expect(page.getByTestId("wifi-no-scan-yet")).toBeVisible();
+        page.getByRole("button", { name: /Scanning|Rescan/ }),
+      ).toBeVisible({ timeout: 15000 });
 
       // Save & Apply stays disabled until a successful test of the selected
       // network (test-of-same-SSID gating).

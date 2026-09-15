@@ -13,9 +13,9 @@ export type Props = {
   networks: Network[];
   onTestConnection?: (ssid: string, password: string) => Promise<boolean>; // returns success
   onSaveWifi?: (ssid: string, password: string) => void;
-  /** Trigger a scan for nearby networks. */
+  /** Trigger a rescan for nearby networks. */
   onScan?: () => void;
-  /** Whether a scan has ever produced results (drives the empty state). */
+  /** Whether the first (automatic) scan has completed (drives the empty state). */
   hasScanned?: boolean;
   testing?: boolean;
   loading?: boolean;
@@ -86,16 +86,25 @@ export function WifiSettingsForm({
                 : "text-blue-600 hover:text-blue-700"
             }`}
           >
-            {scanning ? "Scanning…" : hasScanned ? "Rescan" : "Scan for networks"}
+            {scanning ? "Scanning…" : "Rescan"}
           </button>
         </div>
 
-        {!hasScanned && !scanning && (
+        {scanning && !hasScanned && (
           <p
             className="mb-2 text-sm text-gray-600"
-            data-testid="wifi-no-scan-yet"
+            data-testid="wifi-scanning-hint"
           >
-            No networks yet. Tap “Scan for networks” to search.
+            Scanning for networks…
+          </p>
+        )}
+
+        {!scanning && hasScanned && networks.length === 0 && (
+          <p
+            className="mb-2 text-sm text-gray-600"
+            data-testid="wifi-no-networks"
+          >
+            No networks found. Tap “Rescan” to search again.
           </p>
         )}
 

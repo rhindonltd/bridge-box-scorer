@@ -37,11 +37,21 @@ export const Default: Story = {
   },
 };
 
-/** No scan has run yet — the picker is empty and prompts a scan. */
-export const NotYetScanned: Story = {
+/** The automatic first scan is still running — the picker shows a hint. */
+export const Scanning: Story = {
   args: {
     networks: [],
     hasScanned: false,
+    scanning: true,
+    onScan: () => alert("Scanning for networks…"),
+  },
+};
+
+/** A completed scan found no networks — the picker offers a rescan. */
+export const NoNetworksFound: Story = {
+  args: {
+    networks: [],
+    hasScanned: true,
     onScan: () => alert("Scanning for networks…"),
   },
 };
