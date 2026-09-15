@@ -1,101 +1,30 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import os from "os";
-import { deriveDefaultAdminKey } from "./seed-admin-key";
+import { describe, it, expect } from "vitest";
+import { generateAdminKey } from "./seed-admin-key";
 
-describe("deriveDefaultAdminKey", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
+describe("generateAdminKey", () => {
+  const ALLOWED = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]+$/;
+
+  it("produces an 8-character key from the unambiguous alphabet", () => {
+    const key = generateAdminKey();
+    expect(key).toHaveLength(8);
+    expect(key).toMatch(ALLOWED);
   });
 
-  function mockInterfaces(value: ReturnType<typeof os.networkInterfaces>) {
-    vi.spyOn(os, "networkInterfaces").mockReturnValue(value);
-  }
-
-  it("returns the last 6 hex digits of a real MAC, uppercased with no separators", () => {
-    mockInterfaces({
-      eth0: [
-        {
-          address: "192.168.1.5",
-          netmask: "255.255.255.0",
-          family: "IPv4",
-          mac: "dc:a6:32:ab:cd:ef",
-          internal: false,
-          cidr: "192.168.1.5/24",
-        },
-      ],
-    } as any);
-
-    expect(deriveDefaultAdminKey()).toBe("ABCDEF");
+  it("never includes visually ambiguous characters (0, O, 1, I, L)", () => {
+    // Sample many keys so the assertion is meaningful, not a lucky draw.
+    for (let i = 0; i < 1000; i++) {
+      const key = generateAdminKey();
+      expect(key).not.toMatch(/[0O1IL]/);
+    }
   });
 
-  it("skips internal (loopback) interfaces", () => {
-    mockInterfaces({
-      lo: [
-        {
-          address: "127.0.0.1",
-          netmask: "255.0.0.0",
-          family: "IPv4",
-          mac: "00:00:00:00:00:00",
-          internal: true,
-          cidr: "127.0.0.1/8",
-        },
-      ],
-      eth0: [
-        {
-          address: "192.168.1.5",
-          netmask: "255.255.255.0",
-          family: "IPv4",
-          mac: "11:22:33:44:55:66",
-          internal: false,
-          cidr: "192.168.1.5/24",
-        },
-      ],
-    } as any);
-
-    expect(deriveDefaultAdminKey()).toBe("445566");
-  });
-
-  it("skips interfaces with an all-zero MAC", () => {
-    mockInterfaces({
-      eth0: [
-        {
-          address: "192.168.1.5",
-          netmask: "255.255.255.0",
-          family: "IPv4",
-          mac: "00:00:00:00:00:00",
-          internal: false,
-          cidr: "192.168.1.5/24",
-        },
-      ],
-      wlan0: [
-        {
-          address: "192.168.1.6",
-          netmask: "255.255.255.0",
-          family: "IPv4",
-          mac: "aa:bb:cc:dd:ee:ff",
-          internal: false,
-          cidr: "192.168.1.6/24",
-        },
-      ],
-    } as any);
-
-    expect(deriveDefaultAdminKey()).toBe("DDEEFF");
-  });
-
-  it("returns null when no usable MAC address is found", () => {
-    mockInterfaces({
-      lo: [
-        {
-          address: "127.0.0.1",
-          netmask: "255.0.0.0",
-          family: "IPv4",
-          mac: "00:00:00:00:00:00",
-          internal: true,
-          cidr: "127.0.0.1/8",
-        },
-      ],
-    } as any);
-
-    expect(deriveDefaultAdminKey()).toBeNull();
+  it("is random — successive keys differ", () => {
+    const keys = new Set<string>();
+    for (let i = 0; i < 100; i++) {
+      keys.add(generateAdminKey());
+    }
+    // With ~40 bits of entropy, 100 draws colliding would be astronomically
+    // unlikely; allow no more than a single coincidental collision.
+    expect(keys.size).toBeGreaterThanOrEqual(99);
   });
 });

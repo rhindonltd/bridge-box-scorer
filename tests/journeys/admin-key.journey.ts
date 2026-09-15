@@ -6,11 +6,11 @@ import { newParticipant } from "./support";
 /**
  * Admin-key journey: the device settings gate and the admin-key APIs.
  *
- * The factory-default admin key is derived from the host MAC (see
- * `deriveAdminKey`). These tests use the real key to unlock the settings gate,
- * verify the admin-key APIs, and exercise a full key-change cycle — always
- * restoring the ORIGINAL key at the end (guarded), since other settings tests
- * derive it.
+ * The factory-seeded admin key is read from the label file the server writes at
+ * first boot (see `deriveAdminKey`). These tests use the real key to unlock the
+ * settings gate, verify the admin-key APIs, and exercise a full key-change
+ * cycle — always restoring the ORIGINAL key at the end (guarded), since other
+ * settings tests read it.
  */
 
 async function verifyKey(

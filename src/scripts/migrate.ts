@@ -3,6 +3,7 @@ import { runMovementsMigrations } from "@/db/movements/migrate";
 import { runPlayersMigrations } from "@/db/players/migrate";
 import { runSystemMigrations } from "@/db/system/migrate";
 import { seedAdminKey } from "@/db/system/seed-admin-key";
+import { adminKeyFilePath } from "@/db/system/admin-key-file";
 
 async function run() {
   // Migrate every always-open singleton database. The game-index DB holds the
@@ -14,11 +15,12 @@ async function run() {
   await runPlayersMigrations();
   await runSystemMigrations();
 
-  // Factory-seed the admin key from the device MAC on first setup. Idempotent:
-  // it never overwrites a key the owner has already changed.
+  // Factory-seed a random admin key on first setup. Idempotent: it never
+  // overwrites a key the owner has already changed.
   const seeded = await seedAdminKey();
   if (seeded) {
-    console.log(`Admin key seeded from device MAC (label value): ${seeded}`);
+    console.log(`Admin key generated (label value): ${seeded}`);
+    console.log(`Admin key also written to: ${adminKeyFilePath()}`);
   }
 }
 

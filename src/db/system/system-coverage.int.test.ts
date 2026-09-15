@@ -8,8 +8,8 @@ import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 
 /**
  * Fills the system-database coverage gaps left by system.int.test.ts:
- *  - seedAdminKey (seeds when absent, no-ops when a key exists, no-ops when no
- *    MAC is available);
+ *  - seedAdminKey (generates + persists a random key and writes the label file
+ *    when absent, no-ops when a key already exists);
  *  - the "no stored hash -> false" early returns in verifyAdminKey and
  *    verifyDirectorPassword;
  *  - the synchronous getSystemDb helper behind findLoginSession, including its
@@ -28,95 +28,33 @@ describe("system db: coverage gaps", () => {
     harness.teardown();
   });
 
-  const macInterfaces = {
-    eth0: [
-      {
-        address: "192.168.1.5",
-        netmask: "255.255.255.0",
-        family: "IPv4",
-        mac: "dc:a6:32:ab:cd:ef",
-        internal: false,
-        cidr: "192.168.1.5/24",
-      },
-    ],
-  } as unknown as ReturnType<typeof os.networkInterfaces>;
-
-  it("seedAdminKey seeds the MAC-derived default when no key exists", async () => {
-    vi.spyOn(os, "networkInterfaces").mockReturnValue(macInterfaces);
-
+  it("seedAdminKey generates a verifiable key and writes the label file", async () => {
     const { seedAdminKey } = await import("@/db/system/seed-admin-key");
     const { adminKeyExists, verifyAdminKey } = await import(
       "@/db/system/queries/admin-key"
     );
+    const { adminKeyFilePath } = await import("@/db/system/admin-key-file");
 
     expect(await adminKeyExists()).toBe(false);
 
     const seeded = await seedAdminKey();
-    expect(seeded).toBe("ABCDEF");
+    expect(seeded).toMatch(/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/);
 
+    // The stored hash verifies against the returned plaintext.
     expect(await adminKeyExists()).toBe(true);
-    expect(await verifyAdminKey("ABCDEF")).toBe(true);
+    expect(await verifyAdminKey(seeded!)).toBe(true);
+
+    // The plaintext label file holds exactly the same key (trailing newline).
+    const fileContents = fs.readFileSync(adminKeyFilePath(), "utf8");
+    expect(fileContents.trim()).toBe(seeded);
   });
 
   it("seedAdminKey is a no-op when an admin key already exists", async () => {
-    vi.spyOn(os, "networkInterfaces").mockReturnValue(macInterfaces);
-
     const { seedAdminKey } = await import("@/db/system/seed-admin-key");
     const { setAdminKey } = await import("@/db/system/queries/admin-key");
 
     await setAdminKey("existing-key");
     expect(await seedAdminKey()).toBeNull();
-  });
-
-  it("seedAdminKey returns null when no usable MAC address is found", async () => {
-    vi.spyOn(os, "networkInterfaces").mockReturnValue({
-      lo: [
-        {
-          address: "127.0.0.1",
-          netmask: "255.0.0.0",
-          family: "IPv4",
-          mac: "00:00:00:00:00:00",
-          internal: true,
-          cidr: "127.0.0.1/8",
-        },
-      ],
-    } as unknown as ReturnType<typeof os.networkInterfaces>);
-
-    const { seedAdminKey } = await import("@/db/system/seed-admin-key");
-    expect(await seedAdminKey()).toBeNull();
-  });
-
-  it("deriveDefaultAdminKey skips interface names that map to undefined", async () => {
-    // `interfaces[name]` can be undefined; the `?? []` guard must be exercised.
-    vi.spyOn(os, "networkInterfaces").mockReturnValue({
-      empty: undefined,
-    } as unknown as ReturnType<typeof os.networkInterfaces>);
-
-    const { deriveDefaultAdminKey } = await import(
-      "@/db/system/seed-admin-key"
-    );
-    expect(deriveDefaultAdminKey()).toBeNull();
-  });
-
-  it("deriveDefaultAdminKey skips a MAC with fewer than 6 hex digits", async () => {
-    vi.spyOn(os, "networkInterfaces").mockReturnValue({
-      eth0: [
-        {
-          address: "192.168.1.5",
-          netmask: "255.255.255.0",
-          family: "IPv4",
-          // Strips to "AB" (2 hex digits) < 6, so it is skipped.
-          mac: "a:b",
-          internal: false,
-          cidr: "192.168.1.5/24",
-        },
-      ],
-    } as unknown as ReturnType<typeof os.networkInterfaces>);
-
-    const { deriveDefaultAdminKey } = await import(
-      "@/db/system/seed-admin-key"
-    );
-    expect(deriveDefaultAdminKey()).toBeNull();
   });
 
   it("verifyAdminKey returns false when no admin key has been stored", async () => {
