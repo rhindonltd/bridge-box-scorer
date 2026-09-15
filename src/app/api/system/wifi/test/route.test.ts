@@ -13,9 +13,6 @@ vi.mock("@/lib/system/wifi-ctl", async (importActual) => {
   return { ...actual, runWifiCtl };
 });
 
-const { writeTestResult } = vi.hoisted(() => ({ writeTestResult: vi.fn() }));
-vi.mock("@/lib/system/wifi-config", () => ({ writeTestResult }));
-
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { WifiCtlBusyError } from "@/lib/system/wifi-ctl";
 import { runWifiCtl as mockRunWifiCtl } from "@/lib/system/wifi-ctl";
@@ -77,11 +74,6 @@ describe("POST /api/system/wifi/test", () => {
       success: true,
       result: { connected: true, internet: false },
     });
-    expect(vi.mocked(writeTestResult).mock.calls.at(-1)?.[0]).toMatchObject({
-      connected: true,
-      internet: false,
-      inProgress: false,
-    });
   });
 
   it("reports failure when the helper says failed", async () => {
@@ -95,20 +87,6 @@ describe("POST /api/system/wifi/test", () => {
       success: false,
       error: "Failed to connect to the network",
     });
-    expect(vi.mocked(writeTestResult).mock.calls.at(-1)?.[0]).toMatchObject({
-      connected: false,
-      inProgress: false,
-    });
-  });
-
-  it("persists in-progress before the test, then the final result", async () => {
-    vi.mocked(mockRunWifiCtl).mockResolvedValue("TEST_RESULT: ok (x)");
-
-    await POST(req({ ssid: "HomeNet", password: "secret" }));
-
-    const writes = vi.mocked(writeTestResult).mock.calls.map((c) => c[0]);
-    expect(writes[0]).toMatchObject({ inProgress: true, connected: false });
-    expect(writes.at(-1)).toMatchObject({ inProgress: false, connected: true });
   });
 
   it("reports a retriable busy result when a provisioning window holds the lock", async () => {

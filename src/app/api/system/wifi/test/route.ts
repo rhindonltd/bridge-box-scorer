@@ -3,7 +3,6 @@ import { z } from "zod";
 import { withAdminRoute } from "@/lib/api/adminRoute";
 import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
-import { writeTestResult } from "@/lib/system/wifi-config";
 import { runWifiCtl, WifiCtlBusyError } from "@/lib/system/wifi-ctl";
 import { logger } from "@/lib/log";
 
@@ -38,17 +37,13 @@ function parseTestResult(stdout: string): TestOutcome {
  *
  *   wifi-ctl.sh test-connect "<ssid>" "<password>" [yes]
  *
- * The helper adds a throwaway `bridge-box-wifi-test` profile, brings it up to
- * check association, then always tears it down and restores the hotspot — so
- * there is no separate teardown here in the normal path. It prints a
- * `TEST_RESULT:` line we parse for pass/fail.
+ * The helper adds a throwaway `bridge-box-wifi-test` profile on the dedicated
+ * uplink adapter, brings it up to check association, then always tears it down.
+ * Because the test runs on the uplink adapter, the players' hotspot stays up
+ * and the caller stays connected — so the outcome is read straight from this
+ * response. The helper prints a `TEST_RESULT:` line we parse for pass/fail.
  *
- * Because the helper drops the hotspot during the test, the caller is
- * disconnected and this HTTP response usually never reaches them. The outcome
- * is persisted via {@link writeTestResult}; the client reconnects and reads it
- * from `GET /api/system/wifi/test/status`. `inProgress` is written up-front.
- *
- * Response shape (for the rare case the response does reach the caller):
+ * Response shape:
  *   200 { success: true,  result: { connected, internet } }
  *   200 { success: false, error, busy? }
  */
@@ -80,15 +75,6 @@ export const POST = withAdminRoute(async ({ req }) => {
 
   const { ssid, password, hidden } = parsed.data;
 
-  // Mark in-progress BEFORE the helper drops the hotspot so a reconnecting
-  // client can tell "still testing" from "done".
-  writeTestResult({
-    ssid,
-    connected: false,
-    at: new Date().toISOString(),
-    inProgress: true,
-  });
-
   try {
     // `yes` third arg only for a hidden SSID; omit otherwise.
     const args = hidden ? [ssid, password, "yes"] : [ssid, password];
@@ -100,14 +86,6 @@ export const POST = withAdminRoute(async ({ req }) => {
     const connected = outcome === "ok" || outcome === "connected-no-internet";
     const internet = outcome === "ok";
 
-    writeTestResult({
-      ssid,
-      connected,
-      internet,
-      at: new Date().toISOString(),
-      inProgress: false,
-    });
-
     if (connected) {
       return success({ connected, internet });
     }
@@ -118,12 +96,6 @@ export const POST = withAdminRoute(async ({ req }) => {
   } catch (err) {
     if (err instanceof WifiCtlBusyError) {
       // A provisioning window holds the lock; retriable, not a failure.
-      writeTestResult({
-        ssid,
-        connected: false,
-        at: new Date().toISOString(),
-        inProgress: false,
-      });
       return NextResponse.json(
         { success: false, error: err.message, busy: true },
         { status: 200 },
@@ -131,13 +103,6 @@ export const POST = withAdminRoute(async ({ req }) => {
     }
 
     logger.error({ err }, "WiFi test failed");
-
-    writeTestResult({
-      ssid,
-      connected: false,
-      at: new Date().toISOString(),
-      inProgress: false,
-    });
 
     return NextResponse.json(
       { success: false, error: "Failed to connect to the network" },

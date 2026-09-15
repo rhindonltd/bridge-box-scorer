@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Network } from "@/model/network";
 import { getAdminToken, clearAdminToken } from "@/lib/admin-token";
 import { swrKeys } from "@/swr/swr-keys";
@@ -28,10 +28,15 @@ export function useWifiActions() {
   const [message, setMessage] = useState<string | null>(null);
   // Networks from the most recent scan this session (null until a scan runs).
   const [networks, setNetworks] = useState<Network[] | null>(null);
+  // True once a scan has completed at least once (drives the empty state so we
+  // don't flash "no networks" before the automatic first scan finishes).
+  const [hasScanned, setHasScanned] = useState(false);
 
   // Scan for nearby networks. With a dedicated uplink adapter the hotspot stays
-  // up, so we just await the scan response and read the networks from it.
-  const scan = async () => {
+  // up, so we just await the scan response and read the networks from it. Runs
+  // automatically when the screen opens (see the effect below) and again when
+  // the director taps Rescan.
+  const scan = useCallback(async () => {
     setScanning(true);
     setMessage(null);
 
@@ -53,7 +58,7 @@ export function useWifiActions() {
         return;
       }
 
-      const found = (body.networks ?? []) as Network[];
+      const found = (body.result?.networks ?? []) as Network[];
       setNetworks(found);
       if (found.length === 0) {
         setMessage("No networks found. Try scanning again.");
@@ -62,8 +67,18 @@ export function useWifiActions() {
       setMessage("❌ Error scanning for networks");
     } finally {
       setScanning(false);
+      setHasScanned(true);
     }
-  };
+  }, []);
+
+  // Scan automatically when the screen opens. This is safe now that scanning no
+  // longer takes the players' hotspot down, so it needs no confirmation. Deferred
+  // to a microtask so the initial render settles before `scan` flips `scanning`
+  // on (calling setState synchronously inside an effect triggers a cascading
+  // render).
+  useEffect(() => {
+    queueMicrotask(() => void scan());
+  }, [scan]);
 
   // Test whether the box can associate with the given network. With a dedicated
   // uplink adapter the hotspot stays up during the test, so we read the outcome
@@ -157,6 +172,8 @@ export function useWifiActions() {
     message,
     /** This session's fresh scan result (null until a scan has run). */
     networks,
+    /** True once the first (automatic) scan has completed. */
+    hasScanned,
     // actions
     scan,
     test,

@@ -8,39 +8,29 @@ import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import { useWifiActions } from "./useWifiActions";
 
-type ScanResult = {
-  networks: Network[];
-  at: string;
-  inProgress: boolean;
-  failed?: boolean;
-  error?: string;
-} | null;
-
 export default function WifiSettings() {
-  const { loading, testing, scanning, message, networks, scan, test, save } =
-    useWifiActions();
+  const {
+    loading,
+    testing,
+    scanning,
+    message,
+    networks,
+    hasScanned,
+    scan,
+    test,
+    save,
+  } = useWifiActions();
 
   // Capability check: the network endpoint reports whether the device can
   // manage WiFi (has nmcli). This decides whether to show the "can't change
-  // WiFi here" page.
+  // WiFi here" page. The scan itself runs automatically from useWifiActions.
   const { data: net, isLoading: netLoading } = useSWR<{
     wifi: { available: boolean };
   }>(swrKeys.network(), fetcher);
 
-  // Last persisted scan result, so the picker isn't empty when reopening the
-  // screen before running a fresh scan.
-  const { data: lastScan } = useSWR<{ result: ScanResult }>(
-    swrKeys.wifiScanStatus(),
-    fetcher,
+  const displayNetworks: Network[] = [...(networks ?? [])].sort(
+    (a, b) => b.signal - a.signal,
   );
-
-  // Prefer this session's fresh scan; otherwise fall back to the last persisted
-  // scan so the picker isn't empty when reopening the screen.
-  const displayNetworks: Network[] = [
-    ...(networks ?? lastScan?.result?.networks ?? []),
-  ].sort((a, b) => b.signal - a.signal);
-
-  const hasScanned = networks !== null || !!lastScan?.result;
 
   // A device without WiFi management shows the dedicated unavailable page
   // rather than the picker.

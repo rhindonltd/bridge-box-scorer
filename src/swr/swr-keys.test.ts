@@ -44,10 +44,6 @@ describe("swrKeys", () => {
     expect(swrKeys.wifiScan()).toBe("/api/system/wifi/scan");
   });
 
-  it("wifiScanStatus returns static path", () => {
-    expect(swrKeys.wifiScanStatus()).toBe("/api/system/wifi/scan/status");
-  });
-
   it("wifiDiagnostics returns static path", () => {
     expect(swrKeys.wifiDiagnostics()).toBe("/api/system/wifi/diagnostics");
   });
@@ -60,9 +56,5 @@ describe("swrKeys", () => {
     expect(swrKeys.directorValidate("g1")).toBe(
       "/api/games/g1/director/validate",
     );
-  });
-
-  it("wifiTestStatus returns static path", () => {
-    expect(swrKeys.wifiTestStatus()).toBe("/api/system/wifi/test/status");
   });
 });
