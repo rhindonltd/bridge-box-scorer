@@ -2,6 +2,8 @@ import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { TeamMatchLeaderboard } from "@/components/leaderboard/TeamMatchLeaderboard";
 import { TeamOverallLeaderboard } from "@/components/leaderboard/TeamOverallLeaderboard";
 import { OverallLeaderboardView } from "@/components/scoring/OverallLeaderboardView";
+import { ScoreTableView } from "@/components/scoring/ScoreTableView";
+import { buildSwissVpTable } from "@/scoring/swiss/swiss-vp-view";
 import { getOverallPlugin } from "@/scoring/plugins/registry";
 import "@/scoring/plugins/register";
 
@@ -34,6 +36,20 @@ export function Leaderboard({
           teams={overallScoreAndParticipant.participants}
           leaderboard={overallScoreAndParticipant.overallScore}
           highlightAssignmentId={highlightAssignmentId}
+        />
+      );
+    case "PAIR_SWISS_VP":
+      // Swiss Pairs Victory Points is a per-round table rather than a single
+      // aggregate column, so it renders through a dedicated table builder
+      // instead of the plugin registry (which is keyed by MP/IMP/XIMP).
+      return (
+        <ScoreTableView
+          table={buildSwissVpTable(
+            overallScoreAndParticipant.overallScore,
+            overallScoreAndParticipant.participants,
+          )}
+          highlightAssignmentId={highlightAssignmentId}
+          rowTestId="leaderboard-row"
         />
       );
   }

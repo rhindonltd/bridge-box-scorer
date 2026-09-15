@@ -12,6 +12,9 @@ import "@/scoring/plugins/register";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { ScoringType } from "@/db/games/types/scoring-type";
+import { parseSelectedMovement } from "@/model/selected-movement";
+import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
+import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 
 /**
  * A computed leaderboard: the overall score plus the participants it ranks.
@@ -31,6 +34,25 @@ export interface SectionLeaderboard extends LeaderboardResult {
 
 function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
   return { ...p, type: "PAIR" as const, id: p.initialSeat };
+}
+
+/**
+ * How a Swiss Pairs game derives its per-round Victory Points, or null when the
+ * game is not a Swiss VP game (any non-Swiss movement, or a Swiss game whose
+ * scoring method has no VP mapping). "IMP" converts each round's head-to-head
+ * IMP margin; "MP" converts each round's field matchpoint percentage.
+ */
+type SwissVpMode = "IMP" | "MP" | null;
+
+/**
+ * Compute the Swiss VP overall for a set of board rows under the given VP mode.
+ * Returns null when there is no Swiss VP mode, so callers fall back to the
+ * standard board-pooled overall.
+ */
+function scoreSwissVp(boardRows: Board[], mode: SwissVpMode) {
+  if (mode === "IMP") return calculateSwissVpOverall(boardRows);
+  if (mode === "MP") return calculateSwissMpVpOverall(boardRows);
+  return null;
 }
 
 /**
@@ -207,8 +229,11 @@ function computeCombined(
   pairs: Pairs,
   gameId: string,
   scoringType: ScoringType,
+  swissVpMode: SwissVpMode,
 ): LeaderboardResult {
-  const overallScore = scoreBoardsToOverall(boardRows, scoringType, gameId);
+  const overallScore =
+    scoreSwissVp(boardRows, swissVpMode) ??
+    scoreBoardsToOverall(boardRows, scoringType, gameId);
   return {
     type: overallScore.type,
     overallScore,
@@ -225,6 +250,7 @@ function computeSections(
   boardRows: Board[],
   pairs: Pairs,
   scoringType: ScoringType,
+  swissVpMode: SwissVpMode,
 ): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
   for (const row of boardRows) {
@@ -246,11 +272,10 @@ function computeSections(
   ).sort();
 
   return sections.map((section) => {
-    const overallScore = scoreBoardsToOverall(
-      rowsBySection.get(section) ?? [],
-      scoringType,
-      section,
-    );
+    const sectionRows = rowsBySection.get(section) ?? [];
+    const overallScore =
+      scoreSwissVp(sectionRows, swissVpMode) ??
+      scoreBoardsToOverall(sectionRows, scoringType, section);
     return {
       section,
       type: overallScore.type,
@@ -264,13 +289,30 @@ function computeSections(
 async function readLeaderboardInputs(
   db: Db,
   gameId: string,
-): Promise<{ scoringType: ScoringType; boardRows: Board[]; pairs: Pairs }> {
+): Promise<{
+  scoringType: ScoringType;
+  swissVpMode: SwissVpMode;
+  boardRows: Board[];
+  pairs: Pairs;
+}> {
   const game = await findGameById(gameId);
   const [boardRows, pairs] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
     findPairs(db),
   ]);
-  return { scoringType: game!.scoringType, boardRows, pairs };
+
+  // Swiss Pairs events rank overall on Victory Points, summed per round. The
+  // per-round VP source depends on the scoring method: IMP games convert each
+  // round's head-to-head IMP margin, MP games convert each round's field
+  // matchpoint percentage. Any other movement keeps the board-pooled overall.
+  const movement = parseSelectedMovement(game?.selectedMovement);
+  const swissVpMode: SwissVpMode =
+    movement?.source === "SWISS" &&
+    (game?.scoringType === "IMP" || game?.scoringType === "MP")
+      ? game.scoringType
+      : null;
+
+  return { scoringType: game!.scoringType, swissVpMode, boardRows, pairs };
 }
 
 /**
@@ -284,13 +326,17 @@ export async function buildLeaderboards(
   db: Db,
   gameId: string,
 ): Promise<{ leaderboard: LeaderboardResult; sections: SectionLeaderboard[] }> {
-  const { scoringType, boardRows, pairs } = await readLeaderboardInputs(
-    db,
-    gameId,
-  );
+  const { scoringType, swissVpMode, boardRows, pairs } =
+    await readLeaderboardInputs(db, gameId);
   return {
-    leaderboard: computeCombined(boardRows, pairs, gameId, scoringType),
-    sections: computeSections(boardRows, pairs, scoringType),
+    leaderboard: computeCombined(
+      boardRows,
+      pairs,
+      gameId,
+      scoringType,
+      swissVpMode,
+    ),
+    sections: computeSections(boardRows, pairs, scoringType, swissVpMode),
   };
 }
 
@@ -304,11 +350,9 @@ export async function computeLeaderboard(
   db: Db,
   gameId: string,
 ): Promise<LeaderboardResult> {
-  const { scoringType, boardRows, pairs } = await readLeaderboardInputs(
-    db,
-    gameId,
-  );
-  return computeCombined(boardRows, pairs, gameId, scoringType);
+  const { scoringType, swissVpMode, boardRows, pairs } =
+    await readLeaderboardInputs(db, gameId);
+  return computeCombined(boardRows, pairs, gameId, scoringType, swissVpMode);
 }
 
 /**
@@ -321,9 +365,7 @@ export async function computeSectionLeaderboards(
   db: Db,
   gameId: string,
 ): Promise<SectionLeaderboard[]> {
-  const { scoringType, boardRows, pairs } = await readLeaderboardInputs(
-    db,
-    gameId,
-  );
-  return computeSections(boardRows, pairs, scoringType);
+  const { scoringType, swissVpMode, boardRows, pairs } =
+    await readLeaderboardInputs(db, gameId);
+  return computeSections(boardRows, pairs, scoringType, swissVpMode);
 }
