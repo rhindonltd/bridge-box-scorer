@@ -11,6 +11,8 @@ import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { MovementByTable } from "@/movement/movementData";
 import { useSections } from "@/hooks/sections";
+import { useResultsComplete } from "@/hooks/results-complete";
+import { SwissDrawControl } from "./SwissDrawControl";
 
 interface ManageMovementPageProps {
   backHref: string;
@@ -26,6 +28,7 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
 
   const { sections } = useSections(game.gameId);
   const multiSection = sections.length > 1;
+  const { allResultsIn } = useResultsComplete(game.gameId);
 
   // Which section's movement is shown. Defaults to the first section (A) once
   // the section list loads. A single-section game never surfaces a selector.
@@ -57,6 +60,20 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
       socket.off(SocketEvents.BOARD_RESULT_UPDATED, onBoardResultUpdated);
     };
   }, [mutate]);
+
+  // The active section's movement, used to show the Swiss "Draw Next Round"
+  // control only for a Swiss section.
+  const activeSelected = sections.find(
+    (s) => s.section === activeSection,
+  )?.selectedMovement;
+  const swissControl =
+    activeSection && activeSelected?.source === "SWISS" ? (
+      <SwissDrawControl
+        gameId={game.gameId}
+        section={activeSection}
+        allResultsIn={allResultsIn}
+      />
+    ) : null;
 
   const selector = multiSection ? (
     <div className="flex flex-wrap gap-2 px-4 py-3 bg-gray-50 border-b shrink-0">
@@ -96,6 +113,7 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
   return (
     <PageLayout headerTitle="Movement Details" backHref={backHref}>
       {selector}
+      {swissControl}
       <MovementDetailView tables={data.tables} />
     </PageLayout>
   );

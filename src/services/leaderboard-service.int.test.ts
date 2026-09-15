@@ -145,4 +145,68 @@ describe("section-aware leaderboard (real scoring)", () => {
     // Per-section A ranks only its own 2 pairs.
     expect(a.overallScore.lines.length).toBe(2);
   });
+
+  it("credits a Swiss sit-out pair 60% of the board top under matchpoints", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { computeSectionLeaderboards } = await import("./leaderboard-service");
+
+    // Section A: three pairs. Two tables play board 1 (giving a matchpoint top
+    // of 2, i.e. 2*(2-1) with two results), and a third pair sits out board 1.
+    await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+    await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
+
+    db.insert(boards)
+      .values([
+        // Two real results on board 1 -> matchpoint top = 2.
+        {
+          section: "A",
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 1,
+          ns: "A1NS",
+          ew: "A1EW",
+          confirmedResult: "3NTN+1" as BoardOutcome,
+          status: "CONFIRMED" as const,
+        },
+        {
+          section: "A",
+          roundNumber: 1,
+          tableNumber: 2,
+          boardNumber: 1,
+          ns: "A2NS",
+          ew: "A2EW",
+          confirmedResult: "3NTN=" as BoardOutcome,
+          status: "CONFIRMED" as const,
+        },
+        // Pair A3NS sits out board 1 (phantom opponent, SIT_OUT).
+        {
+          section: "A",
+          roundNumber: 1,
+          tableNumber: 3,
+          boardNumber: 1,
+          ns: "A3NS",
+          ew: "PHANTOM",
+          status: "SIT_OUT" as const,
+        },
+      ])
+      .run();
+
+    const perSection = await computeSectionLeaderboards(db, gameId);
+    const a = perSection.find((s) => s.section === "A")!;
+    const lines = a.overallScore.lines as {
+      pairId: string;
+      totalMP: number;
+      maxMP: number;
+    }[];
+
+    const sitOut = lines.find((l) => l.pairId === "A3NS");
+    expect(sitOut).toBeDefined();
+    // Board top is 2, so the bye pair is credited 60% => 1.2 of a max of 2.
+    expect(sitOut!.maxMP).toBeCloseTo(2, 5);
+    expect(sitOut!.totalMP).toBeCloseTo(1.2, 5);
+    // 60% is above the 50% average, so the sit-out pair is protected.
+    expect(sitOut!.totalMP / sitOut!.maxMP).toBeCloseTo(0.6, 5);
+  });
 });

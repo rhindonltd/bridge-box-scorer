@@ -3,6 +3,7 @@ import http from "http";
 import { registerGameHandlers } from "@/socket/handlers/game/game.handlers";
 import { registerTimerHandlers } from "./handlers/timer/timer.handlers";
 import { registerResultsHandlers } from "./handlers/results/results.handlers";
+import { registerSwissHandlers } from "./handlers/swiss/swiss.handlers";
 import { logger } from "@/lib/log";
 
 // The Socket.IO server is stored on `globalThis`, NOT a module-level variable.
@@ -58,6 +59,7 @@ export function startSocketServer(server: http.Server) {
     registerGameHandlers(socket, requireIO());
     registerTimerHandlers(socket, requireIO());
     registerResultsHandlers(socket, requireIO());
+    registerSwissHandlers(socket, requireIO());
   });
 
   return io;

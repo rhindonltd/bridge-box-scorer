@@ -97,4 +97,12 @@ export const SocketEvents = {
   LEAVE_TRAVELLER: "traveller:leave",
   // Client-initiated (director): override a board result.
   OVERRIDE_RESULT_TRAVELLER: "traveller:overrideResult",
+
+  // Client-initiated (director): draw the next Swiss Pairs round from the
+  // current standings. Only valid once the current round is fully scored and
+  // the event has rounds remaining. Materializes the next round's boards and
+  // broadcasts the resulting live updates; the acknowledgement carries the
+  // drawn round number plus advisories (unavoidable repeat, stationary
+  // conflict, sit-out pair) for the director.
+  DRAW_NEXT_SWISS_ROUND: "swiss:drawNextRound",
 } as const;

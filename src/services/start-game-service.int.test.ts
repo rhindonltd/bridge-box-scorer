@@ -60,6 +60,11 @@ const mitchell = (tables: number) => ({
   mitchell: { tables, rounds: tables, boardsPerRound: 3 },
 });
 
+const swiss = (tables: number, rounds = 5, boardsPerRound = 3) => ({
+  source: "SWISS" as const,
+  swiss: { tables, rounds, boardsPerRound },
+});
+
 /** Mock a games Db whose boards table is empty (not yet started). */
 function mockEmptyDb() {
   return {
@@ -225,5 +230,66 @@ describe("startGame (multi-section)", () => {
 
     expect(result.canStart).toBe(false);
     expect(materializeSections).not.toHaveBeenCalled();
+  });
+});
+
+describe("startGame (Swiss)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("materializes only round 1 as a positional layout", async () => {
+    vi.mocked(getDb).mockResolvedValue(mockEmptyDb() as any);
+    // 2 Swiss tables => 4 pairs seated positionally (A1NS/A1EW/A2NS/A2EW).
+    vi.mocked(findSections).mockResolvedValue([section("A", 2)] as any);
+    vi.mocked(getSectionMovement).mockResolvedValue(swiss(2, 5, 3));
+    vi.mocked(findPairs).mockResolvedValue(seatedPairs(2, "A") as any);
+
+    const result = await startGame("g1");
+
+    expect(result.canStart).toBe(true);
+    expect(materializeSections).toHaveBeenCalledTimes(1);
+
+    const [, sections] = vi.mocked(materializeSections).mock.calls[0];
+    const movement = sections[0].movement;
+
+    // Only round 1 is materialized (no later rounds), across both tables.
+    expect(movement).toHaveLength(2);
+    for (const table of movement) {
+      expect(table.rounds).toHaveLength(1);
+      expect(table.rounds[0].roundNumber).toBe(1);
+      // Round 1 boards are 1..boardsPerRound.
+      expect(table.rounds[0].boardStart).toBe(1);
+      expect(table.rounds[0].boardEnd).toBe(3);
+    }
+
+    // Positional pairing: table T seats its own NS/EW pairs, whose stable ids
+    // are their round-1 home seats ("1NS" / "1EW", section-qualified later).
+    const t1 = movement.find((m) => m.tableNumber === 1)!.rounds[0];
+    expect(t1.ns).toBe("1NS");
+    expect(t1.ew).toBe("1EW");
+  });
+
+  it("applies a round-1 bye when the field is odd", async () => {
+    vi.mocked(getDb).mockResolvedValue(mockEmptyDb() as any);
+    // 2 tables but one seat empty (A2EW) => 3 pairs => a bye.
+    vi.mocked(findSections).mockResolvedValue([section("A", 2)] as any);
+    vi.mocked(getSectionMovement).mockResolvedValue(swiss(2, 5, 3));
+    vi.mocked(findPairs).mockResolvedValue(
+      seatedPairs(2, "A", ["A2EW"]) as any,
+    );
+
+    const result = await startGame("g1");
+
+    expect(result.canStart).toBe(true);
+
+    const [, sections] = vi.mocked(materializeSections).mock.calls[0];
+    const movement = sections[0].movement;
+
+    // The table with the empty EW seat becomes a sit-out; its occupied pair
+    // (the NS pair at that table, home seat "2NS") byes with a phantom opponent.
+    const sitOutTable = movement.find((m) => m.rounds[0].sitOut)!;
+    expect(sitOutTable.rounds[0].ns).toBe("2NS");
+    expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
   });
 });

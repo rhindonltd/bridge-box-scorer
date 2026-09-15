@@ -29,6 +29,9 @@ function movementSummary(section: ClientSection): string {
   if (m.source === "MITCHELL") {
     return `Mitchell — ${m.mitchell.tables} tables, ${m.mitchell.rounds} rounds`;
   }
+  if (m.source === "SWISS") {
+    return `Swiss Pairs — ${m.swiss.tables} tables, ${m.swiss.rounds} rounds`;
+  }
   return "Movement selected";
 }
 

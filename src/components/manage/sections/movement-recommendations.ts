@@ -29,6 +29,9 @@ export function movementMatchesSelection(
     return specRef.source === "db" && specRef.id === selected.specId;
   }
 
+  // Swiss is not a recommendation-card movement, so it never matches one.
+  if (selected.source !== "MITCHELL") return false;
+
   if (specRef.source !== "generated") return false;
 
   const a = specRef.spec;

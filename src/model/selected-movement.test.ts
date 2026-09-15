@@ -52,6 +52,17 @@ describe("SelectedMovement round-trip", () => {
 
     expect(parsed).toEqual(selected);
   });
+
+  it("round-trips a SWISS selection", () => {
+    const selected: SelectedMovement = {
+      source: "SWISS",
+      swiss: { tables: 6, rounds: 8, boardsPerRound: 3 },
+    };
+
+    const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
+
+    expect(parsed).toEqual(selected);
+  });
 });
 
 describe("parseSelectedMovement", () => {
@@ -133,5 +144,26 @@ describe("selectedMovementsEqual", () => {
     expect(selectedMovementsEqual(mitchell(), mitchell({ skip: true }))).toBe(
       false,
     );
+  });
+
+  const swiss = (
+    over: Partial<{ tables: number; rounds: number; boardsPerRound: number }> = {},
+  ): SelectedMovement => ({
+    source: "SWISS",
+    swiss: { tables: 6, rounds: 8, boardsPerRound: 3, ...over },
+  });
+
+  it("compares SWISS selections by their defining fields", () => {
+    expect(selectedMovementsEqual(swiss(), swiss())).toBe(true);
+    expect(selectedMovementsEqual(swiss(), swiss({ rounds: 9 }))).toBe(false);
+    expect(selectedMovementsEqual(swiss(), swiss({ tables: 7 }))).toBe(false);
+    expect(
+      selectedMovementsEqual(swiss(), swiss({ boardsPerRound: 2 })),
+    ).toBe(false);
+  });
+
+  it("treats SWISS as different from other sources", () => {
+    expect(selectedMovementsEqual(swiss(), mitchell())).toBe(false);
+    expect(selectedMovementsEqual(swiss(), spec(1))).toBe(false);
   });
 });

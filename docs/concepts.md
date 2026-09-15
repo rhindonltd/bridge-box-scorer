@@ -42,9 +42,21 @@ step-by-step instructions.
   which effectively sets the **session length**.
 - **Round** — one segment of play; a pair plays a fixed set of boards, then
   moves.
+- **Swiss Pairs** — a movement where the schedule isn't fixed in advance.
+  Everyone plays the same boards each round; then, based on the current
+  standings, the director draws the next round so close-ranked pairs meet, and
+  no two pairs play each other twice where it can be avoided. Only the first
+  round is set at the start — the director draws each later round once the
+  current one is fully scored. Swiss Pairs runs as a single group of tables
+  (one section).
+- **Stationary pair** — a pair that stays at the same table and direction for
+  the whole event, with their opponents coming to them. In Swiss Pairs the
+  director can mark pairs as stationary on the Tables step.
 - **Sit-out** — with some table counts a pair has no opponents in a round and
   sits it out. The app shows a sit-out screen and directs the pair where to go
-  next.
+  next. In Swiss Pairs, an odd number of pairs means one pair sits out (a
+  **bye**) each round; no pair is given more than one bye, and a pair on a bye
+  is credited an above-average score so the break doesn't hurt their standing.
 
 ## Results
 

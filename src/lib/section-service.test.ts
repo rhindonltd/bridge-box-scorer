@@ -11,6 +11,7 @@ import {
   updateSectionTables,
   setSectionMovementSpec,
   setSectionMitchellMovement,
+  setSectionSwissMovement,
 } from "./section-service";
 
 const okResponse = { ok: true, json: async () => ({ success: true, result: {} }) };
@@ -79,6 +80,20 @@ describe("section-service (HTTP)", () => {
     await setSectionMitchellMovement("g1", "A", mitchell);
     const { body } = lastCall();
     expect(body).toEqual({ mitchell });
+  });
+
+  it("setSectionSwissMovement PUTs /sections/[section]/movement with the swiss spec", async () => {
+    const swiss = {
+      tables: 6,
+      rounds: 8,
+      boardsPerRound: 3,
+      stationaryPairs: [1, 9],
+    };
+    await setSectionSwissMovement("g1", "A", swiss);
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/movement");
+    expect(init.method).toBe("PUT");
+    expect(body).toEqual({ swiss });
   });
 
   it("throws the server error message on a non-ok response", async () => {
