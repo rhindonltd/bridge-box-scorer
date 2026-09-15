@@ -13,7 +13,7 @@ export type Props = {
   networks: Network[];
   onTestConnection?: (ssid: string, password: string) => Promise<boolean>; // returns success
   onSaveWifi?: (ssid: string, password: string) => void;
-  /** Trigger a (disruptive) scan for nearby networks. */
+  /** Trigger a scan for nearby networks. */
   onScan?: () => void;
   /** Whether a scan has ever produced results (drives the empty state). */
   hasScanned?: boolean;
@@ -73,17 +73,6 @@ export function WifiSettingsForm({
   return (
     <PageLayout headerTitle="Wifi Settings">
       <>
-        {/* Both scanning and testing briefly interrupt the box's own WiFi on a
-            single-radio appliance, so warn the director up front. */}
-        <p
-          className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800"
-          data-testid="wifi-interruption-warning"
-        >
-          Scanning for and testing WiFi networks briefly interrupts the Bridge
-          Box&apos;s own WiFi. Connected devices may drop for a few seconds and
-          will reconnect automatically.
-        </p>
-
         <div className="mb-1 flex items-center justify-between">
           <label className="block text-sm font-medium">Network</label>
           <button
@@ -106,8 +95,7 @@ export function WifiSettingsForm({
             className="mb-2 text-sm text-gray-600"
             data-testid="wifi-no-scan-yet"
           >
-            No networks yet. Tap “Scan for networks” to search. Scanning briefly
-            interrupts the Bridge Box&apos;s WiFi.
+            No networks yet. Tap “Scan for networks” to search.
           </p>
         )}
 

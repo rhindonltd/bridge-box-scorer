@@ -3,24 +3,19 @@
 import { useState } from "react";
 import { Network } from "@/model/network";
 import { getAdminToken, clearAdminToken } from "@/lib/admin-token";
-import { waitForApReachable } from "@/lib/wifi-recovery";
 import { swrKeys } from "@/swr/swr-keys";
-
-type ScanResult = {
-  networks: Network[];
-  at: string;
-  inProgress: boolean;
-  failed?: boolean;
-  error?: string;
-} | null;
 
 /**
  * Owns the WiFi settings page's in-flight state (scanning / testing / saving /
  * status message and the fresh scan result) plus the three async orchestration
- * handlers. Each handler follows the same appliance-specific dance: fire a
- * disruptive request that drops this device's connection, wait for the box's AP
- * to come back (`waitForApReachable`), then read the persisted result — since
- * the original HTTP response never reaches us once the hotspot goes down.
+ * handlers.
+ *
+ * The appliance now has a dedicated uplink WiFi adapter separate from the one
+ * hosting the players' access point, so scanning and testing no longer take the
+ * hotspot down. That means the client stays connected throughout and reads each
+ * outcome directly from the request's own HTTP response — no "fire, wait for the
+ * AP to return, then re-read a persisted result" dance is needed. Only Save
+ * still reboots the box (and drops this device), so it keeps the hard reload.
  *
  * Extracted from the page component so the page is left as SWR reads +
  * presentation over this hook's returned state/actions.
@@ -34,40 +29,33 @@ export function useWifiActions() {
   // Networks from the most recent scan this session (null until a scan runs).
   const [networks, setNetworks] = useState<Network[] | null>(null);
 
-  // Kick off a disruptive scan: bring the AP down, scan, bring it back — which
-  // drops THIS device. Fire the request, wait for the box to return, then read
-  // persisted results.
+  // Scan for nearby networks. With a dedicated uplink adapter the hotspot stays
+  // up, so we just await the scan response and read the networks from it.
   const scan = async () => {
     setScanning(true);
     setMessage(null);
 
     try {
-      void fetch(swrKeys.wifiScan(), {
+      const res = await fetch(swrKeys.wifiScan(), {
         method: "POST",
         headers: { "x-admin-token": getAdminToken() ?? "" },
-      }).catch(() => {
-        // Expected: the connection drops while the AP is down.
       });
-
-      await waitForApReachable();
-
-      const res = await fetch(swrKeys.wifiScanStatus(), { cache: "no-store" });
       const body = await res.json();
-      const result = body?.result?.result as ScanResult;
 
-      if (result?.failed) {
+      if (!body?.success) {
         // Surface the real reason (e.g. an nmcli permission error) to aid
         // diagnosis, falling back to a generic message.
         setMessage(
-          result.error
-            ? `❌ Scan failed: ${result.error}`
+          body?.error
+            ? `❌ Scan failed: ${body.error}`
             : "❌ Scan failed. Please try again.",
         );
         return;
       }
 
-      setNetworks(result?.networks ?? []);
-      if ((result?.networks ?? []).length === 0) {
+      const found = (body.networks ?? []) as Network[];
+      setNetworks(found);
+      if (found.length === 0) {
         setMessage("No networks found. Try scanning again.");
       }
     } catch {
@@ -77,51 +65,32 @@ export function useWifiActions() {
     }
   };
 
-  // Testing brings up a client connection, which on a single-radio appliance
-  // drops the hosted hotspot — so THIS device never sees the test's HTTP
-  // response. Fire the test, wait for the box's WiFi to return, then read the
-  // persisted test outcome.
+  // Test whether the box can associate with the given network. With a dedicated
+  // uplink adapter the hotspot stays up during the test, so we read the outcome
+  // straight from the test response.
   const test = async (ssid: string, password: string): Promise<boolean> => {
     setTesting(true);
     setTestingSSID(ssid);
     setMessage(null);
 
     try {
-      void fetch("/api/system/wifi/test", {
+      const res = await fetch("/api/system/wifi/test", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-admin-token": getAdminToken() ?? "",
         },
         body: JSON.stringify({ ssid, password }),
-      }).catch(() => {
-        // Expected: the connection drops while the AP is down.
       });
-
-      await waitForApReachable();
-
-      const res = await fetch(swrKeys.wifiTestStatus(), { cache: "no-store" });
       const body = await res.json();
-      const result = body?.result?.result as
-        | {
-            ssid: string;
-            connected: boolean;
-            internet?: boolean;
-            inProgress: boolean;
-          }
-        | null;
 
-      const connected =
-        !!result &&
-        result.ssid === ssid &&
-        result.connected &&
-        !result.inProgress;
+      const connected = !!body?.success && !!body?.result?.connected;
 
       if (connected) {
         // Associated (credentials valid) — Save is allowed. Distinguish a full
         // connection from one with no route out to the internet.
         setMessage(
-          result?.internet === false
+          body?.result?.internet === false
             ? "✅ Connected (no internet access detected)"
             : "✅ Connection successful",
         );

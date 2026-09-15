@@ -142,11 +142,6 @@ describe("WifiSettingsForm UI", () => {
     expect(screen.getByText("Applying changes")).toBeInTheDocument();
   });
 
-  it("always shows the WiFi-interruption warning", () => {
-    render(<WifiSettingsForm networks={networks} />);
-    expect(screen.getByTestId("wifi-interruption-warning")).toBeInTheDocument();
-  });
-
   it("calls onScan when the scan button is clicked", async () => {
     const onScan = vi.fn();
     render(<WifiSettingsForm networks={networks} onScan={onScan} hasScanned />);
