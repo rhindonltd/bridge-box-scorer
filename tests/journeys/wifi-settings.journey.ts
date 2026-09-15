@@ -19,13 +19,12 @@ import { newParticipant } from "./support";
  * on both. WiFi settings are behind the admin-key gate; `unlockSettings` seeds
  * a valid admin token first.
  *
- * On the appliance the single WiFi radio hosts the hotspot, so both scanning
- * and testing take that hotspot down momentarily (the radio can't scan or
- * associate while hosting the AP). Scanning is therefore an explicit,
- * admin-gated action that disconnects and reconnects the device; the picker
- * carries a persistent interruption warning. The disruptive scan/test cycles
- * (real AP-down/scan/AP-up, real association) need a real `nmcli`/WiFi host and
- * are verified manually — see tests/E2E-COVERAGE-AUDIT.md.
+ * The appliance has a dedicated uplink WiFi adapter separate from the one
+ * hosting the players' hotspot, so scanning and testing no longer take the
+ * hotspot down — the device stays connected throughout. Scanning is still an
+ * explicit, admin-gated action (it is not run automatically). The real scan/
+ * test cycles (real association against a live network) need a real `nmcli`/
+ * WiFi host and are verified manually — see tests/E2E-COVERAGE-AUDIT.md.
  */
 
 function hasNmcli(): boolean {
@@ -101,15 +100,9 @@ test.describe("WiFi settings screen (capability-aware)", () => {
         page.getByRole("button", { name: "Test Connection" }),
       ).toBeVisible();
 
-      // The screen warns that scanning/testing briefly interrupt the box's own
-      // WiFi (both take the single radio off the hosted AP momentarily).
-      await expect(
-        page.getByTestId("wifi-interruption-warning"),
-      ).toBeVisible();
-
       // Scanning is explicit (never automatic). Before any scan the picker is
       // empty and offers a "Scan for networks" action; we do not trigger it in
-      // this journey because it would disconnect the test browser.
+      // this journey to keep the run deterministic without a live network.
       await expect(
         page.getByRole("button", { name: "Scan for networks" }),
       ).toBeVisible();
