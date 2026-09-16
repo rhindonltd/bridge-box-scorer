@@ -11,11 +11,11 @@ import { swrKeys } from "@/swr/swr-keys";
  * handlers.
  *
  * The appliance now has a dedicated uplink WiFi adapter separate from the one
- * hosting the players' access point, so scanning and testing no longer take the
- * hotspot down. That means the client stays connected throughout and reads each
+ * hosting the players' access point, so scanning, testing and saving no longer
+ * take the hotspot down. The client stays connected throughout and reads each
  * outcome directly from the request's own HTTP response — no "fire, wait for the
- * AP to return, then re-read a persisted result" dance is needed. Only Save
- * still reboots the box (and drops this device), so it keeps the hard reload.
+ * AP to return, then re-read a persisted result" dance is needed. Save persists
+ * the chosen network and confirms in place; it does not reboot the box.
  *
  * Extracted from the page component so the page is left as SWR reads +
  * presentation over this hook's returned state/actions.
@@ -152,14 +152,10 @@ export function useWifiActions() {
         return;
       }
 
-      await fetch("/api/system/reboot", {
-        method: "POST",
-        headers: { "x-admin-token": adminToken },
-      });
-      // Full-page navigation is intentional: the device is rebooting its WiFi,
-      // so we want a hard reload rather than an SPA transition here.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-      window.location.href = "/restarting";
+      // The network was already verified by the test, and the save persists the
+      // chosen config. No reboot is needed — the box applies it without
+      // restarting — so we stay on the page and confirm success in place.
+      setMessage("✅ WiFi settings saved");
     } catch {
       setMessage("Failed to save WiFi");
     } finally {
