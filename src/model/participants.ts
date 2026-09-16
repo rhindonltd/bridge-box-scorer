@@ -72,6 +72,18 @@ export function seatFor(
   return `${section}${tableNumber}${direction}` as PairSeat;
 }
 
+/**
+ * The stable id of the TEAM whose home table a seat belongs to: the seat's
+ * section + table number, with the NS/EW direction dropped (e.g. "A1NS" and
+ * "A1EW" both map to "A1"). A team is the two pairs at one home table, so both
+ * of its pair seats resolve to the same team id. This is the key used by the
+ * `teams` table (which stores the optional team name).
+ */
+export function deriveTeamId(seat: Seat): string {
+  const { section, tableNumber } = parseSeat(seat);
+  return `${section}${tableNumber}`;
+}
+
 /* ---------- participants ---------- */
 
 export type NewPair = {
@@ -116,7 +128,15 @@ export type Assignment = TeamAssignment | PairAssignment;
 
 export type AssignedPair = Pair & PairAssignment;
 
-export type AssignedTeam = Team & TeamAssignment;
+export type AssignedTeam = Team &
+  TeamAssignment & {
+    /**
+     * The team's display name. Either the name entered by the home (NS) pair or,
+     * when none was entered, the North player's surname (resolved at read time
+     * in `findTeams`, so a later change of the North player is reflected).
+     */
+    name: string;
+  };
 
 export type AssignedParticipant = AssignedTeam | AssignedPair;
 

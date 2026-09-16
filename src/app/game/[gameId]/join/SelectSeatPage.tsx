@@ -1,7 +1,7 @@
 "use client";
 
 import { useRequiredGame } from "@/context/GameContext";
-import { Pair, PairSeat, Seat } from "@/model/participants";
+import { Pair, PairSeat, parseSeat, Seat } from "@/model/participants";
 import { useState } from "react";
 import EnterPlayerNames from "@/app/game/[gameId]/join/EnterPlayerNames";
 import { swrKeys } from "@/swr/swr-keys";
@@ -53,15 +53,33 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
     setSelectedSeat(seat);
   };
 
-  async function handlePairSubmitted(player1: NewPlayer, player2: NewPlayer) {
+  // A team name is only relevant for a Teams event, and only for the home (NS)
+  // pair (a team is named by its home NS pair; the away EW pair does not name
+  // it). Teams is currently always Swiss Teams, so the game-level type is the
+  // signal — no need to inspect per-section movement here.
+  const isTeamsEvent = game.gameType === "TEAMS";
+  const isTeamsNsSeat =
+    isTeamsEvent &&
+    selectedSeat !== null &&
+    parseSeat(selectedSeat).direction === "NS";
+
+  async function handlePairSubmitted(
+    player1: NewPlayer,
+    player2: NewPlayer,
+    teamName?: string,
+  ) {
     setSubmitError(null);
     try {
-      await createParticipant(gameId, {
-        type: "PAIR",
-        initialSeat: selectedSeat!,
-        player1,
-        player2,
-      });
+      await createParticipant(
+        gameId,
+        {
+          type: "PAIR",
+          initialSeat: selectedSeat!,
+          player1,
+          player2,
+        },
+        isTeamsNsSeat ? teamName : undefined,
+      );
       onSeatSelected(selectedSeat!);
     } catch (err) {
       // e.g. an EBU number already seated elsewhere in the event. Keep the
@@ -118,6 +136,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
               )}
               <EnterPlayerNames
                 seat={selectedSeat}
+                showTeamName={isTeamsNsSeat}
                 onSubmitPair={handlePairSubmitted}
               />
             </>

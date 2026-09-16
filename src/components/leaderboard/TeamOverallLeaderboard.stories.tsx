@@ -20,6 +20,7 @@ export const Default: Story = {
       {
         type: "TEAM",
         id: "1",
+        name: "Collier",
         pair1: {
           type: "PAIR",
           initialSeat: "A1NS",

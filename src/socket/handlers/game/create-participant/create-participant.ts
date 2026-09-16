@@ -13,9 +13,13 @@ import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper
 
 // `newParticipant` carries a nested player/seat structure validated by the
 // domain model; keep it as a passthrough here and rely on the typed shape.
+// `teamName` is an optional Teams-event extra: the home (NS) pair may name
+// their team. It is a sibling of the pair rather than part of `NewParticipant`
+// (which stays a pure pair shape); the DB action ignores it for non-NS seats.
 const payloadSchema = z.object({
   gameId: z.string().min(1),
   newParticipant: z.custom<NewParticipant>(),
+  teamName: z.string().optional(),
 });
 
 export function registerCreateParticipantHandler(socket: Socket, io: Server) {
@@ -26,7 +30,7 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
     {
       schema: payloadSchema,
       handler: async ({ payload, ack }) => {
-        const { gameId, newParticipant } = payload;
+        const { gameId, newParticipant, teamName } = payload;
 
         const db = await getDb(gameId);
 
@@ -69,6 +73,7 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
           player1: newParticipant.player1,
           player2: newParticipant.player2,
           secretKey: key,
+          teamName,
         });
 
         await broadcastParticipants(gameId, io);

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { TeamOverallOverallScore } from "@/model/leaderboard";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
@@ -9,37 +10,57 @@ interface Props {
   highlightAssignmentId?: string;
 }
 
+/** The four player names of a team ("First Last"), in NS-then-EW order. */
+function teamPlayerLines(team: AssignedTeam): string[] {
+  return [team.pair1, team.pair2].flatMap((pair) => [
+    `${pair.player1.firstName} ${pair.player1.lastName}`.trim(),
+    `${pair.player2.firstName} ${pair.player2.lastName}`.trim(),
+  ]);
+}
+
+/**
+ * The Team cell: the team's name, which expands to the four player names when
+ * tapped. Rendered as an accessible, keyboard-focusable button with
+ * `aria-expanded`. Falls back to the raw team id when the team is not found.
+ */
+function TeamNameCell({
+  teams,
+  teamId,
+}: {
+  teams: AssignedTeam[];
+  teamId: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const team = teams.find((t) => t.id === teamId);
+
+  if (!team) return <>{teamId}</>;
+
+  return (
+    <div className="text-left">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((v) => !v)}
+        className="text-left font-medium underline decoration-dotted underline-offset-2"
+      >
+        {team.name}
+      </button>
+      {expanded && (
+        <div className="mt-1 text-sm text-gray-600">
+          {teamPlayerLines(team).map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TeamOverallLeaderboard({
   teams,
   leaderboard,
   highlightAssignmentId,
 }: Props) {
-  const getPlayerNames = (playerId: string) => {
-    const participant = teams.find((ind) => ind.id === playerId);
-    if (!participant) return playerId;
-
-    return (
-      <div className="text-left">
-        <div>
-          {participant.pair1.player1.firstName}{" "}
-          {participant.pair1.player1.lastName}
-        </div>
-        <div>
-          {participant.pair1.player2.firstName}{" "}
-          {participant.pair1.player2.lastName}
-        </div>
-        <div>
-          {participant.pair2.player1.firstName}{" "}
-          {participant.pair2.player1.lastName}
-        </div>
-        <div>
-          {participant.pair2.player2.firstName}{" "}
-          {participant.pair2.player2.lastName}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <Table
       columns={["Rank", "Team", "IMP/VP/PAB"]} // TODO: Fix this
@@ -52,7 +73,7 @@ export function TeamOverallLeaderboard({
             striped={highlightAssignmentId === undefined}
             cells={[
               row.tied ? `${row.rank}=` : row.rank,
-              getPlayerNames(row.teamId),
+              <TeamNameCell key="team" teams={teams} teamId={row.teamId} />,
               row.score,
             ]}
             className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
