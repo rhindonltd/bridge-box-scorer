@@ -1,10 +1,12 @@
 import { create } from "xmlbuilder2";
 import {
   formatOutcomeForUsebio,
+  formatContractCompact,
   formatLeadForUsebio,
   isAdjustedScore,
   parseAdjustedScore,
 } from "./format-contract";
+import { totalTricksFor } from "./traveller-line";
 import { outcomeToScore } from "@/scoring/traveller/common";
 import { scoreMP as scorePairMP } from "@/scoring/traveller/pair/mp";
 import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
@@ -52,7 +54,13 @@ export type UsebioBoardResult = {
   lead: Card | null;
 };
 
-export type UsebioGameData = {
+/**
+ * The MP/Butler/XIMP pairs event: the original flat "boards with per-line
+ * scores + percentage ranking" shape. `kind` is optional and defaults to
+ * "MP_PAIRS" so existing callers need no change.
+ */
+export type UsebioPairsData = {
+  kind?: "MP_PAIRS";
   club: UsebioClub;
   eventName: string;
   eventDate: string;
@@ -64,14 +72,123 @@ export type UsebioGameData = {
   boardResults: UsebioBoardResult[];
 };
 
+/**
+ * The data the USEBIO builder renders. A discriminated union on `kind`:
+ * - MP_PAIRS (default): the pairs board-scored event (unchanged behaviour).
+ * - SWISS_PAIRS: a Swiss Pairs event (matches per round, VP scored).
+ * - SWISS_TEAMS: a Swiss Teams event (team matches per round, VP scored).
+ */
+export type UsebioGameData =
+  | UsebioPairsData
+  | UsebioSwissPairsData
+  | UsebioSwissTeamsData;
+
+/* ---- Swiss Pairs ---- */
+
+/** One board's traveller line within a Swiss Pairs match. */
+export type UsebioSwissBoard = {
+  boardNumber: number;
+  contract: string;
+  playedBy: string;
+  lead: string;
+  tricks: string;
+  score: string;
+};
+
+/** One Swiss Pairs match: a round's head-to-head between two pairs. */
+export type UsebioSwissPairsMatch = {
+  round: number;
+  nsPairNumber: string;
+  ewPairNumber: string;
+  /** Match victory points (integer) for each side. */
+  nsScore: number;
+  ewScore: number;
+  boards: UsebioSwissBoard[];
+};
+
+/** One entry in a Swiss (VP) ranking. */
+export type UsebioVpRankEntry = {
+  /** Pair or team number. */
+  number: string;
+  sectionId: string;
+  totalVP: number;
+  place: number;
+};
+
+export type UsebioSwissPairsData = {
+  kind: "SWISS_PAIRS";
+  club: UsebioClub;
+  eventName: string;
+  eventDate: string;
+  sectionName: string;
+  boards: number;
+  pairs: UsebioPair[];
+  matches: UsebioSwissPairsMatch[];
+  ranking: UsebioVpRankEntry[];
+};
+
+/* ---- Swiss Teams ---- */
+
+/** A team in the Swiss Teams roster: a number, a name, and its four players. */
+export type UsebioTeam = {
+  teamNumber: string;
+  teamName: string;
+  sectionId: string;
+  players: UsebioPlayer[];
+};
+
+/** One board within a Swiss Teams match (both rooms), with the net IMPs. */
+export type UsebioTeamBoard = {
+  boardNumber: number;
+  /** Net IMPs from the primary TEAM's perspective (may be negative). */
+  imps: number;
+  travellerLines: UsebioTeamTravellerLine[];
+};
+
+/** A traveller line for a Swiss Teams board, tagged with the room direction. */
+export type UsebioTeamTravellerLine = {
+  /** Which direction the primary team sat at this table ("NS"/"EW"). */
+  direction: string;
+  contract: string;
+  playedBy: string;
+  lead: string;
+  tricks: string;
+  score: string;
+};
+
+/** One Swiss Teams match: a round's team-vs-team encounter. */
+export type UsebioSwissTeamsMatch = {
+  round: number;
+  team: string;
+  opposingTeam: string;
+  startBoard: number;
+  endBoard: number;
+  /** Match victory points (integer) for each team. */
+  teamScore: number;
+  opposingTeamScore: number;
+  boards: UsebioTeamBoard[];
+};
+
+export type UsebioSwissTeamsData = {
+  kind: "SWISS_TEAMS";
+  club: UsebioClub;
+  eventName: string;
+  eventDate: string;
+  sectionName: string;
+  boards: number;
+  teams: UsebioTeam[];
+  matches: UsebioSwissTeamsMatch[];
+  ranking: UsebioVpRankEntry[];
+};
+
 /* ============================================================
    SCORING TYPE MAPPING
 ============================================================ */
 
 const SCORING_TYPE_MAP: Record<ScoringType, string> = {
-  MP: "MP",
+  MP: "MATCH_POINTS",
   IMP: "BUTLER",
-  XIMP: "XIMP",
+  XIMP: "CROSS_IMPS",
 };
 
 /* ============================================================
@@ -170,43 +287,114 @@ function scoreDescriptorFor(scoringType: ScoringType): UsebioScoreDescriptor {
    GENERATOR
 ============================================================ */
 
+/**
+ * Render a USEBIO 1.2 document for any supported event kind. Dispatches on the
+ * data's `kind` discriminator (a missing `kind` is treated as MP_PAIRS so
+ * existing callers are unaffected).
+ */
 export function generateUsebioXml(data: UsebioGameData): string {
-  const doc = create({ version: "1.0", encoding: "UTF-8" });
+  switch (data.kind) {
+    case "SWISS_PAIRS":
+      return generateSwissPairsXml(data);
+    case "SWISS_TEAMS":
+      return generateSwissTeamsXml(data);
+    case "MP_PAIRS":
+    case undefined:
+      return generateMpPairsXml(data);
+  }
+}
 
+/**
+ * Create the shared document root: `<USEBIO Version="1.2">` with the CLUB
+ * block, returning the `<EVENT>` element (with the given EVENT_TYPE) and the
+ * document so the caller can finish it.
+ */
+function startUsebioDoc(
+  club: UsebioClub,
+  eventType: string,
+): {
+  doc: ReturnType<typeof create>;
+  event: ReturnType<ReturnType<typeof create>["ele"]>;
+} {
+  // Real USEBIO files declare the DTD and use the iso-8859-1 prolog.
+  const doc = create({ version: "1.0", encoding: "iso-8859-1" });
+  doc.dtd({
+    name: "USEBIO",
+    sysID: "http://www.ebu.co.uk/usebio/usebio_v1_2.dtd",
+  });
   const root = doc.ele("USEBIO", { Version: "1.2" });
 
-  // CLUB
   const clubEl = root.ele("CLUB");
-  clubEl.ele("CLUB_NAME").txt(data.club.name);
-  clubEl.ele("CLUB_ID_NUMBER").txt(data.club.clubNumber);
+  clubEl.ele("CLUB_NAME").txt(club.name);
+  clubEl.ele("CLUB_ID_NUMBER").txt(club.clubNumber);
 
-  // EVENT
-  const event = root.ele("EVENT", { EVENT_TYPE: "MP_PAIRS" });
-  event.ele("EVENT_DESCRIPTION").txt(data.eventName);
-  event.ele("DATE").txt(formatDate(data.eventDate));
+  const event = root.ele("EVENT", { EVENT_TYPE: eventType });
+  return { doc, event };
+}
+
+/**
+ * Open the single `<SESSION><SECTION>` wrapper the USEBIO structure nests
+ * participants and boards inside, returning the SECTION element for the caller
+ * to populate. The appliance runs one session per game; multi-section games
+ * still export under one SECTION today (participants carry their own section
+ * id), matching the pre-existing single-section export.
+ */
+function startSection(
+  event: ReturnType<ReturnType<typeof create>["ele"]>,
+  sectionId: string,
+): ReturnType<ReturnType<typeof create>["ele"]> {
+  const session = event.ele("SESSION", { SESSION_ID: "1" });
+  return session.ele("SECTION", { SECTION_ID: sectionId });
+}
+
+/* ============================================================
+   MP / BUTLER / XIMP PAIRS (unchanged behaviour)
+============================================================ */
+
+function generateMpPairsXml(data: UsebioPairsData): string {
+  const { doc, event } = startUsebioDoc(data.club, "PAIRS");
+
+  // Placings per pair (inline on each PAIR, USEBIO-style) rather than a
+  // separate RANKING block.
+  const ranking = computeOverallRanking(data);
+  const rankByPair = new Map(ranking.map((r) => [r.pairNumber, r]));
+  const ewPairs = data.pairs.filter((p) => p.direction === "E").length;
+
+  // EVENT header.
   event
     .ele("BOARD_SCORING_METHOD")
-    .txt(SCORING_TYPE_MAP[data.scoringType] ?? "MP");
-  event.ele("BOARDS").txt(String(data.boards));
+    .txt(SCORING_TYPE_MAP[data.scoringType] ?? "MATCH_POINTS");
+  event.ele("EVENT_DESCRIPTION").txt(data.eventName);
+  event.ele("DATE").txt(formatDate(data.eventDate));
+  event.ele("SESSION_COUNT").txt("1");
+  event.ele("SECTION_COUNT").txt("1");
+  event.ele("PAIRS").txt(String(data.pairs.length));
+  event.ele("BOARDS_PLAYED").txt(String(data.boards));
+  // One combined ranking across all pairs (not a two-winner NS/EW event).
+  event.ele("WINNER_TYPE").txt("1");
+  event.ele("EW_PAIRS").txt(String(ewPairs));
 
-  // PARTICIPANTS — each pair is tagged with its real section (derived from the
-  // section-qualified pair number, falling back to the game's section label).
-  const participants = event.ele("PARTICIPANTS");
+  const section = startSection(event, data.sectionName || "A");
+
+  // PARTICIPANTS — each pair carries its placing inline.
+  const participants = section.ele("PARTICIPANTS");
   for (const pair of data.pairs) {
     const dir = pair.direction === "N" ? "NS" : "EW";
-    const pairEl = participants.ele("PAIR", {
-      PAIR_NUMBER: pair.pairNumber,
-      DIRECTION: dir,
-      SECTION_ID: sectionOf(pair.pairNumber, data.sectionName),
-    });
+    const pairEl = participants.ele("PAIR");
+    pairEl.ele("PAIR_NUMBER").txt(pair.pairNumber);
+    pairEl.ele("DIRECTION").txt(dir);
+
+    const rank = rankByPair.get(pair.pairNumber);
+    if (rank) {
+      pairEl.ele("PERCENTAGE").txt(rank.percentage);
+      pairEl.ele("PLACE").txt(String(rank.place));
+    }
 
     addPlayer(pairEl, pair.player1);
     addPlayer(pairEl, pair.player2);
   }
 
-  // BOARD_RESULTS
-  const boardResultsEl = event.ele("BOARD_RESULTS");
-
+  // BOARD elements (one per board number), each with its TRAVELLER_LINEs.
   const boardGroups = groupBy(data.boardResults, (r) => r.board);
   const boardNumbers = [...boardGroups.keys()].sort((a, b) => a - b);
 
@@ -214,23 +402,22 @@ export function generateUsebioXml(data: UsebioGameData): string {
     const results = boardGroups.get(boardNum)!;
     const scoredLines = computeBoardScores(boardNum, results, data.scoringType);
 
-    const boardEl = boardResultsEl.ele("BOARD", {
-      BOARD_NUMBER: String(boardNum),
-    });
+    const boardEl = section.ele("BOARD");
+    boardEl.ele("BOARD_NUMBER").txt(String(boardNum));
 
     for (const result of results) {
       const key = resultKey(result);
-      const resultEl = boardEl.ele("RESULT");
-      resultEl.ele("NS_PAIR_NUMBER").txt(result.nsPairNumber);
-      resultEl.ele("EW_PAIR_NUMBER").txt(result.ewPairNumber);
+      const lineEl = boardEl.ele("TRAVELLER_LINE");
+      lineEl.ele("NS_PAIR_NUMBER").txt(result.nsPairNumber);
+      lineEl.ele("EW_PAIR_NUMBER").txt(result.ewPairNumber);
 
       if (isAdjustedScore(result.outcome)) {
         const adj = parseAdjustedScore(result.outcome);
-        resultEl.ele("CONTRACT").txt("");
-        resultEl.ele("DECLARER").txt("");
-        resultEl.ele("LEAD").txt("");
-        resultEl.ele("RESULT_FIELD").txt("");
-        resultEl.ele("SCORE").txt("0");
+        lineEl.ele("CONTRACT").txt("");
+        lineEl.ele("PLAYED_BY").txt("");
+        lineEl.ele("LEAD").txt("");
+        lineEl.ele("TRICKS").txt("");
+        lineEl.ele("SCORE").txt("0");
 
         // `adj` is always non-null here because isAdjustedScore() and
         // parseAdjustedScore() share the same regex; `?? { ns: 0, ew: 0 }` is
@@ -240,41 +427,152 @@ export function generateUsebioXml(data: UsebioGameData): string {
           adj ?? { ns: 0, ew: 0 },
           results.length,
         );
-        appendLineScore(resultEl, data.scoringType, line);
-        resultEl.ele("ARTIFICIAL_SCORE").txt("Adjusted");
+        appendLineScore(lineEl, data.scoringType, line);
       } else {
-        const formatted = formatOutcomeForUsebio(result.outcome);
+        const contract = formatContractCompact(result.outcome);
+        const declarer = formatOutcomeForUsebio(result.outcome).declarer;
         const score = outcomeToScore(boardNum, result.outcome);
         const lead = formatLeadForUsebio(result.lead);
         const lineScore = scoredLines.get(key);
 
-        resultEl.ele("CONTRACT").txt(formatted.contract);
-        resultEl.ele("DECLARER").txt(formatted.declarer);
-        resultEl.ele("LEAD").txt(lead);
-        resultEl.ele("RESULT_FIELD").txt(formatted.result);
-        resultEl.ele("SCORE").txt(String(score ?? 0));
+        lineEl.ele("CONTRACT").txt(contract);
+        lineEl.ele("PLAYED_BY").txt(declarer);
+        lineEl.ele("LEAD").txt(lead);
+        lineEl.ele("TRICKS").txt(totalTricksFor(result.outcome));
+        lineEl.ele("SCORE").txt(String(score ?? 0));
 
         if (lineScore) {
-          appendLineScore(resultEl, data.scoringType, lineScore);
+          appendLineScore(lineEl, data.scoringType, lineScore);
         }
       }
     }
   }
 
-  // RANKING
-  const ranking = computeOverallRanking(data);
-  if (ranking.length > 0) {
-    const rankingEl = event.ele("RANKING");
-    for (const entry of ranking) {
-      rankingEl.ele("RANK", {
-        PAIR_NUMBER: entry.pairNumber,
-        DIRECTION: entry.direction,
-        SECTION_ID: sectionOf(entry.pairNumber, data.sectionName),
-        TOTAL_SCORE: String(entry.totalScore),
-        MAX_SCORE: String(entry.maxScore),
-        PERCENTAGE: entry.percentage,
-        PLACE: String(entry.place),
-      });
+  return doc.end({ prettyPrint: true, indent: "  " });
+}
+
+/* ============================================================
+   SWISS PAIRS
+============================================================ */
+
+function generateSwissPairsXml(data: UsebioSwissPairsData): string {
+  const { doc, event } = startUsebioDoc(data.club, "SWISS_PAIRS");
+
+  const ewPairs = data.pairs.filter((p) => p.direction === "E").length;
+
+  // EVENT header.
+  event.ele("MATCH_SCORING_METHOD").txt("VPS");
+  event.ele("EVENT_DESCRIPTION").txt(data.eventName);
+  event.ele("DATE").txt(formatDate(data.eventDate));
+  event.ele("SESSION_COUNT").txt("1");
+  event.ele("SECTION_COUNT").txt("1");
+  event.ele("PAIRS").txt(String(data.pairs.length));
+  event.ele("BOARDS_PLAYED").txt(String(data.boards));
+  event.ele("WINNER_TYPE").txt("1");
+  event.ele("EW_PAIRS").txt(String(ewPairs));
+
+  const section = startSection(event, data.sectionName || "A");
+
+  // Global pairs roster with inline placings.
+  const rankByPair = new Map(data.ranking.map((r) => [r.number, r]));
+  const participants = section.ele("PARTICIPANTS");
+  for (const pair of data.pairs) {
+    const dir = pair.direction === "N" ? "NS" : "EW";
+    const pairEl = participants.ele("PAIR");
+    pairEl.ele("PAIR_NUMBER").txt(pair.pairNumber);
+    pairEl.ele("DIRECTION").txt(dir);
+
+    const rank = rankByPair.get(pair.pairNumber);
+    if (rank) {
+      pairEl.ele("TOTAL_SCORE").txt(String(rank.totalVP));
+      pairEl.ele("PLACE").txt(String(rank.place));
+    }
+
+    addPlayer(pairEl, pair.player1);
+    addPlayer(pairEl, pair.player2);
+  }
+
+  // One MATCH per round/table pairing. Pair numbers live at the match level, so
+  // the nested traveller lines do not repeat them.
+  for (const match of data.matches) {
+    const matchEl = section.ele("MATCH");
+    matchEl.ele("ROUND_NUMBER").txt(String(match.round));
+    matchEl.ele("NS_PAIR_NUMBER").txt(match.nsPairNumber);
+    matchEl.ele("EW_PAIR_NUMBER").txt(match.ewPairNumber);
+    matchEl.ele("NS_SCORE").txt(String(match.nsScore));
+    matchEl.ele("EW_SCORE").txt(String(match.ewScore));
+
+    for (const board of match.boards) {
+      const boardEl = matchEl.ele("BOARD");
+      boardEl.ele("BOARD_NUMBER").txt(String(board.boardNumber));
+      const line = boardEl.ele("TRAVELLER_LINE");
+      appendTravellerDetail(line, board);
+    }
+  }
+
+  return doc.end({ prettyPrint: true, indent: "  " });
+}
+
+/* ============================================================
+   SWISS TEAMS
+============================================================ */
+
+function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
+  const { doc, event } = startUsebioDoc(data.club, "SWISS_TEAMS");
+
+  // EVENT header.
+  event.ele("MATCH_SCORING_METHOD").txt("VPS");
+  event.ele("EVENT_DESCRIPTION").txt(data.eventName);
+  event.ele("DATE").txt(formatDate(data.eventDate));
+  event.ele("SESSION_COUNT").txt("1");
+  event.ele("SECTION_COUNT").txt("1");
+  event.ele("BOARDS_PLAYED").txt(String(data.boards));
+  event.ele("WINNER_TYPE").txt("1");
+
+  const section = startSection(event, data.sectionName || "A");
+
+  // Global team roster: each TEAM carries its id and name (both DTD
+  // attributes), its placing, and its four players.
+  const rankByTeam = new Map(data.ranking.map((r) => [r.number, r]));
+  const participants = section.ele("PARTICIPANTS");
+  for (const team of data.teams) {
+    const teamEl = participants.ele("TEAM", {
+      TEAM_ID: team.teamNumber,
+      TEAM_NAME: team.teamName,
+    });
+
+    const rank = rankByTeam.get(team.teamNumber);
+    if (rank) {
+      teamEl.ele("TOTAL_SCORE").txt(String(rank.totalVP));
+      teamEl.ele("PLACE").txt(String(rank.place));
+    }
+
+    for (const player of team.players) {
+      addPlayer(teamEl, player);
+    }
+  }
+
+  // One MATCH per round: the primary TEAM vs its OPPOSING_TEAM over a board
+  // range, with per-board net IMPs and both rooms' traveller lines.
+  for (const match of data.matches) {
+    const matchEl = section.ele("MATCH");
+    matchEl.ele("ROUND_NUMBER").txt(String(match.round));
+    matchEl.ele("TEAM").txt(match.team);
+    matchEl.ele("OPPOSING_TEAM").txt(match.opposingTeam);
+    matchEl.ele("START_BOARD_NUMBER").txt(String(match.startBoard));
+    matchEl.ele("END_BOARD_NUMBER").txt(String(match.endBoard));
+    matchEl.ele("TEAM_SCORE").txt(String(match.teamScore));
+    matchEl.ele("OPPOSING_TEAM_SCORE").txt(String(match.opposingTeamScore));
+
+    for (const board of match.boards) {
+      const boardEl = matchEl.ele("BOARD", { EVENT_TYPE: "SWISS_TEAMS" });
+      boardEl.ele("BOARD_NUMBER").txt(String(board.boardNumber));
+      boardEl.ele("IMPS").txt(String(board.imps));
+      for (const line of board.travellerLines) {
+        const lineEl = boardEl.ele("TRAVELLER_LINE");
+        lineEl.ele("DIRECTION").txt(line.direction);
+        appendTravellerDetail(lineEl, line);
+      }
     }
   }
 
@@ -286,12 +584,25 @@ export function generateUsebioXml(data: UsebioGameData): string {
 ============================================================ */
 
 /**
- * Derive the section id from a section-qualified pair number (e.g. "A1NS" ->
- * "A"). Falls back to the provided default when the id is not section-prefixed.
+ * Append the shared traveller-line detail elements (contract, declarer, lead,
+ * tricks, score). Used by both Swiss variants; the caller adds any leading
+ * elements (e.g. the teams DIRECTION) first.
  */
-function sectionOf(pairNumber: string, fallback: string): string {
-  const match = /^([A-Z]+)\d+(?:NS|EW)$/.exec(pairNumber);
-  return match ? match[1] : fallback || "A";
+function appendTravellerDetail(
+  lineEl: ReturnType<ReturnType<typeof create>["ele"]>,
+  detail: {
+    contract: string;
+    playedBy: string;
+    lead: string;
+    tricks: string;
+    score: string;
+  },
+): void {
+  lineEl.ele("CONTRACT").txt(detail.contract);
+  lineEl.ele("PLAYED_BY").txt(detail.playedBy);
+  lineEl.ele("LEAD").txt(detail.lead);
+  lineEl.ele("TRICKS").txt(detail.tricks);
+  lineEl.ele("SCORE").txt(detail.score);
 }
 
 function addPlayer(parentEl: ReturnType<typeof create>, player: UsebioPlayer) {
@@ -407,7 +718,7 @@ type RankEntry = {
   place: number;
 };
 
-function computeOverallRanking(data: UsebioGameData): RankEntry[] {
+function computeOverallRanking(data: UsebioPairsData): RankEntry[] {
   const totals = new Map<string, PairTotals>();
   const descriptor = scoreDescriptorFor(data.scoringType);
 

@@ -89,7 +89,7 @@ describe("generateUsebio", () => {
     expect(xml).toContain("<CLUB_NAME>Test Bridge Club</CLUB_NAME>");
     expect(xml).toContain("<EVENT_DESCRIPTION>Monday Pairs</EVENT_DESCRIPTION>");
     expect(xml).toContain("<PLAYER_NAME>Alice Smith</PLAYER_NAME>");
-    expect(xml).toContain('<BOARD BOARD_NUMBER="1">');
+    expect(xml).toContain("<BOARD_NUMBER>1</BOARD_NUMBER>");
   });
 
   it("produces valid XML even with no pairs or boards", async () => {
@@ -99,5 +99,107 @@ describe("generateUsebio", () => {
     const xml = await generateUsebio(db, game, club);
     expect(xml).toContain("<USEBIO");
     expect(xml).toMatch(/PARTICIPANTS/);
+  });
+
+  async function seatPair(seat: string, first: string) {
+    const { createPlayer } = await import("@/db/games/actions/create-player");
+    const { createParticipant } = await import(
+      "@/db/games/actions/create-participant"
+    );
+    const p1 = await createPlayer(harness.gameId, {
+      firstName: first,
+      lastName: "N",
+    });
+    const p2 = await createPlayer(harness.gameId, {
+      firstName: first,
+      lastName: "S",
+    });
+    await createParticipant(harness.gameId, {
+      type: "PAIR",
+      initialSeat: seat as PairSeat,
+      player1: p1.id,
+      player2: p2.id,
+      secretKey: seat,
+    } as never);
+  }
+
+  async function makeBoard(
+    round: number,
+    table: number,
+    boardNumber: number,
+    ns: string,
+    ew: string,
+    result: string,
+  ) {
+    const { createBoard } = await import("@/db/games/actions/create-board");
+    await createBoard(harness.gameId, {
+      section: "A",
+      roundNumber: round,
+      tableNumber: table,
+      boardNumber,
+      copy: "A",
+      ns,
+      ew,
+      status: "CONFIRMED",
+      confirmedResult: result as never,
+    });
+  }
+
+  it("emits a SWISS_PAIRS file for a Swiss Pairs game", async () => {
+    await seatPair("A1NS", "Al");
+    await seatPair("A1EW", "Cy");
+    await makeBoard(1, 1, 1, "A1NS", "A1EW", "3NTN=");
+
+    const swissGame: BridgeGame = {
+      ...game,
+      gameType: "PAIRS",
+      scoringType: "IMP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS",
+        swiss: { tables: 1, rounds: 1, boardsPerRound: 1 },
+      }),
+    };
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+
+    const xml = await generateUsebio(db, swissGame, club);
+
+    expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_PAIRS">');
+    expect(xml).toContain("<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>");
+    expect(xml).toContain("<NS_PAIR_NUMBER>A1NS</NS_PAIR_NUMBER>");
+    expect(xml).toContain("<ROUND_NUMBER>1</ROUND_NUMBER>");
+  });
+
+  it("emits a SWISS_TEAMS file for a Swiss Teams game", async () => {
+    // Two teams (home tables 1 and 2), each a full NS+EW pair, playing one
+    // board against each other in both rooms.
+    await seatPair("A1NS", "H1");
+    await seatPair("A1EW", "A1");
+    await seatPair("A2NS", "H2");
+    await seatPair("A2EW", "A2");
+    await makeBoard(1, 1, 1, "A1NS", "A2EW", "4SN=");
+    await makeBoard(1, 2, 1, "A2NS", "A1EW", "3NTN=");
+
+    const teamsGame: BridgeGame = {
+      ...game,
+      gameType: "TEAMS",
+      scoringType: "IMP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 2, rounds: 1, boardsPerRound: 1 },
+      }),
+    };
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+
+    const xml = await generateUsebio(db, teamsGame, club);
+
+    expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_TEAMS">');
+    expect(xml).toContain("<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>");
+    expect(xml).toContain('TEAM_NAME="N"'); // North surname fallback (attribute)
+    expect(xml).toContain("<TEAM>1</TEAM>");
+    expect(xml).toContain("<OPPOSING_TEAM>2</OPPOSING_TEAM>");
   });
 });

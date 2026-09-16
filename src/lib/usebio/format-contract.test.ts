@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   formatOutcomeForUsebio,
+  formatContractCompact,
   formatLeadForUsebio,
   isAdjustedScore,
   parseAdjustedScore,
 } from "./format-contract";
+import type { BoardOutcome } from "@/model/score";
 
 describe("formatOutcomeForUsebio", () => {
   describe("played contracts", () => {
@@ -187,5 +189,31 @@ describe("formatLeadForUsebio", () => {
 
   it("returns empty string for a single character (too short)", () => {
     expect(formatLeadForUsebio("S")).toBe("");
+  });
+});
+
+describe("formatContractCompact", () => {
+  it("formats a making contract with no spaces", () => {
+    expect(formatContractCompact("1NTN=" as BoardOutcome)).toBe("1NT");
+    expect(formatContractCompact("4SS+2" as BoardOutcome)).toBe("4S");
+    expect(formatContractCompact("3HE-1" as BoardOutcome)).toBe("3H");
+  });
+
+  it("appends a lowercase x for a doubled contract", () => {
+    expect(formatContractCompact("2CXW=" as BoardOutcome)).toBe("2Cx");
+  });
+
+  it("appends xx for a redoubled contract", () => {
+    expect(formatContractCompact("7NTXXS=" as BoardOutcome)).toBe("7NTxx");
+  });
+
+  it("returns PASS for a pass-out", () => {
+    expect(formatContractCompact("PO" as BoardOutcome)).toBe("PASS");
+  });
+
+  it("returns empty for not-played, adjusted, or unrecognised outcomes", () => {
+    expect(formatContractCompact("NP" as BoardOutcome)).toBe("");
+    expect(formatContractCompact("A60/40" as BoardOutcome)).toBe("");
+    expect(formatContractCompact("AVE" as BoardOutcome)).toBe("");
   });
 });
