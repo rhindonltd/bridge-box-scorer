@@ -11,7 +11,12 @@ export type StartProblemCode =
   | "TOO_MANY_TABLES"
   | "HALF_FILLED_TABLE"
   | "MULTIPLE_EMPTY_POSITIONS"
-  | "UNKNOWN_SEAT";
+  | "UNKNOWN_SEAT"
+  // Swiss Teams needs an even number of complete teams: no pair may sit out
+  // (that would be half a team) and the team count must be even (odd counts
+  // need three-way handling, which is not yet supported).
+  | "TEAMS_SIT_OUT_NOT_ALLOWED"
+  | "ODD_TEAM_COUNT";
 
 export interface StartProblem {
   code: StartProblemCode;

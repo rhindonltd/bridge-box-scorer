@@ -1,6 +1,9 @@
 import { getDirectorToken } from "@/lib/director-token";
 import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
-import { SwissMovementSpec } from "@/model/selected-movement";
+import {
+  SwissMovementSpec,
+  SwissTeamsMovementSpec,
+} from "@/model/selected-movement";
 
 /**
  * Director-only section management calls. These go over HTTP (not the socket):
@@ -114,5 +117,22 @@ export async function setSectionSwissMovement(
   await directorFetch(gameId, `${sectionPath(section)}/movement`, {
     method: "PUT",
     body: { swiss },
+  });
+}
+
+/**
+ * Set the section's movement to a Swiss Teams movement, described by its setup
+ * parameters (team count, rounds, boards per round). Like Swiss Pairs there is
+ * no per-round layout: round 1 is a random draw and each later round is drawn
+ * from standings as the event runs.
+ */
+export async function setSectionSwissTeamsMovement(
+  gameId: string,
+  section: string,
+  swissTeams: SwissTeamsMovementSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { swissTeams },
   });
 }

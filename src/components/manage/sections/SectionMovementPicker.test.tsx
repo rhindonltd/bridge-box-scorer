@@ -12,6 +12,7 @@ vi.mock("@/lib/section-service", () => ({
   setSectionMitchellMovement: vi.fn(),
   setSectionMovementSpec: vi.fn(),
   setSectionSwissMovement: vi.fn(),
+  setSectionSwissTeamsMovement: vi.fn(),
 }));
 
 const mockRecommendations = vi.fn();
@@ -42,6 +43,7 @@ import {
   setSectionMitchellMovement,
   setSectionMovementSpec,
   setSectionSwissMovement,
+  setSectionSwissTeamsMovement,
 } from "@/lib/section-service";
 import type { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
 import { SectionMovementPicker } from "./SectionMovementPicker";
@@ -525,5 +527,68 @@ describe("SectionMovementPicker", () => {
     expect(screen.getByTestId("swiss-movement-option")).toHaveTextContent(
       "Selected",
     );
+  });
+
+  it("offers Swiss Teams (not Swiss Pairs) for a single-section TEAMS game", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        gameType="TEAMS"
+      />,
+    );
+    expect(screen.getByTestId("swiss-teams-movement-option")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("swiss-movement-option"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("persists a Swiss Teams movement on confirm (even team count)", async () => {
+    mockRecommendations.mockReturnValue([]);
+    const onDone = vi.fn();
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        gameType="TEAMS"
+        onDone={onDone}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() =>
+      expect(setSectionSwissTeamsMovement).toHaveBeenCalledWith("g1", "A", {
+        teams: 6,
+        rounds: 7,
+        boardsPerRound: 6,
+      }),
+    );
+    expect(onDone).toHaveBeenCalled();
+  });
+
+  it("blocks confirming a Swiss Teams movement with an odd team count", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={5}
+        singleSection
+        gameType="TEAMS"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
+    // The even-count warning is shown and the confirm button is disabled.
+    expect(screen.getByText(/even number of teams/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+    expect(setSectionSwissTeamsMovement).not.toHaveBeenCalled();
   });
 });

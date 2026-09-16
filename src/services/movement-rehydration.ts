@@ -53,6 +53,14 @@ export interface RehydratedMovement {
    * Mitchell/spec sit-out helpers.
    */
   isSwiss: boolean;
+  /**
+   * True for a Swiss Teams selection. Like Swiss it only ever rehydrates round
+   * 1's seat layout (every table filled NS + EW); the actual random team
+   * pairing and open/closed-room expansion happen in the Swiss Teams start
+   * path, not here. The start pipeline uses this to route materialization
+   * through the Swiss Teams path.
+   */
+  isSwissTeams: boolean;
 }
 
 /**
@@ -96,6 +104,7 @@ export async function rehydrateSelectedMovement(
       missingPair: null,
       isStandardMitchell,
       isSwiss: false,
+      isSwissTeams: false,
     };
   }
 
@@ -126,6 +135,36 @@ export async function rehydrateSelectedMovement(
       missingPair: null,
       isStandardMitchell: false,
       isSwiss: true,
+      isSwissTeams: false,
+    };
+  }
+
+  if (selected.source === "SWISS_TEAMS") {
+    // Swiss Teams rehydrates only round 1's seat layout: every table is filled
+    // NS + EW (positional, table T = pair T NS vs pair teams+T EW). This is
+    // enough for expected-seat derivation; the real random team pairing and
+    // open/closed-room expansion happen in the Swiss Teams start path.
+    const { teams, boardsPerRound } = selected.swissTeams;
+    const { boardStart, boardEnd } = swissRoundBoardRange(1, boardsPerRound);
+    const movement: RehydratedTable[] = swissRoundOne(teams).map((seat) => ({
+      tableNumber: seat.tableNumber,
+      rounds: [
+        {
+          roundNumber: 1,
+          ns: `${seat.tableNumber}NS`,
+          ew: `${seat.tableNumber}EW`,
+          boardStart,
+          boardEnd,
+          boardCopy: "A",
+        },
+      ],
+    }));
+    return {
+      movement,
+      missingPair: null,
+      isStandardMitchell: false,
+      isSwiss: false,
+      isSwissTeams: true,
     };
   }
 
@@ -157,5 +196,6 @@ export async function rehydrateSelectedMovement(
     missingPair,
     isStandardMitchell: false,
     isSwiss: false,
+    isSwissTeams: false,
   };
 }

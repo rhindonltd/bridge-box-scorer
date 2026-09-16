@@ -2,6 +2,7 @@
 
 import { useSetupSections } from "./useSetupSections";
 import { SectionMovementPicker } from "./SectionMovementPicker";
+import { useRequiredGame } from "@/context/GameContext";
 
 interface Props {
   gameId: string;
@@ -16,6 +17,7 @@ interface Props {
  */
 export function MovementStep({ gameId }: Props) {
   const { sections, selected, pills, modal } = useSetupSections(gameId);
+  const { game } = useRequiredGame();
 
   const current = sections.find((s) => s.section === selected);
 
@@ -36,9 +38,11 @@ export function MovementStep({ gameId }: Props) {
             // The selected section is already shown by the pills, so the picker
             // omits its own "Section X" heading.
             multiSection={false}
-            // Swiss Pairs is a single-pool movement; only offer it when the
-            // game has exactly one section.
+            // Swiss Pairs / Swiss Teams is a single-pool movement; only offer
+            // it when the game has exactly one section.
             singleSection={sections.length === 1}
+            // A Teams game offers Swiss Teams in place of Swiss Pairs.
+            gameType={game.gameType}
           />
         )}
       </div>

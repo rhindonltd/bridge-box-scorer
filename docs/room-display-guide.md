@@ -50,6 +50,8 @@ Shows live standings that update as results come in:
   (matchpoints/percentage, IMPs, or Cross-IMPs).
 - For a **Swiss Pairs** game, Victory Points with a column per round and each
   pair's running total.
+- For a **Swiss Teams** game, Victory Points with a column per round and each
+  team's running total.
 - For **teams** games, the team match / overall standings.
 - For **multi-section** events, each section's standings plus a combined
   overall ranking across all sections.

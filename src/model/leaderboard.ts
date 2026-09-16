@@ -74,6 +74,7 @@ interface ScoreByModeAndScoring {
   TEAM: {
     MATCH: TeamMatchScore;
     OVERALL: OverallTeamResult;
+    SWISS_VP: SwissVpOverallScore;
   };
 }
 
@@ -118,6 +119,7 @@ export type PairIMPOverallScore = OverallScoreBase<"PAIR", "IMP">;
 export type PairSwissVpOverallScore = OverallScoreBase<"PAIR", "SWISS_VP">;
 export type TeamMatchOverallScore = OverallScoreBase<"TEAM", "MATCH">;
 export type TeamOverallOverallScore = OverallScoreBase<"TEAM", "OVERALL">;
+export type TeamSwissVpOverallScore = OverallScoreBase<"TEAM", "SWISS_VP">;
 
 export type OverallScore =
   | PairMatchpointOverallScore
@@ -125,7 +127,8 @@ export type OverallScore =
   | PairIMPOverallScore
   | PairSwissVpOverallScore
   | TeamMatchOverallScore
-  | TeamOverallOverallScore;
+  | TeamOverallOverallScore
+  | TeamSwissVpOverallScore;
 
 /* ---------- participants mapping ---------- */
 

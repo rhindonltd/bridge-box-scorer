@@ -31,6 +31,11 @@ import {
   applySpecSitOutNoMissingPair,
   alignSpecMissingPair,
 } from "@/movement/spec-sit-out";
+import { swissTeamsRoundOne } from "@/movement/swiss-teams/swiss-teams-pairing";
+import {
+  swissTeamsRoundOneSeed,
+  swissTeamsRoundToMaterializable,
+} from "@/services/materialize-swiss-teams-round";
 
 /**
  * Resolution of a single section: its validation and, when valid, the concrete
@@ -93,6 +98,7 @@ export async function resolveSectionStart(
   section: SectionLetter,
   selected: SelectedMovement | null,
   seatedSeats: PairSeat[],
+  gameId: string,
 ): Promise<ResolvedStart> {
   if (selected === null) {
     return {
@@ -113,6 +119,14 @@ export async function resolveSectionStart(
 
   const validation = validateStart(expected, seatedSeats);
 
+  // Swiss Teams has extra structural requirements the generic validator does
+  // not know about: every table must be a complete team (no sit-out — that
+  // would be half a team) and the team count must be even (odd counts need
+  // three-way handling, which is out of scope). Layer these on top.
+  if (selected.source === "SWISS_TEAMS") {
+    return resolveSwissTeamsStart(section, selected, validation, gameId);
+  }
+
   if (!validation.canStart) {
     return { validation, movement: null };
   }
@@ -121,6 +135,61 @@ export async function resolveSectionStart(
     validation.sitOutSeat !== null
       ? applySitOut(selected, rehydrated, validation.sitOutSeat)
       : toMaterializable(rehydrated.movement);
+
+  return { validation, movement };
+}
+
+/**
+ * Resolve a Swiss Teams section's start. On top of the base seat validation it
+ * rejects a sit-out (a team must have both its pairs) and an odd team count,
+ * then — when valid — materializes round 1 by drawing a random team pairing
+ * (seeded per game+section) and expanding it into open/closed-room board rows.
+ */
+function resolveSwissTeamsStart(
+  section: SectionLetter,
+  selected: Extract<SelectedMovement, { source: "SWISS_TEAMS" }>,
+  baseValidation: StartValidationResult,
+  gameId: string,
+): ResolvedStart {
+  const problems: StartProblem[] = [...baseValidation.problems];
+
+  // A Swiss Teams table must hold a full team; a one-pair-short section (which
+  // the base validator would allow as a single sit-out) is not valid here.
+  if (baseValidation.sitOutSeat !== null) {
+    problems.push({
+      code: "TEAMS_SIT_OUT_NOT_ALLOWED",
+      message:
+        "Swiss Teams needs a full team at every table — seat both pairs or remove the table. Sit-outs are not supported.",
+    });
+  }
+
+  const { teams, boardsPerRound } = selected.swissTeams;
+
+  if (teams % 2 !== 0) {
+    problems.push({
+      code: "ODD_TEAM_COUNT",
+      message: `Swiss Teams needs an even number of teams — you have ${teams}. Add or remove a table before starting.`,
+    });
+  }
+
+  const canStart = problems.length === 0;
+  const validation: StartValidationResult = {
+    canStart,
+    sitOutSeat: null,
+    problems,
+  };
+
+  if (!canStart) {
+    return { validation, movement: null };
+  }
+
+  // Random round-1 pairing, seeded per game+section so a retried start is
+  // reproducible, then expanded into the two-table (open/closed) board rows.
+  const matches = swissTeamsRoundOne(
+    teams,
+    swissTeamsRoundOneSeed(gameId, section),
+  );
+  const movement = swissTeamsRoundToMaterializable(1, boardsPerRound, matches);
 
   return { validation, movement };
 }
@@ -166,6 +235,7 @@ async function resolveAllSections(
         s.section,
         selected,
         seatedSeats,
+        gameId,
       );
       return { section: s.section, resolved };
     }),

@@ -33,7 +33,7 @@ describe("resolveSectionStart", () => {
   });
 
   it("returns NO_MOVEMENT_SELECTED when nothing is selected", async () => {
-    const result = await resolveSectionStart("A", null, ["A1NS", "A1EW"]);
+    const result = await resolveSectionStart("A", null, ["A1NS", "A1EW"], "g1");
     expect(result.validation.canStart).toBe(false);
     expect(result.movement).toBeNull();
     expect(result.validation.problems.map((p) => p.code)).toContain(
@@ -46,6 +46,7 @@ describe("resolveSectionStart", () => {
       "A",
       { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
       seatsForTables(5),
+      "g1",
     );
 
     expect(result.validation.canStart).toBe(true);
@@ -62,6 +63,7 @@ describe("resolveSectionStart", () => {
       "A",
       { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
       seated,
+      "g1",
     );
 
     expect(result.validation.canStart).toBe(true);
@@ -80,6 +82,7 @@ describe("resolveSectionStart", () => {
       "B",
       { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
       seated,
+      "g1",
     );
 
     expect(result.validation.canStart).toBe(true);
@@ -95,6 +98,7 @@ describe("resolveSectionStart", () => {
       "A",
       { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
       seated,
+      "g1",
     );
 
     expect(result.validation.canStart).toBe(false);
@@ -148,6 +152,7 @@ describe("resolveSectionStart", () => {
       "A",
       { source: "SPEC", specId: 10, boardsPerRound: 2 },
       seated,
+      "g1",
     );
 
     expect(result.validation.canStart).toBe(true);
@@ -211,6 +216,7 @@ describe("resolveSectionStart", () => {
       "A",
       { source: "SPEC", specId: 11, boardsPerRound: 2 },
       seated,
+      "g1",
     );
 
     expect(result.validation.canStart).toBe(true);
@@ -237,9 +243,79 @@ describe("resolveSectionStart", () => {
           mitchell: { tables: 6, rounds: 5, boardsPerRound: 3, skip: true },
         },
         seated,
+        "g1",
       ),
     ).rejects.toThrow(
       "Sit-out handling is only supported for Standard Mitchell movements.",
     );
+  });
+
+  it("resolves a fully-seated Swiss Teams and materializes round 1 as two tables per match", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      { source: "SWISS_TEAMS", swissTeams: { teams: 4, rounds: 5, boardsPerRound: 6 } },
+      seatsForTables(4),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement).not.toBeNull();
+
+    // Four teams => two matches => four tables, each with round 1 only.
+    expect(result.movement!.map((t) => t.tableNumber).sort((a, b) => a - b)).toEqual([
+      1, 2, 3, 4,
+    ]);
+    for (const table of result.movement!) {
+      expect(table.rounds).toHaveLength(1);
+      expect(table.rounds[0].roundNumber).toBe(1);
+      // Round 1 plays boards 1..6.
+      expect(table.rounds[0].boardStart).toBe(1);
+      expect(table.rounds[0].boardEnd).toBe(6);
+      // Each table hosts a home NS pair and an away EW pair from another table.
+      expect(table.rounds[0].ns).toMatch(/NS$/);
+      expect(table.rounds[0].ew).toMatch(/EW$/);
+    }
+  });
+
+  it("blocks a Swiss Teams start with an odd team count", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      { source: "SWISS_TEAMS", swissTeams: { teams: 3, rounds: 5, boardsPerRound: 6 } },
+      seatsForTables(3),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(false);
+    expect(result.movement).toBeNull();
+    expect(result.validation.problems.map((p) => p.code)).toContain(
+      "ODD_TEAM_COUNT",
+    );
+  });
+
+  it("blocks a Swiss Teams start when a table is one pair short (no half teams)", async () => {
+    const seated = seatsForTables(4).filter((s) => s !== "A3EW");
+
+    const result = await resolveSectionStart(
+      "A",
+      { source: "SWISS_TEAMS", swissTeams: { teams: 4, rounds: 5, boardsPerRound: 6 } },
+      seated,
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(false);
+    expect(result.movement).toBeNull();
+    expect(result.validation.problems.map((p) => p.code)).toContain(
+      "TEAMS_SIT_OUT_NOT_ALLOWED",
+    );
+  });
+
+  it("draws round 1 deterministically for a given game+section", async () => {
+    const spec = {
+      source: "SWISS_TEAMS" as const,
+      swissTeams: { teams: 6, rounds: 5, boardsPerRound: 6 },
+    };
+    const a = await resolveSectionStart("A", spec, seatsForTables(6), "g1");
+    const b = await resolveSectionStart("A", spec, seatsForTables(6), "g1");
+    expect(a.movement).toEqual(b.movement);
   });
 });

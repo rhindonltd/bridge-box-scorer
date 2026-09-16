@@ -105,4 +105,12 @@ export const SocketEvents = {
   // drawn round number plus advisories (unavoidable repeat, stationary
   // conflict, sit-out pair) for the director.
   DRAW_NEXT_SWISS_ROUND: "swiss:drawNextRound",
+
+  // Client-initiated (director): draw the next Swiss Teams round from the
+  // current standings. Only valid once the current round is fully scored and
+  // the event has rounds remaining. Materializes the next round's boards (two
+  // tables per match) and broadcasts the resulting live updates; the
+  // acknowledgement carries the drawn round number plus an unavoidable-repeat
+  // advisory for the director.
+  DRAW_NEXT_SWISS_TEAMS_ROUND: "swissTeams:drawNextRound",
 } as const;
