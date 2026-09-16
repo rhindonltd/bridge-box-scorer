@@ -5,12 +5,27 @@ import { parseSeat, Seat } from "@/model/participants";
 
 interface Props {
   seat: Seat;
-  onSubmitPair: (player1: NewPlayer, player2: NewPlayer) => void;
+  /**
+   * Whether to show the optional "Team name" field. True only for the home
+   * (NS) pair of a Teams event; the entered value (if any) is passed as the
+   * third argument to `onSubmitPair`.
+   */
+  showTeamName?: boolean;
+  onSubmitPair: (
+    player1: NewPlayer,
+    player2: NewPlayer,
+    teamName?: string,
+  ) => void;
 }
 
-export default function EnterPlayerNames({ seat, onSubmitPair }: Props) {
+export default function EnterPlayerNames({
+  seat,
+  showTeamName = false,
+  onSubmitPair,
+}: Props) {
   const [player1, setPlayer1] = useState<NewPlayer | null>(null);
   const [player2, setPlayer2] = useState<NewPlayer | null>(null);
+  const [teamName, setTeamName] = useState("");
 
   const parsedSeat = parseSeat(seat);
 
@@ -49,6 +64,32 @@ export default function EnterPlayerNames({ seat, onSubmitPair }: Props) {
             value={player2}
             onChange={setPlayer2}
           />
+
+          {showTeamName && (
+            <div className="space-y-1">
+              <label
+                htmlFor="team-name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Team name (optional)
+              </label>
+              <input
+                id="team-name"
+                type="text"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                placeholder="Defaults to North's surname"
+                className="
+                  w-full
+                  rounded-xl
+                  border border-gray-300
+                  px-3 py-2
+                  text-base
+                  focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500
+                "
+              />
+            </div>
+          )}
         </div>
 
         {sameNationalId && (
@@ -60,7 +101,13 @@ export default function EnterPlayerNames({ seat, onSubmitPair }: Props) {
 
         <button
           disabled={!canSubmit}
-          onClick={() => onSubmitPair(player1!, player2!)}
+          onClick={() =>
+            onSubmitPair(
+              player1!,
+              player2!,
+              showTeamName ? teamName : undefined,
+            )
+          }
           className="
             w-full
             rounded-xl

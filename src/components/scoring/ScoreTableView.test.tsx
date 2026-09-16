@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 import { ScoreTableView } from "./ScoreTableView";
 import {
@@ -7,6 +7,7 @@ import {
   numberCell,
   contractCell,
   multilineCell,
+  expandableCell,
   type ScoreTable,
 } from "@/scoring/table/score-table";
 import type { BoardOutcome } from "@/model/score";
@@ -70,5 +71,36 @@ describe("ScoreTableView", () => {
     const { container } = render(<ScoreTableView table={table()} />);
     expect(container.textContent).toContain("♠"); // 4S
     expect(container.textContent).toContain("NT"); // 3NT
+  });
+
+  it("renders an expandable cell as a collapsed label, revealing lines on click", () => {
+    const expandable: ScoreTable = {
+      columns: [{ label: "Team" }],
+      rows: [
+        {
+          highlightIds: ["A1"],
+          cells: [
+            expandableCell("Sharks", [
+              "Alice Adams",
+              "Bob Brown",
+              "Carol Clark",
+              "Dan Day",
+            ]),
+          ],
+        },
+      ],
+    };
+
+    render(<ScoreTableView table={expandable} />);
+
+    const toggle = screen.getByRole("button", { name: "Sharks" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Alice Adams")).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Alice Adams")).toBeInTheDocument();
+    expect(screen.getByText("Dan Day")).toBeInTheDocument();
   });
 });

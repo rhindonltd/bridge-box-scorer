@@ -9,8 +9,9 @@ vi.mock("swr", () => ({
   default: (...args: unknown[]) => mockUseSWR(...args),
 }));
 
+const mockGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
-  useRequiredGame: () => ({ game: { gameId: "g1" }, mutateGame: vi.fn() }),
+  useRequiredGame: () => ({ game: mockGame(), mutateGame: vi.fn() }),
 }));
 
 const mockUseSections = vi.fn();
@@ -41,7 +42,10 @@ vi.mock("@/app/game/[gameId]/join/ClaimSeatTransfer", () => ({
   ClaimSeatTransfer: () => <div data-testid="claim-seat-transfer" />,
 }));
 
-// SelectTable stub: exposes a button that selects seat A1NS.
+// The seat the SelectTable stub selects; tests override it to exercise NS vs EW.
+let pickedSeat = "A1NS";
+
+// SelectTable stub: exposes a button that selects the current `pickedSeat`.
 vi.mock("@/app/game/[gameId]/join/SelectTable", () => ({
   default: ({
     onSeatSelected,
@@ -52,28 +56,32 @@ vi.mock("@/app/game/[gameId]/join/SelectTable", () => ({
   }) => (
     <div>
       <div data-testid="starting-count">{startingPositions.length}</div>
-      <button data-testid="pick-seat" onClick={() => onSeatSelected("A1NS")}>
+      <button data-testid="pick-seat" onClick={() => onSeatSelected(pickedSeat)}>
         pick
       </button>
     </div>
   ),
 }));
 
-// EnterPlayerNames stub: exposes a submit button that emits two players.
+// EnterPlayerNames stub: exposes the seat, whether the team-name field is
+// shown, and a submit button that emits two players plus a fixed team name.
 vi.mock("@/app/game/[gameId]/join/EnterPlayerNames", () => ({
   default: ({
     seat,
+    showTeamName,
     onSubmitPair,
   }: {
     seat: string;
-    onSubmitPair: (p1: unknown, p2: unknown) => void;
+    showTeamName?: boolean;
+    onSubmitPair: (p1: unknown, p2: unknown, teamName?: string) => void;
   }) => (
     <div>
       <div data-testid="sheet-seat">{seat}</div>
+      <div data-testid="show-team-name">{String(!!showTeamName)}</div>
       <button
         data-testid="submit-pair"
         onClick={() =>
-          onSubmitPair({ firstName: "A" }, { firstName: "B" })
+          onSubmitPair({ firstName: "A" }, { firstName: "B" }, "Sharks")
         }
       >
         submit
@@ -85,6 +93,8 @@ vi.mock("@/app/game/[gameId]/join/EnterPlayerNames", () => ({
 describe("SelectSeatPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    pickedSeat = "A1NS";
+    mockGame.mockReturnValue({ gameId: "g1", gameType: "PAIRS" });
     mockUseSWR.mockReturnValue({ data: undefined });
     mockUseSections.mockReturnValue({ sections: [] });
     mockCreateParticipant.mockResolvedValue(undefined);
@@ -134,14 +144,82 @@ describe("SelectSeatPage", () => {
     fireEvent.click(screen.getByTestId("submit-pair"));
 
     await waitFor(() =>
-      expect(mockCreateParticipant).toHaveBeenCalledWith("g1", {
-        type: "PAIR",
-        initialSeat: "A1NS",
-        player1: { firstName: "A" },
-        player2: { firstName: "B" },
-      }),
+      expect(mockCreateParticipant).toHaveBeenCalledWith(
+        "g1",
+        {
+          type: "PAIR",
+          initialSeat: "A1NS",
+          player1: { firstName: "A" },
+          player2: { firstName: "B" },
+        },
+        // Pairs event: no team name is forwarded.
+        undefined,
+      ),
     );
     await waitFor(() => expect(onSeatSelected).toHaveBeenCalledWith("A1NS"));
+  });
+
+  describe("team name (Teams event)", () => {
+    it("shows the team-name field for an NS seat in a Teams event", () => {
+      mockGame.mockReturnValue({ gameId: "g1", gameType: "TEAMS" });
+      pickedSeat = "A1NS";
+      render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      fireEvent.click(screen.getByTestId("pick-seat"));
+      expect(screen.getByTestId("show-team-name")).toHaveTextContent("true");
+    });
+
+    it("hides the team-name field for an EW seat in a Teams event", () => {
+      mockGame.mockReturnValue({ gameId: "g1", gameType: "TEAMS" });
+      pickedSeat = "A1EW";
+      render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      fireEvent.click(screen.getByTestId("pick-seat"));
+      expect(screen.getByTestId("show-team-name")).toHaveTextContent("false");
+    });
+
+    it("hides the team-name field for an NS seat in a Pairs event", () => {
+      mockGame.mockReturnValue({ gameId: "g1", gameType: "PAIRS" });
+      pickedSeat = "A1NS";
+      render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      fireEvent.click(screen.getByTestId("pick-seat"));
+      expect(screen.getByTestId("show-team-name")).toHaveTextContent("false");
+    });
+
+    it("forwards the team name for an NS seat in a Teams event", async () => {
+      mockGame.mockReturnValue({ gameId: "g1", gameType: "TEAMS" });
+      pickedSeat = "A1NS";
+      render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      fireEvent.click(screen.getByTestId("pick-seat"));
+      fireEvent.click(screen.getByTestId("submit-pair"));
+
+      await waitFor(() =>
+        expect(mockCreateParticipant).toHaveBeenCalledWith(
+          "g1",
+          expect.objectContaining({ initialSeat: "A1NS" }),
+          "Sharks",
+        ),
+      );
+    });
+
+    it("does not forward a team name for an EW seat even in a Teams event", async () => {
+      mockGame.mockReturnValue({ gameId: "g1", gameType: "TEAMS" });
+      pickedSeat = "A1EW";
+      render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      fireEvent.click(screen.getByTestId("pick-seat"));
+      fireEvent.click(screen.getByTestId("submit-pair"));
+
+      await waitFor(() =>
+        expect(mockCreateParticipant).toHaveBeenCalledWith(
+          "g1",
+          expect.objectContaining({ initialSeat: "A1EW" }),
+          undefined,
+        ),
+      );
+    });
   });
 
   it("shows the server error and keeps the sheet open when seating is rejected", async () => {

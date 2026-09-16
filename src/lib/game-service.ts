@@ -120,10 +120,11 @@ export async function generateShareCode(gameId: string): Promise<string> {
 export async function createParticipant(
   gameId: string,
   newParticipant: NewParticipant,
+  teamName?: string,
 ) {
   const response = await emitWithAck<{ success: boolean; key: string }>(
     SocketEvents.CREATE_PARTICIPANT,
-    { gameId, newParticipant },
+    { gameId, newParticipant, teamName },
   );
 
   setPlayerToken(gameId, {

@@ -13,7 +13,11 @@ export type ScoreCell =
   | { kind: "text"; value: string }
   | { kind: "multiline"; values: string[] }
   | { kind: "number"; value: number; decimals?: number }
-  | { kind: "contract"; outcome: BoardOutcome };
+  | { kind: "contract"; outcome: BoardOutcome }
+  // A summary label that reveals a stack of detail lines when tapped (e.g. a
+  // team name that expands to its four player names). The display component
+  // owns the toggle; the scoring layer only supplies the label and lines.
+  | { kind: "expandable"; label: string; lines: string[] };
 
 export interface ScoreColumn {
   /** Header label shown at the top of the column. */
@@ -44,6 +48,14 @@ export function textCell(value: string): ScoreCell {
 /** A left-aligned stack of text lines (e.g. the two players of a pair). */
 export function multilineCell(values: string[]): ScoreCell {
   return { kind: "multiline", values };
+}
+
+/**
+ * A summary label that reveals a stack of detail lines when tapped (e.g. a
+ * team name that expands to its four player names).
+ */
+export function expandableCell(label: string, lines: string[]): ScoreCell {
+  return { kind: "expandable", label, lines };
 }
 
 export function numberCell(value: number, decimals?: number): ScoreCell {

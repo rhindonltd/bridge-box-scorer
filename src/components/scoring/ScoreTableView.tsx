@@ -6,7 +6,7 @@ import {
   ScoreTable,
   formatNumberCell,
 } from "@/scoring/table/score-table";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 
 type Props = {
   table: ScoreTable;
@@ -21,6 +21,35 @@ type Props = {
    */
   rowTestId?: string;
 };
+
+/**
+ * A summary label (e.g. a team name) that toggles a stack of detail lines
+ * (e.g. its four players) when tapped. Rendered as an accessible, keyboard-
+ * focusable button with `aria-expanded`.
+ */
+function ExpandableCell({ label, lines }: { label: string; lines: string[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="text-left">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((v) => !v)}
+        className="text-left font-medium underline decoration-dotted underline-offset-2"
+      >
+        {label}
+      </button>
+      {expanded && (
+        <div className="mt-1 text-sm text-gray-600">
+          {lines.map((value, i) => (
+            <div key={i}>{value}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function renderCell(cell: ScoreCell, key: number): ReactNode {
   switch (cell.kind) {
@@ -38,6 +67,8 @@ function renderCell(cell: ScoreCell, key: number): ReactNode {
       return formatNumberCell(cell);
     case "contract":
       return <BoardResult key={key} boardOutcome={cell.outcome} />;
+    case "expandable":
+      return <ExpandableCell key={key} label={cell.label} lines={cell.lines} />;
   }
 }
 

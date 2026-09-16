@@ -15,6 +15,13 @@
       "when": 1788423410142,
       "tag": "0001_sleepy_colossus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789578327204,
+      "tag": "0002_hesitant_radioactive_man",
+      "breakpoints": true
     }
   ]
 }

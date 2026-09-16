@@ -107,6 +107,65 @@ describe("registerCreateParticipantHandler (unit)", () => {
       );
     });
 
+    it("forwards an optional team name to createPairWithPlayers", async () => {
+      const socket = makeDirectorSocket();
+      const io = makeIo();
+
+      registerCreateParticipantHandler(socket as any, io as any);
+      const handler = socket.on.mock.calls[0][1];
+      const cb = vi.fn();
+
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
+      vi.mocked(findPairs).mockResolvedValue([]);
+
+      await handler(
+        {
+          gameId: "game-1",
+          newParticipant: {
+            type: "PAIR",
+            initialSeat: "A1NS",
+            player1: { firstName: "P1", lastName: "L1" },
+            player2: { firstName: "P2", lastName: "L2" },
+          },
+          teamName: "Sharks",
+        },
+        cb,
+      );
+
+      expect(createPairWithPlayers).toHaveBeenCalledWith(
+        "game-1",
+        expect.objectContaining({ teamName: "Sharks" }),
+      );
+    });
+
+    it("passes teamName undefined when none is supplied", async () => {
+      const socket = makeDirectorSocket();
+      registerCreateParticipantHandler(socket as any, makeIo() as any);
+      const handler = socket.on.mock.calls[0][1];
+      const cb = vi.fn();
+
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
+      vi.mocked(findPairs).mockResolvedValue([]);
+
+      await handler(
+        {
+          gameId: "game-1",
+          newParticipant: {
+            type: "PAIR",
+            initialSeat: "A1NS",
+            player1: { firstName: "P1", lastName: "L1" },
+            player2: { firstName: "P2", lastName: "L2" },
+          },
+        },
+        cb,
+      );
+
+      expect(createPairWithPlayers).toHaveBeenCalledWith(
+        "game-1",
+        expect.objectContaining({ teamName: undefined }),
+      );
+    });
+
     it("calls cb with success: false on error", async () => {
       const socket = makeDirectorSocket();
       registerCreateParticipantHandler(socket as any, makeIo() as any);

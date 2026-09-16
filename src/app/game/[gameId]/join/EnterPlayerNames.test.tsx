@@ -82,6 +82,8 @@ describe("EnterPlayerNames", () => {
     expect(onSubmitPair).toHaveBeenCalledWith(
       { firstName: "Ada", lastName: "" },
       { firstName: "Grace", lastName: "" },
+      // No team-name field shown, so no team name is passed.
+      undefined,
     );
   });
 
@@ -137,5 +139,78 @@ describe("EnterPlayerNames", () => {
     expect(
       screen.getByRole("button", { name: "Enter Pair" }),
     ).not.toBeDisabled();
+  });
+
+  describe("optional team name", () => {
+    it("does not render the team-name field by default", () => {
+      render(<EnterPlayerNames seat="A1NS" onSubmitPair={vi.fn()} />);
+      expect(
+        screen.queryByLabelText("Team name (optional)"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("renders the team-name field when showTeamName is set", () => {
+      render(
+        <EnterPlayerNames seat="A1NS" showTeamName onSubmitPair={vi.fn()} />,
+      );
+      expect(
+        screen.getByLabelText("Team name (optional)"),
+      ).toBeInTheDocument();
+    });
+
+    it("forwards the entered team name on submit", () => {
+      const onSubmitPair = vi.fn();
+      render(
+        <EnterPlayerNames
+          seat="A1NS"
+          showTeamName
+          onSubmitPair={onSubmitPair}
+        />,
+      );
+
+      fireEvent.change(screen.getByLabelText("North Player"), {
+        target: { value: "Ada" },
+      });
+      fireEvent.change(screen.getByLabelText("South Player"), {
+        target: { value: "Grace" },
+      });
+      fireEvent.change(screen.getByLabelText("Team name (optional)"), {
+        target: { value: "Sharks" },
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Enter Pair" }));
+
+      expect(onSubmitPair).toHaveBeenCalledWith(
+        { firstName: "Ada", lastName: "" },
+        { firstName: "Grace", lastName: "" },
+        "Sharks",
+      );
+    });
+
+    it("forwards an empty string when the team name is left blank", () => {
+      const onSubmitPair = vi.fn();
+      render(
+        <EnterPlayerNames
+          seat="A1NS"
+          showTeamName
+          onSubmitPair={onSubmitPair}
+        />,
+      );
+
+      fireEvent.change(screen.getByLabelText("North Player"), {
+        target: { value: "Ada" },
+      });
+      fireEvent.change(screen.getByLabelText("South Player"), {
+        target: { value: "Grace" },
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Enter Pair" }));
+
+      expect(onSubmitPair).toHaveBeenCalledWith(
+        { firstName: "Ada", lastName: "" },
+        { firstName: "Grace", lastName: "" },
+        "",
+      );
+    });
   });
 });
