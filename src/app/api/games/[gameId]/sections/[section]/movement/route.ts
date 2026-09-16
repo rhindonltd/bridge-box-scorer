@@ -13,6 +13,7 @@ import { SelectedMovement } from "@/model/selected-movement";
 import {
   mitchellSpecSchema,
   swissSpecSchema,
+  swissTeamsSpecSchema,
 } from "@/model/selected-movement";
 
 const bodySchema = z.object({
@@ -20,6 +21,7 @@ const bodySchema = z.object({
   boardsPerRound: z.number().int().positive().optional(),
   mitchell: mitchellSpecSchema.optional(),
   swiss: swissSpecSchema.optional(),
+  swissTeams: swissTeamsSpecSchema.optional(),
 });
 
 /**
@@ -38,10 +40,12 @@ export const PUT = withDirectorRoute(async ({ gameId, req }) => {
     );
   }
 
-  const { id, boardsPerRound, mitchell, swiss } = parsed.data;
+  const { id, boardsPerRound, mitchell, swiss, swissTeams } = parsed.data;
 
   let selected: SelectedMovement | null;
-  if (swiss) {
+  if (swissTeams) {
+    selected = { source: "SWISS_TEAMS", swissTeams };
+  } else if (swiss) {
     selected = { source: "SWISS", swiss };
   } else if (mitchell) {
     selected = { source: "MITCHELL", mitchell };

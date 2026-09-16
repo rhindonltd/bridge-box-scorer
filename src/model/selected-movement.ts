@@ -16,6 +16,14 @@ import { z } from "zod";
  *   at start, and each later round is drawn live by the director from current
  *   standings. The selection therefore carries only the setup parameters
  *   (tables, total rounds, boards-per-round); no per-round layout is stored.
+ * - SWISS_TEAMS: a Swiss Teams movement. A team is the two pairs seated at one
+ *   home table. Like SWISS, its schedule is drawn live: round 1 is a random
+ *   team pairing and later rounds are drawn from standings. Each team's NS pair
+ *   stays at its home table while its other pair moves to the opponent's home
+ *   table (open/closed room), so a match spans two tables playing the same
+ *   boards. The selection carries only the setup parameters (team count, total
+ *   rounds, boards-per-round); no per-round layout is stored. The team count
+ *   must be even (three-way "triangle" handling is not yet supported).
  */
 
 export const mitchellSpecSchema = z.object({
@@ -53,6 +61,23 @@ export const swissSpecSchema = z.object({
 
 export type SwissMovementSpec = z.infer<typeof swissSpecSchema>;
 
+/**
+ * Setup parameters for a Swiss Teams movement. A team is the two pairs seated
+ * at one home table, so `teams` equals the table count. Like Swiss Pairs there
+ * is no per-round layout: round 1 is a random draw and later rounds are drawn
+ * from standings, so all that is stored is the team count, the number of rounds
+ * to play, and the boards played per round (which fixes each round's board
+ * range). The team count must be even; odd counts are rejected at start/draw
+ * (three-way handling is future work).
+ */
+export const swissTeamsSpecSchema = z.object({
+  teams: z.number().int().positive(),
+  rounds: z.number().int().positive(),
+  boardsPerRound: z.number().int().positive(),
+});
+
+export type SwissTeamsMovementSpec = z.infer<typeof swissTeamsSpecSchema>;
+
 export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SPEC"),
@@ -69,6 +94,10 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SWISS"),
     swiss: swissSpecSchema,
+  }),
+  z.object({
+    source: z.literal("SWISS_TEAMS"),
+    swissTeams: swissTeamsSpecSchema,
   }),
 ]);
 
@@ -123,6 +152,14 @@ export function selectedMovementsEqual(
       a.swiss.tables === b.swiss.tables &&
       a.swiss.rounds === b.swiss.rounds &&
       a.swiss.boardsPerRound === b.swiss.boardsPerRound
+    );
+  }
+
+  if (a.source === "SWISS_TEAMS" && b.source === "SWISS_TEAMS") {
+    return (
+      a.swissTeams.teams === b.swissTeams.teams &&
+      a.swissTeams.rounds === b.swissTeams.rounds &&
+      a.swissTeams.boardsPerRound === b.swissTeams.boardsPerRound
     );
   }
 

@@ -12,6 +12,7 @@ import {
   setSectionMitchellMovement,
   setSectionMovementSpec,
   setSectionSwissMovement,
+  setSectionSwissTeamsMovement,
 } from "@/lib/section-service";
 import {
   groupByBoardsPerPair,
@@ -19,7 +20,12 @@ import {
 } from "./movement-recommendations";
 import { MovementPreviewDialog } from "./MovementPreviewDialog";
 import { SwissSetupDialog } from "./SwissSetupDialog";
-import type { SwissMovementSpec } from "@/model/selected-movement";
+import { SwissTeamsSetupDialog } from "./SwissTeamsSetupDialog";
+import type {
+  SwissMovementSpec,
+  SwissTeamsMovementSpec,
+} from "@/model/selected-movement";
+import type { GameType } from "@/db/games/types/game-type";
 
 interface Props {
   gameId: string;
@@ -61,6 +67,12 @@ interface Props {
    * shown only when true.
    */
   singleSection?: boolean;
+  /**
+   * The game's event type. A TEAMS game offers Swiss Teams (each table's two
+   * pairs form a team) in place of Swiss Pairs; a PAIRS game offers Swiss
+   * Pairs. Defaults to PAIRS.
+   */
+  gameType?: GameType;
 }
 
 /**
@@ -81,7 +93,9 @@ export function SectionMovementPicker({
   onSelected,
   onAddSection,
   singleSection = false,
+  gameType = "PAIRS",
 }: Props) {
+  const isTeams = gameType === "TEAMS";
   // Seeded specs for this table count, used to resolve a SPEC recommendation's
   // concrete id/type at selection time (recommendations reference specs by
   // name, not id).
@@ -104,17 +118,36 @@ export function SectionMovementPicker({
   // is only persisted once the director confirms with "Select Movement".
   const [preview, setPreview] = useState<RecommendedMovement | null>(null);
   const [saving, setSaving] = useState(false);
-  // Whether the Swiss Pairs setup dialog is open.
+  // Whether the Swiss Pairs / Swiss Teams setup dialog is open.
   const [swissOpen, setSwissOpen] = useState(false);
+  const [swissTeamsOpen, setSwissTeamsOpen] = useState(false);
 
   const selectedSwiss =
     selectedMovement?.source === "SWISS" ? selectedMovement.swiss : null;
+  const selectedSwissTeams =
+    selectedMovement?.source === "SWISS_TEAMS"
+      ? selectedMovement.swissTeams
+      : null;
 
   async function handleConfirmSwiss(spec: SwissMovementSpec) {
     setSaving(true);
     try {
       await setSectionSwissMovement(gameId, section, spec);
       setSwissOpen(false);
+      onDone?.();
+      onSelected?.();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to set movement");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmSwissTeams(spec: SwissTeamsMovementSpec) {
+    setSaving(true);
+    try {
+      await setSectionSwissTeamsMovement(gameId, section, spec);
+      setSwissTeamsOpen(false);
       onDone?.();
       onSelected?.();
     } catch (err) {
@@ -194,29 +227,56 @@ export function SectionMovementPicker({
               Swiss
             </h2>
             <div className="p-3">
-              <button
-                type="button"
-                onClick={() => setSwissOpen(true)}
-                data-testid="swiss-movement-option"
-                className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition hover:bg-white ${
-                  selectedSwiss
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 bg-white"
-                }`}
-              >
-                <span>
-                  <span className="block text-sm font-semibold text-gray-900">
-                    Swiss Pairs
+              {isTeams ? (
+                <button
+                  type="button"
+                  onClick={() => setSwissTeamsOpen(true)}
+                  data-testid="swiss-teams-movement-option"
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition hover:bg-white ${
+                    selectedSwissTeams
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <span>
+                    <span className="block text-sm font-semibold text-gray-900">
+                      Swiss Teams
+                    </span>
+                    <span className="block text-xs text-gray-500">
+                      The two pairs at each table form a team; teams are re-drawn
+                      each round by standing. You draw each round as the event
+                      runs.
+                    </span>
                   </span>
-                  <span className="block text-xs text-gray-500">
-                    Pairs are re-drawn each round by standing; you draw each
-                    round as the event runs.
+                  <span className="shrink-0 text-xs font-medium text-blue-600">
+                    {selectedSwissTeams ? "Selected" : "Set up"}
                   </span>
-                </span>
-                <span className="shrink-0 text-xs font-medium text-blue-600">
-                  {selectedSwiss ? "Selected" : "Set up"}
-                </span>
-              </button>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSwissOpen(true)}
+                  data-testid="swiss-movement-option"
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition hover:bg-white ${
+                    selectedSwiss
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
+                  <span>
+                    <span className="block text-sm font-semibold text-gray-900">
+                      Swiss Pairs
+                    </span>
+                    <span className="block text-xs text-gray-500">
+                      Pairs are re-drawn each round by standing; you draw each
+                      round as the event runs.
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs font-medium text-blue-600">
+                    {selectedSwiss ? "Selected" : "Set up"}
+                  </span>
+                </button>
+              )}
             </div>
           </section>
         )}
@@ -272,6 +332,17 @@ export function SectionMovementPicker({
           if (!saving) setSwissOpen(false);
         }}
         onConfirm={handleConfirmSwiss}
+      />
+
+      <SwissTeamsSetupDialog
+        open={swissTeamsOpen}
+        teams={tables}
+        initial={selectedSwissTeams}
+        saving={saving}
+        onCancel={() => {
+          if (!saving) setSwissTeamsOpen(false);
+        }}
+        onConfirm={handleConfirmSwissTeams}
       />
     </div>
   );

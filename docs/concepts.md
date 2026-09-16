@@ -49,6 +49,14 @@ step-by-step instructions.
   round is set at the start — the director draws each later round once the
   current one is fully scored. Swiss Pairs runs as a single group of tables
   (one section).
+- **Swiss Teams** — the teams version of Swiss. A **team** is simply the two
+  pairs sitting at one table: the North/South pair and the East/West pair — no
+  separate team sign-up is needed. Each round two teams play the same boards
+  against each other in two rooms: each team's North/South pair stays at their
+  home table while their other pair goes to the opponents' table. The first
+  round is a random draw; the director draws each later round from the
+  standings, avoiding repeat opponents. Swiss Teams runs as a single group of
+  tables (one section) and needs an **even number of teams**.
 - **Stationary pair** — a pair that stays at the same table and direction for
   the whole event, with their opponents coming to them. In Swiss Pairs the
   director can mark pairs as stationary on the Tables step.
@@ -84,16 +92,19 @@ step-by-step instructions.
   - **IMP** — International Match Points.
   - **XIMP** — Cross-IMPs.
   - Teams games use team match / overall scoring.
-- **Victory Points (VP)** — how a **Swiss Pairs** game is ranked overall. Each
-  round is turned into Victory Points on a 20-point scale, and a pair's session
-  result is the sum of its Victory Points across every round, highest total
-  first. How a round earns its points depends on the game's scoring method:
-  - On **IMPs**, each round is a head-to-head match and the margin between the
-    two pairs decides how the 20 points are shared.
-  - On **matchpoints**, each round is scored as a percentage against the whole
-    field, and that percentage sets the pair's Victory Points for the round.
+- **Victory Points (VP)** — how a **Swiss** game (Pairs or Teams) is ranked
+  overall. Each round is turned into Victory Points on a 20-point scale, and a
+  pair's or team's session result is the sum of its Victory Points across every
+  round, highest total first. How a round earns its points depends on the game:
+  - **Swiss Pairs on IMPs**, each round is a head-to-head match and the margin
+    between the two pairs decides how the 20 points are shared.
+  - **Swiss Pairs on matchpoints**, each round is scored as a percentage
+    against the whole field, and that percentage sets the pair's Victory Points.
+  - **Swiss Teams**, each round is a match between two teams played over the
+    same boards in two rooms; the two rooms' results are compared, and the
+    winning margin decides how the 20 points are shared between the teams.
 
-  The Swiss Pairs leaderboard shows each pair with a column per round, so you
+  The Swiss leaderboard shows each pair or team with a column per round, so you
   can see the points won in each one. The round in progress shows a live
   running estimate — it starts at 10 (an even, average result) and updates as
   each table's results come in, so treat it as a guide that can still move until

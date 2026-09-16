@@ -29,6 +29,10 @@ vi.mock("./SectionMovementPicker", () => ({
   ),
 }));
 
+vi.mock("@/context/GameContext", () => ({
+  useRequiredGame: () => ({ game: { gameId: "g1", gameType: "PAIRS" } }),
+}));
+
 import { MovementStep } from "./MovementStep";
 
 describe("MovementStep", () => {

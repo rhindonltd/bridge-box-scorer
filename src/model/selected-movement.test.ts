@@ -63,6 +63,17 @@ describe("SelectedMovement round-trip", () => {
 
     expect(parsed).toEqual(selected);
   });
+
+  it("round-trips a SWISS_TEAMS selection", () => {
+    const selected: SelectedMovement = {
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 8, rounds: 7, boardsPerRound: 4 },
+    };
+
+    const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
+
+    expect(parsed).toEqual(selected);
+  });
 });
 
 describe("parseSelectedMovement", () => {
@@ -165,5 +176,30 @@ describe("selectedMovementsEqual", () => {
   it("treats SWISS as different from other sources", () => {
     expect(selectedMovementsEqual(swiss(), mitchell())).toBe(false);
     expect(selectedMovementsEqual(swiss(), spec(1))).toBe(false);
+  });
+
+  const swissTeams = (
+    over: Partial<{ teams: number; rounds: number; boardsPerRound: number }> = {},
+  ): SelectedMovement => ({
+    source: "SWISS_TEAMS",
+    swissTeams: { teams: 8, rounds: 7, boardsPerRound: 4, ...over },
+  });
+
+  it("compares SWISS_TEAMS selections by their defining fields", () => {
+    expect(selectedMovementsEqual(swissTeams(), swissTeams())).toBe(true);
+    expect(selectedMovementsEqual(swissTeams(), swissTeams({ rounds: 8 }))).toBe(
+      false,
+    );
+    expect(selectedMovementsEqual(swissTeams(), swissTeams({ teams: 6 }))).toBe(
+      false,
+    );
+    expect(
+      selectedMovementsEqual(swissTeams(), swissTeams({ boardsPerRound: 3 })),
+    ).toBe(false);
+  });
+
+  it("treats SWISS_TEAMS as different from other sources", () => {
+    expect(selectedMovementsEqual(swissTeams(), swiss())).toBe(false);
+    expect(selectedMovementsEqual(swissTeams(), mitchell())).toBe(false);
   });
 });

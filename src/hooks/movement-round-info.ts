@@ -72,6 +72,18 @@ export function useMovementRoundInfo(
     };
   }
 
+  if (selectedMovement.source === "SWISS_TEAMS") {
+    // Swiss Teams likewise carries its round count and boards-per-round on the
+    // selection; the schedule is drawn round by round, not stored.
+    return {
+      info: {
+        rounds: selectedMovement.swissTeams.rounds,
+        boardsPerRound: selectedMovement.swissTeams.boardsPerRound,
+      },
+      isLoading: false,
+    };
+  }
+
   // SPEC: rounds come from the fetched detail; boards-per-round is on the
   // selection itself. Every table plays the same round count, so the first
   // table is representative.

@@ -7,22 +7,27 @@ import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { PairTraveller } from "@/model/traveller";
 import { BoardOutcome } from "@/model/score";
 import { OverallScore } from "@/model/leaderboard";
-import { parseSeat } from "@/model/participants";
+import { AssignedPair, AssignedTeam, parseSeat } from "@/model/participants";
 import "@/scoring/plugins/register";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import { findTeams } from "@/db/games/queries/find-teams";
 import { ScoringType } from "@/db/games/types/scoring-type";
 import { parseSelectedMovement } from "@/model/selected-movement";
 import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
+import { calculateSwissTeamsVpOverall } from "@/scoring/swiss/swiss-teams-vp-overall";
 
 /**
  * A computed leaderboard: the overall score plus the participants it ranks.
+ * Participants are pairs for pair games and teams for team games; the pairing
+ * with the overall score is enforced by {@link OverallScoreAndParticipant} at
+ * the boundary this feeds.
  */
 export interface LeaderboardResult {
   type: OverallScore["type"];
   overallScore: OverallScore;
-  participants: (ReturnType<typeof toParticipant>)[];
+  participants: AssignedPair[] | AssignedTeam[];
 }
 
 /**
@@ -230,7 +235,16 @@ function computeCombined(
   gameId: string,
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
+  isSwissTeams: boolean,
+  teams: AssignedTeam[],
 ): LeaderboardResult {
+  // A Swiss Teams game ranks teams on Victory Points; every other game ranks
+  // pairs (Swiss VP or the standard board-pooled overall).
+  if (isSwissTeams) {
+    const overallScore = calculateSwissTeamsVpOverall(boardRows);
+    return { type: overallScore.type, overallScore, participants: teams };
+  }
+
   const overallScore =
     scoreSwissVp(boardRows, swissVpMode) ??
     scoreBoardsToOverall(boardRows, scoringType, gameId);
@@ -251,6 +265,8 @@ function computeSections(
   pairs: Pairs,
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
+  isSwissTeams: boolean,
+  teams: AssignedTeam[],
 ): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
   for (const row of boardRows) {
@@ -267,12 +283,32 @@ function computeSections(
     pairsBySection.set(section, arr);
   }
 
+  // Teams are section-qualified by their home NS seat id (e.g. "A1NS").
+  const teamsBySection = new Map<string, AssignedTeam[]>();
+  for (const team of teams) {
+    const { section } = parseSeat(team.id as Parameters<typeof parseSeat>[0]);
+    const arr = teamsBySection.get(section) ?? [];
+    arr.push(team);
+    teamsBySection.set(section, arr);
+  }
+
   const sections = Array.from(
     new Set([...rowsBySection.keys(), ...pairsBySection.keys()]),
   ).sort();
 
-  return sections.map((section) => {
+  return sections.map((section): SectionLeaderboard => {
     const sectionRows = rowsBySection.get(section) ?? [];
+
+    if (isSwissTeams) {
+      const overallScore = calculateSwissTeamsVpOverall(sectionRows);
+      return {
+        section,
+        type: overallScore.type,
+        overallScore,
+        participants: teamsBySection.get(section) ?? [],
+      };
+    }
+
     const overallScore =
       scoreSwissVp(sectionRows, swissVpMode) ??
       scoreBoardsToOverall(sectionRows, scoringType, section);
@@ -292,27 +328,41 @@ async function readLeaderboardInputs(
 ): Promise<{
   scoringType: ScoringType;
   swissVpMode: SwissVpMode;
+  isSwissTeams: boolean;
   boardRows: Board[];
   pairs: Pairs;
+  teams: AssignedTeam[];
 }> {
   const game = await findGameById(gameId);
-  const [boardRows, pairs] = await Promise.all([
+  const movement = parseSelectedMovement(game?.selectedMovement);
+  const isSwissTeams =
+    game?.gameType === "TEAMS" && movement?.source === "SWISS_TEAMS";
+
+  const [boardRows, pairs, teams] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
     findPairs(db),
+    // Teams are derived from the seating; only needed for a Swiss Teams game.
+    isSwissTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
   ]);
 
   // Swiss Pairs events rank overall on Victory Points, summed per round. The
   // per-round VP source depends on the scoring method: IMP games convert each
   // round's head-to-head IMP margin, MP games convert each round's field
   // matchpoint percentage. Any other movement keeps the board-pooled overall.
-  const movement = parseSelectedMovement(game?.selectedMovement);
   const swissVpMode: SwissVpMode =
     movement?.source === "SWISS" &&
     (game?.scoringType === "IMP" || game?.scoringType === "MP")
       ? game.scoringType
       : null;
 
-  return { scoringType: game!.scoringType, swissVpMode, boardRows, pairs };
+  return {
+    scoringType: game!.scoringType,
+    swissVpMode,
+    isSwissTeams,
+    boardRows,
+    pairs,
+    teams,
+  };
 }
 
 /**
@@ -326,7 +376,7 @@ export async function buildLeaderboards(
   db: Db,
   gameId: string,
 ): Promise<{ leaderboard: LeaderboardResult; sections: SectionLeaderboard[] }> {
-  const { scoringType, swissVpMode, boardRows, pairs } =
+  const { scoringType, swissVpMode, isSwissTeams, boardRows, pairs, teams } =
     await readLeaderboardInputs(db, gameId);
   return {
     leaderboard: computeCombined(
@@ -335,8 +385,17 @@ export async function buildLeaderboards(
       gameId,
       scoringType,
       swissVpMode,
+      isSwissTeams,
+      teams,
     ),
-    sections: computeSections(boardRows, pairs, scoringType, swissVpMode),
+    sections: computeSections(
+      boardRows,
+      pairs,
+      scoringType,
+      swissVpMode,
+      isSwissTeams,
+      teams,
+    ),
   };
 }
 
@@ -350,9 +409,17 @@ export async function computeLeaderboard(
   db: Db,
   gameId: string,
 ): Promise<LeaderboardResult> {
-  const { scoringType, swissVpMode, boardRows, pairs } =
+  const { scoringType, swissVpMode, isSwissTeams, boardRows, pairs, teams } =
     await readLeaderboardInputs(db, gameId);
-  return computeCombined(boardRows, pairs, gameId, scoringType, swissVpMode);
+  return computeCombined(
+    boardRows,
+    pairs,
+    gameId,
+    scoringType,
+    swissVpMode,
+    isSwissTeams,
+    teams,
+  );
 }
 
 /**
@@ -365,7 +432,14 @@ export async function computeSectionLeaderboards(
   db: Db,
   gameId: string,
 ): Promise<SectionLeaderboard[]> {
-  const { scoringType, swissVpMode, boardRows, pairs } =
+  const { scoringType, swissVpMode, isSwissTeams, boardRows, pairs, teams } =
     await readLeaderboardInputs(db, gameId);
-  return computeSections(boardRows, pairs, scoringType, swissVpMode);
+  return computeSections(
+    boardRows,
+    pairs,
+    scoringType,
+    swissVpMode,
+    isSwissTeams,
+    teams,
+  );
 }
