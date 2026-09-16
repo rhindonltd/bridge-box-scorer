@@ -611,7 +611,9 @@ scaffolding:
   the provisioning-owned sudo helper (`sudo -n /usr/local/bridgebox/bin/wifi-ctl.sh
   scan`). The app runs unprivileged and NetworkManager only lets root change
   networking, so the helper (not the app) takes the network lock, drops the
-  hotspot on the single radio, runs `nmcli device wifi list --rescan yes`, prints
+  hotspot on the single radio, runs
+  `nmcli -t -f SSID,SECURITY,SIGNAL device wifi list --rescan yes` (terminal mode
+  so the app's parser gets colon-separated rows, not the default table), prints
   its raw output verbatim, and restores the hotspot. The app parses that output
   and persists the outcome (`in-progress` → networks/failed); the scan never
   runs automatically and is triggered only by the "Scan for networks" button.

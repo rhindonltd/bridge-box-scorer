@@ -13,7 +13,10 @@ import { logger } from "@/lib/log";
  * Scans for nearby WiFi networks. The app runs unprivileged and NetworkManager
  * only lets root change networking, so the privileged scan is delegated to the
  * provisioning-owned sudo helper (`wifi-ctl.sh scan`), which runs
- * `nmcli device wifi list --rescan yes` and prints its RAW output verbatim.
+ * `nmcli -t -f SSID,SECURITY,SIGNAL device wifi list --rescan yes` and prints
+ * its RAW output verbatim. The `-t -f SSID,SECURITY,SIGNAL` flags matter: the
+ * parser reads nmcli terminal mode (colon-separated `SSID:SECURITY:SIGNAL`),
+ * not the default aligned table.
  *
  * The appliance now scans on its dedicated uplink adapter, so the players'
  * hotspot stays up throughout — the caller stays connected and reads the
@@ -40,7 +43,8 @@ export const POST = withAdminRoute(async () => {
 
   try {
     // The helper does the privileged rescan and prints raw
-    // `nmcli device wifi list` output verbatim.
+    // `nmcli -t -f SSID,SECURITY,SIGNAL device wifi list` output verbatim
+    // (terminal mode: colon-separated fields, one AP per line).
     const stdout = await runWifiCtl("scan");
     const networks = parseWifiScan(stdout, { excludeSSID: ap?.ssid ?? null });
 

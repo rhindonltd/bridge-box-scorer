@@ -33,12 +33,30 @@ during the operation and returns after (the UI already handles that reconnect).
 
 **1. Scan for networks** — needs privilege (rescan), returns the network list:
 
-- before: `nmcli device wifi list --rescan yes`
+- before: `nmcli -t -f SSID,SECURITY,SIGNAL device wifi list --rescan yes`
 - after:  `sudo -n /usr/local/bridgebox/bin/wifi-ctl.sh scan`
 
-The helper runs exactly `nmcli device wifi list --rescan yes` and prints its **raw output
-verbatim** on stdout — so your existing parser of that output needs no change. (It drops/rescans/
-restores the hotspot around it.)
+The helper must run exactly
+
+```
+nmcli -t -f SSID,SECURITY,SIGNAL device wifi list --rescan yes
+```
+
+and print its **raw output verbatim** on stdout. (It drops/rescans/restores the hotspot around it.)
+
+> **IMPORTANT — the `-t -f SSID,SECURITY,SIGNAL` flags are load-bearing.** The app's parser
+> (`parseWifiScan`) reads nmcli's **terminal mode**: one AP per line, colon-separated
+> `SSID:SECURITY:SIGNAL`, e.g.
+>
+> ```
+> HomeNet:WPA2:80
+> Cafe:--:55
+> ```
+>
+> It does **not** parse the default (no-`-t`) human-readable table (`IN-USE BSSID SSID MODE …`).
+> If the helper runs a bare `nmcli device wifi list --rescan yes`, the app receives the aligned
+> table, the parser discards every row, and the scan silently returns **zero networks** even
+> though nmcli found them. So the helper's scan verb MUST include `-t -f SSID,SECURITY,SIGNAL`.
 
 **2. Test candidate credentials** — needs privilege (create/up/down/delete a profile):
 
@@ -91,7 +109,9 @@ These work as `bridgebox` without privilege; leave them as-is.
   surface a "busy, try again" message and retry.
 
 ## Acceptance criteria
-- The "scan networks" UI works with the app calling `wifi-ctl.sh scan` (same list as before).
+- The "scan networks" UI works with the app calling `wifi-ctl.sh scan` (same list as before). The
+  helper's `scan` verb emits nmcli terminal mode (`-t -f SSID,SECURITY,SIGNAL`), not the default
+  table, so the app's parser receives colon-separated rows and lists the networks.
 - Credential testing works via `wifi-ctl.sh test-connect` and reports pass/fail from `TEST_RESULT:`.
 - Committing a network writes `wifi.json` (no direct activation); the box connects on its next
   online window.
