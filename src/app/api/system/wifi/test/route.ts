@@ -102,10 +102,15 @@ export const POST = withAdminRoute(async ({ req }) => {
       );
     }
 
+    // Surface the real reason (e.g. a sudo/helper invocation failure) rather
+    // than a generic "couldn't connect", so a misconfiguration is diagnosable
+    // from the UI and logs instead of looking like a wrong password. Mirrors
+    // the scan route's error handling.
+    const reason = err instanceof Error ? err.message : String(err);
     logger.error({ err }, "WiFi test failed");
 
     return NextResponse.json(
-      { success: false, error: "Failed to connect to the network" },
+      { success: false, error: `Test failed: ${reason}` },
       { status: 200 },
     );
   }

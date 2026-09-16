@@ -34,9 +34,19 @@ export function WifiSettingsForm({
   scanning = false,
   message = null,
 }: Props) {
-  const [selectedSSID, setSelectedSSID] = useState<Network | null>(null);
+  // Track selection by SSID string, not the Network object. A rescan replaces
+  // `networks` with fresh object instances, so holding the object would leave
+  // the selection stale (and appear cleared) after every background scan.
+  const [selectedSSID, setSelectedSSID] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [testedSSID, setTestedSSID] = useState<string | null>(null); // Track successfully tested network
+
+  // Resolve the currently-selected network from the live list so signal bars
+  // stay in sync across rescans. Falls back to a bare SSID entry if the network
+  // is no longer in range, so the selection (and password) survive a rescan.
+  const selectedNetwork =
+    networks.find((n) => n.ssid === selectedSSID) ??
+    (selectedSSID ? { ssid: selectedSSID, signal: 0 } : null);
 
   const renderSignalBars = (signal: number) => {
     const bars = [25, 50, 75, 100].map((threshold, i) => (
@@ -55,20 +65,23 @@ export function WifiSettingsForm({
     if (!selectedSSID) return;
     if (!onTestConnection) return;
 
-    const success = await onTestConnection(selectedSSID.ssid, password);
+    const success = await onTestConnection(selectedSSID, password);
     if (success) {
-      setTestedSSID(selectedSSID.ssid);
+      setTestedSSID(selectedSSID);
     } else {
+      // A failed test only clears the "verified" marker (so Save stays
+      // disabled). The chosen network and password are intentionally kept so
+      // the director can correct the password and retry without re-selecting.
       setTestedSSID(null);
     }
   };
 
   const handleSaveClick = () => {
     if (!selectedSSID || !onSaveWifi) return;
-    onSaveWifi(selectedSSID.ssid, password);
+    onSaveWifi(selectedSSID, password);
   };
 
-  const saveEnabled = selectedSSID?.ssid === testedSSID;
+  const saveEnabled = selectedSSID !== null && selectedSSID === testedSSID;
 
   return (
     <PageLayout headerTitle="Wifi Settings">
@@ -110,10 +123,10 @@ export function WifiSettingsForm({
 
         <Menu as="div" className="relative mb-4">
           <Menu.Button className="w-full p-2 border border-gray-300 rounded text-left focus:outline-none focus:ring-2 focus:ring-blue-500">
-            {selectedSSID ? (
+            {selectedNetwork ? (
               <div className="flex justify-between items-center">
-                <span>{selectedSSID.ssid}</span>
-                {renderSignalBars(selectedSSID.signal)}
+                <span>{selectedNetwork.ssid}</span>
+                {renderSignalBars(selectedNetwork.signal)}
               </div>
             ) : (
               "-- Select WiFi --"
@@ -134,7 +147,7 @@ export function WifiSettingsForm({
                 <Menu.Item key={network.ssid}>
                   {({ active }) => (
                     <div
-                      onClick={() => setSelectedSSID(network)}
+                      onClick={() => setSelectedSSID(network.ssid)}
                       className={`flex justify-between items-center px-4 py-2 cursor-pointer ${
                         active ? "bg-blue-100" : ""
                       }`}

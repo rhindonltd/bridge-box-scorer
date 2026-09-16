@@ -81,6 +81,74 @@ describe("WifiSettingsForm UI", () => {
     expect(screen.getByRole("button", { name: /Save & Apply/i })).toBeDisabled();
   });
 
+  it("keeps the selection and verified state across a rescan with fresh network objects", async () => {
+    const onTestConnection = vi.fn(async () => true);
+
+    const { rerender } = render(
+      <WifiSettingsForm
+        networks={networks}
+        onTestConnection={onTestConnection}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /-- Select WiFi --/i }),
+    );
+    await userEvent.click(screen.getByText("Home WiFi"));
+    await userEvent.click(
+      screen.getByRole("button", { name: /Test Connection/i }),
+    );
+
+    const saveButton = screen.getByRole("button", { name: /Save & Apply/i });
+    expect(saveButton).toBeEnabled();
+
+    // Simulate a background rescan: same SSIDs, brand-new object instances and
+    // a fresh array (as page.tsx produces on every render). Selection is keyed
+    // by SSID, so it must survive and Save must stay enabled.
+    rerender(
+      <WifiSettingsForm
+        networks={[
+          { ssid: "Home WiFi", signal: 88 },
+          { ssid: "CoffeeShop", signal: 61 },
+        ]}
+        onTestConnection={onTestConnection}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Home WiFi/i }),
+    ).toBeInTheDocument();
+    expect(saveButton).toBeEnabled();
+  });
+
+  it("keeps the selection when a failed test only disables Save", async () => {
+    const onTestConnection = vi.fn(async () => false);
+
+    render(
+      <WifiSettingsForm
+        networks={networks}
+        onTestConnection={onTestConnection}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /-- Select WiFi --/i }),
+    );
+    await userEvent.click(screen.getByText("CoffeeShop"));
+    await userEvent.click(
+      screen.getByRole("button", { name: /Test Connection/i }),
+    );
+
+    // Selection is retained (dropdown still shows the chosen SSID) even though
+    // Save is disabled after the failed test.
+    expect(
+      screen.getByRole("button", { name: /CoffeeShop/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Save & Apply/i }),
+    ).toBeDisabled();
+  });
+
   it("does nothing when testing with no network selected or no handler", async () => {
     const onTestConnection = vi.fn(async () => true);
 
