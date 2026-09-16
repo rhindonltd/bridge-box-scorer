@@ -18,7 +18,10 @@ vi.mock("@/lib/usebio/generate-usebio", () => ({
 import { generateUsebio } from "./usebio-service";
 import { Db } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
-import { generateUsebioXml } from "@/lib/usebio/generate-usebio";
+import {
+  generateUsebioXml,
+  type UsebioPairsData,
+} from "@/lib/usebio/generate-usebio";
 import type { BridgeGame } from "@/db/game-index/schema";
 import type { Club } from "@/db/system/schema";
 
@@ -123,7 +126,8 @@ describe("generateUsebio", () => {
 
     await generateUsebio(db, makeGame(), club);
 
-    const data = vi.mocked(generateUsebioXml).mock.calls[0][0];
+    const data = vi.mocked(generateUsebioXml).mock
+      .calls[0][0] as UsebioPairsData;
 
     // Direction ternary: NS -> "N", EW -> "E".
     expect(data.pairs.map((p) => p.direction)).toEqual(["N", "E"]);
@@ -149,7 +153,8 @@ describe("generateUsebio", () => {
 
     await generateUsebio(db, makeGame({ sectionName: "" }), club);
 
-    const data = vi.mocked(generateUsebioXml).mock.calls[0][0];
+    const data = vi.mocked(generateUsebioXml).mock
+      .calls[0][0] as UsebioPairsData;
     expect(data.sectionName).toBe("A");
     expect(data.pairs).toHaveLength(0);
     expect(data.boardResults).toHaveLength(0);

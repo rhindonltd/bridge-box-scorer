@@ -317,6 +317,11 @@ At the end of the session:
 2. The results are exported as a standard **USEBIO XML** file.
 3. Upload that file to the EBU or import it into your scoring program.
 
+The file matches the kind of event you ran: an ordinary pairs game exports as a
+pairs event, while **Swiss Pairs** and **Swiss Teams** export in their own
+format — round by round, with each match and its Victory Points — so a Swiss
+event imports correctly rather than looking like a plain pairs game.
+
 ---
 
 ## Tips for directors

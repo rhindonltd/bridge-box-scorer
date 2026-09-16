@@ -1,18 +1,53 @@
 import { BridgeGame } from "@/db/game-index/schema";
 import { Db } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { findTeams } from "@/db/games/queries/find-teams";
 import { boards } from "@/db/games/tables/boards";
 import { Club } from "@/db/system/schema";
 import {
   generateUsebioXml,
   UsebioBoardResult,
-  UsebioGameData,
+  UsebioPairsData,
   UsebioPair,
 } from "@/lib/usebio/generate-usebio";
+import { assembleSwissPairs } from "@/lib/usebio/assemble-swiss-pairs";
+import { assembleSwissTeams } from "@/lib/usebio/assemble-swiss-teams";
+import { parseSelectedMovement } from "@/model/selected-movement";
 import { Card } from "@/model/common";
 import { BoardOutcome } from "@/model/score";
 
+/**
+ * Generate the USEBIO 1.2 XML for a game, choosing the event shape from the
+ * game type and its selected movement:
+ *  - Swiss Pairs (movement source SWISS) -> a SWISS_PAIRS file (matches per
+ *    round, integer Victory Points);
+ *  - Swiss Teams (TEAMS + source SWISS_TEAMS) -> a SWISS_TEAMS file (team
+ *    matches per round, board IMPs, integer Victory Points);
+ *  - everything else -> the standard MP/Butler/XIMP pairs file.
+ */
 export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
+  const movement = parseSelectedMovement(game.selectedMovement);
+
+  if (movement?.source === "SWISS_TEAMS" && game.gameType === "TEAMS") {
+    const [teams, boardRows] = await Promise.all([
+      findTeams(db),
+      db.select().from(boards),
+    ]);
+    return generateUsebioXml(assembleSwissTeams(game, club, teams, boardRows));
+  }
+
+  if (movement?.source === "SWISS") {
+    const [pairs, boardRows] = await Promise.all([
+      findPairs(db),
+      db.select().from(boards),
+    ]);
+    return generateUsebioXml(assembleSwissPairs(game, club, pairs, boardRows));
+  }
+
+  return generateMpPairsUsebio(db, game, club);
+}
+
+async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
   // Get participants (pairs)
   const pairs = await findPairs(db);
 
@@ -50,7 +85,7 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
   // Count total boards
   const boardNumbers = new Set(allBoards.map((b) => b.boardNumber));
 
-  const usebioData: UsebioGameData = {
+  const usebioData: UsebioPairsData = {
     club: {
       name: club.name,
       clubNumber: club.clubNumber,

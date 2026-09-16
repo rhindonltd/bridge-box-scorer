@@ -90,3 +90,27 @@ export function formatLeadForUsebio(lead: string | null): string {
   if (!lead || lead.length < 2) return "";
   return lead;
 }
+
+/**
+ * The compact USEBIO contract form used inside a TRAVELLER_LINE: no spaces,
+ * with a lowercase `x`/`xx` doubling suffix. This matches the real USEBIO 1.2
+ * files (e.g. "3NT", "4Sx", "3NTxx"), unlike {@link formatOutcomeForUsebio}'s
+ * spaced form.
+ *
+ *   "1NTN="   -> "1NT"
+ *   "4SXS+2"  -> "4Sx"
+ *   "3HXXE-1" -> "3Hxx"
+ *   "PO"      -> "PASS"
+ *   "NP" / adjusted / unrecognised -> ""
+ */
+export function formatContractCompact(outcome: BoardOutcome): string {
+  if (outcome === "PO") return "PASS";
+  if (outcome === "NP") return "";
+  if (isAdjustedScore(outcome)) return "";
+  if (!isPlayedContractCode(outcome)) return "";
+
+  const parsed = parsePlayedContract(outcome);
+  const doubling =
+    parsed.doubling === "X" ? "x" : parsed.doubling === "XX" ? "xx" : "";
+  return `${parsed.level}${parsed.suit}${doubling}`;
+}

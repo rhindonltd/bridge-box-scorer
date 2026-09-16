@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { generateUsebioXml, UsebioGameData } from "./generate-usebio";
+import {
+  generateUsebioXml,
+  UsebioPairsData,
+  UsebioSwissPairsData,
+  UsebioSwissTeamsData,
+} from "./generate-usebio";
 
-function makeBasicGameData(): UsebioGameData {
+function makeBasicGameData(): UsebioPairsData {
   return {
     club: {
       name: "Test Bridge Club",
@@ -90,9 +95,12 @@ function makeBasicGameData(): UsebioGameData {
 
 describe("generateUsebioXml", () => {
   describe("XML structure", () => {
-    it("produces valid XML with correct declaration", () => {
+    it("produces valid XML with the USEBIO 1.2 prolog and DOCTYPE", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+      expect(xml).toContain('<?xml version="1.0" encoding="iso-8859-1"?>');
+      expect(xml).toContain(
+        '<!DOCTYPE USEBIO SYSTEM "http://www.ebu.co.uk/usebio/usebio_v1_2.dtd">',
+      );
       expect(xml).toContain('<USEBIO Version="1.2">');
       expect(xml).toContain("</USEBIO>");
     });
@@ -105,9 +113,9 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("</CLUB>");
     });
 
-    it("includes EVENT element", () => {
+    it("uses the PAIRS event type", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain('<EVENT EVENT_TYPE="MP_PAIRS">');
+      expect(xml).toContain('<EVENT EVENT_TYPE="PAIRS">');
       expect(xml).toContain(
         "<EVENT_DESCRIPTION>Monday Pairs</EVENT_DESCRIPTION>",
       );
@@ -119,24 +127,45 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("<DATE>18/11/2024</DATE>");
     });
 
-    it("includes BOARD_SCORING_METHOD", () => {
+    it("includes BOARD_SCORING_METHOD as MATCH_POINTS for MP", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain("<BOARD_SCORING_METHOD>MP</BOARD_SCORING_METHOD>");
+      expect(xml).toContain(
+        "<BOARD_SCORING_METHOD>MATCH_POINTS</BOARD_SCORING_METHOD>",
+      );
     });
 
-    it("includes BOARDS count", () => {
+    it("includes the event header counts", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain("<BOARDS>6</BOARDS>");
+      expect(xml).toContain("<SESSION_COUNT>1</SESSION_COUNT>");
+      expect(xml).toContain("<SECTION_COUNT>1</SECTION_COUNT>");
+      expect(xml).toContain("<PAIRS>4</PAIRS>");
+      expect(xml).toContain("<EW_PAIRS>2</EW_PAIRS>");
+      expect(xml).toContain("<BOARDS_PLAYED>6</BOARDS_PLAYED>");
+      expect(xml).toContain("<WINNER_TYPE>1</WINNER_TYPE>");
+    });
+
+    it("nests results in SESSION > SECTION", () => {
+      const xml = generateUsebioXml(makeBasicGameData());
+      expect(xml).toContain('<SESSION SESSION_ID="1">');
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
     });
   });
 
   describe("PARTICIPANTS section", () => {
-    it("includes all pairs", () => {
+    it("includes all pairs with number and direction", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain('<PAIR PAIR_NUMBER="1NS" DIRECTION="NS"');
-      expect(xml).toContain('<PAIR PAIR_NUMBER="2NS" DIRECTION="NS"');
-      expect(xml).toContain('<PAIR PAIR_NUMBER="1EW" DIRECTION="EW"');
-      expect(xml).toContain('<PAIR PAIR_NUMBER="2EW" DIRECTION="EW"');
+      expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>2NS</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>2EW</PAIR_NUMBER>");
+      expect(xml).toContain("<DIRECTION>NS</DIRECTION>");
+      expect(xml).toContain("<DIRECTION>EW</DIRECTION>");
+    });
+
+    it("includes inline placing (PERCENTAGE and PLACE) per pair", () => {
+      const xml = generateUsebioXml(makeBasicGameData());
+      expect(xml).toContain("<PERCENTAGE>");
+      expect(xml).toContain("<PLACE>1</PLACE>");
     });
 
     it("includes player names", () => {
@@ -160,36 +189,35 @@ describe("generateUsebioXml", () => {
     });
   });
 
-  describe("BOARD_RESULTS section", () => {
-    it("groups results by board number", () => {
+  describe("BOARD / TRAVELLER_LINE section", () => {
+    it("emits one BOARD per board number with a child BOARD_NUMBER", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain('<BOARD BOARD_NUMBER="1">');
-      expect(xml).toContain('<BOARD BOARD_NUMBER="2">');
+      expect(xml).toContain("<BOARD_NUMBER>1</BOARD_NUMBER>");
+      expect(xml).toContain("<BOARD_NUMBER>2</BOARD_NUMBER>");
     });
 
-    it("includes pair numbers in results", () => {
+    it("includes pair numbers on each traveller line", () => {
       const xml = generateUsebioXml(makeBasicGameData());
       expect(xml).toContain("<NS_PAIR_NUMBER>1NS</NS_PAIR_NUMBER>");
       expect(xml).toContain("<EW_PAIR_NUMBER>1EW</EW_PAIR_NUMBER>");
     });
 
-    it("formats contract correctly", () => {
+    it("formats the contract in the compact form", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain("<CONTRACT>3 NT</CONTRACT>");
-      expect(xml).toContain("<CONTRACT>4 S</CONTRACT>");
+      expect(xml).toContain("<CONTRACT>3NT</CONTRACT>");
+      expect(xml).toContain("<CONTRACT>4S</CONTRACT>");
     });
 
-    it("includes declarer", () => {
+    it("includes PLAYED_BY (declarer)", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain("<DECLARER>N</DECLARER>");
-      expect(xml).toContain("<DECLARER>E</DECLARER>");
+      expect(xml).toContain("<PLAYED_BY>N</PLAYED_BY>");
+      expect(xml).toContain("<PLAYED_BY>E</PLAYED_BY>");
     });
 
-    it("includes result field", () => {
+    it("includes TRICKS (total tricks taken)", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain("<RESULT_FIELD>+1</RESULT_FIELD>");
-      expect(xml).toContain("<RESULT_FIELD>-1</RESULT_FIELD>");
-      expect(xml).toContain("<RESULT_FIELD>=</RESULT_FIELD>");
+      // 3NTN+1 -> 10 total tricks.
+      expect(xml).toContain("<TRICKS>10</TRICKS>");
     });
 
     it("includes score", () => {
@@ -215,41 +243,21 @@ describe("generateUsebioXml", () => {
       // "HK" internal (Heart King) stays as "HK" in USEBIO
       expect(xml).toContain("<LEAD>HK</LEAD>");
     });
-  });
 
-  describe("RANKING section", () => {
-    it("includes ranking element", () => {
+    it("does not emit a separate RANKING block (placings are inline)", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain("<RANKING>");
-      expect(xml).toContain("</RANKING>");
-    });
-
-    it("includes RANK entries with pair numbers", () => {
-      const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain('PAIR_NUMBER="1NS"');
-      expect(xml).toContain('PAIR_NUMBER="2NS"');
-      expect(xml).toContain('PAIR_NUMBER="1EW"');
-      expect(xml).toContain('PAIR_NUMBER="2EW"');
-    });
-
-    it("includes percentage and place", () => {
-      const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain("PERCENTAGE=");
-      expect(xml).toContain("PLACE=");
-    });
-
-    it("assigns place 1 to the best pair", () => {
-      const xml = generateUsebioXml(makeBasicGameData());
-      expect(xml).toContain('PLACE="1"');
+      expect(xml).not.toContain("<RANKING>");
     });
   });
 
   describe("scoring type mapping", () => {
-    it("maps MP to MP", () => {
+    it("maps MP to MATCH_POINTS", () => {
       const data = makeBasicGameData();
       data.scoringType = "MP";
       const xml = generateUsebioXml(data);
-      expect(xml).toContain("<BOARD_SCORING_METHOD>MP</BOARD_SCORING_METHOD>");
+      expect(xml).toContain(
+        "<BOARD_SCORING_METHOD>MATCH_POINTS</BOARD_SCORING_METHOD>",
+      );
     });
 
     it("maps IMP to BUTLER", () => {
@@ -261,12 +269,12 @@ describe("generateUsebioXml", () => {
       );
     });
 
-    it("maps XIMP to XIMP", () => {
+    it("maps XIMP to CROSS_IMPS", () => {
       const data = makeBasicGameData();
       data.scoringType = "XIMP";
       const xml = generateUsebioXml(data);
       expect(xml).toContain(
-        "<BOARD_SCORING_METHOD>XIMP</BOARD_SCORING_METHOD>",
+        "<BOARD_SCORING_METHOD>CROSS_IMPS</BOARD_SCORING_METHOD>",
       );
     });
   });
@@ -294,8 +302,8 @@ describe("generateUsebioXml", () => {
       const data = makeBasicGameData();
       data.boardResults = [];
       const xml = generateUsebioXml(data);
-      // xmlbuilder2 may self-close empty elements
-      expect(xml).toMatch(/BOARD_RESULTS/);
+      // Still produces a valid section with participants, just no BOARD rows.
+      expect(xml).toMatch(/SECTION/);
     });
 
     it("handles empty pairs list", () => {
@@ -319,7 +327,7 @@ describe("generateUsebioXml", () => {
         },
       ];
       const xml = generateUsebioXml(data);
-      expect(xml).toContain('<BOARD BOARD_NUMBER="1">');
+      expect(xml).toContain("<BOARD_NUMBER>1</BOARD_NUMBER>");
       expect(xml).toContain("<SCORE>90</SCORE>");
     });
 
@@ -327,25 +335,26 @@ describe("generateUsebioXml", () => {
       const data = makeBasicGameData();
       data.sectionName = "";
       const xml = generateUsebioXml(data);
-      // Should still generate valid XML
-      expect(xml).toContain("<USEBIO");
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
     });
 
-    it("falls back to MP for unknown scoring type (line 88)", () => {
+    it("falls back to MATCH_POINTS for unknown scoring type", () => {
       const data = makeBasicGameData();
       (data as any).scoringType = "UNKNOWN_TYPE";
       const xml = generateUsebioXml(data);
-      expect(xml).toContain("<BOARD_SCORING_METHOD>MP</BOARD_SCORING_METHOD>");
+      expect(xml).toContain(
+        "<BOARD_SCORING_METHOD>MATCH_POINTS</BOARD_SCORING_METHOD>",
+      );
     });
 
-    it("returns raw date string for invalid date (line 171)", () => {
+    it("returns raw date string for invalid date", () => {
       const data = makeBasicGameData();
       data.eventDate = "not-a-valid-date";
       const xml = generateUsebioXml(data);
       expect(xml).toContain("<DATE>not-a-valid-date</DATE>");
     });
 
-    it("handles NP (not-played) outcomes with null score (line 129-131)", () => {
+    it("handles NP (not-played) outcomes with blank detail and null score", () => {
       const data = makeBasicGameData();
       data.boardResults = [
         {
@@ -360,12 +369,12 @@ describe("generateUsebioXml", () => {
       ];
       const xml = generateUsebioXml(data);
       expect(xml).toContain("<CONTRACT/>");
-      expect(xml).toContain("<DECLARER/>");
-      expect(xml).toContain("<RESULT_FIELD/>");
+      expect(xml).toContain("<PLAYED_BY/>");
+      expect(xml).toContain("<TRICKS/>");
       expect(xml).toContain("<SCORE>0</SCORE>");
     });
 
-    it("omits NATIONAL_ID_NUMBER when player has no nationalId (line 129-131)", () => {
+    it("omits NATIONAL_ID_NUMBER when player has no nationalId", () => {
       const data = makeBasicGameData();
       data.pairs = [
         {
@@ -378,24 +387,16 @@ describe("generateUsebioXml", () => {
       const xml = generateUsebioXml(data);
       expect(xml).not.toContain("<NATIONAL_ID_NUMBER>");
     });
-
-    it("produces empty RANKING when no board results exist", () => {
-      const data = makeBasicGameData();
-      data.boardResults = [];
-      const xml = generateUsebioXml(data);
-      // With no results, ranking computation returns empty list
-      expect(xml).not.toContain("<RANKING>");
-    });
   });
 
   describe("adjusted scores (A<ns>/<ew> outcomes)", () => {
     // Two lines on the same board so results.length - 1 > 0 (a non-zero max),
     // giving meaningful matchpoints / percentages for the adjusted rows.
     function makeAdjustedData(
-      scoringType: UsebioGameData["scoringType"],
+      scoringType: UsebioPairsData["scoringType"],
       nsPercent: number,
       ewPercent: number,
-    ): UsebioGameData {
+    ): UsebioPairsData {
       const data = makeBasicGameData();
       data.scoringType = scoringType;
       data.boardResults = [
@@ -423,8 +424,8 @@ describe("generateUsebioXml", () => {
 
     it("emits an artificial/adjusted MP result with percentage-based matchpoints", () => {
       const xml = generateUsebioXml(makeAdjustedData("MP", 60, 40));
-      // Blank contract fields + zero score + Adjusted marker.
-      expect(xml).toContain("<ARTIFICIAL_SCORE>Adjusted</ARTIFICIAL_SCORE>");
+      // Blank contract fields + zero score for the adjusted line.
+      expect(xml).toContain("<CONTRACT/>");
       expect(xml).toContain("<SCORE>0</SCORE>");
       // maxMp = 2 * (2 - 1) = 2. NS 60% -> round(0.6*2)=1, EW 40% -> round(0.4*2)=1.
       expect(xml).toContain("<NS_MATCH_POINTS>1</NS_MATCH_POINTS>");
@@ -435,7 +436,6 @@ describe("generateUsebioXml", () => {
       const xml = generateUsebioXml(makeAdjustedData("IMP", 60, 40));
       expect(xml).toContain("<NS_IMPS>3</NS_IMPS>");
       expect(xml).toContain("<EW_IMPS>-3</EW_IMPS>");
-      expect(xml).toContain("<ARTIFICIAL_SCORE>Adjusted</ARTIFICIAL_SCORE>");
     });
 
     it("emits AVE (50%) as 0 IMPs for XIMP scoring", () => {
@@ -444,22 +444,21 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("<EW_IMPS>0</EW_IMPS>");
     });
 
-    it("accumulates adjusted MP scores into the overall ranking", () => {
+    it("keeps adjusted-score pairs in the participants list with a placing", () => {
       const xml = generateUsebioXml(makeAdjustedData("MP", 60, 40));
-      const ranking = xml.split("<RANKING>")[1].split("</RANKING>")[0];
-      // The adjusted-score pairs still appear in the ranking.
-      expect(ranking).toContain('PAIR_NUMBER="1NS"');
-      expect(ranking).toContain('PAIR_NUMBER="1EW"');
+      // The adjusted-score pairs still appear as participants with a placing.
+      expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
+      expect(xml).toContain("<PLACE>");
     });
 
-    it("accumulates adjusted IMP/XIMP scores into the overall ranking", () => {
+    it("lists adjusted IMP-scored pairs as participants", () => {
       const xml = generateUsebioXml(makeAdjustedData("IMP", 60, 40));
-      const ranking = xml.split("<RANKING>")[1].split("</RANKING>")[0];
-      expect(ranking).toContain('PAIR_NUMBER="1NS"');
-      expect(ranking).toContain('PAIR_NUMBER="1EW"');
+      expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
     });
 
-    it("adds zero to max for a lone adjusted MP result (single line on a board)", () => {
+    it("gives a 0.00 percentage to a lone adjusted MP result (zero max)", () => {
       // A board with a single result -> maxMp = 2 * (1 - 1) = 0, exercising the
       // `maxMp > 0 ? maxMp : 0` false branch in the ranking accumulation.
       const data = makeBasicGameData();
@@ -476,15 +475,14 @@ describe("generateUsebioXml", () => {
         },
       ];
       const xml = generateUsebioXml(data);
-      // With max 0, the ranking percentage is the "0.00" fallback.
-      const ranking = xml.split("<RANKING>")[1].split("</RANKING>")[0];
-      expect(ranking).toContain('PAIR_NUMBER="1NS"');
-      expect(ranking).toContain('PERCENTAGE="0.00"');
+      // With max 0, the inline percentage is the "0.00" fallback.
+      expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+      expect(xml).toContain("<PERCENTAGE>0.00</PERCENTAGE>");
     });
   });
 
   describe("multi-section output", () => {
-    function makeMultiSectionData(): UsebioGameData {
+    function makeMultiSectionData(): UsebioPairsData {
       return {
         ...makeBasicGameData(),
         // Section-qualified pair numbers across sections A and B.
@@ -537,28 +535,248 @@ describe("generateUsebioXml", () => {
       };
     }
 
-    it("tags participants with their real section id", () => {
+    it("lists every pair as a participant under the single section", () => {
       const xml = generateUsebioXml(makeMultiSectionData());
-      expect(xml).toContain('PAIR_NUMBER="A1NS"');
-      expect(xml).toContain('SECTION_ID="A"');
-      expect(xml).toContain('PAIR_NUMBER="B1NS"');
-      expect(xml).toContain('SECTION_ID="B"');
+      expect(xml).toContain("<PAIR_NUMBER>A1NS</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>B1NS</PAIR_NUMBER>");
+      // The export nests all pairs under one SECTION (the game's section id).
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
     });
 
-    it("tags ranking entries with their section id", () => {
-      const xml = generateUsebioXml(makeMultiSectionData());
-      // Both sections' pairs are ranked and each carries a SECTION_ID.
-      const ranking = xml.split("<RANKING>")[1].split("</RANKING>")[0];
-      expect(ranking).toContain('PAIR_NUMBER="A1NS"');
-      expect(ranking).toContain('PAIR_NUMBER="B1NS"');
-      expect(ranking).toMatch(/SECTION_ID="A"/);
-      expect(ranking).toMatch(/SECTION_ID="B"/);
-    });
-
-    it("falls back to the section label for unprefixed pair numbers", () => {
+    it("uses the game's section id on the SECTION element", () => {
       const xml = generateUsebioXml(makeBasicGameData());
-      // Basic data uses unprefixed "1NS" etc., so SECTION_ID defaults to "A".
-      expect(xml).toContain('SECTION_ID="A"');
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
+    });
+  });
+
+  describe("Swiss Pairs (SWISS_PAIRS)", () => {
+    function makeSwissPairsData(): UsebioSwissPairsData {
+      return {
+        kind: "SWISS_PAIRS",
+        club: { name: "Test Bridge Club", clubNumber: "12345" },
+        eventName: "Tuesday Swiss Pairs",
+        eventDate: "2024-11-18T00:00:00.000Z",
+        sectionName: "A",
+        boards: 2,
+        pairs: [
+          {
+            pairNumber: "3",
+            direction: "N",
+            player1: { firstName: "Al", lastName: "A", nationalId: null },
+            player2: { firstName: "Bo", lastName: "B", nationalId: null },
+          },
+          {
+            pairNumber: "12",
+            direction: "E",
+            player1: { firstName: "Cy", lastName: "C", nationalId: null },
+            player2: { firstName: "Di", lastName: "D", nationalId: null },
+          },
+        ],
+        matches: [
+          {
+            round: 1,
+            nsPairNumber: "3",
+            ewPairNumber: "12",
+            nsScore: 15,
+            ewScore: 5,
+            boards: [
+              {
+                boardNumber: 1,
+                contract: "3NT",
+                playedBy: "N",
+                lead: "S4",
+                tricks: "9",
+                score: "400",
+              },
+            ],
+          },
+        ],
+        ranking: [
+          { number: "3", sectionId: "A", totalVP: 15, place: 1 },
+          { number: "12", sectionId: "A", totalVP: 5, place: 2 },
+        ],
+      };
+    }
+
+    it("uses the SWISS_PAIRS event type and VPS match scoring", () => {
+      const xml = generateUsebioXml(makeSwissPairsData());
+      expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_PAIRS">');
+      expect(xml).toContain(
+        "<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>",
+      );
+    });
+
+    it("nests everything in SESSION > SECTION", () => {
+      const xml = generateUsebioXml(makeSwissPairsData());
+      expect(xml).toContain('<SESSION SESSION_ID="1">');
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
+    });
+
+    it("lists pairs in a global PARTICIPANTS roster with inline placings", () => {
+      const xml = generateUsebioXml(makeSwissPairsData());
+      expect(xml).toContain("<PAIR_NUMBER>3</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>12</PAIR_NUMBER>");
+      expect(xml).toContain("<PLAYER_NAME>Al A</PLAYER_NAME>");
+      // Inline placing: total VP + place per pair (integer VPs).
+      expect(xml).toContain("<TOTAL_SCORE>15</TOTAL_SCORE>");
+      expect(xml).toContain("<PLACE>1</PLACE>");
+    });
+
+    it("emits a MATCH per round with pair numbers and VP scores at match level", () => {
+      const xml = generateUsebioXml(makeSwissPairsData());
+      const match = xml.split("<MATCH>")[1].split("</MATCH>")[0];
+      expect(match).toContain("<ROUND_NUMBER>1</ROUND_NUMBER>");
+      expect(match).toContain("<NS_PAIR_NUMBER>3</NS_PAIR_NUMBER>");
+      expect(match).toContain("<EW_PAIR_NUMBER>12</EW_PAIR_NUMBER>");
+      expect(match).toContain("<NS_SCORE>15</NS_SCORE>");
+      expect(match).toContain("<EW_SCORE>5</EW_SCORE>");
+    });
+
+    it("nests BOARD/TRAVELLER_LINE without repeating pair numbers", () => {
+      const xml = generateUsebioXml(makeSwissPairsData());
+      const match = xml.split("<MATCH>")[1].split("</MATCH>")[0];
+      const traveller = match
+        .split("<TRAVELLER_LINE>")[1]
+        .split("</TRAVELLER_LINE>")[0];
+      expect(match).toContain("<BOARD_NUMBER>1</BOARD_NUMBER>");
+      expect(traveller).toContain("<CONTRACT>3NT</CONTRACT>");
+      expect(traveller).toContain("<PLAYED_BY>N</PLAYED_BY>");
+      expect(traveller).toContain("<LEAD>S4</LEAD>");
+      expect(traveller).toContain("<TRICKS>9</TRICKS>");
+      expect(traveller).toContain("<SCORE>400</SCORE>");
+      // Pair numbers are NOT repeated inside the traveller line.
+      expect(traveller).not.toContain("NS_PAIR_NUMBER");
+    });
+
+    it("does not emit a separate RANKING block (placings are inline)", () => {
+      const xml = generateUsebioXml(makeSwissPairsData());
+      expect(xml).not.toContain("<RANKING>");
+    });
+  });
+
+  describe("Swiss Teams (SWISS_TEAMS)", () => {
+    function makeSwissTeamsData(): UsebioSwissTeamsData {
+      return {
+        kind: "SWISS_TEAMS",
+        club: { name: "Test Bridge Club", clubNumber: "12345" },
+        eventName: "Wednesday Swiss Teams",
+        eventDate: "2024-11-18T00:00:00.000Z",
+        sectionName: "A",
+        boards: 5,
+        teams: [
+          {
+            teamNumber: "11",
+            teamName: "Sharks",
+            sectionId: "A",
+            players: [
+              { firstName: "Al", lastName: "A", nationalId: null },
+              { firstName: "Bo", lastName: "B", nationalId: null },
+              { firstName: "Cy", lastName: "C", nationalId: null },
+              { firstName: "Di", lastName: "D", nationalId: null },
+            ],
+          },
+          {
+            teamNumber: "2",
+            teamName: "Dragons",
+            sectionId: "A",
+            players: [
+              { firstName: "Ed", lastName: "E", nationalId: null },
+              { firstName: "Fi", lastName: "F", nationalId: null },
+              { firstName: "Gu", lastName: "G", nationalId: null },
+              { firstName: "Ha", lastName: "H", nationalId: null },
+            ],
+          },
+        ],
+        matches: [
+          {
+            round: 2,
+            team: "11",
+            opposingTeam: "2",
+            startBoard: 6,
+            endBoard: 10,
+            teamScore: 19,
+            opposingTeamScore: 1,
+            boards: [
+              {
+                boardNumber: 6,
+                imps: 10,
+                travellerLines: [
+                  {
+                    direction: "NS",
+                    contract: "4 H",
+                    playedBy: "S",
+                    lead: "DK",
+                    tricks: "10",
+                    score: "420",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        ranking: [
+          { number: "11", sectionId: "A", totalVP: 19, place: 1 },
+          { number: "2", sectionId: "A", totalVP: 1, place: 2 },
+        ],
+      };
+    }
+
+    it("uses the SWISS_TEAMS event type and VPS match scoring", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_TEAMS">');
+      expect(xml).toContain(
+        "<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>",
+      );
+    });
+
+    it("nests everything in SESSION > SECTION", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      expect(xml).toContain('<SESSION SESSION_ID="1">');
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
+    });
+
+    it("lists teams (number, name, placing, four players) in PARTICIPANTS", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      expect(xml).toContain('TEAM_ID="11"');
+      expect(xml).toContain('TEAM_NAME="Sharks"');
+      expect(xml).toContain("<PLAYER_NAME>Al A</PLAYER_NAME>");
+      expect(xml).toContain("<PLAYER_NAME>Di D</PLAYER_NAME>");
+      // Inline placing on the team.
+      expect(xml).toContain("<TOTAL_SCORE>19</TOTAL_SCORE>");
+      expect(xml).toContain("<PLACE>1</PLACE>");
+    });
+
+    it("emits a MATCH with the competing teams, board range and VP scores", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      const match = xml.split("<MATCH>")[1].split("</MATCH>")[0];
+      expect(match).toContain("<ROUND_NUMBER>2</ROUND_NUMBER>");
+      expect(match).toContain("<TEAM>11</TEAM>");
+      expect(match).toContain("<OPPOSING_TEAM>2</OPPOSING_TEAM>");
+      expect(match).toContain("<START_BOARD_NUMBER>6</START_BOARD_NUMBER>");
+      expect(match).toContain("<END_BOARD_NUMBER>10</END_BOARD_NUMBER>");
+      expect(match).toContain("<TEAM_SCORE>19</TEAM_SCORE>");
+      expect(match).toContain(
+        "<OPPOSING_TEAM_SCORE>1</OPPOSING_TEAM_SCORE>",
+      );
+    });
+
+    it("emits board IMPS and a direction-tagged traveller line", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      const board = xml
+        .split('<BOARD EVENT_TYPE="SWISS_TEAMS">')[1]
+        .split("</BOARD>")[0];
+      expect(board).toContain("<BOARD_NUMBER>6</BOARD_NUMBER>");
+      expect(board).toContain("<IMPS>10</IMPS>");
+      expect(board).toContain("<DIRECTION>NS</DIRECTION>");
+      expect(board).toContain("<CONTRACT>4 H</CONTRACT>");
+      expect(board).toContain("<PLAYED_BY>S</PLAYED_BY>");
+      expect(board).toContain("<TRICKS>10</TRICKS>");
+      expect(board).toContain("<SCORE>420</SCORE>");
+    });
+
+    it("does not emit a separate RANKING block (placings are inline)", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      expect(xml).not.toContain("<RANKING>");
     });
   });
 });
