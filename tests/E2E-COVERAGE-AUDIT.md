@@ -648,9 +648,10 @@ scaffolding:
   shows success, and Save & Apply then enables. The availability, unavailable-
   page, warning, explicit-Scan/empty-state, and gated-Save (disabled) states are
   covered automatically.
-- [ ] WiFi restarting page shown after save.
 - [x] Save WiFi (`POST /api/system/wifi`) is admin-gated; returns 200
-  `{success:false}` when WiFi management is unavailable (route unit tests).
+  `{success:false}` when WiFi management is unavailable (route unit tests). Save
+  persists the chosen network and confirms in place; it no longer reboots the
+  box or shows a restarting page (both removed).
 - [x] Network read (`GET /api/system/network`) returns the wifi/network shape;
   on a no-`nmcli` host it degrades to 200 `{ wifi: { available:false, … } }`
   (`api-contract.spec.ts`; route unit test). **Product change:** the route now
@@ -903,7 +904,7 @@ section CRUD was closed in P2's `multi-section.journey.ts`):
   players non-digit, and all `system` routes incl. `GET /api/system/network`
   (`api-contract.spec.ts`, 22 tests).
 - Remaining P4 follow-ups (all environment- or state-gated, not code gaps):
-  WiFi test-success/Save-gating on a real `nmcli` host, the restarting page,
+  WiFi test-success/Save-gating on a real `nmcli` host,
   and USEBIO "disabled until all results in" as a distinct assertion.
 
 **P5 — Security / authorization — CLOSED** (`authorization.journey.ts`):

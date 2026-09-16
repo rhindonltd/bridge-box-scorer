@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { writeFileSync } = vi.hoisted(() => ({ writeFileSync: vi.fn() }));
-vi.mock("fs", async (importActual) => {
-  const actual = await importActual<typeof import("fs")>();
-  return { ...actual, writeFileSync, default: { ...actual, writeFileSync } };
+// The route persists via the atomic `writeWifiConfig` helper; mock it so this
+// test asserts the route's contract (write on valid+authorised, skip otherwise)
+// while the atomic-write mechanics are covered in wifi-config.test.ts.
+const { writeWifiConfig } = vi.hoisted(() => ({ writeWifiConfig: vi.fn() }));
+vi.mock("@/lib/system/wifi-config", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/system/wifi-config")>();
+  return { ...actual, writeWifiConfig };
 });
 vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
 
@@ -32,27 +35,27 @@ describe("POST /api/system/wifi", () => {
     vi.mocked(isWifiManagementAvailable).mockResolvedValue(true);
   });
 
-  it("writes the wifi config to the provisioning path for an authorised admin", async () => {
+  it("persists the wifi config via the atomic helper for an authorised admin", async () => {
     const res = await POST(req({ ssid: "HomeNet", password: "secret" }));
     expect(res.status).toBe(200);
-    expect(writeFileSync).toHaveBeenCalledOnce();
-    // Provisioning reads this exact path during its online window.
-    expect(writeFileSync.mock.calls[0][0]).toBe("/home/bridgebox/wifi.json");
-    const written = JSON.parse(writeFileSync.mock.calls[0][1] as string);
-    expect(written).toEqual({ ssid: "HomeNet", password: "secret" });
+    expect(writeWifiConfig).toHaveBeenCalledOnce();
+    expect(writeWifiConfig).toHaveBeenCalledWith({
+      ssid: "HomeNet",
+      password: "secret",
+    });
   });
 
   it("returns 400 for an invalid body", async () => {
     const res = await POST(req({ ssid: "HomeNet" }));
     expect(res.status).toBe(400);
-    expect(writeFileSync).not.toHaveBeenCalled();
+    expect(writeWifiConfig).not.toHaveBeenCalled();
   });
 
   it("returns 401 for an invalid token", async () => {
     vi.mocked(validateAdminToken).mockResolvedValue(false);
     const res = await POST(req({ ssid: "x", password: "y" }, null));
     expect(res.status).toBe(401);
-    expect(writeFileSync).not.toHaveBeenCalled();
+    expect(writeWifiConfig).not.toHaveBeenCalled();
   });
 
   it("returns success:false (200) and writes nothing when WiFi is unavailable", async () => {
@@ -63,6 +66,6 @@ describe("POST /api/system/wifi", () => {
       success: false,
       error: "WiFi management not available on this device",
     });
-    expect(writeFileSync).not.toHaveBeenCalled();
+    expect(writeWifiConfig).not.toHaveBeenCalled();
   });
 });

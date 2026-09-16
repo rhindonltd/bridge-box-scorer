@@ -1,10 +1,9 @@
 import { withAdminRoute } from "@/lib/api/adminRoute";
-import fs from "fs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { success } from "@/lib/api/success";
 import { isWifiManagementAvailable } from "@/lib/system/wifi-availability";
-import { WIFI_CONFIG_PATH } from "@/lib/system/wifi-config";
+import { writeWifiConfig } from "@/lib/system/wifi-config";
 
 export const POST = withAdminRoute(async ({ req }) => {
   // No WiFi management on this device: refuse the save with a clear reason.
@@ -39,7 +38,10 @@ export const POST = withAdminRoute(async ({ req }) => {
     );
   }
 
-  fs.writeFileSync(WIFI_CONFIG_PATH, JSON.stringify(parsed.data, null, 2));
+  // Atomic write: a systemd watcher on the box reacts to this file and connects
+  // to the new network, so it must never observe a partial write. See
+  // `writeWifiConfig`.
+  writeWifiConfig(parsed.data);
 
-  return success({ message: "WiFi saved. Restart required." });
+  return success({ message: "WiFi saved." });
 });
