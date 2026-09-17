@@ -7,13 +7,14 @@ import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { PairTraveller } from "@/model/traveller";
 import { BoardOutcome } from "@/model/score";
 import { OverallScore } from "@/model/leaderboard";
-import { AssignedPair, AssignedTeam, parseSeat } from "@/model/participants";
+import { AssignedPair, AssignedTeam, sectionOf } from "@/model/participants";
 import "@/scoring/plugins/register";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { ScoringType } from "@/db/games/types/scoring-type";
 import { parseSelectedMovement } from "@/model/selected-movement";
+import { classifyEvent, SwissVpMode } from "@/model/event-format";
 import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 import { calculateSwissTeamsVpOverall } from "@/scoring/swiss/swiss-teams-vp-overall";
@@ -40,14 +41,6 @@ export interface SectionLeaderboard extends LeaderboardResult {
 function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
   return { ...p, type: "PAIR" as const, id: p.initialSeat };
 }
-
-/**
- * How a Swiss Pairs game derives its per-round Victory Points, or null when the
- * game is not a Swiss VP game (any non-Swiss movement, or a Swiss game whose
- * scoring method has no VP mapping). "IMP" converts each round's head-to-head
- * IMP margin; "MP" converts each round's field matchpoint percentage.
- */
-type SwissVpMode = "IMP" | "MP" | null;
 
 /**
  * Compute the Swiss VP overall for a set of board rows under the given VP mode.
@@ -277,7 +270,7 @@ function computeSections(
 
   const pairsBySection = new Map<string, Pairs>();
   for (const pair of pairs) {
-    const { section } = parseSeat(pair.initialSeat);
+    const section = sectionOf(pair.initialSeat);
     const arr = pairsBySection.get(section) ?? [];
     arr.push(pair);
     pairsBySection.set(section, arr);
@@ -286,7 +279,7 @@ function computeSections(
   // Teams are section-qualified by their home NS seat id (e.g. "A1NS").
   const teamsBySection = new Map<string, AssignedTeam[]>();
   for (const team of teams) {
-    const { section } = parseSeat(team.id as Parameters<typeof parseSeat>[0]);
+    const section = sectionOf(team.id);
     const arr = teamsBySection.get(section) ?? [];
     arr.push(team);
     teamsBySection.set(section, arr);
@@ -335,8 +328,16 @@ async function readLeaderboardInputs(
 }> {
   const game = await findGameById(gameId);
   const movement = parseSelectedMovement(game?.selectedMovement);
-  const isSwissTeams =
-    game?.gameType === "TEAMS" && movement?.source === "SWISS_TEAMS";
+
+  // Single classification point: what scoring format this game runs under and,
+  // for Swiss Pairs, how its per-round VP is derived.
+  const classification = classifyEvent(
+    game!.gameType,
+    game!.scoringType,
+    movement,
+  );
+  const isSwissTeams = classification.format === "SWISS_TEAMS_VP";
+  const swissVpMode: SwissVpMode = classification.swissVpMode;
 
   const [boardRows, pairs, teams] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
@@ -344,16 +345,6 @@ async function readLeaderboardInputs(
     // Teams are derived from the seating; only needed for a Swiss Teams game.
     isSwissTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
   ]);
-
-  // Swiss Pairs events rank overall on Victory Points, summed per round. The
-  // per-round VP source depends on the scoring method: IMP games convert each
-  // round's head-to-head IMP margin, MP games convert each round's field
-  // matchpoint percentage. Any other movement keeps the board-pooled overall.
-  const swissVpMode: SwissVpMode =
-    movement?.source === "SWISS" &&
-    (game?.scoringType === "IMP" || game?.scoringType === "MP")
-      ? game.scoringType
-      : null;
 
   return {
     scoringType: game!.scoringType,

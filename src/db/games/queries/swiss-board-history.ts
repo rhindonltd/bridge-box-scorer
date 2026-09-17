@@ -45,7 +45,7 @@ export function swissPairIdFromParticipant(
 ): SwissPairId | null {
   let parsed;
   try {
-    parsed = parseSeat(participantId as Parameters<typeof parseSeat>[0]);
+    parsed = parseSeat(participantId);
   } catch {
     return null;
   }

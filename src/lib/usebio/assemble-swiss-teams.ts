@@ -1,11 +1,15 @@
 import { Board } from "@/db/games/tables/boards";
-import { AssignedTeam, parseSeat } from "@/model/participants";
+import { AssignedTeam, sectionOf } from "@/model/participants";
 import { BridgeGame } from "@/db/game-index/schema";
 import { Club } from "@/db/system/schema";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
-import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
 import { calculateWbfVP } from "@/scoring/swiss/wbf-vp";
+import {
+  groupTeamMatches,
+  teamMatchBoardImps,
+  boardResult,
+} from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
 import {
@@ -50,7 +54,7 @@ export function assembleSwissTeams(
   const usebioTeams: UsebioTeam[] = teams.map((team, i) => {
     const teamNumber = String(i + 1);
     numberByTeamId.set(team.id, teamNumber);
-    const { section } = parseSeat(team.id as Parameters<typeof parseSeat>[0]);
+    const section = sectionOf(team.id);
     return {
       teamNumber,
       teamName: team.name,
@@ -64,7 +68,7 @@ export function assembleSwissTeams(
     };
   });
 
-  const { matches, totals } = buildMatches(boardRows, numberByTeamId);
+  const { matches, totals } = buildUsebioMatches(boardRows, numberByTeamId);
   const ranking = buildRanking(totals, numberByTeamId);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
@@ -82,103 +86,56 @@ export function assembleSwissTeams(
   };
 }
 
-/** The final result on a board: a director override wins over the confirmed. */
-function boardResultOf(row: Board): BoardOutcome | null {
-  return row.directorOverrideResult ?? row.confirmedResult ?? null;
-}
-
 function leadOf(row: Board): Card | null {
   return (row.directorOverrideLead ?? row.confirmedLead ?? null) as Card | null;
 }
 
-/** A team's stable id is its home NS seat (e.g. "A1NS"). */
-function teamIdFor(section: string, homeTable: number): string {
-  return `${section}${homeTable}NS`;
-}
-
-interface HomeEntry {
-  section: string;
-  round: number;
-  homeTable: number;
-  opponentTable: number;
-  rows: Board[];
-}
-
 /**
- * Reconstruct team matches from board rows and emit each match's per-board
- * IMPs, both rooms' traveller lines, and the integer VP split. Also accumulate
- * per-team VP totals (keyed by team id) for the ranking.
- *
- * Matches are assembled by pairing each home table with its opponent's home
- * table (the EW seat encodes the opponent home table), processing each
- * unordered match once (when homeTable < opponentTable). Ordered by round then
- * section then home table.
+ * Reconstruct team matches from board rows (via the shared `groupTeamMatches`)
+ * and emit each match's per-board IMPs, both rooms' traveller lines, and the
+ * integer VP split. Also accumulate per-team VP totals (keyed by team id) for
+ * the ranking. Matches come out ordered by round, then section, then home
+ * table — the order `groupTeamMatches` guarantees.
  */
-function buildMatches(
+function buildUsebioMatches(
   boardRows: Board[],
   numberByTeamId: Map<string, string>,
 ): { matches: UsebioSwissTeamsMatch[]; totals: Map<string, number> } {
-  // Index each home table's boards by (section, round, homeTable).
-  const homeBoards = new Map<string, HomeEntry>();
-  for (const row of boardRows) {
-    if (row.status === "SIT_OUT") continue;
-    const nsSeat = parseSeat(row.ns as Parameters<typeof parseSeat>[0]);
-    const ewSeat = parseSeat(row.ew as Parameters<typeof parseSeat>[0]);
-    const key = `${row.section}|${row.roundNumber}|${nsSeat.tableNumber}`;
-    const entry =
-      homeBoards.get(key) ??
-      ({
-        section: row.section,
-        round: row.roundNumber,
-        homeTable: nsSeat.tableNumber,
-        opponentTable: ewSeat.tableNumber,
-        rows: [],
-      } satisfies HomeEntry);
-    entry.rows.push(row);
-    homeBoards.set(key, entry);
-  }
-
   const totals = new Map<string, number>();
   const addVp = (teamId: string, vp: number): void => {
     totals.set(teamId, (totals.get(teamId) ?? 0) + vp);
   };
 
   const matches: UsebioSwissTeamsMatch[] = [];
-  const processed = new Set<string>();
 
-  const ordered = Array.from(homeBoards.values()).sort(
-    (a, b) =>
-      a.round - b.round ||
-      (a.section < b.section ? -1 : a.section > b.section ? 1 : 0) ||
-      a.homeTable - b.homeTable,
-  );
+  for (const match of groupTeamMatches(boardRows)) {
+    const { homeTeamId, opponentTeamId } = match;
+    const teamNumber = numberByTeamId.get(homeTeamId) ?? homeTeamId;
+    const opposingNumber = numberByTeamId.get(opponentTeamId) ?? opponentTeamId;
 
-  for (const entry of ordered) {
-    const { section, round, homeTable, opponentTable } = entry;
-    if (homeTable >= opponentTable) continue; // process the lower home once
+    const { perBoard, margin, boardsPlayed } = teamMatchBoardImps(match);
 
-    const key = `${section}|${round}|${homeTable}`;
-    if (processed.has(key)) continue;
-    processed.add(key);
+    // Build the per-board USEBIO shapes: net IMPs (0 shown when not yet
+    // comparable) plus a traveller line from each room that has played it.
+    const boards: UsebioTeamBoard[] = perBoard.map(({ boardNumber, imps }) => {
+      const travellerLines: UsebioTeamTravellerLine[] = [];
+      const homeRow = match.homeRowsByBoard.get(boardNumber);
+      const awayRow = match.opponentRowsByBoard.get(boardNumber);
+      // Primary team sat NS at its own home table, EW at the opponent's.
+      if (homeRow) travellerLines.push(teamTravellerLine(homeRow, "NS"));
+      if (awayRow) travellerLines.push(teamTravellerLine(awayRow, "EW"));
+      return { boardNumber, imps: imps ?? 0, travellerLines };
+    });
 
-    const other = homeBoards.get(`${section}|${round}|${opponentTable}`);
-
-    const teamId = teamIdFor(section, homeTable);
-    const opponentId = teamIdFor(section, opponentTable);
-    const teamNumber = numberByTeamId.get(teamId) ?? teamId;
-    const opposingNumber = numberByTeamId.get(opponentId) ?? opponentId;
-
-    const { boards, margin, boardsPlayed, startBoard, endBoard } = buildBoards(
-      entry,
-      other,
-    );
+    const startBoard = boards[0]?.boardNumber ?? 0;
+    const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
 
     const { teamScore, opposingTeamScore } = matchVp(margin, boardsPlayed);
-    addVp(teamId, teamScore);
-    addVp(opponentId, opposingTeamScore);
+    addVp(homeTeamId, teamScore);
+    addVp(opponentTeamId, opposingTeamScore);
 
     matches.push({
-      round,
+      round: match.round,
       team: teamNumber,
       opposingTeam: opposingNumber,
       startBoard,
@@ -192,76 +149,8 @@ function buildMatches(
   return { matches, totals };
 }
 
-/**
- * Build a match's board list (with per-board IMPs from the primary team's
- * perspective and both rooms' traveller lines) plus the summed IMP margin and
- * the board range. The primary team sits NS at its own home table and EW at the
- * opponent's home table.
- */
-function buildBoards(
-  entry: HomeEntry,
-  other: HomeEntry | undefined,
-): {
-  boards: UsebioTeamBoard[];
-  margin: number;
-  boardsPlayed: number;
-  startBoard: number;
-  endBoard: number;
-} {
-  const homeByBoard = new Map<number, Board>();
-  for (const row of entry.rows) homeByBoard.set(row.boardNumber, row);
-  const awayByBoard = new Map<number, Board>();
-  for (const row of other?.rows ?? []) awayByBoard.set(row.boardNumber, row);
-
-  const boardNumbers = Array.from(
-    new Set([...homeByBoard.keys(), ...awayByBoard.keys()]),
-  ).sort((a, b) => a - b);
-
-  let margin = 0;
-  let boardsPlayed = 0;
-  const boards: UsebioTeamBoard[] = [];
-
-  for (const boardNumber of boardNumbers) {
-    const homeRow = homeByBoard.get(boardNumber);
-    const awayRow = awayByBoard.get(boardNumber);
-
-    const homeScore = homeRow ? scoreOf(homeRow) : null;
-    const awayScore = awayRow ? scoreOf(awayRow) : null;
-
-    // IMPs count only when BOTH rooms have a comparable score.
-    let imps = 0;
-    if (homeScore != null && awayScore != null) {
-      imps = computeImps(homeScore - awayScore);
-      margin += imps;
-      boardsPlayed += 1;
-    }
-
-    const travellerLines: UsebioTeamTravellerLine[] = [];
-    // Primary team sat NS at its own home table.
-    if (homeRow) travellerLines.push(teamTravellerLine(homeRow, "NS"));
-    // Primary team's away pair sat EW at the opponent's home table.
-    if (awayRow) travellerLines.push(teamTravellerLine(awayRow, "EW"));
-
-    boards.push({ boardNumber, imps, travellerLines });
-  }
-
-  return {
-    boards,
-    margin,
-    boardsPlayed,
-    startBoard: boardNumbers[0] ?? 0,
-    endBoard: boardNumbers[boardNumbers.length - 1] ?? 0,
-  };
-}
-
-/** The NS-perspective contract score for a row, or null when not comparable. */
-function scoreOf(row: Board): number | null {
-  const outcome = boardResultOf(row);
-  return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
-}
-
 function teamTravellerLine(row: Board, direction: string): UsebioTeamTravellerLine {
-  const outcome = boardResultOf(row) ?? ("NP" as BoardOutcome);
+  const outcome = boardResult(row) ?? ("NP" as BoardOutcome);
   const line = buildTravellerLine(row.boardNumber, outcome, leadOf(row));
   return { direction, ...line };
 }
@@ -302,7 +191,7 @@ function buildRanking(
   );
 
   return ranked.map((row) => {
-    const { section } = parseSeat(row.teamId as Parameters<typeof parseSeat>[0]);
+    const section = sectionOf(row.teamId);
     return {
       number: numberByTeamId.get(row.teamId) ?? row.teamId,
       sectionId: section,

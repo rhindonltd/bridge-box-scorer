@@ -13,6 +13,7 @@ import {
 import { assembleSwissPairs } from "@/lib/usebio/assemble-swiss-pairs";
 import { assembleSwissTeams } from "@/lib/usebio/assemble-swiss-teams";
 import { parseSelectedMovement } from "@/model/selected-movement";
+import { classifyEvent } from "@/model/event-format";
 import { Card } from "@/model/common";
 import { BoardOutcome } from "@/model/score";
 
@@ -27,24 +28,30 @@ import { BoardOutcome } from "@/model/score";
  */
 export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
   const movement = parseSelectedMovement(game.selectedMovement);
+  const { format } = classifyEvent(game.gameType, game.scoringType, movement);
 
-  if (movement?.source === "SWISS_TEAMS" && game.gameType === "TEAMS") {
-    const [teams, boardRows] = await Promise.all([
-      findTeams(db),
-      db.select().from(boards),
-    ]);
-    return generateUsebioXml(assembleSwissTeams(game, club, teams, boardRows));
+  switch (format) {
+    case "SWISS_TEAMS_VP": {
+      const [teams, boardRows] = await Promise.all([
+        findTeams(db),
+        db.select().from(boards),
+      ]);
+      return generateUsebioXml(
+        assembleSwissTeams(game, club, teams, boardRows),
+      );
+    }
+    case "SWISS_PAIRS_VP": {
+      const [pairs, boardRows] = await Promise.all([
+        findPairs(db),
+        db.select().from(boards),
+      ]);
+      return generateUsebioXml(
+        assembleSwissPairs(game, club, pairs, boardRows),
+      );
+    }
+    case "PAIRS_BOARD":
+      return generateMpPairsUsebio(db, game, club);
   }
-
-  if (movement?.source === "SWISS") {
-    const [pairs, boardRows] = await Promise.all([
-      findPairs(db),
-      db.select().from(boards),
-    ]);
-    return generateUsebioXml(assembleSwissPairs(game, club, pairs, boardRows));
-  }
-
-  return generateMpPairsUsebio(db, game, club);
 }
 
 async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {

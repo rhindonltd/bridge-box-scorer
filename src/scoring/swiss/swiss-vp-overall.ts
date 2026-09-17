@@ -3,6 +3,7 @@ import { BoardOutcome } from "@/model/score";
 import { scoreIMP } from "@/scoring/traveller/pair/imp";
 import { rank } from "@/scoring/overall/rank";
 import { calculateWbfVP } from "./wbf-vp";
+import { boardResult } from "./team-match";
 
 /**
  * The minimal board-row shape the Swiss VP aggregation needs. Kept structural
@@ -27,11 +28,6 @@ export interface SwissVpBoardRow {
  * results yet: half of the 20-point pool, i.e. a dead-average match.
  */
 export const NEUTRAL_VP = 10;
-
-/** The final result on a board: a director override wins over the confirmed. */
-function boardResult(row: SwissVpBoardRow): BoardOutcome | null {
-  return row.directorOverrideResult ?? row.confirmedResult;
-}
 
 /** Group key for one Swiss match: a single table's seating within one round. */
 function matchKey(row: SwissVpBoardRow): string {

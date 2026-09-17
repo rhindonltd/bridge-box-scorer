@@ -61,8 +61,8 @@ async function getSwissTeamsHistory(
   for (const row of rows) {
     highestRound = Math.max(highestRound, row.roundNumber);
     try {
-      const home = parseSeat(row.ns as Parameters<typeof parseSeat>[0]);
-      const away = parseSeat(row.ew as Parameters<typeof parseSeat>[0]);
+      const home = parseSeat(row.ns);
+      const away = parseSeat(row.ew);
       playedOpponents.add(
         teamOpponentKey(home.tableNumber, away.tableNumber),
       );
@@ -123,8 +123,7 @@ async function rankedStandings(
       teamId: string;
     }[]) {
       try {
-        const id = parseSeat(line.teamId as Parameters<typeof parseSeat>[0])
-          .tableNumber;
+        const id = parseSeat(line.teamId).tableNumber;
         if (!seen.has(id)) {
           ordered.push(id);
           seen.add(id);

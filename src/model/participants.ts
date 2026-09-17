@@ -40,10 +40,17 @@ export function isPairSeat(seat: Seat): seat is PairSeat {
 /**
  * Decode a section-qualified seat into its parts.
  *
+ * Accepts a plain `string` rather than the `Seat` template-literal type,
+ * because the values callers most often decode — a board row's `ns`/`ew`
+ * participant id, or a team id — are stored as `string`. The regex still
+ * validates the shape and throws on anything unqualified, so widening the
+ * parameter removes the `as Parameters<typeof parseSeat>[0]` casts callers
+ * previously needed without loosening the actual check.
+ *
  * @throws if the seat is not a valid section-qualified seat (e.g. an
  *   unprefixed "3NS"); all seats in the system are expected to be qualified.
  */
-export function parseSeat(seat: Seat): {
+export function parseSeat(seat: string): {
   section: SectionLetter;
   tableNumber: number;
   direction: PairDirection;
@@ -59,6 +66,17 @@ export function parseSeat(seat: Seat): {
     tableNumber: Number(table),
     direction: direction as PairDirection,
   };
+}
+
+/**
+ * The section letter of a section-qualified seat or team id (e.g. "A1NS" or
+ * "A1" -> "A"). A thin wrapper over {@link parseSeat} for the common case of
+ * grouping pairs/teams by section without needing the table or direction.
+ *
+ * @throws if the id is not a valid section-qualified seat.
+ */
+export function sectionOf(id: string): SectionLetter {
+  return parseSeat(id).section;
 }
 
 /**

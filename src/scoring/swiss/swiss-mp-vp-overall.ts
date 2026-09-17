@@ -1,14 +1,9 @@
 import { PairSwissVpOverallScore } from "@/model/leaderboard";
-import { BoardOutcome } from "@/model/score";
 import { scoreMP } from "@/scoring/traveller/pair/mp";
 import { rank } from "@/scoring/overall/rank";
 import { calculateIndependentMpVP } from "./matchpoint-vp";
 import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
-
-/** The final result on a board: a director override wins over the confirmed. */
-function boardResult(row: SwissVpBoardRow): BoardOutcome | null {
-  return row.directorOverrideResult ?? row.confirmedResult;
-}
+import { boardResult } from "./team-match";
 
 interface Accumulator {
   /** Matchpoints earned across the round's scored boards. */

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { deriveTeamId, isPairSeat, parseSeat, seatFor } from "./participants";
+import {
+  deriveTeamId,
+  isPairSeat,
+  parseSeat,
+  sectionOf,
+  seatFor,
+} from "./participants";
 
 describe("isPairSeat", () => {
   it("returns true for section-qualified pair seats ending in NS or EW", () => {
@@ -97,5 +103,32 @@ describe("deriveTeamId", () => {
 
   it("throws for an unprefixed seat", () => {
     expect(() => deriveTeamId("1NS" as never)).toThrow();
+  });
+});
+
+describe("sectionOf", () => {
+  it("returns the section letter of a full seat", () => {
+    expect(sectionOf("A1NS")).toBe("A");
+    expect(sectionOf("B12EW")).toBe("B");
+  });
+
+  it("throws for an unprefixed or malformed id", () => {
+    expect(() => sectionOf("1NS")).toThrow();
+    expect(() => sectionOf("A1")).toThrow();
+  });
+});
+
+describe("parseSeat accepts a plain string", () => {
+  it("decodes a valid seat passed as a bare string (no cast needed)", () => {
+    const id: string = "A3NS";
+    expect(parseSeat(id)).toEqual({
+      section: "A",
+      tableNumber: 3,
+      direction: "NS",
+    });
+  });
+
+  it("throws for an invalid string", () => {
+    expect(() => parseSeat("not-a-seat")).toThrow();
   });
 });
