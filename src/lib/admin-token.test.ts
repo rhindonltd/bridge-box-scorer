@@ -7,6 +7,7 @@ import {
   hasAdminToken,
   subscribeAdminToken,
   verifyAdminTokenWithServer,
+  logoutAdmin,
 } from "./admin-token";
 
 describe("admin token store", () => {
@@ -141,5 +142,66 @@ describe("verifyAdminTokenWithServer", () => {
     await expect(verifyAdminTokenWithServer()).resolves.toBe(false);
     // A transient failure must not throw away a possibly-valid token.
     expect(getAdminToken()).toBe("maybe-valid");
+  });
+});
+
+describe("logoutAdmin", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("invalidates the session on the server and clears the local token", async () => {
+    setAdminToken("live");
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await logoutAdmin();
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "/api/system/admin-key/logout",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "x-admin-token": "live" },
+      }),
+    );
+    expect(getAdminToken()).toBeNull();
+  });
+
+  it("clears the local token even when the server call fails", async () => {
+    setAdminToken("live");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+    await logoutAdmin();
+
+    // The user must be reliably logged out on this device regardless of the
+    // server outcome.
+    expect(getAdminToken()).toBeNull();
+  });
+
+  it("does not call the server when no token is stored", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await logoutAdmin();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(getAdminToken()).toBeNull();
+  });
+
+  it("notifies subscribers so the settings gate re-locks", async () => {
+    setAdminToken("live");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+
+    const onChange = vi.fn();
+    const unsubscribe = subscribeAdminToken(onChange);
+
+    await logoutAdmin();
+
+    // Clearing the token fires the change event the settings layout listens to.
+    expect(onChange).toHaveBeenCalled();
+    unsubscribe();
   });
 });
