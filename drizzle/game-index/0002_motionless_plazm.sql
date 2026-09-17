@@ -1,0 +1,1 @@
+ALTER TABLE `games` ADD `bridgewebs_event_id` text;

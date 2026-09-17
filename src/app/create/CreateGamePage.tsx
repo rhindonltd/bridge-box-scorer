@@ -4,12 +4,16 @@ import { NewBridgeGame } from "@/db/game-index/schema";
 import { useRouter } from "next/navigation";
 import { createGame } from "@/lib/game-service";
 import { useId, useState } from "react";
+import useSWR from "swr";
 import { GameType } from "@/db/games/types/game-type";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import DateField from "@/components/common/DateField";
 import { Toggle } from "@/components/common/Toggle";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
+import type { BridgewebsEventsResponse } from "@/app/api/games/bridgewebs/events/route";
 
 const DEFAULT_TABLES = 5;
 
@@ -24,12 +28,34 @@ export function CreateGamePage() {
   const [gameType, setGameType] = useState<GameType>("PAIRS");
   const [eventDate, setEventDate] = useState(todayDateOnly());
   const [leadCardRequired, setLeadCardRequired] = useState(true);
+  const [bridgewebsEventId, setBridgewebsEventId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
 
   const leadCardLabelId = useId();
+
+  // BridgeWebs events for the chosen date. Only shown when the box has
+  // BridgeWebs credentials configured; a failed fetch degrades to no picker so
+  // the page behaves exactly as it did before the integration.
+  const { data: bridgewebs } = useSWR<BridgewebsEventsResponse>(
+    swrKeys.bridgewebsEvents(eventDate),
+    fetcher,
+  );
+
+  const showEventPicker =
+    (bridgewebs?.configured ?? false) && (bridgewebs?.events.length ?? 0) > 0;
+
+  function handleSelectBridgewebsEvent(id: string) {
+    setBridgewebsEventId(id);
+    const selected = bridgewebs?.events.find((e) => e.id === id);
+    // Prefill the event name from the chosen BridgeWebs event; picking "None"
+    // leaves the name untouched.
+    if (selected) {
+      setEventName(selected.title);
+    }
+  }
 
   async function onCreateGame(game: NewBridgeGame) {
     setError(null);
@@ -54,6 +80,7 @@ export function CreateGamePage() {
       sectionName: "",
       tables: DEFAULT_TABLES,
       leadCardRequired,
+      bridgewebsEventId: bridgewebsEventId || null,
     });
   }
 
@@ -108,6 +135,21 @@ export function CreateGamePage() {
             value={eventDate}
             onChange={setEventDate}
           />
+
+          {showEventPicker && (
+            <SelectField
+              label="BridgeWebs Event"
+              value={bridgewebsEventId}
+              options={[
+                { label: "— None —", value: "" },
+                ...bridgewebs!.events.map((e) => ({
+                  label: e.title,
+                  value: e.id,
+                })),
+              ]}
+              onSelect={handleSelectBridgewebsEvent}
+            />
+          )}
 
           <div className="flex flex-col gap-1">
             <label

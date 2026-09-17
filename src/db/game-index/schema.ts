@@ -26,6 +26,10 @@ export const games = sqliteTable("games", {
   // Null until the director has chosen a movement. Materialized into boards /
   // assignments only when the game is started.
   selectedMovement: text("selected_movement"),
+  // BridgeWebs calendar event id this game maps to (chosen on the create page
+  // when BridgeWebs is configured). Null when unset; used as `event_id` on the
+  // results upload so BridgeWebs attaches results to the right calendar entry.
+  bridgewebsEventId: text("bridgewebs_event_id"),
   leadCardRequired: integer("lead_card_required", { mode: "boolean" })
     .notNull()
     .default(true),

@@ -24,6 +24,10 @@ export default function SettingsPage() {
           Club Information
         </Link>
 
+        <Link href="/settings/bridgewebs" className={settingsButtonClasses}>
+          BridgeWebs
+        </Link>
+
         <Link href="/settings/admin-key" className={settingsButtonClasses}>
           Update Admin Key
         </Link>

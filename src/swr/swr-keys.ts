@@ -23,6 +23,11 @@ export const swrKeys = {
 
   club: () => "/api/system/club",
 
+  bridgewebs: () => "/api/system/bridgewebs",
+
+  bridgewebsEvents: (date: string) =>
+    `/api/games/bridgewebs/events?date=${encodeURIComponent(date)}`,
+
   playerSearch: (query: string) =>
     `/api/players/search?q=${encodeURIComponent(query)}`,
 

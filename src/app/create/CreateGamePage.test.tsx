@@ -13,6 +13,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
 }));
 
+// The BridgeWebs event picker reads its data via SWR. Default to "not
+// configured" so the base tests see the page exactly as before; individual
+// tests override the returned data.
+const mockUseSWR = vi.fn();
+vi.mock("swr", () => ({
+  default: (key: string) => mockUseSWR(key),
+}));
+
 import { CreateGamePage } from "./CreateGamePage";
 
 function todayDateOnly(): string {
@@ -24,6 +32,10 @@ describe("CreateGamePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCreateGame.mockResolvedValue({ gameId: "new-game" });
+    // Default: BridgeWebs not configured -> no picker.
+    mockUseSWR.mockReturnValue({
+      data: { configured: false, events: [] },
+    });
   });
 
   it("does not render a tables field", () => {
@@ -74,6 +86,59 @@ describe("CreateGamePage", () => {
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
     expect(mockCreateGame).toHaveBeenCalledWith(
       expect.objectContaining({ leadCardRequired: false }),
+    );
+  });
+
+  it("does not show the BridgeWebs picker when not configured", () => {
+    render(<CreateGamePage />);
+    expect(screen.queryByLabelText("BridgeWebs Event")).not.toBeInTheDocument();
+  });
+
+  it("does not show the picker when configured but there are no events", () => {
+    mockUseSWR.mockReturnValue({ data: { configured: true, events: [] } });
+    render(<CreateGamePage />);
+    expect(screen.queryByLabelText("BridgeWebs Event")).not.toBeInTheDocument();
+  });
+
+  it("shows the picker and prefills the event name on selection, persisting the event id", async () => {
+    mockUseSWR.mockReturnValue({
+      data: {
+        configured: true,
+        events: [
+          { id: "1", title: "Monday Duplicate" },
+          { id: "2", title: "Afternoon Teams" },
+        ],
+      },
+    });
+
+    render(<CreateGamePage />);
+
+    const picker = screen.getByLabelText("BridgeWebs Event");
+    expect(picker).toBeInTheDocument();
+
+    fireEvent.change(picker, { target: { value: "2" } });
+
+    // Event name is prefilled from the selected event.
+    expect(screen.getByLabelText("Event Name")).toHaveValue("Afternoon Teams");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "Afternoon Teams",
+        bridgewebsEventId: "2",
+      }),
+    );
+  });
+
+  it("submits a null bridgewebsEventId when no event is chosen", async () => {
+    render(<CreateGamePage />);
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ bridgewebsEventId: null }),
     );
   });
 

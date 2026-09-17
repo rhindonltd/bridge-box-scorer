@@ -10,6 +10,7 @@ export const mockGame = {
   tables: 8,
   selectedMovement: null,
   leadCardRequired: true,
+  bridgewebsEventId: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
