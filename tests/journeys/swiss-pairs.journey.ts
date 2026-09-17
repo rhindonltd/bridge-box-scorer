@@ -11,7 +11,7 @@ import {
 } from "../fixtures/game-setup";
 import { seatSingleSectionFieldOnDevices } from "../fixtures/join";
 import { deleteGame } from "../fixtures/delete-game";
-import { closeSeatDevices, newParticipant } from "./support";
+import { closeSeatDevices, newParticipant, gotoStable } from "./support";
 
 /**
  * Swiss Pairs end-to-end.
@@ -152,7 +152,7 @@ function materializedRounds(gameId: string, section = "A"): number {
  * confirmation notice.
  */
 async function drawNextRound(directorPage: Page, gameId: string): Promise<void> {
-  await directorPage.goto(`/game/${gameId}/manage/movement`);
+  await gotoStable(directorPage, `/game/${gameId}/manage/movement`);
   const button = directorPage.getByTestId("draw-next-round");
   await expect(button).toBeEnabled({ timeout: 15000 });
   await button.click();
@@ -190,7 +190,7 @@ test.describe("Swiss Pairs draws round by round", () => {
       expect(materializedRounds(gameId)).toBe(1);
 
       // Before scoring, the draw button is disabled (results not yet in).
-      await directorPage.goto(`/game/${gameId}/manage/movement`);
+      await gotoStable(directorPage, `/game/${gameId}/manage/movement`);
       await expect(directorPage.getByTestId("draw-next-round")).toBeDisabled({
         timeout: 15000,
       });

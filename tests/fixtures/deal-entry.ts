@@ -21,7 +21,9 @@ export async function fillAndSaveFullDeal(page: Page): Promise<void> {
   for (const dir of ["N", "E", "S", "W"] as const) {
     await page.getByTestId(`entry-dir-${dir}`).click();
     for (const rank of RANKS) {
-      await page.getByTestId(`card-${rank}${SUIT_FOR[dir]}`).click();
+      // Card test ids are suit-first (e.g. "card-SA"), matching the suit-first
+      // Card code convention.
+      await page.getByTestId(`card-${SUIT_FOR[dir]}${rank}`).click();
     }
   }
 

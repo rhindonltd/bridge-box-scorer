@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { createGame } from "../fixtures/game-create";
 import { deleteGame } from "../fixtures/delete-game";
-import { newParticipant } from "./support";
+import { newParticipant, gotoStable } from "./support";
 
 /**
  * Navigation & game-selection journey.
@@ -57,7 +57,7 @@ test.describe("Navigation & selection", () => {
       gameId = created.gameId;
 
       // /manage selector lists the game (all games); rows show the event name.
-      await page.goto("/manage");
+      await gotoStable(page, "/manage");
       const manageRow = page.getByRole("button", { name: new RegExp(eventName) });
       await expect(manageRow).toBeVisible({ timeout: 15000 });
       // As the local director, selecting goes straight to manage.
@@ -67,7 +67,7 @@ test.describe("Navigation & selection", () => {
       });
 
       // /display selector navigates to the display route.
-      await page.goto("/display");
+      await gotoStable(page, "/display");
       const displayRow = page.getByRole("button", { name: new RegExp(eventName) });
       await expect(displayRow).toBeVisible({ timeout: 15000 });
       await displayRow.click();
@@ -76,7 +76,7 @@ test.describe("Navigation & selection", () => {
       });
 
       // /join selector navigates to the join route.
-      await page.goto("/join");
+      await gotoStable(page, "/join");
       const joinRow = page.getByRole("button", { name: new RegExp(eventName) });
       await expect(joinRow).toBeVisible({ timeout: 15000 });
       await joinRow.click();

@@ -133,7 +133,6 @@ async function setUpStartedGameWithSavedTimer(
   await spin("Play minutes").fill("0");
   await spin("Play seconds").fill(String(config.playSeconds));
   await spin("Move minutes").fill("0");
-  await spin("Move seconds").fill(String(config.moveSeconds));
 
   if (config.breakAfterRound != null) {
     await directorPage.getByRole("button", { name: "+ Add break" }).click();
@@ -141,8 +140,21 @@ async function setUpStartedGameWithSavedTimer(
     await spin("Break 1 duration minutes").fill(String(config.breakMinutes ?? 5));
   }
 
-  // Let the debounced autosave persist before starting (start promotes it).
-  await directorPage.waitForTimeout(AUTOSAVE_SETTLE_MS);
+  // The config autosaves ~400ms after the last edit (a debounced PUT to the
+  // section timer-config route). Make the final edit while WAITING for that
+  // PUT to complete, so the config is definitely persisted before we navigate
+  // away to seat/start — a fixed timeout raced the debounce and could leave
+  // the game with no configured timer to promote.
+  await Promise.all([
+    directorPage.waitForResponse(
+      (res) =>
+        /\/sections\/[^/]+\/timer\/config$/.test(res.url()) &&
+        res.request().method() === "PUT" &&
+        res.ok(),
+      { timeout: 15000 },
+    ),
+    spin("Move seconds").fill(String(config.moveSeconds)),
+  ]);
 
   // Seat and start the game; starting promotes the autosaved config to live.
   await seatTwoTableField(directorPage, gameId);

@@ -3,7 +3,11 @@ import { test, expect } from "@playwright/test";
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { fillAndSaveFullDeal } from "../fixtures/deal-entry";
-import { closeSeatDevices, setUpStartedTwoTableGame } from "./support";
+import {
+  closeSeatDevices,
+  setUpStartedTwoTableGame,
+  gotoStable,
+} from "./support";
 
 /**
  * Board-deal capture journey (pure UI).
@@ -82,12 +86,12 @@ test.describe("Board deal capture", () => {
       // traveller (the shared per-board deal path). Open Enter Deals for the
       // first board: it pre-fills with the deal the player just recorded, so a
       // populated grid (13/13 on each direction) proves it round-tripped.
-      const dealsUrl = `/game/${gameId}/manage/deals`;
+      // The deals page's StartedGuard briefly redirects to /manage while its
+      // started-state resolves, which can interrupt a plain goto; gotoStable
+      // rides that out. Once loaded it shows the board picker.
       const boardButton = directorPage.getByTestId(`select-board-${firstBoard}`);
-      await expect(async () => {
-        await directorPage.goto(dealsUrl).catch(() => {});
-        await expect(boardButton).toBeVisible({ timeout: 5000 });
-      }).toPass({ timeout: 20000 });
+      await gotoStable(directorPage, `/game/${gameId}/manage/deals`);
+      await expect(boardButton).toBeVisible({ timeout: 15000 });
       await boardButton.click();
 
       // Each direction tab shows a full 13-card count, i.e. the deal loaded.
@@ -124,13 +128,11 @@ test.describe("Board deal capture", () => {
       const board = schedule.rounds.find((r) => r.roundNumber === 1)!.boards[0];
       await confirmBoardPassOut(nsPage, ewPage, gameId, 1, board);
 
-      // Director opens the Manage Game Menu and taps "Enter Deals".
-      const dealsUrl = `/game/${gameId}/manage/deals`;
+      // Director opens the Enter Deals page. Its StartedGuard can briefly
+      // redirect to /manage while resolving, so gotoStable rides that out.
       const boardButton = directorPage.getByTestId(`select-board-${board}`);
-      await expect(async () => {
-        await directorPage.goto(dealsUrl).catch(() => {});
-        await expect(boardButton).toBeVisible({ timeout: 5000 });
-      }).toPass({ timeout: 20000 });
+      await gotoStable(directorPage, `/game/${gameId}/manage/deals`);
+      await expect(boardButton).toBeVisible({ timeout: 15000 });
 
       await boardButton.click();
 

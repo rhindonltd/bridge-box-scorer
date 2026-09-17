@@ -12,6 +12,29 @@ export async function newParticipant(browser: Browser): Promise<Page> {
 }
 
 /**
+ * Navigate to `url`, tolerating a competing client-side navigation. Right after
+ * create/start/select the app may still be settling its own redirect (e.g.
+ * landing on `/manage`), which interrupts a plain `goto` ("interrupted by
+ * another navigation"). Waiting only until "commit" (not "load") and retrying
+ * once rides out that race. Callers assert on real content afterwards, so we do
+ * not need to wait for full load here.
+ */
+export async function gotoStable(page: Page, url: string): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await page.goto(url, { waitUntil: "commit" });
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (attempt === 2 || !message.includes("interrupted by another navigation")) {
+        throw err;
+      }
+      await page.waitForTimeout(400);
+    }
+  }
+}
+
+/**
  * Close every per-pair device context in a seats map (as returned by the
  * setup helpers). Each pair page owns its own context, so closing the pages'
  * contexts tears down all the simulated devices in one call.
@@ -140,18 +163,27 @@ async function sizeSectionTables(
   section: string,
   tables: number,
 ): Promise<void> {
-  const res = await fetch(
-    `http://localhost:3000/api/games/${gameId}/sections/${section}/tables`,
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "x-director-token": directorToken,
+  // The section was just added through the UI; its DB row may not be visible to
+  // this HTTP call for a moment, so the route can 404 ("Section not found").
+  // Retry a few times on 404 before giving up; other failures surface at once.
+  const deadline = Date.now() + 10_000;
+  for (;;) {
+    const res = await fetch(
+      `http://localhost:3000/api/games/${gameId}/sections/${section}/tables`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-director-token": directorToken,
+        },
+        body: JSON.stringify({ tables }),
       },
-      body: JSON.stringify({ tables }),
-    },
-  );
-  if (!res.ok) {
+    );
+    if (res.ok) return;
+    if (res.status === 404 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 300));
+      continue;
+    }
     throw new Error(`Failed to size section ${section}: ${res.status}`);
   }
 }
