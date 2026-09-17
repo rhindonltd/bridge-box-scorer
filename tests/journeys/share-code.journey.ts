@@ -1,7 +1,11 @@
 import { test, expect } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
-import { newParticipant, setUpStartedTwoTableGame } from "./support";
+import {
+  newParticipant,
+  setUpStartedTwoTableGame,
+  gotoStable,
+} from "./support";
 
 /**
  * Share-code co-director round-trip (pure UI, no socket seam).
@@ -37,7 +41,7 @@ test.describe("Share director access round-trip", () => {
 
     try {
       // Device A generates a share code on the Share Director Access page.
-      await directorPage.goto(`/game/${gameId}/manage/share-access`);
+      await gotoStable(directorPage, `/game/${gameId}/manage/share-access`);
       const codeEl = directorPage.getByTestId("share-code");
       await expect(codeEl).toBeVisible({ timeout: 15000 });
       const code = (await codeEl.textContent())?.trim() ?? "";
@@ -124,7 +128,7 @@ test.describe("Share director access round-trip", () => {
     );
 
     try {
-      await directorPage.goto(`/game/${gameId}/manage/share-access`);
+      await gotoStable(directorPage, `/game/${gameId}/manage/share-access`);
       const codeEl = directorPage.getByTestId("share-code");
       await expect(codeEl).toBeVisible({ timeout: 15000 });
       const firstCode = (await codeEl.textContent())?.trim() ?? "";
@@ -177,7 +181,7 @@ test.describe("Share director access round-trip", () => {
 
     try {
       // Device A generates a code.
-      await directorPage.goto(`/game/${gameId}/manage/share-access`);
+      await gotoStable(directorPage, `/game/${gameId}/manage/share-access`);
       const codeEl = directorPage.getByTestId("share-code");
       await expect(codeEl).toBeVisible({ timeout: 15000 });
       const code = (await codeEl.textContent())?.trim() ?? "";

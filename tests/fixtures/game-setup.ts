@@ -24,7 +24,19 @@ const INCREASE_TABLES = "Increase Tables";
  */
 export async function openSetupStep(page: Page, name: string): Promise<void> {
   await page.getByRole("button", { name: "Setup menu" }).click();
-  await page.getByRole("menuitem", { name }).click();
+  // Wait for the menu item to be actionable before clicking: the menu animates
+  // open, and on the narrow mobile viewport a click fired before it settles can
+  // miss (leaving the menu open and the view unchanged, which later steps then
+  // hang on). getByRole scopes to the open menu; toBeVisible waits out the
+  // animation.
+  const item = page.getByRole("menuitem", { name });
+  await expect(item).toBeVisible({ timeout: 15000 });
+  await item.click();
+  // The menu closes once a view is chosen; wait for it to go away so a
+  // subsequent interaction isn't intercepted by the closing overlay.
+  await expect(page.getByRole("menuitem", { name })).toBeHidden({
+    timeout: 15000,
+  });
 }
 
 /**

@@ -20,7 +20,10 @@ import { newParticipant } from "./support";
  * guard is server-enforced and surfaced as an alert).
  */
 
-const MINUS = "\u2212"; // the NumberStepper decrement glyph (U+2212)
+// The Tables NumberStepper exposes its controls via aria-labels (the visible
+// −/+ glyphs are decorative) and its current value via a "Tables" spinbutton.
+const DECREASE_TABLES = "Decrease Tables";
+const INCREASE_TABLES = "Increase Tables";
 
 /** Open the setup Tables view for a game. */
 async function openTablesTab(page: Page, gameId: string): Promise<void> {
@@ -28,20 +31,11 @@ async function openTablesTab(page: Page, gameId: string): Promise<void> {
   await openSetupStep(page, "Tables");
 }
 
-/**
- * Read the (single-section) table count from the stepper. The value sits
- * between the − and + buttons; the compass "Table N" label splits "Table" and
- * "N" across elements, so the stepper is the reliable count source.
- */
+/** Read the (single-section) table count from the Tables spinbutton. */
 async function readTableCount(page: Page): Promise<number> {
-  const value = await page.evaluate(() => {
-    const minus = [...document.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "\u2212",
-    );
-    const row = minus?.parentElement;
-    const text = row?.textContent?.replace(/[\u2212+]/g, "").trim();
-    return text ?? "";
-  });
+  const value = await page
+    .getByRole("spinbutton", { name: "Tables" })
+    .inputValue();
   return Number(value);
 }
 
@@ -63,14 +57,16 @@ test.describe("Director table management", () => {
         .toBe(2);
 
       // Increment to three tables.
-      await directorPage.getByRole("button", { name: "+", exact: true }).click();
+      await directorPage
+        .getByRole("button", { name: INCREASE_TABLES, exact: true })
+        .click();
       await expect
         .poll(() => readTableCount(directorPage), { timeout: 15000 })
         .toBe(3);
 
       // Decrement back to two (the third table is empty, so this is allowed).
       await directorPage
-        .getByRole("button", { name: MINUS, exact: true })
+        .getByRole("button", { name: DECREASE_TABLES, exact: true })
         .click();
       await expect
         .poll(() => readTableCount(directorPage), { timeout: 15000 })
@@ -140,17 +136,15 @@ test.describe("Director table management", () => {
         .poll(() => readTableCount(directorPage), { timeout: 15000 })
         .toBe(2);
 
-      // Attempt to shrink to one table. The shrink guard rejects removing a
-      // seated table (server-enforced, surfaced as an alert). Auto-dismiss any
-      // dialog so the click doesn't hang.
-      directorPage.on("dialog", (d) => void d.accept());
-      await directorPage
-        .getByRole("button", { name: MINUS, exact: true })
-        .click();
+      // Removing a table would drop the seated last table, so the shrink guard
+      // DISABLES the decrement control (the director can't even attempt it).
+      const decrease = directorPage.getByRole("button", {
+        name: DECREASE_TABLES,
+        exact: true,
+      });
+      await expect(decrease).toBeDisabled({ timeout: 15000 });
 
-      // The seated table was not removed: the count stays at two. (Poll for a
-      // short window to allow the rejected round-trip to settle.)
-      await directorPage.waitForTimeout(1000);
+      // The count therefore stays at two.
       await expect
         .poll(() => readTableCount(directorPage), { timeout: 15000 })
         .toBe(2);

@@ -28,6 +28,53 @@ export const SEEDED_EBU = {
   keithPonsford: "10056",
 } as const;
 
+/**
+ * An ordered pool of distinct, reliably-seeded EBU numbers (all resolvable via
+ * `/api/players/search?q=<ebu>`). A player may only be seated once per game, so
+ * multi-seat fields must draw a UNIQUE pair per seat from this pool. Twenty
+ * players (ten pairs) covers the largest field the journeys build: a 3-table
+ * single section (6 pairs) and a two-section, two-tables-each field (8 pairs).
+ * Add more from `data/players.db` if a larger field is ever needed.
+ */
+export const SEEDED_EBU_POOL: readonly string[] = [
+  "477484", "404476", "12269", "16671",
+  "10008", "10009", "10021", "10056",
+  "10077", "10079", "10096", "10105",
+  "10117", "10118", "10128", "10159",
+  "10169", "10183", "10188", "10204",
+] as const;
+
+/**
+ * Assign each seat a distinct pair (two EBU numbers) drawn in order from
+ * {@link SEEDED_EBU_POOL}, so no player is seated twice in one game. Throws if
+ * the draw would run off the end of the pool, which is a clearer failure than
+ * the app's "already seated" rejection surfacing as a navigation timeout.
+ *
+ * `pairOffset` shifts the starting pair, so callers that seat several groups
+ * into the SAME game (e.g. one call per section) can keep every player distinct
+ * across the whole game by advancing the offset by `seats.length` per group.
+ */
+export function assignDistinctPairs(
+  seats: string[],
+  pairOffset = 0,
+): Record<string, [string, string]> {
+  const lastPlayerIndex = (pairOffset + seats.length) * 2 - 1;
+  if (lastPlayerIndex >= SEEDED_EBU_POOL.length) {
+    throw new Error(
+      `Need ${lastPlayerIndex + 1} distinct players (offset ${pairOffset} + ` +
+        `${seats.length} seats), but the seeded pool only has ` +
+        `${SEEDED_EBU_POOL.length}. Add more EBU numbers to SEEDED_EBU_POOL ` +
+        `(from data/players.db).`,
+    );
+  }
+  const assignment: Record<string, [string, string]> = {};
+  seats.forEach((seat, i) => {
+    const p = (pairOffset + i) * 2;
+    assignment[seat] = [SEEDED_EBU_POOL[p], SEEDED_EBU_POOL[p + 1]];
+  });
+  return assignment;
+}
+
 async function fillSeat(
   page: Page,
   label: "North" | "South" | "East" | "West",
@@ -151,38 +198,48 @@ export async function seatPairBySeat(
 }
 
 /**
- * Seat a full two-table field in a specific section using explicit seats.
- * Reuses the four seeded players (no distinct-player constraint).
+ * Seat a full two-table field in a specific section using explicit seats, one
+ * distinct pair per seat (a player may only be seated once per game).
  */
 export async function seatTwoTableSection(
   page: Page,
   gameId: string,
   section: string,
 ): Promise<void> {
-  const { jacquelineCollier, davidCollier, celiaOram, denisKing } = SEEDED_EBU;
+  const seats = [
+    `${section}1NS`,
+    `${section}1EW`,
+    `${section}2NS`,
+    `${section}2EW`,
+  ];
+  const pairs = assignDistinctPairs(seats);
 
-  await seatPairBySeat(page, gameId, `${section}1NS`, jacquelineCollier, davidCollier);
-  await seatPairBySeat(page, gameId, `${section}1EW`, celiaOram, denisKing);
-  await seatPairBySeat(page, gameId, `${section}2NS`, jacquelineCollier, davidCollier);
-  await seatPairBySeat(page, gameId, `${section}2EW`, celiaOram, denisKing);
+  for (const seat of seats) {
+    const [ebu1, ebu2] = pairs[seat];
+    await seatPairBySeat(page, gameId, seat, ebu1, ebu2);
+  }
 }
 
 /**
- * Seat every seat of an N-table single-section (section "A") field using the
- * seeded players (reused across tables — there is no distinct-player
- * constraint). Uses explicit section-qualified seats so it works for any table
- * count, not just two.
+ * Seat every seat of an N-table single-section (section "A") field, one
+ * distinct pair per seat (a player may only be seated once per game). Uses
+ * explicit section-qualified seats so it works for any table count, not just
+ * two.
  */
 export async function seatSingleSectionField(
   page: Page,
   gameId: string,
   tables: number,
 ): Promise<void> {
-  const { jacquelineCollier, davidCollier, celiaOram, denisKing } = SEEDED_EBU;
-
+  const seats: string[] = [];
   for (let table = 1; table <= tables; table++) {
-    await seatPairBySeat(page, gameId, `A${table}NS`, jacquelineCollier, davidCollier);
-    await seatPairBySeat(page, gameId, `A${table}EW`, celiaOram, denisKing);
+    seats.push(`A${table}NS`, `A${table}EW`);
+  }
+  const pairs = assignDistinctPairs(seats);
+
+  for (const seat of seats) {
+    const [ebu1, ebu2] = pairs[seat];
+    await seatPairBySeat(page, gameId, seat, ebu1, ebu2);
   }
 }
 
@@ -216,6 +273,9 @@ export async function seatTwoTableFieldOnDevices(
 
 /**
  * Seat a full two-table field for a specific section, one device per pair.
+ * Offsets into the player pool by section (A→0, B→4, …) so seating multiple
+ * sections in the same game keeps every player distinct across sections (a
+ * player may only be seated once per game).
  *
  * @returns a map from section-qualified seat (e.g. "B1NS") to that pair's page.
  */
@@ -230,7 +290,10 @@ export async function seatTwoTableSectionOnDevices(
     `${section}2NS`,
     `${section}2EW`,
   ];
-  return seatSeatsOnDevices(makePage, gameId, seats);
+  // Four seats per section; advance the pool offset one section-block per
+  // section letter so sections never share players.
+  const sectionIndex = section.toUpperCase().charCodeAt(0) - "A".charCodeAt(0);
+  return seatSeatsOnDevices(makePage, gameId, seats, sectionIndex * seats.length);
 }
 
 /**
@@ -253,23 +316,22 @@ export async function seatSingleSectionFieldOnDevices(
 
 /**
  * Seat an explicit list of section-qualified seats, each from its own device,
- * reusing the four seeded players (there is no distinct-player constraint).
- * Returns the seat -> page map so callers can drive play from the same device
- * that joined (and therefore holds that seat's token).
+ * giving every seat a DISTINCT pair (a player may only be seated once per
+ * game). Returns the seat -> page map so callers can drive play from the same
+ * device that joined (and therefore holds that seat's token).
  */
 export async function seatSeatsOnDevices(
   makePage: MakePage,
   gameId: string,
   seats: string[],
+  pairOffset = 0,
 ): Promise<Record<string, Page>> {
-  const { jacquelineCollier, davidCollier, celiaOram, denisKing } = SEEDED_EBU;
+  const pairs = assignDistinctPairs(seats, pairOffset);
 
   const pages: Record<string, Page> = {};
   for (const seat of seats) {
     const page = await makePage();
-    const isNS = seat.endsWith("NS");
-    const ebu1 = isNS ? jacquelineCollier : celiaOram;
-    const ebu2 = isNS ? davidCollier : denisKing;
+    const [ebu1, ebu2] = pairs[seat];
     await seatPairBySeat(page, gameId, seat, ebu1, ebu2);
     pages[seat] = page;
   }

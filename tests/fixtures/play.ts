@@ -11,6 +11,51 @@ import { Page, expect } from "@playwright/test";
  */
 
 /**
+ * From the round-info screen, enter the round and land on `boardNumber`'s
+ * contract wizard.
+ *
+ * The wizard shows the board-selection step (StepBoard, `wizard-board-{n}`)
+ * only when more than one unplayed board remains in the round. When just one
+ * board is left it is auto-selected and the wizard opens straight on the level
+ * step (no `wizard-board-*` buttons). This helper handles both: it clicks the
+ * board button when present, otherwise confirms the auto-selected board matches
+ * (or switches to it via the board dropdown) so callers always end up entering
+ * the intended board.
+ */
+async function enterRoundAndSelectBoard(
+  page: Page,
+  boardNumber: number,
+): Promise<void> {
+  const enterRound = page.getByTestId("play-enter-round");
+  await expect(enterRound).toBeVisible({ timeout: 15000 });
+  await enterRound.click();
+
+  const boardButton = page.getByTestId(`wizard-board-${boardNumber}`);
+  // Either StepBoard (board buttons) or an auto-selected board on the level
+  // step (a "Board N" dropdown) will appear; wait for whichever lands.
+  await expect(
+    boardButton.or(page.getByRole("button", { name: /^Board \d+$/ })),
+  ).toBeVisible({ timeout: 15000 });
+
+  if (await boardButton.isVisible()) {
+    await boardButton.click();
+    return;
+  }
+
+  // Auto-selected onto the level step. If the wrong board was auto-selected,
+  // switch to the target via the board dropdown; otherwise proceed.
+  const boardDropdown = page.getByRole("button", { name: /^Board \d+$/ });
+  const current = (await boardDropdown.textContent())?.trim();
+  if (current !== `Board ${boardNumber}`) {
+    await boardDropdown.click();
+    await page
+      .getByRole("button", { name: `Board ${boardNumber}`, exact: true })
+      .last()
+      .click();
+  }
+}
+
+/**
  * Enter a Pass Out for a single seat on a specific board.
  *
  * Walks: open the seat, Enter Round, pick the board, Pass Out, Submit. Leaves
@@ -25,13 +70,7 @@ export async function enterPassOut(
 ): Promise<void> {
   await page.goto(`/game/${gameId}/play/${seat}`);
 
-  const enterRound = page.getByTestId("play-enter-round");
-  await expect(enterRound).toBeVisible({ timeout: 15000 });
-  await enterRound.click();
-
-  const boardButton = page.getByTestId(`wizard-board-${boardNumber}`);
-  await expect(boardButton).toBeVisible({ timeout: 15000 });
-  await boardButton.click();
+  await enterRoundAndSelectBoard(page, boardNumber);
 
   const passOut = page.getByTestId("wizard-pass-out");
   await expect(passOut).toBeVisible();
@@ -164,13 +203,7 @@ export async function enterPlayedContract(
 ): Promise<void> {
   await page.goto(`/game/${gameId}/play/${seat}`);
 
-  const enterRound = page.getByTestId("play-enter-round");
-  await expect(enterRound).toBeVisible({ timeout: 15000 });
-  await enterRound.click();
-
-  const boardButton = page.getByTestId(`wizard-board-${boardNumber}`);
-  await expect(boardButton).toBeVisible({ timeout: 15000 });
-  await boardButton.click();
+  await enterRoundAndSelectBoard(page, boardNumber);
 
   // Step: Level.
   await clickButtonByText(page, String(spec.level));
@@ -283,13 +316,7 @@ export async function enterNotPlayed(
 ): Promise<void> {
   await page.goto(`/game/${gameId}/play/${seat}`);
 
-  const enterRound = page.getByTestId("play-enter-round");
-  await expect(enterRound).toBeVisible({ timeout: 15000 });
-  await enterRound.click();
-
-  const boardButton = page.getByTestId(`wizard-board-${boardNumber}`);
-  await expect(boardButton).toBeVisible({ timeout: 15000 });
-  await boardButton.click();
+  await enterRoundAndSelectBoard(page, boardNumber);
 
   // "Not Played" sits on the level step next to "Pass Out"; it has no test id,
   // but the label is unique on that step.

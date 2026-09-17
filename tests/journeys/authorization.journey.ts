@@ -16,10 +16,11 @@ import { newParticipant } from "./support";
  *   - HTTP director routes 401 without a valid token; admin routes 401 without
  *     x-admin-token.
  *   - The intentionally-OPEN events behave as designed (documented below):
- *     players submit results and seat themselves WITHOUT a director token, and
- *     a share code is claimed without any prior auth. These are open by design
- *     — the integrity mechanism for results is dual-side confirmation, not
- *     director authorization, and a claimant has no token yet.
+ *     a player seats their own pair WITHOUT a director token, and a share code
+ *     is claimed without any prior auth (the claimant has no token yet).
+ *   - Result submission is PLAYER-authed: it requires the seat's own token
+ *     (issued at join), so a submission without it is rejected — the happy path
+ *     is covered by the play journeys.
  */
 
 /** Open a raw socket.io connection from the test process. */
@@ -47,12 +48,15 @@ function emit<T = { success: boolean; error?: string }>(
 }
 
 test.describe("Authorization: director socket events", () => {
-  test("director-only events reject missing/invalid tokens and accept the real one", async ({
+  test("a director-only socket event rejects missing/invalid tokens", async ({
     browser,
   }) => {
     test.setTimeout(90_000);
 
-    // A started, seated game so director events reach their auth check.
+    // A game whose director-only socket events reach their auth check.
+    // `traveller:overrideResult` is a representative director-only socket event
+    // that acks its own Unauthorized failure; share-code generate/claim are now
+    // HTTP routes (covered below and in the HTTP-routes describe).
     const directorPage = await newParticipant(browser);
     const { gameId, directorToken } = await createGame(directorPage, {
       eventName: `Auth ${Date.now()}`,
@@ -60,15 +64,24 @@ test.describe("Authorization: director socket events", () => {
     });
     await setTableCount(directorPage, 2);
     await pickFirstMovement(directorPage);
-    await seatTwoTableField(directorPage, gameId);
 
     const socket = await openSocket();
+
+    // A fully valid-shaped override payload (all required fields present) so
+    // the request passes schema validation and reaches the director auth check.
+    const overridePayload = {
+      gameId,
+      boardNumber: 1,
+      roundNumber: 1,
+      tableNumber: 1,
+      result: "PO",
+    };
 
     try {
       // A garbage token is rejected as Unauthorized (a valid-shaped but
       // unrecognised token reaches the auth check).
-      const garbage = await emit(socket, "game:generateShareCode", {
-        gameId,
+      const garbage = await emit(socket, "traveller:overrideResult", {
+        ...overridePayload,
         directorToken: "garbage-token",
       });
       expect(garbage.success).toBe(false);
@@ -76,21 +89,19 @@ test.describe("Authorization: director socket events", () => {
 
       // A missing token is also rejected (payload validation fires first,
       // before the auth check — still a non-success ack).
-      const missing = await emit(socket, "game:generateShareCode", { gameId });
+      const missing = await emit(socket, "traveller:overrideResult", overridePayload);
       expect(missing.success).toBe(false);
 
-      // Participant eviction, table resize and section management moved to HTTP
-      // routes; their 401s are covered by the HTTP director-route auth checks,
-      // not this socket path.
-
-      // Positive control: the real director token authorises the event.
-      const ok = await emit<{ success: boolean; code?: string }>(
+      // Positive control: the real director token passes the auth check. (This
+      // game has no played board 1 to override, so the override itself does not
+      // succeed — but it gets PAST auth, i.e. it is NOT rejected as
+      // Unauthorized, which is what this test asserts.)
+      const authed = await emit<{ success: boolean; error?: string }>(
         socket,
-        "game:generateShareCode",
-        { gameId, directorToken },
+        "traveller:overrideResult",
+        { ...overridePayload, directorToken },
       );
-      expect(ok.success).toBe(true);
-      expect(ok.code).toMatch(/^[A-Z0-9]{6}$/);
+      expect(authed.error).not.toBe("Unauthorized");
     } finally {
       socket.disconnect();
       await deleteGame(directorPage, gameId);
@@ -137,7 +148,7 @@ test.describe("Authorization: intentionally-open events (by design)", () => {
     }
   });
 
-  test("a player submits a result without a director token", async ({
+  test("a result submission without the seat's player token is rejected", async ({
     browser,
   }) => {
     test.setTimeout(90_000);
@@ -156,8 +167,11 @@ test.describe("Authorization: intentionally-open events (by design)", () => {
 
     const playerSocket = await openSocket();
     try {
-      // NO director token — a player submits their own result. Accepted by
-      // design (dual-side confirmation is the integrity mechanism).
+      // Result submission is PLAYER-authed: the payload must carry the seat's
+      // own token (issued at join). A raw socket that never seated has no such
+      // token, so the submission is rejected as Unauthorized. (The happy path —
+      // a seated player submitting with their token — is covered end to end by
+      // the play-flow / mismatch journeys.)
       const res = await emit(playerSocket, "game:submitResult", {
         gameId,
         seat: "A1NS",
@@ -166,7 +180,8 @@ test.describe("Authorization: intentionally-open events (by design)", () => {
         boardNumber: 1,
         result: "PO",
       });
-      expect(res.success).toBe(true);
+      expect(res.success).toBe(false);
+      expect(res.error).toBe("Unauthorized");
     } finally {
       playerSocket.disconnect();
       await deleteGame(directorPage, gameId);
@@ -176,6 +191,7 @@ test.describe("Authorization: intentionally-open events (by design)", () => {
 
   test("a share code is claimed without prior auth and bad codes are rejected", async ({
     browser,
+    request,
   }) => {
     test.setTimeout(90_000);
 
@@ -185,39 +201,35 @@ test.describe("Authorization: intentionally-open events (by design)", () => {
       recordOpeningLead: false,
     });
 
-    const dirSocket = await openSocket();
-    const claimantSocket = await openSocket();
-
     try {
-      // Director generates a code (authorised).
-      const gen = await emit<{ success: boolean; code?: string }>(
-        dirSocket,
-        "game:generateShareCode",
-        { gameId, directorToken },
-      );
-      expect(gen.success).toBe(true);
-      const code = gen.code!;
+      // Director generates a code (authorised via the director token header).
+      // Share codes are HTTP routes now, not socket events.
+      const genRes = await request.post(`/api/games/${gameId}/share-code`, {
+        headers: { "x-director-token": directorToken },
+      });
+      expect(genRes.ok()).toBe(true);
+      const code = (await genRes.json()).result.code as string;
+      expect(code).toMatch(/^[A-Z0-9]{6}$/);
 
-      // A bad code is rejected (no auth required to try).
-      const bad = await emit<{ success: boolean; error?: string }>(
-        claimantSocket,
-        "game:claimDirectorCode",
-        { code: "ZZZZZZ" },
-      );
-      expect(bad.success).toBe(false);
+      // A bad code is rejected (no auth required to try) — 400 client error.
+      const badRes = await request.post("/api/director-codes/claim", {
+        data: { code: "ZZZZZZ" },
+      });
+      expect(badRes.ok()).toBe(false);
+      expect(badRes.status()).toBe(400);
 
       // The real code is claimed with NO prior auth, minting a director token.
-      const claim = await emit<{
-        success: boolean;
+      const claimRes = await request.post("/api/director-codes/claim", {
+        data: { code },
+      });
+      expect(claimRes.ok()).toBe(true);
+      const claim = (await claimRes.json()).result as {
         directorToken?: string;
         gameId?: string;
-      }>(claimantSocket, "game:claimDirectorCode", { code });
-      expect(claim.success).toBe(true);
+      };
       expect(claim.directorToken).toBeTruthy();
       expect(claim.gameId).toBe(gameId);
     } finally {
-      dirSocket.disconnect();
-      claimantSocket.disconnect();
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
     }
