@@ -101,7 +101,7 @@ describe("generateUsebio", () => {
     expect(xml).toMatch(/PARTICIPANTS/);
   });
 
-  it("includes an entered board deal as HAND elements in the export", async () => {
+  it("excludes an entered board deal from the export (deals go to the PBN file)", async () => {
     await seedPairAndBoard();
 
     const { upsertDeal } = await import("@/db/games/actions/set-deal");
@@ -118,9 +118,66 @@ describe("generateUsebio", () => {
     const { generateUsebio } = await import("@/services/usebio-service");
     const xml = await generateUsebio(db, game, club);
 
-    expect(xml).toContain("<VULNERABILITY>Love</VULNERABILITY>");
-    expect(xml).toContain("<SPADES>AKQJT98765432</SPADES>");
-    expect(xml).toContain("<CLUBS>AKQJT98765432</CLUBS>");
+    // Even though a deal is stored for board 1, the USEBIO export carries only
+    // players and results. The dealt cards / vulnerability are exported
+    // separately as a PBN file (BridgeWebs takes both files).
+    expect(xml).not.toContain("<VULNERABILITY>");
+    expect(xml).not.toContain("<HAND>");
+    expect(xml).not.toContain("<SPADES>");
+    expect(xml).not.toContain("<CLUBS>");
+  });
+
+  it("emits one SECTION per section with unprefixed pair numbers", async () => {
+    const { createSection } = await import(
+      "@/db/games/actions/create-section"
+    );
+    const { createBoard } = await import("@/db/games/actions/create-board");
+
+    // Two sections, each with a seated NS/EW pair playing board 1.
+    await createSection(harness.gameId, { section: "A", tables: 1 });
+    await createSection(harness.gameId, { section: "B", tables: 1 });
+
+    await seatPair("A1NS", "Alice");
+    await seatPair("A1EW", "Cara");
+    await seatPair("B1NS", "Bob");
+    await seatPair("B1EW", "Dana");
+
+    for (const section of ["A", "B"] as const) {
+      await createBoard(harness.gameId, {
+        section,
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: 1,
+        copy: "A",
+        ns: `${section}1NS`,
+        ew: `${section}1EW`,
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+      });
+    }
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+    const xml = await generateUsebio(db, game, club);
+
+    // Two SECTION elements under one SESSION, and the right count.
+    expect(xml).toContain("<SECTION_COUNT>2</SECTION_COUNT>");
+    expect(xml).toContain('<SECTION SECTION_ID="A">');
+    expect(xml).toContain('<SECTION SECTION_ID="B">');
+
+    // Pair numbers are UNPREFIXED — no "A1NS"/"B1NS" anywhere.
+    expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+    expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
+    expect(xml).not.toContain("A1NS");
+    expect(xml).not.toContain("B1NS");
+
+    // Each pair sits under its own section, with players kept separate.
+    const sectionA = xml.split('SECTION_ID="A"')[1].split('SECTION_ID="B"')[0];
+    const sectionB = xml.split('SECTION_ID="B"')[1];
+    expect(sectionA).toContain("Alice");
+    expect(sectionA).not.toContain("Bob");
+    expect(sectionB).toContain("Bob");
+    expect(sectionB).not.toContain("Alice");
   });
 
   async function seatPair(seat: string, first: string) {

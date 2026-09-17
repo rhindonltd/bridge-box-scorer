@@ -3,9 +3,8 @@ import { Db } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { boards } from "@/db/games/tables/boards";
-import { getAllDealHands } from "@/db/games/queries/get-deal";
 import { findSections } from "@/db/games/queries/find-sections";
-import { formatPairNumber } from "@/model/participants";
+import { formatPairNumber, sectionOf } from "@/model/participants";
 import { Club } from "@/db/system/schema";
 import {
   generateUsebioXml,
@@ -64,44 +63,46 @@ async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
   // Get all board results
   const allBoards = await db.select().from(boards);
 
-  // Get any entered deals (the four hands), keyed by board number.
-  const deals = await getAllDealHands(db);
-
-  // With a single section the section prefix on pair numbers is redundant
-  // (e.g. "A1NS" -> "1NS"); keep it only when the game has multiple sections so
-  // pairs stay distinguishable across them.
+  // The ordered section ids to emit (one <SECTION> each). Each section is its
+  // own scoring field, so pair numbers are always emitted UNPREFIXED (e.g.
+  // "1NS", never "A1NS") — the enclosing SECTION carries the section id.
   const sections = await findSections(db);
-  const includeSection = sections.length > 1;
+  const sectionIds = sections.map((s) => s.section);
 
-  // Build USEBIO pairs data
+  // Build USEBIO pairs data. The pair carries its section (derived from its
+  // section-qualified seat) so the builder can group it under the right
+  // SECTION; the pair number itself is unprefixed.
   const usebioPairs: UsebioPair[] = pairs.map((pair) => {
-    // Parse direction from initialSeat (e.g., "1NS" → table 1, direction NS)
+    // Parse direction from initialSeat (e.g., "A1NS" → direction NS → "N").
     const direction = pair.initialSeat.endsWith("NS") ? "N" : "E";
 
     return {
-      pairNumber: formatPairNumber(pair.initialSeat, includeSection),
+      pairNumber: formatPairNumber(pair.initialSeat, false),
       direction: direction as "N" | "E",
+      section: sectionOf(pair.initialSeat),
       player1: pair.player1,
       player2: pair.player2,
     };
   });
 
-  // Build board results
+  // Build board results — each tagged with the section it was played in (from
+  // the board row), with unprefixed pair numbers.
   const boardResults: UsebioBoardResult[] = allBoards
     .filter((b) => b.confirmedResult || b.status === "NOT_PLAYED")
     .map((b) => ({
       table: b.tableNumber,
       board: b.boardNumber,
       round: b.roundNumber,
-      nsPairNumber: formatPairNumber(b.ns, includeSection),
-      ewPairNumber: formatPairNumber(b.ew, includeSection),
+      nsPairNumber: formatPairNumber(b.ns, false),
+      ewPairNumber: formatPairNumber(b.ew, false),
       outcome: (b.directorOverrideResult ??
         b.confirmedResult ??
         "NP") as BoardOutcome,
       lead: (b.confirmedLead ?? null) as Card | null,
+      section: b.section,
     }));
 
-  // Count total boards
+  // Count total distinct board numbers (sections share the same board set).
   const boardNumbers = new Set(allBoards.map((b) => b.boardNumber));
 
   const usebioData: UsebioPairsData = {
@@ -114,10 +115,10 @@ async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
     scoringType: game.scoringType,
     tables: game.tables,
     sectionName: game.sectionName || "A",
+    sections: sectionIds,
     boards: boardNumbers.size,
     pairs: usebioPairs,
     boardResults,
-    deals,
   };
 
   return generateUsebioXml(usebioData);

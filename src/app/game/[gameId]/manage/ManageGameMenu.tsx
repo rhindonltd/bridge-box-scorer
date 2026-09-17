@@ -33,6 +33,9 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       onDownloadUsebioClick={() =>
         router.push(`/game/${gameId}/manage/download-usebio`)
       }
+      onDownloadPbnClick={() =>
+        router.push(`/game/${gameId}/manage/download-pbn`)
+      }
       onDeleteGameClick={() =>
         router.push(`/game/${gameId}/manage/delete-game`)
       }
@@ -42,6 +45,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       showMovement={started}
       showDownloadUsebio={showDownloadUsebio}
       downloadUsebioDisabled={!allResultsIn}
+      showDownloadPbn={started}
     />
   );
 }

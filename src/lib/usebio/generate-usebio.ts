@@ -12,8 +12,7 @@ import { scoreMP as scorePairMP } from "@/scoring/traveller/pair/mp";
 import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
 import { scoreXIMP as scorePairXIMP } from "@/scoring/traveller/pair/x-imp";
 import { BoardOutcome } from "@/model/score";
-import { Card, Deal, Directions, Rank, Suit, Suits } from "@/model/common";
-import { vulnerabilityFor } from "@/model/deal";
+import { Card } from "@/model/common";
 import { ScoringType } from "@/db/games/types/scoring-type";
 
 /**
@@ -41,6 +40,11 @@ export type UsebioPlayer = {
 export type UsebioPair = {
   pairNumber: string;
   direction: "N" | "E";
+  /**
+   * The section this pair belongs to (e.g. "A", "B"). Optional: when absent the
+   * pair is placed in the event's single default section (`sectionName`).
+   */
+  section?: string;
   player1: UsebioPlayer;
   player2: UsebioPlayer;
 };
@@ -53,6 +57,13 @@ export type UsebioBoardResult = {
   ewPairNumber: string;
   outcome: BoardOutcome;
   lead: Card | null;
+  /**
+   * The section this result was played in (e.g. "A", "B"). Optional: when
+   * absent the result belongs to the event's single default section
+   * (`sectionName`). Scoring/ranking are computed within a section, so the same
+   * board number played in different sections is scored independently.
+   */
+  section?: string;
 };
 
 /**
@@ -67,16 +78,20 @@ export type UsebioPairsData = {
   eventDate: string;
   scoringType: ScoringType;
   tables: number;
+  /**
+   * The default section id, used for pairs/results that carry no `section` and
+   * as the single SECTION for a one-section event.
+   */
   sectionName: string;
+  /**
+   * The ordered list of section ids to emit, one `<SECTION>` each. Optional:
+   * when absent (or empty) the export falls back to a single section using
+   * `sectionName`, preserving the original single-section behaviour.
+   */
+  sections?: string[];
   boards: number;
   pairs: UsebioPair[];
   boardResults: UsebioBoardResult[];
-  /**
-   * The dealt cards per board number (the four hands), when entered. Boards
-   * absent from this map emit no HAND elements — exactly as before deals
-   * existed. Optional so existing callers/tests need no change.
-   */
-  deals?: Map<number, Deal>;
 };
 
 /**
@@ -361,10 +376,14 @@ function startSection(
 function generateMpPairsXml(data: UsebioPairsData): string {
   const { doc, event } = startUsebioDoc(data.club, "PAIRS");
 
-  // Placings per pair (inline on each PAIR, USEBIO-style) rather than a
-  // separate RANKING block.
-  const ranking = computeOverallRanking(data);
-  const rankByPair = new Map(ranking.map((r) => [r.pairNumber, r]));
+  // The ordered sections to emit, one <SECTION> each. Fall back to the single
+  // default section when no explicit list is supplied (original behaviour).
+  const sectionIds =
+    data.sections && data.sections.length > 0
+      ? data.sections
+      : [data.sectionName || "A"];
+  const defaultSection = data.sectionName || "A";
+
   const ewPairs = data.pairs.filter((p) => p.direction === "E").length;
 
   // EVENT header.
@@ -374,18 +393,53 @@ function generateMpPairsXml(data: UsebioPairsData): string {
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
   event.ele("SESSION_COUNT").txt("1");
-  event.ele("SECTION_COUNT").txt("1");
+  event.ele("SECTION_COUNT").txt(String(sectionIds.length));
   event.ele("PAIRS").txt(String(data.pairs.length));
   event.ele("BOARDS_PLAYED").txt(String(data.boards));
   // One combined ranking across all pairs (not a two-winner NS/EW event).
   event.ele("WINNER_TYPE").txt("1");
   event.ele("EW_PAIRS").txt(String(ewPairs));
 
-  const section = startSection(event, data.sectionName || "A");
+  // One SESSION wraps all sections; each section is a separate <SECTION> with
+  // its own participants, boards and (independently computed) placings.
+  const session = event.ele("SESSION", { SESSION_ID: "1" });
+
+  for (const sectionId of sectionIds) {
+    const sectionPairs = data.pairs.filter(
+      (p) => (p.section ?? defaultSection) === sectionId,
+    );
+    const sectionResults = data.boardResults.filter(
+      (r) => (r.section ?? defaultSection) === sectionId,
+    );
+
+    const section = session.ele("SECTION", { SECTION_ID: sectionId });
+    appendSectionContent(section, data.scoringType, sectionPairs, sectionResults);
+  }
+
+  return doc.end({ prettyPrint: true, indent: "  " });
+}
+
+/**
+ * Populate a single `<SECTION>` with its PARTICIPANTS (each pair carrying its
+ * inline placing) and its BOARD/TRAVELLER_LINE elements. Placings and per-line
+ * scores are computed within this section only, so the same board number played
+ * in other sections is scored independently and unprefixed pair numbers do not
+ * collide across sections.
+ */
+function appendSectionContent(
+  section: ReturnType<ReturnType<typeof create>["ele"]>,
+  scoringType: ScoringType,
+  pairs: UsebioPair[],
+  boardResults: UsebioBoardResult[],
+): void {
+  // Placings per pair (inline on each PAIR, USEBIO-style) rather than a
+  // separate RANKING block — scoped to this section's field.
+  const ranking = computeOverallRanking(scoringType, boardResults);
+  const rankByPair = new Map(ranking.map((r) => [r.pairNumber, r]));
 
   // PARTICIPANTS — each pair carries its placing inline.
   const participants = section.ele("PARTICIPANTS");
-  for (const pair of data.pairs) {
+  for (const pair of pairs) {
     const dir = pair.direction === "N" ? "NS" : "EW";
     const pairEl = participants.ele("PAIR");
     pairEl.ele("PAIR_NUMBER").txt(pair.pairNumber);
@@ -402,23 +456,19 @@ function generateMpPairsXml(data: UsebioPairsData): string {
   }
 
   // BOARD elements (one per board number), each with its TRAVELLER_LINEs.
-  const boardGroups = groupBy(data.boardResults, (r) => r.board);
+  const boardGroups = groupBy(boardResults, (r) => r.board);
   const boardNumbers = [...boardGroups.keys()].sort((a, b) => a - b);
 
   for (const boardNum of boardNumbers) {
     const results = boardGroups.get(boardNum)!;
-    const scoredLines = computeBoardScores(boardNum, results, data.scoringType);
+    const scoredLines = computeBoardScores(boardNum, results, scoringType);
 
     const boardEl = section.ele("BOARD");
     boardEl.ele("BOARD_NUMBER").txt(String(boardNum));
 
-    // Emit the dealt cards (HAND per direction, with the derived dealer) when
-    // a deal has been entered for this board. Boards without a deal emit no
-    // HAND elements, exactly as before.
-    const deal = data.deals?.get(boardNum);
-    if (deal) {
-      appendHands(boardEl, boardNum, deal);
-    }
+    // Note: the dealt cards (HAND / VULNERABILITY) are intentionally NOT emitted
+    // here. Deal information is exported separately as a PBN file; the USEBIO
+    // file carries only players and results (BridgeWebs takes both files).
 
     for (const result of results) {
       const key = resultKey(result);
@@ -438,11 +488,11 @@ function generateMpPairsXml(data: UsebioPairsData): string {
         // parseAdjustedScore() share the same regex; `?? { ns: 0, ew: 0 }` is
         // unreachable defensive code.
         /* v8 ignore next */
-        const line = scoreDescriptorFor(data.scoringType).adjusted(
+        const line = scoreDescriptorFor(scoringType).adjusted(
           adj ?? { ns: 0, ew: 0 },
           results.length,
         );
-        appendLineScore(lineEl, data.scoringType, line);
+        appendLineScore(lineEl, scoringType, line);
       } else {
         const contract = formatContractCompact(result.outcome);
         const declarer = formatOutcomeForUsebio(result.outcome).declarer;
@@ -457,13 +507,11 @@ function generateMpPairsXml(data: UsebioPairsData): string {
         lineEl.ele("SCORE").txt(String(score ?? 0));
 
         if (lineScore) {
-          appendLineScore(lineEl, data.scoringType, lineScore);
+          appendLineScore(lineEl, scoringType, lineScore);
         }
       }
     }
   }
-
-  return doc.end({ prettyPrint: true, indent: "  " });
 }
 
 /* ============================================================
@@ -628,67 +676,6 @@ function addPlayer(parentEl: ReturnType<typeof create>, player: UsebioPlayer) {
   }
 }
 
-/** USEBIO HAND suit element names, in the standard high-to-low suit order. */
-const USEBIO_SUIT_ELEMENT: Record<Suit, string> = {
-  S: "SPADES",
-  H: "HEARTS",
-  D: "DIAMONDS",
-  C: "CLUBS",
-};
-
-/** Rank order (high to low) for laying a suit's cards out in a HAND element. */
-const RANK_ORDER: readonly Rank[] = [
-  "A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2",
-];
-
-/** USEBIO VULNERABILITY text for a board's vulnerability. */
-const USEBIO_VULNERABILITY: Record<
-  ReturnType<typeof vulnerabilityFor>,
-  string
-> = {
-  Love: "Love",
-  NS: "North-South",
-  EW: "East-West",
-  All: "All",
-};
-
-/**
- * Append a board's dealt cards to its BOARD element: the board VULNERABILITY
- * (derived from the board number) followed by the four HAND elements. Each HAND
- * carries the seat DIRECTION and one element per suit holding that suit's ranks
- * high-to-low (empty for a void). This matches the USEBIO 1.2 DTD, which has no
- * dealer element on BOARD/HAND — the dealer is implied by the board number.
- */
-function appendHands(
-  boardEl: ReturnType<ReturnType<typeof create>["ele"]>,
-  boardNumber: number,
-  deal: Deal,
-): void {
-  boardEl
-    .ele("VULNERABILITY")
-    .txt(USEBIO_VULNERABILITY[vulnerabilityFor(boardNumber)]);
-
-  for (const dir of Directions) {
-    const handEl = boardEl.ele("HAND");
-    handEl.ele("DIRECTION").txt(dir);
-
-    // Group this hand's cards by suit, ranks high-to-low.
-    const bySuit: Record<Suit, Rank[]> = { S: [], H: [], D: [], C: [] };
-    for (const card of deal[dir]) {
-      const rank = card[0] as Rank;
-      const suit = card[1] as Suit;
-      bySuit[suit].push(rank);
-    }
-
-    for (const suit of Suits) {
-      const ranks = bySuit[suit]
-        .sort((a, b) => RANK_ORDER.indexOf(a) - RANK_ORDER.indexOf(b))
-        .join("");
-      handEl.ele(USEBIO_SUIT_ELEMENT[suit]).txt(ranks);
-    }
-  }
-}
-
 function formatDate(isoDate: string): string {
   const d = new Date(isoDate);
   if (isNaN(d.getTime())) return isoDate;
@@ -794,14 +781,23 @@ type RankEntry = {
   place: number;
 };
 
-function computeOverallRanking(data: UsebioPairsData): RankEntry[] {
+/**
+ * Compute the placings for one section's field: totals accumulated across that
+ * section's board results and turned into a percentage-ordered ranking. Callers
+ * pass only the results for a single section so pair numbers (which are
+ * unprefixed and therefore only unique within a section) do not collide.
+ */
+function computeOverallRanking(
+  scoringType: ScoringType,
+  boardResults: UsebioBoardResult[],
+): RankEntry[] {
   const totals = new Map<string, PairTotals>();
-  const descriptor = scoreDescriptorFor(data.scoringType);
+  const descriptor = scoreDescriptorFor(scoringType);
 
-  const boardGroups = groupBy(data.boardResults, (r) => r.board);
+  const boardGroups = groupBy(boardResults, (r) => r.board);
 
   for (const [boardNum, results] of boardGroups) {
-    const scoredLines = computeBoardScores(boardNum, results, data.scoringType);
+    const scoredLines = computeBoardScores(boardNum, results, scoringType);
 
     // Normally scored lines. For MP the per-board maximum a pair can earn is
     // ns+ew (they split the same pot); IMP/XIMP have no such maximum.

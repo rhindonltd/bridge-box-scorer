@@ -24,6 +24,7 @@ const handlers = {
   onMovementClick: vi.fn(),
   onShareDirectorAccessClick: vi.fn(),
   onDownloadUsebioClick: vi.fn(),
+  onDownloadPbnClick: vi.fn(),
   onDeleteGameClick: vi.fn(),
 };
 
@@ -33,6 +34,7 @@ const flags = {
   showMovement: false,
   showDownloadUsebio: false,
   downloadUsebioDisabled: false,
+  showDownloadPbn: false,
 };
 
 describe("ManageGameMenuPage", () => {

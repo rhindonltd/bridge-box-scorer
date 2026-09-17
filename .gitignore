@@ -58,3 +58,4 @@ node_modules/
 
 # Generated USEBIO sample XML (regenerate with `npm run usebio-samples`)
 /usebio-samples
+/pbn-samples
