@@ -73,14 +73,17 @@ describe("SelectTable", () => {
   });
 
   it("marks table as full when both directions are assigned", () => {
-    const { container } = render(
+    render(
       <SelectTable
         sections={sectionA(1)}
         onSeatSelected={vi.fn()}
         startingPositions={[makePair("A", 1, "NS"), makePair("A", 1, "EW")]}
       />,
     );
-    expect(container.querySelector(".opacity-50")).toBeInTheDocument();
+    // A full table is marked by disabling both of its seat buttons (previously
+    // a whole-card opacity, which failed WCAG contrast on the header).
+    expect(screen.getByRole("button", { name: "NS" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "EW" })).toBeDisabled();
   });
 
   it("renders multiple sections with headings", () => {

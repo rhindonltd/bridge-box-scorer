@@ -35,7 +35,15 @@ export function ScrollableContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex-1 min-h-0">
-      <div ref={scrollRef} className={`h-full overflow-y-auto`}>
+      {/* tabIndex makes the scroll region keyboard-focusable so it can be
+          scrolled without a pointer (WCAG scrollable-region-focusable). */}
+      <div
+        ref={scrollRef}
+        tabIndex={0}
+        role="region"
+        aria-label="Page content"
+        className={`h-full overflow-y-auto`}
+      >
         {children}
       </div>
 

@@ -6,6 +6,8 @@ const meta: Meta<typeof MainMenuPage> = {
   component: MainMenuPage,
   parameters: {
     layout: "fullscreen",
+    // Uses next/link for its menu buttons and the settings cog.
+    nextjs: { appDirectory: true, navigation: { pathname: "/" } },
   },
   tags: ["autodocs"],
 };
@@ -13,4 +15,8 @@ const meta: Meta<typeof MainMenuPage> = {
 export default meta;
 type Story = StoryObj<typeof MainMenuPage>;
 
+/**
+ * The landing menu. This screen is intentionally single-state — it is a static
+ * set of navigation links with no props or data — so there is one story.
+ */
 export const Default: Story = {};

@@ -82,7 +82,7 @@ export function TimerLiveView({
         ) : (
           <button
             onClick={onStart}
-            className={`${btnBase} bg-green-600 text-white hover:bg-green-700 focus-visible:ring-green-500`}
+            className={`${btnBase} bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-500`}
           >
             Start
           </button>

@@ -11,7 +11,7 @@ import { getVersionLabel } from "@/lib/version";
 export function VersionFooter({ className = "" }: { className?: string }) {
   return (
     <footer
-      className={`text-center text-xs text-gray-400 pb-3 ${className}`.trim()}
+      className={`text-center text-xs text-gray-500 pb-3 ${className}`.trim()}
     >
       <span>v{getVersionLabel()}</span>
     </footer>

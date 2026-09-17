@@ -166,7 +166,7 @@ function DurationField({
             suffix="m"
             onChange={onMinutesChange}
           />
-          <span className="pl-1 text-xs text-gray-400">min</span>
+          <span className="pl-1 text-xs text-gray-500">min</span>
         </div>
         <div className="flex flex-col gap-1">
           <StepperInput
@@ -179,7 +179,7 @@ function DurationField({
             suffix="s"
             onChange={onSecondsChange}
           />
-          <span className="pl-1 text-xs text-gray-400">sec</span>
+          <span className="pl-1 text-xs text-gray-500">sec</span>
         </div>
       </div>
     </div>

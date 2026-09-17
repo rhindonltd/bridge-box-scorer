@@ -58,6 +58,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `npm run lint`      | ESLint check                                       |
 | `npm run format`    | Prettier format                                    |
 | `npm run storybook` | Launch Storybook on port 6006                      |
+| `npm run test:storybook`    | Run Storybook stories as tests (headless browser + a11y) |
+| `npm run check:page-stories` | Verify every route `*Page`/`*Flow` has a co-located story |
 
 ## Project Structure
 
@@ -132,7 +134,33 @@ npm run e2e
 
 # Storybook visual tests
 npm run storybook
+
+# Story tests in a headless browser (renders every story, runs a11y checks).
+# Deliberately NOT part of `npm test` — it needs a browser and is slower, so it
+# runs as its own CI job.
+npm run test:storybook
+
+# Guardrail: fail if a route-level *Page/*Flow component has no co-located story.
+npm run check:page-stories
 ```
+
+> **CI guardrail (separate from `npm test`).** `npm test` stays fast and runs only the
+> unit project. The Storybook browser tests and the page-story check are meant to run as
+> their own CI step, e.g.:
+>
+> ```yaml
+> # .github/workflows/storybook.yml (example — adapt to your CI provider)
+> - run: npm ci
+> - run: npm run check:page-stories
+> - run: npx playwright install --with-deps chromium
+> - run: npm run test:storybook
+> ```
+>
+> `check:page-stories` uses a shrinking allowlist (`scripts/check-page-stories.mjs`,
+> `KNOWN_MISSING`) so it baselines today's gaps and fails only on *new* uncovered route
+> components. Accessibility enforcement is rolled out per-component via
+> `parameters.a11y.test = "error"` (global default stays report-only — see
+> `.storybook/preview.tsx`).
 
 ### Coverage scope
 

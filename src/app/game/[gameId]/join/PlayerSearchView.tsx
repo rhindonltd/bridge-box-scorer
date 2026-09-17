@@ -47,6 +47,7 @@ export function PlayerSearchView({
           </div>
           <button
             onClick={onClear}
+            aria-label="Clear selected player"
             className="rounded-lg p-2 text-slate-500 hover:bg-white"
           >
             <X size={18} />

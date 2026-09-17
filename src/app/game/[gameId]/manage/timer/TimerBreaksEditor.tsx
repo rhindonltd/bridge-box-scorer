@@ -48,7 +48,7 @@ export function TimerBreaksEditor({
       </div>
 
       {breaks.length === 0 && (
-        <div className="text-sm text-gray-400">No breaks scheduled.</div>
+        <div className="text-sm text-gray-500">No breaks scheduled.</div>
       )}
 
       {breaks.map((b, index) => (

@@ -121,7 +121,7 @@ export function DealEntry({
               ].join(" ")}
             >
               {DIRECTION_LABEL[dir]}
-              <span className="block text-xs opacity-80">{count}/13</span>
+              <span className="block text-xs">{count}/13</span>
             </button>
           );
         })}

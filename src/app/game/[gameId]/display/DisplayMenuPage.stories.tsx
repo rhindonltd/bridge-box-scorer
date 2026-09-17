@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { fn } from "storybook/test";
 
 import { DisplayMenuPage } from "@/app/game/[gameId]/display/DisplayMenuPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
@@ -14,12 +15,20 @@ const meta: Meta<typeof DisplayMenuPage> = {
     },
   },
   tags: ["autodocs"],
+  args: {
+    onTimerClick: fn(),
+    onLeaderboardClick: fn(),
+  },
 };
 
 export default meta;
 
 type Story = StoryObj<typeof DisplayMenuPage>;
 
+/**
+ * The display menu. Intentionally single-state — two navigation buttons with no
+ * data — so there is one story.
+ */
 export const Default: Story = {
   decorators: [withGame(pairsGame4Tables)],
 };
