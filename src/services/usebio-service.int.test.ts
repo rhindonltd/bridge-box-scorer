@@ -6,6 +6,7 @@ import type { Db } from "@/db/games";
 import type { BridgeGame } from "@/db/game-index/schema";
 import type { Club } from "@/db/system/schema";
 import type { PairSeat } from "@/model/participants";
+import type { Card, Rank } from "@/model/common";
 
 const club: Club = { id: 1, name: "Test Bridge Club", clubNumber: "12345" };
 
@@ -20,6 +21,7 @@ const game: BridgeGame = {
   eventDate: "2024-11-18T00:00:00.000Z",
   tables: 1,
   selectedMovement: null,
+  bridgewebsEventId: null,
   leadCardRequired: true,
   createdAt: "2024-11-18 00:00:00",
   updatedAt: "2024-11-18 00:00:00",
@@ -107,12 +109,12 @@ describe("generateUsebio", () => {
     const { upsertDeal } = await import("@/db/games/actions/set-deal");
     const db = (await harness.getDb()) as Db;
 
-    const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
     await upsertDeal(db, 1, {
-      N: ranks.map((r) => `${r}S`),
-      E: ranks.map((r) => `${r}H`),
-      S: ranks.map((r) => `${r}D`),
-      W: ranks.map((r) => `${r}C`),
+      N: ranks.map((r): Card => `S${r}`),
+      E: ranks.map((r): Card => `H${r}`),
+      S: ranks.map((r): Card => `D${r}`),
+      W: ranks.map((r): Card => `C${r}`),
     });
 
     const { generateUsebio } = await import("@/services/usebio-service");

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
+import type { Card, Rank } from "@/model/common";
 
 vi.mock("@/context/GameContext", () => {
   const game = {
@@ -92,12 +93,12 @@ describe("BoardResultsPage", () => {
   });
 
   it("reveals the board's hand behind the Show hand toggle when a deal exists", () => {
-    const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
     const deal = {
-      N: ranks.map((r) => `${r}S`),
-      E: ranks.map((r) => `${r}H`),
-      S: ranks.map((r) => `${r}D`),
-      W: ranks.map((r) => `${r}C`),
+      N: ranks.map((r): Card => `S${r}`),
+      E: ranks.map((r): Card => `H${r}`),
+      S: ranks.map((r): Card => `D${r}`),
+      W: ranks.map((r): Card => `C${r}`),
     };
 
     render(<BoardResultsPage {...baseProps} deal={deal} />);

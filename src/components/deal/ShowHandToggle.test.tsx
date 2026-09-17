@@ -2,15 +2,15 @@ import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ShowHandToggle } from "./ShowHandToggle";
 import { DealDisplay } from "./DealDisplay";
-import type { Deal } from "@/model/common";
+import type { Card, Deal, Rank } from "@/model/common";
 
 function validDeal(): Deal {
-  const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
   return {
-    N: ranks.map((r) => `${r}S`),
-    E: ranks.map((r) => `${r}H`),
-    S: ranks.map((r) => `${r}D`),
-    W: ranks.map((r) => `${r}C`),
+    N: ranks.map((r): Card => `S${r}`),
+    E: ranks.map((r): Card => `H${r}`),
+    S: ranks.map((r): Card => `D${r}`),
+    W: ranks.map((r): Card => `C${r}`),
   };
 }
 
@@ -18,10 +18,10 @@ function validDeal(): Deal {
 function dealWithVoid(): Deal {
   return {
     // North: 6 spades + 4 hearts + 0 diamonds + 3 clubs = 13, diamonds void.
-    N: ["AS", "KS", "QS", "JS", "TS", "9S", "AH", "KH", "QH", "JH", "AC", "KC", "QC"],
-    E: ["8S", "7S", "6S", "TH", "9H", "8H", "7H", "6H", "5H", "JC", "TC", "9C", "8C"],
-    S: ["5S", "4S", "3S", "2S", "4H", "3H", "2H", "AD", "KD", "QD", "JD", "TD", "9D"],
-    W: ["8D", "7D", "6D", "5D", "4D", "3D", "2D", "7C", "6C", "5C", "4C", "3C", "2C"],
+    N: ["SA", "SK", "SQ", "SJ", "ST", "S9", "HA", "HK", "HQ", "HJ", "CA", "CK", "CQ"],
+    E: ["S8", "S7", "S6", "HT", "H9", "H8", "H7", "H6", "H5", "CJ", "CT", "C9", "C8"],
+    S: ["S5", "S4", "S3", "S2", "H4", "H3", "H2", "DA", "DK", "DQ", "DJ", "DT", "D9"],
+    W: ["D8", "D7", "D6", "D5", "D4", "D3", "D2", "C7", "C6", "C5", "C4", "C3", "C2"],
   };
 }
 

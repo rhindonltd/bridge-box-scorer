@@ -3,27 +3,27 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import type { Db } from "@/db/games";
-import type { Deal } from "@/model/common";
+import type { Card, Deal, Rank } from "@/model/common";
 
 /** A valid 52-card deal (N=spades, E=hearts, S=diamonds, W=clubs). */
 function buildValidDeal(): Deal {
-  const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
   return {
-    N: ranks.map((r) => `${r}S`),
-    E: ranks.map((r) => `${r}H`),
-    S: ranks.map((r) => `${r}D`),
-    W: ranks.map((r) => `${r}C`),
+    N: ranks.map((r): Card => `S${r}`),
+    E: ranks.map((r): Card => `H${r}`),
+    S: ranks.map((r): Card => `D${r}`),
+    W: ranks.map((r): Card => `C${r}`),
   };
 }
 
 /** A second, different valid deal (rotate suits one direction). */
 function buildOtherDeal(): Deal {
-  const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
   return {
-    N: ranks.map((r) => `${r}H`),
-    E: ranks.map((r) => `${r}D`),
-    S: ranks.map((r) => `${r}C`),
-    W: ranks.map((r) => `${r}S`),
+    N: ranks.map((r): Card => `H${r}`),
+    E: ranks.map((r): Card => `D${r}`),
+    S: ranks.map((r): Card => `C${r}`),
+    W: ranks.map((r): Card => `S${r}`),
   };
 }
 

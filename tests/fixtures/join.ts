@@ -13,14 +13,19 @@ import { Page, expect } from "@playwright/test";
 export type Direction = "NS" | "EW";
 
 /**
- * The four reliably-seeded EBU players. There is no distinct-player constraint
- * on seating, so the same players can fill both tables of a two-table game.
+ * Reliably-seeded EBU players. A player may only be seated once per game (the
+ * app rejects seating an already-seated EBU number), so a two-table field needs
+ * eight distinct players — one pair per direction per table.
  */
 export const SEEDED_EBU = {
   jacquelineCollier: "477484",
   davidCollier: "404476",
   celiaOram: "12269",
   denisKing: "16671",
+  nigelFreake: "10008",
+  bobCooke: "10009",
+  sheilaSpencer: "10021",
+  keithPonsford: "10056",
 } as const;
 
 async function fillSeat(
@@ -67,25 +72,41 @@ export async function seatPair(
   await fillSeat(page, label2, ebu2);
 
   await page.getByRole("button", { name: "Enter Pair" }).click();
-  await page.waitForURL(/\/game\/.+\/play\//, { timeout: 15000 });
+  // The play page opens a live (WebSocket) connection and keeps it open, so the
+  // page's "load" event never fires; waiting for it (waitForURL's default)
+  // would hang. Wait for the URL to change on navigation commit instead.
+  await page.waitForURL(/\/game\/.+\/play\//, {
+    timeout: 15000,
+    waitUntil: "commit",
+  });
   return page.url();
 }
 
 /**
  * Seat all four pairs of a two-table pairs game using the seeded players.
  * Runs from a single (director) context; each seat-join returns to `/join` for
- * the next pair. Reuses the four seeded players across both tables.
+ * the next pair. Uses eight distinct players, since a player cannot be seated
+ * more than once in the same game.
  */
 export async function seatTwoTableField(
   page: Page,
   gameId: string,
 ): Promise<void> {
-  const { jacquelineCollier, davidCollier, celiaOram, denisKing } = SEEDED_EBU;
+  const {
+    jacquelineCollier,
+    davidCollier,
+    celiaOram,
+    denisKing,
+    nigelFreake,
+    bobCooke,
+    sheilaSpencer,
+    keithPonsford,
+  } = SEEDED_EBU;
 
   await seatPair(page, gameId, 0, "NS", jacquelineCollier, davidCollier);
   await seatPair(page, gameId, 0, "EW", celiaOram, denisKing);
-  await seatPair(page, gameId, 1, "NS", jacquelineCollier, davidCollier);
-  await seatPair(page, gameId, 1, "EW", celiaOram, denisKing);
+  await seatPair(page, gameId, 1, "NS", nigelFreake, bobCooke);
+  await seatPair(page, gameId, 1, "EW", sheilaSpencer, keithPonsford);
 }
 
 /**
@@ -119,7 +140,13 @@ export async function seatPairBySeat(
   await fillSeat(page, label2, ebu2);
 
   await page.getByRole("button", { name: "Enter Pair" }).click();
-  await page.waitForURL(/\/game\/.+\/play\//, { timeout: 15000 });
+  // The play page opens a live (WebSocket) connection and keeps it open, so the
+  // page's "load" event never fires; waiting for it (waitForURL's default)
+  // would hang. Wait for the URL to change on navigation commit instead.
+  await page.waitForURL(/\/game\/.+\/play\//, {
+    timeout: 15000,
+    waitUntil: "commit",
+  });
   return page.url();
 }
 

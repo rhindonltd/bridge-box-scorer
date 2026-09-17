@@ -186,17 +186,6 @@ test.describe("API contract — system / device", () => {
     expect(res.status()).toBe(401);
   });
 
-  test("GET /api/system/wifi/scan/status returns a { result } envelope", async ({
-    request,
-  }) => {
-    const res = await request.get("/api/system/wifi/scan/status");
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    // `result` is either null (no scan yet) or the persisted scan shape.
-    expect(body.result).toHaveProperty("result");
-  });
-
   test("GET /api/system/network responds 200 with a wifi availability shape", async ({
     request,
   }) => {

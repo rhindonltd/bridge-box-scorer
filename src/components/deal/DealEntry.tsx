@@ -141,7 +141,7 @@ export function DealEntry({
             </span>
             <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-1 flex-1">
               {Ranks.map((rank) => {
-                const card = `${rank}${suit}` as Card;
+                const card = `${suit}${rank}` as Card;
                 const inActiveHand = deal[active].includes(card);
                 const usedElsewhere = used.has(card) && !inActiveHand;
                 return (
@@ -150,7 +150,7 @@ export function DealEntry({
                     type="button"
                     disabled={usedElsewhere}
                     onClick={() => toggleCard(card)}
-                    data-testid={`card-${rank}${suit}`}
+                    data-testid={`card-${suit}${rank}`}
                     className={[
                       "rounded border py-1 text-xs font-medium",
                       inActiveHand
@@ -194,7 +194,7 @@ function ReadOnlyHand({
 }) {
   const bySuit: Record<Suit, Rank[]> = { S: [], H: [], D: [], C: [] };
   for (const card of hand) {
-    bySuit[card[1] as Suit].push(card[0] as Rank);
+    bySuit[card[0] as Suit].push(card[1] as Rank);
   }
   const order = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
   for (const suit of Suits) {

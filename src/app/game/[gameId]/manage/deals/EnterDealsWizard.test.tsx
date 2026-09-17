@@ -42,7 +42,7 @@ vi.mock("@/app/game/[gameId]/manage/travellers/SelectBoardPage", () => ({
 }));
 
 const existingDeal: Deal = {
-  N: ["AS"],
+  N: ["SA"],
   E: [],
   S: [],
   W: [],

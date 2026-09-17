@@ -4,18 +4,18 @@ import type { Deal } from "@/model/common";
 
 /** A full valid deal (N=spades, E=hearts, S=diamonds, W=clubs). */
 const fullSuitsDeal: Deal = {
-  N: ["AS", "KS", "QS", "JS", "TS", "9S", "8S", "7S", "6S", "5S", "4S", "3S", "2S"],
-  E: ["AH", "KH", "QH", "JH", "TH", "9H", "8H", "7H", "6H", "5H", "4H", "3H", "2H"],
-  S: ["AD", "KD", "QD", "JD", "TD", "9D", "8D", "7D", "6D", "5D", "4D", "3D", "2D"],
-  W: ["AC", "KC", "QC", "JC", "TC", "9C", "8C", "7C", "6C", "5C", "4C", "3C", "2C"],
+  N: ["SA", "SK", "SQ", "SJ", "ST", "S9", "S8", "S7", "S6", "S5", "S4", "S3", "S2"],
+  E: ["HA", "HK", "HQ", "HJ", "HT", "H9", "H8", "H7", "H6", "H5", "H4", "H3", "H2"],
+  S: ["DA", "DK", "DQ", "DJ", "DT", "D9", "D8", "D7", "D6", "D5", "D4", "D3", "D2"],
+  W: ["CA", "CK", "CQ", "CJ", "CT", "C9", "C8", "C7", "C6", "C5", "C4", "C3", "C2"],
 };
 
 /** A more realistic mixed deal, with a void in North's diamonds. */
 const mixedDeal: Deal = {
-  N: ["AS", "KS", "QS", "JS", "TS", "9S", "AH", "KH", "QH", "JH", "AC", "KC", "QC"],
-  E: ["8S", "7S", "6S", "TH", "9H", "8H", "7H", "6H", "5H", "JC", "TC", "9C", "8C"],
-  S: ["5S", "4S", "3S", "2S", "4H", "3H", "2H", "AD", "KD", "QD", "JD", "TD", "9D"],
-  W: ["8D", "7D", "6D", "5D", "4D", "3D", "2D", "7C", "6C", "5C", "4C", "3C", "2C"],
+  N: ["SA", "SK", "SQ", "SJ", "ST", "S9", "HA", "HK", "HQ", "HJ", "CA", "CK", "CQ"],
+  E: ["S8", "S7", "S6", "HT", "H9", "H8", "H7", "H6", "H5", "CJ", "CT", "C9", "C8"],
+  S: ["S5", "S4", "S3", "S2", "H4", "H3", "H2", "DA", "DK", "DQ", "DJ", "DT", "D9"],
+  W: ["D8", "D7", "D6", "D5", "D4", "D3", "D2", "C7", "C6", "C5", "C4", "C3", "C2"],
 };
 
 const meta: Meta<typeof DealDisplay> = {

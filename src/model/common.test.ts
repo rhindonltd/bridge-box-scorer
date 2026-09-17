@@ -41,19 +41,19 @@ describe("common model", () => {
 
   describe("isCard", () => {
     it("returns true for valid card codes", () => {
-      expect(isCard("AS")).toBe(true);
-      expect(isCard("TH")).toBe(true);
-      expect(isCard("2C")).toBe(true);
-      expect(isCard("KD")).toBe(true);
+      expect(isCard("SA")).toBe(true);
+      expect(isCard("HT")).toBe(true);
+      expect(isCard("C2")).toBe(true);
+      expect(isCard("DK")).toBe(true);
     });
 
     it("returns false for invalid card codes", () => {
-      expect(isCard("XS")).toBe(false);
-      expect(isCard("A")).toBe(false);
+      expect(isCard("SX")).toBe(false);
+      expect(isCard("S")).toBe(false);
       expect(isCard("")).toBe(false);
-      expect(isCard("ASH")).toBe(false);
-      expect(isCard("1S")).toBe(false);
-      expect(isCard("AX")).toBe(false);
+      expect(isCard("SAH")).toBe(false);
+      expect(isCard("S1")).toBe(false);
+      expect(isCard("XA")).toBe(false);
     });
 
     it("is case sensitive", () => {
@@ -64,16 +64,16 @@ describe("common model", () => {
 
   describe("parseCard", () => {
     it("parses a valid card into rank and suit", () => {
-      expect(parseCard("AS")).toEqual({ rank: "A", suit: "S" });
-      expect(parseCard("TH")).toEqual({ rank: "T", suit: "H" });
-      expect(parseCard("2C")).toEqual({ rank: "2", suit: "C" });
-      expect(parseCard("KD")).toEqual({ rank: "K", suit: "D" });
+      expect(parseCard("SA")).toEqual({ rank: "A", suit: "S" });
+      expect(parseCard("HT")).toEqual({ rank: "T", suit: "H" });
+      expect(parseCard("C2")).toEqual({ rank: "2", suit: "C" });
+      expect(parseCard("DK")).toEqual({ rank: "K", suit: "D" });
     });
 
     it("throws for an invalid card code", () => {
       expect(() => parseCard("XY")).toThrow("Invalid card: XY");
       expect(() => parseCard("")).toThrow("Invalid card: ");
-      expect(() => parseCard("1S")).toThrow("Invalid card: 1S");
+      expect(() => parseCard("S1")).toThrow("Invalid card: S1");
     });
   });
 });

@@ -22,19 +22,19 @@ import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { broadcastResultsChanged } from "./broadcast-results";
 import { registerDealSubmitHandler } from "./deal-submit.handler";
 import { SocketEvents } from "@/socket/socket-events";
-import type { Deal } from "@/model/common";
+import type { Card, Deal, Rank } from "@/model/common";
 
 function createMockSocket() {
   return { on: vi.fn() } as any;
 }
 
 function validDeal(): Deal {
-  const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
   return {
-    N: ranks.map((r) => `${r}S`),
-    E: ranks.map((r) => `${r}H`),
-    S: ranks.map((r) => `${r}D`),
-    W: ranks.map((r) => `${r}C`),
+    N: ranks.map((r): Card => `S${r}`),
+    E: ranks.map((r): Card => `H${r}`),
+    S: ranks.map((r): Card => `D${r}`),
+    W: ranks.map((r): Card => `C${r}`),
   };
 }
 

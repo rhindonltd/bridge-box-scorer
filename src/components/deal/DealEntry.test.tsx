@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DealEntry } from "./DealEntry";
-import type { Deal } from "@/model/common";
+import type { Card, Deal, Rank } from "@/model/common";
 import { Directions, Ranks, Suits } from "@/model/common";
 
 /**
@@ -14,7 +14,7 @@ function enterFullDeal() {
   for (const dir of Directions) {
     fireEvent.click(screen.getByTestId(`entry-dir-${dir}`));
     for (const rank of Ranks) {
-      fireEvent.click(screen.getByTestId(`card-${rank}${suitFor[dir]}`));
+      fireEvent.click(screen.getByTestId(`card-${suitFor[dir]}${rank}`));
     }
   }
 }
@@ -29,7 +29,7 @@ describe("DealEntry", () => {
     // Assign only North's spades — still incomplete.
     fireEvent.click(screen.getByTestId("entry-dir-N"));
     for (const rank of Ranks) {
-      fireEvent.click(screen.getByTestId(`card-${rank}S`));
+      fireEvent.click(screen.getByTestId(`card-S${rank}`));
     }
     expect(save.disabled).toBe(true);
   });
@@ -57,21 +57,21 @@ describe("DealEntry", () => {
 
     // Put the ace of spades in North.
     fireEvent.click(screen.getByTestId("entry-dir-N"));
-    fireEvent.click(screen.getByTestId("card-AS"));
+    fireEvent.click(screen.getByTestId("card-SA"));
 
     // Switch to East: the ace of spades is now disabled.
     fireEvent.click(screen.getByTestId("entry-dir-E"));
-    const asButton = screen.getByTestId("card-AS") as HTMLButtonElement;
+    const asButton = screen.getByTestId("card-SA") as HTMLButtonElement;
     expect(asButton.disabled).toBe(true);
   });
 
   it("shows the deal read-only when someone else entered it first", () => {
-    const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
     const deal: Deal = {
-      N: ranks.map((r) => `${r}S`),
-      E: ranks.map((r) => `${r}H`),
-      S: ranks.map((r) => `${r}D`),
-      W: ranks.map((r) => `${r}C`),
+      N: ranks.map((r): Card => `S${r}`),
+      E: ranks.map((r): Card => `H${r}`),
+      S: ranks.map((r): Card => `D${r}`),
+      W: ranks.map((r): Card => `C${r}`),
     };
     render(
       <DealEntry boardNumber={1} onSubmit={vi.fn()} readOnlyDeal={deal} />,
