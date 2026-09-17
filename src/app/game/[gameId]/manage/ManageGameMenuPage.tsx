@@ -9,6 +9,7 @@ export interface DirectorMenuPageProps {
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
   onDownloadUsebioClick: () => void;
+  onDownloadPbnClick: () => void;
   onDeleteGameClick: () => void;
   /** Show "Set Up Game" — only before the game has started. */
   showSetUpGame: boolean;
@@ -26,6 +27,11 @@ export interface DirectorMenuPageProps {
    * all results are in.
    */
   downloadUsebioDisabled: boolean;
+  /**
+   * Show "Download PBN" — only once the game has started. PBN exports the
+   * entered deals (not results), so it is not gated on results being complete.
+   */
+  showDownloadPbn: boolean;
 }
 
 export function ManageGameMenuPage({
@@ -35,6 +41,7 @@ export function ManageGameMenuPage({
   onMovementClick,
   onShareDirectorAccessClick,
   onDownloadUsebioClick,
+  onDownloadPbnClick,
   onDeleteGameClick,
   showSetUpGame,
   showTravellers,
@@ -42,6 +49,7 @@ export function ManageGameMenuPage({
   showMovement,
   showDownloadUsebio,
   downloadUsebioDisabled,
+  showDownloadPbn,
 }: DirectorMenuPageProps) {
   const standardButtonClass =
     "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed pl-4";
@@ -90,6 +98,12 @@ export function ManageGameMenuPage({
             className={standardButtonClass}
           >
             <span className="flex items-center gap-3">Download USEBIO</span>
+          </button>
+        )}
+
+        {showDownloadPbn && (
+          <button onClick={onDownloadPbnClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Download PBN</span>
           </button>
         )}
 

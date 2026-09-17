@@ -19,6 +19,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onMovementClick: fn(),
     onShareDirectorAccessClick: fn(),
     onDownloadUsebioClick: fn(),
+    onDownloadPbnClick: fn(),
     onDeleteGameClick: fn(),
     showSetUpGame: true,
     showTravellers: false,
@@ -26,6 +27,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     showMovement: false,
     showDownloadUsebio: false,
     downloadUsebioDisabled: false,
+    showDownloadPbn: false,
   },
 };
 
