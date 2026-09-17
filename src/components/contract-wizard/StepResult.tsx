@@ -34,7 +34,7 @@ export function StepResult({ level, onResultComplete }: Props) {
           type="button"
           className={`flex-1 py-3 rounded-xl text-center border-2 active:scale-[0.98] transition text-lg font-semibold ${
             mode === "made"
-              ? "bg-green-600 text-white border-green-600"
+              ? "bg-green-700 text-white border-green-700"
               : "border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-700"
           }`}
           onClick={() => setMode("made")}

@@ -192,7 +192,7 @@ export function WifiSettingsForm({
             className={`flex-1 px-4 py-2 font-medium text-white rounded ${
               !saveEnabled || loading
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700"
+                : "bg-green-700 hover:bg-green-800"
             }`}
           >
             {loading ? "Saving..." : "Save & Apply"}

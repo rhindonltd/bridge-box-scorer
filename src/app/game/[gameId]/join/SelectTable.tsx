@@ -24,9 +24,6 @@ export default function SelectTable({
       (a) => a.initialSeat === seatFor(section, table, direction),
     );
 
-  const isTableFull = (section: string, table: number) =>
-    PairDirections.every((d) => isTaken(section, table, d));
-
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="shrink-0 px-4 mt-2 mb-2">
@@ -51,9 +48,10 @@ export default function SelectTable({
                 {tableNumbers.map((table) => (
                   <div
                     key={`${s.section}-${table}`}
-                    className={`bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden ${
-                      isTableFull(s.section, table) ? "opacity-50" : ""
-                    }`}
+                    // A full table is indicated by its disabled seat buttons
+                    // below (not by dimming the whole card): whole-card opacity
+                    // dropped the header text below the WCAG AA contrast ratio.
+                    className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden"
                   >
                     <div className="text-center py-3 text-lg font-semibold text-blue-900 border-b border-blue-200 bg-blue-100">
                       Table {table}
@@ -73,7 +71,7 @@ export default function SelectTable({
                             disabled={taken}
                             className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200 ${
                               taken
-                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                ? "bg-gray-200 text-gray-600 cursor-not-allowed line-through"
                                 : "text-gray-700 hover:bg-gray-50 active:bg-gray-100"
                             }`}
                           >

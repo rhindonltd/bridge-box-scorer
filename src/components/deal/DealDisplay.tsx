@@ -43,7 +43,7 @@ export function DealDisplay({
         <div />
 
         <HandView direction="W" hand={deal.W} isDealer={dealer === "W"} />
-        <div className="text-xs font-medium text-gray-400">
+        <div className="text-xs font-medium text-gray-500">
           Board {boardNumber}
         </div>
         <HandView direction="E" hand={deal.E} isDealer={dealer === "E"} />

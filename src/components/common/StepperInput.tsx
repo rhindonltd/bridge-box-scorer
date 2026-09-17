@@ -150,7 +150,7 @@ export function StepperInput({
         } text-center text-lg font-medium tabular-nums text-gray-900 focus:outline-none [appearance:textfield] disabled:text-gray-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
       />
       {suffix ? (
-        <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sm text-gray-400">
+        <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-sm text-gray-500">
           {suffix}
         </span>
       ) : null}

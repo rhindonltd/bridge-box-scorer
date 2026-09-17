@@ -28,7 +28,8 @@ describe("PlayerCard", () => {
     render(<PlayerCard label="West" player={null} />);
     const container = screen.getByText("Empty").parentElement;
     expect(container).toHaveClass("bg-gray-100");
-    expect(container).toHaveClass("text-gray-500");
+    // text-gray-600 (not -500) to meet WCAG AA contrast on the gray-100 card.
+    expect(container).toHaveClass("text-gray-600");
   });
 
   it("applies active styles when player exists", () => {

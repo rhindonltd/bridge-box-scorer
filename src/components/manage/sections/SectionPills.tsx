@@ -43,32 +43,35 @@ export function SectionPills({
     </button>
   );
 
+  // The section switcher is a tablist (role="tab" pills). The "+ Add section"
+  // action is NOT a tab, so it lives as a sibling OUTSIDE the tablist —
+  // otherwise it would be a disallowed non-tab child of role="tablist". Both
+  // sit in the same flex row so the layout is unchanged.
   return (
-    <div
-      role="tablist"
-      aria-label="Section"
-      className="flex w-full max-w-md flex-wrap gap-2"
-    >
-      {!singleSection &&
-        sections.map((s) => {
-          const active = s.section === selected;
-          return (
-            <button
-              key={s.section}
-              role="tab"
-              aria-selected={active}
-              onClick={() => onSelect(s.section)}
-              className={`${pillBase} ${
-                active
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-              }`}
-            >
-              Section{" "}
-              {s.section === s.label ? s.section : `${s.section} — ${s.label}`}
-            </button>
-          );
-        })}
+    <div className="flex w-full max-w-md flex-wrap gap-2">
+      {!singleSection && (
+        <div role="tablist" aria-label="Section" className="flex flex-wrap gap-2">
+          {sections.map((s) => {
+            const active = s.section === selected;
+            return (
+              <button
+                key={s.section}
+                role="tab"
+                aria-selected={active}
+                onClick={() => onSelect(s.section)}
+                className={`${pillBase} ${
+                  active
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                }`}
+              >
+                Section{" "}
+                {s.section === s.label ? s.section : `${s.section} — ${s.label}`}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {addPill}
     </div>
