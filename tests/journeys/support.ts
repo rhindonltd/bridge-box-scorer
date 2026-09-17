@@ -160,7 +160,10 @@ async function sizeSectionTables(
  * On the setup Movement view, select a section via its pill and choose the
  * first recommended movement for it.
  */
-async function pickMovementForSection(page: Page, section: string): Promise<void> {
+export async function pickMovementForSection(
+  page: Page,
+  section: string,
+): Promise<void> {
   await openSetupStep(page, "Movement");
   await selectSection(page, section);
 

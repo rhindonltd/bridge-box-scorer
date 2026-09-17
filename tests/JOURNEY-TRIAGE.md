@@ -30,6 +30,76 @@ Rewrite only individual journeys that triage shows assert removed behaviour.
 
 ## Progress log
 
+- **Root cause #2 (timer) FIXED.** All 7 timer journey tests pass. On top of
+  the earlier autosave/selector rework:
+    - Duration fields are `StepperInput`s; select the inner input via
+      `getByRole("spinbutton", { name, exact: true })` (getByLabel matched the
+      −/+ buttons too).
+    - Live-timer duration assertions now set **Per Round** timing mode (so the
+      play-phase length equals the entered duration, not × boards-per-round) and
+      assert **relative** values (e.g. round-2 play "not 00:xx" after
+      apply-to-future +1m) rather than exact `MM:SS`.
+    - The multi-section config test selects a movement per section first (the
+      config derives its structure from the movement) via the now-exported
+      `pickMovementForSection`, and asserts each section keeps its own autosaved
+      value (the removed "Apply to all sections" copy behaviour is gone).
+    - The "Apply to all subsequent phases" checkbox is toggled via its wrapping
+      label text (the bare checkbox is flaky to `.check()` in the narrow mobile
+      layout).
+    - Added `openTimerDisplay` (reload-once retry past "Connecting…") and
+      `gotoManageTimer` (settle the post-start `/manage` redirect, then goto with
+      `waitUntil:"commit"` + one retry) to kill promote/redirect races.
+    - **Hardened `openSetupStep` (shared fixture)**: wait for the menu item to be
+      visible before clicking and for the menu to close after — the animated
+      hamburger menu on mobile could drop a click, leaving the menu open and
+      later steps hanging. This also sped the timer file up (~3m → ~1m) and helps
+      every journey that navigates the setup menu.
+
+- **Overall journeys-phone: 23/51 → 57/18 (pass/fail).**
+
+Remaining 18 (phone), grouped — next clusters:
+  - **`page.goto … interrupted by another navigation` (share-code ×3, swiss ×1,
+    navigation ×1)**: same redirect-race class the timer helper fixed; these
+    inline gotos to pages that immediately redirect/open a socket need
+    `waitUntil:"commit"` (and possibly a settle on the redirect target). Highest
+    leverage next.
+  - **Test timeout 90–120s (authorization ×2, deal-entry ×1, display-detail ×1)**:
+    likely downstream hangs (a mid-test step never resolves); re-triage each
+    after the goto-race fixes.
+  - **`toBe` value assertions (table-management ×2, authorization ×1)**: verify
+    against current resize / result-auth behaviour.
+  - **`toBeVisible`/`toBeEnabled` selector drift (create-form ×2, deal-entry ×1,
+    play-flow `wizard-board-N` ×1, share-code invalid-code ×1)**: individual
+    selector/expectation updates (create-form still needs the `networkidle`
+    wait; play-flow needs the ContractWizard board-picker selector).
+  - **timer ×1**: a flaky `toBeHidden` (PAUSED) straggler under full-load
+    parallelism; passes in isolation.
+
+- **Root cause #2 (timer) PARTIALLY FIXED.** Reworked `timer.journey.ts` to the
+  autosave model: removed the Save-button waits/clicks and the "Apply to all
+  sections" / "Not started yet" assertions; stopped typing the movement-derived
+  `#total-rounds`; and switched duration-field selectors from `getByLabel(...)`
+  to `getByRole("spinbutton", { name, exact: true })` (the `StepperInput`'s
+  −/+ buttons share the field's accessible name, so `getByLabel` matched 3
+  elements). Timer phone failures: **7 → 4**. Now passing: promote-on-start,
+  scheduled break, pre-start session-length preview.
+  Still failing (4), and these are NOT selector issues — they are **real-time
+  timing assertions calibrated to the OLD typed-config model**:
+    - `adjusting … update the live timer` and `live status panel … apply-to-
+      future`: assert exact remaining values (`01:MM`, `00:20`) after +1m /
+      Apply Changes. The live phase length now shows e.g. `05:00`, because with
+      the movement-derived structure the phase duration depends on the **timing
+      mode** (Per Board vs Per Round): Per Board play length = playSeconds ×
+      boardsPerRound, so `playSeconds: 40` does NOT yield a 40s phase. These
+      tests must set the timing mode explicitly (a `Per Round` PillToggle) and
+      recompute expected durations, or assert relative change rather than exact
+      values.
+    - `multi-section per-section autosave` (my rework) and `multi-section
+      display section chooser`: still failing; likely the two-section setup /
+      section-switch timing. Needs a closer look (possibly the autosave-per-
+      section persistence timing, or the section-chooser display path).
+  These four are the natural place to confirm the intended timing-mode UX.
+
 - **Root cause #1 FIXED** (seating fixtures now assign a distinct pair per seat
   from a 20-player `SEEDED_EBU_POOL` in `tests/fixtures/join.ts`; see
   `assignDistinctPairs`). Phone journeys went from **51 → 25** failures
