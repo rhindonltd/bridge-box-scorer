@@ -10,6 +10,7 @@ export interface DirectorMenuPageProps {
   onShareDirectorAccessClick: () => void;
   onDownloadUsebioClick: () => void;
   onDownloadPbnClick: () => void;
+  onUploadBridgewebsClick: () => void;
   onDeleteGameClick: () => void;
   /** Show "Set Up Game" — only before the game has started. */
   showSetUpGame: boolean;
@@ -32,6 +33,16 @@ export interface DirectorMenuPageProps {
    * entered deals (not results), so it is not gated on results being complete.
    */
   showDownloadPbn: boolean;
+  /**
+   * Show "Upload to BridgeWebs" — only once the game has started AND BridgeWebs
+   * is configured in Settings. Hidden entirely when unconfigured.
+   */
+  showUploadBridgewebs: boolean;
+  /**
+   * Render "Upload to BridgeWebs" as disabled — used until every result is in
+   * (results are what get uploaded) and while the completion signal loads.
+   */
+  uploadBridgewebsDisabled: boolean;
 }
 
 export function ManageGameMenuPage({
@@ -42,6 +53,7 @@ export function ManageGameMenuPage({
   onShareDirectorAccessClick,
   onDownloadUsebioClick,
   onDownloadPbnClick,
+  onUploadBridgewebsClick,
   onDeleteGameClick,
   showSetUpGame,
   showTravellers,
@@ -50,6 +62,8 @@ export function ManageGameMenuPage({
   showDownloadUsebio,
   downloadUsebioDisabled,
   showDownloadPbn,
+  showUploadBridgewebs,
+  uploadBridgewebsDisabled,
 }: DirectorMenuPageProps) {
   const standardButtonClass =
     "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed pl-4";
@@ -104,6 +118,16 @@ export function ManageGameMenuPage({
         {showDownloadPbn && (
           <button onClick={onDownloadPbnClick} className={standardButtonClass}>
             <span className="flex items-center gap-3">Download PBN</span>
+          </button>
+        )}
+
+        {showUploadBridgewebs && (
+          <button
+            onClick={onUploadBridgewebsClick}
+            disabled={uploadBridgewebsDisabled}
+            className={standardButtonClass}
+          >
+            <span className="flex items-center gap-3">Upload to BridgeWebs</span>
           </button>
         )}
 

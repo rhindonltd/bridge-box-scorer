@@ -21,20 +21,25 @@ import { ManageGameMenuPage } from "./ManageGameMenuPage";
 const handlers = {
   onSetUpGameClick: vi.fn(),
   onTravellersClick: vi.fn(),
+  onEnterDealsClick: vi.fn(),
   onMovementClick: vi.fn(),
   onShareDirectorAccessClick: vi.fn(),
   onDownloadUsebioClick: vi.fn(),
   onDownloadPbnClick: vi.fn(),
+  onUploadBridgewebsClick: vi.fn(),
   onDeleteGameClick: vi.fn(),
 };
 
 const flags = {
   showSetUpGame: false,
   showTravellers: false,
+  showEnterDeals: false,
   showMovement: false,
   showDownloadUsebio: false,
   downloadUsebioDisabled: false,
   showDownloadPbn: false,
+  showUploadBridgewebs: false,
+  uploadBridgewebsDisabled: false,
 };
 
 describe("ManageGameMenuPage", () => {
@@ -163,6 +168,57 @@ describe("ManageGameMenuPage", () => {
 
       fireEvent.click(button);
       expect(handlers.onDownloadUsebioClick).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Upload to BridgeWebs", () => {
+    it("is hidden when showUploadBridgewebs is false", () => {
+      render(
+        <ManageGameMenuPage
+          {...handlers}
+          {...flags}
+          showUploadBridgewebs={false}
+        />,
+      );
+      expect(
+        screen.queryByRole("button", { name: "Upload to BridgeWebs" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("is shown and enabled when results are in", () => {
+      render(
+        <ManageGameMenuPage
+          {...handlers}
+          {...flags}
+          showUploadBridgewebs={true}
+          uploadBridgewebsDisabled={false}
+        />,
+      );
+      const button = screen.getByRole("button", {
+        name: "Upload to BridgeWebs",
+      });
+      expect(button).toBeEnabled();
+
+      fireEvent.click(button);
+      expect(handlers.onUploadBridgewebsClick).toHaveBeenCalled();
+    });
+
+    it("is shown but disabled until all results are in", () => {
+      render(
+        <ManageGameMenuPage
+          {...handlers}
+          {...flags}
+          showUploadBridgewebs={true}
+          uploadBridgewebsDisabled={true}
+        />,
+      );
+      const button = screen.getByRole("button", {
+        name: "Upload to BridgeWebs",
+      });
+      expect(button).toBeDisabled();
+
+      fireEvent.click(button);
+      expect(handlers.onUploadBridgewebsClick).not.toHaveBeenCalled();
     });
   });
 });

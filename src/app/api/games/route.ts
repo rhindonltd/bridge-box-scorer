@@ -20,6 +20,7 @@ const bodySchema = z.object({
   eventDate: z.string().min(1),
   tables: z.number().int().min(1),
   leadCardRequired: z.boolean().optional(),
+  bridgewebsEventId: z.string().nullish(),
 });
 
 /**

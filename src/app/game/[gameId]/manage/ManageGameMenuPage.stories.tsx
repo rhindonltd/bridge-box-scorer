@@ -20,6 +20,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onShareDirectorAccessClick: fn(),
     onDownloadUsebioClick: fn(),
     onDownloadPbnClick: fn(),
+    onUploadBridgewebsClick: fn(),
     onDeleteGameClick: fn(),
     showSetUpGame: true,
     showTravellers: false,
@@ -28,6 +29,8 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     showDownloadUsebio: false,
     downloadUsebioDisabled: false,
     showDownloadPbn: false,
+    showUploadBridgewebs: false,
+    uploadBridgewebsDisabled: false,
   },
 };
 
@@ -68,5 +71,23 @@ export const StartedResultsComplete: Story = {
     showMovement: true,
     showDownloadUsebio: true,
     downloadUsebioDisabled: false,
+  },
+};
+
+/**
+ * All results in and BridgeWebs configured: the Upload to BridgeWebs option is
+ * shown alongside the USEBIO/PBN exports.
+ */
+export const StartedWithBridgewebs: Story = {
+  args: {
+    showSetUpGame: false,
+    showTravellers: true,
+    showEnterDeals: true,
+    showMovement: true,
+    showDownloadUsebio: true,
+    downloadUsebioDisabled: false,
+    showDownloadPbn: true,
+    showUploadBridgewebs: true,
+    uploadBridgewebsDisabled: false,
   },
 };
