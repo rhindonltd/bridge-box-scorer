@@ -5,6 +5,7 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 export interface DirectorMenuPageProps {
   onSetUpGameClick: () => void;
   onTravellersClick: () => void;
+  onEnterDealsClick: () => void;
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
   onDownloadUsebioClick: () => void;
@@ -13,6 +14,8 @@ export interface DirectorMenuPageProps {
   showSetUpGame: boolean;
   /** Show "Travellers" — only after the game has started. */
   showTravellers: boolean;
+  /** Show "Enter Deals" — only after the game has started. */
+  showEnterDeals: boolean;
   /** Show "Movement" — only after the game has started. */
   showMovement: boolean;
   /** Show "Download USEBIO" — only once the game has started. */
@@ -28,12 +31,14 @@ export interface DirectorMenuPageProps {
 export function ManageGameMenuPage({
   onSetUpGameClick,
   onTravellersClick,
+  onEnterDealsClick,
   onMovementClick,
   onShareDirectorAccessClick,
   onDownloadUsebioClick,
   onDeleteGameClick,
   showSetUpGame,
   showTravellers,
+  showEnterDeals,
   showMovement,
   showDownloadUsebio,
   downloadUsebioDisabled,
@@ -56,6 +61,12 @@ export function ManageGameMenuPage({
         {showTravellers && (
           <button onClick={onTravellersClick} className={standardButtonClass}>
             <span className="flex items-center gap-3">Travellers</span>
+          </button>
+        )}
+
+        {showEnterDeals && (
+          <button onClick={onEnterDealsClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Enter Deals</span>
           </button>
         )}
 

@@ -2,6 +2,8 @@ import { Server, Socket } from "socket.io";
 import { registerLeaderboardRequestHandler } from "./leaderboard-request.handler";
 import { registerTravellerRequestHandler } from "./traveller-request.handler";
 import { registerTravellerOverrideHandler } from "./traveller-override.handler";
+import { registerDealSubmitHandler } from "./deal-submit.handler";
+import { registerDealOverrideHandler } from "./deal-override.handler";
 
 /**
  * Handlers for live, DB-derived results features (leaderboard, traveller).
@@ -13,4 +15,6 @@ export function registerResultsHandlers(socket: Socket, io: Server) {
   registerLeaderboardRequestHandler(socket, io);
   registerTravellerRequestHandler(socket, io);
   registerTravellerOverrideHandler(socket, io);
+  registerDealSubmitHandler(socket, io);
+  registerDealOverrideHandler(socket, io);
 }

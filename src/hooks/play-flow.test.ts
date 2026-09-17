@@ -524,7 +524,15 @@ describe("usePlayFlow", () => {
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       toBoardResults(result, 1);
+      // Finishing a round's last board now offers the optional deal-entry step
+      // before advancing.
       act(() => result.current.handleBoardResultsNext());
+      expect(result.current.playState).toEqual({
+        state: "enterDeals",
+        roundIndex: 0,
+        nextRoundIndex: 1,
+      });
+      act(() => result.current.handleDealsContinue());
       expect(result.current.playState).toEqual({
         state: "moveInfo",
         nextRoundIndex: 1,
@@ -541,6 +549,8 @@ describe("usePlayFlow", () => {
 
       toBoardResults(result, 1);
       act(() => result.current.handleBoardResultsNext());
+      expect(result.current.playState.state).toBe("enterDeals");
+      act(() => result.current.handleDealsContinue());
       expect(result.current.playState.state).toBe("gameComplete");
     });
 
@@ -576,6 +586,8 @@ describe("usePlayFlow", () => {
 
       toBoardResults(result, 1);
       act(() => result.current.handleBoardResultsNext());
+      expect(result.current.playState.state).toBe("enterDeals");
+      act(() => result.current.handleDealsContinue());
       expect(result.current.playState.state).toBe("moveInfo");
 
       act(() => result.current.handleMoveInfoContinue());

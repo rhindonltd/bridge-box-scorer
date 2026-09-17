@@ -58,6 +58,13 @@ export type PlayState =
       ewResult: string;
     }
   | { state: "boardResults"; roundIndex: number; boardIndex: number }
+  /**
+   * Optional, post-round-only step offering to enter the dealt cards for the
+   * round just finished. Reachable only when a round completes (never
+   * mid-round, to keep card entry off the critical path), and always skippable
+   * — continuing advances to `moveInfo` / `gameComplete` via `nextRoundIndex`.
+   */
+  | { state: "enterDeals"; roundIndex: number; nextRoundIndex: number }
   | { state: "moveInfo"; nextRoundIndex: number }
   | { state: "gameComplete" };
 
@@ -72,6 +79,8 @@ export type PlayAction =
   | { type: "submit"; boardNumber: number }
   | { type: "reenter" }
   | { type: "boardResultsNext" }
+  /** Leave the optional post-round deal-entry step (finished or skipped). */
+  | { type: "dealsContinue" }
   | { type: "moveInfoContinue" }
   | { type: "sitOutContinue" }
   | {
@@ -132,6 +141,20 @@ function afterRound(nextRoundIndex: number, schedule: Schedule): PlayState {
     return { state: "moveInfo", nextRoundIndex };
   }
   return { state: "gameComplete" };
+}
+
+/**
+ * Advance from the end of a PLAYED round. Offers the optional deal-entry step
+ * for the round just finished before continuing to the move screen / game
+ * complete. Sit-out rounds skip this (they route through `afterRound` directly)
+ * since the sitting pair played no boards to enter cards for.
+ */
+function afterPlayedRound(completedRoundIndex: number): PlayState {
+  return {
+    state: "enterDeals",
+    roundIndex: completedRoundIndex,
+    nextRoundIndex: completedRoundIndex + 1,
+  };
 }
 
 /**
@@ -196,8 +219,14 @@ export function playReducer(
         };
       }
 
-      // Round complete.
-      return afterRound(prev.roundIndex + 1, schedule);
+      // Round complete — offer the optional deal-entry step for it.
+      return afterPlayedRound(prev.roundIndex);
+    }
+
+    case "dealsContinue": {
+      if (!schedule) return prev;
+      if (prev.state !== "enterDeals") return prev;
+      return afterRound(prev.nextRoundIndex, schedule);
     }
 
     case "moveInfoContinue": {

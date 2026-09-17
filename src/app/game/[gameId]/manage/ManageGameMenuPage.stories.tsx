@@ -15,12 +15,14 @@ const meta: Meta<typeof ManageGameMenuPage> = {
   args: {
     onSetUpGameClick: fn(),
     onTravellersClick: fn(),
+    onEnterDealsClick: fn(),
     onMovementClick: fn(),
     onShareDirectorAccessClick: fn(),
     onDownloadUsebioClick: fn(),
     onDeleteGameClick: fn(),
     showSetUpGame: true,
     showTravellers: false,
+    showEnterDeals: false,
     showMovement: false,
     showDownloadUsebio: false,
     downloadUsebioDisabled: false,
@@ -48,6 +50,7 @@ export const StartedResultsIncomplete: Story = {
   args: {
     showSetUpGame: false,
     showTravellers: true,
+    showEnterDeals: true,
     showMovement: true,
     showDownloadUsebio: true,
     downloadUsebioDisabled: true,
@@ -59,6 +62,7 @@ export const StartedResultsComplete: Story = {
   args: {
     showSetUpGame: false,
     showTravellers: true,
+    showEnterDeals: true,
     showMovement: true,
     showDownloadUsebio: true,
     downloadUsebioDisabled: false,

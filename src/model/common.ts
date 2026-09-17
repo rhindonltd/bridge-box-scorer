@@ -55,4 +55,9 @@ export interface Board {
   deal: Deal;
 }
 
-export type Deal = Record<Direction, string>;
+/**
+ * A full deal is the four hands, one per compass direction. Each hand is a list
+ * of {@link Card} codes (rank-first, e.g. "AS", "TH"). See `@/model/deal` for
+ * the PBN codec and completeness validation.
+ */
+export type Deal = Record<Direction, Card[]>;

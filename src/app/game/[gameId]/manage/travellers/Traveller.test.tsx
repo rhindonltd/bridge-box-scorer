@@ -137,6 +137,46 @@ describe("Traveller", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
+  it("does not show the Show hand toggle when there is no deal", () => {
+    render(
+      <Traveller
+        boardNumber={5}
+        instances={[pairInstance()]}
+        deal={null}
+        isLoading={false}
+        onLineSelected={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId("show-hand-toggle")).not.toBeInTheDocument();
+  });
+
+  it("reveals the deal via the Show hand toggle when a deal is present", () => {
+    const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const deal = {
+      N: ranks.map((r) => `${r}S`),
+      E: ranks.map((r) => `${r}H`),
+      S: ranks.map((r) => `${r}D`),
+      W: ranks.map((r) => `${r}C`),
+    };
+
+    render(
+      <Traveller
+        boardNumber={5}
+        instances={[pairInstance()]}
+        deal={deal}
+        isLoading={false}
+        onLineSelected={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    // Off by default.
+    expect(screen.queryByTestId("deal-display")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("show-hand-toggle"));
+    expect(screen.getByTestId("deal-display")).toBeInTheDocument();
+  });
+
   it("omits pair cells for a non-pairs instance", () => {
     const instance = {
       roundNumber: 2,

@@ -8,6 +8,15 @@ vi.mock("@/db/games/tables/boards", () => ({
   boards: "boards",
 }));
 
+vi.mock("@/db/games/queries/get-deal", () => ({
+  getAllDealHands: vi.fn(async () => new Map()),
+}));
+
+vi.mock("@/db/games/queries/find-sections", () => ({
+  // Single section by default; individual tests override for multi-section.
+  findSections: vi.fn(async () => [{ section: "A" }]),
+}));
+
 // Capture the data passed to the XML generator so we can assert the branch
 // fallbacks (direction, outcome, lead, sectionName) without exercising the real
 // serializer.
@@ -133,6 +142,11 @@ describe("generateUsebio", () => {
     expect(data.pairs.map((p) => p.direction)).toEqual(["N", "E"]);
     expect(data.sectionName).toBe("A");
 
+    // Single section: the section prefix is stripped from pair numbers.
+    expect(data.pairs.map((p) => p.pairNumber)).toEqual(["1NS", "1EW"]);
+    expect(data.boardResults[0].nsPairNumber).toBe("1NS");
+    expect(data.boardResults[0].ewPairNumber).toBe("1EW");
+
     // Only 3 of 4 boards pass the filter.
     expect(data.boardResults).toHaveLength(3);
     // Override beats confirmed.
@@ -159,5 +173,44 @@ describe("generateUsebio", () => {
     expect(data.pairs).toHaveLength(0);
     expect(data.boardResults).toHaveLength(0);
     expect(data.boards).toBe(0);
+  });
+
+  it("keeps the section prefix on pair numbers when there are multiple sections", async () => {
+    const { findSections } = await import("@/db/games/queries/find-sections");
+    vi.mocked(findSections).mockResolvedValueOnce([
+      { section: "A" },
+      { section: "B" },
+    ] as any);
+
+    vi.mocked(findPairs).mockResolvedValue([
+      {
+        initialSeat: "A1NS",
+        player1: { firstName: "A", lastName: "B" },
+        player2: { firstName: "C", lastName: "D" },
+      },
+    ] as any);
+
+    const db = mockDb([
+      {
+        tableNumber: 1,
+        boardNumber: 1,
+        roundNumber: 1,
+        ns: "A1NS",
+        ew: "A1EW",
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+        confirmedLead: null,
+      },
+    ]);
+
+    await generateUsebio(db, makeGame(), club);
+
+    const data = vi.mocked(generateUsebioXml).mock
+      .calls[0][0] as UsebioPairsData;
+
+    expect(data.pairs[0].pairNumber).toBe("A1NS");
+    expect(data.boardResults[0].nsPairNumber).toBe("A1NS");
+    expect(data.boardResults[0].ewPairNumber).toBe("A1EW");
   });
 });

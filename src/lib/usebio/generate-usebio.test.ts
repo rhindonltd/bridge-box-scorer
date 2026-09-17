@@ -248,6 +248,44 @@ describe("generateUsebioXml", () => {
       const xml = generateUsebioXml(makeBasicGameData());
       expect(xml).not.toContain("<RANKING>");
     });
+
+    it("does not emit HAND elements when no deals are supplied", () => {
+      const xml = generateUsebioXml(makeBasicGameData());
+
+      expect(xml).not.toContain("<HAND>");
+      expect(xml).not.toContain("<HAND_DEALER>");
+    });
+
+    it("emits HAND elements and the dealer for a board that has a deal", () => {
+      const data = makeBasicGameData();
+      const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+      // Board 1 => dealer North. N=spades, E=hearts, S=diamonds, W=clubs.
+      data.deals = new Map([
+        [
+          1,
+          {
+            N: ranks.map((r) => `${r}S`),
+            E: ranks.map((r) => `${r}H`),
+            S: ranks.map((r) => `${r}D`),
+            W: ranks.map((r) => `${r}C`),
+          },
+        ],
+      ]);
+
+      const xml = generateUsebioXml(data);
+
+      // Board 1 is "Love" (nobody vulnerable) by the standard cycle.
+      expect(xml).toContain("<VULNERABILITY>Love</VULNERABILITY>");
+      expect(xml).toContain("<DIRECTION>N</DIRECTION>");
+      // North holds all spades.
+      expect(xml).toContain("<SPADES>AKQJT98765432</SPADES>");
+      // West holds all clubs.
+      expect(xml).toContain("<CLUBS>AKQJT98765432</CLUBS>");
+      // A void suit renders as an empty element.
+      expect(xml).toContain("<HEARTS/>");
+      // No dealer element — the USEBIO DTD has none on BOARD/HAND.
+      expect(xml).not.toContain("HAND_DEALER");
+    });
   });
 
   describe("scoring type mapping", () => {

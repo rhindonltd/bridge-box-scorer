@@ -25,6 +25,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
     <ManageGameMenuPage
       onSetUpGameClick={() => router.push(`/game/${gameId}/create`)}
       onTravellersClick={() => router.push(`/game/${gameId}/manage/travellers`)}
+      onEnterDealsClick={() => router.push(`/game/${gameId}/manage/deals`)}
       onMovementClick={() => router.push(`/game/${gameId}/manage/movement`)}
       onShareDirectorAccessClick={() =>
         router.push(`/game/${gameId}/manage/share-access`)
@@ -37,6 +38,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       }
       showSetUpGame={startedKnown && !started}
       showTravellers={started}
+      showEnterDeals={started}
       showMovement={started}
       showDownloadUsebio={showDownloadUsebio}
       downloadUsebioDisabled={!allResultsIn}

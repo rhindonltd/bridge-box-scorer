@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   deriveTeamId,
+  formatPairNumber,
   isPairSeat,
   parseSeat,
   sectionOf,
@@ -77,6 +78,23 @@ describe("seatFor", () => {
       tableNumber: 5,
       direction: "EW",
     });
+  });
+});
+
+describe("formatPairNumber", () => {
+  it("keeps the full seat when the section is included (multi-section)", () => {
+    expect(formatPairNumber("A1NS", true)).toBe("A1NS");
+    expect(formatPairNumber("B12EW", true)).toBe("B12EW");
+  });
+
+  it("strips the section prefix when excluded (single section)", () => {
+    expect(formatPairNumber("A1NS", false)).toBe("1NS");
+    expect(formatPairNumber("A1EW", false)).toBe("1EW");
+    expect(formatPairNumber("B12EW", false)).toBe("12EW");
+  });
+
+  it("returns a non-seat value unchanged", () => {
+    expect(formatPairNumber("not-a-seat", false)).toBe("not-a-seat");
   });
 });
 

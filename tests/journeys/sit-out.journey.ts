@@ -255,8 +255,15 @@ async function playRoundsUpToSitOut(
       }
     }
 
-    // After the last board of the round, the player is on the move-info screen.
-    // Continue moves into the next round (the sit-out on the final iteration).
+    // After the last board of the round, the optional "Enter cards" step is
+    // offered. This journey isn't about deal entry, so skip it on both devices.
+    const skip = player.getByTestId("skip-deals");
+    if (await skip.isVisible().catch(() => false)) await skip.click();
+    const pskip = partner.getByTestId("skip-deals");
+    if (await pskip.isVisible().catch(() => false)) await pskip.click();
+
+    // Then the player is on the move-info screen. Continue moves into the next
+    // round (the sit-out on the final iteration).
     const cont = player.getByRole("button", { name: "Continue", exact: true });
     await expect(cont).toBeVisible({ timeout: 15000 });
     await cont.click();

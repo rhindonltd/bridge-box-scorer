@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
-import { getSocket } from "../lib/socket";
+import { getSocket, emitWithAck } from "../lib/socket";
 import { SocketEvents } from "../socket/socket-events";
+import { Deal } from "@/model/common";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import { getPlayerToken } from "@/lib/player-token";
@@ -210,6 +211,31 @@ export function usePlayFlow(gameId: string, seat: string) {
     () => dispatch({ type: "sitOutContinue" }),
     [dispatch],
   );
+  const handleDealsContinue = useCallback(
+    () => dispatch({ type: "dealsContinue" }),
+    [dispatch],
+  );
+
+  /**
+   * Submit the entered cards for a board (from the optional post-round deal
+   * step). Global first-wins: the ack's `stored` is false when another player
+   * had already entered that board, so the caller can show it read-only. A
+   * rejected ack (bad deal / not found) rejects the promise. Emitting the deal
+   * has no effect on the play-flow state — the deal step is purely additive.
+   */
+  const submitDeal = useCallback(
+    async (boardNumber: number, deal: Deal): Promise<{ stored: boolean }> => {
+      const token = getPlayerToken(gameId)?.token ?? "";
+      return emitWithAck<{ stored: boolean }>(SocketEvents.DEAL_SUBMIT, {
+        gameId,
+        seat,
+        token,
+        boardNumber,
+        deal,
+      });
+    },
+    [gameId, seat],
+  );
 
   return {
     schedule,
@@ -219,8 +245,10 @@ export function usePlayFlow(gameId: string, seat: string) {
     handleSitOutContinue,
     handleMoveInfoContinue,
     handleBoardResultsNext,
+    handleDealsContinue,
     handleReenter,
     handleEnterRound,
     submitResult,
+    submitDeal,
   };
 }

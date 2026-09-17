@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useRequiredGame } from "@/context/GameContext";
-import { TravellerProvider } from "@/context/TravellerContext";
+import { TravellerProvider, useTravellerContext } from "@/context/TravellerContext";
 import { ContractWizard } from "@/app/game/[gameId]/play/[initialSeat]/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { parseContract } from "@/model/contract";
@@ -12,6 +12,7 @@ import { ResultMismatch } from "@/app/game/[gameId]/play/[initialSeat]/ResultMis
 import { RoundInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/RoundInfoPage";
 import { GameComplete } from "@/app/game/[gameId]/play/[initialSeat]/GameComplete";
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
+import { EnterDealsPage } from "@/app/game/[gameId]/play/[initialSeat]/EnterDealsPage";
 import { ScoringType } from "@/db/games/types/scoring-type";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
@@ -61,9 +62,11 @@ type PlayHandlers = Pick<
   | "handleSitOutContinue"
   | "handleMoveInfoContinue"
   | "handleBoardResultsNext"
+  | "handleDealsContinue"
   | "handleReenter"
   | "handleEnterRound"
   | "submitResult"
+  | "submitDeal"
 >;
 
 /**
@@ -201,6 +204,18 @@ function PlayStateRouter({
       );
     }
 
+    case "enterDeals": {
+      const round = schedule.rounds[playState.roundIndex];
+      return (
+        <EnterDealsPage
+          boards={round.boards}
+          onSubmitDeal={handlers.submitDeal}
+          onDone={handlers.handleDealsContinue}
+          headerRight={headerRight}
+        />
+      );
+    }
+
     case "moveInfo": {
       const roundSchedule = schedule.rounds[playState.nextRoundIndex];
 
@@ -278,6 +293,9 @@ function BoardResultsContent({
   headerRight?: React.ReactNode;
 }) {
   const scoredBoard = useScoredBoard(gameId, viewingBoard, scoringType);
+  // The deal for the board being viewed rides the same traveller context, so
+  // it appears (and updates live) once anyone has entered it.
+  const { deal } = useTravellerContext();
 
   if (!scoredBoard) {
     return <FullScreenSpinner />;
@@ -289,6 +307,7 @@ function BoardResultsContent({
       playedBoards={playedBoards}
       lastBoardOfRound={lastBoardOfRound}
       scoredBoard={scoredBoard}
+      deal={deal}
       onBoardSelected={onBoardSelected}
       onNext={onNext}
       headerRight={headerRight}

@@ -5,10 +5,14 @@ import { CaptionedSpinner } from "@/components/common/Spinner";
 import { BoardResult as ContractDisplay } from "@/components/traveller/BoardResult";
 import { BoardInstance } from "@/model/participants";
 import { BoardOutcome } from "@/model/score";
+import { Deal } from "@/model/common";
+import { ShowHandToggle } from "@/components/deal/ShowHandToggle";
 
 interface TravellerViewProps {
   boardNumber: number;
   instances: BoardInstance[];
+  /** The board's deal, shown behind a "Show hand" toggle when present. */
+  deal?: Deal | null;
   isLoading: boolean;
   onLineSelected: (instance: BoardInstance) => void;
   onBack: () => void;
@@ -23,6 +27,7 @@ interface TravellerViewProps {
 export function Traveller({
   boardNumber,
   instances,
+  deal = null,
   isLoading,
   onLineSelected,
   onBack,
@@ -72,6 +77,8 @@ export function Traveller({
   return (
     <GamePageLayout headerTitle="Travellers" backAction={onBack}>
       <div className="flex-1 overflow-y-auto p-4">
+        <ShowHandToggle boardNumber={boardNumber} deal={deal} />
+
         {instances.length === 0 && (
           <div className="text-center text-gray-500 py-12">
             No results for this board yet

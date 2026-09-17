@@ -91,6 +91,25 @@ export function seatFor(
 }
 
 /**
+ * Format a pair number for display / export from its section-qualified seat.
+ *
+ * When the game has a single section the section prefix is redundant, so it is
+ * dropped (e.g. "A1NS" -> "1NS"); with multiple sections the full qualified
+ * seat is kept so pairs stay distinguishable across sections. A value that is
+ * not a valid section-qualified seat is returned unchanged.
+ */
+export function formatPairNumber(
+  seat: string,
+  includeSection: boolean,
+): string {
+  if (includeSection) return seat;
+  const match = SEAT_REGEX.exec(seat);
+  if (!match) return seat;
+  const [, , table, direction] = match;
+  return `${table}${direction}`;
+}
+
+/**
  * The stable id of the TEAM whose home table a seat belongs to: the seat's
  * section + table number, with the NS/EW direction dropped (e.g. "A1NS" and
  * "A1EW" both map to "A1"). A team is the two pairs at one home table, so both

@@ -3,6 +3,9 @@ import { Db } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { boards } from "@/db/games/tables/boards";
+import { getAllDealHands } from "@/db/games/queries/get-deal";
+import { findSections } from "@/db/games/queries/find-sections";
+import { formatPairNumber } from "@/model/participants";
 import { Club } from "@/db/system/schema";
 import {
   generateUsebioXml,
@@ -61,13 +64,22 @@ async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
   // Get all board results
   const allBoards = await db.select().from(boards);
 
+  // Get any entered deals (the four hands), keyed by board number.
+  const deals = await getAllDealHands(db);
+
+  // With a single section the section prefix on pair numbers is redundant
+  // (e.g. "A1NS" -> "1NS"); keep it only when the game has multiple sections so
+  // pairs stay distinguishable across them.
+  const sections = await findSections(db);
+  const includeSection = sections.length > 1;
+
   // Build USEBIO pairs data
   const usebioPairs: UsebioPair[] = pairs.map((pair) => {
     // Parse direction from initialSeat (e.g., "1NS" → table 1, direction NS)
     const direction = pair.initialSeat.endsWith("NS") ? "N" : "E";
 
     return {
-      pairNumber: pair.initialSeat, // Use initialSeat as pair ID
+      pairNumber: formatPairNumber(pair.initialSeat, includeSection),
       direction: direction as "N" | "E",
       player1: pair.player1,
       player2: pair.player2,
@@ -81,8 +93,8 @@ async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
       table: b.tableNumber,
       board: b.boardNumber,
       round: b.roundNumber,
-      nsPairNumber: b.ns,
-      ewPairNumber: b.ew,
+      nsPairNumber: formatPairNumber(b.ns, includeSection),
+      ewPairNumber: formatPairNumber(b.ew, includeSection),
       outcome: (b.directorOverrideResult ??
         b.confirmedResult ??
         "NP") as BoardOutcome,
@@ -105,6 +117,7 @@ async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
     boards: boardNumbers.size,
     pairs: usebioPairs,
     boardResults,
+    deals,
   };
 
   return generateUsebioXml(usebioData);

@@ -98,6 +98,14 @@ export const SocketEvents = {
   // Client-initiated (director): override a board result.
   OVERRIDE_RESULT_TRAVELLER: "traveller:overrideResult",
 
+  // Client-initiated (player): submit the dealt cards for a board after the
+  // round is complete. First entry for a board wins (global across sections);
+  // later submissions are told it already exists.
+  DEAL_SUBMIT: "deal:submit",
+  // Client-initiated (director): enter or overwrite the dealt cards for a
+  // board. Also the entry point a future dealing-machine file import reuses.
+  DEAL_OVERRIDE: "deal:override",
+
   // Client-initiated (director): draw the next Swiss Pairs round from the
   // current standings. Only valid once the current round is fully scored and
   // the event has rounds remaining. Materializes the next round's boards and
