@@ -11,8 +11,11 @@ import { Page, expect } from "@playwright/test";
  * (a single table offers none), so the live-update journeys use two tables.
  */
 
-// The NumberStepper decrement glyph is a MINUS SIGN (U+2212), not a hyphen.
-const MINUS = "\u2212";
+// The Tables NumberStepper exposes its controls via aria-labels (the visible
+// glyphs are decorative), and the current value via a spinbutton labelled
+// "Tables".
+const DECREASE_TABLES = "Decrease Tables";
+const INCREASE_TABLES = "Increase Tables";
 
 /**
  * Open the header hamburger ("Setup menu") and switch to the named setup view
@@ -53,15 +56,10 @@ export async function selectSection(
 }
 
 async function readTableCount(page: Page): Promise<number> {
-  const value = await page.evaluate(() => {
-    const minus = [...document.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "\u2212",
-    );
-    // The stepper value sits between the − and + buttons in the same row.
-    const row = minus?.parentElement;
-    const text = row?.textContent?.replace(/[\u2212+]/g, "").trim();
-    return text ?? "";
-  });
+  // The current count is the value of the "Tables" spinbutton.
+  const value = await page
+    .getByRole("spinbutton", { name: "Tables" })
+    .inputValue();
   const n = Number(value);
   if (Number.isNaN(n)) {
     throw new Error(`Could not read table count (saw "${value}")`);
@@ -70,17 +68,19 @@ async function readTableCount(page: Page): Promise<number> {
 }
 
 /**
- * Drive the Tables stepper to the requested count using the +/− buttons,
- * exactly as a director would (there is no direct text entry).
+ * Drive the Tables stepper to the requested count using the increase/decrease
+ * buttons, exactly as a director would (there is no direct text entry).
  */
 export async function setTableCount(page: Page, target: number): Promise<void> {
   await openSetupStep(page, "Tables");
-  await expect(page.getByRole("button", { name: MINUS, exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: DECREASE_TABLES, exact: true }),
+  ).toBeVisible();
 
   for (let guard = 0; guard < 20; guard++) {
     const current = await readTableCount(page);
     if (current === target) return;
-    const name = current > target ? MINUS : "+";
+    const name = current > target ? DECREASE_TABLES : INCREASE_TABLES;
     await page.getByRole("button", { name, exact: true }).click();
     // The stepper re-renders the seating grid; give it a beat to settle.
     await page.waitForTimeout(150);

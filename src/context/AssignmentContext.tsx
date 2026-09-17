@@ -126,7 +126,7 @@ export function AssignmentProvider({
   }, [data]);
 
   const pair = useMemo<SeatedPair | null>(() => {
-    const mine = pairsData?.pairs.find((p) => p.initialSeat === initialSeat);
+    const mine = pairsData?.pairs?.find((p) => p.initialSeat === initialSeat);
     if (!mine) {
       return null;
     }

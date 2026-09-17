@@ -1,12 +1,30 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import fs from "fs";
+import path from "path";
+
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * Load `.env` into `process.env` for the test runner process (without adding a
+ * dotenv dependency). Some fixtures resolve the data directory from
+ * `DATABASE_URL` (e.g. reading the admin-key label file); the custom server
+ * gets `.env` via its own launch, but the Playwright runner does not, so we
+ * load it here. Existing environment variables take precedence.
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+function loadDotEnv(): void {
+  const envPath = path.resolve(__dirname, ".env");
+  if (!fs.existsSync(envPath)) return;
+  for (const rawLine of fs.readFileSync(envPath, "utf8").split("\n")) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    const value = line.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+}
+
+loadDotEnv();
 
 /**
  * See https://playwright.dev/docs/test-configuration.

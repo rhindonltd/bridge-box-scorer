@@ -1,5 +1,5 @@
 // Regex
-const CARD_REGEX = /^[AKQJT98765432][SHDC]$/;
+const CARD_REGEX = /^[SHDC][AKQJT98765432]$/;
 
 // Consts
 export const Directions = ["N", "E", "S", "W"] as const;
@@ -41,8 +41,8 @@ export function parseCard(code: string): { rank: Rank; suit: Suit } {
   }
 
   return {
-    suit: code[1] as Suit,
-    rank: code[0] as Rank,
+    suit: code[0] as Suit,
+    rank: code[1] as Rank,
   };
 }
 
@@ -57,7 +57,7 @@ export interface Board {
 
 /**
  * A full deal is the four hands, one per compass direction. Each hand is a list
- * of {@link Card} codes (rank-first, e.g. "AS", "TH"). See `@/model/deal` for
+ * of {@link Card} codes (suit-first, e.g. "SA", "HT"). See `@/model/deal` for
  * the PBN codec and completeness validation.
  */
 export type Deal = Record<Direction, Card[]>;

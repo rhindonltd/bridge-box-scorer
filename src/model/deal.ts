@@ -15,7 +15,7 @@ import {
  * Pure deal / PBN utilities.
  *
  * A {@link Deal} is the four hands keyed by compass direction, each hand a list
- * of rank-first {@link Card} codes (e.g. "AS", "TH"). This module owns the
+ * of suit-first {@link Card} codes (e.g. "SA", "HT"). This module owns the
  * boundary between that in-memory shape and the PBN storage/interchange string,
  * plus strict completeness validation. It performs no I/O so it stays
  * unit-testable and reusable (UI, DB actions, USEBIO export all share it).
@@ -111,9 +111,9 @@ export function pbnStringToHand(segment: string): Card[] {
   suitGroups.forEach((group, i) => {
     const suit = PBN_SUIT_ORDER[i];
     for (const rankChar of group) {
-      const card = `${rankChar}${suit}`;
+      const card = `${suit}${rankChar}`;
       if (!isCard(card)) {
-        throw new Error(`Invalid card in PBN hand: "${rankChar}${suit}"`);
+        throw new Error(`Invalid card in PBN hand: "${suit}${rankChar}"`);
       }
       cards.push(card as Card);
     }
@@ -199,7 +199,7 @@ export function isCompleteDeal(deal: Deal): boolean {
 
   for (const suit of Suits) {
     for (const rank of Ranks) {
-      if (!seen.has(`${rank}${suit}`)) {
+      if (!seen.has(`${suit}${rank}`)) {
         return false;
       }
     }

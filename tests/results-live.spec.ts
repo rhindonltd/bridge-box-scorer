@@ -23,6 +23,9 @@ async function newContextPage(browser: Browser): Promise<Page> {
 
 async function createGame(page: Page, eventName: string): Promise<string> {
   await page.goto("/create");
+  // Let the on-mount BridgeWebs fetch settle before filling; its re-render can
+  // otherwise drop the first field's value in WebKit (see fixtures/game-create).
+  await page.waitForLoadState("networkidle");
   await page.getByLabel("Event Name").fill(eventName);
   await page.getByLabel("Director Name").fill("E2E Director");
   await page.getByRole("button", { name: "Create Game", exact: true }).click();

@@ -31,6 +31,12 @@ export async function createGame(
 ): Promise<CreatedGame> {
   await page.goto("/create");
 
+  // The create page fires a BridgeWebs-events fetch on mount; when it resolves
+  // it re-renders the form. Filling before that settles can drop the first
+  // field's value in WebKit (the re-render lands between the input event and
+  // React committing the state). Wait for the page to go idle first.
+  await page.waitForLoadState("networkidle");
+
   await page.getByLabel("Event Name").fill(opts.eventName);
   await page.getByLabel("Director Name").fill(opts.directorName ?? "E2E Director");
 
