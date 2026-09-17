@@ -142,10 +142,13 @@ describe("generateUsebio", () => {
     expect(data.pairs.map((p) => p.direction)).toEqual(["N", "E"]);
     expect(data.sectionName).toBe("A");
 
-    // Single section: the section prefix is stripped from pair numbers.
+    // Pair numbers are always unprefixed; the section is carried separately.
     expect(data.pairs.map((p) => p.pairNumber)).toEqual(["1NS", "1EW"]);
+    expect(data.pairs.map((p) => p.section)).toEqual(["A", "A"]);
     expect(data.boardResults[0].nsPairNumber).toBe("1NS");
     expect(data.boardResults[0].ewPairNumber).toBe("1EW");
+    // The ordered section list is passed through for one-<SECTION>-per-section.
+    expect(data.sections).toEqual(["A"]);
 
     // Only 3 of 4 boards pass the filter.
     expect(data.boardResults).toHaveLength(3);
@@ -175,7 +178,7 @@ describe("generateUsebio", () => {
     expect(data.boards).toBe(0);
   });
 
-  it("keeps the section prefix on pair numbers when there are multiple sections", async () => {
+  it("emits unprefixed pair numbers and per-section grouping for multiple sections", async () => {
     const { findSections } = await import("@/db/games/queries/find-sections");
     vi.mocked(findSections).mockResolvedValueOnce([
       { section: "A" },
@@ -188,10 +191,16 @@ describe("generateUsebio", () => {
         player1: { firstName: "A", lastName: "B" },
         player2: { firstName: "C", lastName: "D" },
       },
+      {
+        initialSeat: "B1NS",
+        player1: { firstName: "E", lastName: "F" },
+        player2: { firstName: "G", lastName: "H" },
+      },
     ] as any);
 
     const db = mockDb([
       {
+        section: "A",
         tableNumber: 1,
         boardNumber: 1,
         roundNumber: 1,
@@ -202,6 +211,18 @@ describe("generateUsebio", () => {
         directorOverrideResult: null,
         confirmedLead: null,
       },
+      {
+        section: "B",
+        tableNumber: 1,
+        boardNumber: 1,
+        roundNumber: 1,
+        ns: "B1NS",
+        ew: "B1EW",
+        status: "CONFIRMED",
+        confirmedResult: "4SE-1",
+        directorOverrideResult: null,
+        confirmedLead: null,
+      },
     ]);
 
     await generateUsebio(db, makeGame(), club);
@@ -209,8 +230,18 @@ describe("generateUsebio", () => {
     const data = vi.mocked(generateUsebioXml).mock
       .calls[0][0] as UsebioPairsData;
 
-    expect(data.pairs[0].pairNumber).toBe("A1NS");
-    expect(data.boardResults[0].nsPairNumber).toBe("A1NS");
-    expect(data.boardResults[0].ewPairNumber).toBe("A1EW");
+    // The ordered section list is passed through, one <SECTION> per section.
+    expect(data.sections).toEqual(["A", "B"]);
+
+    // Pair numbers are UNPREFIXED even with multiple sections; the section is
+    // carried separately so the builder can group them.
+    expect(data.pairs.map((p) => p.pairNumber)).toEqual(["1NS", "1NS"]);
+    expect(data.pairs.map((p) => p.section)).toEqual(["A", "B"]);
+
+    // Board results are unprefixed and tagged with their section.
+    expect(data.boardResults[0].nsPairNumber).toBe("1NS");
+    expect(data.boardResults[0].ewPairNumber).toBe("1EW");
+    expect(data.boardResults[0].section).toBe("A");
+    expect(data.boardResults[1].section).toBe("B");
   });
 });

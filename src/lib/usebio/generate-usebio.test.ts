@@ -249,42 +249,94 @@ describe("generateUsebioXml", () => {
       expect(xml).not.toContain("<RANKING>");
     });
 
-    it("does not emit HAND elements when no deals are supplied", () => {
+    it("never emits deal/hand data — deals are exported separately as PBN", () => {
       const xml = generateUsebioXml(makeBasicGameData());
 
+      // The USEBIO file carries players + results only; the dealt cards and the
+      // board vulnerability travel in the separate PBN export (BridgeWebs takes
+      // both files).
       expect(xml).not.toContain("<HAND>");
-      expect(xml).not.toContain("<HAND_DEALER>");
+      expect(xml).not.toContain("<VULNERABILITY>");
+      expect(xml).not.toContain("<SPADES>");
+      expect(xml).not.toContain("<HEARTS>");
+      expect(xml).not.toContain("<DIAMONDS>");
+      expect(xml).not.toContain("<CLUBS>");
     });
+  });
 
-    it("emits HAND elements and the dealer for a board that has a deal", () => {
-      const data = makeBasicGameData();
-      const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
-      // Board 1 => dealer North. N=spades, E=hearts, S=diamonds, W=clubs.
-      data.deals = new Map([
-        [
-          1,
+  describe("multi-section events", () => {
+    // A two-section game: sections A and B each have their own pairs playing the
+    // same board numbers. Pair numbers are unprefixed and carry a `section`.
+    function makeTwoSectionData(): UsebioPairsData {
+      const base = makeBasicGameData();
+      return {
+        ...base,
+        sections: ["A", "B"],
+        pairs: [
+          { ...base.pairs[0], section: "A" },
+          { ...base.pairs[2], section: "A" },
+          { ...base.pairs[0], section: "B" },
+          { ...base.pairs[2], section: "B" },
+        ],
+        boardResults: [
           {
-            N: ranks.map((r) => `${r}S`),
-            E: ranks.map((r) => `${r}H`),
-            S: ranks.map((r) => `${r}D`),
-            W: ranks.map((r) => `${r}C`),
+            table: 1,
+            board: 1,
+            round: 1,
+            nsPairNumber: "1NS",
+            ewPairNumber: "1EW",
+            outcome: "3NTN+1",
+            lead: "HK",
+            section: "A",
+          },
+          {
+            table: 1,
+            board: 1,
+            round: 1,
+            nsPairNumber: "1NS",
+            ewPairNumber: "1EW",
+            outcome: "4SE-1",
+            lead: "SA",
+            section: "B",
           },
         ],
-      ]);
+      };
+    }
 
-      const xml = generateUsebioXml(data);
+    it("emits one SECTION per section with the right SECTION_COUNT", () => {
+      const xml = generateUsebioXml(makeTwoSectionData());
+      expect(xml).toContain("<SECTION_COUNT>2</SECTION_COUNT>");
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
+      expect(xml).toContain('<SECTION SECTION_ID="B">');
+      // Both sections live under one SESSION.
+      expect(xml.match(/<SESSION /g)?.length).toBe(1);
+      expect(xml.match(/<SECTION /g)?.length).toBe(2);
+    });
 
-      // Board 1 is "Love" (nobody vulnerable) by the standard cycle.
-      expect(xml).toContain("<VULNERABILITY>Love</VULNERABILITY>");
-      expect(xml).toContain("<DIRECTION>N</DIRECTION>");
-      // North holds all spades.
-      expect(xml).toContain("<SPADES>AKQJT98765432</SPADES>");
-      // West holds all clubs.
-      expect(xml).toContain("<CLUBS>AKQJT98765432</CLUBS>");
-      // A void suit renders as an empty element.
-      expect(xml).toContain("<HEARTS/>");
-      // No dealer element — the USEBIO DTD has none on BOARD/HAND.
-      expect(xml).not.toContain("HAND_DEALER");
+    it("does not prefix pair numbers with the section id", () => {
+      const xml = generateUsebioXml(makeTwoSectionData());
+      expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
+      // The prefixed form must never appear.
+      expect(xml).not.toContain("A1NS");
+      expect(xml).not.toContain("B1NS");
+    });
+
+    it("places each section's boards under its own SECTION", () => {
+      const xml = generateUsebioXml(makeTwoSectionData());
+      const sectionA = xml.split('SECTION_ID="A"')[1].split('SECTION_ID="B"')[0];
+      const sectionB = xml.split('SECTION_ID="B"')[1];
+      // Section A's board 1 was 3NT; section B's board 1 was 4S.
+      expect(sectionA).toContain("<CONTRACT>3NT</CONTRACT>");
+      expect(sectionA).not.toContain("<CONTRACT>4S</CONTRACT>");
+      expect(sectionB).toContain("<CONTRACT>4S</CONTRACT>");
+      expect(sectionB).not.toContain("<CONTRACT>3NT</CONTRACT>");
+    });
+
+    it("still emits a single SECTION when no section list is given", () => {
+      const xml = generateUsebioXml(makeBasicGameData());
+      expect(xml).toContain("<SECTION_COUNT>1</SECTION_COUNT>");
+      expect(xml.match(/<SECTION /g)?.length).toBe(1);
     });
   });
 
