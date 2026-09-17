@@ -6,3 +6,4 @@ export { participants } from "@/db/games/tables/participants";
 export { boardSubmissions } from "@/db/games/tables/submissions";
 export { sections } from "@/db/games/tables/sections";
 export { teams } from "@/db/games/tables/teams";
+export { deals } from "@/db/games/tables/deals";

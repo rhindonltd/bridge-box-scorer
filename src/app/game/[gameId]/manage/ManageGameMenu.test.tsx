@@ -62,6 +62,9 @@ describe("ManageGameMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "onTravellersClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/travellers");
 
+    fireEvent.click(screen.getByRole("button", { name: "onEnterDealsClick" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/deals");
+
     fireEvent.click(screen.getByRole("button", { name: "onMovementClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/movement");
 

@@ -121,14 +121,32 @@ Once a board is confirmed, you see its **traveller** — a table of every result
 for that board played around the room, scored using the game's scoring method.
 You can flip back through the boards you have already played in this round.
 
+If the cards for a board have been entered, a **Show hand** button appears here.
+Tap it to see the four hands laid out (North, East, South and West), with the
+dealer marked; tap **Hide hand** to put it away again. If no one has entered the
+cards for that board yet, there is no button to show.
+
 Tap **Next** to move on to the next board.
+
+### Entering the cards (optional)
+
+When a round is finished, you may be offered an **Enter cards** screen for the
+boards you have just played. This is entirely optional, and it only appears once
+the whole round is complete — so filling it in never holds the table up.
+
+For each board you can lay out the four hands (North, East, South and West) by
+tapping the cards in each hand; **Save cards** becomes available once a full
+deal of all 52 cards has been entered. You can **Skip** the whole step, or stop
+after any board. If someone at another table has already entered a board's
+cards, you will see their entry instead — the first person to record a board's
+cards sets them for everyone.
 
 ### Moving on
 
-When you finish the last board of a round, the app shows a **move** screen
-telling you which table and direction to go to for the next round. Tap continue
-when you have moved. After the final round you see the **leaderboard**, with
-your own pair highlighted.
+When you finish the last board of a round (and the optional Enter cards step),
+the app shows a **move** screen telling you which table and direction to go to
+for the next round. Tap continue when you have moved. After the final round you
+see the **leaderboard**, with your own pair highlighted.
 
 ### The play menu
 

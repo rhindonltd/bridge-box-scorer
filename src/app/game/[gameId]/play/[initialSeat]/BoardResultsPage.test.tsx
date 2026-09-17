@@ -85,4 +85,25 @@ describe("BoardResultsPage", () => {
     );
     expect(screen.getByTestId("play-menu")).toBeInTheDocument();
   });
+
+  it("does not offer a Show hand toggle when no deal has been entered", () => {
+    render(<BoardResultsPage {...baseProps} deal={null} />);
+    expect(screen.queryByTestId("show-hand-toggle")).not.toBeInTheDocument();
+  });
+
+  it("reveals the board's hand behind the Show hand toggle when a deal exists", () => {
+    const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const deal = {
+      N: ranks.map((r) => `${r}S`),
+      E: ranks.map((r) => `${r}H`),
+      S: ranks.map((r) => `${r}D`),
+      W: ranks.map((r) => `${r}C`),
+    };
+
+    render(<BoardResultsPage {...baseProps} deal={deal} />);
+
+    expect(screen.queryByTestId("deal-display")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("show-hand-toggle"));
+    expect(screen.getByTestId("deal-display")).toBeInTheDocument();
+  });
 });

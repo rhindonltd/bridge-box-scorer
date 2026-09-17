@@ -13,8 +13,13 @@ vi.mock("@/services/board-service", () => ({
   getBoardInstances: vi.fn(),
 }));
 
+vi.mock("@/db/games/queries/get-deal", () => ({
+  getDealHands: vi.fn(),
+}));
+
 import { getDb } from "@/db/games";
 import { getBoardInstances } from "@/services/board-service";
+import { getDealHands } from "@/db/games/queries/get-deal";
 import { registerTravellerRequestHandler } from "./traveller-request.handler";
 
 describe("registerTravellerRequestHandler (integration)", () => {
@@ -26,6 +31,7 @@ describe("registerTravellerRequestHandler (integration)", () => {
     vi.mocked(getBoardInstances).mockResolvedValue([
       { boardNumber: 7, roundNumber: 1, tableNumber: 2 },
     ] as any);
+    vi.mocked(getDealHands).mockResolvedValue(null);
   });
 
   afterEach(async () => {

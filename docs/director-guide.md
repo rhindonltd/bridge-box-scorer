@@ -175,6 +175,7 @@ all sections** to copy it to them all.
 | -------------------------- | ------------------------------------------------------------------------- |
 | **Set Up Game**            | Returns to the Tables / Movements / Timer setup tabs.                     |
 | **Travellers**             | View results by board and correct any that were entered wrong.            |
+| **Enter Deals**            | Enter or correct the dealt cards (the four hands) for any board.          |
 | **Movement**               | View or change the movement.                                              |
 | **Share Director Access**  | Generate a code so a co-director can manage from another device.          |
 | **Download USEBIO**        | Export the results as a USEBIO XML file for the EBU or a scoring program. |
@@ -282,13 +283,36 @@ If a board was entered incorrectly, you can override it:
 1. From the Manage Game Menu, tap **Travellers**.
 2. Choose the **board number** to correct.
 3. You see every instance of that board (each table/round it was played at),
-   live. Tap the line you want to fix.
+   live. Tap the line you want to fix. If the board's cards have been entered, a
+   **Show hand** button here lets you view the four hands.
 4. Enter the correct result step by step, the same way players enter one
    (contract, or **Pass Out** / **Not Played**). You also get an extra
    **Adjusted Score** option for assigning a result such as a percentage split
    (for example 60/40).
 5. The correction is saved, and anyone viewing that board sees the updated
    result.
+
+---
+
+## Entering the deals
+
+You can record the dealt cards (the four hands) for any board — useful when you
+want the hands on the traveller and in the exported results. Players can also
+enter them from their own devices after a round, but as director you can enter
+or correct any board at any time.
+
+1. From the Manage Game Menu, tap **Enter Deals**.
+2. Choose the **board number**.
+3. Lay out the four hands: pick a direction (North, East, South, West) and tap
+   that hand's cards. A card already placed in another hand can't be reused, and
+   each hand holds 13 cards. If the board already has cards entered, they are
+   shown ready for you to adjust.
+4. Tap **Save deal** once the full deal of 52 cards is in. It is saved
+   straight away, replacing any earlier entry, and appears for anyone viewing
+   that board's hand.
+
+Every board's cards are the same across sections, so a board only needs its
+deal entered once.
 
 ---
 
@@ -321,6 +345,9 @@ The file matches the kind of event you ran: an ordinary pairs game exports as a
 pairs event, while **Swiss Pairs** and **Swiss Teams** export in their own
 format — round by round, with each match and its Victory Points — so a Swiss
 event imports correctly rather than looking like a plain pairs game.
+
+If the cards for a board have been entered (see **Entering the deals**), those
+hands are included in the exported file alongside that board's results.
 
 ---
 

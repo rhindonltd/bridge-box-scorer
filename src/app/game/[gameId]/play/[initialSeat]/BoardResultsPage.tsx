@@ -3,12 +3,20 @@ import { ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { BoardSelector } from "@/app/game/[gameId]/play/[initialSeat]/BoardSelector";
 import { useAssignment } from "@/context/AssignmentContext";
+import { ShowHandToggle } from "@/components/deal/ShowHandToggle";
+import { Deal } from "@/model/common";
 
 interface Props {
   board: number;
   playedBoards: number[];
   lastBoardOfRound: boolean;
   scoredBoard: ScoredBoard;
+  /**
+   * The four hands for the board being viewed, or null when no deal has been
+   * entered. Surfaced behind an opt-in "Show hand" toggle so a player can see
+   * the deal after playing the board without cluttering the results table.
+   */
+  deal?: Deal | null;
   onBoardSelected: (board: number) => void;
   onNext: () => void;
   /** Right-hand header content (the play header menu). */
@@ -20,6 +28,7 @@ export function BoardResultsPage({
   playedBoards,
   lastBoardOfRound,
   scoredBoard,
+  deal = null,
   onBoardSelected,
   onNext,
   headerRight,
@@ -47,6 +56,7 @@ export function BoardResultsPage({
           playedBoards={playedBoards}
           onBoardSelected={onBoardSelected}
         />
+        <ShowHandToggle boardNumber={board} deal={deal} />
         <Traveller
           scoredBoard={scoredBoard}
           highlightAssignmentId={assignment?.id}

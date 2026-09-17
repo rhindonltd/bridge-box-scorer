@@ -101,6 +101,28 @@ describe("generateUsebio", () => {
     expect(xml).toMatch(/PARTICIPANTS/);
   });
 
+  it("includes an entered board deal as HAND elements in the export", async () => {
+    await seedPairAndBoard();
+
+    const { upsertDeal } = await import("@/db/games/actions/set-deal");
+    const db = (await harness.getDb()) as Db;
+
+    const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    await upsertDeal(db, 1, {
+      N: ranks.map((r) => `${r}S`),
+      E: ranks.map((r) => `${r}H`),
+      S: ranks.map((r) => `${r}D`),
+      W: ranks.map((r) => `${r}C`),
+    });
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const xml = await generateUsebio(db, game, club);
+
+    expect(xml).toContain("<VULNERABILITY>Love</VULNERABILITY>");
+    expect(xml).toContain("<SPADES>AKQJT98765432</SPADES>");
+    expect(xml).toContain("<CLUBS>AKQJT98765432</CLUBS>");
+  });
+
   async function seatPair(seat: string, first: string) {
     const { createPlayer } = await import("@/db/games/actions/create-player");
     const { createParticipant } = await import(

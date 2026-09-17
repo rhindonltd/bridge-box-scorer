@@ -6,6 +6,7 @@ import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
 import { buildLeaderboards } from "@/services/leaderboard-service";
 import { getBoardInstances } from "@/services/board-service";
+import { getDealHands } from "@/db/games/queries/get-deal";
 import type { Db } from "@/db/games";
 
 /** How many sockets are currently in a room (0 if none / unknown). */
@@ -25,11 +26,17 @@ export async function buildLeaderboardPayload(db: Db, gameId: string) {
 }
 
 /**
- * Recompute and broadcast the current board instances for a single board to
- * that board's traveller room.
+ * Recompute the current traveller snapshot for a single board: the played
+ * instances plus the board's deal (the four hands), or `deal: null` when no
+ * deal has been entered yet. Shared by the traveller request ack and the
+ * pushed `traveller:sync`, so viewers see the hand appear live once entered.
  */
 export async function buildTravellerPayload(db: Db, boardNumber: number) {
-  return { instances: await getBoardInstances(db, boardNumber) };
+  const [instances, deal] = await Promise.all([
+    getBoardInstances(db, boardNumber),
+    getDealHands(db, boardNumber),
+  ]);
+  return { instances, deal };
 }
 
 /**

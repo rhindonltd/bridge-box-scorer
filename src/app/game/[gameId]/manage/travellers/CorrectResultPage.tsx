@@ -42,12 +42,13 @@ function CorrectResultTraveller({
   onLineSelected: (instance: BoardInstance) => void;
   onBack: () => void;
 }) {
-  const { instances, isLoading } = useTravellerContext();
+  const { instances, deal, isLoading } = useTravellerContext();
 
   return (
     <Traveller
       boardNumber={boardNumber}
       instances={instances}
+      deal={deal}
       isLoading={isLoading}
       onLineSelected={onLineSelected}
       onBack={onBack}

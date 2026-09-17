@@ -2,16 +2,21 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import { BoardInstance } from "@/model/participants";
+import { Deal } from "@/model/common";
 import { SocketEvents } from "@/socket/socket-events";
 import { useRequiredGame } from "@/context/GameContext";
 import { useFeatureSnapshot } from "@/hooks/use-feature-snapshot";
 
 interface TravellerSnapshot {
   instances: BoardInstance[];
+  /** The four hands for this board, or null when no deal has been entered. */
+  deal: Deal | null;
 }
 
 interface TravellerContextType {
   instances: BoardInstance[];
+  /** The board's deal (four hands), or null when none has been entered yet. */
+  deal: Deal | null;
   isLoading: boolean;
 }
 
@@ -45,6 +50,7 @@ export function TravellerProvider({
   const [loaded, setLoaded] = useState<{
     board: number;
     instances: BoardInstance[];
+    deal: Deal | null;
   } | null>(null);
 
   useFeatureSnapshot<TravellerSnapshot, TravellerSnapshot>({
@@ -54,17 +60,22 @@ export function TravellerProvider({
     params: { gameId, boardNumber },
     apply: (data) => {
       if (!data) return;
-      setLoaded({ board: boardNumber, instances: data.instances });
+      setLoaded({
+        board: boardNumber,
+        instances: data.instances,
+        deal: data.deal ?? null,
+      });
     },
     deps: [gameId, boardNumber],
   });
 
   const isForCurrentBoard = loaded?.board === boardNumber;
   const instances = isForCurrentBoard ? loaded!.instances : [];
+  const deal = isForCurrentBoard ? loaded!.deal : null;
   const isLoading = !isForCurrentBoard;
 
   return (
-    <TravellerContext.Provider value={{ instances, isLoading }}>
+    <TravellerContext.Provider value={{ instances, deal, isLoading }}>
       {children}
     </TravellerContext.Provider>
   );

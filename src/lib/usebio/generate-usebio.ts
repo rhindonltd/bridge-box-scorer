@@ -12,7 +12,8 @@ import { scoreMP as scorePairMP } from "@/scoring/traveller/pair/mp";
 import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
 import { scoreXIMP as scorePairXIMP } from "@/scoring/traveller/pair/x-imp";
 import { BoardOutcome } from "@/model/score";
-import { Card } from "@/model/common";
+import { Card, Deal, Directions, Rank, Suit, Suits } from "@/model/common";
+import { vulnerabilityFor } from "@/model/deal";
 import { ScoringType } from "@/db/games/types/scoring-type";
 
 /**
@@ -70,6 +71,12 @@ export type UsebioPairsData = {
   boards: number;
   pairs: UsebioPair[];
   boardResults: UsebioBoardResult[];
+  /**
+   * The dealt cards per board number (the four hands), when entered. Boards
+   * absent from this map emit no HAND elements — exactly as before deals
+   * existed. Optional so existing callers/tests need no change.
+   */
+  deals?: Map<number, Deal>;
 };
 
 /**
@@ -405,6 +412,14 @@ function generateMpPairsXml(data: UsebioPairsData): string {
     const boardEl = section.ele("BOARD");
     boardEl.ele("BOARD_NUMBER").txt(String(boardNum));
 
+    // Emit the dealt cards (HAND per direction, with the derived dealer) when
+    // a deal has been entered for this board. Boards without a deal emit no
+    // HAND elements, exactly as before.
+    const deal = data.deals?.get(boardNum);
+    if (deal) {
+      appendHands(boardEl, boardNum, deal);
+    }
+
     for (const result of results) {
       const key = resultKey(result);
       const lineEl = boardEl.ele("TRAVELLER_LINE");
@@ -610,6 +625,67 @@ function addPlayer(parentEl: ReturnType<typeof create>, player: UsebioPlayer) {
   playerEl.ele("PLAYER_NAME").txt(`${player.firstName} ${player.lastName}`);
   if (player.nationalId) {
     playerEl.ele("NATIONAL_ID_NUMBER").txt(player.nationalId);
+  }
+}
+
+/** USEBIO HAND suit element names, in the standard high-to-low suit order. */
+const USEBIO_SUIT_ELEMENT: Record<Suit, string> = {
+  S: "SPADES",
+  H: "HEARTS",
+  D: "DIAMONDS",
+  C: "CLUBS",
+};
+
+/** Rank order (high to low) for laying a suit's cards out in a HAND element. */
+const RANK_ORDER: readonly Rank[] = [
+  "A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2",
+];
+
+/** USEBIO VULNERABILITY text for a board's vulnerability. */
+const USEBIO_VULNERABILITY: Record<
+  ReturnType<typeof vulnerabilityFor>,
+  string
+> = {
+  Love: "Love",
+  NS: "North-South",
+  EW: "East-West",
+  All: "All",
+};
+
+/**
+ * Append a board's dealt cards to its BOARD element: the board VULNERABILITY
+ * (derived from the board number) followed by the four HAND elements. Each HAND
+ * carries the seat DIRECTION and one element per suit holding that suit's ranks
+ * high-to-low (empty for a void). This matches the USEBIO 1.2 DTD, which has no
+ * dealer element on BOARD/HAND — the dealer is implied by the board number.
+ */
+function appendHands(
+  boardEl: ReturnType<ReturnType<typeof create>["ele"]>,
+  boardNumber: number,
+  deal: Deal,
+): void {
+  boardEl
+    .ele("VULNERABILITY")
+    .txt(USEBIO_VULNERABILITY[vulnerabilityFor(boardNumber)]);
+
+  for (const dir of Directions) {
+    const handEl = boardEl.ele("HAND");
+    handEl.ele("DIRECTION").txt(dir);
+
+    // Group this hand's cards by suit, ranks high-to-low.
+    const bySuit: Record<Suit, Rank[]> = { S: [], H: [], D: [], C: [] };
+    for (const card of deal[dir]) {
+      const rank = card[0] as Rank;
+      const suit = card[1] as Suit;
+      bySuit[suit].push(rank);
+    }
+
+    for (const suit of Suits) {
+      const ranks = bySuit[suit]
+        .sort((a, b) => RANK_ORDER.indexOf(a) - RANK_ORDER.indexOf(b))
+        .join("");
+      handEl.ele(USEBIO_SUIT_ELEMENT[suit]).txt(ranks);
+    }
   }
 }
 
