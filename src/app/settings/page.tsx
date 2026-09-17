@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LogoutButton } from "@/app/settings/LogoutButton";
 
 export const metadata: Metadata = {
   title: "Settings | Bridge Box",
@@ -31,6 +32,10 @@ export default function SettingsPage() {
         <Link href="/settings/admin-key" className={settingsButtonClasses}>
           Update Admin Key
         </Link>
+
+        <div className="pt-3">
+          <LogoutButton />
+        </div>
       </div>
     </div>
   );

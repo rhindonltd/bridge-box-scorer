@@ -3,15 +3,17 @@
 The **Settings** area covers the **Bridge Box** itself rather than any single
 game. Open it from the **⚙ cog** in the top-right of the home screen.
 
-Settings has three options:
+Settings has these options:
 
 - **WiFi Settings**
 - **Club Information**
 - **Update Admin Key**
+- **Log Out**
 
 Some settings are protected by the Bridge Box's **admin key** — a secret the
 Bridge Box's owner sets. When a protected screen needs it, you are asked to
-enter the admin key once; you won't be asked again on that device.
+enter the admin key once; you won't be asked again on that device until you
+**Log Out**.
 
 > The admin key protects the Bridge Box's settings; it is not a per-game
 > director code. Directors do not need it to run a game.
@@ -61,3 +63,14 @@ the club name and number that appear in the USEBIO file).
 Sets or changes the Bridge Box's **admin key** — the secret that protects its
 settings. Keep it somewhere safe; you will need it to change protected settings
 in future.
+
+---
+
+## Log Out
+
+Tap **Log Out** at the bottom of the Settings screen to lock the settings again
+on this device. The next time anyone opens a protected setting on this device,
+they will need to enter the admin key.
+
+Use this on a shared phone or tablet when you have finished changing settings,
+so the Bridge Box's settings aren't left unlocked for the next person.

@@ -75,6 +75,33 @@ export async function verifyAdminTokenWithServer(): Promise<boolean> {
 }
 
 /**
+ * Log out of the admin session.
+ *
+ * Best-effort invalidates the session on the server (so a copied token can't be
+ * reused) and then clears the local token. The local clear always happens, even
+ * if the server call fails, so the user is reliably logged out on this device;
+ * the settings gate re-validates on the resulting token change and falls back
+ * to the admin-key prompt.
+ */
+export async function logoutAdmin(): Promise<void> {
+  const token = getAdminToken();
+
+  if (token) {
+    try {
+      await fetch("/api/system/admin-key/logout", {
+        method: "POST",
+        headers: { "x-admin-token": token },
+        cache: "no-store",
+      });
+    } catch {
+      // Ignore network/other errors — we still clear locally below.
+    }
+  }
+
+  clearAdminToken();
+}
+
+/**
  * Subscribe to admin-token changes. Listens both to same-tab changes (via a
  * custom event dispatched by the setters above) and cross-tab changes (via the
  * browser `storage` event). Intended for use with `useSyncExternalStore`.
