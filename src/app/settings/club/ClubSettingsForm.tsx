@@ -1,11 +1,14 @@
 "use client";
 
+import { HeaderBar } from "@/components/layout/HeaderBar";
+
 /**
  * Presentational club-information form. It owns no data fetching — the parent
  * ({@link ClubSettingsPage}) loads the club record over SWR and performs the
  * save; this component just renders the fields, the status message, and the
- * Save/Back buttons. Splitting it out keeps the form storyable and unit-testable
- * without wiring up request mocking.
+ * Save button. The header's back arrow returns to the previous screen.
+ * Splitting it out keeps the form storyable and unit-testable without wiring up
+ * request mocking.
  */
 export interface ClubSettingsFormProps {
   /** Current club name value (controlled by the parent). */
@@ -37,15 +40,18 @@ export function ClubSettingsForm({
 }: ClubSettingsFormProps) {
   return (
     <div className="min-h-dvh flex flex-col bg-white">
-      <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
-        Club Information
-      </div>
+      <HeaderBar headerTitle="Club Information" backAction={onBack} />
 
       <form
         onSubmit={onSave}
         className="flex-1 flex flex-col px-6 pt-6 pb-8 max-w-sm w-full mx-auto"
       >
         <div className="space-y-4 flex-1">
+          <p className="text-sm text-gray-600">
+            Set your club&apos;s name and EBU number. These identify the club on
+            published results and USEBIO exports.
+          </p>
+
           <div>
             <label
               htmlFor="club-name"
@@ -96,14 +102,6 @@ export function ClubSettingsForm({
             className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          >
-            Back
           </button>
         </div>
       </form>

@@ -1,8 +1,11 @@
 "use client";
 
+import { HeaderBar } from "@/components/layout/HeaderBar";
+
 /**
  * Presentational "update admin key" form. Owns no logic — the parent
  * ({@link UpdateAdminKeyPage}) holds the field state, validation, and save.
+ * The header's back arrow returns to the previous screen.
  */
 export interface UpdateAdminKeyFormProps {
   newKey: string;
@@ -28,9 +31,7 @@ export function UpdateAdminKeyForm({
 }: UpdateAdminKeyFormProps) {
   return (
     <div className="min-h-dvh flex flex-col bg-white">
-      <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
-        Update Admin Key
-      </div>
+      <HeaderBar headerTitle="Update Admin Key" backAction={onBack} />
 
       <form
         onSubmit={onSave}
@@ -92,14 +93,6 @@ export function UpdateAdminKeyForm({
             className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Update Key"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          >
-            Back
           </button>
         </div>
       </form>

@@ -1,6 +1,15 @@
 import type { Preview } from "@storybook/nextjs-vite";
 import { mswLoader } from "msw-storybook-addon/csf3";
+import { sb } from "storybook/test";
 import "../src/styles/globals.css";
+
+// Register socket-backed service modules for mocking so stories of
+// director-only, socket-driven controls (e.g. SwissDrawControl) can drive the
+// success/advisory/error states without a live Socket.IO server. `spy: true`
+// leaves the real implementation intact by default; individual stories override
+// the behaviour per-story with `mocked(...)` in a `beforeEach`. The path is
+// relative to this file and includes the extension, as automocking requires.
+sb.mock(import("../src/lib/swiss-service.ts"), { spy: true });
 
 const preview: Preview = {
   // MSW intercepts fetch() at the network layer (via the generated

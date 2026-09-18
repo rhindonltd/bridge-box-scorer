@@ -34,6 +34,7 @@ export const Default: Story = {
     },
     onSaveWifi: (ssid, password) =>
       alert(`Saving ${ssid} with password ${password}`),
+    onBack: () => alert("Back"),
   },
 };
 
