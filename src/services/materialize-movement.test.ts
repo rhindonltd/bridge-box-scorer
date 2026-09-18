@@ -8,11 +8,13 @@ import {
   buildSectionRows,
   sectionParticipantId,
   mitchellToPairMovement,
+  roundRobinTeamsToMaterializable,
   materializePairLikeMovement,
   materializeSections,
   type MaterializableMovement,
 } from "./materialize-movement";
 import type { Tables } from "@/model/movement";
+import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
 import { getDb } from "@/db/games";
 
 describe("sectionParticipantId", () => {
@@ -124,7 +126,7 @@ describe("buildSectionRows", () => {
 
 describe("mitchellToPairMovement", () => {
   it("maps table/round shape and derives boardStart/boardEnd from the boards array", () => {
-    const tables: Tables<"PAIR"> = {
+    const tables: Tables = {
       tables: [
         {
           table: 1,
@@ -168,6 +170,37 @@ describe("mitchellToPairMovement", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("roundRobinTeamsToMaterializable", () => {
+  it("maps a generated round robin to every table's per-round board rows", () => {
+    const teams = 6;
+    const rounds = teams - 1;
+    const boardsPerRound = 4;
+
+    const movement = roundRobinTeamsToMaterializable(
+      generateRoundRobinTeams({ teams, rounds, boardsPerRound }),
+    );
+
+    // One materializable table per team, each carrying every round.
+    expect(movement.map((t) => t.tableNumber)).toEqual([1, 2, 3, 4, 5, 6]);
+
+    for (const table of movement) {
+      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3, 4, 5]);
+
+      for (const round of table.rounds) {
+        // Board range comes straight from boardsPerRound (round r plays set r).
+        expect(round.boardStart).toBe((round.roundNumber - 1) * boardsPerRound + 1);
+        expect(round.boardEnd).toBe(round.roundNumber * boardsPerRound);
+
+        // Home NS pair is this table's own team; away EW pair is another team.
+        expect(round.ns).toBe(`${table.tableNumber}NS`);
+        expect(round.ew).toMatch(/^\d+EW$/);
+        const away = Number(round.ew.replace(/EW$/, ""));
+        expect(away).not.toBe(table.tableNumber);
+      }
+    }
   });
 });
 

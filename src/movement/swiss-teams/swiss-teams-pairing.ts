@@ -23,13 +23,13 @@
  */
 
 /** A team's stable id for the whole event: its home table number (1..teams). */
-export type SwissTeamId = number;
+export type TeamId = number;
 
 /** A single drawn match between two teams for one round. */
-export interface SwissTeamsMatch {
+export interface TeamsMatch {
   /** The two team ids meeting this round (order is not significant). */
-  a: SwissTeamId;
-  b: SwissTeamId;
+  a: TeamId;
+  b: TeamId;
 }
 
 /** Everything the engine needs to draw the next round. */
@@ -41,7 +41,7 @@ export interface SwissTeamsDrawInput {
    * exactly once; ties should already be broken by the caller into a stable
    * order, which the engine treats as authoritative.
    */
-  standings: SwissTeamId[];
+  standings: TeamId[];
   /**
    * Teams that have already played each other, as a set of unordered-pair keys
    * (see {@link teamOpponentKey}). Used to avoid repeat matches.
@@ -52,7 +52,7 @@ export interface SwissTeamsDrawInput {
 /** The drawn next round plus any advisories the director should see. */
 export interface SwissTeamsDrawResult {
   /** The matches for the round, in ascending lower-team-id order. */
-  matches: SwissTeamsMatch[];
+  matches: TeamsMatch[];
   /**
    * True when at least one drawn match repeats a pairing already played (only
    * ever set when no repeat-free complete pairing exists).
@@ -65,24 +65,24 @@ export interface SwissTeamsDrawResult {
  * physical tables. `homeTeam` sits at `tableNumber` (its home); the two pairs
  * at that table are `homeTeam`'s home pair (NS) and `awayTeam`'s away pair (EW).
  */
-export interface SwissTeamsSeatPlacement {
+export interface TeamsSeatPlacement {
   tableNumber: number;
   /** The team whose home table this is (its home pair sits NS here). */
-  nsTeam: SwissTeamId;
+  nsTeam: TeamId;
   /** The team whose away pair travels here to sit EW. */
-  ewTeam: SwissTeamId;
+  ewTeam: TeamId;
 }
 
 /**
  * A stable, order-independent key for the unordered team pair {a, b}. Used both
  * to record played opponents and to test a candidate match against history.
  */
-export function teamOpponentKey(a: SwissTeamId, b: SwissTeamId): string {
+export function teamOpponentKey(a: TeamId, b: TeamId): string {
   return a < b ? `${a}-${b}` : `${b}-${a}`;
 }
 
 /** The stable team ids for an event of `teams` teams: 1..teams. */
-export function swissTeamIds(teams: number): SwissTeamId[] {
+export function teamIds(teams: number): TeamId[] {
   return Array.from({ length: teams }, (_, i) => i + 1);
 }
 
@@ -122,15 +122,15 @@ function shuffle<T>(items: T[], rng: () => number): T[] {
 export function swissTeamsRoundOne(
   teams: number,
   seed: number,
-): SwissTeamsMatch[] {
+): TeamsMatch[] {
   if (teams % 2 !== 0) {
     throw new Error(`Swiss Teams requires an even team count, got ${teams}`);
   }
 
   const rng = mulberry32(seed);
-  const order = shuffle(swissTeamIds(teams), rng);
+  const order = shuffle(teamIds(teams), rng);
 
-  const matches: SwissTeamsMatch[] = [];
+  const matches: TeamsMatch[] = [];
   for (let i = 0; i < order.length; i += 2) {
     matches.push(normalizeMatch(order[i], order[i + 1]));
   }
@@ -146,16 +146,16 @@ export function swissTeamsRoundOne(
  * Swiss Pairs `pairUp`, minus the bye handling (the field is always even).
  */
 function pairUp(
-  ordered: SwissTeamId[],
+  ordered: TeamId[],
   playedOpponents: ReadonlySet<string>,
-): { matches: SwissTeamsMatch[]; hadUnavoidableRepeat: boolean } {
+): { matches: TeamsMatch[]; hadUnavoidableRepeat: boolean } {
   const n = ordered.length;
   const used = new Array<boolean>(n).fill(false);
 
-  let bestMatches: SwissTeamsMatch[] | null = null;
+  let bestMatches: TeamsMatch[] | null = null;
   let bestRepeats = Number.POSITIVE_INFINITY;
 
-  const current: SwissTeamsMatch[] = [];
+  const current: TeamsMatch[] = [];
 
   const search = (placed: number, repeats: number): void => {
     if (repeats >= bestRepeats) return;
@@ -231,9 +231,9 @@ export function drawSwissTeamsRound(
  * home pair never moves; only away pairs travel to the opponent's home table.
  */
 export function expandTeamMatches(
-  matches: SwissTeamsMatch[],
-): SwissTeamsSeatPlacement[] {
-  const placements: SwissTeamsSeatPlacement[] = [];
+  matches: TeamsMatch[],
+): TeamsSeatPlacement[] {
+  const placements: TeamsSeatPlacement[] = [];
 
   for (const match of matches) {
     // Open room at A's home: A home pair (NS) vs B away pair (EW).
@@ -246,11 +246,11 @@ export function expandTeamMatches(
 }
 
 /** Order a match's ids so the lower id is `a` (canonical form). */
-function normalizeMatch(x: SwissTeamId, y: SwissTeamId): SwissTeamsMatch {
+function normalizeMatch(x: TeamId, y: TeamId): TeamsMatch {
   return x <= y ? { a: x, b: y } : { a: y, b: x };
 }
 
 /** Sort matches by their lower team id for a stable, readable order. */
-function sortMatches(matches: SwissTeamsMatch[]): SwissTeamsMatch[] {
+function sortMatches(matches: TeamsMatch[]): TeamsMatch[] {
   return [...matches].sort((m, n) => m.a - n.a);
 }

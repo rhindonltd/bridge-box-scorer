@@ -24,14 +24,14 @@ export interface ExpectedSeats {
  * layout.
  *
  * @param section  The section these seats belong to (their seat prefix).
- * @param movement  The generated / loaded movement (Tables<"PAIR">).
+ * @param movement  The generated / loaded movement (Tables).
  * @param missingParticipant  Optional movement position id of a built-in
  *   phantom pair. When provided and matched against a round-1 position, that
  *   seat becomes `phantomSeat` and is removed from `seats`.
  */
 export function deriveExpectedSeats(
   section: SectionLetter,
-  movement: Tables<"PAIR">,
+  movement: Tables,
   missingParticipant?: number | null,
 ): ExpectedSeats {
   const seats = new Set<PairSeat>();

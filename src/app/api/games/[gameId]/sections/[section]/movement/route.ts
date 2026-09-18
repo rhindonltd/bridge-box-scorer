@@ -14,6 +14,7 @@ import {
   mitchellSpecSchema,
   swissSpecSchema,
   swissTeamsSpecSchema,
+  roundRobinTeamsSpecSchema,
 } from "@/model/selected-movement";
 
 const bodySchema = z.object({
@@ -22,6 +23,7 @@ const bodySchema = z.object({
   mitchell: mitchellSpecSchema.optional(),
   swiss: swissSpecSchema.optional(),
   swissTeams: swissTeamsSpecSchema.optional(),
+  roundRobinTeams: roundRobinTeamsSpecSchema.optional(),
 });
 
 /**
@@ -40,10 +42,13 @@ export const PUT = withDirectorRoute(async ({ gameId, req }) => {
     );
   }
 
-  const { id, boardsPerRound, mitchell, swiss, swissTeams } = parsed.data;
+  const { id, boardsPerRound, mitchell, swiss, swissTeams, roundRobinTeams } =
+    parsed.data;
 
   let selected: SelectedMovement | null;
-  if (swissTeams) {
+  if (roundRobinTeams) {
+    selected = { source: "ROUND_ROBIN_TEAMS", roundRobinTeams };
+  } else if (swissTeams) {
     selected = { source: "SWISS_TEAMS", swissTeams };
   } else if (swiss) {
     selected = { source: "SWISS", swiss };

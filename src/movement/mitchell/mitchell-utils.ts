@@ -97,11 +97,11 @@ export function buildMitchell(
   spec: MitchellMovementSpec,
   loop: { tables: number; rounds: number },
   assignments: MitchellAssignments,
-): Tables<"PAIR"> {
+): Tables {
   const { boardsPerRound, arrowSwitchRounds = 0 } = spec;
   const { tables, rounds } = loop;
 
-  const result: Table<"PAIR">[] = [];
+  const result: Table[] = [];
 
   for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
     const roundsList = [];

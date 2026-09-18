@@ -8,7 +8,7 @@ import {
 } from "@/services/materialize-movement";
 
 /**
- * Convert a generated Tables<"PAIR"> into the MaterializableMovement shape,
+ * Convert a generated Tables into the MaterializableMovement shape,
  * flagging the dormant (table, round) positions as sit-outs.
  *
  * A sit-out is modelled as a phantom pair occupying `sitOutSeat` in round 1.
@@ -18,7 +18,7 @@ import {
  * while keeping the real board numbers and table for the sitting-out pair.
  */
 export function applyMitchellSitOut(
-  movement: Tables<"PAIR">,
+  movement: Tables,
   sitOutSeat: PairSeat | null,
 ): MaterializableMovement {
   const phantomId =

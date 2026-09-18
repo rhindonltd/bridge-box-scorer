@@ -71,7 +71,7 @@ export async function refreshMovements(): Promise<{
   return { pairs: pairMovements.length, teams: teamMovements.length };
 }
 
-async function seedPairMovements(movements: Movement<"PAIR">[]) {
+async function seedPairMovements(movements: Movement[]) {
   for (const movement of movements) {
     const movementId = await createPairMovementSpec({
       name: movement.name,
@@ -103,7 +103,7 @@ async function seedPairMovements(movements: Movement<"PAIR">[]) {
   }
 }
 
-async function seedTeamMovements(movements: Movement<"PAIR">[]) {
+async function seedTeamMovements(movements: Movement[]) {
   for (const movement of movements) {
     const movementId = await createTeamMovementSpec({
       name: movement.name,

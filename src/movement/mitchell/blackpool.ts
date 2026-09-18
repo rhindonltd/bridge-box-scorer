@@ -42,7 +42,7 @@ export interface BlackpoolMovementSpec extends MitchellMovementSpec {
  */
 export function generateBlackpool(
   spec: BlackpoolMovementSpec,
-): Tables<"PAIR"> {
+): Tables {
   const { tables, revengeRounds = 0 } = spec;
 
   validateBlackpoolSpec(spec);

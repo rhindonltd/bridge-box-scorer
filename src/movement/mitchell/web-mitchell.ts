@@ -41,7 +41,7 @@ export interface WebMitchellMovementSpec extends MitchellMovementSpec {
  */
 export function generateWebMitchell(
   spec: WebMitchellMovementSpec,
-): Tables<"PAIR"> {
+): Tables {
   return spec.tables % 2 === 0
     ? generateWebMitchellEven(spec)
     : generateWebMitchellOdd(spec);
@@ -66,7 +66,7 @@ function ewDistance(round: number, rounds: number): number {
 
 function generateWebMitchellEven(
   spec: WebMitchellMovementSpec,
-): Tables<"PAIR"> {
+): Tables {
   const { tables, rounds } = spec;
 
   validateMitchellSpec(spec);
@@ -113,7 +113,7 @@ const COPY_LABELS = ["A", "B", "C", "D"];
 
 function generateWebMitchellOdd(
   spec: WebMitchellMovementSpec,
-): Tables<"PAIR"> {
+): Tables {
   const { tables, rounds } = spec;
 
   validateMitchellSpec(spec);

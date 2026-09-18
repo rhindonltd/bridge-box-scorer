@@ -84,6 +84,19 @@ export function useMovementRoundInfo(
     };
   }
 
+  if (selectedMovement.source === "ROUND_ROBIN_TEAMS") {
+    // Teams Round Robin carries its round count and boards-per-round on the
+    // selection (the fixed schedule is regenerated from them at start); no
+    // fetch is needed.
+    return {
+      info: {
+        rounds: selectedMovement.roundRobinTeams.rounds,
+        boardsPerRound: selectedMovement.roundRobinTeams.boardsPerRound,
+      },
+      isLoading: false,
+    };
+  }
+
   // SPEC: rounds come from the fetched detail; boards-per-round is on the
   // selection itself. Every table plays the same round count, so the first
   // table is representative.

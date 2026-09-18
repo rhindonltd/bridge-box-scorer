@@ -51,7 +51,7 @@ describe("model/movement types", () => {
   });
 
   it("Table type holds rounds for a specific table", () => {
-    const table: Table<"PAIR"> = {
+    const table: Table = {
       table: 1,
       rounds: [
         {

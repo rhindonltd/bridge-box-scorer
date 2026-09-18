@@ -15,6 +15,10 @@ const SWISS_TEAMS: SelectedMovement = {
   source: "SWISS_TEAMS",
   swissTeams: { teams: 4, rounds: 4, boardsPerRound: 2 },
 };
+const ROUND_ROBIN_TEAMS: SelectedMovement = {
+  source: "ROUND_ROBIN_TEAMS",
+  roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 2 },
+};
 
 describe("classifyEvent", () => {
   it("classifies a pairs game with no movement as PAIRS_BOARD", () => {
@@ -59,15 +63,30 @@ describe("classifyEvent", () => {
     });
   });
 
-  it("classifies a Teams + Swiss Teams game as SWISS_TEAMS_VP with null mode", () => {
+  it("classifies a Teams + Swiss Teams game as TEAMS_VP with null mode", () => {
     expect(classifyEvent("TEAMS", "IMP", SWISS_TEAMS)).toEqual({
-      format: "SWISS_TEAMS_VP",
+      format: "TEAMS_VP",
       scoringType: "IMP",
       swissVpMode: null,
     });
   });
 
-  it("classifies a TEAMS game whose movement is not Swiss Teams as PAIRS_BOARD", () => {
+  it("classifies a Teams + Round Robin Teams game as TEAMS_VP with null mode", () => {
+    expect(classifyEvent("TEAMS", "IMP", ROUND_ROBIN_TEAMS)).toEqual({
+      format: "TEAMS_VP",
+      scoringType: "IMP",
+      swissVpMode: null,
+    });
+  });
+
+  it("treats a Round Robin Teams movement in a PAIRS game as PAIRS_BOARD", () => {
+    // The teams format needs the TEAMS game type as well as a teams movement.
+    expect(classifyEvent("PAIRS", "IMP", ROUND_ROBIN_TEAMS).format).toBe(
+      "PAIRS_BOARD",
+    );
+  });
+
+  it("classifies a TEAMS game whose movement is not a teams movement as PAIRS_BOARD", () => {
     // Edge case: the TEAMS game type alone does not imply the teams format —
     // the movement must also be Swiss Teams.
     expect(classifyEvent("TEAMS", "IMP", SPEC).format).toBe("PAIRS_BOARD");
@@ -80,7 +99,7 @@ describe("classifyEvent", () => {
     }
   });
 
-  it("leaves swissVpMode null for SWISS_TEAMS_VP regardless of scoring type", () => {
+  it("leaves swissVpMode null for TEAMS_VP regardless of scoring type", () => {
     for (const scoring of ["MP", "IMP", "XIMP"] as const) {
       expect(
         classifyEvent("TEAMS", scoring, SWISS_TEAMS).swissVpMode,

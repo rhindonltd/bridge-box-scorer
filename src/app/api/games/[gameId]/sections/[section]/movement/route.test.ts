@@ -68,6 +68,23 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
     );
   });
 
+  it("sets a ROUND_ROBIN_TEAMS movement and broadcasts the change", async () => {
+    const roundRobinTeams = { teams: 6, rounds: 5, boardsPerRound: 4 };
+    const res = await invoke("g1", "A", { roundRobinTeams });
+
+    expect(res.status).toBe(200);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "ROUND_ROBIN_TEAMS",
+      roundRobinTeams,
+    });
+    expect(broadcastSectionMovementChanged).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      null,
+      { source: "ROUND_ROBIN_TEAMS", roundRobinTeams },
+    );
+  });
+
   it("sets a SPEC movement with id + boardsPerRound", async () => {
     const res = await invoke("g1", "A", { id: 12, boardsPerRound: 2 });
 

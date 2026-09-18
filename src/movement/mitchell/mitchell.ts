@@ -39,7 +39,7 @@ type VariantFlag =
 
 const VARIANT_GENERATORS: {
   flag: VariantFlag;
-  generate: (spec: MitchellMovementSpec) => Tables<"PAIR">;
+  generate: (spec: MitchellMovementSpec) => Tables;
 }[] = [
   { flag: "skip", generate: (s) => generateSkipMitchell({ ...s, skip: true }) },
   {
@@ -62,7 +62,7 @@ const VARIANT_GENERATORS: {
   { flag: "web", generate: (s) => generateWebMitchell({ ...s, web: true }) },
 ];
 
-export function generateMitchell(spec: MitchellMovementSpec): Tables<"PAIR"> {
+export function generateMitchell(spec: MitchellMovementSpec): Tables {
   const variant = VARIANT_GENERATORS.find(({ flag }) => spec[flag]);
   return variant ? variant.generate(spec) : generateStandardMitchell(spec);
 }

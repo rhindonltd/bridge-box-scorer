@@ -9,7 +9,7 @@ import { Tables } from "../../model/movement";
 
 export function generateStandardMitchell(
   spec: MitchellMovementSpec,
-): Tables<"PAIR"> {
+): Tables {
   validateMitchellSpec(spec);
 
   const { tables, rounds } = spec;

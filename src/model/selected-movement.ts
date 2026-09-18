@@ -5,7 +5,7 @@ import { z } from "zod";
  * `games` row as opaque JSON text and only materialized into boards/assignments
  * when the game is started.
  *
- * Three variants:
+ * Variants:
  * - SPEC: a hard-coded movement from the movements database, keyed by numeric id
  *   plus the boards-per-round chosen for it (the stored spec keeps only board-set
  *   indices, so board numbers are computed at materialize time).
@@ -24,6 +24,13 @@ import { z } from "zod";
  *   boards. The selection carries only the setup parameters (team count, total
  *   rounds, boards-per-round); no per-round layout is stored. The team count
  *   must be even (three-way "triangle" handling is not yet supported).
+ * - ROUND_ROBIN_TEAMS: a Teams Round Robin movement. Like SWISS_TEAMS a team is
+ *   the two pairs at one home table and matches use the same open/closed-room
+ *   layout, but the schedule is fixed and fully known up front (every team
+ *   plays every other exactly once), so the WHOLE schedule is materialized at
+ *   start rather than drawn live. The selection still stores only the setup
+ *   parameters (team count, total rounds, boards-per-round); the schedule is
+ *   regenerated deterministically from them. The team count must be even.
  */
 
 export const mitchellSpecSchema = z.object({
@@ -78,6 +85,26 @@ export const swissTeamsSpecSchema = z.object({
 
 export type SwissTeamsMovementSpec = z.infer<typeof swissTeamsSpecSchema>;
 
+/**
+ * Setup parameters for a Teams Round Robin movement. As with Swiss Teams a team
+ * is the two pairs seated at one home table, so `teams` equals the table count.
+ * Unlike Swiss Teams the schedule is fixed and fully known up front (every team
+ * plays every other exactly once), but the selection still stores only the
+ * setup parameters — the whole schedule is regenerated deterministically at
+ * start from the team count, rounds to play, and boards per round (which fixes
+ * each round's board range). The team count must be even; odd counts are
+ * rejected at start (bye handling is future work).
+ */
+export const roundRobinTeamsSpecSchema = z.object({
+  teams: z.number().int().positive(),
+  rounds: z.number().int().positive(),
+  boardsPerRound: z.number().int().positive(),
+});
+
+export type RoundRobinTeamsMovementSpec = z.infer<
+  typeof roundRobinTeamsSpecSchema
+>;
+
 export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SPEC"),
@@ -98,6 +125,10 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SWISS_TEAMS"),
     swissTeams: swissTeamsSpecSchema,
+  }),
+  z.object({
+    source: z.literal("ROUND_ROBIN_TEAMS"),
+    roundRobinTeams: roundRobinTeamsSpecSchema,
   }),
 ]);
 
@@ -160,6 +191,14 @@ export function selectedMovementsEqual(
       a.swissTeams.teams === b.swissTeams.teams &&
       a.swissTeams.rounds === b.swissTeams.rounds &&
       a.swissTeams.boardsPerRound === b.swissTeams.boardsPerRound
+    );
+  }
+
+  if (a.source === "ROUND_ROBIN_TEAMS" && b.source === "ROUND_ROBIN_TEAMS") {
+    return (
+      a.roundRobinTeams.teams === b.roundRobinTeams.teams &&
+      a.roundRobinTeams.rounds === b.roundRobinTeams.rounds &&
+      a.roundRobinTeams.boardsPerRound === b.roundRobinTeams.boardsPerRound
     );
   }
 

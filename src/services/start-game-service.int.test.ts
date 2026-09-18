@@ -22,9 +22,17 @@ vi.mock("@/db/games/queries/get-section-movement", () => ({
   getSectionMovement: vi.fn(),
 }));
 
-vi.mock("@/services/materialize-movement", () => ({
-  materializeSections: vi.fn(async () => {}),
-}));
+vi.mock("@/services/materialize-movement", async (importActual) => {
+  // Mock only the DB write (materializeSections); keep the real pure mappers
+  // (e.g. roundRobinTeamsToMaterializable) so the resolver produces its real
+  // materializable movement, which the tests below assert on.
+  const actual =
+    await importActual<typeof import("@/services/materialize-movement")>();
+  return {
+    ...actual,
+    materializeSections: vi.fn(async () => {}),
+  };
+});
 
 import { getDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
@@ -63,6 +71,11 @@ const mitchell = (tables: number) => ({
 const swiss = (tables: number, rounds = 5, boardsPerRound = 3) => ({
   source: "SWISS" as const,
   swiss: { tables, rounds, boardsPerRound },
+});
+
+const roundRobinTeams = (teams: number, rounds: number, boardsPerRound = 3) => ({
+  source: "ROUND_ROBIN_TEAMS" as const,
+  roundRobinTeams: { teams, rounds, boardsPerRound },
 });
 
 /** Mock a games Db whose boards table is empty (not yet started). */
@@ -291,5 +304,57 @@ describe("startGame (Swiss)", () => {
     const sitOutTable = movement.find((m) => m.rounds[0].sitOut)!;
     expect(sitOutTable.rounds[0].ns).toBe("2NS");
     expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
+  });
+});
+
+describe("startGame (Round Robin Teams)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("materializes the WHOLE fixed schedule (every round) up front", async () => {
+    vi.mocked(getDb).mockResolvedValue(mockEmptyDb() as any);
+    // 6 teams => 6 tables fully seated (both pairs at each table).
+    const teams = 6;
+    const rounds = teams - 1;
+    vi.mocked(findSections).mockResolvedValue([section("A", teams)] as any);
+    vi.mocked(getSectionMovement).mockResolvedValue(
+      roundRobinTeams(teams, rounds, 4),
+    );
+    vi.mocked(findPairs).mockResolvedValue(seatedPairs(teams, "A") as any);
+
+    const result = await startGame("g1");
+
+    expect(result.canStart).toBe(true);
+    expect(materializeSections).toHaveBeenCalledTimes(1);
+
+    const [, sections] = vi.mocked(materializeSections).mock.calls[0];
+    const movement = sections[0].movement;
+
+    // Every team's home table is present, each carrying ALL rounds (unlike
+    // Swiss Teams, which materializes only round 1 at start).
+    expect(movement.map((m) => m.tableNumber).sort((a, b) => a - b)).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
+    for (const table of movement) {
+      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3, 4, 5]);
+      for (const round of table.rounds) {
+        expect(round.boardStart).toBe((round.roundNumber - 1) * 4 + 1);
+        expect(round.boardEnd).toBe(round.roundNumber * 4);
+      }
+    }
+  });
+
+  it("does not materialize an odd-team Round Robin (blocked)", async () => {
+    vi.mocked(getDb).mockResolvedValue(mockEmptyDb() as any);
+    vi.mocked(findSections).mockResolvedValue([section("A", 5)] as any);
+    vi.mocked(getSectionMovement).mockResolvedValue(roundRobinTeams(5, 4, 4));
+    vi.mocked(findPairs).mockResolvedValue(seatedPairs(5, "A") as any);
+
+    const result = await startGame("g1");
+
+    expect(result.canStart).toBe(false);
+    expect(result.problems.map((p) => p.code)).toContain("ODD_TEAM_COUNT");
+    expect(materializeSections).not.toHaveBeenCalled();
   });
 });
