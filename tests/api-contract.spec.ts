@@ -133,11 +133,18 @@ test.describe("API contract — games (existing game)", () => {
     expect(unknown.status()).toBe(404);
   });
 
-  test("GET /api/games/[id]/results-summary responds 200", async ({
+  test("GET /api/games/[id]/results-summary returns the summary shape", async ({
     request,
   }) => {
     const res = await request.get(`/api/games/${gameId}/results-summary`);
     expect(res.ok()).toBe(true);
+    const summary = (await res.json()).result;
+    expect(typeof summary.totalPlayable).toBe("number");
+    expect(typeof summary.finalized).toBe("number");
+    expect(typeof summary.allResultsIn).toBe("boolean");
+    // A freshly started game has playable boards but no results in yet.
+    expect(summary.totalPlayable).toBeGreaterThan(0);
+    expect(summary.allResultsIn).toBe(false);
   });
 
   test("GET /api/games/[id]/start-check responds 200", async ({ request }) => {
@@ -228,6 +235,28 @@ test.describe("API contract — system / device", () => {
     // connection success in this environment.
     expect(res.status()).toBe(200);
     expect((await res.json()).success).toBe(false);
+  });
+
+  test("GET /api/system/wifi/diagnostics is admin-gated and returns a diagnostics shape", async ({
+    request,
+  }) => {
+    // No token -> 401.
+    const noToken = await request.get("/api/system/wifi/diagnostics");
+    expect(noToken.status()).toBe(401);
+
+    // With a token -> 200 with the diagnostics shape. On a no-nmcli host this
+    // degrades to wifiManagementAvailable:false with null fields, which is what
+    // the assertion allows for.
+    const token = await fetchAdminToken(request);
+    const res = await request.get("/api/system/wifi/diagnostics", {
+      headers: { "x-admin-token": token },
+    });
+    expect(res.ok()).toBe(true);
+    const result = (await res.json()).result;
+    expect(typeof result.wifiManagementAvailable).toBe("boolean");
+    expect(result).toHaveProperty("permissions");
+    expect(result).toHaveProperty("ownAp");
+    expect(result).toHaveProperty("activeConnections");
   });
 
   test("admin-only device routes reject calls without a token", async ({

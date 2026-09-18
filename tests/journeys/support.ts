@@ -1,4 +1,20 @@
-import { Browser, Page, test } from "@playwright/test";
+import { Browser, Page, expect, test } from "@playwright/test";
+
+/**
+ * Assert an inline error/status message is visible by its TEXT.
+ *
+ * Prefer this over `getByRole("alert")` for the app's inline messages: Next.js
+ * mounts its own aria-live route-announcer with `role="alert"`, so a bare
+ * role query is ambiguous (strict-mode violation) even when the app's own
+ * `<p role="alert">` is present. Matching by text targets the app's message.
+ */
+export async function expectInlineError(
+  page: Page,
+  text: string | RegExp,
+  timeout = 15000,
+): Promise<void> {
+  await expect(page.getByText(text)).toBeVisible({ timeout });
+}
 
 /**
  * Open a fresh browser context + page using the active journey project's
@@ -47,7 +63,6 @@ export async function closeSeatDevices(
   }
 }
 
-import { expect } from "@playwright/test";
 import { createGame } from "../fixtures/game-create";
 import {
   setTableCount,

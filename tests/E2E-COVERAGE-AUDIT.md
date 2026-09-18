@@ -28,14 +28,23 @@ surface. Test files present at audit time:
 
 - Specs: `smoke.spec.ts`, `api.spec.ts`, `api-contract.spec.ts`,
   `game-api.spec.ts`, `club-settings.spec.ts`, `settings.spec.ts`,
-  `settings-menu.spec.ts`, `results-live.spec.ts`.
+  `settings-menu.spec.ts`, `bridgewebs-settings.spec.ts`, `results-live.spec.ts`.
 - Journeys: `navigation`, `create-form`, `sections-setup`, `table-management`,
   `movement-types`, `seating-detail`, `play-flow`, `played-contract`,
   `contract-variants`, `mismatch`, `sit-out`, `deal-entry`, `swiss-pairs`,
   `director-override`, `traveller-live`, `leaderboard-live`, `display-detail`,
   `request-on-mount`, `realtime-internals`, `reconnect`, `timer`,
-  `multi-section`, `share-code`, `delete-game`, `usebio`,
+  `multi-section`, `share-code`, `delete-game`, `usebio`, `pbn`,
+  `bridgewebs-upload`, `bridgewebs-create`, `seat-transfer`, `leave-table`,
   `completed-game-redirect`, `admin-key`, `wifi-settings`, `authorization`.
+
+## Status (last updated after Phases 1–4)
+
+Every **true (unblocked) test gap** the original audit found has been closed —
+see "Recently closed" below. The only remaining open items are **blocked** on
+missing UI or real hardware (teams play, scoring-type selection, American Whist,
+cloud/subscription, WiFi-on-hardware, timer `restart:true`, and the Swiss Teams
+draw). No further E2E is authorable for those until the product surface exists.
 
 ---
 
@@ -82,12 +91,24 @@ below:
   (`delete-game.journey.ts`).
 - **USEBIO export**: happy-path download + club-field validation + 404
   (`usebio.journey.ts`).
+- **PBN export**: deal recorded → populated `.pbn` download + club-not-configured
+  gate + director-auth (`pbn.journey.ts`, `authorization.journey.ts`).
+- **BridgeWebs**: results upload success/failure against a mocked BridgeWebs
+  server (`bridgewebs-upload.journey.ts`); credentials settings save + admin-
+  gating + password-never-exposed (`bridgewebs-settings.spec.ts`); create-page
+  event picker → name prefill + `bridgewebsEventId` persistence
+  (`bridgewebs-create.journey.ts`).
+- **Seat transfer / Change device**: mint → claim → seat handover + secret
+  rotation (old token rejected, new accepted) + invalid code
+  (`seat-transfer.journey.ts`).
+- **Player leave table**: pre-start un-seat frees the seat live
+  (`leave-table.journey.ts`).
 - **Completed game**: hidden from Join; join/play URLs redirect to leaderboard
   (`completed-game-redirect.journey.ts`).
-- **Settings/device**: admin-key gate + verify + full update cycle
-  (`admin-key.journey.ts`); WiFi capability-aware UI + admin-gated scan
-  (`wifi-settings.journey.ts`, `settings.spec.ts`); club info page + API
-  (`club-settings.spec.ts`, `settings-menu.spec.ts`).
+- **Settings/device**: admin-key gate + verify + full update cycle + logout
+  re-gate + validate contract (`admin-key.journey.ts`); WiFi capability-aware UI
+  + admin-gated scan (`wifi-settings.journey.ts`, `settings.spec.ts`); club info
+  page + API (`club-settings.spec.ts`, `settings-menu.spec.ts`).
 - **Auth**: director socket + HTTP 401s, admin 401s, intentionally-open events
   (`authorization.journey.ts`).
 - **HTTP API contract**: games reads/404s, movements 400/404, players search,
@@ -95,169 +116,111 @@ below:
 
 ---
 
-## Gaps — functionality with NO E2E coverage
+## Recently closed (Phases 1–4)
 
-### 1. PBN export (director)
+Every gap below was a "true test gap" in the original audit and now has E2E
+coverage. Kept here (rather than deleted) as a record of what closed each and
+where the coverage lives.
 
-- **What**: The "Download PBN" flow — director downloads a `.pbn` file of the
-  game's deals.
-- **Where**: page `src/app/game/[gameId]/manage/download-pbn/DownloadPbnPage.tsx`;
-  route `GET /api/games/[gameId]/pbn` (director-authed); menu entry
-  `showDownloadPbn` in `src/app/game/[gameId]/manage/ManageGameMenu.tsx`.
-- **Gap**: No spec or journey references `pbn` at all. No test for the download
-  happy path, the empty/no-deals case, the director-auth requirement, or a
-  nonexistent-game 404.
-- **Suggested coverage**: mirror `usebio.journey.ts` — complete/seed a game,
-  open Download PBN, assert a non-empty `.pbn` blob; add an API 404 for an
-  unknown game and a 401 without a director token (extend
-  `authorization.journey.ts`).
-- **Type**: true test gap (UI + route both exist).
+### 1. PBN export (director) — CLOSED
 
-### 2. BridgeWebs results upload (director)
+- `tests/journeys/pbn.journey.ts`: records a deal (director Enter Deals), then
+  downloads the `.pbn` and asserts non-empty content with the `[Event`,
+  `[Board "n"]` and `[Deal` tags; plus a club-not-configured disabled state.
+- Director-auth (401 no/bogus token) added to `authorization.journey.ts`.
+- Note discovered: the PBN service returns an EMPTY file when no deals are
+  entered, so the happy path must record a deal first (unlike USEBIO).
 
-- **What**: "Upload to BridgeWebs" — pushes finished results to the club's
-  BridgeWebs account. Menu entry appears only when BridgeWebs is configured and
-  is disabled until all results are in.
-- **Where**: page
-  `src/app/game/[gameId]/manage/upload-bridgewebs/UploadBridgewebsPage.tsx`;
-  route `POST /api/games/[gameId]/bridgewebs/upload` (director-authed);
-  gating `showUploadBridgewebs`/`uploadBridgewebsDisabled` in `ManageGameMenu.tsx`.
-- **Gap**: No test references bridgewebs upload. Uncovered: the menu item only
-  showing when configured, the disabled-until-all-results-in gate, the upload
-  happy path, the failure path, and director-auth on the route.
-- **Type**: true test gap. The happy path likely needs the outbound BridgeWebs
-  HTTP call mocked/stubbed (via `page.route` on the upload endpoint or a
-  fixture), so plan for network isolation.
+### 2. BridgeWebs results upload (director) — CLOSED
 
-### 3. BridgeWebs credentials settings
+- `tests/journeys/bridgewebs-upload.journey.ts`: success (asserts the reply
+  status + that the mock received `type=upload`, club, password, `.xml`/`.pbn`
+  files) and BridgeWebs-reported failure (inline error).
+- The **real BridgeWebs server is mocked**: `BRIDGEWEBS_API_BASE` is env-
+  overridable (`src/lib/bridgewebs/client.ts`) and a local mock
+  (`tests/fixtures/bridgewebs-mock.ts`) stands in; `playwright.config.ts` wires
+  the app server to it. Guarded to a loopback host so it never hits real
+  BridgeWebs.
+- Director-auth (401) added to `authorization.journey.ts`. Not-configured gating
+  stays unit-covered (no API to clear credentials).
 
-- **What**: The `/settings/bridgewebs` screen where the admin saves the club's
-  BridgeWebs code + password (drives items 2 and 4).
-- **Where**: page `src/app/settings/bridgewebs/BridgewebsSettingsForm.tsx` /
-  `BridgewebsSettingsPage.tsx`; routes `GET /api/system/bridgewebs` (status,
-  never returns the password) and `POST /api/system/bridgewebs` (admin-gated).
-- **Gap**: No E2E. The settings-menu spec only checks WiFi + Club links; there
-  is no BridgeWebs link assertion, no save flow, and no admin-gating test on the
-  route. (Unit/int coverage exists for the form and credentials query, but no
-  browser/API E2E.)
-- **Suggested coverage**: extend `settings-menu.spec.ts` (link present +
-  navigates); add save-with-`x-admin-token` + 401-without to `api-contract.spec.ts`
-  or `authorization.journey.ts`; a `bridgewebs-settings.spec.ts` for the
-  configured/"leave blank to keep" password rule.
-- **Type**: true test gap.
+### 3. BridgeWebs credentials settings — CLOSED
 
-### 4. BridgeWebs event picker on Create
+- `tests/bridgewebs-settings.spec.ts`: settings-menu link → `/settings/bridgewebs`;
+  UI save flow + reload shows configured + "leave blank to keep"; `GET` status
+  shape never exposes the password; `POST` admin-gated (200/401); blank club →
+  400; blank password keeps the stored one.
 
-- **What**: When BridgeWebs is configured, the create form shows a "BridgeWebs
-  Event" dropdown of that day's events; choosing one prefills the event name and
-  sets `bridgewebsEventId` on the game.
-- **Where**: `src/app/create/CreateGamePage.tsx` (`showEventPicker`,
-  `handleSelectBridgewebsEvent`); route `GET /api/games/bridgewebs/events?date=`;
-  field `bridgewebsEventId` (`src/db/game-index/schema.ts`).
-- **Gap**: Tests only *wait out* the on-mount events fetch (WebKit race) — they
-  never render the picker (BridgeWebs is unconfigured in the test env), select an
-  event, assert the name prefill, or verify `bridgewebsEventId` persists on the
-  created game.
-- **Type**: true test gap, but requires seeding BridgeWebs config + stubbing the
-  events endpoint.
+### 4. BridgeWebs event picker on Create — CLOSED
 
-### 5. Seat transfer / "Change device" (player)
+- `tests/journeys/bridgewebs-create.journey.ts`: with credentials seeded and the
+  mock serving events, the picker renders, selecting an event prefills the name,
+  and `bridgewebsEventId` persists on the created game (verified via
+  `GET /api/games/[id]`).
 
-- **What**: A seated player hands their seat to another device: the old device
-  mints a transfer code; the new device claims it, which rotates the seat secret
-  so only the new device owns the seat.
-- **Where**: socket events `game:createSeatTransfer` / `game:claimSeatTransfer`
-  (`src/socket/socket-events.ts`, `handlers/game/`); claim page
-  `src/app/game/[gameId]/join/ClaimSeatTransfer.tsx`; the "Change device" entry
-  in the play header menu (`PlayHeaderMenu`).
-- **Gap**: No test references seat transfer / change device / claimSeatTransfer.
-  Uncovered: minting a code, claiming it on a second device, the secret rotation
-  (old device can no longer submit; new device can), and bad/expired-code
-  rejection.
-- **Type**: true test gap. A good analogue exists in `share-code.journey.ts`
-  (generate-on-A / claim-on-B), so the pattern is available.
+### 5. Seat transfer / "Change device" (player) — CLOSED
 
-### 6. Player "leave table" (pre-start un-seat)
+- `tests/journeys/seat-transfer.journey.ts`: mint on the old device (play header
+  → "Change device"), claim on a new device, land on the seat's play page; the
+  secret rotation is proven by the stored secret changing AND an old-token submit
+  being rejected while a new-token submit is accepted (`tests/fixtures/seat-secret.ts`).
+  Plus an invalid-code rejection.
 
-- **What**: A seated player vacates their seat before the game starts, freeing
-  it; broadcasts PARTICIPANTS.
-- **Where**: socket event `game:leaveTable` (`src/socket/socket-events.ts`,
-  `handlers/game/`).
-- **Gap**: No test drives `leaveTable`. Director *eviction* (the HTTP DELETE) is
-  covered in `table-management.journey.ts`, but the player-initiated leave (and
-  its live seat-freeing + player-token requirement) is not.
-- **Type**: true test gap.
+### 6. Player "leave table" (pre-start un-seat) — CLOSED
 
-### 7. Swiss Teams draw
+- `tests/journeys/leave-table.journey.ts`: a pre-start player leaves the seat
+  (accepting the native confirm), routes back to `/join`, and a watching device
+  sees the seat become available again live.
 
-- **What**: Swiss Teams movement setup + drawing each round from standings (two
-  tables per match).
-- **Where**: setup dialog
-  `src/components/manage/sections/SwissTeamsSetupDialog.tsx`; socket event
-  `swissTeams:drawNextRound` (`handlers/swiss/draw-next-teams-round.handler.ts`);
-  scoring in `src/scoring/swiss/swiss-teams-*`.
-- **Gap**: Swiss *Pairs* is covered (`swiss-pairs.journey.ts`) but Swiss Teams
-  has no journey — no setup-dialog select, no round draw, no even-team-count
-  guard, no `TEAM_SWISS_VP` leaderboard rendering E2E.
-- **Type**: partially blocked. Swiss Teams setup UI exists and is single-section
-  only, but it is entangled with the broader Teams-play gap (item 12): team
-  seating/play reuses the pairs flow, so a full Teams-scored journey may not be
-  authorable until team play exists. The **round-draw + setup dialog** portions
-  are testable now.
+### 8. Admin session lifecycle: logout & re-validation — CLOSED
 
-### 8. Admin session lifecycle: logout & re-validation
+- `tests/journeys/admin-key.journey.ts` (extended): logging out re-gates the
+  settings section (the admin-key prompt returns); `GET .../admin-key/validate`
+  returns 200 `{valid:true}` with a good token and 401 without/with a bogus one.
 
-- **What**: `POST /api/system/admin-key/logout` invalidates the admin session;
-  `GET /api/system/admin-key/validate` is the settings-unlock check that
-  re-confirms a stored admin token.
-- **Where**: `src/app/api/system/admin-key/logout/route.ts`,
-  `src/app/api/system/admin-key/validate/route.ts`; the "Logout" action in
-  `src/app/settings/SettingsMenuPage.tsx` / `LogoutButton.tsx`.
-- **Gap**: `admin-key.journey.ts` covers verify + update, but not logout
-  (session actually invalidated → settings re-gated) nor the validate endpoint
-  (valid token passes, cleared/invalid token re-prompts).
-- **Type**: true test gap.
+### 9. Director token validation endpoint — CLOSED
 
-### 9. Director token validation endpoint
+- `authorization.journey.ts`: `GET /api/games/[id]/director/validate` → 200
+  `{valid:true}` with a valid token, 401 with none/bogus.
 
-- **What**: `GET /api/games/[gameId]/director/validate` returns `{ valid: true }`
-  for a good director token — used to decide whether a device is already this
-  game's director.
-- **Where**: `src/app/api/games/[gameId]/director/validate/route.ts`.
-- **Gap**: No direct contract test (valid token → `{valid:true}`; invalid/absent
-  → 401). Director-manage navigation is exercised indirectly via
-  `navigation.journey.ts` / `share-code.journey.ts`, but this endpoint's
-  positive/negative contract is not asserted.
-- **Type**: true test gap (small; add to `authorization.journey.ts`).
+### 11. Assorted API contract endpoints — CLOSED
 
-### 10. `game:selectMovement` socket event (game-level movement)
+- `api-contract.spec.ts`: `results-summary` now asserts the full
+  `{totalPlayable, finalized, allResultsIn}` shape; `wifi/diagnostics` added
+  (admin-gated + shape). `/games/all` and `start-check` were already covered.
 
-- **What**: The director persists a selected movement on the game row via the
-  `game:selectMovement` socket event (distinct from the section-scoped HTTP
-  `PUT .../sections/[section]/movement`).
-- **Where**: `SELECT_MOVEMENT` (`src/socket/socket-events.ts`,
-  `handlers/game/`).
-- **Gap**: Movement selection is exercised through the section HTTP route
-  (`movement-types.journey.ts`, `sections-setup.journey.ts`), but the
-  `game:selectMovement` socket path and its director-auth are not directly
-  tested. Confirm whether this event is still used by the UI; if dead, it is a
-  cleanup candidate rather than a coverage gap.
-- **Type**: needs triage (possibly unused).
+### 10. `game:selectMovement` socket event — TRIAGED (no gap)
 
-### 11. Assorted API contract endpoints
+- Still used by the client (`src/lib/game-service.ts` `selectMovement` /
+  `selectMitchellMovement`), so not dead code. Its director-auth is already
+  unit-tested (`select-movement.handler.test.ts` — "rejects when directorToken
+  is invalid") plus integration tests. No E2E gap; not a removal candidate.
 
-Endpoints with no dedicated contract assertion (some are exercised indirectly):
+### 7. Swiss Teams draw — RECLASSIFIED AS BLOCKED (see item 7 below)
 
-- `GET /api/games/[gameId]/results-summary` — drives menu gating; no direct test.
-- `GET /api/games/[gameId]/start-check` — pre-start validation; unit-covered via
-  `StartGameScreen` but no API contract test.
-- `GET /api/games/all` — used by the manage selector; no dedicated assertion.
-- `GET /api/system/wifi/diagnostics` (admin) — no test.
-- **Type**: true (minor) gaps; cheap to add to `api-contract.spec.ts`.
+- On closer inspection the Swiss Teams **draw is unreachable through the UI**, so
+  it moved from "partially testable" to blocked. Details in the blocked section.
 
 ---
 
 ## Gaps — blocked (no UI or environment-dependent)
+
+### 7. Swiss Teams draw — BLOCKED (no UI path)
+
+- **What**: Swiss Teams setup + drawing each round from standings (two tables
+  per match).
+- **Where**: setup dialog
+  `src/components/manage/sections/SwissTeamsSetupDialog.tsx`; socket event
+  `swissTeams:drawNextRound` (`handlers/swiss/draw-next-teams-round.handler.ts`);
+  scoring in `src/scoring/swiss/swiss-teams-*`.
+- **Blocked**: `ManageMovementPage` renders `SwissDrawControl` only when the
+  section's movement `source === "SWISS"` (not `SWISS_TEAMS`), and
+  `SwissDrawControl` calls `drawNextSwissRound` (the Pairs draw). So **no UI
+  triggers `swissTeams:drawNextRound`** — the handler exists and is unit-tested,
+  but nothing calls it. Compounded by the teams-seating gap (item 12): the join
+  flow is pair-oriented, so a teams game can't be seated/scored through the UI to
+  reach a draw anyway. Blocked until a teams draw control (and teams seating)
+  exist. (Swiss *Pairs* is fully covered — `swiss-pairs.journey.ts`.)
 
 ### 12. Teams play & seating
 
@@ -336,34 +299,49 @@ reachable or are timing-fragile in a browser:
 
 ---
 
-## Prioritized action list
+## Prioritized action list — all unblocked work CLOSED
 
-Ordered by product risk. Everything here is a **true test gap** (items in the
-"blocked" section are excluded — they need UI or hardware first).
+The four phases below were the original prioritized backlog. All are now done
+(see "Recently closed"). Only blocked items remain.
 
-**P1 — Director export/publish paths (data leaves the box):**
-1. PBN export download + auth + 404 (item 1).
-2. BridgeWebs upload: configured-gating, all-results-in gating, happy path
-   (network-isolated), failure, auth (item 2).
+- **P1 — Director export/publish paths:** ✅ PBN export (item 1); ✅ BridgeWebs
+  upload against a mocked server (item 2).
+- **P2 — BridgeWebs configuration surface:** ✅ credentials settings (item 3);
+  ✅ create-page event picker (item 4).
+- **P3 — Player device/session flows:** ✅ seat transfer + rotation (item 5);
+  ✅ player leave-table (item 6); ✅ admin logout + validate (item 8).
+- **P4 — Contract/coverage tidy-ups:** ✅ director-token validate (item 9);
+  ✅ `results-summary`/`wifi/diagnostics` contracts, with `/games/all` +
+  `start-check` already covered (item 11); ✅ `game:selectMovement` triaged as
+  used + already-covered (item 10). Swiss Teams draw (item 7) reclassified as
+  blocked (no UI path).
 
-**P2 — BridgeWebs configuration surface (enables P1 + create picker):**
-3. BridgeWebs credentials settings: link, save, admin-gating, "keep password"
-   rule (item 3).
-4. Create-page BridgeWebs event picker: render, select, name prefill,
-   `bridgewebsEventId` persistence (item 4).
+**Remaining — blocked (needs UI or hardware first, cannot E2E now):** Swiss
+Teams draw (7), Teams play (12), scoring-type selection (13), American Whist
+(14), cloud/subscription (15), WiFi success on real hardware (16), timer
+`restart:true` (17). Each needs a product surface or hardware that does not
+exist yet; none is a test-authoring gap.
 
-**P3 — Player device/session flows:**
-5. Seat transfer / Change device round-trip + secret rotation (item 5).
-6. Player leave-table (pre-start un-seat) live seat freeing (item 6).
-7. Admin logout + validate (settings re-gate) (item 8).
+## Infrastructure added while closing gaps
 
-**P4 — Contract/coverage tidy-ups (cheap):**
-8. Swiss Teams setup dialog + round draw (item 7, the testable portion).
-9. Director-token validate endpoint (item 9).
-10. `results-summary`, `start-check`, `/games/all`, `wifi/diagnostics` API
-    contracts (item 11).
-11. Triage `game:selectMovement` — test or remove if unused (item 10).
+- **BridgeWebs base URL is env-overridable** (`src/lib/bridgewebs/client.ts`) so
+  the outbound API call can be pointed at a local mock; the mock server lives in
+  `tests/fixtures/bridgewebs-mock.ts` and `playwright.config.ts` wires the app
+  server to it by default (loopback-guarded so real BridgeWebs is never hit).
+- **`tests/fixtures/seat-secret.ts`**: read a seat's secret from the per-game DB
+  and submit a result over a raw socket with a chosen token (for rotation proofs).
+- **`expectInlineError(page, text)`** in `tests/journeys/support.ts`: asserts an
+  app inline message by text, avoiding the Next route-announcer `role="alert"`
+  ambiguity.
+- **Fixed a pre-existing build blocker**: four Storybook fixtures were missing
+  the `bridgewebsEventId` field on their `BridgeGame` literals, which failed the
+  production `tsc`/build the journeys depend on. Added `bridgewebsEventId: null`
+  to each.
 
-**Blocked (needs UI/hardware first, cannot E2E now):** Teams play (12),
-scoring-type selection (13), American Whist (14), cloud/subscription (15),
-WiFi success on real hardware (16), timer `restart:true` (17).
+### Running the BridgeWebs journeys
+
+Journeys use `--reporter=list` (the default `html` reporter opens a browser and
+blocks). The BridgeWebs upload/create journeys need the app server pointed at
+the mock — `playwright.config.ts` does this automatically for a Playwright-
+launched server; a manually-started reused server must set the same
+`BRIDGEWEBS_API_BASE`.

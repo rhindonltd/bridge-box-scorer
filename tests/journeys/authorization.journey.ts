@@ -244,13 +244,13 @@ test.describe("Authorization: HTTP routes", () => {
     test.setTimeout(90_000);
 
     const directorPage = await newParticipant(browser);
-    const { gameId } = await createGame(directorPage, {
+    const { gameId, directorToken } = await createGame(directorPage, {
       eventName: `Http Auth ${Date.now()}`,
       recordOpeningLead: false,
     });
 
     try {
-      await assertDirectorAndAdminRoutes(request, gameId);
+      await assertDirectorAndAdminRoutes(request, gameId, directorToken);
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
@@ -261,7 +261,28 @@ test.describe("Authorization: HTTP routes", () => {
 async function assertDirectorAndAdminRoutes(
   request: APIRequestContext,
   gameId: string,
+  directorToken: string,
 ): Promise<void> {
+  // Director-token validate: a valid token for this game -> 200 { valid:true };
+  // no token and a bogus token -> 401 (the guard runs before the handler).
+  const validOk = await request.get(
+    `/api/games/${gameId}/director/validate`,
+    { headers: { "x-director-token": directorToken } },
+  );
+  expect(validOk.status()).toBe(200);
+  expect((await validOk.json()).result).toEqual({ valid: true });
+
+  const validNoToken = await request.get(
+    `/api/games/${gameId}/director/validate`,
+  );
+  expect(validNoToken.status()).toBe(401);
+
+  const validBadToken = await request.get(
+    `/api/games/${gameId}/director/validate`,
+    { headers: { "x-director-token": "garbage" } },
+  );
+  expect(validBadToken.status()).toBe(401);
+
   // Director route (USEBIO GET) without a token header -> 401.
   const usebioNoToken = await request.get(`/api/games/${gameId}/usebio`);
   expect(usebioNoToken.status()).toBe(401);

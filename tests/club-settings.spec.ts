@@ -45,11 +45,16 @@ test.describe("Club Settings", () => {
     });
   });
 
-  test("club settings page shows Back button", async ({ page, request }) => {
+  test("club settings page shows a header back arrow", async ({
+    page,
+    request,
+  }) => {
     await unlockSettings(page, request);
     await page.goto("/settings/club");
+    // Back navigation is the shared header arrow (aria-label "Go back"), not an
+    // in-form "Back" button.
     await expect(
-      page.getByRole("button", { name: "Back", exact: true }),
+      page.getByRole("button", { name: "Go back", exact: true }),
     ).toBeVisible({ timeout: 10000 });
   });
 

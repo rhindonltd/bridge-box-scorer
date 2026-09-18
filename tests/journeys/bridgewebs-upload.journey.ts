@@ -4,7 +4,7 @@ import { deleteGame } from "../fixtures/delete-game";
 import { confirmEntireGame } from "../fixtures/complete-game";
 import { fetchAdminToken } from "../fixtures/settings";
 import { startBridgewebsMock, type BridgewebsMock } from "../fixtures/bridgewebs-mock";
-import { setUpStartedTwoTableGame } from "./support";
+import { setUpStartedTwoTableGame, expectInlineError } from "./support";
 
 /**
  * BridgeWebs upload journey.
@@ -159,12 +159,7 @@ test.describe("BridgeWebs upload", () => {
         .click();
 
       // A non-"Successful" reply renders as an inline error (not a status).
-      // Match by text rather than role: Next mounts its own aria-live
-      // route-announcer with role="alert", so a bare getByRole("alert") is
-      // ambiguous.
-      await expect(
-        directorPage.getByText(/Upload failed/i),
-      ).toBeVisible({ timeout: 15000 });
+      await expectInlineError(directorPage, /Upload failed/i);
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

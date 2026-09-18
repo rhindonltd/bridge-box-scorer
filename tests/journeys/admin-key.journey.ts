@@ -58,6 +58,36 @@ test.describe("Admin-key settings gate", () => {
       await page.context().close();
     }
   });
+
+  test("logging out re-gates the settings section", async ({ browser }) => {
+    test.setTimeout(60_000);
+
+    const key = deriveAdminKey();
+    test.skip(!key, "could not derive the device admin key on this host");
+
+    const page = await newParticipant(browser);
+    try {
+      // Unlock the gate.
+      await page.goto("/settings");
+      await page.locator("#admin-key").fill(key!);
+      await page.getByRole("button", { name: "Unlock" }).click();
+      await expect(
+        page.getByRole("link", { name: "WiFi Settings" }),
+      ).toBeVisible({ timeout: 15000 });
+
+      // Log out: the session is invalidated and the gate returns without a
+      // reload (the layout swaps in the admin-key prompt on token clear).
+      await page.getByRole("button", { name: "Log Out" }).click();
+      await expect(page.getByText("Admin Access")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(
+        page.getByRole("link", { name: "WiFi Settings" }),
+      ).toBeHidden();
+    } finally {
+      await page.context().close();
+    }
+  });
 });
 
 test.describe("Admin-key APIs", () => {
@@ -81,6 +111,33 @@ test.describe("Admin-key APIs", () => {
       data: {},
     });
     expect(missing.status()).toBe(400);
+  });
+
+  test("validate confirms a good token and rejects a missing/bogus one", async ({
+    request,
+  }) => {
+    const key = deriveAdminKey();
+    test.skip(!key, "could not derive the device admin key on this host");
+
+    const token = (await verifyKey(request, key!)).token!;
+    expect(token).toBeTruthy();
+
+    // A valid token -> 200 { valid: true }.
+    const ok = await request.get("/api/system/admin-key/validate", {
+      headers: { "x-admin-token": token },
+    });
+    expect(ok.status()).toBe(200);
+    expect((await ok.json()).result).toEqual({ valid: true });
+
+    // No token -> 401.
+    const noAuth = await request.get("/api/system/admin-key/validate");
+    expect(noAuth.status()).toBe(401);
+
+    // Bogus token -> 401.
+    const bogus = await request.get("/api/system/admin-key/validate", {
+      headers: { "x-admin-token": "not-a-real-token" },
+    });
+    expect(bogus.status()).toBe(401);
   });
 
   test("update rejects short keys and unauthenticated calls", async ({
