@@ -149,9 +149,9 @@ describe("ClubSettingsPage", () => {
     expect(await screen.findByText("Network error")).toBeInTheDocument();
   });
 
-  it("navigates back when Back is clicked", () => {
+  it("navigates back when the header back arrow is clicked", () => {
     render(<ClubSettingsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    fireEvent.click(screen.getByRole("button", { name: "Go back" }));
     expect(mockBack).toHaveBeenCalled();
   });
 });

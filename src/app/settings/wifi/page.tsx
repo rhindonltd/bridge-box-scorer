@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import { useRouter } from "next/navigation";
 import { Network } from "@/model/network";
 import { WifiSettingsForm } from "@/app/settings/wifi/WifiSettingsForm";
 import { WifiUnavailablePage } from "@/app/settings/wifi/WifiUnavailablePage";
@@ -9,6 +10,7 @@ import { swrKeys } from "@/swr/swr-keys";
 import { useWifiActions } from "./useWifiActions";
 
 export default function WifiSettings() {
+  const router = useRouter();
   const {
     loading,
     testing,
@@ -49,6 +51,7 @@ export default function WifiSettings() {
       onScan={scan}
       onTestConnection={test}
       onSaveWifi={save}
+      onBack={() => router.back()}
     />
   );
 }
