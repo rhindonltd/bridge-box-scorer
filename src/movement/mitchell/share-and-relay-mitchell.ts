@@ -13,7 +13,7 @@ export interface ShareAndRelayMovementSpec extends MitchellMovementSpec {
 
 export function generateShareAndRelayMitchell(
   spec: ShareAndRelayMovementSpec,
-): Tables<"PAIR"> {
+): Tables {
   validateMitchellSpec(spec);
 
   const { tables, rounds } = spec;

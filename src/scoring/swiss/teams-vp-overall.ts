@@ -39,7 +39,7 @@ function credit(
  * via the EW-seat-encodes-opponent convention) is shared with the USEBIO
  * exporter via `groupTeamMatches` / `teamMatchBoardImps`.
  */
-export function calculateSwissTeamsVpOverall(
+export function calculateTeamsVpOverall(
   boardRows: SwissVpBoardRow[],
 ): TeamSwissVpOverallScore {
   const totals = new Map<string, Accumulator>();

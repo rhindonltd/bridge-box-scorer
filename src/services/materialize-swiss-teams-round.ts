@@ -12,7 +12,7 @@ import {
 import { swissRoundBoardRange } from "@/services/materialize-swiss-round";
 import {
   expandTeamMatches,
-  type SwissTeamsMatch,
+  type TeamsMatch,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
 
 /**
@@ -61,7 +61,7 @@ function awayPairId(tableNumber: number): string {
 export function swissTeamsRoundToMaterializable(
   roundNumber: number,
   boardsPerRound: number,
-  matches: SwissTeamsMatch[],
+  matches: TeamsMatch[],
 ): MaterializableMovement {
   const { boardStart, boardEnd } = swissRoundBoardRange(
     roundNumber,
@@ -93,7 +93,7 @@ export async function materializeSwissTeamsRound(
   section: SectionLetter,
   roundNumber: number,
   boardsPerRound: number,
-  matches: SwissTeamsMatch[],
+  matches: TeamsMatch[],
 ): Promise<{ written: boolean }> {
   const db = await getDb(gameId);
   if (!db) {

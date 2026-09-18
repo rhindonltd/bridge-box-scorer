@@ -23,6 +23,7 @@ import {
 } from "@/services/movement-rehydration";
 import {
   materializeSections,
+  roundRobinTeamsToMaterializable,
   MaterializableMovement,
   MaterializableTable,
 } from "@/services/materialize-movement";
@@ -36,6 +37,7 @@ import {
   swissTeamsRoundOneSeed,
   swissTeamsRoundToMaterializable,
 } from "@/services/materialize-swiss-teams-round";
+import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
 
 /**
  * Resolution of a single section: its validation and, when valid, the concrete
@@ -127,6 +129,13 @@ export async function resolveSectionStart(
     return resolveSwissTeamsStart(section, selected, validation, gameId);
   }
 
+  // Teams Round Robin shares Swiss Teams' structural requirements (a full team
+  // at every table, an even team count) but, unlike Swiss Teams, its whole
+  // fixed schedule is materialized at start rather than drawn round by round.
+  if (selected.source === "ROUND_ROBIN_TEAMS") {
+    return resolveRoundRobinTeamsStart(selected, validation);
+  }
+
   if (!validation.canStart) {
     return { validation, movement: null };
   }
@@ -151,35 +160,14 @@ function resolveSwissTeamsStart(
   baseValidation: StartValidationResult,
   gameId: string,
 ): ResolvedStart {
-  const problems: StartProblem[] = [...baseValidation.problems];
-
-  // A Swiss Teams table must hold a full team; a one-pair-short section (which
-  // the base validator would allow as a single sit-out) is not valid here.
-  if (baseValidation.sitOutSeat !== null) {
-    problems.push({
-      code: "TEAMS_SIT_OUT_NOT_ALLOWED",
-      message:
-        "Swiss Teams needs a full team at every table — seat both pairs or remove the table. Sit-outs are not supported.",
-    });
-  }
-
   const { teams, boardsPerRound } = selected.swissTeams;
+  const validation = validateTeamsStructure(
+    baseValidation,
+    teams,
+    "Swiss Teams",
+  );
 
-  if (teams % 2 !== 0) {
-    problems.push({
-      code: "ODD_TEAM_COUNT",
-      message: `Swiss Teams needs an even number of teams — you have ${teams}. Add or remove a table before starting.`,
-    });
-  }
-
-  const canStart = problems.length === 0;
-  const validation: StartValidationResult = {
-    canStart,
-    sitOutSeat: null,
-    problems,
-  };
-
-  if (!canStart) {
+  if (!validation.canStart) {
     return { validation, movement: null };
   }
 
@@ -190,6 +178,65 @@ function resolveSwissTeamsStart(
     swissTeamsRoundOneSeed(gameId, section),
   );
   const movement = swissTeamsRoundToMaterializable(1, boardsPerRound, matches);
+
+  return { validation, movement };
+}
+
+/**
+ * The structural validations both teams formats share, on top of the base seat
+ * validation: every table must hold a full team (no single sit-out — that would
+ * be half a team), and the team count must be even (odd counts need bye /
+ * three-way handling, which is out of scope). `label` names the format in the
+ * director-facing messages.
+ */
+function validateTeamsStructure(
+  baseValidation: StartValidationResult,
+  teams: number,
+  label: string,
+): StartValidationResult {
+  const problems: StartProblem[] = [...baseValidation.problems];
+
+  if (baseValidation.sitOutSeat !== null) {
+    problems.push({
+      code: "TEAMS_SIT_OUT_NOT_ALLOWED",
+      message: `${label} needs a full team at every table — seat both pairs or remove the table. Sit-outs are not supported.`,
+    });
+  }
+
+  if (teams % 2 !== 0) {
+    problems.push({
+      code: "ODD_TEAM_COUNT",
+      message: `${label} needs an even number of teams — you have ${teams}. Add or remove a table before starting.`,
+    });
+  }
+
+  return { canStart: problems.length === 0, sitOutSeat: null, problems };
+}
+
+/**
+ * Resolve a Teams Round Robin section's start. It layers the shared teams
+ * structural validations (full team per table, even team count) on the base
+ * seat validation, then — when valid — generates the WHOLE fixed schedule
+ * (every team plays every other once) and materializes all of its rounds up
+ * front. There is no live draw: the schedule is deterministic from the spec.
+ */
+function resolveRoundRobinTeamsStart(
+  selected: Extract<SelectedMovement, { source: "ROUND_ROBIN_TEAMS" }>,
+  baseValidation: StartValidationResult,
+): ResolvedStart {
+  const { teams, rounds, boardsPerRound } = selected.roundRobinTeams;
+  const validation = validateTeamsStructure(
+    baseValidation,
+    teams,
+    "Round Robin Teams",
+  );
+
+  if (!validation.canStart) {
+    return { validation, movement: null };
+  }
+
+  const generated = generateRoundRobinTeams({ teams, rounds, boardsPerRound });
+  const movement = roundRobinTeamsToMaterializable(generated);
 
   return { validation, movement };
 }
@@ -299,7 +346,7 @@ function flattenAggregate(
 }
 
 /**
- * Convert a rehydrated movement into the round-oriented Tables<"PAIR"> shape
+ * Convert a rehydrated movement into the round-oriented Tables shape
  * used by deriveExpectedSeats. Only round 1 participants matter for expected seats,
  * but we map all rounds for completeness.
  */

@@ -39,7 +39,7 @@ describe("deriveExpectedSeats", () => {
   it("flags the phantom seat and excludes it from expected seats", () => {
     // A tiny hand-built 2-table movement whose EW pair at table 2 is the
     // phantom (movement position id 4).
-    const movement: Tables<"PAIR"> = {
+    const movement: Tables = {
       tables: [
         {
           table: 1,
@@ -96,7 +96,7 @@ describe("deriveExpectedSeats", () => {
 
   it("flags a phantom seated NS and excludes it", () => {
     // Table 1 NS pair is the phantom (movement position id 1).
-    const movement: Tables<"PAIR"> = {
+    const movement: Tables = {
       tables: [
         {
           table: 1,
@@ -121,7 +121,7 @@ describe("deriveExpectedSeats", () => {
 
   it("skips a table that has no round-1 layout", () => {
     // Table 2 only has a round 2 entry, so it is skipped entirely.
-    const movement: Tables<"PAIR"> = {
+    const movement: Tables = {
       tables: [
         {
           table: 1,

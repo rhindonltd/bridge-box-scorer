@@ -33,7 +33,7 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
   const { format } = classifyEvent(game.gameType, game.scoringType, movement);
 
   switch (format) {
-    case "SWISS_TEAMS_VP": {
+    case "TEAMS_VP": {
       const [teams, boardRows] = await Promise.all([
         findTeams(db),
         db.select().from(boards),

@@ -22,7 +22,7 @@ const TARGETS: { tables: number; rounds: number }[] = [
 
 const BOARDS_PER_ROUND = 3;
 
-function build(tables: number, rounds: number): Tables<"PAIR"> {
+function build(tables: number, rounds: number): Tables {
   return generateWebMitchell({
     tables,
     rounds,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { generateDoubleHesitationMitchell } from "./double-hesitation-mitchell";
 import { Tables } from "../../model/movement";
 
-function boardSetsByPair(movement: Tables<"PAIR">): Map<string, string[]> {
+function boardSetsByPair(movement: Tables): Map<string, string[]> {
   const byPair = new Map<string, string[]>();
   for (const table of movement.tables) {
     for (const round of table.rounds) {
@@ -15,7 +15,7 @@ function boardSetsByPair(movement: Tables<"PAIR">): Map<string, string[]> {
   return byPair;
 }
 
-function opponentsByPair(movement: Tables<"PAIR">): Map<string, string[]> {
+function opponentsByPair(movement: Tables): Map<string, string[]> {
   const byPair = new Map<string, string[]>();
   for (const table of movement.tables) {
     for (const round of table.rounds) {

@@ -90,7 +90,7 @@ describe("buildTables", () => {
       },
     ];
 
-    const tables = buildTables<"PAIR">(lines, roundParser);
+    const tables = buildTables(lines, roundParser);
 
     expect(tables).toEqual([
       {
@@ -258,13 +258,13 @@ describe("splitLinesOfFile", () => {
 
 describe("groupByRound", () => {
   it("returns empty rounds for empty tables", () => {
-    const movement: Tables<"PAIR"> = { tables: [] };
+    const movement: Tables = { tables: [] };
     const result = groupByRound(movement);
     expect(result.rounds).toEqual([]);
   });
 
   it("groups table data by round number", () => {
-    const movement: Tables<"PAIR"> = {
+    const movement: Tables = {
       tables: [
         {
           table: 1,

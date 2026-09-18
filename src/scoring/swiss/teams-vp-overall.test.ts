@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
-import { calculateSwissTeamsVpOverall } from "./swiss-teams-vp-overall";
+import { calculateTeamsVpOverall } from "./teams-vp-overall";
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
   return {
@@ -17,9 +17,9 @@ function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
   };
 }
 
-describe("calculateSwissTeamsVpOverall", () => {
+describe("calculateTeamsVpOverall", () => {
   it("returns empty, well-formed metadata for no rows", () => {
-    const result = calculateSwissTeamsVpOverall([]);
+    const result = calculateTeamsVpOverall([]);
     expect(result.type).toBe("TEAM_SWISS_VP");
     expect(result.mode).toBe("TEAM");
     expect(result.scoring).toBe("SWISS_VP");
@@ -46,7 +46,7 @@ describe("calculateSwissTeamsVpOverall", () => {
       }),
     ];
 
-    const result = calculateSwissTeamsVpOverall(rows);
+    const result = calculateTeamsVpOverall(rows);
 
     const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
     const t2 = result.lines.find((l) => l.teamId === "A2NS")!;
@@ -67,7 +67,7 @@ describe("calculateSwissTeamsVpOverall", () => {
       row({ tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
     ];
 
-    const result = calculateSwissTeamsVpOverall(rows);
+    const result = calculateTeamsVpOverall(rows);
     for (const line of result.lines) {
       expect(line.vpByRound[1]).toBe(10);
     }
@@ -79,7 +79,7 @@ describe("calculateSwissTeamsVpOverall", () => {
       row({ tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: null }),
     ];
 
-    const result = calculateSwissTeamsVpOverall(rows);
+    const result = calculateTeamsVpOverall(rows);
     expect(result.lines).toHaveLength(2);
     for (const line of result.lines) {
       expect(line.vpByRound[1]).toBe(10);
@@ -96,7 +96,7 @@ describe("calculateSwissTeamsVpOverall", () => {
       row({ tableNumber: 2, boardNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: null }),
     ];
 
-    const result = calculateSwissTeamsVpOverall(rows);
+    const result = calculateTeamsVpOverall(rows);
     const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
     // Only board 1 counts so far; team 1 leads and its cell is above neutral.
     expect(t1.vpByRound[1]).toBeGreaterThan(10);
@@ -114,7 +114,7 @@ describe("calculateSwissTeamsVpOverall", () => {
       row({ tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
     ];
 
-    const result = calculateSwissTeamsVpOverall(rows);
+    const result = calculateTeamsVpOverall(rows);
     const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
     const t2 = result.lines.find((l) => l.teamId === "A2NS")!;
     // The override (a slam at table 1) makes team 1 the clear winner.

@@ -53,7 +53,7 @@ export interface DoubleHesitationMitchellMovementSpec
  */
 export function generateDoubleHesitationMitchell(
   spec: DoubleHesitationMitchellMovementSpec,
-): Tables<"PAIR"> {
+): Tables {
   const { tables, boardsPerRound, arrowSwitchRounds = 0, modified = false } =
     spec;
 

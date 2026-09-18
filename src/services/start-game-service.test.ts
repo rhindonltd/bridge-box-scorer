@@ -318,4 +318,91 @@ describe("resolveSectionStart", () => {
     const b = await resolveSectionStart("A", spec, seatsForTables(6), "g1");
     expect(a.movement).toEqual(b.movement);
   });
+
+  it("resolves a fully-seated Round Robin Teams and materializes ALL rounds", async () => {
+    const teams = 6;
+    const rounds = 5; // a full round robin of 6 teams
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "ROUND_ROBIN_TEAMS",
+        roundRobinTeams: { teams, rounds, boardsPerRound: 4 },
+      },
+      seatsForTables(teams),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement).not.toBeNull();
+
+    // Six teams => six physical tables, each carrying every round (unlike Swiss
+    // Teams, which materializes only round 1 at start).
+    expect(
+      result.movement!.map((t) => t.tableNumber).sort((a, b) => a - b),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
+    for (const table of result.movement!) {
+      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3, 4, 5]);
+      for (const round of table.rounds) {
+        expect(round.boardStart).toBe((round.roundNumber - 1) * 4 + 1);
+        expect(round.boardEnd).toBe(round.roundNumber * 4);
+        expect(round.ns).toMatch(/NS$/);
+        expect(round.ew).toMatch(/EW$/);
+      }
+    }
+  });
+
+  it("blocks a Round Robin Teams start with an odd team count", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "ROUND_ROBIN_TEAMS",
+        roundRobinTeams: { teams: 5, rounds: 4, boardsPerRound: 4 },
+      },
+      seatsForTables(5),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(false);
+    expect(result.movement).toBeNull();
+    expect(result.validation.problems.map((p) => p.code)).toContain(
+      "ODD_TEAM_COUNT",
+    );
+  });
+
+  it("blocks a Round Robin Teams start when a table is one pair short", async () => {
+    const seated = seatsForTables(6).filter((s) => s !== "A3EW");
+
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "ROUND_ROBIN_TEAMS",
+        roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 4 },
+      },
+      seated,
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(false);
+    expect(result.movement).toBeNull();
+    expect(result.validation.problems.map((p) => p.code)).toContain(
+      "TEAMS_SIT_OUT_NOT_ALLOWED",
+    );
+  });
+
+  it("materializes a shortened Round Robin Teams (fewer than a full robin)", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "ROUND_ROBIN_TEAMS",
+        roundRobinTeams: { teams: 6, rounds: 3, boardsPerRound: 4 },
+      },
+      seatsForTables(6),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    for (const table of result.movement!) {
+      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3]);
+    }
+  });
 });

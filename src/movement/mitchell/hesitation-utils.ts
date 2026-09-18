@@ -126,7 +126,7 @@ export function arrowSwitchSeat(seat: {
 /**
  * Convert a resolved layout plus a precomputed board-set matrix
  * (`boardSetByTableRound[tableIndex][roundIndex]`, produced by each generator's
- * canonical relay slot layout) into the Tables<"PAIR"> shape. Pair numbers are
+ * canonical relay slot layout) into the Tables shape. Pair numbers are
  * stringified to match the one-winner numbering used across the Mitchell
  * generators.
  */
@@ -134,8 +134,8 @@ export function layoutToTables(
   layout: HesitationLayout,
   boardsPerRound: number,
   boardSetByTableRound: number[][],
-): Tables<"PAIR"> {
-  const result: Table<"PAIR">[] = [];
+): Tables {
+  const result: Table[] = [];
 
   for (let t = 0; t < layout.tables; t++) {
     const tableNumber = t + 1;

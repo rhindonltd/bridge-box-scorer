@@ -1,10 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
-import { Round, Rounds, Table, Tables } from "@/model/movement";
 import {
-  ParticipantsByMode,
-  TravellerParticipantMode,
-} from "@/model/participants";
+  PairParticipants,
+  Round,
+  Rounds,
+  Table,
+  Tables,
+} from "@/model/movement";
 import { boardsForSet } from "./mitchell/mitchell-utils";
 
 // ---- Types ----
@@ -29,14 +31,14 @@ export type MovementHeader = {
   missingParticipant: number;
 };
 
-export type Movement<M extends TravellerParticipantMode> = {
+export type Movement = {
   name: string;
   description: string;
   tables: number;
   boards: number;
   boardsPerRound: number;
   rounds: number;
-  tableData: Table<M>[];
+  tableData: Table[];
   missingParticipant?: number;
   type: MovementType;
 };
@@ -89,10 +91,10 @@ export const chunk = <T>(arr: T[], size: number): T[][] =>
     arr.slice(i * size, i * size + size),
   );
 
-export const buildMovementBase = <M extends TravellerParticipantMode>(
+export const buildMovementBase = (
   header: MovementHeader,
-  tables: Table<M>[],
-): Movement<M> => ({
+  tables: Table[],
+): Movement => ({
   name: header.name,
   description: header.name,
   tables: header.numberOfTables,
@@ -104,14 +106,14 @@ export const buildMovementBase = <M extends TravellerParticipantMode>(
   type: header.movementType,
 });
 
-export function buildTables<M extends TravellerParticipantMode>(
+export function buildTables(
   lines: string[],
   roundParser: (line: string) => {
     round: number;
     boards: number[];
-    participants: ParticipantsByMode[M];
+    participants: PairParticipants;
   }[],
-): Table<M>[] {
+): Table[] {
   return lines.slice(2).map((line, idx) => ({
     table: idx + 1,
     rounds: roundParser(line),
@@ -168,9 +170,7 @@ export const formatBoards = (boards: number[]): string => {
   return ranges.join(",");
 };
 
-export function groupByRound<M extends TravellerParticipantMode>(
-  movement: Tables<M>,
-): Rounds<M> {
+export function groupByRound(movement: Tables): Rounds {
   if (movement.tables.length === 0)
     return {
       rounds: [],
@@ -178,7 +178,7 @@ export function groupByRound<M extends TravellerParticipantMode>(
 
   const roundsCount = movement.tables[0].rounds.length;
 
-  const rounds: Round<M>[] = [];
+  const rounds: Round[] = [];
 
   for (let roundIdx = 0; roundIdx < roundsCount; roundIdx++) {
     const roundTables = movement.tables.map((table) => ({

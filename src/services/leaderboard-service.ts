@@ -17,7 +17,7 @@ import { parseSelectedMovement } from "@/model/selected-movement";
 import { classifyEvent, SwissVpMode } from "@/model/event-format";
 import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
-import { calculateSwissTeamsVpOverall } from "@/scoring/swiss/swiss-teams-vp-overall";
+import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
 
 /**
  * A computed leaderboard: the overall score plus the participants it ranks.
@@ -228,13 +228,13 @@ function computeCombined(
   gameId: string,
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
-  isSwissTeams: boolean,
+  isTeamsVp: boolean,
   teams: AssignedTeam[],
 ): LeaderboardResult {
-  // A Swiss Teams game ranks teams on Victory Points; every other game ranks
+  // A teams-VP game ranks teams on Victory Points; every other game ranks
   // pairs (Swiss VP or the standard board-pooled overall).
-  if (isSwissTeams) {
-    const overallScore = calculateSwissTeamsVpOverall(boardRows);
+  if (isTeamsVp) {
+    const overallScore = calculateTeamsVpOverall(boardRows);
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
@@ -258,7 +258,7 @@ function computeSections(
   pairs: Pairs,
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
-  isSwissTeams: boolean,
+  isTeamsVp: boolean,
   teams: AssignedTeam[],
 ): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
@@ -292,8 +292,8 @@ function computeSections(
   return sections.map((section): SectionLeaderboard => {
     const sectionRows = rowsBySection.get(section) ?? [];
 
-    if (isSwissTeams) {
-      const overallScore = calculateSwissTeamsVpOverall(sectionRows);
+    if (isTeamsVp) {
+      const overallScore = calculateTeamsVpOverall(sectionRows);
       return {
         section,
         type: overallScore.type,
@@ -321,7 +321,7 @@ async function readLeaderboardInputs(
 ): Promise<{
   scoringType: ScoringType;
   swissVpMode: SwissVpMode;
-  isSwissTeams: boolean;
+  isTeamsVp: boolean;
   boardRows: Board[];
   pairs: Pairs;
   teams: AssignedTeam[];
@@ -336,20 +336,20 @@ async function readLeaderboardInputs(
     game!.scoringType,
     movement,
   );
-  const isSwissTeams = classification.format === "SWISS_TEAMS_VP";
+  const isTeamsVp = classification.format === "TEAMS_VP";
   const swissVpMode: SwissVpMode = classification.swissVpMode;
 
   const [boardRows, pairs, teams] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
     findPairs(db),
-    // Teams are derived from the seating; only needed for a Swiss Teams game.
-    isSwissTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
+    // Teams are derived from the seating; only needed for a teams-VP game.
+    isTeamsVp ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
   ]);
 
   return {
     scoringType: game!.scoringType,
     swissVpMode,
-    isSwissTeams,
+    isTeamsVp,
     boardRows,
     pairs,
     teams,
@@ -367,7 +367,7 @@ export async function buildLeaderboards(
   db: Db,
   gameId: string,
 ): Promise<{ leaderboard: LeaderboardResult; sections: SectionLeaderboard[] }> {
-  const { scoringType, swissVpMode, isSwissTeams, boardRows, pairs, teams } =
+  const { scoringType, swissVpMode, isTeamsVp, boardRows, pairs, teams } =
     await readLeaderboardInputs(db, gameId);
   return {
     leaderboard: computeCombined(
@@ -376,7 +376,7 @@ export async function buildLeaderboards(
       gameId,
       scoringType,
       swissVpMode,
-      isSwissTeams,
+      isTeamsVp,
       teams,
     ),
     sections: computeSections(
@@ -384,7 +384,7 @@ export async function buildLeaderboards(
       pairs,
       scoringType,
       swissVpMode,
-      isSwissTeams,
+      isTeamsVp,
       teams,
     ),
   };
@@ -400,7 +400,7 @@ export async function computeLeaderboard(
   db: Db,
   gameId: string,
 ): Promise<LeaderboardResult> {
-  const { scoringType, swissVpMode, isSwissTeams, boardRows, pairs, teams } =
+  const { scoringType, swissVpMode, isTeamsVp, boardRows, pairs, teams } =
     await readLeaderboardInputs(db, gameId);
   return computeCombined(
     boardRows,
@@ -408,7 +408,7 @@ export async function computeLeaderboard(
     gameId,
     scoringType,
     swissVpMode,
-    isSwissTeams,
+    isTeamsVp,
     teams,
   );
 }
@@ -423,14 +423,14 @@ export async function computeSectionLeaderboards(
   db: Db,
   gameId: string,
 ): Promise<SectionLeaderboard[]> {
-  const { scoringType, swissVpMode, isSwissTeams, boardRows, pairs, teams } =
+  const { scoringType, swissVpMode, isTeamsVp, boardRows, pairs, teams } =
     await readLeaderboardInputs(db, gameId);
   return computeSections(
     boardRows,
     pairs,
     scoringType,
     swissVpMode,
-    isSwissTeams,
+    isTeamsVp,
     teams,
   );
 }

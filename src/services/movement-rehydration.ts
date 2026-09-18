@@ -61,13 +61,22 @@ export interface RehydratedMovement {
    * through the Swiss Teams path.
    */
   isSwissTeams: boolean;
+  /**
+   * True for a Teams Round Robin selection. Like Swiss Teams it rehydrates only
+   * round 1's positional seat layout here (enough for expected-seat
+   * derivation); unlike Swiss Teams the whole fixed schedule is generated and
+   * materialized at start (no live draw). The start pipeline uses this to route
+   * through the round-robin resolver, which shares Swiss Teams' structural
+   * validations (full team per table, even team count).
+   */
+  isRoundRobinTeams: boolean;
 }
 
 /**
- * Convert a generated Tables<"PAIR"> into the rehydrated movement shape.
+ * Convert a generated Tables into the rehydrated movement shape.
  */
 export function tablesToPairMovement(
-  tables: Tables<"PAIR">,
+  tables: Tables,
 ): RehydratedTable[] {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
@@ -105,6 +114,7 @@ export async function rehydrateSelectedMovement(
       isStandardMitchell,
       isSwiss: false,
       isSwissTeams: false,
+      isRoundRobinTeams: false,
     };
   }
 
@@ -136,6 +146,7 @@ export async function rehydrateSelectedMovement(
       isStandardMitchell: false,
       isSwiss: true,
       isSwissTeams: false,
+      isRoundRobinTeams: false,
     };
   }
 
@@ -165,6 +176,37 @@ export async function rehydrateSelectedMovement(
       isStandardMitchell: false,
       isSwiss: false,
       isSwissTeams: true,
+      isRoundRobinTeams: false,
+    };
+  }
+
+  if (selected.source === "ROUND_ROBIN_TEAMS") {
+    // Teams Round Robin rehydrates only round 1's positional seat layout (every
+    // table filled NS + EW), which is all the expected-seat derivation needs.
+    // The full fixed schedule is generated and materialized at start by the
+    // round-robin resolver — this stays a lightweight round-1 layout.
+    const { teams, boardsPerRound } = selected.roundRobinTeams;
+    const { boardStart, boardEnd } = swissRoundBoardRange(1, boardsPerRound);
+    const movement: RehydratedTable[] = swissRoundOne(teams).map((seat) => ({
+      tableNumber: seat.tableNumber,
+      rounds: [
+        {
+          roundNumber: 1,
+          ns: `${seat.tableNumber}NS`,
+          ew: `${seat.tableNumber}EW`,
+          boardStart,
+          boardEnd,
+          boardCopy: "A",
+        },
+      ],
+    }));
+    return {
+      movement,
+      missingPair: null,
+      isStandardMitchell: false,
+      isSwiss: false,
+      isSwissTeams: false,
+      isRoundRobinTeams: true,
     };
   }
 
@@ -197,5 +239,6 @@ export async function rehydrateSelectedMovement(
     isStandardMitchell: false,
     isSwiss: false,
     isSwissTeams: false,
+    isRoundRobinTeams: false,
   };
 }

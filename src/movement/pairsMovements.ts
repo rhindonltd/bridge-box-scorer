@@ -8,8 +8,7 @@ import {
   buildMovementBase,
   boardSetToBoardList,
 } from "./shared";
-import { Table } from "@/model/movement";
-import { ParticipantsByMode } from "@/model/participants";
+import { PairParticipants, Table } from "@/model/movement";
 
 // ---- Parser ----
 
@@ -20,7 +19,7 @@ const parsePairsRounds =
   ): {
     round: number;
     boards: number[];
-    participants: ParticipantsByMode["PAIR"];
+    participants: PairParticipants;
   }[] =>
     chunk(parseInts(line), 3).map(([ns, ew, boardSet], index) => ({
       round: index + 1,
@@ -33,13 +32,13 @@ const parsePairsRounds =
 
 // ---- Generator ----
 
-export const generatePairsMovements = (): Movement<"PAIR">[] =>
+export const generatePairsMovements = (): Movement[] =>
   splitLinesOfFile("PSMovements.txt")
     .filter((lines) => lines.length >= 2)
     .map((lines) => {
       const header = parseHeader(lines);
 
-      const tables: Table<"PAIR">[] = buildTables(
+      const tables: Table[] = buildTables(
         lines,
         parsePairsRounds(header.defaultBoardsPerSet),
       );

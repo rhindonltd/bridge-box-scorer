@@ -10,9 +10,11 @@ import { SelectedMovement } from "@/model/selected-movement";
  * - PAIRS_BOARD: an ordinary pairs event (MP / Butler / Cross-IMP), ranked by
  *   pooling every table's result on a board.
  * - SWISS_PAIRS_VP: a Swiss Pairs event, ranked on per-round Victory Points.
- * - SWISS_TEAMS_VP: a Swiss Teams event, ranked on per-round Victory Points.
+ * - TEAMS_VP: a teams event ranked on per-round Victory Points (Swiss Teams
+ *   today; every teams-VP movement shares this format regardless of how its
+ *   schedule is drawn).
  */
-export type EventFormat = "PAIRS_BOARD" | "SWISS_PAIRS_VP" | "SWISS_TEAMS_VP";
+export type EventFormat = "PAIRS_BOARD" | "SWISS_PAIRS_VP" | "TEAMS_VP";
 
 /**
  * How a Swiss Pairs game derives its per-round Victory Points, or null when the
@@ -49,9 +51,9 @@ export interface EventClassification {
  *
  * The rules preserve the behaviour these consumers had before this classifier
  * existed:
- * - A Teams game whose movement is Swiss Teams is SWISS_TEAMS_VP. (A TEAMS
- *   game type alone does not imply the teams format — the movement must also be
- *   Swiss Teams.)
+ * - A Teams game whose movement is a teams-VP movement (Swiss Teams or Teams
+ *   Round Robin) is TEAMS_VP. (A TEAMS game type alone does not imply the teams
+ *   format — the movement must also be one of those.)
  * - Any Swiss (Pairs) movement is SWISS_PAIRS_VP; its `swissVpMode` is the
  *   scoring type when that maps to a VP method (IMP or MP), else null. A Swiss
  *   movement with an unmapped scoring type therefore still classifies as
@@ -59,13 +61,26 @@ export interface EventClassification {
  *   board-pooled overall exactly as before.
  * - Everything else is PAIRS_BOARD.
  */
+/**
+ * Whether a selected movement is a teams-VP movement (ranked on per-round
+ * Victory Points via the shared teams scorer). Both Swiss Teams and Teams Round
+ * Robin qualify — they differ only in how the schedule is produced (live draw
+ * vs fixed), not in how they are scored.
+ */
+function isTeamsVpMovement(movement: SelectedMovement | null): boolean {
+  return (
+    movement?.source === "SWISS_TEAMS" ||
+    movement?.source === "ROUND_ROBIN_TEAMS"
+  );
+}
+
 export function classifyEvent(
   gameType: GameType,
   scoringType: ScoringType,
   movement: SelectedMovement | null,
 ): EventClassification {
-  if (gameType === "TEAMS" && movement?.source === "SWISS_TEAMS") {
-    return { format: "SWISS_TEAMS_VP", scoringType, swissVpMode: null };
+  if (gameType === "TEAMS" && isTeamsVpMovement(movement)) {
+    return { format: "TEAMS_VP", scoringType, swissVpMode: null };
   }
 
   if (movement?.source === "SWISS") {

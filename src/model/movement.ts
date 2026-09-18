@@ -1,8 +1,3 @@
-import {
-  TravellerParticipantMode,
-  ParticipantsByMode,
-} from "@/model/participants";
-
 /**
  * The physical duplicate copy of a board set a table plays in a given round.
  *
@@ -14,41 +9,62 @@ import {
  */
 export type BoardCopy = string;
 
-export type Round<M extends TravellerParticipantMode> = {
+/**
+ * The two seats of a table in a given round, named by the participant id that
+ * sits there. For a pairs movement these are the NS and EW pair ids; for a
+ * teams movement they are the home pair (NS) and the travelling away pair (EW),
+ * which is why a single `{ nsId, ewId }` shape covers every movement the
+ * generators produce (teams are laid out as pair seats — see the
+ * `${table}NS` / `${table}EW` convention in the teams materializers).
+ *
+ * This used to be `ParticipantsByMode[M]` behind a `TravellerParticipantMode`
+ * type parameter, but every movement the generators build is a pair-seat
+ * layout, so the parameter was always `"PAIR"` and carried no information. The
+ * traveller/leaderboard layers keep their own mode system (which does have a
+ * real `"TEAM"` mode); this is only the movement-generation shape.
+ */
+export type PairParticipants = {
+  nsId: string;
+  ewId: string;
+};
+
+export type Round = {
   round: number;
   tables: {
     table: number;
     boards: number[];
     boardCopy?: BoardCopy;
-    participants: ParticipantsByMode[M];
+    participants: PairParticipants;
   }[];
 };
 
-export type Table<M extends TravellerParticipantMode> = {
+export type Table = {
   table: number;
   rounds: {
     round: number;
     boards: number[];
     boardCopy?: BoardCopy;
-    participants: ParticipantsByMode[M];
+    participants: PairParticipants;
   }[];
 };
 
-export interface Rounds<M extends TravellerParticipantMode> {
-  rounds: Round<M>[];
+export interface Rounds {
+  rounds: Round[];
 }
 
-export interface Tables<M extends TravellerParticipantMode> {
-  tables: Table<M>[];
+export interface Tables {
+  tables: Table[];
 }
 
-// Top-level discriminated type
-export type Movement<M extends TravellerParticipantMode> = {
-  type: M;
-} & Rounds<M>;
+// Top-level movement. The `type` discriminant is retained (always "PAIR") so
+// existing consumers that narrow on it keep working; there is only one movement
+// shape now that the mode parameter is gone.
+export type Movement = {
+  type: "PAIR";
+} & Rounds;
 
-// Convenience alias
-export type PairMovement = Movement<"PAIR">;
+// Convenience alias, kept for readability at call sites.
+export type PairMovement = Movement;
 
-// Union for runtime usage
+// Union for runtime usage.
 export type AnyMovement = PairMovement;

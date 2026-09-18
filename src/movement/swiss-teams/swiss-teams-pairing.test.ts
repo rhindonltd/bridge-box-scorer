@@ -2,14 +2,14 @@ import { describe, it, expect } from "vitest";
 import {
   drawSwissTeamsRound,
   expandTeamMatches,
-  swissTeamIds,
+  teamIds,
   swissTeamsRoundOne,
   teamOpponentKey,
 } from "./swiss-teams-pairing";
 
-describe("swissTeamIds", () => {
+describe("teamIds", () => {
   it("returns 1..teams", () => {
-    expect(swissTeamIds(4)).toEqual([1, 2, 3, 4]);
+    expect(teamIds(4)).toEqual([1, 2, 3, 4]);
   });
 });
 

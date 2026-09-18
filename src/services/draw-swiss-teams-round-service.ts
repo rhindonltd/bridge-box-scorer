@@ -6,9 +6,9 @@ import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import { materializeSwissTeamsRound } from "@/services/materialize-swiss-teams-round";
 import {
   drawSwissTeamsRound,
-  swissTeamIds,
+  teamIds,
   teamOpponentKey,
-  type SwissTeamId,
+  type TeamId,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
 import { SectionLetter, parseSeat } from "@/model/participants";
 
@@ -111,12 +111,12 @@ async function rankedStandings(
   gameId: string,
   section: SectionLetter,
   teams: number,
-): Promise<SwissTeamId[]> {
+): Promise<TeamId[]> {
   const sections = await computeSectionLeaderboards(db, gameId);
   const sectionBoard = sections.find((s) => s.section === section);
 
-  const ordered: SwissTeamId[] = [];
-  const seen = new Set<SwissTeamId>();
+  const ordered: TeamId[] = [];
+  const seen = new Set<TeamId>();
 
   if (sectionBoard) {
     for (const line of sectionBoard.overallScore.lines as {
@@ -134,7 +134,7 @@ async function rankedStandings(
     }
   }
 
-  for (const id of swissTeamIds(teams)) {
+  for (const id of teamIds(teams)) {
     if (!seen.has(id)) {
       ordered.push(id);
       seen.add(id);

@@ -41,7 +41,7 @@ export interface HesitationMitchellMovementSpec extends MitchellMovementSpec {
  */
 export function generateHesitationMitchell(
   spec: HesitationMitchellMovementSpec,
-): Tables<"PAIR"> {
+): Tables {
   const { tables, boardsPerRound, arrowSwitchRounds = 0 } = spec;
 
   validateHesitationMitchellSpec(spec);

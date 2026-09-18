@@ -44,14 +44,14 @@ export type MovementByRound = {
 };
 
 /**
- * Map a generated pair movement (`Tables<"PAIR">`) to the `MovementByTable`
+ * Map a generated pair movement (`Tables`) to the `MovementByTable`
  * display shape, carrying each round's `boardCopy` through. Board numbers come
  * straight from the generator's explicit `boards` list, so this works for every
  * Mitchell-family movement including Web (which is the only family that sets a
  * meaningful `boardCopy`).
  */
 export function generatedToMovementByTable(
-  generated: Tables<"PAIR">,
+  generated: Tables,
 ): MovementByTable[] {
   return generated.tables.map((t) => ({
     tableNumber: t.table,

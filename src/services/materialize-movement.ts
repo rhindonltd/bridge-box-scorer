@@ -171,11 +171,14 @@ async function insertSectionRows(
 }
 
 /**
- * Convert the generateMitchell output (Tables<"PAIR">) into the
- * MaterializableMovement shape.
+ * Convert a generated, fully-expanded {@link Tables} movement (board numbers
+ * already applied) into the {@link MaterializableMovement} shape the DB writers
+ * consume. Movement-agnostic: it only reads the per-table, per-round layout, so
+ * every generator that emits `Tables` — Mitchell-family pairs and Teams Round
+ * Robin alike — shares it.
  */
-export function mitchellToPairMovement(
-  tables: Tables<"PAIR">,
+export function tablesToMaterializableMovement(
+  tables: Tables,
 ): MaterializableMovement {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
@@ -188,4 +191,27 @@ export function mitchellToPairMovement(
       boardCopy: round.boardCopy,
     })),
   }));
+}
+
+/**
+ * Convert the generateMitchell output (Tables) into the MaterializableMovement
+ * shape. Thin alias over {@link tablesToMaterializableMovement}, kept for its
+ * existing Mitchell call sites.
+ */
+export function mitchellToPairMovement(
+  tables: Tables,
+): MaterializableMovement {
+  return tablesToMaterializableMovement(tables);
+}
+
+/**
+ * Convert a generated Teams Round Robin (`generateRoundRobinTeams` output) into
+ * the MaterializableMovement shape. Thin alias over
+ * {@link tablesToMaterializableMovement}; named for its call site so the start
+ * pipeline reads clearly.
+ */
+export function roundRobinTeamsToMaterializable(
+  tables: Tables,
+): MaterializableMovement {
+  return tablesToMaterializableMovement(tables);
 }

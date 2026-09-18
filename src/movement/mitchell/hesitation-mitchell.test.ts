@@ -3,7 +3,7 @@ import { generateHesitationMitchell } from "./hesitation-mitchell";
 import { Tables } from "../../model/movement";
 
 /** All (pair -> board sets played) across the whole movement. */
-function boardSetsByPair(movement: Tables<"PAIR">): Map<string, string[]> {
+function boardSetsByPair(movement: Tables): Map<string, string[]> {
   const byPair = new Map<string, string[]>();
   for (const table of movement.tables) {
     for (const round of table.rounds) {
@@ -19,7 +19,7 @@ function boardSetsByPair(movement: Tables<"PAIR">): Map<string, string[]> {
 }
 
 /** All (pair -> opponents met) across the whole movement. */
-function opponentsByPair(movement: Tables<"PAIR">): Map<string, string[]> {
+function opponentsByPair(movement: Tables): Map<string, string[]> {
   const byPair = new Map<string, string[]>();
   for (const table of movement.tables) {
     for (const round of table.rounds) {

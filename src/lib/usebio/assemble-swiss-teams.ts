@@ -32,7 +32,7 @@ import {
  * per-board net converts to IMPs and the match's summed IMP margin converts to
  * WHOLE-integer Victory Points on the WBF 20-point scale.
  *
- * This mirrors `calculateSwissTeamsVpOverall`'s match reconstruction (home
+ * This mirrors `calculateTeamsVpOverall`'s match reconstruction (home
  * tables paired via the EW-seat encoding) but additionally emits the per-board
  * IMPs, both rooms' traveller lines and the per-match VP split the export
  * needs. Integer VPs are used throughout per the export's requirement.
