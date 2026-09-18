@@ -272,6 +272,26 @@ async function assertDirectorAndAdminRoutes(
   });
   expect(usebioBadToken.status()).toBe(401);
 
+  // PBN export is also a director-authed GET: no token and a bogus token -> 401.
+  const pbnNoToken = await request.get(`/api/games/${gameId}/pbn`);
+  expect(pbnNoToken.status()).toBe(401);
+  const pbnBadToken = await request.get(`/api/games/${gameId}/pbn`, {
+    headers: { "x-director-token": "garbage" },
+  });
+  expect(pbnBadToken.status()).toBe(401);
+
+  // BridgeWebs upload is a director-authed POST: no token and a bogus token ->
+  // 401 (auth runs before any BridgeWebs call, so this never hits the network).
+  const bwNoToken = await request.post(
+    `/api/games/${gameId}/bridgewebs/upload`,
+  );
+  expect(bwNoToken.status()).toBe(401);
+  const bwBadToken = await request.post(
+    `/api/games/${gameId}/bridgewebs/upload`,
+    { headers: { "x-director-token": "garbage" } },
+  );
+  expect(bwBadToken.status()).toBe(401);
+
   // Director DELETE without a token in the body -> 400/401 (never deletes).
   const delNoToken = await request.delete(`/api/games/${gameId}/delete`, {
     data: {},

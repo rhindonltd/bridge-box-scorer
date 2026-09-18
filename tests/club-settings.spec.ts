@@ -48,9 +48,9 @@ test.describe("Club Settings", () => {
   test("club settings page shows Back button", async ({ page, request }) => {
     await unlockSettings(page, request);
     await page.goto("/settings/club");
-    await expect(page.getByRole("button", { name: "Back" })).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(
+      page.getByRole("button", { name: "Back", exact: true }),
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test("GET /api/system/club returns club data", async ({ request }) => {

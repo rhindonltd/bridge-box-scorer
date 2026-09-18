@@ -14,8 +14,16 @@
  * pass them in.
  */
 
-/** Base endpoint. The `club` query param is appended per the API docs. */
+/**
+ * Base endpoint. The `club` query param is appended per the API docs.
+ *
+ * Defaults to the real BridgeWebs API. `BRIDGEWEBS_API_BASE` can override it so
+ * tests (and any self-hosted proxy) can point the outbound POST at a stand-in
+ * server without touching the client — mirroring how the data dir and the
+ * crypto key path are env-overridable.
+ */
 export const BRIDGEWEBS_API_BASE =
+  process.env.BRIDGEWEBS_API_BASE ??
   "https://www.bridgewebs.com/cgi-bin/bwx/api.cgi";
 
 /** Fields sent to the API. All values are strings (form-encoded). */
