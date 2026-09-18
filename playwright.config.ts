@@ -27,6 +27,21 @@ function loadDotEnv(): void {
 loadDotEnv();
 
 /**
+ * Point the app's BridgeWebs client at a LOCAL mock instead of the real
+ * BridgeWebs API for the whole test run. The upload is a server-side POST, so
+ * it can't be intercepted in the browser; instead the app server is launched
+ * with `BRIDGEWEBS_API_BASE` set here (passed through via `webServer.env`), and
+ * the BridgeWebs journey starts a matching mock server on this origin (see
+ * tests/fixtures/bridgewebs-mock.ts). This guarantees no test ever reaches the
+ * real BridgeWebs. An operator can still override it by exporting their own
+ * `BRIDGEWEBS_API_BASE` before running (e.g. to point at a sandbox).
+ */
+const BRIDGEWEBS_MOCK_BASE = "http://127.0.0.1:3999/cgi-bin/bwx/api.cgi";
+if (process.env.BRIDGEWEBS_API_BASE === undefined) {
+  process.env.BRIDGEWEBS_API_BASE = BRIDGEWEBS_MOCK_BASE;
+}
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -128,5 +143,10 @@ export default defineConfig({
     command: "npm run start",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    // Point the app server's BridgeWebs client at the local mock. NOTE: when a
+    // server is already running and reused (reuseExistingServer), this env is
+    // NOT applied to it — start that server with the same BRIDGEWEBS_API_BASE,
+    // or let Playwright launch it here.
+    env: { BRIDGEWEBS_API_BASE: process.env.BRIDGEWEBS_API_BASE! },
   },
 });
