@@ -1,10 +1,13 @@
 "use client";
 
+import { HeaderBar } from "@/components/layout/HeaderBar";
+
 /**
  * Presentational BridgeWebs settings form. Owns no data fetching — the parent
  * ({@link BridgewebsSettingsPage}) loads the configured status over SWR and
- * performs the save. Splitting it out keeps the form storyable and testable
- * without request mocking.
+ * performs the save. The header's back arrow returns to the previous screen.
+ * Splitting it out keeps the form storyable and testable without request
+ * mocking.
  *
  * The password field is always edit-only: the stored password is never sent to
  * the client, so a blank password on an already-configured account means "keep
@@ -37,9 +40,7 @@ export function BridgewebsSettingsForm({
 }: BridgewebsSettingsFormProps) {
   return (
     <div className="min-h-dvh flex flex-col bg-white">
-      <div className="bg-gray-200 text-gray-800 py-3 text-center font-bold text-lg shrink-0">
-        BridgeWebs
-      </div>
+      <HeaderBar headerTitle="BridgeWebs" backAction={onBack} />
 
       <form
         onSubmit={onSave}
@@ -109,14 +110,6 @@ export function BridgewebsSettingsForm({
             className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onBack}
-            className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          >
-            Back
           </button>
         </div>
       </form>
