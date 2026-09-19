@@ -38,11 +38,33 @@ vi.mock("@/scoring/plugins/registry", async (importOriginal) => {
   };
 });
 
+// Teams are only read for teams-VP games; mock the query so those paths don't
+// touch a real db.
+vi.mock("@/db/games/queries/find-teams", () => ({
+  findTeams: vi.fn(),
+}));
+
+// The Swiss/Teams VP overall calculators are exercised elsewhere; here we mock
+// them to assert routing and return canned overalls.
+vi.mock("@/scoring/swiss/swiss-vp-overall", () => ({
+  calculateSwissVpOverall: vi.fn(),
+}));
+vi.mock("@/scoring/swiss/swiss-mp-vp-overall", () => ({
+  calculateSwissMpVpOverall: vi.fn(),
+}));
+vi.mock("@/scoring/swiss/teams-vp-overall", () => ({
+  calculateTeamsVpOverall: vi.fn(),
+}));
+
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import { findTeams } from "@/db/games/queries/find-teams";
 import { scoreBoard } from "@/scoring/traveller/score-traveller";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
+import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
+import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
+import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
 
 /** Build a mock overall plugin whose aggregate returns the given overall score. */
 function mockOverallPlugin(overallScore: unknown) {
@@ -476,5 +498,318 @@ describe("computeSectionLeaderboards", () => {
     // Section B has a pair but no board rows -> scoreBoardsToOverall gets [].
     expect(result[1].section).toBe("B");
     expect(result[1].participants).toHaveLength(1);
+  });
+});
+
+/** A db whose `select().from()` resolves to the given board rows. */
+function dbWithBoards(rows: unknown[]): Db {
+  return {
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockResolvedValue(rows),
+    }),
+  } as unknown as Db;
+}
+
+describe("Swiss Pairs VP routing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // A Swiss Pairs game: selectedMovement encodes a SWISS spec so classifyEvent
+    // returns SWISS_PAIRS_VP; scoringType decides the VP mode.
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "IMP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS",
+        swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
+      }),
+    } as BridgeGame);
+    vi.mocked(findPairs).mockResolvedValue([]);
+  });
+
+  it("uses the Swiss IMP-VP overall for a Swiss + IMP game", async () => {
+    vi.mocked(calculateSwissVpOverall).mockReturnValue({
+      type: "SWISS_VP",
+      lines: [],
+    } as any);
+
+    const result = await computeLeaderboard(dbWithBoards([]), "game-1");
+
+    expect(calculateSwissVpOverall).toHaveBeenCalledTimes(1);
+    expect(calculateSwissMpVpOverall).not.toHaveBeenCalled();
+    expect(result.type).toBe("SWISS_VP");
+  });
+
+  it("uses the Swiss MP-VP overall for a Swiss + MP game", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS",
+        swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
+      }),
+    } as BridgeGame);
+    vi.mocked(calculateSwissMpVpOverall).mockReturnValue({
+      type: "SWISS_MP_VP",
+      lines: [],
+    } as any);
+
+    const result = await computeLeaderboard(dbWithBoards([]), "game-1");
+
+    expect(calculateSwissMpVpOverall).toHaveBeenCalledTimes(1);
+    expect(result.type).toBe("SWISS_MP_VP");
+  });
+});
+
+describe("Teams VP routing", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "TEAMS",
+      scoringType: "IMP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
+      }),
+    } as BridgeGame);
+    vi.mocked(findPairs).mockResolvedValue([]);
+  });
+
+  it("ranks teams on VP for a teams-VP game (combined and per-section)", async () => {
+    vi.mocked(findTeams).mockResolvedValue([
+      { id: "A1NS", type: "TEAM" } as any,
+    ]);
+    vi.mocked(calculateTeamsVpOverall).mockReturnValue({
+      type: "TEAMS_VP",
+      lines: [],
+    } as any);
+
+    const combined = await computeLeaderboard(
+      dbWithBoards([{ boardNumber: 1, ns: "A1NS", ew: "A2EW", section: "A" }]),
+      "game-1",
+    );
+    expect(combined.type).toBe("TEAMS_VP");
+    expect(combined.participants).toHaveLength(1);
+
+    const sections = await computeSectionLeaderboards(
+      dbWithBoards([
+        { boardNumber: 1, ns: "A1NS", ew: "A2EW", section: "A" },
+        // Section B has board rows but no team -> exercises the `?? []`
+        // fallback for teamsBySection in the per-section teams-VP path.
+        { boardNumber: 1, ns: "B1NS", ew: "B2EW", section: "B" },
+      ]),
+      "game-1",
+    );
+    expect(sections.map((s) => s.section)).toEqual(["A", "B"]);
+    expect(sections[0].type).toBe("TEAMS_VP");
+    expect(sections[0].participants).toHaveLength(1);
+    expect(sections[1].participants).toHaveLength(0);
+    // findTeams is consulted for a teams-VP game.
+    expect(findTeams).toHaveBeenCalled();
+  });
+});
+
+describe("Swiss sit-out synthetic scoring", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(findPairs).mockResolvedValue([]);
+    // A non-Swiss-VP MP game so scoreBoardsToOverall (and its sit-out helper)
+    // runs. (swissVpMode null -> falls through to the board-pooled overall.)
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+    } as BridgeGame);
+  });
+
+  it("credits a bye pair 60% of the board top under matchpoints", async () => {
+    vi.mocked(getCombination).mockReturnValue({
+      perBoard: "MP",
+      overall: "MP",
+    });
+    // A real played board (board 1) gives a maxMatchPoints top of 2; a SIT_OUT
+    // row on the same board credits the bye pair 60% of that top.
+    vi.mocked(scoreBoard).mockReturnValue({
+      pluginId: "MP",
+      board: 1,
+      lines: [
+        {
+          nsId: "1",
+          ewId: "2",
+          nsMatchPoints: 2,
+          ewMatchPoints: 0,
+          maxMatchPoints: 2,
+        },
+      ],
+    } as any);
+    const aggregate = mockOverallPlugin({ type: "PAIR_MP", lines: [] });
+
+    await computeLeaderboard(
+      dbWithBoards([
+        {
+          boardNumber: 1,
+          ns: "1",
+          ew: "2",
+          section: "A",
+          status: "CONFIRMED",
+          confirmedResult: "3NTN=",
+          directorOverrideResult: null,
+        },
+        {
+          boardNumber: 1,
+          ns: "5",
+          ew: "PHANTOM",
+          section: "A",
+          status: "SIT_OUT",
+          confirmedResult: null,
+          directorOverrideResult: null,
+        },
+      ]),
+      "game-1",
+    );
+
+    // The aggregator receives the real board line plus one synthetic sit-out
+    // line crediting pair 5 with 0.6 * 2 = 1.2 matchpoints.
+    const passed = aggregate.mock.calls[0][0] as { lines: any[] }[];
+    const allLines = passed.flatMap((b) => b.lines);
+    expect(
+      allLines.some((l) => l.nsId === "5" && l.nsMatchPoints === 1.2),
+    ).toBe(true);
+  });
+
+  it("skips the bye credit when no sibling board has been scored yet", async () => {
+    vi.mocked(getCombination).mockReturnValue({
+      perBoard: "MP",
+      overall: "MP",
+    });
+    // No played board on board 7 -> top unknown -> the bye is credited nothing.
+    const aggregate = mockOverallPlugin({ type: "PAIR_MP", lines: [] });
+
+    await computeLeaderboard(
+      dbWithBoards([
+        {
+          boardNumber: 7,
+          ns: "5",
+          ew: "PHANTOM",
+          section: "A",
+          status: "SIT_OUT",
+          confirmedResult: null,
+          directorOverrideResult: null,
+        },
+      ]),
+      "game-1",
+    );
+
+    const passed = aggregate.mock.calls[0][0] as { lines: any[] }[];
+    expect(passed.flatMap((b) => b.lines)).toHaveLength(0);
+    expect(scoreBoard).not.toHaveBeenCalled();
+  });
+
+  it("credits a bye pair zero net imps under IMP scoring", async () => {
+    vi.mocked(getCombination).mockReturnValue({
+      perBoard: "IMP",
+      overall: "IMP",
+    });
+    const aggregate = mockOverallPlugin({ type: "PAIR_IMP", lines: [] });
+
+    await computeLeaderboard(
+      dbWithBoards([
+        {
+          boardNumber: 1,
+          ns: "5",
+          ew: "PHANTOM",
+          section: "A",
+          status: "SIT_OUT",
+          confirmedResult: null,
+          directorOverrideResult: null,
+        },
+      ]),
+      "game-1",
+    );
+
+    const allLines = (aggregate.mock.calls[0][0] as { lines: any[] }[]).flatMap(
+      (b) => b.lines,
+    );
+    expect(
+      allLines.some((l) => l.nsId === "5" && l.nsImps === 0 && l.ewImps === 0),
+    ).toBe(true);
+  });
+
+  it("credits a bye pair zero cross-imps under Cross-IMP scoring", async () => {
+    vi.mocked(getCombination).mockReturnValue({
+      perBoard: "PAIR_XIMP",
+      overall: "PAIR_XIMP",
+    });
+    const aggregate = mockOverallPlugin({ type: "PAIR_XIMP", lines: [] });
+
+    await computeLeaderboard(
+      dbWithBoards([
+        {
+          boardNumber: 1,
+          ns: "5",
+          ew: "PHANTOM",
+          section: "A",
+          status: "SIT_OUT",
+          confirmedResult: null,
+          directorOverrideResult: null,
+        },
+      ]),
+      "game-1",
+    );
+
+    const allLines = (aggregate.mock.calls[0][0] as { lines: any[] }[]).flatMap(
+      (b) => b.lines,
+    );
+    expect(
+      allLines.some(
+        (l) => l.nsId === "5" && l.nsCrossImps === 0 && l.ewCrossImps === 0,
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("buildLeaderboards", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+    } as BridgeGame);
+    vi.mocked(getCombination).mockReturnValue({
+      perBoard: "MP",
+      overall: "MP",
+    });
+    vi.mocked(findPairs).mockResolvedValue([]);
+  });
+
+  it("computes both the combined and per-section leaderboards from a single read", async () => {
+    const { buildLeaderboards } = await import("./leaderboard-service");
+    mockOverallPlugin({ type: "PAIR_MP", lines: [] });
+    vi.mocked(scoreBoard).mockReturnValue({
+      pluginId: "MP",
+      board: 1,
+      lines: [],
+    } as any);
+
+    const db = dbWithBoards([
+      {
+        boardNumber: 1,
+        ns: "1",
+        ew: "2",
+        section: "A",
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+      },
+    ]);
+
+    const { leaderboard, sections } = await buildLeaderboards(db, "game-1");
+
+    expect(leaderboard.type).toBe("PAIR_MP");
+    expect(sections).toHaveLength(1);
+    expect(sections[0].section).toBe("A");
   });
 });

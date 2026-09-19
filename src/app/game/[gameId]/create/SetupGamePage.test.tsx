@@ -21,10 +21,17 @@ vi.mock("@/hooks/flow", () => ({
 }));
 
 vi.mock("./ShowTablesPage", () => ({
-  ShowTablesPage: ({ menu }: { menu?: React.ReactNode }) => (
+  ShowTablesPage: ({
+    menu,
+    onEditMovement,
+  }: {
+    menu?: React.ReactNode;
+    onEditMovement?: () => void;
+  }) => (
     <div>
       {menu}
       <div>tables-view</div>
+      <button onClick={() => onEditMovement?.()}>edit-movement</button>
     </div>
   ),
 }));
@@ -104,6 +111,26 @@ describe("SetupGamePage setup menu", () => {
     );
   });
 
+  it("navigates to the tables step when the Tables item is chosen", async () => {
+    // Start on a different step so choosing Tables actually invokes its
+    // onSelect handler.
+    currentStep = "timer";
+    render(<SetupGamePage />);
+
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Tables" }));
+    expect(mockGoTo).toHaveBeenCalledWith("tables");
+  });
+
+  it("jumps to the movements step from the Tables view's edit-movement action", async () => {
+    render(<SetupGamePage />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "edit-movement" }),
+    );
+    expect(mockGoTo).toHaveBeenCalledWith("movements");
+  });
+
   it("navigates to the movements step when the Movement item is chosen", async () => {
     render(<SetupGamePage />);
 
@@ -174,7 +201,9 @@ describe("SetupGamePage setup menu", () => {
       screen.queryByRole("menuitem", { name: "Manage sections" }),
     ).toBeNull();
     // The other items remain.
-    expect(screen.getByRole("menuitem", { name: "Tables" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Tables" }),
+    ).toBeInTheDocument();
   });
 
   it("redirects away from manage-sections when the game is single-section", () => {

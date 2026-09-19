@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 
 // ---- mocks ----
 
@@ -43,19 +49,13 @@ describe("CreateGamePage", () => {
     expect(screen.queryByText("Initial Tables")).not.toBeInTheDocument();
   });
 
-  it("renders a Date Played field defaulting to today", () => {
+  it("does not render a Date Played field", () => {
     render(<CreateGamePage />);
-    const input = screen.getByLabelText("Date Played") as HTMLInputElement;
-    expect(input).toHaveAttribute("type", "date");
-    expect(input.value).toBe(todayDateOnly());
+    expect(screen.queryByLabelText("Date Played")).not.toBeInTheDocument();
   });
 
-  it("submits with tables defaulted to 5 and the selected date", async () => {
+  it("submits with tables defaulted to 5 and today's date", async () => {
     render(<CreateGamePage />);
-
-    fireEvent.change(screen.getByLabelText("Date Played"), {
-      target: { value: "2026-05-20" },
-    });
 
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
@@ -63,7 +63,7 @@ describe("CreateGamePage", () => {
     expect(mockCreateGame).toHaveBeenCalledWith(
       expect.objectContaining({
         tables: 5,
-        eventDate: "2026-05-20",
+        eventDate: todayDateOnly(),
       }),
     );
   });
@@ -89,18 +89,22 @@ describe("CreateGamePage", () => {
     );
   });
 
-  it("does not show the BridgeWebs picker when not configured", () => {
+  it("shows only a free-text Event Name and no BridgeWebs switch when not configured", () => {
     render(<CreateGamePage />);
-    expect(screen.queryByLabelText("BridgeWebs Event")).not.toBeInTheDocument();
+    const eventName = screen.getByLabelText("Event Name") as HTMLInputElement;
+    expect(eventName.tagName).toBe("INPUT");
+    expect(screen.queryByText("Use BridgeWebs Event")).not.toBeInTheDocument();
   });
 
-  it("does not show the picker when configured but there are no events", () => {
+  it("shows no BridgeWebs switch when configured but there are no events", () => {
     mockUseSWR.mockReturnValue({ data: { configured: true, events: [] } });
     render(<CreateGamePage />);
-    expect(screen.queryByLabelText("BridgeWebs Event")).not.toBeInTheDocument();
+    const eventName = screen.getByLabelText("Event Name") as HTMLInputElement;
+    expect(eventName.tagName).toBe("INPUT");
+    expect(screen.queryByText("Use BridgeWebs Event")).not.toBeInTheDocument();
   });
 
-  it("shows the picker and prefills the event name on selection, persisting the event id", async () => {
+  it("offers a BridgeWebs switch and swaps Event Name to a dropdown, prefilling and persisting the event id", async () => {
     mockUseSWR.mockReturnValue({
       data: {
         configured: true,
@@ -113,13 +117,24 @@ describe("CreateGamePage", () => {
 
     render(<CreateGamePage />);
 
-    const picker = screen.getByLabelText("BridgeWebs Event");
-    expect(picker).toBeInTheDocument();
+    // Starts as a free-text field; the switch defaults to "No".
+    expect(screen.getByText("Use BridgeWebs Event")).toBeInTheDocument();
+    expect((screen.getByLabelText("Event Name") as HTMLElement).tagName).toBe(
+      "INPUT",
+    );
+
+    // Turn the switch on -> Event Name becomes a dropdown of events.
+    const bridgewebsSwitch = screen.getByRole("group", {
+      name: "Use BridgeWebs Event",
+    });
+    fireEvent.click(
+      within(bridgewebsSwitch).getByRole("button", { name: "Yes" }),
+    );
+
+    const picker = screen.getByLabelText("Event Name");
+    expect(picker.tagName).toBe("SELECT");
 
     fireEvent.change(picker, { target: { value: "2" } });
-
-    // Event name is prefilled from the selected event.
-    expect(screen.getByLabelText("Event Name")).toHaveValue("Afternoon Teams");
 
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
@@ -132,6 +147,46 @@ describe("CreateGamePage", () => {
     );
   });
 
+  it("drops the BridgeWebs event id when the switch is turned back off", async () => {
+    mockUseSWR.mockReturnValue({
+      data: {
+        configured: true,
+        events: [{ id: "2", title: "Afternoon Teams" }],
+      },
+    });
+
+    render(<CreateGamePage />);
+
+    const bridgewebsSwitch = screen.getByRole("group", {
+      name: "Use BridgeWebs Event",
+    });
+    fireEvent.click(
+      within(bridgewebsSwitch).getByRole("button", { name: "Yes" }),
+    );
+    fireEvent.change(screen.getByLabelText("Event Name"), {
+      target: { value: "2" },
+    });
+    // Back to free text: keeps the prefilled name but drops the event id.
+    fireEvent.click(
+      within(bridgewebsSwitch).getByRole("button", { name: "No" }),
+    );
+
+    expect((screen.getByLabelText("Event Name") as HTMLElement).tagName).toBe(
+      "INPUT",
+    );
+    expect(screen.getByLabelText("Event Name")).toHaveValue("Afternoon Teams");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "Afternoon Teams",
+        bridgewebsEventId: null,
+      }),
+    );
+  });
+
   it("submits a null bridgewebsEventId when no event is chosen", async () => {
     render(<CreateGamePage />);
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
@@ -139,6 +194,54 @@ describe("CreateGamePage", () => {
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
     expect(mockCreateGame).toHaveBeenCalledWith(
       expect.objectContaining({ bridgewebsEventId: null }),
+    );
+  });
+
+  it("treats an undefined BridgeWebs response as not configured", () => {
+    // SWR has no data yet: the `?? false` / `?? 0` fallbacks must keep the
+    // picker unavailable rather than throwing.
+    mockUseSWR.mockReturnValue({ data: undefined });
+    render(<CreateGamePage />);
+
+    expect((screen.getByLabelText("Event Name") as HTMLElement).tagName).toBe(
+      "INPUT",
+    );
+    expect(screen.queryByText("Use BridgeWebs Event")).not.toBeInTheDocument();
+  });
+
+  it("leaves the event name untouched when the 'None' option is picked", async () => {
+    mockUseSWR.mockReturnValue({
+      data: {
+        configured: true,
+        events: [{ id: "2", title: "Afternoon Teams" }],
+      },
+    });
+
+    render(<CreateGamePage />);
+
+    const bridgewebsSwitch = screen.getByRole("group", {
+      name: "Use BridgeWebs Event",
+    });
+    fireEvent.click(
+      within(bridgewebsSwitch).getByRole("button", { name: "Yes" }),
+    );
+
+    const picker = screen.getByLabelText("Event Name");
+    // Prefill a name, then pick "None" (value ""): the id clears but the name
+    // stays put (the `if (selected)` guard's false arm).
+    fireEvent.change(picker, { target: { value: "2" } });
+    fireEvent.change(picker, { target: { value: "" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    // Picker is shown but no event is selected, so the id resolves to null via
+    // the `bridgewebsEventId || null` fallback.
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventName: "Afternoon Teams",
+        bridgewebsEventId: null,
+      }),
     );
   });
 

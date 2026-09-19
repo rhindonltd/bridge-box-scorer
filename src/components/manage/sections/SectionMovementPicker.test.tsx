@@ -126,13 +126,9 @@ describe("SectionMovementPicker", () => {
   it("groups movements by boards a pair plays, ascending, with no 'Recommended Movements' heading", () => {
     // generatedRec plays 16 boards, dbRec plays 24.
     mockRecommendations.mockReturnValue([dbRec(), generatedRec()]);
-    render(
-      <SectionMovementPicker gameId="g1" section="A" tables={8} />,
-    );
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
 
-    expect(
-      screen.queryByText("Recommended Movements"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Recommended Movements")).not.toBeInTheDocument();
 
     const headings = screen.getAllByRole("heading", { level: 2 });
     const groupHeadings = headings
@@ -200,7 +196,10 @@ describe("SectionMovementPicker", () => {
 
   it("groups multiple movements sharing the same boards-a-pair count together", () => {
     // Two movements both playing 16 boards -> single group with both cards.
-    const rec2: RecommendedMovement = { ...generatedRec(), name: "Skip Mitchell" };
+    const rec2: RecommendedMovement = {
+      ...generatedRec(),
+      name: "Skip Mitchell",
+    };
     mockRecommendations.mockReturnValue([generatedRec(), rec2]);
     render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
 
@@ -209,7 +208,9 @@ describe("SectionMovementPicker", () => {
       .map((h) => h.textContent)
       .filter((t) => t?.includes("boards"));
     expect(groupHeadings).toEqual(["16 boards"]);
-    expect(screen.getByRole("button", { name: "Mitchell" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Mitchell" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Skip Mitchell" }),
     ).toBeInTheDocument();
@@ -260,7 +261,13 @@ describe("SectionMovementPicker", () => {
               {
                 tableNumber: 1,
                 rounds: [
-                  { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 4 },
+                  {
+                    roundNumber: 1,
+                    ns: "1",
+                    ew: "2",
+                    boardStart: 1,
+                    boardEnd: 4,
+                  },
                 ],
               },
             ],
@@ -310,7 +317,9 @@ describe("SectionMovementPicker", () => {
     );
     expect(setSectionMitchellMovement).not.toHaveBeenCalled();
     // The list is still there.
-    expect(screen.getByRole("button", { name: "Mitchell" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Mitchell" }),
+    ).toBeInTheDocument();
   });
 
   it("shows a back control that calls onDone when provided", () => {
@@ -471,9 +480,7 @@ describe("SectionMovementPicker", () => {
 
   it("does not offer Swiss Pairs when the game is not single-section", () => {
     mockRecommendations.mockReturnValue([]);
-    render(
-      <SectionMovementPicker gameId="g1" section="A" tables={6} />,
-    );
+    render(<SectionMovementPicker gameId="g1" section="A" tables={6} />);
     expect(
       screen.queryByTestId("swiss-movement-option"),
     ).not.toBeInTheDocument();
@@ -510,6 +517,133 @@ describe("SectionMovementPicker", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  it("alerts when persisting a Swiss movement fails and keeps the dialog open", async () => {
+    mockRecommendations.mockReturnValue([]);
+    vi.mocked(setSectionSwissMovement).mockRejectedValueOnce(
+      new Error("swiss boom"),
+    );
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("swiss boom"));
+  });
+
+  it("uses a generic message when a Swiss save rejects with a non-Error", async () => {
+    mockRecommendations.mockReturnValue([]);
+    vi.mocked(setSectionSwissMovement).mockRejectedValueOnce("nope");
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Failed to set movement"),
+    );
+  });
+
+  it("cancels the Swiss setup dialog", async () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() => expect(setSectionSwissMovement).not.toHaveBeenCalled());
+  });
+
+  it("alerts when persisting a Swiss Teams movement fails", async () => {
+    mockRecommendations.mockReturnValue([]);
+    vi.mocked(setSectionSwissTeamsMovement).mockRejectedValueOnce(
+      new Error("teams boom"),
+    );
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        gameType="TEAMS"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("teams boom"));
+  });
+
+  it("uses a generic message when a Swiss Teams save rejects with a non-Error", async () => {
+    mockRecommendations.mockReturnValue([]);
+    vi.mocked(setSectionSwissTeamsMovement).mockRejectedValueOnce("nope");
+    const alertSpy = vi.fn();
+    vi.stubGlobal("alert", alertSpy);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        gameType="TEAMS"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Failed to set movement"),
+    );
+  });
+
+  it("cancels the Swiss Teams setup dialog", async () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        gameType="TEAMS"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() =>
+      expect(setSectionSwissTeamsMovement).not.toHaveBeenCalled(),
+    );
+  });
+
   it("marks the Swiss option Selected when the section already has a Swiss movement", () => {
     mockRecommendations.mockReturnValue([]);
     render(
@@ -529,6 +663,97 @@ describe("SectionMovementPicker", () => {
     );
   });
 
+  it("marks the Swiss Teams option Selected when the section already has one", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        gameType="TEAMS"
+        selectedMovement={{
+          source: "SWISS_TEAMS",
+          swissTeams: { teams: 6, rounds: 7, boardsPerRound: 6 },
+        }}
+      />,
+    );
+    expect(screen.getByTestId("swiss-teams-movement-option")).toHaveTextContent(
+      "Selected",
+    );
+  });
+
+  it("keeps the preview open while a save is in flight (Close is a no-op)", async () => {
+    mockRecommendations.mockReturnValue([generatedRec()]);
+    // A never-resolving save keeps `saving` true so the guarded Close no-ops.
+    vi.mocked(setSectionMitchellMovement).mockReturnValueOnce(
+      new Promise(() => {}),
+    );
+    render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Mitchell" }));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    // While saving, the Close button is disabled. The dialog's own dismiss
+    // (Escape) still fires onClose, whose `if (!saving)` guard keeps it open.
+    const close = await screen.findByRole("button", { name: /^close$/i });
+    expect(close).toBeDisabled();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("keeps the Swiss dialog open while a save is in flight (Cancel is a no-op)", async () => {
+    mockRecommendations.mockReturnValue([]);
+    vi.mocked(setSectionSwissMovement).mockReturnValueOnce(
+      new Promise(() => {}),
+    );
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    const cancel = await screen.findByRole("button", { name: /^cancel$/i });
+    expect(cancel).toBeDisabled();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    // The dialog is still mounted (its confirm button remains).
+    expect(
+      screen.getByRole("button", { name: /saving…/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the Swiss Teams dialog open while a save is in flight", async () => {
+    mockRecommendations.mockReturnValue([]);
+    vi.mocked(setSectionSwissTeamsMovement).mockReturnValueOnce(
+      new Promise(() => {}),
+    );
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        singleSection
+        gameType="TEAMS"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    const cancel = await screen.findByRole("button", { name: /^cancel$/i });
+    expect(cancel).toBeDisabled();
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(
+      screen.getByRole("button", { name: /saving…/i }),
+    ).toBeInTheDocument();
+  });
+
   it("offers Swiss Teams (not Swiss Pairs) for a single-section TEAMS game", () => {
     mockRecommendations.mockReturnValue([]);
     render(
@@ -540,7 +765,9 @@ describe("SectionMovementPicker", () => {
         gameType="TEAMS"
       />,
     );
-    expect(screen.getByTestId("swiss-teams-movement-option")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("swiss-teams-movement-option"),
+    ).toBeInTheDocument();
     expect(
       screen.queryByTestId("swiss-movement-option"),
     ).not.toBeInTheDocument();

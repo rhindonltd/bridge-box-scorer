@@ -37,6 +37,14 @@ describe("calculateIndependentMpVP", () => {
     });
   });
 
+  it("uses the low segment between 30% and 42.5%", () => {
+    // 40% -> (40 - 30) * 0.4 = 4 VP.
+    expect(calculateIndependentMpVP(40)).toEqual({
+      pairPercentage: 40,
+      vpAwarded: 4,
+    });
+  });
+
   it("scores each pair independently — a table need not sum to 20", () => {
     // The material's example: 15% -> 0 VP, opponents' 50% -> 10 VP; the table
     // totals 10 VP, not 20, because each pair is measured against the field.

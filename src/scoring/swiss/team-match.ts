@@ -122,6 +122,7 @@ export function groupTeamMatches<R extends TeamMatchRow>(
     if (homeTable >= opponentTable) continue;
 
     const key = `${section}|${round}|${homeTable}`;
+    /* v8 ignore next -- defensive: homeTables is keyed by this exact (section,round,homeTable) string so each entry is unique; the dedup guard never actually fires */
     if (processed.has(key)) continue;
     processed.add(key);
 

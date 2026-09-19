@@ -49,17 +49,13 @@ describe("MovementStep", () => {
 
     expect(screen.getByText("section-pills")).toBeInTheDocument();
     expect(screen.getByText("section-modal")).toBeInTheDocument();
-    expect(
-      screen.getByText(/picker section=A tables=4/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/picker section=A tables=4/)).toBeInTheDocument();
   });
 
   it("renders the picker for whichever section is selected", () => {
     mockSelected = "B";
     render(<MovementStep gameId="g1" />);
 
-    expect(
-      screen.getByText(/picker section=B tables=6/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/picker section=B tables=6/)).toBeInTheDocument();
   });
 });

@@ -146,4 +146,37 @@ describe("assembleSwissPairs", () => {
     const data = assembleSwissPairs(game, club, pairs, boards);
     expect(data.matches).toHaveLength(0);
   });
+
+  it("defaults a blank event section name to 'A'", () => {
+    const blankSection = { ...game, sectionName: "" } as BridgeGame;
+    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
+    const boards = [board(1, 1, 1, "A1NS", "A1EW", "3NTN=" as BoardOutcome)];
+
+    const data = assembleSwissPairs(blankSection, club, pairs, boards);
+    expect(data.sectionName).toBe("A");
+  });
+
+  it("awards the winner's VP to EW when the margin favours them (negative margin)", () => {
+    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
+    // NS go down in a vulnerable game; EW win the board and thus the match.
+    const boards = [board(1, 1, 1, "A1NS", "A1EW", "4SN-3" as BoardOutcome)];
+
+    const data = assembleSwissPairs(game, club, pairs, boards);
+    const match = data.matches[0];
+
+    expect(match.nsScore + match.ewScore).toBe(20);
+    // EW took the winner's (larger) share.
+    expect(match.ewScore).toBeGreaterThan(match.nsScore);
+  });
+
+  it("falls back to section 'A' for a pair id that isn't a section-qualified seat", () => {
+    // A non-standard participant id (no section/table/direction) exercises the
+    // sectionOf fallback in the ranking.
+    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
+    const boards = [board(1, 1, 1, "ODD", "A1EW", "3NTN=" as BoardOutcome)];
+
+    const data = assembleSwissPairs(game, club, pairs, boards);
+    const oddEntry = data.ranking.find((r) => r.number === "ODD");
+    expect(oddEntry?.sectionId).toBe("A");
+  });
 });

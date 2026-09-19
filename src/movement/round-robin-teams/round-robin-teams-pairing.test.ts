@@ -173,6 +173,18 @@ describe("generateRoundRobinTeams", () => {
       generateRoundRobinTeams({ teams: 4, rounds: 3, boardsPerRound: 0 }),
     ).toThrow(/boardsPerRound/);
   });
+
+  it("throws on fewer than two teams", () => {
+    expect(() =>
+      generateRoundRobinTeams({ teams: 1, rounds: 1, boardsPerRound: 2 }),
+    ).toThrow(/at least 2/);
+  });
+
+  it("throws on a non-positive round count", () => {
+    expect(() =>
+      generateRoundRobinTeams({ teams: 4, rounds: 0, boardsPerRound: 2 }),
+    ).toThrow(/rounds must be a positive integer/);
+  });
 });
 
 /**
@@ -205,7 +217,9 @@ describe("TSMovements round-robin format", () => {
 
     // Each of the next `tables` lines is a table's per-round triples.
     for (let t = 0; t < tables; t++) {
-      const nums = lines[headerIdx + 2 + t].split(",").map((n) => parseInt(n, 10));
+      const nums = lines[headerIdx + 2 + t]
+        .split(",")
+        .map((n) => parseInt(n, 10));
       expect(nums.length).toBe(rounds * 3);
 
       for (let r = 0; r < rounds; r++) {

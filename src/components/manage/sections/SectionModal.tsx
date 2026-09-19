@@ -65,9 +65,12 @@ export function SectionModal({
   }
 
   const canConfirm =
-    newLabel.trim().length > 0 && (!twoField || existingLabel.trim().length > 0);
+    newLabel.trim().length > 0 &&
+    (!twoField || existingLabel.trim().length > 0);
 
   function handleConfirm() {
+    /* v8 ignore next -- defensive: the Add button is disabled while
+       !canConfirm, so a disabled native button never fires this handler. */
     if (!canConfirm) return;
     onConfirm({
       newLabel: newLabel.trim(),

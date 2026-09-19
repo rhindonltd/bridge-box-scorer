@@ -68,6 +68,11 @@ export function StepperInput({
   const clamp = (val: number) => Math.max(min, Math.min(max, val));
 
   const commit = (raw: number) => {
+    // The `: min` fallback is defensive: every caller passes a finite value
+    // (stepping clamps a finite result; typed values are `Number.isNaN`-guarded
+    // and the native number input sanitises non-finite text to ""), so the
+    // non-finite branch is unreachable in practice.
+    /* v8 ignore next */
     const next = clamp(Number.isFinite(raw) ? raw : min);
     onChange(next);
   };
@@ -78,7 +83,7 @@ export function StepperInput({
   const nextValue = (direction: 1 | -1) => {
     if (wrap && Number.isFinite(max)) {
       const span = max - min + step; // e.g. 45 - 0 + 15 = 60 → wraps 0..45
-      const offset = ((value - min + direction * step) % span + span) % span;
+      const offset = (((value - min + direction * step) % span) + span) % span;
       return min + offset;
     }
     return clamp(value + direction * step);

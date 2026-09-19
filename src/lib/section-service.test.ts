@@ -4,6 +4,8 @@ vi.mock("@/lib/director-token", () => ({
   getDirectorToken: vi.fn(() => "director-tok"),
 }));
 
+import { getDirectorToken } from "@/lib/director-token";
+
 import {
   createSection,
   renameSection,
@@ -12,9 +14,13 @@ import {
   setSectionMovementSpec,
   setSectionMitchellMovement,
   setSectionSwissMovement,
+  setSectionSwissTeamsMovement,
 } from "./section-service";
 
-const okResponse = { ok: true, json: async () => ({ success: true, result: {} }) };
+const okResponse = {
+  ok: true,
+  json: async () => ({ success: true, result: {} }),
+};
 
 describe("section-service (HTTP)", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -96,6 +102,15 @@ describe("section-service (HTTP)", () => {
     expect(body).toEqual({ swiss });
   });
 
+  it("setSectionSwissTeamsMovement PUTs /sections/[section]/movement with the swissTeams spec", async () => {
+    const swissTeams = { teams: 6, rounds: 7, boardsPerRound: 4 };
+    await setSectionSwissTeamsMovement("g1", "A", swissTeams);
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/movement");
+    expect(init.method).toBe("PUT");
+    expect(body).toEqual({ swissTeams });
+  });
+
   it("throws the server error message on a non-ok response", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
@@ -105,5 +120,23 @@ describe("section-service (HTTP)", () => {
     await expect(createSection("g1", "A", 8)).rejects.toThrow(
       "Section A already exists",
     );
+  });
+
+  it("falls back to the default message when the error body cannot be parsed", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => {
+        throw new Error("not json");
+      },
+    });
+
+    await expect(deleteSection("g1", "A")).rejects.toThrow("Request failed");
+  });
+
+  it("sends an empty token header when no director token is stored", async () => {
+    vi.mocked(getDirectorToken).mockReturnValueOnce(null);
+    await deleteSection("g1", "A");
+    const { init } = lastCall();
+    expect(init.headers["x-director-token"]).toBe("");
   });
 });

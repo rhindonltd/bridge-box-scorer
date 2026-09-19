@@ -79,7 +79,12 @@ function generatorTriples(tables: number, rounds: number): Triple[][] {
  * Inline reference grids for the even-table Web blocks the generator now
  * produces (formerly [WEB8] 14/16/18/20 and [WEB9] 18 in PSMovements.txt).
  */
-const EVEN_WEB_BLOCKS: { label: string; tables: number; rounds: number; lines: string[] }[] = [
+const EVEN_WEB_BLOCKS: {
+  label: string;
+  tables: number;
+  rounds: number;
+  lines: string[];
+}[] = [
   {
     label: "14 Table Web Mitchell (8 rounds)",
     tables: 14,

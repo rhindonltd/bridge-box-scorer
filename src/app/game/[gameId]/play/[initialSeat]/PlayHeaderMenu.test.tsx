@@ -75,4 +75,18 @@ describe("PlayHeaderMenu", () => {
 
     expect(screen.getByTestId("pair-details-dialog")).toBeInTheDocument();
   });
+
+  it("passes a null pairId when no assignment is loaded yet", async () => {
+    // No assignment/pair yet (still loading): `assignment?.id ?? null` takes
+    // the null fallback branch.
+    mockUseAssignment.mockReturnValue({ assignment: null, pair: null });
+    const user = userEvent.setup();
+    render(<PlayHeaderMenu gameId="g1" seat="A1NS" />);
+
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(screen.getByRole("menuitem", { name: "Pair details" }));
+
+    // Dialog still opens; the null pairId branch was exercised on render.
+    expect(screen.getByTestId("pair-details-dialog")).toBeInTheDocument();
+  });
 });

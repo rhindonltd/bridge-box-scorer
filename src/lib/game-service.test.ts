@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   createGame,
   selectMovement,
+  selectMitchellMovement,
   createParticipant,
   leaveTable,
   generateSeatTransferCode,
   claimSeatTransfer,
+  generateShareCode,
 } from "./game-service";
 import { SocketEvents } from "@/socket/socket-events";
 
@@ -23,12 +25,15 @@ vi.mock("@/lib/director-token", () => ({
 
 vi.mock("./player-token", () => ({
   setPlayerToken: vi.fn(),
-  getPlayerToken: vi.fn(() => ({ startingPosition: "A1NS", token: "seat-tok" })),
+  getPlayerToken: vi.fn(() => ({
+    startingPosition: "A1NS",
+    token: "seat-tok",
+  })),
   clearPlayerToken: vi.fn(),
 }));
 
 import { emitWithAck, emitEvent } from "@/lib/socket";
-import { setDirectorToken } from "@/lib/director-token";
+import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
 import {
   setPlayerToken,
   getPlayerToken,
@@ -196,6 +201,51 @@ describe("game-service", () => {
     });
   });
 
+  describe("selectMitchellMovement", () => {
+    it("emits SELECT_MOVEMENT with the mitchell spec and director token", async () => {
+      const spec = { tables: 5, rounds: 9, boardsPerRound: 2 } as never;
+      await selectMitchellMovement("g1", spec);
+
+      expect(mockEmitEvent).toHaveBeenCalledWith(SocketEvents.SELECT_MOVEMENT, {
+        gameId: "g1",
+        type: "PAIRS",
+        mitchell: spec,
+        directorToken: "stored-token",
+      });
+    });
+  });
+
+  describe("generateShareCode", () => {
+    it("POSTs with the director-token header and returns the code", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, result: { code: "SHARE1" } }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(generateShareCode("g1")).resolves.toBe("SHARE1");
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/games/g1/share-code",
+        expect.objectContaining({
+          method: "POST",
+          headers: { "x-director-token": "stored-token" },
+        }),
+      );
+      vi.unstubAllGlobals();
+    });
+
+    it("throws the server error message when generation fails", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: "Not the director" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(generateShareCode("g1")).rejects.toThrow("Not the director");
+      vi.unstubAllGlobals();
+    });
+  });
+
   describe("createParticipant", () => {
     it("emits CREATE_PARTICIPANT and stores the returned key as the player token", async () => {
       mockEmitWithAck.mockResolvedValue({ success: true, key: "p-key-123" });
@@ -277,6 +327,113 @@ describe("game-service", () => {
 
       await expect(claimSeatTransfer("ZZZZZZ")).rejects.toThrow("Invalid code");
       expect(setPlayerToken).not.toHaveBeenCalled();
+    });
+  });
+
+  // These exercise the defensive fallback branches: the `.catch(() => null)`
+  // arrow when the error body isn't JSON, the `?? "..."` default messages, and
+  // the empty-token fallbacks when no token is stored on the device.
+  describe("fallback branches", () => {
+    it("createGame falls back to the default message when the error body is not JSON", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => {
+          throw new Error("not json");
+        },
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(createGame({ eventName: "x" } as any)).rejects.toThrow(
+        "Failed to create game",
+      );
+
+      vi.unstubAllGlobals();
+    });
+
+    it("startGame sends an empty token header and uses the default error message", async () => {
+      vi.mocked(getDirectorToken).mockReturnValueOnce(null);
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => {
+          throw new Error("not json");
+        },
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const { startGame } = await import("./game-service");
+      await expect(startGame("g1")).rejects.toThrow("Failed to start game");
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/games/g1/start",
+        expect.objectContaining({
+          headers: { "x-director-token": "" },
+        }),
+      );
+
+      vi.unstubAllGlobals();
+    });
+
+    it("claimDirectorCode uses the default error message when the body is not JSON", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => {
+          throw new Error("not json");
+        },
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const { claimDirectorCode } = await import("./game-service");
+      await expect(claimDirectorCode("ABC123")).rejects.toThrow(
+        "Failed to claim code",
+      );
+
+      vi.unstubAllGlobals();
+    });
+
+    it("generateShareCode sends an empty token header and uses the default error message", async () => {
+      vi.mocked(getDirectorToken).mockReturnValueOnce(null);
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => {
+          throw new Error("not json");
+        },
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(generateShareCode("g1")).rejects.toThrow(
+        "Failed to generate code",
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/games/g1/share-code",
+        expect.objectContaining({ headers: { "x-director-token": "" } }),
+      );
+
+      vi.unstubAllGlobals();
+    });
+
+    it("leaveTable sends an empty token when no player token is stored", async () => {
+      vi.mocked(getPlayerToken).mockReturnValueOnce(null);
+      mockEmitWithAck.mockResolvedValue({ success: true });
+
+      await leaveTable("g1", "A1NS");
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(SocketEvents.LEAVE_TABLE, {
+        gameId: "g1",
+        seat: "A1NS",
+        token: "",
+      });
+    });
+
+    it("generateSeatTransferCode sends an empty token when no player token is stored", async () => {
+      vi.mocked(getPlayerToken).mockReturnValueOnce(null);
+      mockEmitWithAck.mockResolvedValue({ code: "Z" });
+
+      await generateSeatTransferCode("g1", "A1NS");
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.CREATE_SEAT_TRANSFER,
+        { gameId: "g1", seat: "A1NS", token: "" },
+      );
     });
   });
 });

@@ -29,7 +29,21 @@ function createMockSocket() {
 }
 
 function validDeal(): Deal {
-  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = [
+    "A",
+    "K",
+    "Q",
+    "J",
+    "T",
+    "9",
+    "8",
+    "7",
+    "6",
+    "5",
+    "4",
+    "3",
+    "2",
+  ];
   return {
     N: ranks.map((r): Card => `S${r}`),
     E: ranks.map((r): Card => `H${r}`),
@@ -109,7 +123,10 @@ describe("registerDealSubmitHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    const broken = { ...validPayload, deal: { ...validDeal(), N: validDeal().N.slice(0, 12) } };
+    const broken = {
+      ...validPayload,
+      deal: { ...validDeal(), N: validDeal().N.slice(0, 12) },
+    };
     await handler(broken, cb);
 
     expect(cb).toHaveBeenCalledWith({
@@ -132,5 +149,37 @@ describe("registerDealSubmitHandler", () => {
       error: expect.any(String),
     });
     expect(assertPlayer).not.toHaveBeenCalled();
+  });
+
+  it("errors when the game db does not exist", async () => {
+    vi.mocked(getDb).mockResolvedValue(undefined as any);
+    const socket = createMockSocket();
+    registerDealSubmitHandler(socket, {} as never);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler(validPayload, cb);
+
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Game not found",
+    });
+    expect(insertDealIfAbsent).not.toHaveBeenCalled();
+  });
+
+  it("errors and does not broadcast when the store fails", async () => {
+    vi.mocked(insertDealIfAbsent).mockRejectedValue(new Error("disk full"));
+    const socket = createMockSocket();
+    registerDealSubmitHandler(socket, {} as never);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler(validPayload, cb);
+
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Failed to save deal",
+    });
+    expect(broadcastResultsChanged).not.toHaveBeenCalled();
   });
 });

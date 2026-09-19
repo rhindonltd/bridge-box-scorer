@@ -121,6 +121,8 @@ function SwissSetupForm({
               <StepperInput
                 label="Tables"
                 value={tables}
+                /* v8 ignore next -- readOnly StepperInput never calls onChange (the
+                   table count is edited on the Tables step). */
                 onChange={() => {}}
                 readOnly
               />

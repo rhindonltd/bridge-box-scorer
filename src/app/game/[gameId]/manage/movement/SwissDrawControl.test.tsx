@@ -14,13 +14,9 @@ describe("SwissDrawControl", () => {
   });
 
   it("disables Draw Next Round until all results are in", () => {
-    render(
-      <SwissDrawControl gameId="g1" section="A" allResultsIn={false} />,
-    );
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn={false} />);
     expect(screen.getByTestId("draw-next-round")).toBeDisabled();
-    expect(
-      screen.getByText(/Waiting for all results/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Waiting for all results/i)).toBeInTheDocument();
   });
 
   it("enables the button when all results are in and draws the next round", async () => {
@@ -75,6 +71,19 @@ describe("SwissDrawControl", () => {
     await waitFor(() =>
       expect(screen.getByTestId("draw-error")).toHaveTextContent(
         /All results for the current round/i,
+      ),
+    );
+  });
+
+  it("shows a generic error when the draw rejects with a non-Error", async () => {
+    vi.mocked(drawNextSwissRound).mockRejectedValue("nope");
+
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
+    fireEvent.click(screen.getByTestId("draw-next-round"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("draw-error")).toHaveTextContent(
+        "Could not draw the next round.",
       ),
     );
   });

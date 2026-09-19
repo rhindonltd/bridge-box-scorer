@@ -124,6 +124,44 @@ describe("ManageGameMenuPage", () => {
     });
   });
 
+  describe("Enter Deals", () => {
+    it("is shown and wired when showEnterDeals is true", () => {
+      render(
+        <ManageGameMenuPage {...handlers} {...flags} showEnterDeals={true} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Enter Deals" }));
+      expect(handlers.onEnterDealsClick).toHaveBeenCalled();
+    });
+
+    it("is hidden when showEnterDeals is false", () => {
+      render(
+        <ManageGameMenuPage {...handlers} {...flags} showEnterDeals={false} />,
+      );
+      expect(
+        screen.queryByRole("button", { name: "Enter Deals" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Download PBN", () => {
+    it("is shown and wired when showDownloadPbn is true", () => {
+      render(
+        <ManageGameMenuPage {...handlers} {...flags} showDownloadPbn={true} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Download PBN" }));
+      expect(handlers.onDownloadPbnClick).toHaveBeenCalled();
+    });
+
+    it("is hidden when showDownloadPbn is false", () => {
+      render(
+        <ManageGameMenuPage {...handlers} {...flags} showDownloadPbn={false} />,
+      );
+      expect(
+        screen.queryByRole("button", { name: "Download PBN" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   describe("Download USEBIO", () => {
     it("is hidden when showDownloadUsebio is false", () => {
       render(

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   dealerFor,
+  clockwiseFrom,
   vulnerabilityFor,
   parsePbn,
   toPbn,
@@ -15,7 +16,21 @@ import type { Card, Deal, Rank } from "./common";
 function buildValidDeal(): Deal {
   // Distribute the 52 cards: give each direction one full suit's worth split.
   // N: all spades; E: all hearts; S: all diamonds; W: all clubs.
-  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = [
+    "A",
+    "K",
+    "Q",
+    "J",
+    "T",
+    "9",
+    "8",
+    "7",
+    "6",
+    "5",
+    "4",
+    "3",
+    "2",
+  ];
   return {
     N: ranks.map((r): Card => `S${r}`),
     E: ranks.map((r): Card => `H${r}`),
@@ -58,7 +73,21 @@ describe("vulnerabilityFor", () => {
 
 describe("handToPbnString / pbnStringToHand", () => {
   it("serializes a hand as spades.hearts.diamonds.clubs with ranks descending", () => {
-    const hand: Card[] = ["SK", "S6", "S5", "H5", "H4", "H3", "CA", "CJ", "C9", "C8", "C7", "C5", "C4"];
+    const hand: Card[] = [
+      "SK",
+      "S6",
+      "S5",
+      "H5",
+      "H4",
+      "H3",
+      "CA",
+      "CJ",
+      "C9",
+      "C8",
+      "C7",
+      "C5",
+      "C4",
+    ];
     // ♠K65 ♥543 ♦void ♣AJ98754
     expect(handToPbnString(hand)).toBe("K65.543..AJ98754");
   });
@@ -101,10 +130,66 @@ describe("parsePbn / toPbn round-trip", () => {
   it("round-trips a deal containing voids", () => {
     // A hand-crafted valid deal where some suits are void in some hands.
     const deal: Deal = {
-      N: ["SA", "SK", "SQ", "SJ", "ST", "S9", "S8", "S7", "S6", "S5", "S4", "S3", "S2"],
-      E: ["HA", "HK", "HQ", "HJ", "HT", "H9", "H8", "H7", "H6", "H5", "H4", "H3", "H2"],
-      S: ["DA", "DK", "DQ", "DJ", "DT", "D9", "D8", "D7", "D6", "D5", "D4", "D3", "D2"],
-      W: ["CA", "CK", "CQ", "CJ", "CT", "C9", "C8", "C7", "C6", "C5", "C4", "C3", "C2"],
+      N: [
+        "SA",
+        "SK",
+        "SQ",
+        "SJ",
+        "ST",
+        "S9",
+        "S8",
+        "S7",
+        "S6",
+        "S5",
+        "S4",
+        "S3",
+        "S2",
+      ],
+      E: [
+        "HA",
+        "HK",
+        "HQ",
+        "HJ",
+        "HT",
+        "H9",
+        "H8",
+        "H7",
+        "H6",
+        "H5",
+        "H4",
+        "H3",
+        "H2",
+      ],
+      S: [
+        "DA",
+        "DK",
+        "DQ",
+        "DJ",
+        "DT",
+        "D9",
+        "D8",
+        "D7",
+        "D6",
+        "D5",
+        "D4",
+        "D3",
+        "D2",
+      ],
+      W: [
+        "CA",
+        "CK",
+        "CQ",
+        "CJ",
+        "CT",
+        "C9",
+        "C8",
+        "C7",
+        "C6",
+        "C5",
+        "C4",
+        "C3",
+        "C2",
+      ],
     };
     const pbn = toPbn(deal, dealerFor(1));
     expect(parsePbn(pbn)).toEqual(deal);
@@ -152,5 +237,35 @@ describe("parsePbn validation", () => {
   it("throws when the deal is not complete (52 distinct cards)", () => {
     // Four empty hands.
     expect(() => parsePbn("N:... ... ... ...")).toThrow();
+  });
+
+  it("throws when the dealer is missing (no colon)", () => {
+    expect(() => parsePbn("AKJ.Q98..")).toThrow(/missing dealer/);
+  });
+
+  it("throws on an unrecognised dealer letter", () => {
+    expect(() => parsePbn("Z:a b c d")).toThrow(/Invalid PBN dealer/);
+  });
+
+  it("throws when there are not exactly four hands", () => {
+    expect(() => parsePbn("N:AK.Q.. J.T..")).toThrow(/expected 4 hands/);
+  });
+});
+
+describe("clockwiseFrom", () => {
+  it("orders the seats clockwise starting at the dealer", () => {
+    expect(clockwiseFrom("N")).toEqual(["N", "E", "S", "W"]);
+    expect(clockwiseFrom("E")).toEqual(["E", "S", "W", "N"]);
+    expect(clockwiseFrom("W")).toEqual(["W", "N", "E", "S"]);
+  });
+});
+
+describe("pbnStringToHand validation", () => {
+  it("throws when a hand segment does not have four suits", () => {
+    expect(() => pbnStringToHand("AK.Q")).toThrow(/expected 4 suits/);
+  });
+
+  it("throws on an invalid rank character in a segment", () => {
+    expect(() => pbnStringToHand("AKX...")).toThrow(/Invalid card/);
   });
 });

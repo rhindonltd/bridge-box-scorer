@@ -27,6 +27,19 @@ describe("ChangeDeviceButton", () => {
       await user.click(screen.getByRole("button", { name: "Change device" }));
       expect(screen.getByTestId("change-device-view")).toBeInTheDocument();
     });
+
+    it("closes the dialog on Escape (dialog onClose -> internal state)", async () => {
+      const user = userEvent.setup();
+      render(<ChangeDeviceButton gameId="g1" seat="A1NS" variant="icon" />);
+
+      await user.click(screen.getByRole("button", { name: "Change device" }));
+      expect(screen.getByTestId("change-device-view")).toBeInTheDocument();
+
+      // Escape triggers the Dialog's own onClose, which flips the uncontrolled
+      // internal open state back to false.
+      await user.keyboard("{Escape}");
+      expect(screen.queryByTestId("change-device-view")).toBeNull();
+    });
   });
 
   describe("controlled", () => {

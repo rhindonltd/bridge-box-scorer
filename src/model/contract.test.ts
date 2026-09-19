@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { isContractCode, parseContract, isCall } from "./contract";
+import {
+  isContractCode,
+  parseContract,
+  isCall,
+  buildContractCode,
+} from "./contract";
 
 describe("isContractCode", () => {
   it("returns true for valid undoubled contracts", () => {
@@ -98,5 +103,26 @@ describe("isCall", () => {
   it("returns false for full contract codes (includes direction)", () => {
     // isCall checks CallCode pattern, which is just level+suit
     expect(isCall("1SN" as any)).toBe(false);
+  });
+});
+
+describe("buildContractCode", () => {
+  it("assembles level, suit, doubling and declarer into a contract code", () => {
+    expect(buildContractCode(3, "NT", "X", "N")).toBe("3NTXN");
+    expect(buildContractCode(7, "S", "XX", "W")).toBe("7SXXW");
+  });
+
+  it("omits doubling when undoubled (empty doubling segment)", () => {
+    expect(buildContractCode(1, "H", "", "E")).toBe("1HE");
+  });
+
+  it("round-trips through parseContract", () => {
+    const code = buildContractCode(4, "S", "", "S");
+    const parsed = parseContract(code);
+    expect(parsed).toMatchObject({
+      level: 4,
+      suit: "S",
+      declarer: "S",
+    });
   });
 });

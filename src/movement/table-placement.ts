@@ -101,6 +101,7 @@ export function buildTablePlacement(
 
   for (const cell of cells) {
     const key = `${cell.boardStart}-${cell.boardEnd}-${cell.boardCopy ?? ""}`;
+    /* v8 ignore next -- every key was inserted into bySet in the loop above, so the `?? [cell.tableNumber]` fallback is unreachable defensive code */
     const group = bySet.get(key) ?? [cell.tableNumber];
     const sharesWith = group
       .filter((t) => t !== cell.tableNumber)

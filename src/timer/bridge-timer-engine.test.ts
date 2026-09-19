@@ -255,7 +255,6 @@ describe("BridgeTimerEngine", () => {
   });
 });
 
-
 // ---- Corrected-behaviour tests: breaks, controls, live config ----
 
 import type { BreakConfig } from "./timer-state";
@@ -316,7 +315,11 @@ describe("BridgeTimerEngine - breaks", () => {
 
   it("uses a normal move when no break follows the round", () => {
     const engine = new BridgeTimerEngine(
-      makeBreakState({ phase: "play", round: 1, breaks: [durationBreak(3, 10)] }),
+      makeBreakState({
+        phase: "play",
+        round: 1,
+        breaks: [durationBreak(3, 10)],
+      }),
     );
 
     engine.nextPhase();
@@ -437,7 +440,11 @@ describe("BridgeTimerEngine - previous / restart", () => {
 
   it("previousPhase from play steps back into a preceding break when scheduled", () => {
     const engine = new BridgeTimerEngine(
-      makeBreakState({ phase: "play", round: 3, breaks: [durationBreak(2, 8)] }),
+      makeBreakState({
+        phase: "play",
+        round: 3,
+        breaks: [durationBreak(2, 8)],
+      }),
     );
 
     engine.previousPhase();
@@ -513,7 +520,11 @@ describe("BridgeTimerEngine - adjustTime", () => {
 
   it("applies to all subsequent play phases when requested", () => {
     const engine = new BridgeTimerEngine(
-      makeBreakState({ phase: "play", remainingMs: 300_000, playDuration: 420 }),
+      makeBreakState({
+        phase: "play",
+        remainingMs: 300_000,
+        playDuration: 420,
+      }),
     );
 
     engine.adjustTime(60_000, true);
@@ -524,7 +535,12 @@ describe("BridgeTimerEngine - adjustTime", () => {
 
   it("applies to all subsequent move phases when in a move phase", () => {
     const engine = new BridgeTimerEngine(
-      makeBreakState({ phase: "move", round: 2, remainingMs: 30_000, moveDuration: 60 }),
+      makeBreakState({
+        phase: "move",
+        round: 2,
+        remainingMs: 30_000,
+        moveDuration: 60,
+      }),
     );
 
     engine.adjustTime(30_000, true);
@@ -606,6 +622,16 @@ describe("BridgeTimerEngine - updateConfig live edits", () => {
 
     expect(engine.getState().breaks).toEqual([durationBreak(2, 10)]);
     expect(engine.getState().warningSeconds).toBe(45);
+  });
+
+  it("stores the timing mode when supplied in options", () => {
+    const engine = new BridgeTimerEngine(
+      makeBreakState({ timingMode: "perRound" }),
+    );
+
+    engine.updateConfig(3, 5, 420, 60, { timingMode: "perBoard" });
+
+    expect(engine.getState().timingMode).toBe("perBoard");
   });
 });
 
@@ -964,15 +990,31 @@ describe("BridgeTimerEngine - restartPhase / nextPhase edge branches", () => {
     );
 
     // moveDuration null -> newDuration uses `?? this.state.moveDuration` (60).
-    engine.updateConfig(
-      3,
-      5,
-      420,
-      null as unknown as number,
-    );
+    engine.updateConfig(3, 5, 420, null as unknown as number);
 
     // Elapsed 30s against unchanged 60s duration -> remaining stays 30s.
     expect(engine.getState().remainingMs).toBe(30_000);
     expect(engine.getState().moveDuration).toBe(60);
+  });
+
+  it("updateConfig on a RUNNING MOVE phase keeps the move duration when null is passed", () => {
+    const now = Date.now();
+    const engine = new BridgeTimerEngine(
+      makeBreakState({
+        phase: "move",
+        round: 2,
+        isRunning: true,
+        phaseStartedAt: now - 20_000, // 20s elapsed of 60s
+        moveDuration: 60,
+      }),
+    );
+
+    // moveDuration null on the running path: the `moveDuration != null` guard
+    // is false, so the stored move duration is left untouched and the reanchor
+    // runs against the unchanged 60s duration.
+    engine.updateConfig(3, 5, 420, null as unknown as number);
+
+    expect(engine.getState().moveDuration).toBe(60);
+    expect(engine.getRemainingMs(now)).toBe(40_000);
   });
 });

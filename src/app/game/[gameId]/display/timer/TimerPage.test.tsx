@@ -61,6 +61,18 @@ describe("TimerPage", () => {
     expect(screen.getByText("Connecting…")).toBeInTheDocument();
   });
 
+  it("defaults to section A when no sections are loaded yet", () => {
+    // Empty sections -> `sections[0]?.section ?? "A"` fallback; single-section
+    // path renders the timer directly (no chooser).
+    mockSections = [];
+    mockTimerState = { phase: "play" };
+
+    render(<TimerPage />);
+
+    expect(screen.getByTestId("display-timer")).toBeInTheDocument();
+    expect(screen.queryByText("Choose a section")).toBeNull();
+  });
+
   it("renders the display timer once state is present and ticks each second", () => {
     vi.useFakeTimers();
     mockTimerState = { phase: "play" };
@@ -108,5 +120,45 @@ describe("TimerPage", () => {
 
     expect(screen.getByTestId("display-timer")).toBeInTheDocument();
     expect(screen.queryByText("Choose a section")).toBeNull();
+  });
+
+  it("returns to the section chooser via the back button", () => {
+    mockSections = [
+      { section: "A", label: "A" },
+      { section: "B", label: "B" },
+    ];
+    mockTimerState = { phase: "play" };
+
+    render(<TimerPage />);
+
+    act(() => {
+      screen.getByRole("button", { name: /Section B/ }).click();
+    });
+    expect(screen.getByTestId("display-timer")).toBeInTheDocument();
+
+    // The "← Sections" back button resets the chosen section to null.
+    act(() => {
+      screen.getByRole("button", { name: /Sections/ }).click();
+    });
+    expect(screen.getByText("Choose a section")).toBeInTheDocument();
+    expect(screen.queryByTestId("display-timer")).toBeNull();
+  });
+
+  it("appends the section label when it differs from the section letter", () => {
+    mockSections = [
+      { section: "A", label: "Open" },
+      { section: "B", label: "B" },
+    ];
+    mockTimerState = { phase: "play" };
+
+    render(<TimerPage />);
+
+    // A has a distinct label -> "Section A — Open"; B matches -> "Section B".
+    expect(
+      screen.getByRole("button", { name: /Section A — Open/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Section B" }),
+    ).toBeInTheDocument();
   });
 });

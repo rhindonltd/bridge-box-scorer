@@ -324,7 +324,9 @@ describe("generateUsebioXml", () => {
 
     it("places each section's boards under its own SECTION", () => {
       const xml = generateUsebioXml(makeTwoSectionData());
-      const sectionA = xml.split('SECTION_ID="A"')[1].split('SECTION_ID="B"')[0];
+      const sectionA = xml
+        .split('SECTION_ID="A"')[1]
+        .split('SECTION_ID="B"')[0];
       const sectionB = xml.split('SECTION_ID="B"')[1];
       // Section A's board 1 was 3NT; section B's board 1 was 4S.
       expect(sectionA).toContain("<CONTRACT>3NT</CONTRACT>");
@@ -691,9 +693,7 @@ describe("generateUsebioXml", () => {
     it("uses the SWISS_PAIRS event type and VPS match scoring", () => {
       const xml = generateUsebioXml(makeSwissPairsData());
       expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_PAIRS">');
-      expect(xml).toContain(
-        "<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>",
-      );
+      expect(xml).toContain("<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>");
     });
 
     it("nests everything in SESSION > SECTION", () => {
@@ -741,6 +741,29 @@ describe("generateUsebioXml", () => {
     it("does not emit a separate RANKING block (placings are inline)", () => {
       const xml = generateUsebioXml(makeSwissPairsData());
       expect(xml).not.toContain("<RANKING>");
+    });
+
+    it("defaults a blank section name to 'A'", () => {
+      const data = makeSwissPairsData();
+      data.sectionName = "";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
+    });
+
+    it("omits inline placing for a pair with no ranking entry", () => {
+      const data = makeSwissPairsData();
+      // Drop the ranking for pair "12": its PAIR block must carry no
+      // TOTAL_SCORE/PLACE, but the pair is still listed.
+      data.ranking = data.ranking.filter((r) => r.number !== "12");
+      const xml = generateUsebioXml(data);
+
+      const pair12 = xml
+        .split("<PAIR_NUMBER>12</PAIR_NUMBER>")[1]
+        .split("</PAIR>")[0];
+      expect(pair12).not.toContain("<TOTAL_SCORE>");
+      expect(pair12).not.toContain("<PLACE>");
+      // The ranked pair still shows its placing.
+      expect(xml).toContain("<TOTAL_SCORE>15</TOTAL_SCORE>");
     });
   });
 
@@ -814,9 +837,7 @@ describe("generateUsebioXml", () => {
     it("uses the SWISS_TEAMS event type and VPS match scoring", () => {
       const xml = generateUsebioXml(makeSwissTeamsData());
       expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_TEAMS">');
-      expect(xml).toContain(
-        "<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>",
-      );
+      expect(xml).toContain("<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>");
     });
 
     it("nests everything in SESSION > SECTION", () => {
@@ -845,9 +866,7 @@ describe("generateUsebioXml", () => {
       expect(match).toContain("<START_BOARD_NUMBER>6</START_BOARD_NUMBER>");
       expect(match).toContain("<END_BOARD_NUMBER>10</END_BOARD_NUMBER>");
       expect(match).toContain("<TEAM_SCORE>19</TEAM_SCORE>");
-      expect(match).toContain(
-        "<OPPOSING_TEAM_SCORE>1</OPPOSING_TEAM_SCORE>",
-      );
+      expect(match).toContain("<OPPOSING_TEAM_SCORE>1</OPPOSING_TEAM_SCORE>");
     });
 
     it("emits board IMPS and a direction-tagged traveller line", () => {
@@ -867,6 +886,47 @@ describe("generateUsebioXml", () => {
     it("does not emit a separate RANKING block (placings are inline)", () => {
       const xml = generateUsebioXml(makeSwissTeamsData());
       expect(xml).not.toContain("<RANKING>");
+    });
+
+    it("defaults a blank section name to 'A'", () => {
+      const data = makeSwissTeamsData();
+      data.sectionName = "";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
+    });
+
+    it("omits inline placing for a team with no ranking entry", () => {
+      const data = makeSwissTeamsData();
+      // Drop the ranking for team "2": its TEAM block carries no
+      // TOTAL_SCORE/PLACE but the team is still listed.
+      data.ranking = data.ranking.filter((r) => r.number !== "2");
+      const xml = generateUsebioXml(data);
+
+      const team2 = xml.split('TEAM_NAME="Dragons"')[1].split("</TEAM>")[0];
+      expect(team2).not.toContain("<TOTAL_SCORE>");
+      expect(team2).not.toContain("<PLACE>");
+      expect(xml).toContain("<TOTAL_SCORE>19</TOTAL_SCORE>");
+    });
+  });
+
+  describe("kind dispatch", () => {
+    it("treats a missing kind as MP_PAIRS so existing callers are unaffected", () => {
+      const data = makeBasicGameData() as UsebioPairsData & {
+        kind?: undefined;
+      };
+      data.kind = undefined;
+      const xml = generateUsebioXml(data);
+      // MP_PAIRS renders the PAIRS event type.
+      expect(xml).toContain('<EVENT EVENT_TYPE="PAIRS">');
+    });
+
+    it("dispatches an explicit MP_PAIRS kind to the pairs generator", () => {
+      const data = makeBasicGameData() as UsebioPairsData & {
+        kind: "MP_PAIRS";
+      };
+      data.kind = "MP_PAIRS";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain('<EVENT EVENT_TYPE="PAIRS">');
     });
   });
 });

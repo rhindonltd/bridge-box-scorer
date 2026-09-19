@@ -20,8 +20,9 @@ vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({ game: { gameId: "g1" } }),
 }));
 
+const mockGetDirectorToken = vi.fn(() => "director-tok" as string | null);
 vi.mock("@/lib/director-token", () => ({
-  getDirectorToken: () => "director-tok",
+  getDirectorToken: () => mockGetDirectorToken(),
 }));
 
 vi.mock("@/components/layout/GamePageLayout", () => ({
@@ -51,6 +52,7 @@ describe("DownloadUsebioPage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetDirectorToken.mockReturnValue("director-tok");
     swrState = { data: { club: CONFIGURED_CLUB }, isLoading: false };
 
     vi.stubGlobal("URL", {
@@ -109,6 +111,30 @@ describe("DownloadUsebioPage", () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
+  it("shows the guard error if the form is submitted while unconfigured", async () => {
+    swrState = { data: { club: null }, isLoading: false };
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const onUsebioDownloaded = vi.fn();
+
+    const { container } = render(
+      <DownloadUsebioPage
+        onUsebioDownloaded={onUsebioDownloaded}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    fireEvent.submit(container.querySelector("#download-usebio-form")!);
+
+    await waitFor(() =>
+      expect(
+        screen.getAllByText(/must be set in Settings/i).length,
+      ).toBeGreaterThan(0),
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(onUsebioDownloaded).not.toHaveBeenCalled();
+  });
+
   it("downloads the USEBIO file with the director token header on success", async () => {
     const blob = new Blob(["<xml/>"], { type: "application/xml" });
     const fetchMock = vi.fn().mockResolvedValue({
@@ -145,6 +171,52 @@ describe("DownloadUsebioPage", () => {
     expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
   });
 
+  it("falls back to a default filename and empty token when both are absent", async () => {
+    mockGetDirectorToken.mockReturnValue(null);
+    const blob = new Blob(["<xml/>"], { type: "application/xml" });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: { get: () => null },
+      blob: async () => blob,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const onUsebioDownloaded = vi.fn();
+
+    render(
+      <DownloadUsebioPage
+        onUsebioDownloaded={onUsebioDownloaded}
+        onCancel={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Download USEBIO" }));
+
+    await waitFor(() => expect(onUsebioDownloaded).toHaveBeenCalled());
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/games/g1/usebio",
+      expect.objectContaining({ headers: { "x-director-token": "" } }),
+    );
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it("shows a generic error when USEBIO generation fails with no error body", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => {
+        throw new Error("not json");
+      },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <DownloadUsebioPage onUsebioDownloaded={vi.fn()} onCancel={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Download USEBIO" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to generate USEBIO file",
+    );
+  });
+
   it("shows the server error when USEBIO generation fails", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
@@ -157,7 +229,9 @@ describe("DownloadUsebioPage", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Download USEBIO" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("No results yet");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No results yet",
+    );
   });
 
   it("shows a network error if the request throws", async () => {

@@ -50,6 +50,28 @@ export default mergeConfig(
           // src/app/** are intentionally left in the report so genuine
           // (unit-testable) gaps stay visible.
           "src/app/**/{page,layout,loading,error,not-found}.tsx",
+          // API route handlers (`route.ts`). These are thin adapters: they
+          // validate/parse the request and delegate to services/DB actions that
+          // ARE unit-tested, then hand off to the shared route wrappers
+          // (withBasicRoute/withDirectorRoute, themselves tested). Exercising
+          // the HTTP boundary end-to-end (auth, status codes, error mapping) is
+          // the job of the Playwright journey suite, so the handlers are not a
+          // unit target.
+          "src/app/api/**/route.ts",
+          "src/app/healthz/route.ts",
+          // Privileged system integrations that shell out to the appliance OS
+          // (NetworkManager via nmcli, the wifi-ctl/​wifi-config helpers, the
+          // reboot/recovery paths). They are I/O against the host, verified on
+          // the box / by ops testing rather than mocked shell calls, which would
+          // only assert the mock.
+          "src/lib/system/nmcli.ts",
+          "src/lib/system/wifi-ctl.ts",
+          "src/lib/system/wifi-config.ts",
+          "src/lib/wifi-recovery.ts",
+          // Next.js client navigation side-effect wiring (subscribes to route
+          // changes to maintain the in-app history stack); has no logic to
+          // unit-test and only runs under a live router.
+          "src/components/layout/AppNavigationTracker.tsx",
         ],
       },
 

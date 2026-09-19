@@ -41,9 +41,9 @@ describe("boardResult", () => {
   });
 
   it("uses the confirmed result when there is no override", () => {
-    expect(boardResult(row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome))).toBe(
-      "3NTN=",
-    );
+    expect(
+      boardResult(row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome)),
+    ).toBe("3NTN=");
   });
 
   it("is null when neither is present", () => {
@@ -80,9 +80,7 @@ describe("groupTeamMatches", () => {
   });
 
   it("skips SIT_OUT rows", () => {
-    const rows = [
-      { ...row(1, 1, "A1NS", "A2EW", null), status: "SIT_OUT" },
-    ];
+    const rows = [{ ...row(1, 1, "A1NS", "A2EW", null), status: "SIT_OUT" }];
     expect(groupTeamMatches(rows)).toHaveLength(0);
   });
 
@@ -103,6 +101,20 @@ describe("groupTeamMatches", () => {
     expect(
       matches.map((m) => `${m.round}:${m.homeTable}v${m.opponentTable}`),
     ).toEqual(["1:1v2", "1:3v4", "2:1v2"]);
+  });
+
+  it("breaks ties within a round by section letter", () => {
+    // Same round and home table across two sections: section A must sort
+    // before section B.
+    const rows = [
+      row(1, 1, "B1NS", "B2EW", "3NTN=" as BoardOutcome, { section: "B" }),
+      row(1, 1, "B2NS", "B1EW", "3NTN=" as BoardOutcome, { section: "B" }),
+      row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome, { section: "A" }),
+      row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome, { section: "A" }),
+    ];
+
+    const matches = groupTeamMatches(rows);
+    expect(matches.map((m) => m.section)).toEqual(["A", "B"]);
   });
 });
 
@@ -130,6 +142,19 @@ describe("teamMatchBoardImps", () => {
     ];
     const [match] = groupTeamMatches(rows);
 
+    const { perBoard, margin, boardsPlayed } = teamMatchBoardImps(match);
+    expect(perBoard).toEqual([{ boardNumber: 1, imps: null }]);
+    expect(margin).toBe(0);
+    expect(boardsPlayed).toBe(0);
+  });
+
+  it("defaults the opponent room to empty when its table has no rows", () => {
+    // Only the home table (1) has any rows; the opponent table (2) was never
+    // entered, so its rows-by-board map defaults to empty and no board counts.
+    const rows = [row(1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome)];
+    const [match] = groupTeamMatches(rows);
+
+    expect(match.opponentRowsByBoard.size).toBe(0);
     const { perBoard, margin, boardsPlayed } = teamMatchBoardImps(match);
     expect(perBoard).toEqual([{ boardNumber: 1, imps: null }]);
     expect(margin).toBe(0);

@@ -102,12 +102,7 @@ describe("SectionManager", () => {
 
   it("hides delete when only one section exists", () => {
     const props = noopProps();
-    render(
-      <SectionManager
-        sections={[sections()[0]]}
-        {...props}
-      />,
-    );
+    render(<SectionManager sections={[sections()[0]]} {...props} />);
 
     expect(screen.queryByText("Delete")).not.toBeInTheDocument();
   });
@@ -160,11 +155,45 @@ describe("SectionManager", () => {
           boardsPerRound: 3,
         },
       },
-      { section: "B", label: "B", tables: 6, ordinal: 1, selectedMovement: null },
+      {
+        section: "B",
+        label: "B",
+        tables: 6,
+        ordinal: 1,
+        selectedMovement: null,
+      },
     ];
     render(<SectionManager sections={withSpec} {...props} />);
 
     expect(screen.getByText("Movement selected")).toBeInTheDocument();
+  });
+
+  it("summarises a Swiss Pairs movement", () => {
+    const props = noopProps();
+    const withSwiss: ClientSection[] = [
+      {
+        section: "A",
+        label: "A",
+        tables: 5,
+        ordinal: 0,
+        selectedMovement: {
+          source: "SWISS",
+          swiss: { tables: 5, rounds: 7 },
+        } as never,
+      },
+      {
+        section: "B",
+        label: "B",
+        tables: 6,
+        ordinal: 1,
+        selectedMovement: null,
+      },
+    ];
+    render(<SectionManager sections={withSwiss} {...props} />);
+
+    expect(
+      screen.getByText("Swiss Pairs — 5 tables, 7 rounds"),
+    ).toBeInTheDocument();
   });
 
   it("is read-only: no add/delete, shows static values", () => {

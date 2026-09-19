@@ -65,8 +65,54 @@ describe("DealEntry", () => {
     expect(asButton.disabled).toBe(true);
   });
 
+  it("rejects a 14th card once the active hand already holds 13", () => {
+    render(<DealEntry boardNumber={1} onSubmit={vi.fn()} />);
+
+    // Fill North with all 13 spades.
+    fireEvent.click(screen.getByTestId("entry-dir-N"));
+    for (const rank of Ranks) {
+      fireEvent.click(screen.getByTestId(`card-S${rank}`));
+    }
+    // The North tab shows the full-hand ring at 13/13.
+    expect(screen.getByTestId("entry-dir-N")).toHaveTextContent("13/13");
+
+    // A heart is not used anywhere, so its button stays enabled; tapping it
+    // hits the `hand.length >= 13` guard and is ignored (still 13 in North).
+    const heartAce = screen.getByTestId("card-HA") as HTMLButtonElement;
+    expect(heartAce.disabled).toBe(false);
+    fireEvent.click(heartAce);
+    expect(screen.getByTestId("entry-dir-N")).toHaveTextContent("13/13");
+    // The heart was not added (it would render as selected/blue otherwise).
+    expect(heartAce.className).not.toContain("bg-blue-600");
+  });
+
+  it("deselects a card from the active hand when tapped again", () => {
+    render(<DealEntry boardNumber={1} onSubmit={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId("entry-dir-N"));
+    const spadeAce = screen.getByTestId("card-SA") as HTMLButtonElement;
+    fireEvent.click(spadeAce); // select
+    expect(spadeAce.className).toContain("bg-blue-600");
+    fireEvent.click(spadeAce); // deselect
+    expect(spadeAce.className).not.toContain("bg-blue-600");
+  });
+
   it("shows the deal read-only when someone else entered it first", () => {
-    const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const ranks: Rank[] = [
+      "A",
+      "K",
+      "Q",
+      "J",
+      "T",
+      "9",
+      "8",
+      "7",
+      "6",
+      "5",
+      "4",
+      "3",
+      "2",
+    ];
     const deal: Deal = {
       N: ranks.map((r): Card => `S${r}`),
       E: ranks.map((r): Card => `H${r}`),

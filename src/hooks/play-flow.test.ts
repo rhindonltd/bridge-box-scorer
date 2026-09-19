@@ -11,8 +11,10 @@ vi.mock("swr", () => ({
 const socketOn = vi.fn();
 const socketOff = vi.fn();
 const socketEmit = vi.fn();
+const mockEmitWithAck = vi.fn();
 vi.mock("../lib/socket", () => ({
   getSocket: () => ({ on: socketOn, off: socketOff, emit: socketEmit }),
+  emitWithAck: (...args: unknown[]) => mockEmitWithAck(...args),
 }));
 
 vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
@@ -104,10 +106,7 @@ describe("usePlayFlow", () => {
     withSchedule({
       assignmentId: "A1",
       side: "NS",
-      rounds: [
-        round(1, [1, 2], { confirmed: true }),
-        round(2, [3, 4]),
-      ],
+      rounds: [round(1, [1, 2], { confirmed: true }), round(2, [3, 4])],
     });
 
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
@@ -481,9 +480,12 @@ describe("usePlayFlow", () => {
   });
 
   // Drive a single board of round 0 all the way to boardResults.
-  function toBoardResults(result: {
-    current: ReturnType<typeof usePlayFlow>;
-  }, boardNumber: number) {
+  function toBoardResults(
+    result: {
+      current: ReturnType<typeof usePlayFlow>;
+    },
+    boardNumber: number,
+  ) {
     act(() => result.current.handleEnterRound());
     act(() => result.current.submitResult(boardNumber, "3NTN="));
     act(() =>
@@ -744,9 +746,7 @@ describe("usePlayFlow", () => {
         rounds: [round(1, [1, 2])],
       };
       withSchedule(schedule);
-      const { result, rerender } = renderHook(() =>
-        usePlayFlow("g1", "A1NS"),
-      );
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       expect(result.current.playState.state).toBe("enterContract");
@@ -765,9 +765,7 @@ describe("usePlayFlow", () => {
         side: "NS",
         rounds: [round(1, [1, 2])],
       });
-      const { result, rerender } = renderHook(() =>
-        usePlayFlow("g1", "A1NS"),
-      );
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       expect(result.current.playState.state).toBe("enterContract");
@@ -798,9 +796,7 @@ describe("usePlayFlow", () => {
         rounds: [round(1, [1])],
       };
       withSchedule(schedule);
-      const { result, rerender } = renderHook(() =>
-        usePlayFlow("g1", "A1NS"),
-      );
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       act(() => result.current.submitResult(1, "3NTN="));
@@ -826,9 +822,7 @@ describe("usePlayFlow", () => {
         rounds: [round(1, [1])],
       };
       withSchedule(schedule);
-      const { result, rerender } = renderHook(() =>
-        usePlayFlow("g1", "A1NS"),
-      );
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       act(() => result.current.submitResult(1, "3NTN="));
@@ -856,9 +850,7 @@ describe("usePlayFlow", () => {
         rounds: [round(1, [1])],
       };
       withSchedule(schedule);
-      const { result, rerender } = renderHook(() =>
-        usePlayFlow("g1", "A1NS"),
-      );
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       expect(result.current.playState.state).toBe("enterContract");
@@ -879,9 +871,7 @@ describe("usePlayFlow", () => {
         rounds: [round(1, [1])],
       };
       withSchedule(schedule);
-      const { result, rerender } = renderHook(() =>
-        usePlayFlow("g1", "A1NS"),
-      );
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       toBoardResults(result, 1);
       expect(result.current.playState.state).toBe("boardResults");
@@ -891,6 +881,74 @@ describe("usePlayFlow", () => {
 
       act(() => result.current.handleBoardResultsNext());
       expect(result.current.playState.state).toBe("boardResults");
+    });
+  });
+
+  describe("schedule SWR retry policy", () => {
+    // The hook configures SWR to retry on error EXCEPT on a 404 (the expected
+    // "seated, waiting for the game to start" state). We drive the option
+    // predicate directly since SWR itself is mocked.
+    function shouldRetryOnError() {
+      withScheduleError(404);
+      renderHook(() => usePlayFlow("g1", "A1NS"));
+      const opts = mockUseSWR.mock.calls.at(-1)?.[2] as {
+        shouldRetryOnError: (e: Error & { status?: number }) => boolean;
+      };
+      return opts.shouldRetryOnError;
+    }
+
+    it("does not retry on a 404", () => {
+      const predicate = shouldRetryOnError();
+      const err = Object.assign(new Error("not found"), { status: 404 });
+      expect(predicate(err)).toBe(false);
+    });
+
+    it("retries on any other error status", () => {
+      const predicate = shouldRetryOnError();
+      const err = Object.assign(new Error("server error"), { status: 500 });
+      expect(predicate(err)).toBe(true);
+    });
+  });
+
+  describe("submitDeal", () => {
+    it("emits DEAL_SUBMIT with the seat token and resolves the ack", async () => {
+      mockEmitWithAck.mockResolvedValue({ stored: true });
+      withSchedule({ assignmentId: "A1", side: "NS", rounds: [round(1, [1])] });
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+      const deal = { N: "SAKQ", E: "", S: "", W: "" } as unknown as never;
+      let ack: { stored: boolean } | undefined;
+      await act(async () => {
+        ack = await result.current.submitDeal(1, deal);
+      });
+
+      expect(ack).toEqual({ stored: true });
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.DEAL_SUBMIT,
+        expect.objectContaining({
+          gameId: "g1",
+          seat: "A1NS",
+          token: "tok-1",
+          boardNumber: 1,
+          deal,
+        }),
+      );
+    });
+
+    it("sends an empty token when none is stored", async () => {
+      mockGetPlayerToken.mockReturnValue(null);
+      mockEmitWithAck.mockResolvedValue({ stored: false });
+      withSchedule({ assignmentId: "A1", side: "NS", rounds: [round(1, [1])] });
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+      await act(async () => {
+        await result.current.submitDeal(2, {} as unknown as never);
+      });
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.DEAL_SUBMIT,
+        expect.objectContaining({ token: "", boardNumber: 2 }),
+      );
     });
   });
 });

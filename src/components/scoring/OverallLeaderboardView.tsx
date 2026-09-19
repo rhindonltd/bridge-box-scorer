@@ -11,6 +11,8 @@ type Props = {
   lines: unknown;
   participants: AssignedPair[];
   highlightAssignmentId?: string;
+  /** Spread the standings across this many side-by-side columns (default 1). */
+  splitColumns?: number;
 };
 
 /**
@@ -23,6 +25,7 @@ export function OverallLeaderboardView({
   lines,
   participants,
   highlightAssignmentId,
+  splitColumns,
 }: Props) {
   const views = plugin.views;
   const [showFirst, setShowFirst] = useState(true);
@@ -33,6 +36,7 @@ export function OverallLeaderboardView({
         table={views[0].toTable(lines, participants, { highlightAssignmentId })}
         highlightAssignmentId={highlightAssignmentId}
         rowTestId="leaderboard-row"
+        splitColumns={splitColumns}
       />
     );
   }
@@ -55,6 +59,7 @@ export function OverallLeaderboardView({
         })}
         highlightAssignmentId={highlightAssignmentId}
         rowTestId="leaderboard-row"
+        splitColumns={splitColumns}
       />
     </div>
   );

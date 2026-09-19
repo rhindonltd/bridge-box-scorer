@@ -32,10 +32,7 @@ type RawEntry = {
 };
 
 type RecommendationsJson = {
-  recommendations: Record<
-    string,
-    Record<string, RawEntry[] | null>
-  >;
+  recommendations: Record<string, Record<string, RawEntry[] | null>>;
 };
 
 /**
@@ -120,9 +117,10 @@ describe("recommendation coverage", () => {
       }
     }
 
-    expect(unexpectedGaps, `unexpected gaps:\n${unexpectedGaps.join("\n")}`).toEqual(
-      [],
-    );
+    expect(
+      unexpectedGaps,
+      `unexpected gaps:\n${unexpectedGaps.join("\n")}`,
+    ).toEqual([]);
     expect(
       unexpectedResolved,
       `now-resolved; remove from EXPECTED_GAPS:\n${unexpectedResolved.join("\n")}`,
@@ -174,7 +172,9 @@ describe("recommendation coverage", () => {
             );
           }
         } catch (err) {
-          failures.push(`${context}: generate threw: ${(err as Error).message}`);
+          failures.push(
+            `${context}: generate threw: ${(err as Error).message}`,
+          );
         }
       }
     }

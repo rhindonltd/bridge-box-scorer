@@ -32,91 +32,99 @@ function build(tables: number, rounds: number): Tables {
 }
 
 describe("generateWebMitchell", () => {
-  describe.each(TARGETS)("$tables tables / $rounds rounds", ({ tables, rounds }) => {
-    const movement = build(tables, rounds);
+  describe.each(TARGETS)(
+    "$tables tables / $rounds rounds",
+    ({ tables, rounds }) => {
+      const movement = build(tables, rounds);
 
-    it("generates one entry per table", () => {
-      expect(movement.tables).toHaveLength(tables);
-    });
+      it("generates one entry per table", () => {
+        expect(movement.tables).toHaveLength(tables);
+      });
 
-    it("generates the requested number of rounds at every table", () => {
-      for (const table of movement.tables) {
-        expect(table.rounds).toHaveLength(rounds);
-      }
-    });
-
-    it("keeps NS pairs stationary at their own table", () => {
-      for (const table of movement.tables) {
-        const nsPairs = table.rounds.map((round) => round.participants.nsId);
-
-        expect(new Set(nsPairs).size).toBe(1);
-        expect(nsPairs[0]).toBe(`${table.table}NS`);
-      }
-    });
-
-    it("uses exactly `rounds` distinct board sets across the field", () => {
-      const setStarts = new Set<number>();
-
-      for (const table of movement.tables) {
-        for (const round of table.rounds) {
-          // The first board number identifies the set.
-          setStarts.add(round.boards[0]);
-        }
-      }
-
-      expect(setStarts.size).toBe(rounds);
-    });
-
-    it("has distinct NS and EW pairs at every table each round", () => {
-      for (let r = 0; r < rounds; r++) {
-        const ns = movement.tables.map((t) => t.rounds[r].participants.nsId);
-        const ew = movement.tables.map((t) => t.rounds[r].participants.ewId);
-
-        expect(new Set(ns).size).toBe(tables);
-        expect(new Set(ew).size).toBe(tables);
-      }
-    });
-
-    it("never gives an NS pair the same opponent twice", () => {
-      for (const table of movement.tables) {
-        const opponents = table.rounds.map((round) => round.participants.ewId);
-
-        expect(new Set(opponents).size).toBe(opponents.length);
-      }
-    });
-
-    it("never lets an EW pair play the same board set twice", () => {
-      // The Web's replay-free guarantee: follow each EW pair and confirm every
-      // board set it plays is distinct. (For odd table counts the NS seats
-      // deliberately replay set numbers on duplicate physical copies, which is
-      // the point of a Web, so that invariant only holds for the EW pairs.)
-      const ewBoards = new Map<string, number[]>();
-
-      for (const table of movement.tables) {
-        for (const round of table.rounds) {
-          const { ewId } = round.participants;
-
-          ewBoards.set(ewId, [...(ewBoards.get(ewId) ?? []), ...round.boards]);
-        }
-      }
-
-      for (const boards of ewBoards.values()) {
-        expect(new Set(boards).size).toBe(boards.length);
-      }
-    });
-
-    if (tables % 2 === 0) {
-      it("never lets an NS seat play the same board set twice (even Web)", () => {
-        // Even-table Webs split into twin halves that share sets on duplicate
-        // copies, and every seat still plays distinct set numbers.
+      it("generates the requested number of rounds at every table", () => {
         for (const table of movement.tables) {
-          const boards = table.rounds.flatMap((round) => round.boards);
+          expect(table.rounds).toHaveLength(rounds);
+        }
+      });
 
+      it("keeps NS pairs stationary at their own table", () => {
+        for (const table of movement.tables) {
+          const nsPairs = table.rounds.map((round) => round.participants.nsId);
+
+          expect(new Set(nsPairs).size).toBe(1);
+          expect(nsPairs[0]).toBe(`${table.table}NS`);
+        }
+      });
+
+      it("uses exactly `rounds` distinct board sets across the field", () => {
+        const setStarts = new Set<number>();
+
+        for (const table of movement.tables) {
+          for (const round of table.rounds) {
+            // The first board number identifies the set.
+            setStarts.add(round.boards[0]);
+          }
+        }
+
+        expect(setStarts.size).toBe(rounds);
+      });
+
+      it("has distinct NS and EW pairs at every table each round", () => {
+        for (let r = 0; r < rounds; r++) {
+          const ns = movement.tables.map((t) => t.rounds[r].participants.nsId);
+          const ew = movement.tables.map((t) => t.rounds[r].participants.ewId);
+
+          expect(new Set(ns).size).toBe(tables);
+          expect(new Set(ew).size).toBe(tables);
+        }
+      });
+
+      it("never gives an NS pair the same opponent twice", () => {
+        for (const table of movement.tables) {
+          const opponents = table.rounds.map(
+            (round) => round.participants.ewId,
+          );
+
+          expect(new Set(opponents).size).toBe(opponents.length);
+        }
+      });
+
+      it("never lets an EW pair play the same board set twice", () => {
+        // The Web's replay-free guarantee: follow each EW pair and confirm every
+        // board set it plays is distinct. (For odd table counts the NS seats
+        // deliberately replay set numbers on duplicate physical copies, which is
+        // the point of a Web, so that invariant only holds for the EW pairs.)
+        const ewBoards = new Map<string, number[]>();
+
+        for (const table of movement.tables) {
+          for (const round of table.rounds) {
+            const { ewId } = round.participants;
+
+            ewBoards.set(ewId, [
+              ...(ewBoards.get(ewId) ?? []),
+              ...round.boards,
+            ]);
+          }
+        }
+
+        for (const boards of ewBoards.values()) {
           expect(new Set(boards).size).toBe(boards.length);
         }
       });
-    }
-  });
+
+      if (tables % 2 === 0) {
+        it("never lets an NS seat play the same board set twice (even Web)", () => {
+          // Even-table Webs split into twin halves that share sets on duplicate
+          // copies, and every seat still plays distinct set numbers.
+          for (const table of movement.tables) {
+            const boards = table.rounds.flatMap((round) => round.boards);
+
+            expect(new Set(boards).size).toBe(boards.length);
+          }
+        });
+      }
+    },
+  );
 
   it("dispatches even table counts through the even construction", () => {
     // 12-table 8-round is the layout the even rule was verified against:

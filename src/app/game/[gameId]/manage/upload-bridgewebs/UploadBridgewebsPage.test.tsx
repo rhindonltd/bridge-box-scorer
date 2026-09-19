@@ -20,8 +20,9 @@ vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({ game: { gameId: "g1" } }),
 }));
 
+const mockGetDirectorToken = vi.fn(() => "director-tok" as string | null);
 vi.mock("@/lib/director-token", () => ({
-  getDirectorToken: () => "director-tok",
+  getDirectorToken: () => mockGetDirectorToken(),
 }));
 
 vi.mock("@/components/layout/GamePageLayout", () => ({
@@ -47,6 +48,7 @@ import { UploadBridgewebsPage } from "./UploadBridgewebsPage";
 describe("UploadBridgewebsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetDirectorToken.mockReturnValue("director-tok");
     swrState = {
       data: { configured: true, club: "myclub" },
       isLoading: false,
@@ -142,6 +144,101 @@ describe("UploadBridgewebsPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Club info not configured.",
     );
+  });
+
+  it("sends an empty token header when no director token is present", async () => {
+    mockGetDirectorToken.mockReturnValue(null);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ result: { ok: true, message: "done" } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<UploadBridgewebsPage onCancel={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Upload to BridgeWebs" }),
+    );
+
+    await screen.findByRole("status");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/games/g1/bridgewebs/upload",
+      expect.objectContaining({ headers: { "x-director-token": "" } }),
+    );
+  });
+
+  it("falls back to a generic success message when the reply omits one", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ result: { ok: true } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<UploadBridgewebsPage onCancel={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Upload to BridgeWebs" }),
+    );
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Upload successful",
+    );
+  });
+
+  it("falls back to a generic failure message when the reply omits one", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ result: { ok: false } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<UploadBridgewebsPage onCancel={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Upload to BridgeWebs" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Upload failed");
+  });
+
+  it("handles a malformed JSON body on an ok response (falls back to failed)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new Error("not json");
+      },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<UploadBridgewebsPage onCancel={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Upload to BridgeWebs" }),
+    );
+
+    // body is null -> body?.result?.ok is falsy -> generic "Upload failed".
+    expect(await screen.findByRole("alert")).toHaveTextContent("Upload failed");
+  });
+
+  it("shows a generic error when a non-ok response has no error field", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({}),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<UploadBridgewebsPage onCancel={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Upload to BridgeWebs" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Upload failed. Please try again.",
+    );
+  });
+
+  it("omits the club name from the blurb when configured without a club", () => {
+    swrState = { data: { configured: true, club: null }, isLoading: false };
+    render(<UploadBridgewebsPage onCancel={vi.fn()} />);
+    // Configured, so the descriptive blurb shows, but with no `for club "..."`.
+    expect(screen.getByText(/uploads the game results/i)).toBeInTheDocument();
+    expect(screen.queryByText(/for club "/i)).not.toBeInTheDocument();
   });
 
   it("shows a network error if the request throws", async () => {

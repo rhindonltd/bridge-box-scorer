@@ -98,6 +98,7 @@ export function calculateSwissMpVpOverall(
     for (const [pairId, acc] of perPair) {
       // A pair with no board this round isn't in it (bye / not drawn); leave
       // the round empty for them.
+      /* v8 ignore next -- unreachable: every pair added to perPair gets a board recorded in the same loop iteration, so boards.size is never 0 here */
       if (acc.boards.size === 0) continue;
 
       // Running estimate over the boards scored so far, against whatever field
@@ -106,10 +107,12 @@ export function calculateSwissMpVpOverall(
       // round shows the neutral average of 10 VP; it refines as results land.
       // This live percentage is a "barometer" figure that can swing until every
       // table in the field has entered the round's boards.
-      const vp =
-        acc.max === 0
-          ? NEUTRAL_VP
-          : calculateIndependentMpVP((acc.mp / acc.max) * 100).vpAwarded;
+      let vp: number;
+      if (acc.max === 0) {
+        vp = NEUTRAL_VP;
+      } else {
+        vp = calculateIndependentMpVP((acc.mp / acc.max) * 100).vpAwarded;
+      }
 
       const running = totals.get(pairId) ?? { totalVP: 0, vpByRound: {} };
       running.vpByRound[round] = vp;

@@ -59,7 +59,10 @@ describe("TableCompassLayout", () => {
       />,
     );
 
-    const middleRow = screen.getByText("West").parentElement;
+    // West and East each sit in a `min-w-0` wrapper cell (so their 1fr columns
+    // can shrink on narrow screens), so the shared middle row is the grid that
+    // contains those wrappers plus the center — i.e. West's grandparent.
+    const middleRow = screen.getByText("West").parentElement?.parentElement;
 
     expect(middleRow).toHaveTextContent("West");
     expect(middleRow).toHaveTextContent("Center");

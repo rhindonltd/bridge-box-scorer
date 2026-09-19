@@ -13,6 +13,14 @@ describe("teamIds", () => {
   });
 });
 
+describe("teamOpponentKey", () => {
+  it("is order-independent (normalises to low-high)", () => {
+    expect(teamOpponentKey(1, 4)).toBe("1-4");
+    expect(teamOpponentKey(4, 1)).toBe("1-4");
+    expect(teamOpponentKey(4, 1)).toBe(teamOpponentKey(1, 4));
+  });
+});
+
 describe("swissTeamsRoundOne", () => {
   it("pairs every team exactly once into teams/2 matches", () => {
     const matches = swissTeamsRoundOne(6, 123);
@@ -67,6 +75,28 @@ describe("drawSwissTeamsRound", () => {
     expect(hadUnavoidableRepeat).toBe(false);
     const keys = matches.map((m) => teamOpponentKey(m.a, m.b));
     expect(keys).not.toContain(teamOpponentKey(1, 2));
+  });
+
+  it("prunes inferior branches and settles on a repeat-free draw (larger field)", () => {
+    // Six teams whose nearest-rank partners have already met, forcing the
+    // search to explore and prune repeat branches before finding a clean draw.
+    const { matches, hadUnavoidableRepeat } = drawSwissTeamsRound({
+      teams: 6,
+      standings: [1, 2, 3, 4, 5, 6],
+      playedOpponents: new Set([
+        teamOpponentKey(1, 2),
+        teamOpponentKey(3, 4),
+        teamOpponentKey(5, 6),
+      ]),
+    });
+
+    expect(hadUnavoidableRepeat).toBe(false);
+    const keys = matches.map((m) => teamOpponentKey(m.a, m.b));
+    expect(keys).not.toContain(teamOpponentKey(1, 2));
+    expect(keys).not.toContain(teamOpponentKey(3, 4));
+    expect(keys).not.toContain(teamOpponentKey(5, 6));
+    const seen = matches.flatMap((m) => [m.a, m.b]).sort((x, y) => x - y);
+    expect(seen).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
   it("flags an unavoidable repeat when the field is exhausted", () => {

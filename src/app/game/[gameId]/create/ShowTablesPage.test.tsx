@@ -33,8 +33,8 @@ vi.mock("swr", () => ({
 
 // Capture the sync selector so a test can invoke it directly.
 let syncSelector:
-  | ((p: { participants: Pair[] }) => { key: string; data: Pair[] })
-  | null = null;
+  ((p: { participants: Pair[] }) => { key: string; data: Pair[] }) | null =
+  null;
 vi.mock("@/hooks/socket-swr-sync", () => ({
   useSocketSWRSync: (
     _event: unknown,
@@ -71,8 +71,6 @@ vi.mock("@/components/manage/sections/useSetupSections", () => ({
   }),
 }));
 
-
-
 vi.mock("@/lib/director-token", () => ({
   getDirectorToken: () => "token",
 }));
@@ -83,8 +81,11 @@ vi.mock("@/lib/fetcher", () => ({
 
 // Table resize now goes through the HTTP section-service.
 const mockUpdateSectionTables = vi.fn().mockResolvedValue(undefined);
+const mockSetSectionSwissMovement = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/section-service", () => ({
   updateSectionTables: (...args: unknown[]) => mockUpdateSectionTables(...args),
+  setSectionSwissMovement: (...args: unknown[]) =>
+    mockSetSectionSwissMovement(...args),
 }));
 
 // Eviction now goes through the HTTP participant-service.
@@ -140,10 +141,17 @@ describe("ShowTablesPage", () => {
     syncSelector = null;
     capturedFetcher = null;
     currentSections = [
-      { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
     ];
     currentSelected = "A";
     mockUpdateSectionTables.mockResolvedValue(undefined);
+    mockSetSectionSwissMovement.mockResolvedValue(undefined);
     mockEvictParticipant.mockResolvedValue(undefined);
     mockStationary = new Map();
     mockPlacement = new Map();
@@ -164,9 +172,10 @@ describe("ShowTablesPage", () => {
 
     render(<ShowTablesPage />);
 
-    // Occupied seat renders an evict control for that player.
+    // Occupied seats render inside a tappable table card (which opens the
+    // management dialog).
     expect(
-      screen.getByLabelText("Evict North player"),
+      screen.getByRole("button", { name: "Manage table 1" }),
     ).toBeInTheDocument();
 
     // Sync selector maps a PARTICIPANTS event to the pairs cache key.
@@ -209,12 +218,22 @@ describe("ShowTablesPage", () => {
     const updater = optimistic![1] as (d: {
       sections: { section: string; tables: number }[];
     }) => { sections: { section: string; tables: number }[] };
-    expect(
-      updater({
-        sections: [{ section: "A", tables: 2 } as never],
-      }).sections[0],
-    ).toMatchObject({ section: "A", tables: 3 });
+    const patched = updater({
+      // A non-matching section (B) is left untouched; A is bumped to 3.
+      sections: [
+        { section: "A", tables: 2 } as never,
+        { section: "B", tables: 4 } as never,
+      ],
+    });
+    expect(patched.sections[0]).toMatchObject({ section: "A", tables: 3 });
+    expect(patched.sections[1]).toMatchObject({ section: "B", tables: 4 });
     expect(optimistic![2]).toMatchObject({ revalidate: false });
+
+    // When the cache is empty the updater passes the (undefined) value through
+    // unchanged rather than fabricating a sections envelope.
+    expect(
+      (updater as (d?: { sections: unknown[] }) => unknown)(undefined),
+    ).toBeUndefined();
   });
 
   it("alerts when a resize is rejected (e.g. shrink guard)", async () => {
@@ -243,13 +262,45 @@ describe("ShowTablesPage", () => {
     ).toBe(true);
   });
 
-  it("evicts a pair after confirmation via the HTTP service", async () => {
+  it("uses a generic message when the resize rejects with a non-Error", async () => {
+    mockUpdateSectionTables.mockRejectedValueOnce("nope");
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+
+    render(<ShowTablesPage />);
+    const increment = screen.getByRole("button", { name: "Increase Tables" });
+    fireEvent.pointerDown(increment);
+    fireEvent.pointerUp(increment);
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Failed to update tables"),
+    );
+  });
+
+  it("renders nothing section-specific when the selected section is missing", () => {
+    // `selected` points at a section that isn't in the list -> currentSection
+    // is undefined, so the grid/stepper are not rendered and no movement
+    // warning is shown.
+    currentSelected = "Z";
+
+    render(<ShowTablesPage />);
+
+    expect(screen.queryByLabelText("Tables")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("movement-warning-banner"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("evicts a pair after confirmation via the HTTP service (from the dialog)", async () => {
     currentPairs = [pairAt("A1NS")];
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<ShowTablesPage />);
 
-    fireEvent.click(screen.getByLabelText("Evict North player"));
+    // Open the table's management dialog, then evict the NS pair.
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Evict North / South pair" }),
+    );
     expect(confirmSpy).toHaveBeenCalled();
     await waitFor(() =>
       expect(mockEvictParticipant).toHaveBeenCalledWith("g1", "A1NS"),
@@ -263,19 +314,40 @@ describe("ShowTablesPage", () => {
     mockEvictParticipant.mockRejectedValueOnce(new Error("cannot evict"));
 
     render(<ShowTablesPage />);
-    fireEvent.click(screen.getByLabelText("Evict North player"));
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Evict North / South pair" }),
+    );
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("cannot evict"));
+  });
+
+  it("uses a generic message when the eviction rejects with a non-Error", async () => {
+    currentPairs = [pairAt("A1NS")];
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    mockEvictParticipant.mockRejectedValueOnce("nope");
+
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Evict North / South pair" }),
+    );
 
     await waitFor(() =>
-      expect(alertSpy).toHaveBeenCalledWith("cannot evict"),
+      expect(alertSpy).toHaveBeenCalledWith("Failed to evict participant"),
     );
   });
 
-  it("does not evict when the director cancels the confirm", () => {
+  it("does not evict when the director cancels the confirm", async () => {
     currentPairs = [pairAt("A1NS")];
     vi.spyOn(window, "confirm").mockReturnValue(false);
 
     render(<ShowTablesPage />);
-    fireEvent.click(screen.getByLabelText("Evict North player"));
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Evict North / South pair" }),
+    );
 
     expect(mockEvictParticipant).not.toHaveBeenCalled();
   });
@@ -320,7 +392,9 @@ describe("ShowTablesPage", () => {
     render(<ShowTablesPage />);
 
     // Copy label appears alongside the boards.
-    expect(screen.getAllByText("Boards 1–3 (Copy A)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Boards 1–3 (Copy A)").length).toBeGreaterThan(
+      0,
+    );
     // Share and relay lines.
     expect(screen.getByText("Shares with table 2")).toBeInTheDocument();
     expect(screen.getByText("Relay → table 1")).toBeInTheDocument();
@@ -441,8 +515,20 @@ describe("ShowTablesPage", () => {
 
   it("shows only the selected section's grid and stepper", async () => {
     currentSections = [
-      { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
-      { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "Blue",
+        tables: 4,
+        ordinal: 1,
+        selectedMovement: null,
+      },
     ];
     currentSelected = "B";
 
@@ -456,6 +542,185 @@ describe("ShowTablesPage", () => {
 
     await waitFor(() =>
       expect(mockUpdateSectionTables).toHaveBeenCalledWith("g1", "B", 5),
+    );
+  });
+
+  describe("Swiss stationary toggle", () => {
+    function swissSection(stationaryPairs: number[] = []) {
+      return [
+        {
+          section: "A",
+          label: "A",
+          tables: 2,
+          ordinal: 0,
+          selectedMovement: {
+            source: "SWISS",
+            swiss: { tables: 2, stationaryPairs },
+          } as never,
+        },
+      ];
+    }
+
+    it("marks a NS pair stationary (adds its id) via the modal", async () => {
+      currentSections = swissSection([]);
+      currentPairs = [pairAt("A1NS")];
+      mockMovementTables = 2;
+
+      render(<ShowTablesPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      // The stationary toggle for the NS pair (table 1, ns=true -> pairId 1).
+      // The Toggle renders "No"/"Yes" buttons; clicking either fires the
+      // handler, which flips membership regardless of the value passed.
+      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+
+      await waitFor(() =>
+        expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
+          tables: 2,
+          stationaryPairs: [1],
+        }),
+      );
+    });
+
+    it("un-marks a stationary EW pair (removes its id) via the modal", async () => {
+      // EW pair at table 1 has id tables + 1 = 3; already stationary.
+      currentSections = swissSection([3]);
+      currentPairs = [pairAt("A1EW")];
+      mockMovementTables = 2;
+
+      render(<ShowTablesPage />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      // Single occupied pair (EW) -> one toggle; click "No" to un-mark.
+      fireEvent.click(await screen.findByRole("button", { name: "No" }));
+
+      await waitFor(() =>
+        expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
+          tables: 2,
+          stationaryPairs: [],
+        }),
+      );
+    });
+
+    it("alerts when saving the stationary change fails", async () => {
+      currentSections = swissSection([]);
+      currentPairs = [pairAt("A1NS")];
+      mockMovementTables = 2;
+      const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+      mockSetSectionSwissMovement.mockRejectedValueOnce(new Error("boom"));
+
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("boom"));
+    });
+
+    it("handles a swiss spec with no stationaryPairs field", async () => {
+      currentSections = [
+        {
+          section: "A",
+          label: "A",
+          tables: 2,
+          ordinal: 0,
+          // No stationaryPairs key -> the `?? []` default kicks in.
+          selectedMovement: {
+            source: "SWISS",
+            swiss: { tables: 2 },
+          } as never,
+        },
+      ];
+      currentPairs = [pairAt("A1NS")];
+      mockMovementTables = 2;
+
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+
+      await waitFor(() =>
+        expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
+          tables: 2,
+          stationaryPairs: [1],
+        }),
+      );
+    });
+
+    it("keeps the stationary-pairs list sorted when adding a third id", async () => {
+      // Already-stationary ids 4 and 1; toggling table 1 NS (id 1) removes it,
+      // but toggling table 2 NS (id 2) adds it, forcing the sort comparator to
+      // order [4, 1, 2] -> [1, 2, 4].
+      currentSections = swissSection([4, 1]);
+      currentPairs = [pairAt("A2NS")];
+      mockMovementTables = 2;
+
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 2" }));
+      // Table 2 NS -> pairId 2, not currently stationary, so it is added.
+      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+
+      await waitFor(() =>
+        expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
+          tables: 2,
+          stationaryPairs: [1, 2, 4],
+        }),
+      );
+    });
+
+    it("uses a generic message when the stationary save rejects with a non-Error", async () => {
+      currentSections = swissSection([]);
+      currentPairs = [pairAt("A1NS")];
+      mockMovementTables = 2;
+      const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+      mockSetSectionSwissMovement.mockRejectedValueOnce("nope");
+
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+
+      await waitFor(() =>
+        expect(alertSpy).toHaveBeenCalledWith("Failed to update stationary"),
+      );
+    });
+  });
+
+  it("closes the table dialog when Done is pressed", async () => {
+    currentPairs = [pairAt("A1NS")];
+
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    expect(await screen.findByText("Table 1")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    await waitFor(() =>
+      expect(screen.queryByText("Table 1")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("falls back to no table in the dialog when the opened table no longer exists", async () => {
+    // Open a table, then shrink the section so the opened table number is gone.
+    // The dialog's `tables.find(...) ?? null` fallback should resolve to null,
+    // closing the dialog rather than showing a stale table.
+    currentPairs = [pairAt("A2NS")];
+
+    const { rerender } = render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 2" }));
+    expect(await screen.findByText("Table 2")).toBeInTheDocument();
+
+    // Section now has a single table; table 2 no longer exists.
+    currentSections = [
+      {
+        section: "A",
+        label: "A",
+        tables: 1,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+    ];
+    rerender(<ShowTablesPage />);
+
+    await waitFor(() =>
+      expect(screen.queryByText("Table 2")).not.toBeInTheDocument(),
     );
   });
 });

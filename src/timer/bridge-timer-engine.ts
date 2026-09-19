@@ -136,6 +136,7 @@ export class BridgeTimerEngine {
    * the wall-clock time (ms since epoch) at which the preceding play segment
    * ended — used to derive the length of resume-time breaks. Defaults to now.
    */
+  /* v8 ignore next -- the sole caller (nextPhase) always passes priorPlayEndMs, so the Date.now() default is never evaluated */
   private enterBreak(afterRound: number, priorPlayEndMs = Date.now()) {
     // Caller must have confirmed a break exists after this round, so the gap is
     // always a break here; the `?? 0` arm is defensive only.

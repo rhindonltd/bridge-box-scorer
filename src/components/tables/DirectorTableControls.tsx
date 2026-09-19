@@ -52,34 +52,29 @@ export interface DirectorTable {
 
 interface Props {
   tables: DirectorTable[];
-  onEvict: (seat: Seat) => void;
   /**
-   * Swiss only: toggle a pair's stationary flag. `ns` is true for the NS pair
-   * (North/South cards) of `tableNumber`, false for the EW pair (East/West).
-   * When omitted, positions are not clickable (non-Swiss movements have no
-   * director-set stationary pairs).
+   * Open the per-table management dialog (evict pairs / set stationary). Tapping
+   * anywhere on a table's card invokes this with that table.
    */
-  onToggleStationary?: (tableNumber: number, ns: boolean) => void;
+  onOpenTable: (table: DirectorTable) => void;
 }
 
-function EvictablePlayerCard({
+/**
+ * A single compass position's player card, with a "Stationary" badge when the
+ * position belongs to a stationary pair. Purely presentational — the evict and
+ * stationary controls now live in the per-table dialog (see
+ * {@link DirectorTableModal}), which opens by tapping the table card.
+ */
+function CompassPlayerCard({
   label,
   player,
-  seat,
-  onEvict,
   stationary = false,
-  onToggleStationary,
 }: {
   label: string;
   player: Omit<Player, "id"> | null;
-  seat: Seat | null;
-  onEvict: (seat: Seat) => void;
   /** Highlight this position as stationary for the selected movement. */
   stationary?: boolean;
-  /** When provided, the card is clickable to toggle this position stationary. */
-  onToggleStationary?: () => void;
 }) {
-  const clickable = onToggleStationary != null;
   return (
     <div
       className={
@@ -88,23 +83,7 @@ function EvictablePlayerCard({
           : "relative"
       }
     >
-      {clickable ? (
-        <button
-          type="button"
-          onClick={onToggleStationary}
-          aria-pressed={stationary}
-          title={
-            stationary
-              ? "Stationary — tap to let this pair move"
-              : "Tap to keep this pair at this table (stationary)"
-          }
-          className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-lg"
-        >
-          <PlayerCard label={label} player={player} />
-        </button>
-      ) : (
-        <PlayerCard label={label} player={player} />
-      )}
+      <PlayerCard label={label} player={player} />
       {stationary && (
         <span
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-950"
@@ -112,16 +91,6 @@ function EvictablePlayerCard({
         >
           Stationary
         </span>
-      )}
-      {player && seat && (
-        <button
-          onClick={() => onEvict(seat)}
-          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center hover:bg-red-700 transition"
-          aria-label={`Evict ${label} player`}
-          title="Evict player"
-        >
-          &times;
-        </button>
       )}
     </div>
   );
@@ -170,92 +139,63 @@ function TablePlacementNote({
   );
 }
 
-export default function DirectorTableControls({
-  tables,
-  onEvict,
-  onToggleStationary,
-}: Props) {
+export default function DirectorTableControls({ tables, onOpenTable }: Props) {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {tables.map((table) => (
-            <div
-              key={table.tableNumber}
-              className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-200"
-            >
-              <div className="p-4 sm:p-6">
-                <TableCompassLayout
-                  north={
-                    <EvictablePlayerCard
-                      label="North"
-                      player={table.players.N}
-                      seat={table.seats.N}
-                      onEvict={onEvict}
-                      stationary={table.stationary?.N}
-                      onToggleStationary={
-                        onToggleStationary
-                          ? () => onToggleStationary(table.tableNumber, true)
-                          : undefined
-                      }
-                    />
-                  }
-                  south={
-                    <EvictablePlayerCard
-                      label="South"
-                      player={table.players.S}
-                      seat={table.seats.S}
-                      onEvict={onEvict}
-                      stationary={table.stationary?.S}
-                      onToggleStationary={
-                        onToggleStationary
-                          ? () => onToggleStationary(table.tableNumber, true)
-                          : undefined
-                      }
-                    />
-                  }
-                  east={
-                    <EvictablePlayerCard
-                      label="East"
-                      player={table.players.E}
-                      seat={table.seats.E}
-                      onEvict={onEvict}
-                      stationary={table.stationary?.E}
-                      onToggleStationary={
-                        onToggleStationary
-                          ? () => onToggleStationary(table.tableNumber, false)
-                          : undefined
-                      }
-                    />
-                  }
-                  west={
-                    <EvictablePlayerCard
-                      label="West"
-                      player={table.players.W}
-                      seat={table.seats.W}
-                      onEvict={onEvict}
-                      stationary={table.stationary?.W}
-                      onToggleStationary={
-                        onToggleStationary
-                          ? () => onToggleStationary(table.tableNumber, false)
-                          : undefined
-                      }
-                    />
-                  }
-                  center={
-                    <div className="flex flex-col items-center gap-1.5">
-                      <div className="flex flex-col items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg">
-                        <div className="text-[10px] font-bold">Table</div>
-                        <div className="text-xl font-bold">
-                          {table.tableNumber}
-                        </div>
+        {tables.map((table) => (
+          <button
+            key={table.tableNumber}
+            type="button"
+            onClick={() => onOpenTable(table)}
+            aria-label={`Manage table ${table.tableNumber}`}
+            className="block w-full rounded-2xl border border-gray-200 bg-white text-left shadow-md transition-shadow duration-200 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <div className="p-4 sm:p-6">
+              <TableCompassLayout
+                north={
+                  <CompassPlayerCard
+                    label="North"
+                    player={table.players.N}
+                    stationary={table.stationary?.N}
+                  />
+                }
+                south={
+                  <CompassPlayerCard
+                    label="South"
+                    player={table.players.S}
+                    stationary={table.stationary?.S}
+                  />
+                }
+                east={
+                  <CompassPlayerCard
+                    label="East"
+                    player={table.players.E}
+                    stationary={table.stationary?.E}
+                  />
+                }
+                west={
+                  <CompassPlayerCard
+                    label="West"
+                    player={table.players.W}
+                    stationary={table.stationary?.W}
+                  />
+                }
+                center={
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className="flex flex-col items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg">
+                      <div className="text-[10px] font-bold">Table</div>
+                      <div className="text-xl font-bold">
+                        {table.tableNumber}
                       </div>
-                      <TablePlacementNote placement={table.placement} />
                     </div>
-                  }
-                />
-              </div>
+                    <TablePlacementNote placement={table.placement} />
+                  </div>
+                }
+              />
             </div>
-          ))}
+          </button>
+        ))}
       </div>
     </div>
   );

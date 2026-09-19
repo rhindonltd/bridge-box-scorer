@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import PlayerSearch from "@/app/game/[gameId]/join/PlayerSearch";
+import PlayerSearch, {
+  guestFromQuery,
+} from "@/app/game/[gameId]/join/PlayerSearch";
 import { swrKeys } from "@/swr/swr-keys";
 
 const mockUseSWR = vi.fn();
@@ -52,6 +54,25 @@ vi.mock("@/app/game/[gameId]/join/PlayerSearchView", () => ({
     </div>
   ),
 }));
+
+describe("guestFromQuery", () => {
+  it("returns null for an empty or whitespace-only query", () => {
+    expect(guestFromQuery("")).toBeNull();
+    expect(guestFromQuery("   ")).toBeNull();
+  });
+
+  it("returns null for a purely numeric query (id lookup)", () => {
+    expect(guestFromQuery("12345")).toBeNull();
+  });
+
+  it("splits the first whitespace into first/last name", () => {
+    expect(guestFromQuery("  Ada   Lovelace ")).toEqual({
+      firstName: "Ada",
+      lastName: "Lovelace",
+      nationalId: null,
+    });
+  });
+});
 
 describe("PlayerSearch", () => {
   beforeEach(() => {

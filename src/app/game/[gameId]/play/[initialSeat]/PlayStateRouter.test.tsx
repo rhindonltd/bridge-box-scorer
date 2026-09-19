@@ -56,7 +56,11 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/ContractWizard", () => ({
     onComplete,
   }: {
     playedBoards: number[];
-    onComplete: (d: { board: number; contract: string; result: number }) => void;
+    onComplete: (d: {
+      board: number;
+      contract: string;
+      result: number;
+    }) => void;
   }) => (
     <div data-testid="contract-wizard">
       <span data-testid="played-boards">{playedBoards.join(",")}</span>
@@ -74,11 +78,14 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/ContractWizard", () => ({
   ),
 }));
 
-vi.mock("@/app/game/[gameId]/play/[initialSeat]/WaitingForConfirmation", () => ({
-  WaitingForConfirmation: ({ boardNumber }: { boardNumber: number }) => (
-    <div data-testid="waiting">{boardNumber}</div>
-  ),
-}));
+vi.mock(
+  "@/app/game/[gameId]/play/[initialSeat]/WaitingForConfirmation",
+  () => ({
+    WaitingForConfirmation: ({ boardNumber }: { boardNumber: number }) => (
+      <div data-testid="waiting">{boardNumber}</div>
+    ),
+  }),
+);
 
 vi.mock("@/app/game/[gameId]/play/[initialSeat]/ResultMismatch", () => ({
   ResultMismatch: ({
@@ -142,8 +149,9 @@ vi.mock("@/context/TravellerContext", () => ({
   useTravellerContext: () => ({ deal: null }),
 }));
 
+const mockUseScoredBoard = vi.fn();
 vi.mock("./useScoredBoard", () => ({
-  useScoredBoard: () => ({ board: 1, lines: [] }),
+  useScoredBoard: (...a: unknown[]) => mockUseScoredBoard(...a),
 }));
 
 vi.mock("@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage", () => ({
@@ -225,7 +233,10 @@ function renderRouter(playState: PlayState, handlers = makeHandlers()) {
 }
 
 describe("PlayStateRouter", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseScoredBoard.mockReturnValue({ board: 1, lines: [] });
+  });
 
   it("renders a spinner in the loading state", () => {
     renderRouter({ state: "loading" });
@@ -305,6 +316,14 @@ describe("PlayStateRouter", () => {
     expect(screen.getByTestId("board-results")).toHaveTextContent("b2-last");
   });
 
+  it("shows a spinner in board-results while the scored board is still loading", () => {
+    // useScoredBoard not ready yet -> the loader renders the spinner.
+    mockUseScoredBoard.mockReturnValue(null);
+    renderRouter({ state: "boardResults", roundIndex: 0, boardIndex: 0 });
+    expect(screen.getByTestId("spinner")).toBeInTheDocument();
+    expect(screen.queryByTestId("board-results")).toBeNull();
+  });
+
   it("renders EnterDealsPage with the round's boards", () => {
     renderRouter({ state: "enterDeals", roundIndex: 0, nextRoundIndex: 1 });
     expect(screen.getByTestId("enter-deals")).toHaveTextContent("1,2");
@@ -313,6 +332,14 @@ describe("PlayStateRouter", () => {
   it("renders MoveInfoPage for the next round, reflecting its sit-out flag", () => {
     renderRouter({ state: "moveInfo", nextRoundIndex: 1 });
     expect(screen.getByTestId("move-info")).toHaveTextContent("r2-sitout");
+  });
+
+  it("defaults MoveInfoPage sitOut to false when the next round has no flag", () => {
+    // Round 0 has no `sitOut` property -> `?? false` fallback.
+    renderRouter({ state: "moveInfo", nextRoundIndex: 0 });
+    const moveInfo = screen.getByTestId("move-info");
+    expect(moveInfo).toHaveTextContent("r1");
+    expect(moveInfo).not.toHaveTextContent("sitout");
   });
 
   it("renders GameComplete in the terminal state", () => {

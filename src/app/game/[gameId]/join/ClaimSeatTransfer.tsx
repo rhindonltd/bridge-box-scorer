@@ -1,7 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
-import { Dialog, Transition } from "@headlessui/react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { claimSeatTransfer } from "@/lib/game-service";
 import { ClaimSeatTransferView } from "./ClaimSeatTransferView";
@@ -56,44 +55,23 @@ export function ClaimSeatTransfer() {
         Moving from another device? Enter a code
       </button>
 
-      <Transition show={open} as={Fragment}>
-        <Dialog onClose={handleClose} className="relative z-50">
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-150"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-100"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-150"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-100"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-                <ClaimSeatTransferView
-                  code={code}
-                  error={error}
-                  loading={loading}
-                  onCodeChange={setCode}
-                  onSubmit={handleSubmit}
-                  onCancel={handleClose}
-                />
-              </Dialog.Panel>
-            </Transition.Child>
+      {/* Presented as a full-screen page (header bar + back button + centered
+          form + fixed-bottom action) rather than a small dialog. Pinned over
+          the app within its max-width cage. */}
+      {open && (
+        <div className="fixed inset-0 z-50 bg-white">
+          <div className="mx-auto flex h-full max-w-2xl flex-col">
+            <ClaimSeatTransferView
+              code={code}
+              error={error}
+              loading={loading}
+              onCodeChange={setCode}
+              onSubmit={handleSubmit}
+              onCancel={handleClose}
+            />
           </div>
-        </Dialog>
-      </Transition>
+        </div>
+      )}
     </>
   );
 }

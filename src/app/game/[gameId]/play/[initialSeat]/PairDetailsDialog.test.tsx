@@ -97,4 +97,22 @@ describe("PairDetailsDialog", () => {
     await user.click(screen.getByRole("button", { name: "Done" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it("calls onOpenChange(false) when the dialog is dismissed with Escape", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    render(
+      <PairDetailsDialog
+        open
+        onOpenChange={onOpenChange}
+        pair={nsPair}
+        pairId="3"
+      />,
+    );
+
+    // Headless UI's Dialog fires onClose on Escape, exercising the dialog's own
+    // dismiss path (distinct from the Done button).
+    await user.keyboard("{Escape}");
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
 });

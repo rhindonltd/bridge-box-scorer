@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  SwissVpBoardRow,
-  calculateSwissVpOverall,
-} from "./swiss-vp-overall";
+import { SwissVpBoardRow, calculateSwissVpOverall } from "./swiss-vp-overall";
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
   return {
@@ -107,7 +104,9 @@ describe("calculateSwissVpOverall", () => {
     // The one scored board already favours NS, so the live estimate is not the
     // neutral 10 and the two sides still split exactly 20.
     expect(ns.vpByRound[1]).toBeGreaterThan(10);
-    expect(Math.round((ns.vpByRound[1] + ew.vpByRound[1]) * 100) / 100).toBe(20);
+    expect(Math.round((ns.vpByRound[1] + ew.vpByRound[1]) * 100) / 100).toBe(
+      20,
+    );
   });
 
   it("shows a neutral 10 for a drawn round with no results yet", () => {
@@ -123,8 +122,12 @@ describe("calculateSwissVpOverall", () => {
     ];
 
     const result = calculateSwissVpOverall(rows);
-    expect(result.lines.find((l) => l.pairId === "A1NS")!.vpByRound[1]).toBe(10);
-    expect(result.lines.find((l) => l.pairId === "A2EW")!.vpByRound[1]).toBe(10);
+    expect(result.lines.find((l) => l.pairId === "A1NS")!.vpByRound[1]).toBe(
+      10,
+    );
+    expect(result.lines.find((l) => l.pairId === "A2EW")!.vpByRound[1]).toBe(
+      10,
+    );
   });
 
   it("ignores sit-out (bye) rows", () => {
@@ -142,6 +145,30 @@ describe("calculateSwissVpOverall", () => {
 
     const result = calculateSwissVpOverall(rows);
     expect(result.lines).toHaveLength(0);
+  });
+
+  it("awards the win to EW when the margin is negative (NS goes minus)", () => {
+    const rows: SwissVpBoardRow[] = [
+      // NS declares and goes down heavily, so the NS score is negative and the
+      // match margin favours EW.
+      row({
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: 1,
+        ns: "A1NS",
+        ew: "A2EW",
+        confirmedResult: "7NTN-7",
+      }),
+    ];
+
+    const result = calculateSwissVpOverall(rows);
+    const ns = result.lines.find((l) => l.pairId === "A1NS")!;
+    const ew = result.lines.find((l) => l.pairId === "A2EW")!;
+    expect(ew.vpByRound[1]).toBeGreaterThan(ns.vpByRound[1]);
+    // The two sides still split exactly 20 VP.
+    expect(Math.round((ns.vpByRound[1] + ew.vpByRound[1]) * 100) / 100).toBe(
+      20,
+    );
   });
 
   it("uses the director override result over the confirmed result", () => {

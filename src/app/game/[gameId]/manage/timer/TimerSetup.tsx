@@ -91,9 +91,10 @@ function TimerConfigContainer({
   const emitKey = noMovement ? null : configSignature;
   const lastEmitted = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingRef = useRef<{ section: string; fields: typeof emitConfigFields } | null>(
-    null,
-  );
+  const pendingRef = useRef<{
+    section: string;
+    fields: typeof emitConfigFields;
+  } | null>(null);
 
   const flushSave = useCallback(() => {
     if (timerRef.current) {
@@ -117,6 +118,9 @@ function TimerConfigContainer({
       lastEmitted.current = emitKey;
       return;
     }
+    /* v8 ignore next -- defensive: the effect's only dep is `emitKey`, so it
+       never re-runs with a value equal to the one just recorded; this guards a
+       theoretical duplicate emit. */
     if (emitKey === lastEmitted.current) return;
     lastEmitted.current = emitKey;
 

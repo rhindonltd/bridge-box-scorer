@@ -3,7 +3,10 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockMutateGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
-  useRequiredGame: () => ({ game: { gameId: "g1" }, mutateGame: mockMutateGame }),
+  useRequiredGame: () => ({
+    game: { gameId: "g1" },
+    mutateGame: mockMutateGame,
+  }),
 }));
 
 let mockStartCheck: {
@@ -69,8 +72,16 @@ describe("StartGameScreen", () => {
     mockStartCheck = {
       canStart: false,
       problems: [
-        { code: "NO_PAIRS_SEATED", message: "No pairs are seated yet.", section: "A" },
-        { code: "MULTIPLE_EMPTY_POSITIONS", message: "More than one pair is missing.", section: "B" },
+        {
+          code: "NO_PAIRS_SEATED",
+          message: "No pairs are seated yet.",
+          section: "A",
+        },
+        {
+          code: "MULTIPLE_EMPTY_POSITIONS",
+          message: "More than one pair is missing.",
+          section: "B",
+        },
       ],
       sitOutSeat: null,
     };
@@ -89,7 +100,11 @@ describe("StartGameScreen", () => {
     mockStartCheck = {
       canStart: false,
       problems: [
-        { code: "NO_PAIRS_SEATED", message: "No pairs are seated yet.", section: "A" },
+        {
+          code: "NO_PAIRS_SEATED",
+          message: "No pairs are seated yet.",
+          section: "A",
+        },
       ],
       sitOutSeat: null,
     };
@@ -136,5 +151,37 @@ describe("StartGameScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("nope"));
+  });
+
+  it("falls back to a generic message when the failure is not an Error", async () => {
+    mockStartCheck = { canStart: true, problems: [], sitOutSeat: null };
+    // A non-Error rejection value exercises the cond-expr's false arm.
+    mockStartGame.mockRejectedValueOnce("boom");
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+
+    render(<StartGameScreen />);
+    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
+
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith("Failed to start game"),
+    );
+  });
+
+  it("groups multiple problems within the same section together", () => {
+    mockStartCheck = {
+      canStart: false,
+      problems: [
+        { code: "A1", message: "First issue.", section: "A" },
+        { code: "A2", message: "Second issue.", section: "A" },
+      ],
+      sitOutSeat: null,
+    };
+
+    render(<StartGameScreen />);
+
+    // Both messages appear under a single section bucket (the `if (!bucket)`
+    // false arm reuses the existing group).
+    expect(screen.getByText("First issue.")).toBeInTheDocument();
+    expect(screen.getByText("Second issue.")).toBeInTheDocument();
   });
 });

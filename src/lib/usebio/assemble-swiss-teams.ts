@@ -127,8 +127,13 @@ function buildUsebioMatches(
       return { boardNumber, imps: imps ?? 0, travellerLines };
     });
 
+    // A match is only emitted for a home entry that has at least one board row
+    // (groupTeamMatches keys entries off actual rows), so `boards` is never
+    // empty here and the `?? 0` / optional-chain fallbacks below cannot fire.
+    /* v8 ignore start -- unreachable: a reconstructed match always has >=1 board */
     const startBoard = boards[0]?.boardNumber ?? 0;
     const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
+    /* v8 ignore stop */
 
     const { teamScore, opposingTeamScore } = matchVp(margin, boardsPlayed);
     addVp(homeTeamId, teamScore);

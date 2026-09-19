@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { makeTimerBroadcaster, buildTimerSyncPayload } from "./broadcast-timer";
+import {
+  makeTimerBroadcaster,
+  buildTimerSyncPayload,
+  broadcastTimerCleared,
+} from "./broadcast-timer";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
 import type { TimerState } from "@/timer/timer-state";
@@ -59,5 +63,20 @@ describe("makeTimerBroadcaster", () => {
 
     expect(to).toHaveBeenNthCalledWith(1, Rooms.timer("g1", "A"));
     expect(to).toHaveBeenNthCalledWith(2, Rooms.timer("g1", "B"));
+  });
+});
+
+describe("broadcastTimerCleared", () => {
+  it("emits TIMER_CLEARED to the section's timer room with the section", () => {
+    const emit = vi.fn();
+    const to = vi.fn(() => ({ emit }));
+    const io = { to } as never;
+
+    broadcastTimerCleared(io, "g1", "B");
+
+    expect(to).toHaveBeenCalledWith(Rooms.timer("g1", "B"));
+    expect(emit).toHaveBeenCalledWith(SocketEvents.TIMER_CLEARED, {
+      section: "B",
+    });
   });
 });

@@ -8,7 +8,6 @@ import useSWR from "swr";
 import { GameType } from "@/db/games/types/game-type";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
-import DateField from "@/components/common/DateField";
 import { Toggle } from "@/components/common/Toggle";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { fetcher } from "@/lib/fetcher";
@@ -26,34 +25,59 @@ export function CreateGamePage() {
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
   const [gameType, setGameType] = useState<GameType>("PAIRS");
-  const [eventDate, setEventDate] = useState(todayDateOnly());
   const [leadCardRequired, setLeadCardRequired] = useState(true);
   const [bridgewebsEventId, setBridgewebsEventId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Whether the director has switched the Event Name field over to the
+  // BridgeWebs event dropdown. Only takes effect while a picker is available
+  // (see `showEventPicker`), so it can stay `true` harmlessly when the picker
+  // is briefly unavailable (e.g. mid date-change re-fetch).
+  const [useBridgewebsEvent, setUseBridgewebsEvent] = useState(false);
+
+  // Games are always created for today; there is no date field on the form.
+  const eventDate = todayDateOnly();
+
   const router = useRouter();
 
   const leadCardLabelId = useId();
+  const eventNameModeLabelId = useId();
 
-  // BridgeWebs events for the chosen date. Only shown when the box has
-  // BridgeWebs credentials configured; a failed fetch degrades to no picker so
-  // the page behaves exactly as it did before the integration.
+  // BridgeWebs events for today. Only offered when the box has BridgeWebs
+  // credentials configured and there are events for the day; a failed fetch
+  // degrades to the plain text field so the page behaves exactly as it did
+  // before the integration.
   const { data: bridgewebs } = useSWR<BridgewebsEventsResponse>(
     swrKeys.bridgewebsEvents(eventDate),
     fetcher,
   );
 
-  const showEventPicker =
-    (bridgewebs?.configured ?? false) && (bridgewebs?.events.length ?? 0) > 0;
+  const eventPickerAvailable =
+    (bridgewebs?.configured ?? false) &&
+    /* v8 ignore next -- `events` is always an array in the response type, so `.length` is never nullish; the `?? 0` fallback is unreachable defensive code */
+    (bridgewebs?.events.length ?? 0) > 0;
+
+  // The dropdown is only shown when a picker is available AND the director has
+  // switched it on. Deriving this (rather than storing it) means an unavailable
+  // picker automatically falls back to the text field, with no effect needed.
+  const showEventPicker = eventPickerAvailable && useBridgewebsEvent;
 
   function handleSelectBridgewebsEvent(id: string) {
     setBridgewebsEventId(id);
     const selected = bridgewebs?.events.find((e) => e.id === id);
-    // Prefill the event name from the chosen BridgeWebs event; picking "None"
-    // leaves the name untouched.
+    // Mirror the chosen BridgeWebs event's title into the event name; picking
+    // "None" clears the id but leaves the name untouched.
     if (selected) {
       setEventName(selected.title);
+    }
+  }
+
+  function handleToggleEventMode(useBridgewebs: boolean) {
+    setUseBridgewebsEvent(useBridgewebs);
+    // Switching back to free text drops the BridgeWebs event association.
+    if (!useBridgewebs) {
+      setBridgewebsEventId("");
     }
   }
 
@@ -80,7 +104,9 @@ export function CreateGamePage() {
       sectionName: "",
       tables: DEFAULT_TABLES,
       leadCardRequired,
-      bridgewebsEventId: bridgewebsEventId || null,
+      // Only attach a BridgeWebs event id when the picker is actually shown, so
+      // a hidden/stale selection never rides along on the created game.
+      bridgewebsEventId: showEventPicker ? bridgewebsEventId || null : null,
     });
   }
 
@@ -108,11 +134,46 @@ export function CreateGamePage() {
         className="flex flex-col w-full max-w-md p-4"
       >
         <div className="flex flex-col flex-1 justify-center gap-4">
-          <TextField
-            label="Event Name"
-            value={eventName}
-            onChange={setEventName}
-          />
+          <div className="flex flex-col gap-1">
+            {eventPickerAvailable && (
+              <div className="flex items-center justify-between">
+                <span
+                  id={eventNameModeLabelId}
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Use BridgeWebs Event
+                </span>
+                <Toggle
+                  value={useBridgewebsEvent}
+                  offLabel="No"
+                  onLabel="Yes"
+                  labelledBy={eventNameModeLabelId}
+                  onChange={handleToggleEventMode}
+                />
+              </div>
+            )}
+
+            {showEventPicker ? (
+              <SelectField
+                label="Event Name"
+                value={bridgewebsEventId}
+                options={[
+                  { label: "— Select an event —", value: "" },
+                  ...bridgewebs!.events.map((e) => ({
+                    label: e.title,
+                    value: e.id,
+                  })),
+                ]}
+                onSelect={handleSelectBridgewebsEvent}
+              />
+            ) : (
+              <TextField
+                label="Event Name"
+                value={eventName}
+                onChange={setEventName}
+              />
+            )}
+          </div>
 
           <TextField
             label="Director Name"
@@ -129,27 +190,6 @@ export function CreateGamePage() {
             ]}
             onSelect={setGameType}
           />
-
-          <DateField
-            label="Date Played"
-            value={eventDate}
-            onChange={setEventDate}
-          />
-
-          {showEventPicker && (
-            <SelectField
-              label="BridgeWebs Event"
-              value={bridgewebsEventId}
-              options={[
-                { label: "— None —", value: "" },
-                ...bridgewebs!.events.map((e) => ({
-                  label: e.title,
-                  value: e.id,
-                })),
-              ]}
-              onSelect={handleSelectBridgewebsEvent}
-            />
-          )}
 
           <div className="flex flex-col gap-1">
             <label

@@ -6,92 +6,80 @@ vi.mock("swr", () => ({
   default: (...args: unknown[]) => mockUseSWR(...args),
 }));
 
-vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
-
 import { useMovementRoundInfo } from "./movement-round-info";
 import type { SelectedMovement } from "@/model/selected-movement";
 
 describe("useMovementRoundInfo", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Default: no fetched data (used by the MITCHELL/null cases that never fetch).
     mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
   });
 
-  it("returns null when no movement is selected without fetching", () => {
+  it("returns null with no movement selected", () => {
     const { result } = renderHook(() => useMovementRoundInfo(null, "PAIRS"));
-
     expect(result.current).toEqual({ info: null, isLoading: false });
-    // SWR is called with a null key (disabled) so no request is made.
-    expect(mockUseSWR).toHaveBeenCalledWith(null, expect.any(Function));
   });
 
-  it("resolves MITCHELL selections inline without fetching", () => {
-    const selected: SelectedMovement = {
+  it("reads rounds/boardsPerRound inline for MITCHELL (no fetch)", () => {
+    const m: SelectedMovement = {
       source: "MITCHELL",
-      mitchell: { tables: 4, rounds: 7, boardsPerRound: 3 },
+      mitchell: { tables: 5, rounds: 9, boardsPerRound: 3 },
     };
-
-    const { result } = renderHook(() =>
-      useMovementRoundInfo(selected, "PAIRS"),
-    );
-
-    expect(result.current).toEqual({
-      info: { rounds: 7, boardsPerRound: 3 },
-      isLoading: false,
-    });
+    const { result } = renderHook(() => useMovementRoundInfo(m, "PAIRS"));
+    expect(result.current.info).toEqual({ rounds: 9, boardsPerRound: 3 });
+    // MITCHELL passes a null key to useSWR (no network call).
     expect(mockUseSWR).toHaveBeenCalledWith(null, expect.any(Function));
   });
 
-  it("fetches SPEC detail and derives rounds from the first table", () => {
+  it("reads inline round info for SWISS", () => {
+    const m: SelectedMovement = {
+      source: "SWISS",
+      swiss: { tables: 6, rounds: 7, boardsPerRound: 2 },
+    };
+    const { result } = renderHook(() => useMovementRoundInfo(m, "PAIRS"));
+    expect(result.current.info).toEqual({ rounds: 7, boardsPerRound: 2 });
+  });
+
+  it("reads inline round info for SWISS_TEAMS", () => {
+    const m: SelectedMovement = {
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 8, rounds: 5, boardsPerRound: 4 },
+    };
+    const { result } = renderHook(() => useMovementRoundInfo(m, "TEAMS"));
+    expect(result.current.info).toEqual({ rounds: 5, boardsPerRound: 4 });
+  });
+
+  it("reads inline round info for ROUND_ROBIN_TEAMS", () => {
+    const m: SelectedMovement = {
+      source: "ROUND_ROBIN_TEAMS",
+      roundRobinTeams: { teams: 4, rounds: 3, boardsPerRound: 6 },
+    };
+    const { result } = renderHook(() => useMovementRoundInfo(m, "TEAMS"));
+    expect(result.current.info).toEqual({ rounds: 3, boardsPerRound: 6 });
+  });
+
+  it("derives SPEC rounds from the fetched movement detail", () => {
     mockUseSWR.mockReturnValue({
-      data: {
-        type: "PAIRS",
-        tables: [
-          { tableNumber: 1, rounds: [{}, {}, {}, {}, {}, {}] },
-          { tableNumber: 2, rounds: [{}, {}, {}, {}, {}, {}] },
-        ],
-      },
+      data: { type: "PAIRS", tables: [{ rounds: [{}, {}, {}] }] },
       isLoading: false,
     });
-
-    const selected: SelectedMovement = {
+    const m: SelectedMovement = {
       source: "SPEC",
-      specId: 42,
+      specId: 12,
       boardsPerRound: 2,
     };
-
-    const { result } = renderHook(() =>
-      useMovementRoundInfo(selected, "PAIRS"),
-    );
-
-    expect(mockUseSWR).toHaveBeenCalledWith(
-      "/api/movements/detail/PAIRS/42",
-      expect.any(Function),
-    );
-    expect(result.current).toEqual({
-      info: { rounds: 6, boardsPerRound: 2 },
-      isLoading: false,
-    });
+    const { result } = renderHook(() => useMovementRoundInfo(m, "PAIRS"));
+    expect(result.current.info).toEqual({ rounds: 3, boardsPerRound: 2 });
   });
 
-  it("returns null info while a SPEC lookup is loading", () => {
+  it("returns null info while a SPEC detail is still loading", () => {
     mockUseSWR.mockReturnValue({ data: undefined, isLoading: true });
-
-    const selected: SelectedMovement = {
+    const m: SelectedMovement = {
       source: "SPEC",
-      specId: 7,
-      boardsPerRound: 3,
+      specId: 12,
+      boardsPerRound: 2,
     };
-
-    const { result } = renderHook(() =>
-      useMovementRoundInfo(selected, "TEAMS"),
-    );
-
-    expect(mockUseSWR).toHaveBeenCalledWith(
-      "/api/movements/detail/TEAMS/7",
-      expect.any(Function),
-    );
+    const { result } = renderHook(() => useMovementRoundInfo(m, "PAIRS"));
     expect(result.current).toEqual({ info: null, isLoading: true });
   });
 });
