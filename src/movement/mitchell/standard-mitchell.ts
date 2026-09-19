@@ -14,6 +14,10 @@ export function generateStandardMitchell(
 
   const { tables, rounds } = spec;
 
+  if (tables % 2 === 0) {
+    throw new Error("Standard Mitchell requires an odd number of tables");
+  }
+
   return buildMitchell(
     spec,
     { tables, rounds },

@@ -236,7 +236,7 @@ describe("Multi-client Socket.IO scenarios", () => {
         {
           gameId: "g1",
           type: "PAIRS",
-          mitchell: { tables: 4, rounds: 4, boardsPerRound: 2 },
+          mitchell: { tables: 5, rounds: 5, boardsPerRound: 2 },
           directorToken: "dir-tok",
         },
       );

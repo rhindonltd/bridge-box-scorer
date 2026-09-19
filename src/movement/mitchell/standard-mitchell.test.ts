@@ -128,20 +128,30 @@ describe("generateStandardMitchell", () => {
 
   it("supports a different number of boards per round", () => {
     const result = generateStandardMitchell({
-      tables: 6,
-      rounds: 6,
+      tables: 7,
+      rounds: 7,
       boardsPerRound: 3,
     });
 
-    expect(result.tables).toHaveLength(6);
+    expect(result.tables).toHaveLength(7);
 
     for (const table of result.tables) {
-      expect(table.rounds).toHaveLength(6);
+      expect(table.rounds).toHaveLength(7);
 
       for (const round of table.rounds) {
         expect(round.boards).toHaveLength(3);
       }
     }
+  });
+
+  it("rejects an even number of tables", () => {
+    expect(() =>
+      generateStandardMitchell({
+        tables: 4,
+        rounds: 4,
+        boardsPerRound: 2,
+      }),
+    ).toThrow("Standard Mitchell requires an odd number of tables");
   });
 
   it("does not give a pair the same opponent twice", () => {

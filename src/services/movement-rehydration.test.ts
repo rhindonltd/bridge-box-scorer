@@ -38,6 +38,17 @@ describe("rehydrateSelectedMovement — Mitchell variants", () => {
     expect(result.movement[0].rounds).toHaveLength(5);
   });
 
+  it("rejects an even-table Standard Mitchell selection with a clear message", async () => {
+    // A corrupt/hand-crafted MITCHELL selection with an even table count and no
+    // variant flag must fail fast at rehydration (start) rather than produce a
+    // broken movement. The generator's guard propagates unwrapped.
+    await expect(
+      rehydrateSelectedMovement(
+        mitchell({ tables: 4, rounds: 4, boardsPerRound: 2 }),
+      ),
+    ).rejects.toThrow("Standard Mitchell requires an odd number of tables");
+  });
+
   it("builds a Skip Mitchell (fewer rounds than tables) — not standard", async () => {
     const result = await rehydrateSelectedMovement(
       mitchell({ tables: 6, rounds: 5, boardsPerRound: 4, skip: true }),
