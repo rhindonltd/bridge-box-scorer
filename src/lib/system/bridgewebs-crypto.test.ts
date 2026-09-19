@@ -77,14 +77,45 @@ describe("bridgewebs-crypto", () => {
 
   it("throws on a malformed payload", async () => {
     const { decryptSecret } = await loadModule();
-    expect(() => decryptSecret("not-a-valid-payload")).toThrow(
-      /Malformed/,
-    );
+    expect(() => decryptSecret("not-a-valid-payload")).toThrow(/Malformed/);
   });
 
   it("throws when the key file is corrupt", async () => {
     fs.writeFileSync(keyPath, "too-short");
     const { encryptSecret } = await loadModule();
     expect(() => encryptSecret("x")).toThrow(/invalid/);
+  });
+
+  it("cleans up the temp file and rethrows when the atomic rename fails", async () => {
+    const { encryptSecret } = await loadModule();
+    const renameSpy = vi.spyOn(fs, "renameSync").mockImplementation(() => {
+      throw new Error("rename fail");
+    });
+    const unlinkSpy = vi.spyOn(fs, "unlinkSync");
+
+    expect(() => encryptSecret("x")).toThrow(/rename fail/);
+    // Best-effort cleanup removed the sibling temp file, and no key file was
+    // left behind at the target path.
+    expect(unlinkSpy).toHaveBeenCalledTimes(1);
+    expect(fs.existsSync(keyPath)).toBe(false);
+
+    renameSpy.mockRestore();
+    unlinkSpy.mockRestore();
+  });
+
+  it("still rethrows the rename error when temp-file cleanup also fails", async () => {
+    const { encryptSecret } = await loadModule();
+    const renameSpy = vi.spyOn(fs, "renameSync").mockImplementation(() => {
+      throw new Error("rename fail");
+    });
+    const unlinkSpy = vi.spyOn(fs, "unlinkSync").mockImplementation(() => {
+      throw new Error("unlink fail");
+    });
+
+    // The original rename error wins, not the cleanup error.
+    expect(() => encryptSecret("x")).toThrow(/rename fail/);
+
+    renameSpy.mockRestore();
+    unlinkSpy.mockRestore();
   });
 });

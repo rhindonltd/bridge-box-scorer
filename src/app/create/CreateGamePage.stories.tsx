@@ -27,7 +27,8 @@ type Story = StoryObj<typeof CreateGamePage>;
 
 /**
  * BridgeWebs not configured (or unreachable): the form degrades gracefully to
- * no event picker — the default create-game experience.
+ * a plain free-text Event Name with no BridgeWebs switch — the default
+ * create-game experience.
  */
 export const NoBridgewebs: Story = {
   parameters: {
@@ -42,8 +43,9 @@ export const NoBridgewebs: Story = {
 };
 
 /**
- * BridgeWebs configured with events for the day: the event picker is shown so
- * the director can prefill the event name from a BridgeWebs event.
+ * BridgeWebs configured with events for the day: a "Use BridgeWebs Event"
+ * switch appears above the Event Name field. Turning it on swaps the Event Name
+ * text field for a dropdown of the day's BridgeWebs events.
  */
 export const WithBridgewebsEvents: Story = {
   parameters: {

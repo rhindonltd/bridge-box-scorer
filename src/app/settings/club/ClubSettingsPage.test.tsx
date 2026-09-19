@@ -149,6 +149,41 @@ describe("ClubSettingsPage", () => {
     expect(await screen.findByText("Network error")).toBeInTheDocument();
   });
 
+  it("sends an empty token header when no admin token is stored", async () => {
+    // No stored token exercises the `getAdminToken() ?? ""` fallback arm.
+    mockGetAdminToken.mockReturnValue(null);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ClubSettingsPage />);
+    fillForm("New Club", "555");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/system/club",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "x-admin-token": "" }),
+      }),
+    );
+  });
+
+  it("falls back to a generic message when the error body has no error field", async () => {
+    // A non-401 failure without an `error` field exercises the
+    // `body.error ?? "Failed to save"` fallback.
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({}),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ClubSettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Failed to save")).toBeInTheDocument();
+  });
+
   it("navigates back when the header back arrow is clicked", () => {
     render(<ClubSettingsPage />);
     fireEvent.click(screen.getByRole("button", { name: "Go back" }));

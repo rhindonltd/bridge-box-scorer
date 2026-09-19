@@ -131,9 +131,9 @@ describe("AssignmentContext", () => {
     });
 
     // The schedule useSWR (keyed by seat) carries the retry config.
-    const scheduleCall = (
-      mockUseSWR.mock.calls as unknown as unknown[][]
-    ).find((c) => !String(c[0]).includes("/participants"))!;
+    const scheduleCall = (mockUseSWR.mock.calls as unknown as unknown[][]).find(
+      (c) => !String(c[0]).includes("/participants"),
+    )!;
     const config = scheduleCall[2] as {
       shouldRetryOnError: (e: Error & { status?: number }) => boolean;
     };
@@ -216,6 +216,31 @@ describe("AssignmentContext", () => {
     it("is null while the pair list is loading", () => {
       const { result } = renderHook(() => useAssignment(), {
         wrapper: ({ children }) => wrapper(children),
+      });
+
+      expect(result.current.pair).toBeNull();
+    });
+
+    it("is null when this seat's own record has an unparseable seat", () => {
+      // The seat matches a participant row, but its seat string cannot be
+      // parsed for a direction, so the pair resolves to null via the catch.
+      setPairs({
+        pairs: [
+          {
+            type: "PAIR",
+            initialSeat: "!!!",
+            player1: makePlayer(1, "Ann", "Smith"),
+            player2: makePlayer(2, "Ben", "Jones"),
+          },
+        ],
+      });
+
+      const { result } = renderHook(() => useAssignment(), {
+        wrapper: ({ children }) => (
+          <AssignmentProvider gameId="g1" initialSeat={"!!!" as Seat}>
+            {children}
+          </AssignmentProvider>
+        ),
       });
 
       expect(result.current.pair).toBeNull();

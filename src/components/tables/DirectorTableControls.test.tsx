@@ -15,17 +15,14 @@ function tables(): DirectorTable[] {
     {
       tableNumber: 1,
       players: {
-        // North: present with a seat -> evict button shown.
         N: player("Ada"),
-        // South: present but no seat -> no evict button.
         S: player("Bob"),
-        // East: absent -> no evict button.
         E: null,
         W: null,
       },
       seats: {
         N: "A1NS" as Seat,
-        S: null,
+        S: "A1NS" as Seat,
         E: null,
         W: null,
       },
@@ -35,42 +32,20 @@ function tables(): DirectorTable[] {
 
 describe("DirectorTableControls", () => {
   it("renders a table with its number and occupied players", () => {
-    render(
-      <DirectorTableControls
-        tables={tables()}
-        onEvict={vi.fn()}
-      />,
-    );
+    render(<DirectorTableControls tables={tables()} onOpenTable={vi.fn()} />);
 
     expect(screen.getByText("1")).toBeInTheDocument();
     expect(screen.getByText("Ada")).toBeInTheDocument();
     expect(screen.getByText("Bob")).toBeInTheDocument();
   });
 
-  it("shows an evict button only for a player that has a seat, and evicts", () => {
-    const onEvict = vi.fn();
-    render(
-      <DirectorTableControls
-        tables={tables()}
-        onEvict={onEvict}
-      />,
-    );
+  it("opens the management dialog for the tapped table", () => {
+    const onOpenTable = vi.fn();
+    const data = tables();
+    render(<DirectorTableControls tables={data} onOpenTable={onOpenTable} />);
 
-    // North has a player + seat -> evict button present.
-    const evictNorth = screen.getByRole("button", {
-      name: "Evict North player",
-    });
-    // South has a player but no seat -> no evict button.
-    expect(
-      screen.queryByRole("button", { name: "Evict South player" }),
-    ).not.toBeInTheDocument();
-    // East is empty -> no evict button.
-    expect(
-      screen.queryByRole("button", { name: "Evict East player" }),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(evictNorth);
-    expect(onEvict).toHaveBeenCalledWith("A1NS");
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    expect(onOpenTable).toHaveBeenCalledWith(data[0]);
   });
 
   it("marks stationary positions with a Stationary badge (even when empty)", () => {
@@ -83,10 +58,7 @@ describe("DirectorTableControls", () => {
     ];
 
     render(
-      <DirectorTableControls
-        tables={withStationary}
-        onEvict={vi.fn()}
-      />,
+      <DirectorTableControls tables={withStationary} onOpenTable={vi.fn()} />,
     );
 
     // North (occupied) and South (occupied) are stationary -> two badges.
@@ -105,10 +77,7 @@ describe("DirectorTableControls", () => {
     ];
 
     render(
-      <DirectorTableControls
-        tables={withStationary}
-        onEvict={vi.fn()}
-      />,
+      <DirectorTableControls tables={withStationary} onOpenTable={vi.fn()} />,
     );
 
     // Both NS compass positions show the badge despite being unoccupied.
@@ -116,12 +85,7 @@ describe("DirectorTableControls", () => {
   });
 
   it("renders no Stationary badge when no stationary info is provided", () => {
-    render(
-      <DirectorTableControls
-        tables={tables()}
-        onEvict={vi.fn()}
-      />,
-    );
+    render(<DirectorTableControls tables={tables()} onOpenTable={vi.fn()} />);
 
     expect(screen.queryByText("Stationary")).not.toBeInTheDocument();
   });
@@ -132,10 +96,7 @@ describe("DirectorTableControls", () => {
     ];
 
     render(
-      <DirectorTableControls
-        tables={withPlacement}
-        onEvict={vi.fn()}
-      />,
+      <DirectorTableControls tables={withPlacement} onOpenTable={vi.fn()} />,
     );
 
     expect(screen.getByText("Boards 1\u20133")).toBeInTheDocument();
@@ -147,10 +108,7 @@ describe("DirectorTableControls", () => {
     ];
 
     render(
-      <DirectorTableControls
-        tables={withPlacement}
-        onEvict={vi.fn()}
-      />,
+      <DirectorTableControls tables={withPlacement} onOpenTable={vi.fn()} />,
     );
 
     expect(screen.getByText("Board 5")).toBeInTheDocument();
@@ -165,10 +123,7 @@ describe("DirectorTableControls", () => {
     ];
 
     render(
-      <DirectorTableControls
-        tables={withPlacement}
-        onEvict={vi.fn()}
-      />,
+      <DirectorTableControls tables={withPlacement} onOpenTable={vi.fn()} />,
     );
 
     expect(screen.getByText("Boards 1\u20133 (Copy B)")).toBeInTheDocument();
@@ -183,10 +138,7 @@ describe("DirectorTableControls", () => {
     ];
 
     const { rerender } = render(
-      <DirectorTableControls
-        tables={single}
-        onEvict={vi.fn()}
-      />,
+      <DirectorTableControls tables={single} onOpenTable={vi.fn()} />,
     );
     expect(screen.getByText("Shares with table 2")).toBeInTheDocument();
 
@@ -196,12 +148,7 @@ describe("DirectorTableControls", () => {
         placement: { boardStart: 1, boardEnd: 2, sharesWith: [2, 3] },
       },
     ];
-    rerender(
-      <DirectorTableControls
-        tables={multi}
-        onEvict={vi.fn()}
-      />,
-    );
+    rerender(<DirectorTableControls tables={multi} onOpenTable={vi.fn()} />);
     expect(screen.getByText("Shares with tables 2, 3")).toBeInTheDocument();
   });
 
@@ -213,23 +160,13 @@ describe("DirectorTableControls", () => {
       },
     ];
 
-    render(
-      <DirectorTableControls
-        tables={withRelay}
-        onEvict={vi.fn()}
-      />,
-    );
+    render(<DirectorTableControls tables={withRelay} onOpenTable={vi.fn()} />);
 
     expect(screen.getByText("Relay \u2192 table 4")).toBeInTheDocument();
   });
 
   it("renders no board placement when the table has none", () => {
-    render(
-      <DirectorTableControls
-        tables={tables()}
-        onEvict={vi.fn()}
-      />,
-    );
+    render(<DirectorTableControls tables={tables()} onOpenTable={vi.fn()} />);
 
     expect(screen.queryByText(/^Boards? /)).not.toBeInTheDocument();
     expect(screen.queryByText(/Shares with/)).not.toBeInTheDocument();

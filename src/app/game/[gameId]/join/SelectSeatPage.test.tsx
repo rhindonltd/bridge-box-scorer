@@ -56,7 +56,10 @@ vi.mock("@/app/game/[gameId]/join/SelectTable", () => ({
   }) => (
     <div>
       <div data-testid="starting-count">{startingPositions.length}</div>
-      <button data-testid="pick-seat" onClick={() => onSeatSelected(pickedSeat)}>
+      <button
+        data-testid="pick-seat"
+        onClick={() => onSeatSelected(pickedSeat)}
+      >
         pick
       </button>
     </div>
@@ -225,7 +228,9 @@ describe("SelectSeatPage", () => {
   it("shows the server error and keeps the sheet open when seating is rejected", async () => {
     const onSeatSelected = vi.fn();
     mockCreateParticipant.mockRejectedValue(
-      new Error("A player with EBU number 123456 is already seated in this event."),
+      new Error(
+        "A player with EBU number 123456 is already seated in this event.",
+      ),
     );
     render(<SelectSeatPage onSeatSelected={onSeatSelected} />);
 
@@ -240,6 +245,20 @@ describe("SelectSeatPage", () => {
     // Navigation did not happen; the sheet stays open to fix the entry.
     expect(onSeatSelected).not.toHaveBeenCalled();
     expect(screen.getByTestId("sheet-seat")).toBeInTheDocument();
+  });
+
+  it("shows a default error when seating is rejected with a non-Error", async () => {
+    mockCreateParticipant.mockRejectedValue("boom");
+    render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId("pick-seat"));
+    fireEvent.click(screen.getByTestId("submit-pair"));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Could not seat this pair.",
+      ),
+    );
   });
 
   it("wires up the participants socket->SWR sync", () => {
@@ -264,8 +283,6 @@ describe("SelectSeatPage", () => {
     (fetcher as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       pairs: [{ initialSeat: "A1NS" }],
     });
-    await expect(fetcherArg("/x")).resolves.toEqual([
-      { initialSeat: "A1NS" },
-    ]);
+    await expect(fetcherArg("/x")).resolves.toEqual([{ initialSeat: "A1NS" }]);
   });
 });

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  act,
+  waitFor,
+} from "@testing-library/react";
 import { SocketEvents } from "@/socket/socket-events";
 
 // ---- mocks ----
@@ -155,7 +161,9 @@ describe("TimerSetup (config screen)", () => {
     mockSections = [{ section: "A", label: "A", selectedMovement: null }];
     render(<TimerSetup />);
 
-    expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Select a movement first",
+    );
     expect(screen.queryByLabelText("Total Rounds")).toBeNull();
     // No config to save while no movement is selected.
     expect(mockSaveTimerConfig).not.toHaveBeenCalled();
@@ -270,9 +278,7 @@ describe("TimerSetup (config screen)", () => {
         target: { value: "5" },
       });
 
-      fireEvent.click(
-        screen.getByRole("radio", { name: "Resume at time" }),
-      );
+      fireEvent.click(screen.getByRole("radio", { name: "Resume at time" }));
       fireEvent.change(screen.getByLabelText("Break 1 resume time"), {
         target: { value: "23:59" },
       });
@@ -437,6 +443,12 @@ describe("TimerManager (routes by started state)", () => {
     mockSections = [
       { section: "A", label: "A", selectedMovement: mitchellMovement },
     ];
+  });
+
+  it("renders nothing when there are no sections", () => {
+    mockSections = [];
+    const { container } = render(<TimerManager started={false} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("shows the config screen when the game has not started", () => {
@@ -605,9 +617,7 @@ describe("per-section timer UI", () => {
 
     // Switching sections unmounts the A container, flushing its pending save.
     fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
-    await waitFor(() =>
-      expect(savesForSection("A").length).toBeGreaterThan(0),
-    );
+    await waitFor(() => expect(savesForSection("A").length).toBeGreaterThan(0));
 
     // Editing section B auto-saves for section B.
     fireEvent.click(screen.getByLabelText("Per Round"));
@@ -615,6 +625,106 @@ describe("per-section timer UI", () => {
       const call = lastSave();
       expect(call![1]).toBe("B");
     });
+  });
+
+  it("renders nothing when there are no sections to select", () => {
+    mockSections = [];
+    const { container } = render(<TimerSetup />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("collapses a burst of edits into a single debounced save", async () => {
+    render(<TimerSetup />);
+
+    // Two quick edits before the debounce fires -> the first pending timer is
+    // cleared and only the latest values are saved once.
+    fireEvent.change(screen.getByLabelText("Play minutes"), {
+      target: { value: "8" },
+    });
+    fireEvent.change(screen.getByLabelText("Play minutes"), {
+      target: { value: "9" },
+    });
+
+    await waitFor(() => expect(mockSaveTimerConfig).toHaveBeenCalled());
+    // Debounced: a single save carrying the final play time (9m30s * 3 = 1710s).
+    expect(savesForSection("A")).toHaveLength(1);
+    expect(lastSave()![2]).toMatchObject({ playDuration: 1710 });
+  });
+
+  it("logs when an auto-save fails", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockSaveTimerConfig.mockRejectedValue(new Error("save failed"));
+
+    render(<TimerSetup />);
+    fireEvent.click(screen.getByLabelText("Per Round"));
+
+    await waitFor(() =>
+      expect(errSpy).toHaveBeenCalledWith(
+        "Failed to save timer config:",
+        expect.any(Error),
+      ),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("logs when a live timer control fails", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockEmitWithAck.mockRejectedValueOnce(new Error("ack failed"));
+    mockTimerState = {
+      phase: "play",
+      round: 1,
+      totalRounds: 8,
+      board: 1,
+      boardsPerRound: 3,
+      isRunning: false,
+      playDuration: 120,
+      moveDuration: 90,
+      phaseStartedAt: null,
+      remainingMs: null,
+    };
+
+    render(<TimerManager started={true} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
+
+    await waitFor(() =>
+      expect(errSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Timer control"),
+        expect.any(Error),
+      ),
+    );
+    errSpy.mockRestore();
+  });
+
+  it("ticks the live status down each second", () => {
+    vi.useFakeTimers();
+    try {
+      mockTimerState = {
+        phase: "play",
+        round: 1,
+        totalRounds: 8,
+        board: 1,
+        boardsPerRound: 3,
+        isRunning: true,
+        playDuration: 120,
+        moveDuration: 90,
+        phaseStartedAt: Date.now(),
+        remainingMs: null,
+      };
+      render(<TimerManager started={true} />);
+
+      // The seed timeout (0ms) and the 1s interval both drive setTick, keeping
+      // the derived status live between server syncs.
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("live controls target the selected section", () => {

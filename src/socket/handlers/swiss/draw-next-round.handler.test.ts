@@ -20,6 +20,8 @@ vi.mock("@/socket/handlers/results/broadcast-results", () => ({
 
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { drawNextSwissRound } from "@/services/draw-swiss-round-service";
+import { getDb } from "@/db/games";
+import { buildLeaderboardPayload } from "@/socket/handlers/results/broadcast-results";
 import { registerDrawNextRoundHandler } from "./draw-next-round.handler";
 import { SocketEvents } from "@/socket/socket-events";
 
@@ -117,5 +119,88 @@ describe("registerDrawNextRoundHandler", () => {
       success: false,
       error: expect.stringContaining("current round"),
     });
+  });
+
+  it("uses a default message for an unmapped rejection reason", async () => {
+    vi.mocked(drawNextSwissRound).mockResolvedValue({
+      ok: false,
+      reason: "SOMETHING_ELSE" as any,
+    });
+
+    const socket = createMockSocket();
+    registerDrawNextRoundHandler(socket, makeIo());
+
+    const ack = vi.fn();
+    await handlerFor(socket)(validPayload, ack);
+
+    expect(ack).toHaveBeenCalledWith({
+      success: false,
+      error: "Could not draw the next round.",
+    });
+  });
+
+  it("pushes a fresh leaderboard snapshot when the leaderboard room is occupied", async () => {
+    vi.mocked(drawNextSwissRound).mockResolvedValue({
+      ok: true,
+      roundNumber: 2,
+      sitOutPairId: null,
+      hadUnavoidableRepeat: false,
+      hadStationaryConflict: false,
+    });
+    vi.mocked(getDb).mockResolvedValue({} as any);
+    vi.mocked(buildLeaderboardPayload).mockResolvedValue({ lb: 1 } as any);
+
+    const emit = vi.fn();
+    const io = {
+      to: vi.fn(() => ({ emit })),
+      // Any room lookup reports one viewer, so the occupancy gate is open.
+      sockets: { adapter: { rooms: new Map([["room", new Set(["s1"])]]) } },
+    } as any;
+    // Make every rooms.get(...) return the occupied set.
+    io.sockets.adapter.rooms.get = vi.fn(() => new Set(["s1"]));
+
+    const socket = createMockSocket();
+    registerDrawNextRoundHandler(socket, io);
+
+    const ack = vi.fn();
+    await handlerFor(socket)(validPayload, ack);
+
+    expect(getDb).toHaveBeenCalledWith("g1");
+    expect(buildLeaderboardPayload).toHaveBeenCalled();
+    expect(emit).toHaveBeenCalledWith(SocketEvents.LEADERBOARD_SYNC, {
+      lb: 1,
+    });
+    expect(ack).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true }),
+    );
+  });
+
+  it("skips the leaderboard snapshot when the game db is missing", async () => {
+    vi.mocked(drawNextSwissRound).mockResolvedValue({
+      ok: true,
+      roundNumber: 2,
+      sitOutPairId: null,
+      hadUnavoidableRepeat: false,
+      hadStationaryConflict: false,
+    });
+    vi.mocked(getDb).mockResolvedValue(null);
+
+    const io = {
+      to: vi.fn(() => ({ emit: vi.fn() })),
+      sockets: { adapter: { rooms: new Map() } },
+    } as any;
+    io.sockets.adapter.rooms.get = vi.fn(() => new Set(["s1"]));
+
+    const socket = createMockSocket();
+    registerDrawNextRoundHandler(socket, io);
+
+    const ack = vi.fn();
+    await handlerFor(socket)(validPayload, ack);
+
+    expect(getDb).toHaveBeenCalledWith("g1");
+    expect(buildLeaderboardPayload).not.toHaveBeenCalled();
+    expect(ack).toHaveBeenCalledWith(
+      expect.objectContaining({ success: true }),
+    );
   });
 });

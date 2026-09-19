@@ -125,9 +125,7 @@ describe("validateStart", () => {
     const unknown = result.problems.find((p) => p.code === "UNKNOWN_SEAT");
     expect(unknown).toBeDefined();
     expect(unknown?.seats).toEqual(["A2EW"]);
-    expect(result.problems.map((p) => p.code)).not.toContain(
-      "TOO_MANY_TABLES",
-    );
+    expect(result.problems.map((p) => p.code)).not.toContain("TOO_MANY_TABLES");
   });
 
   it("reports MULTIPLE_EMPTY_POSITIONS without HALF_FILLED_TABLE when a whole table is empty", () => {
@@ -163,12 +161,7 @@ describe("validateStart", () => {
       phantomSeat: "A3NS",
     };
 
-    const result = validateStart(expected, [
-      "A1NS",
-      "A1EW",
-      "A2EW",
-      "A2NS",
-    ]);
+    const result = validateStart(expected, ["A1NS", "A1EW", "A2EW", "A2NS"]);
 
     const unknown = result.problems.find((p) => p.code === "UNKNOWN_SEAT");
     expect(unknown?.seats).toEqual(["A2EW", "A2NS"]);

@@ -29,7 +29,21 @@ function createMockSocket() {
 }
 
 function validDeal(): Deal {
-  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = [
+    "A",
+    "K",
+    "Q",
+    "J",
+    "T",
+    "9",
+    "8",
+    "7",
+    "6",
+    "5",
+    "4",
+    "3",
+    "2",
+  ];
   return {
     N: ranks.map((r): Card => `S${r}`),
     E: ranks.map((r): Card => `H${r}`),
@@ -94,7 +108,10 @@ describe("registerDealOverrideHandler", () => {
 
     const handler = socket.on.mock.calls[0][1];
     const cb = vi.fn();
-    const broken = { ...validPayload, deal: { ...validDeal(), N: validDeal().N.slice(0, 12) } };
+    const broken = {
+      ...validPayload,
+      deal: { ...validDeal(), N: validDeal().N.slice(0, 12) },
+    };
     await handler(broken, cb);
 
     expect(cb).toHaveBeenCalledWith({
@@ -113,7 +130,26 @@ describe("registerDealOverrideHandler", () => {
     const cb = vi.fn();
     await handler(validPayload, cb);
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Game not found" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Game not found",
+    });
+    expect(broadcastResultsChanged).not.toHaveBeenCalled();
+  });
+
+  it("acks a failure and does not broadcast when the upsert throws", async () => {
+    vi.mocked(upsertDeal).mockRejectedValue(new Error("locked"));
+    const socket = createMockSocket();
+    registerDealOverrideHandler(socket, {} as never);
+
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler(validPayload, cb);
+
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Failed to save deal",
+    });
     expect(broadcastResultsChanged).not.toHaveBeenCalled();
   });
 });

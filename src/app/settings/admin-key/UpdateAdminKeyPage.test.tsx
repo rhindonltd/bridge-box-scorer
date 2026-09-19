@@ -115,6 +115,45 @@ describe("UpdateAdminKeyPage", () => {
     expect(await screen.findByText("Network error")).toBeInTheDocument();
   });
 
+  it("sends an empty token header when no admin token is stored", async () => {
+    // No stored token exercises the `getAdminToken() ?? ""` fallback arm.
+    mockGetAdminToken.mockReturnValue(null);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<UpdateAdminKeyPage />);
+    typeNew("newsecret");
+    typeConfirm("newsecret");
+    fireEvent.click(screen.getByRole("button", { name: "Update Key" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/system/admin-key",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "x-admin-token": "" }),
+      }),
+    );
+  });
+
+  it("falls back to a generic message when the error body has no error field", async () => {
+    // A failure response without an `error` field exercises the
+    // `body.error ?? "Failed to update admin key"` fallback.
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({}),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<UpdateAdminKeyPage />);
+    typeNew("newsecret");
+    typeConfirm("newsecret");
+    fireEvent.click(screen.getByRole("button", { name: "Update Key" }));
+
+    expect(
+      await screen.findByText("Failed to update admin key"),
+    ).toBeInTheDocument();
+  });
+
   it("navigates back when the header back arrow is clicked", () => {
     render(<UpdateAdminKeyPage />);
     fireEvent.click(screen.getByRole("button", { name: "Go back" }));

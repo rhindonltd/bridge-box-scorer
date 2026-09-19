@@ -44,7 +44,8 @@ step.
 
 ## The leaderboard display
 
-Shows live standings that update as results come in:
+A full-screen board of live standings, sized to be read from across the room
+and updating as results come in:
 
 - For **pairs** games, rankings by the game's scoring method
   (matchpoints/percentage, IMPs, or Cross-IMPs).
@@ -55,6 +56,18 @@ Shows live standings that update as results come in:
 - For **teams** games, the team match / overall standings.
 - For **multi-section** events, each section's standings plus a combined
   overall ranking across all sections.
+
+The board is designed to run hands-free on the screen:
+
+- The heading shows the **event name** (and the **section** when a single
+  section is on screen).
+- When there are lots of pairs and the screen is wide, the standings fill it by
+  **spreading into two columns** so more places show at once.
+- For a **multi-section** event it **cycles automatically** — combined, then
+  each section in turn, about a minute each. Tapping a **section tab** jumps
+  straight to that view and restarts the cycle.
+- If a list is still too long to fit, it **scrolls slowly** to the bottom and
+  back so every place comes into view.
 
 Standings update automatically whenever a result is confirmed or a director
 correction is made — there is nothing to refresh.

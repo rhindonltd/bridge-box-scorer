@@ -5,7 +5,7 @@ import { ClaimSeatTransferView } from "@/app/game/[gameId]/join/ClaimSeatTransfe
 const meta: Meta<typeof ClaimSeatTransferView> = {
   title: "App/Join/Game/ClaimSeatTransferView",
   component: ClaimSeatTransferView,
-  parameters: { layout: "centered" },
+  parameters: { layout: "fullscreen" },
   tags: ["autodocs"],
   args: {
     onCodeChange: fn(),

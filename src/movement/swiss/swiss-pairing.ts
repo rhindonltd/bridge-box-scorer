@@ -238,6 +238,9 @@ function pairUp(
   search(0, 0);
 
   return {
+    // search() always completes a full pairing for a non-empty even field, so
+    // bestMatches is set; the `?? []` arm is unreachable defensive code.
+    /* v8 ignore next */
     matches: bestMatches ?? [],
     hadUnavoidableRepeat: bestRepeats > 0,
   };
@@ -267,6 +270,9 @@ function orientMatch(
   if (surplusB > surplusA) return { ns: match.a, ew: match.b };
 
   // Tie: keep it deterministic — the earlier (higher-ranked) id sits NS.
+  // pairUp always builds matches with a < b (it pairs the first unused id with
+  // a later one), so the a > b arm is unreachable defensive code.
+  /* v8 ignore next 3 */
   return match.a < match.b
     ? { ns: match.a, ew: match.b }
     : { ns: match.b, ew: match.a };
@@ -290,8 +296,14 @@ function orientMatch(
  * the director can intervene.
  */
 export function drawSwissRound(input: SwissDrawInput): SwissDrawResult {
-  const { tables, standings, playedOpponents, hadBye, directionCounts, stationary } =
-    input;
+  const {
+    tables,
+    standings,
+    playedOpponents,
+    hadBye,
+    directionCounts,
+    stationary,
+  } = input;
 
   const isOdd = standings.length % 2 === 1;
   const sitOutPairId = isOdd ? chooseSitOut(standings, hadBye) : null;

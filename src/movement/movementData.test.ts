@@ -36,8 +36,22 @@ describe("buildRounds", () => {
     expect(rounds[0]).toEqual({
       roundNumber: 1,
       tables: [
-        { tableNumber: 1, roundNumber: 1, ns: "1", ew: "4", boardStart: 1, boardEnd: 2 },
-        { tableNumber: 2, roundNumber: 1, ns: "2", ew: "5", boardStart: 3, boardEnd: 4 },
+        {
+          tableNumber: 1,
+          roundNumber: 1,
+          ns: "1",
+          ew: "4",
+          boardStart: 1,
+          boardEnd: 2,
+        },
+        {
+          tableNumber: 2,
+          roundNumber: 1,
+          ns: "2",
+          ew: "5",
+          boardStart: 3,
+          boardEnd: 4,
+        },
       ],
     });
     expect(rounds[1].roundNumber).toBe(2);

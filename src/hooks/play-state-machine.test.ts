@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { playReducer, type PlayState, type Schedule } from "./play-state-machine";
+import {
+  playReducer,
+  type PlayState,
+  type Schedule,
+} from "./play-state-machine";
 
 function round(
   roundNumber: number,
@@ -89,5 +93,27 @@ describe("play reducer — optional deal-entry step", () => {
     const next = playReducer(prev, { type: "sitOutContinue" }, sch);
     // Straight to the move screen for the next round — no enterDeals.
     expect(next).toEqual({ state: "moveInfo", nextRoundIndex: 1 });
+  });
+});
+
+describe("play reducer — null-schedule guards", () => {
+  it("submit is a no-op when no schedule is loaded", () => {
+    const prev: PlayState = {
+      state: "enterContract",
+      roundIndex: 0,
+      boardIndex: 0,
+    };
+    const next = playReducer(prev, { type: "submit", boardNumber: 1 }, null);
+    expect(next).toBe(prev);
+  });
+
+  it("dealsContinue is a no-op when no schedule is loaded", () => {
+    const prev: PlayState = {
+      state: "enterDeals",
+      roundIndex: 0,
+      nextRoundIndex: 1,
+    };
+    const next = playReducer(prev, { type: "dealsContinue" }, null);
+    expect(next).toBe(prev);
   });
 });

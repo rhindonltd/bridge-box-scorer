@@ -22,6 +22,16 @@ vi.mock("@/hooks/sections", () => ({
   useSections: (...args: unknown[]) => mockUseSections(...args),
 }));
 
+const mockUseResultsComplete = vi.fn(() => ({ allResultsIn: false }));
+vi.mock("@/hooks/results-complete", () => ({
+  useResultsComplete: () => mockUseResultsComplete(),
+}));
+
+// SwissDrawControl (rendered for a Swiss section) calls the swiss service.
+vi.mock("@/lib/swiss-service", () => ({
+  drawNextSwissRound: vi.fn(),
+}));
+
 // Capture the SWR key the page requests so we can assert the section param.
 const mockUseSWR = vi.fn();
 vi.mock("swr", () => ({
@@ -152,6 +162,42 @@ describe("ManageMovementPage", () => {
     expect(mockFetcher).toHaveBeenCalledWith(
       "/api/games/g1/movement?section=A",
     );
+  });
+
+  it("shows the Swiss draw control for a Swiss section", () => {
+    mockUseSections.mockReturnValue({
+      sections: [
+        {
+          section: "A",
+          label: "A",
+          tables: 5,
+          ordinal: 0,
+          selectedMovement: { source: "SWISS", swiss: { tables: 5 } },
+        },
+      ],
+    });
+
+    render(<ManageMovementPage backHref="/back" />);
+
+    // The Swiss "Draw Next Round" control is rendered above the detail view.
+    expect(screen.getByTestId("draw-next-round")).toBeInTheDocument();
+  });
+
+  it("shows no Swiss draw control for a non-Swiss section", () => {
+    mockUseSections.mockReturnValue({
+      sections: [
+        {
+          section: "A",
+          label: "A",
+          tables: 5,
+          ordinal: 0,
+          selectedMovement: { source: "MITCHELL" },
+        },
+      ],
+    });
+
+    render(<ManageMovementPage backHref="/back" />);
+    expect(screen.queryByTestId("draw-next-round")).not.toBeInTheDocument();
   });
 
   it("re-fetches on the board-result-updated socket event", () => {

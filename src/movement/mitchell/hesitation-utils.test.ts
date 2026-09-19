@@ -15,9 +15,7 @@ describe("circulateMovingPairs", () => {
     { table: 3, direction: "EW" },
   ];
 
-  const pairForStation = (
-    s: Station,
-  ): Omit<SeatOccupant, "originStation"> => ({
+  const pairForStation = (s: Station): Omit<SeatOccupant, "originStation"> => ({
     pair: s.table + 10,
     origin: "EW",
   });
@@ -51,8 +49,7 @@ describe("circulateMovingPairs", () => {
     for (let stationIdx = 0; stationIdx < 3; stationIdx++) {
       const originPair = occ[stationIdx][0].pair;
       // The pair three steps ahead ends back where it started.
-      const afterFullCycle =
-        occ[(stationIdx + 3) % 3][0].pair;
+      const afterFullCycle = occ[(stationIdx + 3) % 3][0].pair;
       expect(afterFullCycle).toBe(originPair);
     }
   });
@@ -86,9 +83,7 @@ describe("buildPivotLayout (7-table Hesitation Mitchell)", () => {
   stations.push({ table: pivot, direction: "NS" });
 
   // Round-1 identity: EW at table t = pair t + tables; NS at pivot = pair 7.
-  const pairForStation = (
-    s: Station,
-  ): Omit<SeatOccupant, "originStation"> =>
+  const pairForStation = (s: Station): Omit<SeatOccupant, "originStation"> =>
     s.direction === "EW"
       ? { pair: s.table + tables, origin: "EW" }
       : { pair: s.table, origin: "NS" };
@@ -115,7 +110,9 @@ describe("buildPivotLayout (7-table Hesitation Mitchell)", () => {
   it("keeps stationary NS pairs fixed at their tables (no arrow switch)", () => {
     const layout = build(0);
     for (let t = 1; t <= 6; t++) {
-      const nsPairs = layout.seatByTableRound[t - 1].map((seat) => seat.ns.pair);
+      const nsPairs = layout.seatByTableRound[t - 1].map(
+        (seat) => seat.ns.pair,
+      );
       expect(new Set(nsPairs)).toEqual(new Set([t]));
     }
   });
@@ -210,9 +207,7 @@ describe("layoutToTables", () => {
 });
 
 describe("buildPivotLayout — unresolvable seats", () => {
-  const pairForStation = (
-    s: Station,
-  ): Omit<SeatOccupant, "originStation"> => ({
+  const pairForStation = (s: Station): Omit<SeatOccupant, "originStation"> => ({
     pair: s.table,
     origin: s.direction,
   });

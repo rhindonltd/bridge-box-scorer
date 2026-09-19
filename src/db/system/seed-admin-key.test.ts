@@ -1,5 +1,24 @@
-import { describe, it, expect } from "vitest";
-import { generateAdminKey } from "./seed-admin-key";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("@/db/system/queries/admin-key", () => ({
+  adminKeyExists: vi.fn(),
+  setAdminKey: vi.fn(),
+}));
+vi.mock("fs", () => ({
+  default: {
+    existsSync: vi.fn(),
+    mkdirSync: vi.fn(),
+    writeFileSync: vi.fn(),
+  },
+}));
+vi.mock("@/db/system/admin-key-file", () => ({
+  adminKeyDataDir: vi.fn(() => "/data"),
+  adminKeyFilePath: vi.fn(() => "/data/admin-key.txt"),
+}));
+
+import fs from "fs";
+import { adminKeyExists, setAdminKey } from "@/db/system/queries/admin-key";
+import { generateAdminKey, seedAdminKey } from "./seed-admin-key";
 
 describe("generateAdminKey", () => {
   const ALLOWED = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]+$/;
@@ -26,5 +45,47 @@ describe("generateAdminKey", () => {
     // With ~40 bits of entropy, 100 draws colliding would be astronomically
     // unlikely; allow no more than a single coincidental collision.
     expect(keys.size).toBeGreaterThanOrEqual(99);
+  });
+});
+
+describe("seedAdminKey", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns null and writes nothing when a key already exists", async () => {
+    vi.mocked(adminKeyExists).mockResolvedValue(true);
+
+    const result = await seedAdminKey();
+
+    expect(result).toBeNull();
+    expect(setAdminKey).not.toHaveBeenCalled();
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it("seeds a key, stores its hash, and writes the label file (creating the dir)", async () => {
+    vi.mocked(adminKeyExists).mockResolvedValue(false);
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    const key = await seedAdminKey();
+
+    expect(key).toMatch(/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/);
+    expect(setAdminKey).toHaveBeenCalledWith(key);
+    expect(fs.mkdirSync).toHaveBeenCalledWith("/data", { recursive: true });
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      "/data/admin-key.txt",
+      `${key}\n`,
+      { mode: 0o600 },
+    );
+  });
+
+  it("does not re-create the data dir when it already exists", async () => {
+    vi.mocked(adminKeyExists).mockResolvedValue(false);
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+
+    await seedAdminKey();
+
+    expect(fs.mkdirSync).not.toHaveBeenCalled();
+    expect(fs.writeFileSync).toHaveBeenCalled();
   });
 });

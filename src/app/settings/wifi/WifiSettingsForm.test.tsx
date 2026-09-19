@@ -64,7 +64,10 @@ describe("WifiSettingsForm UI", () => {
     const onTestConnection = vi.fn(async () => false);
 
     render(
-      <WifiSettingsForm networks={networks} onTestConnection={onTestConnection} />,
+      <WifiSettingsForm
+        networks={networks}
+        onTestConnection={onTestConnection}
+      />,
     );
 
     await userEvent.click(
@@ -78,7 +81,9 @@ describe("WifiSettingsForm UI", () => {
 
     expect(onTestConnection).toHaveBeenCalled();
     // Failed test -> testedSSID reset to null -> Save stays disabled.
-    expect(screen.getByRole("button", { name: /Save & Apply/i })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Save & Apply/i }),
+    ).toBeDisabled();
   });
 
   it("keeps the selection and verified state across a rescan with fresh network objects", async () => {
@@ -153,7 +158,10 @@ describe("WifiSettingsForm UI", () => {
     const onTestConnection = vi.fn(async () => true);
 
     const { rerender } = render(
-      <WifiSettingsForm networks={networks} onTestConnection={onTestConnection} />,
+      <WifiSettingsForm
+        networks={networks}
+        onTestConnection={onTestConnection}
+      />,
     );
 
     // No selection: Test Connection is disabled, and handler guards on selection.
@@ -178,7 +186,10 @@ describe("WifiSettingsForm UI", () => {
     const onTestConnection = vi.fn(async () => true);
 
     render(
-      <WifiSettingsForm networks={networks} onTestConnection={onTestConnection} />,
+      <WifiSettingsForm
+        networks={networks}
+        onTestConnection={onTestConnection}
+      />,
     );
 
     await userEvent.click(
@@ -241,5 +252,36 @@ describe("WifiSettingsForm UI", () => {
     render(<WifiSettingsForm networks={networks} scanning />);
 
     expect(screen.getByRole("button", { name: /Scanning/i })).toBeDisabled();
+  });
+
+  it("keeps a selected network in the dropdown after it drops out of range", async () => {
+    const { rerender } = render(<WifiSettingsForm networks={networks} />);
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /-- Select WiFi --/i }),
+    );
+    await userEvent.click(screen.getByText("Home WiFi"));
+
+    // A rescan no longer sees "Home WiFi". The selection is kept via the bare
+    // { ssid, signal: 0 } fallback (the `selectedSSID ? … : null` truthy arm).
+    rerender(
+      <WifiSettingsForm networks={[{ ssid: "CoffeeShop", signal: 61 }]} />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Home WiFi/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("styles a success message in green", () => {
+    render(<WifiSettingsForm networks={networks} message="✅ Connected" />);
+
+    expect(screen.getByText("✅ Connected")).toHaveClass("text-green-700");
+  });
+
+  it("styles a failure message in red", () => {
+    render(<WifiSettingsForm networks={networks} message="❌ Failed" />);
+
+    expect(screen.getByText("❌ Failed")).toHaveClass("text-red-600");
   });
 });

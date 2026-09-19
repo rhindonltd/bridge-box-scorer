@@ -90,6 +90,10 @@ describe("TimerLiveView", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "−1m" }));
     expect(props.onAdjustTime).toHaveBeenCalledWith(-60);
+    fireEvent.click(screen.getByRole("button", { name: "−15s" }));
+    expect(props.onAdjustTime).toHaveBeenCalledWith(-15);
+    fireEvent.click(screen.getByRole("button", { name: "+15s" }));
+    expect(props.onAdjustTime).toHaveBeenCalledWith(15);
     fireEvent.click(screen.getByRole("button", { name: "+1m" }));
     expect(props.onAdjustTime).toHaveBeenCalledWith(60);
 
@@ -151,6 +155,21 @@ describe("TimerLiveView", () => {
       />,
     );
     expect(screen.getByText("02:05")).toBeInTheDocument();
+  });
+
+  it("surfaces invalid break-timing problems", () => {
+    render(
+      <TimerLiveView
+        {...makeProps({
+          breakProblems: [{ afterRound: 3, overrunMs: 5 * 60000 }],
+        })}
+      />,
+    );
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Break timing is invalid");
+    expect(alert).toHaveTextContent(/break after round 3/i);
+    expect(alert).toHaveTextContent(/over by about 5 min/i);
   });
 
   it("edits config through the shared fields", () => {

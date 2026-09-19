@@ -72,9 +72,18 @@ describe("buildTablePlacement", () => {
   it("lists all partners when more than two tables collide on a set", () => {
     // Hand-built degenerate input: three tables all start on boards 1-2.
     const tables: MovementByTable[] = [
-      { tableNumber: 1, rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }] },
-      { tableNumber: 2, rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }] },
-      { tableNumber: 3, rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }] },
+      {
+        tableNumber: 1,
+        rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }],
+      },
+      {
+        tableNumber: 2,
+        rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }],
+      },
+      {
+        tableNumber: 3,
+        rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }],
+      },
     ];
 
     const placement = buildTablePlacement(tables);
@@ -86,7 +95,10 @@ describe("buildTablePlacement", () => {
 
   it("skips tables with no rounds", () => {
     const tables: MovementByTable[] = [
-      { tableNumber: 1, rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }] },
+      {
+        tableNumber: 1,
+        rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }],
+      },
       { tableNumber: 2, rounds: [] },
     ];
 
@@ -94,6 +106,21 @@ describe("buildTablePlacement", () => {
 
     expect(placement.has(1)).toBe(true);
     expect(placement.has(2)).toBe(false);
+  });
+
+  it("falls back to the first round when a table has no round numbered 1", () => {
+    // A table whose earliest round is numbered 2 (e.g. a seeded fragment):
+    // placement uses that first available round's board set.
+    const tables: MovementByTable[] = [
+      {
+        tableNumber: 1,
+        rounds: [{ roundNumber: 2, boardStart: 7, boardEnd: 8 }],
+      },
+    ];
+
+    const placement = buildTablePlacement(tables);
+
+    expect(placement.get(1)).toMatchObject({ boardStart: 7, boardEnd: 8 });
   });
 });
 
@@ -140,9 +167,18 @@ describe("withRelay", () => {
     // Seeded-style tables: sets 1, 2, 4 played, set 3 (boards 5-6) unplayed.
     // A bare gap must NOT be treated as a relay.
     const tables: MovementByTable[] = [
-      { tableNumber: 1, rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }] },
-      { tableNumber: 2, rounds: [{ roundNumber: 1, boardStart: 3, boardEnd: 4 }] },
-      { tableNumber: 3, rounds: [{ roundNumber: 1, boardStart: 7, boardEnd: 8 }] },
+      {
+        tableNumber: 1,
+        rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }],
+      },
+      {
+        tableNumber: 2,
+        rounds: [{ roundNumber: 1, boardStart: 3, boardEnd: 4 }],
+      },
+      {
+        tableNumber: 3,
+        rounds: [{ roundNumber: 1, boardStart: 7, boardEnd: 8 }],
+      },
     ];
 
     const placement = withRelay(buildTablePlacement(tables), {
@@ -158,9 +194,18 @@ describe("withRelay", () => {
   it("leaves an odd table count unannotated (no well-defined relay)", () => {
     const placement = withRelay(
       buildTablePlacement([
-        { tableNumber: 1, rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }] },
-        { tableNumber: 2, rounds: [{ roundNumber: 1, boardStart: 3, boardEnd: 4 }] },
-        { tableNumber: 3, rounds: [{ roundNumber: 1, boardStart: 5, boardEnd: 6 }] },
+        {
+          tableNumber: 1,
+          rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 2 }],
+        },
+        {
+          tableNumber: 2,
+          rounds: [{ roundNumber: 1, boardStart: 3, boardEnd: 4 }],
+        },
+        {
+          tableNumber: 3,
+          rounds: [{ roundNumber: 1, boardStart: 5, boardEnd: 6 }],
+        },
       ]),
       { shareAndRelay: true, tables: 3 },
     );
@@ -168,5 +213,16 @@ describe("withRelay", () => {
     for (const p of placement.values()) {
       expect(p.relayWith).toBeUndefined();
     }
+  });
+
+  it("leaves the map unchanged when the middle tables are absent", () => {
+    // An even table count is claimed but the placement has no entries for the
+    // two middle tables, so there is nothing to annotate.
+    const placement = withRelay(buildTablePlacement([]), {
+      shareAndRelay: true,
+      tables: 4,
+    });
+
+    expect(placement.size).toBe(0);
   });
 });

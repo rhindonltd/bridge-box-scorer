@@ -8,7 +8,10 @@ import type {
 } from "@/model/leaderboard";
 import type { AssignedPair } from "@/model/participants";
 
-function pair(id: string, names: [string, string, string, string]): AssignedPair {
+function pair(
+  id: string,
+  names: [string, string, string, string],
+): AssignedPair {
   return {
     type: "PAIR",
     id,
@@ -92,5 +95,74 @@ describe("Leaderboard (PAIR MP)", () => {
 
     render(<Leaderboard overallScoreAndParticipant={data} />);
     expect(screen.getByText("42")).toBeInTheDocument();
+  });
+
+  it("renders the Swiss Pairs VP variant through the shared table view", () => {
+    const data = {
+      type: "PAIR_SWISS_VP",
+      overallScore: {
+        type: "PAIR_SWISS_VP",
+        mode: "PAIR",
+        scoring: "SWISS_VP",
+        lines: [
+          {
+            pairId: "A1",
+            rank: 1,
+            tied: false,
+            totalVP: 15,
+            vpByRound: { 1: 15 },
+          },
+        ],
+      },
+      participants: [pair("A1", ["Alice", "Adams", "Bob", "Brown"])],
+    } as unknown as OverallScoreAndParticipant;
+
+    render(<Leaderboard overallScoreAndParticipant={data} />);
+    // Pair name lines and the total VP (2 dp: total column + round column).
+    expect(screen.getByText("Alice Adams")).toBeInTheDocument();
+    expect(screen.getAllByText("15.00").length).toBeGreaterThan(0);
+  });
+
+  it("renders the Swiss Teams VP variant through the shared table view", () => {
+    const team = {
+      type: "TEAM",
+      id: "T1",
+      name: "The Aces",
+      pair1: {
+        type: "PAIR",
+        initialSeat: "A1NS",
+        player1: { id: 1, firstName: "Alice", lastName: "X" },
+        player2: { id: 2, firstName: "Bob", lastName: "Y" },
+      },
+      pair2: {
+        type: "PAIR",
+        initialSeat: "A1EW",
+        player1: { id: 3, firstName: "Carol", lastName: "Z" },
+        player2: { id: 4, firstName: "Dan", lastName: "W" },
+      },
+    };
+
+    const data = {
+      type: "TEAM_SWISS_VP",
+      overallScore: {
+        type: "TEAM_SWISS_VP",
+        mode: "TEAM",
+        scoring: "SWISS_VP",
+        lines: [
+          {
+            teamId: "T1",
+            rank: 1,
+            tied: false,
+            totalVP: 18,
+            vpByRound: { 1: 18 },
+          },
+        ],
+      },
+      participants: [team],
+    } as unknown as OverallScoreAndParticipant;
+
+    render(<Leaderboard overallScoreAndParticipant={data} />);
+    expect(screen.getByText("The Aces")).toBeInTheDocument();
+    expect(screen.getAllByText("18.00").length).toBeGreaterThan(0);
   });
 });

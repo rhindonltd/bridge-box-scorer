@@ -20,11 +20,14 @@ export default function TableCompassLayout({
       {/* North */}
       {north}
 
-      {/* Middle Row */}
+      {/* Middle Row. `min-w-0` on the side cells lets the 1fr columns actually
+          shrink below their content's intrinsic width, so long player names
+          wrap/truncate within the card instead of pushing East off the edge on
+          narrow phones. */}
       <div className="grid grid-cols-[1fr_auto_1fr] items-center w-full gap-2">
-        {west}
+        <div className="min-w-0">{west}</div>
         {center}
-        {east}
+        <div className="min-w-0">{east}</div>
       </div>
 
       {/* South */}

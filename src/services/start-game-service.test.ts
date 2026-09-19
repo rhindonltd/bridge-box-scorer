@@ -44,7 +44,10 @@ describe("resolveSectionStart", () => {
   it("resolves a fully-seated Mitchell without a sit-out", async () => {
     const result = await resolveSectionStart(
       "A",
-      { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
+      {
+        source: "MITCHELL",
+        mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 },
+      },
       seatsForTables(5),
       "g1",
     );
@@ -61,7 +64,10 @@ describe("resolveSectionStart", () => {
 
     const result = await resolveSectionStart(
       "A",
-      { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
+      {
+        source: "MITCHELL",
+        mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 },
+      },
       seated,
       "g1",
     );
@@ -80,7 +86,10 @@ describe("resolveSectionStart", () => {
 
     const result = await resolveSectionStart(
       "B",
-      { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
+      {
+        source: "MITCHELL",
+        mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 },
+      },
       seated,
       "g1",
     );
@@ -96,7 +105,10 @@ describe("resolveSectionStart", () => {
 
     const result = await resolveSectionStart(
       "A",
-      { source: "MITCHELL", mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 } },
+      {
+        source: "MITCHELL",
+        mitchell: { tables: 5, rounds: 5, boardsPerRound: 3 },
+      },
       seated,
       "g1",
     );
@@ -158,8 +170,9 @@ describe("resolveSectionStart", () => {
     expect(result.validation.canStart).toBe(true);
     expect(result.validation.sitOutSeat).toBe("A3EW");
     for (let r = 0; r < 3; r++) {
-      const sitOuts = result.movement!.filter((t) => isSitOut(t.rounds[r]))
-        .length;
+      const sitOuts = result.movement!.filter((t) =>
+        isSitOut(t.rounds[r]),
+      ).length;
       expect(sitOuts).toBe(1);
     }
   });
@@ -250,10 +263,35 @@ describe("resolveSectionStart", () => {
     );
   });
 
+  it("applies a Swiss round-1 bye when the empty seat is an NS seat (bye pair is the EW pair)", async () => {
+    // 2-table Swiss with A2NS empty => 3 pairs => a bye. The empty seat is NS,
+    // so the bye pair is the one sitting the OTHER direction (EW) at that table:
+    // home seat "2EW". This drives the `direction === "NS" ? round.ew : ...`
+    // branch of applySwissRoundOneSitOut.
+    const seated = seatsForTables(2).filter((s) => s !== "A2NS");
+
+    const result = await resolveSectionStart(
+      "A",
+      { source: "SWISS", swiss: { tables: 2, rounds: 5, boardsPerRound: 3 } },
+      seated,
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.validation.sitOutSeat).toBe("A2NS");
+
+    const sitOutTable = result.movement!.find((t) => isSitOut(t.rounds[0]))!;
+    expect(sitOutTable.rounds[0].ns).toBe("2EW");
+    expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
+  });
+
   it("resolves a fully-seated Swiss Teams and materializes round 1 as two tables per match", async () => {
     const result = await resolveSectionStart(
       "A",
-      { source: "SWISS_TEAMS", swissTeams: { teams: 4, rounds: 5, boardsPerRound: 6 } },
+      {
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 4, rounds: 5, boardsPerRound: 6 },
+      },
       seatsForTables(4),
       "g1",
     );
@@ -262,9 +300,9 @@ describe("resolveSectionStart", () => {
     expect(result.movement).not.toBeNull();
 
     // Four teams => two matches => four tables, each with round 1 only.
-    expect(result.movement!.map((t) => t.tableNumber).sort((a, b) => a - b)).toEqual([
-      1, 2, 3, 4,
-    ]);
+    expect(
+      result.movement!.map((t) => t.tableNumber).sort((a, b) => a - b),
+    ).toEqual([1, 2, 3, 4]);
     for (const table of result.movement!) {
       expect(table.rounds).toHaveLength(1);
       expect(table.rounds[0].roundNumber).toBe(1);
@@ -280,7 +318,10 @@ describe("resolveSectionStart", () => {
   it("blocks a Swiss Teams start with an odd team count", async () => {
     const result = await resolveSectionStart(
       "A",
-      { source: "SWISS_TEAMS", swissTeams: { teams: 3, rounds: 5, boardsPerRound: 6 } },
+      {
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 3, rounds: 5, boardsPerRound: 6 },
+      },
       seatsForTables(3),
       "g1",
     );
@@ -297,7 +338,10 @@ describe("resolveSectionStart", () => {
 
     const result = await resolveSectionStart(
       "A",
-      { source: "SWISS_TEAMS", swissTeams: { teams: 4, rounds: 5, boardsPerRound: 6 } },
+      {
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 4, rounds: 5, boardsPerRound: 6 },
+      },
       seated,
       "g1",
     );

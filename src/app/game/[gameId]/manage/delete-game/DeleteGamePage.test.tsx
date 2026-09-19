@@ -77,9 +77,7 @@ describe("DeleteGamePage", () => {
     vi.stubGlobal("fetch", fetchMock);
     const onGameDeleted = vi.fn();
 
-    render(
-      <DeleteGamePage onGameDeleted={onGameDeleted} onCancel={vi.fn()} />,
-    );
+    render(<DeleteGamePage onGameDeleted={onGameDeleted} onCancel={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Yes, Delete Game" }));
 
@@ -99,6 +97,22 @@ describe("DeleteGamePage", () => {
     // The DELETE carries no request body — the token travels in the header.
     expect(fetchMock.mock.calls[0][1]).not.toHaveProperty("body");
     expect(mockClearDirectorToken).toHaveBeenCalledWith("g1");
+  });
+
+  it("sends an empty token header when no director token is stored", async () => {
+    mockGetDirectorToken.mockReturnValue(null);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<DeleteGamePage onGameDeleted={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Yes, Delete Game" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/games/g1/delete",
+        expect.objectContaining({ headers: { "x-director-token": "" } }),
+      ),
+    );
   });
 
   it("shows the server error message when the request fails", async () => {

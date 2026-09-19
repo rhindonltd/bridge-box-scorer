@@ -13,7 +13,13 @@ import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerRequestStateHandler } from "./request-state.handler";
 
 function createMockSocket() {
-  return { data: {}, id: "test", on: vi.fn(), join: vi.fn(), leave: vi.fn() } as any;
+  return {
+    data: {},
+    id: "test",
+    on: vi.fn(),
+    join: vi.fn(),
+    leave: vi.fn(),
+  } as any;
 }
 
 function createMockIo() {
@@ -134,6 +140,45 @@ describe("registerRequestStateHandler", () => {
     registerRequestStateHandler(socket, createMockIo());
 
     const handler = socket.on.mock.calls[0][1];
-    await expect(handler({ gameId: "game-1", section: "A" }, undefined)).resolves.not.toThrow();
+    await expect(
+      handler({ gameId: "game-1", section: "A" }, undefined),
+    ).resolves.not.toThrow();
+  });
+
+  describe("timer:leave", () => {
+    /** Find the LEAVE_TIMER listener registered on the socket. */
+    function leaveHandlerFor(socket: any) {
+      const call = socket.on.mock.calls.find(
+        (c: any[]) => c[0] === "timer:leave",
+      );
+      return call[1] as (payload: unknown) => void;
+    }
+
+    it("registers a listener for timer:leave", () => {
+      const socket = createMockSocket();
+      registerRequestStateHandler(socket, createMockIo());
+      expect(socket.on).toHaveBeenCalledWith(
+        "timer:leave",
+        expect.any(Function),
+      );
+    });
+
+    it("leaves the section's timer room for a valid payload", () => {
+      const socket = createMockSocket();
+      registerRequestStateHandler(socket, createMockIo());
+
+      leaveHandlerFor(socket)({ gameId: "game-1", section: "A" });
+
+      expect(socket.leave).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores an invalid payload without leaving any room", () => {
+      const socket = createMockSocket();
+      registerRequestStateHandler(socket, createMockIo());
+
+      leaveHandlerFor(socket)({ notAGameId: true });
+
+      expect(socket.leave).not.toHaveBeenCalled();
+    });
   });
 });

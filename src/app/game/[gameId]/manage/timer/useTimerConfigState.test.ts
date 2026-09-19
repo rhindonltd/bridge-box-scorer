@@ -37,7 +37,9 @@ describe("useTimerConfigState", () => {
     it("lets the two structure fields be edited", () => {
       const { result } = renderHook(() => useTimerConfigState(seedState()));
 
-      act(() => result.current.configHandlers.onConfigChange("totalRounds", 12));
+      act(() =>
+        result.current.configHandlers.onConfigChange("totalRounds", 12),
+      );
       act(() =>
         result.current.configHandlers.onConfigChange("boardsPerRound", 2),
       );
@@ -198,7 +200,12 @@ describe("useTimerConfigState", () => {
     it("fills the earliest legal time when switching a break to Resume at time", () => {
       // 4 rounds, 150s play, 90s move, no breaks yet.
       const { result, now } = renderAtFixedTime(
-        seedState({ totalRounds: 4, playDuration: 150, moveDuration: 90, breaks: [] }),
+        seedState({
+          totalRounds: 4,
+          playDuration: 150,
+          moveDuration: 90,
+          breaks: [],
+        }),
       );
 
       act(() => result.current.configHandlers.onAddBreak());
@@ -219,7 +226,12 @@ describe("useTimerConfigState", () => {
 
     it("snaps an illegal (too-early) time up to the earliest when the round changes", () => {
       const { result, now } = renderAtFixedTime(
-        seedState({ totalRounds: 4, playDuration: 150, moveDuration: 90, breaks: [] }),
+        seedState({
+          totalRounds: 4,
+          playDuration: 150,
+          moveDuration: 90,
+          breaks: [],
+        }),
       );
 
       act(() => result.current.configHandlers.onAddBreak());
@@ -241,7 +253,12 @@ describe("useTimerConfigState", () => {
 
     it("keeps a legal resume time as the director set it", () => {
       const { result } = renderAtFixedTime(
-        seedState({ totalRounds: 4, playDuration: 150, moveDuration: 90, breaks: [] }),
+        seedState({
+          totalRounds: 4,
+          playDuration: 150,
+          moveDuration: 90,
+          breaks: [],
+        }),
       );
 
       act(() => result.current.configHandlers.onAddBreak());
@@ -285,15 +302,24 @@ describe("useTimerConfigState", () => {
         useTimerConfigState(
           seedState({
             totalRounds: 4,
-            breaks: [
-              { afterRound: 2, mode: "duration", durationSeconds: 600 },
-            ],
+            breaks: [{ afterRound: 2, mode: "duration", durationSeconds: 600 }],
           }),
         ),
       );
 
       // 1380s = 23m 0s.
       expect(result.current.sessionLength).toBe("23m 0s");
+    });
+
+    // With zero rounds the per-round timeline is empty, so the session-end
+    // lookup (`playEndByRound.get(totalRounds)`) misses and falls back to
+    // `tick`, giving a zero-length session.
+    it("reports a zero-length session when there are no rounds", () => {
+      const { result } = renderHook(() =>
+        useTimerConfigState(seedState({ totalRounds: 0, breaks: [] })),
+      );
+
+      expect(result.current.sessionLength).toBe("0s");
     });
 
     it("adds break time on top of the play+move baseline", () => {
@@ -304,9 +330,7 @@ describe("useTimerConfigState", () => {
         useTimerConfigState(
           seedState({
             totalRounds: 4,
-            breaks: [
-              { afterRound: 2, mode: "duration", durationSeconds: 600 },
-            ],
+            breaks: [{ afterRound: 2, mode: "duration", durationSeconds: 600 }],
           }),
         ),
       ).result.current.sessionLength;

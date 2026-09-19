@@ -117,6 +117,8 @@ function SwissTeamsSetupForm({
               <StepperInput
                 label="Teams"
                 value={teams}
+                /* v8 ignore next -- readOnly StepperInput never calls onChange (the
+                   team count is derived from the section's table count). */
                 onChange={() => {}}
                 readOnly
               />

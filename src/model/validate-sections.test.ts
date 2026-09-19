@@ -23,8 +23,16 @@ function allSeats(tables: number, section: string): PairSeat[] {
 describe("validateSections", () => {
   it("can start when all sections are individually valid", () => {
     const result = validateSections([
-      { section: "A", expected: expectedFor(4, "A"), seatedSeats: allSeats(4, "A") },
-      { section: "B", expected: expectedFor(3, "B"), seatedSeats: allSeats(3, "B") },
+      {
+        section: "A",
+        expected: expectedFor(4, "A"),
+        seatedSeats: allSeats(4, "A"),
+      },
+      {
+        section: "B",
+        expected: expectedFor(3, "B"),
+        seatedSeats: allSeats(3, "B"),
+      },
     ]);
 
     expect(result.canStart).toBe(true);
@@ -41,7 +49,11 @@ describe("validateSections", () => {
     );
 
     const result = validateSections([
-      { section: "A", expected: expectedFor(4, "A"), seatedSeats: allSeats(4, "A") },
+      {
+        section: "A",
+        expected: expectedFor(4, "A"),
+        seatedSeats: allSeats(4, "A"),
+      },
       { section: "B", expected: expectedFor(3, "B"), seatedSeats: bSeated },
     ]);
 
@@ -61,7 +73,11 @@ describe("validateSections", () => {
     const bSeated = allSeats(3, "B").filter((s) => s !== "B3EW");
 
     const result = validateSections([
-      { section: "A", expected: expectedFor(4, "A"), seatedSeats: allSeats(4, "A") },
+      {
+        section: "A",
+        expected: expectedFor(4, "A"),
+        seatedSeats: allSeats(4, "A"),
+      },
       { section: "B", expected: expectedFor(3, "B"), seatedSeats: bSeated },
     ]);
 

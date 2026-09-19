@@ -34,12 +34,9 @@ vi.mock("@/lib/game-service", () => ({
 }));
 
 // The change-device affordance is covered by its own test; stub it here.
-vi.mock(
-  "@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceButton",
-  () => ({
-    ChangeDeviceButton: () => <div data-testid="change-device-button" />,
-  }),
-);
+vi.mock("@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceButton", () => ({
+  ChangeDeviceButton: () => <div data-testid="change-device-button" />,
+}));
 
 import { WaitingToStartPage } from "./WaitingToStartPage";
 import type { Seat } from "@/model/participants";
@@ -57,7 +54,9 @@ describe("WaitingToStartPage", () => {
       screen.getByText(/Waiting for the director to start/i),
     ).toBeInTheDocument();
     // Auto-advance reassurance is a polite live region.
-    expect(screen.getByRole("status")).toHaveTextContent(/as soon as the game starts/i);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /as soon as the game starts/i,
+    );
   });
 
   it("shows the player's table and direction", () => {
@@ -82,9 +81,7 @@ describe("WaitingToStartPage", () => {
 
   it("falls back to a seat-less message when the seat cannot be parsed", () => {
     render(<WaitingToStartPage gameId="g1" seat={"bogus" as Seat} />);
-    expect(
-      screen.getByText(/seated and ready to play/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/seated and ready to play/i)).toBeInTheDocument();
     expect(screen.queryByText("Table 3")).not.toBeInTheDocument();
   });
 
@@ -118,18 +115,34 @@ describe("WaitingToStartPage", () => {
   it("shows an error and stays put when leaving fails", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     mockLeaveTable.mockRejectedValue(
-      new Error("The game has already started; you can no longer leave your seat."),
+      new Error(
+        "The game has already started; you can no longer leave your seat.",
+      ),
     );
     render(<WaitingToStartPage gameId="g1" seat={"A3NS" as Seat} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Leave table" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent(
-        "already started",
-      ),
+      expect(screen.getByRole("alert")).toHaveTextContent("already started"),
     );
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("shows a default message when leaving fails with a non-Error", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    // Reject with a non-Error value so the `: "Could not leave the table."`
+    // fallback branch is taken.
+    mockLeaveTable.mockRejectedValue("boom");
+    render(<WaitingToStartPage gameId="g1" seat={"A3NS" as Seat} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Leave table" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Could not leave the table.",
+      ),
+    );
   });
 
   it("renders the change-device affordance", () => {

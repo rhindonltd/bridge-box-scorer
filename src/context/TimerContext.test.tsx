@@ -193,7 +193,10 @@ describe("TimerProvider", () => {
     const fixed = 1_000_000;
     vi.spyOn(Date, "now").mockReturnValue(fixed);
     // serverNow ahead of the client clock by 5s => now() should be +5s.
-    mockEmitWithAck.mockResolvedValue({ ...snapshot, serverNow: fixed + 5_000 });
+    mockEmitWithAck.mockResolvedValue({
+      ...snapshot,
+      serverNow: fixed + 5_000,
+    });
 
     render(
       <TimerProvider section="A">
@@ -228,6 +231,62 @@ describe("TimerProvider", () => {
       await Promise.resolve();
     });
     // apply() short-circuits on cancelled, so no state update / act warning.
+  });
+
+  it("clears its state on a timer:cleared event for its own section", async () => {
+    mockEmitWithAck.mockResolvedValue(snapshot);
+
+    render(
+      <TimerProvider section="A">
+        <Probe />
+      </TimerProvider>,
+    );
+
+    // Seed state first.
+    await waitFor(() =>
+      expect(screen.getByTestId("round").textContent).toBe("2"),
+    );
+    expect(screen.getByTestId("connected").textContent).toBe("true");
+
+    const clearedHandler = mockOn.mock.calls.find(
+      (c) => c[0] === SocketEvents.TIMER_CLEARED,
+    )![1];
+
+    act(() => {
+      clearedHandler({ section: "A" });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("round").textContent).toBe("none"),
+    );
+    expect(screen.getByTestId("connected").textContent).toBe("false");
+    expect(screen.getByTestId("phase").textContent).toBe("none");
+  });
+
+  it("ignores a timer:cleared event for a different section", async () => {
+    mockEmitWithAck.mockResolvedValue(snapshot);
+
+    render(
+      <TimerProvider section="A">
+        <Probe />
+      </TimerProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("round").textContent).toBe("2"),
+    );
+
+    const clearedHandler = mockOn.mock.calls.find(
+      (c) => c[0] === SocketEvents.TIMER_CLEARED,
+    )![1];
+
+    act(() => {
+      clearedHandler({ section: "B" });
+    });
+
+    // Section A's state is untouched.
+    expect(screen.getByTestId("round").textContent).toBe("2");
+    expect(screen.getByTestId("connected").textContent).toBe("true");
   });
 
   it("useTimerContext throws when used outside a provider", () => {

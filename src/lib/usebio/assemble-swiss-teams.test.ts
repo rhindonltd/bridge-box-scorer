@@ -168,4 +168,67 @@ describe("assembleSwissTeams", () => {
     expect(match.teamScore).toBe(10);
     expect(match.opposingTeamScore).toBe(10);
   });
+
+  it("defaults a blank event section name to 'A'", () => {
+    const blankSection = { ...game, sectionName: "" } as BridgeGame;
+    const data = assembleSwissTeams(blankSection, club, teams, []);
+    expect(data.sectionName).toBe("A");
+  });
+
+  it("falls back to the raw team id when a match references an unknown team", () => {
+    // No teams roster, so the reconstructed match ids are not in the number
+    // map: both the match and the ranking fall back to the raw team id.
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+
+    const data = assembleSwissTeams(game, club, [], boards);
+    const match = data.matches[0];
+
+    expect(match.team).toBe("A1NS");
+    expect(match.opposingTeam).toBe("A2NS");
+    // The ranking also uses the raw id fallback.
+    expect(data.ranking.map((r) => r.number).sort()).toEqual(["A1NS", "A2NS"]);
+  });
+
+  it("emits a traveller line only for the room that has played a given board", () => {
+    // Board 1 is played in both rooms; board 2 only at the primary team's own
+    // home table, board 3 only at the opponent's home table.
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 2, "A1NS", "A2EW", "3NTN=" as BoardOutcome), // home only
+      board(1, 2, 3, "A2NS", "A1EW", "3NTN=" as BoardOutcome), // opponent only
+    ];
+
+    const data = assembleSwissTeams(game, club, teams, boards);
+    const byBoard = new Map(
+      data.matches[0].boards.map((b) => [b.boardNumber, b]),
+    );
+
+    // Board 2: only the home (NS) room's line present.
+    expect(byBoard.get(2)!.travellerLines.map((l) => l.direction)).toEqual([
+      "NS",
+    ]);
+    // Board 3: only the opponent (EW) room's line present.
+    expect(byBoard.get(3)!.travellerLines.map((l) => l.direction)).toEqual([
+      "EW",
+    ]);
+  });
+
+  it("awards the winner's VP to the opposing team on a negative margin", () => {
+    // Primary team (home NS) does badly: 4S-3 at its own table while the
+    // opponent's home table makes 3NT, so team 1's margin is negative.
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN-3" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+
+    const data = assembleSwissTeams(game, club, teams, boards);
+    const match = data.matches[0];
+
+    expect(match.teamScore + match.opposingTeamScore).toBe(20);
+    expect(match.opposingTeamScore).toBeGreaterThan(match.teamScore);
+  });
 });

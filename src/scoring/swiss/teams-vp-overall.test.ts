@@ -54,7 +54,9 @@ describe("calculateTeamsVpOverall", () => {
     expect(t2).toBeDefined();
 
     // The two teams split exactly 20 VP; team 1 (the winner) ranks first.
-    expect(Math.round((t1.vpByRound[1] + t2.vpByRound[1]) * 100) / 100).toBe(20);
+    expect(Math.round((t1.vpByRound[1] + t2.vpByRound[1]) * 100) / 100).toBe(
+      20,
+    );
     expect(t1.vpByRound[1]).toBeGreaterThan(10);
     expect(t2.vpByRound[1]).toBeLessThan(10);
     expect(result.lines[0].teamId).toBe("A1NS");
@@ -90,16 +92,63 @@ describe("calculateTeamsVpOverall", () => {
     // Board 1 scored at both tables; board 2 only at table 1 -> counts board 1
     // only, still producing a live VP rather than waiting for the full match.
     const rows: SwissVpBoardRow[] = [
-      row({ tableNumber: 1, boardNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "3NTN+1" }),
-      row({ tableNumber: 2, boardNumber: 1, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
-      row({ tableNumber: 1, boardNumber: 2, ns: "A1NS", ew: "A2EW", confirmedResult: "3NTN=" }),
-      row({ tableNumber: 2, boardNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: null }),
+      row({
+        tableNumber: 1,
+        boardNumber: 1,
+        ns: "A1NS",
+        ew: "A2EW",
+        confirmedResult: "3NTN+1",
+      }),
+      row({
+        tableNumber: 2,
+        boardNumber: 1,
+        ns: "A2NS",
+        ew: "A1EW",
+        confirmedResult: "3NTN=",
+      }),
+      row({
+        tableNumber: 1,
+        boardNumber: 2,
+        ns: "A1NS",
+        ew: "A2EW",
+        confirmedResult: "3NTN=",
+      }),
+      row({
+        tableNumber: 2,
+        boardNumber: 2,
+        ns: "A2NS",
+        ew: "A1EW",
+        confirmedResult: null,
+      }),
     ];
 
     const result = calculateTeamsVpOverall(rows);
     const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
     // Only board 1 counts so far; team 1 leads and its cell is above neutral.
     expect(t1.vpByRound[1]).toBeGreaterThan(10);
+  });
+
+  it("awards the win to the opponent team when the margin is negative", () => {
+    // Table 1 (home team A1) NS makes only 3NT= (+400); table 2 (opponent A2)
+    // NS makes 3NT+1 (+430). The home team's net is negative, so the opponent
+    // team wins the match.
+    const rows: SwissVpBoardRow[] = [
+      row({ tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+      row({
+        tableNumber: 2,
+        ns: "A2NS",
+        ew: "A1EW",
+        confirmedResult: "3NTN+1",
+      }),
+    ];
+
+    const result = calculateTeamsVpOverall(rows);
+    const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
+    const t2 = result.lines.find((l) => l.teamId === "A2NS")!;
+    expect(t2.vpByRound[1]).toBeGreaterThan(t1.vpByRound[1]);
+    expect(Math.round((t1.vpByRound[1] + t2.vpByRound[1]) * 100) / 100).toBe(
+      20,
+    );
   });
 
   it("uses the director override result over the confirmed result", () => {

@@ -19,13 +19,22 @@ From the home screen, tap **Create New Game**.
 
 ### Step 2: Fill in the details
 
-| Field                   | Description                                                        |
+| Field                   | Description                                                       |
 | ----------------------- | ----------------------------------------------------------------- |
 | **Event Name**          | The name of your event (e.g. "Monday Pairs").                     |
 | **Director Name**       | Your name.                                                        |
 | **Event Type**          | **Pairs** or **Teams**.                                           |
-| **Date Played**         | The date of the session.                                          |
 | **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
+
+The session is always dated today, so there is no date to set.
+
+If your club has set up BridgeWebs (see the settings guide) and there are
+BridgeWebs events listed for the date you chose, a **Use BridgeWebs Event**
+switch appears above **Event Name**. Turn it **on** to pick the event from a
+list of that day's BridgeWebs events instead of typing the name; picking one
+fills in the event name for you. Turn it **off** to type the name yourself. The
+switch is hidden when BridgeWebs isn't set up or there are no events for the
+chosen date, so you just type the name as normal.
 
 Tap **Create Game**.
 
@@ -59,8 +68,11 @@ From this tab you can:
   a section has.
 - **Add or remove a table** — a table can only be removed if it is the last
   one and is empty.
-- **Evict a pair** — if someone sat in the wrong place, tap them and confirm
-  "Evict this pair from the table?".
+- **Manage a table** — tap a table to open its dialog, which lists the two
+  pairs seated there (North/South and East/West).
+- **Evict a pair** — in a table's dialog, tap **Evict pair** next to a pair and
+  confirm "Evict this pair from the table?" (useful if someone sat in the wrong
+  place).
 
 Once you've chosen a movement for the section, each table also shows the
 **boards to put out there** at the start — for example "Boards 1–3". This is a
@@ -76,10 +88,11 @@ The app also checks the setup and flags anything that would stop the game
 starting. If a table isn't full, it shows which seat will **sit out** each
 round so the movement still works.
 
-For a **Swiss Pairs** section, the Tables tab lets you mark **stationary pairs**:
-tap a seat position to keep that pair at their table and direction for the whole
-event (their opponents come to them). Tap it again to let them move. Stationary
-pairs are shown with an amber "Stationary" marker.
+For a **Swiss Pairs** section, a table's dialog also lets you mark **stationary
+pairs**: turn on **Stationary** for a pair to keep them at their table and
+direction for the whole event (their opponents come to them), and turn it off to
+let them move. Stationary pairs are shown with an amber "Stationary" marker on
+the table.
 
 When you're ready, tap **Start Game**.
 
@@ -171,15 +184,15 @@ all sections** to copy it to them all.
 
 ### The Manage Game Menu
 
-| Option                     | What it does                                                              |
-| -------------------------- | ------------------------------------------------------------------------- |
-| **Set Up Game**            | Returns to the Tables / Movements / Timer setup tabs.                     |
-| **Travellers**             | View results by board and correct any that were entered wrong.            |
-| **Enter Deals**            | Enter or correct the dealt cards (the four hands) for any board.          |
-| **Movement**               | View or change the movement.                                              |
-| **Share Director Access**  | Generate a code so a co-director can manage from another device.          |
-| **Download USEBIO**        | Export the results as a USEBIO XML file for the EBU or a scoring program. |
-| **Delete Game** *(red)*    | Permanently delete the game. This cannot be undone.                       |
+| Option                    | What it does                                                              |
+| ------------------------- | ------------------------------------------------------------------------- |
+| **Set Up Game**           | Returns to the Tables / Movements / Timer setup tabs.                     |
+| **Travellers**            | View results by board and correct any that were entered wrong.            |
+| **Enter Deals**           | Enter or correct the dealt cards (the four hands) for any board.          |
+| **Movement**              | View or change the movement.                                              |
+| **Share Director Access** | Generate a code so a co-director can manage from another device.          |
+| **Download USEBIO**       | Export the results as a USEBIO XML file for the EBU or a scoring program. |
+| **Delete Game** _(red)_   | Permanently delete the game. This cannot be undone.                       |
 
 The **timer** is reached through **Set Up Game → Timer tab**. Before the game
 starts this shows the timer setup (configure and **Save**); once the game is in

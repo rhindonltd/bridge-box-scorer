@@ -36,8 +36,18 @@ const catalog: SpecCatalogEntry[] = [
     tables: 13,
     rounds: 11,
   },
-  { name: "Square Mitchell (4 tables)", family: "SQUARE", tables: 4, rounds: 4 },
-  { name: "Double Weave Mitchell", family: "DOUBLE_WEAVE", tables: 8, rounds: 8 },
+  {
+    name: "Square Mitchell (4 tables)",
+    family: "SQUARE",
+    tables: 4,
+    rounds: 4,
+  },
+  {
+    name: "Double Weave Mitchell",
+    family: "DOUBLE_WEAVE",
+    tables: 8,
+    rounds: 8,
+  },
 ];
 
 describe("resolveRecommendationDescriptor — SPEC labels", () => {
@@ -193,7 +203,12 @@ describe("resolveRecommendationDescriptor — SPEC labels", () => {
     // 3 tables / 5 rounds is the plain "3 Table Howell", so the `.find` yields
     // nothing and we fall back to familyMatches[0].
     const result = resolveRecommendationDescriptor(
-      entry({ tables: 3, movement: "3/4 Howell", rounds: 5, boardsPerRound: 5 }),
+      entry({
+        tables: 3,
+        movement: "3/4 Howell",
+        rounds: 5,
+        boardsPerRound: 5,
+      }),
       catalog,
     );
     expect(result.resolved).toBe(true);
@@ -318,10 +333,9 @@ describe("resolveRecommendationDescriptor — Mitchell family", () => {
     );
     expect(result.resolved).toBe(true);
     if (result.resolved) {
-      expect(result.descriptors.map((d) => d.type === "MITCHELL" && d.subtype)).toEqual([
-        "SHARE_AND_RELAY",
-        "SKIP",
-      ]);
+      expect(
+        result.descriptors.map((d) => d.type === "MITCHELL" && d.subtype),
+      ).toEqual(["SHARE_AND_RELAY", "SKIP"]);
       expect(
         result.descriptors.every(
           (d) => d.type === "MITCHELL" && d.arrowSwitches === 1,

@@ -11,7 +11,7 @@ const meta: Meta<typeof DirectorTableControls> = {
   },
   tags: ["autodocs"],
   args: {
-    onEvict: fn(),
+    onOpenTable: fn(),
   },
 };
 
@@ -26,6 +26,33 @@ const yoshiPlayers = {
   W: { id: 1, firstName: "Purple", lastName: "Yoshi", nationalId: null },
 };
 
+const longNamePlayers = {
+  N: {
+    id: 1,
+    firstName: "Alexandria",
+    lastName: "Featherstonehaugh",
+    nationalId: null,
+  },
+  S: {
+    id: 1,
+    firstName: "Bartholomew",
+    lastName: "Wolstenholme",
+    nationalId: null,
+  },
+  E: {
+    id: 1,
+    firstName: "Christopher",
+    lastName: "Featherstonehaugh",
+    nationalId: null,
+  },
+  W: {
+    id: 1,
+    firstName: "Wilhelmina",
+    lastName: "Cholmondeley",
+    nationalId: null,
+  },
+};
+
 const emptySeats = { N: null, S: null, E: null, W: null };
 
 export const Default: Story = {
@@ -34,6 +61,18 @@ export const Default: Story = {
       { tableNumber: 1, players: yoshiPlayers, seats: emptySeats },
       { tableNumber: 2, players: yoshiPlayers, seats: emptySeats },
     ],
+  },
+};
+
+/**
+ * Regression guard for narrow phones: with very long player names the East
+ * seat used to overflow the card and get clipped. View this at a small mobile
+ * width (e.g. 320px) — all four seats must stay inside the card, with names
+ * wrapping rather than spilling past the right edge.
+ */
+export const LongNames: Story = {
+  args: {
+    tables: [{ tableNumber: 1, players: longNamePlayers, seats: emptySeats }],
   },
 };
 

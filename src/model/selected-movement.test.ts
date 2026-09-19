@@ -99,7 +99,9 @@ describe("parseSelectedMovement", () => {
   });
 
   it("returns null for JSON that does not match the schema", () => {
-    expect(parseSelectedMovement(JSON.stringify({ source: "OTHER" }))).toBeNull();
+    expect(
+      parseSelectedMovement(JSON.stringify({ source: "OTHER" })),
+    ).toBeNull();
     expect(
       parseSelectedMovement(JSON.stringify({ source: "SPEC" })),
     ).toBeNull();
@@ -169,7 +171,11 @@ describe("selectedMovementsEqual", () => {
   });
 
   const swiss = (
-    over: Partial<{ tables: number; rounds: number; boardsPerRound: number }> = {},
+    over: Partial<{
+      tables: number;
+      rounds: number;
+      boardsPerRound: number;
+    }> = {},
   ): SelectedMovement => ({
     source: "SWISS",
     swiss: { tables: 6, rounds: 8, boardsPerRound: 3, ...over },
@@ -179,9 +185,9 @@ describe("selectedMovementsEqual", () => {
     expect(selectedMovementsEqual(swiss(), swiss())).toBe(true);
     expect(selectedMovementsEqual(swiss(), swiss({ rounds: 9 }))).toBe(false);
     expect(selectedMovementsEqual(swiss(), swiss({ tables: 7 }))).toBe(false);
-    expect(
-      selectedMovementsEqual(swiss(), swiss({ boardsPerRound: 2 })),
-    ).toBe(false);
+    expect(selectedMovementsEqual(swiss(), swiss({ boardsPerRound: 2 }))).toBe(
+      false,
+    );
   });
 
   it("treats SWISS as different from other sources", () => {
@@ -190,7 +196,11 @@ describe("selectedMovementsEqual", () => {
   });
 
   const swissTeams = (
-    over: Partial<{ teams: number; rounds: number; boardsPerRound: number }> = {},
+    over: Partial<{
+      teams: number;
+      rounds: number;
+      boardsPerRound: number;
+    }> = {},
   ): SelectedMovement => ({
     source: "SWISS_TEAMS",
     swissTeams: { teams: 8, rounds: 7, boardsPerRound: 4, ...over },
@@ -198,9 +208,9 @@ describe("selectedMovementsEqual", () => {
 
   it("compares SWISS_TEAMS selections by their defining fields", () => {
     expect(selectedMovementsEqual(swissTeams(), swissTeams())).toBe(true);
-    expect(selectedMovementsEqual(swissTeams(), swissTeams({ rounds: 8 }))).toBe(
-      false,
-    );
+    expect(
+      selectedMovementsEqual(swissTeams(), swissTeams({ rounds: 8 })),
+    ).toBe(false);
     expect(selectedMovementsEqual(swissTeams(), swissTeams({ teams: 6 }))).toBe(
       false,
     );
@@ -215,16 +225,20 @@ describe("selectedMovementsEqual", () => {
   });
 
   const roundRobinTeams = (
-    over: Partial<{ teams: number; rounds: number; boardsPerRound: number }> = {},
+    over: Partial<{
+      teams: number;
+      rounds: number;
+      boardsPerRound: number;
+    }> = {},
   ): SelectedMovement => ({
     source: "ROUND_ROBIN_TEAMS",
     roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 4, ...over },
   });
 
   it("compares ROUND_ROBIN_TEAMS selections by their defining fields", () => {
-    expect(
-      selectedMovementsEqual(roundRobinTeams(), roundRobinTeams()),
-    ).toBe(true);
+    expect(selectedMovementsEqual(roundRobinTeams(), roundRobinTeams())).toBe(
+      true,
+    );
     expect(
       selectedMovementsEqual(roundRobinTeams(), roundRobinTeams({ rounds: 4 })),
     ).toBe(false);

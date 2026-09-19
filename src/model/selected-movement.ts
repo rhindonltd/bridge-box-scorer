@@ -137,9 +137,7 @@ export type SelectedMovement = z.infer<typeof selectedMovementSchema>;
 /**
  * Serialize a SelectedMovement to the JSON text stored in the DB column.
  */
-export function serializeSelectedMovement(
-  selected: SelectedMovement,
-): string {
+export function serializeSelectedMovement(selected: SelectedMovement): string {
   return JSON.stringify(selected);
 }
 
@@ -159,50 +157,60 @@ export function selectedMovementsEqual(
   if (a === null || b === null) return a === b;
   if (a.source !== b.source) return false;
 
-  if (a.source === "SPEC" && b.source === "SPEC") {
-    return a.specId === b.specId && a.boardsPerRound === b.boardsPerRound;
+  // Sources are known-equal here. Switch over the (finite) source union with a
+  // case per variant, each returning. TypeScript sees the switch as exhaustive
+  // (`a.source` is narrowed to `never` after the last case), so no fallthrough
+  // return is needed — there is simply no unreachable line to test. Adding a
+  // new source without a case becomes a compile error ("not all code paths
+  // return a value").
+  switch (a.source) {
+    case "SPEC": {
+      const y = b as Extract<SelectedMovement, { source: "SPEC" }>;
+      return a.specId === y.specId && a.boardsPerRound === y.boardsPerRound;
+    }
+    case "MITCHELL": {
+      const x = a.mitchell;
+      const y = (b as Extract<SelectedMovement, { source: "MITCHELL" }>)
+        .mitchell;
+      return (
+        x.tables === y.tables &&
+        x.rounds === y.rounds &&
+        x.boardsPerRound === y.boardsPerRound &&
+        (x.arrowSwitchRounds ?? 0) === (y.arrowSwitchRounds ?? 0) &&
+        !!x.skip === !!y.skip &&
+        !!x.shareAndRelay === !!y.shareAndRelay &&
+        !!x.hesitation === !!y.hesitation &&
+        !!x.web === !!y.web
+      );
+    }
+    case "SWISS": {
+      const y = (b as Extract<SelectedMovement, { source: "SWISS" }>).swiss;
+      return (
+        a.swiss.tables === y.tables &&
+        a.swiss.rounds === y.rounds &&
+        a.swiss.boardsPerRound === y.boardsPerRound
+      );
+    }
+    case "SWISS_TEAMS": {
+      const y = (b as Extract<SelectedMovement, { source: "SWISS_TEAMS" }>)
+        .swissTeams;
+      return (
+        a.swissTeams.teams === y.teams &&
+        a.swissTeams.rounds === y.rounds &&
+        a.swissTeams.boardsPerRound === y.boardsPerRound
+      );
+    }
+    case "ROUND_ROBIN_TEAMS": {
+      const y = (
+        b as Extract<SelectedMovement, { source: "ROUND_ROBIN_TEAMS" }>
+      ).roundRobinTeams;
+      return (
+        a.roundRobinTeams.teams === y.teams &&
+        a.roundRobinTeams.rounds === y.rounds &&
+        a.roundRobinTeams.boardsPerRound === y.boardsPerRound
+      );
+    }
   }
-
-  if (a.source === "MITCHELL" && b.source === "MITCHELL") {
-    const x = a.mitchell;
-    const y = b.mitchell;
-    return (
-      x.tables === y.tables &&
-      x.rounds === y.rounds &&
-      x.boardsPerRound === y.boardsPerRound &&
-      (x.arrowSwitchRounds ?? 0) === (y.arrowSwitchRounds ?? 0) &&
-      !!x.skip === !!y.skip &&
-      !!x.shareAndRelay === !!y.shareAndRelay &&
-      !!x.hesitation === !!y.hesitation &&
-      !!x.web === !!y.web
-    );
-  }
-
-  if (a.source === "SWISS" && b.source === "SWISS") {
-    return (
-      a.swiss.tables === b.swiss.tables &&
-      a.swiss.rounds === b.swiss.rounds &&
-      a.swiss.boardsPerRound === b.swiss.boardsPerRound
-    );
-  }
-
-  if (a.source === "SWISS_TEAMS" && b.source === "SWISS_TEAMS") {
-    return (
-      a.swissTeams.teams === b.swissTeams.teams &&
-      a.swissTeams.rounds === b.swissTeams.rounds &&
-      a.swissTeams.boardsPerRound === b.swissTeams.boardsPerRound
-    );
-  }
-
-  if (a.source === "ROUND_ROBIN_TEAMS" && b.source === "ROUND_ROBIN_TEAMS") {
-    return (
-      a.roundRobinTeams.teams === b.roundRobinTeams.teams &&
-      a.roundRobinTeams.rounds === b.roundRobinTeams.rounds &&
-      a.roundRobinTeams.boardsPerRound === b.roundRobinTeams.boardsPerRound
-    );
-  }
-
-  return false;
 }
 
 /**

@@ -49,7 +49,11 @@ describe("boardsForSet", () => {
 });
 
 describe("validateMitchellSpec", () => {
-  const base: MitchellMovementSpec = { tables: 8, rounds: 8, boardsPerRound: 2 };
+  const base: MitchellMovementSpec = {
+    tables: 8,
+    rounds: 8,
+    boardsPerRound: 2,
+  };
 
   it("accepts a valid spec", () => {
     expect(() => validateMitchellSpec(base)).not.toThrow();
@@ -77,9 +81,9 @@ describe("validateMitchellSpec", () => {
   });
 
   it("requires a positive integer boardsPerRound", () => {
-    expect(() =>
-      validateMitchellSpec({ ...base, boardsPerRound: 0 }),
-    ).toThrow(/boardsPerRound must be a positive integer/);
+    expect(() => validateMitchellSpec({ ...base, boardsPerRound: 0 })).toThrow(
+      /boardsPerRound must be a positive integer/,
+    );
   });
 });
 

@@ -165,6 +165,44 @@ describe("BridgewebsSettingsPage", () => {
     expect(await screen.findByText("Network error")).toBeInTheDocument();
   });
 
+  it("sends an empty token header when no admin token is stored", async () => {
+    // No stored token exercises the `getAdminToken() ?? ""` fallback arm.
+    mockGetAdminToken.mockReturnValue(null);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<BridgewebsSettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/system/bridgewebs",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "x-admin-token": "" }),
+      }),
+    );
+  });
+
+  it("falls back to a generic message when the error body cannot be parsed", async () => {
+    // A non-401 failure whose body is not JSON: `res.json()` rejects, the
+    // `.catch(() => null)` yields null, and `body?.error ?? "Failed to save"`
+    // resolves to the generic message.
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => {
+        throw new Error("not json");
+      },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<BridgewebsSettingsPage />);
+    typePassword("secret");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Failed to save")).toBeInTheDocument();
+  });
+
   it("navigates back when the header back arrow is clicked", () => {
     render(<BridgewebsSettingsPage />);
     fireEvent.click(screen.getByRole("button", { name: "Go back" }));

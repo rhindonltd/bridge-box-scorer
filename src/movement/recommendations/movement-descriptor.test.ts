@@ -123,7 +123,9 @@ describe("descriptorToSelectedMovement", () => {
       pros: [],
       cons: [],
     };
-    expect(() => descriptorToSelectedMovement(descriptor, () => undefined)).toThrow();
+    expect(() =>
+      descriptorToSelectedMovement(descriptor, () => undefined),
+    ).toThrow();
   });
 
   it("converts a STANDARD Mitchell descriptor (no flags)", () => {

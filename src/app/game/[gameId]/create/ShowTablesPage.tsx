@@ -21,8 +21,9 @@ import {
 import { evictParticipant } from "@/lib/participant-service";
 import { useMovementResolution } from "@/hooks/stationary-pairs";
 import { useSelectedMovementName } from "@/hooks/selected-movement-name";
+import { DirectorTableModal } from "@/components/tables/DirectorTableModal";
 import { buildDirectorTable } from "./build-director-table";
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 /** Unwrap the `{ pairs }` envelope the pairs endpoint returns. */
 async function pairsFetcher(url: string): Promise<Pair[]> {
@@ -47,6 +48,9 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
 
   const { data: pairs } = useSWR<Pair[], Error>(key, pairsFetcher);
   const { sections, selected, pills, modal } = useSetupSections(gameId);
+
+  // The table whose management dialog (evict / stationary) is open, or null.
+  const [openTable, setOpenTable] = useState<DirectorTable | null>(null);
 
   // The Tables view shows one section at a time (selected via the pills); its
   // table-count stepper is pinned above the scroll area.
@@ -73,7 +77,8 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
   //    as laid out (resized away from the movement's size).
   // `movementTables` is 0 when nothing is resolved (no movement, or a SPEC
   // lookup still loading), so we only flag a mismatch once it is known (> 0).
-  const noMovement = !!currentSection && currentSection.selectedMovement == null;
+  const noMovement =
+    !!currentSection && currentSection.selectedMovement == null;
   const invalidMovement =
     !!currentSection &&
     currentSection.selectedMovement != null &&
@@ -149,6 +154,8 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
 
     try {
       await evictParticipant(gameId, seat);
+      // The pair is gone; close the management dialog.
+      setOpenTable(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to evict participant");
     }
@@ -164,6 +171,9 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
       : null;
 
   async function handleToggleStationary(tableNumber: number, ns: boolean) {
+    /* v8 ignore next -- defensive guard: the stationary toggle only renders in
+       the modal when swissSpec != null, which implies currentSection != null,
+       so this early-return is unreachable through the UI. */
     if (!currentSection || !swissSpec) return;
 
     // NS pair at table T is id T; EW pair is id tables + T.
@@ -262,10 +272,7 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
               <div className="p-3">
                 <DirectorTableControls
                   tables={tables}
-                  onEvict={handleEvict}
-                  onToggleStationary={
-                    swissSpec ? handleToggleStationary : undefined
-                  }
+                  onOpenTable={setOpenTable}
                 />
               </div>
             </section>
@@ -273,6 +280,21 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
         </div>
       </div>
       {modal}
+      {/* Per-table management dialog. Resolve the live table from the current
+          `tables` (rebuilt on evict / stationary changes) so the dialog stays
+          in sync; fall back to the opened snapshot if the table count shrank. */}
+      <DirectorTableModal
+        table={
+          openTable
+            ? (tables.find((t) => t.tableNumber === openTable.tableNumber) ??
+              null)
+            : null
+        }
+        isSwiss={swissSpec != null}
+        onEvict={handleEvict}
+        onToggleStationary={handleToggleStationary}
+        onClose={() => setOpenTable(null)}
+      />
     </GamePageLayout>
   );
 }

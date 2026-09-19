@@ -119,10 +119,7 @@ function shuffle<T>(items: T[], rng: () => number): T[] {
  * @throws if the team count is odd (see module docstring: odd counts are out
  *   of scope). Callers validate this earlier and surface a director message.
  */
-export function swissTeamsRoundOne(
-  teams: number,
-  seed: number,
-): TeamsMatch[] {
+export function swissTeamsRoundOne(teams: number, seed: number): TeamsMatch[] {
   if (teams % 2 !== 0) {
     throw new Error(`Swiss Teams requires an even team count, got ${teams}`);
   }
@@ -194,6 +191,9 @@ function pairUp(
   search(0, 0);
 
   return {
+    // search() always completes a full pairing for a non-empty even field, so
+    // bestMatches is set; the `?? []` arm is unreachable defensive code.
+    /* v8 ignore next */
     matches: bestMatches ?? [],
     hadUnavoidableRepeat: bestRepeats > 0,
   };
@@ -230,9 +230,7 @@ export function drawSwissTeamsRound(
  * The home table for a team is its stable id (team T is at table T), so the
  * home pair never moves; only away pairs travel to the opponent's home table.
  */
-export function expandTeamMatches(
-  matches: TeamsMatch[],
-): TeamsSeatPlacement[] {
+export function expandTeamMatches(matches: TeamsMatch[]): TeamsSeatPlacement[] {
   const placements: TeamsSeatPlacement[] = [];
 
   for (const match of matches) {

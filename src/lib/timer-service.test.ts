@@ -1,69 +1,85 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/director-token", () => ({
-  getDirectorToken: () => "stored-token",
+  getDirectorToken: vi.fn(() => "dir-tok"),
 }));
 
-import { saveTimerConfig } from "./timer-service";
+import { getDirectorToken } from "@/lib/director-token";
+import { saveTimerConfig, type TimerConfigFields } from "./timer-service";
 
-const fields = {
+const fields: TimerConfigFields = {
   boardsPerRound: 2,
-  totalRounds: 4,
-  playDuration: 420,
-  moveDuration: 60,
+  totalRounds: 9,
+  playDuration: 15,
+  moveDuration: 1,
 };
 
 describe("saveTimerConfig", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("PUTs the section timer config with the director-token header", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true, result: {} }),
-    });
+  it("PUTs the config with the director token header (section url-encoded)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
-    await saveTimerConfig("g1", "A", fields);
+    await saveTimerConfig("g1", "N S", fields);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/games/g1/sections/A/timer/config",
+      "/api/games/g1/sections/N%20S/timer/config",
       expect.objectContaining({
         method: "PUT",
-        headers: expect.objectContaining({
-          "x-director-token": "stored-token",
+        headers: {
           "Content-Type": "application/json",
-        }),
+          "x-director-token": "dir-tok",
+        },
         body: JSON.stringify(fields),
       }),
     );
   });
 
-  it("encodes the section in the URL", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+  it("sends an empty token header when no director token is stored", async () => {
+    vi.mocked(getDirectorToken).mockReturnValueOnce(null);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
-    await saveTimerConfig("g1", "A B", fields);
+    await saveTimerConfig("g1", "A", fields);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/games/g1/sections/A%20B/timer/config",
-      expect.anything(),
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({ "x-director-token": "" }),
+      }),
     );
   });
 
-  it("throws the server error message on failure", async () => {
+  it("throws the server error message when the request fails", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
-      json: async () => ({ success: false, error: "Invalid timer configuration" }),
+      json: async () => ({ error: "Timer already running" }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(saveTimerConfig("g1", "A", fields)).rejects.toThrow(
-      "Invalid timer configuration",
+      "Timer already running",
+    );
+  });
+
+  it("throws a default message when the error body cannot be parsed", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => {
+        throw new Error("not json");
+      },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(saveTimerConfig("g1", "A", fields)).rejects.toThrow(
+      "Failed to save timer config",
     );
   });
 });

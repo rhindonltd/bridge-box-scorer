@@ -27,7 +27,9 @@ describe("SectionPills", () => {
 
   it("calls onSelect with the section when a pill is clicked", () => {
     const onSelect = vi.fn();
-    render(<SectionPills sections={sections} selected="A" onSelect={onSelect} />);
+    render(
+      <SectionPills sections={sections} selected="A" onSelect={onSelect} />,
+    );
 
     fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
     expect(onSelect).toHaveBeenCalledWith("B");
@@ -37,9 +39,7 @@ describe("SectionPills", () => {
     const { rerender } = render(
       <SectionPills sections={sections} selected="A" onSelect={vi.fn()} />,
     );
-    expect(
-      screen.queryByRole("button", { name: /Add section/ }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Add section/ })).toBeNull();
 
     const onAddSection = vi.fn();
     rerender(

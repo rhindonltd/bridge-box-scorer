@@ -26,6 +26,29 @@ html {
   }
 }
 
+/* Room-display leaderboard: this screen is shown on a large TV and must be
+   readable from the back of the room. The shared score-table primitives use
+   small, fixed (rem-based) Tailwind sizes because they are also used on phones
+   (travellers, end-of-session). Rather than change those primitives, we scope
+   an enlargement here to the `.leaderboard-display` wrapper only, so every
+   other use of the tables is untouched. */
+.leaderboard-display table {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.leaderboard-display thead {
+  font-size: 1rem;
+}
+
+.leaderboard-display th,
+.leaderboard-display td {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
 /* Dynamic viewport height for mobile — fills the visible area excluding
    browser chrome (address bar, toolbar). Falls back to vh for older browsers. */
 @supports (height: 100dvh) {

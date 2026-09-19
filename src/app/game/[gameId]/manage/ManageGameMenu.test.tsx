@@ -7,6 +7,15 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
 }));
 
+let bridgewebsData: unknown = { configured: true };
+vi.mock("swr", () => ({
+  default: () => ({ data: bridgewebsData }),
+}));
+vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
+vi.mock("@/swr/swr-keys", () => ({
+  swrKeys: { bridgewebs: () => "/api/system/bridgewebs" },
+}));
+
 const mockUseGameStarted = vi.fn();
 const mockUseResultsComplete = vi.fn();
 vi.mock("@/hooks/game-started", () => ({
@@ -46,6 +55,7 @@ function flag(name: string) {
 describe("ManageGameMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    bridgewebsData = { configured: true };
     mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
     mockUseResultsComplete.mockReturnValue({
       allResultsIn: false,
@@ -78,8 +88,28 @@ describe("ManageGameMenu", () => {
     );
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/download-usebio");
 
+    fireEvent.click(screen.getByRole("button", { name: "onDownloadPbnClick" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/download-pbn");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "onUploadBridgewebsClick" }),
+    );
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/upload-bridgewebs");
+
     fireEvent.click(screen.getByRole("button", { name: "onDeleteGameClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/delete-game");
+  });
+
+  it("hides Upload to BridgeWebs when the status hasn't loaded / isn't configured", () => {
+    bridgewebsData = undefined; // `?? false` -> not configured
+    render(<ManageGameMenu gameId="g1" />);
+    expect(flag("showUploadBridgewebs")).toBe("false");
+  });
+
+  it("shows Upload to BridgeWebs when configured and started", () => {
+    bridgewebsData = { configured: true };
+    render(<ManageGameMenu gameId="g1" />);
+    expect(flag("showUploadBridgewebs")).toBe("true");
   });
 
   it("before start: shows Set Up Game, hides Travellers/Movement/USEBIO", () => {

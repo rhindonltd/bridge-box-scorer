@@ -15,11 +15,18 @@ type Props = {
    * pair's / team's assignment id.
    */
   highlightAssignmentId?: string;
+  /**
+   * Spread the standings across this many side-by-side columns (default 1).
+   * Used by the room display to fill a wide TV screen; ignored by the team
+   * match view (which is not a simple ranked list).
+   */
+  splitColumns?: number;
 };
 
 export function Leaderboard({
   overallScoreAndParticipant,
   highlightAssignmentId,
+  splitColumns,
 }: Props) {
   // TEAM scoring is not yet plugin-migrated; handle those variants first so
   // the remaining case narrows to PAIR (with AssignedPair[] participants).
@@ -50,6 +57,7 @@ export function Leaderboard({
           )}
           highlightAssignmentId={highlightAssignmentId}
           rowTestId="leaderboard-row"
+          splitColumns={splitColumns}
         />
       );
     case "PAIR_SWISS_VP":
@@ -64,6 +72,7 @@ export function Leaderboard({
           )}
           highlightAssignmentId={highlightAssignmentId}
           rowTestId="leaderboard-row"
+          splitColumns={splitColumns}
         />
       );
   }
@@ -79,6 +88,7 @@ export function Leaderboard({
       lines={overallScore}
       participants={participants}
       highlightAssignmentId={highlightAssignmentId}
+      splitColumns={splitColumns}
     />
   );
 }

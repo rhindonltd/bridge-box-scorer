@@ -128,6 +128,21 @@ describe("calculateSwissMpVpOverall", () => {
     }
   });
 
+  it("shows a neutral 10 when a scored board has no comparison (single-table field)", () => {
+    // Only one table played the board, so there is no field to matchpoint
+    // against (max matchpoints is 0). The pair has a scored board but the
+    // round still shows the neutral 10 VP.
+    const rows: SwissVpBoardRow[] = [
+      row({ tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+    ];
+
+    const result = calculateSwissMpVpOverall(rows);
+    const ns = result.lines.find((l) => l.pairId === "A1NS")!;
+    const ew = result.lines.find((l) => l.pairId === "A2EW")!;
+    expect(ns.vpByRound[1]).toBe(10);
+    expect(ew.vpByRound[1]).toBe(10);
+  });
+
   it("ignores sit-out (bye) rows", () => {
     const rows: SwissVpBoardRow[] = [
       row({

@@ -20,7 +20,33 @@ type Props = {
    * count/select the rendered rows (which are otherwise keyed only by index).
    */
   rowTestId?: string;
+  /**
+   * Render the rows across this many side-by-side tables (default 1). Used by
+   * the room-display leaderboard to spread a long list across a wide TV screen
+   * so more places are visible without scrolling. Rows are split into this many
+   * roughly-equal, order-preserving chunks; each chunk repeats the header. Any
+   * value <= 1 renders a single table exactly as before.
+   */
+  splitColumns?: number;
 };
+
+/** Split an array into `count` roughly-equal, order-preserving chunks. */
+function splitIntoChunks<T>(items: T[], count: number): T[][] {
+  // Defensive: the only caller (the multi-column render path) guards with
+  // `splitColumns <= 1` and returns early before ever calling this, so
+  // `count <= 1` here is unreachable in practice.
+  /* v8 ignore next */
+  if (count <= 1) return [items];
+  const perChunk = Math.ceil(items.length / count);
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += perChunk) {
+    chunks.push(items.slice(i, i + perChunk));
+  }
+  // Guarantee exactly `count` chunks (pad with empties) so the columns stay a
+  // consistent width even when there are fewer rows than columns.
+  while (chunks.length < count) chunks.push([]);
+  return chunks;
+}
 
 /**
  * A summary label (e.g. a team name) that toggles a stack of detail lines
@@ -82,29 +108,49 @@ export function ScoreTableView({
   table,
   highlightAssignmentId,
   rowTestId,
+  splitColumns = 1,
 }: Props) {
-  return (
-    <Table
-      columns={table.columns.map((c) => c.label)}
-      body={table.rows.map((row, index, arr) => {
-        const isLast = index === arr.length - 1;
-        const highlighted =
-          highlightAssignmentId !== undefined &&
-          row.highlightIds.includes(highlightAssignmentId);
+  const columns = table.columns.map((c) => c.label);
 
-        return (
-          <TableRow
-            key={index}
-            highlighted={highlighted}
-            striped={highlightAssignmentId === undefined}
-            testId={rowTestId}
-            cells={row.cells.map((cell, cellIndex) =>
-              renderCell(cell, cellIndex),
-            )}
-            className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
-          />
-        );
-      })}
-    />
+  const renderRows = (rows: typeof table.rows) =>
+    rows.map((row, index, arr) => {
+      const isLast = index === arr.length - 1;
+      const highlighted =
+        highlightAssignmentId !== undefined &&
+        row.highlightIds.includes(highlightAssignmentId);
+
+      return (
+        <TableRow
+          key={index}
+          highlighted={highlighted}
+          striped={highlightAssignmentId === undefined}
+          testId={rowTestId}
+          cells={row.cells.map((cell, cellIndex) =>
+            renderCell(cell, cellIndex),
+          )}
+          className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
+        />
+      );
+    });
+
+  // Single-table (default) path — unchanged for every existing caller.
+  if (splitColumns <= 1) {
+    return <Table columns={columns} body={renderRows(table.rows)} />;
+  }
+
+  // Multi-column path: split the rows across N side-by-side tables so a long
+  // list fills a wide TV screen. Each column repeats the header.
+  const chunks = splitIntoChunks(table.rows, splitColumns);
+  return (
+    // `items-start` (rather than stretch) lets each column size to its own
+    // content, so the inner tables never become their own scroll regions — the
+    // surrounding page owns the scrolling. Columns stay top-aligned.
+    <div className="flex items-start gap-4">
+      {chunks.map((chunk, i) => (
+        <div key={i} className="min-w-0 flex-1">
+          <Table columns={columns} body={renderRows(chunk)} />
+        </div>
+      ))}
+    </div>
   );
 }
