@@ -223,4 +223,27 @@ describe("descriptorToSelectedMovement", () => {
       mitchell: { tables: 14, rounds: 8, boardsPerRound: 3, web: true },
     });
   });
+
+  it("converts an AMERICAN_WHIST descriptor", () => {
+    const descriptor: MovementDescriptor = {
+      type: "MITCHELL",
+      subtype: "AMERICAN_WHIST",
+      tables: 5,
+      rounds: 5,
+      boardsPerRound: 5,
+      arrowSwitches: 0,
+      copies: 1,
+      pros: [],
+      cons: [],
+    };
+    expect(descriptorToSelectedMovement(descriptor)).toEqual({
+      source: "MITCHELL",
+      mitchell: {
+        tables: 5,
+        rounds: 5,
+        boardsPerRound: 5,
+        americanWhist: true,
+      },
+    });
+  });
 });

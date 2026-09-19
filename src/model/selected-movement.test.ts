@@ -53,6 +53,22 @@ describe("SelectedMovement round-trip", () => {
     expect(parsed).toEqual(selected);
   });
 
+  it("round-trips an American Whist Mitchell selection", () => {
+    const selected: SelectedMovement = {
+      source: "MITCHELL",
+      mitchell: {
+        tables: 5,
+        rounds: 5,
+        boardsPerRound: 5,
+        americanWhist: true,
+      },
+    };
+
+    const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
+
+    expect(parsed).toEqual(selected);
+  });
+
   it("round-trips a SWISS selection", () => {
     const selected: SelectedMovement = {
       source: "SWISS",
@@ -168,6 +184,17 @@ describe("selectedMovementsEqual", () => {
     expect(selectedMovementsEqual(mitchell(), mitchell({ skip: true }))).toBe(
       false,
     );
+    // The americanWhist flag participates in equality: two AWL selections are
+    // equal, and an AWL differs from a plain Standard with the same fields.
+    expect(
+      selectedMovementsEqual(
+        mitchell({ americanWhist: true }),
+        mitchell({ americanWhist: true }),
+      ),
+    ).toBe(true);
+    expect(
+      selectedMovementsEqual(mitchell(), mitchell({ americanWhist: true })),
+    ).toBe(false);
   });
 
   const swiss = (

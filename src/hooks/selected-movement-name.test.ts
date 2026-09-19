@@ -15,6 +15,7 @@ function mitchell(
     shareAndRelay: boolean;
     web: boolean;
     hesitation: boolean;
+    americanWhist: boolean;
   }> = {},
 ): SelectedMovement {
   return {
@@ -41,6 +42,7 @@ describe("useSelectedMovementName", () => {
       [mitchell({ shareAndRelay: true }), "Share and Relay Mitchell"],
       [mitchell({ web: true }), "Web Mitchell"],
       [mitchell({ hesitation: true }), "Hesitation Mitchell"],
+      [mitchell({ americanWhist: true }), "American Whist"],
     ];
     for (const [m, expected] of cases) {
       const { result } = renderHook(() => useSelectedMovementName(m, "PAIRS"));

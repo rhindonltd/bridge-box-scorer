@@ -28,6 +28,10 @@ import { SelectedMovement } from "@/model/selected-movement";
  * - HESITATION      -> hesitation: true (rounds computed as tables + 1)
  * - WEB             -> web: true (even-table Web Mitchell; odd tables stay on
  *                      seeded specs)
+ * - AMERICAN_WHIST  -> americanWhist: true (odd-table AWL; EW down two tables,
+ *                      boards down one). Buildable and persistable, but not yet
+ *                      produced by any resolver rule — no recommendation offers
+ *                      it today.
  */
 export const MITCHELL_SUBTYPES = [
   "STANDARD",
@@ -35,6 +39,7 @@ export const MITCHELL_SUBTYPES = [
   "SKIP",
   "HESITATION",
   "WEB",
+  "AMERICAN_WHIST",
 ] as const;
 
 export type MitchellSubtype = (typeof MITCHELL_SUBTYPES)[number];
@@ -147,6 +152,7 @@ export function descriptorToSelectedMovement(
       ...(subtype === "SKIP" ? { skip: true } : {}),
       ...(subtype === "HESITATION" ? { hesitation: true } : {}),
       ...(subtype === "WEB" ? { web: true } : {}),
+      ...(subtype === "AMERICAN_WHIST" ? { americanWhist: true } : {}),
     },
   };
 }
