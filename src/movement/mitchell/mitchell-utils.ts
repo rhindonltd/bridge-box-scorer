@@ -14,6 +14,7 @@ export interface MitchellMovementSpec {
   hesitation?: boolean;
   doubleHesitation?: boolean;
   web?: boolean;
+  americanWhist?: boolean;
   /** Revenge rounds for Blackpool (see BlackpoolMovementSpec). */
   revengeRounds?: number;
   /** Modified variant flag for the Double Hesitation Mitchell. */

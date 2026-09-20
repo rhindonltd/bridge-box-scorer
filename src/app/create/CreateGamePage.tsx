@@ -6,6 +6,7 @@ import { createGame } from "@/lib/game-service";
 import { useId, useState } from "react";
 import useSWR from "swr";
 import { GameType } from "@/db/games/types/game-type";
+import { ScoringType } from "@/db/games/types/scoring-type";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import { Toggle } from "@/components/common/Toggle";
@@ -25,6 +26,12 @@ export function CreateGamePage() {
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
   const [gameType, setGameType] = useState<GameType>("PAIRS");
+  // Teams scoring choice, only surfaced (and only meaningful) for a Teams game:
+  // IMP Victory Points (default) or Board-a-Match. Pairs games keep the DB's
+  // "MP" default and show no scoring selector.
+  const [teamsScoring, setTeamsScoring] = useState<
+    Extract<ScoringType, "IMP" | "BAM" | "PAB">
+  >("IMP");
   const [leadCardRequired, setLeadCardRequired] = useState(true);
   const [bridgewebsEventId, setBridgewebsEventId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +106,9 @@ export function CreateGamePage() {
       eventName,
       director,
       gameType,
+      // Only a Teams game carries an explicit scoring choice; a Pairs game
+      // falls back to the DB default ("MP").
+      ...(gameType === "TEAMS" ? { scoringType: teamsScoring } : {}),
       sessionName: "",
       eventDate,
       sectionName: "",
@@ -190,6 +200,19 @@ export function CreateGamePage() {
             ]}
             onSelect={setGameType}
           />
+
+          {gameType === "TEAMS" && (
+            <SelectField
+              label="Scoring"
+              value={teamsScoring}
+              options={[
+                { label: "IMP (Victory Points)", value: "IMP" as const },
+                { label: "Board-a-Match", value: "BAM" as const },
+                { label: "Point-a-Board", value: "PAB" as const },
+              ]}
+              onSelect={setTeamsScoring}
+            />
+          )}
 
           <div className="flex flex-col gap-1">
             <label

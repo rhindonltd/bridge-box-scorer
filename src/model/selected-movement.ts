@@ -44,6 +44,7 @@ export const mitchellSpecSchema = z.object({
   shareAndRelay: z.boolean().optional(),
   hesitation: z.boolean().optional(),
   web: z.boolean().optional(),
+  americanWhist: z.boolean().optional(),
 });
 
 /**
@@ -180,7 +181,8 @@ export function selectedMovementsEqual(
         !!x.skip === !!y.skip &&
         !!x.shareAndRelay === !!y.shareAndRelay &&
         !!x.hesitation === !!y.hesitation &&
-        !!x.web === !!y.web
+        !!x.web === !!y.web &&
+        !!x.americanWhist === !!y.americanWhist
       );
     }
     case "SWISS": {

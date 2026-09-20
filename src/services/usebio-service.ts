@@ -14,6 +14,7 @@ import {
 } from "@/lib/usebio/generate-usebio";
 import { assembleSwissPairs } from "@/lib/usebio/assemble-swiss-pairs";
 import { assembleSwissTeams } from "@/lib/usebio/assemble-swiss-teams";
+import { assembleBoardComparisonTeams } from "@/lib/usebio/assemble-board-comparison-teams";
 import { parseSelectedMovement } from "@/model/selected-movement";
 import { classifyEvent } from "@/model/event-format";
 import { Card } from "@/model/common";
@@ -26,6 +27,9 @@ import { BoardOutcome } from "@/model/score";
  *    round, integer Victory Points);
  *  - Swiss Teams (TEAMS + source SWISS_TEAMS) -> a SWISS_TEAMS file (team
  *    matches per round, board IMPs, integer Victory Points);
+ *  - Board-comparison teams (TEAMS + a teams movement + BAM or PAB scoring) ->
+ *    a board-comparison teams file (team matches per round, per-board points,
+ *    ranked by points won): BAM uses a 0/0.5/1 scale, PAB a 0/1/2 scale;
  *  - everything else -> the standard MP/Butler/XIMP pairs file.
  */
 export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
@@ -40,6 +44,17 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
       ]);
       return generateUsebioXml(
         assembleSwissTeams(game, club, teams, boardRows),
+      );
+    }
+    case "TEAMS_BAM":
+    case "TEAMS_PAB": {
+      const [teams, boardRows] = await Promise.all([
+        findTeams(db),
+        db.select().from(boards),
+      ]);
+      const scoring = format === "TEAMS_PAB" ? "PAB" : "BAM";
+      return generateUsebioXml(
+        assembleBoardComparisonTeams(game, club, teams, boardRows, scoring),
       );
     }
     case "SWISS_PAIRS_VP": {

@@ -10,11 +10,21 @@ import { SelectedMovement } from "@/model/selected-movement";
  * - PAIRS_BOARD: an ordinary pairs event (MP / Butler / Cross-IMP), ranked by
  *   pooling every table's result on a board.
  * - SWISS_PAIRS_VP: a Swiss Pairs event, ranked on per-round Victory Points.
- * - TEAMS_VP: a teams event ranked on per-round Victory Points (Swiss Teams
- *   today; every teams-VP movement shares this format regardless of how its
+ * - TEAMS_VP: a teams event ranked on per-round Victory Points (the default for
+ *   any teams movement — Swiss Teams or Round Robin — regardless of how its
  *   schedule is drawn).
+ * - TEAMS_BAM: a teams event scored Board-a-Match (each board a win/tie/loss on
+ *   a 0/0.5/1 scale), ranked on total boards won. Chosen when a teams game's
+ *   scoring type is "BAM"; orthogonal to the movement (any teams movement can).
+ * - TEAMS_PAB: a teams event scored Point-a-Board — identical to BAM but on a
+ *   0/1/2 scale. Chosen when a teams game's scoring type is "PAB".
  */
-export type EventFormat = "PAIRS_BOARD" | "SWISS_PAIRS_VP" | "TEAMS_VP";
+export type EventFormat =
+  | "PAIRS_BOARD"
+  | "SWISS_PAIRS_VP"
+  | "TEAMS_VP"
+  | "TEAMS_BAM"
+  | "TEAMS_PAB";
 
 /**
  * How a Swiss Pairs game derives its per-round Victory Points, or null when the
@@ -80,7 +90,17 @@ export function classifyEvent(
   movement: SelectedMovement | null,
 ): EventClassification {
   if (gameType === "TEAMS" && isTeamsVpMovement(movement)) {
-    return { format: "TEAMS_VP", scoringType, swissVpMode: null };
+    // A board-comparison scoring type (Board-a-Match / Point-a-Board) ranks on
+    // boards won; otherwise it defaults to per-round Victory Points. These are
+    // orthogonal to the movement, so both Swiss Teams and Round Robin honour
+    // them.
+    const format =
+      scoringType === "BAM"
+        ? "TEAMS_BAM"
+        : scoringType === "PAB"
+          ? "TEAMS_PAB"
+          : "TEAMS_VP";
+    return { format, scoringType, swissVpMode: null };
   }
 
   if (movement?.source === "SWISS") {

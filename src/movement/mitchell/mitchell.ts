@@ -7,6 +7,7 @@ import { generateBlackpool } from "./blackpool";
 import { generateHesitationMitchell } from "./hesitation-mitchell";
 import { generateDoubleHesitationMitchell } from "./double-hesitation-mitchell";
 import { generateWebMitchell } from "./web-mitchell";
+import { generateAmericanWhistMitchell } from "./american-whist-mitchell";
 
 /**
  * Single entry point for generating any Mitchell-family pair movement.
@@ -35,7 +36,8 @@ type VariantFlag =
   | "blackpool"
   | "hesitation"
   | "doubleHesitation"
-  | "web";
+  | "web"
+  | "americanWhist";
 
 const VARIANT_GENERATORS: {
   flag: VariantFlag;
@@ -60,6 +62,11 @@ const VARIANT_GENERATORS: {
       generateDoubleHesitationMitchell({ ...s, doubleHesitation: true }),
   },
   { flag: "web", generate: (s) => generateWebMitchell({ ...s, web: true }) },
+  {
+    flag: "americanWhist",
+    generate: (s) =>
+      generateAmericanWhistMitchell({ ...s, americanWhist: true }),
+  },
 ];
 
 export function generateMitchell(spec: MitchellMovementSpec): Tables {

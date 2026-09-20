@@ -4,6 +4,7 @@ import {
   UsebioPairsData,
   UsebioSwissPairsData,
   UsebioSwissTeamsData,
+  UsebioBoardComparisonTeamsData,
 } from "./generate-usebio";
 
 function makeBasicGameData(): UsebioPairsData {
@@ -927,6 +928,145 @@ describe("generateUsebioXml", () => {
       data.kind = "MP_PAIRS";
       const xml = generateUsebioXml(data);
       expect(xml).toContain('<EVENT EVENT_TYPE="PAIRS">');
+    });
+  });
+
+  describe("Board-comparison teams", () => {
+    // Build board-comparison teams data on the given scale: BAM win = 1 / tie =
+    // 0.5, PAB win = 2 / tie = 1.
+    function makeData(
+      scoring: "BAM" | "PAB",
+    ): UsebioBoardComparisonTeamsData {
+      const win = scoring === "PAB" ? 2 : 1;
+      const tie = win / 2;
+      return {
+        kind: "BOARD_COMPARISON_TEAMS",
+        scoring,
+        club: { name: "Test Bridge Club", clubNumber: "00987654" },
+        eventName: `${scoring} Teams`,
+        eventDate: "2024-11-18T00:00:00.000Z",
+        sectionName: "A",
+        boards: 2,
+        teams: [
+          {
+            teamNumber: "1",
+            teamName: "Sharks",
+            sectionId: "A",
+            players: [
+              { firstName: "Ann", lastName: "One", nationalId: "1" },
+              { firstName: "Bob", lastName: "Two", nationalId: null },
+              { firstName: "Cy", lastName: "Three", nationalId: null },
+              { firstName: "Di", lastName: "Four", nationalId: null },
+            ],
+          },
+          {
+            teamNumber: "2",
+            teamName: "Dragons",
+            sectionId: "A",
+            players: [
+              { firstName: "Ed", lastName: "Five", nationalId: null },
+              { firstName: "Fi", lastName: "Six", nationalId: null },
+              { firstName: "Gu", lastName: "Seven", nationalId: null },
+              { firstName: "Ha", lastName: "Eight", nationalId: null },
+            ],
+          },
+        ],
+        matches: [
+          {
+            round: 1,
+            team: "1",
+            opposingTeam: "2",
+            startBoard: 1,
+            endBoard: 2,
+            teamScore: win + tie,
+            opposingTeamScore: tie,
+            boards: [
+              {
+                boardNumber: 1,
+                teamPoints: win,
+                opposingTeamPoints: 0,
+                travellerLines: [
+                  {
+                    direction: "NS",
+                    contract: "4S",
+                    playedBy: "N",
+                    lead: "HK",
+                    tricks: "10",
+                    score: "420",
+                  },
+                  {
+                    direction: "EW",
+                    contract: "3NT",
+                    playedBy: "N",
+                    lead: "HK",
+                    tricks: "9",
+                    score: "400",
+                  },
+                ],
+              },
+              {
+                boardNumber: 2,
+                teamPoints: tie,
+                opposingTeamPoints: tie,
+                travellerLines: [],
+              },
+            ],
+          },
+        ],
+        ranking: [
+          { number: "1", sectionId: "A", totalWon: win + tie, place: 1 },
+          { number: "2", sectionId: "A", totalWon: tie, place: 2 },
+        ],
+      };
+    }
+
+    it("emits a TEAMS event with BAM board and match scoring methods", () => {
+      const xml = generateUsebioXml(makeData("BAM"));
+      expect(xml).toContain('<EVENT EVENT_TYPE="TEAMS">');
+      expect(xml).toContain("<BOARD_SCORING_METHOD>BAM</BOARD_SCORING_METHOD>");
+      expect(xml).toContain("<MATCH_SCORING_METHOD>BAM</MATCH_SCORING_METHOD>");
+    });
+
+    it("lists teams with total points won and place", () => {
+      const xml = generateUsebioXml(makeData("BAM"));
+      expect(xml).toContain('<TEAM TEAM_ID="1" TEAM_NAME="Sharks">');
+      expect(xml).toContain("<TOTAL_SCORE>1.5</TOTAL_SCORE>");
+      expect(xml).toContain("<PLACE>1</PLACE>");
+    });
+
+    it("emits per-board TEAM_POINTS / OPPOSING_TEAM_POINTS on the BAM scale", () => {
+      const xml = generateUsebioXml(makeData("BAM"));
+      expect(xml).toContain("<TEAM_POINTS>1</TEAM_POINTS>");
+      expect(xml).toContain("<OPPOSING_TEAM_POINTS>0</OPPOSING_TEAM_POINTS>");
+      expect(xml).toContain("<TEAM_POINTS>0.5</TEAM_POINTS>");
+    });
+
+    it("emits the match board-points totals as TEAM_SCORE", () => {
+      const xml = generateUsebioXml(makeData("BAM"));
+      expect(xml).toContain("<TEAM_SCORE>1.5</TEAM_SCORE>");
+      expect(xml).toContain("<OPPOSING_TEAM_SCORE>0.5</OPPOSING_TEAM_SCORE>");
+    });
+
+    it("does not emit cross-IMP points on traveller lines", () => {
+      const xml = generateUsebioXml(makeData("BAM"));
+      expect(xml).not.toContain("CROSS_IMP_POINTS");
+      // The traveller detail is still present.
+      expect(xml).toContain("<CONTRACT>4S</CONTRACT>");
+      expect(xml).toContain("<SCORE>420</SCORE>");
+    });
+
+    it("emits PAB scoring methods and 0/1/2 points for a Point-a-Board file", () => {
+      const xml = generateUsebioXml(makeData("PAB"));
+      expect(xml).toContain("<BOARD_SCORING_METHOD>PAB</BOARD_SCORING_METHOD>");
+      expect(xml).toContain("<MATCH_SCORING_METHOD>PAB</MATCH_SCORING_METHOD>");
+      // Win board -> 2 / 0; tie board -> 1 / 1.
+      expect(xml).toContain("<TEAM_POINTS>2</TEAM_POINTS>");
+      expect(xml).toContain("<OPPOSING_TEAM_POINTS>0</OPPOSING_TEAM_POINTS>");
+      expect(xml).toContain("<TEAM_POINTS>1</TEAM_POINTS>");
+      // Match total: win(2) + tie(1) = 3 vs 1.
+      expect(xml).toContain("<TEAM_SCORE>3</TEAM_SCORE>");
+      expect(xml).toContain("<OPPOSING_TEAM_SCORE>1</OPPOSING_TEAM_SCORE>");
+      expect(xml).not.toContain("CROSS_IMP_POINTS");
     });
   });
 });

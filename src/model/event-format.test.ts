@@ -79,6 +79,49 @@ describe("classifyEvent", () => {
     });
   });
 
+  it("classifies a Teams + Swiss Teams BAM game as TEAMS_BAM", () => {
+    expect(classifyEvent("TEAMS", "BAM", SWISS_TEAMS)).toEqual({
+      format: "TEAMS_BAM",
+      scoringType: "BAM",
+      swissVpMode: null,
+    });
+  });
+
+  it("classifies a Teams + Round Robin Teams BAM game as TEAMS_BAM", () => {
+    expect(classifyEvent("TEAMS", "BAM", ROUND_ROBIN_TEAMS).format).toBe(
+      "TEAMS_BAM",
+    );
+  });
+
+  it("keeps a Teams teams-movement game as TEAMS_VP unless scoring is BAM/PAB", () => {
+    expect(classifyEvent("TEAMS", "IMP", SWISS_TEAMS).format).toBe("TEAMS_VP");
+    expect(classifyEvent("TEAMS", "MP", SWISS_TEAMS).format).toBe("TEAMS_VP");
+  });
+
+  it("classifies a Teams + Swiss Teams PAB game as TEAMS_PAB", () => {
+    expect(classifyEvent("TEAMS", "PAB", SWISS_TEAMS)).toEqual({
+      format: "TEAMS_PAB",
+      scoringType: "PAB",
+      swissVpMode: null,
+    });
+  });
+
+  it("classifies a Teams + Round Robin Teams PAB game as TEAMS_PAB", () => {
+    expect(classifyEvent("TEAMS", "PAB", ROUND_ROBIN_TEAMS).format).toBe(
+      "TEAMS_PAB",
+    );
+  });
+
+  it("does not make a PAB PAIRS game a teams format", () => {
+    expect(classifyEvent("PAIRS", "PAB", MITCHELL).format).toBe("PAIRS_BOARD");
+  });
+
+  it("does not make a BAM PAIRS game a teams format", () => {
+    // BAM only means Board-a-Match for a teams movement; a pairs game with a
+    // stray BAM scoring type is still board-scored.
+    expect(classifyEvent("PAIRS", "BAM", MITCHELL).format).toBe("PAIRS_BOARD");
+  });
+
   it("treats a Round Robin Teams movement in a PAIRS game as PAIRS_BOARD", () => {
     // The teams format needs the TEAMS game type as well as a teams movement.
     expect(classifyEvent("PAIRS", "IMP", ROUND_ROBIN_TEAMS).format).toBe(

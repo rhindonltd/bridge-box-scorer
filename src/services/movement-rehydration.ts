@@ -101,10 +101,12 @@ export async function rehydrateSelectedMovement(
   selected: SelectedMovement,
 ): Promise<RehydratedMovement> {
   if (selected.source === "MITCHELL") {
-    const { skip, shareAndRelay, hesitation, web } = selected.mitchell;
+    const { skip, shareAndRelay, hesitation, web, americanWhist } =
+      selected.mitchell;
     // Only a plain Standard Mitchell (no variant flag) supports the sit-out
     // handling applied downstream; the variants build differently.
-    const isStandardMitchell = !skip && !shareAndRelay && !hesitation && !web;
+    const isStandardMitchell =
+      !skip && !shareAndRelay && !hesitation && !web && !americanWhist;
     // Dispatch through generateMitchell so every variant flag (skip,
     // shareAndRelay, hesitation, web) is honoured, not just Standard.
     const generated = generateMitchell(selected.mitchell);

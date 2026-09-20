@@ -52,17 +52,17 @@ function generatedRec(): RecommendedMovement {
   return {
     family: "MITCHELL",
     name: "Mitchell",
-    rounds: 8,
+    rounds: 7,
     boardsPerRound: 2,
-    boardsPerPair: 16,
-    boardsInPlay: 16,
+    boardsPerPair: 14,
+    boardsInPlay: 14,
     copies: 1,
     pros: [],
     cons: [],
     source: "generated",
     specRef: {
       source: "generated",
-      spec: { tables: 8, rounds: 8, boardsPerRound: 2 },
+      spec: { tables: 7, rounds: 7, boardsPerRound: 2 },
     },
   };
 }
@@ -124,7 +124,7 @@ describe("SectionMovementPicker", () => {
   });
 
   it("groups movements by boards a pair plays, ascending, with no 'Recommended Movements' heading", () => {
-    // generatedRec plays 16 boards, dbRec plays 24.
+    // generatedRec plays 14 boards, dbRec plays 24.
     mockRecommendations.mockReturnValue([dbRec(), generatedRec()]);
     render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
 
@@ -134,7 +134,7 @@ describe("SectionMovementPicker", () => {
     const groupHeadings = headings
       .map((h) => h.textContent)
       .filter((t) => t?.includes("boards"));
-    expect(groupHeadings).toEqual(["16 boards", "24 boards"]);
+    expect(groupHeadings).toEqual(["14 boards", "24 boards"]);
   });
 
   it("highlights the card matching a SPEC selection and no others", () => {
@@ -165,7 +165,7 @@ describe("SectionMovementPicker", () => {
         tables={8}
         selectedMovement={{
           source: "MITCHELL",
-          mitchell: { tables: 8, rounds: 8, boardsPerRound: 2 },
+          mitchell: { tables: 7, rounds: 7, boardsPerRound: 2 },
         }}
       />,
     );
@@ -195,7 +195,7 @@ describe("SectionMovementPicker", () => {
   });
 
   it("groups multiple movements sharing the same boards-a-pair count together", () => {
-    // Two movements both playing 16 boards -> single group with both cards.
+    // Two movements both playing 14 boards -> single group with both cards.
     const rec2: RecommendedMovement = {
       ...generatedRec(),
       name: "Skip Mitchell",
@@ -207,7 +207,7 @@ describe("SectionMovementPicker", () => {
       .getAllByRole("heading", { level: 2 })
       .map((h) => h.textContent)
       .filter((t) => t?.includes("boards"));
-    expect(groupHeadings).toEqual(["16 boards"]);
+    expect(groupHeadings).toEqual(["14 boards"]);
     expect(
       screen.getByRole("button", { name: "Mitchell" }),
     ).toBeInTheDocument();
@@ -238,8 +238,8 @@ describe("SectionMovementPicker", () => {
 
     await waitFor(() =>
       expect(setSectionMitchellMovement).toHaveBeenCalledWith("g1", "A", {
-        tables: 8,
-        rounds: 8,
+        tables: 7,
+        rounds: 7,
         boardsPerRound: 2,
       }),
     );
@@ -377,8 +377,8 @@ describe("SectionMovementPicker", () => {
 
     await waitFor(() =>
       expect(setSectionMitchellMovement).toHaveBeenCalledWith("g1", "A", {
-        tables: 8,
-        rounds: 8,
+        tables: 7,
+        rounds: 7,
         boardsPerRound: 2,
       }),
     );

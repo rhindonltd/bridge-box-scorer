@@ -24,6 +24,7 @@ function mitchellName(spec: MitchellMovementSpec | undefined): string {
   if (spec.shareAndRelay) return "Share and Relay Mitchell";
   if (spec.web) return "Web Mitchell";
   if (spec.hesitation) return "Hesitation Mitchell";
+  if (spec.americanWhist) return "American Whist";
   return "Standard Mitchell";
 }
 

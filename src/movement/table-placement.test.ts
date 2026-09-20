@@ -150,12 +150,12 @@ describe("withRelay", () => {
 
   it("adds no relay for a non-share-and-relay movement", () => {
     const tables = generatedToMovementByTable(
-      generateMitchell({ tables: 6, rounds: 6, boardsPerRound: 2 }),
+      generateMitchell({ tables: 5, rounds: 5, boardsPerRound: 2 }),
     );
 
     const placement = withRelay(buildTablePlacement(tables), {
       shareAndRelay: false,
-      tables: 6,
+      tables: 5,
     });
 
     for (const p of placement.values()) {
