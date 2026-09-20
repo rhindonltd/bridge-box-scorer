@@ -31,7 +31,7 @@ const REJECTION_MESSAGE: Record<string, string> = {
     "All results for the current round must be in before drawing the next round.",
   EVENT_COMPLETE: "All rounds have already been drawn.",
   ODD_TEAM_COUNT:
-    "Swiss Teams needs an even number of teams before the next round can be drawn.",
+    "This odd Swiss Teams event uses three-way triangles, which aren't supported yet — start it with the bye option instead.",
 };
 
 /**

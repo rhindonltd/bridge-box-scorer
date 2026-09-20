@@ -73,11 +73,16 @@ describe("drawNextSwissTeamsRound", () => {
     });
   });
 
-  it("rejects an odd team count", async () => {
+  it("rejects an odd team count that uses (unsupported) triangle handling", async () => {
     vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
-      swissTeams: { teams: 5, rounds: 4, boardsPerRound: 3 },
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 3,
+        oddHandling: "TRIANGLE",
+      },
     } as any);
 
     await expect(drawNextSwissTeamsRound("g1", "A")).resolves.toEqual({
@@ -177,6 +182,63 @@ describe("drawNextSwissTeamsRound", () => {
       2,
       3,
       expect.any(Array),
+      // Even field -> no bye team.
+      null,
+    );
+  });
+
+  it("draws an odd (BYE) round and passes the bye team to materialize", async () => {
+    // Round 1 done for a 5-team BYE event; team 5 already byed in round 1
+    // (a SIT_OUT row), so round 2's bye goes to the next lowest eligible team.
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [
+          { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
+          // The round-1 bye: team 5 sat out (SIT_OUT, phantom opponent).
+          { roundNumber: 1, ns: "A5NS", ew: "PHANTOM", status: "SIT_OUT" },
+        ] as any,
+        [{ status: "CONFIRMED" }, { status: "SIT_OUT" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 3,
+        oddHandling: "BYE",
+      },
+    } as any);
+    // Standings best-first: 1,2,3,4,5. Team 5 already byed, so round 2 byes 4.
+    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
+      {
+        section: "A",
+        overallScore: {
+          lines: [
+            { teamId: "A1NS" },
+            { teamId: "A2NS" },
+            { teamId: "A3NS" },
+            { teamId: "A4NS" },
+            { teamId: "A5NS" },
+          ],
+        },
+      },
+    ] as any);
+    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
+
+    const result = await drawNextSwissTeamsRound("g1", "A");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.roundNumber).toBe(2);
+    // Materialized with the round-2 bye team (4 — lowest without a prior bye).
+    expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      2,
+      3,
+      expect.any(Array),
+      4,
     );
   });
 

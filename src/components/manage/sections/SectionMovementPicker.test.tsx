@@ -800,7 +800,7 @@ describe("SectionMovementPicker", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
-  it("blocks confirming a Swiss Teams movement with an odd team count", () => {
+  it("defaults an odd Swiss Teams field to a Bye and confirms with oddHandling", async () => {
     mockRecommendations.mockReturnValue([]);
     render(
       <SectionMovementPicker
@@ -813,9 +813,35 @@ describe("SectionMovementPicker", () => {
     );
 
     fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
-    // The even-count warning is shown and the confirm button is disabled.
-    expect(screen.getByText(/even number of teams/i)).toBeInTheDocument();
+    // The odd count offers a Bye/Triangle choice with Bye selected by default,
+    // so confirming is allowed and carries oddHandling: "BYE".
     fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
-    expect(setSectionSwissTeamsMovement).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(setSectionSwissTeamsMovement).toHaveBeenCalledWith("g1", "A", {
+        teams: 5,
+        rounds: 7,
+        boardsPerRound: 6,
+        oddHandling: "BYE",
+      }),
+    );
+  });
+
+  it("offers Triangle disabled (not supported yet) for an odd Swiss Teams field", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={5}
+        singleSection
+        gameType="TEAMS"
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
+    // Triangle is offered but disabled, so the director can't pick the
+    // unimplemented mode; Bye stays selected.
+    expect(screen.getByRole("radio", { name: /triangle/i })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: /bye/i })).toBeChecked();
   });
 });

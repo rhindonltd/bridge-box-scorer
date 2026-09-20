@@ -91,6 +91,17 @@ describe("SelectedMovement round-trip", () => {
     expect(parsed).toEqual(selected);
   });
 
+  it("round-trips a SWISS_TEAMS selection with oddHandling", () => {
+    const selected: SelectedMovement = {
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 5, rounds: 7, boardsPerRound: 4, oddHandling: "BYE" },
+    };
+
+    const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
+
+    expect(parsed).toEqual(selected);
+  });
+
   it("round-trips a ROUND_ROBIN_TEAMS selection", () => {
     const selected: SelectedMovement = {
       source: "ROUND_ROBIN_TEAMS",
@@ -227,6 +238,7 @@ describe("selectedMovementsEqual", () => {
       teams: number;
       rounds: number;
       boardsPerRound: number;
+      oddHandling: "BYE" | "TRIANGLE";
     }> = {},
   ): SelectedMovement => ({
     source: "SWISS_TEAMS",
@@ -243,6 +255,16 @@ describe("selectedMovementsEqual", () => {
     );
     expect(
       selectedMovementsEqual(swissTeams(), swissTeams({ boardsPerRound: 3 })),
+    ).toBe(false);
+    // oddHandling participates in equality; absent means the default "BYE".
+    expect(
+      selectedMovementsEqual(swissTeams(), swissTeams({ oddHandling: "BYE" })),
+    ).toBe(true);
+    expect(
+      selectedMovementsEqual(
+        swissTeams(),
+        swissTeams({ oddHandling: "TRIANGLE" }),
+      ),
     ).toBe(false);
   });
 

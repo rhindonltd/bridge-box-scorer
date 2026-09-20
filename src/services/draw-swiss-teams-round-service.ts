@@ -31,13 +31,19 @@ export type DrawSwissTeamsResult =
 interface SwissTeamsHistory {
   highestRound: number;
   playedOpponents: Set<string>;
+  /** Teams that have already had a bye (recovered from SIT_OUT rows). */
+  hadBye: Set<TeamId>;
 }
 
 /**
  * Reduce a section's board rows to the Swiss Teams history the draw needs: the
- * highest round materialized so far and the set of team matchups already
- * played. A match is recovered from each home table's row — the NS seat is the
- * home team and the EW seat encodes the opponent's home table.
+ * highest round materialized so far, the set of team matchups already played,
+ * and the teams that have already had a bye.
+ *
+ * A played match is recovered from each home table's row — the NS seat is the
+ * home team and the EW seat encodes the opponent's home table. A bye is a
+ * SIT_OUT row: its NS seat is the bye team's home table and its EW is a phantom
+ * (not a real opponent), so it is recorded as a bye rather than a played match.
  */
 async function getSwissTeamsHistory(
   db: Db,
@@ -51,33 +57,45 @@ async function getSwissTeamsHistory(
       roundNumber: boards.roundNumber,
       ns: boards.ns,
       ew: boards.ew,
+      status: boards.status,
     })
     .from(boards)
     .where(eq(boards.section, section));
 
   const playedOpponents = new Set<string>();
+  const hadBye = new Set<TeamId>();
   let highestRound = 0;
 
   for (const row of rows) {
     highestRound = Math.max(highestRound, row.roundNumber);
+
+    // A SIT_OUT row is a bye: record the sitting team, not a played match.
+    if (row.status === "SIT_OUT") {
+      try {
+        hadBye.add(parseSeat(row.ns).tableNumber);
+      } catch {
+        // A non-seat NS id (should not occur) is skipped.
+      }
+      continue;
+    }
+
     try {
       const home = parseSeat(row.ns);
       const away = parseSeat(row.ew);
-      playedOpponents.add(
-        teamOpponentKey(home.tableNumber, away.tableNumber),
-      );
+      playedOpponents.add(teamOpponentKey(home.tableNumber, away.tableNumber));
     } catch {
       // A non-seat id (should not occur for teams) is skipped.
     }
   }
 
-  return { highestRound, playedOpponents };
+  return { highestRound, playedOpponents, hadBye };
 }
 
 /**
- * Whether every board in a round has a final result (CONFIRMED or OVERRIDDEN),
- * so the round is safe to draw from. Swiss Teams has no sit-outs, so every
- * board is playable. An empty round is not "complete".
+ * Whether a round is safe to draw from: every playable board has a final result
+ * (CONFIRMED or OVERRIDDEN). A bye's SIT_OUT boards are never played, so they
+ * count as complete (they don't block the next draw). An empty round is not
+ * "complete".
  */
 async function isRoundComplete(
   db: Db,
@@ -96,7 +114,10 @@ async function isRoundComplete(
 
   if (rows.length === 0) return false;
   return rows.every(
-    (r) => r.status === "CONFIRMED" || r.status === "OVERRIDDEN",
+    (r) =>
+      r.status === "CONFIRMED" ||
+      r.status === "OVERRIDDEN" ||
+      r.status === "SIT_OUT",
   );
 }
 
@@ -148,11 +169,14 @@ async function rankedStandings(
  * Draw and materialize the next Swiss Teams round for a section.
  *
  * Preconditions (so the caller can reject cleanly): the section is a Swiss
- * Teams movement, the team count is even (three-way handling is out of scope),
- * the current round is fully scored, and the event has rounds remaining. When
- * all hold, it draws the next round from current standings (avoiding repeat
- * opponents), materializes its open/closed-room board rows, and reports whether
- * a repeat was unavoidable. It does NOT advance the timer.
+ * Teams movement, the current round is fully scored, and the event has rounds
+ * remaining. An odd team count is allowed when the movement's `oddHandling` is
+ * "BYE" (a team sits out each round); the "TRIANGLE" alternative is not yet
+ * implemented and is rejected. When all hold, it draws the next round from
+ * current standings (avoiding repeat opponents, byeing the lowest-ranked team
+ * without a prior bye when the field is odd), materializes its open/closed-room
+ * board rows plus any bye sit-out, and reports whether a repeat was
+ * unavoidable. It does NOT advance the timer.
  */
 export async function drawNextSwissTeamsRound(
   gameId: string,
@@ -168,13 +192,20 @@ export async function drawNextSwissTeamsRound(
     return { ok: false, reason: "NOT_SWISS_TEAMS" };
   }
 
-  const { teams, rounds: totalRounds, boardsPerRound } = selected.swissTeams;
+  const {
+    teams,
+    rounds: totalRounds,
+    boardsPerRound,
+    oddHandling = "BYE",
+  } = selected.swissTeams;
 
-  if (teams % 2 !== 0) {
+  // An odd field is only drawable via a bye; the triangle alternative is not
+  // yet implemented, so an odd TRIANGLE event is rejected.
+  if (teams % 2 !== 0 && oddHandling !== "BYE") {
     return { ok: false, reason: "ODD_TEAM_COUNT" };
   }
 
-  const { highestRound, playedOpponents } = await getSwissTeamsHistory(
+  const { highestRound, playedOpponents, hadBye } = await getSwissTeamsHistory(
     db,
     section,
   );
@@ -190,7 +221,12 @@ export async function drawNextSwissTeamsRound(
 
   const standings = await rankedStandings(db, gameId, section, teams);
 
-  const draw = drawSwissTeamsRound({ teams, standings, playedOpponents });
+  const draw = drawSwissTeamsRound({
+    teams,
+    standings,
+    playedOpponents,
+    hadBye,
+  });
   const nextRound = currentRound + 1;
 
   await materializeSwissTeamsRound(
@@ -199,6 +235,7 @@ export async function drawNextSwissTeamsRound(
     nextRound,
     boardsPerRound,
     draw.matches,
+    draw.byeTeamId,
   );
 
   return {

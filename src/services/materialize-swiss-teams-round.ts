@@ -49,6 +49,13 @@ function awayPairId(tableNumber: number): string {
 }
 
 /**
+ * Phantom opponent id for a bye team's sit-out row. Not a valid seat, so the
+ * board-history reader and match reconstruction never treat it as a real
+ * opponent — matching the Swiss Pairs sit-out convention.
+ */
+const TEAMS_BYE_PHANTOM = "PHANTOM";
+
+/**
  * Turn a drawn Swiss Teams round into the {@link MaterializableMovement} shape.
  *
  * Each team match becomes two physical tables (open room + closed room) that
@@ -62,24 +69,48 @@ export function swissTeamsRoundToMaterializable(
   roundNumber: number,
   boardsPerRound: number,
   matches: TeamsMatch[],
+  byeTeamId: number | null = null,
 ): MaterializableMovement {
   const { boardStart, boardEnd } = swissRoundBoardRange(
     roundNumber,
     boardsPerRound,
   );
 
-  return expandTeamMatches(matches).map((placement) => ({
-    tableNumber: placement.tableNumber,
-    rounds: [
-      {
-        roundNumber,
-        ns: homePairId(placement.nsTeam),
-        ew: awayPairId(placement.ewTeam),
-        boardStart,
-        boardEnd,
-      },
-    ],
-  }));
+  const tablesOut: MaterializableMovement = expandTeamMatches(matches).map(
+    (placement) => ({
+      tableNumber: placement.tableNumber,
+      rounds: [
+        {
+          roundNumber,
+          ns: homePairId(placement.nsTeam),
+          ew: awayPairId(placement.ewTeam),
+          boardStart,
+          boardEnd,
+        },
+      ],
+    }),
+  );
+
+  // Odd field: the bye team sits at its own home table (its home pair on NS,
+  // a phantom opponent on EW) with the round's boards flagged SIT_OUT, so the
+  // boards are never played/scored and the bye is recoverable from history.
+  if (byeTeamId != null) {
+    tablesOut.push({
+      tableNumber: byeTeamId,
+      rounds: [
+        {
+          roundNumber,
+          ns: homePairId(byeTeamId),
+          ew: TEAMS_BYE_PHANTOM,
+          boardStart,
+          boardEnd,
+          sitOut: true,
+        },
+      ],
+    });
+  }
+
+  return tablesOut.sort((x, y) => x.tableNumber - y.tableNumber);
 }
 
 /**
@@ -94,6 +125,7 @@ export async function materializeSwissTeamsRound(
   roundNumber: number,
   boardsPerRound: number,
   matches: TeamsMatch[],
+  byeTeamId: number | null = null,
 ): Promise<{ written: boolean }> {
   const db = await getDb(gameId);
   if (!db) {
@@ -114,6 +146,7 @@ export async function materializeSwissTeamsRound(
     roundNumber,
     boardsPerRound,
     matches,
+    byeTeamId,
   );
 
   const { boardRows, assignmentRows } = buildSectionRows(section, movement);

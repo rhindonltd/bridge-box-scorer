@@ -4,7 +4,18 @@ import {
 } from "@/model/leaderboard";
 import { rank } from "@/scoring/overall/rank";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
-import { groupTeamMatches, teamMatchBoardWins } from "./team-match";
+import {
+  groupTeamMatches,
+  teamByeRounds,
+  teamMatchBoardWins,
+} from "./team-match";
+
+/**
+ * The fraction of a round's boards a bye team is credited (average-plus, i.e.
+ * 60% of the boards it would have played). Held in native board units, so it
+ * scales the same on the BAM (1×) and PAB (2×) presentations.
+ */
+const BYE_WON_FRACTION = 0.6;
 
 /**
  * The two board-comparison teams scorings. They are identical bar the per-board
@@ -70,6 +81,18 @@ export function calculateTeamsBoardComparisonOverall(
     // with nothing comparable yet contributes 0 won / 0 played to each.
     credit(totals, homeTeamId, round, won, boardsPlayed);
     credit(totals, opponentTeamId, round, boardsPlayed - won, boardsPlayed);
+  }
+
+  // Credit each bye team an average-plus result (60% of the round's boards) for
+  // the round it sat out, so a forced bye slightly favours the sitting team.
+  for (const bye of teamByeRounds(boardRows)) {
+    credit(
+      totals,
+      bye.teamId,
+      bye.round,
+      BYE_WON_FRACTION * bye.boards,
+      bye.boards,
+    );
   }
 
   const lines = rank(

@@ -3,7 +3,10 @@
 import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { StepperInput } from "@/components/common/StepperInput";
-import type { SwissTeamsMovementSpec } from "@/model/selected-movement";
+import type {
+  SwissTeamsMovementSpec,
+  SwissTeamsOddHandling,
+} from "@/model/selected-movement";
 
 /**
  * Setup popup for a Swiss Teams movement. A team is the two pairs seated at one
@@ -13,8 +16,11 @@ import type { SwissTeamsMovementSpec } from "@/model/selected-movement";
  * from the standings as the event runs. Confirming hands back a
  * {@link SwissTeamsMovementSpec}.
  *
- * Swiss Teams needs an even number of teams (each match pits two teams across
- * two tables); an odd count is flagged here and blocks confirming.
+ * A match pits two teams across two tables, so an even count pairs cleanly.
+ * With an odd count the director chooses how to handle the odd team: "BYE"
+ * (the default) sits one team out each round, while "TRIANGLE" (three-way
+ * matches) is not yet supported and is offered disabled. The chosen mode is
+ * carried on the spec as `oddHandling`; an even count omits it.
  */
 export function SwissTeamsSetupDialog({
   open,
@@ -93,8 +99,14 @@ function SwissTeamsSetupForm({
   const [boardsPerRound, setBoardsPerRound] = useState(
     initial?.boardsPerRound ?? 6,
   );
+  const [oddHandling, setOddHandling] = useState<SwissTeamsOddHandling>(
+    initial?.oddHandling ?? "BYE",
+  );
 
   const oddTeams = teams % 2 !== 0;
+  // Only BYE is implemented; picking TRIANGLE would be rejected at start, so
+  // confirming is blocked while it is selected.
+  const blocked = oddTeams && oddHandling !== "BYE";
 
   return (
     <>
@@ -155,10 +167,51 @@ function SwissTeamsSetupForm({
         </div>
 
         {oddTeams && (
-          <p role="alert" className="text-sm font-medium text-red-600">
-            Swiss Teams needs an even number of teams — you currently have{" "}
-            {teams}. Adjust the tables on the Tables step before starting.
-          </p>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium text-gray-700">
+              You have an odd number of teams ({teams}). How should the odd team
+              be handled each round?
+            </legend>
+
+            <label className="flex items-start gap-2 text-sm text-gray-700">
+              <input
+                type="radio"
+                name="oddHandling"
+                value="BYE"
+                checked={oddHandling === "BYE"}
+                onChange={() => setOddHandling("BYE")}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">Bye</span> — one team sits out each
+                round (the bottom table first, then the lowest-ranked team that
+                hasn&apos;t had a bye) and is credited an average-plus result.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-2 text-sm text-gray-400">
+              <input
+                type="radio"
+                name="oddHandling"
+                value="TRIANGLE"
+                checked={oddHandling === "TRIANGLE"}
+                onChange={() => setOddHandling("TRIANGLE")}
+                disabled
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium">Triangle</span> — three teams play
+                a three-way match.{" "}
+                <span className="italic">Coming soon.</span>
+              </span>
+            </label>
+
+            {blocked && (
+              <p role="alert" className="text-sm font-medium text-red-600">
+                Triangles aren&apos;t supported yet — choose Bye to continue.
+              </p>
+            )}
+          </fieldset>
         )}
       </div>
 
@@ -173,8 +226,16 @@ function SwissTeamsSetupForm({
         </button>
         <button
           type="button"
-          onClick={() => onConfirm({ teams, rounds, boardsPerRound })}
-          disabled={saving || oddTeams}
+          onClick={() =>
+            onConfirm({
+              teams,
+              rounds,
+              boardsPerRound,
+              // Only carry the choice for an odd field; even ignores it.
+              ...(oddTeams ? { oddHandling } : {}),
+            })
+          }
+          disabled={saving || blocked}
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Select Movement"}

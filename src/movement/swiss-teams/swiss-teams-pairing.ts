@@ -13,10 +13,13 @@
  * The match result is the net IMP margin comparing the two tables board by board.
  *
  * Only round 1 (a random pairing) is known up front; every later round is drawn
- * from the current standings, avoiding repeat opponents. Unlike Swiss Pairs
- * there are no byes and no stationary/direction handling: the team count is
- * required to be even (odd counts need three-way "triangle" handling, which is
- * out of scope), home pairs never move, and only away pairs travel.
+ * from the current standings, avoiding repeat opponents. Home pairs never move,
+ * and only away pairs travel.
+ *
+ * Odd team counts are supported via a bye: one team sits out each round (the
+ * bottom table in round 1, then the lowest-ranked team without a prior bye),
+ * mirroring the Swiss Pairs sit-out. The three-way "triangle" alternative is
+ * separate future work; this engine only produces byes.
  *
  * This module is framework/IO-free: all persistence, scoring and socket
  * plumbing lives elsewhere.
@@ -49,6 +52,16 @@ export interface SwissTeamsDrawInput {
   playedOpponents: ReadonlySet<string>;
 }
 
+/** Everything the engine needs to draw the next round. */
+export interface SwissTeamsDrawInputWithBye extends SwissTeamsDrawInput {
+  /**
+   * Teams that have already had a bye (each may only sit out once until the
+   * field is exhausted). Only consulted for an odd field. Optional; defaults to
+   * none.
+   */
+  hadBye?: ReadonlySet<TeamId>;
+}
+
 /** The drawn next round plus any advisories the director should see. */
 export interface SwissTeamsDrawResult {
   /** The matches for the round, in ascending lower-team-id order. */
@@ -58,6 +71,18 @@ export interface SwissTeamsDrawResult {
    * ever set when no repeat-free complete pairing exists).
    */
   hadUnavoidableRepeat: boolean;
+  /**
+   * The team sitting out this round (odd field, bye handling), or null when the
+   * field is even. The bye team plays no match and is credited an average-plus
+   * result in the standings.
+   */
+  byeTeamId: TeamId | null;
+}
+
+/** Round 1 matches plus the bye team (odd field) or null (even field). */
+export interface SwissTeamsRoundOneResult {
+  matches: TeamsMatch[];
+  byeTeamId: TeamId | null;
 }
 
 /**
@@ -116,23 +141,47 @@ function shuffle<T>(items: T[], rng: () => number): T[] {
  * result is deterministic for a given seed. Matches are returned in ascending
  * lower-team-id order.
  *
- * @throws if the team count is odd (see module docstring: odd counts are out
- *   of scope). Callers validate this earlier and surface a director message.
+ * Odd field (bye handling): the BOTTOM table (highest team id) takes the round-1
+ * bye — there are no standings yet, so the bye is deterministic rather than
+ * random — and the remaining `teams - 1` teams are shuffled and paired. The bye
+ * team is reported on `byeTeamId`.
  */
-export function swissTeamsRoundOne(teams: number, seed: number): TeamsMatch[] {
-  if (teams % 2 !== 0) {
-    throw new Error(`Swiss Teams requires an even team count, got ${teams}`);
-  }
+export function swissTeamsRoundOne(
+  teams: number,
+  seed: number,
+): SwissTeamsRoundOneResult {
+  // Odd field: the bottom table sits out round 1; pair the rest.
+  const byeTeamId = teams % 2 === 0 ? null : teams;
+  const playing = byeTeamId === null ? teamIds(teams) : teamIds(teams - 1);
 
   const rng = mulberry32(seed);
-  const order = shuffle(teamIds(teams), rng);
+  const order = shuffle(playing, rng);
 
   const matches: TeamsMatch[] = [];
   for (let i = 0; i < order.length; i += 2) {
     matches.push(normalizeMatch(order[i], order[i + 1]));
   }
 
-  return sortMatches(matches);
+  return { matches: sortMatches(matches), byeTeamId };
+}
+
+/**
+ * Choose the bye team for an odd field: the lowest-ranked team (nearest the
+ * bottom of the standings) that has not already had a bye. If every team has
+ * had a bye — only once the field is exhausted — fall back to the single
+ * lowest-ranked team so a draw is still produced. Mirrors the Swiss Pairs
+ * `chooseSitOut`.
+ */
+function chooseTeamBye(
+  standings: TeamId[],
+  hadBye: ReadonlySet<TeamId>,
+): TeamId {
+  for (let i = standings.length - 1; i >= 0; i--) {
+    if (!hadBye.has(standings[i])) {
+      return standings[i];
+    }
+  }
+  return standings[standings.length - 1];
 }
 
 /**
@@ -201,25 +250,31 @@ function pairUp(
 
 /**
  * Draw the next Swiss Teams round from the current standings, avoiding repeat
- * opponents where possible (least-repeats fallback otherwise). The field is
- * assumed even; there are no byes.
+ * opponents where possible (least-repeats fallback otherwise).
  *
- * @throws if the standings length is odd.
+ * Even field: every team is paired; `byeTeamId` is null. Odd field (bye
+ * handling): the lowest-ranked team without a prior bye sits out (see
+ * {@link chooseTeamBye}), and the remaining even field is paired. The bye team
+ * is reported on `byeTeamId`.
  */
 export function drawSwissTeamsRound(
-  input: SwissTeamsDrawInput,
+  input: SwissTeamsDrawInputWithBye,
 ): SwissTeamsDrawResult {
-  const { standings, playedOpponents } = input;
+  const { standings, playedOpponents, hadBye } = input;
 
-  if (standings.length % 2 !== 0) {
-    throw new Error(
-      `Swiss Teams requires an even team count, got ${standings.length}`,
-    );
-  }
+  const isOdd = standings.length % 2 === 1;
+  const byeTeamId = isOdd
+    ? chooseTeamBye(standings, hadBye ?? new Set())
+    : null;
 
-  const { matches, hadUnavoidableRepeat } = pairUp(standings, playedOpponents);
+  const playing =
+    byeTeamId === null
+      ? standings
+      : standings.filter((id) => id !== byeTeamId);
 
-  return { matches: sortMatches(matches), hadUnavoidableRepeat };
+  const { matches, hadUnavoidableRepeat } = pairUp(playing, playedOpponents);
+
+  return { matches: sortMatches(matches), hadUnavoidableRepeat, byeTeamId };
 }
 
 /**

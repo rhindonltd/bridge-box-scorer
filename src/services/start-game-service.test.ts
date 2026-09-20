@@ -315,12 +315,64 @@ describe("resolveSectionStart", () => {
     }
   });
 
-  it("blocks a Swiss Teams start with an odd team count", async () => {
+  it("starts an odd Swiss Teams (BYE) with the bottom table sitting out round 1", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS_TEAMS",
+        swissTeams: {
+          teams: 3,
+          rounds: 5,
+          boardsPerRound: 6,
+          oddHandling: "BYE",
+        },
+      },
+      seatsForTables(3),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement).not.toBeNull();
+
+    // The bottom table (team 3) sits out round 1: its round is flagged sitOut
+    // with a phantom opponent; the other two teams form one match (two tables).
+    const byeTable = result.movement!.find((t) => t.tableNumber === 3);
+    expect(byeTable!.rounds[0].sitOut).toBe(true);
+    expect(byeTable!.rounds[0].ns).toBe("3NS");
+    expect(byeTable!.rounds[0].ew).toBe("PHANTOM");
+
+    const playingTables = result
+      .movement!.filter((t) => t.tableNumber !== 3)
+      .flatMap((t) => t.rounds.map((r) => r.sitOut ?? false));
+    expect(playingTables.every((s) => s === false)).toBe(true);
+  });
+
+  it("defaults an odd Swiss Teams with no oddHandling to a bye (starts)", async () => {
     const result = await resolveSectionStart(
       "A",
       {
         source: "SWISS_TEAMS",
         swissTeams: { teams: 3, rounds: 5, boardsPerRound: 6 },
+      },
+      seatsForTables(3),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement).not.toBeNull();
+  });
+
+  it("blocks an odd Swiss Teams TRIANGLE start as not yet supported", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS_TEAMS",
+        swissTeams: {
+          teams: 3,
+          rounds: 5,
+          boardsPerRound: 6,
+          oddHandling: "TRIANGLE",
+        },
       },
       seatsForTables(3),
       "g1",
