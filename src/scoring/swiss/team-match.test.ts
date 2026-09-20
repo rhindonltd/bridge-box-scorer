@@ -4,6 +4,7 @@ import {
   teamIdFor,
   groupTeamMatches,
   teamMatchBoardImps,
+  teamMatchBoardWins,
   type TeamMatchRow,
 } from "./team-match";
 import type { BoardOutcome } from "@/model/score";
@@ -172,5 +173,60 @@ describe("teamMatchBoardImps", () => {
 
     const { perBoard } = teamMatchBoardImps(match);
     expect(perBoard.map((b) => b.boardNumber)).toEqual([1, 2]);
+  });
+});
+
+describe("teamMatchBoardWins", () => {
+  it("scores each board as a win (1), tie (0.5) or loss (0) for the home team", () => {
+    // Board 1: home NS 4S= (420) vs opponent home NS 3NT= (400) -> home wins.
+    // Board 2: both rooms 3NT= (400 vs 400) -> tie.
+    // Board 3: home NS 3NT= (400) vs opponent home NS 4S= (420) -> home loses.
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      row(1, 2, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(1, 2, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      row(1, 3, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(1, 3, "A2NS", "A1EW", "4SN=" as BoardOutcome),
+    ];
+    const [match] = groupTeamMatches(rows);
+
+    const { perBoard, won, boardsPlayed } = teamMatchBoardWins(match);
+    expect(perBoard).toEqual([
+      { boardNumber: 1, result: 1 },
+      { boardNumber: 2, result: 0.5 },
+      { boardNumber: 3, result: 0 },
+    ]);
+    expect(won).toBe(1.5);
+    expect(boardsPlayed).toBe(3);
+  });
+
+  it("skips a board that only one room has scored (not comparable)", () => {
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      row(1, 1, "A2NS", "A1EW", null),
+    ];
+    const [match] = groupTeamMatches(rows);
+
+    const { perBoard, won, boardsPlayed } = teamMatchBoardWins(match);
+    expect(perBoard).toEqual([{ boardNumber: 1, result: null }]);
+    expect(won).toBe(0);
+    expect(boardsPlayed).toBe(0);
+  });
+
+  it("uses the same primary/home perspective as groupTeamMatches", () => {
+    // The match is keyed on the lower table (1) as home. Board 1: table 1 NS
+    // 4S= (420) beats table 2 NS 3NT= (400), so the home team wins the board
+    // regardless of the row insertion order.
+    const rows = [
+      row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      row(1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+    ];
+    const [match] = groupTeamMatches(rows);
+
+    expect(match.homeTable).toBe(1);
+    const { won, boardsPlayed } = teamMatchBoardWins(match);
+    expect(won).toBe(1);
+    expect(boardsPlayed).toBe(1);
   });
 });

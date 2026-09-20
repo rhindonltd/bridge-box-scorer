@@ -18,6 +18,10 @@ import { classifyEvent, SwissVpMode } from "@/model/event-format";
 import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
+import {
+  BoardComparisonScoring,
+  calculateTeamsBoardComparisonOverall,
+} from "@/scoring/swiss/teams-board-comparison-overall";
 
 /**
  * A computed leaderboard: the overall score plus the participants it ranks.
@@ -229,10 +233,21 @@ function computeCombined(
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
   isTeamsVp: boolean,
+  teamsBoardComparison: BoardComparisonScoring | null,
+  barometer: boolean,
   teams: AssignedTeam[],
 ): LeaderboardResult {
-  // A teams-VP game ranks teams on Victory Points; every other game ranks
-  // pairs (Swiss VP or the standard board-pooled overall).
+  // A board-comparison teams game (BAM/PAB) ranks teams on boards won; a
+  // teams-VP game ranks teams on Victory Points; every other game ranks pairs
+  // (Swiss VP or the standard board-pooled overall).
+  if (teamsBoardComparison !== null) {
+    const overallScore = calculateTeamsBoardComparisonOverall(boardRows, {
+      barometer,
+      scoring: teamsBoardComparison,
+    });
+    return { type: overallScore.type, overallScore, participants: teams };
+  }
+
   if (isTeamsVp) {
     const overallScore = calculateTeamsVpOverall(boardRows);
     return { type: overallScore.type, overallScore, participants: teams };
@@ -259,6 +274,8 @@ function computeSections(
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
   isTeamsVp: boolean,
+  teamsBoardComparison: BoardComparisonScoring | null,
+  barometer: boolean,
   teams: AssignedTeam[],
 ): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
@@ -292,6 +309,19 @@ function computeSections(
   return sections.map((section): SectionLeaderboard => {
     const sectionRows = rowsBySection.get(section) ?? [];
 
+    if (teamsBoardComparison !== null) {
+      const overallScore = calculateTeamsBoardComparisonOverall(sectionRows, {
+        barometer,
+        scoring: teamsBoardComparison,
+      });
+      return {
+        section,
+        type: overallScore.type,
+        overallScore,
+        participants: teamsBySection.get(section) ?? [],
+      };
+    }
+
     if (isTeamsVp) {
       const overallScore = calculateTeamsVpOverall(sectionRows);
       return {
@@ -322,6 +352,8 @@ async function readLeaderboardInputs(
   scoringType: ScoringType;
   swissVpMode: SwissVpMode;
   isTeamsVp: boolean;
+  teamsBoardComparison: BoardComparisonScoring | null;
+  barometer: boolean;
   boardRows: Board[];
   pairs: Pairs;
   teams: AssignedTeam[];
@@ -337,19 +369,38 @@ async function readLeaderboardInputs(
     movement,
   );
   const isTeamsVp = classification.format === "TEAMS_VP";
+  // A board-comparison teams format (Board-a-Match / Point-a-Board), or null
+  // for any other format. Carries the scale directly so the compute functions
+  // pass it straight to the shared scorer.
+  const teamsBoardComparison: BoardComparisonScoring | null =
+    classification.format === "TEAMS_BAM"
+      ? "BAM"
+      : classification.format === "TEAMS_PAB"
+        ? "PAB"
+        : null;
   const swissVpMode: SwissVpMode = classification.swissVpMode;
+
+  // A barometer teams movement (Swiss Teams: all tables play the same boards
+  // each round) drives the per-round table; a fixed-schedule movement (Round
+  // Robin) drives the cumulative table. Only meaningful for the teams formats.
+  const barometer = movement?.source === "SWISS_TEAMS";
 
   const [boardRows, pairs, teams] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
     findPairs(db),
-    // Teams are derived from the seating; only needed for a teams-VP game.
-    isTeamsVp ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
+    // Teams are derived from the seating; needed for any teams game (VP, BAM,
+    // or PAB).
+    isTeamsVp || teamsBoardComparison !== null
+      ? findTeams(db)
+      : Promise.resolve([] as AssignedTeam[]),
   ]);
 
   return {
     scoringType: game!.scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsBoardComparison,
+    barometer,
     boardRows,
     pairs,
     teams,
@@ -367,8 +418,16 @@ export async function buildLeaderboards(
   db: Db,
   gameId: string,
 ): Promise<{ leaderboard: LeaderboardResult; sections: SectionLeaderboard[] }> {
-  const { scoringType, swissVpMode, isTeamsVp, boardRows, pairs, teams } =
-    await readLeaderboardInputs(db, gameId);
+  const {
+    scoringType,
+    swissVpMode,
+    isTeamsVp,
+    teamsBoardComparison,
+    barometer,
+    boardRows,
+    pairs,
+    teams,
+  } = await readLeaderboardInputs(db, gameId);
   return {
     leaderboard: computeCombined(
       boardRows,
@@ -377,6 +436,8 @@ export async function buildLeaderboards(
       scoringType,
       swissVpMode,
       isTeamsVp,
+      teamsBoardComparison,
+      barometer,
       teams,
     ),
     sections: computeSections(
@@ -385,6 +446,8 @@ export async function buildLeaderboards(
       scoringType,
       swissVpMode,
       isTeamsVp,
+      teamsBoardComparison,
+      barometer,
       teams,
     ),
   };
@@ -400,8 +463,16 @@ export async function computeLeaderboard(
   db: Db,
   gameId: string,
 ): Promise<LeaderboardResult> {
-  const { scoringType, swissVpMode, isTeamsVp, boardRows, pairs, teams } =
-    await readLeaderboardInputs(db, gameId);
+  const {
+    scoringType,
+    swissVpMode,
+    isTeamsVp,
+    teamsBoardComparison,
+    barometer,
+    boardRows,
+    pairs,
+    teams,
+  } = await readLeaderboardInputs(db, gameId);
   return computeCombined(
     boardRows,
     pairs,
@@ -409,6 +480,8 @@ export async function computeLeaderboard(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsBoardComparison,
+    barometer,
     teams,
   );
 }
@@ -423,14 +496,24 @@ export async function computeSectionLeaderboards(
   db: Db,
   gameId: string,
 ): Promise<SectionLeaderboard[]> {
-  const { scoringType, swissVpMode, isTeamsVp, boardRows, pairs, teams } =
-    await readLeaderboardInputs(db, gameId);
+  const {
+    scoringType,
+    swissVpMode,
+    isTeamsVp,
+    teamsBoardComparison,
+    barometer,
+    boardRows,
+    pairs,
+    teams,
+  } = await readLeaderboardInputs(db, gameId);
   return computeSections(
     boardRows,
     pairs,
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsBoardComparison,
+    barometer,
     teams,
   );
 }

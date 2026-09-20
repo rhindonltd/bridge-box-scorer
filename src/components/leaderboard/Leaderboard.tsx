@@ -1,6 +1,7 @@
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { TeamMatchLeaderboard } from "@/components/leaderboard/TeamMatchLeaderboard";
 import { TeamOverallLeaderboard } from "@/components/leaderboard/TeamOverallLeaderboard";
+import { TeamBoardComparisonLeaderboard } from "@/components/leaderboard/TeamBoardComparisonLeaderboard";
 import { OverallLeaderboardView } from "@/components/scoring/OverallLeaderboardView";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { buildSwissVpTable } from "@/scoring/swiss/swiss-vp-view";
@@ -57,6 +58,20 @@ export function Leaderboard({
           )}
           highlightAssignmentId={highlightAssignmentId}
           rowTestId="leaderboard-row"
+          splitColumns={splitColumns}
+        />
+      );
+    case "TEAM_BAM":
+    case "TEAM_PAB":
+      // Board-comparison teams (Board-a-Match or Point-a-Board): points-won
+      // standings with a fraction/% toggle. The scale (BAM 1 / PAB 2 points per
+      // board) and the table layout (per-round for a barometer Swiss Teams
+      // movement, cumulative for Round Robin) are chosen from the score.
+      return (
+        <TeamBoardComparisonLeaderboard
+          leaderboard={overallScoreAndParticipant.overallScore}
+          teams={overallScoreAndParticipant.participants}
+          highlightAssignmentId={highlightAssignmentId}
           splitColumns={splitColumns}
         />
       );

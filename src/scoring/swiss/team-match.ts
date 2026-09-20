@@ -196,3 +196,64 @@ export function teamMatchBoardImps<R extends TeamMatchRow>(
 
   return { perBoard, margin, boardsPlayed };
 }
+
+/** One board's Board-a-Match result from the primary/home team's perspective. */
+export interface TeamMatchBoardWin {
+  boardNumber: number;
+  /**
+   * Board-a-Match result for the home team: 1 for a win, 0.5 for a tie, 0 for
+   * a loss; null when the board is not comparable (only one room has a scored
+   * result, or a pass-out / not-played board).
+   */
+  result: number | null;
+}
+
+/**
+ * The per-board Board-a-Match results (from the primary/home team's
+ * perspective), the total boards won (halves for ties), and the number of
+ * boards that counted, for one team match.
+ *
+ * Board-a-Match treats each board as its own match: the team with the higher
+ * score wins the board (1), an equal score is a tie (0.5 each), and the lower
+ * score loses (0). A board counts only when BOTH rooms have a comparable scored
+ * result — mirroring {@link teamMatchBoardImps}, which shares the same
+ * comparability rule so the two functions never disagree about which boards are
+ * played. The per-board list spans every board either room has a row for, in
+ * ascending board order.
+ */
+export function teamMatchBoardWins<R extends TeamMatchRow>(
+  match: TeamMatch<R>,
+): { perBoard: TeamMatchBoardWin[]; won: number; boardsPlayed: number } {
+  const boardNumbers = Array.from(
+    new Set([
+      ...match.homeRowsByBoard.keys(),
+      ...match.opponentRowsByBoard.keys(),
+    ]),
+  ).sort((a, b) => a - b);
+
+  const scoreOf = (row: R | undefined): number | null => {
+    if (!row) return null;
+    const outcome = boardResult(row);
+    return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
+  };
+
+  let won = 0;
+  let boardsPlayed = 0;
+  const perBoard: TeamMatchBoardWin[] = [];
+
+  for (const boardNumber of boardNumbers) {
+    const homeScore = scoreOf(match.homeRowsByBoard.get(boardNumber));
+    const awayScore = scoreOf(match.opponentRowsByBoard.get(boardNumber));
+
+    if (homeScore != null && awayScore != null) {
+      const result = homeScore > awayScore ? 1 : homeScore < awayScore ? 0 : 0.5;
+      won += result;
+      boardsPlayed += 1;
+      perBoard.push({ boardNumber, result });
+    } else {
+      perBoard.push({ boardNumber, result: null });
+    }
+  }
+
+  return { perBoard, won, boardsPlayed };
+}

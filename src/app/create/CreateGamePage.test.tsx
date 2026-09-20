@@ -245,6 +245,75 @@ describe("CreateGamePage", () => {
     );
   });
 
+  it("shows no Scoring selector for a Pairs game and submits no scoringType", async () => {
+    render(<CreateGamePage />);
+
+    expect(screen.queryByLabelText("Scoring")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    const payload = mockCreateGame.mock.calls[0][0];
+    expect(payload.gameType).toBe("PAIRS");
+    // Pairs falls back to the DB default; no explicit scoringType is sent.
+    expect(payload.scoringType).toBeUndefined();
+  });
+
+  it("reveals a Scoring selector for a Teams game, defaulting to IMP", async () => {
+    render(<CreateGamePage />);
+
+    fireEvent.change(screen.getByLabelText("Event Type"), {
+      target: { value: "TEAMS" },
+    });
+
+    const scoring = screen.getByLabelText("Scoring") as HTMLSelectElement;
+    expect(scoring.tagName).toBe("SELECT");
+    expect(scoring.value).toBe("IMP");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ gameType: "TEAMS", scoringType: "IMP" }),
+    );
+  });
+
+  it("submits Board-a-Match scoring for a Teams game", async () => {
+    render(<CreateGamePage />);
+
+    fireEvent.change(screen.getByLabelText("Event Type"), {
+      target: { value: "TEAMS" },
+    });
+    fireEvent.change(screen.getByLabelText("Scoring"), {
+      target: { value: "BAM" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ gameType: "TEAMS", scoringType: "BAM" }),
+    );
+  });
+
+  it("submits Point-a-Board scoring for a Teams game", async () => {
+    render(<CreateGamePage />);
+
+    fireEvent.change(screen.getByLabelText("Event Type"), {
+      target: { value: "TEAMS" },
+    });
+    fireEvent.change(screen.getByLabelText("Scoring"), {
+      target: { value: "PAB" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ gameType: "TEAMS", scoringType: "PAB" }),
+    );
+  });
+
   it("shows an error and re-enables the button when creation fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     mockCreateGame.mockRejectedValue(new Error("boom"));

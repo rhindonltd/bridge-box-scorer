@@ -103,7 +103,8 @@ export type UsebioPairsData = {
 export type UsebioGameData =
   | UsebioPairsData
   | UsebioSwissPairsData
-  | UsebioSwissTeamsData;
+  | UsebioSwissTeamsData
+  | UsebioBoardComparisonTeamsData;
 
 /* ---- Swiss Pairs ---- */
 
@@ -203,6 +204,64 @@ export type UsebioSwissTeamsData = {
   ranking: UsebioVpRankEntry[];
 };
 
+/* ---- Board-a-Match Teams ---- */
+
+/**
+ * The USEBIO scoring tag for a board-comparison teams file: "BAM" for
+ * Board-a-Match (points 0/0.5/1) or "PAB" for Point-a-Board (points 0/1/2).
+ */
+export type UsebioBoardComparisonScoring = "BAM" | "PAB";
+
+/**
+ * One board within a board-comparison team match (both rooms), with the board's
+ * points for each side. Points are already on the file's scale (the assembler
+ * applies BAM 0/0.5/1 or PAB 0/1/2). No cross-IMP points are emitted.
+ */
+export type UsebioBoardComparisonBoard = {
+  boardNumber: number;
+  /** Points for the primary team on this board, on the file's scale. */
+  teamPoints: number;
+  /** Points for the opposing team on this board, on the file's scale. */
+  opposingTeamPoints: number;
+  travellerLines: UsebioTeamTravellerLine[];
+};
+
+/** One board-comparison team match: a round's team-vs-team encounter. */
+export type UsebioBoardComparisonMatch = {
+  round: number;
+  team: string;
+  opposingTeam: string;
+  startBoard: number;
+  endBoard: number;
+  /** Total points won by each team across the match's comparable boards. */
+  teamScore: number;
+  opposingTeamScore: number;
+  boards: UsebioBoardComparisonBoard[];
+};
+
+/** One team's placing in the board-comparison ranking (by total points won). */
+export type UsebioBoardComparisonRankEntry = {
+  number: string;
+  sectionId: string;
+  /** Total points won across the event, on the file's scale. */
+  totalWon: number;
+  place: number;
+};
+
+export type UsebioBoardComparisonTeamsData = {
+  kind: "BOARD_COMPARISON_TEAMS";
+  /** Which scale/tag the file uses (BAM 0/0.5/1, PAB 0/1/2). */
+  scoring: UsebioBoardComparisonScoring;
+  club: UsebioClub;
+  eventName: string;
+  eventDate: string;
+  sectionName: string;
+  boards: number;
+  teams: UsebioTeam[];
+  matches: UsebioBoardComparisonMatch[];
+  ranking: UsebioBoardComparisonRankEntry[];
+};
+
 /* ============================================================
    SCORING TYPE MAPPING
 ============================================================ */
@@ -211,6 +270,8 @@ const SCORING_TYPE_MAP: Record<ScoringType, string> = {
   MP: "MATCH_POINTS",
   IMP: "BUTLER",
   XIMP: "CROSS_IMPS",
+  BAM: "BAM",
+  PAB: "PAB",
 };
 
 /* ============================================================
@@ -320,6 +381,8 @@ export function generateUsebioXml(data: UsebioGameData): string {
       return generateSwissPairsXml(data);
     case "SWISS_TEAMS":
       return generateSwissTeamsXml(data);
+    case "BOARD_COMPARISON_TEAMS":
+      return generateBoardComparisonTeamsXml(data);
     case "MP_PAIRS":
     case undefined:
       return generateMpPairsXml(data);
@@ -631,6 +694,78 @@ function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
       const boardEl = matchEl.ele("BOARD", { EVENT_TYPE: "SWISS_TEAMS" });
       boardEl.ele("BOARD_NUMBER").txt(String(board.boardNumber));
       boardEl.ele("IMPS").txt(String(board.imps));
+      for (const line of board.travellerLines) {
+        const lineEl = boardEl.ele("TRAVELLER_LINE");
+        lineEl.ele("DIRECTION").txt(line.direction);
+        appendTravellerDetail(lineEl, line);
+      }
+    }
+  }
+
+  return doc.end({ prettyPrint: true, indent: "  " });
+}
+
+/**
+ * Generate the USEBIO XML for a board-comparison teams event (Board-a-Match or
+ * Point-a-Board).
+ *
+ * Structurally identical to the Swiss Teams file, but scored by board
+ * comparison: BOARD_SCORING_METHOD and MATCH_SCORING_METHOD are both the
+ * scoring tag ("BAM" or "PAB"), each board carries the two teams' points
+ * (already on the file's scale) rather than net IMPs, each match's TEAM_SCORE
+ * is the team's total points won, and the ranking is by total points won. No
+ * cross-IMP points are emitted on traveller lines.
+ */
+function generateBoardComparisonTeamsXml(
+  data: UsebioBoardComparisonTeamsData,
+): string {
+  const { doc, event } = startUsebioDoc(data.club, "TEAMS");
+
+  event.ele("BOARD_SCORING_METHOD").txt(data.scoring);
+  event.ele("MATCH_SCORING_METHOD").txt(data.scoring);
+  event.ele("EVENT_DESCRIPTION").txt(data.eventName);
+  event.ele("DATE").txt(formatDate(data.eventDate));
+  event.ele("SESSION_COUNT").txt("1");
+  event.ele("SECTION_COUNT").txt("1");
+  event.ele("BOARDS_PLAYED").txt(String(data.boards));
+  event.ele("WINNER_TYPE").txt("1");
+
+  const section = startSection(event, data.sectionName || "A");
+
+  const rankByTeam = new Map(data.ranking.map((r) => [r.number, r]));
+  const participants = section.ele("PARTICIPANTS");
+  for (const team of data.teams) {
+    const teamEl = participants.ele("TEAM", {
+      TEAM_ID: team.teamNumber,
+      TEAM_NAME: team.teamName,
+    });
+
+    const rank = rankByTeam.get(team.teamNumber);
+    if (rank) {
+      teamEl.ele("TOTAL_SCORE").txt(String(rank.totalWon));
+      teamEl.ele("PLACE").txt(String(rank.place));
+    }
+
+    for (const player of team.players) {
+      addPlayer(teamEl, player);
+    }
+  }
+
+  for (const match of data.matches) {
+    const matchEl = section.ele("MATCH");
+    matchEl.ele("ROUND_NUMBER").txt(String(match.round));
+    matchEl.ele("TEAM").txt(match.team);
+    matchEl.ele("OPPOSING_TEAM").txt(match.opposingTeam);
+    matchEl.ele("START_BOARD_NUMBER").txt(String(match.startBoard));
+    matchEl.ele("END_BOARD_NUMBER").txt(String(match.endBoard));
+    matchEl.ele("TEAM_SCORE").txt(String(match.teamScore));
+    matchEl.ele("OPPOSING_TEAM_SCORE").txt(String(match.opposingTeamScore));
+
+    for (const board of match.boards) {
+      const boardEl = matchEl.ele("BOARD", { EVENT_TYPE: "TEAMS" });
+      boardEl.ele("BOARD_NUMBER").txt(String(board.boardNumber));
+      boardEl.ele("TEAM_POINTS").txt(String(board.teamPoints));
+      boardEl.ele("OPPOSING_TEAM_POINTS").txt(String(board.opposingTeamPoints));
       for (const line of board.travellerLines) {
         const lineEl = boardEl.ele("TRAVELLER_LINE");
         lineEl.ele("DIRECTION").txt(line.direction);
