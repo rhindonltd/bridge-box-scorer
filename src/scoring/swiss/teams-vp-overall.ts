@@ -2,7 +2,19 @@ import { TeamSwissVpOverallScore } from "@/model/leaderboard";
 import { rank } from "@/scoring/overall/rank";
 import { calculateWbfVP } from "./wbf-vp";
 import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
-import { groupTeamMatches, teamMatchBoardImps } from "./team-match";
+import {
+  groupTeamMatches,
+  teamByeRounds,
+  teamMatchBoardImps,
+} from "./team-match";
+
+/**
+ * Victory Points awarded to a team that sits out a round (an odd-field bye).
+ * An average-plus award (2 above the neutral 10) mirrors the sit-out
+ * convention: a forced bye should not disadvantage — and slightly favours — the
+ * sitting team, without matching a strong win.
+ */
+const BYE_VP = 12;
 
 interface Accumulator {
   totalVP: number;
@@ -64,6 +76,11 @@ export function calculateTeamsVpOverall(
       credit(totals, opponentTeamId, round, winnerVP);
       credit(totals, homeTeamId, round, loserVP);
     }
+  }
+
+  // Credit each bye team an average-plus result for the round it sat out.
+  for (const bye of teamByeRounds(boardRows)) {
+    credit(totals, bye.teamId, bye.round, BYE_VP);
   }
 
   const lines = rank(

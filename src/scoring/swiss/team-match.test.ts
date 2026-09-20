@@ -3,6 +3,7 @@ import {
   boardResult,
   teamIdFor,
   groupTeamMatches,
+  teamByeRounds,
   teamMatchBoardImps,
   teamMatchBoardWins,
   type TeamMatchRow,
@@ -228,5 +229,40 @@ describe("teamMatchBoardWins", () => {
     const { won, boardsPlayed } = teamMatchBoardWins(match);
     expect(won).toBe(1);
     expect(boardsPlayed).toBe(1);
+  });
+});
+
+describe("teamByeRounds", () => {
+  it("recovers a bye team, round and board count from SIT_OUT rows", () => {
+    // Team at table 3 sits out round 1 over 2 boards (phantom opponent).
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      row(1, 1, "A3NS", "PHANTOM", null, { status: "SIT_OUT" }),
+      row(1, 2, "A3NS", "PHANTOM", null, { status: "SIT_OUT" }),
+    ];
+
+    const byes = teamByeRounds(rows);
+    expect(byes).toEqual([{ teamId: "A3NS", round: 1, boards: 2 }]);
+  });
+
+  it("returns no byes when there are no SIT_OUT rows", () => {
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+    expect(teamByeRounds(rows)).toEqual([]);
+  });
+
+  it("recovers a distinct bye per round", () => {
+    const rows = [
+      row(1, 1, "A3NS", "PHANTOM", null, { status: "SIT_OUT" }),
+      row(2, 2, "A2NS", "PHANTOM", null, { status: "SIT_OUT" }),
+    ];
+    const byes = teamByeRounds(rows).sort((a, b) => a.round - b.round);
+    expect(byes).toEqual([
+      { teamId: "A3NS", round: 1, boards: 1 },
+      { teamId: "A2NS", round: 2, boards: 1 },
+    ]);
   });
 });

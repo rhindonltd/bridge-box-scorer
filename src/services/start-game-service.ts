@@ -160,12 +160,13 @@ function resolveSwissTeamsStart(
   baseValidation: StartValidationResult,
   gameId: string,
 ): ResolvedStart {
-  const { teams, boardsPerRound } = selected.swissTeams;
-  const validation = validateTeamsStructure(
-    baseValidation,
-    teams,
-    "Swiss Teams",
-  );
+  const { teams, boardsPerRound, oddHandling = "BYE" } = selected.swissTeams;
+  // Swiss Teams supports an odd count via a bye; the triangle alternative is
+  // not yet implemented, so an odd TRIANGLE selection is rejected as a gap.
+  const validation = validateTeamsStructure(baseValidation, teams, {
+    label: "Swiss Teams",
+    oddHandling,
+  });
 
   if (!validation.canStart) {
     return { validation, movement: null };
@@ -173,11 +174,17 @@ function resolveSwissTeamsStart(
 
   // Random round-1 pairing, seeded per game+section so a retried start is
   // reproducible, then expanded into the two-table (open/closed) board rows.
-  const matches = swissTeamsRoundOne(
+  // An odd field byes the bottom table in round 1 (see swissTeamsRoundOne).
+  const { matches, byeTeamId } = swissTeamsRoundOne(
     teams,
     swissTeamsRoundOneSeed(gameId, section),
   );
-  const movement = swissTeamsRoundToMaterializable(1, boardsPerRound, matches);
+  const movement = swissTeamsRoundToMaterializable(
+    1,
+    boardsPerRound,
+    matches,
+    byeTeamId,
+  );
 
   return { validation, movement };
 }
@@ -185,15 +192,19 @@ function resolveSwissTeamsStart(
 /**
  * The structural validations both teams formats share, on top of the base seat
  * validation: every table must hold a full team (no single sit-out — that would
- * be half a team), and the team count must be even (odd counts need bye /
- * three-way handling, which is out of scope). `label` names the format in the
- * director-facing messages.
+ * be half a team). `label` names the format in the director-facing messages.
+ *
+ * Odd team counts: by default an odd count is rejected (Round Robin, and Swiss
+ * Teams with no odd handling). When `oddHandling` is supplied (Swiss Teams),
+ * "BYE" permits an odd count (one team sits out each round) while "TRIANGLE" is
+ * rejected as not-yet-implemented, so the choice is gated cleanly.
  */
 function validateTeamsStructure(
   baseValidation: StartValidationResult,
   teams: number,
-  label: string,
+  options: { label: string; oddHandling?: "BYE" | "TRIANGLE" },
 ): StartValidationResult {
+  const { label, oddHandling } = options;
   const problems: StartProblem[] = [...baseValidation.problems];
 
   if (baseValidation.sitOutSeat !== null) {
@@ -204,10 +215,19 @@ function validateTeamsStructure(
   }
 
   if (teams % 2 !== 0) {
-    problems.push({
-      code: "ODD_TEAM_COUNT",
-      message: `${label} needs an even number of teams — you have ${teams}. Add or remove a table before starting.`,
-    });
+    if (oddHandling === "TRIANGLE") {
+      problems.push({
+        code: "ODD_TEAM_COUNT",
+        message: `${label} with a three-way triangle for an odd number of teams is not supported yet — choose the bye option, or add/remove a table.`,
+      });
+    } else if (oddHandling !== "BYE") {
+      // No odd handling for this format/choice: an odd count is rejected.
+      problems.push({
+        code: "ODD_TEAM_COUNT",
+        message: `${label} needs an even number of teams — you have ${teams}. Add or remove a table before starting.`,
+      });
+    }
+    // oddHandling === "BYE": an odd count is allowed (a team byes each round).
   }
 
   return { canStart: problems.length === 0, sitOutSeat: null, problems };
@@ -225,11 +245,10 @@ function resolveRoundRobinTeamsStart(
   baseValidation: StartValidationResult,
 ): ResolvedStart {
   const { teams, rounds, boardsPerRound } = selected.roundRobinTeams;
-  const validation = validateTeamsStructure(
-    baseValidation,
-    teams,
-    "Round Robin Teams",
-  );
+  // Round Robin has no odd handling: an odd team count is always rejected.
+  const validation = validateTeamsStructure(baseValidation, teams, {
+    label: "Round Robin Teams",
+  });
 
   if (!validation.canStart) {
     return { validation, movement: null };

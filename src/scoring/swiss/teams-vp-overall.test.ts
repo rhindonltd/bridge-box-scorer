@@ -169,4 +169,28 @@ describe("calculateTeamsVpOverall", () => {
     // The override (a slam at table 1) makes team 1 the clear winner.
     expect(t1.vpByRound[1]).toBeGreaterThan(t2.vpByRound[1]);
   });
+
+  it("credits a bye team an average-plus 12 VP for its sit-out round", () => {
+    // Teams 1 v 2 play round 1; team 3 sits out (SIT_OUT rows on its home
+    // table with a phantom opponent).
+    const rows: SwissVpBoardRow[] = [
+      row({ tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+      row({ tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+      row({
+        tableNumber: 3,
+        ns: "A3NS",
+        ew: "PHANTOM",
+        confirmedResult: null,
+        status: "SIT_OUT",
+      }),
+    ];
+
+    const result = calculateTeamsVpOverall(rows);
+    const bye = result.lines.find((l) => l.teamId === "A3NS")!;
+    expect(bye).toBeDefined();
+    expect(bye.vpByRound[1]).toBe(12);
+    // The playing teams tied on the one board -> neutral 10 each (not 12).
+    const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
+    expect(t1.vpByRound[1]).toBe(10);
+  });
 });

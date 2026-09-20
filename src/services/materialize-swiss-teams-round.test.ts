@@ -76,6 +76,40 @@ describe("swissTeamsRoundToMaterializable", () => {
       expect(table.rounds[0].ew).toMatch(/EW$/);
     }
   });
+
+  it("appends a SIT_OUT phantom row for the bye team on an odd field", () => {
+    // Teams 1..5, team 5 byes; the played match is 1v2, plus a 3v4 (say).
+    const oddMatches: TeamsMatch[] = [
+      { a: 1, b: 2 },
+      { a: 3, b: 4 },
+    ];
+    const out = swissTeamsRoundToMaterializable(1, 3, oddMatches, 5);
+
+    const byeTable = out.find((t) => t.tableNumber === 5);
+    expect(byeTable).toBeDefined();
+    expect(byeTable!.rounds[0]).toMatchObject({
+      roundNumber: 1,
+      ns: "5NS",
+      ew: "PHANTOM",
+      sitOut: true,
+      boardStart: 1,
+      boardEnd: 3,
+    });
+
+    // The played tables are not flagged sitOut.
+    for (const table of out.filter((t) => t.tableNumber !== 5)) {
+      expect(table.rounds[0].sitOut).toBeUndefined();
+    }
+    // Tables are returned in ascending table-number order.
+    expect(out.map((t) => t.tableNumber)).toEqual(
+      [...out.map((t) => t.tableNumber)].sort((x, y) => x - y),
+    );
+  });
+
+  it("adds no sit-out row for an even field (null bye)", () => {
+    const out = swissTeamsRoundToMaterializable(2, 3, matches, null);
+    expect(out.every((t) => t.rounds[0].sitOut === undefined)).toBe(true);
+  });
 });
 
 describe("materializeSwissTeamsRound", () => {

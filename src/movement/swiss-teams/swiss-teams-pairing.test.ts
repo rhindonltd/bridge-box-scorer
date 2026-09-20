@@ -22,8 +22,9 @@ describe("teamOpponentKey", () => {
 });
 
 describe("swissTeamsRoundOne", () => {
-  it("pairs every team exactly once into teams/2 matches", () => {
-    const matches = swissTeamsRoundOne(6, 123);
+  it("pairs every team exactly once into teams/2 matches (even, no bye)", () => {
+    const { matches, byeTeamId } = swissTeamsRoundOne(6, 123);
+    expect(byeTeamId).toBeNull();
     expect(matches).toHaveLength(3);
     const seen = matches.flatMap((m) => [m.a, m.b]).sort((x, y) => x - y);
     expect(seen).toEqual([1, 2, 3, 4, 5, 6]);
@@ -38,12 +39,19 @@ describe("swissTeamsRoundOne", () => {
     expect(new Set([a, b, c]).size).toBeGreaterThan(1);
   });
 
-  it("throws on an odd team count", () => {
-    expect(() => swissTeamsRoundOne(5, 1)).toThrow(/even team count/);
+  it("byes the bottom table and pairs the rest for an odd field", () => {
+    const { matches, byeTeamId } = swissTeamsRoundOne(5, 1);
+    // Bottom table (highest id) sits out round 1.
+    expect(byeTeamId).toBe(5);
+    expect(matches).toHaveLength(2);
+    const seen = matches.flatMap((m) => [m.a, m.b]).sort((x, y) => x - y);
+    expect(seen).toEqual([1, 2, 3, 4]);
+    // The bye team never appears in a match.
+    expect(seen).not.toContain(5);
   });
 
   it("returns matches in ascending lower-team-id order", () => {
-    const matches = swissTeamsRoundOne(6, 999);
+    const { matches } = swissTeamsRoundOne(6, 999);
     const firsts = matches.map((m) => m.a);
     expect([...firsts]).toEqual([...firsts].sort((x, y) => x - y));
     // Each match is normalised so a <= b.
@@ -109,14 +117,49 @@ describe("drawSwissTeamsRound", () => {
     expect(hadUnavoidableRepeat).toBe(true);
   });
 
-  it("throws on an odd field", () => {
-    expect(() =>
-      drawSwissTeamsRound({
-        teams: 3,
-        standings: [1, 2, 3],
-        playedOpponents: new Set(),
-      }),
-    ).toThrow(/even team count/);
+  it("byes the lowest-ranked eligible team on an odd field", () => {
+    // Standings best-first [1,2,3,4,5]; team 5 (lowest) has already had a bye,
+    // so the bye goes to team 4 (next lowest without a prior bye).
+    const { matches, byeTeamId } = drawSwissTeamsRound({
+      teams: 5,
+      standings: [1, 2, 3, 4, 5],
+      playedOpponents: new Set(),
+      hadBye: new Set([5]),
+    });
+
+    expect(byeTeamId).toBe(4);
+    const seen = matches.flatMap((m) => [m.a, m.b]).sort((x, y) => x - y);
+    // The remaining even field (1,2,3,5) is paired; the bye team is excluded.
+    expect(seen).toEqual([1, 2, 3, 5]);
+    expect(seen).not.toContain(4);
+  });
+
+  it("byes the lowest-ranked team when none has had a bye yet", () => {
+    const { byeTeamId } = drawSwissTeamsRound({
+      teams: 5,
+      standings: [1, 2, 3, 4, 5],
+      playedOpponents: new Set(),
+    });
+    expect(byeTeamId).toBe(5);
+  });
+
+  it("falls back to the lowest-ranked team when all have had a bye", () => {
+    const { byeTeamId } = drawSwissTeamsRound({
+      teams: 3,
+      standings: [1, 2, 3],
+      playedOpponents: new Set(),
+      hadBye: new Set([1, 2, 3]),
+    });
+    expect(byeTeamId).toBe(3);
+  });
+
+  it("reports a null bye for an even field", () => {
+    const { byeTeamId } = drawSwissTeamsRound({
+      teams: 4,
+      standings: [1, 2, 3, 4],
+      playedOpponents: new Set(),
+    });
+    expect(byeTeamId).toBeNull();
   });
 });
 

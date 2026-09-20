@@ -75,16 +75,30 @@ export type SwissMovementSpec = z.infer<typeof swissSpecSchema>;
  * is no per-round layout: round 1 is a random draw and later rounds are drawn
  * from standings, so all that is stored is the team count, the number of rounds
  * to play, and the boards played per round (which fixes each round's board
- * range). The team count must be even; odd counts are rejected at start/draw
- * (three-way handling is future work).
+ * range).
+ *
+ * An odd team count is handled per `oddHandling`: "BYE" (the default) sits one
+ * team out each round (the bottom table in round 1, then the lowest-ranked team
+ * without a prior bye); "TRIANGLE" (three-way matches) is not yet implemented
+ * and is rejected at start. An even count ignores `oddHandling`.
  */
 export const swissTeamsSpecSchema = z.object({
   teams: z.number().int().positive(),
   rounds: z.number().int().positive(),
   boardsPerRound: z.number().int().positive(),
+  /**
+   * How an odd team count is resolved. Defaults to "BYE". Only meaningful when
+   * `teams` is odd.
+   */
+  oddHandling: z.enum(["BYE", "TRIANGLE"]).optional(),
 });
 
 export type SwissTeamsMovementSpec = z.infer<typeof swissTeamsSpecSchema>;
+
+/** How an odd Swiss Teams field is resolved (`oddHandling`); default "BYE". */
+export type SwissTeamsOddHandling = NonNullable<
+  SwissTeamsMovementSpec["oddHandling"]
+>;
 
 /**
  * Setup parameters for a Teams Round Robin movement. As with Swiss Teams a team
@@ -199,7 +213,9 @@ export function selectedMovementsEqual(
       return (
         a.swissTeams.teams === y.teams &&
         a.swissTeams.rounds === y.rounds &&
-        a.swissTeams.boardsPerRound === y.boardsPerRound
+        a.swissTeams.boardsPerRound === y.boardsPerRound &&
+        // Absent oddHandling means the default "BYE".
+        (a.swissTeams.oddHandling ?? "BYE") === (y.oddHandling ?? "BYE")
       );
     }
     case "ROUND_ROBIN_TEAMS": {

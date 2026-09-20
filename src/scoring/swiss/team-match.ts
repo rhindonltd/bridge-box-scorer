@@ -257,3 +257,59 @@ export function teamMatchBoardWins<R extends TeamMatchRow>(
 
   return { perBoard, won, boardsPlayed };
 }
+
+/** One team's bye round, recovered from a section's SIT_OUT board rows. */
+export interface TeamByeRound {
+  /** The bye team's stable id (its home NS seat, e.g. "A3NS"). */
+  teamId: string;
+  round: number;
+  /** How many boards that round would have carried (for the average credit). */
+  boards: number;
+}
+
+/**
+ * Recover the team byes from a game's board rows.
+ *
+ * A Swiss Teams bye is written as SIT_OUT rows on the bye team's home table:
+ * the NS seat is the bye team (e.g. "A3NS") and the EW seat is a phantom. These
+ * rows are skipped by {@link groupTeamMatches} (they are not a real match), so
+ * the teams overall scorers use this to credit the sitting team an average-plus
+ * result for the round. One entry per (section, round, home table), with the
+ * board count taken from the distinct board numbers of that bye's rows.
+ */
+export function teamByeRounds<R extends TeamMatchRow>(
+  rows: R[],
+): TeamByeRound[] {
+  // Group SIT_OUT rows by (section, round, home table); count distinct boards.
+  const byes = new Map<
+    string,
+    { teamId: string; round: number; boards: Set<number> }
+  >();
+
+  for (const row of rows) {
+    if (row.status !== "SIT_OUT") continue;
+
+    let homeTable: number;
+    try {
+      homeTable = parseSeat(row.ns).tableNumber;
+    } catch {
+      // A non-seat NS id (should not occur) is skipped.
+      continue;
+    }
+
+    const key = `${row.section}|${row.roundNumber}|${homeTable}`;
+    const entry = byes.get(key) ?? {
+      teamId: teamIdFor(row.section, homeTable),
+      round: row.roundNumber,
+      boards: new Set<number>(),
+    };
+    entry.boards.add(row.boardNumber);
+    byes.set(key, entry);
+  }
+
+  return Array.from(byes.values()).map((b) => ({
+    teamId: b.teamId,
+    round: b.round,
+    boards: b.boards.size,
+  }));
+}
