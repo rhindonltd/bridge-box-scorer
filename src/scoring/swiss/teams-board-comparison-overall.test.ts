@@ -142,6 +142,41 @@ describe("calculateTeamsPabOverall", () => {
   });
 });
 
+describe("board-comparison triangle credit", () => {
+  it("credits each triangle team wins vs both other tables (two comparisons/board)", () => {
+    // Triangle {1,2,3}, board 1 (None vul): 420 > 400 > 110. Team 1 beats both
+    // (2), team 2 beats one (1), team 3 none (0); each plays 2 comparisons.
+    const rows = [
+      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "3NTN=" }),
+      row({ boardNumber: 1, tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "2SN=" }),
+    ];
+
+    const result = calculateTeamsBamOverall(rows, { barometer: true });
+    const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
+    const t2 = result.lines.find((l) => l.teamId === "A2NS")!;
+    const t3 = result.lines.find((l) => l.teamId === "A3NS")!;
+
+    expect(t1.byRound[1]).toEqual({ won: 2, played: 2 });
+    expect(t2.byRound[1]).toEqual({ won: 1, played: 2 });
+    expect(t3.byRound[1]).toEqual({ won: 0, played: 2 });
+    // The three teams' wins sum to 3 board-points per board (3 pairings).
+    expect(t1.totalWon + t2.totalWon + t3.totalWon).toBe(3);
+  });
+
+  it("uses the same native triangle units on BAM and PAB", () => {
+    const rows = [
+      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "3NTN=" }),
+      row({ boardNumber: 1, tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "2SN=" }),
+    ];
+    const bam = calculateTeamsBamOverall(rows, { barometer: true });
+    const pab = calculateTeamsPabOverall(rows, { barometer: true });
+    expect(bam.lines.find((l) => l.teamId === "A1NS")!.totalWon).toBe(2);
+    expect(pab.lines.find((l) => l.teamId === "A1NS")!.totalWon).toBe(2);
+  });
+});
+
 describe("board-comparison bye credit", () => {
   it("credits a bye team 60% of the round's boards (BAM native units)", () => {
     // Teams 1 v 2 play a 2-board round; team 3 sits out (SIT_OUT on its home

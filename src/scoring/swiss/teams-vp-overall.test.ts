@@ -170,6 +170,45 @@ describe("calculateTeamsVpOverall", () => {
     expect(t1.vpByRound[1]).toBeGreaterThan(t2.vpByRound[1]);
   });
 
+  it("credits triangle teams a cross-IMP VP centred on the average", () => {
+    // A triangle {1,2,3} on board 1 (None vul): scores 420, 400, 110 ->
+    // cross-IMPs 8, 6, -14. Positive margins earn above 10 VP, the negative
+    // below 10, and no other match/bye is present.
+    const rows: SwissVpBoardRow[] = [
+      row({ tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "3NTN=" }),
+      row({ tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "2SN=" }),
+    ];
+
+    const result = calculateTeamsVpOverall(rows);
+    const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
+    const t2 = result.lines.find((l) => l.teamId === "A2NS")!;
+    const t3 = result.lines.find((l) => l.teamId === "A3NS")!;
+
+    expect(t1).toBeDefined();
+    // Ordering follows the cross-IMP order 8 > 6 > -14.
+    expect(t1.vpByRound[1]).toBeGreaterThan(t2.vpByRound[1]);
+    expect(t2.vpByRound[1]).toBeGreaterThan(t3.vpByRound[1]);
+    // The two above-field teams beat the neutral 10; the below-field team is under.
+    expect(t1.vpByRound[1]).toBeGreaterThan(10);
+    expect(t2.vpByRound[1]).toBeGreaterThan(10);
+    expect(t3.vpByRound[1]).toBeLessThan(10);
+  });
+
+  it("sits triangle teams at the neutral 10 when nothing is comparable yet", () => {
+    // Only one table entered a result -> the triangle has no counted board.
+    const rows: SwissVpBoardRow[] = [
+      row({ tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: null }),
+      row({ tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: null }),
+    ];
+
+    const result = calculateTeamsVpOverall(rows);
+    for (const line of result.lines) {
+      expect(line.vpByRound[1]).toBe(10);
+    }
+  });
+
   it("credits a bye team an average-plus 12 VP for its sit-out round", () => {
     // Teams 1 v 2 play round 1; team 3 sits out (SIT_OUT rows on its home
     // table with a phantom opponent).

@@ -110,6 +110,34 @@ describe("swissTeamsRoundToMaterializable", () => {
     const out = swissTeamsRoundToMaterializable(2, 3, matches, null);
     expect(out.every((t) => t.rounds[0].sitOut === undefined)).toBe(true);
   });
+
+  it("expands a triangle into three tables in the seating cycle, all playing every board", () => {
+    // Teams 1..5: a normal 1v2, plus a triangle {3,4,5}.
+    const out = swissTeamsRoundToMaterializable(
+      1,
+      3,
+      [{ a: 1, b: 2 }],
+      null,
+      { a: 3, b: 4, c: 5 },
+    );
+
+    const t3 = out.find((t) => t.tableNumber === 3)!;
+    const t4 = out.find((t) => t.tableNumber === 4)!;
+    const t5 = out.find((t) => t.tableNumber === 5)!;
+
+    // The fixed cycle 3-NS/4-EW, 4-NS/5-EW, 5-NS/3-EW; no sit-out; each table
+    // plays the whole round (boards 1..3).
+    expect(t3.rounds[0]).toMatchObject({ ns: "3NS", ew: "4EW", boardStart: 1, boardEnd: 3 });
+    expect(t4.rounds[0]).toMatchObject({ ns: "4NS", ew: "5EW", boardStart: 1, boardEnd: 3 });
+    expect(t5.rounds[0]).toMatchObject({ ns: "5NS", ew: "3EW", boardStart: 1, boardEnd: 3 });
+    for (const t of [t3, t4, t5]) {
+      expect(t.rounds[0].sitOut).toBeUndefined();
+    }
+
+    // All five tables present, ascending, none a sit-out.
+    expect(out.map((t) => t.tableNumber)).toEqual([1, 2, 3, 4, 5]);
+    expect(out.every((t) => t.rounds[0].sitOut === undefined)).toBe(true);
+  });
 });
 
 describe("materializeSwissTeamsRound", () => {

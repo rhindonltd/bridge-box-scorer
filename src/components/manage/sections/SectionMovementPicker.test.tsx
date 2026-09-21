@@ -826,7 +826,7 @@ describe("SectionMovementPicker", () => {
     );
   });
 
-  it("offers Triangle disabled (not supported yet) for an odd Swiss Teams field", () => {
+  it("confirms an odd Swiss Teams field with a Triangle when chosen", async () => {
     mockRecommendations.mockReturnValue([]);
     render(
       <SectionMovementPicker
@@ -839,9 +839,19 @@ describe("SectionMovementPicker", () => {
     );
 
     fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
-    // Triangle is offered but disabled, so the director can't pick the
-    // unimplemented mode; Bye stays selected.
-    expect(screen.getByRole("radio", { name: /triangle/i })).toBeDisabled();
-    expect(screen.getByRole("radio", { name: /bye/i })).toBeChecked();
+    // Triangle is now selectable; picking it carries oddHandling: "TRIANGLE".
+    const triangle = screen.getByRole("radio", { name: /triangle/i });
+    expect(triangle).toBeEnabled();
+    fireEvent.click(triangle);
+    fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
+
+    await waitFor(() =>
+      expect(setSectionSwissTeamsMovement).toHaveBeenCalledWith("g1", "A", {
+        teams: 5,
+        rounds: 7,
+        boardsPerRound: 6,
+        oddHandling: "TRIANGLE",
+      }),
+    );
   });
 });

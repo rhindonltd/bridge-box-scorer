@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   drawSwissTeamsRound,
   expandTeamMatches,
+  expandTeamTriangle,
   teamIds,
   swissTeamsRoundOne,
   teamOpponentKey,
@@ -56,6 +57,33 @@ describe("swissTeamsRoundOne", () => {
     expect([...firsts]).toEqual([...firsts].sort((x, y) => x - y));
     // Each match is normalised so a <= b.
     for (const m of matches) expect(m.a).toBeLessThanOrEqual(m.b);
+  });
+
+  it("triangles the bottom three tables and pairs the rest (odd, TRIANGLE)", () => {
+    const { matches, byeTeamId, triangle } = swissTeamsRoundOne(
+      7,
+      1,
+      "TRIANGLE",
+    );
+    // Bottom three tables (5,6,7) form the round-1 triangle; no bye.
+    expect(byeTeamId).toBeNull();
+    expect(triangle).toEqual({ a: 5, b: 6, c: 7 });
+    // The remaining even field (1,2,3,4) is paired.
+    expect(matches).toHaveLength(2);
+    const seen = matches.flatMap((m) => [m.a, m.b]).sort((x, y) => x - y);
+    expect(seen).toEqual([1, 2, 3, 4]);
+  });
+
+  it("still byes the bottom table for an odd field when handling is BYE", () => {
+    const { byeTeamId, triangle } = swissTeamsRoundOne(5, 1, "BYE");
+    expect(byeTeamId).toBe(5);
+    expect(triangle).toBeNull();
+  });
+
+  it("ignores TRIANGLE for an even field (no triangle, no bye)", () => {
+    const { byeTeamId, triangle } = swissTeamsRoundOne(6, 1, "TRIANGLE");
+    expect(byeTeamId).toBeNull();
+    expect(triangle).toBeNull();
   });
 });
 
@@ -160,6 +188,71 @@ describe("drawSwissTeamsRound", () => {
       playedOpponents: new Set(),
     });
     expect(byeTeamId).toBeNull();
+  });
+
+  it("triangles the lowest-ranked three and pairs the rest (odd, TRIANGLE)", () => {
+    // Standings best-first [1..7]; the lowest three (5,6,7) form the triangle.
+    const { matches, byeTeamId, triangle } = drawSwissTeamsRound({
+      teams: 7,
+      standings: [1, 2, 3, 4, 5, 6, 7],
+      playedOpponents: new Set(),
+      oddHandling: "TRIANGLE",
+    });
+
+    expect(byeTeamId).toBeNull();
+    expect(triangle).toEqual({ a: 5, b: 6, c: 7 });
+    const seen = matches.flatMap((m) => [m.a, m.b]).sort((x, y) => x - y);
+    expect(seen).toEqual([1, 2, 3, 4]);
+  });
+
+  it("prefers the lowest-ranked three without a recent triangle", () => {
+    // Teams 6 and 7 have already had a triangle, so the next-lowest without one
+    // (4,5) join the lowest remaining (there aren't 3 fresh below, so scan up):
+    // bottom-up eligible are 5,4,3 -> triangle {3,4,5}.
+    const { triangle } = drawSwissTeamsRound({
+      teams: 7,
+      standings: [1, 2, 3, 4, 5, 6, 7],
+      playedOpponents: new Set(),
+      oddHandling: "TRIANGLE",
+      hadTriangle: new Set([6, 7]),
+    });
+    expect(triangle).toEqual({ a: 3, b: 4, c: 5 });
+  });
+
+  it("tops up from the bottom when fewer than three teams lack a triangle", () => {
+    // Only team 1 has no prior triangle; top up with the lowest remaining.
+    const { triangle } = drawSwissTeamsRound({
+      teams: 5,
+      standings: [1, 2, 3, 4, 5],
+      playedOpponents: new Set(),
+      oddHandling: "TRIANGLE",
+      hadTriangle: new Set([2, 3, 4, 5]),
+    });
+    // team 1 (fresh) + bottom-up remaining 5,4 -> {1,4,5}.
+    expect(triangle).toEqual({ a: 1, b: 4, c: 5 });
+  });
+
+  it("reports a null triangle for an even field even under TRIANGLE", () => {
+    const { byeTeamId, triangle } = drawSwissTeamsRound({
+      teams: 4,
+      standings: [1, 2, 3, 4],
+      playedOpponents: new Set(),
+      oddHandling: "TRIANGLE",
+    });
+    expect(byeTeamId).toBeNull();
+    expect(triangle).toBeNull();
+  });
+});
+
+describe("expandTeamTriangle", () => {
+  it("places the three tables in the A-NS/B-EW, B-NS/C-EW, C-NS/A-EW cycle", () => {
+    const placements = expandTeamTriangle({ a: 5, b: 6, c: 7 });
+
+    expect(placements).toEqual([
+      { tableNumber: 5, nsTeam: 5, ewTeam: 6 },
+      { tableNumber: 6, nsTeam: 6, ewTeam: 7 },
+      { tableNumber: 7, nsTeam: 7, ewTeam: 5 },
+    ]);
   });
 });
 

@@ -362,19 +362,56 @@ describe("resolveSectionStart", () => {
     expect(result.movement).not.toBeNull();
   });
 
-  it("blocks an odd Swiss Teams TRIANGLE start as not yet supported", async () => {
+  it("starts an odd Swiss Teams (TRIANGLE) with the bottom three in a three-way", async () => {
     const result = await resolveSectionStart(
       "A",
       {
         source: "SWISS_TEAMS",
         swissTeams: {
-          teams: 3,
+          teams: 5,
           rounds: 5,
           boardsPerRound: 6,
           oddHandling: "TRIANGLE",
         },
       },
-      seatsForTables(3),
+      seatsForTables(5),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement).not.toBeNull();
+
+    // The bottom three tables (3,4,5) form the round-1 triangle in the fixed
+    // cycle: 3-NS/4-EW, 4-NS/5-EW, 5-NS/3-EW. Every triangle table plays the
+    // whole round (boards 1..6) and none sits out.
+    const t3 = result.movement!.find((t) => t.tableNumber === 3)!;
+    const t4 = result.movement!.find((t) => t.tableNumber === 4)!;
+    const t5 = result.movement!.find((t) => t.tableNumber === 5)!;
+    expect([t3, t4, t5].every((t) => t.rounds[0].sitOut ?? false)).toBe(false);
+    expect(t3.rounds[0]).toMatchObject({ ns: "3NS", ew: "4EW", boardStart: 1, boardEnd: 6 });
+    expect(t4.rounds[0]).toMatchObject({ ns: "4NS", ew: "5EW" });
+    expect(t5.rounds[0]).toMatchObject({ ns: "5NS", ew: "3EW" });
+
+    // Tables 1 and 2 form an ordinary head-to-head; no bye/sit-out anywhere.
+    expect(
+      result.movement!.every((t) => (t.rounds[0].sitOut ?? false) === false),
+    ).toBe(true);
+    expect(result.movement!.map((t) => t.tableNumber).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it("blocks an odd Swiss Teams TRIANGLE too small to form a three-way (< 3 teams)", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS_TEAMS",
+        swissTeams: {
+          teams: 1,
+          rounds: 5,
+          boardsPerRound: 6,
+          oddHandling: "TRIANGLE",
+        },
+      },
+      seatsForTables(1),
       "g1",
     );
 

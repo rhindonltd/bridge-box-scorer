@@ -4,8 +4,10 @@ import { calculateWbfVP } from "./wbf-vp";
 import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
 import {
   groupTeamMatches,
+  groupTeamTriangles,
   teamByeRounds,
   teamMatchBoardImps,
+  triangleTeamImps,
 } from "./team-match";
 
 /**
@@ -81,6 +83,28 @@ export function calculateTeamsVpOverall(
   // Credit each bye team an average-plus result for the round it sat out.
   for (const bye of teamByeRounds(boardRows)) {
     credit(totals, bye.teamId, bye.round, BYE_VP);
+  }
+
+  // Credit each triangle team its cross-IMP result for the round, converted to
+  // VP on the WBF scale (scaled to boards played). Each team's cross-IMP total
+  // is signed (positive = above the field): a positive margin earns the winner
+  // VP, a negative one the mirrored loser VP, so all three centre on 10.
+  for (const triangle of groupTeamTriangles(boardRows)) {
+    const { perTeam, boardsPlayed } = triangleTeamImps(triangle);
+    for (const team of perTeam) {
+      if (boardsPlayed === 0) {
+        // Nothing comparable yet: sit the team at the neutral average.
+        credit(totals, team.teamId, triangle.round, NEUTRAL_VP);
+        continue;
+      }
+      const { winnerVP, loserVP } = calculateWbfVP(boardsPlayed, team.crossImps);
+      credit(
+        totals,
+        team.teamId,
+        triangle.round,
+        team.crossImps >= 0 ? winnerVP : loserVP,
+      );
+    }
   }
 
   const lines = rank(

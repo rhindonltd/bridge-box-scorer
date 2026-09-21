@@ -7,6 +7,9 @@ import { Card } from "@/model/common";
 import { calculateWbfVP } from "@/scoring/swiss/wbf-vp";
 import {
   groupTeamMatches,
+  groupTeamTriangles,
+  triangleSubMatches,
+  triangleTeamImps,
   teamMatchBoardImps,
   boardResult,
 } from "@/scoring/swiss/team-match";
@@ -151,7 +154,73 @@ function buildUsebioMatches(
     });
   }
 
+  // Triangles: USEBIO has no three-way tag, so each triangle is written as its
+  // three pairwise head-to-head MATCH nodes (same round) for board-level
+  // detail. Those nodes are INFORMATIONAL — a triangle team's contribution to
+  // its VP total is its single CROSS-IMP result (Option A: the export total
+  // agrees with the live cross-IMP standings), added once here.
+  for (const triangle of groupTeamTriangles(boardRows)) {
+    for (const sub of triangleSubMatches(triangle)) {
+      const teamNumber = numberByTeamId.get(sub.homeTeamId) ?? sub.homeTeamId;
+      const opposingNumber =
+        numberByTeamId.get(sub.opponentTeamId) ?? sub.opponentTeamId;
+      const { perBoard, margin, boardsPlayed } = teamMatchBoardImps(sub);
+
+      const boards: UsebioTeamBoard[] = perBoard.map(({ boardNumber, imps }) => {
+        const travellerLines: UsebioTeamTravellerLine[] = [];
+        const homeRow = sub.homeRowsByBoard.get(boardNumber);
+        const awayRow = sub.opponentRowsByBoard.get(boardNumber);
+        if (homeRow) travellerLines.push(teamTravellerLine(homeRow, "NS"));
+        if (awayRow) travellerLines.push(teamTravellerLine(awayRow, "EW"));
+        return { boardNumber, imps: imps ?? 0, travellerLines };
+      });
+
+      /* v8 ignore start -- a reconstructed sub-match always has >=1 board */
+      const startBoard = boards[0]?.boardNumber ?? 0;
+      const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
+      /* v8 ignore stop */
+
+      // Head-to-head VP on the node itself (informational, self-consistent).
+      const { teamScore, opposingTeamScore } = matchVp(margin, boardsPlayed);
+
+      matches.push({
+        round: sub.round,
+        team: teamNumber,
+        opposingTeam: opposingNumber,
+        startBoard,
+        endBoard,
+        teamScore,
+        opposingTeamScore,
+        boards,
+      });
+    }
+
+    // The authoritative per-team round result: the cross-IMP VP (integer, to
+    // match the file's discrete VP), added once per triangle team.
+    const { perTeam, boardsPlayed } = triangleTeamImps(triangle);
+    for (const team of perTeam) {
+      addVp(team.teamId, triangleCrossVp(boardsPlayed, team.crossImps));
+    }
+  }
+
   return { matches, totals };
+}
+
+/**
+ * The integer cross-IMP VP for one triangle team over the boards all three
+ * tables have scored. Mirrors {@link matchVp} but on a single team's signed
+ * cross-IMP total: a positive margin (above the field) earns the winner share,
+ * a negative one the loser share, so all three centre on the neutral 10. No
+ * comparable board yet is a neutral 10.
+ */
+function triangleCrossVp(boardsPlayed: number, crossImps: number): number {
+  if (boardsPlayed === 0) return NEUTRAL_VP_INT;
+  const { winnerVP, loserVP } = calculateWbfVP(
+    boardsPlayed,
+    crossImps,
+    "discrete",
+  );
+  return crossImps >= 0 ? winnerVP : loserVP;
 }
 
 function teamTravellerLine(row: Board, direction: string): UsebioTeamTravellerLine {

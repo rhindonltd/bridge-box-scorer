@@ -33,17 +33,24 @@ interface SwissTeamsHistory {
   playedOpponents: Set<string>;
   /** Teams that have already had a bye (recovered from SIT_OUT rows). */
   hadBye: Set<TeamId>;
+  /** Teams that have already been in a triangle (recovered from 3-cycles). */
+  hadTriangle: Set<TeamId>;
 }
 
 /**
  * Reduce a section's board rows to the Swiss Teams history the draw needs: the
  * highest round materialized so far, the set of team matchups already played,
- * and the teams that have already had a bye.
+ * the teams that have already had a bye, and the teams that have already been
+ * in a triangle.
  *
  * A played match is recovered from each home table's row — the NS seat is the
  * home team and the EW seat encodes the opponent's home table. A bye is a
  * SIT_OUT row: its NS seat is the bye team's home table and its EW is a phantom
  * (not a real opponent), so it is recorded as a bye rather than a played match.
+ * A triangle is three tables in one round whose home→opponent references form a
+ * directed 3-cycle (A→B→C→A); its three teams are recorded as having had a
+ * triangle. All three of a triangle's pairwise matchups are still recorded in
+ * `playedOpponents` (each of the cycle's edges is an opponent key).
  */
 async function getSwissTeamsHistory(
   db: Db,
@@ -66,6 +73,9 @@ async function getSwissTeamsHistory(
   const hadBye = new Set<TeamId>();
   let highestRound = 0;
 
+  // Per-round home→opponent edges, used after the pass to detect triangles.
+  const edgesByRound = new Map<number, Map<TeamId, TeamId>>();
+
   for (const row of rows) {
     highestRound = Math.max(highestRound, row.roundNumber);
 
@@ -83,12 +93,45 @@ async function getSwissTeamsHistory(
       const home = parseSeat(row.ns);
       const away = parseSeat(row.ew);
       playedOpponents.add(teamOpponentKey(home.tableNumber, away.tableNumber));
+
+      const edges =
+        edgesByRound.get(row.roundNumber) ?? new Map<TeamId, TeamId>();
+      edges.set(home.tableNumber, away.tableNumber);
+      edgesByRound.set(row.roundNumber, edges);
     } catch {
       // A non-seat id (should not occur for teams) is skipped.
     }
   }
 
-  return { highestRound, playedOpponents, hadBye };
+  const hadTriangle = recoverTriangleTeams(edgesByRound);
+
+  return { highestRound, playedOpponents, hadBye, hadTriangle };
+}
+
+/**
+ * Find every team that was in a triangle, from the per-round home→opponent
+ * edges. A triangle is a directed 3-cycle x→y→z→x through three distinct
+ * tables (an ordinary match is mutual, x→y and y→x, and is not a 3-cycle).
+ */
+function recoverTriangleTeams(
+  edgesByRound: Map<number, Map<TeamId, TeamId>>,
+): Set<TeamId> {
+  const inTriangle = new Set<TeamId>();
+
+  for (const edges of edgesByRound.values()) {
+    for (const [x, y] of edges) {
+      if (edges.get(y) === x) continue; // mutual = ordinary two-team match
+      const z = edges.get(y);
+      if (z === undefined) continue;
+      if (edges.get(z) === x && new Set([x, y, z]).size === 3) {
+        inTriangle.add(x);
+        inTriangle.add(y);
+        inTriangle.add(z);
+      }
+    }
+  }
+
+  return inTriangle;
 }
 
 /**
@@ -199,16 +242,14 @@ export async function drawNextSwissTeamsRound(
     oddHandling = "BYE",
   } = selected.swissTeams;
 
-  // An odd field is only drawable via a bye; the triangle alternative is not
-  // yet implemented, so an odd TRIANGLE event is rejected.
-  if (teams % 2 !== 0 && oddHandling !== "BYE") {
+  // An odd field is resolved by a bye or a triangle (both supported); a
+  // triangle needs at least three teams to form the three-way.
+  if (teams % 2 !== 0 && oddHandling === "TRIANGLE" && teams < 3) {
     return { ok: false, reason: "ODD_TEAM_COUNT" };
   }
 
-  const { highestRound, playedOpponents, hadBye } = await getSwissTeamsHistory(
-    db,
-    section,
-  );
+  const { highestRound, playedOpponents, hadBye, hadTriangle } =
+    await getSwissTeamsHistory(db, section);
   const currentRound = highestRound;
 
   if (currentRound >= totalRounds) {
@@ -225,7 +266,9 @@ export async function drawNextSwissTeamsRound(
     teams,
     standings,
     playedOpponents,
+    oddHandling,
     hadBye,
+    hadTriangle,
   });
   const nextRound = currentRound + 1;
 
@@ -236,6 +279,7 @@ export async function drawNextSwissTeamsRound(
     boardsPerRound,
     draw.matches,
     draw.byeTeamId,
+    draw.triangle,
   );
 
   return {

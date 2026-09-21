@@ -6,6 +6,9 @@ import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import {
   groupTeamMatches,
+  groupTeamTriangles,
+  triangleSubMatches,
+  triangleTeamWins,
   teamMatchBoardWins,
   boardResult,
 } from "@/scoring/swiss/team-match";
@@ -161,6 +164,59 @@ function buildMatches(
       opposingTeamScore,
       boards,
     });
+  }
+
+  // Triangles: USEBIO has no three-way tag, so each triangle is written as its
+  // three pairwise head-to-head MATCH nodes (same round) for board-level
+  // detail. Those nodes are INFORMATIONAL — a triangle team's contribution to
+  // its total is its CROSS board-comparison result (win/tie/loss vs BOTH other
+  // tables), added once here (Option A: the export total agrees with the live
+  // board-comparison standings).
+  for (const triangle of groupTeamTriangles(boardRows)) {
+    for (const sub of triangleSubMatches(triangle)) {
+      const teamNumber = numberByTeamId.get(sub.homeTeamId) ?? sub.homeTeamId;
+      const opposingNumber =
+        numberByTeamId.get(sub.opponentTeamId) ?? sub.opponentTeamId;
+      const { perBoard, won, boardsPlayed } = teamMatchBoardWins(sub);
+
+      const boards: UsebioBoardComparisonBoard[] = perBoard.map(
+        ({ boardNumber, result }) => {
+          const travellerLines: UsebioTeamTravellerLine[] = [];
+          const homeRow = sub.homeRowsByBoard.get(boardNumber);
+          const awayRow = sub.opponentRowsByBoard.get(boardNumber);
+          if (homeRow) travellerLines.push(teamTravellerLine(homeRow, "NS"));
+          if (awayRow) travellerLines.push(teamTravellerLine(awayRow, "EW"));
+          const teamPoints = (result ?? 0) * winPoints;
+          const opposingTeamPoints =
+            result == null ? 0 : (1 - result) * winPoints;
+          return { boardNumber, teamPoints, opposingTeamPoints, travellerLines };
+        },
+      );
+
+      /* v8 ignore start -- a reconstructed sub-match always has >=1 board */
+      const startBoard = boards[0]?.boardNumber ?? 0;
+      const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
+      /* v8 ignore stop */
+
+      // Head-to-head points on the node itself (informational, self-consistent).
+      matches.push({
+        round: sub.round,
+        team: teamNumber,
+        opposingTeam: opposingNumber,
+        startBoard,
+        endBoard,
+        teamScore: won * winPoints,
+        opposingTeamScore: (boardsPlayed - won) * winPoints,
+        boards,
+      });
+    }
+
+    // The authoritative per-team round result: the cross board-comparison
+    // points (win/tie/loss vs both other tables, scaled), added once per team.
+    const { perTeam } = triangleTeamWins(triangle);
+    for (const team of perTeam) {
+      add(team.teamId, team.won * winPoints);
+    }
   }
 
   return { matches, totals };

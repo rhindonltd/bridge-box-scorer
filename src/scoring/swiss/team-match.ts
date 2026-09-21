@@ -1,6 +1,10 @@
 import { BoardOutcome } from "@/model/score";
 import { parseSeat } from "@/model/participants";
-import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
+import {
+  outcomeToScore,
+  computeImps,
+  computeCrossImps,
+} from "@/scoring/traveller/common";
 
 /**
  * The minimal board-row shape the Swiss Teams match reconstruction needs. Kept
@@ -82,6 +86,10 @@ export function groupTeamMatches<R extends TeamMatchRow>(
     rowsByBoard: Map<number, R>;
   }
 
+  // Triangle tables score cross-IMP across three tables (see groupTeamTriangles),
+  // not as two-table head-to-heads, so exclude them here to avoid mis-pairing.
+  const triangleTables = triangleTableKeys(rows);
+
   // Index each home table's rows by (section, round, homeTable).
   const homeTables = new Map<string, HomeEntry>();
   for (const row of rows) {
@@ -91,6 +99,10 @@ export function groupTeamMatches<R extends TeamMatchRow>(
     const ewSeat = parseSeat(row.ew);
     const homeTable = nsSeat.tableNumber;
     const opponentTable = ewSeat.tableNumber;
+
+    if (triangleTables.has(`${row.section}|${row.roundNumber}|${homeTable}`)) {
+      continue;
+    }
 
     const key = `${row.section}|${row.roundNumber}|${homeTable}`;
     const entry =
@@ -311,5 +323,362 @@ export function teamByeRounds<R extends TeamMatchRow>(
     teamId: b.teamId,
     round: b.round,
     boards: b.boards.size,
+  }));
+}
+
+/* =========================================================================
+   TRIANGLES (three-way matches for an odd field)
+
+   A triangle is three teams A<B<C playing a three-way over a round's whole
+   board set, seated in a fixed cycle so every team meets both others:
+     - table A: A home pair (NS) vs B away pair (EW)
+     - table B: B home pair (NS) vs C away pair (EW)
+     - table C: C home pair (NS) vs A away pair (EW)
+   Unlike a two-table head-to-head (where the two tables reference each other
+   MUTUALLY via their EW seats), a triangle's EW references form a directed
+   3-CYCLE (A→B→C→A) and are never mutual. That asymmetry is exactly how a
+   triangle is told apart from an ordinary match here.
+
+   Scoring is cross-IMP / board comparison across the three tables: on each
+   board, a team is compared against BOTH other tables (not one opponent room),
+   so the two-table `teamMatchBoardImps` / `teamMatchBoardWins` do not apply.
+   ========================================================================= */
+
+/** One table of a triangle: its home team and that table's rows by board. */
+interface TriangleTable<R extends TeamMatchRow> {
+  table: number;
+  teamId: string;
+  rowsByBoard: Map<number, R>;
+}
+
+/**
+ * One reconstructed three-way triangle: the three home tables (in ascending
+ * table order) that make up a three-team encounter in one round.
+ */
+export interface TeamTriangle<R extends TeamMatchRow> {
+  section: string;
+  round: number;
+  /** The three tables in ascending order, each with its home team's rows. */
+  tables: [TriangleTable<R>, TriangleTable<R>, TriangleTable<R>];
+}
+
+/** A home table's opponent reference for one (section, round). */
+interface TableEdge {
+  section: string;
+  round: number;
+  homeTable: number;
+  opponentTable: number;
+}
+
+/**
+ * Index the non-SIT_OUT rows into one edge per (section, round, homeTable): the
+ * home team (NS seat) and the single opponent it references (EW seat). A home
+ * table faces exactly one opponent seat per round in every movement (two-team
+ * or triangle), so the last EW seen is authoritative. Rows whose seats don't
+ * parse (e.g. a phantom) are skipped.
+ */
+function indexTableEdges<R extends TeamMatchRow>(
+  rows: R[],
+): Map<string, TableEdge> {
+  const edges = new Map<string, TableEdge>();
+  for (const row of rows) {
+    if (row.status === "SIT_OUT") continue;
+    let homeTable: number;
+    let opponentTable: number;
+    try {
+      homeTable = parseSeat(row.ns).tableNumber;
+      opponentTable = parseSeat(row.ew).tableNumber;
+    } catch {
+      continue;
+    }
+    edges.set(`${row.section}|${row.roundNumber}|${homeTable}`, {
+      section: row.section,
+      round: row.roundNumber,
+      homeTable,
+      opponentTable,
+    });
+  }
+  return edges;
+}
+
+/**
+ * The set of `(section|round|table)` keys that belong to a triangle, so
+ * {@link groupTeamMatches} can exclude them.
+ *
+ * A triangle is three tables in the same (section, round) whose EW opponent
+ * references form a directed 3-cycle (x→y→z→x) with none of them mutual. A
+ * two-table match is mutual (x→y and y→x) and never matches this shape.
+ */
+function triangleTableKeys<R extends TeamMatchRow>(rows: R[]): Set<string> {
+  const edges = indexTableEdges(rows);
+  const keys = new Set<string>();
+
+  for (const edge of edges.values()) {
+    const { section, round, homeTable } = edge;
+    const self = `${section}|${round}|${homeTable}`;
+    if (keys.has(self)) continue;
+
+    // Follow the EW references three hops; a triangle returns to the start
+    // through three DISTINCT tables (x→y→z→x).
+    const y = edges.get(`${section}|${round}|${edge.opponentTable}`);
+    if (!y || y.opponentTable === homeTable) continue; // mutual = two-team match
+    const z = edges.get(`${section}|${round}|${y.opponentTable}`);
+    if (!z) continue;
+
+    if (
+      z.opponentTable === homeTable &&
+      new Set([homeTable, y.homeTable, z.homeTable]).size === 3
+    ) {
+      keys.add(`${section}|${round}|${homeTable}`);
+      keys.add(`${section}|${round}|${y.homeTable}`);
+      keys.add(`${section}|${round}|${z.homeTable}`);
+    }
+  }
+
+  return keys;
+}
+
+/**
+ * Reconstruct the three-way triangles from a game's board rows.
+ *
+ * Detects each directed 3-cycle of tables (see {@link triangleTableKeys}) and
+ * emits one {@link TeamTriangle} per triangle, with its three tables in
+ * ascending table order and each table's rows keyed by board. Triangles are
+ * returned ordered by round, then section, then lowest table — matching the
+ * ordering convention of {@link groupTeamMatches}.
+ */
+export function groupTeamTriangles<R extends TeamMatchRow>(
+  rows: R[],
+): TeamTriangle<R>[] {
+  const triangleKeys = triangleTableKeys(rows);
+  if (triangleKeys.size === 0) return [];
+
+  // Accumulate rows-by-board for every triangle table.
+  const tableRows = new Map<
+    string,
+    { section: string; round: number; table: number; rowsByBoard: Map<number, R> }
+  >();
+
+  for (const row of rows) {
+    if (row.status === "SIT_OUT") continue;
+    let homeTable: number;
+    try {
+      homeTable = parseSeat(row.ns).tableNumber;
+    } catch {
+      continue;
+    }
+    const key = `${row.section}|${row.roundNumber}|${homeTable}`;
+    if (!triangleKeys.has(key)) continue;
+
+    const entry =
+      tableRows.get(key) ??
+      {
+        section: row.section,
+        round: row.roundNumber,
+        table: homeTable,
+        rowsByBoard: new Map<number, R>(),
+      };
+    entry.rowsByBoard.set(row.boardNumber, row);
+    tableRows.set(key, entry);
+  }
+
+  // Group the triangle tables by (section, round); each such group is exactly
+  // one triangle of three tables.
+  const groups = new Map<
+    string,
+    { section: string; round: number; tables: TriangleTable<R>[] }
+  >();
+  for (const entry of tableRows.values()) {
+    const groupKey = `${entry.round}|${entry.section}`;
+    const group =
+      groups.get(groupKey) ??
+      { section: entry.section, round: entry.round, tables: [] };
+    group.tables.push({
+      table: entry.table,
+      teamId: teamIdFor(entry.section, entry.table),
+      rowsByBoard: entry.rowsByBoard,
+    });
+    groups.set(groupKey, group);
+  }
+
+  const triangles: TeamTriangle<R>[] = [];
+  for (const group of groups.values()) {
+    const tables = group.tables.sort((a, b) => a.table - b.table);
+    /* v8 ignore next -- a detected triangle always has exactly three tables */
+    if (tables.length !== 3) continue;
+    triangles.push({
+      section: group.section,
+      round: group.round,
+      tables: [tables[0], tables[1], tables[2]],
+    });
+  }
+
+  // Order by round, then section, then lowest table.
+  return triangles.sort(
+    (a, b) =>
+      a.round - b.round ||
+      (a.section < b.section ? -1 : a.section > b.section ? 1 : 0) ||
+      a.tables[0].table - b.tables[0].table,
+  );
+}
+
+/** One team's cross-IMP result across a triangle round. */
+export interface TriangleTeamImps {
+  teamId: string;
+  /** Summed cross-IMPs vs the other two tables over the counted boards. */
+  crossImps: number;
+  /** Boards where all three tables have a comparable scored result. */
+  boardsPlayed: number;
+}
+
+/**
+ * Score a triangle cross-IMP (Butler): on each board where ALL THREE tables
+ * have a comparable scored result, each team's board cross-IMPs are the sum of
+ * the IMP difference of its score against EACH of the other two tables' scores
+ * (via {@link computeCrossImps}). A team's round total is the sum over the
+ * counted boards. Returns one entry per team (in the triangle's table order)
+ * plus the shared count of boards played.
+ *
+ * A board where any table has no comparable score (pass-out / not-played /
+ * unentered) is skipped for every team, so all three stay on the same board
+ * set — the running estimate simply grows as results come in.
+ */
+export function triangleTeamImps<R extends TeamMatchRow>(
+  triangle: TeamTriangle<R>,
+): { perTeam: TriangleTeamImps[]; boardsPlayed: number } {
+  const [t0, t1, t2] = triangle.tables;
+  const boardNumbers = triangleBoardNumbers(triangle);
+
+  const perTeam: TriangleTeamImps[] = triangle.tables.map((t) => ({
+    teamId: t.teamId,
+    crossImps: 0,
+    boardsPlayed: 0,
+  }));
+
+  let boardsPlayed = 0;
+
+  for (const boardNumber of boardNumbers) {
+    const s0 = scoreOfRow(t0.rowsByBoard.get(boardNumber));
+    const s1 = scoreOfRow(t1.rowsByBoard.get(boardNumber));
+    const s2 = scoreOfRow(t2.rowsByBoard.get(boardNumber));
+    if (s0 == null || s1 == null || s2 == null) continue;
+
+    boardsPlayed += 1;
+    perTeam[0].crossImps += computeCrossImps(s0, [s1, s2]);
+    perTeam[1].crossImps += computeCrossImps(s1, [s0, s2]);
+    perTeam[2].crossImps += computeCrossImps(s2, [s0, s1]);
+  }
+
+  for (const team of perTeam) team.boardsPlayed = boardsPlayed;
+  return { perTeam, boardsPlayed };
+}
+
+/** One team's board-comparison result across a triangle round. */
+export interface TriangleTeamWins {
+  teamId: string;
+  /**
+   * Board-comparison points won: on each counted board, 1 for beating another
+   * table / 0.5 for a tie / 0 for losing, SUMMED over BOTH other tables (so up
+   * to 2 per board). Native board units; the BAM (×1) / PAB (×2) scale is
+   * applied only at display, matching the two-team board-comparison scorer.
+   */
+  won: number;
+  /** Boards where all three tables have a comparable scored result. */
+  boardsPlayed: number;
+}
+
+/**
+ * Score a triangle by board comparison: on each board where ALL THREE tables
+ * have a comparable scored result, each team compares its score against EACH of
+ * the other two tables (win 1 / tie 0.5 / loss 0) and sums the two, so a team
+ * can win up to 2 board-points per board. A team's round total is the sum over
+ * the counted boards. Mirrors {@link triangleTeamImps}'s comparability rule so
+ * the VP and board-comparison views never disagree about which boards counted.
+ */
+export function triangleTeamWins<R extends TeamMatchRow>(
+  triangle: TeamTriangle<R>,
+): { perTeam: TriangleTeamWins[]; boardsPlayed: number } {
+  const [t0, t1, t2] = triangle.tables;
+  const boardNumbers = triangleBoardNumbers(triangle);
+
+  const perTeam: TriangleTeamWins[] = triangle.tables.map((t) => ({
+    teamId: t.teamId,
+    won: 0,
+    boardsPlayed: 0,
+  }));
+
+  let boardsPlayed = 0;
+
+  const wl = (me: number, other: number): number =>
+    me > other ? 1 : me < other ? 0 : 0.5;
+
+  for (const boardNumber of boardNumbers) {
+    const s0 = scoreOfRow(t0.rowsByBoard.get(boardNumber));
+    const s1 = scoreOfRow(t1.rowsByBoard.get(boardNumber));
+    const s2 = scoreOfRow(t2.rowsByBoard.get(boardNumber));
+    if (s0 == null || s1 == null || s2 == null) continue;
+
+    boardsPlayed += 1;
+    perTeam[0].won += wl(s0, s1) + wl(s0, s2);
+    perTeam[1].won += wl(s1, s0) + wl(s1, s2);
+    perTeam[2].won += wl(s2, s0) + wl(s2, s1);
+  }
+
+  for (const team of perTeam) team.boardsPlayed = boardsPlayed;
+  return { perTeam, boardsPlayed };
+}
+
+/** The union of board numbers any of a triangle's three tables has a row for. */
+function triangleBoardNumbers<R extends TeamMatchRow>(
+  triangle: TeamTriangle<R>,
+): number[] {
+  const nums = new Set<number>();
+  for (const t of triangle.tables) {
+    for (const n of t.rowsByBoard.keys()) nums.add(n);
+  }
+  return Array.from(nums).sort((a, b) => a - b);
+}
+
+/** A table row's final score (override ?? confirmed), or null when unscored. */
+function scoreOfRow<R extends TeamMatchRow>(row: R | undefined): number | null {
+  if (!row) return null;
+  const outcome = boardResult(row);
+  return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
+}
+
+/**
+ * Decompose a triangle into its three pairwise HEAD-TO-HEAD match views, for
+ * the USEBIO export only.
+ *
+ * A triangle is scored cross-IMP for the standings (see {@link triangleTeamImps}),
+ * but USEBIO has no three-way tag: a three-way is written as three ordinary
+ * `<MATCH>` nodes sharing one round. Each pairing X-Y (X < Y) is presented as a
+ * conventional two-table encounter — table X is the home room (X-NS) and table
+ * Y the other (Y-NS) — so the existing per-board IMP / board-comparison detail
+ * and travellers can be emitted unchanged. These views are INFORMATIONAL: the
+ * authoritative round result stays the cross-IMP total, not the sum of these
+ * three head-to-head comparisons.
+ *
+ * Returns the three matches in ascending (homeTable, opponentTable) order.
+ */
+export function triangleSubMatches<R extends TeamMatchRow>(
+  triangle: TeamTriangle<R>,
+): TeamMatch<R>[] {
+  const { section, round, tables } = triangle;
+  const pairs: Array<[TriangleTable<R>, TriangleTable<R>]> = [
+    [tables[0], tables[1]],
+    [tables[0], tables[2]],
+    [tables[1], tables[2]],
+  ];
+
+  return pairs.map(([home, away]) => ({
+    section,
+    round,
+    homeTable: home.table,
+    opponentTable: away.table,
+    homeTeamId: teamIdFor(section, home.table),
+    opponentTeamId: teamIdFor(section, away.table),
+    homeRowsByBoard: home.rowsByBoard,
+    opponentRowsByBoard: away.rowsByBoard,
   }));
 }

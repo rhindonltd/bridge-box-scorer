@@ -31,7 +31,7 @@ const REJECTION_MESSAGE: Record<string, string> = {
     "All results for the current round must be in before drawing the next round.",
   EVENT_COMPLETE: "All rounds have already been drawn.",
   ODD_TEAM_COUNT:
-    "This odd Swiss Teams event uses three-way triangles, which aren't supported yet — start it with the bye option instead.",
+    "A three-way triangle needs at least three teams — add a table, or switch this event to the bye option.",
 };
 
 /**
@@ -39,8 +39,9 @@ const REJECTION_MESSAGE: Record<string, string> = {
  *
  * Validates the director token, then delegates to
  * {@link drawNextSwissTeamsRound}, which enforces the preconditions (Swiss
- * Teams section, even team count, current round fully scored, rounds
- * remaining) and materializes the next round from current standings.
+ * Teams section, odd fields resolved by a bye or triangle, current round fully
+ * scored, rounds remaining) and materializes the next round from current
+ * standings.
  *
  * On success it fans out the live updates: a `GAME_UPDATED` to the game room so
  * every device re-reads its schedule for the new round (each team's away pair

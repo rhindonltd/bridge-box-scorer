@@ -174,16 +174,19 @@ function resolveSwissTeamsStart(
 
   // Random round-1 pairing, seeded per game+section so a retried start is
   // reproducible, then expanded into the two-table (open/closed) board rows.
-  // An odd field byes the bottom table in round 1 (see swissTeamsRoundOne).
-  const { matches, byeTeamId } = swissTeamsRoundOne(
+  // An odd field resolves per oddHandling in round 1: "BYE" byes the bottom
+  // table, "TRIANGLE" triangles the bottom three (see swissTeamsRoundOne).
+  const { matches, byeTeamId, triangle } = swissTeamsRoundOne(
     teams,
     swissTeamsRoundOneSeed(gameId, section),
+    oddHandling,
   );
   const movement = swissTeamsRoundToMaterializable(
     1,
     boardsPerRound,
     matches,
     byeTeamId,
+    triangle,
   );
 
   return { validation, movement };
@@ -196,8 +199,9 @@ function resolveSwissTeamsStart(
  *
  * Odd team counts: by default an odd count is rejected (Round Robin, and Swiss
  * Teams with no odd handling). When `oddHandling` is supplied (Swiss Teams),
- * "BYE" permits an odd count (one team sits out each round) while "TRIANGLE" is
- * rejected as not-yet-implemented, so the choice is gated cleanly.
+ * "BYE" permits an odd count (one team sits out each round) and "TRIANGLE"
+ * permits it too (three teams play a three-way each round) — a triangle needs
+ * at least three teams to form, so an odd field of one is still rejected.
  */
 function validateTeamsStructure(
   baseValidation: StartValidationResult,
@@ -216,10 +220,14 @@ function validateTeamsStructure(
 
   if (teams % 2 !== 0) {
     if (oddHandling === "TRIANGLE") {
-      problems.push({
-        code: "ODD_TEAM_COUNT",
-        message: `${label} with a three-way triangle for an odd number of teams is not supported yet — choose the bye option, or add/remove a table.`,
-      });
+      // A triangle needs three teams to form the three-way.
+      if (teams < 3) {
+        problems.push({
+          code: "ODD_TEAM_COUNT",
+          message: `${label} with a three-way triangle needs at least three teams — you have ${teams}. Add a table before starting.`,
+        });
+      }
+      // teams >= 3 (odd): allowed (the bottom three play a three-way each round).
     } else if (oddHandling !== "BYE") {
       // No odd handling for this format/choice: an odd count is rejected.
       problems.push({
