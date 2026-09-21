@@ -870,6 +870,29 @@ describe("generateUsebioXml", () => {
       expect(match).toContain("<OPPOSING_TEAM_SCORE>1</OPPOSING_TEAM_SCORE>");
     });
 
+    it("writes a triangle as three MATCH nodes sharing one ROUND_NUMBER", () => {
+      // A triangle is three ordinary MATCH nodes with the same round: the
+      // writer just iterates data.matches, so three same-round entries emit
+      // three <MATCH> blocks.
+      const data = makeSwissTeamsData();
+      const triBoard = {
+        boardNumber: 1,
+        imps: 0,
+        travellerLines: [],
+      };
+      data.matches = [
+        { round: 1, team: "11", opposingTeam: "2", startBoard: 1, endBoard: 4, teamScore: 13, opposingTeamScore: 7, boards: [triBoard] },
+        { round: 1, team: "11", opposingTeam: "3", startBoard: 1, endBoard: 4, teamScore: 12, opposingTeamScore: 8, boards: [triBoard] },
+        { round: 1, team: "2", opposingTeam: "3", startBoard: 1, endBoard: 4, teamScore: 11, opposingTeamScore: 9, boards: [triBoard] },
+      ];
+
+      const xml = generateUsebioXml(data);
+      const matchBlocks = xml.match(/<MATCH>/g) ?? [];
+      expect(matchBlocks).toHaveLength(3);
+      // All three carry the same round number.
+      expect(xml.match(/<ROUND_NUMBER>1<\/ROUND_NUMBER>/g)).toHaveLength(3);
+    });
+
     it("emits board IMPS and a direction-tagged traveller line", () => {
       const xml = generateUsebioXml(makeSwissTeamsData());
       const board = xml

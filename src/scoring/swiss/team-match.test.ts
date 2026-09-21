@@ -3,6 +3,10 @@ import {
   boardResult,
   teamIdFor,
   groupTeamMatches,
+  groupTeamTriangles,
+  triangleSubMatches,
+  triangleTeamImps,
+  triangleTeamWins,
   teamByeRounds,
   teamMatchBoardImps,
   teamMatchBoardWins,
@@ -264,5 +268,149 @@ describe("teamByeRounds", () => {
       { teamId: "A3NS", round: 1, boards: 1 },
       { teamId: "A2NS", round: 2, boards: 1 },
     ]);
+  });
+});
+
+/**
+ * A triangle {1,2,3}: table 1 = A1NS/A2EW, table 2 = A2NS/A3EW, table 3 =
+ * A3NS/A1EW (the directed 3-cycle). One shared board set.
+ */
+function triangleRows(
+  round: number,
+  board: number,
+  outcomes: [BoardOutcome | null, BoardOutcome | null, BoardOutcome | null],
+) {
+  return [
+    row(round, board, "A1NS", "A2EW", outcomes[0]),
+    row(round, board, "A2NS", "A3EW", outcomes[1]),
+    row(round, board, "A3NS", "A1EW", outcomes[2]),
+  ];
+}
+
+describe("groupTeamTriangles", () => {
+  it("reconstructs a three-cycle of tables as one triangle", () => {
+    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
+    const triangles = groupTeamTriangles(rows);
+
+    expect(triangles).toHaveLength(1);
+    const [tri] = triangles;
+    expect(tri.round).toBe(1);
+    expect(tri.section).toBe("A");
+    expect(tri.tables.map((t) => t.table)).toEqual([1, 2, 3]);
+    expect(tri.tables.map((t) => t.teamId)).toEqual(["A1NS", "A2NS", "A3NS"]);
+  });
+
+  it("does not treat an ordinary two-table match as a triangle", () => {
+    // Mutual references (1<->2) are a head-to-head, not a 3-cycle.
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+    expect(groupTeamTriangles(rows)).toHaveLength(0);
+    // ...and groupTeamMatches still reconstructs the head-to-head.
+    expect(groupTeamMatches(rows)).toHaveLength(1);
+  });
+
+  it("keeps a triangle out of the two-table match reconstruction", () => {
+    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
+    // The triangle tables must NOT be mis-paired as head-to-head matches.
+    expect(groupTeamMatches(rows)).toHaveLength(0);
+  });
+
+  it("reconstructs a triangle alongside a normal match in the same round", () => {
+    const rows = [
+      ...triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]),
+      // A separate head-to-head 4 v 5 in the same round.
+      row(1, 1, "A4NS", "A5EW", "3NTN=" as BoardOutcome),
+      row(1, 1, "A5NS", "A4EW", "3NTN=" as BoardOutcome),
+    ];
+    expect(groupTeamTriangles(rows)).toHaveLength(1);
+    const matches = groupTeamMatches(rows);
+    expect(matches).toHaveLength(1);
+    expect(matches[0].homeTable).toBe(4);
+  });
+});
+
+describe("triangleTeamImps", () => {
+  it("cross-IMPs each team against the other two tables per board", () => {
+    // Board 1 (None vul): scores 420, 400, 110.
+    // T1: imps(20)+imps(310) = 1+7 = 8; T2: imps(-20)+imps(290) = -1+7 = 6;
+    // T3: imps(-310)+imps(-290) = -7-7 = -14. Sum is zero.
+    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
+    const [tri] = groupTeamTriangles(rows);
+    const { perTeam, boardsPlayed } = triangleTeamImps(tri);
+
+    expect(boardsPlayed).toBe(1);
+    expect(perTeam.map((t) => [t.teamId, t.crossImps])).toEqual([
+      ["A1NS", 8],
+      ["A2NS", 6],
+      ["A3NS", -14],
+    ]);
+    expect(perTeam.reduce((s, t) => s + t.crossImps, 0)).toBe(0);
+  });
+
+  it("skips a board unless all three tables have a comparable score", () => {
+    // Only two tables entered board 1 -> nothing counts yet.
+    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", null]);
+    const [tri] = groupTeamTriangles(rows);
+    const { perTeam, boardsPlayed } = triangleTeamImps(tri);
+    expect(boardsPlayed).toBe(0);
+    for (const t of perTeam) expect(t.crossImps).toBe(0);
+  });
+});
+
+describe("triangleTeamWins", () => {
+  it("sums win/tie/loss against each of the other two tables per board", () => {
+    // Board 1: 420 > 400 > 110. T1 beats both (2), T2 beats one (1), T3 (0).
+    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
+    const [tri] = groupTeamTriangles(rows);
+    const { perTeam, boardsPlayed } = triangleTeamWins(tri);
+
+    expect(boardsPlayed).toBe(1);
+    expect(perTeam.map((t) => [t.teamId, t.won])).toEqual([
+      ["A1NS", 2],
+      ["A2NS", 1],
+      ["A3NS", 0],
+    ]);
+    // Total board-points per board across the three teams is 3 (3 pairwise
+    // comparisons, each worth 1 split between the two teams).
+    expect(perTeam.reduce((s, t) => s + t.won, 0)).toBe(3);
+  });
+
+  it("splits a tie half each", () => {
+    // All three score 400 -> every pairwise comparison is a tie (0.5 each).
+    const rows = triangleRows(1, 1, ["3NTN=", "3NTN=", "3NTN="]);
+    const [tri] = groupTeamTriangles(rows);
+    const { perTeam } = triangleTeamWins(tri);
+    for (const t of perTeam) expect(t.won).toBe(1); // 0.5 + 0.5
+  });
+});
+
+describe("triangleSubMatches", () => {
+  it("decomposes a triangle into its three head-to-head pairings", () => {
+    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
+    const [tri] = groupTeamTriangles(rows);
+    const subs = triangleSubMatches(tri);
+
+    // Three pairings in ascending (home, opponent) order: 1-2, 1-3, 2-3.
+    expect(
+      subs.map((m) => `${m.homeTable}v${m.opponentTable}`),
+    ).toEqual(["1v2", "1v3", "2v3"]);
+    expect(subs.every((m) => m.round === 1 && m.section === "A")).toBe(true);
+    // Team ids follow the home-NS convention.
+    expect(subs.map((m) => m.homeTeamId)).toEqual(["A1NS", "A1NS", "A2NS"]);
+  });
+
+  it("yields head-to-head IMPs per pairing via teamMatchBoardImps", () => {
+    // Board 1 (None): table1 420, table2 400, table3 110.
+    // 1v2: imps(420-400)=imps(20)=1. 1v3: imps(420-110)=imps(310)=7.
+    // 2v3: imps(400-110)=imps(290)=7.
+    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
+    const [tri] = groupTeamTriangles(rows);
+    const [ab, ac, bc] = triangleSubMatches(tri);
+
+    expect(teamMatchBoardImps(ab).margin).toBe(1);
+    expect(teamMatchBoardImps(ac).margin).toBe(7);
+    expect(teamMatchBoardImps(bc).margin).toBe(7);
   });
 });

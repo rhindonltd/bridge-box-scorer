@@ -18,9 +18,9 @@ import type {
  *
  * A match pits two teams across two tables, so an even count pairs cleanly.
  * With an odd count the director chooses how to handle the odd team: "BYE"
- * (the default) sits one team out each round, while "TRIANGLE" (three-way
- * matches) is not yet supported and is offered disabled. The chosen mode is
- * carried on the spec as `oddHandling`; an even count omits it.
+ * (the default) sits one team out each round, or "TRIANGLE" — three teams play
+ * a three-way each round (scored cross-IMP across the three tables). The chosen
+ * mode is carried on the spec as `oddHandling`; an even count omits it.
  */
 export function SwissTeamsSetupDialog({
   open,
@@ -104,9 +104,9 @@ function SwissTeamsSetupForm({
   );
 
   const oddTeams = teams % 2 !== 0;
-  // Only BYE is implemented; picking TRIANGLE would be rejected at start, so
-  // confirming is blocked while it is selected.
-  const blocked = oddTeams && oddHandling !== "BYE";
+  // A triangle needs at least three teams to form the three-way; if fewer are
+  // present, that choice would be rejected at start, so confirming is blocked.
+  const blocked = oddTeams && oddHandling === "TRIANGLE" && teams < 3;
 
   return (
     <>
@@ -189,26 +189,27 @@ function SwissTeamsSetupForm({
               </span>
             </label>
 
-            <label className="flex items-start gap-2 text-sm text-gray-400">
+            <label className="flex items-start gap-2 text-sm text-gray-700">
               <input
                 type="radio"
                 name="oddHandling"
                 value="TRIANGLE"
                 checked={oddHandling === "TRIANGLE"}
                 onChange={() => setOddHandling("TRIANGLE")}
-                disabled
                 className="mt-0.5"
               />
               <span>
                 <span className="font-medium">Triangle</span> — three teams play
-                a three-way match.{" "}
-                <span className="italic">Coming soon.</span>
+                a three-way each round (the bottom three tables first, then the
+                lowest-ranked three without a recent triangle), scored cross-IMP
+                across the three tables.
               </span>
             </label>
 
             {blocked && (
               <p role="alert" className="text-sm font-medium text-red-600">
-                Triangles aren&apos;t supported yet — choose Bye to continue.
+                A triangle needs at least three teams — choose Bye, or add a
+                table.
               </p>
             )}
           </fieldset>

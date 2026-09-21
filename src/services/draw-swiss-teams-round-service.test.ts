@@ -73,12 +73,13 @@ describe("drawNextSwissTeamsRound", () => {
     });
   });
 
-  it("rejects an odd team count that uses (unsupported) triangle handling", async () => {
+  it("rejects a triangle field too small to form a three-way (< 3 teams)", async () => {
     vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
       swissTeams: {
-        teams: 5,
+        // A triangle needs at least three teams; a lone odd team can't form one.
+        teams: 1,
         rounds: 4,
         boardsPerRound: 3,
         oddHandling: "TRIANGLE",
@@ -182,7 +183,8 @@ describe("drawNextSwissTeamsRound", () => {
       2,
       3,
       expect.any(Array),
-      // Even field -> no bye team.
+      // Even field -> no bye team, no triangle.
+      null,
       null,
     );
   });
@@ -231,7 +233,8 @@ describe("drawNextSwissTeamsRound", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(2);
-    // Materialized with the round-2 bye team (4 — lowest without a prior bye).
+    // Materialized with the round-2 bye team (4 — lowest without a prior bye)
+    // and no triangle.
     expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
       "g1",
       "A",
@@ -239,6 +242,67 @@ describe("drawNextSwissTeamsRound", () => {
       3,
       expect.any(Array),
       4,
+      null,
+    );
+  });
+
+  it("draws an odd (TRIANGLE) round and passes the triangle to materialize", async () => {
+    // Round 1 done for a 5-team TRIANGLE event; the bottom three (3,4,5) formed
+    // the round-1 triangle. Round 2 triangles the next-lowest without a recent
+    // triangle: 2,1 have none, top up with the lowest remaining -> {1,2,5}.
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [
+          // Round-1 triangle 3→4→5→3 (directed 3-cycle) plus a normal 1 v 2.
+          { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
+          { roundNumber: 1, ns: "A2NS", ew: "A1EW" },
+          { roundNumber: 1, ns: "A3NS", ew: "A4EW" },
+          { roundNumber: 1, ns: "A4NS", ew: "A5EW" },
+          { roundNumber: 1, ns: "A5NS", ew: "A3EW" },
+        ] as any,
+        [{ status: "CONFIRMED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 3,
+        oddHandling: "TRIANGLE",
+      },
+    } as any);
+    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
+      {
+        section: "A",
+        overallScore: {
+          lines: [
+            { teamId: "A1NS" },
+            { teamId: "A2NS" },
+            { teamId: "A3NS" },
+            { teamId: "A4NS" },
+            { teamId: "A5NS" },
+          ],
+        },
+      },
+    ] as any);
+    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
+
+    const result = await drawNextSwissTeamsRound("g1", "A");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.roundNumber).toBe(2);
+    // Round-2 triangle: teams 3,4,5 had a triangle already, so the fresh 1,2
+    // plus the lowest remaining (5) -> {1,2,5}; no bye.
+    expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      2,
+      3,
+      expect.any(Array),
+      null,
+      { a: 1, b: 2, c: 5 },
     );
   });
 

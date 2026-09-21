@@ -217,6 +217,53 @@ describe("assembleSwissTeams", () => {
     ]);
   });
 
+  it("writes a triangle as three same-round match nodes with cross-IMP totals", () => {
+    const triTeams = [team(1, "Sharks"), team(2, "Dragons"), team(3, "Owls")];
+    // Triangle 1→2→3→1 on board 1 (None vul): table1 420, table2 400, table3 110.
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A3EW", "3NTN=" as BoardOutcome),
+      board(1, 3, 1, "A3NS", "A1EW", "2SN=" as BoardOutcome),
+    ];
+
+    const data = assembleSwissTeams(game, club, triTeams, boards);
+
+    // Three MATCH nodes, all round 1, covering the three pairings.
+    expect(data.matches).toHaveLength(3);
+    expect(data.matches.every((m) => m.round === 1)).toBe(true);
+    expect(
+      data.matches.map((m) => `${m.team}v${m.opposingTeam}`).sort(),
+    ).toEqual(["1v2", "1v3", "2v3"]);
+
+    // Totals are the cross-IMP VPs (integer): cross-IMPs 8, 6, -14 -> the two
+    // above-field teams beat 10, the below-field team is under 10.
+    const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalVP]));
+    expect(byNumber.get("1")!).toBeGreaterThan(10);
+    expect(byNumber.get("2")!).toBeGreaterThan(10);
+    expect(byNumber.get("3")!).toBeLessThan(10);
+    // Team 1 (cross-IMP 8) outranks team 2 (6) outranks team 3 (-14).
+    expect(byNumber.get("1")!).toBeGreaterThanOrEqual(byNumber.get("2")!);
+    expect(byNumber.get("2")!).toBeGreaterThan(byNumber.get("3")!);
+    expect(data.ranking[0].number).toBe("1");
+  });
+
+  it("keeps a triangle's cross-IMP total independent of the head-to-head node scores", () => {
+    const triTeams = [team(1, "A"), team(2, "B"), team(3, "C")];
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A3EW", "3NTN=" as BoardOutcome),
+      board(1, 3, 1, "A3NS", "A1EW", "2SN=" as BoardOutcome),
+    ];
+
+    const data = assembleSwissTeams(game, club, triTeams, boards);
+    // The three head-to-head node scores do NOT drive the total (Option A):
+    // team 1's total equals its cross-IMP VP, not the sum of its 1v2 + 1v3 node
+    // scores. Assert the total sits on the WBF scale around the neutral 10.
+    const t1 = data.ranking.find((r) => r.number === "1")!;
+    expect(t1.totalVP).toBeGreaterThan(10);
+    expect(t1.totalVP).toBeLessThanOrEqual(20);
+  });
+
   it("awards the winner's VP to the opposing team on a negative margin", () => {
     // Primary team (home NS) does badly: 4S-3 at its own table while the
     // opponent's home table makes 3NT, so team 1's margin is negative.

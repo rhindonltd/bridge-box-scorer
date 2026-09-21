@@ -12,7 +12,9 @@ import {
 import { swissRoundBoardRange } from "@/services/materialize-swiss-round";
 import {
   expandTeamMatches,
+  expandTeamTriangle,
   type TeamsMatch,
+  type TeamsTriangle,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
 
 /**
@@ -64,12 +66,19 @@ const TEAMS_BYE_PHANTOM = "PHANTOM";
  *   - EW is A's away pair (id "${A}EW", which travels here from A's home table).
  * So every pair keeps its stable id all event; only the away pair's table
  * changes round to round.
+ *
+ * An odd field carries either a `byeTeamId` (one team sits out) or a `triangle`
+ * (three teams play a three-way), never both. A triangle expands to its three
+ * home tables in the fixed cycle (A-NS/B-EW, B-NS/C-EW, C-NS/A-EW), each playing
+ * the round's WHOLE board set — every board is played at all three tables, and
+ * the cross-IMP scorer compares the three tables board by board.
  */
 export function swissTeamsRoundToMaterializable(
   roundNumber: number,
   boardsPerRound: number,
   matches: TeamsMatch[],
   byeTeamId: number | null = null,
+  triangle: TeamsTriangle | null = null,
 ): MaterializableMovement {
   const { boardStart, boardEnd } = swissRoundBoardRange(
     roundNumber,
@@ -90,6 +99,26 @@ export function swissTeamsRoundToMaterializable(
       ],
     }),
   );
+
+  // Odd field (triangle): the three tables of the three-way, each playing the
+  // whole board set. Its seats use the same home-NS / away-EW convention, so
+  // the reconstruction detects the directed 3-cycle and scores it cross-IMP.
+  if (triangle != null) {
+    for (const placement of expandTeamTriangle(triangle)) {
+      tablesOut.push({
+        tableNumber: placement.tableNumber,
+        rounds: [
+          {
+            roundNumber,
+            ns: homePairId(placement.nsTeam),
+            ew: awayPairId(placement.ewTeam),
+            boardStart,
+            boardEnd,
+          },
+        ],
+      });
+    }
+  }
 
   // Odd field: the bye team sits at its own home table (its home pair on NS,
   // a phantom opponent on EW) with the round's boards flagged SIT_OUT, so the
@@ -126,6 +155,7 @@ export async function materializeSwissTeamsRound(
   boardsPerRound: number,
   matches: TeamsMatch[],
   byeTeamId: number | null = null,
+  triangle: TeamsTriangle | null = null,
 ): Promise<{ written: boolean }> {
   const db = await getDb(gameId);
   if (!db) {
@@ -147,6 +177,7 @@ export async function materializeSwissTeamsRound(
     boardsPerRound,
     matches,
     byeTeamId,
+    triangle,
   );
 
   const { boardRows, assignmentRows } = buildSectionRows(section, movement);

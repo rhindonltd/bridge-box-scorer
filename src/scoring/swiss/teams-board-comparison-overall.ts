@@ -6,8 +6,10 @@ import { rank } from "@/scoring/overall/rank";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 import {
   groupTeamMatches,
+  groupTeamTriangles,
   teamByeRounds,
   teamMatchBoardWins,
+  triangleTeamWins,
 } from "./team-match";
 
 /**
@@ -93,6 +95,17 @@ export function calculateTeamsBoardComparisonOverall(
       BYE_WON_FRACTION * bye.boards,
       bye.boards,
     );
+  }
+
+  // Credit each triangle team its board-comparison result: on every counted
+  // board it is compared against BOTH other tables (win 1 / tie 0.5 / loss 0
+  // each), so it plays two comparisons per board. Native units, exactly like a
+  // two-team match — the BAM/PAB scale is applied only at display.
+  for (const triangle of groupTeamTriangles(boardRows)) {
+    const { perTeam, boardsPlayed } = triangleTeamWins(triangle);
+    for (const team of perTeam) {
+      credit(totals, team.teamId, triangle.round, team.won, boardsPlayed * 2);
+    }
   }
 
   const lines = rank(

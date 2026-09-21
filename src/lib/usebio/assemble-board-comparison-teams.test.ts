@@ -197,3 +197,49 @@ describe("assembleBoardComparisonTeams — Point-a-Board (scale 2)", () => {
     expect(data.ranking[0]).toMatchObject({ number: "1", place: 1, totalWon: 3 });
   });
 });
+
+describe("assembleBoardComparisonTeams — triangles", () => {
+  const triTeams = [team(1, "Sharks"), team(2, "Dragons"), team(3, "Owls")];
+
+  it("writes a triangle as three same-round match nodes with cross board-comparison totals (BAM)", () => {
+    // Triangle 1→2→3→1 on board 1 (None vul): 420, 400, 110.
+    // Cross wins: team1 beats both (2), team2 beats one (1), team3 none (0).
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A3EW", "3NTN=" as BoardOutcome),
+      board(1, 3, 1, "A3NS", "A1EW", "2SN=" as BoardOutcome),
+    ];
+
+    const data = assembleBoardComparisonTeams(game, club, triTeams, boards, "BAM");
+
+    // Three MATCH nodes, all round 1, covering the three pairings.
+    expect(data.matches).toHaveLength(3);
+    expect(data.matches.every((m) => m.round === 1)).toBe(true);
+    expect(
+      data.matches.map((m) => `${m.team}v${m.opposingTeam}`).sort(),
+    ).toEqual(["1v2", "1v3", "2v3"]);
+
+    // Totals are the cross board-comparison points (BAM ×1): 2 / 1 / 0.
+    const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalWon]));
+    expect(byNumber.get("1")).toBe(2);
+    expect(byNumber.get("2")).toBe(1);
+    expect(byNumber.get("3")).toBe(0);
+    expect(data.ranking[0].number).toBe("1");
+  });
+
+  it("scales the triangle cross totals onto PAB points (×2)", () => {
+    const pabGame = { ...game, scoringType: "PAB" } as BridgeGame;
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A3EW", "3NTN=" as BoardOutcome),
+      board(1, 3, 1, "A3NS", "A1EW", "2SN=" as BoardOutcome),
+    ];
+
+    const data = assembleBoardComparisonTeams(pabGame, club, triTeams, boards, "PAB");
+    const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalWon]));
+    // PAB doubles: 4 / 2 / 0.
+    expect(byNumber.get("1")).toBe(4);
+    expect(byNumber.get("2")).toBe(2);
+    expect(byNumber.get("3")).toBe(0);
+  });
+});
