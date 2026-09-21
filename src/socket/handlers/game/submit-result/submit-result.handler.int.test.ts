@@ -8,6 +8,7 @@ import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-g
 import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
 import { getDb } from "@/db/games";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
+import { getBoardStatus } from "@/db/games/queries/get-board-status";
 
 // Mock the results broadcaster so this test does not pull in the real
 // leaderboard/board compute + drizzle chain; assert it's invoked on confirm.
@@ -24,28 +25,14 @@ const mockUpdate = vi.fn(() => ({
   set: mockSet,
 }));
 
-// The SIT_OUT guard reads the target board's status; default to a playable
-// (non-SIT_OUT) board so normal submissions proceed.
-const mockSelect = vi.fn(() => ({
-  from: vi.fn(() => ({
-    where: vi.fn(() => ({
-      get: vi.fn(async () => ({ status: "NOT_PLAYED" })),
-    })),
-  })),
-}));
-
 vi.mock("@/db/games", () => ({
-  getDb: vi.fn(async () => ({ update: mockUpdate, select: mockSelect })),
+  getDb: vi.fn(async () => ({ update: mockUpdate })),
 }));
 
-vi.mock("@/db/games/tables/boards", () => ({
-  boards: {
-    section: "section",
-    roundNumber: "roundNumber",
-    tableNumber: "tableNumber",
-    boardNumber: "boardNumber",
-    status: "status",
-  },
+// The SIT_OUT guard reads the board status via getBoardStatus; default to a
+// playable board. The sit-out test overrides this to "SIT_OUT".
+vi.mock("@/db/games/queries/get-board-status", () => ({
+  getBoardStatus: vi.fn(async () => "NOT_PLAYED"),
 }));
 
 // Stateful in-memory fake for the board-submission persistence layer. The
@@ -132,10 +119,9 @@ describe("registerSubmitResultHandler (integration)", () => {
     vi.mocked(assertPlayer).mockResolvedValue(true);
     // Restore the default db (mockResolvedValue overrides in some tests persist
     // across cases since clearAllMocks does not reset implementations).
-    vi.mocked(getDb).mockResolvedValue({
-      update: mockUpdate,
-      select: mockSelect,
-    } as any);
+    vi.mocked(getDb).mockResolvedValue({ update: mockUpdate } as any);
+    // Restore the default playable-board status (some tests override it).
+    vi.mocked(getBoardStatus).mockResolvedValue("NOT_PLAYED");
     // Restore the stateful default for findBoardSubmissions. The handler only
     // reads `side`/`boardNumber`/`result` off each row, so the minimal
     // FakeSubmission shape is sufficient; cast to the real signature for TS.
@@ -527,16 +513,7 @@ describe("registerSubmitResultHandler (integration)", () => {
 
   it("rejects a submission against a SIT_OUT board", async () => {
     // Override the board status lookup to report a sit-out board.
-    vi.mocked(getDb).mockResolvedValue({
-      update: mockUpdate,
-      select: vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => ({
-            get: vi.fn(async () => ({ status: "SIT_OUT" })),
-          })),
-        })),
-      })),
-    } as any);
+    vi.mocked(getBoardStatus).mockResolvedValue("SIT_OUT");
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {

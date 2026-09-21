@@ -2,6 +2,7 @@ import { TeamSwissVpOverallScore } from "@/model/leaderboard";
 import { rank } from "@/scoring/overall/rank";
 import { calculateWbfVP } from "./wbf-vp";
 import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
+import { VpAccumulator, creditVp } from "./vp-accumulator";
 import {
   groupTeamMatches,
   groupTeamTriangles,
@@ -17,23 +18,6 @@ import {
  * sitting team, without matching a strong win.
  */
 const BYE_VP = 12;
-
-interface Accumulator {
-  totalVP: number;
-  vpByRound: Record<number, number>;
-}
-
-function credit(
-  totals: Map<string, Accumulator>,
-  id: string,
-  round: number,
-  vp: number,
-): void {
-  const acc = totals.get(id) ?? { totalVP: 0, vpByRound: {} };
-  acc.vpByRound[round] = vp;
-  acc.totalVP = Math.round((acc.totalVP + vp) * 100) / 100;
-  totals.set(id, acc);
-}
 
 /**
  * Compute the Swiss Teams Victory-Point overall standings from a game's board
@@ -56,7 +40,7 @@ function credit(
 export function calculateTeamsVpOverall(
   boardRows: SwissVpBoardRow[],
 ): TeamSwissVpOverallScore {
-  const totals = new Map<string, Accumulator>();
+  const totals = new Map<string, VpAccumulator>();
 
   for (const match of groupTeamMatches(boardRows)) {
     const { round, homeTeamId, opponentTeamId } = match;
@@ -64,25 +48,25 @@ export function calculateTeamsVpOverall(
 
     if (boardsPlayed === 0) {
       // Match drawn but nothing comparable yet: both teams sit at the average.
-      credit(totals, homeTeamId, round, NEUTRAL_VP);
-      credit(totals, opponentTeamId, round, NEUTRAL_VP);
+      creditVp(totals, homeTeamId, round, NEUTRAL_VP);
+      creditVp(totals, opponentTeamId, round, NEUTRAL_VP);
       continue;
     }
 
     const { winnerVP, loserVP } = calculateWbfVP(boardsPlayed, margin);
     // A non-negative margin means the home team won (zero is a tie: both get 10).
     if (margin >= 0) {
-      credit(totals, homeTeamId, round, winnerVP);
-      credit(totals, opponentTeamId, round, loserVP);
+      creditVp(totals, homeTeamId, round, winnerVP);
+      creditVp(totals, opponentTeamId, round, loserVP);
     } else {
-      credit(totals, opponentTeamId, round, winnerVP);
-      credit(totals, homeTeamId, round, loserVP);
+      creditVp(totals, opponentTeamId, round, winnerVP);
+      creditVp(totals, homeTeamId, round, loserVP);
     }
   }
 
   // Credit each bye team an average-plus result for the round it sat out.
   for (const bye of teamByeRounds(boardRows)) {
-    credit(totals, bye.teamId, bye.round, BYE_VP);
+    creditVp(totals, bye.teamId, bye.round, BYE_VP);
   }
 
   // Credit each triangle team its cross-IMP result for the round, converted to
@@ -94,11 +78,11 @@ export function calculateTeamsVpOverall(
     for (const team of perTeam) {
       if (boardsPlayed === 0) {
         // Nothing comparable yet: sit the team at the neutral average.
-        credit(totals, team.teamId, triangle.round, NEUTRAL_VP);
+        creditVp(totals, team.teamId, triangle.round, NEUTRAL_VP);
         continue;
       }
       const { winnerVP, loserVP } = calculateWbfVP(boardsPlayed, team.crossImps);
-      credit(
+      creditVp(
         totals,
         team.teamId,
         triangle.round,

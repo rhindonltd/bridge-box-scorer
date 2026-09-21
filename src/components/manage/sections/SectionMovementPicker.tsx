@@ -14,6 +14,7 @@ import {
   setSectionSwissMovement,
   setSectionSwissTeamsMovement,
 } from "@/lib/section-service";
+import { errorMessage } from "@/lib/error-message";
 import {
   groupByBoardsPerPair,
   movementMatchesSelection,
@@ -137,7 +138,7 @@ export function SectionMovementPicker({
       onDone?.();
       onSelected?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to set movement");
+      alert(errorMessage(err, "Failed to set movement"));
     } finally {
       setSaving(false);
     }
@@ -151,7 +152,7 @@ export function SectionMovementPicker({
       onDone?.();
       onSelected?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to set movement");
+      alert(errorMessage(err, "Failed to set movement"));
     } finally {
       setSaving(false);
     }
@@ -174,7 +175,7 @@ export function SectionMovementPicker({
       onDone?.();
       onSelected?.();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to set movement");
+      alert(errorMessage(err, "Failed to set movement"));
     } finally {
       setSaving(false);
     }
@@ -228,54 +229,21 @@ export function SectionMovementPicker({
             </h2>
             <div className="p-3">
               {isTeams ? (
-                <button
-                  type="button"
+                <SwissOptionCard
+                  testId="swiss-teams-movement-option"
+                  title="Swiss Teams"
+                  description="The two pairs at each table form a team; teams are re-drawn each round by standing. You draw each round as the event runs."
+                  selected={selectedSwissTeams != null}
                   onClick={() => setSwissTeamsOpen(true)}
-                  data-testid="swiss-teams-movement-option"
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition hover:bg-white ${
-                    selectedSwissTeams
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <span>
-                    <span className="block text-sm font-semibold text-gray-900">
-                      Swiss Teams
-                    </span>
-                    <span className="block text-xs text-gray-500">
-                      The two pairs at each table form a team; teams are re-drawn
-                      each round by standing. You draw each round as the event
-                      runs.
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-xs font-medium text-blue-600">
-                    {selectedSwissTeams ? "Selected" : "Set up"}
-                  </span>
-                </button>
+                />
               ) : (
-                <button
-                  type="button"
+                <SwissOptionCard
+                  testId="swiss-movement-option"
+                  title="Swiss Pairs"
+                  description="Pairs are re-drawn each round by standing; you draw each round as the event runs."
+                  selected={selectedSwiss != null}
                   onClick={() => setSwissOpen(true)}
-                  data-testid="swiss-movement-option"
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition hover:bg-white ${
-                    selectedSwiss
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <span>
-                    <span className="block text-sm font-semibold text-gray-900">
-                      Swiss Pairs
-                    </span>
-                    <span className="block text-xs text-gray-500">
-                      Pairs are re-drawn each round by standing; you draw each
-                      round as the event runs.
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-xs font-medium text-blue-600">
-                    {selectedSwiss ? "Selected" : "Set up"}
-                  </span>
-                </button>
+                />
               )}
             </div>
           </section>
@@ -345,5 +313,46 @@ export function SectionMovementPicker({
         onConfirm={handleConfirmSwissTeams}
       />
     </div>
+  );
+}
+
+/**
+ * The single Swiss option button shown in the single-section setup — one card
+ * for Swiss Pairs, one for Swiss Teams. Clicking it opens the matching setup
+ * dialog. It reads "Selected" once a Swiss movement is chosen, otherwise
+ * "Set up", and highlights when selected.
+ */
+function SwissOptionCard({
+  testId,
+  title,
+  description,
+  selected,
+  onClick,
+}: {
+  testId: string;
+  title: string;
+  description: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition hover:bg-white ${
+        selected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"
+      }`}
+    >
+      <span>
+        <span className="block text-sm font-semibold text-gray-900">
+          {title}
+        </span>
+        <span className="block text-xs text-gray-500">{description}</span>
+      </span>
+      <span className="shrink-0 text-xs font-medium text-blue-600">
+        {selected ? "Selected" : "Set up"}
+      </span>
+    </button>
   );
 }

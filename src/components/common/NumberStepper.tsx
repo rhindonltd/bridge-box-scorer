@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useAutoRepeat } from "@/hooks/use-auto-repeat";
 
 export type Props = {
   value: number;
@@ -9,7 +9,7 @@ export type Props = {
   onChange: (value: number) => void;
 };
 
-export default function NumberStepper({
+export function NumberStepper({
   value,
   showPlus,
   zeroCharacter = "=",
@@ -17,35 +17,12 @@ export default function NumberStepper({
   max = Infinity,
   onChange,
 }: Props) {
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { start: startAdjusting, stop: stopAdjusting } = useAutoRepeat();
 
   const clamp = (val: number) => Math.max(min, Math.min(max, val));
 
   const adjust = (delta: number) => {
     onChange(clamp(value + delta));
-  };
-
-  const startAdjusting = (delta: number) => {
-    let speed = 300;
-
-    adjust(delta); // immediate
-
-    timeoutRef.current = setTimeout(() => {
-      const tick = () => {
-        adjust(delta);
-
-        speed = Math.max(50, speed - 30);
-        intervalRef.current = setTimeout(tick, speed);
-      };
-
-      tick();
-    }, 400);
-  };
-
-  const stopAdjusting = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (intervalRef.current) clearTimeout(intervalRef.current);
   };
 
   const resultText =
@@ -63,10 +40,10 @@ export default function NumberStepper({
       <button
         type="button"
         className="w-[35px] h-[35px] text-xl rounded-lg border disabled:opacity-50"
-        onMouseDown={() => startAdjusting(-1)}
+        onMouseDown={() => startAdjusting(() => adjust(-1))}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
-        onTouchStart={() => startAdjusting(-1)}
+        onTouchStart={() => startAdjusting(() => adjust(-1))}
         onTouchEnd={stopAdjusting}
         disabled={value <= min}
       >
@@ -82,10 +59,10 @@ export default function NumberStepper({
       <button
         type="button"
         className="w-[35px] h-[35px] text-2xl rounded-lg border disabled:opacity-50"
-        onMouseDown={() => startAdjusting(1)}
+        onMouseDown={() => startAdjusting(() => adjust(1))}
         onMouseUp={stopAdjusting}
         onMouseLeave={stopAdjusting}
-        onTouchStart={() => startAdjusting(1)}
+        onTouchStart={() => startAdjusting(() => adjust(1))}
         onTouchEnd={stopAdjusting}
         disabled={value >= max}
       >

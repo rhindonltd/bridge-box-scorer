@@ -19,6 +19,23 @@ export function rankCell(row: { rank: number; tied: boolean }) {
 }
 
 /**
+ * The round-column numbers `1..N` for a per-round leaderboard, where `N` is the
+ * highest round any line has been scored in (0 rounds ⇒ an empty list, i.e. no
+ * round columns yet). Each line records its per-round values in a `Record`
+ * keyed by round number (`vpByRound`, `byRound`, …); pass that field's map.
+ */
+export function roundColumnNumbers<TLine>(
+  lines: TLine[],
+  perRound: (line: TLine) => Record<number, unknown>,
+): number[] {
+  const roundCount = lines.reduce((max, line) => {
+    const rounds = Object.keys(perRound(line)).map(Number);
+    return rounds.length === 0 ? max : Math.max(max, ...rounds);
+  }, 0);
+  return Array.from({ length: roundCount }, (_, i) => i + 1);
+}
+
+/**
  * Build a simple "Rank / Pair / <score>" overall view for the IMP-family
  * plugins (IMP and Cross-IMP), which differ only in their id, label, column
  * heading, and which numeric field holds the score. Removes the near-identical

@@ -7,40 +7,39 @@ import { respondToActionError } from "@/lib/api/client-error";
 import { renameSection } from "@/db/games/actions/rename-section";
 import { deleteSection } from "@/db/games/actions/delete-section";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
-import { sectionFromUrl } from "@/lib/api/section-param";
 
 const renameSchema = z.object({ label: z.string().min(1) });
 
 /**
  * PATCH /api/games/[gameId]/sections/[section] — rename a section's label.
  */
-export const PATCH = withDirectorRoute(async ({ gameId, req }) => {
-  const section = sectionFromUrl(req.url);
-  const parsed = renameSchema.safeParse(await req.json().catch(() => null));
-  if (!section || !parsed.success) {
-    return NextResponse.json(
-      { success: false, error: "Invalid request" },
-      { status: 400 },
-    );
-  }
+export const PATCH = withDirectorRoute(
+  async ({ gameId, section, body }) => {
+    if (!section) {
+      return NextResponse.json(
+        { success: false, error: "Invalid request" },
+        { status: 400 },
+      );
+    }
 
-  try {
-    await renameSection(gameId, section, parsed.data.label);
-    await broadcastSections(gameId);
-    return success({});
-  } catch (err) {
-    return respondToActionError(
-      err,
-      `Failed to rename section ${section} in game ${gameId}:`,
-    );
-  }
-});
+    try {
+      await renameSection(gameId, section, body.label);
+      await broadcastSections(gameId);
+      return success({});
+    } catch (err) {
+      return respondToActionError(
+        err,
+        `Failed to rename section ${section} in game ${gameId}:`,
+      );
+    }
+  },
+  { bodySchema: renameSchema },
+);
 
 /**
  * DELETE /api/games/[gameId]/sections/[section] — remove a section.
  */
-export const DELETE = withDirectorRoute(async ({ gameId, req }) => {
-  const section = sectionFromUrl(req.url);
+export const DELETE = withDirectorRoute(async ({ gameId, section }) => {
   if (!section) {
     return NextResponse.json(
       { success: false, error: "Invalid request" },

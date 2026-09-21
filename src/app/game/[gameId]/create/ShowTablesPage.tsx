@@ -13,6 +13,7 @@ import { ClientSection } from "@/hooks/sections";
 import { Pair, Seat } from "@/model/participants";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { StepperInput } from "@/components/common/StepperInput";
+import { errorMessage } from "@/lib/error-message";
 import { useSetupSections } from "@/components/manage/sections/useSetupSections";
 import {
   updateSectionTables,
@@ -145,7 +146,7 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
     } catch (err) {
       // Roll back to the server's truth and surface the shrink-guard message.
       void mutate(sectionsKey);
-      alert(err instanceof Error ? err.message : "Failed to update tables");
+      alert(errorMessage(err, "Failed to update tables"));
     }
   }
 
@@ -157,7 +158,7 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
       // The pair is gone; close the management dialog.
       setOpenTable(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to evict participant");
+      alert(errorMessage(err, "Failed to evict participant"));
     }
   }
 
@@ -191,7 +192,7 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
         stationaryPairs: Array.from(current).sort((a, b) => a - b),
       });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update stationary");
+      alert(errorMessage(err, "Failed to update stationary"));
     }
   }
 

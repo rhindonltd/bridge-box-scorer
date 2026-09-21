@@ -15,7 +15,15 @@ vi.mock("@/lib/socket", () => ({
 }));
 
 const mockFetcher = vi.fn();
-vi.mock("@/lib/fetcher", () => ({ fetcher: (...args: unknown[]) => mockFetcher(...args) }));
+vi.mock("@/lib/fetcher", () => ({
+  fetcher: (...args: unknown[]) => mockFetcher(...args),
+  unwrapFetcher:
+    (key: string) =>
+    async (...args: unknown[]) => {
+      const result = (await mockFetcher(...args)) as Record<string, unknown>;
+      return result[key];
+    },
+}));
 
 import { GameProvider, useGame, useRequiredGame } from "./GameContext";
 import { SocketEvents } from "@/socket/socket-events";

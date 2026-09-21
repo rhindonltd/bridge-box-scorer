@@ -6,8 +6,7 @@ import { Rooms } from "@/socket/rooms";
 import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { drawNextSwissRound } from "@/services/draw-swiss-round-service";
-import { getDb } from "@/db/games";
-import { buildLeaderboardPayload } from "@/socket/handlers/results/broadcast-results";
+import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 
 const payloadSchema = z.object({
@@ -71,14 +70,7 @@ export function registerDrawNextRoundHandler(socket: Socket, io: Server) {
       io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, { game });
 
       // Push a fresh leaderboard snapshot to viewers (occupancy-gated).
-      const leaderboardRoom = Rooms.leaderboard(gameId);
-      if ((io.sockets.adapter.rooms.get(leaderboardRoom)?.size ?? 0) > 0) {
-        const db = await getDb(gameId);
-        if (db) {
-          const payloadLb = await buildLeaderboardPayload(db, gameId);
-          io.to(leaderboardRoom).emit(SocketEvents.LEADERBOARD_SYNC, payloadLb);
-        }
-      }
+      await broadcastLeaderboardChanged(io, gameId);
 
       ack({
         success: true,

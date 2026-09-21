@@ -1,14 +1,13 @@
 import { Server, Socket } from "socket.io";
-import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
-import { getDb } from "@/db/games";
-import { boards as pairsBoards } from "@/db/games/tables/boards";
+import { Db, getDb } from "@/db/games";
 import { BoardOutcome } from "@/model/score";
 import { parseSeat, PairSeat } from "@/model/participants";
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
+import { getBoardStatus } from "@/db/games/queries/get-board-status";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
 import { confirmBoardResult } from "@/db/games/actions/set-board-result";
 import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
@@ -57,26 +56,18 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         // board / submission lookup so sections sharing a table number don't
         // collide.
         const { section, direction } = parseSeat(seat as PairSeat);
-        const isNS = direction === "NS";
+        const db = await getDb(gameId);
 
         // Defensively reject submissions against a sit-out board: nobody plays
         // that board at that table this round.
-        const db = await getDb(gameId);
         if (db) {
-          const targetBoard = await db
-            .select({ status: pairsBoards.status })
-            .from(pairsBoards)
-            .where(
-              and(
-                eq(pairsBoards.section, section),
-                eq(pairsBoards.roundNumber, roundNumber),
-                eq(pairsBoards.tableNumber, tableNumber),
-                eq(pairsBoards.boardNumber, boardNumber),
-              ),
-            )
-            .get();
-
-          if (targetBoard?.status === "SIT_OUT") {
+          const status = await getBoardStatus(db, {
+            section,
+            roundNumber,
+            tableNumber,
+            boardNumber,
+          });
+          if (status === "SIT_OUT") {
             throw new HandlerError("This board is a sit-out");
           }
         }
@@ -89,7 +80,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             roundNumber,
             tableNumber,
             boardNumber,
-            side: isNS ? "NS" : "EW",
+            side: direction,
             result,
           });
         } catch (err) {
@@ -104,14 +95,9 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
 
         // Reconcile the two sides' pending submissions. The dual-side
         // confirmation rule lives in a pure helper; this handler only reacts to
-        // its verdict (persist + broadcast).
+        // its verdict.
         const outcome = reconcileSubmissions(
-          await findBoardSubmissions(
-            gameId,
-            section,
-            tableNumber,
-            roundNumber,
-          ),
+          await findBoardSubmissions(gameId, section, tableNumber, roundNumber),
         );
 
         if (outcome.status === "pending") {
@@ -119,7 +105,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
         }
 
         if (outcome.status === "mismatch") {
-          // Keep pending, notify both sides.
+          // Keep the submissions pending and notify both sides of the clash.
           io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_MISMATCH, {
             gameId,
             roundNumber,
@@ -132,43 +118,69 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           return;
         }
 
-        // Confirmed: both sides agree. Persist the confirmed result (reuse the
-        // db resolved above), clear the pending submissions, and broadcast.
-        if (!db) {
-          throw new Error("Game db does not exist");
-        }
-
-        const { boardNumber: confirmedBoardNumber, result: confirmedResult } =
-          outcome;
-
-        await confirmBoardResult(
-          db,
-          { section, roundNumber, tableNumber, boardNumber: confirmedBoardNumber },
-          confirmedResult as BoardOutcome,
-        );
-
-        io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {
+        // Confirmed: both sides agree. Persist the result, clear the pending
+        // submissions, notify the room, and push recomputed snapshots.
+        await confirmAndBroadcast(io, db, {
           gameId,
+          section,
           roundNumber,
           tableNumber,
-          boardNumber: confirmedBoardNumber,
-          result: confirmedResult,
+          boardNumber: outcome.boardNumber,
+          result: outcome.result as BoardOutcome,
         });
-
-        // Clear pending for this board.
-        await deleteBoardSubmissions(gameId, section, tableNumber, roundNumber);
-
-        io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
-          gameId,
-          roundNumber,
-          tableNumber,
-          boardNumber: confirmedBoardNumber,
-        });
-
-        // Push recomputed leaderboard / traveller snapshots to any clients
-        // currently viewing them (occupancy-gated inside the broadcaster).
-        await broadcastResultsChanged(io, gameId, confirmedBoardNumber);
       },
     },
   );
+}
+
+/**
+ * The confirmed-result path: persist the agreed result, clear the table's
+ * pending submissions, emit the board-confirmed and board-updated events, and
+ * push recomputed leaderboard / traveller snapshots (occupancy-gated inside the
+ * broadcaster). Split out of the handler so the handler body reads as the
+ * submit → reconcile → verdict flow its comments describe.
+ */
+async function confirmAndBroadcast(
+  io: Server,
+  db: Db | null,
+  args: {
+    gameId: string;
+    section: string;
+    roundNumber: number;
+    tableNumber: number;
+    boardNumber: number;
+    result: BoardOutcome;
+  },
+) {
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+
+  const { gameId, section, roundNumber, tableNumber, boardNumber, result } =
+    args;
+
+  await confirmBoardResult(
+    db,
+    { section, roundNumber, tableNumber, boardNumber },
+    result,
+  );
+
+  io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {
+    gameId,
+    roundNumber,
+    tableNumber,
+    boardNumber,
+    result,
+  });
+
+  await deleteBoardSubmissions(gameId, section, tableNumber, roundNumber);
+
+  io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_RESULT_UPDATED, {
+    gameId,
+    roundNumber,
+    tableNumber,
+    boardNumber,
+  });
+
+  await broadcastResultsChanged(io, gameId, boardNumber);
 }

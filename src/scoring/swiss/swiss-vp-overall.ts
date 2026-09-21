@@ -4,6 +4,7 @@ import { scoreIMP } from "@/scoring/traveller/pair/imp";
 import { rank } from "@/scoring/overall/rank";
 import { calculateWbfVP } from "./wbf-vp";
 import { boardResult } from "./team-match";
+import { VpAccumulator, creditVp } from "./vp-accumulator";
 
 /**
  * The minimal board-row shape the Swiss VP aggregation needs. Kept structural
@@ -34,25 +35,6 @@ function matchKey(row: SwissVpBoardRow): string {
   return `${row.section}|${row.roundNumber}|${row.tableNumber}`;
 }
 
-interface Accumulator {
-  totalVP: number;
-  vpByRound: Record<number, number>;
-}
-
-function credit(
-  totals: Map<string, Accumulator>,
-  pairId: string,
-  round: number,
-  vp: number,
-): void {
-  const acc = totals.get(pairId) ?? { totalVP: 0, vpByRound: {} };
-  // A pair plays at most one match per round, so this assignment is the round's
-  // VP (not an addition), while the session total sums across rounds.
-  acc.vpByRound[round] = vp;
-  acc.totalVP = Math.round((acc.totalVP + vp) * 100) / 100;
-  totals.set(pairId, acc);
-}
-
 /**
  * Compute the Swiss Pairs Victory-Point overall standings from a game's board
  * rows.
@@ -81,7 +63,7 @@ export function calculateSwissVpOverall(
     matches.set(key, arr);
   }
 
-  const totals = new Map<string, Accumulator>();
+  const totals = new Map<string, VpAccumulator>();
 
   for (const rows of matches.values()) {
     const first = rows[0];
@@ -98,8 +80,8 @@ export function calculateSwissVpOverall(
     if (scoredRows.length === 0) {
       // Match drawn but not started: both pairs sit at the average until a
       // result lands.
-      credit(totals, nsId, round, NEUTRAL_VP);
-      credit(totals, ewId, round, NEUTRAL_VP);
+      creditVp(totals, nsId, round, NEUTRAL_VP);
+      creditVp(totals, ewId, round, NEUTRAL_VP);
       continue;
     }
 
@@ -123,11 +105,11 @@ export function calculateSwissVpOverall(
     // A non-negative margin means NS won (a zero margin is a tie: both sides
     // receive the "loser" 10.0 split, which equals winnerVP at margin 0).
     if (margin >= 0) {
-      credit(totals, nsId, round, winnerVP);
-      credit(totals, ewId, round, loserVP);
+      creditVp(totals, nsId, round, winnerVP);
+      creditVp(totals, ewId, round, loserVP);
     } else {
-      credit(totals, ewId, round, winnerVP);
-      credit(totals, nsId, round, loserVP);
+      creditVp(totals, ewId, round, winnerVP);
+      creditVp(totals, nsId, round, loserVP);
     }
   }
 

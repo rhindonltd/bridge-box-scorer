@@ -41,7 +41,7 @@ function invoke(
       body: JSON.stringify(body),
     },
   );
-  return PUT(req, { params: Promise.resolve({ gameId }) } as never);
+  return PUT(req, { params: Promise.resolve({ gameId, section }) } as never);
 }
 
 describe("PUT /api/games/[gameId]/sections/[section]/tables", () => {

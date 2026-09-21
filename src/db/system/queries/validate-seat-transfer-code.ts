@@ -4,6 +4,7 @@ import { getDb } from "@/db/system";
 import { seatTransferCodes } from "@/db/system/schema";
 import { eq } from "drizzle-orm";
 import { rotateParticipantSecret } from "@/db/games/actions/rotate-participant-secret";
+import { checkCodeValidity } from "./code-validation";
 
 export type ClaimSeatTransferResult =
   | { valid: true; gameId: string; seat: string; token: string }
@@ -29,23 +30,18 @@ export async function validateAndClaimSeatTransferCode(
     .where(eq(seatTransferCodes.code, code.toUpperCase()))
     .get();
 
-  if (!record) {
-    return { valid: false, error: "Invalid code" };
+  const rejection = checkCodeValidity(record);
+  if (rejection) {
+    return rejection;
   }
-
-  if (record.used) {
-    return { valid: false, error: "Code has already been used" };
-  }
-
-  if (new Date() > new Date(record.expiresAt)) {
-    return { valid: false, error: "Code has expired" };
-  }
+  // record is defined here: checkCodeValidity rejects the not-found case above.
+  const valid = record!;
 
   // Rotate the seat's secret so only the claiming device retains access.
   const token = crypto.randomUUID();
   const rotated = await rotateParticipantSecret(
-    record.gameId,
-    record.seat,
+    valid.gameId,
+    valid.seat,
     token,
   );
 
@@ -64,5 +60,5 @@ export async function validateAndClaimSeatTransferCode(
     .set({ used: 1 })
     .where(eq(seatTransferCodes.code, code.toUpperCase()));
 
-  return { valid: true, gameId: record.gameId, seat: record.seat, token };
+  return { valid: true, gameId: valid.gameId, seat: valid.seat, token };
 }

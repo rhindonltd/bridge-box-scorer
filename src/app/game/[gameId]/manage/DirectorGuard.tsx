@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { verifyDirectorTokenWithServer } from "@/lib/director-token";
+import { useAuthGuard } from "@/hooks/use-auth-guard";
 
 interface Props {
   gameId: string;
   children: React.ReactNode;
 }
-
-type AuthState = "checking" | "authorized" | "unauthorized";
 
 /**
  * Client-side guard for the manage screens. Authorization is decided by the
@@ -20,16 +19,9 @@ type AuthState = "checking" | "authorized" | "unauthorized";
  */
 export function DirectorGuard({ gameId, children }: Props) {
   const router = useRouter();
-  const [state, setState] = useState<AuthState>("checking");
-  const latestCheck = useRef(0);
-
-  useEffect(() => {
-    const thisCheck = ++latestCheck.current;
-    verifyDirectorTokenWithServer(gameId).then((valid) => {
-      if (thisCheck !== latestCheck.current) return;
-      setState(valid ? "authorized" : "unauthorized");
-    });
-  }, [gameId]);
+  const { state } = useAuthGuard(
+    useCallback(() => verifyDirectorTokenWithServer(gameId), [gameId]),
+  );
 
   useEffect(() => {
     if (state === "unauthorized") {

@@ -34,6 +34,19 @@ export async function createDb(gameId: string): Promise<Db> {
   return dbInstance;
 }
 
+/**
+ * Resolve a game's database, throwing the standard error when it doesn't exist.
+ * Every action/query that needs a game db uses this so the null-guard lives in
+ * one place instead of being repeated at each call site.
+ */
+export async function requireGameDb(gameId: string): Promise<Db> {
+  const db = await getDb(gameId);
+  if (!db) {
+    throw new Error("Game db does not exist");
+  }
+  return db;
+}
+
 export async function getDb(gameId: string): Promise<Db | null> {
   if (dbInstances.has(gameId)) {
     return dbInstances.get(gameId)!;

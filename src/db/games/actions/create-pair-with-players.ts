@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { NewPlayer, players } from "@/db/games/tables/players";
 import { participants } from "@/db/games/tables/participants";
 import { teams } from "@/db/games/tables/teams";
@@ -28,11 +28,7 @@ export async function createPairWithPlayers(
     teamName?: string | null;
   },
 ): Promise<void> {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   // A team name only applies to the home (NS) pair; trim and drop when blank so
   // the read-time surname fallback stays in effect.

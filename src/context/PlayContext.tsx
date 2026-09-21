@@ -10,7 +10,7 @@ export type RoundSelection = {
   round: number;
 } | null;
 
-interface ContextType {
+interface PlayContextValue {
   boardSelection: BoardSelection;
   selectBoard: (board: number) => void;
   clearBoard: () => void;
@@ -20,7 +20,9 @@ interface ContextType {
   clearRound: () => void;
 }
 
-export const PlayContext = createContext<ContextType | undefined>(undefined);
+export const PlayContext = createContext<PlayContextValue | undefined>(
+  undefined,
+);
 
 export function PlayProvider({ children }: { children: ReactNode }) {
   const [boardSelection, setBoardSelection] = useState<BoardSelection>(null);

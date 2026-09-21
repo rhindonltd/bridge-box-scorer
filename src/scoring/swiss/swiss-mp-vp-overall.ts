@@ -4,6 +4,7 @@ import { rank } from "@/scoring/overall/rank";
 import { calculateIndependentMpVP } from "./matchpoint-vp";
 import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
 import { boardResult } from "./team-match";
+import { VpAccumulator, creditVp } from "./vp-accumulator";
 
 interface Accumulator {
   /** Matchpoints earned across the round's scored boards. */
@@ -12,11 +13,6 @@ interface Accumulator {
   max: number;
   /** Board numbers this pair played in the round (to detect a full round). */
   boards: Set<number>;
-}
-
-interface RoundTotals {
-  totalVP: number;
-  vpByRound: Record<number, number>;
 }
 
 /**
@@ -48,7 +44,7 @@ export function calculateSwissMpVpOverall(
     rounds.set(row.roundNumber, byBoard);
   }
 
-  const totals = new Map<string, RoundTotals>();
+  const totals = new Map<string, VpAccumulator>();
 
   for (const [round, byBoard] of rounds) {
     // Per-pair accumulation of matchpoints and completeness for this round.
@@ -114,10 +110,7 @@ export function calculateSwissMpVpOverall(
         vp = calculateIndependentMpVP((acc.mp / acc.max) * 100).vpAwarded;
       }
 
-      const running = totals.get(pairId) ?? { totalVP: 0, vpByRound: {} };
-      running.vpByRound[round] = vp;
-      running.totalVP = Math.round((running.totalVP + vp) * 100) / 100;
-      totals.set(pairId, running);
+      creditVp(totals, pairId, round, vp);
     }
   }
 

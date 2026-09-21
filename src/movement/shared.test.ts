@@ -7,7 +7,7 @@ import {
   groupByRound,
   parseHeader,
   buildMovementBase,
-  parseMovementType,
+  toMovementType,
   MovementType,
   groupLinesReducer,
   splitLinesOfFile,
@@ -148,13 +148,13 @@ describe("formatBoards", () => {
   });
 });
 
-describe("parseMovementType", () => {
+describe("toMovementType", () => {
   it("maps numeric values to MovementType", () => {
-    expect(parseMovementType(0)).toBe(MovementType.MITCHELL);
-    expect(parseMovementType(1)).toBe(MovementType.SWITCHED_MITCHELL);
-    expect(parseMovementType(2)).toBe(MovementType.HOWELL);
-    expect(parseMovementType(3)).toBe(MovementType.AMERICAN_WHIST);
-    expect(parseMovementType(4)).toBe(MovementType.SCORE_BREAK);
+    expect(toMovementType(0)).toBe(MovementType.MITCHELL);
+    expect(toMovementType(1)).toBe(MovementType.SWITCHED_MITCHELL);
+    expect(toMovementType(2)).toBe(MovementType.HOWELL);
+    expect(toMovementType(3)).toBe(MovementType.AMERICAN_WHIST);
+    expect(toMovementType(4)).toBe(MovementType.SCORE_BREAK);
   });
 });
 

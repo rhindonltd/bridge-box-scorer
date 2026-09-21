@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
+import { useAutoRepeat } from "@/hooks/use-auto-repeat";
 
 interface Props {
   /** Accessible name for the input (kept stable for tests). */
@@ -60,21 +61,12 @@ export function StepperInput({
   // Local draft lets the user clear the box while typing without it snapping
   // back to 0. `null` means "not editing — show the committed value".
   const [draft, setDraft] = useState<string | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => stopAdjusting, []);
+  const { start: startAdjusting, stop: stopAdjusting } = useAutoRepeat();
 
   const clamp = (val: number) => Math.max(min, Math.min(max, val));
 
   const commit = (raw: number) => {
-    // The `: min` fallback is defensive: every caller passes a finite value
-    // (stepping clamps a finite result; typed values are `Number.isNaN`-guarded
-    // and the native number input sanitises non-finite text to ""), so the
-    // non-finite branch is unreachable in practice.
-    /* v8 ignore next */
-    const next = clamp(Number.isFinite(raw) ? raw : min);
-    onChange(next);
+    onChange(clamp(raw));
   };
 
   // Compute the next value for a −/+ press. With `wrap` (and a finite max) the
@@ -93,26 +85,6 @@ export function StepperInput({
     setDraft(null);
     commit(nextValue(direction));
   };
-
-  const startAdjusting = (direction: 1 | -1) => {
-    let speed = 300;
-    stepBy(direction); // immediate
-    timeoutRef.current = setTimeout(() => {
-      const tick = () => {
-        stepBy(direction);
-        speed = Math.max(60, speed - 30);
-        intervalRef.current = setTimeout(tick, speed);
-      };
-      tick();
-    }, 400);
-  };
-
-  function stopAdjusting() {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (intervalRef.current) clearTimeout(intervalRef.current);
-    timeoutRef.current = null;
-    intervalRef.current = null;
-  }
 
   const displayValue = draft ?? String(value);
 
@@ -184,7 +156,7 @@ export function StepperInput({
         disabled={disabled || (!wrap && value <= min)}
         onPointerDown={(e) => {
           e.preventDefault();
-          startAdjusting(-1);
+          startAdjusting(() => stepBy(-1));
         }}
         onPointerUp={stopAdjusting}
         onPointerLeave={stopAdjusting}
@@ -202,7 +174,7 @@ export function StepperInput({
         disabled={disabled || (!wrap && value >= max)}
         onPointerDown={(e) => {
           e.preventDefault();
-          startAdjusting(1);
+          startAdjusting(() => stepBy(1));
         }}
         onPointerUp={stopAdjusting}
         onPointerLeave={stopAdjusting}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import NumberStepper, { Props } from "./NumberStepper";
+import { NumberStepper, Props } from "./NumberStepper";
 
 const meta: Meta<typeof NumberStepper> = {
   title: "Components/Common/NumberStepper",

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { metadata } from "@/db/games/tables/metadata";
 import { eq } from "drizzle-orm";
 import { SectionLetter } from "@/model/participants";
@@ -19,11 +19,7 @@ export async function clearTimerState(
   gameId: string,
   section: SectionLetter,
 ): Promise<void> {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   await db.delete(metadata).where(eq(metadata.key, timerKey(section)));
 }

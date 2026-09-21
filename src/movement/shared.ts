@@ -19,7 +19,12 @@ export enum MovementType {
   SCORE_BREAK,
 }
 
-export const parseMovementType = (value: number): MovementType => value;
+/**
+ * Cast a movement-file's numeric type code to {@link MovementType}. The enum is
+ * numeric and aligned to the file's codes (0 = Mitchell, …), so this is a cast,
+ * not a validating parse — an out-of-range code would pass through unchanged.
+ */
+export const toMovementType = (value: number): MovementType => value;
 
 export type MovementHeader = {
   name: string;
@@ -77,7 +82,7 @@ export const parseHeader = ([
 
   return {
     name: firstLine,
-    movementType: parseMovementType(ints[0]),
+    movementType: toMovementType(ints[0]),
     numberOfTables: ints[1],
     numberOfBoardSets: ints[2] / ints[3],
     defaultBoardsPerSet: ints[3],
@@ -121,9 +126,10 @@ export function buildTables(
 }
 
 /**
- * Expand a 1-based board-set index into its board numbers. Alias of
- * {@link boardsForSet} (the Mitchell family's name for the same operation),
- * kept as a single implementation so the two can't drift.
+ * Expand a 1-based board-set index into its board numbers. This is the
+ * movement-facing name for {@link boardsForSet} (the Mitchell family's internal
+ * name for the same operation); it re-exports the one implementation so pairs
+ * and teams movements read in movement terms without a second copy to drift.
  */
 export const boardSetToBoardList = boardsForSet;
 
@@ -151,6 +157,13 @@ export const boardRangeForSet = (
   return { boardStart, boardEnd: boardStart + boardsPerRound - 1 };
 };
 
+/**
+ * Collapse a list of board numbers into a compact range string, e.g.
+ * `[1,2,3,5]` → `"1-3,5"`. Consecutive runs become `start-end`; singletons stay
+ * bare. The loop runs one past the end on purpose: at `i === boards.length`,
+ * `boards[i]` is `undefined`, which never equals `end + 1`, so the final run is
+ * flushed by the same `else` branch that flushes every other run.
+ */
 export const formatBoards = (boards: number[]): string => {
   if (boards.length === 0) return "";
   const ranges: string[] = [];

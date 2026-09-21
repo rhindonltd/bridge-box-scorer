@@ -4,7 +4,6 @@ import { z } from "zod";
 import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
-import { sectionFromUrl } from "@/lib/api/section-param";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { buildConfiguredTimerState } from "@/timer/timer-state";
 import { clearEngine } from "@/timer/game-store";
@@ -33,8 +32,7 @@ const bodySchema = z.object({
  *
  * Bad body → 400; infra failures → 500.
  */
-export const PUT = withDirectorRoute(async ({ gameId, req }) => {
-  const section = sectionFromUrl(req.url);
+export const PUT = withDirectorRoute(async ({ gameId, section, req }) => {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
 
   if (!section || !parsed.success) {
