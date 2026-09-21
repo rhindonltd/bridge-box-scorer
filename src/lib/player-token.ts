@@ -1,31 +1,33 @@
 /**
  * Client-side player token store.
  *
- * Tokens are stored in localStorage keyed by gameId so a token is unique to a particular player and gameId combination.
+ * Tokens are stored in localStorage keyed by gameId so a token is unique to a
+ * particular player and gameId combination.
  *
  * Storage key format: `player:<gameId>`
  */
 
-const PREFIX = "player:";
+import { createKeyedTokenStore } from "@/lib/token-store";
 
 export type PlayerToken = {
   startingPosition: string;
   token: string;
 };
 
+const store = createKeyedTokenStore<PlayerToken>(
+  "player:",
+  (value) => JSON.stringify(value),
+  (raw) => JSON.parse(raw) as PlayerToken,
+);
+
 export function setPlayerToken(gameId: string, playerToken: PlayerToken): void {
-  localStorage.setItem(`${PREFIX}${gameId}`, JSON.stringify(playerToken));
+  store.set(gameId, playerToken);
 }
 
 export function getPlayerToken(gameId: string): PlayerToken | null {
-  const value = localStorage.getItem(`${PREFIX}${gameId}`);
-  if (value == null) {
-    return null;
-  } else {
-    return JSON.parse(value);
-  }
+  return store.get(gameId);
 }
 
 export function clearPlayerToken(gameId: string): void {
-  localStorage.removeItem(`${PREFIX}${gameId}`);
+  store.clear(gameId);
 }

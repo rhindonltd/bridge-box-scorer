@@ -7,31 +7,17 @@ const mockUpdate = vi.fn(() => ({
   })),
 }));
 
-// The SIT_OUT guard reads the target board's status; default to a playable
-// (non-SIT_OUT) board so normal submissions proceed.
-const mockSelect = vi.fn(() => ({
-  from: vi.fn(() => ({
-    where: vi.fn(() => ({
-      get: vi.fn(async () => ({ status: "NOT_PLAYED" })),
-    })),
-  })),
-}));
+const mockDb = { update: mockUpdate };
 
 vi.mock("@/db/games", () => ({
-  getDb: vi.fn(async () => ({
-    update: mockUpdate,
-    select: mockSelect,
-  })),
+  getDb: vi.fn(async () => mockDb),
 }));
 
-vi.mock("@/db/games/tables/boards", () => ({
-  boards: {
-    section: "section",
-    roundNumber: "roundNumber",
-    tableNumber: "tableNumber",
-    boardNumber: "boardNumber",
-    status: "status",
-  },
+// The SIT_OUT guard reads the target board's status via getBoardStatus; default
+// to a playable (non-SIT_OUT) board so normal submissions proceed. Individual
+// tests override the return to exercise the sit-out branch.
+vi.mock("@/db/games/queries/get-board-status", () => ({
+  getBoardStatus: vi.fn(async () => "NOT_PLAYED"),
 }));
 
 vi.mock("@/socket/handlers/results/broadcast-results", () => ({
@@ -75,6 +61,7 @@ vi.mock("@/lib/log", () => ({
 
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
+import { getBoardStatus } from "@/db/games/queries/get-board-status";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
 import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
@@ -120,13 +107,7 @@ describe("registerSubmitResultHandler", () => {
   });
 
   it("rejects a submission against a SIT_OUT board", async () => {
-    mockSelect.mockReturnValueOnce({
-      from: vi.fn(() => ({
-        where: vi.fn(() => ({
-          get: vi.fn(async () => ({ status: "SIT_OUT" })),
-        })),
-      })),
-    } as any);
+    vi.mocked(getBoardStatus).mockResolvedValueOnce("SIT_OUT");
 
     const socket = makeSocket();
     const io = makeIo();

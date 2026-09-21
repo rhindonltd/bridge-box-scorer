@@ -7,6 +7,38 @@ import {
 } from "@/scoring/traveller/common";
 
 /**
+ * The ascending union of the board numbers keyed in the given rows-by-board
+ * maps. Used to span every board any room/table of a match or triangle has a
+ * row for, so a per-board list can be emitted even when only one side has
+ * played a board yet.
+ */
+export function unionBoardNumbers(
+  ...maps: Map<number, unknown>[]
+): number[] {
+  const nums = new Set<number>();
+  for (const map of maps) {
+    for (const n of map.keys()) nums.add(n);
+  }
+  return Array.from(nums).sort((a, b) => a - b);
+}
+
+/**
+ * The canonical ordering for matches/triangles: by round, then section
+ * (lexicographic), then the lowest table number. Callers pass the table key
+ * they order on (a match's home table, a triangle's lowest table).
+ */
+export function compareByRoundSectionTable(
+  a: { round: number; section: string; table: number },
+  b: { round: number; section: string; table: number },
+): number {
+  return (
+    a.round - b.round ||
+    (a.section < b.section ? -1 : a.section > b.section ? 1 : 0) ||
+    a.table - b.table
+  );
+}
+
+/**
  * The minimal board-row shape the Swiss Teams match reconstruction needs. Kept
  * structural (rather than importing the Drizzle `Board` type) so this stays a
  * pure module unit tests can drive with plain objects — and so both the pure
@@ -118,11 +150,11 @@ export function groupTeamMatches<R extends TeamMatchRow>(
     homeTables.set(key, entry);
   }
 
-  const ordered = Array.from(homeTables.values()).sort(
-    (a, b) =>
-      a.round - b.round ||
-      (a.section < b.section ? -1 : a.section > b.section ? 1 : 0) ||
-      a.homeTable - b.homeTable,
+  const ordered = Array.from(homeTables.values()).sort((a, b) =>
+    compareByRoundSectionTable(
+      { round: a.round, section: a.section, table: a.homeTable },
+      { round: b.round, section: b.section, table: b.homeTable },
+    ),
   );
 
   const matches: TeamMatch<R>[] = [];
@@ -175,26 +207,18 @@ export interface TeamMatchBoardImp {
 export function teamMatchBoardImps<R extends TeamMatchRow>(
   match: TeamMatch<R>,
 ): { perBoard: TeamMatchBoardImp[]; margin: number; boardsPlayed: number } {
-  const boardNumbers = Array.from(
-    new Set([
-      ...match.homeRowsByBoard.keys(),
-      ...match.opponentRowsByBoard.keys(),
-    ]),
-  ).sort((a, b) => a - b);
-
-  const scoreOf = (row: R | undefined): number | null => {
-    if (!row) return null;
-    const outcome = boardResult(row);
-    return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
-  };
+  const boardNumbers = unionBoardNumbers(
+    match.homeRowsByBoard,
+    match.opponentRowsByBoard,
+  );
 
   let margin = 0;
   let boardsPlayed = 0;
   const perBoard: TeamMatchBoardImp[] = [];
 
   for (const boardNumber of boardNumbers) {
-    const homeScore = scoreOf(match.homeRowsByBoard.get(boardNumber));
-    const awayScore = scoreOf(match.opponentRowsByBoard.get(boardNumber));
+    const homeScore = scoreOfRow(match.homeRowsByBoard.get(boardNumber));
+    const awayScore = scoreOfRow(match.opponentRowsByBoard.get(boardNumber));
 
     if (homeScore != null && awayScore != null) {
       const imps = computeImps(homeScore - awayScore);
@@ -236,26 +260,18 @@ export interface TeamMatchBoardWin {
 export function teamMatchBoardWins<R extends TeamMatchRow>(
   match: TeamMatch<R>,
 ): { perBoard: TeamMatchBoardWin[]; won: number; boardsPlayed: number } {
-  const boardNumbers = Array.from(
-    new Set([
-      ...match.homeRowsByBoard.keys(),
-      ...match.opponentRowsByBoard.keys(),
-    ]),
-  ).sort((a, b) => a - b);
-
-  const scoreOf = (row: R | undefined): number | null => {
-    if (!row) return null;
-    const outcome = boardResult(row);
-    return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
-  };
+  const boardNumbers = unionBoardNumbers(
+    match.homeRowsByBoard,
+    match.opponentRowsByBoard,
+  );
 
   let won = 0;
   let boardsPlayed = 0;
   const perBoard: TeamMatchBoardWin[] = [];
 
   for (const boardNumber of boardNumbers) {
-    const homeScore = scoreOf(match.homeRowsByBoard.get(boardNumber));
-    const awayScore = scoreOf(match.opponentRowsByBoard.get(boardNumber));
+    const homeScore = scoreOfRow(match.homeRowsByBoard.get(boardNumber));
+    const awayScore = scoreOfRow(match.opponentRowsByBoard.get(boardNumber));
 
     if (homeScore != null && awayScore != null) {
       const result = homeScore > awayScore ? 1 : homeScore < awayScore ? 0 : 0.5;
@@ -514,11 +530,11 @@ export function groupTeamTriangles<R extends TeamMatchRow>(
   }
 
   // Order by round, then section, then lowest table.
-  return triangles.sort(
-    (a, b) =>
-      a.round - b.round ||
-      (a.section < b.section ? -1 : a.section > b.section ? 1 : 0) ||
-      a.tables[0].table - b.tables[0].table,
+  return triangles.sort((a, b) =>
+    compareByRoundSectionTable(
+      { round: a.round, section: a.section, table: a.tables[0].table },
+      { round: b.round, section: b.section, table: b.tables[0].table },
+    ),
   );
 }
 
@@ -632,11 +648,7 @@ export function triangleTeamWins<R extends TeamMatchRow>(
 function triangleBoardNumbers<R extends TeamMatchRow>(
   triangle: TeamTriangle<R>,
 ): number[] {
-  const nums = new Set<number>();
-  for (const t of triangle.tables) {
-    for (const n of t.rowsByBoard.keys()) nums.add(n);
-  }
-  return Array.from(nums).sort((a, b) => a - b);
+  return unionBoardNumbers(...triangle.tables.map((t) => t.rowsByBoard));
 }
 
 /** A table row's final score (override ?? confirmed), or null when unscored. */

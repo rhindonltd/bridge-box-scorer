@@ -14,9 +14,23 @@ vi.mock("@/components/common/SelectGame", () => ({
 }));
 
 // The page fetches joinable games via SWR + fetcher and subscribes to sockets.
-vi.mock("@/lib/fetcher", () => ({
-  fetcher: vi.fn(async () => ({ games: [{ gameId: "g1" }, { gameId: "g2" }] })),
-}));
+vi.mock("@/lib/fetcher", () => {
+  const fetcher = vi.fn(async () => ({
+    games: [{ gameId: "g1" }, { gameId: "g2" }],
+  }));
+  return {
+    fetcher,
+    unwrapFetcher:
+      (key: string) =>
+      async (...args: unknown[]) => {
+        const result = (await fetcher(...(args as []))) as Record<
+          string,
+          unknown
+        >;
+        return result[key];
+      },
+  };
+});
 
 const onHandler = vi.fn();
 const offHandler = vi.fn();

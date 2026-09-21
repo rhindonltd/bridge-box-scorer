@@ -1,4 +1,4 @@
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { or, eq } from "drizzle-orm";
 import { Participant, participants } from "@/db/games/tables/participants";
 
@@ -6,11 +6,7 @@ export async function findPairForPlayerId(
   gameId: string,
   playerId: number,
 ): Promise<Participant | null> {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   const results = await db
     .select()

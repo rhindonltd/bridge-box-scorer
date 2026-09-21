@@ -44,8 +44,8 @@ function req(
   );
 }
 
-const params = (gameId: string) =>
-  ({ params: Promise.resolve({ gameId }) }) as never;
+const params = (gameId: string, section = "A") =>
+  ({ params: Promise.resolve({ gameId, section }) }) as never;
 
 describe("PATCH /api/games/[gameId]/sections/[section]", () => {
   beforeEach(() => {
@@ -119,7 +119,7 @@ describe("DELETE /api/games/[gameId]/sections/[section]", () => {
   });
 
   it("deletes the section and broadcasts", async () => {
-    const res = await DELETE(req("DELETE", "g1", "B"), params("g1"));
+    const res = await DELETE(req("DELETE", "g1", "B"), params("g1", "B"));
 
     expect(res.status).toBe(200);
     expect(deleteSection).toHaveBeenCalledWith("g1", "B");

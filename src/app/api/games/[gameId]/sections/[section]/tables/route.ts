@@ -7,7 +7,6 @@ import { respondToActionError } from "@/lib/api/client-error";
 import { updateSectionTables } from "@/db/games/actions/update-section-tables";
 import { findSections } from "@/db/games/queries/find-sections";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
-import { sectionFromUrl } from "@/lib/api/section-param";
 
 const bodySchema = z.object({ tables: z.number().int().min(1) });
 
@@ -16,32 +15,33 @@ const bodySchema = z.object({ tables: z.number().int().min(1) });
  * count. The per-section shrink guard (rejecting a reduction below a seated
  * table) lives in `updateSectionTables` and surfaces as a 400.
  */
-export const PUT = withDirectorRoute(async ({ gameId, db, req }) => {
-  const section = sectionFromUrl(req.url);
-  const parsed = bodySchema.safeParse(await req.json().catch(() => null));
-  if (!section || !parsed.success) {
-    return NextResponse.json(
-      { success: false, error: "Invalid request" },
-      { status: 400 },
-    );
-  }
+export const PUT = withDirectorRoute(
+  async ({ gameId, db, section, body }) => {
+    if (!section) {
+      return NextResponse.json(
+        { success: false, error: "Invalid request" },
+        { status: 400 },
+      );
+    }
 
-  const sections = await findSections(db);
-  if (!sections.some((s) => s.section === section)) {
-    return NextResponse.json(
-      { success: false, error: `Section ${section} not found` },
-      { status: 404 },
-    );
-  }
+    const sections = await findSections(db);
+    if (!sections.some((s) => s.section === section)) {
+      return NextResponse.json(
+        { success: false, error: `Section ${section} not found` },
+        { status: 404 },
+      );
+    }
 
-  try {
-    await updateSectionTables(gameId, section, parsed.data.tables);
-    await broadcastSections(gameId);
-    return success({});
-  } catch (err) {
-    return respondToActionError(
-      err,
-      `Failed to update tables for section ${section} in game ${gameId}:`,
-    );
-  }
-});
+    try {
+      await updateSectionTables(gameId, section, body.tables);
+      await broadcastSections(gameId);
+      return success({});
+    } catch (err) {
+      return respondToActionError(
+        err,
+        `Failed to update tables for section ${section} in game ${gameId}:`,
+      );
+    }
+  },
+  { bodySchema },
+);

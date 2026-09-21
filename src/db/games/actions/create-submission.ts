@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { boardSubmissions } from "@/db/games/tables/submissions";
 import { NewBoardSubmission } from "../tables/submissions";
 
@@ -8,11 +8,7 @@ export async function createBoardSubmission(
   gameId: string,
   boardSubmission: NewBoardSubmission,
 ) {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   await db
     .insert(boardSubmissions)

@@ -9,6 +9,8 @@
  * Storage key: `admin-token`
  */
 
+import { verifyToken } from "@/lib/token-store";
+
 const KEY = "admin-token";
 
 // Fired whenever the admin token changes in this tab so that
@@ -52,26 +54,12 @@ export function hasAdminToken(): boolean {
  * than an invalid token).
  */
 export async function verifyAdminTokenWithServer(): Promise<boolean> {
-  const token = getAdminToken();
-  if (!token) return false;
-
-  try {
-    const res = await fetch("/api/system/admin-key/validate", {
-      headers: { "x-admin-token": token },
-      cache: "no-store",
-    });
-
-    if (res.status === 401) {
-      // Definitively not authorized — drop the stale token.
-      clearAdminToken();
-      return false;
-    }
-
-    return res.ok;
-  } catch {
-    // Transient failure; don't clear a possibly-valid token.
-    return false;
-  }
+  return verifyToken({
+    token: getAdminToken(),
+    url: "/api/system/admin-key/validate",
+    headerName: "x-admin-token",
+    onInvalid: clearAdminToken,
+  });
 }
 
 /**

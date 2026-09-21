@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { withGameRoute } from "@/lib/api/gameRoute";
@@ -38,25 +37,20 @@ const bodySchema = z.object({
  * POST /api/games/[gameId]/sections — add a section (director-only).
  * Broadcasts the updated section list game-wide.
  */
-export const POST = withDirectorRoute(async ({ gameId, req }) => {
-  const parsed = bodySchema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) {
-    return NextResponse.json(
-      { success: false, error: "Invalid request" },
-      { status: 400 },
-    );
-  }
+export const POST = withDirectorRoute(
+  async ({ gameId, body }) => {
+    const { section, label, tables } = body;
 
-  const { section, label, tables } = parsed.data;
-
-  try {
-    await createSection(gameId, { section, label, tables });
-    await broadcastSections(gameId);
-    return success({});
-  } catch (err) {
-    return respondToActionError(
-      err,
-      `Failed to create section in game ${gameId}:`,
-    );
-  }
-});
+    try {
+      await createSection(gameId, { section, label, tables });
+      await broadcastSections(gameId);
+      return success({});
+    } catch (err) {
+      return respondToActionError(
+        err,
+        `Failed to create section in game ${gameId}:`,
+      );
+    }
+  },
+  { bodySchema },
+);

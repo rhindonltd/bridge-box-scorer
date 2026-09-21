@@ -7,6 +7,7 @@ import Button from "@/components/common/Button";
 import { useRequiredGame } from "@/context/GameContext";
 import { useStartCheck } from "@/hooks/start-check";
 import { startGame } from "@/lib/game-service";
+import { errorMessage } from "@/lib/error-message";
 import type { StartProblem } from "@/model/start-validator";
 
 type Props = {
@@ -58,7 +59,7 @@ export function StartGameScreen({ menu }: Props) {
       await startGame(game.gameId);
       await mutateGame();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to start game");
+      alert(errorMessage(err, "Failed to start game"));
     } finally {
       setStarting(false);
     }

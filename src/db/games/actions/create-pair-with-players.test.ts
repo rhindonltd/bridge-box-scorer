@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
+vi.mock("@/db/games", () => {
+  const getDb = vi.fn();
+  return {
+    getDb,
+    requireGameDb: vi.fn(async (gameId: string) => {
+      const db = await getDb(gameId);
+      if (!db) throw new Error("Game db does not exist");
+      return db;
+    }),
+  };
+});
 
 import { getDb } from "@/db/games";
 import { createPairWithPlayers } from "./create-pair-with-players";

@@ -1,5 +1,5 @@
 import { TimerState } from "@/timer/timer-state";
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { metadata } from "@/db/games/tables/metadata";
 import { SectionLetter } from "@/model/participants";
 import { eq, like } from "drizzle-orm";
@@ -20,11 +20,7 @@ export async function findTimerState(
   gameId: string,
   section: SectionLetter,
 ): Promise<TimerState | null> {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   const timers = await db
     .select()
@@ -41,11 +37,7 @@ export async function findTimerState(
 export async function findAllTimerStates(
   gameId: string,
 ): Promise<Map<SectionLetter, TimerState>> {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   const rows = await db
     .select()

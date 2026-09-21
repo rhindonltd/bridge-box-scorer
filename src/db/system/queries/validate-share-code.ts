@@ -3,6 +3,7 @@ import "server-only";
 import { getDb } from "@/db/system";
 import { shareCodes } from "@/db/system/schema";
 import { eq } from "drizzle-orm";
+import { checkCodeValidity } from "./code-validation";
 
 export type ValidateResult =
   { valid: true; gameId: string } | { valid: false; error: string };
@@ -22,19 +23,9 @@ export async function validateAndClaimShareCode(
     .where(eq(shareCodes.code, code.toUpperCase()))
     .get();
 
-  if (!record) {
-    return { valid: false, error: "Invalid code" };
-  }
-
-  if (record.used) {
-    return { valid: false, error: "Code has already been used" };
-  }
-
-  const now = new Date();
-  const expiresAt = new Date(record.expiresAt);
-
-  if (now > expiresAt) {
-    return { valid: false, error: "Code has expired" };
+  const rejection = checkCodeValidity(record);
+  if (rejection) {
+    return rejection;
   }
 
   // Mark as used
@@ -43,5 +34,6 @@ export async function validateAndClaimShareCode(
     .set({ used: 1 })
     .where(eq(shareCodes.code, code.toUpperCase()));
 
-  return { valid: true, gameId: record.gameId };
+  // record is defined here: checkCodeValidity rejects the not-found case above.
+  return { valid: true, gameId: record!.gameId };
 }

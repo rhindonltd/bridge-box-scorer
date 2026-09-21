@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Toggle } from "@/components/common/Toggle";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
+import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
 import { OverallScoringPlugin } from "@/scoring/plugins/types";
 import { AssignedPair } from "@/model/participants";
 
@@ -17,8 +16,8 @@ type Props = {
 
 /**
  * Renders an overall (leaderboard) scoring result using a scoring plugin's
- * views. Mirrors PerBoardTravellerView: a plugin with two views shows a Toggle
- * (view[0] = "on", view[1] = "off"); a single-view plugin renders directly.
+ * views. The single-view vs. two-view Toggle scaffolding lives in the shared
+ * PluginViewSwitcher; this component just renders each view's leaderboard table.
  */
 export function OverallLeaderboardView({
   plugin,
@@ -27,40 +26,17 @@ export function OverallLeaderboardView({
   highlightAssignmentId,
   splitColumns,
 }: Props) {
-  const views = plugin.views;
-  const [showFirst, setShowFirst] = useState(true);
-
-  if (views.length <= 1) {
-    return (
-      <ScoreTableView
-        table={views[0].toTable(lines, participants, { highlightAssignmentId })}
-        highlightAssignmentId={highlightAssignmentId}
-        rowTestId="leaderboard-row"
-        splitColumns={splitColumns}
-      />
-    );
-  }
-
-  const activeView = showFirst ? views[0] : views[1];
-
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="flex justify-end">
-        <Toggle
-          value={showFirst}
-          offLabel={views[1].label}
-          onLabel={views[0].label}
-          onChange={(isOn) => setShowFirst(isOn)}
+    <PluginViewSwitcher
+      views={plugin.views}
+      renderView={(view) => (
+        <ScoreTableView
+          table={view.toTable(lines, participants, { highlightAssignmentId })}
+          highlightAssignmentId={highlightAssignmentId}
+          rowTestId="leaderboard-row"
+          splitColumns={splitColumns}
         />
-      </div>
-      <ScoreTableView
-        table={activeView.toTable(lines, participants, {
-          highlightAssignmentId,
-        })}
-        highlightAssignmentId={highlightAssignmentId}
-        rowTestId="leaderboard-row"
-        splitColumns={splitColumns}
-      />
-    </div>
+      )}
+    />
   );
 }

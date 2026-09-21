@@ -250,12 +250,24 @@ export class BridgeTimerEngine {
     const shouldContinue = this.state.isRunning;
     this.clearRuntimeFields(false);
 
+    this.stepToPreviousPhase();
+
+    // Every branch above leaves the target phase set up and paused; resume it
+    // only if the timer was running when we stepped back.
+    if (shouldContinue) this.start();
+  }
+
+  /**
+   * Set state to the phase preceding the current one (paused). Split out from
+   * {@link previousPhase} so the "resume if it was running" tail lives in one
+   * place rather than being repeated in every branch.
+   */
+  private stepToPreviousPhase() {
     if (this.state.phase === "finished") {
       // Step back into the final round's play.
       this.state.phase = "play";
       this.state.breakDurationMs = null;
       this.restartPhase();
-      if (shouldContinue) this.start();
       return;
     }
 
@@ -266,7 +278,6 @@ export class BridgeTimerEngine {
       this.state.phase = "play";
       this.state.breakDurationMs = null;
       this.restartPhase();
-      if (shouldContinue) this.start();
       return;
     }
 
@@ -274,14 +285,12 @@ export class BridgeTimerEngine {
     if (this.state.round <= 1) {
       // Already at the first play; just restart it.
       this.restartPhase();
-      if (shouldContinue) this.start();
       return;
     }
 
     // Step back into the gap (break or move) that precedes this play. That gap
     // is the one after the previous round.
-    const previousRound = this.state.round - 1;
-    const breakDurationMs = this.breakDurationAfter(previousRound);
+    const breakDurationMs = this.breakDurationAfter(this.state.round - 1);
 
     if (breakDurationMs != null) {
       this.state.phase = "break";
@@ -292,8 +301,6 @@ export class BridgeTimerEngine {
       this.state.breakDurationMs = null;
       this.state.remainingMs = this.state.moveDuration * 1000;
     }
-
-    if (shouldContinue) this.start();
   }
 
   /**
@@ -363,59 +370,53 @@ export class BridgeTimerEngine {
       timingMode?: TimerState["timingMode"];
     },
   ) {
-    this.state.boardsPerRound = boardsPerRound;
-    this.state.totalRounds = totalRounds;
-
-    if (options && options.breaks !== undefined) {
-      this.state.breaks = options.breaks;
-    }
-
-    if (options && typeof options.warningSeconds === "number") {
-      this.state.warningSeconds = options.warningSeconds;
-    }
-
-    if (options && options.timingMode !== undefined) {
-      this.state.timingMode = options.timingMode;
-    }
-
-    const currentDuration =
+    // How long the current play/move phase was before this config change; used
+    // below to recompute how much of it has elapsed. Read BEFORE the new
+    // durations are stored.
+    const oldPhaseDuration =
       this.state.phase === "play"
         ? this.state.playDuration
         : this.state.moveDuration;
 
-    const newDuration =
-      this.state.phase === "play"
-        ? (playDuration ?? this.state.playDuration)
-        : (moveDuration ?? this.state.moveDuration);
+    // A null duration means "keep the existing value" (callers pass null to
+    // change other config without touching a duration).
+    const nextPlayDuration = playDuration ?? this.state.playDuration;
+    const nextMoveDuration = moveDuration ?? this.state.moveDuration;
 
-    // Recompute remaining time so an in-flight phase reflects the new duration,
-    // whether paused (adjust the frozen remainingMs) or running (re-anchor
-    // phaseStartedAt). Break phases keep their frozen break duration untouched.
-    if (this.state.phase === "play" || this.state.phase === "move") {
-      if (!this.state.isRunning && this.state.remainingMs != null) {
-        const elapsedMs = currentDuration * 1000 - this.state.remainingMs;
-        this.state.remainingMs = Math.max(0, newDuration * 1000 - elapsedMs);
-      } else if (this.state.isRunning && this.state.phaseStartedAt != null) {
-        const elapsedMs = Date.now() - this.state.phaseStartedAt;
-        const newRemaining = Math.max(0, newDuration * 1000 - elapsedMs);
-        // Re-anchor against the new duration. playDuration/moveDuration are
-        // written below, but the reanchor formula reads the *new* duration via
-        // getPhaseDurationMs, so apply the stored duration first for this path.
-        if (this.state.phase === "play" && playDuration != null) {
-          this.state.playDuration = playDuration;
-        } else if (this.state.phase === "move" && moveDuration != null) {
-          this.state.moveDuration = moveDuration;
-        }
-        this.reanchorTo(newRemaining);
-      }
+    // 1. Apply the new config fields (durations + optional settings) up front,
+    //    so the re-anchor step below reads the new duration directly rather
+    //    than juggling the write order.
+    this.state.boardsPerRound = boardsPerRound;
+    this.state.totalRounds = totalRounds;
+    this.state.playDuration = nextPlayDuration;
+    this.state.moveDuration = nextMoveDuration;
+
+    if (options?.breaks !== undefined) {
+      this.state.breaks = options.breaks;
+    }
+    if (typeof options?.warningSeconds === "number") {
+      this.state.warningSeconds = options.warningSeconds;
+    }
+    if (options?.timingMode !== undefined) {
+      this.state.timingMode = options.timingMode;
     }
 
-    if (playDuration != null) {
-      this.state.playDuration = playDuration;
-    }
+    // 2. Re-anchor an in-flight play/move phase to the new duration, preserving
+    //    how much has already elapsed. A break keeps its frozen duration and a
+    //    finished timer has nothing to re-anchor, so both are left untouched.
+    if (this.state.phase !== "play" && this.state.phase !== "move") return;
 
-    if (moveDuration != null) {
-      this.state.moveDuration = moveDuration;
+    const newPhaseDuration =
+      this.state.phase === "play" ? nextPlayDuration : nextMoveDuration;
+
+    if (!this.state.isRunning && this.state.remainingMs != null) {
+      // Paused: shift the frozen remaining by the change in phase length.
+      const elapsedMs = oldPhaseDuration * 1000 - this.state.remainingMs;
+      this.state.remainingMs = Math.max(0, newPhaseDuration * 1000 - elapsedMs);
+    } else if (this.state.isRunning && this.state.phaseStartedAt != null) {
+      // Running: recompute remaining from real elapsed time and re-anchor.
+      const elapsedMs = Date.now() - this.state.phaseStartedAt;
+      this.reanchorTo(Math.max(0, newPhaseDuration * 1000 - elapsedMs));
     }
   }
 }

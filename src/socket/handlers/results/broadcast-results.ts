@@ -26,6 +26,31 @@ export async function buildLeaderboardPayload(db: Db, gameId: string) {
 }
 
 /**
+ * Push a fresh leaderboard snapshot to the game's leaderboard room, recomputed
+ * only when that room is occupied. Used after a change that affects the
+ * standings but not a single board's traveller (e.g. drawing the next Swiss
+ * round), so — unlike {@link broadcastResultsChanged} — it needs no board
+ * number. Same occupancy-as-optimisation caveat applies.
+ */
+export async function broadcastLeaderboardChanged(
+  io: Server,
+  gameId: string,
+): Promise<void> {
+  const leaderboardRoom = Rooms.leaderboard(gameId);
+  if (roomSize(io, leaderboardRoom) === 0) {
+    return;
+  }
+
+  const db = await getDb(gameId);
+  if (!db) {
+    return;
+  }
+
+  const payload = await buildLeaderboardPayload(db, gameId);
+  io.to(leaderboardRoom).emit(SocketEvents.LEADERBOARD_SYNC, payload);
+}
+
+/**
  * Recompute the current traveller snapshot for a single board: the played
  * instances plus the board's deal (the four hands), or `deal: null` when no
  * deal has been entered yet. Shared by the traveller request ack and the

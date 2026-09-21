@@ -1,7 +1,7 @@
 "use client";
 
 import { BridgeGame } from "@/db/game-index/schema";
-import { fetcher } from "@/lib/fetcher";
+import { unwrapFetcher } from "@/lib/fetcher";
 import { getSocket } from "@/lib/socket";
 import { useEffect } from "react";
 import useSWR, { useSWRConfig } from "swr";
@@ -16,11 +16,7 @@ interface Props {
 }
 
 export default function SelectGamePage({ headerTitle, onGameSelected }: Props) {
-  const gamesFetcher = async (url: string): Promise<BridgeGame[]> => {
-    const response: { games: BridgeGame[] } = await fetcher(url);
-
-    return response.games;
-  };
+  const gamesFetcher = unwrapFetcher<BridgeGame[]>("games");
 
   const { data, isLoading } = useSWR<BridgeGame[], Error>(
     swrKeys.joinableGames,

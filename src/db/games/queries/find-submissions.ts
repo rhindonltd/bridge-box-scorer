@@ -1,5 +1,5 @@
 import { BoardSubmission, boardSubmissions } from "../tables/submissions";
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { and, eq } from "drizzle-orm";
 
 export async function findBoardSubmissions(
@@ -8,11 +8,7 @@ export async function findBoardSubmissions(
   table: number,
   round: number,
 ): Promise<BoardSubmission[]> {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   return db
     .select()

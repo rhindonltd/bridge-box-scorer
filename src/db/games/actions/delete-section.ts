@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { sections } from "@/db/games/tables/sections";
 import { eq } from "drizzle-orm";
 import { highestOccupiedTableInSection } from "@/db/games/queries/highest-occupied-table";
@@ -14,11 +14,7 @@ export async function deleteSection(
   gameId: string,
   section: string,
 ): Promise<void> {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   const existing = await db
     .select()

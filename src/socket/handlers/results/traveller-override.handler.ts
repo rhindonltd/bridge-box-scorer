@@ -46,8 +46,7 @@ export function registerTravellerOverrideHandler(socket: Socket, io: Server) {
 
         const db = await getDb(gameId);
         if (!db) {
-          ack({ success: false, error: "Game not found" });
-          return;
+          throw new HandlerError("Game not found");
         }
 
         try {

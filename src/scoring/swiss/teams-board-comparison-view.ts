@@ -1,7 +1,6 @@
 import {
   ScoreCell,
   ScoreTable,
-  expandableCell,
   numberCell,
   textCell,
 } from "@/scoring/table/score-table";
@@ -10,7 +9,11 @@ import {
   TeamPabOverallScore,
 } from "@/model/leaderboard";
 import { AssignedTeam } from "@/model/participants";
-import { rankCell } from "@/scoring/plugins/overall/overall-view";
+import {
+  rankCell,
+  roundColumnNumbers,
+} from "@/scoring/plugins/overall/overall-view";
+import { teamNameCell } from "@/scoring/plugins/overall/team-names";
 
 /** Which presentation a board-comparison table renders. */
 export type BoardComparisonView = "fraction" | "percentage";
@@ -25,25 +28,6 @@ function winPointsFor(scoring: BoardComparisonScore["scoring"]): number {
 /** Format a points value: whole numbers plainly ("6"), halves as "5.5". */
 function formatPoints(points: number): string {
   return Number.isInteger(points) ? `${points}` : points.toFixed(1);
-}
-
-/** The four player names of a team ("First Last"), in NS-then-EW order. */
-function teamPlayerLines(team: AssignedTeam): string[] {
-  return [team.pair1, team.pair2].flatMap((pair) => [
-    `${pair.player1.firstName} ${pair.player1.lastName}`.trim(),
-    `${pair.player2.firstName} ${pair.player2.lastName}`.trim(),
-  ]);
-}
-
-/**
- * The Team column cell: the team's name, which expands to the four player
- * names when tapped. Falls back to the raw team id (as plain text) when the
- * team is not found.
- */
-function teamNameCell(teams: AssignedTeam[], teamId: string): ScoreCell {
-  const team = teams.find((t) => t.id === teamId);
-  if (!team) return textCell(teamId);
-  return expandableCell(team.name, teamPlayerLines(team));
 }
 
 /**
@@ -106,11 +90,10 @@ export function buildTeamsBoardComparisonTable(
     };
   }
 
-  const roundCount = leaderboard.lines.reduce((max, line) => {
-    const rounds = Object.keys(line.byRound).map(Number);
-    return rounds.length === 0 ? max : Math.max(max, ...rounds);
-  }, 0);
-  const roundNumbers = Array.from({ length: roundCount }, (_, i) => i + 1);
+  const roundNumbers = roundColumnNumbers(
+    leaderboard.lines,
+    (line) => line.byRound,
+  );
 
   return {
     columns: [

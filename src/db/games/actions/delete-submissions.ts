@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { and, eq } from "drizzle-orm";
 import { boardSubmissions } from "../tables/submissions";
 
@@ -13,11 +13,7 @@ export async function deleteBoardSubmissions(
   table: number,
   round: number,
 ) {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   await db
     .delete(boardSubmissions)

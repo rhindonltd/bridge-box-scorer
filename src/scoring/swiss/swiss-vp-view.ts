@@ -7,7 +7,10 @@ import {
 import { PairSwissVpOverallScore } from "@/model/leaderboard";
 import { AssignedPair } from "@/model/participants";
 import { pairNameLines } from "@/scoring/plugins/overall/pair-names";
-import { rankCell } from "@/scoring/plugins/overall/overall-view";
+import {
+  rankCell,
+  roundColumnNumbers,
+} from "@/scoring/plugins/overall/overall-view";
 
 /**
  * Build the Swiss Pairs Victory-Point leaderboard table.
@@ -24,12 +27,10 @@ export function buildSwissVpTable(
   leaderboard: PairSwissVpOverallScore,
   participants: AssignedPair[],
 ): ScoreTable {
-  const roundCount = leaderboard.lines.reduce((max, line) => {
-    const rounds = Object.keys(line.vpByRound).map(Number);
-    return rounds.length === 0 ? max : Math.max(max, ...rounds);
-  }, 0);
-
-  const roundNumbers = Array.from({ length: roundCount }, (_, i) => i + 1);
+  const roundNumbers = roundColumnNumbers(
+    leaderboard.lines,
+    (line) => line.vpByRound,
+  );
 
   return {
     columns: [

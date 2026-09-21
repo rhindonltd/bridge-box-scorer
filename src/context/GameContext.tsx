@@ -7,15 +7,17 @@ import { BridgeGame } from "@/db/game-index/schema";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";
-import { fetcher } from "@/lib/fetcher";
+import { unwrapFetcher } from "@/lib/fetcher";
 
-interface ContextType {
+interface GameContextValue {
   game: BridgeGame | null;
   isLoading: boolean;
   mutateGame: KeyedMutator<BridgeGame>;
 }
 
-export const GameContext = createContext<ContextType | undefined>(undefined);
+export const GameContext = createContext<GameContextValue | undefined>(
+  undefined,
+);
 
 export function GameProvider({
   children,
@@ -29,11 +31,7 @@ export function GameProvider({
   const gameId = initialGame.gameId;
   const key = swrKeys.game(gameId);
 
-  const gameFetcher = async (url: string): Promise<BridgeGame> => {
-    const response: { game: BridgeGame } = await fetcher(url);
-
-    return response.game;
-  };
+  const gameFetcher = unwrapFetcher<BridgeGame>("game");
 
   const {
     data: game,
@@ -80,7 +78,7 @@ export function GameProvider({
   );
 }
 
-export function useGame(): ContextType {
+export function useGame(): GameContextValue {
   const ctx = useContext(GameContext);
 
   if (!ctx) {

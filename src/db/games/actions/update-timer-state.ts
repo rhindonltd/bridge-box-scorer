@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { TimerState } from "@/timer/timer-state";
 import { metadata } from "@/db/games/tables/metadata";
 import { SectionLetter } from "@/model/participants";
@@ -15,11 +15,7 @@ export async function updateTimerState(
   section: SectionLetter,
   timerState: TimerState,
 ) {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   await db
     .insert(metadata)

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getDb } from "@/db/games";
+import { requireGameDb } from "@/db/games";
 import { sections } from "@/db/games/tables/sections";
 import { ClientError } from "@/lib/api/client-error";
 
@@ -20,11 +20,7 @@ export async function createSection(
   gameId: string,
   input: CreateSectionInput,
 ): Promise<void> {
-  const db = await getDb(gameId);
-
-  if (!db) {
-    throw new Error("Game db does not exist");
-  }
+  const db = await requireGameDb(gameId);
 
   const existing = await db.select().from(sections);
 

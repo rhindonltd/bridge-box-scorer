@@ -52,8 +52,9 @@ describe("withDirectorRoute", () => {
     expect(validateDirectorToken).toHaveBeenCalledWith("tok", "g1");
     expect(req.json).not.toHaveBeenCalled();
     expect(handler).toHaveBeenCalledOnce();
-    // The context is the plain game-route context (no `body` field added).
-    expect(handler.mock.calls[0][0]).not.toHaveProperty("body");
+    // With no bodySchema the body is never parsed: `body` is present on the
+    // context but undefined, and req.json() (asserted above) is not called.
+    expect(handler.mock.calls[0][0].body).toBeUndefined();
     await expect(res.json()).resolves.toEqual({ ok: true });
   });
 

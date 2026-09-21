@@ -6,6 +6,7 @@ import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import { scoreIMP } from "@/scoring/traveller/pair/imp";
 import { calculateWbfVP } from "@/scoring/swiss/wbf-vp";
+import { compareByRoundSectionTable } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
 import {
@@ -107,11 +108,8 @@ function buildMatches(boardRows: Board[]): {
     groups.set(key, group);
   }
 
-  const ordered = Array.from(groups.values()).sort(
-    (a, b) =>
-      a.round - b.round ||
-      (a.section < b.section ? -1 : a.section > b.section ? 1 : 0) ||
-      a.table - b.table,
+  const ordered = Array.from(groups.values()).sort((a, b) =>
+    compareByRoundSectionTable(a, b),
   );
 
   const totals = new Map<string, number>();
