@@ -24,6 +24,6 @@ export const pairsGame4Tables = {
 export const teamsGame4Tables = {
   ...mockGame,
   gameType: "TEAMS" as const,
-  scoringType: "IMP" as const,
+  scoringType: "IMP_VP" as const,
   tables: 4,
 };

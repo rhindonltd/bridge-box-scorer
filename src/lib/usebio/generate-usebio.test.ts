@@ -353,13 +353,20 @@ describe("generateUsebioXml", () => {
       );
     });
 
-    it("maps IMP to BUTLER", () => {
+    it("maps IMP_VP to BUTLER", () => {
       const data = makeBasicGameData();
-      data.scoringType = "IMP";
+      data.scoringType = "IMP_VP";
       const xml = generateUsebioXml(data);
       expect(xml).toContain(
         "<BOARD_SCORING_METHOD>BUTLER</BOARD_SCORING_METHOD>",
       );
+    });
+
+    it("maps IMP (aggregate) to IMPS", () => {
+      const data = makeBasicGameData();
+      data.scoringType = "IMP";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain("<BOARD_SCORING_METHOD>IMPS</BOARD_SCORING_METHOD>");
     });
 
     it("maps XIMP to CROSS_IMPS", () => {

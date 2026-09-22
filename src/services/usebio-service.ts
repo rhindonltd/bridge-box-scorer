@@ -14,6 +14,7 @@ import {
 } from "@/lib/usebio/generate-usebio";
 import { assembleSwissPairs } from "@/lib/usebio/assemble-swiss-pairs";
 import { assembleSwissTeams } from "@/lib/usebio/assemble-swiss-teams";
+import { assembleImpAggregateTeams } from "@/lib/usebio/assemble-imp-aggregate-teams";
 import { assembleBoardComparisonTeams } from "@/lib/usebio/assemble-board-comparison-teams";
 import { parseSelectedMovement } from "@/model/selected-movement";
 import { classifyEvent } from "@/model/event-format";
@@ -44,6 +45,15 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
       ]);
       return generateUsebioXml(
         assembleSwissTeams(game, club, teams, boardRows),
+      );
+    }
+    case "TEAMS_IMP_AGG": {
+      const [teams, boardRows] = await Promise.all([
+        findTeams(db),
+        db.select().from(boards),
+      ]);
+      return generateUsebioXml(
+        assembleImpAggregateTeams(game, club, teams, boardRows),
       );
     }
     case "TEAMS_BAM":

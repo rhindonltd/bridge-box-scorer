@@ -2,7 +2,10 @@ import type { Locale } from "./locale";
 import type { ScoringType } from "@/db/games/types/scoring-type";
 
 /** The scoring types offerable for a teams game. */
-export type TeamsScoringType = Extract<ScoringType, "IMP" | "BAM" | "PAB">;
+export type TeamsScoringType = Extract<
+  ScoringType,
+  "IMP" | "IMP_VP" | "BAM" | "PAB"
+>;
 
 /**
  * A teams scoring option offered in the create-game form, as a label plus the
@@ -24,14 +27,16 @@ export interface Messages {
 
 const enGB: Messages = {
   teamsScoringOptions: [
-    { label: "IMP (Victory Points)", value: "IMP" },
+    { label: "IMP", value: "IMP" },
+    { label: "IMP (Victory Points)", value: "IMP_VP" },
     { label: "Point-a-Board", value: "PAB" },
   ],
 };
 
 const enUS: Messages = {
   teamsScoringOptions: [
-    { label: "IMP (Victory Points)", value: "IMP" },
+    { label: "IMP", value: "IMP" },
+    { label: "IMP (Victory Points)", value: "IMP_VP" },
     { label: "Board-a-Match", value: "BAM" },
   ],
 };

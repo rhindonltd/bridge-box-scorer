@@ -568,7 +568,7 @@ describe("Teams VP routing", () => {
     vi.mocked(findGameById).mockResolvedValue({
       gameId: "game-1",
       gameType: "TEAMS",
-      scoringType: "IMP",
+      scoringType: "IMP_VP",
       selectedMovement: JSON.stringify({
         source: "SWISS_TEAMS",
         swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },

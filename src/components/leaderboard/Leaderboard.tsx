@@ -6,6 +6,7 @@ import { OverallLeaderboardView } from "@/components/scoring/OverallLeaderboardV
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { buildSwissVpTable } from "@/scoring/swiss/swiss-vp-view";
 import { buildSwissTeamsVpTable } from "@/scoring/swiss/swiss-teams-vp-view";
+import { buildTeamsImpAggregateTable } from "@/scoring/swiss/teams-imp-aggregate-view";
 import { getOverallPlugin } from "@/scoring/plugins/registry";
 import "@/scoring/plugins/register";
 
@@ -77,6 +78,23 @@ export function Leaderboard({
       return (
         <ScoreTableView
           table={buildSwissTeamsVpTable(
+            overallScoreAndParticipant.overallScore,
+            overallScoreAndParticipant.participants,
+          )}
+          highlightAssignmentId={highlightAssignmentId}
+          rowTestId="leaderboard-row"
+          splitColumns={splitColumns}
+          scroll={scroll}
+          interactive={interactive}
+        />
+      );
+    case "TEAM_IMP_AGG":
+      // Aggregate-IMP teams: a per-round table keyed by team, showing each
+      // team's net IMPs per round and its running total (which can be
+      // negative), rendered through the shared table view.
+      return (
+        <ScoreTableView
+          table={buildTeamsImpAggregateTable(
             overallScoreAndParticipant.overallScore,
             overallScoreAndParticipant.participants,
           )}

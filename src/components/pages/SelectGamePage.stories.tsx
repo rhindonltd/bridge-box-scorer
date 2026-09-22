@@ -27,7 +27,7 @@ const games: BridgeGame[] = [
     eventName: "Tuesday PM Teams",
     director: null,
     gameType: "TEAMS",
-    scoringType: "IMP",
+    scoringType: "IMP_VP",
     sectionName: "",
     gameId: "game-2",
     eventDate: new Date().toISOString(),

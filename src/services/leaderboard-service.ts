@@ -28,6 +28,7 @@ import {
 import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
+import { calculateTeamsImpAggregateOverall } from "@/scoring/swiss/teams-imp-aggregate-overall";
 import {
   BoardComparisonScoring,
   calculateTeamsBoardComparisonOverall,
@@ -311,18 +312,27 @@ function computeCombined(
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
   isTeamsVp: boolean,
+  teamsImpAggregate: boolean,
   teamsBoardComparison: BoardComparisonScoring | null,
   barometer: boolean,
   twoWinner: boolean,
   teams: AssignedTeam[],
 ): LeaderboardResult {
   // A board-comparison teams game (BAM/PAB) ranks teams on boards won; a
-  // teams-VP game ranks teams on Victory Points; every other game ranks pairs
-  // (Swiss VP or the standard board-pooled overall).
+  // teams-VP game ranks teams on Victory Points; an aggregate-IMP teams game
+  // ranks teams on total net IMPs; every other game ranks pairs (Swiss VP or
+  // the standard board-pooled overall).
   if (teamsBoardComparison !== null) {
     const overallScore = calculateTeamsBoardComparisonOverall(boardRows, {
       barometer,
       scoring: teamsBoardComparison,
+    });
+    return { type: overallScore.type, overallScore, participants: teams };
+  }
+
+  if (teamsImpAggregate) {
+    const overallScore = calculateTeamsImpAggregateOverall(boardRows, {
+      barometer,
     });
     return { type: overallScore.type, overallScore, participants: teams };
   }
@@ -359,6 +369,7 @@ function computeSections(
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
   isTeamsVp: boolean,
+  teamsImpAggregate: boolean,
   teamsBoardComparison: BoardComparisonScoring | null,
   barometer: boolean,
   twoWinner: boolean,
@@ -408,6 +419,18 @@ function computeSections(
       };
     }
 
+    if (teamsImpAggregate) {
+      const overallScore = calculateTeamsImpAggregateOverall(sectionRows, {
+        barometer,
+      });
+      return {
+        section,
+        type: overallScore.type,
+        overallScore,
+        participants: teamsBySection.get(section) ?? [],
+      };
+    }
+
     if (isTeamsVp) {
       const overallScore = calculateTeamsVpOverall(sectionRows);
       return {
@@ -448,6 +471,7 @@ async function readLeaderboardInputs(
   combinedRanking: boolean;
   swissVpMode: SwissVpMode;
   isTeamsVp: boolean;
+  teamsImpAggregate: boolean;
   teamsBoardComparison: BoardComparisonScoring | null;
   barometer: boolean;
   twoWinner: boolean;
@@ -466,6 +490,8 @@ async function readLeaderboardInputs(
     movement,
   );
   const isTeamsVp = classification.format === "TEAMS_VP";
+  // An aggregate-IMP teams format: ranks teams on total net IMPs (no VP).
+  const teamsImpAggregate = classification.format === "TEAMS_IMP_AGG";
   // A board-comparison teams format (Board-a-Match / Point-a-Board), or null
   // for any other format. Carries the scale directly so the compute functions
   // pass it straight to the shared scorer.
@@ -489,9 +515,9 @@ async function readLeaderboardInputs(
   const [boardRows, pairs, teams] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
     findPairs(db),
-    // Teams are derived from the seating; needed for any teams game (VP, BAM,
-    // or PAB).
-    isTeamsVp || teamsBoardComparison !== null
+    // Teams are derived from the seating; needed for any teams game (VP,
+    // aggregate IMP, BAM, or PAB).
+    isTeamsVp || teamsImpAggregate || teamsBoardComparison !== null
       ? findTeams(db)
       : Promise.resolve([] as AssignedTeam[]),
   ]);
@@ -501,6 +527,7 @@ async function readLeaderboardInputs(
     combinedRanking: game!.combinedRanking,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
     twoWinner,
@@ -529,6 +556,7 @@ export async function buildLeaderboards(
     combinedRanking,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
     twoWinner,
@@ -543,6 +571,7 @@ export async function buildLeaderboards(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
     twoWinner,
@@ -564,6 +593,7 @@ export async function buildLeaderboards(
           scoringType,
           swissVpMode,
           isTeamsVp,
+          teamsImpAggregate,
           teamsBoardComparison,
           barometer,
           twoWinner,
@@ -588,6 +618,7 @@ export async function computeLeaderboard(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
     twoWinner,
@@ -602,6 +633,7 @@ export async function computeLeaderboard(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
     twoWinner,
@@ -623,6 +655,7 @@ export async function computeSectionLeaderboards(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
     twoWinner,
@@ -636,6 +669,7 @@ export async function computeSectionLeaderboards(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
     twoWinner,

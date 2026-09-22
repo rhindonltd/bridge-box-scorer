@@ -63,20 +63,34 @@ describe("classifyEvent", () => {
     });
   });
 
-  it("classifies a Teams + Swiss Teams game as TEAMS_VP with null mode", () => {
-    expect(classifyEvent("TEAMS", "IMP", SWISS_TEAMS)).toEqual({
+  it("classifies a Teams + Swiss Teams IMP_VP game as TEAMS_VP with null mode", () => {
+    expect(classifyEvent("TEAMS", "IMP_VP", SWISS_TEAMS)).toEqual({
       format: "TEAMS_VP",
+      scoringType: "IMP_VP",
+      swissVpMode: null,
+    });
+  });
+
+  it("classifies a Teams + Round Robin Teams IMP_VP game as TEAMS_VP with null mode", () => {
+    expect(classifyEvent("TEAMS", "IMP_VP", ROUND_ROBIN_TEAMS)).toEqual({
+      format: "TEAMS_VP",
+      scoringType: "IMP_VP",
+      swissVpMode: null,
+    });
+  });
+
+  it("classifies a Teams + Swiss Teams IMP game as TEAMS_IMP_AGG (aggregate IMPs)", () => {
+    expect(classifyEvent("TEAMS", "IMP", SWISS_TEAMS)).toEqual({
+      format: "TEAMS_IMP_AGG",
       scoringType: "IMP",
       swissVpMode: null,
     });
   });
 
-  it("classifies a Teams + Round Robin Teams game as TEAMS_VP with null mode", () => {
-    expect(classifyEvent("TEAMS", "IMP", ROUND_ROBIN_TEAMS)).toEqual({
-      format: "TEAMS_VP",
-      scoringType: "IMP",
-      swissVpMode: null,
-    });
+  it("classifies a Teams + Round Robin Teams IMP game as TEAMS_IMP_AGG", () => {
+    expect(classifyEvent("TEAMS", "IMP", ROUND_ROBIN_TEAMS).format).toBe(
+      "TEAMS_IMP_AGG",
+    );
   });
 
   it("classifies a Teams + Swiss Teams BAM game as TEAMS_BAM", () => {
@@ -93,8 +107,10 @@ describe("classifyEvent", () => {
     );
   });
 
-  it("keeps a Teams teams-movement game as TEAMS_VP unless scoring is BAM/PAB", () => {
-    expect(classifyEvent("TEAMS", "IMP", SWISS_TEAMS).format).toBe("TEAMS_VP");
+  it("defaults a Teams teams-movement game to TEAMS_VP for IMP_VP or an unmapped scoring", () => {
+    expect(classifyEvent("TEAMS", "IMP_VP", SWISS_TEAMS).format).toBe(
+      "TEAMS_VP",
+    );
     expect(classifyEvent("TEAMS", "MP", SWISS_TEAMS).format).toBe("TEAMS_VP");
   });
 

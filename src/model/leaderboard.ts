@@ -40,6 +40,21 @@ export interface SwissVpOverallScore {
   vpByRound: Record<number, number>;
 }
 
+/**
+ * Aggregate-IMP teams standing for one team.
+ *
+ * Each team match is scored on the raw net IMP margin summed across its boards
+ * (no conversion to Victory Points); a team's session result is the sum of its
+ * per-round net IMPs, and teams rank highest-total-first (a total can be
+ * negative). `impsByRound` maps a round number to that team's net IMPs for the
+ * round, present only for rounds the team has comparable boards in — a missing
+ * round renders as an empty cell in the barometer (Swiss Teams) per-round table.
+ */
+export interface TeamImpAggregateOverallScore {
+  totalImps: number;
+  impsByRound: Record<number, number>;
+}
+
 export interface TeamMatchLineScore {
   board: number;
   opponent: string;
@@ -101,6 +116,7 @@ interface ScoreByModeAndScoring {
     MATCH: TeamMatchScore;
     OVERALL: OverallTeamResult;
     SWISS_VP: SwissVpOverallScore;
+    IMP_AGG: TeamImpAggregateOverallScore;
     BAM: BoardComparisonOverallScore;
     PAB: BoardComparisonOverallScore;
   };
@@ -170,6 +186,17 @@ export type TeamPabOverallScore = OverallScoreBase<"TEAM", "PAB"> & {
   barometer: boolean;
 };
 
+/**
+ * Aggregate-IMP teams standing. Like {@link TeamSwissVpOverallScore} it ranks
+ * teams on a running per-round total, but the total is the raw net IMP margin
+ * (no VP conversion). Carries the same `barometer` flag as the board-comparison
+ * scores so the view knows whether to render a per-round table (Swiss Teams) or
+ * a single cumulative total (Round Robin Teams); it does not affect the maths.
+ */
+export type TeamImpAggOverallScore = OverallScoreBase<"TEAM", "IMP_AGG"> & {
+  barometer: boolean;
+};
+
 export type OverallScore =
   | PairMatchpointOverallScore
   | PairXIMPOverallScore
@@ -178,6 +205,7 @@ export type OverallScore =
   | TeamMatchOverallScore
   | TeamOverallOverallScore
   | TeamSwissVpOverallScore
+  | TeamImpAggOverallScore
   | TeamBamOverallScore
   | TeamPabOverallScore;
 

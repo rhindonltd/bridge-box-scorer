@@ -78,7 +78,8 @@ const OVERALL_NOT_USED: OverallPluginId = "IMP";
  */
 const combinations: CombinationRegistry = {
   MP: { perBoard: "MP", overall: "MP" },
-  IMP: { perBoard: "IMP", overall: "IMP" },
+  IMP: { perBoard: "IMP", overall: OVERALL_NOT_USED },
+  IMP_VP: { perBoard: "IMP", overall: OVERALL_NOT_USED },
   XIMP: { perBoard: "XIMP", overall: "XIMP" },
   BAM: { perBoard: "IMP", overall: OVERALL_NOT_USED },
   PAB: { perBoard: "IMP", overall: OVERALL_NOT_USED },

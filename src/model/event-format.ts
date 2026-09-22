@@ -10,9 +10,13 @@ import { SelectedMovement } from "@/model/selected-movement";
  * - PAIRS_BOARD: an ordinary pairs event (MP / Butler / Cross-IMP), ranked by
  *   pooling every table's result on a board.
  * - SWISS_PAIRS_VP: a Swiss Pairs event, ranked on per-round Victory Points.
- * - TEAMS_VP: a teams event ranked on per-round Victory Points (the default for
- *   any teams movement — Swiss Teams or Round Robin — regardless of how its
- *   schedule is drawn).
+ * - TEAMS_VP: a teams event ranked on per-round Victory Points, converting each
+ *   match's IMP margin to VP on the WBF scale. The default for any teams
+ *   movement (Swiss Teams or Round Robin) whose scoring type does not pick
+ *   another method. Chosen when a teams game's scoring type is "IMP_VP".
+ * - TEAMS_IMP_AGG: a teams event ranked on aggregate (total net) IMPs — the raw
+ *   sum of each match's IMP margin across all boards, with NO conversion to
+ *   Victory Points. Chosen when a teams game's scoring type is "IMP".
  * - TEAMS_BAM: a teams event scored Board-a-Match (each board a win/tie/loss on
  *   a 0/0.5/1 scale), ranked on total boards won. Chosen when a teams game's
  *   scoring type is "BAM"; orthogonal to the movement (any teams movement can).
@@ -23,6 +27,7 @@ export type EventFormat =
   | "PAIRS_BOARD"
   | "SWISS_PAIRS_VP"
   | "TEAMS_VP"
+  | "TEAMS_IMP_AGG"
   | "TEAMS_BAM"
   | "TEAMS_PAB";
 
@@ -116,22 +121,32 @@ export function classifyEvent(
   movement: SelectedMovement | null,
 ): EventClassification {
   if (gameType === "TEAMS" && isTeamsVpMovement(movement)) {
-    // A board-comparison scoring type (Board-a-Match / Point-a-Board) ranks on
-    // boards won; otherwise it defaults to per-round Victory Points. These are
-    // orthogonal to the movement, so both Swiss Teams and Round Robin honour
-    // them.
+    // The teams scoring method is orthogonal to the movement, so both Swiss
+    // Teams and Round Robin honour it:
+    //  - BAM / PAB rank on boards won (board-comparison);
+    //  - IMP ranks on aggregate (total net) IMPs, no VP conversion;
+    //  - IMP_VP (and any other/legacy value) ranks on per-round Victory Points.
     const format =
       scoringType === "BAM"
         ? "TEAMS_BAM"
         : scoringType === "PAB"
           ? "TEAMS_PAB"
-          : "TEAMS_VP";
+          : scoringType === "IMP"
+            ? "TEAMS_IMP_AGG"
+            : "TEAMS_VP";
     return { format, scoringType, swissVpMode: null };
   }
 
   if (movement?.source === "SWISS") {
+    // Swiss Pairs derive per-round VP from either matchpoint percentage (MP) or
+    // head-to-head IMP margin (Butler). "IMP" and its VP-labelled alias
+    // "IMP_VP" both select the Butler (IMP) VP mode.
     const swissVpMode: SwissVpMode =
-      scoringType === "IMP" || scoringType === "MP" ? scoringType : null;
+      scoringType === "IMP" || scoringType === "IMP_VP"
+        ? "IMP"
+        : scoringType === "MP"
+          ? "MP"
+          : null;
     return { format: "SWISS_PAIRS_VP", scoringType, swissVpMode };
   }
 

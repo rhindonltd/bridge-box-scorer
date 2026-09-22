@@ -33,7 +33,7 @@ export function CreateGamePage() {
   // locale-specific (Point-a-Board / PAB in the UK, Board-a-Match / BAM in the
   // US), so the option list comes from the localized messages.
   const [teamsScoring, setTeamsScoring] = useState<
-    Extract<ScoringType, "IMP" | "BAM" | "PAB">
+    Extract<ScoringType, "IMP" | "IMP_VP" | "BAM" | "PAB">
   >("IMP");
   // Pairs scoring choice, only surfaced for a Pairs game: matchpoints (default)
   // or Cross-IMPs.

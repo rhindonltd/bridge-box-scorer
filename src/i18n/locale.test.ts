@@ -26,18 +26,20 @@ describe("resolveLocale", () => {
 });
 
 describe("getMessages — teams scoring options", () => {
-  it("offers Point-a-Board (PAB) for en-GB", () => {
+  it("offers aggregate IMP, IMP (VP) and Point-a-Board for en-GB", () => {
     const options = getMessages("en-GB").teamsScoringOptions;
     expect(options).toEqual([
-      { label: "IMP (Victory Points)", value: "IMP" },
+      { label: "IMP", value: "IMP" },
+      { label: "IMP (Victory Points)", value: "IMP_VP" },
       { label: "Point-a-Board", value: "PAB" },
     ]);
   });
 
-  it("offers Board-a-Match (BAM) for en-US", () => {
+  it("offers aggregate IMP, IMP (VP) and Board-a-Match for en-US", () => {
     const options = getMessages("en-US").teamsScoringOptions;
     expect(options).toEqual([
-      { label: "IMP (Victory Points)", value: "IMP" },
+      { label: "IMP", value: "IMP" },
+      { label: "IMP (Victory Points)", value: "IMP_VP" },
       { label: "Board-a-Match", value: "BAM" },
     ]);
   });

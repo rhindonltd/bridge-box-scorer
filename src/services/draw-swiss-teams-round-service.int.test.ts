@@ -11,7 +11,7 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(async () => ({
     gameId: "g",
     gameType: "TEAMS",
-    scoringType: "IMP",
+    scoringType: "IMP_VP",
     selectedMovement: JSON.stringify({
       source: "SWISS_TEAMS",
       swissTeams: { teams: 4, rounds: 4, boardsPerRound: 1 },

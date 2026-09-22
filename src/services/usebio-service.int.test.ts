@@ -266,7 +266,7 @@ describe("generateUsebio", () => {
     const teamsGame: BridgeGame = {
       ...game,
       gameType: "TEAMS",
-      scoringType: "IMP",
+      scoringType: "IMP_VP",
       selectedMovement: JSON.stringify({
         source: "SWISS_TEAMS",
         swissTeams: { teams: 2, rounds: 1, boardsPerRound: 1 },
