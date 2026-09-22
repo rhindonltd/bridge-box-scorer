@@ -13,6 +13,7 @@ import { Toggle } from "@/components/common/Toggle";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
+import { useTranslations } from "@/i18n/useTranslations";
 import type { BridgewebsEventsResponse } from "@/app/api/games/bridgewebs/events/route";
 
 const DEFAULT_TABLES = 5;
@@ -23,11 +24,14 @@ function todayDateOnly(): string {
 }
 
 export function CreateGamePage() {
+  const t = useTranslations();
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
   const [gameType, setGameType] = useState<GameType>("PAIRS");
-  // Teams scoring choice, only surfaced (and only meaningful) for a Teams game:
-  // IMP Victory Points (default) or Board-a-Match / Point-a-Board.
+  // Teams scoring choice, only surfaced (and only meaningful) for a Teams game.
+  // Defaults to IMP Victory Points; the board-comparison alternative offered is
+  // locale-specific (Point-a-Board / PAB in the UK, Board-a-Match / BAM in the
+  // US), so the option list comes from the localized messages.
   const [teamsScoring, setTeamsScoring] = useState<
     Extract<ScoringType, "IMP" | "BAM" | "PAB">
   >("IMP");
@@ -149,7 +153,7 @@ export function CreateGamePage() {
         id="create-game-form"
         className="flex flex-col w-full max-w-md p-4"
       >
-        <div className="flex flex-col flex-1 justify-center gap-4">
+        <div className="flex flex-col flex-1 justify-center gap-2.5">
           <div className="flex flex-col gap-1">
             {eventPickerAvailable && (
               <div className="flex items-center justify-between">
@@ -225,11 +229,7 @@ export function CreateGamePage() {
             <SelectField
               label="Scoring"
               value={teamsScoring}
-              options={[
-                { label: "IMP (Victory Points)", value: "IMP" as const },
-                { label: "Board-a-Match", value: "BAM" as const },
-                { label: "Point-a-Board", value: "PAB" as const },
-              ]}
+              options={t.teamsScoringOptions}
               onSelect={setTeamsScoring}
               inline
             />

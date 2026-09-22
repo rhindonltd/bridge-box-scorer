@@ -1,24 +1,36 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { OverallScoreAndParticipant } from "@/model/leaderboard";
+import {
+  DirectionalLeaderboard,
+  OverallScoreAndParticipant,
+} from "@/model/leaderboard";
 import { SocketEvents } from "@/socket/socket-events";
 import { useRequiredGame } from "@/context/GameContext";
 import { useFeatureSnapshot } from "@/hooks/use-feature-snapshot";
 
-export type SectionLeaderboard = OverallScoreAndParticipant & {
+/**
+ * One leaderboard "view" as delivered in a snapshot: the pooled ranking, plus —
+ * for a two-winner pairs event — an optional NS/EW split (`directional`) the
+ * room display renders as two side-by-side rankings.
+ */
+export type LeaderboardView = OverallScoreAndParticipant & {
+  directional?: DirectionalLeaderboard;
+};
+
+export type SectionLeaderboard = LeaderboardView & {
   section: string;
 };
 
 export interface LeaderboardSnapshot {
   // Null when the director has turned off the combined overall ranking for a
   // multi-section event (sections stay separate).
-  leaderboard: OverallScoreAndParticipant | null;
+  leaderboard: LeaderboardView | null;
   sections: SectionLeaderboard[];
 }
 
 interface LeaderboardContextType {
-  leaderboard: OverallScoreAndParticipant | null;
+  leaderboard: LeaderboardView | null;
   sections: SectionLeaderboard[];
   isLoading: boolean;
 }

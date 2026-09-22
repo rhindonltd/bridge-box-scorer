@@ -92,26 +92,6 @@ function pairXimp(): OverallScoreAndParticipant {
   };
 }
 
-/** IMP pairs: a single "IMP" column. */
-function pairImp(): OverallScoreAndParticipant {
-  const scores = [41, 30, 22, 9, -2, -14];
-  return {
-    type: "PAIR_IMP",
-    participants: scores.map((_, i) => pair(i + 1)),
-    overallScore: {
-      type: "PAIR_IMP",
-      mode: "PAIR",
-      scoring: "IMP",
-      lines: scores.map((imps, i) => ({
-        rank: i + 1,
-        tied: false,
-        pairId: String(i + 1),
-        imps,
-      })),
-    },
-  };
-}
-
 /** Swiss Pairs Victory Points: Total plus a column per round. */
 function pairSwissVp(): OverallScoreAndParticipant {
   const rows = [
@@ -288,15 +268,6 @@ export const CrossImpPairs: Story = {
   },
 };
 
-/** IMP pairs standings (single IMP column). */
-export const ImpPairs: Story = {
-  args: {
-    eventName: "IMP Pairs",
-    leaderboard: pairImp(),
-    sections: [{ section: "A", ...pairImp() }],
-  },
-};
-
 /** Swiss Pairs Victory Points: a total plus one column per round. */
 export const SwissPairsVictoryPoints: Story = {
   args: {
@@ -339,5 +310,84 @@ export const PointABoardTeams: Story = {
     eventName: "Point-a-Board Teams",
     leaderboard: teamPab(),
     sections: [{ section: "A", ...teamPab() }],
+  },
+};
+
+// ---- two-winner (Mitchell) NS/EW split -------------------------------------
+
+/** An assigned MP pair for a given section-qualified seat (e.g. "A2EW"). */
+function seatPair(seat: string, seed: number): AssignedPair {
+  const last = SURNAMES[seed % SURNAMES.length];
+  return {
+    type: "PAIR",
+    id: seat,
+    initialSeat: seat as AssignedPair["initialSeat"],
+    player1: player(seed * 2 + 1, "Player", last),
+    player2: player(seed * 2 + 2, "Partner", last),
+  };
+}
+
+/**
+ * One direction's MP ranking of `count` pairs, percentages descending from a
+ * top just under the given start. Enough pairs (e.g. 18) makes each column
+ * overflow so the auto-scroll is visible.
+ */
+function directionRanking(
+  direction: "NS" | "EW",
+  count: number,
+  startPct: number,
+): OverallScoreAndParticipant {
+  const seats = Array.from({ length: count }, (_, i) => `A${i + 1}${direction}`);
+  return {
+    type: "PAIR_MP",
+    participants: seats.map((seat, i) => seatPair(seat, i)),
+    overallScore: {
+      type: "PAIR_MP",
+      mode: "PAIR",
+      scoring: "MP",
+      lines: seats.map((seat, i) => {
+        // Descending percentages with a little variety; clamped so they stay
+        // sensible even for a long field.
+        const pct = Math.max(20, startPct - i * 2.3);
+        return {
+          rank: i + 1,
+          tied: false,
+          pairId: seat,
+          // Percentages are shown directly; totalMP/maxMP back them out so the
+          // percentage view renders pct%.
+          totalMP: Math.round(pct * 100) / 100,
+          maxMP: 100,
+        };
+      }),
+    },
+  };
+}
+
+/**
+ * A two-winner Mitchell leaderboard: North/South and East/West are separate
+ * fields, each with its own ranking, carried as `directional`. `count` pairs
+ * per direction.
+ */
+function twoWinnerMitchell(count = 18): OverallScoreAndParticipant & {
+  directional: { ns: OverallScoreAndParticipant; ew: OverallScoreAndParticipant };
+} {
+  const ns = directionRanking("NS", count, 64.2);
+  const ew = directionRanking("EW", count, 61.8);
+  // The pooled ranking is unused by the two-winner display, but the type still
+  // requires one; reuse the NS ranking as a harmless placeholder.
+  return { ...ns, directional: { ns, ew } };
+}
+
+/**
+ * Two-winner Mitchell pairs: the standings show two independent rankings,
+ * North/South and East/West, side by side. Shown as percentages. With a full
+ * field each column overflows, so the standings slowly auto-scroll.
+ */
+export const TwoWinnerMitchell: Story = {
+  args: {
+    eventName: "Monday Mitchell Pairs",
+    leaderboard: twoWinnerMitchell(),
+    sections: [{ section: "A", ...twoWinnerMitchell() }],
+    scoringMode: "percentage",
   },
 };

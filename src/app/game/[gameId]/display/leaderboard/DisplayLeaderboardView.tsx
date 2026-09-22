@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/common/Spinner";
-import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { Leaderboard } from "@/components/leaderboard/Leaderboard";
-import type { SectionLeaderboard } from "@/context/LeaderboardContext";
+import type {
+  LeaderboardView,
+  SectionLeaderboard,
+} from "@/context/LeaderboardContext";
 
 type View = "combined" | string; // "combined" or a section letter
 
@@ -40,7 +42,7 @@ export interface DisplayLeaderboardViewProps {
   /** The event name, shown as the display heading. */
   eventName: string;
   /** The combined (all-sections) leaderboard, or null when none yet. */
-  leaderboard: OverallScoreAndParticipant | null;
+  leaderboard: LeaderboardView | null;
   /** Per-section leaderboards; more than one enables the section tabs. */
   sections: SectionLeaderboard[];
   /** While true, show a spinner instead of the board. */
@@ -132,10 +134,15 @@ export function DisplayLeaderboardView({
   const selectView = useCallback((next: View) => setSelected(next), []);
 
   // Resolve the leaderboard for the active view.
-  const active: OverallScoreAndParticipant | null =
+  const active: LeaderboardView | null =
     view === "combined"
       ? combined
       : (sections.find((s) => s.section === view) ?? null);
+
+  // A two-winner Mitchell shows two independent rankings (NS and EW) side by
+  // side rather than one; each already fills its half of the screen, so the
+  // screen-fill column wrap is not applied to them.
+  const directional = active?.directional;
 
   // Heading is the event name, with the section appended when a specific
   // section (not the combined view) is being shown.
@@ -143,11 +150,11 @@ export function DisplayLeaderboardView({
     view === "combined" ? eventName : `${eventName} — Section ${view}`;
 
   // Spread into two columns when there are many places and the screen is wide
-  // enough to make each column readable.
+  // enough to make each column readable. Only for a single (one-winner / teams)
+  // ranking — a two-winner event already uses the width for its NS/EW split.
   const rowCount = active?.participants.length ?? 0;
-  const splitColumns = useTwoColumns(rowCount >= TWO_COLUMN_ROW_THRESHOLD)
-    ? 2
-    : 1;
+  const wantTwoColumns = useTwoColumns(rowCount >= TWO_COLUMN_ROW_THRESHOLD);
+  const splitColumns = !directional && wantTwoColumns ? 2 : 1;
 
   // Auto-scroll at a constant speed and, when rotating, only advance to the
   // next view once the scroll has eased back to the top (after at least the
@@ -199,6 +206,23 @@ export function DisplayLeaderboardView({
         )}
       </div>
 
+      {/*
+        Two-winner direction headings sit in a fixed row ABOVE the scroll
+        region so they stay put while the standings scroll. The row mirrors the
+        two-column `flex gap-6` layout below so each heading aligns over its
+        column.
+      */}
+      {active && directional && (
+        <div className="flex shrink-0 gap-6 px-6">
+          <h2 className="min-w-0 flex-1 px-2 text-2xl font-bold text-gray-800">
+            North / South
+          </h2>
+          <h2 className="min-w-0 flex-1 px-2 text-2xl font-bold text-gray-800">
+            East / West
+          </h2>
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         // Focusable so the scrollable standings region is keyboard-accessible
@@ -208,7 +232,26 @@ export function DisplayLeaderboardView({
         aria-label={`${heading} standings`}
         className="min-h-0 flex-1 overflow-y-auto focus:outline-none"
       >
-        {active ? (
+        {active && directional ? (
+          // Two-winner Mitchell: NS and EW are separate fields, shown as two
+          // rankings side by side. The direction headings are the fixed row
+          // above; only the tables scroll here.
+          <div
+            data-testid="leaderboard-standings"
+            className="flex h-full min-h-0 gap-6 px-6"
+          >
+            {[directional.ns, directional.ew].map((ranking, i) => (
+              <div key={i} className="min-w-0 flex-1">
+                <Leaderboard
+                  overallScoreAndParticipant={ranking}
+                  scroll={false}
+                  selectedViewId={scoringMode}
+                  interactive={false}
+                />
+              </div>
+            ))}
+          </div>
+        ) : active ? (
           <div data-testid="leaderboard-standings" className="h-full">
             <Leaderboard
               overallScoreAndParticipant={active}

@@ -53,7 +53,10 @@ A full-screen board of live standings, sized to be read from across the room
 and updating as results come in:
 
 - For **pairs** games, rankings by the game's scoring method
-  (matchpoints/percentage, IMPs, or Cross-IMPs).
+  (matchpoints/percentage, IMPs, or Cross-IMPs). For a **two-winner Mitchell**
+  (where North/South and East/West stay in their own direction all session and
+  so have separate winners), the standings show **two rankings side by side** —
+  North/South and East/West — each ranked within its own direction.
 - For a **Swiss Pairs** game, Victory Points with a column per round and each
   pair's running total.
 - For a **Swiss Teams** game, Victory Points with a column per round and each

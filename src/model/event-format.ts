@@ -84,6 +84,32 @@ function isTeamsVpMovement(movement: SelectedMovement | null): boolean {
   );
 }
 
+/**
+ * Whether a pairs game is a **two-winner** movement — one where North/South and
+ * East/West never swap seats, so the two directions form separate fields with
+ * their own winners (a standard Mitchell). Such an event is ranked as two
+ * independent leaderboards (an NS ranking and an EW ranking) rather than one
+ * pooled ranking.
+ *
+ * A one-winner movement (Howell, or an arrow-switched Mitchell where some
+ * rounds swap NS/EW so everyone competes in a single field) and any teams game
+ * are NOT two-winner.
+ *
+ * Currently only detected for generated MITCHELL movements (no arrow switch);
+ * SPEC (movement-library) movements don't yet surface a winner count, so they
+ * are treated as one-winner until that is plumbed through.
+ */
+export function isTwoWinnerPairs(
+  gameType: GameType,
+  movement: SelectedMovement | null,
+): boolean {
+  if (gameType !== "PAIRS") return false;
+  if (movement?.source !== "MITCHELL") return false;
+  // Any arrow-switched round mixes the two directions into a single field,
+  // collapsing the event to one winner.
+  return !movement.mitchell.arrowSwitchRounds;
+}
+
 export function classifyEvent(
   gameType: GameType,
   scoringType: ScoringType,

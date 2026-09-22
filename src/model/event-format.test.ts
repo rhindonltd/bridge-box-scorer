@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyEvent } from "./event-format";
+import { classifyEvent, isTwoWinnerPairs } from "./event-format";
 import type { SelectedMovement } from "@/model/selected-movement";
 
 const SPEC: SelectedMovement = { source: "SPEC", specId: 1, boardsPerRound: 2 };
@@ -148,5 +148,47 @@ describe("classifyEvent", () => {
         classifyEvent("TEAMS", scoring, SWISS_TEAMS).swissVpMode,
       ).toBeNull();
     }
+  });
+});
+
+describe("isTwoWinnerPairs", () => {
+  it("is true for a standard Mitchell pairs game (no arrow switch)", () => {
+    expect(isTwoWinnerPairs("PAIRS", MITCHELL)).toBe(true);
+  });
+
+  it("is true for a Mitchell variant with no arrow switch (e.g. skip)", () => {
+    const skipMitchell: SelectedMovement = {
+      source: "MITCHELL",
+      mitchell: { tables: 5, rounds: 5, boardsPerRound: 2, skip: true },
+    };
+    expect(isTwoWinnerPairs("PAIRS", skipMitchell)).toBe(true);
+  });
+
+  it("is false for an arrow-switched Mitchell (one winner)", () => {
+    const arrowSwitched: SelectedMovement = {
+      source: "MITCHELL",
+      mitchell: {
+        tables: 4,
+        rounds: 4,
+        boardsPerRound: 2,
+        arrowSwitchRounds: 1,
+      },
+    };
+    expect(isTwoWinnerPairs("PAIRS", arrowSwitched)).toBe(false);
+  });
+
+  it("is false for SPEC, Swiss, and teams movements", () => {
+    expect(isTwoWinnerPairs("PAIRS", SPEC)).toBe(false);
+    expect(isTwoWinnerPairs("PAIRS", SWISS)).toBe(false);
+    expect(isTwoWinnerPairs("TEAMS", SWISS_TEAMS)).toBe(false);
+    expect(isTwoWinnerPairs("TEAMS", ROUND_ROBIN_TEAMS)).toBe(false);
+  });
+
+  it("is false for a teams game even with a Mitchell movement", () => {
+    expect(isTwoWinnerPairs("TEAMS", MITCHELL)).toBe(false);
+  });
+
+  it("is false when there is no movement selected yet", () => {
+    expect(isTwoWinnerPairs("PAIRS", null)).toBe(false);
   });
 });

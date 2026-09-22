@@ -894,3 +894,137 @@ describe("buildLeaderboards", () => {
     expect(sections).toHaveLength(1);
   });
 });
+
+describe("buildLeaderboards — two-winner (Mitchell) NS/EW split", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // A standard Mitchell pairs game: two-winner, so NS and EW are separate
+    // fields.
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+      combinedRanking: true,
+      selectedMovement: JSON.stringify({
+        source: "MITCHELL",
+        mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
+      }),
+    } as BridgeGame);
+    vi.mocked(getCombination).mockReturnValue({
+      perBoard: "MP",
+      overall: "MP",
+    });
+    // Section A, three NS pairs (A1NS/A2NS/A3NS) and three EW (A1EW/A2EW/A3EW).
+    vi.mocked(findPairs).mockResolvedValue(
+      ["A1NS", "A2NS", "A3NS", "A1EW", "A2EW", "A3EW"].map((seat) => ({
+        initialSeat: seat,
+      })) as any,
+    );
+  });
+
+  it("splits the standings into independently-ranked NS and EW fields", async () => {
+    // The pooled aggregate mixes both directions. NS pairs have raised
+    // percentages, EW lower — but the ranks below are the POOLED ranks; the
+    // split must re-rank each direction within itself.
+    mockOverallPlugin({
+      type: "PAIR_MP",
+      mode: "PAIR",
+      scoring: "MP",
+      lines: [
+        { pairId: "A1NS", totalMP: 18, maxMP: 20, rank: 1, tied: false },
+        { pairId: "A2NS", totalMP: 14, maxMP: 20, rank: 2, tied: false },
+        { pairId: "A3NS", totalMP: 10, maxMP: 20, rank: 3, tied: false },
+        { pairId: "A1EW", totalMP: 8, maxMP: 20, rank: 4, tied: false },
+        { pairId: "A2EW", totalMP: 6, maxMP: 20, rank: 5, tied: false },
+        { pairId: "A3EW", totalMP: 4, maxMP: 20, rank: 6, tied: false },
+      ],
+    });
+    vi.mocked(scoreBoard).mockReturnValue({
+      pluginId: "MP",
+      board: 1,
+      lines: [],
+    } as any);
+
+    const db = dbWithBoards([
+      {
+        boardNumber: 1,
+        ns: "A1NS",
+        ew: "A1EW",
+        section: "A",
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+      },
+    ]);
+
+    const { buildLeaderboards } = await import("./leaderboard-service");
+    const { leaderboard } = await buildLeaderboards(db, "game-1");
+    const directional = leaderboard!.directional;
+    expect(directional).toBeDefined();
+
+    // NS field: only the NS pairs, re-ranked 1..3 within the NS field.
+    const nsLines = directional!.ns.overallScore.lines;
+    expect(nsLines.map((l: any) => l.pairId)).toEqual(["A1NS", "A2NS", "A3NS"]);
+    expect(nsLines.map((l: any) => l.rank)).toEqual([1, 2, 3]);
+    expect(directional!.ns.participants.map((p) => p.id)).toEqual([
+      "A1NS",
+      "A2NS",
+      "A3NS",
+    ]);
+
+    // EW field: only the EW pairs, re-ranked from 1 (not 4/5/6 as in the pool).
+    const ewLines = directional!.ew.overallScore.lines;
+    expect(ewLines.map((l: any) => l.pairId)).toEqual(["A1EW", "A2EW", "A3EW"]);
+    expect(ewLines.map((l: any) => l.rank)).toEqual([1, 2, 3]);
+    expect(directional!.ew.participants.map((p) => p.id)).toEqual([
+      "A1EW",
+      "A2EW",
+      "A3EW",
+    ]);
+  });
+
+  it("does not split a one-winner (arrow-switched Mitchell) game", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+      combinedRanking: true,
+      selectedMovement: JSON.stringify({
+        source: "MITCHELL",
+        mitchell: {
+          tables: 3,
+          rounds: 3,
+          boardsPerRound: 2,
+          arrowSwitchRounds: 1,
+        },
+      }),
+    } as BridgeGame);
+    mockOverallPlugin({
+      type: "PAIR_MP",
+      mode: "PAIR",
+      scoring: "MP",
+      lines: [{ pairId: "A1NS", totalMP: 10, maxMP: 20, rank: 1, tied: false }],
+    });
+    vi.mocked(scoreBoard).mockReturnValue({
+      pluginId: "MP",
+      board: 1,
+      lines: [],
+    } as any);
+
+    const db = dbWithBoards([
+      {
+        boardNumber: 1,
+        ns: "A1NS",
+        ew: "A1EW",
+        section: "A",
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+      },
+    ]);
+
+    const { buildLeaderboards } = await import("./leaderboard-service");
+    const { leaderboard } = await buildLeaderboards(db, "game-1");
+    expect(leaderboard!.directional).toBeUndefined();
+  });
+});

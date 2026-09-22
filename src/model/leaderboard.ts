@@ -207,3 +207,15 @@ export type OverallScoreAndParticipant = {
     };
   }[ScoringByMode<M>];
 }[OverallScoreMode];
+
+/**
+ * A two-winner pairs standing (a standard Mitchell), split into two independent
+ * rankings — North/South and East/West — each ranked within its own field.
+ * Attached alongside the pooled ranking on a leaderboard entry when the event
+ * is two-winner; consumers that understand it (the room display) render the two
+ * side by side, while others fall back to the single pooled ranking.
+ */
+export interface DirectionalLeaderboard {
+  ns: OverallScoreAndParticipant;
+  ew: OverallScoreAndParticipant;
+}
