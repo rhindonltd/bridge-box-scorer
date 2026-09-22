@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { getSocket, emitWithAck } from "../lib/socket";
 import { SocketEvents } from "../socket/socket-events";
@@ -20,7 +20,11 @@ import {
 // Re-exported for existing consumers that import these types from the hook.
 export type { RoundSchedule, SeatPlayer } from "./play-state-machine";
 
-export function usePlayFlow(gameId: string, seat: string) {
+export function usePlayFlow(
+  gameId: string,
+  seat: string,
+  handEntryEnabled = false,
+) {
   const [playState, setPlayState] = useState<PlayState>({
     state: "loading",
   });
@@ -44,8 +48,17 @@ export function usePlayFlow(gameId: string, seat: string) {
     },
   );
 
-  const schedule =
-    fetchedSchedule && fetchedSchedule.rounds ? fetchedSchedule : null;
+  // The schedule route (per-game DB) doesn't know the game-level
+  // `handEntryEnabled` flag, which lives on the game-index row and reaches us
+  // via GameContext (same path as `leadCardRequired`). Stamp it onto the
+  // schedule so the pure reducer can gate the optional post-round deal step.
+  const schedule = useMemo(
+    () =>
+      fetchedSchedule && fetchedSchedule.rounds
+        ? { ...fetchedSchedule, handEntryEnabled }
+        : null,
+    [fetchedSchedule, handEntryEnabled],
+  );
 
   // The seat has no schedule yet because the game hasn't been started
   // (materialization creates the assignment rows the schedule needs). Distinct

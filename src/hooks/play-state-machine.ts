@@ -41,6 +41,7 @@ export interface Schedule {
   assignmentId: string;
   side: "NS" | "EW";
   rounds: RoundSchedule[];
+  handEntryEnabled?: boolean;
 }
 
 export type PlayState =
@@ -144,12 +145,23 @@ function afterRound(nextRoundIndex: number, schedule: Schedule): PlayState {
 }
 
 /**
- * Advance from the end of a PLAYED round. Offers the optional deal-entry step
- * for the round just finished before continuing to the move screen / game
- * complete. Sit-out rounds skip this (they route through `afterRound` directly)
- * since the sitting pair played no boards to enter cards for.
+ * Advance from the end of a PLAYED round. When the game has hand entry enabled,
+ * offers the optional deal-entry step for the round just finished before
+ * continuing to the move screen / game complete; otherwise it advances straight
+ * on, as if the step had been skipped. Sit-out rounds never reach here (they
+ * route through `afterRound` directly), since the sitting pair played no boards
+ * to enter cards for.
  */
-function afterPlayedRound(completedRoundIndex: number): PlayState {
+function afterPlayedRound(
+  completedRoundIndex: number,
+  schedule: Schedule,
+): PlayState {
+  // Hand entry is an opt-in per-game setting; when it's off, skip the deal
+  // step and advance as if it had been continued past.
+  if (!schedule.handEntryEnabled) {
+    return afterRound(completedRoundIndex + 1, schedule);
+  }
+
   return {
     state: "enterDeals",
     roundIndex: completedRoundIndex,
@@ -219,8 +231,9 @@ export function playReducer(
         };
       }
 
-      // Round complete — offer the optional deal-entry step for it.
-      return afterPlayedRound(prev.roundIndex);
+      // Round complete — offer the optional deal-entry step for it (skipped
+      // when the game doesn't have hand entry enabled).
+      return afterPlayedRound(prev.roundIndex, schedule);
     }
 
     case "dealsContinue": {

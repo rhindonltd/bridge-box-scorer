@@ -22,12 +22,34 @@ type Props = {
    * match view (which is not a simple ranked list).
    */
   splitColumns?: number;
+  /**
+   * Whether the standings table owns its own scroll region (default true).
+   * The room display passes false so its own auto-scroll container owns
+   * scrolling and the table's sticky header stays pinned while rows scroll.
+   */
+  scroll?: boolean;
+  /**
+   * For pair plugins with more than one view (MP has %/matchpoints), render
+   * this view id and hide the in-screen toggle. The room display sets it from
+   * the MP/% choice made on the preceding screen. Ignored by single-view
+   * plugins (IMP/XIMP) and the team/Swiss variants.
+   */
+  selectedViewId?: string;
+  /**
+   * Whether cells may be interactive (default true). The passive room display
+   * passes false so a team name shows as static text rather than a button that
+   * expands to its players.
+   */
+  interactive?: boolean;
 };
 
 export function Leaderboard({
   overallScoreAndParticipant,
   highlightAssignmentId,
   splitColumns,
+  scroll,
+  selectedViewId,
+  interactive,
 }: Props) {
   // TEAM scoring is not yet plugin-migrated; handle those variants first so
   // the remaining case narrows to PAIR (with AssignedPair[] participants).
@@ -45,6 +67,8 @@ export function Leaderboard({
           teams={overallScoreAndParticipant.participants}
           leaderboard={overallScoreAndParticipant.overallScore}
           highlightAssignmentId={highlightAssignmentId}
+          scroll={scroll}
+          interactive={interactive}
         />
       );
     case "TEAM_SWISS_VP":
@@ -59,6 +83,8 @@ export function Leaderboard({
           highlightAssignmentId={highlightAssignmentId}
           rowTestId="leaderboard-row"
           splitColumns={splitColumns}
+          scroll={scroll}
+          interactive={interactive}
         />
       );
     case "TEAM_BAM":
@@ -73,6 +99,8 @@ export function Leaderboard({
           teams={overallScoreAndParticipant.participants}
           highlightAssignmentId={highlightAssignmentId}
           splitColumns={splitColumns}
+          scroll={scroll}
+          interactive={interactive}
         />
       );
     case "PAIR_SWISS_VP":
@@ -88,6 +116,7 @@ export function Leaderboard({
           highlightAssignmentId={highlightAssignmentId}
           rowTestId="leaderboard-row"
           splitColumns={splitColumns}
+          scroll={scroll}
         />
       );
   }
@@ -104,6 +133,8 @@ export function Leaderboard({
       participants={participants}
       highlightAssignmentId={highlightAssignmentId}
       splitColumns={splitColumns}
+      scroll={scroll}
+      selectedViewId={selectedViewId}
     />
   );
 }

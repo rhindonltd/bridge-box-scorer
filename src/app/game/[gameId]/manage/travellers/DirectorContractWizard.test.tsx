@@ -6,7 +6,6 @@ vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
     game: {
       eventName: "Club Night",
-      sessionName: null,
       sectionName: null,
       ...gameOverrides,
     },
@@ -136,17 +135,10 @@ describe("DirectorContractWizard", () => {
     expect(screen.getByTestId("step-level")).toBeInTheDocument();
   });
 
-  it("renders the session/section subtitle when present", () => {
-    gameOverrides = { sessionName: "Afternoon", sectionName: "Alpha" };
+  it("renders the section subtitle when present", () => {
+    gameOverrides = { sectionName: "Alpha" };
     renderWizard();
-    // The subtitle div renders "Afternoon, Alpha" (session + separator + section).
-    expect(screen.getByText("Afternoon, Alpha")).toBeInTheDocument();
-  });
-
-  it("renders a section-only subtitle", () => {
-    gameOverrides = { sessionName: null, sectionName: "B" };
-    renderWizard();
-    expect(screen.getByText("B")).toBeInTheDocument();
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
   });
 
   it("walks the full played-contract flow with a lead and submits", () => {

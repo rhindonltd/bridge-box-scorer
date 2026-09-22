@@ -45,6 +45,12 @@ export function buildImpView<TLine extends RankedLine>(config: {
   id: string;
   label: string;
   value: (line: TLine) => number;
+  /**
+   * Decimal places for the score cell. Omit for whole numbers (IMP, whose
+   * per-board totals are integers); Cross-IMP is a Butler AVERAGE across the
+   * field, so it is fractional and shown to 2 decimal places.
+   */
+  decimals?: number;
 }): OverallView<{ lines: TLine[] }> {
   return {
     id: config.id,
@@ -61,7 +67,7 @@ export function buildImpView<TLine extends RankedLine>(config: {
           cells: [
             rankCell(row),
             multilineCell(pairNameLines(participants, row.pairId)),
-            numberCell(config.value(row)),
+            numberCell(config.value(row), config.decimals),
           ],
         })),
       };

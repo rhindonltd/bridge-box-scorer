@@ -18,7 +18,6 @@ export const games = sqliteTable("games", {
   })
     .notNull()
     .default("MP"),
-  sessionName: text("session_name").notNull(),
   sectionName: text("section_name").notNull(),
   eventDate: text("event_date").notNull(),
   tables: integer("tables").notNull(),
@@ -33,6 +32,11 @@ export const games = sqliteTable("games", {
   leadCardRequired: integer("lead_card_required", { mode: "boolean" })
     .notNull()
     .default(true),
+  // Whether players may manually enter the hands (the deal) at the end of a
+  // round. Opt-in per game, so it defaults off.
+  handEntryEnabled: integer("hand_entry_enabled", { mode: "boolean" })
+    .notNull()
+    .default(false),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

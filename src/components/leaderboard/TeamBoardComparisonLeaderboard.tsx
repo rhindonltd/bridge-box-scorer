@@ -16,6 +16,17 @@ type Props = {
   highlightAssignmentId?: string;
   /** Spread the standings across this many side-by-side columns (default 1). */
   splitColumns?: number;
+  /**
+   * Whether the table owns its own scroll region (default true). The room
+   * display passes false so its own auto-scroll container owns scrolling and
+   * the table's sticky header stays pinned while rows scroll.
+   */
+  scroll?: boolean;
+  /**
+   * Whether cells may be interactive (default true). The passive room display
+   * passes false so a team name shows as static text rather than a button.
+   */
+  interactive?: boolean;
 };
 
 /**
@@ -31,6 +42,8 @@ export function TeamBoardComparisonLeaderboard({
   teams,
   highlightAssignmentId,
   splitColumns,
+  scroll,
+  interactive,
 }: Props) {
   const [showPercentage, setShowPercentage] = useState(true);
 
@@ -55,6 +68,8 @@ export function TeamBoardComparisonLeaderboard({
         highlightAssignmentId={highlightAssignmentId}
         rowTestId="leaderboard-row"
         splitColumns={splitColumns}
+        scroll={scroll}
+        interactive={interactive}
       />
     </div>
   );

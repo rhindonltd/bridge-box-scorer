@@ -8,6 +8,16 @@ interface Props {
   teams: AssignedTeam[];
   leaderboard: TeamOverallOverallScore;
   highlightAssignmentId?: string;
+  /**
+   * Whether the table owns its own scroll region (default true). The room
+   * display passes false so its auto-scroll container owns scrolling.
+   */
+  scroll?: boolean;
+  /**
+   * Whether the team name is tappable to reveal its players (default true).
+   * The passive room display passes false, showing a static team name.
+   */
+  interactive?: boolean;
 }
 
 /** The four player names of a team ("First Last"), in NS-then-EW order. */
@@ -26,14 +36,22 @@ function teamPlayerLines(team: AssignedTeam): string[] {
 function TeamNameCell({
   teams,
   teamId,
+  interactive,
 }: {
   teams: AssignedTeam[];
   teamId: string;
+  interactive: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const team = teams.find((t) => t.id === teamId);
 
   if (!team) return <>{teamId}</>;
+
+  // On a passive screen (the room display) the name is not tappable: show it as
+  // static, left-aligned text with no expand button.
+  if (!interactive) {
+    return <div className="text-left font-medium">{team.name}</div>;
+  }
 
   return (
     <div className="text-left">
@@ -60,10 +78,15 @@ export function TeamOverallLeaderboard({
   teams,
   leaderboard,
   highlightAssignmentId,
+  scroll = true,
+  interactive = true,
 }: Props) {
   return (
     <Table
       columns={["Rank", "Team", "IMP/VP/PAB"]} // TODO: Fix this
+      // Left-align the "Team" header (index 1) so it sits over the team names.
+      aligns={["center", "left", "center"]}
+      scroll={scroll}
       body={leaderboard.lines.map((row, index, arr) => {
         const isLast = index === arr.length - 1;
         return (
@@ -73,7 +96,12 @@ export function TeamOverallLeaderboard({
             striped={highlightAssignmentId === undefined}
             cells={[
               row.tied ? `${row.rank}=` : row.rank,
-              <TeamNameCell key="team" teams={teams} teamId={row.teamId} />,
+              <TeamNameCell
+                key="team"
+                teams={teams}
+                teamId={row.teamId}
+                interactive={interactive}
+              />,
               row.score,
             ]}
             className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}

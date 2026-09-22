@@ -37,17 +37,19 @@ describe("scoreXIMP", () => {
 
     const result = scoreXIMP(1, lines);
 
-    // Line 1 (400): vs 150 -> 6 IMPs, vs -50 -> 10 IMPs = 16
+    // Cross-IMPs are the AVERAGE IMP vs the other tables (sum of pairwise IMPs
+    // over the WBF chart, divided by the number of comparisons).
+    // Line 1 (400): vs 150 -> 6, vs -50 -> 10; sum 16 over 2 comparisons = 8.
     const line1 = result.find((r) => r.nsId === "1")!;
     expect(line1.score).toBe(400);
-    expect(line1.nsCrossImps).toBeGreaterThan(0);
-    expect(line1.ewCrossImps).toBeLessThan(0);
+    expect(line1.nsCrossImps).toBe(8);
+    expect(line1.ewCrossImps).toBe(-8);
 
-    // Line 3 (-50): vs 400 -> -10, vs 150 -> -5 = -15
+    // Line 3 (-50): vs 400 -> -10, vs 150 -> -5; sum -15 over 2 = -7.5.
     const line3 = result.find((r) => r.nsId === "3")!;
     expect(line3.score).toBe(-50);
-    expect(line3.nsCrossImps).toBeLessThan(0);
-    expect(line3.ewCrossImps).toBeGreaterThan(0);
+    expect(line3.nsCrossImps).toBe(-7.5);
+    expect(line3.ewCrossImps).toBe(7.5);
   });
 
   it("ewCrossImps is always the negative of nsCrossImps", () => {

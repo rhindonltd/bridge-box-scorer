@@ -13,6 +13,8 @@ step-by-step instructions.
 - **Event type** — **Pairs** or **Teams**.
 - **Record opening lead** — a per-game setting. When on, players are asked to
   enter the opening lead card as part of each result.
+- **Allow hand entry** — a per-game setting. When on, players can enter the
+  hands (the four players' cards) at the end of a round.
 
 ## Sections
 
@@ -89,8 +91,12 @@ step-by-step instructions.
   confirm.
 - **Scoring methods:**
   - **MP** — matchpoints, usually shown as a percentage.
-  - **IMP** — International Match Points.
-  - **XIMP** — Cross-IMPs.
+  - **IMP** — International Match Points, comparing each result against a
+    benchmark score for the board.
+  - **XIMP** — Cross-IMPs. Your result on a board is compared against every
+    other table that played it, each comparison is turned into IMPs, and those
+    are averaged to give your score for the board. A pair's total is the sum of
+    these board averages, so it is shown to two decimal places.
   - Teams games use team match / overall scoring.
 - **Victory Points (VP)** — how a **Swiss** game (Pairs or Teams) is ranked
   overall. Each round is turned into Victory Points on a 20-point scale, and a

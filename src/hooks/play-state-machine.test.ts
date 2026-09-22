@@ -23,13 +23,23 @@ function round(
   };
 }
 
-function schedule(rounds: ReturnType<typeof round>[]): Schedule {
-  return { assignmentId: "A1", side: "NS", rounds };
+function schedule(
+  rounds: ReturnType<typeof round>[],
+  opts: { handEntryEnabled?: boolean } = {},
+): Schedule {
+  return {
+    assignmentId: "A1",
+    side: "NS",
+    rounds,
+    handEntryEnabled: opts.handEntryEnabled,
+  };
 }
 
 describe("play reducer — optional deal-entry step", () => {
-  it("routes to enterDeals when a round's last board finishes", () => {
-    const sch = schedule([round(1, [1, 2]), round(2, [3])]);
+  it("routes to enterDeals when a round's last board finishes and hand entry is on", () => {
+    const sch = schedule([round(1, [1, 2]), round(2, [3])], {
+      handEntryEnabled: true,
+    });
     const prev: PlayState = {
       state: "boardResults",
       roundIndex: 0,
@@ -41,6 +51,28 @@ describe("play reducer — optional deal-entry step", () => {
       roundIndex: 0,
       nextRoundIndex: 1,
     });
+  });
+
+  it("skips enterDeals and shows move info when hand entry is off", () => {
+    const sch = schedule([round(1, [1, 2]), round(2, [3])]);
+    const prev: PlayState = {
+      state: "boardResults",
+      roundIndex: 0,
+      boardIndex: 1, // last board of round 0
+    };
+    const next = playReducer(prev, { type: "boardResultsNext" }, sch);
+    expect(next).toEqual({ state: "moveInfo", nextRoundIndex: 1 });
+  });
+
+  it("completes the game after the last round when hand entry is off", () => {
+    const sch = schedule([round(1, [1])]);
+    const prev: PlayState = {
+      state: "boardResults",
+      roundIndex: 0,
+      boardIndex: 0, // last board of the only round
+    };
+    const next = playReducer(prev, { type: "boardResultsNext" }, sch);
+    expect(next).toEqual({ state: "gameComplete" });
   });
 
   it("does NOT route to enterDeals mid-round (advances to next board)", () => {

@@ -24,7 +24,9 @@ From the home screen, tap **Create New Game**.
 | **Event Name**          | The name of your event (e.g. "Monday Pairs").                     |
 | **Director Name**       | Your name.                                                        |
 | **Event Type**          | **Pairs** or **Teams**.                                           |
+| **Scoring**             | How the event is scored. For **Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP (Victory Points)**, **Board-a-Match**, or **Point-a-Board**. Defaults to Matchpoints for Pairs and IMP for Teams. |
 | **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
+| **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
 
 The session is always dated today, so there is no date to set.
 

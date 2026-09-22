@@ -19,7 +19,7 @@ export function PlayPage() {
   const seat = params.initialSeat;
 
   const { game } = useRequiredGame();
-  const flow = usePlayFlow(game.gameId, seat);
+  const flow = usePlayFlow(game.gameId, seat, game.handEntryEnabled);
 
   // Seated, but the director hasn't started the game yet: show a friendly
   // waiting screen (it revalidates and advances automatically at start) rather

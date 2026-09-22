@@ -11,7 +11,6 @@ function newGame(overrides: Partial<NewBridgeGame> = {}): NewBridgeGame {
     director: "Jacqui",
     gameType: "PAIRS",
     scoringType: "MP",
-    sessionName: "1",
     sectionName: "A",
     eventDate: new Date().toISOString(),
     tables: 8,

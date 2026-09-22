@@ -130,9 +130,11 @@ Tap **Next** to move on to the next board.
 
 ### Entering the cards (optional)
 
-When a round is finished, you may be offered an **Enter cards** screen for the
-boards you have just played. This is entirely optional, and it only appears once
-the whole round is complete — so filling it in never holds the table up.
+When a round is finished, and *if your director turned this on for the game*,
+you may be offered an **Enter cards** screen for the boards you have just
+played. This is entirely optional, and it only appears once the whole round is
+complete — so filling it in never holds the table up. If your director did not
+turn it on, you simply move straight on to the next round.
 
 For each board you can lay out the four hands (North, East, South and West) by
 tapping the cards in each hand; **Save cards** becomes available once a full

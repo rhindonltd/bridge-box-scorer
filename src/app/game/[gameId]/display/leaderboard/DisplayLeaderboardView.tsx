@@ -9,6 +9,15 @@ import type { SectionLeaderboard } from "@/context/LeaderboardContext";
 type View = "combined" | string; // "combined" or a section letter
 
 /**
+ * MP scoring can be shown as a percentage or as raw matchpoints. On the room
+ * display the choice is made on a preceding screen (not an in-screen toggle),
+ * so the standings scroll with nothing above them but the pinned column header.
+ * The values map directly to the MP overall plugin's view ids. Undefined (and
+ * any non-MP game) just uses the plugin's default view.
+ */
+export type LeaderboardScoringMode = "percentage" | "matchpoints";
+
+/**
  * Minimum time a view (Combined / a section) stays on screen before it may
  * rotate on. The actual switch is deferred until the auto-scroll has returned
  * to the top, so a long list is never cut off mid-scroll.
@@ -43,6 +52,13 @@ export interface DisplayLeaderboardViewProps {
    * stories and tests can use a shorter dwell.
    */
   dwellMs?: number;
+  /**
+   * For an MP pairs game, whether to show percentages or raw matchpoints —
+   * chosen on the preceding screen (the container always supplies one, so the
+   * display never shows an in-screen toggle). Single-view leaderboards
+   * (IMP/XIMP, teams) ignore it.
+   */
+  scoringMode?: LeaderboardScoringMode;
 }
 
 /**
@@ -74,6 +90,7 @@ export function DisplayLeaderboardView({
   sections,
   isLoading,
   dwellMs = MIN_DWELL_MS,
+  scoringMode,
 }: DisplayLeaderboardViewProps) {
   const multiSection = sections.length > 1;
 
@@ -189,6 +206,18 @@ export function DisplayLeaderboardView({
             <Leaderboard
               overallScoreAndParticipant={active}
               splitColumns={splitColumns}
+              // The display owns scrolling via its own auto-scroll container
+              // (scrollRef), so the table must not create a second scroll
+              // region. This lets the table's sticky column header pin to the
+              // outer region while the standings scroll beneath it.
+              scroll={false}
+              // MP/% is chosen on the preceding screen, so fix the view here
+              // and drop the in-screen toggle (nothing scrolls above the
+              // header). Ignored by non-MP / single-view leaderboards.
+              selectedViewId={scoringMode}
+              // The display is a passive screen nobody taps, so team names show
+              // as static text rather than tap-to-expand buttons.
+              interactive={false}
             />
           </div>
         ) : (

@@ -25,7 +25,6 @@ const validBody = {
   eventName: "Monday Pairs",
   director: "Jane",
   gameType: "PAIRS",
-  sessionName: "",
   sectionName: "",
   eventDate: "2026-09-11",
   tables: 4,

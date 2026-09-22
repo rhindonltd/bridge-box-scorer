@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "dist/**",
     "playwright-report/**",
     "test-results/**",
+    // Generated MSW worker script (vendored, "do NOT modify"): its bundled
+    // eslint-disable directive would otherwise report as an unused directive.
+    "public/mockServiceWorker.js",
   ]),
 
   ...nextVitals,

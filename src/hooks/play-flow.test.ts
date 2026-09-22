@@ -517,17 +517,17 @@ describe("usePlayFlow", () => {
       });
     });
 
-    it("shows move info when the round is complete but more rounds remain", () => {
+    it("offers the deal-entry step when the round completes and hand entry is on", () => {
       withSchedule({
         assignmentId: "A1",
         side: "NS",
         rounds: [round(1, [1]), round(2, [2])],
       });
-      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS", true));
 
       toBoardResults(result, 1);
-      // Finishing a round's last board now offers the optional deal-entry step
-      // before advancing.
+      // With hand entry on, finishing a round's last board offers the optional
+      // deal-entry step before advancing.
       act(() => result.current.handleBoardResultsNext());
       expect(result.current.playState).toEqual({
         state: "enterDeals",
@@ -541,7 +541,38 @@ describe("usePlayFlow", () => {
       });
     });
 
-    it("completes the game after the last board of the last round", () => {
+    it("skips the deal-entry step and shows move info when hand entry is off", () => {
+      withSchedule({
+        assignmentId: "A1",
+        side: "NS",
+        rounds: [round(1, [1]), round(2, [2])],
+      });
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+      toBoardResults(result, 1);
+      act(() => result.current.handleBoardResultsNext());
+      expect(result.current.playState).toEqual({
+        state: "moveInfo",
+        nextRoundIndex: 1,
+      });
+    });
+
+    it("completes the game after the last board of the last round with hand entry on", () => {
+      withSchedule({
+        assignmentId: "A1",
+        side: "NS",
+        rounds: [round(1, [1])],
+      });
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS", true));
+
+      toBoardResults(result, 1);
+      act(() => result.current.handleBoardResultsNext());
+      expect(result.current.playState.state).toBe("enterDeals");
+      act(() => result.current.handleDealsContinue());
+      expect(result.current.playState.state).toBe("gameComplete");
+    });
+
+    it("completes the game after the last board of the last round with hand entry off", () => {
       withSchedule({
         assignmentId: "A1",
         side: "NS",
@@ -551,8 +582,6 @@ describe("usePlayFlow", () => {
 
       toBoardResults(result, 1);
       act(() => result.current.handleBoardResultsNext());
-      expect(result.current.playState.state).toBe("enterDeals");
-      act(() => result.current.handleDealsContinue());
       expect(result.current.playState.state).toBe("gameComplete");
     });
 
@@ -584,7 +613,7 @@ describe("usePlayFlow", () => {
         side: "NS",
         rounds: [round(1, [1]), round(2, [2])],
       });
-      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS", true));
 
       toBoardResults(result, 1);
       act(() => result.current.handleBoardResultsNext());

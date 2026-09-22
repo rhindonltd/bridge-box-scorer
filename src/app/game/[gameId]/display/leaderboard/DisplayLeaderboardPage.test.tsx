@@ -8,6 +8,13 @@ vi.mock("@/context/GameContext", () => ({
   }),
 }));
 
+// The page reads the ?mode= query param via useSearchParams to fix the MP/%
+// view. These tests don't set a mode, so return an empty params object.
+const mockSearchParams = vi.fn(() => new URLSearchParams());
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => mockSearchParams(),
+}));
+
 // Capture what leaderboard the display renders without exercising the scoring
 // plugins. Also records the splitColumns prop for the two-column tests.
 const leaderboardSpy = vi.fn();
@@ -60,22 +67,24 @@ vi.mock("@/context/LeaderboardContext", () => ({
 
 import { DisplayLeaderboardPage } from "./DisplayLeaderboardPage";
 import { DisplayLeaderboardView } from "./DisplayLeaderboardView";
+import type { OverallScoreAndParticipant } from "@/model/leaderboard";
+import type { SectionLeaderboard } from "@/context/LeaderboardContext";
 
 /** A leaderboard with `n` participants (used as the row-count proxy). */
-function combined(n = 0) {
+function combined(n = 0): OverallScoreAndParticipant {
   return {
     type: "PAIR_MP",
     overallScore: { scoring: "MP" },
     participants: Array.from({ length: n }, (_, i) => ({ id: String(i) })),
-  };
+  } as unknown as OverallScoreAndParticipant;
 }
-function sectionLb(section: string, n = 0) {
+function sectionLb(section: string, n = 0): SectionLeaderboard {
   return {
     section,
     type: `PAIR_MP_${section}`,
     overallScore: { scoring: "MP" },
     participants: Array.from({ length: n }, (_, i) => ({ id: String(i) })),
-  };
+  } as unknown as SectionLeaderboard;
 }
 
 describe("DisplayLeaderboardPage", () => {

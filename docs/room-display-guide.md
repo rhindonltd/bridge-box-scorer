@@ -44,6 +44,11 @@ step.
 
 ## The leaderboard display
 
+For a **matchpoint pairs** game the leaderboard first asks how to show the
+standings — as a **Percentage** or as **Matchpoints** — since matchpoints can be
+read either way. Pick one and the board opens showing that. Other games have a
+single natural presentation and go straight to the board.
+
 A full-screen board of live standings, sized to be read from across the room
 and updating as results come in:
 
@@ -67,7 +72,9 @@ The board is designed to run hands-free on the screen:
   each section in turn, about a minute each. Tapping a **section tab** jumps
   straight to that view and restarts the cycle.
 - If a list is still too long to fit, it **scrolls slowly** to the bottom and
-  back so every place comes into view.
+  back so every place comes into view. The column headings stay in place at the
+  top while the places scroll underneath, so it's always clear what each column
+  shows.
 
 Standings update automatically whenever a result is confirmed or a director
 correction is made — there is nothing to refresh.

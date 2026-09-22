@@ -739,8 +739,8 @@ describe("Swiss sit-out synthetic scoring", () => {
 
   it("credits a bye pair zero cross-imps under Cross-IMP scoring", async () => {
     vi.mocked(getCombination).mockReturnValue({
-      perBoard: "PAIR_XIMP",
-      overall: "PAIR_XIMP",
+      perBoard: "XIMP",
+      overall: "XIMP",
     });
     const aggregate = mockOverallPlugin({ type: "PAIR_XIMP", lines: [] });
 

@@ -15,11 +15,11 @@ const bodySchema = z.object({
   director: z.string().nullish(),
   gameType: z.enum(GameTypes),
   scoringType: z.enum(ScoringTypes).optional(),
-  sessionName: z.string(),
   sectionName: z.string(),
   eventDate: z.string().min(1),
   tables: z.number().int().min(1),
   leadCardRequired: z.boolean().optional(),
+  handEntryEnabled: z.boolean().optional(),
   bridgewebsEventId: z.string().nullish(),
 });
 

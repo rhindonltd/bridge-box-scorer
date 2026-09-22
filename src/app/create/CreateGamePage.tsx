@@ -27,12 +27,17 @@ export function CreateGamePage() {
   const [director, setDirector] = useState("");
   const [gameType, setGameType] = useState<GameType>("PAIRS");
   // Teams scoring choice, only surfaced (and only meaningful) for a Teams game:
-  // IMP Victory Points (default) or Board-a-Match. Pairs games keep the DB's
-  // "MP" default and show no scoring selector.
+  // IMP Victory Points (default) or Board-a-Match / Point-a-Board.
   const [teamsScoring, setTeamsScoring] = useState<
     Extract<ScoringType, "IMP" | "BAM" | "PAB">
   >("IMP");
+  // Pairs scoring choice, only surfaced for a Pairs game: matchpoints (default)
+  // or Cross-IMPs.
+  const [pairsScoring, setPairsScoring] = useState<
+    Extract<ScoringType, "MP" | "XIMP">
+  >("MP");
   const [leadCardRequired, setLeadCardRequired] = useState(true);
+  const [handEntryEnabled, setHandEntryEnabled] = useState(false);
   const [bridgewebsEventId, setBridgewebsEventId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +54,7 @@ export function CreateGamePage() {
   const router = useRouter();
 
   const leadCardLabelId = useId();
+  const handEntryLabelId = useId();
   const eventNameModeLabelId = useId();
 
   // BridgeWebs events for today. Only offered when the box has BridgeWebs
@@ -106,14 +112,14 @@ export function CreateGamePage() {
       eventName,
       director,
       gameType,
-      // Only a Teams game carries an explicit scoring choice; a Pairs game
-      // falls back to the DB default ("MP").
-      ...(gameType === "TEAMS" ? { scoringType: teamsScoring } : {}),
-      sessionName: "",
+      // Both game types carry an explicit scoring choice: Teams pick
+      // IMP/BAM/PAB, Pairs pick MP/XIMP.
+      scoringType: gameType === "TEAMS" ? teamsScoring : pairsScoring,
       eventDate,
       sectionName: "",
       tables: DEFAULT_TABLES,
       leadCardRequired,
+      handEntryEnabled,
       // Only attach a BridgeWebs event id when the picker is actually shown, so
       // a hidden/stale selection never rides along on the created game.
       bridgewebsEventId: showEventPicker ? bridgewebsEventId || null : null,
@@ -199,7 +205,21 @@ export function CreateGamePage() {
               { label: "Teams", value: "TEAMS" },
             ]}
             onSelect={setGameType}
+            inline
           />
+
+          {gameType === "PAIRS" && (
+            <SelectField
+              label="Scoring"
+              value={pairsScoring}
+              options={[
+                { label: "Matchpoints", value: "MP" as const },
+                { label: "Cross-IMPs", value: "XIMP" as const },
+              ]}
+              onSelect={setPairsScoring}
+              inline
+            />
+          )}
 
           {gameType === "TEAMS" && (
             <SelectField
@@ -211,10 +231,11 @@ export function CreateGamePage() {
                 { label: "Point-a-Board", value: "PAB" as const },
               ]}
               onSelect={setTeamsScoring}
+              inline
             />
           )}
 
-          <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
             <label
               id={leadCardLabelId}
               className="text-sm font-semibold text-gray-700"
@@ -227,6 +248,22 @@ export function CreateGamePage() {
               onLabel="Yes"
               labelledBy={leadCardLabelId}
               onChange={(isOn) => setLeadCardRequired(isOn)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label
+              id={handEntryLabelId}
+              className="text-sm font-semibold text-gray-700"
+            >
+              Allow Hand Entry
+            </label>
+            <Toggle
+              value={handEntryEnabled}
+              offLabel="No"
+              onLabel="Yes"
+              labelledBy={handEntryLabelId}
+              onChange={(isOn) => setHandEntryEnabled(isOn)}
             />
           </div>
 
