@@ -12,6 +12,9 @@ const crossImpsView = buildImpView<XimpOverall["lines"][number]>({
   id: "cross-imps",
   label: "X-IMP",
   value: (row) => row.crossImps,
+  // Cross-IMP totals are sums of per-board Butler averages, so they're
+  // fractional — show to 2 decimal places (IMP stays whole).
+  decimals: 2,
 });
 
 export const ximpOverallPlugin: OverallScoringPlugin<XimpScored, XimpOverall> =

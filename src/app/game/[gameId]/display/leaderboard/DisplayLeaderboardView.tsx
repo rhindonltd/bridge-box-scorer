@@ -2,11 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/common/Spinner";
-import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { Leaderboard } from "@/components/leaderboard/Leaderboard";
-import type { SectionLeaderboard } from "@/context/LeaderboardContext";
+import type {
+  LeaderboardView,
+  SectionLeaderboard,
+} from "@/context/LeaderboardContext";
 
 type View = "combined" | string; // "combined" or a section letter
+
+/**
+ * MP scoring can be shown as a percentage or as raw matchpoints. On the room
+ * display the choice is made on a preceding screen (not an in-screen toggle),
+ * so the standings scroll with nothing above them but the pinned column header.
+ * The values map directly to the MP overall plugin's view ids. Undefined (and
+ * any non-MP game) just uses the plugin's default view.
+ */
+export type LeaderboardScoringMode = "percentage" | "matchpoints";
 
 /**
  * Minimum time a view (Combined / a section) stays on screen before it may
@@ -31,7 +42,7 @@ export interface DisplayLeaderboardViewProps {
   /** The event name, shown as the display heading. */
   eventName: string;
   /** The combined (all-sections) leaderboard, or null when none yet. */
-  leaderboard: OverallScoreAndParticipant | null;
+  leaderboard: LeaderboardView | null;
   /** Per-section leaderboards; more than one enables the section tabs. */
   sections: SectionLeaderboard[];
   /** While true, show a spinner instead of the board. */
@@ -43,6 +54,13 @@ export interface DisplayLeaderboardViewProps {
    * stories and tests can use a shorter dwell.
    */
   dwellMs?: number;
+  /**
+   * For an MP pairs game, whether to show percentages or raw matchpoints —
+   * chosen on the preceding screen (the container always supplies one, so the
+   * display never shows an in-screen toggle). Single-view leaderboards
+   * (IMP/XIMP, teams) ignore it.
+   */
+  scoringMode?: LeaderboardScoringMode;
 }
 
 /**
@@ -74,31 +92,41 @@ export function DisplayLeaderboardView({
   sections,
   isLoading,
   dwellMs = MIN_DWELL_MS,
+  scoringMode,
 }: DisplayLeaderboardViewProps) {
   const multiSection = sections.length > 1;
+  // The director can turn off the combined overall ranking for a multi-section
+  // event, in which case there is no combined leaderboard to show — only the
+  // per-section views rotate.
+  const hasCombined = combined !== null;
 
-  // The ordered set of views to rotate through. Combined first, then each
-  // section in order. Single-section games have just the one (combined) view.
+  // The ordered set of views to rotate through: the Combined view first (when
+  // present), then each section in order. With the combined ranking turned off
+  // this is just the sections; a single-section game is just the one combined
+  // view. The order is never empty as long as there is any data.
   const viewOrder = useMemo<View[]>(
-    () =>
-      multiSection
-        ? ["combined", ...sections.map((s) => s.section)]
-        : ["combined"],
-    [multiSection, sections],
+    () => [
+      ...(hasCombined ? (["combined"] as View[]) : []),
+      ...(multiSection ? sections.map((s) => s.section) : []),
+    ],
+    [hasCombined, multiSection, sections],
   );
 
-  const [selected, setSelected] = useState<View>("combined");
+  // Start on the first available view (Combined when present, otherwise the
+  // first section).
+  const firstView: View = viewOrder[0] ?? "combined";
+  const [selected, setSelected] = useState<View>(firstView);
 
   // Derive the effective view instead of correcting state in an effect: if the
-  // set of sections changes underneath us (e.g. a re-score removes a section)
-  // so the stored selection is no longer valid, fall back to Combined for this
-  // render.
-  const view: View = viewOrder.includes(selected) ? selected : "combined";
+  // set of views changes underneath us (e.g. a re-score removes a section, or
+  // the director turns the combined ranking off) so the stored selection is no
+  // longer valid, fall back to the first available view for this render.
+  const view: View = viewOrder.includes(selected) ? selected : firstView;
 
   const advanceView = useCallback(() => {
     setSelected((current) => {
       const idx = viewOrder.indexOf(current);
-      // -1 (current no longer valid) advances to viewOrder[0] = Combined.
+      // -1 (current no longer valid) advances to viewOrder[0].
       return viewOrder[(idx + 1) % viewOrder.length];
     });
   }, [viewOrder]);
@@ -106,14 +134,15 @@ export function DisplayLeaderboardView({
   const selectView = useCallback((next: View) => setSelected(next), []);
 
   // Resolve the leaderboard for the active view.
-  // The `?? combined` fallback is defensive-only: a non-combined `view` is
-  // always present in `viewOrder`, which is derived from `sections`, so `find`
-  // always succeeds. It is therefore unreachable and excluded from coverage.
-  /* v8 ignore next 3 */
-  const active: OverallScoreAndParticipant | null =
+  const active: LeaderboardView | null =
     view === "combined"
       ? combined
-      : (sections.find((s) => s.section === view) ?? combined);
+      : (sections.find((s) => s.section === view) ?? null);
+
+  // A two-winner Mitchell shows two independent rankings (NS and EW) side by
+  // side rather than one; each already fills its half of the screen, so the
+  // screen-fill column wrap is not applied to them.
+  const directional = active?.directional;
 
   // Heading is the event name, with the section appended when a specific
   // section (not the combined view) is being shown.
@@ -121,11 +150,11 @@ export function DisplayLeaderboardView({
     view === "combined" ? eventName : `${eventName} — Section ${view}`;
 
   // Spread into two columns when there are many places and the screen is wide
-  // enough to make each column readable.
+  // enough to make each column readable. Only for a single (one-winner / teams)
+  // ranking — a two-winner event already uses the width for its NS/EW split.
   const rowCount = active?.participants.length ?? 0;
-  const splitColumns = useTwoColumns(rowCount >= TWO_COLUMN_ROW_THRESHOLD)
-    ? 2
-    : 1;
+  const wantTwoColumns = useTwoColumns(rowCount >= TWO_COLUMN_ROW_THRESHOLD);
+  const splitColumns = !directional && wantTwoColumns ? 2 : 1;
 
   // Auto-scroll at a constant speed and, when rotating, only advance to the
   // next view once the scroll has eased back to the top (after at least the
@@ -156,13 +185,15 @@ export function DisplayLeaderboardView({
       <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-5 pb-3">
         <h1 className="text-4xl font-bold text-gray-900">{heading}</h1>
 
-        {multiSection && (
+        {viewOrder.length > 1 && (
           <div className="flex flex-wrap gap-2">
-            <ViewTab
-              label="Combined"
-              active={view === "combined"}
-              onClick={() => selectView("combined")}
-            />
+            {hasCombined && (
+              <ViewTab
+                label="Combined"
+                active={view === "combined"}
+                onClick={() => selectView("combined")}
+              />
+            )}
             {sections.map((s) => (
               <ViewTab
                 key={s.section}
@@ -175,6 +206,23 @@ export function DisplayLeaderboardView({
         )}
       </div>
 
+      {/*
+        Two-winner direction headings sit in a fixed row ABOVE the scroll
+        region so they stay put while the standings scroll. The row mirrors the
+        two-column `flex gap-6` layout below so each heading aligns over its
+        column.
+      */}
+      {active && directional && (
+        <div className="flex shrink-0 gap-6 px-6">
+          <h2 className="min-w-0 flex-1 px-2 text-2xl font-bold text-gray-800">
+            North / South
+          </h2>
+          <h2 className="min-w-0 flex-1 px-2 text-2xl font-bold text-gray-800">
+            East / West
+          </h2>
+        </div>
+      )}
+
       <div
         ref={scrollRef}
         // Focusable so the scrollable standings region is keyboard-accessible
@@ -184,11 +232,42 @@ export function DisplayLeaderboardView({
         aria-label={`${heading} standings`}
         className="min-h-0 flex-1 overflow-y-auto focus:outline-none"
       >
-        {active ? (
+        {active && directional ? (
+          // Two-winner Mitchell: NS and EW are separate fields, shown as two
+          // rankings side by side. The direction headings are the fixed row
+          // above; only the tables scroll here.
+          <div
+            data-testid="leaderboard-standings"
+            className="flex h-full min-h-0 gap-6 px-6"
+          >
+            {[directional.ns, directional.ew].map((ranking, i) => (
+              <div key={i} className="min-w-0 flex-1">
+                <Leaderboard
+                  overallScoreAndParticipant={ranking}
+                  scroll={false}
+                  selectedViewId={scoringMode}
+                  interactive={false}
+                />
+              </div>
+            ))}
+          </div>
+        ) : active ? (
           <div data-testid="leaderboard-standings" className="h-full">
             <Leaderboard
               overallScoreAndParticipant={active}
               splitColumns={splitColumns}
+              // The display owns scrolling via its own auto-scroll container
+              // (scrollRef), so the table must not create a second scroll
+              // region. This lets the table's sticky column header pin to the
+              // outer region while the standings scroll beneath it.
+              scroll={false}
+              // MP/% is chosen on the preceding screen, so fix the view here
+              // and drop the in-screen toggle (nothing scrolls above the
+              // header). Ignored by non-MP / single-view leaderboards.
+              selectedViewId={scoringMode}
+              // The display is a passive screen nobody taps, so team names show
+              // as static text rather than tap-to-expand buttons.
+              interactive={false}
             />
           </div>
         ) : (

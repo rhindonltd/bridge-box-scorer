@@ -29,6 +29,20 @@ vi.mock("@/lib/report-error", () => ({
   reportError: (...a: unknown[]) => mockReportError(...a),
 }));
 
+const mockUpdateCombinedRanking = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/game-service", () => ({
+  updateCombinedRanking: (...a: unknown[]) => mockUpdateCombinedRanking(...a),
+}));
+
+// The screen reads the game (for the combined-ranking toggle) via
+// useRequiredGame; supply a minimal game and a mutate spy rather than wrapping
+// the tree in a GameProvider.
+const mockMutateGame = vi.fn();
+let mockGame = { gameId: "g1", combinedRanking: true };
+vi.mock("@/context/GameContext", () => ({
+  useRequiredGame: () => ({ game: mockGame, mutateGame: mockMutateGame }),
+}));
+
 import { ManageSectionsScreen } from "./ManageSectionsScreen";
 
 describe("ManageSectionsScreen", () => {

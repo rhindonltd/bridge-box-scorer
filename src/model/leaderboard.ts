@@ -40,19 +40,19 @@ export interface SwissVpOverallScore {
   vpByRound: Record<number, number>;
 }
 
-export interface TeamMatchLineScore {
-  board: number;
-  opponent: string;
-  teamScore: number;
-  opponentScore: number;
-}
-
-export interface TeamMatchScore {
-  teamMatchLineScores: TeamMatchLineScore[];
-}
-
-export interface OverallTeamResult {
-  score: number;
+/**
+ * Aggregate-IMP teams standing for one team.
+ *
+ * Each team match is scored on the raw net IMP margin summed across its boards
+ * (no conversion to Victory Points); a team's session result is the sum of its
+ * per-round net IMPs, and teams rank highest-total-first (a total can be
+ * negative). `impsByRound` maps a round number to that team's net IMPs for the
+ * round, present only for rounds the team has comparable boards in — a missing
+ * round renders as an empty cell in the barometer (Swiss Teams) per-round table.
+ */
+export interface TeamImpAggregateOverallScore {
+  totalImps: number;
+  impsByRound: Record<number, number>;
 }
 
 /**
@@ -98,9 +98,8 @@ interface ScoreByModeAndScoring {
     SWISS_VP: SwissVpOverallScore;
   };
   TEAM: {
-    MATCH: TeamMatchScore;
-    OVERALL: OverallTeamResult;
     SWISS_VP: SwissVpOverallScore;
+    IMP_AGG: TeamImpAggregateOverallScore;
     BAM: BoardComparisonOverallScore;
     PAB: BoardComparisonOverallScore;
   };
@@ -145,8 +144,6 @@ export type PairMatchpointOverallScore = OverallScoreBase<"PAIR", "MP">;
 export type PairXIMPOverallScore = OverallScoreBase<"PAIR", "XIMP">;
 export type PairIMPOverallScore = OverallScoreBase<"PAIR", "IMP">;
 export type PairSwissVpOverallScore = OverallScoreBase<"PAIR", "SWISS_VP">;
-export type TeamMatchOverallScore = OverallScoreBase<"TEAM", "MATCH">;
-export type TeamOverallOverallScore = OverallScoreBase<"TEAM", "OVERALL">;
 export type TeamSwissVpOverallScore = OverallScoreBase<"TEAM", "SWISS_VP">;
 
 /**
@@ -170,14 +167,24 @@ export type TeamPabOverallScore = OverallScoreBase<"TEAM", "PAB"> & {
   barometer: boolean;
 };
 
+/**
+ * Aggregate-IMP teams standing. Like {@link TeamSwissVpOverallScore} it ranks
+ * teams on a running per-round total, but the total is the raw net IMP margin
+ * (no VP conversion). Carries the same `barometer` flag as the board-comparison
+ * scores so the view knows whether to render a per-round table (Swiss Teams) or
+ * a single cumulative total (Round Robin Teams); it does not affect the maths.
+ */
+export type TeamImpAggOverallScore = OverallScoreBase<"TEAM", "IMP_AGG"> & {
+  barometer: boolean;
+};
+
 export type OverallScore =
   | PairMatchpointOverallScore
   | PairXIMPOverallScore
   | PairIMPOverallScore
   | PairSwissVpOverallScore
-  | TeamMatchOverallScore
-  | TeamOverallOverallScore
   | TeamSwissVpOverallScore
+  | TeamImpAggOverallScore
   | TeamBamOverallScore
   | TeamPabOverallScore;
 
@@ -207,3 +214,15 @@ export type OverallScoreAndParticipant = {
     };
   }[ScoringByMode<M>];
 }[OverallScoreMode];
+
+/**
+ * A two-winner pairs standing (a standard Mitchell), split into two independent
+ * rankings — North/South and East/West — each ranked within its own field.
+ * Attached alongside the pooled ranking on a leaderboard entry when the event
+ * is two-winner; consumers that understand it (the room display) render the two
+ * side by side, while others fall back to the single pooled ranking.
+ */
+export interface DirectionalLeaderboard {
+  ns: OverallScoreAndParticipant;
+  ew: OverallScoreAndParticipant;
+}

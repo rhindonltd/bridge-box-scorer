@@ -20,46 +20,22 @@ beforeEach(() => {
 });
 
 describe("GameHeaderBar", () => {
-  it("shows session and section together when both are present", () => {
+  it("shows the section when one is set", () => {
     mockGame.mockReturnValue({
       eventName: "Spring Pairs",
-      sessionName: "1",
-      sectionName: "A",
+      sectionName: "B",
     });
 
     render(<GameHeaderBar headerTitle="Play" />);
 
     expect(screen.getByText("Play")).toBeInTheDocument();
     expect(screen.getByText("Spring Pairs")).toBeInTheDocument();
-    expect(screen.getByText("Session 1, Section A")).toBeInTheDocument();
-  });
-
-  it("shows only the session when no section is set", () => {
-    mockGame.mockReturnValue({
-      eventName: "Spring Pairs",
-      sessionName: "1",
-      sectionName: "",
-    });
-
-    render(<GameHeaderBar headerTitle="Play" />);
-    expect(screen.getByText("Session 1")).toBeInTheDocument();
-  });
-
-  it("shows only the section when there is no session", () => {
-    mockGame.mockReturnValue({
-      eventName: "Spring Pairs",
-      sessionName: "",
-      sectionName: "B",
-    });
-
-    render(<GameHeaderBar headerTitle="Play" />);
     expect(screen.getByText("Section B")).toBeInTheDocument();
   });
 
-  it("shows an empty subtitle when neither session nor section is set", () => {
+  it("shows an empty subtitle when no section is set", () => {
     mockGame.mockReturnValue({
       eventName: "Spring Pairs",
-      sessionName: "",
       sectionName: "",
     });
 

@@ -44,18 +44,28 @@ step.
 
 ## The leaderboard display
 
+For a **matchpoint pairs** game the leaderboard first asks how to show the
+standings — as a **Percentage** or as **Matchpoints** — since matchpoints can be
+read either way. Pick one and the board opens showing that. Other games have a
+single natural presentation and go straight to the board.
+
 A full-screen board of live standings, sized to be read from across the room
 and updating as results come in:
 
 - For **pairs** games, rankings by the game's scoring method
-  (matchpoints/percentage, IMPs, or Cross-IMPs).
+  (matchpoints/percentage, IMPs, or Cross-IMPs). For a **two-winner Mitchell**
+  (where North/South and East/West stay in their own direction all session and
+  so have separate winners), the standings show **two rankings side by side** —
+  North/South and East/West — each ranked within its own direction.
 - For a **Swiss Pairs** game, Victory Points with a column per round and each
   pair's running total.
 - For a **Swiss Teams** game, Victory Points with a column per round and each
   team's running total.
 - For **teams** games, the team match / overall standings.
-- For **multi-section** events, each section's standings plus a combined
-  overall ranking across all sections.
+- For **multi-section** events, each section's standings — plus a combined
+  overall ranking across all sections when the director has set the sections to
+  rank **Combined** (see the director guide). With **Separate** sections there
+  is no combined ranking, just the per-section standings.
 
 The board is designed to run hands-free on the screen:
 
@@ -63,11 +73,14 @@ The board is designed to run hands-free on the screen:
   section is on screen).
 - When there are lots of pairs and the screen is wide, the standings fill it by
   **spreading into two columns** so more places show at once.
-- For a **multi-section** event it **cycles automatically** — combined, then
-  each section in turn, about a minute each. Tapping a **section tab** jumps
-  straight to that view and restarts the cycle.
+- For a **multi-section** event it **cycles automatically** through the
+  available views — the combined ranking (if shown), then each section in turn,
+  about a minute each. Tapping a **tab** jumps straight to that view and
+  restarts the cycle.
 - If a list is still too long to fit, it **scrolls slowly** to the bottom and
-  back so every place comes into view.
+  back so every place comes into view. The column headings stay in place at the
+  top while the places scroll underneath, so it's always clear what each column
+  shows.
 
 Standings update automatically whenever a result is confirmed or a director
 correction is made — there is nothing to refresh.

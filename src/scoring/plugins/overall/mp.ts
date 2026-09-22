@@ -38,7 +38,7 @@ const percentageView: OverallView<MpOverall> = {
   label: "%",
   toTable(leaderboard, participants): ScoreTable {
     return {
-      columns: [{ label: "Rank" }, { label: "Pair" }, { label: "MP" }],
+      columns: [{ label: "Rank" }, { label: "Pair" }, { label: "%" }],
       rows: leaderboard.lines.map((row) => ({
         highlightIds: [row.pairId],
         cells: [

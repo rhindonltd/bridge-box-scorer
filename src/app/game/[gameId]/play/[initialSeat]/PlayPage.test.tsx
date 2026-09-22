@@ -56,6 +56,7 @@ describe("PlayPage", () => {
         gameId: "g1",
         scoringType: "MP",
         leadCardRequired: true,
+        handEntryEnabled: true,
       },
     });
   });
@@ -98,7 +99,9 @@ describe("PlayPage", () => {
     expect(screen.getByTestId("play-state-router")).toHaveTextContent(
       "g1:A3NS:MP:true",
     );
-    // usePlayFlow is driven by the resolved game id and seat.
-    expect(mockUsePlayFlow).toHaveBeenCalledWith("g1", "A3NS");
+    // usePlayFlow is driven by the resolved game id, seat, the game's
+    // hand-entry setting, and whether it is a teams game (post-round team
+    // results summary) — false here for this MP pairs game.
+    expect(mockUsePlayFlow).toHaveBeenCalledWith("g1", "A3NS", true, false);
   });
 });

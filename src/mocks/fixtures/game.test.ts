@@ -16,9 +16,9 @@ describe("game fixtures", () => {
     expect(pairsGame4Tables.eventName).toBe(mockGame.eventName);
   });
 
-  it("teamsGame4Tables is an IMP teams game with 4 tables", () => {
+  it("teamsGame4Tables is an IMP (Victory Points) teams game with 4 tables", () => {
     expect(teamsGame4Tables.gameType).toBe("TEAMS");
-    expect(teamsGame4Tables.scoringType).toBe("IMP");
+    expect(teamsGame4Tables.scoringType).toBe("IMP_VP");
     expect(teamsGame4Tables.tables).toBe(4);
   });
 });

@@ -13,7 +13,7 @@ const game = {
   eventName: "Swiss Teams",
   eventDate: "2024-11-18T00:00:00.000Z",
   gameType: "TEAMS",
-  scoringType: "IMP",
+  scoringType: "IMP_VP",
   sectionName: "A",
 } as BridgeGame;
 

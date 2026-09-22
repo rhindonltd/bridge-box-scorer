@@ -59,29 +59,23 @@ export function getOverallPlugin(
 }
 
 /**
- * Placeholder `overall` id for the teams-only board-comparison scorings (BAM,
- * PAB). Their standings are produced by `calculateTeamsBoardComparisonOverall`
- * (routed before the pairs overall plugin path is reached), so this id is never
- * actually looked up — the registry entry exists only to supply their per-board
- * traveller display plugin. Named so the placeholder reads as intentional.
- */
-const OVERALL_NOT_USED: OverallPluginId = "IMP";
-
-/**
- * The valid per-board + overall combinations, keyed by the stored ScoringType.
- * Adding a new scoring type means adding one entry here (plus registering the
- * referenced plugins) — no dispatcher edits required.
+ * The valid per-board (+ overall, for pairs) combinations, keyed by the stored
+ * ScoringType. Adding a new scoring type means adding one entry here (plus
+ * registering the referenced plugins) — no dispatcher edits required.
  *
- * BAM and PAB reuse the IMP per-board plugin purely as the raw-score traveller
- * display; their `overall` is {@link OVERALL_NOT_USED} because a teams
- * board-comparison game never reaches the pairs overall plugin.
+ * The teams scorings (the IMP variants and BAM/PAB) declare only `perBoard`:
+ * they reuse the IMP per-board plugin as the raw-score traveller display, and
+ * their standings come from the dedicated teams scorers shown via the team
+ * overall registry — the pairs `overall` plugin is never resolved for them, so
+ * they omit it.
  */
 const combinations: CombinationRegistry = {
   MP: { perBoard: "MP", overall: "MP" },
-  IMP: { perBoard: "IMP", overall: "IMP" },
+  IMP: { perBoard: "IMP" },
+  IMP_VP: { perBoard: "IMP" },
   XIMP: { perBoard: "XIMP", overall: "XIMP" },
-  BAM: { perBoard: "IMP", overall: OVERALL_NOT_USED },
-  PAB: { perBoard: "IMP", overall: OVERALL_NOT_USED },
+  BAM: { perBoard: "IMP" },
+  PAB: { perBoard: "IMP" },
 };
 
 export function getCombination(scoringType: ScoringType): ScoringCombination {

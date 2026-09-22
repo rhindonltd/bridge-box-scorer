@@ -183,11 +183,12 @@ the route-entry files above are considered "journey-covered" by the specs in
 
 ## Environment Variables
 
-| Variable              | Default                 | Description                            |
-| --------------------- | ----------------------- | -------------------------------------- |
-| `DATABASE_URL`        | `./data`                | Directory for system databases         |
-| `DATABASE_GAMES_URL`  | `./data/games`          | Directory for per-game databases       |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | App URL (used by socket client + CORS) |
+| Variable                    | Default                 | Description                                              |
+| --------------------------- | ----------------------- | ------------------------------------------------------- |
+| `DATABASE_URL`              | `./data`                | Directory for system databases                          |
+| `DATABASE_GAMES_URL`        | `./data/games`          | Directory for per-game databases                        |
+| `NEXT_PUBLIC_APP_URL`       | `http://localhost:3000` | App URL (used by socket client + CORS)                  |
+| `NEXT_PUBLIC_BRIDGE_LOCALE` | `en-GB`                 | Device locale (`en-GB` or `en-US`); sets regional terms |
 
 ## Deployment
 

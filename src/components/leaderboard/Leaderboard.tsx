@@ -1,11 +1,8 @@
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { TeamMatchLeaderboard } from "@/components/leaderboard/TeamMatchLeaderboard";
-import { TeamOverallLeaderboard } from "@/components/leaderboard/TeamOverallLeaderboard";
-import { TeamBoardComparisonLeaderboard } from "@/components/leaderboard/TeamBoardComparisonLeaderboard";
+import { TeamOverallLeaderboardView } from "@/components/leaderboard/TeamOverallLeaderboardView";
 import { OverallLeaderboardView } from "@/components/scoring/OverallLeaderboardView";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { buildSwissVpTable } from "@/scoring/swiss/swiss-vp-view";
-import { buildSwissTeamsVpTable } from "@/scoring/swiss/swiss-teams-vp-view";
 import { getOverallPlugin } from "@/scoring/plugins/registry";
 import "@/scoring/plugins/register";
 
@@ -22,57 +19,55 @@ type Props = {
    * match view (which is not a simple ranked list).
    */
   splitColumns?: number;
+  /**
+   * Whether the standings table owns its own scroll region (default true).
+   * The room display passes false so its own auto-scroll container owns
+   * scrolling and the table's sticky header stays pinned while rows scroll.
+   */
+  scroll?: boolean;
+  /**
+   * For pair plugins with more than one view (MP has %/matchpoints), render
+   * this view id and hide the in-screen toggle. The room display sets it from
+   * the MP/% choice made on the preceding screen. Ignored by single-view
+   * plugins (IMP/XIMP) and the team/Swiss variants.
+   */
+  selectedViewId?: string;
+  /**
+   * Whether cells may be interactive (default true). The passive room display
+   * passes false so a team name shows as static text rather than a button that
+   * expands to its players.
+   */
+  interactive?: boolean;
 };
 
 export function Leaderboard({
   overallScoreAndParticipant,
   highlightAssignmentId,
   splitColumns,
+  scroll,
+  selectedViewId,
+  interactive,
 }: Props) {
-  // TEAM scoring is not yet plugin-migrated; handle those variants first so
-  // the remaining case narrows to PAIR (with AssignedPair[] participants).
+  // TEAM standings are rendered via the team overall display registry (keyed
+  // by the score's `type` tag); handle those first so the rest narrows to PAIR
+  // (with AssignedPair[] participants).
   switch (overallScoreAndParticipant.type) {
-    case "TEAM_MATCH":
-      return (
-        <TeamMatchLeaderboard
-          teams={overallScoreAndParticipant.participants}
-          leaderboard={overallScoreAndParticipant.overallScore}
-        />
-      );
-    case "TEAM_OVERALL":
-      return (
-        <TeamOverallLeaderboard
-          teams={overallScoreAndParticipant.participants}
-          leaderboard={overallScoreAndParticipant.overallScore}
-          highlightAssignmentId={highlightAssignmentId}
-        />
-      );
     case "TEAM_SWISS_VP":
-      // Swiss Teams Victory Points: a per-round table keyed by team, rendered
-      // through the shared table view (highlighting the viewing team's row).
-      return (
-        <ScoreTableView
-          table={buildSwissTeamsVpTable(
-            overallScoreAndParticipant.overallScore,
-            overallScoreAndParticipant.participants,
-          )}
-          highlightAssignmentId={highlightAssignmentId}
-          rowTestId="leaderboard-row"
-          splitColumns={splitColumns}
-        />
-      );
+    case "TEAM_IMP_AGG":
     case "TEAM_BAM":
     case "TEAM_PAB":
-      // Board-comparison teams (Board-a-Match or Point-a-Board): points-won
-      // standings with a fraction/% toggle. The scale (BAM 1 / PAB 2 points per
-      // board) and the table layout (per-round for a barometer Swiss Teams
-      // movement, cumulative for Round Robin) are chosen from the score.
+      // Swiss VP / aggregate IMPs render a single per-round (or cumulative)
+      // table; Board-a-Match / Point-a-Board add a %/Points toggle. Which of
+      // those, and the table layout, is decided by the registry entry for the
+      // score's type.
       return (
-        <TeamBoardComparisonLeaderboard
-          leaderboard={overallScoreAndParticipant.overallScore}
+        <TeamOverallLeaderboardView
+          score={overallScoreAndParticipant.overallScore}
           teams={overallScoreAndParticipant.participants}
           highlightAssignmentId={highlightAssignmentId}
           splitColumns={splitColumns}
+          scroll={scroll}
+          interactive={interactive}
         />
       );
     case "PAIR_SWISS_VP":
@@ -88,6 +83,7 @@ export function Leaderboard({
           highlightAssignmentId={highlightAssignmentId}
           rowTestId="leaderboard-row"
           splitColumns={splitColumns}
+          scroll={scroll}
         />
       );
   }
@@ -104,6 +100,8 @@ export function Leaderboard({
       participants={participants}
       highlightAssignmentId={highlightAssignmentId}
       splitColumns={splitColumns}
+      scroll={scroll}
+      selectedViewId={selectedViewId}
     />
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyEvent } from "./event-format";
+import { classifyEvent, isTwoWinnerPairs } from "./event-format";
 import type { SelectedMovement } from "@/model/selected-movement";
 
 const SPEC: SelectedMovement = { source: "SPEC", specId: 1, boardsPerRound: 2 };
@@ -63,20 +63,34 @@ describe("classifyEvent", () => {
     });
   });
 
-  it("classifies a Teams + Swiss Teams game as TEAMS_VP with null mode", () => {
-    expect(classifyEvent("TEAMS", "IMP", SWISS_TEAMS)).toEqual({
+  it("classifies a Teams + Swiss Teams IMP_VP game as TEAMS_VP with null mode", () => {
+    expect(classifyEvent("TEAMS", "IMP_VP", SWISS_TEAMS)).toEqual({
       format: "TEAMS_VP",
+      scoringType: "IMP_VP",
+      swissVpMode: null,
+    });
+  });
+
+  it("classifies a Teams + Round Robin Teams IMP_VP game as TEAMS_VP with null mode", () => {
+    expect(classifyEvent("TEAMS", "IMP_VP", ROUND_ROBIN_TEAMS)).toEqual({
+      format: "TEAMS_VP",
+      scoringType: "IMP_VP",
+      swissVpMode: null,
+    });
+  });
+
+  it("classifies a Teams + Swiss Teams IMP game as TEAMS_IMP_AGG (aggregate IMPs)", () => {
+    expect(classifyEvent("TEAMS", "IMP", SWISS_TEAMS)).toEqual({
+      format: "TEAMS_IMP_AGG",
       scoringType: "IMP",
       swissVpMode: null,
     });
   });
 
-  it("classifies a Teams + Round Robin Teams game as TEAMS_VP with null mode", () => {
-    expect(classifyEvent("TEAMS", "IMP", ROUND_ROBIN_TEAMS)).toEqual({
-      format: "TEAMS_VP",
-      scoringType: "IMP",
-      swissVpMode: null,
-    });
+  it("classifies a Teams + Round Robin Teams IMP game as TEAMS_IMP_AGG", () => {
+    expect(classifyEvent("TEAMS", "IMP", ROUND_ROBIN_TEAMS).format).toBe(
+      "TEAMS_IMP_AGG",
+    );
   });
 
   it("classifies a Teams + Swiss Teams BAM game as TEAMS_BAM", () => {
@@ -93,8 +107,10 @@ describe("classifyEvent", () => {
     );
   });
 
-  it("keeps a Teams teams-movement game as TEAMS_VP unless scoring is BAM/PAB", () => {
-    expect(classifyEvent("TEAMS", "IMP", SWISS_TEAMS).format).toBe("TEAMS_VP");
+  it("defaults a Teams teams-movement game to TEAMS_VP for IMP_VP or an unmapped scoring", () => {
+    expect(classifyEvent("TEAMS", "IMP_VP", SWISS_TEAMS).format).toBe(
+      "TEAMS_VP",
+    );
     expect(classifyEvent("TEAMS", "MP", SWISS_TEAMS).format).toBe("TEAMS_VP");
   });
 
@@ -148,5 +164,47 @@ describe("classifyEvent", () => {
         classifyEvent("TEAMS", scoring, SWISS_TEAMS).swissVpMode,
       ).toBeNull();
     }
+  });
+});
+
+describe("isTwoWinnerPairs", () => {
+  it("is true for a standard Mitchell pairs game (no arrow switch)", () => {
+    expect(isTwoWinnerPairs("PAIRS", MITCHELL)).toBe(true);
+  });
+
+  it("is true for a Mitchell variant with no arrow switch (e.g. skip)", () => {
+    const skipMitchell: SelectedMovement = {
+      source: "MITCHELL",
+      mitchell: { tables: 5, rounds: 5, boardsPerRound: 2, skip: true },
+    };
+    expect(isTwoWinnerPairs("PAIRS", skipMitchell)).toBe(true);
+  });
+
+  it("is false for an arrow-switched Mitchell (one winner)", () => {
+    const arrowSwitched: SelectedMovement = {
+      source: "MITCHELL",
+      mitchell: {
+        tables: 4,
+        rounds: 4,
+        boardsPerRound: 2,
+        arrowSwitchRounds: 1,
+      },
+    };
+    expect(isTwoWinnerPairs("PAIRS", arrowSwitched)).toBe(false);
+  });
+
+  it("is false for SPEC, Swiss, and teams movements", () => {
+    expect(isTwoWinnerPairs("PAIRS", SPEC)).toBe(false);
+    expect(isTwoWinnerPairs("PAIRS", SWISS)).toBe(false);
+    expect(isTwoWinnerPairs("TEAMS", SWISS_TEAMS)).toBe(false);
+    expect(isTwoWinnerPairs("TEAMS", ROUND_ROBIN_TEAMS)).toBe(false);
+  });
+
+  it("is false for a teams game even with a Mitchell movement", () => {
+    expect(isTwoWinnerPairs("TEAMS", MITCHELL)).toBe(false);
+  });
+
+  it("is false when there is no movement selected yet", () => {
+    expect(isTwoWinnerPairs("PAIRS", null)).toBe(false);
   });
 });

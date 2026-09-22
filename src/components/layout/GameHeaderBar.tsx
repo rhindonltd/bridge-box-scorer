@@ -23,16 +23,7 @@ export function GameHeaderBar({
   const { game } = useRequiredGame();
 
   function headerSubtitle2(): string {
-    let subTitle: string = "";
-    if (game!.sessionName) {
-      subTitle = `Session ${game!.sessionName}`;
-      if (game!.sectionName) {
-        subTitle = subTitle + `, Section ${game!.sectionName}`;
-      }
-    } else if (game!.sectionName) {
-      subTitle = `Section ${game!.sectionName}`;
-    }
-    return subTitle;
+    return game!.sectionName ? `Section ${game!.sectionName}` : "";
   }
 
   return (

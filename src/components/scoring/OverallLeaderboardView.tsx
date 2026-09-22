@@ -12,6 +12,18 @@ type Props = {
   highlightAssignmentId?: string;
   /** Spread the standings across this many side-by-side columns (default 1). */
   splitColumns?: number;
+  /**
+   * Whether the leaderboard table owns its own scroll region (default true).
+   * The room display passes false so its own auto-scroll container owns
+   * scrolling and the table's sticky header pins to that outer region.
+   */
+  scroll?: boolean;
+  /**
+   * Render the plugin view with this id and hide the in-screen toggle. The
+   * room display uses this to honour the MP/% choice made on the preceding
+   * screen. Ignored when no view matches.
+   */
+  selectedViewId?: string;
 };
 
 /**
@@ -25,16 +37,20 @@ export function OverallLeaderboardView({
   participants,
   highlightAssignmentId,
   splitColumns,
+  scroll,
+  selectedViewId,
 }: Props) {
   return (
     <PluginViewSwitcher
       views={plugin.views}
+      selectedViewId={selectedViewId}
       renderView={(view) => (
         <ScoreTableView
           table={view.toTable(lines, participants, { highlightAssignmentId })}
           highlightAssignmentId={highlightAssignmentId}
           rowTestId="leaderboard-row"
           splitColumns={splitColumns}
+          scroll={scroll}
         />
       )}
     />

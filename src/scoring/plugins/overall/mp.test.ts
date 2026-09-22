@@ -63,6 +63,7 @@ describe("mp overall plugin", () => {
     const view = mpOverallPlugin.views.find((v) => v.id === "percentage")!;
     const table = view.toTable(leaderboard, participants);
 
+    expect(table.columns.map((c) => c.label)).toEqual(["Rank", "Pair", "%"]);
     const pctCell = table.rows[0].cells[2];
     if (pctCell.kind !== "number") throw new Error("expected number cell");
     expect(pctCell.decimals).toBe(2);

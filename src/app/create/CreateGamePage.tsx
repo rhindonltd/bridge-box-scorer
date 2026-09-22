@@ -13,6 +13,7 @@ import { Toggle } from "@/components/common/Toggle";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
+import { useTranslations } from "@/i18n/useTranslations";
 import type { BridgewebsEventsResponse } from "@/app/api/games/bridgewebs/events/route";
 
 const DEFAULT_TABLES = 5;
@@ -23,16 +24,24 @@ function todayDateOnly(): string {
 }
 
 export function CreateGamePage() {
+  const t = useTranslations();
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
   const [gameType, setGameType] = useState<GameType>("PAIRS");
-  // Teams scoring choice, only surfaced (and only meaningful) for a Teams game:
-  // IMP Victory Points (default) or Board-a-Match. Pairs games keep the DB's
-  // "MP" default and show no scoring selector.
+  // Teams scoring choice, only surfaced (and only meaningful) for a Teams game.
+  // Defaults to IMP Victory Points; the board-comparison alternative offered is
+  // locale-specific (Point-a-Board / PAB in the UK, Board-a-Match / BAM in the
+  // US), so the option list comes from the localized messages.
   const [teamsScoring, setTeamsScoring] = useState<
-    Extract<ScoringType, "IMP" | "BAM" | "PAB">
+    Extract<ScoringType, "IMP" | "IMP_VP" | "BAM" | "PAB">
   >("IMP");
+  // Pairs scoring choice, only surfaced for a Pairs game: matchpoints (default)
+  // or Cross-IMPs.
+  const [pairsScoring, setPairsScoring] = useState<
+    Extract<ScoringType, "MP" | "XIMP">
+  >("MP");
   const [leadCardRequired, setLeadCardRequired] = useState(true);
+  const [handEntryEnabled, setHandEntryEnabled] = useState(false);
   const [bridgewebsEventId, setBridgewebsEventId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +58,7 @@ export function CreateGamePage() {
   const router = useRouter();
 
   const leadCardLabelId = useId();
+  const handEntryLabelId = useId();
   const eventNameModeLabelId = useId();
 
   // BridgeWebs events for today. Only offered when the box has BridgeWebs
@@ -106,14 +116,14 @@ export function CreateGamePage() {
       eventName,
       director,
       gameType,
-      // Only a Teams game carries an explicit scoring choice; a Pairs game
-      // falls back to the DB default ("MP").
-      ...(gameType === "TEAMS" ? { scoringType: teamsScoring } : {}),
-      sessionName: "",
+      // Both game types carry an explicit scoring choice: Teams pick
+      // IMP/BAM/PAB, Pairs pick MP/XIMP.
+      scoringType: gameType === "TEAMS" ? teamsScoring : pairsScoring,
       eventDate,
       sectionName: "",
       tables: DEFAULT_TABLES,
       leadCardRequired,
+      handEntryEnabled,
       // Only attach a BridgeWebs event id when the picker is actually shown, so
       // a hidden/stale selection never rides along on the created game.
       bridgewebsEventId: showEventPicker ? bridgewebsEventId || null : null,
@@ -143,7 +153,7 @@ export function CreateGamePage() {
         id="create-game-form"
         className="flex flex-col w-full max-w-md p-4"
       >
-        <div className="flex flex-col flex-1 justify-center gap-4">
+        <div className="flex flex-col flex-1 justify-center gap-2.5">
           <div className="flex flex-col gap-1">
             {eventPickerAvailable && (
               <div className="flex items-center justify-between">
@@ -199,22 +209,33 @@ export function CreateGamePage() {
               { label: "Teams", value: "TEAMS" },
             ]}
             onSelect={setGameType}
+            inline
           />
+
+          {gameType === "PAIRS" && (
+            <SelectField
+              label="Scoring"
+              value={pairsScoring}
+              options={[
+                { label: "Matchpoints", value: "MP" as const },
+                { label: "Cross-IMPs", value: "XIMP" as const },
+              ]}
+              onSelect={setPairsScoring}
+              inline
+            />
+          )}
 
           {gameType === "TEAMS" && (
             <SelectField
               label="Scoring"
               value={teamsScoring}
-              options={[
-                { label: "IMP (Victory Points)", value: "IMP" as const },
-                { label: "Board-a-Match", value: "BAM" as const },
-                { label: "Point-a-Board", value: "PAB" as const },
-              ]}
+              options={t.teamsScoringOptions}
               onSelect={setTeamsScoring}
+              inline
             />
           )}
 
-          <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
             <label
               id={leadCardLabelId}
               className="text-sm font-semibold text-gray-700"
@@ -227,6 +248,22 @@ export function CreateGamePage() {
               onLabel="Yes"
               labelledBy={leadCardLabelId}
               onChange={(isOn) => setLeadCardRequired(isOn)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label
+              id={handEntryLabelId}
+              className="text-sm font-semibold text-gray-700"
+            >
+              Allow Hand Entry
+            </label>
+            <Toggle
+              value={handEntryEnabled}
+              offLabel="No"
+              onLabel="Yes"
+              labelledBy={handEntryLabelId}
+              onChange={(isOn) => setHandEntryEnabled(isOn)}
             />
           </div>
 

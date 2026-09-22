@@ -86,7 +86,12 @@ describe("ximp overall plugin", () => {
       "Pair",
       "X-IMP",
     ]);
-    expect(table.rows[0].cells[2]).toEqual({ kind: "number", value: 7 });
+    // Cross-IMP is a Butler average (fractional), so shown to 2 decimals.
+    expect(table.rows[0].cells[2]).toEqual({
+      kind: "number",
+      value: 7,
+      decimals: 2,
+    });
   });
 });
 

@@ -18,7 +18,7 @@ function fullTable(overrides: Partial<DirectorTable> = {}): DirectorTable {
       W: player("West"),
     },
     seats: { N: "A1NS", S: "A1NS", E: "A1EW", W: "A1EW" },
-    stationary: { N: false, E: false },
+    stationary: { N: false, S: false, E: false, W: false },
     ...overrides,
   } as DirectorTable;
 }
@@ -29,7 +29,7 @@ function halfEmptyTable(): DirectorTable {
     tableNumber: 2,
     players: { N: player("North"), S: player("South"), E: null, W: null },
     seats: { N: "A2NS", S: "A2NS", E: null, W: null },
-    stationary: { N: false, E: false },
+    stationary: { N: false, S: false, E: false, W: false },
   } as DirectorTable;
 }
 

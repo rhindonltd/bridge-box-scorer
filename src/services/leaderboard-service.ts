@@ -7,17 +7,28 @@ import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { PairTraveller } from "@/model/traveller";
 import { BoardOutcome } from "@/model/score";
 import { OverallScore } from "@/model/leaderboard";
-import { AssignedPair, AssignedTeam, sectionOf } from "@/model/participants";
+import {
+  AssignedPair,
+  AssignedTeam,
+  parseSeat,
+  sectionOf,
+} from "@/model/participants";
 import "@/scoring/plugins/register";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
+import { rank } from "@/scoring/overall/rank";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { ScoringType } from "@/db/games/types/scoring-type";
 import { parseSelectedMovement } from "@/model/selected-movement";
-import { classifyEvent, SwissVpMode } from "@/model/event-format";
+import {
+  classifyEvent,
+  isTwoWinnerPairs,
+  SwissVpMode,
+} from "@/model/event-format";
 import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
+import { calculateTeamsImpAggregateOverall } from "@/scoring/swiss/teams-imp-aggregate-overall";
 import {
   BoardComparisonScoring,
   calculateTeamsBoardComparisonOverall,
@@ -33,6 +44,19 @@ export interface LeaderboardResult {
   type: OverallScore["type"];
   overallScore: OverallScore;
   participants: AssignedPair[] | AssignedTeam[];
+  /**
+   * For a two-winner pairs event (a standard Mitchell, where North/South and
+   * East/West are separate fields), the same standings split into two
+   * independent rankings — one per direction — each ranked within its own
+   * field. Absent for one-winner and teams events, where `overallScore` /
+   * `participants` are the single ranking. When present, `overallScore` /
+   * `participants` still hold the pooled ranking (unused by the two-winner
+   * display) so existing single-ranking consumers keep working.
+   */
+  directional?: {
+    ns: { overallScore: OverallScore; participants: AssignedPair[] };
+    ew: { overallScore: OverallScore; participants: AssignedPair[] };
+  };
 }
 
 /**
@@ -113,10 +137,75 @@ function scoreBoardsToOverall(
     ...swissSitOutScoredBoards(boardMap, scoringType, scoredBoards),
   );
 
-  const overallPlugin = getOverallPlugin(getCombination(scoringType).overall);
+  // This board-pooled overall path is only reached for pairs scorings (MP /
+  // Cross-IMP, and the IMP-family fallback), which always declare an `overall`
+  // plugin. Teams never reach here — they are routed to their dedicated
+  // scorers before this — so a missing `overall` would be a wiring error.
+  const overallId = getCombination(scoringType).overall;
+  if (!overallId) {
+    throw new Error(
+      `Scoring type "${scoringType}" has no overall plugin for the board-pooled path`,
+    );
+  }
+  const overallPlugin = getOverallPlugin(overallId);
   return overallPlugin.aggregate(
     scoredBoards.map((b) => ({ lines: b.lines })),
   ) as OverallScore;
+}
+
+/**
+ * The value a pair line is ranked on, by pair scoring type. Mirrors each
+ * overall plugin's `sort` key (MP ranks on percentage, IMP on total imps,
+ * Cross-IMP on total cross-imps), so re-ranking a partition here matches how
+ * the plugin ranked the pooled field.
+ */
+function pairRankValue(line: OverallScore["lines"][number]): number {
+  if ("totalMP" in line) {
+    return line.maxMP > 0 ? line.totalMP / line.maxMP : 0;
+  }
+  if ("imps" in line) return line.imps;
+  if ("crossImps" in line) return line.crossImps;
+  /* v8 ignore next -- pairRankValue is only called for MP/IMP/XIMP pair lines */
+  return 0;
+}
+
+/**
+ * Split a pooled pairs overall score into two independent rankings by seat
+ * direction (a two-winner Mitchell: North/South and East/West are separate
+ * fields). The per-board matchpointing is unchanged — the same field-wide
+ * values are used — but each direction is ranked only within itself, so an NS
+ * pair's rank/percentage reflects the NS field only, and likewise for EW.
+ *
+ * The pooled score's line values are reused verbatim; only rank/tied are
+ * recomputed per direction. `pairId` is a section-qualified seat ending in
+ * NS/EW (see {@link toParticipant}), so the direction is read straight from it.
+ */
+function splitByDirection(
+  overallScore: OverallScore,
+  participants: AssignedPair[],
+): LeaderboardResult["directional"] {
+  const forDirection = (direction: "NS" | "EW") => {
+    const lines = overallScore.lines.filter(
+      (l) => "pairId" in l && parseSeat(l.pairId).direction === direction,
+    );
+    // Re-rank within this direction's field, dropping the pooled rank/tied and
+    // recomputing them from the same value the plugin sorted on.
+    const reranked = rank(
+      lines.map(({ ...rest }) => rest),
+      pairRankValue,
+    ) as OverallScore["lines"];
+
+    const directionParticipants = participants.filter(
+      (p) => parseSeat(p.initialSeat).direction === direction,
+    );
+
+    return {
+      overallScore: { ...overallScore, lines: reranked } as OverallScore,
+      participants: directionParticipants,
+    };
+  };
+
+  return { ns: forDirection("NS"), ew: forDirection("EW") };
 }
 
 /** The 60% (average-plus) award a bye pair receives under matchpoints. */
@@ -233,17 +322,27 @@ function computeCombined(
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
   isTeamsVp: boolean,
+  teamsImpAggregate: boolean,
   teamsBoardComparison: BoardComparisonScoring | null,
   barometer: boolean,
+  twoWinner: boolean,
   teams: AssignedTeam[],
 ): LeaderboardResult {
   // A board-comparison teams game (BAM/PAB) ranks teams on boards won; a
-  // teams-VP game ranks teams on Victory Points; every other game ranks pairs
-  // (Swiss VP or the standard board-pooled overall).
+  // teams-VP game ranks teams on Victory Points; an aggregate-IMP teams game
+  // ranks teams on total net IMPs; every other game ranks pairs (Swiss VP or
+  // the standard board-pooled overall).
   if (teamsBoardComparison !== null) {
     const overallScore = calculateTeamsBoardComparisonOverall(boardRows, {
       barometer,
       scoring: teamsBoardComparison,
+    });
+    return { type: overallScore.type, overallScore, participants: teams };
+  }
+
+  if (teamsImpAggregate) {
+    const overallScore = calculateTeamsImpAggregateOverall(boardRows, {
+      barometer,
     });
     return { type: overallScore.type, overallScore, participants: teams };
   }
@@ -256,10 +355,16 @@ function computeCombined(
   const overallScore =
     scoreSwissVp(boardRows, swissVpMode) ??
     scoreBoardsToOverall(boardRows, scoringType, gameId);
+  const participants = pairs.map(toParticipant);
   return {
     type: overallScore.type,
     overallScore,
-    participants: pairs.map(toParticipant),
+    participants,
+    // Two-winner Mitchell: also expose NS and EW as separate rankings. Swiss VP
+    // is one-winner, so only split the board-pooled overall.
+    ...(twoWinner && swissVpMode === null
+      ? { directional: splitByDirection(overallScore, participants) }
+      : {}),
   };
 }
 
@@ -274,8 +379,10 @@ function computeSections(
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
   isTeamsVp: boolean,
+  teamsImpAggregate: boolean,
   teamsBoardComparison: BoardComparisonScoring | null,
   barometer: boolean,
+  twoWinner: boolean,
   teams: AssignedTeam[],
 ): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
@@ -322,6 +429,18 @@ function computeSections(
       };
     }
 
+    if (teamsImpAggregate) {
+      const overallScore = calculateTeamsImpAggregateOverall(sectionRows, {
+        barometer,
+      });
+      return {
+        section,
+        type: overallScore.type,
+        overallScore,
+        participants: teamsBySection.get(section) ?? [],
+      };
+    }
+
     if (isTeamsVp) {
       const overallScore = calculateTeamsVpOverall(sectionRows);
       return {
@@ -335,11 +454,20 @@ function computeSections(
     const overallScore =
       scoreSwissVp(sectionRows, swissVpMode) ??
       scoreBoardsToOverall(sectionRows, scoringType, section);
+    const sectionParticipants = (pairsBySection.get(section) ?? []).map(
+      toParticipant,
+    );
     return {
       section,
       type: overallScore.type,
       overallScore,
-      participants: (pairsBySection.get(section) ?? []).map(toParticipant),
+      participants: sectionParticipants,
+      // Two-winner Mitchell: split each section into its own NS and EW
+      // rankings too. Swiss VP is one-winner, so only split the board-pooled
+      // overall.
+      ...(twoWinner && swissVpMode === null
+        ? { directional: splitByDirection(overallScore, sectionParticipants) }
+        : {}),
     };
   });
 }
@@ -350,10 +478,13 @@ async function readLeaderboardInputs(
   gameId: string,
 ): Promise<{
   scoringType: ScoringType;
+  combinedRanking: boolean;
   swissVpMode: SwissVpMode;
   isTeamsVp: boolean;
+  teamsImpAggregate: boolean;
   teamsBoardComparison: BoardComparisonScoring | null;
   barometer: boolean;
+  twoWinner: boolean;
   boardRows: Board[];
   pairs: Pairs;
   teams: AssignedTeam[];
@@ -369,6 +500,8 @@ async function readLeaderboardInputs(
     movement,
   );
   const isTeamsVp = classification.format === "TEAMS_VP";
+  // An aggregate-IMP teams format: ranks teams on total net IMPs (no VP).
+  const teamsImpAggregate = classification.format === "TEAMS_IMP_AGG";
   // A board-comparison teams format (Board-a-Match / Point-a-Board), or null
   // for any other format. Carries the scale directly so the compute functions
   // pass it straight to the shared scorer.
@@ -385,22 +518,29 @@ async function readLeaderboardInputs(
   // Robin) drives the cumulative table. Only meaningful for the teams formats.
   const barometer = movement?.source === "SWISS_TEAMS";
 
+  // A two-winner pairs movement (standard Mitchell) is ranked as separate NS
+  // and EW fields.
+  const twoWinner = isTwoWinnerPairs(game!.gameType, movement);
+
   const [boardRows, pairs, teams] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
     findPairs(db),
-    // Teams are derived from the seating; needed for any teams game (VP, BAM,
-    // or PAB).
-    isTeamsVp || teamsBoardComparison !== null
+    // Teams are derived from the seating; needed for any teams game (VP,
+    // aggregate IMP, BAM, or PAB).
+    isTeamsVp || teamsImpAggregate || teamsBoardComparison !== null
       ? findTeams(db)
       : Promise.resolve([] as AssignedTeam[]),
   ]);
 
   return {
     scoringType: game!.scoringType,
+    combinedRanking: game!.combinedRanking,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
+    twoWinner,
     boardRows,
     pairs,
     teams,
@@ -417,39 +557,60 @@ async function readLeaderboardInputs(
 export async function buildLeaderboards(
   db: Db,
   gameId: string,
-): Promise<{ leaderboard: LeaderboardResult; sections: SectionLeaderboard[] }> {
+): Promise<{
+  leaderboard: LeaderboardResult | null;
+  sections: SectionLeaderboard[];
+}> {
   const {
     scoringType,
+    combinedRanking,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
+    twoWinner,
     boardRows,
     pairs,
     teams,
   } = await readLeaderboardInputs(db, gameId);
+
+  const sections = computeSections(
+    boardRows,
+    pairs,
+    scoringType,
+    swissVpMode,
+    isTeamsVp,
+    teamsImpAggregate,
+    teamsBoardComparison,
+    barometer,
+    twoWinner,
+    teams,
+  );
+
+  // The director can turn off the combined overall ranking for a multi-section
+  // event, keeping sections separate. It stays on by default, and is always
+  // produced for a single-section game (where "combined" and the one section
+  // are identical anyway).
+  const showCombined = combinedRanking || sections.length <= 1;
+
   return {
-    leaderboard: computeCombined(
-      boardRows,
-      pairs,
-      gameId,
-      scoringType,
-      swissVpMode,
-      isTeamsVp,
-      teamsBoardComparison,
-      barometer,
-      teams,
-    ),
-    sections: computeSections(
-      boardRows,
-      pairs,
-      scoringType,
-      swissVpMode,
-      isTeamsVp,
-      teamsBoardComparison,
-      barometer,
-      teams,
-    ),
+    leaderboard: showCombined
+      ? computeCombined(
+          boardRows,
+          pairs,
+          gameId,
+          scoringType,
+          swissVpMode,
+          isTeamsVp,
+          teamsImpAggregate,
+          teamsBoardComparison,
+          barometer,
+          twoWinner,
+          teams,
+        )
+      : null,
+    sections,
   };
 }
 
@@ -467,8 +628,10 @@ export async function computeLeaderboard(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
+    twoWinner,
     boardRows,
     pairs,
     teams,
@@ -480,8 +643,10 @@ export async function computeLeaderboard(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
+    twoWinner,
     teams,
   );
 }
@@ -500,8 +665,10 @@ export async function computeSectionLeaderboards(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
+    twoWinner,
     boardRows,
     pairs,
     teams,
@@ -512,8 +679,10 @@ export async function computeSectionLeaderboards(
     scoringType,
     swissVpMode,
     isTeamsVp,
+    teamsImpAggregate,
     teamsBoardComparison,
     barometer,
+    twoWinner,
     teams,
   );
 }

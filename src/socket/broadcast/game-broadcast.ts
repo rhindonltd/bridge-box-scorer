@@ -24,3 +24,18 @@ export async function broadcastGameStarted(
   const game = await findGameById(gameId);
   io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, { game });
 }
+
+/**
+ * Broadcast that a game's settings changed (e.g. a director toggled combined
+ * ranking) to the game's room, so every connected client's cached game row
+ * updates. Emits `GAME_UPDATED` with the fresh game row.
+ */
+export async function broadcastGameUpdated(
+  gameId: string,
+  io: Server | null = getIO(),
+): Promise<void> {
+  if (!io) return;
+
+  const game = await findGameById(gameId);
+  io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, { game });
+}

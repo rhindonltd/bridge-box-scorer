@@ -80,12 +80,43 @@ describe("CreateGamePage", () => {
   it("toggles the lead-card requirement and submits it", async () => {
     render(<CreateGamePage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "No" }));
+    const leadGroup = screen.getByRole("group", {
+      name: "Record Opening Lead",
+    });
+    fireEvent.click(within(leadGroup).getByRole("button", { name: "No" }));
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
     expect(mockCreateGame).toHaveBeenCalledWith(
       expect.objectContaining({ leadCardRequired: false }),
+    );
+  });
+
+  it("defaults hand entry off and submits it off", async () => {
+    render(<CreateGamePage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ handEntryEnabled: false }),
+    );
+  });
+
+  it("toggles hand entry on and submits it", async () => {
+    render(<CreateGamePage />);
+
+    const handEntryGroup = screen.getByRole("group", {
+      name: "Allow Hand Entry",
+    });
+    fireEvent.click(
+      within(handEntryGroup).getByRole("button", { name: "Yes" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ handEntryEnabled: true }),
     );
   });
 
@@ -245,18 +276,34 @@ describe("CreateGamePage", () => {
     );
   });
 
-  it("shows no Scoring selector for a Pairs game and submits no scoringType", async () => {
+  it("reveals a Scoring selector for a Pairs game, defaulting to MP", async () => {
     render(<CreateGamePage />);
 
-    expect(screen.queryByLabelText("Scoring")).not.toBeInTheDocument();
+    const scoring = screen.getByLabelText("Scoring") as HTMLSelectElement;
+    expect(scoring.tagName).toBe("SELECT");
+    expect(scoring.value).toBe("MP");
 
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
     const payload = mockCreateGame.mock.calls[0][0];
     expect(payload.gameType).toBe("PAIRS");
-    // Pairs falls back to the DB default; no explicit scoringType is sent.
-    expect(payload.scoringType).toBeUndefined();
+    expect(payload.scoringType).toBe("MP");
+  });
+
+  it("submits XIMP when a Pairs game selects Cross-IMPs", async () => {
+    render(<CreateGamePage />);
+
+    fireEvent.change(screen.getByLabelText("Scoring"), {
+      target: { value: "XIMP" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ gameType: "PAIRS", scoringType: "XIMP" }),
+    );
   });
 
   it("reveals a Scoring selector for a Teams game, defaulting to IMP", async () => {
@@ -278,40 +325,62 @@ describe("CreateGamePage", () => {
     );
   });
 
-  it("submits Board-a-Match scoring for a Teams game", async () => {
+  it("offers Point-a-Board (not Board-a-Match) for a Teams game in the default en-GB locale", async () => {
     render(<CreateGamePage />);
 
     fireEvent.change(screen.getByLabelText("Event Type"), {
       target: { value: "TEAMS" },
     });
-    fireEvent.change(screen.getByLabelText("Scoring"), {
-      target: { value: "BAM" },
-    });
 
-    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+    // en-GB: the board-comparison method is "Point-a-Board" (PAB); the US name
+    // "Board-a-Match" is not offered.
+    expect(
+      screen.getByRole("option", { name: "Point-a-Board" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Board-a-Match" }),
+    ).not.toBeInTheDocument();
 
-    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
-    expect(mockCreateGame).toHaveBeenCalledWith(
-      expect.objectContaining({ gameType: "TEAMS", scoringType: "BAM" }),
-    );
-  });
-
-  it("submits Point-a-Board scoring for a Teams game", async () => {
-    render(<CreateGamePage />);
-
-    fireEvent.change(screen.getByLabelText("Event Type"), {
-      target: { value: "TEAMS" },
-    });
     fireEvent.change(screen.getByLabelText("Scoring"), {
       target: { value: "PAB" },
     });
-
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
     expect(mockCreateGame).toHaveBeenCalledWith(
       expect.objectContaining({ gameType: "TEAMS", scoringType: "PAB" }),
     );
+  });
+
+  it("offers Board-a-Match (not Point-a-Board) for a Teams game in the en-US locale", async () => {
+    vi.stubEnv("NEXT_PUBLIC_BRIDGE_LOCALE", "en-US");
+
+    render(<CreateGamePage />);
+
+    fireEvent.change(screen.getByLabelText("Event Type"), {
+      target: { value: "TEAMS" },
+    });
+
+    // en-US: the board-comparison method is "Board-a-Match" (BAM); the UK name
+    // "Point-a-Board" is not offered.
+    expect(
+      screen.getByRole("option", { name: "Board-a-Match" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Point-a-Board" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Scoring"), {
+      target: { value: "BAM" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ gameType: "TEAMS", scoringType: "BAM" }),
+    );
+
+    vi.unstubAllEnvs();
   });
 
   it("shows an error and re-enables the button when creation fails", async () => {

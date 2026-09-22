@@ -127,6 +127,10 @@ const meta: Meta<typeof DisplayLeaderboardView> = {
   },
   args: {
     eventName: "Monday AM Pairs",
+    // On the real display the container always supplies the MP/% choice made on
+    // the preceding screen, so the board shows a fixed view with no in-screen
+    // toggle. Default the stories to match (percentage, the standing default).
+    scoringMode: "percentage",
   },
   tags: ["autodocs"],
 };

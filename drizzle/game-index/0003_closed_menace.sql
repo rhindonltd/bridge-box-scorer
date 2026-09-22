@@ -1,0 +1,1 @@
+ALTER TABLE `games` ADD `hand_entry_enabled` integer DEFAULT false NOT NULL;

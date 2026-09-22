@@ -122,7 +122,6 @@ describe("ContractWizard", () => {
     vi.clearAllMocks();
     mockGame.mockReturnValue({
       eventName: "Monday Pairs",
-      sessionName: "Evening",
       sectionName: "A",
     });
   });
@@ -140,7 +139,7 @@ describe("ContractWizard", () => {
     );
     expect(screen.getByText("Table 3, Round 2")).toBeInTheDocument();
     expect(screen.getByText("Monday Pairs")).toBeInTheDocument();
-    expect(screen.getByText(/Evening/)).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
     // The pair number is no longer inline in the header; the header-right slot
     // (the play menu) takes its place. Pair details live behind that menu.
     expect(screen.getByTestId("play-menu")).toBeInTheDocument();
@@ -153,14 +152,13 @@ describe("ContractWizard", () => {
     expect(screen.queryByTestId("board-dropdown")).not.toBeInTheDocument();
   });
 
-  it("renders session-only sub text", () => {
+  it("renders no sub text when there is no section", () => {
     mockGame.mockReturnValue({
       eventName: "Teams",
-      sessionName: "Morning",
       sectionName: "",
     });
     render(<ContractWizard {...baseProps} />);
-    expect(screen.getByText("Morning")).toBeInTheDocument();
+    expect(screen.getByText("Teams")).toBeInTheDocument();
   });
 
   it("drives a full played contract and submits (no lead required)", () => {

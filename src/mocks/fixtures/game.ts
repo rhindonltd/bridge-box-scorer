@@ -4,12 +4,13 @@ export const mockGame = {
   director: "Jacqui Collier",
   gameType: "PAIRS" as const,
   scoringType: "MP" as const,
-  sessionName: "1",
   sectionName: "A",
   eventDate: new Date().toISOString(),
   tables: 8,
   selectedMovement: null,
   leadCardRequired: true,
+  handEntryEnabled: false,
+  combinedRanking: true,
   bridgewebsEventId: null,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -23,6 +24,6 @@ export const pairsGame4Tables = {
 export const teamsGame4Tables = {
   ...mockGame,
   gameType: "TEAMS" as const,
-  scoringType: "IMP" as const,
+  scoringType: "IMP_VP" as const,
   tables: 4,
 };

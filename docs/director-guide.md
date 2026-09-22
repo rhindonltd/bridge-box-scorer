@@ -24,7 +24,9 @@ From the home screen, tap **Create New Game**.
 | **Event Name**          | The name of your event (e.g. "Monday Pairs").                     |
 | **Director Name**       | Your name.                                                        |
 | **Event Type**          | **Pairs** or **Teams**.                                           |
+| **Scoring**             | How the event is scored. For **Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). Defaults to Matchpoints for Pairs and IMP for Teams. |
 | **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
+| **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
 
 The session is always dated today, so there is no date to set.
 
@@ -107,6 +109,17 @@ on which boards.
 - **Multiple sections:** you get a section manager where you can add, rename,
   and delete sections, and choose a movement **for each section**
   independently.
+
+When you have more than one section, the section manager also has a **Combined /
+Separate** switch for the rankings:
+
+- **Combined** (the default) — as well as each section's own ranking, the app
+  produces one overall ranking that pools every section together.
+- **Separate** — each section is ranked on its own, with no combined overall
+  ranking.
+
+You can change this at any time; the leaderboard and any room display update to
+match straight away.
 
 The movement picker shows the recommended movements for your table count,
 **grouped by how many boards a pair plays** (which effectively determines

@@ -98,7 +98,7 @@ export const PairMP: Story = {
 export const Team: Story = {
   args: {
     overallScoreAndParticipant: {
-      type: "TEAM_OVERALL",
+      type: "TEAM_SWISS_VP",
       participants: [
         {
           type: "TEAM",
@@ -139,15 +139,16 @@ export const Team: Story = {
         },
       ],
       overallScore: {
-        type: "TEAM_OVERALL",
+        type: "TEAM_SWISS_VP",
         mode: "TEAM",
-        scoring: "OVERALL",
+        scoring: "SWISS_VP",
         lines: [
           {
             tied: false,
             rank: 1,
             teamId: "1",
-            score: 100,
+            totalVP: 100,
+            vpByRound: { 1: 100 },
           },
         ],
       },

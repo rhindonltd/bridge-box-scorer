@@ -95,6 +95,16 @@ export const SocketEvents = {
   // ack) and join that board's traveller room; matching leave on switch/unmount.
   REQUEST_STATE_TRAVELLER: "traveller:requestState",
   LEAVE_TRAVELLER: "traveller:leave",
+  // Server-initiated: a board's results changed while someone is viewing the
+  // end-of-round team results summary. Carries the single changed board's
+  // instances; the client merges it into the boards it is showing.
+  ROUND_RESULTS_SYNC: "roundResults:sync",
+  // Client-initiated (player, teams): request the board instances for a set of
+  // boards at once (returned on the ack) and join the game's round-results
+  // room, so a late result from the other room updates the summary live.
+  // Matching leave on unmount.
+  REQUEST_STATE_ROUND_RESULTS: "roundResults:requestState",
+  LEAVE_ROUND_RESULTS: "roundResults:leave",
   // Client-initiated (director): override a board result.
   OVERRIDE_RESULT_TRAVELLER: "traveller:overrideResult",
 

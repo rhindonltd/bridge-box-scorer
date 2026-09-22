@@ -10,20 +10,26 @@ beforeEach(() => {
 });
 
 describe("scoring plugin registration", () => {
-  it("registers a per-board and overall plugin for every scoring type after importing register", async () => {
+  it("registers the per-board (and, for pairs, overall) plugins after importing register", async () => {
     await import("./register");
     const { getCombination, getPerBoardPlugin, getOverallPlugin } =
       await import("./registry");
 
-    for (const scoringType of ["MP", "IMP", "XIMP"] as const) {
-      const { perBoard, overall } = getCombination(scoringType);
-
+    // Every scoring type resolves a per-board plugin (its traveller display).
+    for (const scoringType of ["MP", "IMP", "XIMP", "BAM", "PAB"] as const) {
+      const { perBoard } = getCombination(scoringType);
       const perBoardPlugin = getPerBoardPlugin(perBoard);
       expect(perBoardPlugin.id).toBe(perBoard);
       expect(perBoardPlugin.views.length).toBeGreaterThan(0);
       expect(typeof perBoardPlugin.score).toBe("function");
+    }
 
-      const overallPlugin = getOverallPlugin(overall);
+    // The pairs board-pooled scorings (MP, Cross-IMP) also resolve an overall
+    // plugin; teams scorings omit `overall` (shown via the team registry).
+    for (const scoringType of ["MP", "XIMP"] as const) {
+      const { overall } = getCombination(scoringType);
+      expect(overall).toBeDefined();
+      const overallPlugin = getOverallPlugin(overall!);
       expect(overallPlugin.id).toBe(overall);
       expect(overallPlugin.views.length).toBeGreaterThan(0);
       expect(typeof overallPlugin.aggregate).toBe("function");

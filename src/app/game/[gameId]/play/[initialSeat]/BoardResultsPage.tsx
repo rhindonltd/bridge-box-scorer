@@ -4,6 +4,9 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { BoardSelector } from "@/app/game/[gameId]/play/[initialSeat]/BoardSelector";
 import { useAssignment } from "@/context/AssignmentContext";
 import { ShowHandToggle } from "@/components/deal/ShowHandToggle";
+import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
+import { ScoreTableView } from "@/components/scoring/ScoreTableView";
+import { ScoreTable } from "@/scoring/table/score-table";
 import { Deal } from "@/model/common";
 
 interface Props {
@@ -11,6 +14,14 @@ interface Props {
   playedBoards: number[];
   lastBoardOfRound: boolean;
   scoredBoard: ScoredBoard;
+  /**
+   * For a teams game, the "Team Result" table for this board (this table vs the
+   * other room, in IMPs), or null when it cannot be built yet (the viewing
+   * table has no result). When present, the results area gains an
+   * "X-IMP / Team Result" toggle; when absent (a pairs game), only the pooled
+   * traveller shows. `null` for every pairs game.
+   */
+  teamResultTable?: ScoreTable | null;
   /**
    * The four hands for the board being viewed, or null when no deal has been
    * entered. Surfaced behind an opt-in "Show hand" toggle so a player can see
@@ -28,12 +39,17 @@ export function BoardResultsPage({
   playedBoards,
   lastBoardOfRound,
   scoredBoard,
+  teamResultTable = null,
   deal = null,
   onBoardSelected,
   onNext,
   headerRight,
 }: Props) {
   const { assignment } = useAssignment();
+
+  const traveller = (
+    <Traveller scoredBoard={scoredBoard} highlightAssignmentId={assignment?.id} />
+  );
 
   return (
     <GamePageLayout
@@ -57,10 +73,29 @@ export function BoardResultsPage({
           onBoardSelected={onBoardSelected}
         />
         <ShowHandToggle boardNumber={board} deal={deal} />
-        <Traveller
-          scoredBoard={scoredBoard}
-          highlightAssignmentId={assignment?.id}
-        />
+        {teamResultTable ? (
+          // Teams game: let the player toggle between the field-wide cross-IMP
+          // traveller and their own team's result (this table vs the other
+          // room). Cross-IMP is first, so it is the default and the "on" side.
+          <PluginViewSwitcher
+            views={[
+              { id: "x-imp", label: "X-IMP" },
+              { id: "team-result", label: "Team Result" },
+            ]}
+            renderView={(view) =>
+              view.id === "team-result" ? (
+                <ScoreTableView
+                  table={teamResultTable}
+                  highlightAssignmentId={assignment?.id}
+                />
+              ) : (
+                traveller
+              )
+            }
+          />
+        ) : (
+          traveller
+        )}
       </>
     </GamePageLayout>
   );

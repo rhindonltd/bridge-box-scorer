@@ -1,6 +1,7 @@
 import { BoardResult } from "@/components/traveller/BoardResult";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
+import type { ColumnAlign } from "@/components/common/table/TableHead";
 import {
   ScoreCell,
   ScoreTable,
@@ -28,7 +29,33 @@ type Props = {
    * value <= 1 renders a single table exactly as before.
    */
   splitColumns?: number;
+  /**
+   * Whether each rendered table owns its own vertical scroll region (default
+   * true). Set false when an ancestor already scrolls (the room-display
+   * leaderboard) so the sticky header pins to that outer region instead of a
+   * redundant inner one.
+   */
+  scroll?: boolean;
+  /**
+   * Whether cells may be interactive (default true). Set false on passive
+   * screens (the room display, which nobody taps): an `expandable` cell then
+   * renders as its static label instead of a button that reveals detail lines.
+   */
+  interactive?: boolean;
 };
+
+/**
+ * A column is left-aligned when its cells hold left-aligned content (a name
+ * stack or a team-name label), so the header sits over the names rather than
+ * centred. Cell kinds are homogeneous down a column, so the first row decides.
+ */
+function columnAligns(table: ScoreTable): ColumnAlign[] {
+  const firstRow = table.rows[0];
+  return table.columns.map((_, i) => {
+    const kind = firstRow?.cells[i]?.kind;
+    return kind === "multiline" || kind === "expandable" ? "left" : "center";
+  });
+}
 
 /** Split an array into `count` roughly-equal, order-preserving chunks. */
 function splitIntoChunks<T>(items: T[], count: number): T[][] {
@@ -77,7 +104,11 @@ function ExpandableCell({ label, lines }: { label: string; lines: string[] }) {
   );
 }
 
-function renderCell(cell: ScoreCell, key: number): ReactNode {
+function renderCell(
+  cell: ScoreCell,
+  key: number,
+  interactive: boolean,
+): ReactNode {
   switch (cell.kind) {
     case "text":
       return cell.value;
@@ -94,7 +125,13 @@ function renderCell(cell: ScoreCell, key: number): ReactNode {
     case "contract":
       return <BoardResult key={key} boardOutcome={cell.outcome} />;
     case "expandable":
-      return <ExpandableCell key={key} label={cell.label} lines={cell.lines} />;
+      // On a passive screen (the room display) the label is not tappable, so
+      // render it as static, left-aligned text instead of an expand button.
+      return interactive ? (
+        <ExpandableCell key={key} label={cell.label} lines={cell.lines} />
+      ) : (
+        <div className="text-left font-medium">{cell.label}</div>
+      );
   }
 }
 
@@ -109,8 +146,11 @@ export function ScoreTableView({
   highlightAssignmentId,
   rowTestId,
   splitColumns = 1,
+  scroll = true,
+  interactive = true,
 }: Props) {
   const columns = table.columns.map((c) => c.label);
+  const aligns = columnAligns(table);
 
   const renderRows = (rows: typeof table.rows) =>
     rows.map((row, index, arr) => {
@@ -126,7 +166,7 @@ export function ScoreTableView({
           striped={highlightAssignmentId === undefined}
           testId={rowTestId}
           cells={row.cells.map((cell, cellIndex) =>
-            renderCell(cell, cellIndex),
+            renderCell(cell, cellIndex, interactive),
           )}
           className={isLast ? "rounded-bl-lg rounded-br-lg" : ""}
         />
@@ -135,7 +175,14 @@ export function ScoreTableView({
 
   // Single-table (default) path — unchanged for every existing caller.
   if (splitColumns <= 1) {
-    return <Table columns={columns} body={renderRows(table.rows)} />;
+    return (
+      <Table
+        columns={columns}
+        aligns={aligns}
+        body={renderRows(table.rows)}
+        scroll={scroll}
+      />
+    );
   }
 
   // Multi-column path: split the rows across N side-by-side tables so a long
@@ -148,7 +195,12 @@ export function ScoreTableView({
     <div className="flex items-start gap-4">
       {chunks.map((chunk, i) => (
         <div key={i} className="min-w-0 flex-1">
-          <Table columns={columns} body={renderRows(chunk)} />
+          <Table
+            columns={columns}
+            aligns={aligns}
+            body={renderRows(chunk)}
+            scroll={scroll}
+          />
         </div>
       ))}
     </div>

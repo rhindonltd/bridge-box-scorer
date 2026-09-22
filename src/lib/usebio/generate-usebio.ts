@@ -202,6 +202,14 @@ export type UsebioSwissTeamsData = {
   teams: UsebioTeam[];
   matches: UsebioSwissTeamsMatch[];
   ranking: UsebioVpRankEntry[];
+  /**
+   * The USEBIO MATCH_SCORING_METHOD for the file. "VPS" for Swiss Teams (each
+   * match scored to Victory Points); "IMPS" for aggregate-IMP teams (each match
+   * scored by its net IMP margin, ranked on total IMPs). Defaults to "VPS" so
+   * existing Swiss Teams callers are unaffected. When "IMPS", the numbers in
+   * `matches[].teamScore` and `ranking[].totalVP` are IMPs, not VP.
+   */
+  matchScoringMethod?: "VPS" | "IMPS";
 };
 
 /* ---- Board-a-Match Teams ---- */
@@ -268,7 +276,11 @@ export type UsebioBoardComparisonTeamsData = {
 
 const SCORING_TYPE_MAP: Record<ScoringType, string> = {
   MP: "MATCH_POINTS",
-  IMP: "BUTLER",
+  // Aggregate teams IMPs: the match score is a summation of International Match
+  // Points, which USEBIO tags IMPS.
+  IMP: "IMPS",
+  // Teams IMPs converted to Victory Points per round (Butler/datum style).
+  IMP_VP: "BUTLER",
   XIMP: "CROSS_IMPS",
   BAM: "BAM",
   PAB: "PAB",
@@ -646,8 +658,11 @@ function generateSwissPairsXml(data: UsebioSwissPairsData): string {
 function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
   const { doc, event } = startUsebioDoc(data.club, "SWISS_TEAMS");
 
-  // EVENT header.
-  event.ele("MATCH_SCORING_METHOD").txt("VPS");
+  // EVENT header. A Swiss Teams file scores each match to Victory Points (VPS);
+  // an aggregate-IMP teams file scores each match by its net IMP margin (IMPS)
+  // and ranks on total IMPs. The per-match TEAM_SCORE and TOTAL_SCORE carry
+  // whichever unit this method names.
+  event.ele("MATCH_SCORING_METHOD").txt(data.matchScoringMethod ?? "VPS");
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
   event.ele("SESSION_COUNT").txt("1");

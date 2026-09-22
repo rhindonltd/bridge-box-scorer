@@ -87,7 +87,13 @@ export interface OverallScoringPlugin<TScored = unknown, TLines = unknown> {
  */
 export interface ScoringCombination {
   perBoard: PerBoardPluginId;
-  overall: OverallPluginId;
+  /**
+   * The overall (leaderboard) plugin for the pairs board-pooled path. Absent
+   * for teams scorings (BAM/PAB and the teams IMP variants): their standings
+   * are produced by the dedicated teams scorers and displayed via the team
+   * overall registry, so the pairs overall plugin is never resolved for them.
+   */
+  overall?: OverallPluginId;
 }
 
 export type CombinationRegistry = Record<ScoringType, ScoringCombination>;

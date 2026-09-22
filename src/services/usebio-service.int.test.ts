@@ -16,13 +16,14 @@ const game: BridgeGame = {
   director: "Jacqui",
   gameType: "PAIRS",
   scoringType: "MP",
-  sessionName: "1",
+  combinedRanking: true,
   sectionName: "A",
   eventDate: "2024-11-18T00:00:00.000Z",
   tables: 1,
   selectedMovement: null,
   bridgewebsEventId: null,
   leadCardRequired: true,
+  handEntryEnabled: false,
   createdAt: "2024-11-18 00:00:00",
   updatedAt: "2024-11-18 00:00:00",
 };
@@ -265,7 +266,7 @@ describe("generateUsebio", () => {
     const teamsGame: BridgeGame = {
       ...game,
       gameType: "TEAMS",
-      scoringType: "IMP",
+      scoringType: "IMP_VP",
       selectedMovement: JSON.stringify({
         source: "SWISS_TEAMS",
         swissTeams: { teams: 2, rounds: 1, boardsPerRound: 1 },

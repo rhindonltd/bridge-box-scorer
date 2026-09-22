@@ -55,12 +55,8 @@ export function WizardShell({
         <div className="flex-1 flex items-start justify-between min-w-0">
           <div className="truncate">
             <div className="font-semibold">{game.eventName}</div>
-            {(game.sessionName || game.sectionName) && (
-              <div className="text-sm text-gray-600">
-                {game.sessionName}
-                {game.sessionName && game.sectionName && ", "}
-                {game.sectionName}
-              </div>
+            {game.sectionName && (
+              <div className="text-sm text-gray-600">{game.sectionName}</div>
             )}
           </div>
           {headerRight}
