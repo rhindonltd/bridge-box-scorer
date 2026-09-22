@@ -57,7 +57,22 @@ export const PairMP: Story = {
  * (default) shows the field-wide cross-IMP traveller; Team Result shows this
  * table vs the other room with the net IMPs to the team. Here team A1 (table 1)
  * made 3NT+1 (+430) while the other room made 3NT= (+400): +1 IMP to A1.
+ *
+ * The traveller and the assignment share the same team seat ids (A1NS plays at
+ * table 1), so the viewing pair's row is highlighted on the X-IMP tab — matching
+ * the live app, where the pooled traveller and the seat use one seat scheme.
  */
+const teamsBoard1: typeof impBoard1 = {
+  type: "PAIR",
+  mode: "PAIR",
+  board: 1,
+  section: "A",
+  lines: [
+    { nsId: "A1NS", ewId: "A2EW", outcome: "3NTN+1" },
+    { nsId: "A2NS", ewId: "A1EW", outcome: "3NTN=" },
+  ],
+} as typeof impBoard1;
+
 export const TeamsBoard: Story = {
   decorators: [
     withGame(teamsGame4Tables),
@@ -66,7 +81,7 @@ export const TeamsBoard: Story = {
   args: {
     board: 1,
     lastBoardOfRound: false,
-    scoredBoard: scoreBoard(impBoard1, "XIMP"),
+    scoredBoard: scoreBoard(teamsBoard1, "XIMP"),
     teamResultTable: buildTeamBoardResultTable(
       [
         { tableNumber: 1, ns: "A1NS", ew: "A2EW", result: "3NTN+1" as never },

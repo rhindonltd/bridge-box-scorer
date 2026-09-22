@@ -1,8 +1,11 @@
 "use client";
 
+import { ReactNode } from "react";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 export interface DirectorMenuPageProps {
+  /** Header right-hand content — the play⇄manage switch on a director device. */
+  headerRight?: ReactNode;
   onSetUpGameClick: () => void;
   onTravellersClick: () => void;
   onEnterDealsClick: () => void;
@@ -46,6 +49,7 @@ export interface DirectorMenuPageProps {
 }
 
 export function ManageGameMenuPage({
+  headerRight,
   onSetUpGameClick,
   onTravellersClick,
   onEnterDealsClick,
@@ -72,7 +76,11 @@ export function ManageGameMenuPage({
     "w-full py-3.5 text-lg font-semibold bg-red-100 text-red-700 rounded-xl hover:bg-red-200 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 pl-4";
 
   return (
-    <GamePageLayout headerTitle="Manage Game Menu" centerContent={true}>
+    <GamePageLayout
+      headerTitle="Manage Game Menu"
+      centerContent={true}
+      headerRight={headerRight}
+    >
       <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
         {showSetUpGame && (
           <button onClick={onSetUpGameClick} className={standardButtonClass}>

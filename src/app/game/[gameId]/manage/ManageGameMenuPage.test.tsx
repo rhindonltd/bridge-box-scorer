@@ -4,13 +4,16 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
+    headerRight,
     children,
   }: {
     headerTitle: string;
+    headerRight?: React.ReactNode;
     children: React.ReactNode;
   }) => (
     <div>
       <h1>{headerTitle}</h1>
+      {headerRight}
       {children}
     </div>
   ),
@@ -61,6 +64,17 @@ describe("ManageGameMenuPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Delete Game" }));
     expect(handlers.onDeleteGameClick).toHaveBeenCalled();
+  });
+
+  it("renders the header-right switch when provided", () => {
+    render(
+      <ManageGameMenuPage
+        {...handlers}
+        {...flags}
+        headerRight={<div data-testid="manage-switch" />}
+      />,
+    );
+    expect(screen.getByTestId("manage-switch")).toBeInTheDocument();
   });
 
   describe("before the game has started", () => {

@@ -195,6 +195,21 @@ all sections** to copy it to them all.
    asked for a **share code** — enter it to claim director access (see
    [Sharing director access](#sharing-director-access)).
 
+### Switching between playing and managing
+
+If you are also playing in the game, your device can act as both a player and
+the director, and you can flip between the two with one tap:
+
+- On your **play** screens there is a **Manage** control (in the header, or in
+  the ⋯ menu on a small screen) that takes you to the Manage Game Menu.
+- On the **manage** screens there is a **Play** control that jumps straight back
+  to your table. If you are not sitting at a table on this device, it reads
+  **Join** instead and takes you to seat selection so you can take a seat.
+
+The Manage control only appears on devices that have director access. Switching
+does not sign you out of either role, so you can move back and forth freely — for
+example, to correct a board and then return to enter your own table's result.
+
 ### The Manage Game Menu
 
 | Option                    | What it does                                                              |
