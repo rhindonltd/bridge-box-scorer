@@ -137,7 +137,17 @@ function scoreBoardsToOverall(
     ...swissSitOutScoredBoards(boardMap, scoringType, scoredBoards),
   );
 
-  const overallPlugin = getOverallPlugin(getCombination(scoringType).overall);
+  // This board-pooled overall path is only reached for pairs scorings (MP /
+  // Cross-IMP, and the IMP-family fallback), which always declare an `overall`
+  // plugin. Teams never reach here — they are routed to their dedicated
+  // scorers before this — so a missing `overall` would be a wiring error.
+  const overallId = getCombination(scoringType).overall;
+  if (!overallId) {
+    throw new Error(
+      `Scoring type "${scoringType}" has no overall plugin for the board-pooled path`,
+    );
+  }
+  const overallPlugin = getOverallPlugin(overallId);
   return overallPlugin.aggregate(
     scoredBoards.map((b) => ({ lines: b.lines })),
   ) as OverallScore;

@@ -42,6 +42,13 @@ export interface Schedule {
   side: "NS" | "EW";
   rounds: RoundSchedule[];
   handEntryEnabled?: boolean;
+  /**
+   * Whether to show the post-round "team results" summary (a teams game only):
+   * a screen listing the round's boards with the team's IMP result on each,
+   * shown when a played round completes, before the optional deal-entry step
+   * and the move screen. Off for pairs games.
+   */
+  teamRoundResults?: boolean;
 }
 
 export type PlayState =
@@ -59,6 +66,12 @@ export type PlayState =
       ewResult: string;
     }
   | { state: "boardResults"; roundIndex: number; boardIndex: number }
+  /**
+   * Post-round team results summary (a teams game only): the round's boards
+   * with the team's IMP result on each. Shown when a played round completes,
+   * before the optional deal-entry step, and always continued past.
+   */
+  | { state: "roundResults"; roundIndex: number; nextRoundIndex: number }
   /**
    * Optional, post-round-only step offering to enter the dealt cards for the
    * round just finished. Reachable only when a round completes (never
@@ -80,6 +93,8 @@ export type PlayAction =
   | { type: "submit"; boardNumber: number }
   | { type: "reenter" }
   | { type: "boardResultsNext" }
+  /** Leave the post-round team results summary (teams game only). */
+  | { type: "roundResultsContinue" }
   /** Leave the optional post-round deal-entry step (finished or skipped). */
   | { type: "dealsContinue" }
   | { type: "moveInfoContinue" }
@@ -153,6 +168,28 @@ function afterRound(nextRoundIndex: number, schedule: Schedule): PlayState {
  * to enter cards for.
  */
 function afterPlayedRound(
+  completedRoundIndex: number,
+  schedule: Schedule,
+): PlayState {
+  // A teams game shows the round's team results first; continuing past it runs
+  // the same deal/move chain as a game without the summary.
+  if (schedule.teamRoundResults) {
+    return {
+      state: "roundResults",
+      roundIndex: completedRoundIndex,
+      nextRoundIndex: completedRoundIndex + 1,
+    };
+  }
+
+  return afterRoundSummary(completedRoundIndex, schedule);
+}
+
+/**
+ * The post-round chain that follows the (optional) team results summary: the
+ * optional deal-entry step when hand entry is enabled, otherwise straight on to
+ * the move screen / game complete.
+ */
+function afterRoundSummary(
   completedRoundIndex: number,
   schedule: Schedule,
 ): PlayState {
@@ -234,6 +271,14 @@ export function playReducer(
       // Round complete — offer the optional deal-entry step for it (skipped
       // when the game doesn't have hand entry enabled).
       return afterPlayedRound(prev.roundIndex, schedule);
+    }
+
+    case "roundResultsContinue": {
+      if (!schedule) return prev;
+      if (prev.state !== "roundResults") return prev;
+      // Continue past the summary into the same deal/move chain a non-summary
+      // game runs after a played round.
+      return afterRoundSummary(prev.roundIndex, schedule);
     }
 
     case "dealsContinue": {

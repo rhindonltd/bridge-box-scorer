@@ -121,6 +121,12 @@ Once a board is confirmed, you see its **traveller** — a table of every result
 for that board played around the room, scored using the game's scoring method.
 You can flip back through the boards you have already played in this round.
 
+In a **Teams** game this screen has an **X-IMP / Team Result** toggle. **X-IMP**
+shows the field-wide traveller (every table's result on the board); **Team
+Result** shows just your team's board — the **Home** and **Away** tables'
+contracts and scores, and a **Team result** line with the IMPs your team gained
+or lost on the board. The team result appears once both tables have entered.
+
 If the cards for a board have been entered, a **Show hand** button appears here.
 Tap it to see the four hands laid out (North, East, South and West), with the
 dealer marked; tap **Hide hand** to put it away again. If no one has entered the
@@ -143,12 +149,20 @@ after any board. If someone at another table has already entered a board's
 cards, you will see their entry instead — the first person to record a board's
 cards sets them for everyone.
 
+### Team results for the round (Teams only)
+
+In a **Teams** game, when you finish the last board of a round you see a **Team
+Results** screen listing that round's boards with your team's IMP result on
+each — a quick summary of how your team fared against the other room. Tap
+**Continue** to move on.
+
 ### Moving on
 
-When you finish the last board of a round (and the optional Enter cards step),
-the app shows a **move** screen telling you which table and direction to go to
-for the next round. Tap continue when you have moved. After the final round you
-see the **leaderboard**, with your own pair highlighted.
+When you finish the last board of a round (the Team Results screen for Teams,
+and the optional Enter cards step), the app shows a **move** screen telling you
+which table and direction to go to for the next round. Tap continue when you
+have moved. After the final round you see the **leaderboard**, with your own
+pair highlighted.
 
 ### The play menu
 

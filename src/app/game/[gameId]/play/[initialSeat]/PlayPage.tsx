@@ -19,7 +19,13 @@ export function PlayPage() {
   const seat = params.initialSeat;
 
   const { game } = useRequiredGame();
-  const flow = usePlayFlow(game.gameId, seat, game.handEntryEnabled);
+  const flow = usePlayFlow(
+    game.gameId,
+    seat,
+    game.handEntryEnabled,
+    // A teams game shows the post-round "team results" summary.
+    game.gameType === "TEAMS",
+  );
 
   // Seated, but the director hasn't started the game yet: show a friendly
   // waiting screen (it revalidates and advances automatically at start) rather
@@ -38,6 +44,7 @@ export function PlayPage() {
       playState={flow.playState}
       gameId={game.gameId}
       seat={seat}
+      gameType={game.gameType}
       scoringType={game.scoringType}
       leadCardRequired={game.leadCardRequired}
       handlers={flow}

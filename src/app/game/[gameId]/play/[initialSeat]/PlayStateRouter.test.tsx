@@ -209,6 +209,7 @@ function makeHandlers(): PlayHandlers {
     handleSitOutContinue: vi.fn(),
     handleMoveInfoContinue: vi.fn(),
     handleBoardResultsNext: vi.fn(),
+    handleRoundResultsContinue: vi.fn(),
     handleDealsContinue: vi.fn(),
     handleReenter: vi.fn(),
     handleEnterRound: vi.fn(),
@@ -224,6 +225,7 @@ function renderRouter(playState: PlayState, handlers = makeHandlers()) {
       playState={playState}
       gameId="g1"
       seat="1NS"
+      gameType="PAIRS"
       scoringType="MP"
       leadCardRequired={false}
       handlers={handlers}

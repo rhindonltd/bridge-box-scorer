@@ -65,6 +65,19 @@ export async function buildTravellerPayload(db: Db, boardNumber: number) {
 }
 
 /**
+ * One board's instances for the end-of-round team results summary. This is the
+ * shape pushed as a `roundResults:sync` when a single board changes; the client
+ * merges it into the round's boards it is showing. (The request ack returns the
+ * whole requested set — see the round-results request handler.)
+ */
+export async function buildRoundResultsBoardPayload(
+  db: Db,
+  boardNumber: number,
+) {
+  return { boardNumber, instances: await getBoardInstances(db, boardNumber) };
+}
+
+/**
  * Fan out live updates after a board result changes (player submission or
  * director override). Occupancy-gated: each feature snapshot is recomputed and
  * emitted only when the corresponding room has at least one viewer, so nothing
@@ -81,11 +94,13 @@ export async function broadcastResultsChanged(
 ): Promise<void> {
   const leaderboardRoom = Rooms.leaderboard(gameId);
   const travellerRoom = Rooms.traveller(gameId, boardNumber);
+  const roundResultsRoom = Rooms.roundResults(gameId);
 
   const wantLeaderboard = roomSize(io, leaderboardRoom) > 0;
   const wantTraveller = roomSize(io, travellerRoom) > 0;
+  const wantRoundResults = roomSize(io, roundResultsRoom) > 0;
 
-  if (!wantLeaderboard && !wantTraveller) {
+  if (!wantLeaderboard && !wantTraveller && !wantRoundResults) {
     return;
   }
 
@@ -102,5 +117,13 @@ export async function broadcastResultsChanged(
   if (wantTraveller) {
     const payload = await buildTravellerPayload(db, boardNumber);
     io.to(travellerRoom).emit(SocketEvents.TRAVELLER_SYNC, payload);
+  }
+
+  if (wantRoundResults) {
+    // The end-of-round summary spans a round; push just the changed board and
+    // let each viewer merge it into the boards it is showing (ignoring boards
+    // outside its round).
+    const payload = await buildRoundResultsBoardPayload(db, boardNumber);
+    io.to(roundResultsRoom).emit(SocketEvents.ROUND_RESULTS_SYNC, payload);
   }
 }

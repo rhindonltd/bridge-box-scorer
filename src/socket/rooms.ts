@@ -34,4 +34,14 @@ export const Rooms = {
    */
   traveller: (gameId: string, boardNumber: number) =>
     `game:${gameId}:traveller:${boardNumber}`,
+
+  /**
+   * A room scoped to a game's end-of-round team results summary. A teams player
+   * on that screen joins this room so a late result from the other room (any
+   * board) is pushed to them and the summary updates live. One room per game
+   * (not per board): the summary spans a whole round, and the pushed sync
+   * carries the single changed board, which the client merges into whatever
+   * boards it is showing.
+   */
+  roundResults: (gameId: string) => `game:${gameId}:roundResults`,
 };

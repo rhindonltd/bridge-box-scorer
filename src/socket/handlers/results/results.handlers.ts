@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { registerLeaderboardRequestHandler } from "./leaderboard-request.handler";
 import { registerTravellerRequestHandler } from "./traveller-request.handler";
+import { registerRoundResultsRequestHandler } from "./round-results-request.handler";
 import { registerTravellerOverrideHandler } from "./traveller-override.handler";
 import { registerDealSubmitHandler } from "./deal-submit.handler";
 import { registerDealOverrideHandler } from "./deal-override.handler";
@@ -14,6 +15,7 @@ import { registerDealOverrideHandler } from "./deal-override.handler";
 export function registerResultsHandlers(socket: Socket, io: Server) {
   registerLeaderboardRequestHandler(socket, io);
   registerTravellerRequestHandler(socket, io);
+  registerRoundResultsRequestHandler(socket, io);
   registerTravellerOverrideHandler(socket, io);
   registerDealSubmitHandler(socket, io);
   registerDealOverrideHandler(socket, io);

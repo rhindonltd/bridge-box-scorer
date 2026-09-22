@@ -24,6 +24,7 @@ export function usePlayFlow(
   gameId: string,
   seat: string,
   handEntryEnabled = false,
+  teamRoundResults = false,
 ) {
   const [playState, setPlayState] = useState<PlayState>({
     state: "loading",
@@ -55,9 +56,9 @@ export function usePlayFlow(
   const schedule = useMemo(
     () =>
       fetchedSchedule && fetchedSchedule.rounds
-        ? { ...fetchedSchedule, handEntryEnabled }
+        ? { ...fetchedSchedule, handEntryEnabled, teamRoundResults }
         : null,
-    [fetchedSchedule, handEntryEnabled],
+    [fetchedSchedule, handEntryEnabled, teamRoundResults],
   );
 
   // The seat has no schedule yet because the game hasn't been started
@@ -228,6 +229,10 @@ export function usePlayFlow(
     () => dispatch({ type: "dealsContinue" }),
     [dispatch],
   );
+  const handleRoundResultsContinue = useCallback(
+    () => dispatch({ type: "roundResultsContinue" }),
+    [dispatch],
+  );
 
   /**
    * Submit the entered cards for a board (from the optional post-round deal
@@ -258,6 +263,7 @@ export function usePlayFlow(
     handleSitOutContinue,
     handleMoveInfoContinue,
     handleBoardResultsNext,
+    handleRoundResultsContinue,
     handleDealsContinue,
     handleReenter,
     handleEnterRound,

@@ -12,11 +12,14 @@ import { GameComplete } from "@/app/game/[gameId]/play/[initialSeat]/GameComplet
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
 import { EnterDealsPage } from "@/app/game/[gameId]/play/[initialSeat]/EnterDealsPage";
 import { ScoringType } from "@/db/games/types/scoring-type";
+import { GameType } from "@/db/games/types/game-type";
+import { buildTeamBoardResultTable } from "@/scoring/swiss/team-board-result-view";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
 import type { PlayState, Schedule } from "@/hooks/play-state-machine";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
+import { RoundResultsLoader } from "@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage";
 import { PlayHeaderMenu } from "@/app/game/[gameId]/play/[initialSeat]/PlayHeaderMenu";
 import { FullScreenSpinner } from "@/components/common/Spinner";
 import { useScoredBoard } from "./useScoredBoard";
@@ -27,6 +30,7 @@ export type PlayHandlers = Pick<
   | "handleSitOutContinue"
   | "handleMoveInfoContinue"
   | "handleBoardResultsNext"
+  | "handleRoundResultsContinue"
   | "handleDealsContinue"
   | "handleReenter"
   | "handleEnterRound"
@@ -45,6 +49,7 @@ export function PlayStateRouter({
   playState,
   gameId,
   seat,
+  gameType,
   scoringType,
   leadCardRequired,
   handlers,
@@ -53,6 +58,7 @@ export function PlayStateRouter({
   playState: PlayState;
   gameId: string;
   seat: string;
+  gameType: GameType;
   scoringType: ScoringType;
   leadCardRequired: boolean;
   handlers: PlayHandlers;
@@ -159,11 +165,26 @@ export function PlayStateRouter({
       return (
         <BoardResultsLoader
           gameId={gameId}
+          seat={seat}
+          gameType={gameType}
           scoringType={scoringType}
           boardNumber={boardNumber}
           playedBoards={playedBoards}
           lastBoardOfRound={lastBoardOfRound}
           onNext={handlers.handleBoardResultsNext}
+          headerRight={headerRight}
+        />
+      );
+    }
+
+    case "roundResults": {
+      const round = schedule.rounds[playState.roundIndex];
+      return (
+        <RoundResultsLoader
+          gameId={gameId}
+          seat={seat}
+          boards={round.boards}
+          onContinue={handlers.handleRoundResultsContinue}
           headerRight={headerRight}
         />
       );
@@ -202,6 +223,8 @@ export function PlayStateRouter({
 
 function BoardResultsLoader({
   gameId,
+  seat,
+  gameType,
   scoringType,
   boardNumber,
   playedBoards,
@@ -210,6 +233,8 @@ function BoardResultsLoader({
   headerRight,
 }: {
   gameId: string;
+  seat: string;
+  gameType: GameType;
   scoringType: ScoringType;
   boardNumber: number;
   playedBoards: number[];
@@ -226,6 +251,8 @@ function BoardResultsLoader({
     <TravellerProvider boardNumber={viewingBoard}>
       <BoardResultsContent
         gameId={gameId}
+        seat={seat}
+        gameType={gameType}
         scoringType={scoringType}
         viewingBoard={viewingBoard}
         playedBoards={playedBoards}
@@ -240,6 +267,8 @@ function BoardResultsLoader({
 
 function BoardResultsContent({
   gameId,
+  seat,
+  gameType,
   scoringType,
   viewingBoard,
   playedBoards,
@@ -249,6 +278,8 @@ function BoardResultsContent({
   headerRight,
 }: {
   gameId: string;
+  seat: string;
+  gameType: GameType;
   scoringType: ScoringType;
   viewingBoard: number;
   playedBoards: number[];
@@ -257,10 +288,35 @@ function BoardResultsContent({
   onNext: () => void;
   headerRight?: React.ReactNode;
 }) {
-  const scoredBoard = useScoredBoard(gameId, viewingBoard, scoringType);
+  const isTeams = gameType === "TEAMS";
+
+  // The board's pooled traveller: for a teams game the field-wide view is
+  // cross-IMP (the "X-IMP" side of the toggle); for pairs it is the game's own
+  // scoring type.
+  const scoredBoard = useScoredBoard(
+    gameId,
+    viewingBoard,
+    isTeams ? "XIMP" : scoringType,
+  );
   // The deal for the board being viewed rides the same traveller context, so
-  // it appears (and updates live) once anyone has entered it.
-  const { deal } = useTravellerContext();
+  // it appears (and updates live) once anyone has entered it. For a teams game
+  // the pooled instances also drive the "Team Result" table (this table vs the
+  // other room), built from the board rows every device already holds.
+  const { deal, instances } = useTravellerContext();
+
+  const teamResultTable = isTeams
+    ? buildTeamBoardResultTable(
+        instances.map((i) => ({
+          tableNumber: i.tableNumber,
+          ns: i.participants.ns,
+          ew: i.participants.ew,
+          result: i.currentResult as never,
+          status: i.status,
+        })),
+        viewingBoard,
+        seat,
+      )
+    : null;
 
   if (!scoredBoard) {
     return <FullScreenSpinner />;
@@ -272,6 +328,7 @@ function BoardResultsContent({
       playedBoards={playedBoards}
       lastBoardOfRound={lastBoardOfRound}
       scoredBoard={scoredBoard}
+      teamResultTable={teamResultTable}
       deal={deal}
       onBoardSelected={onBoardSelected}
       onNext={onNext}

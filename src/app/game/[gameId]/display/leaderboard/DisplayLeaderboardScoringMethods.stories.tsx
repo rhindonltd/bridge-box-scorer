@@ -144,30 +144,6 @@ function teamSwissVp(): OverallScoreAndParticipant {
   };
 }
 
-/** Teams overall: a single cumulative score column. */
-function teamOverall(): OverallScoreAndParticipant {
-  const rows = [
-    { id: "T1", name: "Aces", score: 78 },
-    { id: "T2", name: "Kings", score: 61 },
-    { id: "T3", name: "Queens", score: 42 },
-  ];
-  return {
-    type: "TEAM_OVERALL",
-    participants: rows.map((r, i) => team(r.id, r.name, i)),
-    overallScore: {
-      type: "TEAM_OVERALL",
-      mode: "TEAM",
-      scoring: "OVERALL",
-      lines: rows.map((r, i) => ({
-        rank: i + 1,
-        tied: false,
-        teamId: r.id,
-        score: r.score,
-      })),
-    },
-  };
-}
-
 /** Board-a-Match teams (barometer / Swiss Teams): per-round board fractions. */
 function teamBam(): OverallScoreAndParticipant {
   const rows = [
@@ -283,15 +259,6 @@ export const SwissTeamsVictoryPoints: Story = {
     eventName: "Swiss Teams",
     leaderboard: teamSwissVp(),
     sections: [{ section: "A", ...teamSwissVp() }],
-  },
-};
-
-/** Teams overall: a single cumulative score column, names expandable. */
-export const TeamsOverall: Story = {
-  args: {
-    eventName: "Teams",
-    leaderboard: teamOverall(),
-    sections: [{ section: "A", ...teamOverall() }],
   },
 };
 

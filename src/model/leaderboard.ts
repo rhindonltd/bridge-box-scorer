@@ -55,21 +55,6 @@ export interface TeamImpAggregateOverallScore {
   impsByRound: Record<number, number>;
 }
 
-export interface TeamMatchLineScore {
-  board: number;
-  opponent: string;
-  teamScore: number;
-  opponentScore: number;
-}
-
-export interface TeamMatchScore {
-  teamMatchLineScores: TeamMatchLineScore[];
-}
-
-export interface OverallTeamResult {
-  score: number;
-}
-
 /**
  * A board-comparison teams standing for one team (shared by Board-a-Match and
  * Point-a-Board).
@@ -113,8 +98,6 @@ interface ScoreByModeAndScoring {
     SWISS_VP: SwissVpOverallScore;
   };
   TEAM: {
-    MATCH: TeamMatchScore;
-    OVERALL: OverallTeamResult;
     SWISS_VP: SwissVpOverallScore;
     IMP_AGG: TeamImpAggregateOverallScore;
     BAM: BoardComparisonOverallScore;
@@ -161,8 +144,6 @@ export type PairMatchpointOverallScore = OverallScoreBase<"PAIR", "MP">;
 export type PairXIMPOverallScore = OverallScoreBase<"PAIR", "XIMP">;
 export type PairIMPOverallScore = OverallScoreBase<"PAIR", "IMP">;
 export type PairSwissVpOverallScore = OverallScoreBase<"PAIR", "SWISS_VP">;
-export type TeamMatchOverallScore = OverallScoreBase<"TEAM", "MATCH">;
-export type TeamOverallOverallScore = OverallScoreBase<"TEAM", "OVERALL">;
 export type TeamSwissVpOverallScore = OverallScoreBase<"TEAM", "SWISS_VP">;
 
 /**
@@ -202,8 +183,6 @@ export type OverallScore =
   | PairXIMPOverallScore
   | PairIMPOverallScore
   | PairSwissVpOverallScore
-  | TeamMatchOverallScore
-  | TeamOverallOverallScore
   | TeamSwissVpOverallScore
   | TeamImpAggOverallScore
   | TeamBamOverallScore
