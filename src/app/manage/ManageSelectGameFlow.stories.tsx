@@ -16,6 +16,7 @@ const games: BridgeGame[] = [
     leadCardRequired: true,
     selectedMovement: null,
     handEntryEnabled: false,
+    combinedRanking: true,
     bridgewebsEventId: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

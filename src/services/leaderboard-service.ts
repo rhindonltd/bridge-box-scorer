@@ -350,6 +350,7 @@ async function readLeaderboardInputs(
   gameId: string,
 ): Promise<{
   scoringType: ScoringType;
+  combinedRanking: boolean;
   swissVpMode: SwissVpMode;
   isTeamsVp: boolean;
   teamsBoardComparison: BoardComparisonScoring | null;
@@ -397,6 +398,7 @@ async function readLeaderboardInputs(
 
   return {
     scoringType: game!.scoringType,
+    combinedRanking: game!.combinedRanking,
     swissVpMode,
     isTeamsVp,
     teamsBoardComparison,
@@ -417,9 +419,13 @@ async function readLeaderboardInputs(
 export async function buildLeaderboards(
   db: Db,
   gameId: string,
-): Promise<{ leaderboard: LeaderboardResult; sections: SectionLeaderboard[] }> {
+): Promise<{
+  leaderboard: LeaderboardResult | null;
+  sections: SectionLeaderboard[];
+}> {
   const {
     scoringType,
+    combinedRanking,
     swissVpMode,
     isTeamsVp,
     teamsBoardComparison,
@@ -428,28 +434,39 @@ export async function buildLeaderboards(
     pairs,
     teams,
   } = await readLeaderboardInputs(db, gameId);
+
+  const sections = computeSections(
+    boardRows,
+    pairs,
+    scoringType,
+    swissVpMode,
+    isTeamsVp,
+    teamsBoardComparison,
+    barometer,
+    teams,
+  );
+
+  // The director can turn off the combined overall ranking for a multi-section
+  // event, keeping sections separate. It stays on by default, and is always
+  // produced for a single-section game (where "combined" and the one section
+  // are identical anyway).
+  const showCombined = combinedRanking || sections.length <= 1;
+
   return {
-    leaderboard: computeCombined(
-      boardRows,
-      pairs,
-      gameId,
-      scoringType,
-      swissVpMode,
-      isTeamsVp,
-      teamsBoardComparison,
-      barometer,
-      teams,
-    ),
-    sections: computeSections(
-      boardRows,
-      pairs,
-      scoringType,
-      swissVpMode,
-      isTeamsVp,
-      teamsBoardComparison,
-      barometer,
-      teams,
-    ),
+    leaderboard: showCombined
+      ? computeCombined(
+          boardRows,
+          pairs,
+          gameId,
+          scoringType,
+          swissVpMode,
+          isTeamsVp,
+          teamsBoardComparison,
+          barometer,
+          teams,
+        )
+      : null,
+    sections,
   };
 }
 

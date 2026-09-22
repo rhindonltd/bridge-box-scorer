@@ -72,6 +72,31 @@ export async function startGame(gameId: string): Promise<void> {
 }
 
 /**
+ * Set whether a multi-section game also shows a combined overall ranking across
+ * all sections (director-only). The fresh game row is broadcast to every
+ * device, and any open leaderboard display gains/drops the combined view live.
+ * Throws with the server's error message on failure.
+ */
+export async function updateCombinedRanking(
+  gameId: string,
+  combinedRanking: boolean,
+): Promise<void> {
+  const res = await fetch(`/api/games/${gameId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "x-director-token": getDirectorToken(gameId) ?? "",
+    },
+    body: JSON.stringify({ combinedRanking }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to update setting");
+  }
+}
+
+/**
  * Claim a director share code. No auth (the caller has no token yet) — the code
  * is the credential. On success the minted director token is stored locally
  * keyed by the resolved gameId, which is returned. Throws with the server's

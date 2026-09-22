@@ -808,8 +808,89 @@ describe("buildLeaderboards", () => {
 
     const { leaderboard, sections } = await buildLeaderboards(db, "game-1");
 
-    expect(leaderboard.type).toBe("PAIR_MP");
+    expect(leaderboard).not.toBeNull();
+    expect(leaderboard!.type).toBe("PAIR_MP");
     expect(sections).toHaveLength(1);
     expect(sections[0].section).toBe("A");
+  });
+
+  it("omits the combined leaderboard for a multi-section game when combined ranking is off", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+      combinedRanking: false,
+    } as BridgeGame);
+
+    const { buildLeaderboards } = await import("./leaderboard-service");
+    mockOverallPlugin({ type: "PAIR_MP", lines: [] });
+    vi.mocked(scoreBoard).mockReturnValue({
+      pluginId: "MP",
+      board: 1,
+      lines: [],
+    } as any);
+
+    const db = dbWithBoards([
+      {
+        boardNumber: 1,
+        ns: "1",
+        ew: "2",
+        section: "A",
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+      },
+      {
+        boardNumber: 1,
+        ns: "1",
+        ew: "2",
+        section: "B",
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+      },
+    ]);
+
+    const { leaderboard, sections } = await buildLeaderboards(db, "game-1");
+
+    // No combined ranking, but both sections are still ranked separately.
+    expect(leaderboard).toBeNull();
+    expect(sections.map((s) => s.section)).toEqual(["A", "B"]);
+  });
+
+  it("still produces the combined leaderboard for a single-section game even when combined ranking is off", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "PAIRS",
+      scoringType: "MP",
+      combinedRanking: false,
+    } as BridgeGame);
+
+    const { buildLeaderboards } = await import("./leaderboard-service");
+    mockOverallPlugin({ type: "PAIR_MP", lines: [] });
+    vi.mocked(scoreBoard).mockReturnValue({
+      pluginId: "MP",
+      board: 1,
+      lines: [],
+    } as any);
+
+    const db = dbWithBoards([
+      {
+        boardNumber: 1,
+        ns: "1",
+        ew: "2",
+        section: "A",
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+      },
+    ]);
+
+    const { leaderboard, sections } = await buildLeaderboards(db, "game-1");
+
+    // A single section: "combined" and the one section are identical, so the
+    // combined view is kept regardless of the flag.
+    expect(leaderboard).not.toBeNull();
+    expect(sections).toHaveLength(1);
   });
 });

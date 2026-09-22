@@ -110,6 +110,17 @@ on which boards.
   and delete sections, and choose a movement **for each section**
   independently.
 
+When you have more than one section, the section manager also has a **Combined /
+Separate** switch for the rankings:
+
+- **Combined** (the default) — as well as each section's own ranking, the app
+  produces one overall ranking that pools every section together.
+- **Separate** — each section is ranked on its own, with no combined overall
+  ranking.
+
+You can change this at any time; the leaderboard and any room display update to
+match straight away.
+
 The movement picker shows the recommended movements for your table count,
 **grouped by how many boards a pair plays** (which effectively determines
 session length). Each option is a card showing the movement name, number of

@@ -37,6 +37,14 @@ export const games = sqliteTable("games", {
   handEntryEnabled: integer("hand_entry_enabled", { mode: "boolean" })
     .notNull()
     .default(false),
+  // For a multi-section event, whether to also produce a combined overall
+  // ranking pooled across all sections (in addition to the per-section
+  // rankings). When false, sections stay separate — no combined leaderboard.
+  // Defaults on to preserve the historic always-combined behaviour; only
+  // meaningful when the game has more than one section.
+  combinedRanking: integer("combined_ranking", { mode: "boolean" })
+    .notNull()
+    .default(true),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

@@ -16,6 +16,7 @@ const game: BridgeGame = {
   director: "Jacqui",
   gameType: "PAIRS",
   scoringType: "MP",
+  combinedRanking: true,
   sectionName: "A",
   eventDate: "2024-11-18T00:00:00.000Z",
   tables: 1,

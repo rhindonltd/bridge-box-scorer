@@ -11,7 +11,9 @@ export type SectionLeaderboard = OverallScoreAndParticipant & {
 };
 
 export interface LeaderboardSnapshot {
-  leaderboard: OverallScoreAndParticipant;
+  // Null when the director has turned off the combined overall ranking for a
+  // multi-section event (sections stay separate).
+  leaderboard: OverallScoreAndParticipant | null;
   sections: SectionLeaderboard[];
 }
 

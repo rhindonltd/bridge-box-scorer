@@ -36,6 +36,13 @@
       "when": 1790068422487,
       "tag": "0004_classy_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790068896852,
+      "tag": "0005_red_earthquake",
+      "breakpoints": true
     }
   ]
 }

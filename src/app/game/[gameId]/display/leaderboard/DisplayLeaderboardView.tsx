@@ -93,29 +93,38 @@ export function DisplayLeaderboardView({
   scoringMode,
 }: DisplayLeaderboardViewProps) {
   const multiSection = sections.length > 1;
+  // The director can turn off the combined overall ranking for a multi-section
+  // event, in which case there is no combined leaderboard to show — only the
+  // per-section views rotate.
+  const hasCombined = combined !== null;
 
-  // The ordered set of views to rotate through. Combined first, then each
-  // section in order. Single-section games have just the one (combined) view.
+  // The ordered set of views to rotate through: the Combined view first (when
+  // present), then each section in order. With the combined ranking turned off
+  // this is just the sections; a single-section game is just the one combined
+  // view. The order is never empty as long as there is any data.
   const viewOrder = useMemo<View[]>(
-    () =>
-      multiSection
-        ? ["combined", ...sections.map((s) => s.section)]
-        : ["combined"],
-    [multiSection, sections],
+    () => [
+      ...(hasCombined ? (["combined"] as View[]) : []),
+      ...(multiSection ? sections.map((s) => s.section) : []),
+    ],
+    [hasCombined, multiSection, sections],
   );
 
-  const [selected, setSelected] = useState<View>("combined");
+  // Start on the first available view (Combined when present, otherwise the
+  // first section).
+  const firstView: View = viewOrder[0] ?? "combined";
+  const [selected, setSelected] = useState<View>(firstView);
 
   // Derive the effective view instead of correcting state in an effect: if the
-  // set of sections changes underneath us (e.g. a re-score removes a section)
-  // so the stored selection is no longer valid, fall back to Combined for this
-  // render.
-  const view: View = viewOrder.includes(selected) ? selected : "combined";
+  // set of views changes underneath us (e.g. a re-score removes a section, or
+  // the director turns the combined ranking off) so the stored selection is no
+  // longer valid, fall back to the first available view for this render.
+  const view: View = viewOrder.includes(selected) ? selected : firstView;
 
   const advanceView = useCallback(() => {
     setSelected((current) => {
       const idx = viewOrder.indexOf(current);
-      // -1 (current no longer valid) advances to viewOrder[0] = Combined.
+      // -1 (current no longer valid) advances to viewOrder[0].
       return viewOrder[(idx + 1) % viewOrder.length];
     });
   }, [viewOrder]);
@@ -123,14 +132,10 @@ export function DisplayLeaderboardView({
   const selectView = useCallback((next: View) => setSelected(next), []);
 
   // Resolve the leaderboard for the active view.
-  // The `?? combined` fallback is defensive-only: a non-combined `view` is
-  // always present in `viewOrder`, which is derived from `sections`, so `find`
-  // always succeeds. It is therefore unreachable and excluded from coverage.
-  /* v8 ignore next 3 */
   const active: OverallScoreAndParticipant | null =
     view === "combined"
       ? combined
-      : (sections.find((s) => s.section === view) ?? combined);
+      : (sections.find((s) => s.section === view) ?? null);
 
   // Heading is the event name, with the section appended when a specific
   // section (not the combined view) is being shown.
@@ -173,13 +178,15 @@ export function DisplayLeaderboardView({
       <div className="flex flex-wrap items-center justify-between gap-3 px-6 pt-5 pb-3">
         <h1 className="text-4xl font-bold text-gray-900">{heading}</h1>
 
-        {multiSection && (
+        {viewOrder.length > 1 && (
           <div className="flex flex-wrap gap-2">
-            <ViewTab
-              label="Combined"
-              active={view === "combined"}
-              onClick={() => selectView("combined")}
-            />
+            {hasCombined && (
+              <ViewTab
+                label="Combined"
+                active={view === "combined"}
+                onClick={() => selectView("combined")}
+              />
+            )}
             {sections.map((s) => (
               <ViewTab
                 key={s.section}

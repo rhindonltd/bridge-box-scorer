@@ -1,0 +1,1 @@
+ALTER TABLE `games` ADD `combined_ranking` integer DEFAULT true NOT NULL;

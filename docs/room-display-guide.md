@@ -59,8 +59,10 @@ and updating as results come in:
 - For a **Swiss Teams** game, Victory Points with a column per round and each
   team's running total.
 - For **teams** games, the team match / overall standings.
-- For **multi-section** events, each section's standings plus a combined
-  overall ranking across all sections.
+- For **multi-section** events, each section's standings — plus a combined
+  overall ranking across all sections when the director has set the sections to
+  rank **Combined** (see the director guide). With **Separate** sections there
+  is no combined ranking, just the per-section standings.
 
 The board is designed to run hands-free on the screen:
 
@@ -68,9 +70,10 @@ The board is designed to run hands-free on the screen:
   section is on screen).
 - When there are lots of pairs and the screen is wide, the standings fill it by
   **spreading into two columns** so more places show at once.
-- For a **multi-section** event it **cycles automatically** — combined, then
-  each section in turn, about a minute each. Tapping a **section tab** jumps
-  straight to that view and restarts the cycle.
+- For a **multi-section** event it **cycles automatically** through the
+  available views — the combined ranking (if shown), then each section in turn,
+  about a minute each. Tapping a **tab** jumps straight to that view and
+  restarts the cycle.
 - If a list is still too long to fit, it **scrolls slowly** to the bottom and
   back so every place comes into view. The column headings stay in place at the
   top while the places scroll underneath, so it's always clear what each column

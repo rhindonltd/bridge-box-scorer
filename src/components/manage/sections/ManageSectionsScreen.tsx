@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { useSections } from "@/hooks/sections";
+import { useRequiredGame } from "@/context/GameContext";
 import { nextSectionLetter } from "@/model/section-letter";
 import {
   createSection,
   renameSection,
   deleteSection,
 } from "@/lib/section-service";
+import { updateCombinedRanking } from "@/lib/game-service";
+import { Toggle } from "@/components/common/Toggle";
 import { SectionManager } from "./SectionManager";
 import { SectionModal, SectionModalResult } from "./SectionModal";
 import { reportError } from "@/lib/report-error";
@@ -30,7 +33,22 @@ interface Props {
  */
 export function ManageSectionsScreen({ gameId }: Props) {
   const { sections } = useSections(gameId);
+  const { game, mutateGame } = useRequiredGame();
   const [modalOpen, setModalOpen] = useState(false);
+  const combinedRankingLabelId = useId();
+
+  async function handleToggleCombinedRanking(combined: boolean) {
+    // Optimistically reflect the choice; the server broadcasts the fresh game
+    // row (and a refreshed leaderboard) to every device on success.
+    mutateGame({ ...game, combinedRanking: combined }, false);
+    try {
+      await updateCombinedRanking(gameId, combined);
+    } catch (err) {
+      // Roll back the optimistic change on failure.
+      mutateGame({ ...game, combinedRanking: !combined }, false);
+      reportError(err);
+    }
+  }
 
   const newLetter = nextSectionLetter(sections.map((s) => s.section));
   const firstAdd = sections.length === 1;
@@ -57,6 +75,23 @@ export function ManageSectionsScreen({ gameId }: Props) {
 
   return (
     <>
+      {sections.length > 1 && (
+        <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-3">
+          <label
+            id={combinedRankingLabelId}
+            className="text-sm font-semibold text-gray-700"
+          >
+            Combined ranking across sections
+          </label>
+          <Toggle
+            value={game.combinedRanking}
+            offLabel="Separate"
+            onLabel="Combined"
+            labelledBy={combinedRankingLabelId}
+            onChange={handleToggleCombinedRanking}
+          />
+        </div>
+      )}
       <SectionManager
         sections={sections}
         showMovement={false}
