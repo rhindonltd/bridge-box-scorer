@@ -15,7 +15,7 @@ website/
 ├── index.html      # The whole page
 ├── styles.css      # All styling (design tokens + components)
 ├── assets/
-│   └── bridge-box-logo.png   # Copied from /public/bridge-box-logo.png
+│   └── bridge-box-logo.svg   # Site logo / favicon
 └── README.md       # This file
 ```
 
@@ -63,6 +63,7 @@ Search `index.html` for `IMAGE SLOT` (in HTML comments) or the class
 | Features      | Screenshot: session timer with director controls                      | 16:9             |
 | Features      | Screenshot: live leaderboard (per-section & combined)                 | 16:9             |
 | Features      | Screenshot: traveller sheet for a single board                        | 16:9             |
+| Features      | Screenshot: entering the dealt cards for a board (hand records)        | 16:9             |
 | How it works  | Photo: the Bridge Box plugged in and switched on at the venue         | 16:9             |
 | How it works  | Screenshot: score entry on a player's phone                           | 3:4 (portrait)   |
 | Cloud         | Screenshot: event results published on the BridgeBox website          | 4:3              |

@@ -16,6 +16,12 @@ interface Props {
   gameId: string;
   /** The seat this device holds (section-qualified, e.g. "A3NS"). */
   seat: string;
+  /**
+   * Screen-specific entries added to the top of the menu, above the shared play
+   * actions. Used by a screen that has its own view options — e.g. the board
+   * results screen contributes its "Results / Deal" choice here.
+   */
+  extraItems?: HeaderMenuItem[];
 }
 
 /**
@@ -28,7 +34,7 @@ interface Props {
  * The pair shown in "Pair details" comes from {@link useAssignment}, so it is
  * available in every play state without a per-screen lookup.
  */
-export function PlayHeaderMenu({ gameId, seat }: Props) {
+export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   const { assignment, pair } = useAssignment();
   const isDirector = useIsDirector(gameId);
 
@@ -42,6 +48,8 @@ export function PlayHeaderMenu({ gameId, seat }: Props) {
   const manageItem = usePlayManageSwitchItem(gameId, "toManage");
 
   const items: HeaderMenuItem[] = [
+    // Screen-specific view options (e.g. Results / Deal) come first.
+    ...extraItems,
     { label: "Change device", onSelect: () => setChangeDeviceOpen(true) },
     { label: "Pair details", onSelect: () => setPairDetailsOpen(true) },
     // A director's play→manage switch (folded / small-screen form). The visible

@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { GameCompleteView } from "@/app/game/[gameId]/play/[initialSeat]/GameCompleteView";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
+import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
 import { mockGame } from "@/mocks/fixtures/game";
 import type { OverallScoreAndParticipant } from "@/model/leaderboard";
 
@@ -39,7 +41,7 @@ const meta: Meta<typeof GameCompleteView> = {
   title: "App/Play/Game/Assignment/GameCompleteView",
   component: GameCompleteView,
   // GamePageLayout's GameHeaderBar reads the game from context.
-  decorators: [withGame(mockGame)],
+  decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
   parameters: {
     layout: "fullscreen",
     // GamePageLayout's header uses the Next app router (useBackNavigation), so
@@ -53,6 +55,7 @@ const meta: Meta<typeof GameCompleteView> = {
   args: {
     leaderboard: null,
     isLoading: false,
+    headerRight: storyPlayHeader(),
   },
 };
 

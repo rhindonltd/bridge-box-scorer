@@ -113,6 +113,32 @@ describe("PlayHeaderMenu", () => {
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage");
   });
 
+  it("renders screen-specific extra items and fires their handler", async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <PlayHeaderMenu
+        gameId="g1"
+        seat="A1NS"
+        extraItems={[
+          { label: "Results", active: true, onSelect: vi.fn() },
+          { label: "Deal", active: false, onSelect },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+
+    // The extra items appear alongside the shared actions.
+    expect(
+      screen.getByRole("menuitem", { name: "Results" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Deal" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("menuitem", { name: "Deal" }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
   it("passes a null pairId when no assignment is loaded yet", async () => {
     // No assignment/pair yet (still loading): `assignment?.id ?? null` takes
     // the null fallback branch.

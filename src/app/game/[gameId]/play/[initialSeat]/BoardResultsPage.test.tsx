@@ -33,10 +33,8 @@ vi.mock("@/components/traveller/Traveller", () => ({
 describe("BoardResultsPage", () => {
   const baseProps = {
     board: 5,
-    playedBoards: [5],
     lastBoardOfRound: false,
     scoredBoard: { pluginId: "MP", board: 5, lines: [] } as any,
-    onBoardSelected: vi.fn(),
     onNext: vi.fn(),
   };
 
@@ -87,24 +85,31 @@ describe("BoardResultsPage", () => {
     expect(screen.getByTestId("play-menu")).toBeInTheDocument();
   });
 
-  it("does not offer a Show hand toggle when no deal has been entered", () => {
-    render(<BoardResultsPage {...baseProps} deal={null} />);
-    expect(screen.queryByTestId("show-hand-toggle")).not.toBeInTheDocument();
-  });
-
-  it("reveals the board's hand behind the Show hand toggle when a deal exists", () => {
+  const sampleDeal = () => {
     const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
-    const deal = {
+    return {
       N: ranks.map((r): Card => `S${r}`),
       E: ranks.map((r): Card => `H${r}`),
       S: ranks.map((r): Card => `D${r}`),
       W: ranks.map((r): Card => `C${r}`),
     };
+  };
 
-    render(<BoardResultsPage {...baseProps} deal={deal} />);
-
+  it("shows the results (traveller) by default, even when a deal exists", () => {
+    render(<BoardResultsPage {...baseProps} deal={sampleDeal()} />);
+    expect(screen.getByTestId("traveller")).toBeInTheDocument();
     expect(screen.queryByTestId("deal-display")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("show-hand-toggle"));
+  });
+
+  it("shows the deal instead of the results when showDeal is set", () => {
+    render(<BoardResultsPage {...baseProps} deal={sampleDeal()} showDeal />);
     expect(screen.getByTestId("deal-display")).toBeInTheDocument();
+    expect(screen.queryByTestId("traveller")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the results when showDeal is set but no deal exists", () => {
+    render(<BoardResultsPage {...baseProps} deal={null} showDeal />);
+    expect(screen.getByTestId("traveller")).toBeInTheDocument();
+    expect(screen.queryByTestId("deal-display")).not.toBeInTheDocument();
   });
 });

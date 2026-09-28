@@ -153,6 +153,9 @@ describe("schedule-service", () => {
       expect(result!.rounds).toHaveLength(3);
       expect(result!.rounds[0].roundNumber).toBe(1);
       expect(result!.rounds[0].boards).toEqual([1, 2]);
+      // This pair is the NS assignment in both active rounds.
+      expect(result!.rounds[0].side).toBe("NS");
+      expect(result!.rounds[1].side).toBe("NS");
       expect(result!.rounds[1].roundNumber).toBe(2);
       expect(result!.rounds[2].roundNumber).toBe(3);
       expect(result!.rounds[2].sitOut).toBe(true);
@@ -304,6 +307,8 @@ describe("schedule-service", () => {
       expect(result).not.toBeNull();
       expect(result!.side).toBe("EW");
       expect(result!.assignmentId).toBe("assign-2");
+      // This pair is the EW assignment for the round.
+      expect(result!.rounds[0].side).toBe("EW");
     });
 
     it("skips participants with a missing player or blank seat, and assignments with no seat", async () => {

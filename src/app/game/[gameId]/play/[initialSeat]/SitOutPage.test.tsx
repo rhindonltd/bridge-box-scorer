@@ -8,7 +8,7 @@ vi.mock("@/context/GameContext", () => ({
 import { SitOutPage } from "./SitOutPage";
 
 describe("SitOutPage", () => {
-  it("shows the table when one is provided", () => {
+  it("shows the table where the sit-out is happening", () => {
     render(
       <SitOutPage
         round={5}
@@ -17,10 +17,5 @@ describe("SitOutPage", () => {
       />,
     );
     expect(screen.getByText("Sit Out at Table 3")).toBeInTheDocument();
-  });
-
-  it("falls back to a plain 'Sit Out' when no table is provided", () => {
-    render(<SitOutPage round={5} onHandleSitOutContinue={vi.fn()} />);
-    expect(screen.getByText("Sit Out")).toBeInTheDocument();
   });
 });

@@ -21,6 +21,7 @@ import type { PlayState, Schedule } from "@/hooks/play-state-machine";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
 import { RoundResultsLoader } from "@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage";
 import { PlayHeaderMenu } from "@/app/game/[gameId]/play/[initialSeat]/PlayHeaderMenu";
+import type { HeaderMenuItem } from "@/components/layout/HeaderMenu";
 import { FullScreenSpinner } from "@/components/common/Spinner";
 import { useScoredBoard } from "./useScoredBoard";
 
@@ -159,9 +160,6 @@ export function PlayStateRouter({
       const lastBoardOfRound =
         playState.boardIndex === round.boards.length - 1;
 
-      // All boards played so far in this round (up to and including current).
-      const playedBoards = round.boards.slice(0, playState.boardIndex + 1);
-
       return (
         <BoardResultsLoader
           gameId={gameId}
@@ -169,10 +167,8 @@ export function PlayStateRouter({
           gameType={gameType}
           scoringType={scoringType}
           boardNumber={boardNumber}
-          playedBoards={playedBoards}
           lastBoardOfRound={lastBoardOfRound}
           onNext={handlers.handleBoardResultsNext}
-          headerRight={headerRight}
         />
       );
     }
@@ -208,7 +204,8 @@ export function PlayStateRouter({
       return (
         <MoveInfoPage
           roundNumber={roundSchedule.roundNumber}
-          tableNumber={roundSchedule.tableNumber!}
+          tableNumber={roundSchedule.tableNumber}
+          side={roundSchedule.side}
           sitOut={roundSchedule.sitOut ?? false}
           onMoveInfoContinue={handlers.handleMoveInfoContinue}
           headerRight={headerRight}
@@ -227,39 +224,30 @@ function BoardResultsLoader({
   gameType,
   scoringType,
   boardNumber,
-  playedBoards,
   lastBoardOfRound,
   onNext,
-  headerRight,
 }: {
   gameId: string;
   seat: string;
   gameType: GameType;
   scoringType: ScoringType;
   boardNumber: number;
-  playedBoards: number[];
   lastBoardOfRound: boolean;
   onNext: () => void;
-  headerRight?: React.ReactNode;
 }) {
-  const [viewingBoard, setViewingBoard] = useState(boardNumber);
-
-  // The traveller for the board being viewed comes live from the traveller
-  // context; switching boards re-keys the provider so it requests/joins the
-  // new board's room.
+  // The traveller for the board comes live from the traveller context. The
+  // board-results screen builds its own play header menu (it contributes the
+  // Results / Deal view options), so no headerRight is threaded in here.
   return (
-    <TravellerProvider boardNumber={viewingBoard}>
+    <TravellerProvider boardNumber={boardNumber}>
       <BoardResultsContent
         gameId={gameId}
         seat={seat}
         gameType={gameType}
         scoringType={scoringType}
-        viewingBoard={viewingBoard}
-        playedBoards={playedBoards}
+        board={boardNumber}
         lastBoardOfRound={lastBoardOfRound}
-        onBoardSelected={setViewingBoard}
         onNext={onNext}
-        headerRight={headerRight}
       />
     </TravellerProvider>
   );
@@ -270,32 +258,32 @@ function BoardResultsContent({
   seat,
   gameType,
   scoringType,
-  viewingBoard,
-  playedBoards,
+  board,
   lastBoardOfRound,
-  onBoardSelected,
   onNext,
-  headerRight,
 }: {
   gameId: string;
   seat: string;
   gameType: GameType;
   scoringType: ScoringType;
-  viewingBoard: number;
-  playedBoards: number[];
+  board: number;
   lastBoardOfRound: boolean;
-  onBoardSelected: (board: number) => void;
   onNext: () => void;
-  headerRight?: React.ReactNode;
 }) {
   const isTeams = gameType === "TEAMS";
+
+  // When a deal has been entered for the board, the player can switch the main
+  // view between the results and the hand diagram. That choice lives in the
+  // play header menu (below), so it sits with the other header actions rather
+  // than adding a control to the board area. `false` = results (the default).
+  const [showDeal, setShowDeal] = useState(false);
 
   // The board's pooled traveller: for a teams game the field-wide view is
   // cross-IMP (the "X-IMP" side of the toggle); for pairs it is the game's own
   // scoring type.
   const scoredBoard = useScoredBoard(
     gameId,
-    viewingBoard,
+    board,
     isTeams ? "XIMP" : scoringType,
   );
   // The deal for the board being viewed rides the same traveller context, so
@@ -313,7 +301,7 @@ function BoardResultsContent({
           result: i.currentResult as never,
           status: i.status,
         })),
-        viewingBoard,
+        board,
         seat,
       )
     : null;
@@ -322,17 +310,31 @@ function BoardResultsContent({
     return <FullScreenSpinner />;
   }
 
+  // A deal (once entered) adds a "Results / Deal" choice to the play header
+  // menu, with the current view ticked.
+  const viewItems: HeaderMenuItem[] = deal
+    ? [
+        {
+          label: "Results",
+          active: !showDeal,
+          onSelect: () => setShowDeal(false),
+        },
+        { label: "Deal", active: showDeal, onSelect: () => setShowDeal(true) },
+      ]
+    : [];
+
   return (
     <BoardResultsPage
-      board={viewingBoard}
-      playedBoards={playedBoards}
+      board={board}
       lastBoardOfRound={lastBoardOfRound}
       scoredBoard={scoredBoard}
       teamResultTable={teamResultTable}
       deal={deal}
-      onBoardSelected={onBoardSelected}
+      showDeal={showDeal}
       onNext={onNext}
-      headerRight={headerRight}
+      headerRight={
+        <PlayHeaderMenu gameId={gameId} seat={seat} extraItems={viewItems} />
+      }
     />
   );
 }

@@ -23,6 +23,8 @@ export interface SeatPlayer {
 export interface RoundSchedule {
   roundNumber: number;
   tableNumber: number;
+  /** Which side this pair sits for the round (can switch between rounds). */
+  side?: "NS" | "EW";
   boards: number[];
   boardStatuses: {
     boardNumber: number;

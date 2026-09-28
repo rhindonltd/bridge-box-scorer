@@ -44,7 +44,7 @@ export async function getSchedule(db: Db, seat: string) {
   // Game-wide lookup from an assignment id to the two players sitting there.
   const assignmentToPlayers = await buildAssignmentPlayerLookup(db);
 
-  const rounds = assembleRounds(pairBoards, assignmentToPlayers);
+  const rounds = assembleRounds(pairBoards, assignmentToPlayers, assignmentId);
 
   const totalRounds = await countTotalRounds(db);
 
@@ -125,6 +125,8 @@ async function countTotalRounds(db: Db): Promise<number> {
 type ActiveRound = {
   roundNumber: number;
   tableNumber: number;
+  /** Which side this pair sits for the round (they can switch in some movements). */
+  side: "NS" | "EW";
   boards: number[];
   boardStatuses: { boardNumber: number; status: string | null }[];
   sitOut: boolean;
@@ -136,8 +138,9 @@ type ActiveRound = {
   };
 };
 
-type ScheduleRound = Omit<ActiveRound, "tableNumber" | "sitOut"> & {
+type ScheduleRound = Omit<ActiveRound, "tableNumber" | "side" | "sitOut"> & {
   tableNumber: number | null;
+  side?: "NS" | "EW";
   sitOut?: boolean;
 };
 
@@ -149,6 +152,7 @@ type ScheduleRound = Omit<ActiveRound, "tableNumber" | "sitOut"> & {
 function assembleRounds(
   pairBoards: PairBoardRow[],
   assignmentToPlayers: Map<string, PairPlayers>,
+  assignmentId: string,
 ): ActiveRound[] {
   // Group this pair's boards by round, and remember each round's NS/EW
   // assignment ids (constant within a round).
@@ -189,9 +193,15 @@ function assembleRounds(
         data.boards.length > 0 &&
         data.boards.every((b) => b.status === "SIT_OUT");
 
+      // Which side this pair sits this round: they are the NS assignment, else
+      // the EW one. Derived per round because some movements switch a pair's
+      // direction between rounds (e.g. Howell, arrow switch).
+      const side: "NS" | "EW" = data.ns === assignmentId ? "NS" : "EW";
+
       return {
         roundNumber,
         tableNumber: data.tableNumber,
+        side,
         boards: isSitOut
           ? []
           : data.boards.map((b) => b.boardNumber).sort((a, b) => a - b),

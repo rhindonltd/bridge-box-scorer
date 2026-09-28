@@ -23,25 +23,27 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
 }));
 
 // DealEntry is stubbed to expose the board it is rendering, whether it is in
-// read-only (already-entered) mode, and a button that submits a fixed deal.
+// read-only (already-entered) mode, and buttons that drive the deal up to the
+// page via onDealChange (the page owns the submit button, so DealEntry's own
+// submit is hidden here). "mark-complete" hands up a fixed complete deal;
+// "mark-incomplete" hands up null.
+const FIXED_DEAL = { N: [], E: [], S: [], W: [] } as Deal;
 vi.mock("@/components/deal/DealEntry", () => ({
   DealEntry: ({
     boardNumber,
-    onSubmit,
     readOnlyDeal,
+    onDealChange,
   }: {
     boardNumber: number;
     onSubmit: (deal: Deal) => void;
     readOnlyDeal?: Deal | null;
+    onDealChange?: (deal: Deal | null) => void;
   }) => (
     <div>
       <span data-testid="entry-board">{boardNumber}</span>
       <span data-testid="entry-readonly">{String(readOnlyDeal !== null)}</span>
-      <button
-        onClick={() => onSubmit({ N: [], E: [], S: [], W: [] } as Deal)}
-      >
-        submit-deal
-      </button>
+      <button onClick={() => onDealChange?.(FIXED_DEAL)}>mark-complete</button>
+      <button onClick={() => onDealChange?.(null)}>mark-incomplete</button>
     </div>
   ),
 }));
@@ -49,6 +51,12 @@ vi.mock("@/components/deal/DealEntry", () => ({
 import { EnterDealsPage } from "./EnterDealsPage";
 
 const stored = (v: boolean) => ({ stored: v });
+
+/** Complete the current board's deal, then click the action-bar "Save cards". */
+function completeAndSave() {
+  fireEvent.click(screen.getByText("mark-complete"));
+  fireEvent.click(screen.getByTestId("deal-entry-save"));
+}
 
 describe("EnterDealsPage", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -66,6 +74,30 @@ describe("EnterDealsPage", () => {
     expect(screen.getByText(/optional/i)).toBeInTheDocument();
   });
 
+  it("swaps Skip for Save (in the same action bar) as the deal completes", () => {
+    render(
+      <EnterDealsPage
+        boards={[3, 4]}
+        onSubmitDeal={vi.fn().mockResolvedValue(stored(true))}
+        onDone={vi.fn()}
+      />,
+    );
+
+    // Incomplete deal: Skip is shown, Save is not.
+    expect(screen.getByTestId("skip-deals")).toBeInTheDocument();
+    expect(screen.queryByTestId("deal-entry-save")).not.toBeInTheDocument();
+
+    // Deal becomes complete: Save replaces Skip in the action bar.
+    fireEvent.click(screen.getByText("mark-complete"));
+    expect(screen.queryByTestId("skip-deals")).not.toBeInTheDocument();
+    expect(screen.getByTestId("deal-entry-save")).toBeInTheDocument();
+
+    // Editing back to incomplete brings Skip back and removes Save.
+    fireEvent.click(screen.getByText("mark-incomplete"));
+    expect(screen.getByTestId("skip-deals")).toBeInTheDocument();
+    expect(screen.queryByTestId("deal-entry-save")).not.toBeInTheDocument();
+  });
+
   it("labels the skip button 'Skip' on the first board and 'Done' after advancing", async () => {
     const onSubmitDeal = vi.fn().mockResolvedValue(stored(true));
     render(
@@ -75,7 +107,7 @@ describe("EnterDealsPage", () => {
     expect(screen.getByTestId("skip-deals")).toHaveTextContent("Skip");
 
     // Save board 1 -> advances to board 2, where the button reads "Done".
-    fireEvent.click(screen.getByText("submit-deal"));
+    completeAndSave();
     await waitFor(() =>
       expect(screen.getByTestId("entry-board").textContent).toBe("2"),
     );
@@ -101,7 +133,7 @@ describe("EnterDealsPage", () => {
       <EnterDealsPage boards={[1, 2]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
     );
 
-    fireEvent.click(screen.getByText("submit-deal"));
+    completeAndSave();
 
     await waitFor(() =>
       expect(screen.getByTestId("entry-board").textContent).toBe("2"),
@@ -116,7 +148,7 @@ describe("EnterDealsPage", () => {
       <EnterDealsPage boards={[7]} onSubmitDeal={onSubmitDeal} onDone={onDone} />,
     );
 
-    fireEvent.click(screen.getByText("submit-deal"));
+    completeAndSave();
 
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
   });
@@ -128,7 +160,7 @@ describe("EnterDealsPage", () => {
       <EnterDealsPage boards={[1, 2]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
     );
 
-    fireEvent.click(screen.getByText("submit-deal"));
+    completeAndSave();
 
     // Still on board 1, now read-only, with a "Next board" action.
     await waitFor(() =>
@@ -151,7 +183,7 @@ describe("EnterDealsPage", () => {
       <EnterDealsPage boards={[9]} onSubmitDeal={onSubmitDeal} onDone={onDone} />,
     );
 
-    fireEvent.click(screen.getByText("submit-deal"));
+    completeAndSave();
 
     const next = await screen.findByTestId("deals-next-board");
     expect(next).toHaveTextContent("Finish");
@@ -166,7 +198,7 @@ describe("EnterDealsPage", () => {
       <EnterDealsPage boards={[1, 2]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
     );
 
-    fireEvent.click(screen.getByText("submit-deal"));
+    completeAndSave();
 
     expect(await screen.findByText("save boom")).toBeInTheDocument();
     // Still on board 1 (did not advance).
@@ -179,7 +211,7 @@ describe("EnterDealsPage", () => {
       <EnterDealsPage boards={[1]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
     );
 
-    fireEvent.click(screen.getByText("submit-deal"));
+    completeAndSave();
 
     expect(
       await screen.findByText("Could not save the cards"),
