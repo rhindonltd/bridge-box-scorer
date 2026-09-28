@@ -20,22 +20,6 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
 }));
 
 import { TimerLiveView, TimerLiveViewProps } from "./TimerLiveView";
-import { BreakDraft } from "./timer-view-types";
-
-function baseConfig(overrides: Partial<TimerLiveViewProps["config"]> = {}) {
-  return {
-    boardsPerRound: 3,
-    totalRounds: 8,
-    playMinutes: 7,
-    playSeconds: 0,
-    moveMinutes: 1,
-    moveSeconds: 30,
-    timingMode: "perRound" as const,
-    warningSeconds: 60,
-    breaks: [] as BreakDraft[],
-    ...overrides,
-  };
-}
 
 function makeProps(
   overrides: Partial<TimerLiveViewProps> = {},
@@ -48,13 +32,6 @@ function makeProps(
       round: 2,
       projectedEndDate: new Date("2024-01-01T20:30:00"),
     },
-    config: baseConfig(),
-    breakProblems: [],
-    onConfigChange: vi.fn(),
-    onAddBreak: vi.fn(),
-    onRemoveBreak: vi.fn(),
-    onBreakChange: vi.fn(),
-    onApplyChanges: vi.fn(),
     onStart: vi.fn(),
     onPause: vi.fn(),
     onNext: vi.fn(),
@@ -76,8 +53,11 @@ describe("TimerLiveView", () => {
     expect(screen.getByText("play")).toBeInTheDocument();
     expect(screen.getByText("Live End")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Apply Changes" }));
-    expect(props.onApplyChanges).toHaveBeenCalled();
+    // Config editing is not available on the live screen.
+    expect(screen.queryByLabelText("Total Rounds")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Apply Changes" }),
+    ).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));
     expect(props.onPause).toHaveBeenCalled();
@@ -122,7 +102,7 @@ describe("TimerLiveView", () => {
     expect(props.onStart).toHaveBeenCalled();
   });
 
-  it("shows 00:00 and no Live End for a finished phase", () => {
+  it("shows a completion message and no controls when finished", () => {
     render(
       <TimerLiveView
         {...makeProps({
@@ -136,7 +116,15 @@ describe("TimerLiveView", () => {
         })}
       />,
     );
-    expect(screen.getByText("00:00")).toBeInTheDocument();
+
+    expect(screen.getByText("Session complete")).toBeInTheDocument();
+
+    // None of the live controls are rendered once the session is finished.
+    expect(screen.queryByRole("button", { name: "Start" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Pause" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Next phase" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Previous phase" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "+1m" })).toBeNull();
     expect(screen.queryByText("Live End")).toBeNull();
   });
 
@@ -157,28 +145,4 @@ describe("TimerLiveView", () => {
     expect(screen.getByText("02:05")).toBeInTheDocument();
   });
 
-  it("surfaces invalid break-timing problems", () => {
-    render(
-      <TimerLiveView
-        {...makeProps({
-          breakProblems: [{ afterRound: 3, overrunMs: 5 * 60000 }],
-        })}
-      />,
-    );
-
-    const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("Break timing is invalid");
-    expect(alert).toHaveTextContent(/break after round 3/i);
-    expect(alert).toHaveTextContent(/over by about 5 min/i);
-  });
-
-  it("edits config through the shared fields", () => {
-    const onConfigChange = vi.fn();
-    render(<TimerLiveView {...makeProps({ onConfigChange })} />);
-
-    fireEvent.change(screen.getByLabelText("Total Rounds"), {
-      target: { value: "9" },
-    });
-    expect(onConfigChange).toHaveBeenCalledWith("totalRounds", 9);
-  });
 });

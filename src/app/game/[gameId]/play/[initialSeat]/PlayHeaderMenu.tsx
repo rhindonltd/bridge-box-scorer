@@ -4,6 +4,11 @@ import { useState } from "react";
 
 import { HeaderMenu, type HeaderMenuItem } from "@/components/layout/HeaderMenu";
 import { useAssignment } from "@/context/AssignmentContext";
+import { useIsDirector } from "@/hooks/use-is-director";
+import {
+  PlayManageSwitch,
+  usePlayManageSwitchItem,
+} from "@/components/game/PlayManageSwitch";
 import { ChangeDeviceButton } from "./ChangeDeviceButton";
 import { PairDetailsDialog } from "./PairDetailsDialog";
 
@@ -11,6 +16,12 @@ interface Props {
   gameId: string;
   /** The seat this device holds (section-qualified, e.g. "A3NS"). */
   seat: string;
+  /**
+   * Screen-specific entries added to the top of the menu, above the shared play
+   * actions. Used by a screen that has its own view options — e.g. the board
+   * results screen contributes its "Results / Deal" choice here.
+   */
+  extraItems?: HeaderMenuItem[];
 }
 
 /**
@@ -23,20 +34,34 @@ interface Props {
  * The pair shown in "Pair details" comes from {@link useAssignment}, so it is
  * available in every play state without a per-screen lookup.
  */
-export function PlayHeaderMenu({ gameId, seat }: Props) {
+export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   const { assignment, pair } = useAssignment();
+  const isDirector = useIsDirector(gameId);
 
   const [changeDeviceOpen, setChangeDeviceOpen] = useState(false);
   const [pairDetailsOpen, setPairDetailsOpen] = useState(false);
 
+  // The play→manage switch, for a director device. It shows as a visible
+  // header button at `sm`+ and folds into this menu below `sm`, so exactly one
+  // appears per breakpoint. The hook is called unconditionally (rules of
+  // hooks); the resulting item is only added to the menu for a director.
+  const manageItem = usePlayManageSwitchItem(gameId, "toManage");
+
   const items: HeaderMenuItem[] = [
+    // Screen-specific view options (e.g. Results / Deal) come first.
+    ...extraItems,
     { label: "Change device", onSelect: () => setChangeDeviceOpen(true) },
     { label: "Pair details", onSelect: () => setPairDetailsOpen(true) },
+    // A director's play→manage switch (folded / small-screen form). The visible
+    // form is the `sm`+ button rendered below.
+    ...(isDirector ? [{ ...manageItem, className: "sm:hidden" }] : []),
     // Future items (e.g. "Call director") go here.
   ];
 
   return (
-    <>
+    <span className="flex items-center gap-2">
+      {isDirector && <PlayManageSwitch gameId={gameId} direction="toManage" />}
+
       <HeaderMenu items={items} label="Menu" />
 
       <ChangeDeviceButton
@@ -53,6 +78,6 @@ export function PlayHeaderMenu({ gameId, seat }: Props) {
         pair={pair}
         pairId={assignment?.id ?? null}
       />
-    </>
+    </span>
   );
 }

@@ -15,7 +15,7 @@ website/
 ├── index.html      # The whole page
 ├── styles.css      # All styling (design tokens + components)
 ├── assets/
-│   └── bridge-box-logo.png   # Copied from /public/bridge-box-logo.png
+│   └── bridge-box-logo.svg   # Site logo / favicon
 └── README.md       # This file
 ```
 
@@ -60,12 +60,15 @@ Search `index.html` for `IMAGE SLOT` (in HTML comments) or the class
 | Section       | Intended image                                                        | Ratio            |
 | ------------- | --------------------------------------------------------------------- | ---------------- |
 | Hero          | Product photo: the Bridge Box appliance on a club table, phone/tablet | 4:3              |
-| Features      | Screenshot: session timer with director controls                      | 16:9             |
+| Features      | Screenshot: session timer on the room display                         | 16:9             |
 | Features      | Screenshot: live leaderboard (per-section & combined)                 | 16:9             |
 | Features      | Screenshot: traveller sheet for a single board                        | 16:9             |
+| Features      | Screenshot: entering the dealt cards for a board (hand records)        | 16:9             |
 | How it works  | Photo: the Bridge Box plugged in and switched on at the venue         | 16:9             |
 | How it works  | Screenshot: score entry on a player's phone                           | 3:4 (portrait)   |
-| Cloud         | Screenshot: event results published on the BridgeBox website          | 4:3              |
+| Cloud         | Screenshot: entering BridgeWebs login details (settings)              | 3:4 (portrait)   |
+| Cloud         | Screenshot: picking the BridgeWebs event from the dropdown            | 3:4 (portrait)   |
+| Cloud         | Screenshot: the Bridge Box's Upload to BridgeWebs screen              | 3:4 (portrait)   |
 
 ### The walkthrough video
 
@@ -131,7 +134,7 @@ the real asset:
    folder, keeping the same structure. Using the AWS CLI:
 
    ```bash
-   aws s3 sync website/ s3://YOUR_BUCKET_NAME/ --delete
+   aws s3 sync website/ s3://bridgebox.co.uk-124355663536-eu-west-2-an/ --delete
    ```
 
 3. **Enable static website hosting.** In the bucket's **Properties** tab, turn

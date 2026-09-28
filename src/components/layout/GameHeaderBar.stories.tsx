@@ -8,6 +8,9 @@ const meta: Meta<typeof GameHeaderBar> = {
   component: GameHeaderBar,
   parameters: {
     layout: "fullscreen",
+    // GameHeaderBar reads the pathname (to auto-inject the manage switch) and,
+    // on a manage route, the switch navigates via the router.
+    nextjs: { appDirectory: true },
   },
   tags: ["autodocs"],
   args: {

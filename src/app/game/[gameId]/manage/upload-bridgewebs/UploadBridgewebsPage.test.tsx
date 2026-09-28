@@ -28,14 +28,21 @@ vi.mock("@/lib/director-token", () => ({
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
+    backAction,
     actions,
     children,
   }: {
     headerTitle: string;
+    backAction?: () => void;
     actions?: React.ReactNode;
     children: React.ReactNode;
   }) => (
     <div>
+      {backAction && (
+        <button aria-label="Go back" onClick={backAction}>
+          back
+        </button>
+      )}
       <h1>{headerTitle}</h1>
       {children}
       <div>{actions}</div>
@@ -75,10 +82,10 @@ describe("UploadBridgewebsPage", () => {
     ).toBeDisabled();
   });
 
-  it("calls onCancel when Back is clicked", () => {
+  it("calls onCancel when the header back arrow is clicked", () => {
     const onCancel = vi.fn();
     render(<UploadBridgewebsPage onCancel={onCancel} />);
-    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    fireEvent.click(screen.getByRole("button", { name: "Go back" }));
     expect(onCancel).toHaveBeenCalled();
   });
 

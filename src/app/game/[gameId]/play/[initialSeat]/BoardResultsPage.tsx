@@ -1,9 +1,8 @@
 import { Traveller } from "@/components/traveller/Traveller";
 import { ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { BoardSelector } from "@/app/game/[gameId]/play/[initialSeat]/BoardSelector";
 import { useAssignment } from "@/context/AssignmentContext";
-import { ShowHandToggle } from "@/components/deal/ShowHandToggle";
+import { DealDisplay } from "@/components/deal/DealDisplay";
 import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { ScoreTable } from "@/scoring/table/score-table";
@@ -11,7 +10,6 @@ import { Deal } from "@/model/common";
 
 interface Props {
   board: number;
-  playedBoards: number[];
   lastBoardOfRound: boolean;
   scoredBoard: ScoredBoard;
   /**
@@ -24,11 +22,13 @@ interface Props {
   teamResultTable?: ScoreTable | null;
   /**
    * The four hands for the board being viewed, or null when no deal has been
-   * entered. Surfaced behind an opt-in "Show hand" toggle so a player can see
-   * the deal after playing the board without cluttering the results table.
+   * entered. Rendered instead of the results when {@link showDeal} is set. The
+   * Results / Deal choice itself lives in the play header menu (built by the
+   * caller), so this component only renders the chosen view.
    */
   deal?: Deal | null;
-  onBoardSelected: (board: number) => void;
+  /** When true, show the deal (hand diagram) instead of the results. */
+  showDeal?: boolean;
   onNext: () => void;
   /** Right-hand header content (the play header menu). */
   headerRight?: React.ReactNode;
@@ -36,12 +36,11 @@ interface Props {
 
 export function BoardResultsPage({
   board,
-  playedBoards,
   lastBoardOfRound,
   scoredBoard,
   teamResultTable = null,
   deal = null,
-  onBoardSelected,
+  showDeal = false,
   onNext,
   headerRight,
 }: Props) {
@@ -50,6 +49,33 @@ export function BoardResultsPage({
   const traveller = (
     <Traveller scoredBoard={scoredBoard} highlightAssignmentId={assignment?.id} />
   );
+
+  // The results view: for a teams game, an X-IMP / Team Result toggle over the
+  // field-wide cross-IMP traveller and this table's own result; for pairs, just
+  // the pooled traveller.
+  const results = teamResultTable ? (
+    <PluginViewSwitcher
+      views={[
+        { id: "x-imp", label: "X-IMP" },
+        { id: "team-result", label: "Team Result" },
+      ]}
+      renderView={(view) =>
+        view.id === "team-result" ? (
+          <ScoreTableView
+            table={teamResultTable}
+            highlightAssignmentId={assignment?.id}
+          />
+        ) : (
+          traveller
+        )
+      }
+    />
+  ) : (
+    traveller
+  );
+
+  // Only show the deal when asked and one exists; otherwise fall back to results.
+  const showingDeal = showDeal && deal != null;
 
   return (
     <GamePageLayout
@@ -66,37 +92,11 @@ export function BoardResultsPage({
         </button>
       }
     >
-      <>
-        <BoardSelector
-          board={board}
-          playedBoards={playedBoards}
-          onBoardSelected={onBoardSelected}
-        />
-        <ShowHandToggle boardNumber={board} deal={deal} />
-        {teamResultTable ? (
-          // Teams game: let the player toggle between the field-wide cross-IMP
-          // traveller and their own team's result (this table vs the other
-          // room). Cross-IMP is first, so it is the default and the "on" side.
-          <PluginViewSwitcher
-            views={[
-              { id: "x-imp", label: "X-IMP" },
-              { id: "team-result", label: "Team Result" },
-            ]}
-            renderView={(view) =>
-              view.id === "team-result" ? (
-                <ScoreTableView
-                  table={teamResultTable}
-                  highlightAssignmentId={assignment?.id}
-                />
-              ) : (
-                traveller
-              )
-            }
-          />
-        ) : (
-          traveller
-        )}
-      </>
+      {showingDeal ? (
+        <DealDisplay boardNumber={board} deal={deal} />
+      ) : (
+        results
+      )}
     </GamePageLayout>
   );
 }

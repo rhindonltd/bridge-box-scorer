@@ -8,8 +8,7 @@ type Props = {
 
 export function StepBoard({ boards, playedBoards, onBoardSelected }: Props) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6">
-      <h2 className="text-xl font-bold text-center mb-6">Select Board</h2>
+    <div className="flex-1 flex flex-col items-center justify-center p-4">
       <div className="grid grid-cols-3 gap-4 max-w-xs w-full">
         {boards.map((board) => {
           const isPlayed = playedBoards.includes(board);

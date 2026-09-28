@@ -50,6 +50,34 @@ describe("GamePageLayout", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("renders fill content flush, with no scroll region", () => {
+    render(
+      <GamePageLayout headerTitle="Wizard" contentMode="fill">
+        <p>fill body</p>
+      </GamePageLayout>,
+    );
+
+    expect(screen.getByText("fill body")).toBeInTheDocument();
+    // Fill mode is not wrapped in the scrollable region.
+    expect(
+      screen.queryByRole("region", { name: "Page content" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("still renders an action bar in fill mode when actions are given", () => {
+    render(
+      <GamePageLayout
+        headerTitle="Wizard"
+        contentMode="fill"
+        actions={<button>Submit</button>}
+      >
+        <p>fill body</p>
+      </GamePageLayout>,
+    );
+
+    expect(screen.getByRole("button", { name: "Submit" })).toBeInTheDocument();
+  });
+
   it("plumbs hideBack and backFallbackHref through to the header", () => {
     render(
       <GamePageLayout headerTitle="Board" hideBack backFallbackHref="/game/g1">

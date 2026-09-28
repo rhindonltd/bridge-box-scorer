@@ -178,6 +178,23 @@ export function DirectorContractWizard({
     }
   };
 
+  // Title shown in the header for the current step. Level/suit/declarer all
+  // build the contract, so they share one title.
+  const stepTitle = (() => {
+    switch (step) {
+      case 4:
+        return "Opening Lead";
+      case 5:
+        return "Enter Result";
+      case 6:
+        return "Confirm";
+      case 7:
+        return "Adjusted Score";
+      default:
+        return "Enter Contract";
+    }
+  })();
+
   // --- Step rendering ---
 
   const renderStep = () => {
@@ -239,6 +256,7 @@ export function DirectorContractWizard({
 
   return (
     <WizardShell
+      title={stepTitle}
       round={round}
       table={table}
       headerRight={

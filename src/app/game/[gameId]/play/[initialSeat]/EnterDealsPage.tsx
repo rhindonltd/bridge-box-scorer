@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { DealEntry } from "@/components/deal/DealEntry";
 import { Deal } from "@/model/common";
@@ -39,6 +39,11 @@ export function EnterDealsPage({
   const [error, setError] = useState<string | null>(null);
   const [alreadyEntered, setAlreadyEntered] = useState<Deal | null>(null);
   const [saving, setSaving] = useState(false);
+  // The current board's deal once fully entered, else null. "Save cards" and
+  // "Skip"/"Done" share the action bar and are mutually exclusive: Skip/Done
+  // shows while incomplete, and Save (submitting this deal) replaces it once
+  // the deal is complete.
+  const [completeDeal, setCompleteDeal] = useState<Deal | null>(null);
 
   const board = boards[index];
   const isLast = index >= boards.length - 1;
@@ -46,6 +51,7 @@ export function EnterDealsPage({
   function advance() {
     setAlreadyEntered(null);
     setError(null);
+    setCompleteDeal(null);
     if (isLast) {
       onDone();
     } else {
@@ -72,6 +78,12 @@ export function EnterDealsPage({
     }
   }
 
+  // Stable so it does not retrigger DealEntry's notify effect on every render.
+  const handleDealChange = useCallback(
+    (deal: Deal | null) => setCompleteDeal(deal),
+    [],
+  );
+
   return (
     <GamePageLayout
       headerTitle="Enter cards"
@@ -79,14 +91,31 @@ export function EnterDealsPage({
       hideBack
       actions={
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onDone}
-            data-testid="skip-deals"
-            className="flex-1 rounded-lg border py-3 text-lg font-medium text-gray-700"
-          >
-            {index === 0 ? "Skip" : "Done"}
-          </button>
+          {/* Skip/Done and Save share this bar and are mutually exclusive: show
+              Skip/Done while the deal is incomplete, and Save (which submits the
+              completed deal) once it is complete. In the already-entered state
+              there is no deal to save, so Skip/Done stays alongside "Next
+              board". */}
+          {completeDeal && !alreadyEntered ? (
+            <button
+              type="button"
+              onClick={() => handleSubmit(completeDeal)}
+              disabled={saving}
+              data-testid="deal-entry-save"
+              className="flex-1 rounded-lg bg-blue-600 py-3 text-lg font-bold text-white disabled:bg-gray-300"
+            >
+              Save cards
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onDone}
+              data-testid="skip-deals"
+              className="flex-1 rounded-lg border py-3 text-lg font-medium text-gray-700"
+            >
+              {index === 0 ? "Skip" : "Done"}
+            </button>
+          )}
           {alreadyEntered && (
             <button
               type="button"
@@ -117,6 +146,8 @@ export function EnterDealsPage({
           boardNumber={board}
           onSubmit={handleSubmit}
           readOnlyDeal={alreadyEntered}
+          onDealChange={handleDealChange}
+          hideSubmit
         />
 
         {saving && (

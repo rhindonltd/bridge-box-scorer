@@ -11,13 +11,7 @@ const meta: Meta<typeof TimerLiveView> = {
   parameters: { layout: "fullscreen" },
   tags: ["autodocs"],
   args: {
-    breakProblems: [],
     adjustApplyToFuture: false,
-    onConfigChange: fn(),
-    onAddBreak: fn(),
-    onRemoveBreak: fn(),
-    onBreakChange: fn(),
-    onApplyChanges: fn(),
     onStart: fn(),
     onPause: fn(),
     onNext: fn(),
@@ -30,18 +24,6 @@ const meta: Meta<typeof TimerLiveView> = {
 export default meta;
 type Story = StoryObj<typeof TimerLiveView>;
 
-const config = {
-  boardsPerRound: 3,
-  totalRounds: 8,
-  playMinutes: 7,
-  playSeconds: 0,
-  moveMinutes: 1,
-  moveSeconds: 30,
-  timingMode: "perRound" as const,
-  warningSeconds: 60,
-  breaks: [],
-};
-
 export const Running: Story = {
   args: {
     timer: {
@@ -51,7 +33,6 @@ export const Running: Story = {
       round: 3,
       projectedEndDate: new Date(Date.now() + 3600000),
     },
-    config,
   },
 };
 
@@ -62,9 +43,10 @@ export const Paused: Story = {
       phase: "play",
       remaining: 180,
       round: 5,
-      projectedEndDate: null,
+      // A paused (but not finished) timer still has a projected finish time,
+      // computed from the remaining session, so "Live End" is shown.
+      projectedEndDate: new Date(Date.now() + 2400000),
     },
-    config,
   },
 };
 
@@ -77,6 +59,5 @@ export const Finished: Story = {
       round: 8,
       projectedEndDate: null,
     },
-    config,
   },
 };

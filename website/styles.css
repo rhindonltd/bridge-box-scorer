@@ -744,6 +744,33 @@ textarea:focus-visible {
   margin: 0;
 }
 
+/* Space between the cloud section's callout and the screenshot grid below it. */
+#cloud .grid {
+  margin-top: var(--space-8);
+}
+
+/* Tinted frame around a product screenshot. The app screens are white, so on a
+   white page they have no visible edge; a light grey panel with a soft shadow
+   gives each screenshot a clear boundary and makes it read as a device screen.
+   The inner <img> keeps a hairline border so its own (white) edge stays defined
+   against the grey panel. */
+.screenshot-frame {
+  margin: 0;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow);
+}
+
+.screenshot-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+}
+
 /* ---- Contact / form --------------------------------------------------- */
 .contact {
   background: var(--navy);

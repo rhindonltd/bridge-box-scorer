@@ -12,6 +12,12 @@ export type HeaderMenuItem = {
   onSelect: () => void;
   /** When true, the entry is highlighted as the current selection. */
   active?: boolean;
+  /**
+   * Extra classes on the entry's button. Used to responsively hide an entry
+   * that has a visible equivalent elsewhere — e.g. `sm:hidden` on the folded
+   * play⇄manage switch, whose visible button shows from `sm` up.
+   */
+  className?: string;
 };
 
 type Props = {
@@ -60,7 +66,7 @@ export function HeaderMenu({ items, label = "Menu" }: Props) {
                     item.active
                       ? "font-semibold text-blue-700"
                       : "font-medium text-gray-700"
-                  }`}
+                  } ${item.className ?? ""}`}
                 >
                   <span>{item.label}</span>
                   {item.active && <Check size={16} aria-hidden="true" />}

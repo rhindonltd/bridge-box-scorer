@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
+import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
 import { mockGame } from "@/mocks/fixtures/game";
 import { EnterDealsPage } from "@/app/game/[gameId]/play/[initialSeat]/EnterDealsPage";
 
@@ -8,7 +10,7 @@ const meta: Meta<typeof EnterDealsPage> = {
   title: "App/Play/Game/Assignment/EnterDealsPage",
   component: EnterDealsPage,
   // GamePageLayout's header reads the game from context and uses the app router.
-  decorators: [withGame(mockGame)],
+  decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
   parameters: {
     layout: "fullscreen",
     nextjs: {
@@ -22,6 +24,7 @@ const meta: Meta<typeof EnterDealsPage> = {
     // covered by EnterDealsPage.test.tsx.
     onSubmitDeal: fn(async () => ({ stored: true })),
     onDone: fn(),
+    headerRight: storyPlayHeader(),
   },
 };
 

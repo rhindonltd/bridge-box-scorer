@@ -51,12 +51,13 @@ describe("MoveInfoPage", () => {
     expect(screen.getByTestId("play-menu")).toBeInTheDocument();
   });
 
-  it("shows the destination table when not sitting out", () => {
+  it("shows the destination table and direction when not sitting out", () => {
     const onContinue = vi.fn();
     render(
       <MoveInfoPage
         roundNumber={3}
         tableNumber={4}
+        side="EW"
         sitOut={false}
         onMoveInfoContinue={onContinue}
       />,
@@ -64,13 +65,40 @@ describe("MoveInfoPage", () => {
 
     expect(screen.getByText("Move to")).toBeInTheDocument();
     expect(screen.getByText("Table 4")).toBeInTheDocument();
+    expect(screen.getByText("Sit East / West")).toBeInTheDocument();
     expect(screen.getByText("Round 3")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a sit-out screen when the next round is a sit-out", () => {
+  it("labels a North/South destination", () => {
+    render(
+      <MoveInfoPage
+        roundNumber={2}
+        tableNumber={1}
+        side="NS"
+        sitOut={false}
+        onMoveInfoContinue={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Sit North / South")).toBeInTheDocument();
+  });
+
+  it("omits the direction when no side is provided", () => {
+    render(
+      <MoveInfoPage
+        roundNumber={3}
+        tableNumber={4}
+        sitOut={false}
+        onMoveInfoContinue={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Table 4")).toBeInTheDocument();
+    expect(screen.queryByText(/^Sit /)).not.toBeInTheDocument();
+  });
+
+  it("shows a sit-out screen with its table when the next round is a sit-out", () => {
     const onContinue = vi.fn();
     render(
       <MoveInfoPage
@@ -82,10 +110,25 @@ describe("MoveInfoPage", () => {
     );
 
     expect(screen.getByText("Sit Out")).toBeInTheDocument();
+    expect(screen.getByText("at Table 2")).toBeInTheDocument();
     expect(screen.getByText("Round 5")).toBeInTheDocument();
     expect(screen.queryByText("Move to")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     expect(onContinue).toHaveBeenCalledTimes(1);
+  });
+
+  it("omits the table on a sit-out with no table (padded sit-out round)", () => {
+    render(
+      <MoveInfoPage
+        roundNumber={5}
+        tableNumber={null}
+        sitOut={true}
+        onMoveInfoContinue={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Sit Out")).toBeInTheDocument();
+    expect(screen.queryByText(/at Table/)).not.toBeInTheDocument();
   });
 });

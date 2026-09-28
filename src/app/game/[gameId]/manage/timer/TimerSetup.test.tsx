@@ -475,11 +475,8 @@ describe("TimerManager (routes by started state)", () => {
 
     render(<TimerManager started={true} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Apply Changes" }));
-    expect(mockEmitWithAck).toHaveBeenCalledWith(
-      SocketEvents.UPDATE_CONFIG_TIMER,
-      expect.objectContaining({ gameId: "g1" }),
-    );
+    // The live screen shows no config editing (that is set during setup).
+    expect(screen.queryByRole("button", { name: "Apply Changes" })).toBeNull();
 
     // Running -> primary action is Pause.
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));

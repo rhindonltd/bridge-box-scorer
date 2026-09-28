@@ -40,12 +40,15 @@ settings are protected separately by an **admin key**.
 The Bridge Box can optionally connect out to the internet for **subscription**
 cloud services:
 
-- Publishing event results to the cloud for display on the BridgeBox website
+- Publishing event results to the club's BridgeWebs website
 - Receiving software updates for the appliance
 - Backing up the appliance's data
 
 Running a session does not require any of these — they are additive to the
 local, offline-capable core.
+
+For the first release, published results are available on BridgeWebs only.
+Displaying results on the BridgeBox website is planned for a future release.
 
 ## Deployment context
 

@@ -6,6 +6,7 @@ import { AssignmentContext } from "@/context/AssignmentContext";
 import { KeyedMutator } from "swr";
 import { BridgeGame } from "@/db/game-index/schema";
 import { mockGame } from "@/mocks/fixtures/game";
+import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
 
 const mockAssignment = {
   type: "PAIR" as const,
@@ -21,6 +22,7 @@ const meta: Meta<typeof ContractWizard> = {
   component: ContractWizard,
   parameters: {
     layout: "fullscreen",
+    nextjs: { appDirectory: true },
   },
   tags: ["autodocs"],
   args: {
@@ -30,6 +32,7 @@ const meta: Meta<typeof ContractWizard> = {
     playedBoards: [],
     leadCardRequired: false,
     onComplete: fn(),
+    headerRight: storyPlayHeader(),
   },
   decorators: [
     (Story) => (

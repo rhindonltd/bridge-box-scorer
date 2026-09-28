@@ -23,7 +23,10 @@ describe("RECOMMENDATION_SPEC_MAP snapshot", () => {
   const derived = buildRecommendationSpecMap();
   const snapshot = loadSnapshot();
 
-  it("matches the freshly-derived map (regenerate the JSON if this fails)", () => {
+  it("matches the freshly-derived map", () => {
+    // If this fails, the committed snapshot is stale: rewrite
+    // recommendation-spec-map.json with JSON.stringify(buildRecommendationSpecMap(), null, 2)
+    // (plus a trailing newline) and re-run.
     expect(snapshot).toEqual(derived);
   });
 

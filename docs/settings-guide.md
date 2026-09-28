@@ -25,7 +25,7 @@ enter the admin key once; you won't be asked again on that device until you
 Use this to connect the Bridge Box **out to the internet**. An internet
 connection lets the Bridge Box:
 
-- **Publish results to the cloud** so they appear on the BridgeBox website.
+- **Publish results** to the club's BridgeWebs website.
 - **Receive updates** to keep the Bridge Box up to date.
 - **Back up** the data held on the Bridge Box.
 

@@ -163,7 +163,7 @@ function TimerLiveContainer({
   headerSlot?: React.ReactNode;
 }) {
   const { game } = useRequiredGame();
-  const { timerState, breakProblems } = useTimerContext();
+  const { timerState } = useTimerContext();
 
   const [tick, setTick] = useState(0);
   // A 1s tick keeps the derived status counting down between syncs.
@@ -171,13 +171,8 @@ function TimerLiveContainer({
 
   const timer = useTimerDerived(timerState, tick) as TimerStatus;
 
-  const {
-    config,
-    configHandlers,
-    emitConfigFields,
-    adjustApplyToFuture,
-    setAdjustApplyToFuture,
-  } = useTimerConfigState(timerState);
+  const { adjustApplyToFuture, setAdjustApplyToFuture } =
+    useTimerConfigState(timerState);
 
   // Timer controls are acknowledged: the server validates, mutates the live
   // engine, and acks success/failure. We surface failures (unauthorized, no
@@ -196,10 +191,6 @@ function TimerLiveContainer({
     });
   }
 
-  function onApplyChanges() {
-    runControl(SocketEvents.UPDATE_CONFIG_TIMER, emitConfigFields);
-  }
-
   function onAdjustTime(deltaSeconds: number) {
     runControl(SocketEvents.ADJUST_TIME_TIMER, {
       deltaSeconds,
@@ -211,9 +202,6 @@ function TimerLiveContainer({
     <TimerLiveView
       headerSlot={headerSlot}
       timer={timer}
-      config={config}
-      breakProblems={breakProblems}
-      onApplyChanges={onApplyChanges}
       onStart={() => runControl(SocketEvents.START_TIMER)}
       onPause={() => runControl(SocketEvents.PAUSE_TIMER)}
       onNext={() => runControl(SocketEvents.NEXT_ROUND_TIMER)}
@@ -221,7 +209,6 @@ function TimerLiveContainer({
       onAdjustTime={onAdjustTime}
       adjustApplyToFuture={adjustApplyToFuture}
       onAdjustApplyToFutureChange={setAdjustApplyToFuture}
-      {...configHandlers}
     />
   );
 }

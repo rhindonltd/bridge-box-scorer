@@ -41,11 +41,14 @@ export function FullScreenSpinner() {
 
 /**
  * A centered spinner with a caption beneath it — the "Loading…" screen used by
- * the route-level loading boundaries and full-page loaders.
+ * the route-level loading boundaries and full-page loaders. Fills its parent's
+ * height (via `flex-1` in a flex column, or `h-full` inside a block container
+ * like the scrollable page body) so the spinner sits centred, not pinned to the
+ * top.
  */
 export function CaptionedSpinner({ caption }: { caption: string }) {
   return (
-    <div className="flex-1 flex items-center justify-center">
+    <div className="flex-1 h-full flex items-center justify-center">
       <div className="text-center">
         <Spinner className="mx-auto" />
         <p className="mt-4 text-gray-600">{caption}</p>

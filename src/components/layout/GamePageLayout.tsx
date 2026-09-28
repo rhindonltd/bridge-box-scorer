@@ -5,6 +5,7 @@ import React from "react";
 import { GameHeaderBar } from "./GameHeaderBar";
 import { ScrollableContent } from "./ScrollableContent";
 import { CenteredContent } from "./CenteredContent";
+import { FillContent } from "./FillContent";
 
 interface Props {
   /** Primary header text (e.g., event name, "Manage Games", "Settings") */
@@ -29,7 +30,19 @@ interface Props {
   subHeader?: React.ReactNode;
   /** Fixed-bottom action buttons. Omit to hide the action bar. */
   actions?: React.ReactNode;
-  /** When true, content area centres children vertically and horizontally (for menu-only pages). */
+  /**
+   * How the content area lays out its children:
+   * - `"scroll"` (default): a scrollable region with a "more below" fade.
+   * - `"center"`: children centred vertically and horizontally (menu pages).
+   * - `"fill"`: a bare growing flex column with no scroll wrapper and no
+   *   padding, for full-height self-sizing flows (e.g. the contract wizard);
+   *   children own their own `flex-1`/`min-h-0`.
+   */
+  contentMode?: "scroll" | "center" | "fill";
+  /**
+   * @deprecated Use `contentMode="center"`. When true, maps to
+   * `contentMode="center"` (kept for existing callers).
+   */
   centerContent?: boolean;
   /** Page content */
   children: React.ReactNode;
@@ -44,9 +57,14 @@ export function GamePageLayout({
   headerRight,
   subHeader,
   actions,
+  contentMode,
   centerContent = false,
   children,
 }: Props) {
+  // `centerContent` is the legacy boolean; `contentMode` supersedes it. When
+  // neither is set we default to "scroll".
+  const mode = contentMode ?? (centerContent ? "center" : "scroll");
+
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Header Bar */}
@@ -62,8 +80,10 @@ export function GamePageLayout({
       {/* Optional pinned sub-header (stays put while the body scrolls) */}
       {subHeader && <div className="shrink-0">{subHeader}</div>}
 
-      {centerContent ? (
+      {mode === "center" ? (
         <CenteredContent>{children}</CenteredContent>
+      ) : mode === "fill" ? (
+        <FillContent>{children}</FillContent>
       ) : (
         <ScrollableContent>{children}</ScrollableContent>
       )}

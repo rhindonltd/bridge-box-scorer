@@ -3,15 +3,16 @@ import { fn } from "storybook/test";
 import { ResultMismatch } from "@/app/game/[gameId]/play/[initialSeat]/ResultMismatch";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
+import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
 import { mockGame } from "@/mocks/fixtures/game";
 
 const meta: Meta<typeof ResultMismatch> = {
   title: "App/Play/Game/Assignment/ResultMismatch",
   component: ResultMismatch,
   decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1NS" })],
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", nextjs: { appDirectory: true } },
   tags: ["autodocs"],
-  args: { onReenter: fn() },
+  args: { onReenter: fn(), headerRight: storyPlayHeader() },
 };
 
 export default meta;

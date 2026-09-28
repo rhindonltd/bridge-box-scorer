@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { withGame } from "@storybook/decorators/GameDecorator";
+import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
+import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
 import { teamsGame4Tables } from "@/mocks/fixtures/game";
 import {
   RoundResultsPage,
@@ -15,7 +17,10 @@ const meta: Meta<typeof RoundResultsPage> = {
   title: "App/Play/Game/Assignment/RoundResultsPage",
   component: RoundResultsPage,
   // GamePageLayout's header reads the game from context and uses the app router.
-  decorators: [withGame(teamsGame4Tables)],
+  decorators: [
+    withGame(teamsGame4Tables),
+    withAssignment({ type: "TEAM", id: "A1NS" }),
+  ],
   parameters: {
     layout: "fullscreen",
     nextjs: {
@@ -24,7 +29,7 @@ const meta: Meta<typeof RoundResultsPage> = {
     },
   },
   tags: ["autodocs"],
-  args: { onContinue: fn() },
+  args: { onContinue: fn(), headerRight: storyPlayHeader("A1NS") },
 };
 
 export default meta;

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { WaitingForConfirmation } from "@/app/game/[gameId]/play/[initialSeat]/WaitingForConfirmation";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
+import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
 import { mockGame } from "@/mocks/fixtures/game";
 
 const meta: Meta<typeof WaitingForConfirmation> = {
@@ -18,6 +19,7 @@ const meta: Meta<typeof WaitingForConfirmation> = {
     },
   },
   tags: ["autodocs"],
+  args: { headerRight: storyPlayHeader() },
 };
 
 export default meta;

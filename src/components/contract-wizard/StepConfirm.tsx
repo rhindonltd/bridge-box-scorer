@@ -50,7 +50,7 @@ export function StepConfirm({
 }: Props) {
   if (specialOutcome) {
     return (
-      <div className="flex-1 flex flex-col p-6 min-h-0">
+      <div className="flex-1 flex flex-col p-4 min-h-0">
         <div className="flex-1 flex items-center justify-center">
           <p className="text-3xl font-bold text-center">
             {formatSpecialOutcome(specialOutcome)}
@@ -107,7 +107,7 @@ export function StepConfirm({
     );
 
   return (
-    <div className="flex-1 flex flex-col p-6 min-h-0">
+    <div className="flex-1 flex flex-col p-4 min-h-0">
       <div className="flex-1 flex flex-col items-center justify-center">
         <p className="text-3xl font-bold text-center">{contractDisplay}</p>
         {leadDisplay && (

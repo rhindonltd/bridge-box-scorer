@@ -98,6 +98,23 @@ export function ContractWizard({
     }
   };
 
+  // Title shown in the header for the current step. Choosing the level, suit
+  // and declarer are all "entering the contract", so those share one title.
+  const stepTitle = (() => {
+    switch (step) {
+      case 0:
+        return "Select Board";
+      case 4:
+        return "Opening Lead";
+      case 5:
+        return "Enter Result";
+      case 6:
+        return "Confirm";
+      default:
+        return "Enter Contract";
+    }
+  })();
+
   // --- Step rendering ---
 
   const renderStep = () => {
@@ -167,6 +184,7 @@ export function ContractWizard({
 
   return (
     <WizardShell
+      title={stepTitle}
       round={round}
       table={table}
       headerRight={headerRight}
