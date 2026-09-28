@@ -24,6 +24,10 @@ describe("SettingsMenuPage", () => {
       "href",
       "/settings/bridgewebs",
     );
+    expect(screen.getByRole("link", { name: "Cloud Backup" })).toHaveAttribute(
+      "href",
+      "/settings/cloud-sync",
+    );
     expect(
       screen.getByRole("link", { name: "Update Admin Key" }),
     ).toHaveAttribute("href", "/settings/admin-key");
