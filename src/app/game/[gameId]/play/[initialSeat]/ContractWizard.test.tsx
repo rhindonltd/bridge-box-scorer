@@ -137,9 +137,11 @@ describe("ContractWizard", () => {
         headerRight={<span data-testid="play-menu">menu</span>}
       />,
     );
+    // Step 0 header: a descriptive title plus event/section subtitles.
+    expect(screen.getByText("Select Board")).toBeInTheDocument();
     expect(screen.getByText("Table 3, Round 2")).toBeInTheDocument();
     expect(screen.getByText("Monday Pairs")).toBeInTheDocument();
-    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("Section A")).toBeInTheDocument();
     // The pair number is no longer inline in the header; the header-right slot
     // (the play menu) takes its place. Pair details live behind that menu.
     expect(screen.getByTestId("play-menu")).toBeInTheDocument();
@@ -152,13 +154,14 @@ describe("ContractWizard", () => {
     expect(screen.queryByTestId("board-dropdown")).not.toBeInTheDocument();
   });
 
-  it("renders no sub text when there is no section", () => {
+  it("renders no section sub text when there is no section", () => {
     mockGame.mockReturnValue({
       eventName: "Teams",
       sectionName: "",
     });
     render(<ContractWizard {...baseProps} />);
     expect(screen.getByText("Teams")).toBeInTheDocument();
+    expect(screen.queryByText(/^Section /)).not.toBeInTheDocument();
   });
 
   it("drives a full played contract and submits (no lead required)", () => {

@@ -1,9 +1,14 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-import { useRequiredGame } from "@/context/GameContext";
+import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface WizardShellProps {
+  /**
+   * Title for the grey header, describing the current step (e.g. "Select
+   * Board", "Enter Contract"). The event name and section render beneath it as
+   * subtitles via the shared game header.
+   */
+  title: string;
   /** Round shown in the blue sub-header ("Table {table}, Round {round}"). */
   round: number;
   /** Table shown in the blue sub-header. */
@@ -22,13 +27,17 @@ interface WizardShellProps {
 
 /**
  * Shared chrome for the contract-entry wizards (player {@link ContractWizard}
- * and {@link DirectorContractWizard}). Renders the grey event header (with an
- * optional back arrow and a right-hand slot) and the blue Table/Round
- * sub-header (with a right-hand slot), then the step content beneath. The two
- * wizards differ only in what fills those slots and whether the back arrow
- * shows, so that chrome lives here once rather than being copy-pasted.
+ * and {@link DirectorContractWizard}). Built on {@link GamePageLayout}: the
+ * grey header (with a step-specific title, the event/section subtitles, an
+ * optional back arrow, and a right-hand slot) comes from the shared layout,
+ * while the blue Table/Round sub-header is passed in as the layout's
+ * `subHeader`. The step content fills the remaining height (`contentMode="fill"`)
+ * so each step's grow-to-fill button grids and footer buttons keep working.
+ * The two wizards differ only in title, header-right, sub-header-right, and
+ * whether the back arrow shows.
  */
 export function WizardShell({
+  title,
   round,
   table,
   subHeaderRight,
@@ -37,41 +46,25 @@ export function WizardShell({
   onBack,
   children,
 }: WizardShellProps) {
-  const { game } = useRequiredGame();
-
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header (grey bar) */}
-      <div className="bg-gray-200 text-gray-800 px-3 py-2 flex items-center gap-2 shrink-0">
-        {showBack && (
-          <button
-            onClick={onBack}
-            className="p-2 -ml-2 rounded-lg hover:bg-gray-300 transition"
-            aria-label="Go back"
-          >
-            <ArrowLeft size={20} />
-          </button>
-        )}
-        <div className="flex-1 flex items-start justify-between min-w-0">
-          <div className="truncate">
-            <div className="font-semibold">{game.eventName}</div>
-            {game.sectionName && (
-              <div className="text-sm text-gray-600">{game.sectionName}</div>
-            )}
-          </div>
-          {headerRight}
+    <GamePageLayout
+      headerTitle={title}
+      headerRight={headerRight}
+      // The back arrow is shown per-step: pass the handler when it should show,
+      // and hide the layout's default arrow otherwise.
+      hideBack={!showBack}
+      backAction={showBack ? onBack : undefined}
+      contentMode="fill"
+      subHeader={
+        <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between">
+          <span className="font-bold text-lg">
+            Table {table}, Round {round}
+          </span>
+          {subHeaderRight}
         </div>
-      </div>
-
-      {/* Sub-header (blue bar) */}
-      <div className="bg-blue-600 text-white px-3 py-2.5 flex items-center justify-between shrink-0">
-        <span className="font-bold text-lg">
-          Table {table}, Round {round}
-        </span>
-        {subHeaderRight}
-      </div>
-
+      }
+    >
       {children}
-    </div>
+    </GamePageLayout>
   );
 }

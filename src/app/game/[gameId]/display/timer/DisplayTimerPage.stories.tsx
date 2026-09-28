@@ -22,8 +22,10 @@ const getProjectedEnd = (seconds: number) =>
 
 export const Running: Story = {
   args: {
-    title: "Round 3",
-    boardLabel: "Boards 13–16",
+    title: "Round 3 of 6",
+    // Progress through the round's board set (how far players should be),
+    // not an absolute range — tables play different boards in the same round.
+    boardLabel: "Board 3 of 5",
     remaining: 125,
     phase: "play",
     isRunning: true,
@@ -33,8 +35,8 @@ export const Running: Story = {
 
 export const Paused: Story = {
   args: {
-    title: "Round 3",
-    boardLabel: "Boards 13–16",
+    title: "Round 3 of 6",
+    boardLabel: "Board 3 of 5",
     remaining: 125,
     phase: "play",
     isRunning: false,

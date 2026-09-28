@@ -129,6 +129,7 @@ describe("DirectorContractWizard", () => {
 
   it("shows the header, sub-header and initial level step", () => {
     renderWizard();
+    expect(screen.getByText("Enter Contract")).toBeInTheDocument();
     expect(screen.getByText("Club Night")).toBeInTheDocument();
     expect(screen.getByText("Table 4, Round 3")).toBeInTheDocument();
     expect(screen.getByText("Board 2")).toBeInTheDocument();
@@ -138,7 +139,7 @@ describe("DirectorContractWizard", () => {
   it("renders the section subtitle when present", () => {
     gameOverrides = { sectionName: "Alpha" };
     renderWizard();
-    expect(screen.getByText("Alpha")).toBeInTheDocument();
+    expect(screen.getByText("Section Alpha")).toBeInTheDocument();
   });
 
   it("walks the full played-contract flow with a lead and submits", () => {

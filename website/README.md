@@ -60,7 +60,7 @@ Search `index.html` for `IMAGE SLOT` (in HTML comments) or the class
 | Section       | Intended image                                                        | Ratio            |
 | ------------- | --------------------------------------------------------------------- | ---------------- |
 | Hero          | Product photo: the Bridge Box appliance on a club table, phone/tablet | 4:3              |
-| Features      | Screenshot: session timer with director controls                      | 16:9             |
+| Features      | Screenshot: session timer on the room display                         | 16:9             |
 | Features      | Screenshot: live leaderboard (per-section & combined)                 | 16:9             |
 | Features      | Screenshot: traveller sheet for a single board                        | 16:9             |
 | Features      | Screenshot: entering the dealt cards for a board (hand records)        | 16:9             |
