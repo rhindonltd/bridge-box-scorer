@@ -1,6 +1,9 @@
 "use client";
 
-import { HeaderBar } from "@/components/layout/HeaderBar";
+import { PageLayout } from "@/components/layout/PageLayout";
+
+const primaryButtonClass =
+  "w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50";
 
 /**
  * Presentational club-information form. It owns no data fetching — the parent
@@ -39,14 +42,26 @@ export function ClubSettingsForm({
   onBack,
 }: ClubSettingsFormProps) {
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
-      <HeaderBar headerTitle="Club Information" backAction={onBack} />
-
+    <PageLayout
+      headerTitle="Club Information"
+      backAction={onBack}
+      actions={
+        <button
+          type="submit"
+          form="club-settings-form"
+          disabled={saving}
+          className={primaryButtonClass}
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+      }
+    >
       <form
+        id="club-settings-form"
         onSubmit={onSave}
-        className="flex-1 flex flex-col px-6 pt-6 pb-8 max-w-sm w-full mx-auto"
+        className="px-6 pt-6 max-w-sm w-full mx-auto"
       >
-        <div className="space-y-4 flex-1">
+        <div className="space-y-4">
           <p className="text-sm text-gray-600">
             Set your club&apos;s name and EBU number. These identify the club on
             published results and USEBIO exports.
@@ -94,17 +109,7 @@ export function ClubSettingsForm({
             </p>
           )}
         </div>
-
-        <div className="flex flex-col gap-3 pt-6">
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
-          >
-            {saving ? "Saving..." : "Save"}
-          </button>
-        </div>
       </form>
-    </div>
+    </PageLayout>
   );
 }

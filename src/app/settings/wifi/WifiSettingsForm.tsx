@@ -2,7 +2,7 @@
 
 import { useState, Fragment } from "react";
 import { Menu, Transition } from "@headlessui/react";
-import { HeaderBar } from "@/components/layout/HeaderBar";
+import { PageLayout } from "@/components/layout/PageLayout";
 
 export type Network = {
   ssid: string;
@@ -87,11 +87,22 @@ export function WifiSettingsForm({
   const saveEnabled = selectedSSID !== null && selectedSSID === testedSSID;
 
   return (
-    <div className="min-h-dvh flex flex-col bg-white">
-      <HeaderBar headerTitle="Wifi Settings" backAction={onBack} />
-
-      <div className="flex-1 flex flex-col px-6 pt-6 pb-8 max-w-sm w-full mx-auto">
-        <div className="space-y-4 flex-1">
+    <PageLayout
+      headerTitle="Wifi Settings"
+      backAction={onBack}
+      actions={
+        <button
+          type="button"
+          onClick={handleSaveClick}
+          disabled={!saveEnabled || loading}
+          className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:active:scale-100"
+        >
+          {loading ? "Saving..." : "Save & Apply"}
+        </button>
+      }
+    >
+      <div className="px-6 pt-6 max-w-sm w-full mx-auto">
+        <div className="space-y-4">
           <p className="text-sm text-gray-600">
             Choose a nearby network, test the connection, then save to connect
             the box to your venue&apos;s WiFi.
@@ -220,18 +231,7 @@ export function WifiSettingsForm({
             </p>
           )}
         </div>
-
-        <div className="flex flex-col gap-3 pt-6">
-          <button
-            type="button"
-            onClick={handleSaveClick}
-            disabled={!saveEnabled || loading}
-            className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:active:scale-100"
-          >
-            {loading ? "Saving..." : "Save & Apply"}
-          </button>
-        </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

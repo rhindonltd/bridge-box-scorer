@@ -66,7 +66,9 @@ Search `index.html` for `IMAGE SLOT` (in HTML comments) or the class
 | Features      | Screenshot: entering the dealt cards for a board (hand records)        | 16:9             |
 | How it works  | Photo: the Bridge Box plugged in and switched on at the venue         | 16:9             |
 | How it works  | Screenshot: score entry on a player's phone                           | 3:4 (portrait)   |
-| Cloud         | Screenshot: event results published on the BridgeBox website          | 4:3              |
+| Cloud         | Screenshot: entering BridgeWebs login details (settings)              | 3:4 (portrait)   |
+| Cloud         | Screenshot: picking the BridgeWebs event from the dropdown            | 3:4 (portrait)   |
+| Cloud         | Screenshot: the Bridge Box's Upload to BridgeWebs screen              | 3:4 (portrait)   |
 
 ### The walkthrough video
 
@@ -132,7 +134,7 @@ the real asset:
    folder, keeping the same structure. Using the AWS CLI:
 
    ```bash
-   aws s3 sync website/ s3://YOUR_BUCKET_NAME/ --delete
+   aws s3 sync website/ s3://bridgebox.co.uk-124355663536-eu-west-2-an/ --delete
    ```
 
 3. **Enable static website hosting.** In the bucket's **Properties** tab, turn

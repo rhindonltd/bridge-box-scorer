@@ -339,43 +339,61 @@
       <!-- ================= Cloud subscription ================= -->
       <section class="section" id="cloud" aria-labelledby="cloud-heading">
         <div class="container">
-          <div class="split">
-            <div>
-              <span class="eyebrow">Optional cloud services</span>
-              <h2 id="cloud-heading">Connect to the cloud when it suits you</h2>
-              <p>
-                Every session runs fully offline on the local network. When you
-                want more, the Bridge Box can optionally connect to the internet
-                for subscription cloud services:
-              </p>
-              <ul class="pill-list">
-                <li>Publish event results to the BridgeBox website for members to view</li>
-                <li>Upload results to your club's BridgeWebs website</li>
-                <li>Receive software updates for the appliance</li>
-                <li>Back up the appliance's data</li>
-              </ul>
-              <div class="callout">
-                <p>
-                  These are additive. Running a session never requires an
-                  internet connection or a subscription — the offline core does
-                  it all.
-                </p>
-              </div>
-            </div>
+          <span class="eyebrow">Optional cloud services</span>
+          <h2 id="cloud-heading">Connect to the cloud when it suits you</h2>
+          <p>
+            Every session runs fully offline on the local network. When you
+            want more, the Bridge Box can optionally connect to the internet
+            for subscription cloud services:
+          </p>
+          <ul class="pill-list">
+            <li>Upload results to your club's BridgeWebs website for members to view</li>
+            <li>Receive software updates for the appliance</li>
+            <li>Back up the appliance's data</li>
+          </ul>
+          <div class="callout">
+            <p>
+              These are additive. Running a session never requires an
+              internet connection or a subscription — the offline core does
+              it all.
+            </p>
+          </div>
 
-            <!-- IMAGE SLOT: results published online -->
-            <figure
-              class="img-placeholder img-placeholder--4x3 split__media"
-              role="img"
-              aria-label="Screenshot of event results published on the BridgeBox website."
-            >
-              <div class="img-placeholder__inner">
-                <span class="img-placeholder__badge">Screenshot</span>
-                <p class="img-placeholder__caption">
-                  Event results published on the BridgeBox website
-                </p>
-                <p class="img-placeholder__ratio">Recommended ratio: 4:3</p>
-              </div>
+          <!-- BridgeWebs integration walkthrough: three Bridge Box screens.
+               Each screenshot sits in a tinted frame so the (white) app screen
+               reads as a distinct panel against the white page. -->
+          <div class="grid grid--3">
+            <!-- IMAGE SLOT 1: enter BridgeWebs login info -->
+            <figure class="screenshot-frame">
+              <img
+                src="assets/bridgewebs-password.png"
+                alt="The Bridge Box's BridgeWebs settings screen for entering login details"
+                width="474"
+                height="848"
+                loading="lazy"
+              />
+            </figure>
+
+            <!-- IMAGE SLOT 2: choose the BridgeWebs event from the dropdown -->
+            <figure class="screenshot-frame">
+              <img
+                src="assets/bridgewebs-eventselect.png"
+                alt="Screenshot of the Bridge Box selecting a BridgeWebs calendar event from a dropdown when creating a game."
+                width="476"
+                height="848"
+                loading="lazy"
+              />
+            </figure>
+
+            <!-- IMAGE SLOT 3: upload results to BridgeWebs -->
+            <figure class="screenshot-frame">
+              <img
+                src="assets/bridgewebs-upload.png"
+                alt="Screenshot of the Bridge Box's Upload to BridgeWebs screen."
+                width="484"
+                height="856"
+                loading="lazy"
+              />
             </figure>
           </div>
         </div>

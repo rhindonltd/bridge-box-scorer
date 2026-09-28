@@ -83,26 +83,16 @@ export function UploadBridgewebsPage({ onCancel }: UploadBridgewebsPageProps) {
     <GamePageLayout
       headerTitle="Upload to BridgeWebs"
       centerContent={true}
+      backAction={onCancel}
       actions={
-        <div className="flex flex-col gap-3 pt-6">
-          <button
-            type="submit"
-            form="upload-bridgewebs-form"
-            disabled={uploading || !configured}
-            className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
-          >
-            {uploading ? "Uploading..." : "Upload to BridgeWebs"}
-          </button>
-
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={uploading}
-            className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          >
-            Back
-          </button>
-        </div>
+        <button
+          type="submit"
+          form="upload-bridgewebs-form"
+          disabled={uploading || !configured}
+          className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+        >
+          {uploading ? "Uploading..." : "Upload to BridgeWebs"}
+        </button>
       }
     >
       <form onSubmit={handleUpload} className="px-6" id="upload-bridgewebs-form">

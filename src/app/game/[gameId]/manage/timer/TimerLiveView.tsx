@@ -1,23 +1,13 @@
 "use client";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { BreakProblem } from "@/timer/breaks";
-import { TimerConfigFields } from "./TimerConfigFields";
-import { TimerBreaksEditor } from "./TimerBreaksEditor";
-import {
-  TimerConfig,
-  TimerConfigHandlers,
-  TimerStatus,
-} from "./timer-view-types";
+import { TimerStatus } from "./timer-view-types";
 
 const btnBase =
   "py-4 rounded-xl text-lg font-semibold active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
 
-export interface TimerLiveViewProps extends TimerConfigHandlers {
+export interface TimerLiveViewProps {
   timer: TimerStatus;
-  config: TimerConfig;
-  breakProblems: BreakProblem[];
-  onApplyChanges: () => void;
   onStart: () => void;
   onPause: () => void;
   onNext: () => void;
@@ -40,19 +30,12 @@ function formatTime(totalSeconds: number) {
 
 /**
  * Live timer control screen. Shown once the game is in progress: displays the
- * running status and lets the director start/pause, step phases, adjust the
- * current phase, and apply configuration changes to the running timer. Used on
- * /manage/timer after the game has started.
+ * running status and lets the director start/pause, step phases, and adjust the
+ * current phase. Used on /manage/timer after the game has started. Timer
+ * configuration is set during setup and is not editable once the game is live.
  */
 export function TimerLiveView({
   timer,
-  config,
-  breakProblems,
-  onConfigChange,
-  onAddBreak,
-  onRemoveBreak,
-  onBreakChange,
-  onApplyChanges,
   onStart,
   onPause,
   onNext,
@@ -62,112 +45,130 @@ export function TimerLiveView({
   onAdjustApplyToFutureChange,
   headerSlot,
 }: TimerLiveViewProps) {
-  const controls = (
-    <div className="flex flex-col gap-3 w-full max-w-md">
-      <button
-        onClick={onApplyChanges}
-        className={`${btnBase} bg-blue-600 text-white hover:bg-blue-700 focus-visible:ring-blue-500`}
-      >
-        Apply Changes
-      </button>
+  // Once the session has finished there is nothing left to control, so we drop
+  // the transport/adjust surface entirely and just confirm it's complete.
+  if (timer.phase === "finished") {
+    return (
+      <GamePageLayout headerTitle="Timer Controls" centerContent={false}>
+        <div className="flex h-full flex-col items-center gap-4 p-4">
+          {headerSlot}
+          <div
+            role="status"
+            className="flex flex-1 w-full max-w-md flex-col items-center justify-center rounded-xl border border-gray-200 bg-gray-50 p-8 text-center"
+          >
+            <span className="text-2xl font-semibold text-gray-800">
+              Session complete
+            </span>
+          </div>
+        </div>
+      </GamePageLayout>
+    );
+  }
 
+  const transport = (
+    <div className="grid grid-cols-2 gap-3">
+      {timer.isRunning ? (
+        <button
+          onClick={onPause}
+          className={`${btnBase} bg-yellow-500 text-gray-900 hover:bg-yellow-600 focus-visible:ring-yellow-500`}
+        >
+          Pause
+        </button>
+      ) : (
+        <button
+          onClick={onStart}
+          className={`${btnBase} bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-500`}
+        >
+          Start
+        </button>
+      )}
       <div className="grid grid-cols-2 gap-3">
-        {timer.isRunning ? (
-          <button
-            onClick={onPause}
-            className={`${btnBase} bg-yellow-500 text-gray-900 hover:bg-yellow-600 focus-visible:ring-yellow-500`}
-          >
-            Pause
-          </button>
-        ) : (
-          <button
-            onClick={onStart}
-            className={`${btnBase} bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-500`}
-          >
-            Start
-          </button>
-        )}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={onPrevious}
-            aria-label="Previous phase"
-            className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400`}
-          >
-            ‹ Prev
-          </button>
-          <button
-            onClick={onNext}
-            aria-label="Next phase"
-            className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400`}
-          >
-            Next ›
-          </button>
-        </div>
+        <button
+          onClick={onPrevious}
+          aria-label="Previous phase"
+          className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400`}
+        >
+          ‹<span className="hidden sm:inline"> Prev</span>
+        </button>
+        <button
+          onClick={onNext}
+          aria-label="Next phase"
+          className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400`}
+        >
+          <span className="hidden sm:inline">Next </span>›
+        </button>
       </div>
+    </div>
+  );
 
+  const controls = (
+    <div className="flex-1 w-full max-w-md">
       {/* Add / subtract time to the current phase */}
-      <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
-        <span className="text-sm text-gray-600">Adjust current phase</span>
-        <div className="grid grid-cols-4 gap-2">
-          <button
-            onClick={() => onAdjustTime(-60)}
-            className={`${btnBase} bg-red-100 text-red-800 hover:bg-red-200 focus-visible:ring-red-400 text-base py-3`}
-          >
-            −1m
-          </button>
-          <button
-            onClick={() => onAdjustTime(-15)}
-            className={`${btnBase} bg-red-100 text-red-800 hover:bg-red-200 focus-visible:ring-red-400 text-base py-3`}
-          >
-            −15s
-          </button>
-          <button
-            onClick={() => onAdjustTime(15)}
-            className={`${btnBase} bg-green-100 text-green-800 hover:bg-green-200 focus-visible:ring-green-400 text-base py-3`}
-          >
-            +15s
-          </button>
-          <button
-            onClick={() => onAdjustTime(60)}
-            className={`${btnBase} bg-green-100 text-green-800 hover:bg-green-200 focus-visible:ring-green-400 text-base py-3`}
-          >
-            +1m
-          </button>
+      <div className="flex h-full flex-col gap-2 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 p-3">
+        <h2 className="-mx-3 -mt-3 mb-1 border-b border-gray-200 bg-gray-100 px-3 py-2 text-base font-semibold text-gray-700">
+          Adjust current phase
+        </h2>
+        <div className="flex flex-1 flex-col gap-2">
+          <div className="grid flex-1 grid-cols-4 gap-2">
+            <button
+              onClick={() => onAdjustTime(-60)}
+              className={`${btnBase} bg-red-100 text-red-800 hover:bg-red-200 focus-visible:ring-red-400 text-base`}
+            >
+              −1m
+            </button>
+            <button
+              onClick={() => onAdjustTime(-15)}
+              className={`${btnBase} bg-red-100 text-red-800 hover:bg-red-200 focus-visible:ring-red-400 text-base`}
+            >
+              −15s
+            </button>
+            <button
+              onClick={() => onAdjustTime(15)}
+              className={`${btnBase} bg-green-100 text-green-800 hover:bg-green-200 focus-visible:ring-green-400 text-base`}
+            >
+              +15s
+            </button>
+            <button
+              onClick={() => onAdjustTime(60)}
+              className={`${btnBase} bg-green-100 text-green-800 hover:bg-green-200 focus-visible:ring-green-400 text-base`}
+            >
+              +1m
+            </button>
+          </div>
+          <label className="flex flex-1 items-center gap-2 text-base text-gray-600">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={adjustApplyToFuture}
+              onChange={(e) => onAdjustApplyToFutureChange(e.target.checked)}
+            />
+            Apply to all subsequent phases of this type
+          </label>
         </div>
-        <label className="flex items-center gap-2 text-sm text-gray-600">
-          <input
-            type="checkbox"
-            checked={adjustApplyToFuture}
-            onChange={(e) => onAdjustApplyToFutureChange(e.target.checked)}
-          />
-          Apply to all subsequent phases of this type
-        </label>
       </div>
     </div>
   );
 
   const status = (
-    <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
+    <div className="flex-1 w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-5 text-base">
       <div className="flex justify-between">
         <span className="text-gray-500">Status</span>
-        <span className="capitalize">
+        <span className="capitalize font-medium">
           {timer.isRunning ? timer.phase : "paused"}
         </span>
       </div>
-      <div className="flex justify-between mt-2">
+      <div className="flex justify-between mt-3">
         <span className="text-gray-500">Remaining</span>
-        <span>
-          {timer.phase === "finished" ? "00:00" : formatTime(timer.remaining)}
-        </span>
+        <span className="font-medium">{formatTime(timer.remaining)}</span>
       </div>
-      <div className="flex justify-between mt-2">
+      <div className="flex justify-between mt-3">
         <span className="text-gray-500">Round</span>
-        <span>{timer.round}</span>
+        <span className="font-medium">{timer.round}</span>
       </div>
       {timer.projectedEndDate && (
-        <div className="flex justify-between mt-2">
+        <div className="flex justify-between mt-3">
           <span className="text-gray-500">Live End</span>
-          <span>
+          <span className="font-medium">
             {timer.projectedEndDate.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -175,44 +176,18 @@ export function TimerLiveView({
           </span>
         </div>
       )}
+
+      {/* Primary transport controls, grouped with the status they act on. */}
+      <div className="mt-4 pt-4 border-t border-gray-200">{transport}</div>
     </div>
   );
 
-  const breakProblemPrompt =
-    breakProblems.length > 0 ? (
-      <div
-        role="alert"
-        className="w-full max-w-md rounded-xl border-2 border-red-300 bg-red-50 p-4 text-sm text-red-800"
-      >
-        <div className="font-semibold">Break timing is invalid</div>
-        {breakProblems.map((p) => (
-          <div key={p.afterRound} className="mt-1">
-            The break after round {p.afterRound} is set to resume before play
-            can finish (over by about {Math.ceil(p.overrunMs / 60000)} min).
-            Remove the break or change its timing.
-          </div>
-        ))}
-      </div>
-    ) : null;
-
   return (
-    <GamePageLayout
-      headerTitle="Timer Controls"
-      centerContent={false}
-      actions={controls}
-    >
-      <div className="flex flex-col items-center gap-4 p-4">
+    <GamePageLayout headerTitle="Timer Controls" centerContent={false}>
+      <div className="flex h-full flex-col items-center gap-4 p-4">
         {headerSlot}
         {status}
-        {breakProblemPrompt}
-        <TimerConfigFields config={config} onConfigChange={onConfigChange} />
-        <TimerBreaksEditor
-          breaks={config.breaks}
-          totalRounds={config.totalRounds}
-          onAddBreak={onAddBreak}
-          onRemoveBreak={onRemoveBreak}
-          onBreakChange={onBreakChange}
-        />
+        {controls}
       </div>
     </GamePageLayout>
   );

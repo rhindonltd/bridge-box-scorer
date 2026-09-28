@@ -69,7 +69,6 @@ export const SocketEvents = {
   NEXT_ROUND_TIMER: "timer:nextRound",
   PREVIOUS_TIMER: "timer:previous",
   ADJUST_TIME_TIMER: "timer:adjustTime",
-  UPDATE_CONFIG_TIMER: "timer:updateConfig",
   // NOTE: saving a timer configuration during setup is an HTTP route (PUT
   // /api/games/[gameId]/sections/[section]/timer/config), not a socket event.
   // It persists the "configured but not started" state (phase null, not

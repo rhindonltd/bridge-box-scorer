@@ -161,8 +161,8 @@ step-by-step instructions.
 - **Admin key** — a secret that protects the Bridge Box's settings (WiFi, club
   info). Not needed to run a game.
 - **Cloud services** — subscription features that use the Bridge Box's internet
-  connection: publishing results to the BridgeBox website, receiving device
-  updates, and backing up the Bridge Box's data. Running a session at the venue
-  does not need them.
+  connection: publishing results to the club's BridgeWebs website, receiving
+  device updates, and backing up the Bridge Box's data. Running a session at the
+  venue does not need them.
 - **USEBIO** — the standard XML results format exported at the end of a session
   for the EBU or a scoring program.

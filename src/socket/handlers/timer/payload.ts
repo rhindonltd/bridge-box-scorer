@@ -20,13 +20,6 @@ export const breakConfigSchema = z.discriminatedUnion("mode", [
   }),
 ]);
 
-/** Optional break list + warning threshold shared by create/update payloads. */
-export const timerConfigExtras = {
-  breaks: z.array(breakConfigSchema).optional(),
-  warningSeconds: z.number().int().nonnegative().optional(),
-  timingMode: z.enum(["perRound", "perBoard"]).optional(),
-};
-
 /** Fields common to every director-initiated timer control event. */
 export const directorTimerFields = {
   gameType: z.enum(GameTypes),
