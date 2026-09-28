@@ -6,6 +6,10 @@ import {
   swissPairHomeSeat,
   swissPairIdFromHomeSeat,
   swissRoundOne,
+  swapPairs,
+  reassignBye,
+  seatedPairIds,
+  evaluateSwissSeating,
   type SwissDrawInput,
   type SwissHomeSeat,
   type SwissPairId,
@@ -354,5 +358,151 @@ describe("drawSwissRound — completeness", () => {
 
     const seated = result.seating.flatMap((s) => [s.ns, s.ew]).sort();
     expect(seated).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+});
+
+describe("swapPairs", () => {
+  const seating = [
+    { tableNumber: 1, ns: 1, ew: 4 },
+    { tableNumber: 2, ns: 2, ew: 5 },
+    { tableNumber: 3, ns: 3, ew: 6 },
+  ];
+
+  it("exchanges the seats of two pairs, leaving others untouched", () => {
+    // Swap pair 4 (table 1 EW) and pair 2 (table 2 NS).
+    const out = swapPairs(seating, 4, 2);
+    expect(out).toEqual([
+      { tableNumber: 1, ns: 1, ew: 2 },
+      { tableNumber: 2, ns: 4, ew: 5 },
+      { tableNumber: 3, ns: 3, ew: 6 },
+    ]);
+    // The input is not mutated.
+    expect(seating[0]).toEqual({ tableNumber: 1, ns: 1, ew: 4 });
+  });
+
+  it("returns an unchanged copy when swapping a pair with itself", () => {
+    expect(swapPairs(seating, 3, 3)).toEqual(seating);
+  });
+
+  it("returns an unchanged copy when a pair is not seated (e.g. the bye)", () => {
+    // Pair 99 is not in the seating.
+    expect(swapPairs(seating, 1, 99)).toEqual(seating);
+  });
+
+  it("keeps every pair seated exactly once after a swap", () => {
+    const out = swapPairs(seating, 1, 6);
+    expect([...seatedPairIds(out)].sort((a: number, b: number) => a - b)).toEqual([
+      1, 2, 3, 4, 5, 6,
+    ]);
+  });
+});
+
+describe("reassignBye", () => {
+  // 3-table odd field would have 5 pairs; model a 2-table field (4 pairs) with
+  // one extra pair (5) sitting out.
+  const seating = [
+    { tableNumber: 1, ns: 1, ew: 3 },
+    { tableNumber: 2, ns: 2, ew: 4 },
+  ];
+
+  it("swaps the sit-out pair in for the chosen seated pair", () => {
+    // Pair 5 sits out; make pair 2 sit out instead — pair 5 takes pair 2's seat.
+    const { seating: out, sitOutPairId } = reassignBye(seating, 5, 2);
+    expect(sitOutPairId).toBe(2);
+    expect(out).toEqual([
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 5, ew: 4 },
+    ]);
+  });
+
+  it("no-ops when there is no current sit-out (even field)", () => {
+    const { seating: out, sitOutPairId } = reassignBye(seating, null, 2);
+    expect(out).toEqual(seating);
+    expect(sitOutPairId).toBe(2);
+  });
+
+  it("no-ops when the incoming sit-out is not seated", () => {
+    const { seating: out, sitOutPairId } = reassignBye(seating, 5, 99);
+    expect(out).toEqual(seating);
+    expect(sitOutPairId).toBe(5);
+  });
+});
+
+describe("evaluateSwissSeating", () => {
+  const seating = [
+    { tableNumber: 1, ns: 1, ew: 4 },
+    { tableNumber: 2, ns: 2, ew: 5 },
+    { tableNumber: 3, ns: 3, ew: 6 },
+  ];
+
+  it("reports a clean arrangement with no advisories", () => {
+    const a = evaluateSwissSeating(seating, null, input({ tables: 3 }));
+    expect(a.structuralError).toBe(false);
+    expect(a.hadUnavoidableRepeat).toBe(false);
+    expect(a.hadStationaryConflict).toBe(false);
+    expect(a.byeRepeat).toBe(false);
+  });
+
+  it("flags a repeat pairing against history", () => {
+    const a = evaluateSwissSeating(
+      seating,
+      null,
+      input({ tables: 3, playedOpponents: played([[1, 4]]) }),
+    );
+    expect(a.hadUnavoidableRepeat).toBe(true);
+    expect(a.repeats).toContain(opponentKey(1, 4));
+  });
+
+  it("flags a structural error when a pair is seated twice", () => {
+    const bad = [
+      { tableNumber: 1, ns: 1, ew: 4 },
+      { tableNumber: 2, ns: 1, ew: 5 }, // pair 1 seated twice; pair 2 missing
+      { tableNumber: 3, ns: 3, ew: 6 },
+    ];
+    const a = evaluateSwissSeating(bad, null, input({ tables: 3 }));
+    expect(a.structuralError).toBe(true);
+    expect(a.structuralReasons.some((r: string) => r.includes("Pair 1"))).toBe(
+      true,
+    );
+    expect(a.structuralReasons.some((r: string) => r.includes("Pair 2"))).toBe(
+      true,
+    );
+  });
+
+  it("flags a bye repeat when the sit-out pair already had a bye", () => {
+    // 2-table field (4 pairs) with pair 5 absent — model tables:2 and sit-out 4.
+    const s = [
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 2, ew: 4 },
+    ];
+    const clean = evaluateSwissSeating(
+      s,
+      4,
+      input({ tables: 2, hadBye: new Set([]) }),
+    );
+    expect(clean.byeRepeat).toBe(false);
+
+    const repeat = evaluateSwissSeating(
+      s,
+      4,
+      input({ tables: 2, hadBye: new Set([4]) }),
+    );
+    expect(repeat.byeRepeat).toBe(true);
+  });
+
+  it("flags a stationary pair moved off its home seat", () => {
+    // Pair 1's home is table 1 NS; seat it at table 3 to force a conflict.
+    const moved = [
+      { tableNumber: 1, ns: 3, ew: 4 },
+      { tableNumber: 2, ns: 2, ew: 5 },
+      { tableNumber: 3, ns: 1, ew: 6 },
+    ];
+    const stationary = new Map([[1, swissPairHomeSeat(3, 1)]]);
+    const a = evaluateSwissSeating(
+      moved,
+      null,
+      input({ tables: 3, stationary }),
+    );
+    expect(a.hadStationaryConflict).toBe(true);
   });
 });

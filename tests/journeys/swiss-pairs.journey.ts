@@ -148,14 +148,21 @@ function materializedRounds(gameId: string, section = "A"): number {
 }
 
 /**
- * Draw the next round from the in-play Movement screen and wait for the
- * confirmation notice.
+ * Draw the next round from the in-play Movement screen: click Draw, review the
+ * proposed seating on the preview page, accept it (OK), and wait for the
+ * confirmation notice. The draw only commits when OK is pressed.
  */
 async function drawNextRound(directorPage: Page, gameId: string): Promise<void> {
   await gotoStable(directorPage, `/game/${gameId}/manage/movement`);
   const button = directorPage.getByTestId("draw-next-round");
   await expect(button).toBeEnabled({ timeout: 15000 });
   await button.click();
+
+  // The preview page appears with an OK button; accept the draw.
+  const ok = directorPage.getByTestId("draw-confirm");
+  await expect(ok).toBeVisible({ timeout: 15000 });
+  await ok.click();
+
   await expect(directorPage.getByTestId("draw-notice")).toBeVisible({
     timeout: 15000,
   });
@@ -204,6 +211,62 @@ test.describe("Swiss Pairs draws round by round", () => {
       await confirmRound(gameId, 2, tables);
       await drawNextRound(directorPage, gameId);
       expect(materializedRounds(gameId)).toBe(3);
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await closeSeatDevices(seats);
+    }
+  });
+
+  test("the draw previews the seating and only commits on OK (Cancel discards)", async ({
+    browser,
+  }) => {
+    test.setTimeout(150_000);
+
+    const tables = 2;
+    const directorPage = await newParticipant(browser);
+    const { gameId } = await createGame(directorPage, {
+      eventName: `Swiss Preview ${Date.now()}`,
+      recordOpeningLead: false,
+    });
+
+    let seats: Record<string, Page> = {};
+    try {
+      await setTableCount(directorPage, tables);
+      await pickSwissMovement(directorPage);
+      seats = await seatSingleSectionFieldOnDevices(
+        () => newParticipant(browser),
+        gameId,
+        tables,
+      );
+      await startGame(directorPage, gameId);
+      await confirmRound(gameId, 1, tables);
+
+      await gotoStable(directorPage, `/game/${gameId}/manage/movement`);
+
+      // Click Draw: the preview page appears, but round 2 is NOT yet committed.
+      await directorPage.getByTestId("draw-next-round").click();
+      await expect(directorPage.getByTestId("draw-confirm")).toBeVisible({
+        timeout: 15000,
+      });
+      expect(materializedRounds(gameId)).toBe(1);
+
+      // Cancel discards the preview — still not committed.
+      await directorPage.getByTestId("draw-cancel").click();
+      await expect(directorPage.getByTestId("draw-next-round")).toBeVisible({
+        timeout: 15000,
+      });
+      expect(materializedRounds(gameId)).toBe(1);
+
+      // Draw again and this time accept: now round 2 is committed.
+      await directorPage.getByTestId("draw-next-round").click();
+      const ok = directorPage.getByTestId("draw-confirm");
+      await expect(ok).toBeVisible({ timeout: 15000 });
+      await ok.click();
+      await expect(directorPage.getByTestId("draw-notice")).toBeVisible({
+        timeout: 15000,
+      });
+      expect(materializedRounds(gameId)).toBe(2);
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

@@ -9,7 +9,13 @@ import {
   teamIds,
   teamOpponentKey,
   type TeamId,
+  type TeamsMatch,
+  type TeamsTriangle,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
+import {
+  resolveSwissTeamsMatchNames,
+  type NamedTeamsSeating,
+} from "@/services/swiss-teams-seating-names";
 import { SectionLetter, parseSeat } from "@/model/participants";
 
 /**
@@ -22,10 +28,29 @@ export type DrawSwissTeamsRejection =
   | "EVENT_COMPLETE"
   | "ODD_TEAM_COUNT";
 
-/** Outcome of a Swiss Teams draw attempt: the drawn round, or a rejection. */
-export type DrawSwissTeamsResult =
-  | { ok: true; roundNumber: number; hadUnavoidableRepeat: boolean }
+/**
+ * A previewed (but NOT committed) Swiss Teams draw: the proposed matches (stable
+ * team ids the client echoes back on commit), the odd-field resolution (bye or
+ * triangle), resolved team names for display, and the repeat advisory. Nothing
+ * is written to the DB by a preview.
+ */
+export type PreviewSwissTeamsResult =
+  | {
+      ok: true;
+      roundNumber: number;
+      teams: number;
+      matches: TeamsMatch[];
+      byeTeamId: TeamId | null;
+      triangle: TeamsTriangle | null;
+      named: NamedTeamsSeating;
+      hadUnavoidableRepeat: boolean;
+    }
   | { ok: false; reason: DrawSwissTeamsRejection };
+
+/** Outcome of committing a Swiss Teams round. */
+export type CommitSwissTeamsResult =
+  | { ok: true; roundNumber: number }
+  | { ok: false; reason: DrawSwissTeamsRejection | "INVALID_MATCHES" };
 
 /** The current-round number and the matches already played, from board rows. */
 interface SwissTeamsHistory {

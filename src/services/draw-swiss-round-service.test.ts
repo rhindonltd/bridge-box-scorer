@@ -13,9 +13,21 @@ vi.mock("@/db/games/queries/swiss-board-history", () => ({
 }));
 vi.mock("@/services/materialize-swiss-round", () => ({
   materializeSwissRound: vi.fn(),
+  // The real swissPairMovementId is pure; keep it so resolveSwissSeatingNames
+  // (mocked below) isn't needed to import it. Not used directly here.
+  swissPairMovementId: (_t: number, id: number) => `${id}NS`,
+}));
+// Preview resolves player names; stub it so the service test stays DB-free.
+vi.mock("@/services/swiss-seating-names", () => ({
+  resolveSwissSeatingNames: vi
+    .fn()
+    .mockResolvedValue({ tables: [], bye: null }),
 }));
 
-import { drawNextSwissRound } from "./draw-swiss-round-service";
+import {
+  previewNextSwissRound,
+  commitNextSwissRound,
+} from "./draw-swiss-round-service";
 import { getDb } from "@/db/games";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
@@ -44,181 +56,226 @@ function stubDb(statusRows: { status: string }[]) {
   return { select: () => chain };
 }
 
-describe("drawNextSwissRound", () => {
+/** Seed a Swiss section + fully-scored round-1 history so a draw proceeds. */
+function seedDrawable(over: { stationaryPairs?: number[] } = {}) {
+  vi.mocked(getDb).mockResolvedValue(
+    stubDb([{ status: "CONFIRMED" }, { status: "OVERRIDDEN" }]) as never,
+  );
+  vi.mocked(getSectionMovement).mockResolvedValue({
+    source: "SWISS",
+    swiss: { tables: 2, rounds: 4, boardsPerRound: 2, ...over },
+  } as never);
+  vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(1) as never);
+  vi.mocked(computeSectionLeaderboards).mockResolvedValue([
+    {
+      section: "A",
+      overallScore: { lines: [{ pairId: "1NS" }, { pairId: "1EW" }] },
+    },
+  ] as never);
+  vi.mocked(swissPairIdFromParticipant).mockImplementation((pairId: string) =>
+    pairId === "1NS" ? 1 : pairId === "1EW" ? 3 : null,
+  );
+}
+
+describe("previewNextSwissRound", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("throws when the game db does not exist", async () => {
-    vi.mocked(getDb).mockResolvedValue(undefined as any);
+    vi.mocked(getDb).mockResolvedValue(undefined as never);
 
-    await expect(drawNextSwissRound("g1", "A")).rejects.toThrow(
+    await expect(previewNextSwissRound("g1", "A")).rejects.toThrow(
       "Game db does not exist",
     );
   });
 
   it("rejects a non-Swiss section (no movement selected)", async () => {
-    vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
-    vi.mocked(getSectionMovement).mockResolvedValue(null as any);
+    vi.mocked(getDb).mockResolvedValue(stubDb([]) as never);
+    vi.mocked(getSectionMovement).mockResolvedValue(null as never);
 
-    await expect(drawNextSwissRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "NOT_SWISS",
     });
   });
 
   it("rejects a section whose movement is not SWISS", async () => {
-    vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
+    vi.mocked(getDb).mockResolvedValue(stubDb([]) as never);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "MITCHELL",
-    } as any);
+    } as never);
 
-    await expect(drawNextSwissRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "NOT_SWISS",
     });
   });
 
   it("rejects when every round has already been drawn (event complete)", async () => {
-    vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
+    vi.mocked(getDb).mockResolvedValue(stubDb([]) as never);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS",
       swiss: { tables: 2, rounds: 2, boardsPerRound: 2 },
-    } as any);
-    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(2) as any);
+    } as never);
+    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(2) as never);
 
-    await expect(drawNextSwissRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "EVENT_COMPLETE",
     });
   });
 
   it("rejects when the current round is not fully scored", async () => {
-    // A playable board that is still NOT_PLAYED -> round incomplete.
     vi.mocked(getDb).mockResolvedValue(
-      stubDb([{ status: "NOT_PLAYED" }]) as any,
+      stubDb([{ status: "NOT_PLAYED" }]) as never,
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS",
       swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
-    } as any);
-    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(1) as any);
+    } as never);
+    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(1) as never);
 
-    await expect(drawNextSwissRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "ROUND_INCOMPLETE",
     });
   });
 
-  it("draws the next round when the current round is complete, ranking from the leaderboard and appending unseen pairs", async () => {
-    // Round 1 is fully scored (all CONFIRMED/OVERRIDDEN).
-    vi.mocked(getDb).mockResolvedValue(
-      stubDb([
-        { status: "CONFIRMED" },
-        { status: "OVERRIDDEN" },
-        { status: "SIT_OUT" },
-      ]) as any,
-    );
+  it("treats a round with only sit-out boards as incomplete", async () => {
+    vi.mocked(getDb).mockResolvedValue(stubDb([{ status: "SIT_OUT" }]) as never);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS",
-      // stationaryPairs deliberately undefined -> exercises the `?? []` fallback.
       swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
-    } as any);
-    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(1) as any);
+    } as never);
+    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(1) as never);
 
-    // The leaderboard ranks only pairs 1 and 3; pairs 2 and 4 are appended by
-    // the "not yet ranked" loop.
-    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
-      {
-        section: "A",
-        overallScore: { lines: [{ pairId: "1NS" }, { pairId: "1EW" }] },
-      },
-    ] as any);
-    vi.mocked(swissPairIdFromParticipant).mockImplementation(
-      (pairId: string) => (pairId === "1NS" ? 1 : pairId === "1EW" ? 3 : null),
-    );
-    vi.mocked(materializeSwissRound).mockResolvedValue({ written: true });
+    await expect(previewNextSwissRound("g1", "A")).resolves.toEqual({
+      ok: false,
+      reason: "ROUND_INCOMPLETE",
+    });
+  });
 
-    const result = await drawNextSwissRound("g1", "A");
+  it("computes the next round's seating WITHOUT writing anything", async () => {
+    seedDrawable();
+
+    const result = await previewNextSwissRound("g1", "A");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(2);
-    expect(materializeSwissRound).toHaveBeenCalledTimes(1);
-    // The draw fed round 2 (currentRound 1 + 1).
-    expect(materializeSwissRound).toHaveBeenCalledWith(
-      "g1",
-      "A",
-      2,
-      2,
-      2,
-      expect.any(Array),
-      null,
-    );
-  });
-
-  it("treats a round with only sit-out boards as incomplete (nothing to score from)", async () => {
-    // Every board is SIT_OUT -> playable is empty -> isRoundComplete false.
-    vi.mocked(getDb).mockResolvedValue(stubDb([{ status: "SIT_OUT" }]) as any);
-    vi.mocked(getSectionMovement).mockResolvedValue({
-      source: "SWISS",
-      swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
-    } as any);
-    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(1) as any);
-
-    await expect(drawNextSwissRound("g1", "A")).resolves.toEqual({
-      ok: false,
-      reason: "ROUND_INCOMPLETE",
-    });
+    expect(result.tables).toBe(2);
+    expect(result.seating.length).toBeGreaterThan(0);
+    // A preview must never materialize.
+    expect(materializeSwissRound).not.toHaveBeenCalled();
   });
 
   it("ranks purely from the append loop when the leaderboard has no line for this section", async () => {
-    // currentRound 0 -> no round-complete check; leaderboard lists a different
-    // section so `sectionBoard` is undefined and all pairs come from the loop.
-    vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
+    vi.mocked(getDb).mockResolvedValue(stubDb([]) as never);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS",
       swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
-    } as any);
-    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(0) as any);
+    } as never);
+    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(0) as never);
     vi.mocked(computeSectionLeaderboards).mockResolvedValue([
       { section: "B", overallScore: { lines: [{ pairId: "1NS" }] } },
-    ] as any);
-    vi.mocked(materializeSwissRound).mockResolvedValue({ written: true });
+    ] as never);
 
-    const result = await drawNextSwissRound("g1", "A");
+    const result = await previewNextSwissRound("g1", "A");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(1);
     expect(swissPairIdFromParticipant).not.toHaveBeenCalled();
   });
+});
 
-  it("skips a duplicate pair id already seen on the leaderboard", async () => {
+describe("commitNextSwissRound", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("materializes the exact seating it is given", async () => {
+    seedDrawable();
+    vi.mocked(materializeSwissRound).mockResolvedValue({ written: true });
+
+    // A structurally-valid arrangement for 2 tables (pairs 1..4).
+    const seating = [
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 2, ew: 4 },
+    ];
+
+    const result = await commitNextSwissRound("g1", "A", seating, null);
+
+    expect(result).toEqual({ ok: true, roundNumber: 2 });
+    expect(materializeSwissRound).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      2,
+      2,
+      2,
+      seating,
+      null,
+    );
+  });
+
+  it("commits a director-edited (swapped) seating verbatim", async () => {
+    seedDrawable();
+    vi.mocked(materializeSwissRound).mockResolvedValue({ written: true });
+
+    // Pairs 3 and 4 swapped vs the natural draw — still structurally valid.
+    const edited = [
+      { tableNumber: 1, ns: 1, ew: 4 },
+      { tableNumber: 2, ns: 2, ew: 3 },
+    ];
+
+    const result = await commitNextSwissRound("g1", "A", edited, null);
+
+    expect(result.ok).toBe(true);
+    expect(materializeSwissRound).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      2,
+      2,
+      2,
+      edited,
+      null,
+    );
+  });
+
+  it("rejects a structurally-invalid seating without writing", async () => {
+    seedDrawable();
+
+    // Pair 1 seated twice, pair 2 missing.
+    const invalid = [
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 1, ew: 4 },
+    ];
+
+    const result = await commitNextSwissRound("g1", "A", invalid, null);
+
+    expect(result).toEqual({ ok: false, reason: "INVALID_SEATING" });
+    expect(materializeSwissRound).not.toHaveBeenCalled();
+  });
+
+  it("propagates a precondition rejection (e.g. round incomplete)", async () => {
     vi.mocked(getDb).mockResolvedValue(
-      stubDb([{ status: "CONFIRMED" }]) as any,
+      stubDb([{ status: "NOT_PLAYED" }]) as never,
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS",
-      swiss: {
-        tables: 2,
-        rounds: 4,
-        boardsPerRound: 2,
-        stationaryPairs: [1],
-      },
-    } as any);
-    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(1) as any);
-    // pairId "1NS" appears twice; the second is de-duplicated.
-    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
-      {
-        section: "A",
-        overallScore: { lines: [{ pairId: "1NS" }, { pairId: "1NS" }] },
-      },
-    ] as any);
-    vi.mocked(swissPairIdFromParticipant).mockReturnValue(1);
-    vi.mocked(materializeSwissRound).mockResolvedValue({ written: true });
+      swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
+    } as never);
+    vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(1) as never);
 
-    const result = await drawNextSwissRound("g1", "A");
-    expect(result.ok).toBe(true);
+    const result = await commitNextSwissRound(
+      "g1",
+      "A",
+      [{ tableNumber: 1, ns: 1, ew: 3 }],
+      null,
+    );
+
+    expect(result).toEqual({ ok: false, reason: "ROUND_INCOMPLETE" });
+    expect(materializeSwissRound).not.toHaveBeenCalled();
   });
 });

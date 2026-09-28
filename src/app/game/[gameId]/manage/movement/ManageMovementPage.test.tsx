@@ -29,7 +29,8 @@ vi.mock("@/hooks/results-complete", () => ({
 
 // SwissDrawControl (rendered for a Swiss section) calls the swiss service.
 vi.mock("@/lib/swiss-service", () => ({
-  drawNextSwissRound: vi.fn(),
+  previewNextSwissRound: vi.fn(),
+  commitNextSwissRound: vi.fn(),
 }));
 
 // Capture the SWR key the page requests so we can assert the section param.

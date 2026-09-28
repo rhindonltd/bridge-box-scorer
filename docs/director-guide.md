@@ -156,9 +156,11 @@ is no separate team sign-up. Tap **Swiss Teams**, set the **rounds** and
 
 Each round, two teams play the same boards against each other in two rooms:
 every team's North/South pair stays at their home table, and their other pair
-moves to the opponents' table. The first round is a random draw; you draw each
-later round from the standings during play (see
-[Drawing the next Swiss round](#drawing-the-next-swiss-round)).
+moves to the opponents' table. The first round is a random draw.
+
+> Drawing later **Swiss Teams** rounds from the app is not yet available; for
+> now this applies to **Swiss Pairs** (see
+> [Drawing the next Swiss round](#drawing-the-next-swiss-round)).
 
 Swiss Teams needs an **even number of teams** and a single section. If you have
 an odd number of tables, add or remove one before starting — the game won't
@@ -228,27 +230,38 @@ progress the same place shows the live timer controls (start, pause, adjust).
 
 ### Drawing the next Swiss round
 
-In a **Swiss Pairs** or **Swiss Teams** game, the **Movement** screen shows a
-**Draw Next Round** button. It stays disabled until **every result for the
-current round is in**, so you have time to enter any adjusted scores first. When
-you tap it, the app works out the next round from the current standings —
-pairing close-ranked pairs or teams and avoiding repeat opponents — and the new
-round's seating appears on every device. In Swiss Pairs it also honours any
-stationary pairs.
+In a **Swiss Pairs** game, the **Movement** screen shows a **Draw Next Round**
+button. It stays disabled until **every result for the current round is in**, so
+you have time to enter any adjusted scores first.
 
-- If a repeat pairing couldn't be avoided, or (in Swiss Pairs) two stationary
-  pairs had to meet, the app tells you so you can adjust the seating by hand if
-  you wish.
-- In **Swiss Pairs**, an odd number of pairs means one pair gets a **bye** that
-  round (chosen from those near the bottom who haven't yet had one) and is
-  credited an above-average score.
-- In **Swiss Teams**, every team plays each round (there are no byes), so the
-  team count must stay even.
+When you tap it, the app works out the next round from the current standings —
+pairing close-ranked pairs and avoiding repeat opponents, honouring any
+stationary pairs — and shows you a **review** of the proposed seating **before
+anything is saved**: each table with the two pairs' names, and the pair sitting
+out (the bye) if the field is odd. **Nothing is committed until you accept it.**
 
-For teams, the new round tells each team's travelling pair which table to move
-to; the pairs staying at home just see their new opponents and boards.
+On the review screen you can:
+
+- **Swap two pairs** — tap one pair, then another, and they exchange seats.
+- **Reassign the bye** — tap a seated pair, then the **sit-out** slot, to give
+  that pair the bye instead.
+- **OK** — commit the seating exactly as shown; the new round's seating then
+  appears on every device.
+- **Cancel** — discard the draw and go back; nothing is saved, so you can draw
+  again.
+
+As you adjust, the app re-checks the seating and warns you (without blocking) if
+a pairing repeats an earlier-round opponent, a stationary pair is off its home
+seat, or the pair you've given the bye has already had one. You're free to
+accept an override anyway — the warnings are advice, not a barrier.
+
+- An odd number of pairs means one pair gets a **bye** that round (the app
+  suggests one from near the bottom who hasn't yet had one) and is credited an
+  above-average score.
 
 Repeat this each round until the event is complete.
+
+> **Swiss Teams** draws are not yet available through the app.
 
 ---
 

@@ -18,7 +18,7 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
 let tmpDir: string;
 let gameId: string;
 
-describe("drawNextSwissRound", () => {
+describe("preview/commit next Swiss round", () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "swiss-draw-"));
     process.env.DATABASE_GAMES_URL = tmpDir;
@@ -79,46 +79,66 @@ describe("drawNextSwissRound", () => {
       .where(and(eq(boards.roundNumber, round)));
   }
 
-  it("rejects the draw while the current round is not fully scored", async () => {
-    await setupSwiss();
-    const { drawNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
-
-    const result = await drawNextSwissRound(gameId, "A");
-    expect(result).toEqual({ ok: false, reason: "ROUND_INCOMPLETE" });
-  });
-
-  it("draws round 2 with no repeat opponents once round 1 is complete", async () => {
-    await setupSwiss();
-    await confirmRound(1);
-
-    const { drawNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
+  async function round2Boards() {
     const games = await import("@/db/games");
     const { boards } = await import("@/db/games/tables/boards");
     const { and, eq } = await import("drizzle-orm");
+    const db = (await games.getDb(gameId))!;
+    return db.select().from(boards).where(and(eq(boards.roundNumber, 2)));
+  }
 
-    const result = await drawNextSwissRound(gameId, "A");
+  it("preview rejects while the current round is not fully scored", async () => {
+    await setupSwiss();
+    const { previewNextSwissRound } = await import(
+      "@/services/draw-swiss-round-service"
+    );
+
+    const result = await previewNextSwissRound(gameId, "A");
+    expect(result).toEqual({ ok: false, reason: "ROUND_INCOMPLETE" });
+  });
+
+  it("preview computes seating but writes NOTHING", async () => {
+    await setupSwiss();
+    await confirmRound(1);
+
+    const { previewNextSwissRound } = await import(
+      "@/services/draw-swiss-round-service"
+    );
+
+    const result = await previewNextSwissRound(gameId, "A");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(2);
+    expect(result.seating.length).toBe(2);
 
-    const db = (await games.getDb(gameId))!;
-    const round2 = await db
-      .select()
-      .from(boards)
-      .where(and(eq(boards.roundNumber, 2)));
+    // Crucially, no round-2 boards exist yet — the preview did not commit.
+    expect(await round2Boards()).toHaveLength(0);
+  });
 
-    // Round 2 boards were materialized (boards 3..4 for boardsPerRound=2).
-    expect(round2.length).toBeGreaterThan(0);
-    expect(new Set(round2.map((r) => r.boardNumber))).toEqual(
-      new Set([3, 4]),
+  it("commit materializes the previewed seating with no repeat opponents", async () => {
+    await setupSwiss();
+    await confirmRound(1);
+
+    const { previewNextSwissRound, commitNextSwissRound } = await import(
+      "@/services/draw-swiss-round-service"
     );
 
-    // No round-2 matchup repeats a round-1 matchup. Round 1 pairings were
-    // {A1NS,A1EW} and {A2NS,A2EW}; assert neither recurs.
+    const preview = await previewNextSwissRound(gameId, "A");
+    expect(preview.ok).toBe(true);
+    if (!preview.ok) return;
+
+    const commit = await commitNextSwissRound(
+      gameId,
+      "A",
+      preview.seating,
+      preview.sitOutPairId,
+    );
+    expect(commit).toEqual({ ok: true, roundNumber: 2 });
+
+    const round2 = await round2Boards();
+    expect(new Set(round2.map((r) => r.boardNumber))).toEqual(new Set([3, 4]));
+
+    // No round-2 matchup repeats a round-1 matchup.
     const round2Pairings = new Set(
       round2.map((r) => [r.ns, r.ew].sort().join("|")),
     );
@@ -126,20 +146,63 @@ describe("drawNextSwissRound", () => {
     expect(round2Pairings.has(["A2NS", "A2EW"].sort().join("|"))).toBe(false);
   });
 
-  it("rejects a draw once every round has been drawn", async () => {
-    // A 1-round event: after round 1 there is nothing left to draw.
-    await setupSwiss(2, 1);
+  it("commit persists a director-EDITED seating verbatim (Option B)", async () => {
+    await setupSwiss();
     await confirmRound(1);
 
-    const { drawNextSwissRound } = await import(
+    const { commitNextSwissRound } = await import(
       "@/services/draw-swiss-round-service"
     );
 
-    const result = await drawNextSwissRound(gameId, "A");
+    // Deliberately commit an arrangement that repeats round 1's pairings (an
+    // override the director is allowed to make): pair 1 vs pair 3 again.
+    const edited = [
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 2, ew: 4 },
+    ];
+
+    const commit = await commitNextSwissRound(gameId, "A", edited, null);
+    expect(commit).toEqual({ ok: true, roundNumber: 2 });
+
+    // The DB reflects EXACTLY the edited seating (the repeat pairing is present,
+    // proving advisories don't block a commit).
+    const round2 = await round2Boards();
+    const pairings = new Set(round2.map((r) => [r.ns, r.ew].sort().join("|")));
+    expect(pairings.has(["A1NS", "A1EW"].sort().join("|"))).toBe(true);
+  });
+
+  it("commit rejects a structurally-invalid seating and writes nothing", async () => {
+    await setupSwiss();
+    await confirmRound(1);
+
+    const { commitNextSwissRound } = await import(
+      "@/services/draw-swiss-round-service"
+    );
+
+    // Pair 1 seated twice, pair 4 missing.
+    const invalid = [
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 1, ew: 2 },
+    ];
+
+    const commit = await commitNextSwissRound(gameId, "A", invalid, null);
+    expect(commit).toEqual({ ok: false, reason: "INVALID_SEATING" });
+    expect(await round2Boards()).toHaveLength(0);
+  });
+
+  it("preview rejects once every round has been drawn", async () => {
+    await setupSwiss(2, 1);
+    await confirmRound(1);
+
+    const { previewNextSwissRound } = await import(
+      "@/services/draw-swiss-round-service"
+    );
+
+    const result = await previewNextSwissRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "EVENT_COMPLETE" });
   });
 
-  it("rejects a draw for a non-Swiss section", async () => {
+  it("preview rejects for a non-Swiss section", async () => {
     const { createGameDb } = await import("@/db/games/actions/create-game");
     const { setSectionMovement } = await import(
       "@/db/games/actions/set-section-movement"
@@ -150,10 +213,10 @@ describe("drawNextSwissRound", () => {
       mitchell: { tables: 2, rounds: 2, boardsPerRound: 2 },
     });
 
-    const { drawNextSwissRound } = await import(
+    const { previewNextSwissRound } = await import(
       "@/services/draw-swiss-round-service"
     );
-    const result = await drawNextSwissRound(gameId, "A");
+    const result = await previewNextSwissRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "NOT_SWISS" });
   });
 });

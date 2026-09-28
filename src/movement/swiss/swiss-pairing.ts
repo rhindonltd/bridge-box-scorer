@@ -427,3 +427,246 @@ function seatAtHome(
     ? { tableNumber: home.tableNumber, ns: anchor, ew: opponent }
     : { tableNumber: home.tableNumber, ns: opponent, ew: anchor };
 }
+
+// --- Director editing of a drawn round -----------------------------------
+//
+// The director can hand-adjust a drawn round before committing it: swap any two
+// pairs' positions, or (when the field is odd) choose a different pair to sit
+// out. These operate on the drawn SwissSeating[] as plain data, and the result
+// is re-evaluated with evaluateSwissSeating so the advisories reflect the edit.
+
+/**
+ * Every pair id currently seated in a seating (both directions, every table),
+ * in the order encountered. Excludes any sit-out pair (which is not in the
+ * seating array).
+ */
+export function seatedPairIds(seating: SwissSeating[]): SwissPairId[] {
+  const ids: SwissPairId[] = [];
+  for (const s of seating) {
+    ids.push(s.ns, s.ew);
+  }
+  return ids;
+}
+
+/**
+ * Swap the positions of two pairs in a drawn seating. Wherever `pairA` sits
+ * (table + direction), `pairB` now sits, and vice versa — so the two pairs
+ * exchange seats exactly. Every other seat is untouched, and each pair still
+ * appears exactly once, so the result is always structurally valid.
+ *
+ * If either pair is not seated (e.g. one is the current sit-out), the seating
+ * is returned unchanged — reassigning a bye is done with {@link reassignBye},
+ * not a swap.
+ */
+export function swapPairs(
+  seating: SwissSeating[],
+  pairA: SwissPairId,
+  pairB: SwissPairId,
+): SwissSeating[] {
+  if (pairA === pairB) return seating.map((s) => ({ ...s }));
+
+  const isSeated = (id: SwissPairId) =>
+    seating.some((s) => s.ns === id || s.ew === id);
+  if (!isSeated(pairA) || !isSeated(pairB)) {
+    return seating.map((s) => ({ ...s }));
+  }
+
+  const swapId = (id: SwissPairId): SwissPairId =>
+    id === pairA ? pairB : id === pairB ? pairA : id;
+
+  return seating.map((s) => ({
+    tableNumber: s.tableNumber,
+    ns: swapId(s.ns),
+    ew: swapId(s.ew),
+  }));
+}
+
+/**
+ * Reassign the bye to a different pair. The pair that was sitting out
+ * (`currentSitOut`) takes the seat currently held by `newSitOut`, and
+ * `newSitOut` becomes the sit-out. If there is no current sit-out (an even
+ * field) or the incoming pair isn't seated, the seating is returned unchanged.
+ *
+ * Returns the new seating and the new sit-out pair id.
+ */
+export function reassignBye(
+  seating: SwissSeating[],
+  currentSitOut: SwissPairId | null,
+  newSitOut: SwissPairId,
+): { seating: SwissSeating[]; sitOutPairId: SwissPairId } {
+  if (currentSitOut == null || newSitOut === currentSitOut) {
+    return {
+      seating: seating.map((s) => ({ ...s })),
+      sitOutPairId: currentSitOut ?? newSitOut,
+    };
+  }
+
+  const isSeated = seating.some((s) => s.ns === newSitOut || s.ew === newSitOut);
+  if (!isSeated) {
+    return { seating: seating.map((s) => ({ ...s })), sitOutPairId: currentSitOut };
+  }
+
+  // The formerly-sitting-out pair takes the seat the incoming sit-out vacates.
+  const replaceId = (id: SwissPairId): SwissPairId =>
+    id === newSitOut ? currentSitOut : id;
+
+  return {
+    seating: seating.map((s) => ({
+      tableNumber: s.tableNumber,
+      ns: replaceId(s.ns),
+      ew: replaceId(s.ew),
+    })),
+    sitOutPairId: newSitOut,
+  };
+}
+
+/** A per-arrangement advisory, keyed so the UI can render specifics. */
+export interface SwissSeatingAdvisories {
+  /** True when the seating is not a valid complete arrangement (see reasons). */
+  structuralError: boolean;
+  /** Human-readable structural problems (a pair seated twice, wrong count, …). */
+  structuralReasons: string[];
+  /** Unordered-pair keys of matches that repeat a previously-played opponent. */
+  repeats: string[];
+  /** True when any drawn match repeats a prior opponent. */
+  hadUnavoidableRepeat: boolean;
+  /** True when two stationary pairs are seated together, or one is off its home. */
+  hadStationaryConflict: boolean;
+  /** True when the pair chosen to sit out has already had a bye this event. */
+  byeRepeat: boolean;
+}
+
+/**
+ * Evaluate ANY seating (a fresh draw or a director-edited one) against the
+ * event history, reporting the same advisories a draw surfaces plus structural
+ * validity and specific repeat pairings. Pure, so it runs identically on the
+ * server (initial draw) and the client (after each edit) with no round-trip.
+ *
+ * It never rejects — a director override may intentionally create a repeat or a
+ * stationary conflict; this only *reports* so the UI can warn.
+ */
+export function evaluateSwissSeating(
+  seating: SwissSeating[],
+  sitOutPairId: SwissPairId | null,
+  input: SwissDrawInput,
+): SwissSeatingAdvisories {
+  const { tables, playedOpponents, hadBye, stationary } = input;
+
+  // Structural checks: every pair seated exactly once, plus the sit-out, cover
+  // the whole field; table numbers are within range and unique.
+  const structuralReasons: string[] = [];
+  const seatedIds = seatedPairIds(seating);
+  const allIds = sitOutPairId == null ? seatedIds : [...seatedIds, sitOutPairId];
+  const counts = new Map<SwissPairId, number>();
+  for (const id of allIds) counts.set(id, (counts.get(id) ?? 0) + 1);
+
+  const expected = swissPairIds(tables);
+  for (const id of expected) {
+    const c = counts.get(id) ?? 0;
+    if (c === 0) structuralReasons.push(`Pair ${id} is not seated`);
+    if (c > 1) structuralReasons.push(`Pair ${id} is seated more than once`);
+  }
+  for (const [id] of counts) {
+    if (!expected.includes(id)) {
+      structuralReasons.push(`Unknown pair ${id} is seated`);
+    }
+  }
+  const tableNumbers = seating.map((s) => s.tableNumber);
+  if (new Set(tableNumbers).size !== tableNumbers.length) {
+    structuralReasons.push("Two matches share a table");
+  }
+
+  // Repeat pairings: any seated match whose opponent key is in history.
+  const repeats: string[] = [];
+  for (const s of seating) {
+    const key = opponentKey(s.ns, s.ew);
+    if (playedOpponents.has(key)) repeats.push(key);
+  }
+
+  // Stationary conflict: a stationary pair off its home seat, or two stationary
+  // pairs seated together.
+  let hadStationaryConflict = false;
+  for (const s of seating) {
+    const nsStat = stationary.get(s.ns);
+    const ewStat = stationary.get(s.ew);
+    if (nsStat && ewStat) {
+      hadStationaryConflict = true;
+      continue;
+    }
+    if (
+      nsStat &&
+      (nsStat.tableNumber !== s.tableNumber || nsStat.direction !== "NS")
+    ) {
+      hadStationaryConflict = true;
+    }
+    if (
+      ewStat &&
+      (ewStat.tableNumber !== s.tableNumber || ewStat.direction !== "EW")
+    ) {
+      hadStationaryConflict = true;
+    }
+  }
+
+  const byeRepeat = sitOutPairId != null && hadBye.has(sitOutPairId);
+
+  return {
+    structuralError: structuralReasons.length > 0,
+    structuralReasons,
+    repeats,
+    hadUnavoidableRepeat: repeats.length > 0,
+    hadStationaryConflict,
+    byeRepeat,
+  };
+}
+
+
+/**
+ * The advisory-relevant parts of a {@link SwissDrawInput}, in a
+ * JSON-serializable shape (Sets/Maps flattened to arrays). The server sends
+ * this with a draw preview so the director's device can re-run
+ * {@link evaluateSwissSeating} locally after each edit — no round-trip, and
+ * identical logic to the server's initial draw.
+ */
+export interface SerializableAdvisoryInputs {
+  tables: number;
+  /** Unordered-pair opponent keys already played (see {@link opponentKey}). */
+  playedOpponents: string[];
+  /** Pair ids that have already had a bye. */
+  hadBye: SwissPairId[];
+  /** Per-pair NS/EW counts so far, as [pairId, {ns, ew}] entries. */
+  directionCounts: [SwissPairId, { ns: number; ew: number }][];
+  /** Stationary pairs and their home seats, as [pairId, home] entries. */
+  stationary: [SwissPairId, SwissHomeSeat][];
+}
+
+/** Flatten the advisory-relevant parts of a draw input for transport. */
+export function serializeAdvisoryInputs(
+  input: SwissDrawInput,
+): SerializableAdvisoryInputs {
+  return {
+    tables: input.tables,
+    playedOpponents: [...input.playedOpponents],
+    hadBye: [...input.hadBye],
+    directionCounts: [...input.directionCounts.entries()],
+    stationary: [...input.stationary.entries()],
+  };
+}
+
+/**
+ * Rehydrate {@link SerializableAdvisoryInputs} into the shape
+ * {@link evaluateSwissSeating} expects. Standings are irrelevant to the
+ * advisory check (it evaluates a given seating, not how to draw one), so an
+ * empty standings array is supplied.
+ */
+export function rehydrateAdvisoryInputs(
+  inputs: SerializableAdvisoryInputs,
+): SwissDrawInput {
+  return {
+    tables: inputs.tables,
+    standings: [],
+    playedOpponents: new Set(inputs.playedOpponents),
+    hadBye: new Set(inputs.hadBye),
+    directionCounts: new Map(inputs.directionCounts),
+    stationary: new Map(inputs.stationary),
+  };
+}

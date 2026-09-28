@@ -3,12 +3,16 @@ import type { Server, Socket } from "socket.io";
 
 vi.mock("./draw-next-round.handler", () => ({
   registerDrawNextRoundHandler: vi.fn(),
+  registerPreviewNextRoundHandler: vi.fn(),
 }));
 vi.mock("./draw-next-teams-round.handler", () => ({
   registerDrawNextTeamsRoundHandler: vi.fn(),
 }));
 
-import { registerDrawNextRoundHandler } from "./draw-next-round.handler";
+import {
+  registerDrawNextRoundHandler,
+  registerPreviewNextRoundHandler,
+} from "./draw-next-round.handler";
 import { registerDrawNextTeamsRoundHandler } from "./draw-next-teams-round.handler";
 import { registerSwissHandlers } from "./swiss.handlers";
 
@@ -23,6 +27,7 @@ describe("registerSwissHandlers", () => {
 
     registerSwissHandlers(socket, io);
 
+    expect(registerPreviewNextRoundHandler).toHaveBeenCalledWith(socket, io);
     expect(registerDrawNextRoundHandler).toHaveBeenCalledWith(socket, io);
     expect(registerDrawNextTeamsRoundHandler).toHaveBeenCalledWith(socket, io);
   });
