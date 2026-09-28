@@ -25,6 +25,10 @@ export function SettingsMenuPage() {
           BridgeWebs
         </Link>
 
+        <Link href="/settings/cloud-sync" className={settingsButtonClasses}>
+          Cloud Backup
+        </Link>
+
         <Link href="/settings/admin-key" className={settingsButtonClasses}>
           Update Admin Key
         </Link>

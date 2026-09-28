@@ -25,6 +25,10 @@ export const swrKeys = {
 
   bridgewebs: () => "/api/system/bridgewebs",
 
+  cloudSync: () => "/api/system/cloud-sync",
+
+  cloudSyncStatus: () => "/api/system/cloud-sync/status",
+
   bridgewebsEvents: (date: string) =>
     `/api/games/bridgewebs/events?date=${encodeURIComponent(date)}`,
 
