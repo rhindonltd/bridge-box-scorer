@@ -57,6 +57,12 @@ const previewAck: SwissPreviewAck = {
     directionCounts: [],
     stationary: [],
   },
+  standings: [
+    { id: 1, name: "1st place pair", total: 30, rank: 1, tied: false },
+    { id: 3, name: "2nd place pair", total: 25, rank: 2, tied: false },
+    { id: 2, name: "3rd place pair", total: 20, rank: 3, tied: false },
+    { id: 4, name: "4th place pair", total: 15, rank: 4, tied: false },
+  ],
   hadUnavoidableRepeat: false,
   hadStationaryConflict: false,
 };
@@ -105,7 +111,9 @@ export const PreviewsTheDraw: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByTestId("draw-next-round"));
     await waitFor(() => canvas.getByTestId("draw-confirm"));
-    await expect(canvas.getByText("Alice North / Bob South")).toBeVisible();
+    // Player names render one per line on the pair cards.
+    await expect(canvas.getByText("Alice North")).toBeVisible();
+    await expect(canvas.getByText("Bob South")).toBeVisible();
   },
 };
 

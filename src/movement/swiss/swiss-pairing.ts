@@ -534,6 +534,12 @@ export interface SwissSeatingAdvisories {
   hadStationaryConflict: boolean;
   /** True when the pair chosen to sit out has already had a bye this event. */
   byeRepeat: boolean;
+  /**
+   * The table numbers with a problem the director should look at — a repeat
+   * pairing or a stationary-seat conflict — so the UI can highlight exactly
+   * which tables to check. Ascending, de-duplicated.
+   */
+  problemTables: number[];
 }
 
 /**
@@ -576,11 +582,17 @@ export function evaluateSwissSeating(
     structuralReasons.push("Two matches share a table");
   }
 
+  // Tables the director should check, collected as problems are found.
+  const problemTableSet = new Set<number>();
+
   // Repeat pairings: any seated match whose opponent key is in history.
   const repeats: string[] = [];
   for (const s of seating) {
     const key = opponentKey(s.ns, s.ew);
-    if (playedOpponents.has(key)) repeats.push(key);
+    if (playedOpponents.has(key)) {
+      repeats.push(key);
+      problemTableSet.add(s.tableNumber);
+    }
   }
 
   // Stationary conflict: a stationary pair off its home seat, or two stationary
@@ -591,6 +603,7 @@ export function evaluateSwissSeating(
     const ewStat = stationary.get(s.ew);
     if (nsStat && ewStat) {
       hadStationaryConflict = true;
+      problemTableSet.add(s.tableNumber);
       continue;
     }
     if (
@@ -598,12 +611,14 @@ export function evaluateSwissSeating(
       (nsStat.tableNumber !== s.tableNumber || nsStat.direction !== "NS")
     ) {
       hadStationaryConflict = true;
+      problemTableSet.add(s.tableNumber);
     }
     if (
       ewStat &&
       (ewStat.tableNumber !== s.tableNumber || ewStat.direction !== "EW")
     ) {
       hadStationaryConflict = true;
+      problemTableSet.add(s.tableNumber);
     }
   }
 
@@ -616,6 +631,7 @@ export function evaluateSwissSeating(
     hadUnavoidableRepeat: repeats.length > 0,
     hadStationaryConflict,
     byeRepeat,
+    problemTables: [...problemTableSet].sort((a, b) => a - b),
   };
 }
 

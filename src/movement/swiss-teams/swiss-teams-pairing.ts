@@ -433,3 +433,167 @@ function normalizeMatch(x: TeamId, y: TeamId): TeamsMatch {
 function sortMatches(matches: TeamsMatch[]): TeamsMatch[] {
   return [...matches].sort((m, n) => m.a - n.a);
 }
+
+// --- Director editing of a drawn teams round ------------------------------
+//
+// The director can hand-adjust a drawn round before committing it. A teams
+// round has no seats or directions to shuffle (home tables are fixed and only
+// away pairs travel), so the single edit primitive is "swap two teams": wherever
+// team X is placed this round — in a match, as the bye, or in the triangle —
+// team Y now sits, and vice versa. That one operation covers every case
+// (swapping two match teams re-pairs both matches; swapping a match team with
+// the bye changes who sits out; swapping into the triangle changes the
+// three-way), and each team still appears exactly once, so the result is always
+// structurally valid. The edited round is re-evaluated with
+// {@link evaluateSwissTeamsRound} so the repeat advisory reflects the change.
+
+/**
+ * A whole drawn round as plain, editable data: the matches plus the odd-field
+ * resolution (a bye team or a triangle, at most one of which is set). This is
+ * what the director edits and what a commit persists verbatim.
+ */
+export interface SwissTeamsRound {
+  matches: TeamsMatch[];
+  byeTeamId: TeamId | null;
+  triangle: TeamsTriangle | null;
+}
+
+/** Every team id placed in a round (matches + bye + triangle), order-agnostic. */
+export function roundTeamIds(round: SwissTeamsRound): TeamId[] {
+  const ids: TeamId[] = [];
+  for (const m of round.matches) ids.push(m.a, m.b);
+  if (round.byeTeamId != null) ids.push(round.byeTeamId);
+  if (round.triangle != null) {
+    ids.push(round.triangle.a, round.triangle.b, round.triangle.c);
+  }
+  return ids;
+}
+
+/**
+ * Swap the positions of two teams in a drawn round. Wherever `teamX` is placed
+ * (a match slot, the bye, or a triangle slot) `teamY` now sits, and vice versa;
+ * every other placement is untouched. Matches and the triangle are re-normalised
+ * to canonical (ascending-id) order so the result is stable and comparable.
+ *
+ * If either team is not part of the round, or the two are the same team, the
+ * round is returned unchanged (deep-copied). Each team still appears exactly
+ * once, so a swap never breaks structural validity.
+ */
+export function swapTeams(
+  round: SwissTeamsRound,
+  teamX: TeamId,
+  teamY: TeamId,
+): SwissTeamsRound {
+  const copy = (): SwissTeamsRound => ({
+    matches: round.matches.map((m) => ({ ...m })),
+    byeTeamId: round.byeTeamId,
+    triangle: round.triangle ? { ...round.triangle } : null,
+  });
+
+  if (teamX === teamY) return copy();
+
+  const present = new Set(roundTeamIds(round));
+  if (!present.has(teamX) || !present.has(teamY)) return copy();
+
+  const swap = (id: TeamId): TeamId =>
+    id === teamX ? teamY : id === teamY ? teamX : id;
+
+  return {
+    matches: sortMatches(
+      round.matches.map((m) => normalizeMatch(swap(m.a), swap(m.b))),
+    ),
+    byeTeamId: round.byeTeamId == null ? null : swap(round.byeTeamId),
+    triangle: round.triangle
+      ? normalizeTriangle(
+          swap(round.triangle.a),
+          swap(round.triangle.b),
+          swap(round.triangle.c),
+        )
+      : null,
+  };
+}
+
+/** Order a triangle's ids ascending so its seating cycle is deterministic. */
+function normalizeTriangle(x: TeamId, y: TeamId, z: TeamId): TeamsTriangle {
+  const [a, b, c] = [x, y, z].sort((p, q) => p - q);
+  return { a, b, c };
+}
+
+/** A per-round advisory for a teams draw, keyed so the UI can flag specifics. */
+export interface SwissTeamsRoundAdvisories {
+  /** True when the round is not a valid complete arrangement (see reasons). */
+  structuralError: boolean;
+  /** Human-readable structural problems (a team placed twice, wrong count, …). */
+  structuralReasons: string[];
+  /** Unordered team-pair keys of matches that repeat a previously-played opponent. */
+  repeats: string[];
+  /** True when any drawn match repeats a prior opponent. */
+  hadUnavoidableRepeat: boolean;
+}
+
+/**
+ * The advisory-relevant history for a teams round, in a JSON-serializable shape
+ * (the Set flattened to an array). The server sends this with a draw preview so
+ * the director's device can re-run {@link evaluateSwissTeamsRound} locally after
+ * each edit — no round-trip, identical logic to the server's initial draw.
+ */
+export interface SerializableTeamsAdvisoryInputs {
+  /** Number of teams in play (must be even overall; odd fields use bye/triangle). */
+  teams: number;
+  /** Unordered team-pair opponent keys already played (see {@link teamOpponentKey}). */
+  playedOpponents: string[];
+}
+
+/**
+ * Evaluate ANY teams round (a fresh draw or a director-edited one) against the
+ * event history, reporting structural validity plus the specific repeat matches.
+ * Pure, so it runs identically on the server (initial draw) and the client
+ * (after each edit) with no round-trip.
+ *
+ * A triangle's three pairwise matchups are each checked against history too, so
+ * a repeat inside a triangle is surfaced. It never rejects — a director override
+ * may intentionally create a repeat; this only *reports* so the UI can warn.
+ */
+export function evaluateSwissTeamsRound(
+  round: SwissTeamsRound,
+  inputs: SerializableTeamsAdvisoryInputs,
+): SwissTeamsRoundAdvisories {
+  const played = new Set(inputs.playedOpponents);
+
+  // Structural checks: every team placed exactly once, covering the whole field.
+  const structuralReasons: string[] = [];
+  const placed = roundTeamIds(round);
+  const counts = new Map<TeamId, number>();
+  for (const id of placed) counts.set(id, (counts.get(id) ?? 0) + 1);
+
+  for (const id of teamIds(inputs.teams)) {
+    const c = counts.get(id) ?? 0;
+    if (c === 0) structuralReasons.push(`Team ${id} is not placed`);
+    if (c > 1) structuralReasons.push(`Team ${id} is placed more than once`);
+  }
+  for (const [id] of counts) {
+    if (id < 1 || id > inputs.teams) {
+      structuralReasons.push(`Unknown team ${id} is placed`);
+    }
+  }
+
+  // Repeat matchups: each drawn match plus each of a triangle's three edges.
+  const repeats: string[] = [];
+  const addIfRepeat = (a: TeamId, b: TeamId) => {
+    const key = teamOpponentKey(a, b);
+    if (played.has(key)) repeats.push(key);
+  };
+  for (const m of round.matches) addIfRepeat(m.a, m.b);
+  if (round.triangle) {
+    addIfRepeat(round.triangle.a, round.triangle.b);
+    addIfRepeat(round.triangle.b, round.triangle.c);
+    addIfRepeat(round.triangle.a, round.triangle.c);
+  }
+
+  return {
+    structuralError: structuralReasons.length > 0,
+    structuralReasons,
+    repeats,
+    hadUnavoidableRepeat: repeats.length > 0,
+  };
+}

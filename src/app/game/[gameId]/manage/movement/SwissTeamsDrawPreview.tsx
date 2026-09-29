@@ -1,6 +1,19 @@
 "use client";
 
-import type { SwissTeamsPreviewAck } from "@/lib/swiss-service";
+import { useMemo, useState } from "react";
+import type {
+  SwissTeamsPreviewAck,
+  TeamsMatchEntry,
+  TeamsTriangleEntry,
+} from "@/lib/swiss-service";
+import type { NamedTeam } from "@/services/swiss-teams-seating-names";
+import {
+  evaluateSwissTeamsRound,
+  swapTeams,
+  teamOpponentKey,
+  type SwissTeamsRound,
+  type TeamId,
+} from "@/movement/swiss-teams/swiss-teams-pairing";
 
 const primaryButtonClass =
   "w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50";
@@ -14,21 +27,27 @@ export interface SwissTeamsDrawPreviewProps {
   committing: boolean;
   /** Inline error from a failed commit, if any. */
   error: string | null;
-  /** Accept the drawn round. */
-  onConfirm: () => void;
+  /** Accept the (possibly edited) round. */
+  onConfirm: (
+    matches: TeamsMatchEntry[],
+    byeTeamId: number | null,
+    triangle: TeamsTriangleEntry | null,
+  ) => void;
   onCancel: () => void;
 }
 
 /**
  * Full-screen review of a freshly-drawn Swiss Teams round before it is
  * committed. Shows each match as the two teams meeting, the sit-out (bye) team,
- * or the three-way triangle, plus a repeat advisory. OK commits the round as
- * shown; Cancel discards it (nothing was written).
+ * or the three-way triangle, plus a repeat advisory.
  *
- * This is read-only for now — the director cannot yet edit a teams draw. The
- * component takes the whole preview and reports OK/Cancel, so editing controls
- * (swap teams, reassign the bye/triangle) can be layered on later without
- * changing how it is hosted.
+ * The director may hand-adjust before accepting: tap two teams to swap their
+ * places this round. Wherever one sits — in a match, as the bye, or in the
+ * triangle — the other takes its place (and vice versa), so a single tap-tap
+ * re-pairs matches, changes who sits out, or reshapes the triangle. The repeat
+ * advisory re-checks live on every edit (the same pure check the server ran)
+ * but never blocks — the director can commit an override. OK commits exactly
+ * what is shown; Cancel discards it (nothing was written).
  */
 export function SwissTeamsDrawPreview({
   preview,
@@ -38,6 +57,69 @@ export function SwissTeamsDrawPreview({
   onCancel,
 }: SwissTeamsDrawPreviewProps) {
   const { named } = preview;
+
+  // The editable round as plain data. Names are resolved once from the preview
+  // (they don't depend on placement), keyed by stable team id.
+  const [round, setRound] = useState<SwissTeamsRound>({
+    matches: preview.matches.map((m) => ({ ...m })),
+    byeTeamId: preview.byeTeamId,
+    triangle: preview.triangle ? { ...preview.triangle } : null,
+  });
+  // The team the director has picked as the first half of a swap, or null.
+  const [selected, setSelected] = useState<TeamId | null>(null);
+
+  // Resolve team id -> display name from the preview's named seating (the
+  // initial draw), which covers every team in the field.
+  const nameById = useMemo(() => {
+    const map = new Map<TeamId, string>();
+    const add = (t: NamedTeam) => map.set(t.teamId, t.name);
+    for (const m of named.matches) {
+      add(m.a);
+      add(m.b);
+    }
+    if (named.bye) add(named.bye);
+    if (named.triangle) {
+      add(named.triangle.a);
+      add(named.triangle.b);
+      add(named.triangle.c);
+    }
+    return map;
+  }, [named]);
+  const teamName = (id: TeamId): string => nameById.get(id) ?? `Team ${id}`;
+
+  // Running VP total per team, from the standings the draw ranked on — shown
+  // inline next to each team so there's no separate standings list.
+  const totalById = useMemo(
+    () => new Map(preview.standings.map((s) => [s.id, s.total])),
+    [preview.standings],
+  );
+  const totalFor = (teamId: TeamId): number | null =>
+    totalById.get(teamId) ?? null;
+
+  // Re-evaluate the repeat advisory on every edit. Pure and identical to the
+  // server's check; drives both the warning and the per-match highlight.
+  const advisories = useMemo(
+    () => evaluateSwissTeamsRound(round, preview.advisoryInputs),
+    [round, preview.advisoryInputs],
+  );
+  const repeatKeys = useMemo(
+    () => new Set(advisories.repeats),
+    [advisories.repeats],
+  );
+
+  function pick(teamId: TeamId) {
+    if (selected == null) {
+      setSelected(teamId);
+      return;
+    }
+    if (selected === teamId) {
+      setSelected(null);
+      return;
+    }
+    // Second pick: swap the two teams' places in the round.
+    setRound((r) => swapTeams(r, selected, teamId));
+    setSelected(null);
+  }
 
   return (
     <div
@@ -51,42 +133,73 @@ export function SwissTeamsDrawPreview({
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-2xl px-4 pb-4 pt-4">
           <p className="mb-3 text-sm text-gray-600">
-            Review the team matches for round {preview.roundNumber}. Each match
-            is played in two rooms — the away pairs travel to their opponents.
-            Nothing is saved until you tap OK.
+            Review the team matches for round {preview.roundNumber}. Tap two
+            teams to swap their places
+            {round.byeTeamId != null
+              ? " (including the team sitting out)"
+              : round.triangle != null
+                ? " (including the three-way)"
+                : ""}
+            . Each match is played in two rooms — the away pairs travel to their
+            opponents. Each team shows its current total (the order the draw
+            ranks on). Nothing is saved until you tap OK.
           </p>
 
-          {preview.hadUnavoidableRepeat && (
+          {advisories.hadUnavoidableRepeat && (
             <div
               className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800"
               role="status"
               data-testid="draw-advisories"
             >
-              A match repeats an earlier-round opponent (no repeat-free draw was
-              possible). You can accept it or draw again.
+              A match repeats an earlier-round opponent. You can swap teams to
+              avoid it or accept it as shown.
             </div>
           )}
 
           <div className="flex flex-col gap-3">
-            {named.matches.map((m) => (
-              <div
-                key={`${m.a.teamId}-${m.b.teamId}`}
-                className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
-                data-testid="teams-match"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-base font-semibold text-gray-800">
-                    {m.a.name}
-                  </span>
-                  <span className="text-sm text-gray-400">v</span>
-                  <span className="text-base font-semibold text-gray-800">
-                    {m.b.name}
-                  </span>
+            {round.matches.map((m) => {
+              const isRepeat = repeatKeys.has(teamOpponentKey(m.a, m.b));
+              return (
+                <div
+                  key={`${m.a}-${m.b}`}
+                  data-testid="teams-match"
+                  data-problem={isRepeat ? "true" : undefined}
+                  className={`rounded-xl border bg-white p-3 shadow-sm ${
+                    isRepeat
+                      ? "border-amber-400 ring-2 ring-amber-400"
+                      : "border-gray-200"
+                  }`}
+                >
+                  {isRepeat && (
+                    <div className="mb-1 text-right">
+                      <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950">
+                        Repeat — check this match
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between gap-3">
+                    <TeamChip
+                      teamId={m.a}
+                      name={teamName(m.a)}
+                      total={totalFor(m.a)}
+                      selected={selected === m.a}
+                      onClick={() => pick(m.a)}
+                    />
+                    <span className="shrink-0 text-sm text-gray-400">v</span>
+                    <TeamChip
+                      teamId={m.b}
+                      name={teamName(m.b)}
+                      total={totalFor(m.b)}
+                      selected={selected === m.b}
+                      onClick={() => pick(m.b)}
+                      alignRight
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
-            {named.triangle && (
+            {round.triangle && (
               <div
                 className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
                 data-testid="teams-triangle"
@@ -94,22 +207,38 @@ export function SwissTeamsDrawPreview({
                 <div className="mb-1 text-sm font-semibold text-gray-500">
                   Three-way (triangle)
                 </div>
-                <div className="text-base text-gray-800">
-                  {named.triangle.a.name}, {named.triangle.b.name},{" "}
-                  {named.triangle.c.name}
+                <div className="flex flex-col gap-1">
+                  {[round.triangle.a, round.triangle.b, round.triangle.c].map(
+                    (id) => (
+                      <TeamChip
+                        key={id}
+                        teamId={id}
+                        name={teamName(id)}
+                        total={totalFor(id)}
+                        selected={selected === id}
+                        onClick={() => pick(id)}
+                      />
+                    ),
+                  )}
                 </div>
               </div>
             )}
 
-            {named.bye && (
+            {round.byeTeamId != null && (
               <div
                 className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3"
                 data-testid="teams-bye"
               >
-                <div className="text-sm font-semibold text-gray-500">
+                <div className="mb-1 text-sm font-semibold text-gray-500">
                   Sitting out (bye)
                 </div>
-                <div className="text-base text-gray-800">{named.bye.name}</div>
+                <TeamChip
+                  teamId={round.byeTeamId}
+                  name={teamName(round.byeTeamId)}
+                  total={totalFor(round.byeTeamId)}
+                  selected={selected === round.byeTeamId}
+                  onClick={() => pick(round.byeTeamId!)}
+                />
               </div>
             )}
           </div>
@@ -139,8 +268,10 @@ export function SwissTeamsDrawPreview({
           </button>
           <button
             type="button"
-            onClick={onConfirm}
-            disabled={committing}
+            onClick={() =>
+              onConfirm(round.matches, round.byeTeamId, round.triangle)
+            }
+            disabled={committing || advisories.structuralError}
             className={primaryButtonClass}
             data-testid="draw-confirm"
           >
@@ -149,5 +280,48 @@ export function SwissTeamsDrawPreview({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * A tappable team with its name and current VP total (e.g. "Sharks — 34.00
+ * VP"). Tapping selects it for a swap; tapping a second team swaps their places.
+ * The total is omitted when the team has no leaderboard line yet.
+ */
+function TeamChip({
+  teamId,
+  name,
+  total,
+  selected,
+  onClick,
+  alignRight = false,
+}: {
+  teamId: TeamId;
+  name: string;
+  total: number | null;
+  selected: boolean;
+  onClick: () => void;
+  alignRight?: boolean;
+}) {
+  void teamId;
+  const base =
+    "flex items-baseline gap-2 rounded-lg border px-2 py-1 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500";
+  const stateClasses = selected
+    ? "border-blue-500 bg-blue-50 ring-1 ring-blue-400"
+    : "border-gray-200 bg-gray-50 hover:bg-gray-100";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`${base} ${stateClasses} ${alignRight ? "flex-row-reverse text-right" : ""}`}
+    >
+      <span className="text-base font-semibold text-gray-800">{name}</span>
+      {total != null && (
+        <span className="text-xs font-medium text-gray-600 tabular-nums">
+          {total.toFixed(2)} VP
+        </span>
+      )}
+    </button>
   );
 }

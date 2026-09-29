@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { BoardInstance } from "@/model/participants";
+import { BoardInstance, TeamTravellerMatch } from "@/model/participants";
 import { Deal } from "@/model/common";
 import { SocketEvents } from "@/socket/socket-events";
 import { useRequiredGame } from "@/context/GameContext";
@@ -11,12 +11,20 @@ interface TravellerSnapshot {
   instances: BoardInstance[];
   /** The four hands for this board, or null when no deal has been entered. */
   deal: Deal | null;
+  /**
+   * Team-match framing for a teams game (open/closed rooms, team names, IMP
+   * margin), or an empty array for a pairs game. Optional so an older/other
+   * snapshot shape without it degrades to "no framing".
+   */
+  teamMatches?: TeamTravellerMatch[];
 }
 
 interface TravellerContextType {
   instances: BoardInstance[];
   /** The board's deal (four hands), or null when none has been entered yet. */
   deal: Deal | null;
+  /** Team-match framing (teams games) or an empty array (pairs games). */
+  teamMatches: TeamTravellerMatch[];
   isLoading: boolean;
 }
 
@@ -51,6 +59,7 @@ export function TravellerProvider({
     board: number;
     instances: BoardInstance[];
     deal: Deal | null;
+    teamMatches: TeamTravellerMatch[];
   } | null>(null);
 
   useFeatureSnapshot<TravellerSnapshot, TravellerSnapshot>({
@@ -64,6 +73,7 @@ export function TravellerProvider({
         board: boardNumber,
         instances: data.instances,
         deal: data.deal ?? null,
+        teamMatches: data.teamMatches ?? [],
       });
     },
     deps: [gameId, boardNumber],
@@ -72,10 +82,13 @@ export function TravellerProvider({
   const isForCurrentBoard = loaded?.board === boardNumber;
   const instances = isForCurrentBoard ? loaded!.instances : [];
   const deal = isForCurrentBoard ? loaded!.deal : null;
+  const teamMatches = isForCurrentBoard ? loaded!.teamMatches : [];
   const isLoading = !isForCurrentBoard;
 
   return (
-    <TravellerContext.Provider value={{ instances, deal, isLoading }}>
+    <TravellerContext.Provider
+      value={{ instances, deal, teamMatches, isLoading }}
+    >
       {children}
     </TravellerContext.Provider>
   );

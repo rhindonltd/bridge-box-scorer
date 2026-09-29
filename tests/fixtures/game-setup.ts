@@ -186,6 +186,28 @@ export async function pickSwissMovement(page: Page): Promise<void> {
 }
 
 /**
+ * Open the Movement tab and set up a Swiss Teams movement. Like Swiss Pairs it
+ * is offered only for a single-section game, in place of the Swiss Pairs card
+ * when the game's event type is Teams. Its option (`swiss-teams-movement-option`)
+ * opens the Swiss Teams setup dialog; this taps it, accepts the dialog's
+ * defaults (rounds / boards-per-round / odd-handling; the team count is fixed
+ * by the table count), and confirms.
+ */
+export async function pickSwissTeamsMovement(page: Page): Promise<void> {
+  await openSetupStep(page, "Movement");
+  const swissTeams = page.getByTestId("swiss-teams-movement-option");
+  await expect(swissTeams).toBeVisible({ timeout: 15000 });
+  await swissTeams.click();
+
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Saving/ }),
+  ).toHaveCount(0, { timeout: 15000 });
+}
+
+/**
  * Start the game from the "Start Game" screen in the Setup menu. Requires a
  * valid movement and full seating; the Start Game button stays disabled until
  * both hold. Starting is director-authorised, so this must run in the

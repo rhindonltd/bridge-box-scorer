@@ -23,6 +23,11 @@ vi.mock("@/services/swiss-seating-names", () => ({
     .fn()
     .mockResolvedValue({ tables: [], bye: null }),
 }));
+// buildPairStandings resolves pair names via this lookup; stub it empty so the
+// standings fall back to "Pair {id}" labels (names aren't under test here).
+vi.mock("@/db/games/queries/assignment-players", () => ({
+  buildAssignmentPlayerLookup: vi.fn().mockResolvedValue(new Map()),
+}));
 
 import {
   previewNextSwissRound,
@@ -69,7 +74,12 @@ function seedDrawable(over: { stationaryPairs?: number[] } = {}) {
   vi.mocked(computeSectionLeaderboards).mockResolvedValue([
     {
       section: "A",
-      overallScore: { lines: [{ pairId: "1NS" }, { pairId: "1EW" }] },
+      overallScore: {
+        lines: [
+          { pairId: "1NS", totalVP: 30, rank: 1, tied: false },
+          { pairId: "1EW", totalVP: 25, rank: 2, tied: false },
+        ],
+      },
     },
   ] as never);
   vi.mocked(swissPairIdFromParticipant).mockImplementation((pairId: string) =>
@@ -166,6 +176,15 @@ describe("previewNextSwissRound", () => {
     expect(result.roundNumber).toBe(2);
     expect(result.tables).toBe(2);
     expect(result.seating.length).toBeGreaterThan(0);
+    // Standings are returned in draw order (best first) with running VP totals,
+    // sourced from the same leaderboard lines the draw ranked on.
+    expect(result.standings.map((s) => ({ id: s.id, total: s.total }))).toEqual([
+      { id: 1, total: 30 },
+      { id: 3, total: 25 },
+      // Pairs 2 and 4 have no leaderboard line yet -> appended with a 0 total.
+      { id: 2, total: 0 },
+      { id: 4, total: 0 },
+    ]);
     // A preview must never materialize.
     expect(materializeSwissRound).not.toHaveBeenCalled();
   });

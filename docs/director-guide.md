@@ -264,15 +264,20 @@ Repeat this each round until the event is complete.
 A **Swiss Teams** game has the same **Draw Next Round** button on the
 **Movement** screen, enabled once all the round's results are in. Drawing shows
 a **review** of the proposed round before anything is saved: each **match**
-between two teams (by name), plus the team sitting out (the bye) or the
-three-way **triangle** when the field is odd. Tap **OK** to commit it — the new
-round then appears on every device, with each team's away pair told which table
-to move to — or **Cancel** to discard it and draw again.
+between two teams (by name, with each team's current total), plus the team
+sitting out (the bye) or the three-way **triangle** when the field is odd.
 
-For Swiss Teams the review is currently **read-only**: you can accept or redraw,
-but not yet hand-edit the matches. (Editing — swapping teams between matches —
-is planned.) If a match has to repeat an earlier-round opponent, the review
-tells you so you can redraw or accept it.
+On the review screen you can **swap two teams** — tap one team, then another,
+and they exchange places for the round. Because a swap moves a team wherever it
+sits, one tap-pair can re-pair two matches, change which team sits out (swap a
+match team with the bye team) or reshape the three-way (swap a team in or out of
+the triangle). If a resulting match repeats an earlier-round opponent, that
+match card is highlighted and a note tells you so — you can swap again to avoid
+it or accept it as shown; the warning never blocks you.
+
+Tap **OK** to commit the round exactly as shown — edited or not — and it then
+appears on every device, with each team's away pair told which table to move to;
+or **Cancel** to discard it and draw again.
 
 ---
 
@@ -350,6 +355,12 @@ If a board was entered incorrectly, you can override it:
 3. You see every instance of that board (each table/round it was played at),
    live. Tap the line you want to fix. If the board's cards have been entered, a
    **Show hand** button here lets you view the four hands.
+
+   For a **Teams** game the board is grouped into **team matches**: each card
+   shows the two teams by name, with a row for each room — the open room at one
+   team's table and the closed room at the other's — and the board's IMP margin.
+   Tap the room you want to correct; a three-way (triangle) shows its three
+   rooms. (A Pairs game shows the usual flat NS/EW list.)
 4. Enter the correct result step by step, the same way players enter one
    (contract, or **Pass Out** / **Not Played**). You also get an extra
    **Adjusted Score** option for assigning a result such as a percentage split

@@ -56,6 +56,14 @@ function previewAck(over: Record<string, unknown> = {}) {
       directionCounts: [],
       stationary: [],
     },
+    // Distinct standings labels (won't collide with the seating-card labels in
+    // the DOM, so the tests can target seating chips unambiguously).
+    standings: [
+      { id: 1, name: "Standing Pair 1", total: 30, rank: 1, tied: false },
+      { id: 3, name: "Standing Pair 3", total: 25, rank: 2, tied: false },
+      { id: 2, name: "Standing Pair 2", total: 20, rank: 3, tied: false },
+      { id: 4, name: "Standing Pair 4", total: 15, rank: 4, tied: false },
+    ],
     hadUnavoidableRepeat: false,
     hadStationaryConflict: false,
     ...over,
@@ -86,8 +94,12 @@ describe("SwissDrawControl", () => {
     expect(await screen.findByTestId("draw-confirm")).toBeInTheDocument();
     expect(screen.getByTestId("draw-cancel")).toBeInTheDocument();
     expect(commitNextSwissRound).not.toHaveBeenCalled();
-    // Player names from the preview are shown.
-    expect(screen.getByText("Alice N / Bob S")).toBeInTheDocument();
+    // Player names from the preview are shown, one per line.
+    expect(screen.getByText("Alice N")).toBeInTheDocument();
+    expect(screen.getByText("Bob S")).toBeInTheDocument();
+    // Each pair's running total is shown inline on its card header (2 dp, "VP").
+    // Pair 1 has a total of 30 in the fixture standings.
+    expect(screen.getByText("30.00 VP")).toBeInTheDocument();
   });
 
   it("commits the shown seating on OK and shows a confirmation", async () => {
@@ -127,9 +139,11 @@ describe("SwissDrawControl", () => {
     fireEvent.click(screen.getByTestId("draw-next-round"));
     await screen.findByTestId("draw-confirm");
 
-    // Swap pair 3 (Carol/Dave, table 1 E/W) with pair 2 (Erin/Frank, table 2 N/S).
-    fireEvent.click(screen.getByText("Carol E / Dave W"));
-    fireEvent.click(screen.getByText("Erin N / Frank S"));
+    // Swap pair 3 (Carol/Dave, table 1 E/W) with pair 2 (Erin/Frank, table 2
+    // N/S). Names render one per line, so tap a player name in each chip — the
+    // click bubbles to the enclosing chip button.
+    fireEvent.click(screen.getByText("Carol E"));
+    fireEvent.click(screen.getByText("Erin N"));
 
     fireEvent.click(screen.getByTestId("draw-confirm"));
 
@@ -192,5 +206,39 @@ describe("SwissDrawControl", () => {
     expect(await screen.findByTestId("draw-advisories")).toHaveTextContent(
       /repeats an earlier-round opponent/i,
     );
+    // The specific table with the repeat (pair 1 v 3 at table 1) is flagged.
+    const table1 = screen.getByTestId("table-card-1");
+    expect(table1).toHaveAttribute("data-problem", "true");
+    expect(table1).toHaveTextContent(/check this table/i);
+    // Table 2 (no repeat) is not flagged.
+    expect(screen.getByTestId("table-card-2")).not.toHaveAttribute(
+      "data-problem",
+    );
+  });
+
+  it("marks a stationary pair and locks it from swaps", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue(
+      previewAck({
+        advisoryInputs: {
+          tables: 2,
+          playedOpponents: [],
+          hadBye: [],
+          directionCounts: [],
+          // Pair 1 (table 1 N/S home) is stationary.
+          stationary: [[1, { tableNumber: 1, direction: "NS" }]],
+        },
+      }) as never,
+    );
+
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
+    fireEvent.click(screen.getByTestId("draw-next-round"));
+    await screen.findByTestId("draw-confirm");
+
+    // The stationary pair is badged and its chip button is disabled.
+    expect(screen.getByText("Stationary")).toBeInTheDocument();
+    // Its N/S chip button (containing "Alice N") is disabled — tapping it does
+    // nothing, so it can't be selected as the first half of a swap.
+    const stationaryChip = screen.getByText("Alice N").closest("button")!;
+    expect(stationaryChip).toBeDisabled();
   });
 });

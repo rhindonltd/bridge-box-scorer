@@ -20,6 +20,14 @@ const basePreview: SwissTeamsPreviewAck = {
     bye: null,
     triangle: null,
   },
+  standings: [
+    { id: 1, name: "Sharks", total: 34.0, rank: 1, tied: false },
+    { id: 3, name: "Owls", total: 27.5, rank: 2, tied: false },
+    { id: 2, name: "Dragons", total: 22.0, rank: 3, tied: false },
+    { id: 4, name: "Eagles", total: 16.5, rank: 4, tied: false },
+  ],
+  repeatMatchKeys: [],
+  advisoryInputs: { teams: 4, playedOpponents: [] },
   hadUnavoidableRepeat: false,
 };
 
@@ -48,10 +56,19 @@ export const Committing: Story = {
   args: { committing: true },
 };
 
-/** A draw that repeats an earlier match — advisory shown. */
+/**
+ * A draw where one match repeats an earlier opponent: the advisory shows and
+ * the specific match card (Sharks v Owls, key "1-3") is highlighted.
+ */
 export const WithRepeatAdvisory: Story = {
   args: {
-    preview: { ...basePreview, hadUnavoidableRepeat: true },
+    preview: {
+      ...basePreview,
+      // Sharks (1) v Owls (3) was played before; the live re-check flags it.
+      repeatMatchKeys: ["1-3"],
+      advisoryInputs: { teams: 4, playedOpponents: ["1-3"] },
+      hadUnavoidableRepeat: true,
+    },
   },
 };
 
@@ -74,6 +91,7 @@ export const WithBye: Story = {
         bye: { teamId: 5, name: "Robins" },
         triangle: null,
       },
+      advisoryInputs: { teams: 5, playedOpponents: [] },
     },
   },
 };
@@ -97,6 +115,7 @@ export const WithTriangle: Story = {
           c: { teamId: 3, name: "Owls" },
         },
       },
+      advisoryInputs: { teams: 5, playedOpponents: [] },
     },
   },
 };

@@ -244,6 +244,53 @@ export async function seatSingleSectionField(
 }
 
 /**
+ * Seat one pair at an explicit section-qualified seat, optionally naming the
+ * team. Like {@link seatPairBySeat}, but for a Teams event: when `teamName` is
+ * given and the seat is a home (NS) seat, it fills the optional "Team name"
+ * field before submitting (the field only appears for NS seats of a Teams
+ * game). For an EW seat, or when no name is given, it behaves exactly like
+ * {@link seatPairBySeat}.
+ *
+ * @returns the play route the app navigated to, e.g. `/game/{id}/play/A1NS`.
+ */
+export async function seatTeamPairBySeat(
+  page: Page,
+  gameId: string,
+  seat: string,
+  ebu1: string,
+  ebu2: string,
+  teamName?: string,
+): Promise<string> {
+  await page.goto(`/game/${gameId}/join`);
+
+  const seatButton = page.getByTestId(`seat-${seat}`);
+  await expect(seatButton).toBeVisible({ timeout: 15000 });
+  await seatButton.click();
+
+  const isNS = seat.endsWith("NS");
+  const label1 = isNS ? "North" : "East";
+  const label2 = isNS ? "South" : "West";
+
+  await fillSeat(page, label1, ebu1);
+  await fillSeat(page, label2, ebu2);
+
+  // The optional team-name field only renders for the home (NS) pair of a
+  // Teams event; fill it when a name was supplied for such a seat.
+  if (isNS && teamName) {
+    const teamNameInput = page.locator("#team-name");
+    await expect(teamNameInput).toBeVisible({ timeout: 10000 });
+    await teamNameInput.fill(teamName);
+  }
+
+  await page.getByRole("button", { name: "Enter Pair" }).click();
+  await page.waitForURL(/\/game\/.+\/play\//, {
+    timeout: 15000,
+    waitUntil: "commit",
+  });
+  return page.url();
+}
+
+/**
  * A device factory: returns a fresh, isolated browser page (its own context,
  * localStorage and socket) — one per simulated pair, matching how each pair
  * uses their own phone in the room.
@@ -333,6 +380,38 @@ export async function seatSeatsOnDevices(
     const page = await makePage();
     const [ebu1, ebu2] = pairs[seat];
     await seatPairBySeat(page, gameId, seat, ebu1, ebu2);
+    pages[seat] = page;
+  }
+  return pages;
+}
+
+/**
+ * Seat a full N-table single-section (section "A") TEAMS field, one device per
+ * pair. Each table's two pairs (NS + EW) form a team; the home (NS) pair is
+ * given a distinct team name ("Team A1", "Team A2", …) so the team leaderboard
+ * and travellers show real names rather than the surname fallback. Distinct
+ * pairs are drawn per seat (a player may only be seated once per game).
+ *
+ * @returns a map from section-qualified seat (e.g. "A1NS") to that pair's page.
+ */
+export async function seatTeamsFieldOnDevices(
+  makePage: MakePage,
+  gameId: string,
+  tables: number,
+): Promise<Record<string, Page>> {
+  const seats: string[] = [];
+  for (let table = 1; table <= tables; table++) {
+    seats.push(`A${table}NS`, `A${table}EW`);
+  }
+  const pairs = assignDistinctPairs(seats);
+
+  const pages: Record<string, Page> = {};
+  for (const seat of seats) {
+    const page = await makePage();
+    const [ebu1, ebu2] = pairs[seat];
+    // Name each team from its home (NS) seat; the EW pair carries no name.
+    const teamName = seat.endsWith("NS") ? `Team ${seat.slice(0, -2)}` : undefined;
+    await seatTeamPairBySeat(page, gameId, seat, ebu1, ebu2, teamName);
     pages[seat] = page;
   }
   return pages;

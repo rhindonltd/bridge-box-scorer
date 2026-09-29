@@ -111,6 +111,15 @@ describe("preview/commit next Swiss round", () => {
     expect(result.roundNumber).toBe(2);
     expect(result.seating.length).toBe(2);
 
+    // Current standings are returned for every competitor (4 pairs), best
+    // first, each with a numeric running total — the order the draw ranked on.
+    expect(result.standings).toHaveLength(4);
+    expect(result.standings.every((s) => typeof s.total === "number")).toBe(
+      true,
+    );
+    const ranks = result.standings.map((s) => s.rank);
+    expect([...ranks]).toEqual([...ranks].sort((a, b) => a - b));
+
     // Crucially, no round-2 boards exist yet — the preview did not commit.
     expect(await round2Boards()).toHaveLength(0);
   });

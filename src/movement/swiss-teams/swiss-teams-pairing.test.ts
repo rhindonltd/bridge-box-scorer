@@ -1,11 +1,15 @@
 import { describe, it, expect } from "vitest";
 import {
   drawSwissTeamsRound,
+  evaluateSwissTeamsRound,
   expandTeamMatches,
   expandTeamTriangle,
+  roundTeamIds,
+  swapTeams,
   teamIds,
   swissTeamsRoundOne,
   teamOpponentKey,
+  type SwissTeamsRound,
 } from "./swiss-teams-pairing";
 
 describe("teamIds", () => {
@@ -278,5 +282,184 @@ describe("expandTeamMatches", () => {
       nsTeam: 3,
       ewTeam: 1,
     });
+  });
+});
+
+describe("roundTeamIds", () => {
+  it("collects match, bye and triangle team ids", () => {
+    expect(
+      roundTeamIds({
+        matches: [
+          { a: 1, b: 2 },
+          { a: 3, b: 4 },
+        ],
+        byeTeamId: null,
+        triangle: null,
+      }).sort((x, y) => x - y),
+    ).toEqual([1, 2, 3, 4]);
+
+    expect(
+      roundTeamIds({
+        matches: [{ a: 1, b: 2 }],
+        byeTeamId: 5,
+        triangle: null,
+      }).sort((x, y) => x - y),
+    ).toEqual([1, 2, 5]);
+
+    expect(
+      roundTeamIds({
+        matches: [{ a: 1, b: 2 }],
+        byeTeamId: null,
+        triangle: { a: 3, b: 4, c: 5 },
+      }).sort((x, y) => x - y),
+    ).toEqual([1, 2, 3, 4, 5]);
+  });
+});
+
+describe("swapTeams", () => {
+  const round = (): SwissTeamsRound => ({
+    matches: [
+      { a: 1, b: 2 },
+      { a: 3, b: 4 },
+    ],
+    byeTeamId: null,
+    triangle: null,
+  });
+
+  it("exchanges two teams between matches and re-normalises", () => {
+    // Swap team 2 (in match 1-2) with team 3 (in match 3-4).
+    const result = swapTeams(round(), 2, 3);
+    expect(result.matches).toEqual([
+      { a: 1, b: 3 },
+      { a: 2, b: 4 },
+    ]);
+  });
+
+  it("keeps each team placed exactly once after a swap", () => {
+    const result = swapTeams(round(), 1, 4);
+    expect(roundTeamIds(result).sort((x, y) => x - y)).toEqual([1, 2, 3, 4]);
+  });
+
+  it("swapping a match team with the bye changes who sits out", () => {
+    const r: SwissTeamsRound = {
+      matches: [{ a: 1, b: 2 }],
+      byeTeamId: 3,
+      triangle: null,
+    };
+    // Team 2 sits out; team 3 comes in to play team 1.
+    const result = swapTeams(r, 2, 3);
+    expect(result.byeTeamId).toBe(2);
+    expect(result.matches).toEqual([{ a: 1, b: 3 }]);
+  });
+
+  it("swapping into the triangle reshapes it and re-normalises to ascending", () => {
+    const r: SwissTeamsRound = {
+      matches: [{ a: 1, b: 2 }],
+      byeTeamId: null,
+      triangle: { a: 3, b: 4, c: 5 },
+    };
+    // Swap team 1 (match) with team 5 (triangle).
+    const result = swapTeams(r, 1, 5);
+    expect(result.matches).toEqual([{ a: 2, b: 5 }]);
+    expect(result.triangle).toEqual({ a: 1, b: 3, c: 4 });
+  });
+
+  it("returns an unchanged deep copy when a team is not in the round", () => {
+    const r = round();
+    const result = swapTeams(r, 1, 99);
+    expect(result).toEqual(r);
+    expect(result.matches).not.toBe(r.matches);
+  });
+
+  it("returns an unchanged deep copy when swapping a team with itself", () => {
+    const r = round();
+    const result = swapTeams(r, 2, 2);
+    expect(result).toEqual(r);
+    expect(result.matches[0]).not.toBe(r.matches[0]);
+  });
+});
+
+describe("evaluateSwissTeamsRound", () => {
+  it("reports no problems for a clean full field", () => {
+    const advisories = evaluateSwissTeamsRound(
+      {
+        matches: [
+          { a: 1, b: 2 },
+          { a: 3, b: 4 },
+        ],
+        byeTeamId: null,
+        triangle: null,
+      },
+      { teams: 4, playedOpponents: [] },
+    );
+    expect(advisories.structuralError).toBe(false);
+    expect(advisories.repeats).toEqual([]);
+    expect(advisories.hadUnavoidableRepeat).toBe(false);
+  });
+
+  it("flags a match that repeats an earlier opponent", () => {
+    const advisories = evaluateSwissTeamsRound(
+      {
+        matches: [
+          { a: 1, b: 2 },
+          { a: 3, b: 4 },
+        ],
+        byeTeamId: null,
+        triangle: null,
+      },
+      { teams: 4, playedOpponents: ["1-2"] },
+    );
+    expect(advisories.repeats).toEqual(["1-2"]);
+    expect(advisories.hadUnavoidableRepeat).toBe(true);
+    expect(advisories.structuralError).toBe(false);
+  });
+
+  it("checks each of a triangle's three edges for a repeat", () => {
+    const advisories = evaluateSwissTeamsRound(
+      {
+        matches: [{ a: 1, b: 2 }],
+        byeTeamId: null,
+        triangle: { a: 3, b: 4, c: 5 },
+      },
+      { teams: 5, playedOpponents: ["4-5"] },
+    );
+    expect(advisories.repeats).toEqual(["4-5"]);
+    expect(advisories.hadUnavoidableRepeat).toBe(true);
+  });
+
+  it("reports a structural error when a team is placed twice or missing", () => {
+    const advisories = evaluateSwissTeamsRound(
+      {
+        // Team 2 placed twice; team 4 missing.
+        matches: [
+          { a: 1, b: 2 },
+          { a: 2, b: 3 },
+        ],
+        byeTeamId: null,
+        triangle: null,
+      },
+      { teams: 4, playedOpponents: [] },
+    );
+    expect(advisories.structuralError).toBe(true);
+    expect(advisories.structuralReasons).toContain(
+      "Team 2 is placed more than once",
+    );
+    expect(advisories.structuralReasons).toContain("Team 4 is not placed");
+  });
+
+  it("reports an unknown team id as a structural error", () => {
+    const advisories = evaluateSwissTeamsRound(
+      {
+        matches: [
+          { a: 1, b: 2 },
+          { a: 3, b: 9 },
+        ],
+        byeTeamId: null,
+        triangle: null,
+      },
+      { teams: 4, playedOpponents: [] },
+    );
+    expect(advisories.structuralError).toBe(true);
+    expect(advisories.structuralReasons).toContain("Unknown team 9 is placed");
   });
 });

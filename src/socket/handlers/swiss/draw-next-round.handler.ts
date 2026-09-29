@@ -13,6 +13,7 @@ import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import type { NamedSeating } from "@/services/swiss-seating-names";
 import type { SerializableAdvisoryInputs } from "@/movement/swiss/swiss-pairing";
+import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
 
 /** A single table's seating as pair ids (the shape echoed back on commit). */
 const seatingSchema = z.array(
@@ -47,6 +48,7 @@ interface PreviewAck {
   sitOutPairId: number | null;
   named: NamedSeating;
   advisoryInputs: SerializableAdvisoryInputs;
+  standings: SwissStandingEntry[];
   hadUnavoidableRepeat: boolean;
   hadStationaryConflict: boolean;
 }
@@ -106,6 +108,7 @@ export function registerPreviewNextRoundHandler(socket: Socket, io: Server) {
             sitOutPairId: result.sitOutPairId,
             named: result.named,
             advisoryInputs: result.advisoryInputs,
+            standings: result.standings,
             hadUnavoidableRepeat: result.hadUnavoidableRepeat,
             hadStationaryConflict: result.hadStationaryConflict,
           },

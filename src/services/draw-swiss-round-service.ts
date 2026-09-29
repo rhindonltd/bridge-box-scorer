@@ -7,7 +7,10 @@ import {
   getSwissBoardHistory,
   swissPairIdFromParticipant,
 } from "@/db/games/queries/swiss-board-history";
-import { materializeSwissRound } from "@/services/materialize-swiss-round";
+import {
+  materializeSwissRound,
+  swissPairMovementId,
+} from "@/services/materialize-swiss-round";
 import {
   drawSwissRound,
   evaluateSwissSeating,
@@ -20,10 +23,12 @@ import {
   type SwissPairId,
   type SwissSeating,
 } from "@/movement/swiss/swiss-pairing";
+import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
 import {
   resolveSwissSeatingNames,
   type NamedSeating,
 } from "@/services/swiss-seating-names";
+import { buildAssignmentPlayerLookup } from "@/db/games/queries/assignment-players";
 import type { SectionLetter } from "@/model/participants";
 
 /**
@@ -56,6 +61,12 @@ export type PreviewSwissResult =
        * no round-trip, identical logic to the server's initial draw.
        */
       advisoryInputs: SerializableAdvisoryInputs;
+      /**
+       * Current standings (best first) with each pair's running VP total — the
+       * order the draw ranked the field on. Shown on the preview so the
+       * director can see the draw pairs close-ranked pairs.
+       */
+      standings: SwissStandingEntry[];
       hadUnavoidableRepeat: boolean;
       hadStationaryConflict: boolean;
     }
@@ -107,40 +118,62 @@ async function isRoundComplete(
  * (e.g. only sat out so far) is appended at the end in id order so the field is
  * always complete.
  */
+/** A ranked standings line for a pair, before names are resolved. */
+interface RankedPair {
+  id: SwissPairId;
+  total: number;
+  rank: number;
+  tied: boolean;
+}
+
 async function rankedStandings(
   db: Db,
   gameId: string,
   section: SectionLetter,
   tables: number,
-): Promise<SwissPairId[]> {
+): Promise<{ order: SwissPairId[]; ranked: RankedPair[] }> {
   const sections = await computeSectionLeaderboards(db, gameId);
   const sectionBoard = sections.find((s) => s.section === section);
 
-  const ordered: SwissPairId[] = [];
+  const order: SwissPairId[] = [];
+  const ranked: RankedPair[] = [];
   const seen = new Set<SwissPairId>();
 
   if (sectionBoard) {
-    // overallScore.lines are already ranked best-first.
+    // overallScore.lines are already ranked best-first, and (for Swiss) carry
+    // the running VP total the field is ranked on plus its rank/tie flags.
     for (const line of sectionBoard.overallScore.lines as {
       pairId: string;
+      totalVP?: number;
+      rank?: number;
+      tied?: boolean;
     }[]) {
       const id = swissPairIdFromParticipant(line.pairId, tables);
       if (id != null && !seen.has(id)) {
-        ordered.push(id);
+        order.push(id);
+        ranked.push({
+          id,
+          total: line.totalVP ?? 0,
+          rank: line.rank ?? order.length,
+          tied: line.tied ?? false,
+        });
         seen.add(id);
       }
     }
   }
 
-  // Append any pairs not yet ranked (no scored boards), lowest priority.
+  // Append any pairs not yet ranked (no scored boards), lowest priority. They
+  // have no leaderboard line yet, so show a zero total ranked last.
+  const lastRank = ranked.length > 0 ? ranked[ranked.length - 1].rank : 0;
   for (const id of swissPairIds(tables)) {
     if (!seen.has(id)) {
-      ordered.push(id);
+      order.push(id);
+      ranked.push({ id, total: 0, rank: lastRank + 1, tied: false });
       seen.add(id);
     }
   }
 
-  return ordered;
+  return { order, ranked };
 }
 
 /** Everything needed to draw or validate the next round, once preconditions pass. */
@@ -150,6 +183,8 @@ interface DrawContext {
   boardsPerRound: number;
   nextRound: number;
   input: SwissDrawInput;
+  /** Current standings (best first) with running totals, for the preview. */
+  ranked: RankedPair[];
 }
 
 /**
@@ -189,7 +224,7 @@ async function resolveDrawContext(
     return { reason: "ROUND_INCOMPLETE" };
   }
 
-  const standings = await rankedStandings(db, gameId, section, tables);
+  const { order, ranked } = await rankedStandings(db, gameId, section, tables);
 
   const stationary = new Map<SwissPairId, SwissHomeSeat>();
   for (const pairId of stationaryPairs ?? []) {
@@ -201,9 +236,10 @@ async function resolveDrawContext(
     tables,
     boardsPerRound,
     nextRound: currentRound + 1,
+    ranked,
     input: {
       tables,
-      standings,
+      standings: order,
       playedOpponents: history.playedOpponents,
       hadBye: history.hadBye,
       directionCounts: history.directionCounts,
@@ -240,6 +276,12 @@ export async function previewNextSwissRound(
     draw.seating,
     draw.sitOutPairId,
   );
+  const standings = await buildPairStandings(
+    ctx.db,
+    section,
+    ctx.tables,
+    ctx.ranked,
+  );
 
   return {
     ok: true,
@@ -249,9 +291,33 @@ export async function previewNextSwissRound(
     sitOutPairId: draw.sitOutPairId,
     named,
     advisoryInputs: serializeAdvisoryInputs(ctx.input),
+    standings,
     hadUnavoidableRepeat: draw.hadUnavoidableRepeat,
     hadStationaryConflict: draw.hadStationaryConflict,
   };
+}
+
+/**
+ * Resolve the ranked standings into display entries with pair names, in the
+ * order the draw ranked the field. Names come from the same assignment→players
+ * lookup the seating resolver uses, keyed by each pair's section-qualified
+ * home seat, so a pair's label matches its seating-card label.
+ */
+async function buildPairStandings(
+  db: Db,
+  section: SectionLetter,
+  tables: number,
+  ranked: RankedPair[],
+): Promise<SwissStandingEntry[]> {
+  const lookup = await buildAssignmentPlayerLookup(db);
+
+  return ranked.map((r) => {
+    const players = lookup.get(`${section}${swissPairMovementId(tables, r.id)}`);
+    const name = players
+      ? `${players.player1.firstName} ${players.player1.lastName} / ${players.player2.firstName} ${players.player2.lastName}`
+      : `Pair ${r.id}`;
+    return { id: r.id, name, total: r.total, rank: r.rank, tied: r.tied };
+  });
 }
 
 

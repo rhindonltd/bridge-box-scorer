@@ -17,6 +17,7 @@ import "@/scoring/plugins/register";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { rank } from "@/scoring/overall/rank";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { ScoringType } from "@/db/games/types/scoring-type";
 import { parseSelectedMovement } from "@/model/selected-movement";
@@ -490,7 +491,15 @@ async function readLeaderboardInputs(
   teams: AssignedTeam[];
 }> {
   const game = await findGameById(gameId);
-  const movement = parseSelectedMovement(game?.selectedMovement);
+  // The movement drives event classification (teams VP / Swiss VP / board
+  // pooled). It's stored PER SECTION in the games DB, not on the game-index
+  // row, so prefer the game-index copy when present but fall back to the
+  // section movement — otherwise a Swiss / Swiss Teams game (whose movement
+  // only ever lives on the section) misclassifies as a plain board-pooled
+  // pairs event, which for a teams IMP_VP game has no scorer and throws.
+  const movement =
+    parseSelectedMovement(game?.selectedMovement) ??
+    (await getAnySectionMovement(db));
 
   // Single classification point: what scoring format this game runs under and,
   // for Swiss Pairs, how its per-round VP is derived.

@@ -8,6 +8,7 @@ import {
   drawSwissTeamsRound,
   teamIds,
   teamOpponentKey,
+  type SerializableTeamsAdvisoryInputs,
   type TeamId,
   type TeamsMatch,
   type TeamsTriangle,
@@ -16,6 +17,8 @@ import {
   resolveSwissTeamsMatchNames,
   type NamedTeamsSeating,
 } from "@/services/swiss-teams-seating-names";
+import { findTeams } from "@/db/games/queries/find-teams";
+import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
 import { SectionLetter, parseSeat } from "@/model/participants";
 
 /**
@@ -43,6 +46,24 @@ export type PreviewSwissTeamsResult =
       byeTeamId: TeamId | null;
       triangle: TeamsTriangle | null;
       named: NamedTeamsSeating;
+      /**
+       * Current standings (best first) with each team's running VP total — the
+       * order the draw ranked the field on. Shown on the preview so the
+       * director can see the draw pairs close-ranked teams.
+       */
+      standings: SwissStandingEntry[];
+      /**
+       * Unordered team-pair keys (see teamOpponentKey) of the drawn matches that
+       * repeat an earlier-round opponent, so the preview can highlight exactly
+       * which match to check.
+       */
+      repeatMatchKeys: string[];
+      /**
+       * The advisory-relevant history (team count + played opponents), so the
+       * director's device can re-run the repeat check locally after each edit —
+       * no round-trip, identical logic to this server-side draw.
+       */
+      advisoryInputs: SerializableTeamsAdvisoryInputs;
       hadUnavoidableRepeat: boolean;
     }
   | { ok: false; reason: DrawSwissTeamsRejection };
@@ -195,26 +216,46 @@ async function isRoundComplete(
  * seat (e.g. "A1NS"), already ranked; map each back to its home table number.
  * Any team not yet ranked is appended in id order so the field is complete.
  */
+/** A ranked standings line for a team, before names are resolved. */
+interface RankedTeam {
+  id: TeamId;
+  total: number;
+  rank: number;
+  tied: boolean;
+}
+
 async function rankedStandings(
   db: Db,
   gameId: string,
   section: SectionLetter,
   teams: number,
-): Promise<TeamId[]> {
+): Promise<{ order: TeamId[]; ranked: RankedTeam[] }> {
   const sections = await computeSectionLeaderboards(db, gameId);
   const sectionBoard = sections.find((s) => s.section === section);
 
-  const ordered: TeamId[] = [];
+  const order: TeamId[] = [];
+  const ranked: RankedTeam[] = [];
   const seen = new Set<TeamId>();
 
   if (sectionBoard) {
+    // Lines are already ranked best-first and (for Swiss Teams VP) carry the
+    // running VP total the field is ranked on plus its rank/tie flags.
     for (const line of sectionBoard.overallScore.lines as {
       teamId: string;
+      totalVP?: number;
+      rank: number;
+      tied: boolean;
     }[]) {
       try {
         const id = parseSeat(line.teamId).tableNumber;
         if (!seen.has(id)) {
-          ordered.push(id);
+          order.push(id);
+          ranked.push({
+            id,
+            total: line.totalVP ?? 0,
+            rank: line.rank,
+            tied: line.tied,
+          });
           seen.add(id);
         }
       } catch {
@@ -223,14 +264,17 @@ async function rankedStandings(
     }
   }
 
+  // Append any team not yet ranked, lowest priority, with a zero total.
+  const lastRank = ranked.length > 0 ? ranked[ranked.length - 1].rank : 0;
   for (const id of teamIds(teams)) {
     if (!seen.has(id)) {
-      ordered.push(id);
+      order.push(id);
+      ranked.push({ id, total: 0, rank: lastRank + 1, tied: false });
       seen.add(id);
     }
   }
 
-  return ordered;
+  return { order, ranked };
 }
 
 /** Everything needed to draw or validate the next teams round after checks pass. */
@@ -244,6 +288,8 @@ interface TeamsDrawContext {
   playedOpponents: ReadonlySet<string>;
   hadBye: ReadonlySet<TeamId>;
   hadTriangle: ReadonlySet<TeamId>;
+  /** Current standings (best first) with running totals, for the preview. */
+  ranked: RankedTeam[];
 }
 
 /**
@@ -292,7 +338,7 @@ async function resolveTeamsDrawContext(
     return { reason: "ROUND_INCOMPLETE" };
   }
 
-  const standings = await rankedStandings(db, gameId, section, teams);
+  const { order, ranked } = await rankedStandings(db, gameId, section, teams);
 
   return {
     db,
@@ -300,10 +346,11 @@ async function resolveTeamsDrawContext(
     boardsPerRound,
     oddHandling,
     nextRound: currentRound + 1,
-    standings,
+    standings: order,
     playedOpponents,
     hadBye,
     hadTriangle,
+    ranked,
   };
 }
 
@@ -343,6 +390,12 @@ export async function previewNextSwissTeamsRound(
     draw.byeTeamId,
     draw.triangle,
   );
+  const standings = await buildTeamStandings(ctx.db, section, ctx.ranked);
+
+  // Which drawn matches repeat an earlier-round opponent (for the UI to flag).
+  const repeatMatchKeys = draw.matches
+    .map((m) => teamOpponentKey(m.a, m.b))
+    .filter((key) => ctx.playedOpponents.has(key));
 
   return {
     ok: true,
@@ -352,8 +405,37 @@ export async function previewNextSwissTeamsRound(
     byeTeamId: draw.byeTeamId,
     triangle: draw.triangle,
     named,
+    standings,
+    repeatMatchKeys,
+    advisoryInputs: {
+      teams: ctx.teams,
+      playedOpponents: [...ctx.playedOpponents],
+    },
     hadUnavoidableRepeat: draw.hadUnavoidableRepeat,
   };
+}
+
+/**
+ * Resolve the ranked team standings into display entries with team names, in
+ * the order the draw ranked the field. Names come from the same team
+ * derivation the match resolver uses (`findTeams`, keyed by home NS seat), so a
+ * team's label matches its match-card label.
+ */
+async function buildTeamStandings(
+  db: Db,
+  section: SectionLetter,
+  ranked: RankedTeam[],
+): Promise<SwissStandingEntry[]> {
+  const assigned = await findTeams(db);
+  const nameBySeat = new Map(assigned.map((t) => [t.id, t.name]));
+
+  return ranked.map((r) => ({
+    id: r.id,
+    name: nameBySeat.get(`${section}${r.id}NS`) ?? `Team ${r.id}`,
+    total: r.total,
+    rank: r.rank,
+    tied: r.tied,
+  }));
 }
 
 /**
@@ -389,9 +471,9 @@ function isStructurallyValidTeamsRound(
  * reports the round number. It does NOT advance the timer; the caller
  * broadcasts the live updates.
  *
- * Today the director cannot yet edit a teams draw, so the committed matches are
- * the previewed ones; taking them as an argument (rather than re-drawing) keeps
- * this ready for editing (option 3) without a further reshape.
+ * The director may have edited the previewed draw (swapping teams' places), so
+ * the committed matches are taken as an argument and persisted verbatim rather
+ * than re-drawn — the exact arrangement the director accepted is what runs.
  */
 export async function commitNextSwissTeamsRound(
   gameId: string,

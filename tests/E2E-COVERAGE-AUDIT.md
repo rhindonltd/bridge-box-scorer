@@ -41,10 +41,12 @@ surface. Test files present at audit time:
 ## Status (last updated after Phases 1–4)
 
 Every **true (unblocked) test gap** the original audit found has been closed —
-see "Recently closed" below. The only remaining open items are **blocked** on
-missing UI or real hardware (teams play, scoring-type selection, American Whist,
-cloud/subscription, WiFi-on-hardware, timer `restart:true`, and the Swiss Teams
-draw). No further E2E is authorable for those until the product surface exists.
+see "Recently closed" below. Swiss Teams play & seating (items 7 and 12) is now
+also covered end-to-end (`swiss-teams.journey.ts`), and scoring-type selection
+(item 13) is implemented and exercised via the create form. The only remaining
+open items are **blocked** on missing UI or real hardware (American Whist,
+cloud/subscription, WiFi success on the box — manually verified, and timer
+`restart:true`). No further automated E2E is authorable for those.
 
 ---
 
@@ -74,6 +76,9 @@ below:
   show-hand on traveller (`deal-entry.journey.ts`).
 - **Swiss Pairs**: single-section setup, play round 1, draw round 2 from the
   Movement screen (`swiss-pairs.journey.ts`).
+- **Swiss Teams**: create a Teams game, pick Swiss Teams, seat a full field with
+  team names, play round 1 across the open/closed rooms, draw round 2, and see
+  the named teams on the leaderboard (`swiss-teams.journey.ts`).
 - **Director overrides**: played-contract override, adjusted-score (custom +
   preset), propagation to player + second director
   (`director-override.journey.ts`, `traveller-live.journey.ts`).
@@ -196,57 +201,71 @@ where the coverage lives.
   unit-tested (`select-movement.handler.test.ts` — "rejects when directorToken
   is invalid") plus integration tests. No E2E gap; not a removal candidate.
 
-### 7. Swiss Teams draw — RECLASSIFIED AS BLOCKED (see item 7 below)
+### 7 & 12. Swiss Teams draw + Teams play & seating — CLOSED
 
-- On closer inspection the Swiss Teams **draw is unreachable through the UI**, so
-  it moved from "partially testable" to blocked. Details in the blocked section.
+- `tests/journeys/swiss-teams.journey.ts`: creates a Teams game (IMP-VP scoring),
+  picks Swiss Teams, seats a full field entering a team name per home (NS) pair,
+  starts, scores round 1 across the open/closed rooms over a socket, then draws
+  round 2 through the Movement screen (asserting the round materializes). A
+  second test opens the leaderboard display and asserts the **named** teams
+  ("Team A1"/"Team A2") appear. A third test opens the director traveller for a
+  board and asserts it is framed as a **team match** ("Team A1 v Team A2") with
+  each room (open/closed) shown as its own selectable row.
+- New fixtures: `pickSwissTeamsMovement` (`tests/fixtures/game-setup.ts`);
+  `createGame` gained `gameType` + `teamsScoring` options and its
+  "Record Opening Lead" toggle click is now label-scoped (the Teams form adds an
+  "Allow Hand Entry" toggle, so an unscoped "No" was ambiguous); `join.ts` gained
+  `seatTeamPairBySeat` and `seatTeamsFieldOnDevices` (team-name aware seating).
+- **Product bug found & fixed by this journey**: the leaderboard classified a
+  Swiss / Swiss Teams game as a plain board-pooled pairs event because the
+  movement is stored per section (games DB), not on the game-index row that
+  `readLeaderboardInputs` read via `parseSelectedMovement`. For a teams `IMP_VP`
+  game that threw ("no overall plugin for the board-pooled path"); for Swiss
+  Pairs it silently mis-ranked. Fixed by falling back to the section movement
+  (`getAnySectionMovement`) when the game-index copy is null
+  (`src/services/leaderboard-service.ts`), with a unit test in
+  `leaderboard-service.test.ts`.
+- The teams review is also **editable** (swap two teams, live repeat re-check,
+  commit-exactly-shown), covered by `swapTeams`/`evaluateSwissTeamsRound` unit
+  tests, a control swap-then-commit test, and the `EditsThenCommits` story.
+- The **director traveller is now team-framed** for a teams game: the flat
+  per-table rows are grouped into team-match cards (open/closed rooms, team
+  names, per-board IMP margin, "Tied"/"Three-way"), each room still selectable
+  for a per-table override. Built server-side in `buildTeamTravellerMatches`
+  (reusing the tested `team-match.ts` reconstruction) and gated on the section
+  movement source in `buildTravellerPayload`; the pairs path is unchanged.
+  Covered by `board-service` + `Traveller` unit tests, a `Teams` story, and the
+  journey's third test. (The pairs override journeys still pass, so the shared
+  `openDirectorTraveller` fixture change is safe.)
 
 ---
 
 ## Gaps — blocked (no UI or environment-dependent)
 
-### 7. Swiss Teams draw — BLOCKED (no UI path)
+### 7. Swiss Teams draw — CLOSED (see "Recently closed")
 
-- **What**: Swiss Teams setup + drawing each round from standings (two tables
-  per match).
-- **Where**: setup dialog
-  `src/components/manage/sections/SwissTeamsSetupDialog.tsx`; socket event
-  `swissTeams:drawNextRound` (`handlers/swiss/draw-next-teams-round.handler.ts`);
-  scoring in `src/scoring/swiss/swiss-teams-*`.
-- **UPDATE**: a Swiss Teams **draw control now exists** and is UI-wired.
-  `ManageMovementPage` renders `SwissTeamsDrawControl` when the section's
-  movement `source === "SWISS_TEAMS"`; it previews via
-  `swissTeams:previewNextRound` and commits (the accepted round) via
-  `swissTeams:drawNextRound`. The preview → commit split and the "commit exactly
-  the shown round / reject invalid / write nothing on preview" behaviour are
-  covered at the DB level (`draw-swiss-teams-round-service.int.test.ts`) plus
-  handler, control, preview and resolver unit/story tests. The teams review is
-  read-only for now (no hand-editing).
-- **Still blocked (full browser journey)**: a true end-to-end Teams journey
-  (seat a teams field, score a round over sockets, then draw through the UI)
-  remains blocked by the teams-seating/scoring gap (item 12) and the lack of a
-  `pickSwissTeamsMovement` journey fixture. The draw itself is no longer the
-  blocker; seating + round-scoring through the UI is. (Swiss *Pairs* is fully
-  covered — `swiss-pairs.journey.ts`.)
+- Fully covered end-to-end by `swiss-teams.journey.ts` (create Teams game →
+  pick Swiss Teams → seat a full field with team names → start → score round 1
+  over sockets → draw round 2 through the UI). The preview → edit → commit and
+  advisory behaviour also have unit/story coverage. See "Recently closed" below.
 
-### 12. Teams play & seating
+### 12. Teams play & seating — CLOSED (see "Recently closed")
 
-- **What**: `gameType: "TEAMS"` is selectable at create and `createParticipant`
-  accepts an optional `teamName`, but the `join/` flow does not read `gameType`
-  or collect team names, and the director traveller path is pair-oriented.
-- **Where**: create `src/app/create/CreateGamePage.tsx`; no team-specific screen
-  under `src/app/game/[gameId]/join/`.
-- **Blocked**: no distinct Teams play/seating UI, so a true Teams journey (incl.
-  `TEAM_MATCH` / `TEAM_OVERALL` leaderboards) cannot be authored yet.
+- The audit's original claim (join flow ignores `gameType`, no team names) is
+  stale: `SelectSeatPage` branches on `game.gameType === "TEAMS"` and collects an
+  optional team name for the home (NS) pair, `createParticipant` plumbs it to
+  `createPairWithPlayers`, and teams are derived from seating by `findTeams`. A
+  full Teams journey now exists — see "Recently closed" below.
 
-### 13. Scoring-type selection (MP / IMP / Cross-IMP)
+### 13. Scoring-type selection (MP / IMP / Cross-IMP) — IMPLEMENTED
 
-- **What**: `scoringType` is stored (`src/db/game-index/schema.ts`, default
-  `"MP"`) and consumed at play time, but there is **no create/setup UI** to
-  choose IMP or Cross-IMP.
-- **Blocked**: covering IMP vs Cross-IMP rendering E2E would need games seeded
-  per scoring type, since no selector exists. Scoring math itself is unit-tested
-  under `src/scoring/`.
+- `scoringType` is chosen on the create form (`src/app/create/CreateGamePage.tsx`):
+  a **Pairs** game offers Matchpoints or Cross-IMPs; a **Teams** game offers IMP,
+  IMP (Victory Points), and a board-comparison option (Point-a-Board / Board-a-
+  Match by locale). The value is stored on the game-index row and consumed at
+  play time. The selector is exercised by the Swiss Teams journey
+  (`createGame` picks a teams scoring), and the scoring math is unit-tested under
+  `src/scoring/`. No longer a gap.
 
 ### 14. American Whist movement
 
@@ -264,15 +283,17 @@ where the coverage lives.
   test. (BridgeWebs upload — item 2 — is a separate third-party integration, not
   the BridgeBox cloud service.)
 
-### 16. WiFi scan/test SUCCESS + Save-gating on real hardware
+### 16. WiFi scan/test SUCCESS + Save-gating on real hardware — VERIFIED ON THE BOX
 
 - **What**: The real scan/test cycle (hotspot drops, device reconnects, picker
   populates, a successful test of the selected SSID enables Save).
 - **Where**: `wifi-settings.journey.ts` covers the capability-aware UI, the
-  unavailable page, and admin-gating; the success path needs real `nmcli`/WiFi.
-- **Blocked**: requires actual disconnect/reconnect hardware CI cannot perform.
-  Verify manually on an appliance. The disabled/gated states are covered
-  automatically.
+  unavailable page, and admin-gating; the success path exercises real
+  `nmcli`/WiFi.
+- **Status**: the full scan → test → save-and-apply cycle has been **verified
+  working on the appliance**. It is not part of automated CI (it needs the
+  hardware to drop and reconnect its own radio, which CI cannot do), so it stays
+  a manual on-box check; the disabled/gated states are covered automatically.
 
 ### 17. Timer `restart:true` (previous-phase first step)
 
@@ -320,14 +341,15 @@ The four phases below were the original prioritized backlog. All are now done
 - **P4 — Contract/coverage tidy-ups:** ✅ director-token validate (item 9);
   ✅ `results-summary`/`wifi/diagnostics` contracts, with `/games/all` +
   `start-check` already covered (item 11); ✅ `game:selectMovement` triaged as
-  used + already-covered (item 10). Swiss Teams draw (item 7) reclassified as
-  blocked (no UI path).
+  used + already-covered (item 10). ✅ Swiss Teams draw + Teams play & seating
+  (items 7 & 12) closed end-to-end (`swiss-teams.journey.ts`), which also
+  uncovered and fixed a leaderboard movement-classification bug.
 
-**Remaining — blocked (needs UI or hardware first, cannot E2E now):** Swiss
-Teams draw (7), Teams play (12), scoring-type selection (13), American Whist
-(14), cloud/subscription (15), WiFi success on real hardware (16), timer
-`restart:true` (17). Each needs a product surface or hardware that does not
-exist yet; none is a test-authoring gap.
+**Remaining — blocked (needs UI or hardware first, cannot E2E now):**
+American Whist (14), cloud/subscription (15), WiFi success on the box (16 —
+manually verified on the appliance, not automatable in CI), timer `restart:true`
+(17). Scoring-type selection (13) is now implemented and covered via the create
+form. The rest need a product surface or hardware that does not exist yet.
 
 ## Infrastructure added while closing gaps
 

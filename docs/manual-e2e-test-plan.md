@@ -446,11 +446,12 @@ bye — and only **OK** commits it; **Cancel** discards it.
 
 ## Notes on scope & known limitations
 
-- **Teams play & seating** and **scoring-type selection (IMP / Cross-IMP setup)**
-  currently have limited or no dedicated UI; this plan focuses on the **Pairs +
-  Matchpoints** path that the app fully supports. Cross-IMPs is selectable on the
-  create form, so you can still create such a game, but the richest coverage is
-  the matchpoint pairs flow.
+- **Scoring type is chosen on the create form.** A **Pairs** game offers
+  **Matchpoints** or **Cross-IMPs**; a **Teams** game offers **IMP**, **IMP
+  (Victory Points)**, and a board-comparison option (**Point-a-Board** in the
+  UK / **Board-a-Match** in the US). This plan focuses on the **Pairs +
+  Matchpoints** path for the richest coverage, but any of these can be selected
+  when creating a game.
 - **Swiss Pairs** is fully supported: to test it, create a **single-section**
   game, pick **Swiss Pairs** at the top of the movement picker, set rounds and
   boards, **Select Movement**, then during play draw each later round from the

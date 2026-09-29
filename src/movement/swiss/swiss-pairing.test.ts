@@ -441,9 +441,10 @@ describe("evaluateSwissSeating", () => {
     expect(a.hadUnavoidableRepeat).toBe(false);
     expect(a.hadStationaryConflict).toBe(false);
     expect(a.byeRepeat).toBe(false);
+    expect(a.problemTables).toEqual([]);
   });
 
-  it("flags a repeat pairing against history", () => {
+  it("flags a repeat pairing against history and names the table", () => {
     const a = evaluateSwissSeating(
       seating,
       null,
@@ -451,6 +452,8 @@ describe("evaluateSwissSeating", () => {
     );
     expect(a.hadUnavoidableRepeat).toBe(true);
     expect(a.repeats).toContain(opponentKey(1, 4));
+    // Pair 1 v 4 is seated at table 1, so table 1 is flagged.
+    expect(a.problemTables).toEqual([1]);
   });
 
   it("flags a structural error when a pair is seated twice", () => {
@@ -504,5 +507,7 @@ describe("evaluateSwissSeating", () => {
       input({ tables: 3, stationary }),
     );
     expect(a.hadStationaryConflict).toBe(true);
+    // Pair 1 (stationary, home table 1) was moved to table 3 -> flag table 3.
+    expect(a.problemTables).toEqual([3]);
   });
 });

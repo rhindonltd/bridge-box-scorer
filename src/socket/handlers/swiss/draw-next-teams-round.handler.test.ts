@@ -84,6 +84,9 @@ describe("registerPreviewNextTeamsRoundHandler", () => {
 
   it("acks the proposed matches + names and broadcasts nothing", async () => {
     const named = { matches: [], bye: null, triangle: null };
+    const standings = [
+      { id: 1, name: "Sharks", total: 30, rank: 1, tied: false },
+    ];
     vi.mocked(previewNextSwissTeamsRound).mockResolvedValue({
       ok: true,
       roundNumber: 2,
@@ -92,6 +95,9 @@ describe("registerPreviewNextTeamsRoundHandler", () => {
       byeTeamId: null,
       triangle: null,
       named,
+      standings,
+      repeatMatchKeys: [],
+      advisoryInputs: { teams: 4, playedOpponents: [] },
       hadUnavoidableRepeat: false,
     } as any);
 
@@ -114,6 +120,9 @@ describe("registerPreviewNextTeamsRoundHandler", () => {
         byeTeamId: null,
         triangle: null,
         named,
+        standings,
+        repeatMatchKeys: [],
+        advisoryInputs: { teams: 4, playedOpponents: [] },
         hadUnavoidableRepeat: false,
       },
     });

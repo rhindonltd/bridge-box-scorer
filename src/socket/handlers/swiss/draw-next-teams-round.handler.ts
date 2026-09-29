@@ -12,6 +12,8 @@ import {
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import type { NamedTeamsSeating } from "@/services/swiss-teams-seating-names";
+import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
+import type { SerializableTeamsAdvisoryInputs } from "@/movement/swiss-teams/swiss-teams-pairing";
 
 const matchesSchema = z.array(
   z.object({ a: z.number().int().min(1), b: z.number().int().min(1) }),
@@ -48,6 +50,9 @@ interface PreviewAck {
   byeTeamId: number | null;
   triangle: { a: number; b: number; c: number } | null;
   named: NamedTeamsSeating;
+  standings: SwissStandingEntry[];
+  repeatMatchKeys: string[];
+  advisoryInputs: SerializableTeamsAdvisoryInputs;
   hadUnavoidableRepeat: boolean;
 }
 
@@ -111,6 +116,9 @@ export function registerPreviewNextTeamsRoundHandler(
             byeTeamId: result.byeTeamId,
             triangle: result.triangle,
             named: result.named,
+            standings: result.standings,
+            repeatMatchKeys: result.repeatMatchKeys,
+            advisoryInputs: result.advisoryInputs,
             hadUnavoidableRepeat: result.hadUnavoidableRepeat,
           },
         });

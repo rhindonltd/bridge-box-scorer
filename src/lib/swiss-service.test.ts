@@ -30,6 +30,7 @@ const previewAck: SwissPreviewAck = {
     directionCounts: [],
     stationary: [],
   },
+  standings: [{ id: 1, name: "Alice / Bob", total: 30, rank: 1, tied: false }],
   hadUnavoidableRepeat: false,
   hadStationaryConflict: false,
 };

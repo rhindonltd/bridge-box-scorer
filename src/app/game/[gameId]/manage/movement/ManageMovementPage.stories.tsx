@@ -177,6 +177,12 @@ export const SwissPairs: Story = {
         directionCounts: [],
         stationary: [],
       },
+      standings: [
+        { id: 1, name: "Alice North / Bob South", total: 30, rank: 1, tied: false },
+        { id: 3, name: "Carol East / Dave West", total: 25, rank: 2, tied: false },
+        { id: 2, name: "Erin North / Frank South", total: 20, rank: 3, tied: false },
+        { id: 4, name: "Gina East / Hugo West", total: 15, rank: 4, tied: false },
+      ],
       hadUnavoidableRepeat: false,
       hadStationaryConflict: false,
     });

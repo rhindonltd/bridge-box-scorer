@@ -16,6 +16,11 @@ vi.mock("@/services/swiss-teams-seating-names", () => ({
     .fn()
     .mockResolvedValue({ matches: [], bye: null, triangle: null }),
 }));
+// buildTeamStandings resolves team names via findTeams; stub it empty so the
+// standings fall back to "Team {id}" labels (names aren't under test here).
+vi.mock("@/db/games/queries/find-teams", () => ({
+  findTeams: vi.fn().mockResolvedValue([]),
+}));
 
 import {
   previewNextSwissTeamsRound,
@@ -53,7 +58,12 @@ function rankTeams(n: number) {
     {
       section: "A",
       overallScore: {
-        lines: Array.from({ length: n }, (_, i) => ({ teamId: `A${i + 1}NS` })),
+        lines: Array.from({ length: n }, (_, i) => ({
+          teamId: `A${i + 1}NS`,
+          totalVP: (n - i) * 10,
+          rank: i + 1,
+          tied: false,
+        })),
       },
     },
   ] as any);
@@ -167,6 +177,18 @@ describe("previewNextSwissTeamsRound", () => {
     expect(result.matches.length).toBe(2); // 4 teams -> 2 matches
     expect(result.byeTeamId).toBeNull();
     expect(result.triangle).toBeNull();
+    // Standings are returned in draw order (best first) with running VP totals,
+    // from the same leaderboard lines the draw ranked on (team i -> (n-i)*10).
+    expect(result.standings.map((s) => ({ id: s.id, total: s.total }))).toEqual([
+      { id: 1, total: 40 },
+      { id: 2, total: 30 },
+      { id: 3, total: 20 },
+      { id: 4, total: 10 },
+    ]);
+    // Advisory inputs carry the team count + played opponents so the client
+    // can re-check repeats after an edit (round 1 played 1v2, recovered here).
+    expect(result.advisoryInputs.teams).toBe(4);
+    expect(result.advisoryInputs.playedOpponents).toContain("1-2");
     // A preview must never materialize.
     expect(materializeSwissTeamsRound).not.toHaveBeenCalled();
   });

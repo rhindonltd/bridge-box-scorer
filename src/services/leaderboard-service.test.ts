@@ -44,6 +44,13 @@ vi.mock("@/db/games/queries/find-teams", () => ({
   findTeams: vi.fn(),
 }));
 
+// The movement classification falls back to the section movement when the
+// game-index copy is null; mock it so these tests control the movement purely
+// through the game-index `findGameById` mock (default: no section movement).
+vi.mock("@/db/games/queries/get-section-movement", () => ({
+  getAnySectionMovement: vi.fn(async () => null),
+}));
+
 // The Swiss/Teams VP overall calculators are exercised elsewhere; here we mock
 // them to assert routing and return canned overalls.
 vi.mock("@/scoring/swiss/swiss-vp-overall", () => ({
@@ -65,6 +72,7 @@ import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
+import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 
 /** Build a mock overall plugin whose aggregate returns the given overall score. */
 function mockOverallPlugin(overallScore: unknown) {
@@ -608,6 +616,40 @@ describe("Teams VP routing", () => {
     expect(sections[1].participants).toHaveLength(0);
     // findTeams is consulted for a teams-VP game.
     expect(findTeams).toHaveBeenCalled();
+  });
+
+  it("classifies as teams-VP from the SECTION movement when the game-index copy is null", async () => {
+    // A Swiss Teams game stores its movement per section, not on the game-index
+    // row — so the game-index `selectedMovement` is null. The classifier must
+    // fall back to the section movement, else it misreads the game as a plain
+    // board-pooled pairs event (which for IMP_VP has no scorer and throws).
+    vi.mocked(findGameById).mockResolvedValue({
+      gameId: "game-1",
+      gameType: "TEAMS",
+      scoringType: "IMP_VP",
+      selectedMovement: null,
+    } as BridgeGame);
+    vi.mocked(getAnySectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 2, rounds: 3, boardsPerRound: 6 },
+    });
+    vi.mocked(findTeams).mockResolvedValue([
+      { id: "A1NS", type: "TEAM" } as any,
+    ]);
+    vi.mocked(calculateTeamsVpOverall).mockReturnValue({
+      type: "TEAMS_VP",
+      lines: [],
+    } as any);
+
+    const combined = await computeLeaderboard(
+      dbWithBoards([{ boardNumber: 1, ns: "A1NS", ew: "A2EW", section: "A" }]),
+      "game-1",
+    );
+
+    // Routed to the teams VP scorer, not the board-pooled overall.
+    expect(getAnySectionMovement).toHaveBeenCalled();
+    expect(calculateTeamsVpOverall).toHaveBeenCalledTimes(1);
+    expect(combined.type).toBe("TEAMS_VP");
   });
 });
 

@@ -93,6 +93,9 @@ describe("registerPreviewNextRoundHandler", () => {
       directionCounts: [],
       stationary: [],
     };
+    const standings = [
+      { id: 1, name: "Alice N / Bob S", total: 30, rank: 1, tied: false },
+    ];
     vi.mocked(previewNextSwissRound).mockResolvedValue({
       ok: true,
       roundNumber: 2,
@@ -101,6 +104,7 @@ describe("registerPreviewNextRoundHandler", () => {
       sitOutPairId: null,
       named,
       advisoryInputs,
+      standings,
       hadUnavoidableRepeat: false,
       hadStationaryConflict: false,
     } as any);
@@ -124,6 +128,7 @@ describe("registerPreviewNextRoundHandler", () => {
         sitOutPairId: null,
         named,
         advisoryInputs,
+        standings,
         hadUnavoidableRepeat: false,
         hadStationaryConflict: false,
       },

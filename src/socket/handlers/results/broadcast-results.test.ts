@@ -10,16 +10,25 @@ vi.mock("@/services/leaderboard-service", () => ({
 
 vi.mock("@/services/board-service", () => ({
   getBoardInstances: vi.fn(),
+  buildTeamTravellerMatches: vi.fn(),
 }));
 
 vi.mock("@/db/games/queries/get-deal", () => ({
   getDealHands: vi.fn(),
 }));
 
+vi.mock("@/db/games/queries/get-section-movement", () => ({
+  getAnySectionMovement: vi.fn(),
+}));
+
 import { getDb } from "@/db/games";
 import { buildLeaderboards } from "@/services/leaderboard-service";
-import { getBoardInstances } from "@/services/board-service";
+import {
+  getBoardInstances,
+  buildTeamTravellerMatches,
+} from "@/services/board-service";
 import { getDealHands } from "@/db/games/queries/get-deal";
+import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { broadcastResultsChanged } from "./broadcast-results";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
@@ -51,6 +60,10 @@ describe("broadcastResultsChanged", () => {
     } as any);
     vi.mocked(getBoardInstances).mockResolvedValue([{ boardNumber: 3 }] as any);
     vi.mocked(getDealHands).mockResolvedValue(null);
+    // Default: a pairs game (no section teams movement), so buildTravellerPayload
+    // adds no team framing.
+    vi.mocked(getAnySectionMovement).mockResolvedValue(null);
+    vi.mocked(buildTeamTravellerMatches).mockResolvedValue([]);
   });
 
   it("recomputes and emits the leaderboard when its room is occupied", async () => {

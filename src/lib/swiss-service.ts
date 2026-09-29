@@ -4,6 +4,8 @@ import { getDirectorToken } from "@/lib/director-token";
 import type { NamedSeating } from "@/services/swiss-seating-names";
 import type { NamedTeamsSeating } from "@/services/swiss-teams-seating-names";
 import type { SerializableAdvisoryInputs } from "@/movement/swiss/swiss-pairing";
+import type { SerializableTeamsAdvisoryInputs } from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
 
 /** A single table's seating as stable Swiss pair ids. */
 export interface SwissSeatingEntry {
@@ -24,6 +26,8 @@ export interface SwissPreviewAck {
   sitOutPairId: number | null;
   named: NamedSeating;
   advisoryInputs: SerializableAdvisoryInputs;
+  /** Current standings (best first) with running VP totals — the draw order. */
+  standings: SwissStandingEntry[];
   hadUnavoidableRepeat: boolean;
   hadStationaryConflict: boolean;
 }
@@ -102,6 +106,12 @@ export interface SwissTeamsPreviewAck {
   byeTeamId: number | null;
   triangle: TeamsTriangleEntry | null;
   named: NamedTeamsSeating;
+  /** Current standings (best first) with running VP totals — the draw order. */
+  standings: SwissStandingEntry[];
+  /** Team-pair keys of drawn matches that repeat an earlier opponent. */
+  repeatMatchKeys: string[];
+  /** Team count + played opponents, so the client re-checks repeats after edits. */
+  advisoryInputs: SerializableTeamsAdvisoryInputs;
   hadUnavoidableRepeat: boolean;
 }
 

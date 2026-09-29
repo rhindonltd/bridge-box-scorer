@@ -27,6 +27,17 @@ export async function createGame(
      * so the ContractWizard omits its opening-lead step.
      */
     recordOpeningLead?: boolean;
+    /**
+     * The event type. Defaults to "PAIRS" (the form's default). "TEAMS"
+     * switches the "Event Type" dropdown to Teams, which in turn swaps the
+     * Scoring options over to the teams set (see {@link teamsScoring}).
+     */
+    gameType?: "PAIRS" | "TEAMS";
+    /**
+     * For a Teams game, which teams scoring to select. Defaults to "IMP"
+     * (the form's default). Ignored for a Pairs game.
+     */
+    teamsScoring?: "IMP" | "IMP_VP" | "BAM" | "PAB";
   },
 ): Promise<CreatedGame> {
   await page.goto("/create");
@@ -40,10 +51,25 @@ export async function createGame(
   await page.getByLabel("Event Name").fill(opts.eventName);
   await page.getByLabel("Director Name").fill(opts.directorName ?? "E2E Director");
 
+  // Event Type is a native <select> ("Pairs" / "Teams"), defaulting to Pairs.
+  // Switching to Teams re-renders the Scoring dropdown with the teams options.
+  if (opts.gameType === "TEAMS") {
+    await page.getByLabel("Event Type").selectOption("TEAMS");
+    if (opts.teamsScoring) {
+      // The Scoring dropdown now carries the teams options; select by value.
+      await page.getByLabel("Scoring").selectOption(opts.teamsScoring);
+    }
+  }
+
   // "Record Opening Lead" is a two-button toggle (No / Yes), defaulting to Yes.
   // Only click when the caller wants it off, to keep the default path untouched.
+  // Scope to the toggle by its label — the form has other No/Yes toggles
+  // ("Allow Hand Entry"), so an unscoped "No" match is ambiguous.
   if (opts.recordOpeningLead === false) {
-    await page.getByRole("button", { name: "No", exact: true }).click();
+    await page
+      .getByLabel("Record Opening Lead")
+      .getByRole("button", { name: "No", exact: true })
+      .click();
   }
 
   await page.getByRole("button", { name: "Create Game", exact: true }).click();
