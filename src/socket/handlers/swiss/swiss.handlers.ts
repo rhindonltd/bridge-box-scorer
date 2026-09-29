@@ -1,7 +1,13 @@
 import { Server, Socket } from "socket.io";
 
-import { registerDrawNextRoundHandler } from "./draw-next-round.handler";
-import { registerDrawNextTeamsRoundHandler } from "./draw-next-teams-round.handler";
+import {
+  registerDrawNextRoundHandler,
+  registerPreviewNextRoundHandler,
+} from "./draw-next-round.handler";
+import {
+  registerDrawNextTeamsRoundHandler,
+  registerPreviewNextTeamsRoundHandler,
+} from "./draw-next-teams-round.handler";
 
 /**
  * Register the Swiss socket handlers. Swiss (Pairs and Teams) is the movement
@@ -9,6 +15,8 @@ import { registerDrawNextTeamsRoundHandler } from "./draw-next-teams-round.handl
  * previous one is scored, so each has a director-initiated draw event.
  */
 export function registerSwissHandlers(socket: Socket, io: Server) {
+  registerPreviewNextRoundHandler(socket, io);
   registerDrawNextRoundHandler(socket, io);
+  registerPreviewNextTeamsRoundHandler(socket, io);
   registerDrawNextTeamsRoundHandler(socket, io);
 }

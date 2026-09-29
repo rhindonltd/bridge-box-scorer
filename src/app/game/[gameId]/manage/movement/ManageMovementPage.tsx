@@ -13,6 +13,7 @@ import { MovementByTable } from "@/movement/movementData";
 import { useSections } from "@/hooks/sections";
 import { useResultsComplete } from "@/hooks/results-complete";
 import { SwissDrawControl } from "./SwissDrawControl";
+import { SwissTeamsDrawControl } from "./SwissTeamsDrawControl";
 
 interface ManageMovementPageProps {
   backHref: string;
@@ -61,14 +62,20 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
     };
   }, [mutate]);
 
-  // The active section's movement, used to show the Swiss "Draw Next Round"
-  // control only for a Swiss section.
+  // The active section's movement, used to show the right "Draw Next Round"
+  // control for a Swiss section (Pairs or Teams).
   const activeSelected = sections.find(
     (s) => s.section === activeSection,
   )?.selectedMovement;
   const swissControl =
     activeSection && activeSelected?.source === "SWISS" ? (
       <SwissDrawControl
+        gameId={game.gameId}
+        section={activeSection}
+        allResultsIn={allResultsIn}
+      />
+    ) : activeSection && activeSelected?.source === "SWISS_TEAMS" ? (
+      <SwissTeamsDrawControl
         gameId={game.gameId}
         section={activeSection}
         allResultsIn={allResultsIn}

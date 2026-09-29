@@ -9,7 +9,13 @@ import {
   teamIds,
   teamOpponentKey,
   type TeamId,
+  type TeamsMatch,
+  type TeamsTriangle,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
+import {
+  resolveSwissTeamsMatchNames,
+  type NamedTeamsSeating,
+} from "@/services/swiss-teams-seating-names";
 import { SectionLetter, parseSeat } from "@/model/participants";
 
 /**
@@ -22,10 +28,29 @@ export type DrawSwissTeamsRejection =
   | "EVENT_COMPLETE"
   | "ODD_TEAM_COUNT";
 
-/** Outcome of a Swiss Teams draw attempt: the drawn round, or a rejection. */
-export type DrawSwissTeamsResult =
-  | { ok: true; roundNumber: number; hadUnavoidableRepeat: boolean }
+/**
+ * A previewed (but NOT committed) Swiss Teams draw: the proposed matches (stable
+ * team ids the client echoes back on commit), the odd-field resolution (bye or
+ * triangle), resolved team names for display, and the repeat advisory. Nothing
+ * is written to the DB by a preview.
+ */
+export type PreviewSwissTeamsResult =
+  | {
+      ok: true;
+      roundNumber: number;
+      teams: number;
+      matches: TeamsMatch[];
+      byeTeamId: TeamId | null;
+      triangle: TeamsTriangle | null;
+      named: NamedTeamsSeating;
+      hadUnavoidableRepeat: boolean;
+    }
   | { ok: false; reason: DrawSwissTeamsRejection };
+
+/** Outcome of committing a Swiss Teams round. */
+export type CommitSwissTeamsResult =
+  | { ok: true; roundNumber: number }
+  | { ok: false; reason: DrawSwissTeamsRejection | "INVALID_MATCHES" };
 
 /** The current-round number and the matches already played, from board rows. */
 interface SwissTeamsHistory {
@@ -208,23 +233,30 @@ async function rankedStandings(
   return ordered;
 }
 
+/** Everything needed to draw or validate the next teams round after checks pass. */
+interface TeamsDrawContext {
+  db: Db;
+  teams: number;
+  boardsPerRound: number;
+  oddHandling: "BYE" | "TRIANGLE";
+  nextRound: number;
+  standings: TeamId[];
+  playedOpponents: ReadonlySet<string>;
+  hadBye: ReadonlySet<TeamId>;
+  hadTriangle: ReadonlySet<TeamId>;
+}
+
 /**
- * Draw and materialize the next Swiss Teams round for a section.
- *
- * Preconditions (so the caller can reject cleanly): the section is a Swiss
- * Teams movement, the current round is fully scored, and the event has rounds
- * remaining. An odd team count is allowed when the movement's `oddHandling` is
- * "BYE" (a team sits out each round); the "TRIANGLE" alternative is not yet
- * implemented and is rejected. When all hold, it draws the next round from
- * current standings (avoiding repeat opponents, byeing the lowest-ranked team
- * without a prior bye when the field is odd), materializes its open/closed-room
- * board rows plus any bye sit-out, and reports whether a repeat was
- * unavoidable. It does NOT advance the timer.
+ * Resolve and validate the preconditions for drawing the next Swiss Teams round
+ * and assemble the pure-engine inputs. Returns a rejection reason when the
+ * section isn't Swiss Teams, an odd field can't be resolved, the event is
+ * complete, or the current round isn't fully scored — so both preview and
+ * commit reject cleanly and identically.
  */
-export async function drawNextSwissTeamsRound(
+async function resolveTeamsDrawContext(
   gameId: string,
   section: SectionLetter,
-): Promise<DrawSwissTeamsResult> {
+): Promise<TeamsDrawContext | { reason: DrawSwissTeamsRejection }> {
   const db = await getDb(gameId);
   if (!db) {
     throw new Error("Game db does not exist");
@@ -232,7 +264,7 @@ export async function drawNextSwissTeamsRound(
 
   const selected = await getSectionMovement(db, section);
   if (!selected || selected.source !== "SWISS_TEAMS") {
-    return { ok: false, reason: "NOT_SWISS_TEAMS" };
+    return { reason: "NOT_SWISS_TEAMS" };
   }
 
   const {
@@ -245,7 +277,7 @@ export async function drawNextSwissTeamsRound(
   // An odd field is resolved by a bye or a triangle (both supported); a
   // triangle needs at least three teams to form the three-way.
   if (teams % 2 !== 0 && oddHandling === "TRIANGLE" && teams < 3) {
-    return { ok: false, reason: "ODD_TEAM_COUNT" };
+    return { reason: "ODD_TEAM_COUNT" };
   }
 
   const { highestRound, playedOpponents, hadBye, hadTriangle } =
@@ -253,30 +285,60 @@ export async function drawNextSwissTeamsRound(
   const currentRound = highestRound;
 
   if (currentRound >= totalRounds) {
-    return { ok: false, reason: "EVENT_COMPLETE" };
+    return { reason: "EVENT_COMPLETE" };
   }
 
   if (currentRound >= 1 && !(await isRoundComplete(db, section, currentRound))) {
-    return { ok: false, reason: "ROUND_INCOMPLETE" };
+    return { reason: "ROUND_INCOMPLETE" };
   }
 
   const standings = await rankedStandings(db, gameId, section, teams);
 
-  const draw = drawSwissTeamsRound({
+  return {
+    db,
     teams,
+    boardsPerRound,
+    oddHandling,
+    nextRound: currentRound + 1,
     standings,
     playedOpponents,
-    oddHandling,
     hadBye,
     hadTriangle,
-  });
-  const nextRound = currentRound + 1;
+  };
+}
 
-  await materializeSwissTeamsRound(
-    gameId,
+/**
+ * Compute (but do NOT commit) the next Swiss Teams round for a section.
+ *
+ * Runs the same preconditions as the commit, draws from current standings +
+ * history (avoiding repeat opponents; byeing or triangling the bottom of the
+ * field for an odd count), and resolves team names so the director can review
+ * the proposed matches before accepting. Nothing is written and nothing is
+ * broadcast. Since the current round is fully scored (a precondition),
+ * standings are stable, so the preview matches what a subsequent commit of the
+ * same draw would produce.
+ */
+export async function previewNextSwissTeamsRound(
+  gameId: string,
+  section: SectionLetter,
+): Promise<PreviewSwissTeamsResult> {
+  const ctx = await resolveTeamsDrawContext(gameId, section);
+  if ("reason" in ctx) {
+    return { ok: false, reason: ctx.reason };
+  }
+
+  const draw = drawSwissTeamsRound({
+    teams: ctx.teams,
+    standings: ctx.standings,
+    playedOpponents: ctx.playedOpponents,
+    oddHandling: ctx.oddHandling,
+    hadBye: ctx.hadBye,
+    hadTriangle: ctx.hadTriangle,
+  });
+
+  const named = await resolveSwissTeamsMatchNames(
+    ctx.db,
     section,
-    nextRound,
-    boardsPerRound,
     draw.matches,
     draw.byeTeamId,
     draw.triangle,
@@ -284,7 +346,78 @@ export async function drawNextSwissTeamsRound(
 
   return {
     ok: true,
-    roundNumber: nextRound,
+    roundNumber: ctx.nextRound,
+    teams: ctx.teams,
+    matches: draw.matches,
+    byeTeamId: draw.byeTeamId,
+    triangle: draw.triangle,
+    named,
     hadUnavoidableRepeat: draw.hadUnavoidableRepeat,
   };
+}
+
+/**
+ * Whether a set of team matches (+ bye/triangle) is a structurally valid round
+ * for a field of `teams` teams: every team appears exactly once across the
+ * matches, the bye, and the triangle, and each is a real team id. Advisory
+ * issues (a repeat pairing) are NOT checked here — those are the director's
+ * call and don't block a commit.
+ */
+function isStructurallyValidTeamsRound(
+  teams: number,
+  matches: TeamsMatch[],
+  byeTeamId: TeamId | null,
+  triangle: TeamsTriangle | null,
+): boolean {
+  const seen: TeamId[] = [];
+  for (const m of matches) seen.push(m.a, m.b);
+  if (byeTeamId != null) seen.push(byeTeamId);
+  if (triangle != null) seen.push(triangle.a, triangle.b, triangle.c);
+
+  const expected = teamIds(teams);
+  if (seen.length !== expected.length) return false;
+  if (new Set(seen).size !== seen.length) return false;
+  return seen.every((id) => id >= 1 && id <= teams);
+}
+
+/**
+ * Commit the next Swiss Teams round with the EXACT matches the director
+ * accepted. Re-checks the same preconditions (so a stale commit can't slip a
+ * round in after the event moved on), then validates that the round is
+ * structurally sound (every team placed exactly once). Materializes that round
+ * — the open/closed-room board rows plus any bye sit-out or triangle — and
+ * reports the round number. It does NOT advance the timer; the caller
+ * broadcasts the live updates.
+ *
+ * Today the director cannot yet edit a teams draw, so the committed matches are
+ * the previewed ones; taking them as an argument (rather than re-drawing) keeps
+ * this ready for editing (option 3) without a further reshape.
+ */
+export async function commitNextSwissTeamsRound(
+  gameId: string,
+  section: SectionLetter,
+  matches: TeamsMatch[],
+  byeTeamId: TeamId | null,
+  triangle: TeamsTriangle | null,
+): Promise<CommitSwissTeamsResult> {
+  const ctx = await resolveTeamsDrawContext(gameId, section);
+  if ("reason" in ctx) {
+    return { ok: false, reason: ctx.reason };
+  }
+
+  if (!isStructurallyValidTeamsRound(ctx.teams, matches, byeTeamId, triangle)) {
+    return { ok: false, reason: "INVALID_MATCHES" };
+  }
+
+  await materializeSwissTeamsRound(
+    gameId,
+    section,
+    ctx.nextRound,
+    ctx.boardsPerRound,
+    matches,
+    byeTeamId,
+    triangle,
+  );
+
+  return { ok: true, roundNumber: ctx.nextRound };
 }

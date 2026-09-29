@@ -9,9 +9,15 @@ import type { MovementByTable } from "@/movement/movementData";
 // Imported with the full relative path + extension so the mocked() call below
 // targets the same module instance registered for mocking in
 // .storybook/preview.tsx (used by the embedded SwissDrawControl).
-import { drawNextSwissRound } from "../../../../../lib/swiss-service";
+import { previewNextSwissRound } from "../../../../../lib/swiss-service";
 
 const GAME_ID = mockGame.gameId;
+
+/** A minimal full Player row for the Swiss preview mock. */
+let nextPlayerId = 1;
+function swissPlayer(firstName: string, lastName: string) {
+  return { id: nextPlayerId++, firstName, lastName, nationalId: null };
+}
 
 // A single-section game with a tiny 2-table / 2-round movement.
 const singleSection = [
@@ -123,15 +129,54 @@ export const Loading: Story = {
 
 /**
  * A Swiss Pairs section: the movement table is shown with the director's "Draw
- * Next Round" control above it. All results are in, so the button is enabled
- * and ready to draw. The draw itself is mocked to resolve cleanly (there is no
- * Socket.IO server in Storybook).
+ * Next Round" control above it. All results are in, so the button is enabled;
+ * clicking it previews the next round (the preview call is mocked to resolve,
+ * since there is no Socket.IO server in Storybook).
  */
 export const SwissPairs: Story = {
   beforeEach: () => {
-    mocked(drawNextSwissRound).mockResolvedValue({
+    mocked(previewNextSwissRound).mockResolvedValue({
       roundNumber: 2,
+      tables: 2,
+      seating: [
+        { tableNumber: 1, ns: 1, ew: 3 },
+        { tableNumber: 2, ns: 2, ew: 4 },
+      ],
       sitOutPairId: null,
+      named: {
+        tables: [
+          {
+            tableNumber: 1,
+            nsPairId: 1,
+            ewPairId: 3,
+            players: {
+              N: swissPlayer("Alice", "North"),
+              S: swissPlayer("Bob", "South"),
+              E: swissPlayer("Carol", "East"),
+              W: swissPlayer("Dave", "West"),
+            },
+          },
+          {
+            tableNumber: 2,
+            nsPairId: 2,
+            ewPairId: 4,
+            players: {
+              N: swissPlayer("Erin", "North"),
+              S: swissPlayer("Frank", "South"),
+              E: swissPlayer("Gina", "East"),
+              W: swissPlayer("Hugo", "West"),
+            },
+          },
+        ],
+        bye: null,
+      },
+      advisoryInputs: {
+        tables: 2,
+        playedOpponents: [],
+        hadBye: [],
+        directionCounts: [],
+        stationary: [],
+      },
       hadUnavoidableRepeat: false,
       hadStationaryConflict: false,
     });

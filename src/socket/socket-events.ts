@@ -123,6 +123,15 @@ export const SocketEvents = {
   // conflict, sit-out pair) for the director.
   DRAW_NEXT_SWISS_ROUND: "swiss:drawNextRound",
 
+  // Client-initiated (director): PREVIEW the next Swiss Pairs round without
+  // committing it. Runs the same preconditions and draw as
+  // DRAW_NEXT_SWISS_ROUND but writes nothing and broadcasts nothing; the
+  // acknowledgement carries the proposed seating (stable pair ids + resolved
+  // player names), the sit-out pair and the advisories, so the director can
+  // review/edit it before accepting. The accompanying commit is
+  // DRAW_NEXT_SWISS_ROUND, which now takes the (possibly edited) seating.
+  PREVIEW_NEXT_SWISS_ROUND: "swiss:previewNextRound",
+
   // Client-initiated (director): draw the next Swiss Teams round from the
   // current standings. Only valid once the current round is fully scored and
   // the event has rounds remaining. Materializes the next round's boards (two
@@ -130,4 +139,13 @@ export const SocketEvents = {
   // acknowledgement carries the drawn round number plus an unavoidable-repeat
   // advisory for the director.
   DRAW_NEXT_SWISS_TEAMS_ROUND: "swissTeams:drawNextRound",
+
+  // Client-initiated (director): PREVIEW the next Swiss Teams round without
+  // committing it. Runs the same preconditions and draw as
+  // DRAW_NEXT_SWISS_TEAMS_ROUND but writes nothing and broadcasts nothing; the
+  // acknowledgement carries the proposed matches (stable team ids + resolved
+  // team names), the odd-field resolution (bye or triangle) and the repeat
+  // advisory, so the director can review it before accepting. The accompanying
+  // commit is DRAW_NEXT_SWISS_TEAMS_ROUND, which takes the accepted matches.
+  PREVIEW_NEXT_SWISS_TEAMS_ROUND: "swissTeams:previewNextRound",
 } as const;

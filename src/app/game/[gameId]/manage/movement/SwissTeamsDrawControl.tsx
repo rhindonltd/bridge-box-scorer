@@ -2,26 +2,28 @@
 
 import { useState } from "react";
 import {
-  previewNextSwissRound,
-  commitNextSwissRound,
-  type SwissPreviewAck,
+  previewNextSwissTeamsRound,
+  commitNextSwissTeamsRound,
+  type SwissTeamsPreviewAck,
 } from "@/lib/swiss-service";
-import type { SwissPairId, SwissSeating } from "@/movement/swiss/swiss-pairing";
-import { SwissDrawPreview } from "./SwissDrawPreview";
+import { SwissTeamsDrawPreview } from "./SwissTeamsDrawPreview";
 
 /**
- * Director control for drawing the next Swiss Pairs round, shown on the in-play
- * Movement screen for a Swiss section.
+ * Director control for drawing the next Swiss Teams round, shown on the in-play
+ * Movement screen for a Swiss Teams section.
  *
  * The button is enabled only when every result for the current round is in
  * (`allResultsIn`). Drawing first PREVIEWS the proposed round: the control
- * swaps to a full-screen review ({@link SwissDrawPreview}) showing the seating
- * with player names and any advisories, where the director can hand-adjust
- * before accepting. Only when they tap OK is the round committed and broadcast;
- * Cancel discards it (nothing is written). This replaces the old commit-on-click
- * behaviour so a director always confirms the seating first.
+ * swaps to a full-screen review ({@link SwissTeamsDrawPreview}) showing the
+ * matches (with team names) and any bye or triangle. Only when the director
+ * taps OK is the round committed and broadcast; Cancel discards it (nothing is
+ * written).
+ *
+ * Editing a teams draw is not offered yet; the preview is read-only. The
+ * plumbing (preview → commit-the-shown-round) matches the Swiss Pairs control,
+ * so editing can be added later without reshaping this.
  */
-export function SwissDrawControl({
+export function SwissTeamsDrawControl({
   gameId,
   section,
   allResultsIn,
@@ -32,7 +34,7 @@ export function SwissDrawControl({
 }) {
   const [previewing, setPreviewing] = useState(false);
   const [committing, setCommitting] = useState(false);
-  const [preview, setPreview] = useState<SwissPreviewAck | null>(null);
+  const [preview, setPreview] = useState<SwissTeamsPreviewAck | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,7 +43,7 @@ export function SwissDrawControl({
     setError(null);
     setNotice(null);
     try {
-      const result = await previewNextSwissRound(gameId, section);
+      const result = await previewNextSwissTeamsRound(gameId, section);
       setPreview(result);
     } catch (err) {
       setError(
@@ -52,18 +54,17 @@ export function SwissDrawControl({
     }
   }
 
-  async function handleConfirm(
-    seating: SwissSeating[],
-    sitOutPairId: SwissPairId | null,
-  ) {
+  async function handleConfirm() {
+    if (!preview) return;
     setCommitting(true);
     setError(null);
     try {
-      const result = await commitNextSwissRound(
+      const result = await commitNextSwissTeamsRound(
         gameId,
         section,
-        seating,
-        sitOutPairId,
+        preview.matches,
+        preview.byeTeamId,
+        preview.triangle,
       );
       setPreview(null);
       setNotice(`Round ${result.roundNumber} drawn.`);
@@ -84,7 +85,7 @@ export function SwissDrawControl({
   // While a preview is open, take over the screen with the review page.
   if (preview) {
     return (
-      <SwissDrawPreview
+      <SwissTeamsDrawPreview
         preview={preview}
         committing={committing}
         error={error}
@@ -98,7 +99,7 @@ export function SwissDrawControl({
     <div className="shrink-0 border-b border-gray-200 bg-gray-50 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="text-sm text-gray-700">
-          <span className="font-semibold">Swiss Pairs</span>
+          <span className="font-semibold">Swiss Teams</span>
           <span className="text-gray-500">
             {" "}
             — draw the next round once all results are in.

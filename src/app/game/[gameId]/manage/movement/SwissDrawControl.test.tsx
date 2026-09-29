@@ -2,11 +2,65 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 vi.mock("@/lib/swiss-service", () => ({
-  drawNextSwissRound: vi.fn(),
+  previewNextSwissRound: vi.fn(),
+  commitNextSwissRound: vi.fn(),
 }));
 
-import { drawNextSwissRound } from "@/lib/swiss-service";
+import {
+  previewNextSwissRound,
+  commitNextSwissRound,
+} from "@/lib/swiss-service";
 import { SwissDrawControl } from "./SwissDrawControl";
+
+/** A minimal preview ack for a 2-table field, pair 1v3 / 2v4, no bye. */
+function previewAck(over: Record<string, unknown> = {}) {
+  return {
+    roundNumber: 2,
+    tables: 2,
+    seating: [
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 2, ew: 4 },
+    ],
+    sitOutPairId: null,
+    named: {
+      tables: [
+        {
+          tableNumber: 1,
+          nsPairId: 1,
+          ewPairId: 3,
+          players: {
+            N: { firstName: "Alice", lastName: "N" },
+            S: { firstName: "Bob", lastName: "S" },
+            E: { firstName: "Carol", lastName: "E" },
+            W: { firstName: "Dave", lastName: "W" },
+          },
+        },
+        {
+          tableNumber: 2,
+          nsPairId: 2,
+          ewPairId: 4,
+          players: {
+            N: { firstName: "Erin", lastName: "N" },
+            S: { firstName: "Frank", lastName: "S" },
+            E: { firstName: "Gina", lastName: "E" },
+            W: { firstName: "Hugo", lastName: "W" },
+          },
+        },
+      ],
+      bye: null,
+    },
+    advisoryInputs: {
+      tables: 2,
+      playedOpponents: [],
+      hadBye: [],
+      directionCounts: [],
+      stationary: [],
+    },
+    hadUnavoidableRepeat: false,
+    hadStationaryConflict: false,
+    ...over,
+  };
+}
 
 describe("SwissDrawControl", () => {
   beforeEach(() => {
@@ -19,49 +73,91 @@ describe("SwissDrawControl", () => {
     expect(screen.getByText(/Waiting for all results/i)).toBeInTheDocument();
   });
 
-  it("enables the button when all results are in and draws the next round", async () => {
-    vi.mocked(drawNextSwissRound).mockResolvedValue({
-      roundNumber: 2,
-      sitOutPairId: null,
-      hadUnavoidableRepeat: false,
-      hadStationaryConflict: false,
-    });
-
-    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
-
-    const button = screen.getByTestId("draw-next-round");
-    expect(button).toBeEnabled();
-    fireEvent.click(button);
-
-    await waitFor(() =>
-      expect(drawNextSwissRound).toHaveBeenCalledWith("g1", "A"),
-    );
-    expect(screen.getByTestId("draw-notice")).toHaveTextContent(
-      "Round 2 drawn.",
-    );
-  });
-
-  it("warns about an unavoidable repeat, a stationary conflict, and a bye", async () => {
-    vi.mocked(drawNextSwissRound).mockResolvedValue({
-      roundNumber: 3,
-      sitOutPairId: 5,
-      hadUnavoidableRepeat: true,
-      hadStationaryConflict: true,
-    });
+  it("previews the draw (no commit) and shows the review page", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue(previewAck() as never);
 
     render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
     fireEvent.click(screen.getByTestId("draw-next-round"));
 
-    await waitFor(() => screen.getByTestId("draw-notice"));
-    const notice = screen.getByTestId("draw-notice").textContent ?? "";
-    expect(notice).toContain("Round 3 drawn.");
-    expect(notice).toContain("bye");
-    expect(notice).toContain("repeat pairing");
-    expect(notice).toContain("stationary pairs");
+    await waitFor(() =>
+      expect(previewNextSwissRound).toHaveBeenCalledWith("g1", "A"),
+    );
+    // The review page appears with OK/Cancel; nothing is committed yet.
+    expect(await screen.findByTestId("draw-confirm")).toBeInTheDocument();
+    expect(screen.getByTestId("draw-cancel")).toBeInTheDocument();
+    expect(commitNextSwissRound).not.toHaveBeenCalled();
+    // Player names from the preview are shown.
+    expect(screen.getByText("Alice N / Bob S")).toBeInTheDocument();
   });
 
-  it("shows the server error when the draw is rejected", async () => {
-    vi.mocked(drawNextSwissRound).mockRejectedValue(
+  it("commits the shown seating on OK and shows a confirmation", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue(previewAck() as never);
+    vi.mocked(commitNextSwissRound).mockResolvedValue({
+      roundNumber: 2,
+    } as never);
+
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
+    fireEvent.click(screen.getByTestId("draw-next-round"));
+
+    fireEvent.click(await screen.findByTestId("draw-confirm"));
+
+    await waitFor(() =>
+      expect(commitNextSwissRound).toHaveBeenCalledWith(
+        "g1",
+        "A",
+        [
+          { tableNumber: 1, ns: 1, ew: 3 },
+          { tableNumber: 2, ns: 2, ew: 4 },
+        ],
+        null,
+      ),
+    );
+    expect(await screen.findByTestId("draw-notice")).toHaveTextContent(
+      "Round 2 drawn.",
+    );
+  });
+
+  it("commits an EDITED seating when the director swaps two pairs", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue(previewAck() as never);
+    vi.mocked(commitNextSwissRound).mockResolvedValue({
+      roundNumber: 2,
+    } as never);
+
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
+    fireEvent.click(screen.getByTestId("draw-next-round"));
+    await screen.findByTestId("draw-confirm");
+
+    // Swap pair 3 (Carol/Dave, table 1 E/W) with pair 2 (Erin/Frank, table 2 N/S).
+    fireEvent.click(screen.getByText("Carol E / Dave W"));
+    fireEvent.click(screen.getByText("Erin N / Frank S"));
+
+    fireEvent.click(screen.getByTestId("draw-confirm"));
+
+    await waitFor(() => expect(commitNextSwissRound).toHaveBeenCalled());
+    const [, , seating] = vi.mocked(commitNextSwissRound).mock.calls[0];
+    // Pair 2 and 3 exchanged seats.
+    expect(seating).toEqual([
+      { tableNumber: 1, ns: 1, ew: 2 },
+      { tableNumber: 2, ns: 3, ew: 4 },
+    ]);
+  });
+
+  it("discards the draw on Cancel without committing", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue(previewAck() as never);
+
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
+    fireEvent.click(screen.getByTestId("draw-next-round"));
+
+    fireEvent.click(await screen.findByTestId("draw-cancel"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("draw-next-round")).toBeInTheDocument(),
+    );
+    expect(commitNextSwissRound).not.toHaveBeenCalled();
+  });
+
+  it("shows an error when the preview is rejected", async () => {
+    vi.mocked(previewNextSwissRound).mockRejectedValue(
       new Error("All results for the current round must be in first."),
     );
 
@@ -70,21 +166,31 @@ describe("SwissDrawControl", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("draw-error")).toHaveTextContent(
-        /All results for the current round/i,
+        /current round/i,
       ),
     );
   });
 
-  it("shows a generic error when the draw rejects with a non-Error", async () => {
-    vi.mocked(drawNextSwissRound).mockRejectedValue("nope");
+  it("surfaces advisories on the review page", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue(
+      previewAck({
+        advisoryInputs: {
+          tables: 2,
+          // Pairs 1 and 3 have already met — the drawn 1v3 is a repeat.
+          playedOpponents: ["1-3"],
+          hadBye: [],
+          directionCounts: [],
+          stationary: [],
+        },
+        hadUnavoidableRepeat: true,
+      }) as never,
+    );
 
     render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
     fireEvent.click(screen.getByTestId("draw-next-round"));
 
-    await waitFor(() =>
-      expect(screen.getByTestId("draw-error")).toHaveTextContent(
-        "Could not draw the next round.",
-      ),
+    expect(await screen.findByTestId("draw-advisories")).toHaveTextContent(
+      /repeats an earlier-round opponent/i,
     );
   });
 });

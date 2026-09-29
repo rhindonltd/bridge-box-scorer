@@ -8,50 +8,113 @@ vi.mock("@/lib/director-token", () => ({
 import { emitWithAck } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { SocketEvents } from "@/socket/socket-events";
-import { drawNextSwissRound, type SwissDrawAck } from "./swiss-service";
+import {
+  previewNextSwissRound,
+  commitNextSwissRound,
+  type SwissPreviewAck,
+} from "./swiss-service";
 
-const ack: SwissDrawAck = {
+const previewAck: SwissPreviewAck = {
   roundNumber: 3,
+  tables: 2,
+  seating: [
+    { tableNumber: 1, ns: 1, ew: 3 },
+    { tableNumber: 2, ns: 2, ew: 4 },
+  ],
   sitOutPairId: null,
+  named: { tables: [], bye: null },
+  advisoryInputs: {
+    tables: 2,
+    playedOpponents: [],
+    hadBye: [],
+    directionCounts: [],
+    stationary: [],
+  },
   hadUnavoidableRepeat: false,
   hadStationaryConflict: false,
 };
 
-describe("drawNextSwissRound", () => {
+describe("previewNextSwissRound", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("emits DRAW_NEXT_SWISS_ROUND with the game, section and director token, returning the ack", async () => {
-    vi.mocked(emitWithAck).mockResolvedValue(ack);
+  it("emits PREVIEW_NEXT_SWISS_ROUND with the game, section and director token", async () => {
+    vi.mocked(emitWithAck).mockResolvedValue(previewAck);
 
-    await expect(drawNextSwissRound("g1", "A")).resolves.toEqual(ack);
+    await expect(previewNextSwissRound("g1", "A")).resolves.toEqual(previewAck);
 
     expect(emitWithAck).toHaveBeenCalledWith(
-      SocketEvents.DRAW_NEXT_SWISS_ROUND,
+      SocketEvents.PREVIEW_NEXT_SWISS_ROUND,
       { gameId: "g1", section: "A", directorToken: "dir-tok" },
     );
   });
 
   it("passes an empty token when none is stored for the game", async () => {
     vi.mocked(getDirectorToken).mockReturnValueOnce(null);
-    vi.mocked(emitWithAck).mockResolvedValue(ack);
+    vi.mocked(emitWithAck).mockResolvedValue(previewAck);
 
-    await drawNextSwissRound("g1", "B");
+    await previewNextSwissRound("g1", "B");
 
     expect(emitWithAck).toHaveBeenCalledWith(
-      SocketEvents.DRAW_NEXT_SWISS_ROUND,
+      SocketEvents.PREVIEW_NEXT_SWISS_ROUND,
       { gameId: "g1", section: "B", directorToken: "" },
     );
   });
 
-  it("rejects with the server's message when the draw fails", async () => {
+  it("rejects with the server's message when the preview fails", async () => {
     vi.mocked(emitWithAck).mockRejectedValue(
       new Error("Current round is not fully scored"),
     );
 
-    await expect(drawNextSwissRound("g1", "A")).rejects.toThrow(
+    await expect(previewNextSwissRound("g1", "A")).rejects.toThrow(
       "Current round is not fully scored",
     );
+  });
+});
+
+describe("commitNextSwissRound", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("emits DRAW_NEXT_SWISS_ROUND with the seating, sit-out and director token", async () => {
+    vi.mocked(emitWithAck).mockResolvedValue({ roundNumber: 3 });
+
+    const seating = [
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 2, ew: 4 },
+    ];
+
+    await expect(
+      commitNextSwissRound("g1", "A", seating, null),
+    ).resolves.toEqual({ roundNumber: 3 });
+
+    expect(emitWithAck).toHaveBeenCalledWith(SocketEvents.DRAW_NEXT_SWISS_ROUND, {
+      gameId: "g1",
+      section: "A",
+      directorToken: "dir-tok",
+      seating,
+      sitOutPairId: null,
+    });
+  });
+
+  it("forwards a chosen sit-out pair id", async () => {
+    vi.mocked(emitWithAck).mockResolvedValue({ roundNumber: 4 });
+
+    await commitNextSwissRound("g1", "A", [{ tableNumber: 1, ns: 1, ew: 3 }], 2);
+
+    expect(emitWithAck).toHaveBeenCalledWith(
+      SocketEvents.DRAW_NEXT_SWISS_ROUND,
+      expect.objectContaining({ sitOutPairId: 2 }),
+    );
+  });
+
+  it("rejects with the server's message when the commit fails", async () => {
+    vi.mocked(emitWithAck).mockRejectedValue(new Error("That seating isn't valid"));
+
+    await expect(
+      commitNextSwissRound("g1", "A", [], null),
+    ).rejects.toThrow("That seating isn't valid");
   });
 });

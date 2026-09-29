@@ -4,12 +4,12 @@ import { eq, or } from "drizzle-orm";
 import { Db } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { assignments as pairAssignments } from "@/db/games/tables/assignments";
-import { participants as pairParticipants } from "@/db/games/tables/participants";
-import { players } from "@/db/games/tables/players";
 import type { Player } from "@/db/games/tables/players";
 import { PairSeat } from "@/model/participants";
-
-type PairPlayers = { player1: Player; player2: Player };
+import {
+  buildAssignmentPlayerLookup,
+  type PairPlayers,
+} from "@/db/games/queries/assignment-players";
 
 /** A board row as this pair sees it, grouped under its round. */
 type PairBoardRow = {
@@ -70,45 +70,6 @@ function findPairBoards(db: Db, assignmentId: string) {
     .where(
       or(eq(pairsBoards.ns, assignmentId), eq(pairsBoards.ew, assignmentId)),
     );
-}
-
-/**
- * Build a map from assignment id to the two players sitting at that
- * assignment's initial seat. Reads assignments, participants and players (in
- * that order) and joins them: assignment → initialSeat → participant pair →
- * player rows.
- */
-async function buildAssignmentPlayerLookup(
-  db: Db,
-): Promise<Map<string, PairPlayers>> {
-  const allAssignmentRows = await db.select().from(pairAssignments);
-  const allParticipantRows = await db.select().from(pairParticipants);
-  const allPlayerRows = await db.select().from(players);
-
-  const playerById = new Map(allPlayerRows.map((p) => [p.id, p]));
-
-  // initialSeat -> { player1, player2 }
-  const seatToPlayers = new Map<string, PairPlayers>();
-  for (const p of allParticipantRows) {
-    const p1 = playerById.get(p.player1);
-    const p2 = playerById.get(p.player2);
-    if (p1 && p2 && p.initialSeat) {
-      seatToPlayers.set(p.initialSeat, { player1: p1, player2: p2 });
-    }
-  }
-
-  // assignment id -> { player1, player2 } (via the assignment's initial seat)
-  const assignmentToPlayers = new Map<string, PairPlayers>();
-  for (const a of allAssignmentRows) {
-    const playersForSeat = a.initialSeat
-      ? seatToPlayers.get(a.initialSeat)
-      : undefined;
-    if (playersForSeat) {
-      assignmentToPlayers.set(a.id, playersForSeat);
-    }
-  }
-
-  return assignmentToPlayers;
 }
 
 /** Total rounds in the game, from ALL boards (not just this pair's). */

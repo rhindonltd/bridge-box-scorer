@@ -3,7 +3,63 @@ import { expect, mocked, userEvent, waitFor, within } from "storybook/test";
 import { SwissDrawControl } from "@/app/game/[gameId]/manage/movement/SwissDrawControl";
 // Imported with the full relative path + extension so the mocked() calls below
 // are the same module instance registered for mocking in .storybook/preview.tsx.
-import { drawNextSwissRound } from "../../../../../lib/swiss-service";
+import {
+  previewNextSwissRound,
+  commitNextSwissRound,
+} from "../../../../../lib/swiss-service";
+import type { SwissPreviewAck } from "@/lib/swiss-service";
+
+/** A minimal full Player row for story fixtures. */
+let nextPlayerId = 1;
+function p(firstName: string, lastName: string) {
+  return { id: nextPlayerId++, firstName, lastName, nationalId: null };
+}
+
+const previewAck: SwissPreviewAck = {
+  roundNumber: 2,
+  tables: 2,
+  seating: [
+    { tableNumber: 1, ns: 1, ew: 3 },
+    { tableNumber: 2, ns: 2, ew: 4 },
+  ],
+  sitOutPairId: null,
+  named: {
+    tables: [
+      {
+        tableNumber: 1,
+        nsPairId: 1,
+        ewPairId: 3,
+        players: {
+          N: p("Alice", "North"),
+          S: p("Bob", "South"),
+          E: p("Carol", "East"),
+          W: p("Dave", "West"),
+        },
+      },
+      {
+        tableNumber: 2,
+        nsPairId: 2,
+        ewPairId: 4,
+        players: {
+          N: p("Erin", "North"),
+          S: p("Frank", "South"),
+          E: p("Gina", "East"),
+          W: p("Hugo", "West"),
+        },
+      },
+    ],
+    bye: null,
+  },
+  advisoryInputs: {
+    tables: 2,
+    playedOpponents: [],
+    hadBye: [],
+    directionCounts: [],
+    stationary: [],
+  },
+  hadUnavoidableRepeat: false,
+  hadStationaryConflict: false,
+};
 
 const meta: Meta<typeof SwissDrawControl> = {
   title: "App/Manage/Game/Movement/SwissDrawControl",
@@ -18,46 +74,56 @@ type Story = StoryObj<typeof SwissDrawControl>;
 
 /**
  * Waiting for the current round to finish: the button is disabled and the
- * control explains why. The director must get every result in (including any
- * adjusted scores) before the next round can be drawn.
+ * control explains why.
  */
 export const WaitingForResults: Story = {
   args: { allResultsIn: false },
 };
 
 /**
- * All results are in — the draw button is enabled and idle, ready for the
- * director to draw the next round.
+ * All results are in — the draw button is enabled and idle, ready to preview
+ * the next round.
  */
 export const ReadyToDraw: Story = {
   args: { allResultsIn: true },
   beforeEach: () => {
-    mocked(drawNextSwissRound).mockResolvedValue({
-      roundNumber: 2,
-      sitOutPairId: null,
-      hadUnavoidableRepeat: false,
-      hadStationaryConflict: false,
-    });
+    mocked(previewNextSwissRound).mockResolvedValue(previewAck);
   },
 };
 
 /**
- * A clean draw: the next round is drawn with no advisories, and the control
- * confirms the drawn round number.
+ * Clicking Draw opens the review page showing the proposed seating with player
+ * names, before anything is committed.
  */
-export const DrawnCleanly: Story = {
+export const PreviewsTheDraw: Story = {
   args: { allResultsIn: true },
   beforeEach: () => {
-    mocked(drawNextSwissRound).mockResolvedValue({
-      roundNumber: 2,
-      sitOutPairId: null,
-      hadUnavoidableRepeat: false,
-      hadStationaryConflict: false,
-    });
+    mocked(previewNextSwissRound).mockResolvedValue(previewAck);
+    mocked(commitNextSwissRound).mockResolvedValue({ roundNumber: 2 });
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByTestId("draw-next-round"));
+    await waitFor(() => canvas.getByTestId("draw-confirm"));
+    await expect(canvas.getByText("Alice North / Bob South")).toBeVisible();
+  },
+};
+
+/**
+ * Accepting the draw (OK) commits the shown seating and returns to the control
+ * with a confirmation.
+ */
+export const CommitsOnOk: Story = {
+  args: { allResultsIn: true },
+  beforeEach: () => {
+    mocked(previewNextSwissRound).mockResolvedValue(previewAck);
+    mocked(commitNextSwissRound).mockResolvedValue({ roundNumber: 2 });
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByTestId("draw-next-round"));
+    await waitFor(() => canvas.getByTestId("draw-confirm"));
+    await userEvent.click(canvas.getByTestId("draw-confirm"));
     await waitFor(() =>
       expect(canvas.getByTestId("draw-notice")).toHaveTextContent(
         "Round 2 drawn.",
@@ -67,41 +133,14 @@ export const DrawnCleanly: Story = {
 };
 
 /**
- * A draw with every advisory the server can raise: a bye (sit-out pair), an
- * unavoidable repeat pairing, and two stationary pairs forced to meet. The
- * director is told so they can hand-adjust the seating if they wish.
+ * The preview is rejected (e.g. the round isn't fully scored) — the reason is
+ * shown inline as an error.
  */
-export const DrawnWithAdvisories: Story = {
+export const PreviewRejected: Story = {
   args: { allResultsIn: true },
   beforeEach: () => {
-    mocked(drawNextSwissRound).mockResolvedValue({
-      roundNumber: 3,
-      sitOutPairId: 5,
-      hadUnavoidableRepeat: true,
-      hadStationaryConflict: true,
-    });
-  },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByTestId("draw-next-round"));
-    await waitFor(() => canvas.getByTestId("draw-notice"));
-    const notice = canvas.getByTestId("draw-notice");
-    await expect(notice).toHaveTextContent("Round 3 drawn.");
-    await expect(notice).toHaveTextContent("bye");
-    await expect(notice).toHaveTextContent("repeat pairing");
-    await expect(notice).toHaveTextContent("stationary pairs");
-  },
-};
-
-/**
- * The server rejects the draw (e.g. the event is already complete, or the
- * round isn't fully scored). The reason is shown inline as an error.
- */
-export const DrawRejected: Story = {
-  args: { allResultsIn: true },
-  beforeEach: () => {
-    mocked(drawNextSwissRound).mockRejectedValue(
-      new Error("All rounds have already been drawn."),
+    mocked(previewNextSwissRound).mockRejectedValue(
+      new Error("All results for the current round must be in first."),
     );
   },
   play: async ({ canvasElement }) => {
@@ -109,7 +148,7 @@ export const DrawRejected: Story = {
     await userEvent.click(canvas.getByTestId("draw-next-round"));
     await waitFor(() =>
       expect(canvas.getByTestId("draw-error")).toHaveTextContent(
-        "All rounds have already been drawn.",
+        "current round",
       ),
     );
   },
