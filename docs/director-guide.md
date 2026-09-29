@@ -156,11 +156,9 @@ is no separate team sign-up. Tap **Swiss Teams**, set the **rounds** and
 
 Each round, two teams play the same boards against each other in two rooms:
 every team's North/South pair stays at their home table, and their other pair
-moves to the opponents' table. The first round is a random draw.
-
-> Drawing later **Swiss Teams** rounds from the app is not yet available; for
-> now this applies to **Swiss Pairs** (see
-> [Drawing the next Swiss round](#drawing-the-next-swiss-round)).
+moves to the opponents' table. The first round is a random draw; you draw each
+later round from the standings during play (see
+[Drawing the next Swiss round](#drawing-the-next-swiss-round)).
 
 Swiss Teams needs an **even number of teams** and a single section. If you have
 an odd number of tables, add or remove one before starting — the game won't
@@ -261,7 +259,20 @@ accept an override anyway — the warnings are advice, not a barrier.
 
 Repeat this each round until the event is complete.
 
-> **Swiss Teams** draws are not yet available through the app.
+#### Swiss Teams
+
+A **Swiss Teams** game has the same **Draw Next Round** button on the
+**Movement** screen, enabled once all the round's results are in. Drawing shows
+a **review** of the proposed round before anything is saved: each **match**
+between two teams (by name), plus the team sitting out (the bye) or the
+three-way **triangle** when the field is odd. Tap **OK** to commit it — the new
+round then appears on every device, with each team's away pair told which table
+to move to — or **Cancel** to discard it and draw again.
+
+For Swiss Teams the review is currently **read-only**: you can accept or redraw,
+but not yet hand-edit the matches. (Editing — swapping teams between matches —
+is planned.) If a match has to repeat an earlier-round opponent, the review
+tells you so you can redraw or accept it.
 
 ---
 

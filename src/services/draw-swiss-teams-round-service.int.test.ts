@@ -74,37 +74,62 @@ describe("drawNextSwissTeamsRound", () => {
       .where(eq(boards.roundNumber, round));
   }
 
-  it("rejects the draw while the current round is not fully scored", async () => {
-    await setup();
-    const { drawNextSwissTeamsRound } = await import(
-      "@/services/draw-swiss-teams-round-service"
-    );
-    const result = await drawNextSwissTeamsRound(gameId, "A");
-    expect(result).toEqual({ ok: false, reason: "ROUND_INCOMPLETE" });
-  });
-
-  it("draws round 2 with no repeat matches once round 1 is complete", async () => {
-    await setup();
-    await confirmRound(1);
-
-    const { drawNextSwissTeamsRound } = await import(
-      "@/services/draw-swiss-teams-round-service"
-    );
+  async function round2Boards() {
     const games = await import("@/db/games");
     const { boards } = await import("@/db/games/tables/boards");
     const { eq } = await import("drizzle-orm");
+    const db = (await games.getDb(gameId))!;
+    return db.select().from(boards).where(eq(boards.roundNumber, 2));
+  }
 
-    const result = await drawNextSwissTeamsRound(gameId, "A");
+  it("preview rejects while the current round is not fully scored", async () => {
+    await setup();
+    const { previewNextSwissTeamsRound } = await import(
+      "@/services/draw-swiss-teams-round-service"
+    );
+    const result = await previewNextSwissTeamsRound(gameId, "A");
+    expect(result).toEqual({ ok: false, reason: "ROUND_INCOMPLETE" });
+  });
+
+  it("preview computes matches but writes NOTHING", async () => {
+    await setup();
+    await confirmRound(1);
+
+    const { previewNextSwissTeamsRound } = await import(
+      "@/services/draw-swiss-teams-round-service"
+    );
+
+    const result = await previewNextSwissTeamsRound(gameId, "A");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(2);
+    expect(result.matches.length).toBe(2); // 4 teams -> 2 matches
 
-    const db = (await games.getDb(gameId))!;
-    const round2 = await db
-      .select()
-      .from(boards)
-      .where(eq(boards.roundNumber, 2));
+    // No round-2 boards exist yet — the preview did not commit.
+    expect(await round2Boards()).toHaveLength(0);
+  });
 
+  it("commit materializes the previewed matches with no repeats", async () => {
+    await setup();
+    await confirmRound(1);
+
+    const { previewNextSwissTeamsRound, commitNextSwissTeamsRound } =
+      await import("@/services/draw-swiss-teams-round-service");
+
+    const preview = await previewNextSwissTeamsRound(gameId, "A");
+    expect(preview.ok).toBe(true);
+    if (!preview.ok) return;
+
+    const commit = await commitNextSwissTeamsRound(
+      gameId,
+      "A",
+      preview.matches,
+      preview.byeTeamId,
+      preview.triangle,
+    );
+    expect(commit).toEqual({ ok: true, roundNumber: 2 });
+
+    const round2 = await round2Boards();
     // Four tables materialized for round 2 (two matches, two tables each),
     // playing board 2.
     expect(new Set(round2.map((r) => r.tableNumber))).toEqual(
@@ -112,8 +137,7 @@ describe("drawNextSwissTeamsRound", () => {
     );
     expect(new Set(round2.map((r) => r.boardNumber))).toEqual(new Set([2]));
 
-    // Recover the round-2 matches from each home table's EW opponent seat and
-    // assert neither round-1 match {1,2} or {3,4} recurs.
+    // Neither round-1 match {1,2} or {3,4} recurs.
     const matchKeys = new Set(
       round2.map((r) => {
         const home = Number(/\d+/.exec(r.ns)![0]);
@@ -125,18 +149,43 @@ describe("drawNextSwissTeamsRound", () => {
     expect(matchKeys.has("3-4")).toBe(false);
   });
 
-  it("rejects a draw once every round has been drawn", async () => {
+  it("commit rejects structurally-invalid matches and writes nothing", async () => {
+    await setup();
+    await confirmRound(1);
+
+    const { commitNextSwissTeamsRound } = await import(
+      "@/services/draw-swiss-teams-round-service"
+    );
+
+    // Team 1 placed twice, team 4 missing.
+    const invalid = [
+      { a: 1, b: 3 },
+      { a: 1, b: 2 },
+    ];
+
+    const commit = await commitNextSwissTeamsRound(
+      gameId,
+      "A",
+      invalid,
+      null,
+      null,
+    );
+    expect(commit).toEqual({ ok: false, reason: "INVALID_MATCHES" });
+    expect(await round2Boards()).toHaveLength(0);
+  });
+
+  it("preview rejects once every round has been drawn", async () => {
     await setup(1, 1);
     await confirmRound(1);
 
-    const { drawNextSwissTeamsRound } = await import(
+    const { previewNextSwissTeamsRound } = await import(
       "@/services/draw-swiss-teams-round-service"
     );
-    const result = await drawNextSwissTeamsRound(gameId, "A");
+    const result = await previewNextSwissTeamsRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "EVENT_COMPLETE" });
   });
 
-  it("rejects a draw for a non-Swiss-Teams section", async () => {
+  it("preview rejects for a non-Swiss-Teams section", async () => {
     const { createGameDb } = await import("@/db/games/actions/create-game");
     const { setSectionMovement } = await import(
       "@/db/games/actions/set-section-movement"
@@ -147,10 +196,10 @@ describe("drawNextSwissTeamsRound", () => {
       mitchell: { tables: 2, rounds: 2, boardsPerRound: 2 },
     });
 
-    const { drawNextSwissTeamsRound } = await import(
+    const { previewNextSwissTeamsRound } = await import(
       "@/services/draw-swiss-teams-round-service"
     );
-    const result = await drawNextSwissTeamsRound(gameId, "A");
+    const result = await previewNextSwissTeamsRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "NOT_SWISS_TEAMS" });
   });
 });

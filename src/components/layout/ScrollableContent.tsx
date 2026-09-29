@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useRef } from "react";
 
 function useHasMoreBelow(ref: React.RefObject<HTMLElement | null>) {

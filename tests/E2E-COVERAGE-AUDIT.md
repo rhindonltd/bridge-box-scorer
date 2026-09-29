@@ -213,14 +213,21 @@ where the coverage lives.
   `src/components/manage/sections/SwissTeamsSetupDialog.tsx`; socket event
   `swissTeams:drawNextRound` (`handlers/swiss/draw-next-teams-round.handler.ts`);
   scoring in `src/scoring/swiss/swiss-teams-*`.
-- **Blocked**: `ManageMovementPage` renders `SwissDrawControl` only when the
-  section's movement `source === "SWISS"` (not `SWISS_TEAMS`), and
-  `SwissDrawControl` calls `drawNextSwissRound` (the Pairs draw). So **no UI
-  triggers `swissTeams:drawNextRound`** — the handler exists and is unit-tested,
-  but nothing calls it. Compounded by the teams-seating gap (item 12): the join
-  flow is pair-oriented, so a teams game can't be seated/scored through the UI to
-  reach a draw anyway. Blocked until a teams draw control (and teams seating)
-  exist. (Swiss *Pairs* is fully covered — `swiss-pairs.journey.ts`.)
+- **UPDATE**: a Swiss Teams **draw control now exists** and is UI-wired.
+  `ManageMovementPage` renders `SwissTeamsDrawControl` when the section's
+  movement `source === "SWISS_TEAMS"`; it previews via
+  `swissTeams:previewNextRound` and commits (the accepted round) via
+  `swissTeams:drawNextRound`. The preview → commit split and the "commit exactly
+  the shown round / reject invalid / write nothing on preview" behaviour are
+  covered at the DB level (`draw-swiss-teams-round-service.int.test.ts`) plus
+  handler, control, preview and resolver unit/story tests. The teams review is
+  read-only for now (no hand-editing).
+- **Still blocked (full browser journey)**: a true end-to-end Teams journey
+  (seat a teams field, score a round over sockets, then draw through the UI)
+  remains blocked by the teams-seating/scoring gap (item 12) and the lack of a
+  `pickSwissTeamsMovement` journey fixture. The draw itself is no longer the
+  blocker; seating + round-scoring through the UI is. (Swiss *Pairs* is fully
+  covered — `swiss-pairs.journey.ts`.)
 
 ### 12. Teams play & seating
 

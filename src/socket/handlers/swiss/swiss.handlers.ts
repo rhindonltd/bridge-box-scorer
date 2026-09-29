@@ -4,7 +4,10 @@ import {
   registerDrawNextRoundHandler,
   registerPreviewNextRoundHandler,
 } from "./draw-next-round.handler";
-import { registerDrawNextTeamsRoundHandler } from "./draw-next-teams-round.handler";
+import {
+  registerDrawNextTeamsRoundHandler,
+  registerPreviewNextTeamsRoundHandler,
+} from "./draw-next-teams-round.handler";
 
 /**
  * Register the Swiss socket handlers. Swiss (Pairs and Teams) is the movement
@@ -14,5 +17,6 @@ import { registerDrawNextTeamsRoundHandler } from "./draw-next-teams-round.handl
 export function registerSwissHandlers(socket: Socket, io: Server) {
   registerPreviewNextRoundHandler(socket, io);
   registerDrawNextRoundHandler(socket, io);
+  registerPreviewNextTeamsRoundHandler(socket, io);
   registerDrawNextTeamsRoundHandler(socket, io);
 }

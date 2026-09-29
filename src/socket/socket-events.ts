@@ -139,4 +139,13 @@ export const SocketEvents = {
   // acknowledgement carries the drawn round number plus an unavoidable-repeat
   // advisory for the director.
   DRAW_NEXT_SWISS_TEAMS_ROUND: "swissTeams:drawNextRound",
+
+  // Client-initiated (director): PREVIEW the next Swiss Teams round without
+  // committing it. Runs the same preconditions and draw as
+  // DRAW_NEXT_SWISS_TEAMS_ROUND but writes nothing and broadcasts nothing; the
+  // acknowledgement carries the proposed matches (stable team ids + resolved
+  // team names), the odd-field resolution (bye or triangle) and the repeat
+  // advisory, so the director can review it before accepting. The accompanying
+  // commit is DRAW_NEXT_SWISS_TEAMS_ROUND, which takes the accepted matches.
+  PREVIEW_NEXT_SWISS_TEAMS_ROUND: "swissTeams:previewNextRound",
 } as const;

@@ -10,8 +10,17 @@ vi.mock("@/services/leaderboard-service", () => ({
 vi.mock("@/services/materialize-swiss-teams-round", () => ({
   materializeSwissTeamsRound: vi.fn(),
 }));
+// Preview resolves team names; stub it so the service test stays DB-free.
+vi.mock("@/services/swiss-teams-seating-names", () => ({
+  resolveSwissTeamsMatchNames: vi
+    .fn()
+    .mockResolvedValue({ matches: [], bye: null, triangle: null }),
+}));
 
-import { drawNextSwissTeamsRound } from "./draw-swiss-teams-round-service";
+import {
+  previewNextSwissTeamsRound,
+  commitNextSwissTeamsRound,
+} from "./draw-swiss-teams-round-service";
 import { getDb } from "@/db/games";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
@@ -38,7 +47,19 @@ function stubDb(
   return { select };
 }
 
-describe("drawNextSwissTeamsRound", () => {
+/** A leaderboard mock ranking teams 1..n best-first for section A. */
+function rankTeams(n: number) {
+  vi.mocked(computeSectionLeaderboards).mockResolvedValue([
+    {
+      section: "A",
+      overallScore: {
+        lines: Array.from({ length: n }, (_, i) => ({ teamId: `A${i + 1}NS` })),
+      },
+    },
+  ] as any);
+}
+
+describe("previewNextSwissTeamsRound", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -46,7 +67,7 @@ describe("drawNextSwissTeamsRound", () => {
   it("throws when the game db does not exist", async () => {
     vi.mocked(getDb).mockResolvedValue(undefined as any);
 
-    await expect(drawNextSwissTeamsRound("g1", "A")).rejects.toThrow(
+    await expect(previewNextSwissTeamsRound("g1", "A")).rejects.toThrow(
       "Game db does not exist",
     );
   });
@@ -55,7 +76,7 @@ describe("drawNextSwissTeamsRound", () => {
     vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
     vi.mocked(getSectionMovement).mockResolvedValue(null as any);
 
-    await expect(drawNextSwissTeamsRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissTeamsRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "NOT_SWISS_TEAMS",
     });
@@ -67,7 +88,7 @@ describe("drawNextSwissTeamsRound", () => {
       source: "MITCHELL",
     } as any);
 
-    await expect(drawNextSwissTeamsRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissTeamsRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "NOT_SWISS_TEAMS",
     });
@@ -78,7 +99,6 @@ describe("drawNextSwissTeamsRound", () => {
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
       swissTeams: {
-        // A triangle needs at least three teams; a lone odd team can't form one.
         teams: 1,
         rounds: 4,
         boardsPerRound: 3,
@@ -86,14 +106,13 @@ describe("drawNextSwissTeamsRound", () => {
       },
     } as any);
 
-    await expect(drawNextSwissTeamsRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissTeamsRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "ODD_TEAM_COUNT",
     });
   });
 
   it("rejects once every round has been drawn (event complete)", async () => {
-    // History has a round-2 row so highestRound is 2 == totalRounds.
     vi.mocked(getDb).mockResolvedValue(
       stubDb([{ roundNumber: 2, ns: "A1NS", ew: "A2EW" }]) as any,
     );
@@ -102,17 +121,16 @@ describe("drawNextSwissTeamsRound", () => {
       swissTeams: { teams: 4, rounds: 2, boardsPerRound: 3 },
     } as any);
 
-    await expect(drawNextSwissTeamsRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissTeamsRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "EVENT_COMPLETE",
     });
   });
 
-  it("skips a non-seat id in the history without throwing", async () => {
-    // "junk" is not a seat so parseSeat throws and the row is skipped.
+  it("rejects while the current round is not fully scored", async () => {
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
-        [{ roundNumber: 1, ns: "junk", ew: "also-junk" }],
+        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
         [{ status: "NOT_PLAYED" }],
       ) as any,
     );
@@ -121,29 +139,13 @@ describe("drawNextSwissTeamsRound", () => {
       swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
     } as any);
 
-    // highestRound = 1, current round incomplete -> ROUND_INCOMPLETE.
-    await expect(drawNextSwissTeamsRound("g1", "A")).resolves.toEqual({
+    await expect(previewNextSwissTeamsRound("g1", "A")).resolves.toEqual({
       ok: false,
       reason: "ROUND_INCOMPLETE",
     });
   });
 
-  it("treats an empty round as incomplete", async () => {
-    vi.mocked(getDb).mockResolvedValue(
-      stubDb([{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }], []) as any,
-    );
-    vi.mocked(getSectionMovement).mockResolvedValue({
-      source: "SWISS_TEAMS",
-      swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
-    } as any);
-
-    await expect(drawNextSwissTeamsRound("g1", "A")).resolves.toEqual({
-      ok: false,
-      reason: "ROUND_INCOMPLETE",
-    });
-  });
-
-  it("draws the next round when the current round is complete, ranking from the leaderboard", async () => {
+  it("computes the next round's matches WITHOUT writing anything", async () => {
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
         [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
@@ -154,49 +156,26 @@ describe("drawNextSwissTeamsRound", () => {
       source: "SWISS_TEAMS",
       swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
     } as any);
-    // Leaderboard ranks teams 2 and 1 first; a junk teamId is skipped; teams 3
-    // and 4 are appended by the unseen loop. Also repeats team "A2NS" (id 2) to
-    // exercise the de-dup guard.
-    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
-      {
-        section: "A",
-        overallScore: {
-          lines: [
-            { teamId: "A2NS" },
-            { teamId: "A1NS" },
-            { teamId: "A2NS" },
-            { teamId: "junk" },
-          ],
-        },
-      },
-    ] as any);
-    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
+    rankTeams(4);
 
-    const result = await drawNextSwissTeamsRound("g1", "A");
+    const result = await previewNextSwissTeamsRound("g1", "A");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(2);
-    expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
-      "g1",
-      "A",
-      2,
-      3,
-      expect.any(Array),
-      // Even field -> no bye team, no triangle.
-      null,
-      null,
-    );
+    expect(result.teams).toBe(4);
+    expect(result.matches.length).toBe(2); // 4 teams -> 2 matches
+    expect(result.byeTeamId).toBeNull();
+    expect(result.triangle).toBeNull();
+    // A preview must never materialize.
+    expect(materializeSwissTeamsRound).not.toHaveBeenCalled();
   });
 
-  it("draws an odd (BYE) round and passes the bye team to materialize", async () => {
-    // Round 1 done for a 5-team BYE event; team 5 already byed in round 1
-    // (a SIT_OUT row), so round 2's bye goes to the next lowest eligible team.
+  it("previews an odd (BYE) round, reporting the bye team", async () => {
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
         [
           { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
-          // The round-1 bye: team 5 sat out (SIT_OUT, phantom opponent).
           { roundNumber: 1, ns: "A5NS", ew: "PHANTOM", status: "SIT_OUT" },
         ] as any,
         [{ status: "CONFIRMED" }, { status: "SIT_OUT" }],
@@ -204,56 +183,23 @@ describe("drawNextSwissTeamsRound", () => {
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
-      swissTeams: {
-        teams: 5,
-        rounds: 4,
-        boardsPerRound: 3,
-        oddHandling: "BYE",
-      },
+      swissTeams: { teams: 5, rounds: 4, boardsPerRound: 3, oddHandling: "BYE" },
     } as any);
-    // Standings best-first: 1,2,3,4,5. Team 5 already byed, so round 2 byes 4.
-    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
-      {
-        section: "A",
-        overallScore: {
-          lines: [
-            { teamId: "A1NS" },
-            { teamId: "A2NS" },
-            { teamId: "A3NS" },
-            { teamId: "A4NS" },
-            { teamId: "A5NS" },
-          ],
-        },
-      },
-    ] as any);
-    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
+    rankTeams(5);
 
-    const result = await drawNextSwissTeamsRound("g1", "A");
+    const result = await previewNextSwissTeamsRound("g1", "A");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.roundNumber).toBe(2);
-    // Materialized with the round-2 bye team (4 — lowest without a prior bye)
-    // and no triangle.
-    expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
-      "g1",
-      "A",
-      2,
-      3,
-      expect.any(Array),
-      4,
-      null,
-    );
+    // Team 5 already byed in round 1, so round 2 byes the next lowest (4).
+    expect(result.byeTeamId).toBe(4);
+    expect(result.triangle).toBeNull();
   });
 
-  it("draws an odd (TRIANGLE) round and passes the triangle to materialize", async () => {
-    // Round 1 done for a 5-team TRIANGLE event; the bottom three (3,4,5) formed
-    // the round-1 triangle. Round 2 triangles the next-lowest without a recent
-    // triangle: 2,1 have none, top up with the lowest remaining -> {1,2,5}.
+  it("previews an odd (TRIANGLE) round, reporting the triangle", async () => {
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
         [
-          // Round-1 triangle 3→4→5→3 (directed 3-cycle) plus a normal 1 v 2.
           { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
           { roundNumber: 1, ns: "A2NS", ew: "A1EW" },
           { roundNumber: 1, ns: "A3NS", ew: "A4EW" },
@@ -272,42 +218,17 @@ describe("drawNextSwissTeamsRound", () => {
         oddHandling: "TRIANGLE",
       },
     } as any);
-    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
-      {
-        section: "A",
-        overallScore: {
-          lines: [
-            { teamId: "A1NS" },
-            { teamId: "A2NS" },
-            { teamId: "A3NS" },
-            { teamId: "A4NS" },
-            { teamId: "A5NS" },
-          ],
-        },
-      },
-    ] as any);
-    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
+    rankTeams(5);
 
-    const result = await drawNextSwissTeamsRound("g1", "A");
+    const result = await previewNextSwissTeamsRound("g1", "A");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.roundNumber).toBe(2);
-    // Round-2 triangle: teams 3,4,5 had a triangle already, so the fresh 1,2
-    // plus the lowest remaining (5) -> {1,2,5}; no bye.
-    expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
-      "g1",
-      "A",
-      2,
-      3,
-      expect.any(Array),
-      null,
-      { a: 1, b: 2, c: 5 },
-    );
+    expect(result.byeTeamId).toBeNull();
+    expect(result.triangle).toEqual({ a: 1, b: 2, c: 5 });
   });
 
   it("ranks purely from the append loop when the leaderboard has no line for this section", async () => {
-    // No history rows -> highestRound 0 -> no round-complete check.
     vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
@@ -316,12 +237,126 @@ describe("drawNextSwissTeamsRound", () => {
     vi.mocked(computeSectionLeaderboards).mockResolvedValue([
       { section: "B", overallScore: { lines: [{ teamId: "A1NS" }] } },
     ] as any);
-    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
 
-    const result = await drawNextSwissTeamsRound("g1", "A");
+    const result = await previewNextSwissTeamsRound("g1", "A");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(1);
+  });
+});
+
+describe("commitNextSwissTeamsRound", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Seed a drawable 4-team round-1-complete section. */
+  function seedDrawable() {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
+        [{ status: "CONFIRMED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
+    } as any);
+    rankTeams(4);
+  }
+
+  it("materializes the exact matches it is given", async () => {
+    seedDrawable();
+    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
+
+    const matches = [
+      { a: 1, b: 3 },
+      { a: 2, b: 4 },
+    ];
+
+    const result = await commitNextSwissTeamsRound("g1", "A", matches, null, null);
+
+    expect(result).toEqual({ ok: true, roundNumber: 2 });
+    expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      2,
+      3,
+      matches,
+      null,
+      null,
+    );
+  });
+
+  it("rejects structurally-invalid matches (a team placed twice) without writing", async () => {
+    seedDrawable();
+
+    // Team 1 in two matches, team 4 missing.
+    const invalid = [
+      { a: 1, b: 3 },
+      { a: 1, b: 2 },
+    ];
+
+    const result = await commitNextSwissTeamsRound("g1", "A", invalid, null, null);
+
+    expect(result).toEqual({ ok: false, reason: "INVALID_MATCHES" });
+    expect(materializeSwissTeamsRound).not.toHaveBeenCalled();
+  });
+
+  it("propagates a precondition rejection (e.g. round incomplete)", async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
+        [{ status: "NOT_PLAYED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
+    } as any);
+
+    const result = await commitNextSwissTeamsRound(
+      "g1",
+      "A",
+      [{ a: 1, b: 2 }],
+      null,
+      null,
+    );
+
+    expect(result).toEqual({ ok: false, reason: "ROUND_INCOMPLETE" });
+    expect(materializeSwissTeamsRound).not.toHaveBeenCalled();
+  });
+
+  it("accepts a valid bye round (odd field)", async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
+        [{ status: "CONFIRMED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 5, rounds: 4, boardsPerRound: 3, oddHandling: "BYE" },
+    } as any);
+    rankTeams(5);
+    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
+
+    const matches = [
+      { a: 1, b: 2 },
+      { a: 3, b: 4 },
+    ];
+    const result = await commitNextSwissTeamsRound("g1", "A", matches, 5, null);
+
+    expect(result).toEqual({ ok: true, roundNumber: 2 });
+    expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      2,
+      3,
+      matches,
+      5,
+      null,
+    );
   });
 });

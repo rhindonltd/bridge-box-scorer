@@ -7,13 +7,17 @@ vi.mock("./draw-next-round.handler", () => ({
 }));
 vi.mock("./draw-next-teams-round.handler", () => ({
   registerDrawNextTeamsRoundHandler: vi.fn(),
+  registerPreviewNextTeamsRoundHandler: vi.fn(),
 }));
 
 import {
   registerDrawNextRoundHandler,
   registerPreviewNextRoundHandler,
 } from "./draw-next-round.handler";
-import { registerDrawNextTeamsRoundHandler } from "./draw-next-teams-round.handler";
+import {
+  registerDrawNextTeamsRoundHandler,
+  registerPreviewNextTeamsRoundHandler,
+} from "./draw-next-teams-round.handler";
 import { registerSwissHandlers } from "./swiss.handlers";
 
 describe("registerSwissHandlers", () => {
@@ -29,6 +33,10 @@ describe("registerSwissHandlers", () => {
 
     expect(registerPreviewNextRoundHandler).toHaveBeenCalledWith(socket, io);
     expect(registerDrawNextRoundHandler).toHaveBeenCalledWith(socket, io);
+    expect(registerPreviewNextTeamsRoundHandler).toHaveBeenCalledWith(
+      socket,
+      io,
+    );
     expect(registerDrawNextTeamsRoundHandler).toHaveBeenCalledWith(socket, io);
   });
 });

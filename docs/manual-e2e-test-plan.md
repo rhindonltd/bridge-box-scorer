@@ -457,8 +457,11 @@ bye — and only **OK** commits it; **Cancel** discards it.
   **Movement** screen's **Draw Next Round** button (enabled only once every
   result for the current round is in). The draw shows a **review** of the
   proposed seating that the director can edit (swap pairs, reassign the bye)
-  before it commits — **OK** commits it, **Cancel** discards it. **Swiss Teams**
-  drawing has no UI path yet.
+  before it commits — **OK** commits it, **Cancel** discards it.
+- **Swiss Teams** now has the same **Draw Next Round** button and preview →
+  **OK** / **Cancel** flow, showing the proposed **matches** (team names) plus
+  any bye or triangle. The teams review is **read-only** for now (accept or
+  redraw; no hand-editing yet), so it has fewer edit checks than Swiss Pairs.
 - **Cloud Backup** behaviour depends on whether the box is cloud-configured and
   entitled (a subscription feature). On a box that isn't, the screen correctly
   shows the "not enabled" state and the button does nothing — that is itself a

@@ -27,10 +27,13 @@ vi.mock("@/hooks/results-complete", () => ({
   useResultsComplete: () => mockUseResultsComplete(),
 }));
 
-// SwissDrawControl (rendered for a Swiss section) calls the swiss service.
+// The Swiss draw controls (rendered for a Swiss / Swiss Teams section) call the
+// swiss service.
 vi.mock("@/lib/swiss-service", () => ({
   previewNextSwissRound: vi.fn(),
   commitNextSwissRound: vi.fn(),
+  previewNextSwissTeamsRound: vi.fn(),
+  commitNextSwissTeamsRound: vi.fn(),
 }));
 
 // Capture the SWR key the page requests so we can assert the section param.
@@ -199,6 +202,30 @@ describe("ManageMovementPage", () => {
 
     render(<ManageMovementPage backHref="/back" />);
     expect(screen.queryByTestId("draw-next-round")).not.toBeInTheDocument();
+  });
+
+  it("shows the draw control for a Swiss Teams section", () => {
+    mockUseSections.mockReturnValue({
+      sections: [
+        {
+          section: "A",
+          label: "A",
+          tables: 4,
+          ordinal: 0,
+          selectedMovement: {
+            source: "SWISS_TEAMS",
+            swissTeams: { teams: 4, rounds: 5, boardsPerRound: 6 },
+          },
+        },
+      ],
+    });
+
+    render(<ManageMovementPage backHref="/back" />);
+
+    // The Swiss Teams "Draw Next Round" control is rendered above the detail
+    // view (shares the draw-next-round testid with the pairs control).
+    expect(screen.getByTestId("draw-next-round")).toBeInTheDocument();
+    expect(screen.getByText("Swiss Teams")).toBeInTheDocument();
   });
 
   it("re-fetches on the board-result-updated socket event", () => {
