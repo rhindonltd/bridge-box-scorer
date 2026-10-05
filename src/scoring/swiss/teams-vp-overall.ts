@@ -1,6 +1,6 @@
 import { TeamSwissVpOverallScore } from "@/model/leaderboard";
 import { rank } from "@/scoring/overall/rank";
-import { calculateWbfVP } from "./wbf-vp";
+import { impVpWinner, impVpSided } from "./imp-vp-table";
 import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
 import { VpAccumulator, creditVp } from "./vp-accumulator";
 import {
@@ -28,8 +28,9 @@ const BYE_VP = 12;
  * pair is EW; at team B's home table the mirror. Each team's raw result on a
  * board is its NS score at its own table minus the opponent's NS score at the
  * other table (its away pair sat EW there); the net converts to IMPs and the
- * match's summed IMP margin converts to Victory Points on the WBF 20-VP scale.
- * A team's session result is the sum of its per-round VPs, ranked highest-first.
+ * match's summed IMP margin converts to Victory Points on the EBU 20-VP discrete
+ * (integer) scale. A team's session result is the sum of its per-round VPs,
+ * ranked highest-first.
  *
  * Like the pairs variant this shows a running estimate: a round with no results
  * yet shows the neutral 10 VP for both teams, and partial rounds score on the
@@ -53,7 +54,10 @@ export function calculateTeamsVpOverall(
       continue;
     }
 
-    const { winnerVP, loserVP } = calculateWbfVP(boardsPlayed, margin);
+    // The match's IMP margin → VP on the EBU 20-VP discrete scale; the loser
+    // takes the mirror (20 − winner).
+    const winnerVP = impVpWinner(Math.abs(margin), boardsPlayed, 20);
+    const loserVP = 20 - winnerVP;
     // A non-negative margin means the home team won (zero is a tie: both get 10).
     if (margin >= 0) {
       creditVp(totals, homeTeamId, round, winnerVP);
@@ -81,12 +85,14 @@ export function calculateTeamsVpOverall(
         creditVp(totals, team.teamId, triangle.round, NEUTRAL_VP);
         continue;
       }
-      const { winnerVP, loserVP } = calculateWbfVP(boardsPlayed, team.crossImps);
+      // Each team's signed cross-IMP total → VP on the EBU 20-VP discrete
+      // scale, independent per team (a positive total above the neutral 10, a
+      // negative total the mirror below).
       creditVp(
         totals,
         team.teamId,
         triangle.round,
-        team.crossImps >= 0 ? winnerVP : loserVP,
+        impVpSided(team.crossImps, boardsPlayed, 20),
       );
     }
   }

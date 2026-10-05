@@ -4,7 +4,7 @@ import { BridgeGame } from "@/db/game-index/schema";
 import { Club } from "@/db/system/schema";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
-import { calculateWbfVP } from "@/scoring/swiss/wbf-vp";
+import { impVpWinner, impVpSided } from "@/scoring/swiss/imp-vp-table";
 import {
   groupTeamMatches,
   groupTeamTriangles,
@@ -215,12 +215,8 @@ function buildUsebioMatches(
  */
 function triangleCrossVp(boardsPlayed: number, crossImps: number): number {
   if (boardsPlayed === 0) return NEUTRAL_VP_INT;
-  const { winnerVP, loserVP } = calculateWbfVP(
-    boardsPlayed,
-    crossImps,
-    "discrete",
-  );
-  return crossImps >= 0 ? winnerVP : loserVP;
+  // Independent per team on the EBU 20-VP discrete scale.
+  return impVpSided(crossImps, boardsPlayed, 20);
 }
 
 function teamTravellerLine(row: Board, direction: string): UsebioTeamTravellerLine {
@@ -242,7 +238,9 @@ function matchVp(
   if (boardsPlayed === 0) {
     return { teamScore: NEUTRAL_VP_INT, opposingTeamScore: NEUTRAL_VP_INT };
   }
-  const { winnerVP, loserVP } = calculateWbfVP(boardsPlayed, margin, "discrete");
+  // The match IMP margin → VP on the EBU 20-VP discrete scale; loser mirrors.
+  const winnerVP = impVpWinner(Math.abs(margin), boardsPlayed, 20);
+  const loserVP = 20 - winnerVP;
   return margin >= 0
     ? { teamScore: winnerVP, opposingTeamScore: loserVP }
     : { teamScore: loserVP, opposingTeamScore: winnerVP };

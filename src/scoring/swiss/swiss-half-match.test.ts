@@ -7,7 +7,6 @@ import {
   compensationXimpPerComparison,
   isHalfMatchRound,
   segmentsForPair,
-  ximpHalfVp,
 } from "./swiss-half-match";
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
@@ -45,19 +44,6 @@ describe("compensationXimpPerComparison", () => {
   it("fronts the AVE+ (+2) boards, then AVE (0)", () => {
     expect(compensationXimpPerComparison(4)).toEqual([2, 2, 0, 0]);
     expect(compensationXimpPerComparison(3)).toEqual([2, 2, 0]);
-  });
-});
-
-describe("ximpHalfVp", () => {
-  it("is half the 20-point WBF award over the half's boards (discrete)", () => {
-    expect(ximpHalfVp(4, 0, "discrete")).toBe(5); // dead level → 10 VP → 5
-    // A positive total is above the neutral half; its negative mirrors it.
-    const plus = ximpHalfVp(4, 6, "discrete");
-    const minus = ximpHalfVp(4, -6, "discrete");
-    expect(plus).toBeGreaterThan(5);
-    expect(minus).toBeLessThan(5);
-    // Discrete 20-VP halves sum back to 10 (equal-and-opposite integer awards).
-    expect(plus + minus).toBe(10);
   });
 });
 

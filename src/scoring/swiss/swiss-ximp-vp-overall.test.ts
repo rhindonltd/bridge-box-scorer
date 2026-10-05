@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { calculateSwissXimpVpOverall } from "./swiss-ximp-vp-overall";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 import { outcomeToScore, computeCrossImps } from "@/scoring/traveller/common";
-import { impsToVp } from "./wbf-vp";
+import { impVpSided } from "./imp-vp-table";
 import { BoardOutcome } from "@/model/score";
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
@@ -24,15 +24,15 @@ function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
  * Independently re-derive the expected per-pair round VP for a single board's
  * field of NS-perspective scores, mirroring the scorer's pipeline:
  * XIMPQ = computeCrossImps(score, field) / sqrt(r*c/2); round the total to a
- * whole IMP (halves away from zero); impsToVp(boardsPlayed, total).
+ * whole IMP (halves away from zero); then the EBU 20-VP discrete scale over the
+ * one board played.
  */
 function expectedVp(scores: number[], myScore: number): number {
   const r = scores.length;
   const c = r - 1;
   const ximpq = computeCrossImps(myScore, scores) / Math.sqrt((r * c) / 2);
   const rounded = Math.sign(ximpq) * Math.round(Math.abs(ximpq));
-  // The scorer emits whole-integer VP (discrete scale), shared with the export.
-  return impsToVp(1, rounded, "discrete");
+  return impVpSided(rounded, 1, 20);
 }
 
 describe("calculateSwissXimpVpOverall", () => {
@@ -81,8 +81,8 @@ describe("calculateSwissXimpVpOverall", () => {
       result.lines.find((l) => l.pairId === id)!.vpByRound[1];
 
     // Table 1: NS gets +cross-IMP VP, EW gets the mirror (−cross-IMP → VP).
-    expect(vpOf("A1NS")).toBe(impsToVp(1, roundOf(scores, scores[0]), "discrete"));
-    expect(vpOf("A4EW")).toBe(impsToVp(1, -roundOf(scores, scores[0]), "discrete"));
+    expect(vpOf("A1NS")).toBe(impVpSided(roundOf(scores, scores[0]), 1, 20));
+    expect(vpOf("A4EW")).toBe(impVpSided(-roundOf(scores, scores[0]), 1, 20));
   });
 
   it("sums per-round VPs into the session total, ranked highest-first", () => {
@@ -165,7 +165,7 @@ describe("calculateSwissXimpVpOverall", () => {
     const result = calculateSwissXimpVpOverall(rows);
     const a1 = result.lines.find((l) => l.pairId === "A1NS")!.vpByRound[1];
     // Scored from the override (a clear top), so A1NS is well above average.
-    expect(a1).toBe(impsToVp(1, roundOf(scores, scores[0]), "discrete"));
+    expect(a1).toBe(impVpSided(roundOf(scores, scores[0]), 1, 20));
     expect(a1).toBeGreaterThan(10);
   });
 });
@@ -225,7 +225,8 @@ describe("calculateSwissXimpVpOverall — 2 half matches round", () => {
     const anchorXq = computeCrossImps(field[0], field) / norm;
     const total = 4 * -anchorXq; // X sits EW opposite the anchor on 4 boards
     const rounded = Math.sign(total) * Math.round(Math.abs(total));
-    return impsToVp(4, rounded, "discrete") / 2;
+    // The half's VP on the EBU 10-VP scale over its 4 played boards.
+    return impVpSided(rounded, 4, 10);
   }
 
   // The compensated half's VP/10: AVE+ (+2/comparison) on 2 of 4 boards, AVE (0)
@@ -236,7 +237,7 @@ describe("calculateSwissXimpVpOverall — 2 half matches round", () => {
     let xq = 0;
     for (let i = 0; i < 4; i++) xq += ((i < 2 ? 2 : 0) * c) / norm;
     const rounded = Math.sign(xq) * Math.round(Math.abs(xq));
-    return impsToVp(4, rounded, "discrete") / 2;
+    return impVpSided(rounded, 4, 10);
   }
 
   it("credits the anchor its two real halves summed to /20", () => {

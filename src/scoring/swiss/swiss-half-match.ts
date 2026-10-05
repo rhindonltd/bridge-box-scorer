@@ -1,5 +1,3 @@
-import { impsToVp } from "./wbf-vp";
-import { type VpScale } from "./matchpoint-vp";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 
 /**
@@ -158,19 +156,3 @@ export function compensationXimpPerComparison(boards: number): number[] {
   );
 }
 
-/**
- * Convert a half's cross-IMP total (already rounded to whole IMPs by the
- * caller) to Victory Points on the **10-VP half-scale** — half of the WBF 20-VP
- * award over the half's board count, so a pair's two halves sum back onto the
- * 20-VP round scale.
- *
- * `scale` sets the 20-VP award's precision before halving ("discrete" for the
- * Swiss leaderboard / USEBIO export, "continuous" for 2-dp VP).
- */
-export function ximpHalfVp(
-  halfBoards: number,
-  roundedImps: number,
-  scale: VpScale,
-): number {
-  return impsToVp(halfBoards, roundedImps, scale) / 2;
-}

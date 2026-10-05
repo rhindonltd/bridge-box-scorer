@@ -1,6 +1,6 @@
 import { outcomeToScore, computeCrossImps } from "@/scoring/traveller/common";
 import { scoreMP } from "@/scoring/traveller/pair/mp";
-import { impsToVp } from "./wbf-vp";
+import { impVpSided } from "./imp-vp-table";
 import { mpVpFromPercent } from "./mp-vp-table";
 import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
 import { boardResult } from "./team-match";
@@ -11,7 +11,6 @@ import {
   compensationXimpPerComparison,
   isHalfMatchRound,
   segmentsForPair,
-  ximpHalfVp,
 } from "./swiss-half-match";
 
 /**
@@ -183,7 +182,9 @@ function ximpRealHalfVp(
     boardsPlayed += 1;
   }
   if (boardsPlayed === 0) return NEUTRAL_VP / 2;
-  return ximpHalfVp(boardsPlayed, roundHalfAwayFromZero(ximpq), "discrete");
+  // The half's cross-IMP total → VP on the EBU 10-VP discrete scale, keyed to
+  // the half's played board count.
+  return impVpSided(roundHalfAwayFromZero(ximpq), boardsPlayed, 10);
 }
 
 /** A compensated (unplayed) half's VP/10 for one pair (AVE+/AVE credit). */
@@ -202,16 +203,16 @@ function ximpCompensationHalfVp(
     boardsPlayed += 1;
   });
   if (boardsPlayed === 0) return NEUTRAL_VP / 2;
-  return ximpHalfVp(boardsPlayed, roundHalfAwayFromZero(ximpq), "discrete");
+  return impVpSided(roundHalfAwayFromZero(ximpq), boardsPlayed, 10);
 }
 
-/** An ordinary (full-round) VP for one pair, on the 20-VP scale. */
+/** An ordinary (full-round) VP for one pair, on the EBU 20-VP discrete scale. */
 function ximpOrdinaryVp(boardXimp: Map<number, number>): number {
   const boardsPlayed = boardXimp.size;
   if (boardsPlayed === 0) return NEUTRAL_VP;
   let ximpq = 0;
   for (const q of boardXimp.values()) ximpq += q;
-  return impsToVp(boardsPlayed, roundHalfAwayFromZero(ximpq), "discrete");
+  return impVpSided(roundHalfAwayFromZero(ximpq), boardsPlayed, 20);
 }
 
 /** Score one round in cross-IMP mode: per-pair VP + real-half MATCH splits. */
