@@ -80,6 +80,34 @@ describe("SelectedMovement round-trip", () => {
     expect(parsed).toEqual(selected);
   });
 
+  it("round-trips a SWISS selection with a HALF_MATCHES odd-round plan", () => {
+    const selected: SelectedMovement = {
+      source: "SWISS",
+      swiss: {
+        tables: 5,
+        rounds: 3,
+        boardsPerRound: 6,
+        oddHandling: "HALF_MATCHES",
+        oddRoundPlan: ["BYE", "HALF_MATCHES", "HALF_MATCHES"],
+      },
+    };
+
+    const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
+
+    expect(parsed).toEqual(selected);
+  });
+
+  it("round-trips a SWISS selection with explicit BYE odd handling (no plan)", () => {
+    const selected: SelectedMovement = {
+      source: "SWISS",
+      swiss: { tables: 5, rounds: 4, boardsPerRound: 6, oddHandling: "BYE" },
+    };
+
+    const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
+
+    expect(parsed).toEqual(selected);
+  });
+
   it("round-trips a SWISS_TEAMS selection", () => {
     const selected: SelectedMovement = {
       source: "SWISS_TEAMS",
@@ -152,6 +180,191 @@ describe("parseSelectedMovement", () => {
       parseSelectedMovement(JSON.stringify({ source: "SPEC", specId: 1 })),
     ).toBeNull();
   });
+
+  it("rejects a SWISS HALF_MATCHES selection whose plan length != rounds", () => {
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "SWISS",
+          swiss: {
+            tables: 5,
+            rounds: 3,
+            boardsPerRound: 6,
+            oddHandling: "HALF_MATCHES",
+            oddRoundPlan: ["BYE", "HALF_MATCHES"], // only 2 for 3 rounds
+          },
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it("rejects a SWISS HALF_MATCHES selection with no plan at all", () => {
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "SWISS",
+          swiss: {
+            tables: 5,
+            rounds: 3,
+            boardsPerRound: 6,
+            oddHandling: "HALF_MATCHES",
+          },
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it("rejects a SWISS oddRoundPlan when oddHandling is not HALF_MATCHES", () => {
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "SWISS",
+          swiss: {
+            tables: 5,
+            rounds: 2,
+            boardsPerRound: 6,
+            oddHandling: "BYE",
+            oddRoundPlan: ["BYE", "BYE"],
+          },
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it("rejects an invalid oddRoundPlan entry", () => {
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "SWISS",
+          swiss: {
+            tables: 5,
+            rounds: 2,
+            boardsPerRound: 6,
+            oddHandling: "HALF_MATCHES",
+            oddRoundPlan: ["BYE", "SHORT"], // SHORT is a teams-only value
+          },
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  // --- Swiss Teams TRIPLE oddRoundPlan ---------------------------------------
+
+  const parseTeams = (swissTeams: unknown) =>
+    parseSelectedMovement(JSON.stringify({ source: "SWISS_TEAMS", swissTeams }));
+
+  it("accepts a SWISS_TEAMS TRIPLE plan with byes, shorts and a long group", () => {
+    const parsed = parseTeams({
+      teams: 5,
+      rounds: 5,
+      boardsPerRound: 6,
+      oddHandling: "TRIPLE",
+      oddRoundPlan: [
+        "BYE",
+        "SHORT",
+        { kind: "LONG", group: 1 },
+        { kind: "LONG", group: 1 },
+        "SHORT",
+      ],
+    });
+    expect(parsed).not.toBeNull();
+  });
+
+  it("accepts two back-to-back long triples with distinct groups", () => {
+    const parsed = parseTeams({
+      teams: 7,
+      rounds: 4,
+      boardsPerRound: 6,
+      oddHandling: "TRIPLE",
+      oddRoundPlan: [
+        { kind: "LONG", group: 1 },
+        { kind: "LONG", group: 1 },
+        { kind: "LONG", group: 2 },
+        { kind: "LONG", group: 2 },
+      ],
+    });
+    expect(parsed).not.toBeNull();
+  });
+
+  it("rejects a TRIPLE plan whose length does not match rounds", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 3,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: ["BYE", "SHORT"],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a TRIPLE selection with no plan", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 2,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects an oddRoundPlan when oddHandling is not TRIPLE", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 2,
+        boardsPerRound: 6,
+        oddHandling: "BYE",
+        oddRoundPlan: ["BYE", "BYE"],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a LONG group that is not two adjacent rounds", () => {
+    // group 1's two entries are at positions 0 and 2 (not adjacent).
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 3,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [
+          { kind: "LONG", group: 1 },
+          "SHORT",
+          { kind: "LONG", group: 1 },
+        ],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a LONG group that appears only once", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 2,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [{ kind: "LONG", group: 1 }, "BYE"],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a LONG group appearing more than twice", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 3,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [
+          { kind: "LONG", group: 1 },
+          { kind: "LONG", group: 1 },
+          { kind: "LONG", group: 1 },
+        ],
+      }),
+    ).toBeNull();
+  });
 });
 
 describe("selectedMovementsEqual", () => {
@@ -213,6 +426,9 @@ describe("selectedMovementsEqual", () => {
       tables: number;
       rounds: number;
       boardsPerRound: number;
+      oddHandling: "BYE" | "HALF_MATCHES";
+      oddRoundPlan: ("BYE" | "HALF_MATCHES")[];
+      stationaryPairs: number[];
     }> = {},
   ): SelectedMovement => ({
     source: "SWISS",
@@ -228,6 +444,42 @@ describe("selectedMovementsEqual", () => {
     );
   });
 
+  it("compares SWISS odd handling, the per-round plan and stationary pairs", () => {
+    // Absent oddHandling equals an explicit "BYE".
+    expect(selectedMovementsEqual(swiss(), swiss({ oddHandling: "BYE" }))).toBe(
+      true,
+    );
+    // HALF_MATCHES needs a matching plan length (2 rounds here).
+    const plan = (over = {}) =>
+      swiss({
+        rounds: 2,
+        oddHandling: "HALF_MATCHES",
+        oddRoundPlan: ["BYE", "HALF_MATCHES"],
+        ...over,
+      });
+    expect(selectedMovementsEqual(plan(), plan())).toBe(true);
+    expect(
+      selectedMovementsEqual(
+        plan(),
+        plan({ oddRoundPlan: ["HALF_MATCHES", "BYE"] }),
+      ),
+    ).toBe(false);
+    expect(selectedMovementsEqual(swiss(), plan())).toBe(false);
+    // Stationary pairs participate in equality, order-independently.
+    expect(
+      selectedMovementsEqual(
+        swiss({ stationaryPairs: [1, 2] }),
+        swiss({ stationaryPairs: [2, 1] }),
+      ),
+    ).toBe(true);
+    expect(
+      selectedMovementsEqual(
+        swiss({ stationaryPairs: [1] }),
+        swiss({ stationaryPairs: [2] }),
+      ),
+    ).toBe(false);
+  });
+
   it("treats SWISS as different from other sources", () => {
     expect(selectedMovementsEqual(swiss(), mitchell())).toBe(false);
     expect(selectedMovementsEqual(swiss(), spec(1))).toBe(false);
@@ -238,7 +490,7 @@ describe("selectedMovementsEqual", () => {
       teams: number;
       rounds: number;
       boardsPerRound: number;
-      oddHandling: "BYE" | "TRIANGLE";
+      oddHandling: "BYE" | "TRIPLE";
     }> = {},
   ): SelectedMovement => ({
     source: "SWISS_TEAMS",
@@ -263,7 +515,7 @@ describe("selectedMovementsEqual", () => {
     expect(
       selectedMovementsEqual(
         swissTeams(),
-        swissTeams({ oddHandling: "TRIANGLE" }),
+        swissTeams({ oddHandling: "TRIPLE" }),
       ),
     ).toBe(false);
   });

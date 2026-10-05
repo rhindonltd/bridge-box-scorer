@@ -6,7 +6,11 @@ import {
   commitNextSwissRound,
   type SwissPreviewAck,
 } from "@/lib/swiss-service";
-import type { SwissPairId, SwissSeating } from "@/movement/swiss/swiss-pairing";
+import type {
+  SwissHalfMatchSeating,
+  SwissPairId,
+  SwissSeating,
+} from "@/movement/swiss/swiss-pairing";
 import { SwissDrawPreview } from "./SwissDrawPreview";
 
 /**
@@ -55,6 +59,7 @@ export function SwissDrawControl({
   async function handleConfirm(
     seating: SwissSeating[],
     sitOutPairId: SwissPairId | null,
+    halfMatch: SwissHalfMatchSeating | null,
   ) {
     setCommitting(true);
     setError(null);
@@ -64,6 +69,7 @@ export function SwissDrawControl({
         section,
         seating,
         sitOutPairId,
+        halfMatch,
       );
       setPreview(null);
       setNotice(`Round ${result.roundNumber} drawn.`);

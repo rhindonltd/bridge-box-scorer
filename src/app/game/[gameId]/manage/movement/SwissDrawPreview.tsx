@@ -12,38 +12,48 @@ import {
   type SwissSeating,
 } from "@/movement/swiss/swiss-pairing";
 
+
 const primaryButtonClass =
   "w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50";
 
 const secondaryButtonClass =
   "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50";
 
-/** Short "First Last / First Last" label for a pair, from resolved names. */
-function pairLabel(
+/** The two players of a pair as separate "First Last" lines, from resolved names. */
+function pairNames(
   players: { firstName: string; lastName: string } | null | undefined,
   partner: { firstName: string; lastName: string } | null | undefined,
-): string {
+): [string, string] {
   const one = players ? `${players.firstName} ${players.lastName}` : "—";
   const two = partner ? `${partner.firstName} ${partner.lastName}` : "—";
-  return `${one} / ${two}`;
+  return [one, two];
 }
 
 /**
- * Look up a pair's display label from the resolved names, by stable pair id.
+ * Look up a pair's two player names from the resolved names, by stable pair id.
  * Falls back to the raw id if names weren't resolved (e.g. an unseated guest).
  */
 function useNameLookup(named: NamedSeating) {
   return useMemo(() => {
-    const byPairId = new Map<SwissPairId, string>();
+    const byPairId = new Map<SwissPairId, [string, string]>();
     for (const t of named.tables) {
-      byPairId.set(t.nsPairId, pairLabel(t.players.N, t.players.S));
-      byPairId.set(t.ewPairId, pairLabel(t.players.E, t.players.W));
+      byPairId.set(t.nsPairId, pairNames(t.players.N, t.players.S));
+      byPairId.set(t.ewPairId, pairNames(t.players.E, t.players.W));
     }
     if (named.bye) {
       byPairId.set(
         named.bye.pairId,
-        pairLabel(named.bye.players.player1, named.bye.players.player2),
+        pairNames(named.bye.players.player1, named.bye.players.player2),
       );
+    }
+    if (named.halfMatch) {
+      for (const p of [
+        named.halfMatch.anchor,
+        named.halfMatch.halfOneOpponent,
+        named.halfMatch.halfTwoOpponent,
+      ]) {
+        byPairId.set(p.pairId, pairNames(p.players.player1, p.players.player2));
+      }
     }
     return byPairId;
   }, [named]);
@@ -55,8 +65,12 @@ export interface SwissDrawPreviewProps {
   committing: boolean;
   /** Inline error from a failed commit, if any. */
   error: string | null;
-  /** Accept the (possibly edited) seating. */
-  onConfirm: (seating: SwissSeating[], sitOutPairId: SwissPairId | null) => void;
+  /** Accept the (possibly edited) seating, plus the (read-only) half-match group. */
+  onConfirm: (
+    seating: SwissSeating[],
+    sitOutPairId: SwissPairId | null,
+    halfMatch: SwissPreviewAck["halfMatch"],
+  ) => void;
   onCancel: () => void;
 }
 
@@ -87,21 +101,63 @@ export function SwissDrawPreview({
   // The pair the director has picked as the first half of a swap, or null.
   const [selected, setSelected] = useState<SwissPairId | null>(null);
 
-  // Re-evaluate advisories against the same history the server used, on every
-  // edit. Pure and identical to the server's check.
-  const advisories = useMemo(
-    () =>
-      evaluateSwissSeating(
-        seating,
-        sitOutPairId,
-        rehydrateAdvisoryInputs(preview.advisoryInputs),
-      ),
-    [seating, sitOutPairId, preview.advisoryInputs],
+  // The event history the advisories are computed against (same as the server).
+  const drawInput = useMemo(
+    () => rehydrateAdvisoryInputs(preview.advisoryInputs),
+    [preview.advisoryInputs],
   );
 
-  const label = (id: SwissPairId) => names.get(id) ?? `Pair ${id}`;
+  // Re-evaluate advisories on every edit. Pure and identical to the server's
+  // check; drives both the warnings and the per-table highlights.
+  const advisories = useMemo(
+    () => evaluateSwissSeating(seating, sitOutPairId, drawInput),
+    [seating, sitOutPairId, drawInput],
+  );
+
+  // Stationary pairs (kept at a fixed seat all event) cannot be moved by the
+  // director — the draw already honours their home seat, so they are marked and
+  // locked from swaps/bye, exactly as on the table-setup screen.
+  const stationaryPairIds = useMemo(
+    () => new Set(drawInput.stationary.keys()),
+    [drawInput],
+  );
+  const isStationary = (id: SwissPairId) => stationaryPairIds.has(id);
+
+  // Tables the director should check (a repeat pairing or stationary conflict).
+  const problemTables = useMemo(
+    () => new Set(advisories.problemTables),
+    [advisories],
+  );
+
+  const nameLines = (id: SwissPairId): [string, string] =>
+    names.get(id) ?? [`Pair ${id}`, ""];
+
+  // Short "First / First" labels for the half-match sentence (first names only
+  // where available, falling back to the pair id).
+  const shortLabel = (id: SwissPairId): string => {
+    const [a, b] = nameLines(id);
+    const first = (s: string) => s.split(" ")[0] || s;
+    return a && a !== "—" ? `${first(a)} & ${first(b)}` : `Pair ${id}`;
+  };
+  const anchorLabel = () =>
+    preview.halfMatch ? shortLabel(preview.halfMatch.group.anchor) : "";
+  const halfOneLabel = () =>
+    preview.halfMatch ? shortLabel(preview.halfMatch.group.halfOneOpponent) : "";
+  const halfTwoLabel = () =>
+    preview.halfMatch ? shortLabel(preview.halfMatch.group.halfTwoOpponent) : "";
+
+  // Running VP total per pair, from the standings the draw ranked on. Shown on
+  // each card so the director sees the field's totals inline (no separate list).
+  const totals = useMemo(() => {
+    const byId = new Map<SwissPairId, number>();
+    for (const s of preview.standings) byId.set(s.id, s.total);
+    return byId;
+  }, [preview.standings]);
+  const totalFor = (id: SwissPairId) => totals.get(id) ?? null;
 
   function pickPair(pairId: SwissPairId) {
+    // A stationary pair is locked at its seat; it can't take part in a swap.
+    if (isStationary(pairId)) return;
     if (selected == null) {
       setSelected(pairId);
       return;
@@ -117,7 +173,10 @@ export function SwissDrawPreview({
 
   function pickBye() {
     // Only meaningful when there's a sit-out and a pair is selected to swap in.
-    if (sitOutPairId == null || selected == null) return;
+    // A stationary pair can't be given the bye (it stays at its home seat).
+    if (sitOutPairId == null || selected == null || isStationary(selected)) {
+      return;
+    }
     const result = reassignBye(seating, sitOutPairId, selected);
     setSeating(result.seating);
     setSitOutPairId(result.sitOutPairId);
@@ -153,7 +212,9 @@ export function SwissDrawPreview({
           {sitOutPairId != null
             ? ", or tap a pair then the sit-out slot to give it the bye"
             : ""}
-          . Nothing is saved until you tap OK.
+          . Stationary pairs (amber) stay put and can&apos;t be moved. Each pair
+          shows its current total (the order the draw ranks on). Nothing is saved
+          until you tap OK.
         </p>
 
         {advisoryMessages.length > 0 && (
@@ -171,30 +232,50 @@ export function SwissDrawPreview({
         )}
 
         <div className="flex flex-col gap-3">
-          {seating.map((table) => (
-            <div
-              key={table.tableNumber}
-              className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
-            >
-              <div className="mb-2 text-sm font-semibold text-gray-500">
-                Table {table.tableNumber}
+          {seating.map((table) => {
+            const hasProblem = problemTables.has(table.tableNumber);
+            return (
+              <div
+                key={table.tableNumber}
+                data-testid={`table-card-${table.tableNumber}`}
+                data-problem={hasProblem ? "true" : undefined}
+                className={`rounded-xl border bg-white p-3 shadow-sm ${
+                  hasProblem
+                    ? "border-amber-400 ring-2 ring-amber-400"
+                    : "border-gray-200"
+                }`}
+              >
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-gray-500">
+                    Table {table.tableNumber}
+                  </span>
+                  {hasProblem && (
+                    <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950">
+                      Check this table
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <PairChip
+                    label="N/S"
+                    names={nameLines(table.ns)}
+                    total={totalFor(table.ns)}
+                    stationary={isStationary(table.ns)}
+                    selected={selected === table.ns}
+                    onClick={() => pickPair(table.ns)}
+                  />
+                  <PairChip
+                    label="E/W"
+                    names={nameLines(table.ew)}
+                    total={totalFor(table.ew)}
+                    stationary={isStationary(table.ew)}
+                    selected={selected === table.ew}
+                    onClick={() => pickPair(table.ew)}
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <PairChip
-                  label="N/S"
-                  name={label(table.ns)}
-                  selected={selected === table.ns}
-                  onClick={() => pickPair(table.ns)}
-                />
-                <PairChip
-                  label="E/W"
-                  name={label(table.ew)}
-                  selected={selected === table.ew}
-                  onClick={() => pickPair(table.ew)}
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {sitOutPairId != null && (
             <button
@@ -208,18 +289,50 @@ export function SwissDrawPreview({
                   : "border-blue-400 bg-blue-50 hover:bg-blue-100"
               }`}
             >
-              <div className="text-sm font-semibold text-gray-500">
-                Sitting out (bye)
+              <div className="-mx-3 -mt-3 mb-2 flex items-baseline justify-between gap-2 rounded-t-xl bg-gray-200 px-3 py-1.5">
+                <span className="text-xs font-semibold text-gray-600">
+                  Sitting out (bye)
+                </span>
+                {totalFor(sitOutPairId) != null && (
+                  <span className="text-xs font-medium text-gray-600 tabular-nums">
+                    {totalFor(sitOutPairId)!.toFixed(2)} VP
+                  </span>
+                )}
               </div>
-              <div className="text-base text-gray-800">
-                {label(sitOutPairId)}
-              </div>
+              {nameLines(sitOutPairId).map((n, i) => (
+                <div key={i} className="text-sm text-gray-800">
+                  {n}
+                </div>
+              ))}
               {selected != null && (
                 <div className="mt-1 text-xs text-blue-700">
                   Tap to give the bye to the selected pair
                 </div>
               )}
             </button>
+          )}
+
+          {preview.halfMatch != null && (
+            <div
+              data-testid="draw-half-match"
+              className="rounded-xl border border-indigo-300 bg-indigo-50 p-3"
+            >
+              <div className="-mx-3 -mt-3 mb-2 rounded-t-xl bg-indigo-200 px-3 py-1.5">
+                <span className="text-xs font-semibold text-indigo-900">
+                  2 half matches — table {preview.halfMatch.anchorTable}
+                </span>
+              </div>
+              <p className="mb-2 text-xs text-indigo-800">
+                {anchorLabel()} plays the whole round at table{" "}
+                {preview.halfMatch.anchorTable}: {halfOneLabel()} in the first
+                half, then {halfTwoLabel()} swaps in for the second half.
+              </p>
+              <div className="flex flex-col gap-1.5">
+                <HalfMatchRow role="Anchor (plays both halves)" names={nameLines(preview.halfMatch.group.anchor)} />
+                <HalfMatchRow role="First half" names={nameLines(preview.halfMatch.group.halfOneOpponent)} />
+                <HalfMatchRow role="Second half" names={nameLines(preview.halfMatch.group.halfTwoOpponent)} />
+              </div>
+            </div>
           )}
         </div>
 
@@ -248,8 +361,15 @@ export function SwissDrawPreview({
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(seating, sitOutPairId)}
-            disabled={committing || advisories.structuralError}
+            onClick={() => onConfirm(seating, sitOutPairId, preview.halfMatch)}
+            // A half-match round's three group pairs aren't in `seating`, so the
+            // ordinary structural check (which expects a complete field) would
+            // flag them as missing. The group isn't editable here, so trust the
+            // server's draw and don't block on that advisory for a half-match.
+            disabled={
+              committing ||
+              (preview.halfMatch == null && advisories.structuralError)
+            }
             className={primaryButtonClass}
             data-testid="draw-confirm"
           >
@@ -261,30 +381,85 @@ export function SwissDrawPreview({
   );
 }
 
+/** One read-only pair row within the half-match card: a role label + names. */
+function HalfMatchRow({
+  role,
+  names,
+}: {
+  role: string;
+  names: [string, string];
+}) {
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-white px-2 py-1.5">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-indigo-500">
+        {role}
+      </div>
+      {names.map((n, i) => (
+        <div key={i} className="text-sm text-gray-800">
+          {n}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PairChip({
   label,
-  name,
+  names,
+  total,
+  stationary,
   selected,
   onClick,
 }: {
   label: string;
-  name: string;
+  /** The pair's two player names, shown on separate lines. */
+  names: [string, string];
+  /** The pair's running VP total, or null when not yet on the leaderboard. */
+  total: number | null;
+  /** Whether this pair is stationary (fixed seat all event) — locked from swaps. */
+  stationary: boolean;
   selected: boolean;
   onClick: () => void;
 }) {
+  // A stationary pair is display-only: it can't be selected or swapped, and is
+  // marked with an amber ring + badge (matching the table-setup screen).
+  const base =
+    "relative overflow-hidden rounded-lg border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500";
+  const stateClasses = stationary
+    ? "border-amber-400 bg-amber-50 ring-2 ring-amber-400 cursor-default"
+    : selected
+      ? "border-blue-500 bg-blue-50 ring-1 ring-blue-400"
+      : "border-gray-200 bg-gray-50 hover:bg-gray-100";
+
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-pressed={selected}
-      className={`rounded-lg border p-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-        selected
-          ? "border-blue-500 bg-blue-50 ring-1 ring-blue-400"
-          : "border-gray-200 bg-gray-50 hover:bg-gray-100"
-      }`}
+      disabled={stationary}
+      aria-pressed={stationary ? undefined : selected}
+      className={`${base} ${stateClasses}`}
     >
-      <div className="text-xs font-semibold text-gray-500">{label}</div>
-      <div className="text-sm text-gray-800">{name}</div>
+      {/* Header band: direction + running total, on a darker grey. */}
+      <div className="flex items-baseline justify-between gap-2 bg-gray-200 px-2 py-1">
+        <span className="text-xs font-semibold text-gray-600">{label}</span>
+        {total != null && (
+          <span className="text-xs font-medium text-gray-600 tabular-nums">
+            {total.toFixed(2)} VP
+          </span>
+        )}
+      </div>
+      <div className="px-2 py-1.5">
+        {names.map((n, i) => (
+          <div key={i} className="text-sm text-gray-800">
+            {n}
+          </div>
+        ))}
+        {stationary && (
+          <span className="mt-1 inline-block rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-950">
+            Stationary
+          </span>
+        )}
+      </div>
     </button>
   );
 }

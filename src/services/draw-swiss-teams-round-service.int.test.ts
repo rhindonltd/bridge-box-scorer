@@ -56,7 +56,7 @@ describe("drawNextSwissTeamsRound", () => {
       swissTeams: { teams: 4, rounds: totalRounds, boardsPerRound },
     });
 
-    await materializeSwissTeamsRound(gameId, "A", 1, boardsPerRound, [
+    await materializeSwissTeamsRound(gameId, "A", 1, boardsPerRound, totalRounds, [
       { a: 1, b: 2 },
       { a: 3, b: 4 },
     ]);
@@ -125,7 +125,7 @@ describe("drawNextSwissTeamsRound", () => {
       "A",
       preview.matches,
       preview.byeTeamId,
-      preview.triangle,
+      preview.triple,
     );
     expect(commit).toEqual({ ok: true, roundNumber: 2 });
 

@@ -145,6 +145,76 @@ export const NoResults: Story = {
   },
 };
 
+/**
+ * A Swiss Teams board with two matches (four teams). The flat per-table rows
+ * are grouped into team-match cards (open room at the home team's table, closed
+ * room at the opponent's), labelled by team name. The first match is complete
+ * in both rooms, so it shows the board's IMP margin; the second has only its
+ * open room scored, so its closed room shows "—" and no margin is shown yet.
+ * Every room stays tappable.
+ */
+export const Teams: Story = {
+  args: {
+    boardNumber: 5,
+    isLoading: false,
+    instances: [
+      // Match 1 — Sharks (table 1) v Owls (table 2): both rooms scored.
+      {
+        roundNumber: 2,
+        tableNumber: 1,
+        boardNumber: 5,
+        participants: { type: "PAIRS", ns: "A1NS", ew: "A2EW" },
+        currentResult: "4HN=",
+        status: "CONFIRMED",
+      },
+      {
+        roundNumber: 2,
+        tableNumber: 2,
+        boardNumber: 5,
+        participants: { type: "PAIRS", ns: "A2NS", ew: "A1EW" },
+        currentResult: "3NTN=",
+        status: "CONFIRMED",
+      },
+      // Match 2 — Eagles (table 3) v Robins (table 4): only the open room is in.
+      {
+        roundNumber: 2,
+        tableNumber: 3,
+        boardNumber: 5,
+        participants: { type: "PAIRS", ns: "A3NS", ew: "A4EW" },
+        currentResult: "2SN+1",
+        status: "CONFIRMED",
+      },
+      {
+        roundNumber: 2,
+        tableNumber: 4,
+        boardNumber: 5,
+        participants: { type: "PAIRS", ns: "A4NS", ew: "A3EW" },
+        currentResult: null,
+        status: null,
+      },
+    ],
+    teamMatches: [
+      {
+        tables: [1, 2],
+        teams: [
+          { table: 1, id: "A1NS", name: "Sharks" },
+          { table: 2, id: "A2NS", name: "Owls" },
+        ],
+        margin: 6,
+      },
+      {
+        // Only one room scored, so the board isn't comparable yet.
+        tables: [3, 4],
+        teams: [
+          { table: 3, id: "A3NS", name: "Eagles" },
+          { table: 4, id: "A4NS", name: "Robins" },
+        ],
+        margin: null,
+      },
+    ],
+  },
+};
+
 export const Loading: Story = {
   args: {
     boardNumber: 5,

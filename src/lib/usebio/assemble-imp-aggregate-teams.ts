@@ -6,9 +6,7 @@ import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import {
   groupTeamMatches,
-  groupTeamTriangles,
-  triangleSubMatches,
-  triangleTeamImps,
+  groupTeamTriples,
   teamMatchBoardImps,
   boardResult,
 } from "@/scoring/swiss/team-match";
@@ -35,11 +33,11 @@ import {
  * is set to "IMPS" so the generator writes the correct MATCH_SCORING_METHOD.
  *
  * A team match credits the home team `+margin` and the opponent `−margin`. A
- * three-way triangle is written as three informational head-to-head MATCH nodes
+ * three-way triple is written as three informational head-to-head MATCH nodes
  * (each showing its own IMP margin), while the authoritative per-team round
  * result added to the ranking total is the team's cross-IMP total — mirroring
  * how {@link import("./assemble-swiss-teams").assembleSwissTeams} treats
- * triangles for VP.
+ * triples for VP.
  */
 export function assembleImpAggregateTeams(
   game: BridgeGame,
@@ -173,11 +171,12 @@ function buildImpMatches(
     addImps(match.opponentTeamId, -margin);
   }
 
-  // Triangles: emit the three pairwise head-to-head MATCH nodes for board-level
-  // detail (informational), and add each team's authoritative CROSS-IMP total
-  // once to its ranking aggregate.
-  for (const triangle of groupTeamTriangles(boardRows)) {
-    for (const sub of triangleSubMatches(triangle)) {
+  // Triples: a three-way is three ordinary head-to-head comparisons (x-y, y-z,
+  // z-x), each an authoritative two-room MATCH node. A team's aggregate is the
+  // sum of its comparison margins (home +margin, away −margin) — the export
+  // total agrees with the live head-to-head standings.
+  for (const triple of groupTeamTriples(boardRows)) {
+    for (const sub of triple.comparisons) {
       const { perBoard, margin } = teamMatchBoardImps(sub);
       emitMatch(
         sub.round,
@@ -188,11 +187,8 @@ function buildImpMatches(
         sub.homeRowsByBoard,
         sub.opponentRowsByBoard,
       );
-    }
-
-    const { perTeam } = triangleTeamImps(triangle);
-    for (const team of perTeam) {
-      addImps(team.teamId, team.crossImps);
+      addImps(sub.homeTeamId, margin);
+      addImps(sub.opponentTeamId, -margin);
     }
   }
 

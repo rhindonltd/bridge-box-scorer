@@ -47,8 +47,7 @@ cloud services:
 Running a session does not require any of these — they are additive to the
 local, offline-capable core.
 
-For the first release, published results are available on BridgeWebs only.
-Displaying results on the BridgeBox website is planned for a future release.
+Published results are made available on the club's BridgeWebs website.
 
 ## Deployment context
 

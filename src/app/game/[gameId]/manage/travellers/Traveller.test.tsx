@@ -5,12 +5,19 @@ import type { Card, Rank } from "@/model/common";
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
+    backAction,
     children,
   }: {
     headerTitle: string;
+    backAction?: () => void;
     children: React.ReactNode;
   }) => (
     <div>
+      {backAction && (
+        <button aria-label="Back to board list" onClick={backAction}>
+          Back
+        </button>
+      )}
       <h1>{headerTitle}</h1>
       {children}
     </div>
@@ -58,7 +65,7 @@ describe("Traveller", () => {
       />,
     );
     expect(container.querySelector(".animate-spin")).toBeTruthy();
-    expect(screen.getByText("Board 5")).toBeInTheDocument();
+    expect(screen.getByText("Traveller - Board 5")).toBeInTheDocument();
   });
 
   it("fires onBack from the loading header", () => {
@@ -74,6 +81,19 @@ describe("Traveller", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Back to board list" }));
     expect(onBack).toHaveBeenCalled();
+  });
+
+  it("shows the board number in the header title in the loaded state", () => {
+    render(
+      <Traveller
+        boardNumber={7}
+        instances={[pairInstance({ boardNumber: 7 })]}
+        isLoading={false}
+        onLineSelected={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Traveller - Board 7")).toBeInTheDocument();
   });
 
   it("shows an empty message when there are no results", () => {
@@ -176,6 +196,99 @@ describe("Traveller", () => {
     expect(screen.queryByTestId("deal-display")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("show-hand-toggle"));
     expect(screen.getByTestId("deal-display")).toBeInTheDocument();
+  });
+
+  it("renders team match cards and selects the tapped room's instance (teams)", () => {
+    const onLineSelected = vi.fn();
+    // Two rooms of one match: table 1 (home team Sharks) and table 2 (Owls).
+    const room1 = pairInstance({
+      roundNumber: 1,
+      tableNumber: 1,
+      boardNumber: 5,
+      participants: { type: "PAIRS", ns: "A1NS", ew: "A2EW" },
+      currentResult: "4HN=",
+    });
+    const room2 = pairInstance({
+      roundNumber: 1,
+      tableNumber: 2,
+      boardNumber: 5,
+      participants: { type: "PAIRS", ns: "A2NS", ew: "A1EW" },
+      currentResult: "3NTN=",
+    });
+    const teamMatches = [
+      {
+        tables: [1, 2],
+        teams: [
+          { table: 1, id: "A1NS", name: "Sharks" },
+          { table: 2, id: "A2NS", name: "Owls" },
+        ],
+        margin: 6,
+      },
+    ];
+
+    render(
+      <Traveller
+        boardNumber={5}
+        instances={[room1, room2]}
+        teamMatches={teamMatches}
+        isLoading={false}
+        onLineSelected={onLineSelected}
+        onBack={vi.fn()}
+      />,
+    );
+
+    // The match card names both teams and shows the IMP margin.
+    expect(screen.getByText("Sharks v Owls")).toBeInTheDocument();
+    expect(screen.getByText("+6 IMP")).toBeInTheDocument();
+    // Each physical table stays a selectable room row.
+    fireEvent.click(screen.getByTestId("traveller-row-1-1"));
+    expect(onLineSelected).toHaveBeenCalledWith(room1);
+    fireEvent.click(screen.getByTestId("traveller-row-1-2"));
+    expect(onLineSelected).toHaveBeenCalledWith(room2);
+  });
+
+  it("shows 'Tied' for a level team match and the IMP margin for a win", () => {
+    const rooms = [
+      pairInstance({ roundNumber: 1, tableNumber: 1, boardNumber: 5 }),
+      pairInstance({ roundNumber: 1, tableNumber: 2, boardNumber: 5 }),
+      pairInstance({ roundNumber: 1, tableNumber: 3, boardNumber: 5 }),
+      pairInstance({ roundNumber: 1, tableNumber: 4, boardNumber: 5 }),
+    ];
+    // Two ordinary two-team cards: one level, one a +7 IMP win. (A triple also
+    // frames each of its board-sets as an ordinary two-team card, so there is
+    // no special "three-way" rendering any more.)
+    const teamMatches = [
+      {
+        tables: [1, 2],
+        teams: [
+          { table: 1, id: "A1NS", name: "Sharks" },
+          { table: 2, id: "A2NS", name: "Owls" },
+        ],
+        margin: 0,
+      },
+      {
+        tables: [3, 4],
+        teams: [
+          { table: 3, id: "A3NS", name: "Robins" },
+          { table: 4, id: "A4NS", name: "Hawks" },
+        ],
+        margin: 7,
+      },
+    ];
+
+    render(
+      <Traveller
+        boardNumber={5}
+        instances={rooms}
+        teamMatches={teamMatches}
+        isLoading={false}
+        onLineSelected={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Tied")).toBeInTheDocument();
+    expect(screen.getByText("+7 IMP")).toBeInTheDocument();
   });
 
   it("omits pair cells for a non-pairs instance", () => {

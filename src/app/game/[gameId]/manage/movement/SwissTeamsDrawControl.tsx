@@ -5,6 +5,8 @@ import {
   previewNextSwissTeamsRound,
   commitNextSwissTeamsRound,
   type SwissTeamsPreviewAck,
+  type TeamsMatchEntry,
+  type TeamsTripleEntry,
 } from "@/lib/swiss-service";
 import { SwissTeamsDrawPreview } from "./SwissTeamsDrawPreview";
 
@@ -15,13 +17,12 @@ import { SwissTeamsDrawPreview } from "./SwissTeamsDrawPreview";
  * The button is enabled only when every result for the current round is in
  * (`allResultsIn`). Drawing first PREVIEWS the proposed round: the control
  * swaps to a full-screen review ({@link SwissTeamsDrawPreview}) showing the
- * matches (with team names) and any bye or triangle. Only when the director
+ * matches (with team names) and any bye or triple. Only when the director
  * taps OK is the round committed and broadcast; Cancel discards it (nothing is
  * written).
  *
- * Editing a teams draw is not offered yet; the preview is read-only. The
- * plumbing (preview → commit-the-shown-round) matches the Swiss Pairs control,
- * so editing can be added later without reshaping this.
+ * The director may hand-adjust the draw first (tap two teams to swap their
+ * places); OK commits exactly the arrangement shown, edited or not.
  */
 export function SwissTeamsDrawControl({
   gameId,
@@ -54,7 +55,11 @@ export function SwissTeamsDrawControl({
     }
   }
 
-  async function handleConfirm() {
+  async function handleConfirm(
+    matches: TeamsMatchEntry[],
+    byeTeamId: number | null,
+    triple: TeamsTripleEntry | null,
+  ) {
     if (!preview) return;
     setCommitting(true);
     setError(null);
@@ -62,9 +67,9 @@ export function SwissTeamsDrawControl({
       const result = await commitNextSwissTeamsRound(
         gameId,
         section,
-        preview.matches,
-        preview.byeTeamId,
-        preview.triangle,
+        matches,
+        byeTeamId,
+        triple,
       );
       setPreview(null);
       setNotice(`Round ${result.roundNumber} drawn.`);

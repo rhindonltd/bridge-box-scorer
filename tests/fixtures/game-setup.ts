@@ -186,6 +186,143 @@ export async function pickSwissMovement(page: Page): Promise<void> {
 }
 
 /**
+ * Open the Movement tab and set up a Swiss Pairs movement that uses "2 half
+ * matches" for an odd field. Taps the Swiss card to open its dialog, trims the
+ * round count down to `rounds` (default 2 — enough for the half-match journey),
+ * selects the "2 half matches" odd-handling radio (which reveals the per-round
+ * plan, defaulting every round to a half match), and confirms. Used by the
+ * odd-field half-match journey.
+ *
+ * The rounds are trimmed FIRST, before expanding the per-round plan, so the
+ * dialog stays short: on the narrow phone viewport the full 7-round plan pushes
+ * the "Select Movement" button below the (non-scrolling) dialog, and the
+ * confirm click can never land. Fewer rounds keeps the whole dialog on-screen.
+ */
+export async function pickSwissHalfMatchMovement(
+  page: Page,
+  rounds = 2,
+): Promise<void> {
+  await openSetupStep(page, "Movement");
+  const swiss = page.getByTestId("swiss-movement-option");
+  await expect(swiss).toBeVisible({ timeout: 15000 });
+  await swiss.click();
+
+  // Wait for the Swiss setup dialog to open (its confirm button is present)
+  // before interacting with it.
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeVisible({ timeout: 15000 });
+
+  // Trim rounds down to the requested count via the Rounds stepper, so the
+  // revealed per-round plan is short and the dialog fits the viewport.
+  const decreaseRounds = page.getByRole("button", {
+    name: "Decrease Rounds",
+    exact: true,
+  });
+  for (let guard = 0; guard < 40; guard++) {
+    const value = Number(
+      await page.getByRole("spinbutton", { name: "Rounds" }).inputValue(),
+    );
+    if (value <= rounds) break;
+    await decreaseRounds.click();
+    await page.waitForTimeout(50);
+  }
+
+  // Choose "2 half matches" so every round resolves an odd pair with a group.
+  const halfMatches = page.getByRole("radio", { name: /2 half matches/i });
+  await expect(halfMatches).toBeVisible({ timeout: 15000 });
+  await halfMatches.click();
+  await expect(halfMatches).toBeChecked({ timeout: 5000 });
+
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Saving/ }),
+  ).toHaveCount(0, { timeout: 15000 });
+}
+
+/**
+ * Open the Movement tab and set up a Swiss Teams movement. Like Swiss Pairs it
+ * is offered only for a single-section game, in place of the Swiss Pairs card
+ * when the game's event type is Teams. Its option (`swiss-teams-movement-option`)
+ * opens the Swiss Teams setup dialog; this taps it, accepts the dialog's
+ * defaults (rounds / boards-per-round / odd-handling; the team count is fixed
+ * by the table count), and confirms.
+ */
+export async function pickSwissTeamsMovement(page: Page): Promise<void> {
+  await openSetupStep(page, "Movement");
+  const swissTeams = page.getByTestId("swiss-teams-movement-option");
+  await expect(swissTeams).toBeVisible({ timeout: 15000 });
+  await swissTeams.click();
+
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Saving/ }),
+  ).toHaveCount(0, { timeout: 15000 });
+}
+
+/**
+ * Open the Movement tab and set up a Swiss Teams movement that resolves an ODD
+ * field with triples, following a per-round plan. Taps the Swiss Teams card to
+ * open its dialog, trims the round count down to `plan.length` (so the revealed
+ * per-round plan is short and fits the phone viewport), selects the "Triple"
+ * odd-handling radio (which reveals the per-round builder), sets each round to
+ * its planned kind ("BYE" | "SHORT" | "LONG"), and confirms.
+ *
+ * A LONG takes two rounds, so the plan must place "LONG" on two neighbouring
+ * rounds (the dialog rejects a lone LONG). Used by the odd-field triple journey.
+ */
+export async function pickSwissTeamsTripleMovement(
+  page: Page,
+  plan: Array<"BYE" | "SHORT" | "LONG">,
+): Promise<void> {
+  await openSetupStep(page, "Movement");
+  const swissTeams = page.getByTestId("swiss-teams-movement-option");
+  await expect(swissTeams).toBeVisible({ timeout: 15000 });
+  await swissTeams.click();
+
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeVisible({ timeout: 15000 });
+
+  // Trim rounds down to the plan length via the Rounds stepper so the revealed
+  // per-round plan is short and the dialog fits the viewport.
+  const decreaseRounds = page.getByRole("button", {
+    name: "Decrease Rounds",
+    exact: true,
+  });
+  for (let guard = 0; guard < 40; guard++) {
+    const value = Number(
+      await page.getByRole("spinbutton", { name: "Rounds" }).inputValue(),
+    );
+    if (value <= plan.length) break;
+    await decreaseRounds.click();
+    await page.waitForTimeout(50);
+  }
+
+  // Choose "Triple" to reveal the per-round plan builder.
+  const triple = page.getByRole("radio", { name: /triple/i });
+  await expect(triple).toBeVisible({ timeout: 15000 });
+  await triple.click();
+
+  // Set each round to its planned kind. The per-round radios are grouped by
+  // `teamsOddRound-{i}` with labels Bye / Short / Long; "Short" is the default.
+  const planBuilder = page.getByTestId("teams-odd-round-plan");
+  await expect(planBuilder).toBeVisible({ timeout: 15000 });
+  const rows = planBuilder.getByRole("listitem");
+  for (let i = 0; i < plan.length; i++) {
+    const label = { BYE: "Bye", SHORT: "Short", LONG: "Long" }[plan[i]];
+    await rows.nth(i).getByRole("radio", { name: label }).click();
+  }
+
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Saving/ }),
+  ).toHaveCount(0, { timeout: 15000 });
+}
+
+/**
  * Start the game from the "Start Game" screen in the Setup menu. Requires a
  * valid movement and full seating; the Start Game button stays disabled until
  * both hold. Starting is director-authorised, so this must run in the

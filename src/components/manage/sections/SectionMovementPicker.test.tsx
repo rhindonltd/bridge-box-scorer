@@ -511,7 +511,7 @@ describe("SectionMovementPicker", () => {
       expect(setSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
         tables: 6,
         rounds: 7,
-        boardsPerRound: 3,
+        boardsPerRound: 7,
       }),
     );
     expect(onDone).toHaveBeenCalled();
@@ -813,7 +813,7 @@ describe("SectionMovementPicker", () => {
     );
 
     fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
-    // The odd count offers a Bye/Triangle choice with Bye selected by default,
+    // The odd count offers a Bye/Triple choice with Bye selected by default,
     // so confirming is allowed and carries oddHandling: "BYE".
     fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
     await waitFor(() =>
@@ -826,7 +826,7 @@ describe("SectionMovementPicker", () => {
     );
   });
 
-  it("confirms an odd Swiss Teams field with a Triangle when chosen", async () => {
+  it("confirms an odd Swiss Teams field with a Triple when chosen", async () => {
     mockRecommendations.mockReturnValue([]);
     render(
       <SectionMovementPicker
@@ -839,10 +839,12 @@ describe("SectionMovementPicker", () => {
     );
 
     fireEvent.click(screen.getByTestId("swiss-teams-movement-option"));
-    // Triangle is now selectable; picking it carries oddHandling: "TRIANGLE".
-    const triangle = screen.getByRole("radio", { name: /triangle/i });
-    expect(triangle).toBeEnabled();
-    fireEvent.click(triangle);
+    // Triple is now selectable; picking it reveals the per-round plan and
+    // carries oddHandling: "TRIPLE" plus a full plan (every round a short
+    // triple by default).
+    const triple = screen.getByRole("radio", { name: /triple/i });
+    expect(triple).toBeEnabled();
+    fireEvent.click(triple);
     fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
 
     await waitFor(() =>
@@ -850,7 +852,8 @@ describe("SectionMovementPicker", () => {
         teams: 5,
         rounds: 7,
         boardsPerRound: 6,
-        oddHandling: "TRIANGLE",
+        oddHandling: "TRIPLE",
+        oddRoundPlan: Array(7).fill("SHORT"),
       }),
     );
   });

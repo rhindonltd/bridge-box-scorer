@@ -436,4 +436,142 @@ describe("schedule-service", () => {
       expect(result!.rounds).toHaveLength(0);
     });
   });
+
+  describe("2 half matches round", () => {
+    type Row = {
+      roundNumber: number;
+      tableNumber: number;
+      boardNumber: number;
+      ns: string;
+      ew: string;
+      status: string;
+    };
+
+    /**
+     * Build a mock db for one pair's schedule from its board rows, resolving
+     * three pairs' names (anchor "A1NS", opp1 "A2NS", opp2 "A1EW"), over a
+     * single round.
+     */
+    function makeDb(seat: string, assignmentId: string, pairRows: Row[]): Db {
+      let n = 0;
+      return {
+        select: vi.fn().mockImplementation(() => {
+          n++;
+          if (n === 1) {
+            return {
+              from: () => ({
+                where: () => ({
+                  get: () =>
+                    Promise.resolve({ id: assignmentId, initialSeat: seat }),
+                }),
+              }),
+            };
+          }
+          if (n === 2) {
+            return { from: () => ({ where: () => Promise.resolve(pairRows) }) };
+          }
+          if (n === 3) {
+            return {
+              from: () =>
+                Promise.resolve([
+                  { id: "aA1NS", initialSeat: "A1NS" },
+                  { id: "aA2NS", initialSeat: "A2NS" },
+                  { id: "aA1EW", initialSeat: "A1EW" },
+                ]),
+            };
+          }
+          if (n === 4) {
+            return {
+              from: () =>
+                Promise.resolve([
+                  { initialSeat: "A1NS", player1: 1, player2: 2 },
+                  { initialSeat: "A2NS", player1: 3, player2: 4 },
+                  { initialSeat: "A1EW", player1: 5, player2: 6 },
+                ]),
+            };
+          }
+          if (n === 5) {
+            return {
+              from: () =>
+                Promise.resolve([
+                  { id: 1, firstName: "An", lastName: "Chor" },
+                  { id: 2, firstName: "An2", lastName: "Chor2" },
+                  { id: 3, firstName: "Op", lastName: "One" },
+                  { id: 4, firstName: "Op2", lastName: "One2" },
+                  { id: 5, firstName: "Op", lastName: "Two" },
+                  { id: 6, firstName: "Op2", lastName: "Two2" },
+                ]),
+            };
+          }
+          return { from: () => Promise.resolve([{ roundNumber: 1 }]) };
+        }),
+      } as unknown as Db;
+    }
+
+    it("gives the anchor two segments (one per opponent) across the midpoint", async () => {
+      // Anchor A1NS plays opp1 (A2NS) on boards 1-2, opp2 (A1EW) on boards 3-4.
+      const rows: Row[] = [
+        { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "aA1NS", ew: "aA2NS", status: "CONFIRMED" },
+        { roundNumber: 1, tableNumber: 1, boardNumber: 2, ns: "aA1NS", ew: "aA2NS", status: "CONFIRMED" },
+        { roundNumber: 1, tableNumber: 1, boardNumber: 3, ns: "aA1NS", ew: "aA1EW", status: "NOT_PLAYED" },
+        { roundNumber: 1, tableNumber: 1, boardNumber: 4, ns: "aA1NS", ew: "aA1EW", status: "NOT_PLAYED" },
+      ];
+      const db = makeDb("A1NS", "aA1NS", rows);
+      vi.mocked(getPairsDb).mockResolvedValue(db as any);
+
+      const result = await getSchedule(db, "A1NS");
+      const round = result!.rounds[0];
+
+      expect(round.sitOut).toBeFalsy();
+      expect(round.halfMatch?.role).toBe("anchor");
+      expect(round.halfMatch?.segments).toHaveLength(2);
+      expect(round.halfMatch?.segments[0]).toMatchObject({ half: "first", boards: [1, 2] });
+      expect(round.halfMatch?.segments[1]).toMatchObject({ half: "second", boards: [3, 4] });
+      // The anchor still plays all four boards (full board set for ContractWizard).
+      expect(round.boards).toEqual([1, 2, 3, 4]);
+    });
+
+    it("gives a first-half non-anchor one segment and excludes its compensated boards", async () => {
+      // Opp1 (A2NS) plays the FIRST half (boards 1-2) vs the anchor, and is
+      // compensated (HALF_AVERAGE) on boards 3-4.
+      const rows: Row[] = [
+        { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "aA1NS", ew: "aA2NS", status: "CONFIRMED" },
+        { roundNumber: 1, tableNumber: 1, boardNumber: 2, ns: "aA1NS", ew: "aA2NS", status: "CONFIRMED" },
+        { roundNumber: 1, tableNumber: 7, boardNumber: 3, ns: "aA2NS", ew: "PHANTOM", status: "HALF_AVERAGE" },
+        { roundNumber: 1, tableNumber: 7, boardNumber: 4, ns: "aA2NS", ew: "PHANTOM", status: "HALF_AVERAGE" },
+      ];
+      const db = makeDb("A2NS", "aA2NS", rows);
+      vi.mocked(getPairsDb).mockResolvedValue(db as any);
+
+      const result = await getSchedule(db, "A2NS");
+      const round = result!.rounds[0];
+
+      expect(round.halfMatch?.role).toBe("firstHalf");
+      expect(round.halfMatch?.segments).toHaveLength(1);
+      expect(round.halfMatch?.segments[0]).toMatchObject({ half: "first", boards: [1, 2] });
+      // Compensated boards 3-4 are NOT playable boards for this pair.
+      expect(round.boards).toEqual([1, 2]);
+    });
+
+    it("gives a second-half non-anchor one segment with the second-half marker", async () => {
+      // Opp2 (A1EW) plays the SECOND half (boards 3-4) vs the anchor, and is
+      // compensated on boards 1-2.
+      const rows: Row[] = [
+        { roundNumber: 1, tableNumber: 8, boardNumber: 1, ns: "aA1EW", ew: "PHANTOM", status: "HALF_AVERAGE" },
+        { roundNumber: 1, tableNumber: 8, boardNumber: 2, ns: "aA1EW", ew: "PHANTOM", status: "HALF_AVERAGE" },
+        { roundNumber: 1, tableNumber: 1, boardNumber: 3, ns: "aA1NS", ew: "aA1EW", status: "NOT_PLAYED" },
+        { roundNumber: 1, tableNumber: 1, boardNumber: 4, ns: "aA1NS", ew: "aA1EW", status: "NOT_PLAYED" },
+      ];
+      const db = makeDb("A1EW", "aA1EW", rows);
+      vi.mocked(getPairsDb).mockResolvedValue(db as any);
+
+      const result = await getSchedule(db, "A1EW");
+      const round = result!.rounds[0];
+
+      expect(round.halfMatch?.role).toBe("secondHalf");
+      expect(round.halfMatch?.segments[0]).toMatchObject({ half: "second", boards: [3, 4] });
+      expect(round.boards).toEqual([3, 4]);
+      expect(round.side).toBe("EW");
+    });
+  });
 });

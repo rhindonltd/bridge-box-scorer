@@ -2,10 +2,10 @@ import { rank } from "@/scoring/overall/rank";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 import {
   groupTeamMatches,
-  groupTeamTriangles,
+  groupTeamTriples,
   teamByeRounds,
   teamMatchBoardImps,
-  triangleTeamImps,
+  tripleTeamStakes,
 } from "./team-match";
 import type { TeamImpAggOverallScore } from "@/model/leaderboard";
 
@@ -21,7 +21,7 @@ interface ImpAccumulator {
 /**
  * Credit a team its net IMPs for a round.
  *
- * A team plays at most one match (or one triangle) per round, so the round
+ * A team plays at most one match (or one triple) per round, so the round
  * value is an assignment, while the session total sums across rounds. IMPs are
  * whole numbers, so no rounding is needed.
  */
@@ -48,7 +48,7 @@ function creditImps(
  *
  * A team match spans two home tables sharing the same boards; the home team's
  * net IMPs on the round are `+margin` and the opponent's are `−margin` (each
- * board's IMP difference, summed). A three-way triangle credits each team its
+ * board's IMP difference, summed). A three-way triple credits each team its
  * cross-IMP total for the round. A bye contributes 0 IMPs — a forced sit-out
  * neither helps nor hurts the aggregate total — but is still recorded for the
  * round so the team stays on the table.
@@ -82,13 +82,22 @@ export function calculateTeamsImpAggregateOverall(
     creditImps(totals, bye.teamId, bye.round, 0);
   }
 
-  // Each triangle team is credited its cross-IMP total for the round (the sum
-  // of its IMP differences against both other tables), exactly as the VP
-  // variant computes before the WBF conversion.
-  for (const triangle of groupTeamTriangles(boardRows)) {
-    const { perTeam } = triangleTeamImps(triangle);
-    for (const team of perTeam) {
-      creditImps(totals, team.teamId, triangle.round, team.crossImps);
+  // Each triple team is credited its net IMPs from each of its two head-to-head
+  // comparisons (the home side gets +margin, the away side −margin), summed into
+  // the round(s) its NS pair hosted them in (SHORT: one round; LONG: split
+  // across R and R+1). Nothing comparable yet contributes 0, exactly like a
+  // two-team match.
+  for (const triple of groupTeamTriples(boardRows)) {
+    const byTeamRound = new Map<string, number>();
+    for (const stake of tripleTeamStakes(triple)) {
+      const { margin } = teamMatchBoardImps(stake.comparison);
+      const imps = stake.isHome ? margin : -margin;
+      const key = `${stake.teamId}|${stake.round}`;
+      byTeamRound.set(key, (byTeamRound.get(key) ?? 0) + imps);
+    }
+    for (const [key, imps] of byTeamRound) {
+      const [teamId, roundStr] = key.split("|");
+      creditImps(totals, teamId, Number(roundStr), imps);
     }
   }
 

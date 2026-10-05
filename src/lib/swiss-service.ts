@@ -3,7 +3,12 @@ import { emitWithAck } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import type { NamedSeating } from "@/services/swiss-seating-names";
 import type { NamedTeamsSeating } from "@/services/swiss-teams-seating-names";
-import type { SerializableAdvisoryInputs } from "@/movement/swiss/swiss-pairing";
+import type {
+  SerializableAdvisoryInputs,
+  SwissHalfMatchSeating,
+} from "@/movement/swiss/swiss-pairing";
+import type { SerializableTeamsAdvisoryInputs } from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
 
 /** A single table's seating as stable Swiss pair ids. */
 export interface SwissSeatingEntry {
@@ -22,8 +27,16 @@ export interface SwissPreviewAck {
   tables: number;
   seating: SwissSeatingEntry[];
   sitOutPairId: number | null;
+  /**
+   * The drawn 2-half-matches group for this round, or null for a bye/even
+   * round. Shown read-only on the preview and echoed back on commit so the
+   * server materializes exactly what was reviewed.
+   */
+  halfMatch: SwissHalfMatchSeating | null;
   named: NamedSeating;
   advisoryInputs: SerializableAdvisoryInputs;
+  /** Current standings (best first) with running VP totals — the draw order. */
+  standings: SwissStandingEntry[];
   hadUnavoidableRepeat: boolean;
   hadStationaryConflict: boolean;
 }
@@ -63,6 +76,7 @@ export async function commitNextSwissRound(
   section: string,
   seating: SwissSeatingEntry[],
   sitOutPairId: number | null,
+  halfMatch: SwissHalfMatchSeating | null = null,
 ): Promise<SwissCommitAck> {
   return emitWithAck<SwissCommitAck>(SocketEvents.DRAW_NEXT_SWISS_ROUND, {
     gameId,
@@ -70,6 +84,7 @@ export async function commitNextSwissRound(
     directorToken: getDirectorToken(gameId) ?? "",
     seating,
     sitOutPairId,
+    halfMatch,
   });
 }
 
@@ -82,17 +97,26 @@ export interface TeamsMatchEntry {
   b: number;
 }
 
-/** A three-way triangle, by stable team id. */
-export interface TeamsTriangleEntry {
+/**
+ * A three-way triple, by stable team id, plus which flavour it is. `kind`
+ * (SHORT/LONG), `group` (the long-triple group id linking its two slots) and
+ * `slot` (1 or 2 for a long triple) are carried so a committed triple
+ * materializes on the right board sets and round; a short triple leaves
+ * `group`/`slot` null.
+ */
+export interface TeamsTripleEntry {
   a: number;
   b: number;
   c: number;
+  kind?: "SHORT" | "LONG";
+  group?: number | null;
+  slot?: 1 | 2 | null;
 }
 
 /**
  * What the server returns for a PREVIEWED (uncommitted) Swiss Teams draw: the
  * proposed matches (team ids the client echoes back on commit), the odd-field
- * resolution (bye team or triangle), resolved team names for display, and the
+ * resolution (bye team or triple), resolved team names for display, and the
  * repeat advisory.
  */
 export interface SwissTeamsPreviewAck {
@@ -100,8 +124,14 @@ export interface SwissTeamsPreviewAck {
   teams: number;
   matches: TeamsMatchEntry[];
   byeTeamId: number | null;
-  triangle: TeamsTriangleEntry | null;
+  triple: TeamsTripleEntry | null;
   named: NamedTeamsSeating;
+  /** Current standings (best first) with running VP totals — the draw order. */
+  standings: SwissStandingEntry[];
+  /** Team-pair keys of drawn matches that repeat an earlier opponent. */
+  repeatMatchKeys: string[];
+  /** Team count + played opponents, so the client re-checks repeats after edits. */
+  advisoryInputs: SerializableTeamsAdvisoryInputs;
   hadUnavoidableRepeat: boolean;
 }
 
@@ -137,7 +167,7 @@ export async function commitNextSwissTeamsRound(
   section: string,
   matches: TeamsMatchEntry[],
   byeTeamId: number | null,
-  triangle: TeamsTriangleEntry | null,
+  triple: TeamsTripleEntry | null,
 ): Promise<SwissTeamsCommitAck> {
   return emitWithAck<SwissTeamsCommitAck>(
     SocketEvents.DRAW_NEXT_SWISS_TEAMS_ROUND,
@@ -147,7 +177,7 @@ export async function commitNextSwissTeamsRound(
       directorToken: getDirectorToken(gameId) ?? "",
       matches,
       byeTeamId,
-      triangle,
+      triple,
     },
   );
 }

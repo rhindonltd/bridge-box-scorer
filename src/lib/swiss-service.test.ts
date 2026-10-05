@@ -22,7 +22,8 @@ const previewAck: SwissPreviewAck = {
     { tableNumber: 2, ns: 2, ew: 4 },
   ],
   sitOutPairId: null,
-  named: { tables: [], bye: null },
+  halfMatch: null,
+  named: { tables: [], bye: null, halfMatch: null },
   advisoryInputs: {
     tables: 2,
     playedOpponents: [],
@@ -30,6 +31,7 @@ const previewAck: SwissPreviewAck = {
     directionCounts: [],
     stationary: [],
   },
+  standings: [{ id: 1, name: "Alice / Bob", total: 30, rank: 1, tied: false }],
   hadUnavoidableRepeat: false,
   hadStationaryConflict: false,
 };
@@ -96,6 +98,7 @@ describe("commitNextSwissRound", () => {
       directorToken: "dir-tok",
       seating,
       sitOutPairId: null,
+      halfMatch: null,
     });
   });
 

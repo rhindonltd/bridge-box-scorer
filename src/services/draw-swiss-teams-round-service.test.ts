@@ -14,7 +14,12 @@ vi.mock("@/services/materialize-swiss-teams-round", () => ({
 vi.mock("@/services/swiss-teams-seating-names", () => ({
   resolveSwissTeamsMatchNames: vi
     .fn()
-    .mockResolvedValue({ matches: [], bye: null, triangle: null }),
+    .mockResolvedValue({ matches: [], bye: null, triple: null }),
+}));
+// buildTeamStandings resolves team names via findTeams; stub it empty so the
+// standings fall back to "Team {id}" labels (names aren't under test here).
+vi.mock("@/db/games/queries/find-teams", () => ({
+  findTeams: vi.fn().mockResolvedValue([]),
 }));
 
 import {
@@ -53,7 +58,12 @@ function rankTeams(n: number) {
     {
       section: "A",
       overallScore: {
-        lines: Array.from({ length: n }, (_, i) => ({ teamId: `A${i + 1}NS` })),
+        lines: Array.from({ length: n }, (_, i) => ({
+          teamId: `A${i + 1}NS`,
+          totalVP: (n - i) * 10,
+          rank: i + 1,
+          tied: false,
+        })),
       },
     },
   ] as any);
@@ -94,7 +104,7 @@ describe("previewNextSwissTeamsRound", () => {
     });
   });
 
-  it("rejects a triangle field too small to form a three-way (< 3 teams)", async () => {
+  it("rejects a triple field too small to form a three-way (< 3 teams)", async () => {
     vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
@@ -102,7 +112,7 @@ describe("previewNextSwissTeamsRound", () => {
         teams: 1,
         rounds: 4,
         boardsPerRound: 3,
-        oddHandling: "TRIANGLE",
+        oddHandling: "TRIPLE",
       },
     } as any);
 
@@ -166,7 +176,19 @@ describe("previewNextSwissTeamsRound", () => {
     expect(result.teams).toBe(4);
     expect(result.matches.length).toBe(2); // 4 teams -> 2 matches
     expect(result.byeTeamId).toBeNull();
-    expect(result.triangle).toBeNull();
+    expect(result.triple).toBeNull();
+    // Standings are returned in draw order (best first) with running VP totals,
+    // from the same leaderboard lines the draw ranked on (team i -> (n-i)*10).
+    expect(result.standings.map((s) => ({ id: s.id, total: s.total }))).toEqual([
+      { id: 1, total: 40 },
+      { id: 2, total: 30 },
+      { id: 3, total: 20 },
+      { id: 4, total: 10 },
+    ]);
+    // Advisory inputs carry the team count + played opponents so the client
+    // can re-check repeats after an edit (round 1 played 1v2, recovered here).
+    expect(result.advisoryInputs.teams).toBe(4);
+    expect(result.advisoryInputs.playedOpponents).toContain("1-2");
     // A preview must never materialize.
     expect(materializeSwissTeamsRound).not.toHaveBeenCalled();
   });
@@ -193,10 +215,10 @@ describe("previewNextSwissTeamsRound", () => {
     if (!result.ok) return;
     // Team 5 already byed in round 1, so round 2 byes the next lowest (4).
     expect(result.byeTeamId).toBe(4);
-    expect(result.triangle).toBeNull();
+    expect(result.triple).toBeNull();
   });
 
-  it("previews an odd (TRIANGLE) round, reporting the triangle", async () => {
+  it("previews an odd (TRIPLE) round, reporting the triple", async () => {
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
         [
@@ -215,7 +237,8 @@ describe("previewNextSwissTeamsRound", () => {
         teams: 5,
         rounds: 4,
         boardsPerRound: 3,
-        oddHandling: "TRIANGLE",
+        oddHandling: "TRIPLE",
+        oddRoundPlan: ["SHORT", "SHORT", "SHORT", "SHORT"],
       },
     } as any);
     rankTeams(5);
@@ -225,7 +248,10 @@ describe("previewNextSwissTeamsRound", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.byeTeamId).toBeNull();
-    expect(result.triangle).toEqual({ a: 1, b: 2, c: 5 });
+    // The round-1 fixture is a 3-cycle among 3,4,5 (detected as a triple), so
+    // they count as having had a triple; the round-2 triple avoids re-tripling
+    // all three and tops up with a fresh team (-> {1,2,5}).
+    expect(result.triple).toMatchObject({ a: 1, b: 2, c: 5, kind: "SHORT" });
   });
 
   it("ranks purely from the append loop when the leaderboard has no line for this section", async () => {
@@ -243,6 +269,99 @@ describe("previewNextSwissTeamsRound", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(1);
+  });
+
+  it("marks a prior SHORT triple's teams as having had a triple", async () => {
+    // Round 1 was a SHORT triple {3,4,5} (six head-to-head rows across sets
+    // A/B/C) plus a normal 1 v 2. Drawing round 2 (another SHORT) must pick a
+    // triple that AVOIDS repeating all three of 3,4,5 — so it includes team 1
+    // or 2 rather than re-tripling {3,4,5}.
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [
+          { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
+          { roundNumber: 1, ns: "A2NS", ew: "A1EW" },
+          // SHORT triple {3,4,5}: A (3 v 4), B (4 v 5), C (5 v 3), both rooms.
+          { roundNumber: 1, ns: "A3NS", ew: "A4EW" },
+          { roundNumber: 1, ns: "A4NS", ew: "A3EW" },
+          { roundNumber: 1, ns: "A4NS", ew: "A5EW" },
+          { roundNumber: 1, ns: "A5NS", ew: "A4EW" },
+          { roundNumber: 1, ns: "A5NS", ew: "A3EW" },
+          { roundNumber: 1, ns: "A3NS", ew: "A5EW" },
+        ] as any,
+        [{ status: "CONFIRMED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: ["SHORT", "SHORT", "SHORT", "SHORT"],
+      },
+    } as any);
+    rankTeams(5);
+
+    const result = await previewNextSwissTeamsRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.triple).not.toBeNull();
+    // 3,4,5 already tripled, so the new triple can't be exactly {3,4,5}.
+    const members = [result.triple!.a, result.triple!.b, result.triple!.c];
+    expect(members).not.toEqual([3, 4, 5]);
+    // It must include at least one of the fresh teams (1 or 2).
+    expect(members.some((m) => m === 1 || m === 2)).toBe(true);
+  });
+
+  it("reuses the first slot's teams for a LONG triple's second slot (no fresh draw)", async () => {
+    // Round 1 was a LONG triple slot 1 {3,4,5} (half-1 rooms: 3·NS v 4 on A,
+    // 4·NS v 5 on B, 5·NS v 3 on C) + a normal 1 v 2. The plan makes rounds 1
+    // and 2 a single long triple (group 1), so drawing round 2 must reuse
+    // {3,4,5} as slot 2 rather than choosing a new three-way.
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [
+          { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
+          { roundNumber: 1, ns: "A2NS", ew: "A1EW" },
+          { roundNumber: 1, ns: "A3NS", ew: "A4EW" }, // A half-1
+          { roundNumber: 1, ns: "A4NS", ew: "A5EW" }, // B half-1
+          { roundNumber: 1, ns: "A5NS", ew: "A3EW" }, // C half-1
+        ] as any,
+        [{ status: "CONFIRMED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [
+          { kind: "LONG", group: 1 },
+          { kind: "LONG", group: 1 },
+          "SHORT",
+          "SHORT",
+        ],
+      },
+    } as any);
+    rankTeams(5);
+
+    const result = await previewNextSwissTeamsRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.roundNumber).toBe(2);
+    // The second slot reuses the first slot's three teams, advanced to slot 2.
+    expect(result.triple).toMatchObject({
+      a: 3,
+      b: 4,
+      c: 5,
+      kind: "LONG",
+      group: 1,
+      slot: 2,
+    });
   });
 });
 
@@ -283,6 +402,7 @@ describe("commitNextSwissTeamsRound", () => {
       "A",
       2,
       3,
+      4,
       matches,
       null,
       null,
@@ -354,6 +474,7 @@ describe("commitNextSwissTeamsRound", () => {
       "A",
       2,
       3,
+      4,
       matches,
       5,
       null,

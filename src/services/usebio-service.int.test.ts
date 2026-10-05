@@ -253,6 +253,96 @@ describe("generateUsebio", () => {
     expect(xml).toContain("<ROUND_NUMBER>1</ROUND_NUMBER>");
   });
 
+  it("emits a 2-half-matches Swiss round as two anchor matches, no phantom", async () => {
+    const { createBoard } = await import("@/db/games/actions/create-board");
+
+    // Odd field of five seated pairs. The half-match group plays at table 1:
+    // the anchor A1NS plays A2EW on boards 1-2 (half 1) and A3NS on boards 3-4
+    // (half 2); two ordinary field tables play all four boards; the two
+    // non-anchors are compensated for the half they miss (HALF_AVERAGE, phantom
+    // opponent). The anchor must emit TWO matches and the phantom none.
+    for (const seat of ["A1NS", "A2EW", "A3NS", "A2NS", "A3EW"]) {
+      await seatPair(seat, seat);
+    }
+
+    const confirmed = (
+      round: number,
+      table: number,
+      b: number,
+      ns: string,
+      ew: string,
+      result: string,
+    ) =>
+      createBoard(harness.gameId, {
+        section: "A",
+        roundNumber: round,
+        tableNumber: table,
+        boardNumber: b,
+        copy: "A",
+        ns,
+        ew,
+        status: "CONFIRMED",
+        confirmedResult: result as never,
+      });
+
+    const compensation = (table: number, b: number, ns: string) =>
+      createBoard(harness.gameId, {
+        section: "A",
+        roundNumber: 1,
+        tableNumber: table,
+        boardNumber: b,
+        copy: "A",
+        ns,
+        ew: "APHANTOM",
+        status: "HALF_AVERAGE",
+        confirmedResult: null as never,
+      });
+
+    // Anchor table 1: half 1 (boards 1-2) vs A2EW, half 2 (boards 3-4) vs A3NS.
+    await confirmed(1, 1, 1, "A1NS", "A2EW", "6NTN=");
+    await confirmed(1, 1, 2, "A1NS", "A2EW", "6NTN=");
+    await confirmed(1, 1, 3, "A1NS", "A3NS", "6NTN=");
+    await confirmed(1, 1, 4, "A1NS", "A3NS", "6NTN=");
+    // Two ordinary field tables over all four boards.
+    for (let b = 1; b <= 4; b++) {
+      await confirmed(1, 2, b, "A2NS", "A2EWx", "3NTN=");
+      await confirmed(1, 3, b, "A3EW", "A3EWx", "3NTN-1");
+    }
+    // Compensation: A2EW missed boards 3-4; A3NS missed boards 1-2.
+    await compensation(4, 3, "A2EW");
+    await compensation(4, 4, "A2EW");
+    await compensation(5, 1, "A3NS");
+    await compensation(5, 2, "A3NS");
+
+    const swissGame: BridgeGame = {
+      ...game,
+      gameType: "PAIRS",
+      scoringType: "XIMP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS",
+        swiss: {
+          tables: 3,
+          rounds: 1,
+          boardsPerRound: 4,
+          oddHandling: "HALF_MATCHES",
+          oddRoundPlan: ["HALF_MATCHES"],
+        },
+      }),
+    };
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+    const xml = await generateUsebio(db, swissGame, club);
+
+    expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_PAIRS">');
+    // The anchor appears as NS in both of its halves (vs A2EW and vs A3NS).
+    const anchorMatches = xml.split("<NS_PAIR_NUMBER>A1NS</NS_PAIR_NUMBER>")
+      .length - 1;
+    expect(anchorMatches).toBe(2);
+    // The phantom opponent is never emitted as a pair in any match.
+    expect(xml).not.toContain("APHANTOM");
+  });
+
   it("emits a SWISS_TEAMS file for a Swiss Teams game", async () => {
     // Two teams (home tables 1 and 2), each a full NS+EW pair, playing one
     // board against each other in both rooms.
@@ -283,5 +373,64 @@ describe("generateUsebio", () => {
     expect(xml).toContain('TEAM_NAME="N"'); // North surname fallback (attribute)
     expect(xml).toContain("<TEAM>1</TEAM>");
     expect(xml).toContain("<OPPOSING_TEAM>2</OPPOSING_TEAM>");
+  });
+
+  it("emits a SHORT triple as three head-to-head MATCH nodes", async () => {
+    // Three teams (home tables 1,2,3), each a full NS+EW pair, playing a SHORT
+    // triple: three head-to-head comparisons on disjoint one-board sets
+    //   set A (board 1): 1 v 2, set B (board 2): 2 v 3, set C (board 3): 1 v 3
+    // Each comparison is a two-room same-boards match.
+    for (const seat of [
+      "A1NS",
+      "A1EW",
+      "A2NS",
+      "A2EW",
+      "A3NS",
+      "A3EW",
+    ]) {
+      await seatPair(seat, seat);
+    }
+    // set A board 1 — comparison 1-2
+    await makeBoard(1, 1, 1, "A1NS", "A2EW", "4SN=");
+    await makeBoard(1, 2, 1, "A2NS", "A1EW", "3NTN=");
+    // set B board 2 — comparison 2-3
+    await makeBoard(1, 2, 2, "A2NS", "A3EW", "4SN=");
+    await makeBoard(1, 3, 2, "A3NS", "A2EW", "3NTN=");
+    // set C board 3 — comparison 1-3
+    await makeBoard(1, 3, 3, "A3NS", "A1EW", "3NTN=");
+    await makeBoard(1, 1, 3, "A1NS", "A3EW", "4SN=");
+
+    const teamsGame: BridgeGame = {
+      ...game,
+      gameType: "TEAMS",
+      scoringType: "IMP_VP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS_TEAMS",
+        swissTeams: {
+          teams: 3,
+          rounds: 1,
+          boardsPerRound: 2,
+          oddHandling: "TRIPLE",
+          oddRoundPlan: ["SHORT"],
+        },
+      }),
+    };
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+
+    const xml = await generateUsebio(db, teamsGame, club);
+
+    expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_TEAMS">');
+    // Three head-to-head MATCH nodes, one per pairing (1v2, 1v3, 2v3). The
+    // comparisons are emitted home-vs-opponent in ascending (lo, hi) order, so
+    // opposing-team 3 appears twice (1v3, 2v3) and opposing-team 2 once (1v2).
+    const opposing2 = xml.split("<OPPOSING_TEAM>2</OPPOSING_TEAM>").length - 1;
+    const opposing3 = xml.split("<OPPOSING_TEAM>3</OPPOSING_TEAM>").length - 1;
+    expect(opposing2).toBe(1);
+    expect(opposing3).toBe(2);
+    // All three teams appear as a match's primary team across the three nodes.
+    expect(xml).toContain("<TEAM>1</TEAM>");
+    expect(xml).toContain("<TEAM>2</TEAM>");
   });
 });

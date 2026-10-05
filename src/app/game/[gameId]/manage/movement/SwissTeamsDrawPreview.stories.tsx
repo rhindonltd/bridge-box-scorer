@@ -11,15 +11,23 @@ const basePreview: SwissTeamsPreviewAck = {
     { a: 2, b: 4 },
   ],
   byeTeamId: null,
-  triangle: null,
+  triple: null,
   named: {
     matches: [
       { a: { teamId: 1, name: "Sharks" }, b: { teamId: 3, name: "Owls" } },
       { a: { teamId: 2, name: "Dragons" }, b: { teamId: 4, name: "Eagles" } },
     ],
     bye: null,
-    triangle: null,
+    triple: null,
   },
+  standings: [
+    { id: 1, name: "Sharks", total: 34.0, rank: 1, tied: false },
+    { id: 3, name: "Owls", total: 27.5, rank: 2, tied: false },
+    { id: 2, name: "Dragons", total: 22.0, rank: 3, tied: false },
+    { id: 4, name: "Eagles", total: 16.5, rank: 4, tied: false },
+  ],
+  repeatMatchKeys: [],
+  advisoryInputs: { teams: 4, playedOpponents: [] },
   hadUnavoidableRepeat: false,
 };
 
@@ -48,10 +56,19 @@ export const Committing: Story = {
   args: { committing: true },
 };
 
-/** A draw that repeats an earlier match — advisory shown. */
+/**
+ * A draw where one match repeats an earlier opponent: the advisory shows and
+ * the specific match card (Sharks v Owls, key "1-3") is highlighted.
+ */
 export const WithRepeatAdvisory: Story = {
   args: {
-    preview: { ...basePreview, hadUnavoidableRepeat: true },
+    preview: {
+      ...basePreview,
+      // Sharks (1) v Owls (3) was played before; the live re-check flags it.
+      repeatMatchKeys: ["1-3"],
+      advisoryInputs: { teams: 4, playedOpponents: ["1-3"] },
+      hadUnavoidableRepeat: true,
+    },
   },
 };
 
@@ -72,31 +89,60 @@ export const WithBye: Story = {
           { a: { teamId: 3, name: "Owls" }, b: { teamId: 4, name: "Eagles" } },
         ],
         bye: { teamId: 5, name: "Robins" },
-        triangle: null,
+        triple: null,
       },
+      advisoryInputs: { teams: 5, playedOpponents: [] },
     },
   },
 };
 
-/** An odd field resolved with a three-way triangle. */
-export const WithTriangle: Story = {
+/** An odd field resolved with a SHORT three-way triple (one round). */
+export const WithShortTriple: Story = {
   args: {
     preview: {
       ...basePreview,
       teams: 5,
       matches: [{ a: 4, b: 5 }],
-      triangle: { a: 1, b: 2, c: 3 },
+      triple: { a: 1, b: 2, c: 3, kind: "SHORT", group: null, slot: null },
       named: {
         matches: [
           { a: { teamId: 4, name: "Eagles" }, b: { teamId: 5, name: "Robins" } },
         ],
         bye: null,
-        triangle: {
+        triple: {
           a: { teamId: 1, name: "Sharks" },
           b: { teamId: 2, name: "Dragons" },
           c: { teamId: 3, name: "Owls" },
         },
       },
+      advisoryInputs: { teams: 5, playedOpponents: [] },
+    },
+  },
+};
+
+/**
+ * An odd field resolved with a LONG three-way triple (slot 1 of two rounds):
+ * the heading notes it spans this round and the next.
+ */
+export const WithLongTriple: Story = {
+  args: {
+    preview: {
+      ...basePreview,
+      teams: 5,
+      matches: [{ a: 4, b: 5 }],
+      triple: { a: 1, b: 2, c: 3, kind: "LONG", group: 0, slot: 1 },
+      named: {
+        matches: [
+          { a: { teamId: 4, name: "Eagles" }, b: { teamId: 5, name: "Robins" } },
+        ],
+        bye: null,
+        triple: {
+          a: { teamId: 1, name: "Sharks" },
+          b: { teamId: 2, name: "Dragons" },
+          c: { teamId: 3, name: "Owls" },
+        },
+      },
+      advisoryInputs: { teams: 5, playedOpponents: [] },
     },
   },
 };

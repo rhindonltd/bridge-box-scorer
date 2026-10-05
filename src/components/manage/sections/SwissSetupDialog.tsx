@@ -3,7 +3,11 @@
 import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { StepperInput } from "@/components/common/StepperInput";
-import type { SwissMovementSpec } from "@/model/selected-movement";
+import type {
+  SwissMovementSpec,
+  SwissPairsOddHandling,
+  SwissPairsOddRound,
+} from "@/model/selected-movement";
 
 /**
  * Setup popup for a Swiss Pairs movement. Unlike the other movements (chosen
@@ -15,6 +19,14 @@ import type { SwissMovementSpec } from "@/model/selected-movement";
  * `tables` is fixed to the section's table count (the room as laid out), shown
  * read-only; the director changes it on the Tables step. Confirming hands back
  * a {@link SwissMovementSpec}.
+ *
+ * The director also chooses how an ODD number of pairs is handled: "Bye" (the
+ * default — one pair sits each round for an average-plus) or "2 half matches"
+ * (three pairs play two half matches each round). Choosing "2 half matches"
+ * reveals a per-round plan so the director can set bye or half-matches for each
+ * round individually (the EBU recommendation varies this across the event).
+ * The pair count is not known at setup (seating is a later step), so this is
+ * always offered; it is simply ignored when the field turns out even.
  */
 export function SwissSetupDialog({
   open,
@@ -58,7 +70,7 @@ export function SwissSetupDialog({
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+            <Dialog.Panel className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
               {/* Mounted only while open, so its fields seed from `initial`
                   each time the dialog opens without a state-syncing effect. */}
               {open && (
@@ -98,16 +110,62 @@ function SwissSetupForm({
 }) {
   const [rounds, setRounds] = useState(initial?.rounds ?? 7);
   const [boardsPerRound, setBoardsPerRound] = useState(
-    initial?.boardsPerRound ?? 3,
+    initial?.boardsPerRound ?? 7,
   );
+  const [oddHandling, setOddHandling] = useState<SwissPairsOddHandling>(
+    initial?.oddHandling ?? "BYE",
+  );
+  // The per-round plan (one entry per round) used only under "2 half matches".
+  // Seed from an existing plan, else default every round to a half match (the
+  // director can toggle any round to a bye). Kept length-synced to `rounds`.
+  const [plan, setPlan] = useState<SwissPairsOddRound[]>(
+    initial?.oddRoundPlan ?? [],
+  );
+
+  // Resize the plan to match the round count, padding new rounds with a half
+  // match and truncating removed ones.
+  const changeRounds = (next: number) => {
+    setRounds(next);
+    setPlan((current) =>
+      Array.from(
+        { length: next },
+        (_, i) => current[i] ?? "HALF_MATCHES",
+      ),
+    );
+  };
+
+  const setRoundPlan = (index: number, value: SwissPairsOddRound) => {
+    setPlan((current) => {
+      const next = Array.from(
+        { length: rounds },
+        (_, i) => current[i] ?? "HALF_MATCHES",
+      );
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const confirm = () => {
+    const spec: SwissMovementSpec = { tables, rounds, boardsPerRound };
+    if (oddHandling === "HALF_MATCHES") {
+      // Carry the full per-round plan (length === rounds, padded as above).
+      spec.oddHandling = "HALF_MATCHES";
+      spec.oddRoundPlan = Array.from(
+        { length: rounds },
+        (_, i) => plan[i] ?? "HALF_MATCHES",
+      );
+    }
+    // "BYE" is the default and needs no plan, so the spec stays minimal.
+    onConfirm(spec);
+  };
 
   return (
     <>
-      <Dialog.Title className="rounded-t-2xl bg-gray-300 p-4 text-md font-bold text-gray-800">
+      <Dialog.Title className="shrink-0 rounded-t-2xl bg-gray-300 p-4 text-md font-bold text-gray-800">
         Swiss Pairs
       </Dialog.Title>
 
-      <div className="space-y-4 p-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         <p className="text-sm text-gray-600">
           In Swiss Pairs, every pair plays the same boards each round, then you
           draw the next round based on the standings. Set the size below;
@@ -135,7 +193,7 @@ function SwissSetupForm({
               <StepperInput
                 label="Rounds"
                 value={rounds}
-                onChange={setRounds}
+                onChange={changeRounds}
                 min={1}
                 max={30}
               />
@@ -152,11 +210,100 @@ function SwissSetupForm({
                 value={boardsPerRound}
                 onChange={setBoardsPerRound}
                 min={1}
-                max={12}
+                max={27}
               />
             </div>
           </label>
         </div>
+
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-gray-700">
+            If you have an odd number of pairs, how should each round handle the
+            odd pair?
+          </legend>
+
+          <label className="flex items-start gap-2 text-sm text-gray-700">
+            <input
+              type="radio"
+              name="swissOddHandling"
+              value="BYE"
+              checked={oddHandling === "BYE"}
+              onChange={() => setOddHandling("BYE")}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="font-medium">Bye</span> — one pair sits out each
+              round (the lowest-ranked pair without a prior bye) and is credited
+              an average-plus result.
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2 text-sm text-gray-700">
+            <input
+              type="radio"
+              name="swissOddHandling"
+              value="HALF_MATCHES"
+              checked={oddHandling === "HALF_MATCHES"}
+              onChange={() => setOddHandling("HALF_MATCHES")}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="font-medium">2 half matches</span> — three pairs
+              play two half matches each round (one pair plays the full round
+              against a different opponent in each half). Set this per round
+              below.
+            </span>
+          </label>
+
+          {oddHandling === "HALF_MATCHES" && (
+            <div
+              className="mt-2 rounded-lg border border-gray-200 p-3"
+              data-testid="odd-round-plan"
+            >
+              <p className="mb-2 text-xs text-gray-500">
+                Choose how each round resolves an odd pair. This only applies if
+                your field is odd.
+              </p>
+              <ul className="space-y-1.5">
+                {Array.from({ length: rounds }, (_, i) => {
+                  const value = plan[i] ?? "HALF_MATCHES";
+                  return (
+                    <li
+                      key={i}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <span className="text-sm text-gray-700">
+                        Round {i + 1}
+                      </span>
+                      <div className="flex gap-3 text-sm">
+                        <label className="flex items-center gap-1">
+                          <input
+                            type="radio"
+                            name={`oddRound-${i}`}
+                            value="BYE"
+                            checked={value === "BYE"}
+                            onChange={() => setRoundPlan(i, "BYE")}
+                          />
+                          Bye
+                        </label>
+                        <label className="flex items-center gap-1">
+                          <input
+                            type="radio"
+                            name={`oddRound-${i}`}
+                            value="HALF_MATCHES"
+                            checked={value === "HALF_MATCHES"}
+                            onChange={() => setRoundPlan(i, "HALF_MATCHES")}
+                          />
+                          Half matches
+                        </label>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </fieldset>
 
         <p className="text-xs text-gray-500">
           To keep a pair at a fixed table for the whole event, mark them as
@@ -164,7 +311,7 @@ function SwissSetupForm({
         </p>
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-gray-200 p-4">
+      <div className="flex shrink-0 justify-end gap-2 border-t border-gray-200 p-4">
         <button
           type="button"
           onClick={onCancel}
@@ -175,7 +322,7 @@ function SwissSetupForm({
         </button>
         <button
           type="button"
-          onClick={() => onConfirm({ tables, rounds, boardsPerRound })}
+          onClick={confirm}
           disabled={saving}
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
         >

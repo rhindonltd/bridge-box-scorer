@@ -285,6 +285,122 @@ describe("resolveSectionStart", () => {
     expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
   });
 
+  it("materializes a round-1 half-match group for an odd HALF_MATCHES field", async () => {
+    // 2-table odd field (3 pairs) with a round-1 half-match plan. The field is
+    // large enough to form a three-pair group, so round 1 materializes the
+    // group (two halves at the anchor's table + two HALF_AVERAGE blocks) rather
+    // than a bye.
+    const seated = seatsForTables(2).filter((s) => s !== "A2NS");
+
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS",
+        swiss: {
+          tables: 2,
+          rounds: 3,
+          boardsPerRound: 4,
+          oddHandling: "HALF_MATCHES",
+          oddRoundPlan: ["HALF_MATCHES", "BYE", "HALF_MATCHES"],
+        },
+      },
+      seated,
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.validation.problems).toHaveLength(0);
+
+    // No bye row (it's a half-match, not a sit-out).
+    const rounds = result.movement!.flatMap((t) => t.rounds);
+    expect(rounds.some((r) => r.sitOut)).toBe(false);
+    // Two HALF_AVERAGE compensation blocks (one per non-anchor's missed half).
+    const halfAverage = rounds.filter((r) => r.halfAverage);
+    expect(halfAverage).toHaveLength(2);
+    // The anchor's table hosts two half entries (both halves, two opponents).
+    const anchorTable = result.movement!.find((t) => t.rounds.length === 2);
+    expect(anchorTable).toBeDefined();
+  });
+
+  it("blocks an odd Swiss Pairs HALF_MATCHES field too small to form a group (< 2 tables)", async () => {
+    // A 1-table odd field is a single pair — too few to form a three-pair group
+    // for a round-1 half-match.
+    const seated: PairSeat[] = ["A1NS"]; // one pair, EW empty
+
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS",
+        swiss: {
+          tables: 1,
+          rounds: 2,
+          boardsPerRound: 4,
+          oddHandling: "HALF_MATCHES",
+          oddRoundPlan: ["HALF_MATCHES", "BYE"],
+        },
+      },
+      seated,
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(false);
+    expect(result.validation.problems.map((p) => p.code)).toContain(
+      "HALF_MATCH_FIELD_TOO_SMALL",
+    );
+    expect(result.movement).toBeNull();
+  });
+
+  it("starts an odd Swiss Pairs HALF_MATCHES with a round-1 BYE plan as an ordinary bye", async () => {
+    // Round 1 is a BYE in the plan, so round 1 materializes as a normal bye even
+    // though the event uses half-matches on other rounds.
+    const seated = seatsForTables(2).filter((s) => s !== "A2NS");
+
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS",
+        swiss: {
+          tables: 2,
+          rounds: 3,
+          boardsPerRound: 4,
+          oddHandling: "HALF_MATCHES",
+          oddRoundPlan: ["BYE", "HALF_MATCHES", "HALF_MATCHES"],
+        },
+      },
+      seated,
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    const sitOutTable = result.movement!.find((t) => isSitOut(t.rounds[0]))!;
+    expect(sitOutTable.rounds[0].ns).toBe("2EW");
+    expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
+  });
+
+  it("ignores the half-match plan for an even Swiss Pairs field (no sit-out)", async () => {
+    // An even field never engages odd handling; it starts fully seated.
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS",
+        swiss: {
+          tables: 2,
+          rounds: 3,
+          boardsPerRound: 4,
+          oddHandling: "HALF_MATCHES",
+          oddRoundPlan: ["HALF_MATCHES", "BYE", "HALF_MATCHES"],
+        },
+      },
+      seatsForTables(2),
+      "g1",
+    );
+
+    expect(result.validation.canStart).toBe(true);
+    expect(result.validation.sitOutSeat).toBeNull();
+    const anySitOut = result.movement!.some((t) => t.rounds.some(isSitOut));
+    expect(anySitOut).toBe(false);
+  });
+
   it("resolves a fully-seated Swiss Teams and materializes round 1 as two tables per match", async () => {
     const result = await resolveSectionStart(
       "A",
@@ -362,7 +478,7 @@ describe("resolveSectionStart", () => {
     expect(result.movement).not.toBeNull();
   });
 
-  it("starts an odd Swiss Teams (TRIANGLE) with the bottom three in a three-way", async () => {
+  it("starts an odd Swiss Teams (TRIPLE) with the bottom three in a three-way", async () => {
     const result = await resolveSectionStart(
       "A",
       {
@@ -371,7 +487,10 @@ describe("resolveSectionStart", () => {
           teams: 5,
           rounds: 5,
           boardsPerRound: 6,
-          oddHandling: "TRIANGLE",
+          oddHandling: "TRIPLE",
+          // Round 1 is a SHORT triple; the rest of the plan is immaterial here
+          // (resolveSwissTeamsStart only reads the round-1 entry).
+          oddRoundPlan: ["SHORT", "SHORT", "SHORT", "SHORT", "SHORT"],
         },
       },
       seatsForTables(5),
@@ -381,25 +500,59 @@ describe("resolveSectionStart", () => {
     expect(result.validation.canStart).toBe(true);
     expect(result.movement).not.toBeNull();
 
-    // The bottom three tables (3,4,5) form the round-1 triangle in the fixed
-    // cycle: 3-NS/4-EW, 4-NS/5-EW, 5-NS/3-EW. Every triangle table plays the
-    // whole round (boards 1..6) and none sits out.
-    const t3 = result.movement!.find((t) => t.tableNumber === 3)!;
-    const t4 = result.movement!.find((t) => t.tableNumber === 4)!;
-    const t5 = result.movement!.find((t) => t.tableNumber === 5)!;
-    expect([t3, t4, t5].every((t) => t.rounds[0].sitOut ?? false)).toBe(false);
-    expect(t3.rounds[0]).toMatchObject({ ns: "3NS", ew: "4EW", boardStart: 1, boardEnd: 6 });
-    expect(t4.rounds[0]).toMatchObject({ ns: "4NS", ew: "5EW" });
-    expect(t5.rounds[0]).toMatchObject({ ns: "5NS", ew: "3EW" });
+    // The bottom three tables (3,4,5) form the round-1 SHORT triple: a
+    // round-robin of three head-to-head comparisons over three disjoint
+    // half-sized board sets. 6 boards -> halfSize 3; A = 1..3, B = 4..6, and
+    // C a fresh band above every normal round (5*6 = 30) -> 31..33.
+    //   3 v 4 on A, 4 v 5 on B, 3 v 5 on C.
+    const rowsFor = (table: number) =>
+      result
+        .movement!.filter((t) => t.tableNumber === table)
+        .flatMap((t) =>
+          t.rounds.map((r) => ({
+            ns: r.ns,
+            ew: r.ew,
+            start: r.boardStart,
+            end: r.boardEnd,
+          })),
+        );
 
-    // Tables 1 and 2 form an ordinary head-to-head; no bye/sit-out anywhere.
+    // Table 3 hosts 3·NS v 4 (A) and 3·NS v 5 (C).
+    expect(rowsFor(3)).toEqual(
+      expect.arrayContaining([
+        { ns: "3NS", ew: "4EW", start: 1, end: 3 },
+        { ns: "3NS", ew: "5EW", start: 31, end: 33 },
+      ]),
+    );
+    // Table 4 hosts 4·NS v 3 (A) and 4·NS v 5 (B).
+    expect(rowsFor(4)).toEqual(
+      expect.arrayContaining([
+        { ns: "4NS", ew: "3EW", start: 1, end: 3 },
+        { ns: "4NS", ew: "5EW", start: 4, end: 6 },
+      ]),
+    );
+    // Table 5 hosts 5·NS v 4 (B) and 5·NS v 3 (C).
+    expect(rowsFor(5)).toEqual(
+      expect.arrayContaining([
+        { ns: "5NS", ew: "4EW", start: 4, end: 6 },
+        { ns: "5NS", ew: "3EW", start: 31, end: 33 },
+      ]),
+    );
+
+    // No bye/sit-out anywhere; the full field (tables 1..5) is present.
     expect(
-      result.movement!.every((t) => (t.rounds[0].sitOut ?? false) === false),
+      result.movement!.every((t) =>
+        t.rounds.every((r) => (r.sitOut ?? false) === false),
+      ),
     ).toBe(true);
-    expect(result.movement!.map((t) => t.tableNumber).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5]);
+    expect(
+      [...new Set(result.movement!.map((t) => t.tableNumber))].sort(
+        (a, b) => a - b,
+      ),
+    ).toEqual([1, 2, 3, 4, 5]);
   });
 
-  it("blocks an odd Swiss Teams TRIANGLE too small to form a three-way (< 3 teams)", async () => {
+  it("blocks an odd Swiss Teams TRIPLE too small to form a three-way (< 3 teams)", async () => {
     const result = await resolveSectionStart(
       "A",
       {
@@ -408,7 +561,7 @@ describe("resolveSectionStart", () => {
           teams: 1,
           rounds: 5,
           boardsPerRound: 6,
-          oddHandling: "TRIANGLE",
+          oddHandling: "TRIPLE",
         },
       },
       seatsForTables(1),

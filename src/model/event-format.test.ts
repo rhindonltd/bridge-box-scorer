@@ -45,21 +45,22 @@ describe("classifyEvent", () => {
     });
   });
 
-  it("classifies a Swiss Pairs IMP game as SWISS_PAIRS_VP with IMP mode", () => {
+  it("classifies a Swiss Pairs IMP game as SWISS_PAIRS_VP with null mode", () => {
+    // IMP (head-to-head) is a teams scoring type, not a Swiss Pairs VP mode.
+    // Swiss Pairs are scored by MP or Cross-IMP only, so there is no VP mode
+    // and the leaderboard falls back to the board-pooled overall.
     expect(classifyEvent("PAIRS", "IMP", SWISS)).toEqual({
       format: "SWISS_PAIRS_VP",
       scoringType: "IMP",
-      swissVpMode: "IMP",
+      swissVpMode: null,
     });
   });
 
-  it("classifies a Swiss Pairs XIMP game as SWISS_PAIRS_VP with null mode", () => {
-    // Edge case: still the Swiss path, but XIMP has no VP mapping, so the
-    // leaderboard falls back to the board-pooled overall (swissVpMode null).
+  it("classifies a Swiss Pairs XIMP game as SWISS_PAIRS_VP with XIMP mode", () => {
     expect(classifyEvent("PAIRS", "XIMP", SWISS)).toEqual({
       format: "SWISS_PAIRS_VP",
       scoringType: "XIMP",
-      swissVpMode: null,
+      swissVpMode: "XIMP",
     });
   });
 

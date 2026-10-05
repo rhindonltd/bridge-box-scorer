@@ -6,9 +6,7 @@ import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import {
   groupTeamMatches,
-  groupTeamTriangles,
-  triangleSubMatches,
-  triangleTeamWins,
+  groupTeamTriples,
   teamMatchBoardWins,
   boardResult,
 } from "@/scoring/swiss/team-match";
@@ -166,14 +164,14 @@ function buildMatches(
     });
   }
 
-  // Triangles: USEBIO has no three-way tag, so each triangle is written as its
+  // Triples: USEBIO has no three-way tag, so each triple is written as its
   // three pairwise head-to-head MATCH nodes (same round) for board-level
-  // detail. Those nodes are INFORMATIONAL — a triangle team's contribution to
+  // detail. Those nodes are INFORMATIONAL — a triple team's contribution to
   // its total is its CROSS board-comparison result (win/tie/loss vs BOTH other
   // tables), added once here (Option A: the export total agrees with the live
   // board-comparison standings).
-  for (const triangle of groupTeamTriangles(boardRows)) {
-    for (const sub of triangleSubMatches(triangle)) {
+  for (const triple of groupTeamTriples(boardRows)) {
+    for (const sub of triple.comparisons) {
       const teamNumber = numberByTeamId.get(sub.homeTeamId) ?? sub.homeTeamId;
       const opposingNumber =
         numberByTeamId.get(sub.opponentTeamId) ?? sub.opponentTeamId;
@@ -198,7 +196,8 @@ function buildMatches(
       const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
       /* v8 ignore stop */
 
-      // Head-to-head points on the node itself (informational, self-consistent).
+      // Each comparison is authoritative: the team's points are its own board
+      // wins (home `won`, away `boardsPlayed - won`), scaled, added once here.
       matches.push({
         round: sub.round,
         team: teamNumber,
@@ -209,13 +208,8 @@ function buildMatches(
         opposingTeamScore: (boardsPlayed - won) * winPoints,
         boards,
       });
-    }
-
-    // The authoritative per-team round result: the cross board-comparison
-    // points (win/tie/loss vs both other tables, scaled), added once per team.
-    const { perTeam } = triangleTeamWins(triangle);
-    for (const team of perTeam) {
-      add(team.teamId, team.won * winPoints);
+      add(sub.homeTeamId, won * winPoints);
+      add(sub.opponentTeamId, (boardsPlayed - won) * winPoints);
     }
   }
 

@@ -198,28 +198,41 @@ describe("assembleBoardComparisonTeams — Point-a-Board (scale 2)", () => {
   });
 });
 
-describe("assembleBoardComparisonTeams — triangles", () => {
+describe("assembleBoardComparisonTeams — triples", () => {
   const triTeams = [team(1, "Sharks"), team(2, "Dragons"), team(3, "Owls")];
 
-  it("writes a triangle as three same-round match nodes with cross board-comparison totals (BAM)", () => {
-    // Triangle 1→2→3→1 on board 1 (None vul): 420, 400, 110.
-    // Cross wins: team1 beats both (2), team2 beats one (1), team3 none (0).
-    const boards = [
-      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
-      board(1, 2, 1, "A2NS", "A3EW", "3NTN=" as BoardOutcome),
-      board(1, 3, 1, "A3NS", "A1EW", "2SN=" as BoardOutcome),
-    ];
+  // SHORT triple {1,2,3}, one round, three one-board head-to-head sets:
+  //   set A (board 1): 1·NS 4S= (420) vs 2·NS 3NT= (400) -> team 1 wins board
+  //   set B (board 2): 2·NS 4S= (420) vs 3·NS 3NT= (400) -> team 2 wins board
+  //   set C (board 3): 1·NS 4S= (420) vs 3·NS 3NT= (400) -> team 1 wins board
+  // Board-comparison wins across each team's two comparisons:
+  //   team 1 wins both (1-2, 1-3) -> 2 board-points
+  //   team 2 wins one  (2-3)      -> 1 board-point
+  //   team 3 wins none            -> 0 board-points
+  const tripleBoards = [
+    // set A board 1: comparison 1-2
+    board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+    board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    // set B board 2: comparison 2-3
+    board(1, 2, 2, "A2NS", "A3EW", "4SN=" as BoardOutcome),
+    board(1, 3, 2, "A3NS", "A2EW", "3NTN=" as BoardOutcome),
+    // set C board 3: comparison 1-3
+    board(1, 3, 3, "A3NS", "A1EW", "3NTN=" as BoardOutcome),
+    board(1, 1, 3, "A1NS", "A3EW", "4SN=" as BoardOutcome),
+  ];
 
-    const data = assembleBoardComparisonTeams(game, club, triTeams, boards, "BAM");
+  it("writes a SHORT triple as three head-to-head match nodes (BAM ×1)", () => {
+    const data = assembleBoardComparisonTeams(game, club, triTeams, tripleBoards, "BAM");
 
-    // Three MATCH nodes, all round 1, covering the three pairings.
+    // Three head-to-head MATCH nodes, all round 1, covering the three pairings.
     expect(data.matches).toHaveLength(3);
     expect(data.matches.every((m) => m.round === 1)).toBe(true);
     expect(
       data.matches.map((m) => `${m.team}v${m.opposingTeam}`).sort(),
     ).toEqual(["1v2", "1v3", "2v3"]);
 
-    // Totals are the cross board-comparison points (BAM ×1): 2 / 1 / 0.
+    // Each team's total = sum of its two comparisons' board wins × winPoints
+    // (BAM ×1): 2 / 1 / 0.
     const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalWon]));
     expect(byNumber.get("1")).toBe(2);
     expect(byNumber.get("2")).toBe(1);
@@ -227,17 +240,11 @@ describe("assembleBoardComparisonTeams — triangles", () => {
     expect(data.ranking[0].number).toBe("1");
   });
 
-  it("scales the triangle cross totals onto PAB points (×2)", () => {
+  it("scales the triple head-to-head totals onto PAB points (×2)", () => {
     const pabGame = { ...game, scoringType: "PAB" } as BridgeGame;
-    const boards = [
-      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
-      board(1, 2, 1, "A2NS", "A3EW", "3NTN=" as BoardOutcome),
-      board(1, 3, 1, "A3NS", "A1EW", "2SN=" as BoardOutcome),
-    ];
-
-    const data = assembleBoardComparisonTeams(pabGame, club, triTeams, boards, "PAB");
+    const data = assembleBoardComparisonTeams(pabGame, club, triTeams, tripleBoards, "PAB");
     const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalWon]));
-    // PAB doubles: 4 / 2 / 0.
+    // PAB doubles each board win: 4 / 2 / 0.
     expect(byNumber.get("1")).toBe(4);
     expect(byNumber.get("2")).toBe(2);
     expect(byNumber.get("3")).toBe(0);

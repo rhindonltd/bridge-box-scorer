@@ -85,7 +85,7 @@ describe("registerPreviewNextRoundHandler", () => {
   });
 
   it("acks the proposed seating + advisories and writes/broadcasts nothing", async () => {
-    const named = { tables: [], bye: null };
+    const named = { tables: [], bye: null, halfMatch: null };
     const advisoryInputs = {
       tables: 2,
       playedOpponents: [],
@@ -93,14 +93,19 @@ describe("registerPreviewNextRoundHandler", () => {
       directionCounts: [],
       stationary: [],
     };
+    const standings = [
+      { id: 1, name: "Alice N / Bob S", total: 30, rank: 1, tied: false },
+    ];
     vi.mocked(previewNextSwissRound).mockResolvedValue({
       ok: true,
       roundNumber: 2,
       tables: 2,
       seating,
       sitOutPairId: null,
+      halfMatch: null,
       named,
       advisoryInputs,
+      standings,
       hadUnavoidableRepeat: false,
       hadStationaryConflict: false,
     } as any);
@@ -122,8 +127,10 @@ describe("registerPreviewNextRoundHandler", () => {
         tables: 2,
         seating,
         sitOutPairId: null,
+        halfMatch: null,
         named,
         advisoryInputs,
+        standings,
         hadUnavoidableRepeat: false,
         hadStationaryConflict: false,
       },
@@ -201,7 +208,13 @@ describe("registerDrawNextRoundHandler (commit)", () => {
       ack,
     );
 
-    expect(commitNextSwissRound).toHaveBeenCalledWith("g1", "A", seating, null);
+    expect(commitNextSwissRound).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      seating,
+      null,
+      null,
+    );
     expect(io.to).toHaveBeenCalled();
     expect(broadcastLeaderboardChanged).toHaveBeenCalledWith(io, "g1");
     expect(ack).toHaveBeenCalledWith({

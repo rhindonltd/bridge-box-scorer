@@ -4,13 +4,12 @@ import { BridgeGame } from "@/db/game-index/schema";
 import { Club } from "@/db/system/schema";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
-import { calculateWbfVP } from "@/scoring/swiss/wbf-vp";
+import { impVpWinner } from "@/scoring/swiss/imp-vp-table";
 import {
   groupTeamMatches,
-  groupTeamTriangles,
-  triangleSubMatches,
-  triangleTeamImps,
+  groupTeamTriples,
   teamMatchBoardImps,
+  tripleVpPool,
   boardResult,
 } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
@@ -154,13 +153,15 @@ function buildUsebioMatches(
     });
   }
 
-  // Triangles: USEBIO has no three-way tag, so each triangle is written as its
-  // three pairwise head-to-head MATCH nodes (same round) for board-level
-  // detail. Those nodes are INFORMATIONAL — a triangle team's contribution to
-  // its VP total is its single CROSS-IMP result (Option A: the export total
-  // agrees with the live cross-IMP standings), added once here.
-  for (const triangle of groupTeamTriangles(boardRows)) {
-    for (const sub of triangleSubMatches(triangle)) {
+  // Triples: a three-way is three ordinary head-to-head comparisons (x-y, y-z,
+  // z-x), each an authoritative two-room MATCH node on its own board set. VP is
+  // on the 10-VP half pool for a SHORT triple and the 20-VP full pool for a
+  // LONG one. Each node's own VP is also the team's contribution, so the per-
+  // team total is just the sum of its comparison nodes (no separate cross-IMP
+  // credit) — the export total agrees with the live head-to-head standings.
+  for (const triple of groupTeamTriples(boardRows)) {
+    const pool = tripleVpPool(triple);
+    for (const sub of triple.comparisons) {
       const teamNumber = numberByTeamId.get(sub.homeTeamId) ?? sub.homeTeamId;
       const opposingNumber =
         numberByTeamId.get(sub.opponentTeamId) ?? sub.opponentTeamId;
@@ -175,13 +176,14 @@ function buildUsebioMatches(
         return { boardNumber, imps: imps ?? 0, travellerLines };
       });
 
-      /* v8 ignore start -- a reconstructed sub-match always has >=1 board */
+      /* v8 ignore start -- a reconstructed comparison always has >=1 board */
       const startBoard = boards[0]?.boardNumber ?? 0;
       const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
       /* v8 ignore stop */
 
-      // Head-to-head VP on the node itself (informational, self-consistent).
-      const { teamScore, opposingTeamScore } = matchVp(margin, boardsPlayed);
+      const { teamScore, opposingTeamScore } = matchVp(margin, boardsPlayed, pool);
+      addVp(sub.homeTeamId, teamScore);
+      addVp(sub.opponentTeamId, opposingTeamScore);
 
       matches.push({
         round: sub.round,
@@ -194,33 +196,9 @@ function buildUsebioMatches(
         boards,
       });
     }
-
-    // The authoritative per-team round result: the cross-IMP VP (integer, to
-    // match the file's discrete VP), added once per triangle team.
-    const { perTeam, boardsPlayed } = triangleTeamImps(triangle);
-    for (const team of perTeam) {
-      addVp(team.teamId, triangleCrossVp(boardsPlayed, team.crossImps));
-    }
   }
 
   return { matches, totals };
-}
-
-/**
- * The integer cross-IMP VP for one triangle team over the boards all three
- * tables have scored. Mirrors {@link matchVp} but on a single team's signed
- * cross-IMP total: a positive margin (above the field) earns the winner share,
- * a negative one the loser share, so all three centre on the neutral 10. No
- * comparable board yet is a neutral 10.
- */
-function triangleCrossVp(boardsPlayed: number, crossImps: number): number {
-  if (boardsPlayed === 0) return NEUTRAL_VP_INT;
-  const { winnerVP, loserVP } = calculateWbfVP(
-    boardsPlayed,
-    crossImps,
-    "discrete",
-  );
-  return crossImps >= 0 ? winnerVP : loserVP;
 }
 
 function teamTravellerLine(row: Board, direction: string): UsebioTeamTravellerLine {
@@ -230,26 +208,28 @@ function teamTravellerLine(row: Board, direction: string): UsebioTeamTravellerLi
 }
 
 /**
- * The integer VP split for a match given the primary team's net IMP margin
- * over the boards both rooms have scored. No comparable boards yet is a neutral
- * 10/10; otherwise the WBF 20-VP discrete (integer) scale, with the primary
- * team taking the winner's share when its margin is non-negative.
+ * The integer VP split for a match given the primary team's net IMP margin over
+ * the boards both rooms have scored, on the given pool (20 for an ordinary
+ * full match or a long-triple comparison; 10 for a short-triple half
+ * comparison). No comparable boards yet is the dead-even midpoint for both;
+ * otherwise the EBU discrete (integer) scale, with the primary team taking the
+ * winner's share when its margin is non-negative.
  */
 function matchVp(
   margin: number,
   boardsPlayed: number,
+  pool: 10 | 20 = 20,
 ): { teamScore: number; opposingTeamScore: number } {
   if (boardsPlayed === 0) {
-    return { teamScore: NEUTRAL_VP_INT, opposingTeamScore: NEUTRAL_VP_INT };
+    const mid = pool / 2;
+    return { teamScore: mid, opposingTeamScore: mid };
   }
-  const { winnerVP, loserVP } = calculateWbfVP(boardsPlayed, margin, "discrete");
+  const winnerVP = impVpWinner(Math.abs(margin), boardsPlayed, pool);
+  const loserVP = pool - winnerVP;
   return margin >= 0
     ? { teamScore: winnerVP, opposingTeamScore: loserVP }
     : { teamScore: loserVP, opposingTeamScore: winnerVP };
 }
-
-/** Neutral VP for an unplayed match, as an integer (half the 20-point pool). */
-const NEUTRAL_VP_INT = 10;
 
 /** Rank teams by total VP (highest first), ties share a place. */
 function buildRanking(

@@ -193,3 +193,35 @@ export interface BoardInstance {
   currentResult: string | null;
   status: string | null;
 }
+
+/**
+ * Team-match framing for a single board's traveller (Swiss Teams / Teams Round
+ * Robin). A team match is played in two rooms sharing the board — the "open"
+ * room at the home team's table and the "closed" room at the opponent's — so
+ * the two physical table rows of a match belong together. This describes that
+ * grouping so the director traveller can present the flat per-table
+ * {@link BoardInstance} rows as team-vs-team cards; it never replaces the rows
+ * (each table stays independently selectable for a per-table override).
+ */
+export interface TeamTravellerMatch {
+  /** The two table numbers this head-to-head comparison spans. */
+  tables: number[];
+  /**
+   * The home team at each of those tables, aligned by index with `tables`:
+   * `teams[i]` is the team whose home (NS) pair sits at `tables[i]`. Its `id`
+   * is the home NS seat and `name` the resolved display name (leaderboard
+   * parity).
+   */
+  teams: { table: number; id: string; name: string }[];
+  /**
+   * Net IMP margin on this board from the primary (lowest-table) team's
+   * perspective, or null when the board is not comparable yet (a room hasn't a
+   * scored result).
+   *
+   * Every teams encounter is framed as a two-team head-to-head here, including
+   * a three-way triple: a triple's three comparisons (x-y, y-z, z-x) each sit
+   * on their own board set, so any one board belongs to exactly one comparison
+   * and shows as an ordinary two-team card — never a single three-way card.
+   */
+  margin: number | null;
+}

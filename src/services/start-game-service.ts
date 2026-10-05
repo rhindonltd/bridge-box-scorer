@@ -32,11 +32,23 @@ import {
   applySpecSitOutNoMissingPair,
   alignSpecMissingPair,
 } from "@/movement/spec-sit-out";
-import { swissTeamsRoundOne } from "@/movement/swiss-teams/swiss-teams-pairing";
+import {
+  roundOddResolution,
+  swissTeamsRoundOne,
+} from "@/movement/swiss-teams/swiss-teams-pairing";
 import {
   swissTeamsRoundOneSeed,
   swissTeamsRoundToMaterializable,
 } from "@/services/materialize-swiss-teams-round";
+import { swissRoundToMaterializable } from "@/services/materialize-swiss-round";
+import {
+  drawSwissRound,
+  swissPairHomeSeat,
+  swissPairIds,
+  type SwissHomeSeat,
+  type SwissPairId,
+} from "@/movement/swiss/swiss-pairing";
+import { swissPairIdFromParticipant } from "@/db/games/queries/swiss-board-history";
 import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
 
 /**
@@ -62,10 +74,8 @@ function applySitOut(
   rehydrated: RehydratedMovement,
   sitOutSeat: PairSeat,
 ): MaterializableMovement {
-  if (selected.source === "SWISS") {
-    return applySwissRoundOneSitOut(rehydrated.movement, sitOutSeat);
-  }
-
+  // Swiss Pairs resolves its own round-1 sit-out in resolveSwissPairsStart (it
+  // also owns the half-match group guard), so it never reaches here.
   if (selected.source === "MITCHELL") {
     if (!rehydrated.isStandardMitchell) {
       throw new Error(
@@ -136,6 +146,14 @@ export async function resolveSectionStart(
     return resolveRoundRobinTeamsStart(selected, validation);
   }
 
+  // Swiss Pairs with "2 half matches" odd handling needs a group-size guard the
+  // generic validator doesn't know about (a group needs three pairs), and when
+  // round 1 itself is a half-match round it materializes the group rather than a
+  // bye. A BYE round (or an even field) falls through to the generic path.
+  if (selected.source === "SWISS") {
+    return resolveSwissPairsStart(selected, rehydrated, validation);
+  }
+
   if (!validation.canStart) {
     return { validation, movement: null };
   }
@@ -146,6 +164,135 @@ export async function resolveSectionStart(
       : toMaterializable(rehydrated.movement);
 
   return { validation, movement };
+}
+
+/**
+ * Resolve a Swiss Pairs section's start.
+ *
+ * On top of the base seat validation (which already permits the single empty
+ * seat of an odd field), this adds the "2 half matches" group-size guard: when
+ * the field is odd and this event uses HALF_MATCHES odd handling with round 1
+ * set to a half-match, the field must have at least three pairs (two tables) to
+ * form the group — a one-table odd field (a single pair) is rejected.
+ *
+ * Materialization of a round-1 half-match group (vs the ordinary round-1 bye)
+ * is threaded through the draw/seating layer in a later step; here we only
+ * gate the start. An even field, a BYE event, or a round-1 BYE plan entry all
+ * fall through to the ordinary single-sit-out path unchanged.
+ */
+function resolveSwissPairsStart(
+  selected: Extract<SelectedMovement, { source: "SWISS" }>,
+  rehydrated: RehydratedMovement,
+  baseValidation: StartValidationResult,
+): ResolvedStart {
+  const { tables, oddHandling = "BYE", oddRoundPlan } = selected.swiss;
+
+  // Only an odd field (one empty seat) engages odd handling at all.
+  const isOddField = baseValidation.sitOutSeat !== null;
+  const roundOneIsHalfMatch =
+    isOddField &&
+    oddHandling === "HALF_MATCHES" &&
+    (oddRoundPlan?.[0] ?? "BYE") === "HALF_MATCHES";
+
+  if (roundOneIsHalfMatch && tables < 2) {
+    // One table (an odd field of a single pair) can't form a three-pair group.
+    const problems: StartProblem[] = [
+      ...baseValidation.problems,
+      {
+        code: "HALF_MATCH_FIELD_TOO_SMALL",
+        message:
+          "A 2-half-matches round needs at least three pairs (two tables). Add a table, or use a bye for this round.",
+      },
+    ];
+    return {
+      validation: { canStart: false, problems, sitOutSeat: null },
+      movement: null,
+    };
+  }
+
+  if (!baseValidation.canStart) {
+    return { validation: baseValidation, movement: null };
+  }
+
+  // Round-1 half-match: build the three-pair group from the positional field
+  // (no standings yet, so the engine orders by pair id) and materialize it —
+  // the anchor's table hosts both halves plus the two compensation blocks.
+  if (roundOneIsHalfMatch && baseValidation.sitOutSeat !== null) {
+    return {
+      validation: baseValidation,
+      movement: resolveRoundOneHalfMatch(
+        selected,
+        baseValidation.sitOutSeat,
+      ),
+    };
+  }
+
+  // Otherwise round 1 is an ordinary bye (odd field) or a full even round.
+  const movement =
+    baseValidation.sitOutSeat !== null
+      ? applySwissRoundOneSitOut(rehydrated.movement, baseValidation.sitOutSeat)
+      : toMaterializable(rehydrated.movement);
+
+  return { validation: baseValidation, movement };
+}
+
+/**
+ * Build the round-1 materialization for a 2-half-matches odd field.
+ *
+ * Round 1 has no standings, so the field is ordered positionally (by stable
+ * pair id) over the REAL seated pairs — every `swissPairIds(tables)` id except
+ * the empty seat's phantom. `drawSwissRound` with `oddHandling: "HALF_MATCHES"`
+ * then chooses the three-pair group, honours a stationary anchor, and seats the
+ * rest; `swissRoundToMaterializable` turns that into the round-1 board rows
+ * (two halves at the anchor's table + the two HALF_AVERAGE compensation blocks).
+ */
+function resolveRoundOneHalfMatch(
+  selected: Extract<SelectedMovement, { source: "SWISS" }>,
+  sitOutSeat: PairSeat,
+): MaterializableMovement {
+  const { tables, boardsPerRound, stationaryPairs } = selected.swiss;
+
+  // The phantom position is the empty seat; every other id is a real pair.
+  const phantomId = swissPairIdFromParticipant(sitOutSeat, tables);
+  const standings = swissPairIds(tables).filter((id) => id !== phantomId);
+
+  const stationary = new Map<SwissPairId, SwissHomeSeat>();
+  for (const pairId of stationaryPairs ?? []) {
+    stationary.set(pairId, swissPairHomeSeat(tables, pairId));
+  }
+
+  const draw = drawSwissRound({
+    tables,
+    standings,
+    playedOpponents: new Set(),
+    hadBye: new Set(),
+    hadHalfMatch: new Set(),
+    oddHandling: "HALF_MATCHES",
+    directionCounts: new Map(),
+    stationary,
+  });
+
+  // drawSwissRound always sets `halfMatch` for an odd HALF_MATCHES field of
+  // >= 3 pairs (guaranteed here by the earlier tables >= 2 gate).
+  /* v8 ignore next 3 */
+  if (draw.halfMatch == null) {
+    throw new Error("Expected a half-match group for a round-1 HALF_MATCHES odd field");
+  }
+
+  return swissRoundToMaterializable(
+    tables,
+    1,
+    boardsPerRound,
+    draw.seating,
+    null,
+    {
+      group: draw.halfMatch.group,
+      seat: {
+        tableNumber: draw.halfMatch.anchorTable,
+        anchorDirection: draw.halfMatch.anchorDirection,
+      },
+    },
+  );
 }
 
 /**
@@ -160,9 +307,15 @@ function resolveSwissTeamsStart(
   baseValidation: StartValidationResult,
   gameId: string,
 ): ResolvedStart {
-  const { teams, boardsPerRound, oddHandling = "BYE" } = selected.swissTeams;
-  // Swiss Teams supports an odd count via a bye; the triangle alternative is
-  // not yet implemented, so an odd TRIANGLE selection is rejected as a gap.
+  const {
+    teams,
+    rounds,
+    boardsPerRound,
+    oddHandling = "BYE",
+    oddRoundPlan,
+  } = selected.swissTeams;
+  // Swiss Teams resolves an odd count via a bye or a triple (both supported);
+  // a triple needs at least three teams to form the three-way.
   const validation = validateTeamsStructure(baseValidation, teams, {
     label: "Swiss Teams",
     oddHandling,
@@ -174,19 +327,21 @@ function resolveSwissTeamsStart(
 
   // Random round-1 pairing, seeded per game+section so a retried start is
   // reproducible, then expanded into the two-table (open/closed) board rows.
-  // An odd field resolves per oddHandling in round 1: "BYE" byes the bottom
-  // table, "TRIANGLE" triangles the bottom three (see swissTeamsRoundOne).
-  const { matches, byeTeamId, triangle } = swissTeamsRoundOne(
+  // An odd field resolves per the round-1 plan entry: "BYE" byes the bottom
+  // table, SHORT/LONG triples the bottom three (see swissTeamsRoundOne).
+  const roundOneOdd = roundOddResolution(oddHandling, oddRoundPlan, 1);
+  const { matches, byeTeamId, triple } = swissTeamsRoundOne(
     teams,
     swissTeamsRoundOneSeed(gameId, section),
-    oddHandling,
+    roundOneOdd,
   );
   const movement = swissTeamsRoundToMaterializable(
     1,
     boardsPerRound,
+    rounds,
     matches,
     byeTeamId,
-    triangle,
+    triple,
   );
 
   return { validation, movement };
@@ -199,14 +354,14 @@ function resolveSwissTeamsStart(
  *
  * Odd team counts: by default an odd count is rejected (Round Robin, and Swiss
  * Teams with no odd handling). When `oddHandling` is supplied (Swiss Teams),
- * "BYE" permits an odd count (one team sits out each round) and "TRIANGLE"
- * permits it too (three teams play a three-way each round) — a triangle needs
+ * "BYE" permits an odd count (one team sits out each round) and "TRIPLE"
+ * permits it too (three teams play a three-way each round) — a triple needs
  * at least three teams to form, so an odd field of one is still rejected.
  */
 function validateTeamsStructure(
   baseValidation: StartValidationResult,
   teams: number,
-  options: { label: string; oddHandling?: "BYE" | "TRIANGLE" },
+  options: { label: string; oddHandling?: "BYE" | "TRIPLE" },
 ): StartValidationResult {
   const { label, oddHandling } = options;
   const problems: StartProblem[] = [...baseValidation.problems];
@@ -219,12 +374,12 @@ function validateTeamsStructure(
   }
 
   if (teams % 2 !== 0) {
-    if (oddHandling === "TRIANGLE") {
-      // A triangle needs three teams to form the three-way.
+    if (oddHandling === "TRIPLE") {
+      // A triple needs three teams to form the three-way.
       if (teams < 3) {
         problems.push({
           code: "ODD_TEAM_COUNT",
-          message: `${label} with a three-way triangle needs at least three teams — you have ${teams}. Add a table before starting.`,
+          message: `${label} with a three-way triple needs at least three teams — you have ${teams}. Add a table before starting.`,
         });
       }
       // teams >= 3 (odd): allowed (the bottom three play a three-way each round).

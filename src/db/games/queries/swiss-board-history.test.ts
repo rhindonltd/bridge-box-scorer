@@ -102,4 +102,42 @@ describe("getSwissBoardHistory", () => {
     expect(history.highestRound).toBe(0);
     expect(history.playedOpponents.size).toBe(0);
   });
+
+  it("recovers a 2-half-matches group: the anchor (two opponents at one table) and both non-anchors (HALF_AVERAGE)", async () => {
+    // Round 1 half-match at table 1: anchor A1NS plays A2NS (half 1, boards 1-2)
+    // then A1EW (half 2, boards 3-4). The two non-anchors are compensated on the
+    // half they missed via HALF_AVERAGE rows.
+    const rows = [
+      // Anchor's two real halves at table 1 (two DIFFERENT opponents).
+      { roundNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2NS", status: "CONFIRMED" },
+      { roundNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2NS", status: "CONFIRMED" },
+      { roundNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A1EW", status: "CONFIRMED" },
+      { roundNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A1EW", status: "CONFIRMED" },
+      // Compensation blocks: A2NS missed half 2, A1EW missed half 1.
+      { roundNumber: 1, tableNumber: 7, ns: "A2NS", ew: "PHANTOM", status: "HALF_AVERAGE" },
+      { roundNumber: 1, tableNumber: 8, ns: "A1EW", ew: "PHANTOM", status: "HALF_AVERAGE" },
+    ];
+
+    const history = await getSwissBoardHistory(stubDb(rows), "A", TABLES);
+
+    const anchor = swissPairIdFromParticipant("A1NS", TABLES)!; // 1
+    const nonAnchorNs = swissPairIdFromParticipant("A2NS", TABLES)!; // 2
+    const nonAnchorEw = swissPairIdFromParticipant("A1EW", TABLES)!; // 4
+
+    expect(history.hadHalfMatch.has(anchor)).toBe(true);
+    expect(history.hadHalfMatch.has(nonAnchorNs)).toBe(true);
+    expect(history.hadHalfMatch.has(nonAnchorEw)).toBe(true);
+    // A HALF_AVERAGE row is not a bye and not a played opponent.
+    expect(history.hadBye.size).toBe(0);
+  });
+
+  it("does not flag an ordinary one-opponent round as a half-match", async () => {
+    const rows = [
+      { roundNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", status: "CONFIRMED" },
+      { roundNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A1EW", status: "CONFIRMED" },
+    ];
+
+    const history = await getSwissBoardHistory(stubDb(rows), "A", TABLES);
+    expect(history.hadHalfMatch.size).toBe(0);
+  });
 });

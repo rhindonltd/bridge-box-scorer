@@ -144,7 +144,7 @@ export const SocketEvents = {
   // committing it. Runs the same preconditions and draw as
   // DRAW_NEXT_SWISS_TEAMS_ROUND but writes nothing and broadcasts nothing; the
   // acknowledgement carries the proposed matches (stable team ids + resolved
-  // team names), the odd-field resolution (bye or triangle) and the repeat
+  // team names), the odd-field resolution (bye or triple) and the repeat
   // advisory, so the director can review it before accepting. The accompanying
   // commit is DRAW_NEXT_SWISS_TEAMS_ROUND, which takes the accepted matches.
   PREVIEW_NEXT_SWISS_TEAMS_ROUND: "swissTeams:previewNextRound",

@@ -5,7 +5,11 @@ import { getDb } from "@/db/games";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
 import { buildLeaderboards } from "@/services/leaderboard-service";
-import { getBoardInstances } from "@/services/board-service";
+import {
+  getBoardInstances,
+  buildTeamTravellerMatches,
+} from "@/services/board-service";
+import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { getDealHands } from "@/db/games/queries/get-deal";
 import type { Db } from "@/db/games";
 
@@ -57,11 +61,25 @@ export async function broadcastLeaderboardChanged(
  * pushed `traveller:sync`, so viewers see the hand appear live once entered.
  */
 export async function buildTravellerPayload(db: Db, boardNumber: number) {
-  const [instances, deal] = await Promise.all([
+  const [instances, deal, movement] = await Promise.all([
     getBoardInstances(db, boardNumber),
     getDealHands(db, boardNumber),
+    getAnySectionMovement(db),
   ]);
-  return { instances, deal };
+
+  // For a teams movement, add the team-match framing so the director traveller
+  // can present the flat per-table rows as team-vs-team cards (open/closed
+  // rooms, team names, per-board IMP margin). A pairs movement gets an empty
+  // array — the payload is otherwise byte-for-byte unchanged, so the pairs path
+  // and every other `getBoardInstances` consumer are untouched.
+  const isTeams =
+    movement?.source === "SWISS_TEAMS" ||
+    movement?.source === "ROUND_ROBIN_TEAMS";
+  const teamMatches = isTeams
+    ? await buildTeamTravellerMatches(db, boardNumber)
+    : [];
+
+  return { instances, deal, teamMatches };
 }
 
 /**

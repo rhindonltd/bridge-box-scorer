@@ -22,6 +22,14 @@ export interface MaterializableRound {
   boardEnd: number;
   sitOut?: boolean;
   /**
+   * When true, this (table, round) is the compensated (unplayed) half of a
+   * Swiss Pairs "2 half matches" group: its boards are written with status
+   * HALF_AVERAGE (never played or submittable) and the half-match scorer
+   * recomputes the AVE+/AVE credit across them. `ns` is the non-anchor pair
+   * being compensated; `ew` is a phantom. Mutually exclusive with `sitOut`.
+   */
+  halfAverage?: boolean;
+  /**
    * Physical duplicate copy of the board set (Web Mitchell only). Optional in
    * this in-memory shape; every persisted board row still gets a definite copy
    * because the boards.copy column defaults to "A".
@@ -54,6 +62,12 @@ export function buildSectionRows(
 ): { boardRows: NewBoard[]; assignmentRows: Assignment[] } {
   const boardRows: NewBoard[] = [];
   const assignmentRows: Assignment[] = [];
+  // Participant ids already given a round-1 assignment. A Swiss "2 half
+  // matches" round can seat the anchor in two round-1 entries (its two halves);
+  // its assignment must be written once, not duplicated (a duplicate PK insert
+  // would fail). Every other movement seats each pair once in round 1, so this
+  // guard is a no-op there.
+  const assigned = new Set<string>();
 
   for (const m of movement) {
     for (const r of m.rounds) {
@@ -70,19 +84,30 @@ export function buildSectionRows(
           copy: r.boardCopy ?? "A",
           ns: sectionParticipantId(section, r.ns),
           ew: sectionParticipantId(section, r.ew),
-          status: r.sitOut ? "SIT_OUT" : "NOT_PLAYED",
+          status: r.sitOut
+            ? "SIT_OUT"
+            : r.halfAverage
+              ? "HALF_AVERAGE"
+              : "NOT_PLAYED",
         });
       }
 
-      if (r.roundNumber === 1) {
+      // A half-average (compensation) block is a phantom placeholder, never a
+      // real seat — it must not seed a round-1 assignment (that would clash
+      // with the non-anchor pair's real seat in its played half). Sit-out rows
+      // keep assigning (the sitting pair's NS seat is its real home).
+      if (r.roundNumber === 1 && !r.halfAverage) {
         const seats = [
           { direction: "NS", movementId: r.ns },
           { direction: "EW", movementId: r.ew },
         ] as const;
 
         for (const { direction, movementId } of seats) {
+          const id = sectionParticipantId(section, movementId);
+          if (assigned.has(id)) continue;
+          assigned.add(id);
           assignmentRows.push({
-            id: sectionParticipantId(section, movementId),
+            id,
             initialSeat: seatFor(section, m.tableNumber, direction),
           });
         }

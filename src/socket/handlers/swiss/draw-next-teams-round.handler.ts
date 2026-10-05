@@ -12,15 +12,27 @@ import {
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import type { NamedTeamsSeating } from "@/services/swiss-teams-seating-names";
+import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
+import type {
+  SerializableTeamsAdvisoryInputs,
+  TeamsTriple,
+} from "@/movement/swiss-teams/swiss-teams-pairing";
 
 const matchesSchema = z.array(
   z.object({ a: z.number().int().min(1), b: z.number().int().min(1) }),
 );
-const triangleSchema = z
+const tripleSchema = z
   .object({
     a: z.number().int().min(1),
     b: z.number().int().min(1),
     c: z.number().int().min(1),
+    // Carried so a committed triple materializes on the right board sets/round.
+    kind: z.enum(["SHORT", "LONG"]).optional(),
+    group: z.number().int().nonnegative().nullable().optional(),
+    slot: z
+      .union([z.literal(1), z.literal(2)])
+      .nullable()
+      .optional(),
   })
   .nullable();
 
@@ -34,7 +46,7 @@ const commitPayloadSchema = previewPayloadSchema.extend({
   // The exact round to commit — the previewed draw (editing is a later step).
   matches: matchesSchema,
   byeTeamId: z.number().int().min(1).nullable(),
-  triangle: triangleSchema,
+  triple: tripleSchema,
 });
 
 type PreviewPayload = z.infer<typeof previewPayloadSchema>;
@@ -46,8 +58,11 @@ interface PreviewAck {
   teams: number;
   matches: { a: number; b: number }[];
   byeTeamId: number | null;
-  triangle: { a: number; b: number; c: number } | null;
+  triple: TeamsTriple | null;
   named: NamedTeamsSeating;
+  standings: SwissStandingEntry[];
+  repeatMatchKeys: string[];
+  advisoryInputs: SerializableTeamsAdvisoryInputs;
   hadUnavoidableRepeat: boolean;
 }
 
@@ -63,7 +78,7 @@ const REJECTION_MESSAGE: Record<string, string> = {
     "All results for the current round must be in before drawing the next round.",
   EVENT_COMPLETE: "All rounds have already been drawn.",
   ODD_TEAM_COUNT:
-    "A three-way triangle needs at least three teams — add a table, or switch this event to the bye option.",
+    "A three-way triple needs at least three teams — add a table, or switch this event to the bye option.",
   INVALID_MATCHES:
     "That round isn't valid — every team must be placed exactly once.",
 };
@@ -73,7 +88,7 @@ const REJECTION_MESSAGE: Record<string, string> = {
  *
  * Validates the director token, then computes the proposed round WITHOUT
  * writing or broadcasting. The acknowledgement carries the matches (stable team
- * ids + resolved team names), the odd-field resolution (bye or triangle) and
+ * ids + resolved team names), the odd-field resolution (bye or triple) and
  * the repeat advisory so the director can review it before committing.
  */
 export function registerPreviewNextTeamsRoundHandler(
@@ -109,8 +124,11 @@ export function registerPreviewNextTeamsRoundHandler(
             teams: result.teams,
             matches: result.matches,
             byeTeamId: result.byeTeamId,
-            triangle: result.triangle,
+            triple: result.triple,
             named: result.named,
+            standings: result.standings,
+            repeatMatchKeys: result.repeatMatchKeys,
+            advisoryInputs: result.advisoryInputs,
             hadUnavoidableRepeat: result.hadUnavoidableRepeat,
           },
         });
@@ -137,7 +155,7 @@ export function registerDrawNextTeamsRoundHandler(socket: Socket, io: Server) {
     {
       schema: commitPayloadSchema,
       handler: async ({ payload, ack }) => {
-        const { gameId, section, directorToken, matches, byeTeamId, triangle } =
+        const { gameId, section, directorToken, matches, byeTeamId, triple } =
           payload;
 
         if (!validateDirectorToken(directorToken, gameId)) {
@@ -149,7 +167,7 @@ export function registerDrawNextTeamsRoundHandler(socket: Socket, io: Server) {
           section,
           matches,
           byeTeamId,
-          triangle,
+          triple,
         );
 
         if (!result.ok) {

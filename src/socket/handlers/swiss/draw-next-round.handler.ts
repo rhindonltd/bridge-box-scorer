@@ -12,7 +12,11 @@ import {
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import type { NamedSeating } from "@/services/swiss-seating-names";
-import type { SerializableAdvisoryInputs } from "@/movement/swiss/swiss-pairing";
+import type {
+  SerializableAdvisoryInputs,
+  SwissHalfMatchSeating,
+} from "@/movement/swiss/swiss-pairing";
+import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
 
 /** A single table's seating as pair ids (the shape echoed back on commit). */
 const seatingSchema = z.array(
@@ -23,6 +27,23 @@ const seatingSchema = z.array(
   }),
 );
 
+/**
+ * The drawn 2-half-matches group echoed back on commit (read-only on the
+ * preview, so it is passed through unchanged). Its three pairs are not in
+ * `seating`; the server materializes the group at the anchor's seat.
+ */
+const halfMatchSchema = z
+  .object({
+    group: z.object({
+      anchor: z.number().int().min(1),
+      halfOneOpponent: z.number().int().min(1),
+      halfTwoOpponent: z.number().int().min(1),
+    }),
+    anchorTable: z.number().int().min(1),
+    anchorDirection: z.enum(["NS", "EW"]),
+  })
+  .nullable();
+
 const previewPayloadSchema = z.object({
   gameId: z.string().min(1),
   section: z.string().min(1),
@@ -31,9 +52,14 @@ const previewPayloadSchema = z.object({
 
 const commitPayloadSchema = previewPayloadSchema.extend({
   // The exact seating to commit — the previewed draw, possibly edited by the
-  // director (swapped pairs / reassigned bye).
+  // director (swapped pairs / reassigned bye). Excludes any half-match group's
+  // three pairs, which are carried in `halfMatch`.
   seating: seatingSchema,
   sitOutPairId: z.number().int().min(1).nullable(),
+  // The previewed 2-half-matches group, echoed back so the server materializes
+  // exactly what was reviewed. Null for an ordinary/bye round. Optional so
+  // existing clients that omit it still commit a bye/ordinary round.
+  halfMatch: halfMatchSchema.optional().default(null),
 });
 
 type PreviewPayload = z.infer<typeof previewPayloadSchema>;
@@ -45,8 +71,10 @@ interface PreviewAck {
   tables: number;
   seating: { tableNumber: number; ns: number; ew: number }[];
   sitOutPairId: number | null;
+  halfMatch: SwissHalfMatchSeating | null;
   named: NamedSeating;
   advisoryInputs: SerializableAdvisoryInputs;
+  standings: SwissStandingEntry[];
   hadUnavoidableRepeat: boolean;
   hadStationaryConflict: boolean;
 }
@@ -104,8 +132,10 @@ export function registerPreviewNextRoundHandler(socket: Socket, io: Server) {
             tables: result.tables,
             seating: result.seating,
             sitOutPairId: result.sitOutPairId,
+            halfMatch: result.halfMatch,
             named: result.named,
             advisoryInputs: result.advisoryInputs,
+            standings: result.standings,
             hadUnavoidableRepeat: result.hadUnavoidableRepeat,
             hadStationaryConflict: result.hadStationaryConflict,
           },
@@ -136,7 +166,7 @@ export function registerDrawNextRoundHandler(socket: Socket, io: Server) {
     {
       schema: commitPayloadSchema,
       handler: async ({ payload, ack }) => {
-        const { gameId, section, directorToken, seating, sitOutPairId } =
+        const { gameId, section, directorToken, seating, sitOutPairId, halfMatch } =
           payload;
 
         if (!validateDirectorToken(directorToken, gameId)) {
@@ -148,6 +178,7 @@ export function registerDrawNextRoundHandler(socket: Socket, io: Server) {
           section,
           seating,
           sitOutPairId,
+          halfMatch,
         );
 
         if (!result.ok) {

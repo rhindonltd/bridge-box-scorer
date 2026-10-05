@@ -10,7 +10,11 @@ import {
   reassignBye,
   seatedPairIds,
   evaluateSwissSeating,
+  chooseHalfMatchGroup,
+  halfMatchGroupIds,
+  reanchorHalfMatchGroup,
   type SwissDrawInput,
+  type SwissHalfMatchGroup,
   type SwissHomeSeat,
   type SwissPairId,
 } from "./swiss-pairing";
@@ -27,6 +31,8 @@ function input(over: Partial<SwissDrawInput>): SwissDrawInput {
     standings: over.standings ?? [],
     playedOpponents: over.playedOpponents ?? new Set(),
     hadBye: over.hadBye ?? new Set(),
+    hadHalfMatch: over.hadHalfMatch,
+    oddHandling: over.oddHandling,
     directionCounts: over.directionCounts ?? new Map(),
     stationary: over.stationary ?? new Map(),
   };
@@ -350,6 +356,78 @@ describe("drawSwissRound — stationary pairs", () => {
   });
 });
 
+describe("drawSwissRound — odd field / 2 half matches", () => {
+  it("produces a half-match group (not a bye) when oddHandling is HALF_MATCHES", () => {
+    // 3 tables, 5 pairs (odd). The three lowest-ranked (3, 4, 5) form the group;
+    // the rest (1, 2) play an ordinary match.
+    const result = drawSwissRound(
+      input({
+        tables: 3,
+        standings: [1, 2, 3, 4, 5],
+        oddHandling: "HALF_MATCHES",
+      }),
+    );
+
+    expect(result.sitOutPairId).toBeNull();
+    expect(result.halfMatch).not.toBeNull();
+    const hm = result.halfMatch!;
+    // The group's three pairs are the lowest-ranked three.
+    const groupIds = [
+      hm.group.anchor,
+      hm.group.halfOneOpponent,
+      hm.group.halfTwoOpponent,
+    ].sort();
+    expect(groupIds).toEqual([3, 4, 5]);
+    // The anchor is the best-standing of the three (3).
+    expect(hm.group.anchor).toBe(3);
+    // The three group pairs are NOT in the ordinary seating.
+    const seated = result.seating.flatMap((s) => [s.ns, s.ew]);
+    for (const id of groupIds) expect(seated).not.toContain(id);
+    // The remaining pairs (1, 2) are seated.
+    expect(seated.sort()).toEqual([1, 2]);
+    // The anchor's table is distinct from the ordinary tables.
+    const ordinaryTables = result.seating.map((s) => s.tableNumber);
+    expect(ordinaryTables).not.toContain(hm.anchorTable);
+  });
+
+  it("falls back to a bye when the field is odd but oddHandling is BYE", () => {
+    const result = drawSwissRound(
+      input({ tables: 3, standings: [1, 2, 3, 4, 5], oddHandling: "BYE" }),
+    );
+    expect(result.halfMatch).toBeNull();
+    expect(result.sitOutPairId).not.toBeNull();
+  });
+
+  it("ignores HALF_MATCHES for an even field (ordinary round)", () => {
+    const result = drawSwissRound(
+      input({ tables: 2, standings: [1, 2, 3, 4], oddHandling: "HALF_MATCHES" }),
+    );
+    expect(result.halfMatch).toBeNull();
+    expect(result.sitOutPairId).toBeNull();
+  });
+
+  it("anchors a stationary group member at its home seat", () => {
+    // Pair 5 is stationary at table 3 EW; it is in the group (3,4,5) and must
+    // anchor there even though pair 3 is better-standing.
+    const stationary = new Map<SwissPairId, SwissHomeSeat>([
+      [5, { tableNumber: 3, direction: "EW" }],
+    ]);
+    const result = drawSwissRound(
+      input({
+        tables: 3,
+        standings: [1, 2, 3, 4, 5],
+        oddHandling: "HALF_MATCHES",
+        stationary,
+      }),
+    );
+
+    const hm = result.halfMatch!;
+    expect(hm.group.anchor).toBe(5);
+    expect(hm.anchorTable).toBe(3);
+    expect(hm.anchorDirection).toBe("EW");
+  });
+});
+
 describe("drawSwissRound — completeness", () => {
   it("seats every non-sit-out pair exactly once", () => {
     const result = drawSwissRound(
@@ -441,9 +519,10 @@ describe("evaluateSwissSeating", () => {
     expect(a.hadUnavoidableRepeat).toBe(false);
     expect(a.hadStationaryConflict).toBe(false);
     expect(a.byeRepeat).toBe(false);
+    expect(a.problemTables).toEqual([]);
   });
 
-  it("flags a repeat pairing against history", () => {
+  it("flags a repeat pairing against history and names the table", () => {
     const a = evaluateSwissSeating(
       seating,
       null,
@@ -451,6 +530,8 @@ describe("evaluateSwissSeating", () => {
     );
     expect(a.hadUnavoidableRepeat).toBe(true);
     expect(a.repeats).toContain(opponentKey(1, 4));
+    // Pair 1 v 4 is seated at table 1, so table 1 is flagged.
+    expect(a.problemTables).toEqual([1]);
   });
 
   it("flags a structural error when a pair is seated twice", () => {
@@ -504,5 +585,98 @@ describe("evaluateSwissSeating", () => {
       input({ tables: 3, stationary }),
     );
     expect(a.hadStationaryConflict).toBe(true);
+    // Pair 1 (stationary, home table 1) was moved to table 3 -> flag table 3.
+    expect(a.problemTables).toEqual([3]);
+  });
+});
+
+describe("chooseHalfMatchGroup", () => {
+  it("picks the lowest-ranked three and anchors the best-standing of them", () => {
+    // Standings best-first; the bottom three are 7, 8, 9.
+    const group = chooseHalfMatchGroup(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      new Set(),
+      new Set(),
+    );
+    // The three are {7,8,9}; anchor is the best-standing (7); halves by standing.
+    expect(halfMatchGroupIds(group)).toEqual(new Set([7, 8, 9]));
+    expect(group.anchor).toBe(7);
+    expect(group.halfOneOpponent).toBe(8);
+    expect(group.halfTwoOpponent).toBe(9);
+  });
+
+  it("skips pairs that have already had a half-match or a bye", () => {
+    // 8 and 9 already had a half-match; 7 already had a bye. So the next three
+    // fresh from the bottom are 6, 5, 4.
+    const group = chooseHalfMatchGroup(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      new Set([7]),
+      new Set([8, 9]),
+    );
+    expect(halfMatchGroupIds(group)).toEqual(new Set([4, 5, 6]));
+    expect(group.anchor).toBe(4); // best-standing of {4,5,6}
+    expect(group.halfOneOpponent).toBe(5);
+    expect(group.halfTwoOpponent).toBe(6);
+  });
+
+  it("tops up with lowest-ranked pairs when fewer than three are fresh", () => {
+    // Everyone except pair 1 has had a half-match; still forms a group of three.
+    const standings = [1, 2, 3, 4, 5];
+    const group = chooseHalfMatchGroup(
+      standings,
+      new Set(),
+      new Set([2, 3, 4, 5]),
+    );
+    expect(halfMatchGroupIds(group).size).toBe(3);
+    // 1 is the only fresh pair (picked first); the other two topped up from the
+    // bottom (5, 4). Ordered by standing: anchor 1, then 4, then 5.
+    expect(halfMatchGroupIds(group)).toEqual(new Set([1, 4, 5]));
+    expect(group.anchor).toBe(1);
+    expect(group.halfOneOpponent).toBe(4);
+    expect(group.halfTwoOpponent).toBe(5);
+  });
+
+  it("throws for a field smaller than three", () => {
+    expect(() => chooseHalfMatchGroup([1, 2], new Set(), new Set())).toThrow(
+      /at least three/,
+    );
+  });
+});
+
+describe("reanchorHalfMatchGroup", () => {
+  const group: SwissHalfMatchGroup = {
+    anchor: 7,
+    halfOneOpponent: 8,
+    halfTwoOpponent: 9,
+  };
+
+  it("returns the group unchanged when the new anchor is already the anchor", () => {
+    expect(reanchorHalfMatchGroup(group, 7)).toEqual(group);
+  });
+
+  it("re-anchors onto the half-1 opponent, demoting the old anchor into half 1", () => {
+    expect(reanchorHalfMatchGroup(group, 8)).toEqual({
+      anchor: 8,
+      halfOneOpponent: 7,
+      halfTwoOpponent: 9,
+    });
+  });
+
+  it("re-anchors onto the half-2 opponent, demoting the old anchor into half 2", () => {
+    expect(reanchorHalfMatchGroup(group, 9)).toEqual({
+      anchor: 9,
+      halfOneOpponent: 8,
+      halfTwoOpponent: 7,
+    });
+  });
+
+  it("keeps the same three pairs after re-anchoring", () => {
+    expect(halfMatchGroupIds(reanchorHalfMatchGroup(group, 9))).toEqual(
+      halfMatchGroupIds(group),
+    );
+  });
+
+  it("throws when the new anchor is not in the group", () => {
+    expect(() => reanchorHalfMatchGroup(group, 1)).toThrow(/one of the group/);
   });
 });

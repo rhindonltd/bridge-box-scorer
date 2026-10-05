@@ -6,6 +6,7 @@ import { StepperInput } from "@/components/common/StepperInput";
 import type {
   SwissTeamsMovementSpec,
   SwissTeamsOddHandling,
+  SwissTeamsOddRound,
 } from "@/model/selected-movement";
 
 /**
@@ -17,10 +18,13 @@ import type {
  * {@link SwissTeamsMovementSpec}.
  *
  * A match pits two teams across two tables, so an even count pairs cleanly.
- * With an odd count the director chooses how to handle the odd team: "BYE"
- * (the default) sits one team out each round, or "TRIANGLE" — three teams play
- * a three-way each round (scored cross-IMP across the three tables). The chosen
- * mode is carried on the spec as `oddHandling`; an even count omits it.
+ * With an odd count the director chooses how to handle the odd team: "Bye" (the
+ * default) sits one team out each round, or "Triple" — three teams play a
+ * three-way. A triple is set per round as a SHORT triple (the whole three-way
+ * in one round) or a LONG triple (spread over two consecutive rounds); a long
+ * triple therefore occupies two adjacent rounds. The chosen mode is carried on
+ * the spec as `oddHandling` plus the per-round `oddRoundPlan`; an even count
+ * omits both.
  */
 export function SwissTeamsSetupDialog({
   open,
@@ -64,7 +68,7 @@ export function SwissTeamsSetupDialog({
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+            <Dialog.Panel className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
               {open && (
                 <SwissTeamsSetupForm
                   teams={teams}
@@ -80,6 +84,72 @@ export function SwissTeamsSetupDialog({
       </Dialog>
     </Transition>
   );
+}
+
+/** A per-round plan entry as the UI tracks it (group ids are derived on confirm). */
+type RoundKind = "BYE" | "SHORT" | "LONG";
+
+/**
+ * Reduce a UI plan (`RoundKind` per round) to the persisted
+ * {@link SwissTeamsOddRound}[] the spec needs, assigning each pair of adjacent
+ * LONG rounds a shared group id.
+ *
+ * LONG rounds are paired left-to-right: a LONG immediately followed by another
+ * LONG forms one long triple (a fresh `group`). A LONG that cannot be paired
+ * this way (its neighbour isn't an available LONG) is INVALID — a long triple
+ * must occupy two adjacent rounds — so `valid` is false and the director is
+ * blocked from confirming until the plan is fixed. BYE/SHORT map straight
+ * through.
+ */
+export function resolveTeamsOddRoundPlan(kinds: RoundKind[]): {
+  plan: SwissTeamsOddRound[];
+  valid: boolean;
+} {
+  const plan: SwissTeamsOddRound[] = [];
+  let group = 0;
+  let valid = true;
+  let i = 0;
+
+  while (i < kinds.length) {
+    const kind = kinds[i];
+    if (kind === "BYE" || kind === "SHORT") {
+      plan.push(kind);
+      i += 1;
+      continue;
+    }
+    // kind === "LONG": pair with the next round if it is also LONG.
+    if (kinds[i + 1] === "LONG") {
+      const g = group++;
+      plan.push({ kind: "LONG", group: g });
+      plan.push({ kind: "LONG", group: g });
+      i += 2;
+    } else {
+      // An unpaired LONG: keep it in the plan (so lengths stay aligned) but
+      // mark the plan invalid.
+      plan.push({ kind: "LONG", group: group++ });
+      valid = false;
+      i += 1;
+    }
+  }
+
+  return { plan, valid };
+}
+
+/** The UI `RoundKind`s seeded from an existing persisted plan (group ids dropped). */
+function kindsFromPlan(
+  plan: SwissTeamsOddRound[] | undefined,
+  rounds: number,
+): RoundKind[] {
+  return Array.from({ length: rounds }, (_, i) => {
+    const entry = plan?.[i];
+    if (entry === "BYE") return "BYE";
+    if (entry === "SHORT") return "SHORT";
+    if (entry && typeof entry === "object" && entry.kind === "LONG") {
+      return "LONG";
+    }
+    // No existing entry for this round: default to a short triple.
+    return "SHORT";
+  });
 }
 
 function SwissTeamsSetupForm({
@@ -102,19 +172,66 @@ function SwissTeamsSetupForm({
   const [oddHandling, setOddHandling] = useState<SwissTeamsOddHandling>(
     initial?.oddHandling ?? "BYE",
   );
+  // The per-round plan (one entry per round), used only under "Triple". Each
+  // round is a BYE / SHORT / LONG; group ids for long triples are derived on
+  // confirm (see resolveTeamsOddRoundPlan). Kept length-synced to `rounds`.
+  const [plan, setPlan] = useState<RoundKind[]>(() =>
+    kindsFromPlan(initial?.oddRoundPlan, initial?.rounds ?? 7),
+  );
+
+  // Resize the plan to match the round count, padding new rounds with a short
+  // triple and truncating removed ones.
+  const changeRounds = (next: number) => {
+    setRounds(next);
+    setPlan((current) =>
+      Array.from({ length: next }, (_, i) => current[i] ?? "SHORT"),
+    );
+  };
+
+  const setRoundKind = (index: number, value: RoundKind) => {
+    setPlan((current) => {
+      const next = Array.from(
+        { length: rounds },
+        (_, i) => current[i] ?? "SHORT",
+      );
+      next[index] = value;
+      return next;
+    });
+  };
 
   const oddTeams = teams % 2 !== 0;
-  // A triangle needs at least three teams to form the three-way; if fewer are
+  // A triple needs at least three teams to form the three-way; if fewer are
   // present, that choice would be rejected at start, so confirming is blocked.
-  const blocked = oddTeams && oddHandling === "TRIANGLE" && teams < 3;
+  const tooFewForTriple = oddTeams && oddHandling === "TRIPLE" && teams < 3;
+
+  // Validate the plan only when it will actually be sent (odd field + triple).
+  const resolved = resolveTeamsOddRoundPlan(
+    Array.from({ length: rounds }, (_, i) => plan[i] ?? "SHORT"),
+  );
+  const planInvalid =
+    oddTeams && oddHandling === "TRIPLE" && !resolved.valid;
+
+  const blocked = tooFewForTriple || planInvalid;
+
+  const confirm = () => {
+    const spec: SwissTeamsMovementSpec = { teams, rounds, boardsPerRound };
+    // Only carry the odd handling for an odd field; an even field ignores it.
+    if (oddTeams) {
+      spec.oddHandling = oddHandling;
+      if (oddHandling === "TRIPLE") {
+        spec.oddRoundPlan = resolved.plan;
+      }
+    }
+    onConfirm(spec);
+  };
 
   return (
     <>
-      <Dialog.Title className="rounded-t-2xl bg-gray-300 p-4 text-md font-bold text-gray-800">
+      <Dialog.Title className="shrink-0 rounded-t-2xl bg-gray-300 p-4 text-md font-bold text-gray-800">
         Swiss Teams
       </Dialog.Title>
 
-      <div className="space-y-4 p-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         <p className="text-sm text-gray-600">
           In Swiss Teams, the two pairs at each table make up a team. Each round
           two teams play the same boards in two rooms, then you draw the next
@@ -143,7 +260,7 @@ function SwissTeamsSetupForm({
               <StepperInput
                 label="Rounds"
                 value={rounds}
-                onChange={setRounds}
+                onChange={changeRounds}
                 min={1}
                 max={30}
               />
@@ -193,30 +310,102 @@ function SwissTeamsSetupForm({
               <input
                 type="radio"
                 name="oddHandling"
-                value="TRIANGLE"
-                checked={oddHandling === "TRIANGLE"}
-                onChange={() => setOddHandling("TRIANGLE")}
+                value="TRIPLE"
+                checked={oddHandling === "TRIPLE"}
+                onChange={() => setOddHandling("TRIPLE")}
                 className="mt-0.5"
               />
               <span>
-                <span className="font-medium">Triangle</span> — three teams play
-                a three-way each round (the bottom three tables first, then the
-                lowest-ranked three without a recent triangle), scored cross-IMP
-                across the three tables.
+                <span className="font-medium">Triple</span> — three teams play a
+                three-way (the bottom three tables first, then the lowest-ranked
+                three without a recent triple). Set each round below as a short
+                triple (one round) or a long triple (two rounds).
               </span>
             </label>
 
-            {blocked && (
+            {tooFewForTriple && (
               <p role="alert" className="text-sm font-medium text-red-600">
-                A triangle needs at least three teams — choose Bye, or add a
+                A triple needs at least three teams — choose Bye, or add a
                 table.
               </p>
+            )}
+
+            {oddHandling === "TRIPLE" && (
+              <div
+                className="mt-2 rounded-lg border border-gray-200 p-3"
+                data-testid="teams-odd-round-plan"
+              >
+                <p className="mb-2 text-xs text-gray-500">
+                  Choose how each round resolves the odd team. A long triple
+                  takes two rounds, so pick <span className="font-medium">Long</span>{" "}
+                  on two neighbouring rounds. This only applies if your field is
+                  odd.
+                </p>
+                <ul className="space-y-1.5">
+                  {Array.from({ length: rounds }, (_, i) => {
+                    const value = plan[i] ?? "SHORT";
+                    return (
+                      <li
+                        key={i}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span className="text-sm text-gray-700">
+                          Round {i + 1}
+                        </span>
+                        <div className="flex gap-3 text-sm">
+                          <label className="flex items-center gap-1">
+                            <input
+                              type="radio"
+                              name={`teamsOddRound-${i}`}
+                              value="BYE"
+                              checked={value === "BYE"}
+                              onChange={() => setRoundKind(i, "BYE")}
+                            />
+                            Bye
+                          </label>
+                          <label className="flex items-center gap-1">
+                            <input
+                              type="radio"
+                              name={`teamsOddRound-${i}`}
+                              value="SHORT"
+                              checked={value === "SHORT"}
+                              onChange={() => setRoundKind(i, "SHORT")}
+                            />
+                            Short
+                          </label>
+                          <label className="flex items-center gap-1">
+                            <input
+                              type="radio"
+                              name={`teamsOddRound-${i}`}
+                              value="LONG"
+                              checked={value === "LONG"}
+                              onChange={() => setRoundKind(i, "LONG")}
+                            />
+                            Long
+                          </label>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {planInvalid && (
+                  <p
+                    role="alert"
+                    className="mt-2 text-sm font-medium text-red-600"
+                  >
+                    A long triple takes two rounds — pair each{" "}
+                    <span className="font-medium">Long</span> round with a{" "}
+                    <span className="font-medium">Long</span> on the next round.
+                  </p>
+                )}
+              </div>
             )}
           </fieldset>
         )}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-gray-200 p-4">
+      <div className="flex shrink-0 justify-end gap-2 border-t border-gray-200 p-4">
         <button
           type="button"
           onClick={onCancel}
@@ -227,15 +416,7 @@ function SwissTeamsSetupForm({
         </button>
         <button
           type="button"
-          onClick={() =>
-            onConfirm({
-              teams,
-              rounds,
-              boardsPerRound,
-              // Only carry the choice for an odd field; even ignores it.
-              ...(oddTeams ? { oddHandling } : {}),
-            })
-          }
+          onClick={confirm}
           disabled={saving || blocked}
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
         >

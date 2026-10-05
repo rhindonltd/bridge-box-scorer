@@ -100,3 +100,45 @@ export const LongNames: Story = {
     },
   },
 };
+
+/**
+ * A Swiss Pairs "2 half matches" round for the ANCHOR: it stays at its table
+ * all round and plays two halves against different opponents, with an explicit
+ * midpoint-switch instruction.
+ */
+export const HalfMatchAnchor: Story = {
+  decorators: [
+    withGame(mockGame),
+    withAssignment({ type: "PAIR", id: "1" }),
+  ],
+  args: {
+    round: 2,
+    table: 1,
+    boards: [1, 2, 3, 4],
+    halfMatch: {
+      role: "anchor",
+      segments: [
+        {
+          half: "first",
+          boards: [1, 2],
+          players: {
+            N: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: null },
+            S: { id: 2, firstName: "Bob", lastName: "Johnson", nationalId: null },
+            E: { id: 5, firstName: "Opp", lastName: "One", nationalId: null },
+            W: { id: 6, firstName: "Opp", lastName: "OneB", nationalId: null },
+          },
+        },
+        {
+          half: "second",
+          boards: [3, 4],
+          players: {
+            N: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: null },
+            S: { id: 2, firstName: "Bob", lastName: "Johnson", nationalId: null },
+            E: { id: 7, firstName: "Opp", lastName: "Two", nationalId: null },
+            W: { id: 8, firstName: "Opp", lastName: "TwoB", nationalId: null },
+          },
+        },
+      ],
+    },
+  },
+};

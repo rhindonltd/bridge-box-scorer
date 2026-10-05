@@ -11,15 +11,24 @@ vi.mock("@/db/games", () => ({
 
 vi.mock("@/services/board-service", () => ({
   getBoardInstances: vi.fn(),
+  buildTeamTravellerMatches: vi.fn(),
 }));
 
 vi.mock("@/db/games/queries/get-deal", () => ({
   getDealHands: vi.fn(),
 }));
 
+vi.mock("@/db/games/queries/get-section-movement", () => ({
+  getAnySectionMovement: vi.fn(),
+}));
+
 import { getDb } from "@/db/games";
-import { getBoardInstances } from "@/services/board-service";
+import {
+  getBoardInstances,
+  buildTeamTravellerMatches,
+} from "@/services/board-service";
 import { getDealHands } from "@/db/games/queries/get-deal";
+import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { registerTravellerRequestHandler } from "./traveller-request.handler";
 
 describe("registerTravellerRequestHandler (integration)", () => {
@@ -32,6 +41,9 @@ describe("registerTravellerRequestHandler (integration)", () => {
       { boardNumber: 7, roundNumber: 1, tableNumber: 2 },
     ] as any);
     vi.mocked(getDealHands).mockResolvedValue(null);
+    // Default: a pairs game (no section teams movement), so no team framing.
+    vi.mocked(getAnySectionMovement).mockResolvedValue(null);
+    vi.mocked(buildTeamTravellerMatches).mockResolvedValue([]);
   });
 
   afterEach(async () => {

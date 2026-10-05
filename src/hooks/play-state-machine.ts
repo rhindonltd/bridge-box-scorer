@@ -20,6 +20,32 @@ export interface SeatPlayer {
   nationalId: string | null;
 }
 
+/** The four seat players at a table, nullable where unresolved. */
+export interface SeatPlayers {
+  N: SeatPlayer | null;
+  S: SeatPlayer | null;
+  E: SeatPlayer | null;
+  W: SeatPlayer | null;
+}
+
+/** One half of a 2-half-matches round (board subset + that half's opponents). */
+export interface RoundHalfMatchSegment {
+  half: "first" | "second";
+  boards: number[];
+  players: SeatPlayers;
+}
+
+/**
+ * The 2-half-matches shape of a round for this pair (Swiss Pairs odd-field
+ * handling). Present only when the pair is in the three-pair group:
+ * - `anchor` plays both halves (two segments, opponent change at the midpoint);
+ * - `firstHalf` / `secondHalf` plays only that half (one segment).
+ */
+export interface RoundHalfMatch {
+  role: "anchor" | "firstHalf" | "secondHalf";
+  segments: RoundHalfMatchSegment[];
+}
+
 export interface RoundSchedule {
   roundNumber: number;
   tableNumber: number;
@@ -30,13 +56,10 @@ export interface RoundSchedule {
     boardNumber: number;
     status: string;
   }[];
-  players: {
-    N: SeatPlayer | null;
-    S: SeatPlayer | null;
-    E: SeatPlayer | null;
-    W: SeatPlayer | null;
-  };
+  players: SeatPlayers;
   sitOut?: boolean;
+  /** Present for a Swiss Pairs "2 half matches" round this pair is in. */
+  halfMatch?: RoundHalfMatch;
 }
 
 export interface Schedule {
