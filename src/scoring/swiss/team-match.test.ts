@@ -3,10 +3,9 @@ import {
   boardResult,
   teamIdFor,
   groupTeamMatches,
-  groupTeamTriangles,
-  triangleSubMatches,
-  triangleTeamImps,
-  triangleTeamWins,
+  groupTeamTriples,
+  tripleTeamStakes,
+  tripleVpPool,
   teamByeRounds,
   teamMatchBoardImps,
   teamMatchBoardWins,
@@ -272,145 +271,225 @@ describe("teamByeRounds", () => {
 });
 
 /**
- * A triangle {1,2,3}: table 1 = A1NS/A2EW, table 2 = A2NS/A3EW, table 3 =
- * A3NS/A1EW (the directed 3-cycle). One shared board set.
+ * A SHORT triple {1,2,3}, all in one round, as three head-to-head comparisons
+ * on three disjoint one-board sets:
+ *   - set A (board 1): 1·NS v 2 and 2·NS v 1  → comparison 1-2
+ *   - set B (board 2): 2·NS v 3 and 3·NS v 2  → comparison 2-3
+ *   - set C (board 3): 3·NS v 1 and 1·NS v 3  → comparison 1-3
+ * `outcomes` keys the six rooms as [a1, a2, b1, b2, c1, c2].
  */
-function triangleRows(
+function shortTripleRows(
   round: number,
-  board: number,
-  outcomes: [BoardOutcome | null, BoardOutcome | null, BoardOutcome | null],
+  outcomes: [
+    BoardOutcome | null,
+    BoardOutcome | null,
+    BoardOutcome | null,
+    BoardOutcome | null,
+    BoardOutcome | null,
+    BoardOutcome | null,
+  ],
 ) {
   return [
-    row(round, board, "A1NS", "A2EW", outcomes[0]),
-    row(round, board, "A2NS", "A3EW", outcomes[1]),
-    row(round, board, "A3NS", "A1EW", outcomes[2]),
+    row(round, 1, "A1NS", "A2EW", outcomes[0]), // A: 1 v 2
+    row(round, 1, "A2NS", "A1EW", outcomes[1]), // A mirror
+    row(round, 2, "A2NS", "A3EW", outcomes[2]), // B: 2 v 3
+    row(round, 2, "A3NS", "A2EW", outcomes[3]), // B mirror
+    row(round, 3, "A3NS", "A1EW", outcomes[4]), // C: 3 v 1
+    row(round, 3, "A1NS", "A3EW", outcomes[5]), // C mirror
   ];
 }
 
-describe("groupTeamTriangles", () => {
-  it("reconstructs a three-cycle of tables as one triangle", () => {
-    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
-    const triangles = groupTeamTriangles(rows);
+/**
+ * A LONG triple {1,2,3} over rounds R and R+1. The half-1 room of each
+ * comparison is in round R, the half-2 (mirror) room in round R+1, both on the
+ * same one-board set (A board 1, B board 2, C board 3):
+ *   - A: 1·NS v 2 (R) + 2·NS v 1 (R+1)  → comparison 1-2
+ *   - B: 2·NS v 3 (R) + 3·NS v 2 (R+1)  → comparison 2-3
+ *   - C: 3·NS v 1 (R) + 1·NS v 3 (R+1)  → comparison 1-3
+ */
+function longTripleRows(
+  firstRound: number,
+  outcomes: [
+    BoardOutcome | null,
+    BoardOutcome | null,
+    BoardOutcome | null,
+    BoardOutcome | null,
+    BoardOutcome | null,
+    BoardOutcome | null,
+  ],
+) {
+  const r2 = firstRound + 1;
+  return [
+    row(firstRound, 1, "A1NS", "A2EW", outcomes[0]), // A half-1 (R)
+    row(r2, 1, "A2NS", "A1EW", outcomes[1]), // A half-2 (R+1)
+    row(firstRound, 2, "A2NS", "A3EW", outcomes[2]), // B half-1 (R)
+    row(r2, 2, "A3NS", "A2EW", outcomes[3]), // B half-2 (R+1)
+    row(firstRound, 3, "A3NS", "A1EW", outcomes[4]), // C half-1 (R)
+    row(r2, 3, "A1NS", "A3EW", outcomes[5]), // C half-2 (R+1)
+  ];
+}
 
-    expect(triangles).toHaveLength(1);
-    const [tri] = triangles;
+describe("groupTeamTriples", () => {
+  it("reconstructs a SHORT triple as its three head-to-head comparisons", () => {
+    const rows = shortTripleRows(1, [
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+    ]);
+    const triples = groupTeamTriples(rows);
+
+    expect(triples).toHaveLength(1);
+    const [tri] = triples;
     expect(tri.round).toBe(1);
     expect(tri.section).toBe("A");
+    expect(tri.kind).toBe("SHORT");
+    expect(tri.rounds).toEqual([1]);
     expect(tri.tables.map((t) => t.table)).toEqual([1, 2, 3]);
     expect(tri.tables.map((t) => t.teamId)).toEqual(["A1NS", "A2NS", "A3NS"]);
+    // Three comparisons in ascending (lo, hi) order: 1-2, 1-3, 2-3.
+    expect(
+      tri.comparisons.map((c) => `${c.homeTable}v${c.opponentTable}`),
+    ).toEqual(["1v2", "1v3", "2v3"]);
   });
 
-  it("does not treat an ordinary two-table match as a triangle", () => {
-    // Mutual references (1<->2) are a head-to-head, not a 3-cycle.
+  it("reconstructs a LONG triple spanning two rounds as three comparisons", () => {
+    const rows = longTripleRows(1, [
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+    ]);
+    const triples = groupTeamTriples(rows);
+
+    expect(triples).toHaveLength(1);
+    const [tri] = triples;
+    expect(tri.kind).toBe("LONG");
+    expect(tri.rounds).toEqual([1, 2]);
+    expect(tri.tables.map((t) => t.table)).toEqual([1, 2, 3]);
+    expect(
+      tri.comparisons.map((c) => `${c.homeTable}v${c.opponentTable}`),
+    ).toEqual(["1v2", "1v3", "2v3"]);
+  });
+
+  it("does not treat an ordinary two-table match as a triple", () => {
+    // A table with a single mutual opponent is a head-to-head, not a triple.
     const rows = [
       row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
       row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
     ];
-    expect(groupTeamTriangles(rows)).toHaveLength(0);
-    // ...and groupTeamMatches still reconstructs the head-to-head.
+    expect(groupTeamTriples(rows)).toHaveLength(0);
     expect(groupTeamMatches(rows)).toHaveLength(1);
   });
 
-  it("keeps a triangle out of the two-table match reconstruction", () => {
-    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
-    // The triangle tables must NOT be mis-paired as head-to-head matches.
+  it("keeps a SHORT triple out of the two-table match reconstruction", () => {
+    const rows = shortTripleRows(1, [
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+    ]);
+    // The triple tables must NOT be mis-paired as head-to-head matches.
     expect(groupTeamMatches(rows)).toHaveLength(0);
   });
 
-  it("reconstructs a triangle alongside a normal match in the same round", () => {
+  it("reconstructs a triple alongside a normal match in the same round", () => {
     const rows = [
-      ...triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]),
-      // A separate head-to-head 4 v 5 in the same round.
-      row(1, 1, "A4NS", "A5EW", "3NTN=" as BoardOutcome),
-      row(1, 1, "A5NS", "A4EW", "3NTN=" as BoardOutcome),
+      ...shortTripleRows(1, [
+        "4SN=",
+        "3NTN=",
+        "4SN=",
+        "3NTN=",
+        "4SN=",
+        "3NTN=",
+      ]),
+      // A separate head-to-head 4 v 5 in the same round, on its own boards.
+      row(1, 10, "A4NS", "A5EW", "3NTN=" as BoardOutcome),
+      row(1, 10, "A5NS", "A4EW", "3NTN=" as BoardOutcome),
     ];
-    expect(groupTeamTriangles(rows)).toHaveLength(1);
+    expect(groupTeamTriples(rows)).toHaveLength(1);
     const matches = groupTeamMatches(rows);
     expect(matches).toHaveLength(1);
     expect(matches[0].homeTable).toBe(4);
   });
-});
 
-describe("triangleTeamImps", () => {
-  it("cross-IMPs each team against the other two tables per board", () => {
-    // Board 1 (None vul): scores 420, 400, 110.
-    // T1: imps(20)+imps(310) = 1+7 = 8; T2: imps(-20)+imps(290) = -1+7 = 6;
-    // T3: imps(-310)+imps(-290) = -7-7 = -14. Sum is zero.
-    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
-    const [tri] = groupTeamTriangles(rows);
-    const { perTeam, boardsPlayed } = triangleTeamImps(tri);
-
-    expect(boardsPlayed).toBe(1);
-    expect(perTeam.map((t) => [t.teamId, t.crossImps])).toEqual([
-      ["A1NS", 8],
-      ["A2NS", 6],
-      ["A3NS", -14],
+  it("scores each SHORT comparison as a normal two-team head-to-head", () => {
+    // Set A board 1 (None vul): 1·NS 420 vs 2·NS 400 -> imps(20)=1 to team 1.
+    // Set B board 2: 2·NS 420 vs 3·NS 400 -> 1 to team 2.
+    // Set C board 3: 3·NS 420 vs 1·NS 400 -> 1 to team 3.
+    const rows = shortTripleRows(1, [
+      "4SN=", // A: 1·NS 420
+      "3NTN=", // A: 2·NS 400
+      "4SN=", // B: 2·NS 420
+      "3NTN=", // B: 3·NS 400
+      "4SN=", // C: 3·NS 420
+      "3NTN=", // C: 1·NS 400
     ]);
-    expect(perTeam.reduce((s, t) => s + t.crossImps, 0)).toBe(0);
-  });
-
-  it("skips a board unless all three tables have a comparable score", () => {
-    // Only two tables entered board 1 -> nothing counts yet.
-    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", null]);
-    const [tri] = groupTeamTriangles(rows);
-    const { perTeam, boardsPlayed } = triangleTeamImps(tri);
-    expect(boardsPlayed).toBe(0);
-    for (const t of perTeam) expect(t.crossImps).toBe(0);
+    const [tri] = groupTeamTriples(rows);
+    const [c12, c13, c23] = tri.comparisons;
+    expect(teamMatchBoardImps(c12).margin).toBe(1); // 1 beats 2 by 1 imp
+    // Comparison 1-3: home is table 1 (1·NS 400 on set C) vs 3·NS 420 -> -1.
+    expect(teamMatchBoardImps(c13).margin).toBe(-1);
+    expect(teamMatchBoardImps(c23).margin).toBe(1); // 2 beats 3 by 1 imp
   });
 });
 
-describe("triangleTeamWins", () => {
-  it("sums win/tie/loss against each of the other two tables per board", () => {
-    // Board 1: 420 > 400 > 110. T1 beats both (2), T2 beats one (1), T3 (0).
-    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
-    const [tri] = groupTeamTriangles(rows);
-    const { perTeam, boardsPlayed } = triangleTeamWins(tri);
-
-    expect(boardsPlayed).toBe(1);
-    expect(perTeam.map((t) => [t.teamId, t.won])).toEqual([
-      ["A1NS", 2],
-      ["A2NS", 1],
-      ["A3NS", 0],
+describe("tripleTeamStakes", () => {
+  it("gives each SHORT team its two comparisons, both crediting the one round", () => {
+    const rows = shortTripleRows(1, [
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
     ]);
-    // Total board-points per board across the three teams is 3 (3 pairwise
-    // comparisons, each worth 1 split between the two teams).
-    expect(perTeam.reduce((s, t) => s + t.won, 0)).toBe(3);
+    const [tri] = groupTeamTriples(rows);
+    const stakes = tripleTeamStakes(tri);
+
+    // Six stakes (two per comparison); every stake credits round 1.
+    expect(stakes).toHaveLength(6);
+    expect(stakes.every((s) => s.round === 1)).toBe(true);
+    // Each team appears in exactly two stakes.
+    for (const id of ["A1NS", "A2NS", "A3NS"]) {
+      expect(stakes.filter((s) => s.teamId === id)).toHaveLength(2);
+    }
+    expect(tripleVpPool(tri)).toBe(10);
   });
 
-  it("splits a tie half each", () => {
-    // All three score 400 -> every pairwise comparison is a tie (0.5 each).
-    const rows = triangleRows(1, 1, ["3NTN=", "3NTN=", "3NTN="]);
-    const [tri] = groupTeamTriangles(rows);
-    const { perTeam } = triangleTeamWins(tri);
-    for (const t of perTeam) expect(t.won).toBe(1); // 0.5 + 0.5
-  });
-});
+  it("splits a LONG team's two comparisons across R and R+1 by NS-host round", () => {
+    const rows = longTripleRows(1, [
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+      "4SN=",
+      "3NTN=",
+    ]);
+    const [tri] = groupTeamTriples(rows);
+    const stakes = tripleTeamStakes(tri);
 
-describe("triangleSubMatches", () => {
-  it("decomposes a triangle into its three head-to-head pairings", () => {
-    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
-    const [tri] = groupTeamTriangles(rows);
-    const subs = triangleSubMatches(tri);
-
-    // Three pairings in ascending (home, opponent) order: 1-2, 1-3, 2-3.
-    expect(
-      subs.map((m) => `${m.homeTable}v${m.opponentTable}`),
-    ).toEqual(["1v2", "1v3", "2v3"]);
-    expect(subs.every((m) => m.round === 1 && m.section === "A")).toBe(true);
-    // Team ids follow the home-NS convention.
-    expect(subs.map((m) => m.homeTeamId)).toEqual(["A1NS", "A1NS", "A2NS"]);
-  });
-
-  it("yields head-to-head IMPs per pairing via teamMatchBoardImps", () => {
-    // Board 1 (None): table1 420, table2 400, table3 110.
-    // 1v2: imps(420-400)=imps(20)=1. 1v3: imps(420-110)=imps(310)=7.
-    // 2v3: imps(400-110)=imps(290)=7.
-    const rows = triangleRows(1, 1, ["4SN=", "3NTN=", "2SN="]);
-    const [tri] = groupTeamTriangles(rows);
-    const [ab, ac, bc] = triangleSubMatches(tri);
-
-    expect(teamMatchBoardImps(ab).margin).toBe(1);
-    expect(teamMatchBoardImps(ac).margin).toBe(7);
-    expect(teamMatchBoardImps(bc).margin).toBe(7);
+    expect(tripleVpPool(tri)).toBe(20);
+    // Team 1 hosts team 2 in round 1 (set A half-1) and team 3 in round 2
+    // (set C half-2), so its two stakes credit rounds 1 and 2 respectively.
+    const t1 = stakes
+      .filter((s) => s.teamId === "A1NS")
+      .map((s) => s.round)
+      .sort();
+    expect(t1).toEqual([1, 2]);
+    // Every team has one stake in each round (one VP per team per round).
+    for (const id of ["A1NS", "A2NS", "A3NS"]) {
+      const rounds = stakes
+        .filter((s) => s.teamId === id)
+        .map((s) => s.round)
+        .sort();
+      expect(rounds).toEqual([1, 2]);
+    }
   });
 });

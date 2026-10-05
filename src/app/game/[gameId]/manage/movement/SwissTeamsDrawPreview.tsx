@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type {
   SwissTeamsPreviewAck,
   TeamsMatchEntry,
-  TeamsTriangleEntry,
+  TeamsTripleEntry,
 } from "@/lib/swiss-service";
 import type { NamedTeam } from "@/services/swiss-teams-seating-names";
 import {
@@ -31,7 +31,7 @@ export interface SwissTeamsDrawPreviewProps {
   onConfirm: (
     matches: TeamsMatchEntry[],
     byeTeamId: number | null,
-    triangle: TeamsTriangleEntry | null,
+    triple: TeamsTripleEntry | null,
   ) => void;
   onCancel: () => void;
 }
@@ -39,12 +39,12 @@ export interface SwissTeamsDrawPreviewProps {
 /**
  * Full-screen review of a freshly-drawn Swiss Teams round before it is
  * committed. Shows each match as the two teams meeting, the sit-out (bye) team,
- * or the three-way triangle, plus a repeat advisory.
+ * or the three-way triple, plus a repeat advisory.
  *
  * The director may hand-adjust before accepting: tap two teams to swap their
  * places this round. Wherever one sits — in a match, as the bye, or in the
- * triangle — the other takes its place (and vice versa), so a single tap-tap
- * re-pairs matches, changes who sits out, or reshapes the triangle. The repeat
+ * triple — the other takes its place (and vice versa), so a single tap-tap
+ * re-pairs matches, changes who sits out, or reshapes the triple. The repeat
  * advisory re-checks live on every edit (the same pure check the server ran)
  * but never blocks — the director can commit an override. OK commits exactly
  * what is shown; Cancel discards it (nothing was written).
@@ -63,7 +63,7 @@ export function SwissTeamsDrawPreview({
   const [round, setRound] = useState<SwissTeamsRound>({
     matches: preview.matches.map((m) => ({ ...m })),
     byeTeamId: preview.byeTeamId,
-    triangle: preview.triangle ? { ...preview.triangle } : null,
+    triple: preview.triple ? { ...preview.triple } : null,
   });
   // The team the director has picked as the first half of a swap, or null.
   const [selected, setSelected] = useState<TeamId | null>(null);
@@ -78,10 +78,10 @@ export function SwissTeamsDrawPreview({
       add(m.b);
     }
     if (named.bye) add(named.bye);
-    if (named.triangle) {
-      add(named.triangle.a);
-      add(named.triangle.b);
-      add(named.triangle.c);
+    if (named.triple) {
+      add(named.triple.a);
+      add(named.triple.b);
+      add(named.triple.c);
     }
     return map;
   }, [named]);
@@ -137,7 +137,7 @@ export function SwissTeamsDrawPreview({
             teams to swap their places
             {round.byeTeamId != null
               ? " (including the team sitting out)"
-              : round.triangle != null
+              : round.triple != null
                 ? " (including the three-way)"
                 : ""}
             . Each match is played in two rooms — the away pairs travel to their
@@ -199,27 +199,55 @@ export function SwissTeamsDrawPreview({
               );
             })}
 
-            {round.triangle && (
+            {round.triple && (
               <div
                 className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
-                data-testid="teams-triangle"
+                data-testid="teams-triple"
               >
                 <div className="mb-1 text-sm font-semibold text-gray-500">
-                  Three-way (triangle)
+                  {round.triple.kind === "LONG"
+                    ? "Three-way (long triple — over two rounds)"
+                    : "Three-way (short triple)"}
                 </div>
+                <p className="mb-2 text-xs text-gray-500">
+                  Three teams play a round-robin of three head-to-head
+                  comparisons
+                  {round.triple.kind === "LONG"
+                    ? " on full boards, spread across this round and the next."
+                    : ", each on its own board set within this round."}{" "}
+                  Tap a team to swap it.
+                </p>
                 <div className="flex flex-col gap-1">
-                  {[round.triangle.a, round.triangle.b, round.triangle.c].map(
-                    (id) => (
+                  {(
+                    [
+                      [round.triple.a, round.triple.b],
+                      [round.triple.b, round.triple.c],
+                      [round.triple.a, round.triple.c],
+                    ] as [TeamId, TeamId][]
+                  ).map(([x, y]) => (
+                    <div
+                      key={`${x}-${y}`}
+                      data-testid="teams-triple-comparison"
+                      className="flex items-center justify-between gap-3"
+                    >
                       <TeamChip
-                        key={id}
-                        teamId={id}
-                        name={teamName(id)}
-                        total={totalFor(id)}
-                        selected={selected === id}
-                        onClick={() => pick(id)}
+                        teamId={x}
+                        name={teamName(x)}
+                        total={totalFor(x)}
+                        selected={selected === x}
+                        onClick={() => pick(x)}
                       />
-                    ),
-                  )}
+                      <span className="shrink-0 text-sm text-gray-400">v</span>
+                      <TeamChip
+                        teamId={y}
+                        name={teamName(y)}
+                        total={totalFor(y)}
+                        selected={selected === y}
+                        onClick={() => pick(y)}
+                        alignRight
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -269,7 +297,7 @@ export function SwissTeamsDrawPreview({
           <button
             type="button"
             onClick={() =>
-              onConfirm(round.matches, round.byeTeamId, round.triangle)
+              onConfirm(round.matches, round.byeTeamId, round.triple)
             }
             disabled={committing || advisories.structuralError}
             className={primaryButtonClass}

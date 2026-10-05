@@ -32,7 +32,7 @@ surface. Test files present at audit time:
 - Journeys: `navigation`, `create-form`, `sections-setup`, `table-management`,
   `movement-types`, `seating-detail`, `play-flow`, `played-contract`,
   `contract-variants`, `mismatch`, `sit-out`, `deal-entry`, `swiss-pairs`,
-  `swiss-pairs-half-matches`,
+  `swiss-pairs-half-matches`, `swiss-teams`, `swiss-teams-triples`,
   `director-override`, `traveller-live`, `leaderboard-live`, `display-detail`,
   `request-on-mount`, `realtime-internals`, `reconnect`, `timer`,
   `multi-section`, `share-code`, `delete-game`, `usebio`, `pbn`,
@@ -86,6 +86,11 @@ below:
 - **Swiss Teams**: create a Teams game, pick Swiss Teams, seat a full field with
   team names, play round 1 across the open/closed rooms, draw round 2, and see
   the named teams on the leaderboard (`swiss-teams.journey.ts`).
+- **Swiss Teams triples** (odd field): set up a Swiss Teams game with a per-round
+  triple plan, seat an odd (three-team) field, and run both flavours — a **SHORT**
+  triple (the whole three-way in one round) scored and credited to all three
+  teams, and a **LONG** triple drawn across two rounds (round 2 reuses the same
+  three teams, scored, and credited) (`swiss-teams-triples.journey.ts`).
 - **Director overrides**: played-contract override, adjusted-score (custom +
   preset), propagation to player + second director
   (`director-override.journey.ts`, `traveller-live.journey.ts`).

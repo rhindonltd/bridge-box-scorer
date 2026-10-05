@@ -877,8 +877,8 @@ describe("generateUsebioXml", () => {
       expect(match).toContain("<OPPOSING_TEAM_SCORE>1</OPPOSING_TEAM_SCORE>");
     });
 
-    it("writes a triangle as three MATCH nodes sharing one ROUND_NUMBER", () => {
-      // A triangle is three ordinary MATCH nodes with the same round: the
+    it("writes a triple as three MATCH nodes sharing one ROUND_NUMBER", () => {
+      // A triple is three ordinary MATCH nodes with the same round: the
       // writer just iterates data.matches, so three same-round entries emit
       // three <MATCH> blocks.
       const data = makeSwissTeamsData();

@@ -263,6 +263,66 @@ export async function pickSwissTeamsMovement(page: Page): Promise<void> {
 }
 
 /**
+ * Open the Movement tab and set up a Swiss Teams movement that resolves an ODD
+ * field with triples, following a per-round plan. Taps the Swiss Teams card to
+ * open its dialog, trims the round count down to `plan.length` (so the revealed
+ * per-round plan is short and fits the phone viewport), selects the "Triple"
+ * odd-handling radio (which reveals the per-round builder), sets each round to
+ * its planned kind ("BYE" | "SHORT" | "LONG"), and confirms.
+ *
+ * A LONG takes two rounds, so the plan must place "LONG" on two neighbouring
+ * rounds (the dialog rejects a lone LONG). Used by the odd-field triple journey.
+ */
+export async function pickSwissTeamsTripleMovement(
+  page: Page,
+  plan: Array<"BYE" | "SHORT" | "LONG">,
+): Promise<void> {
+  await openSetupStep(page, "Movement");
+  const swissTeams = page.getByTestId("swiss-teams-movement-option");
+  await expect(swissTeams).toBeVisible({ timeout: 15000 });
+  await swissTeams.click();
+
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeVisible({ timeout: 15000 });
+
+  // Trim rounds down to the plan length via the Rounds stepper so the revealed
+  // per-round plan is short and the dialog fits the viewport.
+  const decreaseRounds = page.getByRole("button", {
+    name: "Decrease Rounds",
+    exact: true,
+  });
+  for (let guard = 0; guard < 40; guard++) {
+    const value = Number(
+      await page.getByRole("spinbutton", { name: "Rounds" }).inputValue(),
+    );
+    if (value <= plan.length) break;
+    await decreaseRounds.click();
+    await page.waitForTimeout(50);
+  }
+
+  // Choose "Triple" to reveal the per-round plan builder.
+  const triple = page.getByRole("radio", { name: /triple/i });
+  await expect(triple).toBeVisible({ timeout: 15000 });
+  await triple.click();
+
+  // Set each round to its planned kind. The per-round radios are grouped by
+  // `teamsOddRound-{i}` with labels Bye / Short / Long; "Short" is the default.
+  const planBuilder = page.getByTestId("teams-odd-round-plan");
+  await expect(planBuilder).toBeVisible({ timeout: 15000 });
+  const rows = planBuilder.getByRole("listitem");
+  for (let i = 0; i < plan.length; i++) {
+    const label = { BYE: "Bye", SHORT: "Short", LONG: "Long" }[plan[i]];
+    await rows.nth(i).getByRole("radio", { name: label }).click();
+  }
+
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Saving/ }),
+  ).toHaveCount(0, { timeout: 15000 });
+}
+
+/**
  * Start the game from the "Start Game" screen in the Setup menu. Requires a
  * valid movement and full seating; the Start Game button stays disabled until
  * both hold. Starting is director-authorised, so this must run in the

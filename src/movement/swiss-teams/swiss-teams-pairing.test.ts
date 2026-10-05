@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
+  continueLongTriple,
   drawSwissTeamsRound,
   evaluateSwissTeamsRound,
   expandTeamMatches,
-  expandTeamTriangle,
+  expandTeamTriple,
+  roundOddResolution,
   roundTeamIds,
   swapTeams,
   teamIds,
@@ -63,31 +65,50 @@ describe("swissTeamsRoundOne", () => {
     for (const m of matches) expect(m.a).toBeLessThanOrEqual(m.b);
   });
 
-  it("triangles the bottom three tables and pairs the rest (odd, TRIANGLE)", () => {
-    const { matches, byeTeamId, triangle } = swissTeamsRoundOne(
-      7,
-      1,
-      "TRIANGLE",
-    );
-    // Bottom three tables (5,6,7) form the round-1 triangle; no bye.
+  it("short-triples the bottom three tables and pairs the rest (odd, SHORT)", () => {
+    const { matches, byeTeamId, triple } = swissTeamsRoundOne(7, 1, "SHORT");
+    // Bottom three tables (5,6,7) form the round-1 short triple; no bye.
     expect(byeTeamId).toBeNull();
-    expect(triangle).toEqual({ a: 5, b: 6, c: 7 });
+    expect(triple).toEqual({
+      a: 5,
+      b: 6,
+      c: 7,
+      kind: "SHORT",
+      group: null,
+      slot: null,
+    });
     // The remaining even field (1,2,3,4) is paired.
     expect(matches).toHaveLength(2);
     const seen = matches.flatMap((m) => [m.a, m.b]).sort((x, y) => x - y);
     expect(seen).toEqual([1, 2, 3, 4]);
   });
 
-  it("still byes the bottom table for an odd field when handling is BYE", () => {
-    const { byeTeamId, triangle } = swissTeamsRoundOne(5, 1, "BYE");
-    expect(byeTeamId).toBe(5);
-    expect(triangle).toBeNull();
+  it("long-triples round 1 as slot 1, carrying the group (odd, LONG)", () => {
+    const { byeTeamId, triple } = swissTeamsRoundOne(7, 1, {
+      kind: "LONG",
+      group: 2,
+    });
+    expect(byeTeamId).toBeNull();
+    expect(triple).toEqual({
+      a: 5,
+      b: 6,
+      c: 7,
+      kind: "LONG",
+      group: 2,
+      slot: 1,
+    });
   });
 
-  it("ignores TRIANGLE for an even field (no triangle, no bye)", () => {
-    const { byeTeamId, triangle } = swissTeamsRoundOne(6, 1, "TRIANGLE");
+  it("still byes the bottom table for an odd field when the entry is BYE", () => {
+    const { byeTeamId, triple } = swissTeamsRoundOne(5, 1, "BYE");
+    expect(byeTeamId).toBe(5);
+    expect(triple).toBeNull();
+  });
+
+  it("ignores a triple entry for an even field (no triple, no bye)", () => {
+    const { byeTeamId, triple } = swissTeamsRoundOne(6, 1, "SHORT");
     expect(byeTeamId).toBeNull();
-    expect(triangle).toBeNull();
+    expect(triple).toBeNull();
   });
 });
 
@@ -194,69 +215,194 @@ describe("drawSwissTeamsRound", () => {
     expect(byeTeamId).toBeNull();
   });
 
-  it("triangles the lowest-ranked three and pairs the rest (odd, TRIANGLE)", () => {
-    // Standings best-first [1..7]; the lowest three (5,6,7) form the triangle.
-    const { matches, byeTeamId, triangle } = drawSwissTeamsRound({
+  it("short-triples the lowest-ranked three and pairs the rest (odd, SHORT)", () => {
+    // Standings best-first [1..7]; the lowest three (5,6,7) form the triple.
+    const { matches, byeTeamId, triple } = drawSwissTeamsRound({
       teams: 7,
       standings: [1, 2, 3, 4, 5, 6, 7],
       playedOpponents: new Set(),
-      oddHandling: "TRIANGLE",
+      oddRound: "SHORT",
     });
 
     expect(byeTeamId).toBeNull();
-    expect(triangle).toEqual({ a: 5, b: 6, c: 7 });
+    expect(triple).toEqual({
+      a: 5,
+      b: 6,
+      c: 7,
+      kind: "SHORT",
+      group: null,
+      slot: null,
+    });
     const seen = matches.flatMap((m) => [m.a, m.b]).sort((x, y) => x - y);
     expect(seen).toEqual([1, 2, 3, 4]);
   });
 
-  it("prefers the lowest-ranked three without a recent triangle", () => {
-    // Teams 6 and 7 have already had a triangle, so the next-lowest without one
-    // (4,5) join the lowest remaining (there aren't 3 fresh below, so scan up):
-    // bottom-up eligible are 5,4,3 -> triangle {3,4,5}.
-    const { triangle } = drawSwissTeamsRound({
+  it("long-triples the lowest-ranked three (odd, LONG) as slot 1 with its group", () => {
+    const { triple } = drawSwissTeamsRound({
       teams: 7,
       standings: [1, 2, 3, 4, 5, 6, 7],
       playedOpponents: new Set(),
-      oddHandling: "TRIANGLE",
-      hadTriangle: new Set([6, 7]),
+      oddRound: { kind: "LONG", group: 3 },
     });
-    expect(triangle).toEqual({ a: 3, b: 4, c: 5 });
+    expect(triple).toEqual({
+      a: 5,
+      b: 6,
+      c: 7,
+      kind: "LONG",
+      group: 3,
+      slot: 1,
+    });
   });
 
-  it("tops up from the bottom when fewer than three teams lack a triangle", () => {
-    // Only team 1 has no prior triangle; top up with the lowest remaining.
-    const { triangle } = drawSwissTeamsRound({
+  it("prefers the lowest-ranked three without a recent triple", () => {
+    // Teams 6 and 7 have already had a triple, so the next-lowest without one
+    // (4,5) join the lowest remaining (there aren't 3 fresh below, so scan up):
+    // bottom-up eligible are 5,4,3 -> triple {3,4,5}.
+    const { triple } = drawSwissTeamsRound({
+      teams: 7,
+      standings: [1, 2, 3, 4, 5, 6, 7],
+      playedOpponents: new Set(),
+      oddRound: "SHORT",
+      hadTriple: new Set([6, 7]),
+    });
+    expect(triple).toMatchObject({ a: 3, b: 4, c: 5, kind: "SHORT" });
+  });
+
+  it("tops up from the bottom when fewer than three teams lack a triple", () => {
+    // Only team 1 has no prior triple; top up with the lowest remaining.
+    const { triple } = drawSwissTeamsRound({
       teams: 5,
       standings: [1, 2, 3, 4, 5],
       playedOpponents: new Set(),
-      oddHandling: "TRIANGLE",
-      hadTriangle: new Set([2, 3, 4, 5]),
+      oddRound: "SHORT",
+      hadTriple: new Set([2, 3, 4, 5]),
     });
     // team 1 (fresh) + bottom-up remaining 5,4 -> {1,4,5}.
-    expect(triangle).toEqual({ a: 1, b: 4, c: 5 });
+    expect(triple).toMatchObject({ a: 1, b: 4, c: 5, kind: "SHORT" });
   });
 
-  it("reports a null triangle for an even field even under TRIANGLE", () => {
-    const { byeTeamId, triangle } = drawSwissTeamsRound({
+  it("reports a null triple for an even field even under a triple entry", () => {
+    const { byeTeamId, triple } = drawSwissTeamsRound({
       teams: 4,
       standings: [1, 2, 3, 4],
       playedOpponents: new Set(),
-      oddHandling: "TRIANGLE",
+      oddRound: "SHORT",
     });
     expect(byeTeamId).toBeNull();
-    expect(triangle).toBeNull();
+    expect(triple).toBeNull();
   });
 });
 
-describe("expandTeamTriangle", () => {
-  it("places the three tables in the A-NS/B-EW, B-NS/C-EW, C-NS/A-EW cycle", () => {
-    const placements = expandTeamTriangle({ a: 5, b: 6, c: 7 });
+describe("roundOddResolution", () => {
+  it("is always a bye when handling is not TRIPLE", () => {
+    expect(roundOddResolution("BYE", undefined, 1)).toBe("BYE");
+    expect(roundOddResolution(undefined, ["SHORT"], 1)).toBe("BYE");
+  });
 
-    expect(placements).toEqual([
-      { tableNumber: 5, nsTeam: 5, ewTeam: 6 },
-      { tableNumber: 6, nsTeam: 6, ewTeam: 7 },
-      { tableNumber: 7, nsTeam: 7, ewTeam: 5 },
+  it("reads the per-round plan entry for a TRIPLE event (1-indexed)", () => {
+    const plan = [
+      "BYE",
+      "SHORT",
+      { kind: "LONG", group: 1 },
+    ] as const;
+    expect(roundOddResolution("TRIPLE", plan, 1)).toBe("BYE");
+    expect(roundOddResolution("TRIPLE", plan, 2)).toBe("SHORT");
+    expect(roundOddResolution("TRIPLE", plan, 3)).toEqual({
+      kind: "LONG",
+      group: 1,
+    });
+  });
+
+  it("falls back to a bye when the plan is missing or too short", () => {
+    expect(roundOddResolution("TRIPLE", undefined, 1)).toBe("BYE");
+    expect(roundOddResolution("TRIPLE", ["SHORT"], 2)).toBe("BYE");
+  });
+});
+
+describe("expandTeamTriple", () => {
+  it("yields the three head-to-head comparisons x-y/A, y-z/B, z-x/C", () => {
+    const comparisons = expandTeamTriple({
+      a: 5,
+      b: 6,
+      c: 7,
+      kind: "SHORT",
+      group: null,
+      slot: null,
+    });
+
+    expect(comparisons).toEqual([
+      {
+        low: 5,
+        high: 6,
+        boardSet: "A",
+        rows: [
+          { tableNumber: 5, nsTeam: 5, ewTeam: 6 },
+          { tableNumber: 6, nsTeam: 6, ewTeam: 5 },
+        ],
+      },
+      {
+        low: 6,
+        high: 7,
+        boardSet: "B",
+        rows: [
+          { tableNumber: 6, nsTeam: 6, ewTeam: 7 },
+          { tableNumber: 7, nsTeam: 7, ewTeam: 6 },
+        ],
+      },
+      {
+        low: 5,
+        high: 7,
+        boardSet: "C",
+        rows: [
+          { tableNumber: 7, nsTeam: 7, ewTeam: 5 },
+          { tableNumber: 5, nsTeam: 5, ewTeam: 7 },
+        ],
+      },
     ]);
+  });
+
+  it("covers all three pairings exactly once (full round-robin)", () => {
+    const comparisons = expandTeamTriple({
+      a: 1,
+      b: 2,
+      c: 3,
+      kind: "LONG",
+      group: 1,
+      slot: 1,
+    });
+    const edges = comparisons
+      .map((c) => `${c.low}-${c.high}`)
+      .sort();
+    expect(edges).toEqual(["1-2", "1-3", "2-3"]);
+    // Each comparison is two rooms (open + closed) of the same two teams.
+    for (const c of comparisons) {
+      expect(c.rows).toHaveLength(2);
+      const teamsInRooms = new Set(
+        c.rows.flatMap((r) => [r.nsTeam, r.ewTeam]),
+      );
+      expect([...teamsInRooms].sort()).toEqual([c.low, c.high]);
+    }
+  });
+});
+
+describe("continueLongTriple", () => {
+  it("advances a long triple to slot 2, keeping its teams and group", () => {
+    const first = {
+      a: 5,
+      b: 6,
+      c: 7,
+      kind: "LONG" as const,
+      group: 4,
+      slot: 1 as const,
+    };
+    expect(continueLongTriple(first)).toEqual({
+      a: 5,
+      b: 6,
+      c: 7,
+      kind: "LONG",
+      group: 4,
+      slot: 2,
+    });
   });
 });
 
@@ -286,7 +432,7 @@ describe("expandTeamMatches", () => {
 });
 
 describe("roundTeamIds", () => {
-  it("collects match, bye and triangle team ids", () => {
+  it("collects match, bye and triple team ids", () => {
     expect(
       roundTeamIds({
         matches: [
@@ -294,7 +440,7 @@ describe("roundTeamIds", () => {
           { a: 3, b: 4 },
         ],
         byeTeamId: null,
-        triangle: null,
+        triple: null,
       }).sort((x, y) => x - y),
     ).toEqual([1, 2, 3, 4]);
 
@@ -302,7 +448,7 @@ describe("roundTeamIds", () => {
       roundTeamIds({
         matches: [{ a: 1, b: 2 }],
         byeTeamId: 5,
-        triangle: null,
+        triple: null,
       }).sort((x, y) => x - y),
     ).toEqual([1, 2, 5]);
 
@@ -310,7 +456,7 @@ describe("roundTeamIds", () => {
       roundTeamIds({
         matches: [{ a: 1, b: 2 }],
         byeTeamId: null,
-        triangle: { a: 3, b: 4, c: 5 },
+        triple: { a: 3, b: 4, c: 5 },
       }).sort((x, y) => x - y),
     ).toEqual([1, 2, 3, 4, 5]);
   });
@@ -323,7 +469,7 @@ describe("swapTeams", () => {
       { a: 3, b: 4 },
     ],
     byeTeamId: null,
-    triangle: null,
+    triple: null,
   });
 
   it("exchanges two teams between matches and re-normalises", () => {
@@ -344,7 +490,7 @@ describe("swapTeams", () => {
     const r: SwissTeamsRound = {
       matches: [{ a: 1, b: 2 }],
       byeTeamId: 3,
-      triangle: null,
+      triple: null,
     };
     // Team 2 sits out; team 3 comes in to play team 1.
     const result = swapTeams(r, 2, 3);
@@ -352,16 +498,16 @@ describe("swapTeams", () => {
     expect(result.matches).toEqual([{ a: 1, b: 3 }]);
   });
 
-  it("swapping into the triangle reshapes it and re-normalises to ascending", () => {
+  it("swapping into the triple reshapes it and re-normalises to ascending", () => {
     const r: SwissTeamsRound = {
       matches: [{ a: 1, b: 2 }],
       byeTeamId: null,
-      triangle: { a: 3, b: 4, c: 5 },
+      triple: { a: 3, b: 4, c: 5 },
     };
-    // Swap team 1 (match) with team 5 (triangle).
+    // Swap team 1 (match) with team 5 (triple).
     const result = swapTeams(r, 1, 5);
     expect(result.matches).toEqual([{ a: 2, b: 5 }]);
-    expect(result.triangle).toEqual({ a: 1, b: 3, c: 4 });
+    expect(result.triple).toEqual({ a: 1, b: 3, c: 4 });
   });
 
   it("returns an unchanged deep copy when a team is not in the round", () => {
@@ -388,7 +534,7 @@ describe("evaluateSwissTeamsRound", () => {
           { a: 3, b: 4 },
         ],
         byeTeamId: null,
-        triangle: null,
+        triple: null,
       },
       { teams: 4, playedOpponents: [] },
     );
@@ -405,7 +551,7 @@ describe("evaluateSwissTeamsRound", () => {
           { a: 3, b: 4 },
         ],
         byeTeamId: null,
-        triangle: null,
+        triple: null,
       },
       { teams: 4, playedOpponents: ["1-2"] },
     );
@@ -414,12 +560,12 @@ describe("evaluateSwissTeamsRound", () => {
     expect(advisories.structuralError).toBe(false);
   });
 
-  it("checks each of a triangle's three edges for a repeat", () => {
+  it("checks each of a triple's three edges for a repeat", () => {
     const advisories = evaluateSwissTeamsRound(
       {
         matches: [{ a: 1, b: 2 }],
         byeTeamId: null,
-        triangle: { a: 3, b: 4, c: 5 },
+        triple: { a: 3, b: 4, c: 5 },
       },
       { teams: 5, playedOpponents: ["4-5"] },
     );
@@ -436,7 +582,7 @@ describe("evaluateSwissTeamsRound", () => {
           { a: 2, b: 3 },
         ],
         byeTeamId: null,
-        triangle: null,
+        triple: null,
       },
       { teams: 4, playedOpponents: [] },
     );
@@ -455,7 +601,7 @@ describe("evaluateSwissTeamsRound", () => {
           { a: 3, b: 9 },
         ],
         byeTeamId: null,
-        triangle: null,
+        triple: null,
       },
       { teams: 4, playedOpponents: [] },
     );

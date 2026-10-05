@@ -97,17 +97,26 @@ export interface TeamsMatchEntry {
   b: number;
 }
 
-/** A three-way triangle, by stable team id. */
-export interface TeamsTriangleEntry {
+/**
+ * A three-way triple, by stable team id, plus which flavour it is. `kind`
+ * (SHORT/LONG), `group` (the long-triple group id linking its two slots) and
+ * `slot` (1 or 2 for a long triple) are carried so a committed triple
+ * materializes on the right board sets and round; a short triple leaves
+ * `group`/`slot` null.
+ */
+export interface TeamsTripleEntry {
   a: number;
   b: number;
   c: number;
+  kind?: "SHORT" | "LONG";
+  group?: number | null;
+  slot?: 1 | 2 | null;
 }
 
 /**
  * What the server returns for a PREVIEWED (uncommitted) Swiss Teams draw: the
  * proposed matches (team ids the client echoes back on commit), the odd-field
- * resolution (bye team or triangle), resolved team names for display, and the
+ * resolution (bye team or triple), resolved team names for display, and the
  * repeat advisory.
  */
 export interface SwissTeamsPreviewAck {
@@ -115,7 +124,7 @@ export interface SwissTeamsPreviewAck {
   teams: number;
   matches: TeamsMatchEntry[];
   byeTeamId: number | null;
-  triangle: TeamsTriangleEntry | null;
+  triple: TeamsTripleEntry | null;
   named: NamedTeamsSeating;
   /** Current standings (best first) with running VP totals — the draw order. */
   standings: SwissStandingEntry[];
@@ -158,7 +167,7 @@ export async function commitNextSwissTeamsRound(
   section: string,
   matches: TeamsMatchEntry[],
   byeTeamId: number | null,
-  triangle: TeamsTriangleEntry | null,
+  triple: TeamsTripleEntry | null,
 ): Promise<SwissTeamsCommitAck> {
   return emitWithAck<SwissTeamsCommitAck>(
     SocketEvents.DRAW_NEXT_SWISS_TEAMS_ROUND,
@@ -168,7 +177,7 @@ export async function commitNextSwissTeamsRound(
       directorToken: getDirectorToken(gameId) ?? "",
       matches,
       byeTeamId,
-      triangle,
+      triple,
     },
   );
 }

@@ -45,7 +45,7 @@ const matches = [
   { a: 2, b: 4 },
 ];
 const previewPayload = { gameId: "g1", section: "A", directorToken: "tok" };
-const commitPayload = { ...previewPayload, matches, byeTeamId: null, triangle: null };
+const commitPayload = { ...previewPayload, matches, byeTeamId: null, triple: null };
 
 function handlerFor(socket: any, event: string) {
   const call = socket.on.mock.calls.find((c: any[]) => c[0] === event);
@@ -83,7 +83,7 @@ describe("registerPreviewNextTeamsRoundHandler", () => {
   });
 
   it("acks the proposed matches + names and broadcasts nothing", async () => {
-    const named = { matches: [], bye: null, triangle: null };
+    const named = { matches: [], bye: null, triple: null };
     const standings = [
       { id: 1, name: "Sharks", total: 30, rank: 1, tied: false },
     ];
@@ -93,7 +93,7 @@ describe("registerPreviewNextTeamsRoundHandler", () => {
       teams: 4,
       matches,
       byeTeamId: null,
-      triangle: null,
+      triple: null,
       named,
       standings,
       repeatMatchKeys: [],
@@ -118,7 +118,7 @@ describe("registerPreviewNextTeamsRoundHandler", () => {
         teams: 4,
         matches,
         byeTeamId: null,
-        triangle: null,
+        triple: null,
         named,
         standings,
         repeatMatchKeys: [],

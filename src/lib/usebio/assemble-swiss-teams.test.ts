@@ -217,48 +217,107 @@ describe("assembleSwissTeams", () => {
     ]);
   });
 
-  it("writes a triangle as three same-round match nodes with cross-IMP totals", () => {
+  it("writes a SHORT triple as three head-to-head match nodes", () => {
     const triTeams = [team(1, "Sharks"), team(2, "Dragons"), team(3, "Owls")];
-    // Triangle 1→2→3→1 on board 1 (None vul): table1 420, table2 400, table3 110.
+    // SHORT triple {1,2,3}, one round, three one-board head-to-head sets:
+    //   set A (board 1): 1·NS 4S= (420) vs 2·NS 3NT= (400) -> team 1 by +1 imp
+    //   set B (board 2): 2·NS 4S= (420) vs 3·NS 3NT= (400) -> team 2 by +1 imp
+    //   set C (board 3): 1·NS 4S= (420) vs 3·NS 3NT= (400) -> team 1 by +1 imp
+    // Each comparison is one board on the 10-VP half pool: imps(20)=1 ->
+    // winner impVpWinner(1,1,10)=6, loser 4. A team's VP total is the sum of
+    // its two comparison nodes (no separate cross-IMP):
+    //   team 1 = 6 (1-2) + 6 (1-3) = 12
+    //   team 2 = 4 (1-2) + 6 (2-3) = 10
+    //   team 3 = 4 (2-3) + 4 (1-3) = 8
     const boards = [
+      // set A board 1: comparison 1-2
       board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
-      board(1, 2, 1, "A2NS", "A3EW", "3NTN=" as BoardOutcome),
-      board(1, 3, 1, "A3NS", "A1EW", "2SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      // set B board 2: comparison 2-3
+      board(1, 2, 2, "A2NS", "A3EW", "4SN=" as BoardOutcome),
+      board(1, 3, 2, "A3NS", "A2EW", "3NTN=" as BoardOutcome),
+      // set C board 3: comparison 1-3
+      board(1, 3, 3, "A3NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 3, "A1NS", "A3EW", "4SN=" as BoardOutcome),
     ];
 
     const data = assembleSwissTeams(game, club, triTeams, boards);
 
-    // Three MATCH nodes, all round 1, covering the three pairings.
+    // Three head-to-head MATCH nodes, all round 1, covering the three pairings.
     expect(data.matches).toHaveLength(3);
     expect(data.matches.every((m) => m.round === 1)).toBe(true);
     expect(
       data.matches.map((m) => `${m.team}v${m.opposingTeam}`).sort(),
     ).toEqual(["1v2", "1v3", "2v3"]);
+    // Each comparison node splits the 10-VP half pool 6/4 to the winner.
+    for (const m of data.matches) {
+      expect(m.teamScore + m.opposingTeamScore).toBe(10);
+    }
 
-    // Totals are the cross-IMP VPs (integer): cross-IMPs 8, 6, -14 -> the two
-    // above-field teams beat 10, the below-field team is under 10.
+    // Each team's ranking total is the sum of its two comparison node VPs.
     const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalVP]));
-    expect(byNumber.get("1")!).toBeGreaterThan(10);
-    expect(byNumber.get("2")!).toBeGreaterThan(10);
-    expect(byNumber.get("3")!).toBeLessThan(10);
-    // Team 1 (cross-IMP 8) outranks team 2 (6) outranks team 3 (-14).
-    expect(byNumber.get("1")!).toBeGreaterThanOrEqual(byNumber.get("2")!);
+    expect(byNumber.get("1")!).toBe(12); // 6 (1-2) + 6 (1-3)
+    expect(byNumber.get("2")!).toBe(10); // 4 (1-2) + 6 (2-3)
+    expect(byNumber.get("3")!).toBe(8); // 4 (2-3) + 4 (1-3)
+    expect(data.ranking[0].number).toBe("1");
+  });
+
+  it("writes a LONG triple as three full-board head-to-head nodes on the 20-VP pool", () => {
+    const triTeams = [team(1, "Sharks"), team(2, "Dragons"), team(3, "Owls")];
+    // LONG triple {1,2,3} over rounds 1 & 2. Each comparison's two rooms sit on
+    // the SAME set but in different rounds (half-1 room in R1, half-2 in R2):
+    //   set A (board 1): 1·NS v 2 (R1) + 2·NS v 1 (R2)   -> comparison 1-2
+    //   set B (board 2): 2·NS v 3 (R1) + 3·NS v 2 (R2)   -> comparison 2-3
+    //   set C (board 3): 3·NS v 1 (R1) + 1·NS v 3 (R2)   -> comparison 1-3
+    // Team 1 wins 1-2 and 1-3; team 2 wins 2-3. On the 20-VP full pool each
+    // comparison splits to the winner, so a team's /20 total = its two nodes.
+    const boards = [
+      // comparison 1-2 on set A (board 1)
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome), // R1: 1·NS 420
+      board(2, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome), // R2: 2·NS 400
+      // comparison 2-3 on set B (board 2)
+      board(1, 2, 2, "A2NS", "A3EW", "4SN=" as BoardOutcome), // R1: 2·NS 420
+      board(2, 3, 2, "A3NS", "A2EW", "3NTN=" as BoardOutcome), // R2: 3·NS 400
+      // comparison 1-3 on set C (board 3)
+      board(1, 3, 3, "A3NS", "A1EW", "3NTN=" as BoardOutcome), // R1: 3·NS 400
+      board(2, 1, 3, "A1NS", "A3EW", "4SN=" as BoardOutcome), // R2: 1·NS 420
+    ];
+
+    const data = assembleSwissTeams(game, club, triTeams, boards);
+
+    // Three head-to-head MATCH nodes covering the three pairings; each on the
+    // 20-VP full pool.
+    expect(data.matches).toHaveLength(3);
+    expect(
+      data.matches.map((m) => `${m.team}v${m.opposingTeam}`).sort(),
+    ).toEqual(["1v2", "1v3", "2v3"]);
+    for (const m of data.matches) {
+      expect(m.teamScore + m.opposingTeamScore).toBe(20);
+    }
+
+    // Team 1 wins both its comparisons -> top of the ranking, total on /40
+    // (two full-pool comparisons), clear of teams 2 and 3.
+    const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalVP]));
+    expect(byNumber.get("1")!).toBeGreaterThan(byNumber.get("2")!);
     expect(byNumber.get("2")!).toBeGreaterThan(byNumber.get("3")!);
     expect(data.ranking[0].number).toBe("1");
   });
 
-  it("keeps a triangle's cross-IMP total independent of the head-to-head node scores", () => {
+  it("keeps a triple team's VP total on the WBF scale around the neutral 10", () => {
     const triTeams = [team(1, "A"), team(2, "B"), team(3, "C")];
+    // Same SHORT triple as above; team 1 wins both its comparisons.
     const boards = [
       board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
-      board(1, 2, 1, "A2NS", "A3EW", "3NTN=" as BoardOutcome),
-      board(1, 3, 1, "A3NS", "A1EW", "2SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 2, 2, "A2NS", "A3EW", "4SN=" as BoardOutcome),
+      board(1, 3, 2, "A3NS", "A2EW", "3NTN=" as BoardOutcome),
+      board(1, 3, 3, "A3NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 3, "A1NS", "A3EW", "4SN=" as BoardOutcome),
     ];
 
     const data = assembleSwissTeams(game, club, triTeams, boards);
-    // The three head-to-head node scores do NOT drive the total (Option A):
-    // team 1's total equals its cross-IMP VP, not the sum of its 1v2 + 1v3 node
-    // scores. Assert the total sits on the WBF scale around the neutral 10.
+    // A team's total is the sum of its two 10-pool comparison nodes, so it
+    // sits on the /20 scale around the neutral 10.
     const t1 = data.ranking.find((r) => r.number === "1")!;
     expect(t1.totalVP).toBeGreaterThan(10);
     expect(t1.totalVP).toBeLessThanOrEqual(20);

@@ -6,10 +6,10 @@ import { rank } from "@/scoring/overall/rank";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 import {
   groupTeamMatches,
-  groupTeamTriangles,
+  groupTeamTriples,
   teamByeRounds,
   teamMatchBoardWins,
-  triangleTeamWins,
+  tripleTeamStakes,
 } from "./team-match";
 
 /**
@@ -97,14 +97,17 @@ export function calculateTeamsBoardComparisonOverall(
     );
   }
 
-  // Credit each triangle team its board-comparison result: on every counted
-  // board it is compared against BOTH other tables (win 1 / tie 0.5 / loss 0
-  // each), so it plays two comparisons per board. Native units, exactly like a
-  // two-team match — the BAM/PAB scale is applied only at display.
-  for (const triangle of groupTeamTriangles(boardRows)) {
-    const { perTeam, boardsPlayed } = triangleTeamWins(triangle);
-    for (const team of perTeam) {
-      credit(totals, team.teamId, triangle.round, team.won, boardsPlayed * 2);
+  // A triple is three ordinary two-team board-comparison matches (x-y, y-z,
+  // z-x); each team plays two of them. Credit each comparison as a normal
+  // head-to-head (home team wins `won`, away `boardsPlayed - won`) into the
+  // round the team's NS pair hosted it (SHORT: one round; LONG: split across R
+  // and R+1). `credit` accumulates within a round, so a team's two comparisons
+  // add up for a SHORT triple's single round.
+  for (const triple of groupTeamTriples(boardRows)) {
+    for (const stake of tripleTeamStakes(triple)) {
+      const { won, boardsPlayed } = teamMatchBoardWins(stake.comparison);
+      const teamWon = stake.isHome ? won : boardsPlayed - won;
+      credit(totals, stake.teamId, stake.round, teamWon, boardsPlayed);
     }
   }
 

@@ -142,36 +142,46 @@ describe("calculateTeamsPabOverall", () => {
   });
 });
 
-describe("board-comparison triangle credit", () => {
-  it("credits each triangle team wins vs both other tables (two comparisons/board)", () => {
-    // Triangle {1,2,3}, board 1 (None vul): 420 > 400 > 110. Team 1 beats both
-    // (2), team 2 beats one (1), team 3 none (0); each plays 2 comparisons.
-    const rows = [
-      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
-      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "3NTN=" }),
-      row({ boardNumber: 1, tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "2SN=" }),
-    ];
+describe("board-comparison triple credit", () => {
+  // SHORT triple {1,2,3}, one round, three one-board head-to-head sets:
+  //   set A (board 1): 1·NS 4S= (420) vs 2·NS 3NT= (400) -> team 1 wins board
+  //   set B (board 2): 2·NS 4S= (420) vs 3·NS 3NT= (400) -> team 2 wins board
+  //   set C (board 3): 1·NS 4S= (420) vs 3·NS 3NT= (400) -> team 1 wins board
+  // Each team plays TWO comparisons of one board each (played = 2):
+  //   team 1 wins both (1-2 and 1-3)  -> won 2 / played 2
+  //   team 2 wins one  (2-3), loses 1-2 -> won 1 / played 2
+  //   team 3 wins none (loses 2-3, 1-3) -> won 0 / played 2
+  const tripleRows = [
+    // set A board 1: comparison 1-2
+    row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+    row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+    // set B board 2: comparison 2-3
+    row({ boardNumber: 2, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "4SN=" }),
+    row({ boardNumber: 2, tableNumber: 3, ns: "A3NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+    // set C board 3: comparison 1-3
+    row({ boardNumber: 3, tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+    row({ boardNumber: 3, tableNumber: 1, ns: "A1NS", ew: "A3EW", confirmedResult: "4SN=" }),
+  ];
 
-    const result = calculateTeamsBamOverall(rows, { barometer: true });
+  it("credits each SHORT triple team its wins across its two comparisons (played 2)", () => {
+    const result = calculateTeamsBamOverall(tripleRows, { barometer: true });
     const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
     const t2 = result.lines.find((l) => l.teamId === "A2NS")!;
     const t3 = result.lines.find((l) => l.teamId === "A3NS")!;
 
+    // Each team plays two one-board comparisons: played = 2 (not boards×2).
     expect(t1.byRound[1]).toEqual({ won: 2, played: 2 });
     expect(t2.byRound[1]).toEqual({ won: 1, played: 2 });
     expect(t3.byRound[1]).toEqual({ won: 0, played: 2 });
-    // The three teams' wins sum to 3 board-points per board (3 pairings).
+    // Three comparisons, one board-point each -> wins sum to 3 across the trio.
     expect(t1.totalWon + t2.totalWon + t3.totalWon).toBe(3);
   });
 
-  it("uses the same native triangle units on BAM and PAB", () => {
-    const rows = [
-      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
-      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "3NTN=" }),
-      row({ boardNumber: 1, tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "2SN=" }),
-    ];
-    const bam = calculateTeamsBamOverall(rows, { barometer: true });
-    const pab = calculateTeamsPabOverall(rows, { barometer: true });
+  it("uses the same native triple units on BAM and PAB", () => {
+    // totalWon is held in native board units (the ×2 PAB scale is applied only
+    // at the display/export boundary), so A1NS reads the same V on both.
+    const bam = calculateTeamsBamOverall(tripleRows, { barometer: true });
+    const pab = calculateTeamsPabOverall(tripleRows, { barometer: true });
     expect(bam.lines.find((l) => l.teamId === "A1NS")!.totalWon).toBe(2);
     expect(pab.lines.find((l) => l.teamId === "A1NS")!.totalWon).toBe(2);
   });

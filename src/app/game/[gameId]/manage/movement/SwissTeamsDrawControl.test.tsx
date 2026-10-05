@@ -22,14 +22,14 @@ function previewAck(over: Record<string, unknown> = {}) {
       { a: 2, b: 4 },
     ],
     byeTeamId: null,
-    triangle: null,
+    triple: null,
     named: {
       matches: [
         { a: { teamId: 1, name: "Sharks" }, b: { teamId: 3, name: "Owls" } },
         { a: { teamId: 2, name: "Dragons" }, b: { teamId: 4, name: "Eagles" } },
       ],
       bye: null,
-      triangle: null,
+      triple: null,
     },
     // Distinct standings labels (won't collide with the match-card team names
     // in the DOM, so the test can target match content unambiguously).
@@ -209,7 +209,7 @@ describe("SwissTeamsDrawControl", () => {
             { a: { teamId: 3, name: "Owls" }, b: { teamId: 4, name: "Eagles" } },
           ],
           bye: { teamId: 5, name: "Robins" },
-          triangle: null,
+          triple: null,
         },
         advisoryInputs: { teams: 5, playedOpponents: [] },
       }) as never,

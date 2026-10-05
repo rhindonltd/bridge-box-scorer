@@ -31,9 +31,10 @@ interface TravellerViewProps {
  * Pairs games render a flat NS/EW table (one row per table). A teams game
  * (when `teamMatches` framing is supplied) renders one card per team match: the
  * two rooms (open at the home team's table, closed at the opponent's) shown as
- * the two teams by name with each room's contract and the board's IMP margin; a
- * three-way triangle shows its three rooms. Either way, every physical table
- * row stays independently tappable and selects that line for correction.
+ * the two teams by name with each room's contract and the board's IMP margin. A
+ * three-way triple's board belongs to one of its head-to-head comparisons, so
+ * it shows as an ordinary two-team card too. Every physical table row stays
+ * independently tappable and selects that line for correction.
  */
 export function Traveller({
   boardNumber,
@@ -158,7 +159,7 @@ function PairTravellerTable({
 
 /**
  * The teams traveller: one card per match. Each card names the two (or three,
- * for a triangle) teams and shows one selectable room row per physical table —
+ * for a triple) teams and shows one selectable room row per physical table —
  * the home team's home pair (NS) hosting the opponent's away pair. A two-team
  * match also shows the board's IMP margin from the higher-scoring team's side.
  */
@@ -187,11 +188,9 @@ function TeamMatchList({
           >
             <div className="flex items-center justify-between gap-2 border-b border-gray-200 bg-gray-100 px-3 py-2">
               <span className="text-sm font-semibold text-gray-700">
-                {match.triangle
-                  ? "Three-way"
-                  : match.teams.map((t) => t.name).join(" v ")}
+                {match.teams.map((t) => t.name).join(" v ")}
               </span>
-              {!match.triangle && match.margin != null && (
+              {match.margin != null && (
                 <span className="text-xs font-medium text-gray-600 tabular-nums">
                   {match.margin === 0
                     ? "Tied"

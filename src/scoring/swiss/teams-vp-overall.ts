@@ -1,14 +1,15 @@
 import { TeamSwissVpOverallScore } from "@/model/leaderboard";
 import { rank } from "@/scoring/overall/rank";
-import { impVpWinner, impVpSided } from "./imp-vp-table";
+import { impVpWinner } from "./imp-vp-table";
 import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
 import { VpAccumulator, creditVp } from "./vp-accumulator";
 import {
   groupTeamMatches,
-  groupTeamTriangles,
+  groupTeamTriples,
   teamByeRounds,
   teamMatchBoardImps,
-  triangleTeamImps,
+  tripleTeamStakes,
+  tripleVpPool,
 } from "./team-match";
 
 /**
@@ -73,27 +74,42 @@ export function calculateTeamsVpOverall(
     creditVp(totals, bye.teamId, bye.round, BYE_VP);
   }
 
-  // Credit each triangle team its cross-IMP result for the round, converted to
-  // VP on the WBF scale (scaled to boards played). Each team's cross-IMP total
-  // is signed (positive = above the field): a positive margin earns the winner
-  // VP, a negative one the mirrored loser VP, so all three centre on 10.
-  for (const triangle of groupTeamTriangles(boardRows)) {
-    const { perTeam, boardsPlayed } = triangleTeamImps(triangle);
-    for (const team of perTeam) {
+  // Credit each triple team its head-to-head comparison VPs. A triple is three
+  // ordinary two-team comparisons (x-y, y-z, z-x); each team plays two of them.
+  // Each comparison's IMP margin converts to VP on the 10-VP half pool (SHORT)
+  // or 20-VP full pool (LONG); the loser takes the mirror. A team's two
+  // comparisons are summed into the round(s) its NS pair hosted them in (SHORT:
+  // one round; LONG: split across R and R+1). A comparison with nothing
+  // comparable yet sits at the neutral 10 — so a long triple reads 10/10 across
+  // both rounds until its second round is scored (both rooms of a comparison
+  // are needed for a margin), without lurching the standings.
+  for (const triple of groupTeamTriples(boardRows)) {
+    const pool = tripleVpPool(triple);
+    // Aggregate each (team, round) VP across the team's comparisons, then
+    // credit once (creditVp assigns the round value, so it must be pre-summed).
+    const byTeamRound = new Map<string, number>();
+    for (const stake of tripleTeamStakes(triple)) {
+      const { margin, boardsPlayed } = teamMatchBoardImps(stake.comparison);
+      let vp: number;
       if (boardsPlayed === 0) {
-        // Nothing comparable yet: sit the team at the neutral average.
-        creditVp(totals, team.teamId, triangle.round, NEUTRAL_VP);
-        continue;
+        // Nothing comparable yet: the dead-even midpoint of this pool (5 on the
+        // 10-VP half pool, 10 on the 20-VP full pool). A SHORT team's two
+        // 5-neutral halves sum to the round's neutral 10; a LONG team's single
+        // per-round comparison is a neutral 10.
+        vp = pool / 2;
+      } else {
+        const winnerVP = impVpWinner(Math.abs(margin), boardsPlayed, pool);
+        const loserVP = pool - winnerVP;
+        // A non-negative margin favours the home side; the away side mirrors.
+        const homeWon = margin >= 0;
+        vp = stake.isHome === homeWon ? winnerVP : loserVP;
       }
-      // Each team's signed cross-IMP total → VP on the EBU 20-VP discrete
-      // scale, independent per team (a positive total above the neutral 10, a
-      // negative total the mirror below).
-      creditVp(
-        totals,
-        team.teamId,
-        triangle.round,
-        impVpSided(team.crossImps, boardsPlayed, 20),
-      );
+      const key = `${stake.teamId}|${stake.round}`;
+      byTeamRound.set(key, (byTeamRound.get(key) ?? 0) + vp);
+    }
+    for (const [key, vp] of byTeamRound) {
+      const [teamId, roundStr] = key.split("|");
+      creditVp(totals, teamId, Number(roundStr), vp);
     }
   }
 

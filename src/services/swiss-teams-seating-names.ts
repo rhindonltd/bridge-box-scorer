@@ -5,7 +5,7 @@ import { findTeams } from "@/db/games/queries/find-teams";
 import type {
   TeamId,
   TeamsMatch,
-  TeamsTriangle,
+  TeamsTriple,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
 import type { SectionLetter } from "@/model/participants";
 
@@ -21,18 +21,18 @@ export interface NamedTeamsMatch {
   b: NamedTeam;
 }
 
-/** A three-way triangle with all three teams' names. */
-export interface NamedTeamsTriangle {
+/** A three-way triple with all three teams' names. */
+export interface NamedTeamsTriple {
   a: NamedTeam;
   b: NamedTeam;
   c: NamedTeam;
 }
 
-/** A round's team draw with names: the matches plus any bye or triangle. */
+/** A round's team draw with names: the matches plus any bye or triple. */
 export interface NamedTeamsSeating {
   matches: NamedTeamsMatch[];
   bye: NamedTeam | null;
-  triangle: NamedTeamsTriangle | null;
+  triple: NamedTeamsTriple | null;
 }
 
 /**
@@ -48,7 +48,7 @@ export async function resolveSwissTeamsMatchNames(
   section: SectionLetter,
   matches: TeamsMatch[],
   byeTeamId: TeamId | null,
-  triangle: TeamsTriangle | null,
+  triple: TeamsTriple | null,
 ): Promise<NamedTeamsSeating> {
   const assigned = await findTeams(db);
   const nameBySeat = new Map(assigned.map((t) => [t.id, t.name]));
@@ -61,9 +61,9 @@ export async function resolveSwissTeamsMatchNames(
   return {
     matches: matches.map((m) => ({ a: named(m.a), b: named(m.b) })),
     bye: byeTeamId == null ? null : named(byeTeamId),
-    triangle:
-      triangle == null
+    triple:
+      triple == null
         ? null
-        : { a: named(triangle.a), b: named(triangle.b), c: named(triangle.c) },
+        : { a: named(triple.a), b: named(triple.b), c: named(triple.c) },
   };
 }

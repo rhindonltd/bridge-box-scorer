@@ -19,12 +19,21 @@
  * Odd team counts are supported two ways, chosen by the director (`oddHandling`):
  *   - "BYE": one team sits out each round (the bottom table in round 1, then the
  *     lowest-ranked team without a prior bye), mirroring the Swiss Pairs sit-out.
- *   - "TRIANGLE": three teams play a three-way this round (the bottom three
- *     tables in round 1, then the lowest-ranked three without a recent triangle);
- *     the remaining even field is paired normally. A triangle is scored
- *     cross-IMP/Butler across its three tables — see the scoring layer.
- * The three chosen teams meet as A-NS/B-EW, B-NS/C-EW, C-NS/A-EW so every team
- * plays every other over the round's boards (all three tables play all boards).
+ *   - "TRIPLE": three teams play a three-way (a "triple") instead of one team
+ *     sitting out. The three chosen teams meet as a round-robin of three
+ *     head-to-head comparisons — x v y, y v z, z v x (for teams x < y < z) —
+ *     and the remaining even field is paired normally. A triple comes in two
+ *     flavours, fixed per round by the director's `oddRoundPlan`:
+ *       - SHORT: the whole three-way fits in ONE round. Each head-to-head is a
+ *         half-sized board comparison; the three comparisons use three disjoint
+ *         board sets A, B, C (A/B are the round's two halves, C a fresh
+ *         half-set). The away pairs switch tables at the round's midpoint.
+ *       - LONG: the three-way is spread over TWO consecutive rounds R and R+1.
+ *         Each head-to-head is a FULL-board comparison; the first room of each
+ *         plays in round R, the second in round R+1. No extra board set is
+ *         needed (the two rounds already have distinct board ranges).
+ * In BOTH flavours every team plays all of its boards — there is no sit-out and
+ * no unplayed-board compensation for a teams triple (contrast Swiss Pairs).
  *
  * This module is framework/IO-free: all persistence, scoring and socket
  * plumbing lives elsewhere.
@@ -33,8 +42,25 @@
 /** A team's stable id for the whole event: its home table number (1..teams). */
 export type TeamId = number;
 
-/** How an odd team field is resolved for a round. */
-export type OddHandling = "BYE" | "TRIANGLE";
+/** How an odd team field is resolved for the event (director's choice). */
+export type OddHandling = "BYE" | "TRIPLE";
+
+/**
+ * How a single round's odd team is resolved, taken from the director's
+ * `oddRoundPlan`:
+ *   - "BYE"  — one team sits out this round.
+ *   - "SHORT" — a short triple (whole three-way inside this one round).
+ *   - { kind: "LONG"; group } — one slot of a long triple spanning this round
+ *     and its adjacent partner round (both plan entries share `group`).
+ * An even field ignores this entirely.
+ */
+export type OddRoundResolution =
+  | "BYE"
+  | "SHORT"
+  | { kind: "LONG"; group: number };
+
+/** Which flavour of triple a drawn round carries. */
+export type TripleKind = "SHORT" | "LONG";
 
 /** A single drawn match between two teams for one round. */
 export interface TeamsMatch {
@@ -44,15 +70,63 @@ export interface TeamsMatch {
 }
 
 /**
- * A three-way "triangle" for one round: three teams that play each other over
- * the round's boards. Stored in ascending id order (`a < b < c`). The seating
- * cycle is fixed by that order: A-NS vs B-EW, B-NS vs C-EW, C-NS vs A-EW.
+ * A three-way "triple" for one round: three teams that play a round-robin of
+ * three head-to-head comparisons. Stored in ascending id order (`a < b < c`).
+ * The three comparisons are fixed by that order: x-y, y-z, z-x (see
+ * {@link expandTeamTriple} for the physical table layout).
+ *
+ * `kind` records whether this is a SHORT triple (the whole three-way inside one
+ * round, on three half-sized board sets) or a LONG triple (spread over two
+ * consecutive rounds on full boards). A LONG triple also carries the `group`
+ * linking its two round slots and `slot` saying which of the two this is
+ * (1 = the first/earlier round, 2 = the second). A SHORT triple has `group`
+ * and `slot` null.
  */
-export interface TeamsTriangle {
+export interface TeamsTriple {
   a: TeamId;
   b: TeamId;
   c: TeamId;
+  /**
+   * SHORT (one round, three half-sized board sets) or LONG (two consecutive
+   * rounds, full boards). Optional for backward/forward compatibility with
+   * callers and persisted shapes that predate the short/long split; absent is
+   * treated as SHORT (a one-round three-way). The draw engine always sets it.
+   */
+  kind?: TripleKind;
+  /**
+   * The long-triple group id linking its two round slots. Present only for a
+   * LONG triple; absent/null for SHORT.
+   */
+  group?: number | null;
+  /**
+   * Which slot of a long triple this round is: 1 (the first/earlier round) or
+   * 2 (the second). Present only for a LONG triple; absent/null for SHORT.
+   */
+  slot?: 1 | 2 | null;
 }
+
+/**
+ * One head-to-head comparison inside a triple: two teams meeting over one board
+ * set, played in two rooms (as any teams match). `home`/`away` name the first
+ * room's NS and EW teams; the mirror room swaps them. `boardSet` tags which of
+ * the triple's board subsets this comparison uses:
+ *   - SHORT: "A", "B" or "C" (the three disjoint half-sized sets).
+ *   - LONG: "R1" (plays in the earlier round) or "R2" (the later round) — a long
+ *     comparison's two rooms span the triple's two rounds.
+ */
+export interface TripleComparison {
+  /** The lower-id team of this comparison. */
+  low: TeamId;
+  /** The higher-id team of this comparison. */
+  high: TeamId;
+  /** The two physical table-rows (open + closed room) for this comparison. */
+  rows: TeamsSeatPlacement[];
+  /** Which board subset this comparison uses (A/B/C short, R1/R2 long). */
+  boardSet: TripleBoardSet;
+}
+
+/** The board subset a triple comparison plays. */
+export type TripleBoardSet = "A" | "B" | "C";
 
 /** Everything the engine needs to draw the next round. */
 export interface SwissTeamsDrawInput {
@@ -74,10 +148,10 @@ export interface SwissTeamsDrawInput {
 /** Everything the engine needs to draw the next round. */
 export interface SwissTeamsDrawInputWithBye extends SwissTeamsDrawInput {
   /**
-   * How an odd field is resolved this round. Defaults to "BYE". Ignored when
-   * the field is even.
+   * How THIS round's odd team is resolved (from the director's `oddRoundPlan`).
+   * Defaults to "BYE". Ignored when the field is even.
    */
-  oddHandling?: OddHandling;
+  oddRound?: OddRoundResolution;
   /**
    * Teams that have already had a bye (each may only sit out once until the
    * field is exhausted). Only consulted for an odd "BYE" field. Optional;
@@ -85,11 +159,20 @@ export interface SwissTeamsDrawInputWithBye extends SwissTeamsDrawInput {
    */
   hadBye?: ReadonlySet<TeamId>;
   /**
-   * Teams that have already been in a triangle (each takes a triangle at most
-   * once until the field is exhausted). Only consulted for an odd "TRIANGLE"
+   * Teams that have already been in a triple (each takes a triple at most
+   * once until the field is exhausted). Only consulted for an odd triple
    * field. Optional; defaults to none.
    */
-  hadTriangle?: ReadonlySet<TeamId>;
+  hadTriple?: ReadonlySet<TeamId>;
+  /**
+   * A pre-determined triple to use for this round INSTEAD of choosing one — set
+   * for the SECOND slot of a long triple, whose three teams are fixed by its
+   * first slot (see {@link continueLongTriple}). When present, the engine does
+   * NOT run {@link chooseTeamTriple}: it uses this triple verbatim, removes its
+   * three teams, and pairs the rest of the field. Ignored unless `oddRound` is a
+   * triple (`"SHORT"` or `{kind:"LONG"}`) and the field is odd.
+   */
+  fixedTriple?: TeamsTriple;
 }
 
 /** The drawn next round plus any advisories the director should see. */
@@ -103,23 +186,22 @@ export interface SwissTeamsDrawResult {
   hadUnavoidableRepeat: boolean;
   /**
    * The team sitting out this round (odd field, bye handling), or null when the
-   * field is even or a triangle was used. The bye team plays no match and is
+   * field is even or a triple was used. The bye team plays no match and is
    * credited an average-plus result in the standings.
    */
   byeTeamId: TeamId | null;
   /**
-   * The three-way triangle for this round (odd field, triangle handling), or
-   * null when the field is even or a bye was used. The three teams play a
-   * three-way and are scored cross-IMP across their tables.
+   * The three-way triple for this round (odd field, triple handling), or
+   * null when the field is even or a bye was used.
    */
-  triangle: TeamsTriangle | null;
+  triple: TeamsTriple | null;
 }
 
-/** Round 1 matches plus the odd-field resolution (bye team or triangle). */
+/** Round 1 matches plus the odd-field resolution (bye team or triple). */
 export interface SwissTeamsRoundOneResult {
   matches: TeamsMatch[];
   byeTeamId: TeamId | null;
-  triangle: TeamsTriangle | null;
+  triple: TeamsTriple | null;
 }
 
 /**
@@ -173,38 +255,57 @@ function shuffle<T>(items: T[], rng: () => number): T[] {
 }
 
 /**
+ * Build the {@link TeamsTriple} record for a chosen set of three teams and the
+ * round's resolution. For a SHORT triple `group`/`slot` are null; for a LONG
+ * triple they carry the plan's group id and which of the two round slots this
+ * round is.
+ */
+function makeTriple(
+  a: TeamId,
+  b: TeamId,
+  c: TeamId,
+  resolution: "SHORT" | { kind: "LONG"; group: number },
+): TeamsTriple {
+  if (resolution === "SHORT") {
+    return { a, b, c, kind: "SHORT", group: null, slot: null };
+  }
+  return { a, b, c, kind: "LONG", group: resolution.group, slot: 1 };
+}
+
+/**
  * Round 1 is a random pairing of the teams (there are no standings yet). The
  * teams are shuffled with a seeded PRNG and paired off two at a time, so the
  * result is deterministic for a given seed. Matches are returned in ascending
  * lower-team-id order.
  *
  * Odd field: there are no standings yet, so the odd resolution is deterministic
- * (bottom tables) rather than random. Under "BYE" the BOTTOM table (highest id)
- * sits out and the remaining `teams - 1` are shuffled and paired. Under
- * "TRIANGLE" the bottom THREE tables (`teams-2, teams-1, teams`) form the
- * triangle and the remaining `teams - 3` (an even count) are shuffled and
- * paired. The chosen resolution is reported on `byeTeamId` / `triangle`.
+ * (bottom tables) rather than random, driven by the round's plan entry
+ * (`oddRound`, default "BYE"). Under "BYE" the BOTTOM table (highest id) sits
+ * out and the remaining `teams - 1` are shuffled and paired. Under a triple
+ * (SHORT or LONG) the bottom THREE tables (`teams-2, teams-1, teams`) form the
+ * triple and the remaining `teams - 3` (an even count) are shuffled and paired.
+ * The chosen resolution is reported on `byeTeamId` / `triple`.
  */
 export function swissTeamsRoundOne(
   teams: number,
   seed: number,
-  oddHandling: OddHandling = "BYE",
+  oddRound: OddRoundResolution = "BYE",
 ): SwissTeamsRoundOneResult {
   const isOdd = teams % 2 !== 0;
-  const useTriangle = isOdd && oddHandling === "TRIANGLE";
+  const useTriple = isOdd && oddRound !== "BYE";
 
-  // Odd field: the bottom table(s) take the round-1 bye/triangle; pair the rest.
-  const byeTeamId = isOdd && !useTriangle ? teams : null;
-  const triangle: TeamsTriangle | null = useTriangle
-    ? { a: teams - 2, b: teams - 1, c: teams }
+  // Odd field: the bottom table(s) take the round-1 bye/triple; pair the rest.
+  const byeTeamId = isOdd && !useTriple ? teams : null;
+  const triple: TeamsTriple | null = useTriple
+    ? makeTriple(teams - 2, teams - 1, teams, oddRound)
     : null;
 
   const removed = new Set<TeamId>();
   if (byeTeamId !== null) removed.add(byeTeamId);
-  if (triangle !== null) {
-    removed.add(triangle.a);
-    removed.add(triangle.b);
-    removed.add(triangle.c);
+  if (triple !== null) {
+    removed.add(triple.a);
+    removed.add(triple.b);
+    removed.add(triple.c);
   }
   const playing = teamIds(teams).filter((id) => !removed.has(id));
 
@@ -216,7 +317,7 @@ export function swissTeamsRoundOne(
     matches.push(normalizeMatch(order[i], order[i + 1]));
   }
 
-  return { matches: sortMatches(matches), byeTeamId, triangle };
+  return { matches: sortMatches(matches), byeTeamId, triple };
 }
 
 /**
@@ -239,23 +340,24 @@ function chooseTeamBye(
 }
 
 /**
- * Choose the three teams for an odd field's triangle: the lowest-ranked three
+ * Choose the three teams for an odd field's triple: the lowest-ranked three
  * (nearest the bottom of the standings) that have not already been in a
- * triangle, scanning bottom-up. Once fewer than three such teams remain (the
- * field has been through a full cycle of triangles), the pool is topped up with
- * the remaining lowest-ranked teams so a triangle is always formed. Returned in
- * ascending id order so the seating cycle (A-NS/B-EW, B-NS/C-EW, C-NS/A-EW) is
- * deterministic. Analogous to {@link chooseTeamBye}.
+ * triple, scanning bottom-up. Once fewer than three such teams remain (the
+ * field has been through a full cycle of triples), the pool is topped up with
+ * the remaining lowest-ranked teams so a triple is always formed. Returned in
+ * ascending id order so the comparison cycle (x-y, y-z, z-x) is deterministic.
+ * Analogous to {@link chooseTeamBye}. Used for both SHORT triples and the
+ * FIRST slot of a LONG triple (the second slot reuses the first's teams).
  */
-function chooseTeamTriangle(
+function chooseTeamTriple(
   standings: TeamId[],
-  hadTriangle: ReadonlySet<TeamId>,
-): TeamsTriangle {
+  hadTriple: ReadonlySet<TeamId>,
+): [TeamId, TeamId, TeamId] {
   const chosen: TeamId[] = [];
 
-  // Prefer the lowest-ranked teams without a prior triangle (bottom-up).
+  // Prefer the lowest-ranked teams without a prior triple (bottom-up).
   for (let i = standings.length - 1; i >= 0 && chosen.length < 3; i--) {
-    if (!hadTriangle.has(standings[i])) {
+    if (!hadTriple.has(standings[i])) {
       chosen.push(standings[i]);
     }
   }
@@ -268,7 +370,7 @@ function chooseTeamTriangle(
   }
 
   const [a, b, c] = chosen.sort((x, y) => x - y);
-  return { a, b, c };
+  return [a, b, c];
 }
 
 /**
@@ -339,36 +441,50 @@ function pairUp(
  * Draw the next Swiss Teams round from the current standings, avoiding repeat
  * opponents where possible (least-repeats fallback otherwise).
  *
- * Even field: every team is paired; `byeTeamId` and `triangle` are null. Odd
- * field: resolved per `oddHandling` (default "BYE"):
+ * Even field: every team is paired; `byeTeamId` and `triple` are null. Odd
+ * field: resolved per this round's plan entry (`oddRound`, default "BYE"):
  *   - "BYE": the lowest-ranked team without a prior bye sits out (see
  *     {@link chooseTeamBye}) and the remaining even field is paired.
- *   - "TRIANGLE": the lowest-ranked three without a recent triangle (see
- *     {@link chooseTeamTriangle}) form a three-way and the remaining even field
- *     is paired.
- * The chosen resolution is reported on `byeTeamId` / `triangle`.
+ *   - SHORT / LONG: the lowest-ranked three without a recent triple (see
+ *     {@link chooseTeamTriple}) form a three-way and the remaining even field
+ *     is paired. The returned `triple.kind` records SHORT vs LONG.
+ * The chosen resolution is reported on `byeTeamId` / `triple`.
+ *
+ * NOTE: this draws the FIRST slot of a LONG triple (and SHORT triples). The
+ * SECOND slot of a long triple is NOT drawn here — it reuses the first slot's
+ * teams (see {@link continueLongTriple}); the draw service must detect a round
+ * scheduled as a long triple's second slot and not draw a fresh round for it.
  */
 export function drawSwissTeamsRound(
   input: SwissTeamsDrawInputWithBye,
 ): SwissTeamsDrawResult {
-  const { standings, playedOpponents, hadBye, hadTriangle } = input;
-  const oddHandling = input.oddHandling ?? "BYE";
+  const { standings, playedOpponents, hadBye, hadTriple, fixedTriple } = input;
+  const oddRound = input.oddRound ?? "BYE";
 
   const isOdd = standings.length % 2 === 1;
-  const useTriangle = isOdd && oddHandling === "TRIANGLE";
+  const useTriple = isOdd && oddRound !== "BYE";
 
   const byeTeamId =
-    isOdd && !useTriangle ? chooseTeamBye(standings, hadBye ?? new Set()) : null;
-  const triangle = useTriangle
-    ? chooseTeamTriangle(standings, hadTriangle ?? new Set())
-    : null;
+    isOdd && !useTriple ? chooseTeamBye(standings, hadBye ?? new Set()) : null;
+
+  let triple: TeamsTriple | null = null;
+  if (useTriple) {
+    // A long triple's second slot has its three teams fixed by its first slot,
+    // so use the supplied triple verbatim rather than choosing a fresh one.
+    if (fixedTriple) {
+      triple = fixedTriple;
+    } else {
+      const [a, b, c] = chooseTeamTriple(standings, hadTriple ?? new Set());
+      triple = makeTriple(a, b, c, oddRound);
+    }
+  }
 
   const removed = new Set<TeamId>();
   if (byeTeamId !== null) removed.add(byeTeamId);
-  if (triangle !== null) {
-    removed.add(triangle.a);
-    removed.add(triangle.b);
-    removed.add(triangle.c);
+  if (triple !== null) {
+    removed.add(triple.a);
+    removed.add(triple.b);
+    removed.add(triple.c);
   }
   const playing = standings.filter((id) => !removed.has(id));
 
@@ -378,8 +494,41 @@ export function drawSwissTeamsRound(
     matches: sortMatches(matches),
     hadUnavoidableRepeat,
     byeTeamId,
-    triangle,
+    triple,
   };
+}
+
+/**
+ * Translate the director's event-level `oddHandling` plus the per-round
+ * `oddRoundPlan` into THIS round's {@link OddRoundResolution} (1-indexed round).
+ *
+ * - "BYE" handling (or no triple plan): always a bye.
+ * - "TRIPLE" handling: the plan's entry for the round (`oddRoundPlan[round-1]`)
+ *   — a "BYE", a "SHORT" triple, or a `{ kind: "LONG"; group }` slot. If the
+ *   plan is missing or shorter than the round (shouldn't happen once the schema
+ *   validates length === rounds), it falls back to a bye.
+ *
+ * The `oddRoundPlan` entry shape is exactly {@link OddRoundResolution}, so this
+ * is really a lookup with safe defaults; it lives here so both the start
+ * (round 1) and draw (later rounds) paths share one translation.
+ */
+export function roundOddResolution(
+  oddHandling: OddHandling | undefined,
+  oddRoundPlan: readonly OddRoundResolution[] | undefined,
+  roundNumber: number,
+): OddRoundResolution {
+  if (oddHandling !== "TRIPLE") return "BYE";
+  return oddRoundPlan?.[roundNumber - 1] ?? "BYE";
+}
+
+/**
+ * Build the SECOND slot of a long triple from its first slot. The three teams
+ * are unchanged (a long triple is one three-way spread over two rounds); only
+ * `slot` advances to 2. The draw service calls this for a round scheduled as a
+ * long triple's second entry rather than drawing a fresh round.
+ */
+export function continueLongTriple(firstSlot: TeamsTriple): TeamsTriple {
+  return { ...firstSlot, slot: 2 };
 }
 
 /**
@@ -404,24 +553,66 @@ export function expandTeamMatches(matches: TeamsMatch[]): TeamsSeatPlacement[] {
 }
 
 /**
- * Expand a round's triangle into its three physical pair-seat placements — one
- * per home table — following the fixed cycle for teams A < B < C:
- *   - table A: A home pair (NS) vs B away pair (EW),
- *   - table B: B home pair (NS) vs C away pair (EW),
- *   - table C: C home pair (NS) vs A away pair (EW).
- * All three tables play the round's whole board set, so every team meets both
- * others; the cross-IMP scorer compares the three tables board by board.
- * Placements are returned in ascending table order.
+ * Expand a triple into its three head-to-head comparisons (x-y, y-z, z-x for
+ * teams x < y < z), each with its two physical table-rows and board set.
+ *
+ * The six table-rows follow §4 of the design (left = NS pair's team, right =
+ * away EW pair's team; home NS pairs never move):
+ *
+ *   | home NS | away EW | board set |
+ *   | ------- | ------- | --------- |
+ *   | x       | y       | A         |  ┐ x-y comparison (set A)
+ *   | y       | x       | A         |  ┘
+ *   | y       | z       | B         |  ┐ y-z comparison (set B)
+ *   | z       | y       | B         |  ┘
+ *   | z       | x       | C         |  ┐ z-x comparison (set C)
+ *   | x       | z       | C         |  ┘
+ *
+ * So each comparison is an ordinary two-team match (two rooms sharing a board
+ * set): x-y on A, y-z on B, z-x on C. For a SHORT triple A/B/C are three
+ * disjoint half-sized sets within one round; for a LONG triple each comparison
+ * plays over full boards with its first room in round R and its second in R+1
+ * (the board subset tags still mark the two rooms as A/B/C for a stable
+ * identity — the materializer maps them to the two rounds' board ranges).
+ *
+ * The comparisons are returned in A, B, C order; each comparison's `low`/`high`
+ * are its two teams in ascending id order, and its `rows` are the two rooms
+ * (home NS team at its own table, away EW team travelling in).
  */
-export function expandTeamTriangle(
-  triangle: TeamsTriangle,
-): TeamsSeatPlacement[] {
-  const { a, b, c } = triangle;
+export function expandTeamTriple(triple: TeamsTriple): TripleComparison[] {
+  const { a: x, b: y, c: z } = triple;
+
+  // Each comparison: the two teams, the two rooms, and its board set.
+  // Room 1 is the "first half" row (half 1 / round R), room 2 the mirror.
+  const comparison = (
+    firstHomeNs: TeamId,
+    firstAwayEw: TeamId,
+    boardSet: TripleBoardSet,
+  ): TripleComparison => {
+    const rows: TeamsSeatPlacement[] = [
+      {
+        tableNumber: firstHomeNs,
+        nsTeam: firstHomeNs,
+        ewTeam: firstAwayEw,
+      },
+      {
+        tableNumber: firstAwayEw,
+        nsTeam: firstAwayEw,
+        ewTeam: firstHomeNs,
+      },
+    ];
+    const [low, high] =
+      firstHomeNs < firstAwayEw
+        ? [firstHomeNs, firstAwayEw]
+        : [firstAwayEw, firstHomeNs];
+    return { low, high, rows, boardSet };
+  };
+
   return [
-    { tableNumber: a, nsTeam: a, ewTeam: b },
-    { tableNumber: b, nsTeam: b, ewTeam: c },
-    { tableNumber: c, nsTeam: c, ewTeam: a },
-  ].sort((x, y) => x.tableNumber - y.tableNumber);
+    comparison(x, y, "A"), // x-y on set A
+    comparison(y, z, "B"), // y-z on set B
+    comparison(z, x, "C"), // z-x on set C
+  ];
 }
 
 /** Order a match's ids so the lower id is `a` (canonical form). */
@@ -439,41 +630,42 @@ function sortMatches(matches: TeamsMatch[]): TeamsMatch[] {
 // The director can hand-adjust a drawn round before committing it. A teams
 // round has no seats or directions to shuffle (home tables are fixed and only
 // away pairs travel), so the single edit primitive is "swap two teams": wherever
-// team X is placed this round — in a match, as the bye, or in the triangle —
+// team X is placed this round — in a match, as the bye, or in the triple —
 // team Y now sits, and vice versa. That one operation covers every case
 // (swapping two match teams re-pairs both matches; swapping a match team with
-// the bye changes who sits out; swapping into the triangle changes the
+// the bye changes who sits out; swapping into the triple changes the
 // three-way), and each team still appears exactly once, so the result is always
 // structurally valid. The edited round is re-evaluated with
 // {@link evaluateSwissTeamsRound} so the repeat advisory reflects the change.
 
 /**
  * A whole drawn round as plain, editable data: the matches plus the odd-field
- * resolution (a bye team or a triangle, at most one of which is set). This is
+ * resolution (a bye team or a triple, at most one of which is set). This is
  * what the director edits and what a commit persists verbatim.
  */
 export interface SwissTeamsRound {
   matches: TeamsMatch[];
   byeTeamId: TeamId | null;
-  triangle: TeamsTriangle | null;
+  triple: TeamsTriple | null;
 }
 
-/** Every team id placed in a round (matches + bye + triangle), order-agnostic. */
+/** Every team id placed in a round (matches + bye + triple), order-agnostic. */
 export function roundTeamIds(round: SwissTeamsRound): TeamId[] {
   const ids: TeamId[] = [];
   for (const m of round.matches) ids.push(m.a, m.b);
   if (round.byeTeamId != null) ids.push(round.byeTeamId);
-  if (round.triangle != null) {
-    ids.push(round.triangle.a, round.triangle.b, round.triangle.c);
+  if (round.triple != null) {
+    ids.push(round.triple.a, round.triple.b, round.triple.c);
   }
   return ids;
 }
 
 /**
  * Swap the positions of two teams in a drawn round. Wherever `teamX` is placed
- * (a match slot, the bye, or a triangle slot) `teamY` now sits, and vice versa;
- * every other placement is untouched. Matches and the triangle are re-normalised
- * to canonical (ascending-id) order so the result is stable and comparable.
+ * (a match slot, the bye, or a triple slot) `teamY` now sits, and vice versa;
+ * every other placement is untouched. Matches and the triple are re-normalised
+ * to canonical (ascending-id) order so the result is stable and comparable. A
+ * triple's `kind`/`group`/`slot` are preserved (only the member ids change).
  *
  * If either team is not part of the round, or the two are the same team, the
  * round is returned unchanged (deep-copied). Each team still appears exactly
@@ -487,7 +679,7 @@ export function swapTeams(
   const copy = (): SwissTeamsRound => ({
     matches: round.matches.map((m) => ({ ...m })),
     byeTeamId: round.byeTeamId,
-    triangle: round.triangle ? { ...round.triangle } : null,
+    triple: round.triple ? { ...round.triple } : null,
   });
 
   if (teamX === teamY) return copy();
@@ -503,20 +695,25 @@ export function swapTeams(
       round.matches.map((m) => normalizeMatch(swap(m.a), swap(m.b))),
     ),
     byeTeamId: round.byeTeamId == null ? null : swap(round.byeTeamId),
-    triangle: round.triangle
-      ? normalizeTriangle(
-          swap(round.triangle.a),
-          swap(round.triangle.b),
-          swap(round.triangle.c),
-        )
+    triple: round.triple
+      ? normalizeTriple(round.triple, swap)
       : null,
   };
 }
 
-/** Order a triangle's ids ascending so its seating cycle is deterministic. */
-function normalizeTriangle(x: TeamId, y: TeamId, z: TeamId): TeamsTriangle {
-  const [a, b, c] = [x, y, z].sort((p, q) => p - q);
-  return { a, b, c };
+/**
+ * Re-normalise a triple after a member swap: its three (possibly changed) ids
+ * are re-sorted ascending so the comparison cycle stays deterministic, while
+ * its `kind`/`group`/`slot` are preserved.
+ */
+function normalizeTriple(
+  triple: TeamsTriple,
+  swap: (id: TeamId) => TeamId,
+): TeamsTriple {
+  const [a, b, c] = [swap(triple.a), swap(triple.b), swap(triple.c)].sort(
+    (p, q) => p - q,
+  );
+  return { ...triple, a, b, c };
 }
 
 /** A per-round advisory for a teams draw, keyed so the UI can flag specifics. */
@@ -538,7 +735,7 @@ export interface SwissTeamsRoundAdvisories {
  * each edit — no round-trip, identical logic to the server's initial draw.
  */
 export interface SerializableTeamsAdvisoryInputs {
-  /** Number of teams in play (must be even overall; odd fields use bye/triangle). */
+  /** Number of teams in play (must be even overall; odd fields use bye/triple). */
   teams: number;
   /** Unordered team-pair opponent keys already played (see {@link teamOpponentKey}). */
   playedOpponents: string[];
@@ -550,9 +747,10 @@ export interface SerializableTeamsAdvisoryInputs {
  * Pure, so it runs identically on the server (initial draw) and the client
  * (after each edit) with no round-trip.
  *
- * A triangle's three pairwise matchups are each checked against history too, so
- * a repeat inside a triangle is surfaced. It never rejects — a director override
- * may intentionally create a repeat; this only *reports* so the UI can warn.
+ * A triple's three head-to-head comparisons (x-y, y-z, z-x) are each checked
+ * against history too, so a repeat inside a triple is surfaced. It never
+ * rejects — a director override may intentionally create a repeat; this only
+ * *reports* so the UI can warn.
  */
 export function evaluateSwissTeamsRound(
   round: SwissTeamsRound,
@@ -577,17 +775,17 @@ export function evaluateSwissTeamsRound(
     }
   }
 
-  // Repeat matchups: each drawn match plus each of a triangle's three edges.
+  // Repeat matchups: each drawn match plus each of a triple's three edges.
   const repeats: string[] = [];
   const addIfRepeat = (a: TeamId, b: TeamId) => {
     const key = teamOpponentKey(a, b);
     if (played.has(key)) repeats.push(key);
   };
   for (const m of round.matches) addIfRepeat(m.a, m.b);
-  if (round.triangle) {
-    addIfRepeat(round.triangle.a, round.triangle.b);
-    addIfRepeat(round.triangle.b, round.triangle.c);
-    addIfRepeat(round.triangle.a, round.triangle.c);
+  if (round.triple) {
+    addIfRepeat(round.triple.a, round.triple.b);
+    addIfRepeat(round.triple.b, round.triple.c);
+    addIfRepeat(round.triple.a, round.triple.c);
   }
 
   return {

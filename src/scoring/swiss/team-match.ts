@@ -1,14 +1,10 @@
 import { BoardOutcome } from "@/model/score";
 import { parseSeat } from "@/model/participants";
-import {
-  outcomeToScore,
-  computeImps,
-  computeCrossImps,
-} from "@/scoring/traveller/common";
+import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
 
 /**
  * The ascending union of the board numbers keyed in the given rows-by-board
- * maps. Used to span every board any room/table of a match or triangle has a
+ * maps. Used to span every board any room/table of a match or triple has a
  * row for, so a per-board list can be emitted even when only one side has
  * played a board yet.
  */
@@ -23,9 +19,9 @@ export function unionBoardNumbers(
 }
 
 /**
- * The canonical ordering for matches/triangles: by round, then section
+ * The canonical ordering for matches/triples: by round, then section
  * (lexicographic), then the lowest table number. Callers pass the table key
- * they order on (a match's home table, a triangle's lowest table).
+ * they order on (a match's home table, a triple's lowest table).
  */
 export function compareByRoundSectionTable(
   a: { round: number; section: string; table: number },
@@ -118,9 +114,9 @@ export function groupTeamMatches<R extends TeamMatchRow>(
     rowsByBoard: Map<number, R>;
   }
 
-  // Triangle tables score cross-IMP across three tables (see groupTeamTriangles),
+  // Triple tables score cross-IMP across three tables (see groupTeamTriples),
   // not as two-table head-to-heads, so exclude them here to avoid mis-pairing.
-  const triangleTables = triangleTableKeys(rows);
+  const tripleTables = tripleTableKeys(rows);
 
   // Index each home table's rows by (section, round, homeTable).
   const homeTables = new Map<string, HomeEntry>();
@@ -132,7 +128,7 @@ export function groupTeamMatches<R extends TeamMatchRow>(
     const homeTable = nsSeat.tableNumber;
     const opponentTable = ewSeat.tableNumber;
 
-    if (triangleTables.has(`${row.section}|${row.roundNumber}|${homeTable}`)) {
+    if (tripleTables.has(`${row.section}|${row.roundNumber}|${homeTable}`)) {
       continue;
     }
 
@@ -342,61 +338,92 @@ export function teamByeRounds<R extends TeamMatchRow>(
   }));
 }
 
+/** A table row's final score (override ?? confirmed), or null when unscored. */
+function scoreOfRow<R extends TeamMatchRow>(row: R | undefined): number | null {
+  if (!row) return null;
+  const outcome = boardResult(row);
+  return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
+}
+
 /* =========================================================================
-   TRIANGLES (three-way matches for an odd field)
+   TRIPLES (three-way matches for an odd field)
 
-   A triangle is three teams A<B<C playing a three-way over a round's whole
-   board set, seated in a fixed cycle so every team meets both others:
-     - table A: A home pair (NS) vs B away pair (EW)
-     - table B: B home pair (NS) vs C away pair (EW)
-     - table C: C home pair (NS) vs A away pair (EW)
-   Unlike a two-table head-to-head (where the two tables reference each other
-   MUTUALLY via their EW seats), a triangle's EW references form a directed
-   3-CYCLE (A→B→C→A) and are never mutual. That asymmetry is exactly how a
-   triangle is told apart from an ordinary match here.
+   When the field is odd, three teams x < y < z play a three-way instead of one
+   team sitting out. A triple is a round-robin of three HEAD-TO-HEAD comparisons
+   — x-y, y-z, z-x — each an ordinary two-room, same-boards team match on its
+   own board set (A, B, C). It comes in two kinds:
 
-   Scoring is cross-IMP / board comparison across the three tables: on each
-   board, a team is compared against BOTH other tables (not one opponent room),
-   so the two-table `teamMatchBoardImps` / `teamMatchBoardWins` do not apply.
+     - SHORT: the whole three-way is one round. A/B are the round's two halves,
+       C a fresh half-set; all six rooms (two per comparison) are in that round.
+     - LONG: the three-way is spread over two consecutive rounds R and R+1 on
+       FULL board sets (A = round R's boards, B = round R+1's, C a fresh full
+       set). The half-1 room of each comparison is played in round R, the half-2
+       room in round R+1 — but BOTH rooms of a comparison sit on the SAME set,
+       so each comparison IMPs cleanly on its one set.
+
+   This is NOT the old cross-IMP-across-three-tables model: each comparison is a
+   normal two-team head-to-head, scored with `teamMatchBoardImps` /
+   `teamMatchBoardWins`. The scorers convert each comparison's margin to VP on
+   the 10-VP half pool (SHORT) or 20-VP full pool (LONG) and sum a team's two.
+
+   Detection from board rows (no stored metadata): within a (section, round),
+     - a home table that references TWO distinct opponents is a SHORT triple
+       member (an ordinary match references exactly one opponent); its trio is
+       that table and its two opponents;
+     - otherwise, three single-opponent tables whose references form a
+       NON-MUTUAL directed 3-cycle (x→y→z→x) are a LONG triple's round. The two
+       consecutive rounds of a long triple each show such a 3-cycle for the same
+       trio and are merged into one triple spanning both rounds.
    ========================================================================= */
 
-/** One table of a triangle: its home team and that table's rows by board. */
-interface TriangleTable<R extends TeamMatchRow> {
+/** Which kind of three-way a reconstructed triple is. */
+export type TeamTripleKind = "SHORT" | "LONG";
+
+/** One table of a triple (its home team), kept for the traveller/board view. */
+interface TripleTable {
   table: number;
   teamId: string;
-  rowsByBoard: Map<number, R>;
 }
 
 /**
- * One reconstructed three-way triangle: the three home tables (in ascending
- * table order) that make up a three-team encounter in one round.
+ * One reconstructed three-way triple as its three head-to-head comparisons.
+ *
+ * Each comparison is an ordinary two-team {@link TeamMatch} (two rooms on one
+ * board set), so the standard two-team scorers apply. `kind` says whether the
+ * three-way was SHORT (one round, 10-VP half pool) or LONG (two rounds, 20-VP
+ * full pool); `rounds` lists the round(s) it spans (one for SHORT, two for
+ * LONG). `round` is the first round (for ordering). `tables` carries the three
+ * home teams in ascending table order for the board/traveller view.
  */
-export interface TeamTriangle<R extends TeamMatchRow> {
+export interface TeamTriple<R extends TeamMatchRow> {
   section: string;
   round: number;
-  /** The three tables in ascending order, each with its home team's rows. */
-  tables: [TriangleTable<R>, TriangleTable<R>, TriangleTable<R>];
-}
-
-/** A home table's opponent reference for one (section, round). */
-interface TableEdge {
-  section: string;
-  round: number;
-  homeTable: number;
-  opponentTable: number;
+  kind: TeamTripleKind;
+  rounds: number[];
+  tables: [TripleTable, TripleTable, TripleTable];
+  /** The three head-to-head comparisons, in ascending (lo, hi) team order. */
+  comparisons: [TeamMatch<R>, TeamMatch<R>, TeamMatch<R>];
 }
 
 /**
- * Index the non-SIT_OUT rows into one edge per (section, round, homeTable): the
- * home team (NS seat) and the single opponent it references (EW seat). A home
- * table faces exactly one opponent seat per round in every movement (two-team
- * or triangle), so the last EW seen is authoritative. Rows whose seats don't
- * parse (e.g. a phantom) are skipped.
+ * A detected triple: its three teams (ascending home-table order), its kind,
+ * and the round(s) it spans (one for SHORT, two consecutive for LONG). This is
+ * the shape {@link detectTriples} returns before the comparison rows are
+ * gathered; the draw-history reader also consumes it to recover `hadTriple`
+ * and a long triple's first-slot teams.
  */
-function indexTableEdges<R extends TeamMatchRow>(
+export interface DetectedTriple {
+  section: string;
+  teams: [number, number, number];
+  kind: TeamTripleKind;
+  rounds: number[];
+}
+
+/** Build the per-(section,round) map of home table → set of opponent tables. */
+function opponentsByRound<R extends TeamMatchRow>(
   rows: R[],
-): Map<string, TableEdge> {
-  const edges = new Map<string, TableEdge>();
+): Map<string, Map<number, Set<number>>> {
+  const perRound = new Map<string, Map<number, Set<number>>>();
   for (const row of rows) {
     if (row.status === "SIT_OUT") continue;
     let homeTable: number;
@@ -407,130 +434,254 @@ function indexTableEdges<R extends TeamMatchRow>(
     } catch {
       continue;
     }
-    edges.set(`${row.section}|${row.roundNumber}|${homeTable}`, {
-      section: row.section,
-      round: row.roundNumber,
-      homeTable,
-      opponentTable,
-    });
+    const key = `${row.section}|${row.roundNumber}`;
+    const byHome = perRound.get(key) ?? new Map<number, Set<number>>();
+    const opps = byHome.get(homeTable) ?? new Set<number>();
+    opps.add(opponentTable);
+    byHome.set(homeTable, opps);
+    perRound.set(key, byHome);
   }
-  return edges;
+  return perRound;
 }
 
 /**
- * The set of `(section|round|table)` keys that belong to a triangle, so
- * {@link groupTeamMatches} can exclude them.
- *
- * A triangle is three tables in the same (section, round) whose EW opponent
- * references form a directed 3-cycle (x→y→z→x) with none of them mutual. A
- * two-table match is mutual (x→y and y→x) and never matches this shape.
+ * Detect every triple from the board rows: SHORT triples (one round, some table
+ * with two opponents) and LONG triples (two consecutive rounds, each a
+ * non-mutual 3-cycle for the same trio). Exported so the draw-history reader
+ * can recover `hadTriple` and a long triple's first-slot teams with the SAME
+ * detection the scorer uses (no divergent logic). Only the `section`,
+ * `roundNumber`, `ns`, `ew` and `status` fields of each row are read.
  */
-function triangleTableKeys<R extends TeamMatchRow>(rows: R[]): Set<string> {
-  const edges = indexTableEdges(rows);
-  const keys = new Set<string>();
+export function detectTriples<R extends TeamMatchRow>(
+  rows: R[],
+): DetectedTriple[] {
+  const perRound = opponentsByRound(rows);
 
-  for (const edge of edges.values()) {
-    const { section, round, homeTable } = edge;
-    const self = `${section}|${round}|${homeTable}`;
-    if (keys.has(self)) continue;
+  const shorts: DetectedTriple[] = [];
+  // LONG rounds collected per (section, trio) so the two consecutive rounds of
+  // one long triple can be paired up.
+  const longRounds = new Map<
+    string,
+    { section: string; teams: [number, number, number]; rounds: number[] }
+  >();
 
-    // Follow the EW references three hops; a triangle returns to the start
-    // through three DISTINCT tables (x→y→z→x).
-    const y = edges.get(`${section}|${round}|${edge.opponentTable}`);
-    if (!y || y.opponentTable === homeTable) continue; // mutual = two-team match
-    const z = edges.get(`${section}|${round}|${y.opponentTable}`);
-    if (!z) continue;
+  for (const [key, byHome] of perRound) {
+    const [section, roundStr] = key.split("|");
+    const round = Number(roundStr);
 
-    if (
-      z.opponentTable === homeTable &&
-      new Set([homeTable, y.homeTable, z.homeTable]).size === 3
-    ) {
-      keys.add(`${section}|${round}|${homeTable}`);
-      keys.add(`${section}|${round}|${y.homeTable}`);
-      keys.add(`${section}|${round}|${z.homeTable}`);
+    // SHORT: a table with >=2 distinct opponents. Its trio is that table plus
+    // its two opponents (each of which also has two opponents in the trio).
+    const shortSeen = new Set<number>();
+    let hadShort = false;
+    for (const [home, opps] of byHome) {
+      if (opps.size < 2 || shortSeen.has(home)) continue;
+      const members = [home, ...opps].sort((a, b) => a - b);
+      if (members.length !== 3) continue; // a well-formed triple has three
+      hadShort = true;
+      for (const m of members) shortSeen.add(m);
+      shorts.push({
+        section,
+        teams: [members[0], members[1], members[2]],
+        kind: "SHORT",
+        rounds: [round],
+      });
+    }
+    if (hadShort) continue;
+
+    // LONG round: a non-mutual directed 3-cycle x→y→z→x among single-opponent
+    // tables. Each triple table references exactly one opponent this round.
+    const single = new Map<number, number>();
+    for (const [home, opps] of byHome) {
+      if (opps.size === 1) single.set(home, [...opps][0]!);
+    }
+    const seen = new Set<number>();
+    for (const [x, y] of single) {
+      if (seen.has(x)) continue;
+      if (single.get(y) === x) continue; // mutual = ordinary two-team match
+      const z = single.get(y);
+      if (z === undefined) continue;
+      if (single.get(z) === x && new Set([x, y, z]).size === 3) {
+        for (const m of [x, y, z]) seen.add(m);
+        const teams = [x, y, z].sort((a, b) => a - b) as [
+          number,
+          number,
+          number,
+        ];
+        const trioKey = `${section}|${teams.join("-")}`;
+        const entry = longRounds.get(trioKey) ?? { section, teams, rounds: [] };
+        entry.rounds.push(round);
+        longRounds.set(trioKey, entry);
+      }
     }
   }
 
+  // Group each trio's long rounds into long triples. A fully-played long triple
+  // spans two consecutive rounds, paired here; a long triple whose SECOND slot
+  // isn't materialized yet shows just its first round (an unpaired long round) —
+  // still emitted as a LONG triple so (a) the scorer sits it at the neutral
+  // 10/10 until the second slot is scored (its comparisons have only one room so
+  // nothing is comparable), and (b) the draw can recover its three teams to
+  // reuse for the second slot.
+  const longs: DetectedTriple[] = [];
+  for (const { section, teams, rounds } of longRounds.values()) {
+    const sorted = [...rounds].sort((a, b) => a - b);
+    for (let i = 0; i < sorted.length; i += 2) {
+      const pair =
+        i + 1 < sorted.length ? [sorted[i], sorted[i + 1]] : [sorted[i]];
+      longs.push({ section, teams, kind: "LONG", rounds: pair });
+    }
+  }
+
+  return [...shorts, ...longs];
+}
+
+/**
+ * The set of `(section|round|table)` keys that belong to a triple, so
+ * {@link groupTeamMatches} can exclude them from the two-team reconstruction.
+ */
+function tripleTableKeys<R extends TeamMatchRow>(rows: R[]): Set<string> {
+  const keys = new Set<string>();
+  for (const t of detectTriples(rows)) {
+    for (const round of t.rounds) {
+      for (const table of t.teams) {
+        keys.add(`${t.section}|${round}|${table}`);
+      }
+    }
+  }
   return keys;
 }
 
 /**
- * Reconstruct the three-way triangles from a game's board rows.
- *
- * Detects each directed 3-cycle of tables (see {@link triangleTableKeys}) and
- * emits one {@link TeamTriangle} per triangle, with its three tables in
- * ascending table order and each table's rows keyed by board. Triangles are
- * returned ordered by round, then section, then lowest table — matching the
- * ordering convention of {@link groupTeamMatches}.
+ * Keep only the rows of one home table that face a given opponent table. A
+ * triple's home table hosts TWO opponents (on two board sets), so a comparison
+ * must take only the rooms against its opponent. Returns rows keyed by board.
  */
-export function groupTeamTriangles<R extends TeamMatchRow>(
-  rows: R[],
-): TeamTriangle<R>[] {
-  const triangleKeys = triangleTableKeys(rows);
-  if (triangleKeys.size === 0) return [];
-
-  // Accumulate rows-by-board for every triangle table.
-  const tableRows = new Map<
-    string,
-    { section: string; round: number; table: number; rowsByBoard: Map<number, R> }
-  >();
-
-  for (const row of rows) {
-    if (row.status === "SIT_OUT") continue;
-    let homeTable: number;
+function restrictRowsToOpponent<R extends TeamMatchRow>(
+  rowsByBoard: Map<number, R>,
+  opponentTable: number,
+): Map<number, R> {
+  const out = new Map<number, R>();
+  for (const [board, row] of rowsByBoard) {
     try {
-      homeTable = parseSeat(row.ns).tableNumber;
+      if (parseSeat(row.ew).tableNumber === opponentTable) {
+        out.set(board, row);
+      }
     } catch {
-      continue;
+      // Non-seat EW (should not occur for a triple row) is skipped.
     }
-    const key = `${row.section}|${row.roundNumber}|${homeTable}`;
-    if (!triangleKeys.has(key)) continue;
-
-    const entry =
-      tableRows.get(key) ??
-      {
-        section: row.section,
-        round: row.roundNumber,
-        table: homeTable,
-        rowsByBoard: new Map<number, R>(),
-      };
-    entry.rowsByBoard.set(row.boardNumber, row);
-    tableRows.set(key, entry);
   }
+  return out;
+}
 
-  // Group the triangle tables by (section, round); each such group is exactly
-  // one triangle of three tables.
-  const groups = new Map<
-    string,
-    { section: string; round: number; tables: TriangleTable<R>[] }
-  >();
-  for (const entry of tableRows.values()) {
-    const groupKey = `${entry.round}|${entry.section}`;
-    const group =
-      groups.get(groupKey) ??
-      { section: entry.section, round: entry.round, tables: [] };
-    group.tables.push({
-      table: entry.table,
-      teamId: teamIdFor(entry.section, entry.table),
-      rowsByBoard: entry.rowsByBoard,
+/**
+ * The round a comparison is ordered/credited by: the smallest round number any
+ * of its rooms' rows carry, falling back to the triple's first round when the
+ * comparison has no rows yet.
+ */
+function comparisonMinRound<R extends TeamMatchRow>(
+  home: Map<number, R>,
+  opponent: Map<number, R>,
+  tripleRounds: number[],
+): number {
+  let min = Number.POSITIVE_INFINITY;
+  for (const map of [home, opponent]) {
+    for (const row of map.values()) {
+      if (row.roundNumber < min) min = row.roundNumber;
+    }
+  }
+  return Number.isFinite(min) ? min : Math.min(...tripleRounds);
+}
+
+/**
+ * Reconstruct the three-way triples from a game's board rows as their three
+ * head-to-head comparisons.
+ *
+ * Each detected triple's rows (restricted to its rounds and three teams) are
+ * grouped by unordered team pair into three {@link TeamMatch} comparisons
+ * (x-y, x-z, y-z), each an ordinary two-room same-boards match the standard
+ * two-team scorers consume. Triples are returned ordered by first round, then
+ * section, then lowest table — matching {@link groupTeamMatches}.
+ */
+export function groupTeamTriples<R extends TeamMatchRow>(
+  rows: R[],
+): TeamTriple<R>[] {
+  const detected = detectTriples(rows);
+  if (detected.length === 0) return [];
+
+  const triples: TeamTriple<R>[] = [];
+
+  for (const det of detected) {
+    const { section, teams, rounds } = det;
+    const roundSet = new Set(rounds);
+    const teamSet = new Set<number>(teams);
+
+    // rowsByBoard for each of the three home tables (this triple only).
+    const rowsByTable = new Map<number, Map<number, R>>();
+    for (const t of teams) rowsByTable.set(t, new Map<number, R>());
+
+    for (const row of rows) {
+      if (row.status === "SIT_OUT") continue;
+      if (row.section !== section || !roundSet.has(row.roundNumber)) continue;
+      let homeTable: number;
+      let opponentTable: number;
+      try {
+        homeTable = parseSeat(row.ns).tableNumber;
+        opponentTable = parseSeat(row.ew).tableNumber;
+      } catch {
+        continue;
+      }
+      // Only rows between two of this triple's teams belong to it.
+      if (!teamSet.has(homeTable) || !teamSet.has(opponentTable)) continue;
+      rowsByTable.get(homeTable)!.set(row.boardNumber, row);
+    }
+
+    // The three unordered pairs become three head-to-head comparisons. For a
+    // pair (lo, hi) the home room is lo-NS and the opponent room is hi-NS; both
+    // rooms share the comparison's board set, so teamMatchBoardImps lines them
+    // up by board number.
+    const pairs: Array<[number, number]> = [
+      [teams[0], teams[1]],
+      [teams[0], teams[2]],
+      [teams[1], teams[2]],
+    ];
+
+    const comparisons = pairs.map(([lo, hi]) => {
+      const homeRowsByBoard = restrictRowsToOpponent(rowsByTable.get(lo)!, hi);
+      const opponentRowsByBoard = restrictRowsToOpponent(
+        rowsByTable.get(hi)!,
+        lo,
+      );
+      const round = comparisonMinRound(
+        homeRowsByBoard,
+        opponentRowsByBoard,
+        rounds,
+      );
+      return {
+        section,
+        round,
+        homeTable: lo,
+        opponentTable: hi,
+        homeTeamId: teamIdFor(section, lo),
+        opponentTeamId: teamIdFor(section, hi),
+        homeRowsByBoard,
+        opponentRowsByBoard,
+      } satisfies TeamMatch<R>;
+    }) as [TeamMatch<R>, TeamMatch<R>, TeamMatch<R>];
+
+    triples.push({
+      section,
+      round: Math.min(...rounds),
+      kind: det.kind,
+      rounds: [...rounds].sort((a, b) => a - b),
+      tables: teams.map((table) => ({
+        table,
+        teamId: teamIdFor(section, table),
+      })) as [TripleTable, TripleTable, TripleTable],
+      comparisons,
     });
-    groups.set(groupKey, group);
   }
 
-  const triangles: TeamTriangle<R>[] = [];
-  for (const group of groups.values()) {
-    const tables = group.tables.sort((a, b) => a.table - b.table);
-    /* v8 ignore next -- a detected triangle always has exactly three tables */
-    if (tables.length !== 3) continue;
-    triangles.push({
-      section: group.section,
-      round: group.round,
-      tables: [tables[0], tables[1], tables[2]],
-    });
-  }
-
-  // Order by round, then section, then lowest table.
-  return triangles.sort((a, b) =>
+  return triples.sort((a, b) =>
     compareByRoundSectionTable(
       { round: a.round, section: a.section, table: a.tables[0].table },
       { round: b.round, section: b.section, table: b.tables[0].table },
@@ -538,159 +689,69 @@ export function groupTeamTriangles<R extends TeamMatchRow>(
   );
 }
 
-/** One team's cross-IMP result across a triangle round. */
-export interface TriangleTeamImps {
+/**
+ * One team's stake in one of a triple's three head-to-head comparisons.
+ *
+ * A triple's three teams each play TWO of the three comparisons. This flattens
+ * a triple into those six (team, comparison) stakes so a scorer can credit each
+ * team its two comparison results. `isHome` says whether the team is the
+ * comparison's home (NS/primary) side — the side a positive IMP margin favours —
+ * so the scorer can apply the margin's sign. `round` is the round the result is
+ * credited to: the round the team's own NS (home) pair hosted this comparison
+ * in (its home room's round). For a SHORT triple both of a team's comparisons
+ * credit the single round; for a LONG triple they split across R and R+1 by
+ * which round the team's NS pair hosted each opponent (design §5).
+ */
+export interface TripleTeamStake<R extends TeamMatchRow> {
   teamId: string;
-  /** Summed cross-IMPs vs the other two tables over the counted boards. */
-  crossImps: number;
-  /** Boards where all three tables have a comparable scored result. */
-  boardsPlayed: number;
+  round: number;
+  isHome: boolean;
+  comparison: TeamMatch<R>;
 }
 
-/**
- * Score a triangle cross-IMP (Butler): on each board where ALL THREE tables
- * have a comparable scored result, each team's board cross-IMPs are the sum of
- * the IMP difference of its score against EACH of the other two tables' scores
- * (via {@link computeCrossImps}). A team's round total is the sum over the
- * counted boards. Returns one entry per team (in the triangle's table order)
- * plus the shared count of boards played.
- *
- * A board where any table has no comparable score (pass-out / not-played /
- * unentered) is skipped for every team, so all three stay on the same board
- * set — the running estimate simply grows as results come in.
- */
-export function triangleTeamImps<R extends TeamMatchRow>(
-  triangle: TeamTriangle<R>,
-): { perTeam: TriangleTeamImps[]; boardsPlayed: number } {
-  const [t0, t1, t2] = triangle.tables;
-  const boardNumbers = triangleBoardNumbers(triangle);
-
-  const perTeam: TriangleTeamImps[] = triangle.tables.map((t) => ({
-    teamId: t.teamId,
-    crossImps: 0,
-    boardsPlayed: 0,
-  }));
-
-  let boardsPlayed = 0;
-
-  for (const boardNumber of boardNumbers) {
-    const s0 = scoreOfRow(t0.rowsByBoard.get(boardNumber));
-    const s1 = scoreOfRow(t1.rowsByBoard.get(boardNumber));
-    const s2 = scoreOfRow(t2.rowsByBoard.get(boardNumber));
-    if (s0 == null || s1 == null || s2 == null) continue;
-
-    boardsPlayed += 1;
-    perTeam[0].crossImps += computeCrossImps(s0, [s1, s2]);
-    perTeam[1].crossImps += computeCrossImps(s1, [s0, s2]);
-    perTeam[2].crossImps += computeCrossImps(s2, [s0, s1]);
+/** The round a side's NS (home) pair hosted a comparison in. */
+function nsHostRound<R extends TeamMatchRow>(
+  rowsByBoard: Map<number, R>,
+  fallback: number,
+): number {
+  let min = Number.POSITIVE_INFINITY;
+  for (const row of rowsByBoard.values()) {
+    if (row.roundNumber < min) min = row.roundNumber;
   }
-
-  for (const team of perTeam) team.boardsPlayed = boardsPlayed;
-  return { perTeam, boardsPlayed };
-}
-
-/** One team's board-comparison result across a triangle round. */
-export interface TriangleTeamWins {
-  teamId: string;
-  /**
-   * Board-comparison points won: on each counted board, 1 for beating another
-   * table / 0.5 for a tie / 0 for losing, SUMMED over BOTH other tables (so up
-   * to 2 per board). Native board units; the BAM (×1) / PAB (×2) scale is
-   * applied only at display, matching the two-team board-comparison scorer.
-   */
-  won: number;
-  /** Boards where all three tables have a comparable scored result. */
-  boardsPlayed: number;
+  return Number.isFinite(min) ? min : fallback;
 }
 
 /**
- * Score a triangle by board comparison: on each board where ALL THREE tables
- * have a comparable scored result, each team compares its score against EACH of
- * the other two tables (win 1 / tie 0.5 / loss 0) and sums the two, so a team
- * can win up to 2 board-points per board. A team's round total is the sum over
- * the counted boards. Mirrors {@link triangleTeamImps}'s comparability rule so
- * the VP and board-comparison views never disagree about which boards counted.
+ * Flatten a triple into its six (team, comparison) stakes — two per team — each
+ * tagged with the round that team's NS pair hosted the comparison in. The
+ * scorer scores each comparison with {@link teamMatchBoardImps} /
+ * {@link teamMatchBoardWins} and credits the team (respecting `isHome` for the
+ * margin sign) on its stake `round`.
  */
-export function triangleTeamWins<R extends TeamMatchRow>(
-  triangle: TeamTriangle<R>,
-): { perTeam: TriangleTeamWins[]; boardsPlayed: number } {
-  const [t0, t1, t2] = triangle.tables;
-  const boardNumbers = triangleBoardNumbers(triangle);
-
-  const perTeam: TriangleTeamWins[] = triangle.tables.map((t) => ({
-    teamId: t.teamId,
-    won: 0,
-    boardsPlayed: 0,
-  }));
-
-  let boardsPlayed = 0;
-
-  const wl = (me: number, other: number): number =>
-    me > other ? 1 : me < other ? 0 : 0.5;
-
-  for (const boardNumber of boardNumbers) {
-    const s0 = scoreOfRow(t0.rowsByBoard.get(boardNumber));
-    const s1 = scoreOfRow(t1.rowsByBoard.get(boardNumber));
-    const s2 = scoreOfRow(t2.rowsByBoard.get(boardNumber));
-    if (s0 == null || s1 == null || s2 == null) continue;
-
-    boardsPlayed += 1;
-    perTeam[0].won += wl(s0, s1) + wl(s0, s2);
-    perTeam[1].won += wl(s1, s0) + wl(s1, s2);
-    perTeam[2].won += wl(s2, s0) + wl(s2, s1);
+export function tripleTeamStakes<R extends TeamMatchRow>(
+  triple: TeamTriple<R>,
+): TripleTeamStake<R>[] {
+  const stakes: TripleTeamStake<R>[] = [];
+  for (const comparison of triple.comparisons) {
+    // The home side's NS pair hosts in its home room; the opponent side's NS
+    // pair hosts in the opponent room. Each credits that room's round.
+    stakes.push({
+      teamId: comparison.homeTeamId,
+      round: nsHostRound(comparison.homeRowsByBoard, triple.round),
+      isHome: true,
+      comparison,
+    });
+    stakes.push({
+      teamId: comparison.opponentTeamId,
+      round: nsHostRound(comparison.opponentRowsByBoard, triple.round),
+      isHome: false,
+      comparison,
+    });
   }
-
-  for (const team of perTeam) team.boardsPlayed = boardsPlayed;
-  return { perTeam, boardsPlayed };
+  return stakes;
 }
 
-/** The union of board numbers any of a triangle's three tables has a row for. */
-function triangleBoardNumbers<R extends TeamMatchRow>(
-  triangle: TeamTriangle<R>,
-): number[] {
-  return unionBoardNumbers(...triangle.tables.map((t) => t.rowsByBoard));
-}
-
-/** A table row's final score (override ?? confirmed), or null when unscored. */
-function scoreOfRow<R extends TeamMatchRow>(row: R | undefined): number | null {
-  if (!row) return null;
-  const outcome = boardResult(row);
-  return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
-}
-
-/**
- * Decompose a triangle into its three pairwise HEAD-TO-HEAD match views, for
- * the USEBIO export only.
- *
- * A triangle is scored cross-IMP for the standings (see {@link triangleTeamImps}),
- * but USEBIO has no three-way tag: a three-way is written as three ordinary
- * `<MATCH>` nodes sharing one round. Each pairing X-Y (X < Y) is presented as a
- * conventional two-table encounter — table X is the home room (X-NS) and table
- * Y the other (Y-NS) — so the existing per-board IMP / board-comparison detail
- * and travellers can be emitted unchanged. These views are INFORMATIONAL: the
- * authoritative round result stays the cross-IMP total, not the sum of these
- * three head-to-head comparisons.
- *
- * Returns the three matches in ascending (homeTable, opponentTable) order.
- */
-export function triangleSubMatches<R extends TeamMatchRow>(
-  triangle: TeamTriangle<R>,
-): TeamMatch<R>[] {
-  const { section, round, tables } = triangle;
-  const pairs: Array<[TriangleTable<R>, TriangleTable<R>]> = [
-    [tables[0], tables[1]],
-    [tables[0], tables[2]],
-    [tables[1], tables[2]],
-  ];
-
-  return pairs.map(([home, away]) => ({
-    section,
-    round,
-    homeTable: home.table,
-    opponentTable: away.table,
-    homeTeamId: teamIdFor(section, home.table),
-    opponentTeamId: teamIdFor(section, away.table),
-    homeRowsByBoard: home.rowsByBoard,
-    opponentRowsByBoard: away.rowsByBoard,
-  }));
+/** The IMP-to-VP pool a triple's comparisons use: 10 for SHORT, 20 for LONG. */
+export function tripleVpPool(triple: TeamTriple<TeamMatchRow>): 10 | 20 {
+  return triple.kind === "LONG" ? 20 : 10;
 }

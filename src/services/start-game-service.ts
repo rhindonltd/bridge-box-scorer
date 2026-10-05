@@ -32,7 +32,10 @@ import {
   applySpecSitOutNoMissingPair,
   alignSpecMissingPair,
 } from "@/movement/spec-sit-out";
-import { swissTeamsRoundOne } from "@/movement/swiss-teams/swiss-teams-pairing";
+import {
+  roundOddResolution,
+  swissTeamsRoundOne,
+} from "@/movement/swiss-teams/swiss-teams-pairing";
 import {
   swissTeamsRoundOneSeed,
   swissTeamsRoundToMaterializable,
@@ -304,9 +307,15 @@ function resolveSwissTeamsStart(
   baseValidation: StartValidationResult,
   gameId: string,
 ): ResolvedStart {
-  const { teams, boardsPerRound, oddHandling = "BYE" } = selected.swissTeams;
-  // Swiss Teams supports an odd count via a bye; the triangle alternative is
-  // not yet implemented, so an odd TRIANGLE selection is rejected as a gap.
+  const {
+    teams,
+    rounds,
+    boardsPerRound,
+    oddHandling = "BYE",
+    oddRoundPlan,
+  } = selected.swissTeams;
+  // Swiss Teams resolves an odd count via a bye or a triple (both supported);
+  // a triple needs at least three teams to form the three-way.
   const validation = validateTeamsStructure(baseValidation, teams, {
     label: "Swiss Teams",
     oddHandling,
@@ -318,19 +327,21 @@ function resolveSwissTeamsStart(
 
   // Random round-1 pairing, seeded per game+section so a retried start is
   // reproducible, then expanded into the two-table (open/closed) board rows.
-  // An odd field resolves per oddHandling in round 1: "BYE" byes the bottom
-  // table, "TRIANGLE" triangles the bottom three (see swissTeamsRoundOne).
-  const { matches, byeTeamId, triangle } = swissTeamsRoundOne(
+  // An odd field resolves per the round-1 plan entry: "BYE" byes the bottom
+  // table, SHORT/LONG triples the bottom three (see swissTeamsRoundOne).
+  const roundOneOdd = roundOddResolution(oddHandling, oddRoundPlan, 1);
+  const { matches, byeTeamId, triple } = swissTeamsRoundOne(
     teams,
     swissTeamsRoundOneSeed(gameId, section),
-    oddHandling,
+    roundOneOdd,
   );
   const movement = swissTeamsRoundToMaterializable(
     1,
     boardsPerRound,
+    rounds,
     matches,
     byeTeamId,
-    triangle,
+    triple,
   );
 
   return { validation, movement };
@@ -343,14 +354,14 @@ function resolveSwissTeamsStart(
  *
  * Odd team counts: by default an odd count is rejected (Round Robin, and Swiss
  * Teams with no odd handling). When `oddHandling` is supplied (Swiss Teams),
- * "BYE" permits an odd count (one team sits out each round) and "TRIANGLE"
- * permits it too (three teams play a three-way each round) — a triangle needs
+ * "BYE" permits an odd count (one team sits out each round) and "TRIPLE"
+ * permits it too (three teams play a three-way each round) — a triple needs
  * at least three teams to form, so an odd field of one is still rejected.
  */
 function validateTeamsStructure(
   baseValidation: StartValidationResult,
   teams: number,
-  options: { label: string; oddHandling?: "BYE" | "TRIANGLE" },
+  options: { label: string; oddHandling?: "BYE" | "TRIPLE" },
 ): StartValidationResult {
   const { label, oddHandling } = options;
   const problems: StartProblem[] = [...baseValidation.problems];
@@ -363,12 +374,12 @@ function validateTeamsStructure(
   }
 
   if (teams % 2 !== 0) {
-    if (oddHandling === "TRIANGLE") {
-      // A triangle needs three teams to form the three-way.
+    if (oddHandling === "TRIPLE") {
+      // A triple needs three teams to form the three-way.
       if (teams < 3) {
         problems.push({
           code: "ODD_TEAM_COUNT",
-          message: `${label} with a three-way triangle needs at least three teams — you have ${teams}. Add a table before starting.`,
+          message: `${label} with a three-way triple needs at least three teams — you have ${teams}. Add a table before starting.`,
         });
       }
       // teams >= 3 (odd): allowed (the bottom three play a three-way each round).

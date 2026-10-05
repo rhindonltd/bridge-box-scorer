@@ -170,14 +170,28 @@ describe("calculateTeamsVpOverall", () => {
     expect(t1.vpByRound[1]).toBeGreaterThan(t2.vpByRound[1]);
   });
 
-  it("credits triangle teams a cross-IMP VP centred on the average", () => {
-    // A triangle {1,2,3} on board 1 (None vul): scores 420, 400, 110 ->
-    // cross-IMPs 8, 6, -14. Positive margins earn above 10 VP, the negative
-    // below 10, and no other match/bye is present.
+  it("credits each SHORT triple team the sum of its two head-to-head comparison VPs", () => {
+    // SHORT triple {1,2,3}, one round, three one-board head-to-head sets:
+    //   set A (board 1): 1·NS 4S= (420) vs 2·NS 3NT= (400) -> team 1 by +1 imp
+    //   set B (board 2): 2·NS 4S= (420) vs 3·NS 3NT= (400) -> team 2 by +1 imp
+    //   set C (board 3): 1·NS 4S= (420) vs 3·NS 3NT= (400) -> team 1 by +1 imp
+    // Each comparison is one board on the 10-VP half pool: imps(20)=1 ->
+    // winner impVpWinner(1,1,10)=6, loser 10-6=4. Each team sums its two
+    // comparisons into the single round (/20):
+    //   team 1 = 6 (1-2) + 6 (1-3) = 12   (clear winner, >10)
+    //   team 2 = 4 (1-2) + 6 (2-3) = 10
+    //   team 3 = 4 (2-3) + 4 (1-3) = 8    (clear loser, <10)
+    // The three comparisons each split 10 VP, so the round total is 3×10 = 30.
     const rows: SwissVpBoardRow[] = [
-      row({ tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
-      row({ tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "3NTN=" }),
-      row({ tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "2SN=" }),
+      // set A board 1: comparison 1-2
+      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+      // set B board 2: comparison 2-3
+      row({ boardNumber: 2, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 2, tableNumber: 3, ns: "A3NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+      // set C board 3: comparison 1-3
+      row({ boardNumber: 3, tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+      row({ boardNumber: 3, tableNumber: 1, ns: "A1NS", ew: "A3EW", confirmedResult: "4SN=" }),
     ];
 
     const result = calculateTeamsVpOverall(rows);
@@ -186,24 +200,32 @@ describe("calculateTeamsVpOverall", () => {
     const t3 = result.lines.find((l) => l.teamId === "A3NS")!;
 
     expect(t1).toBeDefined();
-    // Ordering follows the cross-IMP order 8 > 6 > -14.
-    expect(t1.vpByRound[1]).toBeGreaterThan(t2.vpByRound[1]);
-    expect(t2.vpByRound[1]).toBeGreaterThan(t3.vpByRound[1]);
-    // The two above-field teams beat the neutral 10; the below-field team is under.
+    // Each team's round VP is on the /20 pool (sum of two 10-pool halves).
+    expect(t1.vpByRound[1]).toBe(12);
+    expect(t2.vpByRound[1]).toBe(10);
+    expect(t3.vpByRound[1]).toBe(8);
+    // The clear winner is above the neutral 10 and the clear loser below it.
     expect(t1.vpByRound[1]).toBeGreaterThan(10);
-    expect(t2.vpByRound[1]).toBeGreaterThan(10);
     expect(t3.vpByRound[1]).toBeLessThan(10);
+    // Three comparisons each split a 10-VP pool -> 30 across the round.
+    expect(t1.vpByRound[1] + t2.vpByRound[1] + t3.vpByRound[1]).toBe(30);
   });
 
-  it("sits triangle teams at the neutral 10 when nothing is comparable yet", () => {
-    // Only one table entered a result -> the triangle has no counted board.
+  it("sits triple teams at the neutral 10 when nothing is comparable yet", () => {
+    // Only one room of the SHORT triple entered a result, so no comparison has
+    // both rooms scored -> each comparison sits at its 5-neutral half, and a
+    // team's two halves sum to the round's neutral 10.
     const rows: SwissVpBoardRow[] = [
-      row({ tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
-      row({ tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: null }),
-      row({ tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: null }),
+      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: null }),
+      row({ boardNumber: 2, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: null }),
+      row({ boardNumber: 2, tableNumber: 3, ns: "A3NS", ew: "A2EW", confirmedResult: null }),
+      row({ boardNumber: 3, tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: null }),
+      row({ boardNumber: 3, tableNumber: 1, ns: "A1NS", ew: "A3EW", confirmedResult: null }),
     ];
 
     const result = calculateTeamsVpOverall(rows);
+    expect(result.lines).toHaveLength(3);
     for (const line of result.lines) {
       expect(line.vpByRound[1]).toBe(10);
     }

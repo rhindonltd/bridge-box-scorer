@@ -16,14 +16,14 @@ const previewAck = {
     { a: 2, b: 4 },
   ],
   byeTeamId: null,
-  triangle: null,
+  triple: null,
   named: {
     matches: [
       { a: { teamId: 1, name: "Sharks" }, b: { teamId: 3, name: "Owls" } },
       { a: { teamId: 2, name: "Dragons" }, b: { teamId: 4, name: "Eagles" } },
     ],
     bye: null,
-    triangle: null,
+    triple: null,
   },
   standings: [
     { id: 1, name: "1st place team", total: 30, rank: 1, tied: false },

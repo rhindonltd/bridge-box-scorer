@@ -204,7 +204,7 @@ export interface BoardInstance {
  * (each table stays independently selectable for a per-table override).
  */
 export interface TeamTravellerMatch {
-  /** The two (or three, for a triangle) table numbers this match spans. */
+  /** The two table numbers this head-to-head comparison spans. */
   tables: number[];
   /**
    * The home team at each of those tables, aligned by index with `tables`:
@@ -216,10 +216,12 @@ export interface TeamTravellerMatch {
   /**
    * Net IMP margin on this board from the primary (lowest-table) team's
    * perspective, or null when the board is not comparable yet (a room hasn't a
-   * scored result). Omitted entirely for a triangle (compared cross-IMP across
-   * three tables, not a single head-to-head margin).
+   * scored result).
+   *
+   * Every teams encounter is framed as a two-team head-to-head here, including
+   * a three-way triple: a triple's three comparisons (x-y, y-z, z-x) each sit
+   * on their own board set, so any one board belongs to exactly one comparison
+   * and shows as an ordinary two-team card — never a single three-way card.
    */
   margin: number | null;
-  /** True when this is a three-way triangle rather than a two-team match. */
-  triangle: boolean;
 }

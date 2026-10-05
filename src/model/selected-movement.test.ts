@@ -241,10 +241,128 @@ describe("parseSelectedMovement", () => {
             rounds: 2,
             boardsPerRound: 6,
             oddHandling: "HALF_MATCHES",
-            oddRoundPlan: ["BYE", "TRIANGLE"], // TRIANGLE is teams-only
+            oddRoundPlan: ["BYE", "SHORT"], // SHORT is a teams-only value
           },
         }),
       ),
+    ).toBeNull();
+  });
+
+  // --- Swiss Teams TRIPLE oddRoundPlan ---------------------------------------
+
+  const parseTeams = (swissTeams: unknown) =>
+    parseSelectedMovement(JSON.stringify({ source: "SWISS_TEAMS", swissTeams }));
+
+  it("accepts a SWISS_TEAMS TRIPLE plan with byes, shorts and a long group", () => {
+    const parsed = parseTeams({
+      teams: 5,
+      rounds: 5,
+      boardsPerRound: 6,
+      oddHandling: "TRIPLE",
+      oddRoundPlan: [
+        "BYE",
+        "SHORT",
+        { kind: "LONG", group: 1 },
+        { kind: "LONG", group: 1 },
+        "SHORT",
+      ],
+    });
+    expect(parsed).not.toBeNull();
+  });
+
+  it("accepts two back-to-back long triples with distinct groups", () => {
+    const parsed = parseTeams({
+      teams: 7,
+      rounds: 4,
+      boardsPerRound: 6,
+      oddHandling: "TRIPLE",
+      oddRoundPlan: [
+        { kind: "LONG", group: 1 },
+        { kind: "LONG", group: 1 },
+        { kind: "LONG", group: 2 },
+        { kind: "LONG", group: 2 },
+      ],
+    });
+    expect(parsed).not.toBeNull();
+  });
+
+  it("rejects a TRIPLE plan whose length does not match rounds", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 3,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: ["BYE", "SHORT"],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a TRIPLE selection with no plan", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 2,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects an oddRoundPlan when oddHandling is not TRIPLE", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 2,
+        boardsPerRound: 6,
+        oddHandling: "BYE",
+        oddRoundPlan: ["BYE", "BYE"],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a LONG group that is not two adjacent rounds", () => {
+    // group 1's two entries are at positions 0 and 2 (not adjacent).
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 3,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [
+          { kind: "LONG", group: 1 },
+          "SHORT",
+          { kind: "LONG", group: 1 },
+        ],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a LONG group that appears only once", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 2,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [{ kind: "LONG", group: 1 }, "BYE"],
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects a LONG group appearing more than twice", () => {
+    expect(
+      parseTeams({
+        teams: 5,
+        rounds: 3,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [
+          { kind: "LONG", group: 1 },
+          { kind: "LONG", group: 1 },
+          { kind: "LONG", group: 1 },
+        ],
+      }),
     ).toBeNull();
   });
 });
@@ -372,7 +490,7 @@ describe("selectedMovementsEqual", () => {
       teams: number;
       rounds: number;
       boardsPerRound: number;
-      oddHandling: "BYE" | "TRIANGLE";
+      oddHandling: "BYE" | "TRIPLE";
     }> = {},
   ): SelectedMovement => ({
     source: "SWISS_TEAMS",
@@ -397,7 +515,7 @@ describe("selectedMovementsEqual", () => {
     expect(
       selectedMovementsEqual(
         swissTeams(),
-        swissTeams({ oddHandling: "TRIANGLE" }),
+        swissTeams({ oddHandling: "TRIPLE" }),
       ),
     ).toBe(false);
   });

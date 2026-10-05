@@ -223,7 +223,6 @@ describe("Traveller", () => {
           { table: 2, id: "A2NS", name: "Owls" },
         ],
         margin: 6,
-        triangle: false,
       },
     ];
 
@@ -248,12 +247,16 @@ describe("Traveller", () => {
     expect(onLineSelected).toHaveBeenCalledWith(room2);
   });
 
-  it("shows 'Tied' for a level team match and 'Three-way' for a triangle", () => {
+  it("shows 'Tied' for a level team match and the IMP margin for a win", () => {
     const rooms = [
       pairInstance({ roundNumber: 1, tableNumber: 1, boardNumber: 5 }),
       pairInstance({ roundNumber: 1, tableNumber: 2, boardNumber: 5 }),
       pairInstance({ roundNumber: 1, tableNumber: 3, boardNumber: 5 }),
+      pairInstance({ roundNumber: 1, tableNumber: 4, boardNumber: 5 }),
     ];
+    // Two ordinary two-team cards: one level, one a +7 IMP win. (A triple also
+    // frames each of its board-sets as an ordinary two-team card, so there is
+    // no special "three-way" rendering any more.)
     const teamMatches = [
       {
         tables: [1, 2],
@@ -262,13 +265,14 @@ describe("Traveller", () => {
           { table: 2, id: "A2NS", name: "Owls" },
         ],
         margin: 0,
-        triangle: false,
       },
       {
-        tables: [3],
-        teams: [{ table: 3, id: "A3NS", name: "Robins" }],
-        margin: null,
-        triangle: true,
+        tables: [3, 4],
+        teams: [
+          { table: 3, id: "A3NS", name: "Robins" },
+          { table: 4, id: "A4NS", name: "Hawks" },
+        ],
+        margin: 7,
       },
     ];
 
@@ -284,7 +288,7 @@ describe("Traveller", () => {
     );
 
     expect(screen.getByText("Tied")).toBeInTheDocument();
-    expect(screen.getByText("Three-way")).toBeInTheDocument();
+    expect(screen.getByText("+7 IMP")).toBeInTheDocument();
   });
 
   it("omits pair cells for a non-pairs instance", () => {

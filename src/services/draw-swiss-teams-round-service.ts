@@ -5,14 +5,24 @@ import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import { materializeSwissTeamsRound } from "@/services/materialize-swiss-teams-round";
 import {
+  continueLongTriple,
   drawSwissTeamsRound,
+  roundOddResolution,
   teamIds,
   teamOpponentKey,
+  type OddHandling,
+  type OddRoundResolution,
   type SerializableTeamsAdvisoryInputs,
   type TeamId,
   type TeamsMatch,
-  type TeamsTriangle,
+  type TeamsTriple,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
+import {
+  detectTriples,
+  type DetectedTriple,
+  type TeamMatchRow,
+} from "@/scoring/swiss/team-match";
+import type { SwissTeamsOddRound } from "@/model/selected-movement";
 import {
   resolveSwissTeamsMatchNames,
   type NamedTeamsSeating,
@@ -34,7 +44,7 @@ export type DrawSwissTeamsRejection =
 /**
  * A previewed (but NOT committed) Swiss Teams draw: the proposed matches (stable
  * team ids the client echoes back on commit), the odd-field resolution (bye or
- * triangle), resolved team names for display, and the repeat advisory. Nothing
+ * triple), resolved team names for display, and the repeat advisory. Nothing
  * is written to the DB by a preview.
  */
 export type PreviewSwissTeamsResult =
@@ -44,7 +54,7 @@ export type PreviewSwissTeamsResult =
       teams: number;
       matches: TeamsMatch[];
       byeTeamId: TeamId | null;
-      triangle: TeamsTriangle | null;
+      triple: TeamsTriple | null;
       named: NamedTeamsSeating;
       /**
        * Current standings (best first) with each team's running VP total — the
@@ -79,24 +89,27 @@ interface SwissTeamsHistory {
   playedOpponents: Set<string>;
   /** Teams that have already had a bye (recovered from SIT_OUT rows). */
   hadBye: Set<TeamId>;
-  /** Teams that have already been in a triangle (recovered from 3-cycles). */
-  hadTriangle: Set<TeamId>;
+  /** Teams that have already been in a triple (recovered from the triples). */
+  hadTriple: Set<TeamId>;
+  /** Every triple played so far (short + long), as detected from the rows. */
+  triples: DetectedTriple[];
 }
 
 /**
  * Reduce a section's board rows to the Swiss Teams history the draw needs: the
  * highest round materialized so far, the set of team matchups already played,
- * the teams that have already had a bye, and the teams that have already been
- * in a triangle.
+ * the teams that have already had a bye, and every triple played so far (with
+ * the teams in each, so a long triple's second slot can reuse its first slot's
+ * teams).
  *
  * A played match is recovered from each home table's row — the NS seat is the
  * home team and the EW seat encodes the opponent's home table. A bye is a
- * SIT_OUT row: its NS seat is the bye team's home table and its EW is a phantom
- * (not a real opponent), so it is recorded as a bye rather than a played match.
- * A triangle is three tables in one round whose home→opponent references form a
- * directed 3-cycle (A→B→C→A); its three teams are recorded as having had a
- * triangle. All three of a triangle's pairwise matchups are still recorded in
- * `playedOpponents` (each of the cycle's edges is an opponent key).
+ * SIT_OUT row (NS = the bye team, EW = a phantom), recorded as a bye not a
+ * match. Triples are recovered with the SAME detector the scorer uses
+ * ({@link detectTriples}): a SHORT triple is a home table facing two opponents
+ * in one round; a LONG triple is two consecutive 3-cycle rounds for one trio.
+ * Each triple's three teams are recorded in `hadTriple`, and all three of its
+ * pairwise matchups in `playedOpponents`.
  */
 async function getSwissTeamsHistory(
   db: Db,
@@ -119,8 +132,9 @@ async function getSwissTeamsHistory(
   const hadBye = new Set<TeamId>();
   let highestRound = 0;
 
-  // Per-round home→opponent edges, used after the pass to detect triangles.
-  const edgesByRound = new Map<number, Map<TeamId, TeamId>>();
+  // Minimal TeamMatchRow-shaped rows for the shared triple detector (it reads
+  // only section / roundNumber / ns / ew / status).
+  const detectorRows: TeamMatchRow[] = [];
 
   for (const row of rows) {
     highestRound = Math.max(highestRound, row.roundNumber);
@@ -139,45 +153,27 @@ async function getSwissTeamsHistory(
       const home = parseSeat(row.ns);
       const away = parseSeat(row.ew);
       playedOpponents.add(teamOpponentKey(home.tableNumber, away.tableNumber));
-
-      const edges =
-        edgesByRound.get(row.roundNumber) ?? new Map<TeamId, TeamId>();
-      edges.set(home.tableNumber, away.tableNumber);
-      edgesByRound.set(row.roundNumber, edges);
     } catch {
       // A non-seat id (should not occur for teams) is skipped.
     }
+
+    detectorRows.push({
+      section,
+      roundNumber: row.roundNumber,
+      boardNumber: 0,
+      ns: row.ns,
+      ew: row.ew,
+      confirmedResult: null,
+      directorOverrideResult: null,
+      status: row.status,
+    });
   }
 
-  const hadTriangle = recoverTriangleTeams(edgesByRound);
+  const triples = detectTriples(detectorRows);
+  const hadTriple = new Set<TeamId>();
+  for (const t of triples) for (const team of t.teams) hadTriple.add(team);
 
-  return { highestRound, playedOpponents, hadBye, hadTriangle };
-}
-
-/**
- * Find every team that was in a triangle, from the per-round home→opponent
- * edges. A triangle is a directed 3-cycle x→y→z→x through three distinct
- * tables (an ordinary match is mutual, x→y and y→x, and is not a 3-cycle).
- */
-function recoverTriangleTeams(
-  edgesByRound: Map<number, Map<TeamId, TeamId>>,
-): Set<TeamId> {
-  const inTriangle = new Set<TeamId>();
-
-  for (const edges of edgesByRound.values()) {
-    for (const [x, y] of edges) {
-      if (edges.get(y) === x) continue; // mutual = ordinary two-team match
-      const z = edges.get(y);
-      if (z === undefined) continue;
-      if (edges.get(z) === x && new Set([x, y, z]).size === 3) {
-        inTriangle.add(x);
-        inTriangle.add(y);
-        inTriangle.add(z);
-      }
-    }
-  }
-
-  return inTriangle;
+  return { highestRound, playedOpponents, hadBye, hadTriple, triples };
 }
 
 /**
@@ -282,14 +278,83 @@ interface TeamsDrawContext {
   db: Db;
   teams: number;
   boardsPerRound: number;
-  oddHandling: "BYE" | "TRIANGLE";
+  /** The event's declared round count (for placing a short triple's set C). */
+  totalRounds: number;
+  oddHandling: OddHandling;
   nextRound: number;
+  /**
+   * How the next round's odd team is resolved, from the per-round plan: "BYE",
+   * "SHORT", or a `{ kind: "LONG"; group }` slot. An even field ignores it.
+   */
+  oddRound: OddRoundResolution;
+  /**
+   * The pre-determined triple for the next round when it is the SECOND slot of
+   * a long triple (its teams fixed by the first slot, advanced to slot 2), or
+   * null otherwise. When set, the draw reuses this triple rather than choosing
+   * a fresh one, and does NOT draw a fresh three-way.
+   */
+  fixedTriple: TeamsTriple | null;
   standings: TeamId[];
   playedOpponents: ReadonlySet<string>;
   hadBye: ReadonlySet<TeamId>;
-  hadTriangle: ReadonlySet<TeamId>;
+  hadTriple: ReadonlySet<TeamId>;
   /** Current standings (best first) with running totals, for the preview. */
   ranked: RankedTeam[];
+}
+
+/**
+ * Resolve the next round's odd-team handling and, when it is the second slot of
+ * a long triple, the fixed triple to reuse.
+ *
+ * A long triple occupies two adjacent plan entries sharing a `group`. If the
+ * next round's entry is `{ kind: "LONG"; group g }` AND the PREVIOUS round's
+ * entry is the same group, the next round is that triple's SECOND slot: its
+ * three teams are fixed by the first slot (recovered from the detected
+ * triples), advanced to slot 2 via {@link continueLongTriple}. No fresh triple
+ * is drawn. In every other case (bye, short, or a long triple's first slot)
+ * there is no fixed triple.
+ */
+function resolveOddRound(
+  oddHandling: OddHandling,
+  oddRoundPlan: SwissTeamsOddRound[] | undefined,
+  nextRound: number,
+  triples: DetectedTriple[],
+): { oddRound: OddRoundResolution; fixedTriple: TeamsTriple | null } {
+  const plan = oddRoundPlan as OddRoundResolution[] | undefined;
+  const oddRound = roundOddResolution(oddHandling, plan, nextRound);
+
+  if (typeof oddRound !== "object" || oddRound.kind !== "LONG") {
+    return { oddRound, fixedTriple: null };
+  }
+
+  const prev = plan?.[nextRound - 2];
+  const isSecondSlot =
+    typeof prev === "object" && prev.kind === "LONG" && prev.group === oddRound.group;
+  if (!isSecondSlot) {
+    return { oddRound, fixedTriple: null };
+  }
+
+  // The first slot was the previous round; find that long triple's teams.
+  const firstRound = nextRound - 1;
+  const firstSlot = triples.find(
+    (t) => t.kind === "LONG" && t.rounds.includes(firstRound),
+  );
+  if (!firstSlot) {
+    // The first slot isn't recoverable yet (shouldn't happen once it is
+    // materialized); fall back to drawing a fresh long triple.
+    return { oddRound, fixedTriple: null };
+  }
+
+  const [a, b, c] = firstSlot.teams;
+  const fixedTriple = continueLongTriple({
+    a,
+    b,
+    c,
+    kind: "LONG",
+    group: oddRound.group,
+    slot: 1,
+  });
+  return { oddRound, fixedTriple };
 }
 
 /**
@@ -318,15 +383,16 @@ async function resolveTeamsDrawContext(
     rounds: totalRounds,
     boardsPerRound,
     oddHandling = "BYE",
+    oddRoundPlan,
   } = selected.swissTeams;
 
-  // An odd field is resolved by a bye or a triangle (both supported); a
-  // triangle needs at least three teams to form the three-way.
-  if (teams % 2 !== 0 && oddHandling === "TRIANGLE" && teams < 3) {
+  // An odd field is resolved by a bye or a triple (both supported); a
+  // triple needs at least three teams to form the three-way.
+  if (teams % 2 !== 0 && oddHandling === "TRIPLE" && teams < 3) {
     return { reason: "ODD_TEAM_COUNT" };
   }
 
-  const { highestRound, playedOpponents, hadBye, hadTriangle } =
+  const { highestRound, playedOpponents, hadBye, hadTriple, triples } =
     await getSwissTeamsHistory(db, section);
   const currentRound = highestRound;
 
@@ -340,16 +406,27 @@ async function resolveTeamsDrawContext(
 
   const { order, ranked } = await rankedStandings(db, gameId, section, teams);
 
+  const nextRound = currentRound + 1;
+  const { oddRound, fixedTriple } = resolveOddRound(
+    oddHandling,
+    oddRoundPlan,
+    nextRound,
+    triples,
+  );
+
   return {
     db,
     teams,
     boardsPerRound,
+    totalRounds,
     oddHandling,
-    nextRound: currentRound + 1,
+    nextRound,
+    oddRound,
+    fixedTriple,
     standings: order,
     playedOpponents,
     hadBye,
-    hadTriangle,
+    hadTriple,
     ranked,
   };
 }
@@ -378,9 +455,12 @@ export async function previewNextSwissTeamsRound(
     teams: ctx.teams,
     standings: ctx.standings,
     playedOpponents: ctx.playedOpponents,
-    oddHandling: ctx.oddHandling,
+    oddRound: ctx.oddRound,
     hadBye: ctx.hadBye,
-    hadTriangle: ctx.hadTriangle,
+    hadTriple: ctx.hadTriple,
+    // A long triple's second slot reuses its first slot's three teams rather
+    // than drawing a fresh three-way.
+    fixedTriple: ctx.fixedTriple ?? undefined,
   });
 
   const named = await resolveSwissTeamsMatchNames(
@@ -388,7 +468,7 @@ export async function previewNextSwissTeamsRound(
     section,
     draw.matches,
     draw.byeTeamId,
-    draw.triangle,
+    draw.triple,
   );
   const standings = await buildTeamStandings(ctx.db, section, ctx.ranked);
 
@@ -403,7 +483,7 @@ export async function previewNextSwissTeamsRound(
     teams: ctx.teams,
     matches: draw.matches,
     byeTeamId: draw.byeTeamId,
-    triangle: draw.triangle,
+    triple: draw.triple,
     named,
     standings,
     repeatMatchKeys,
@@ -439,9 +519,9 @@ async function buildTeamStandings(
 }
 
 /**
- * Whether a set of team matches (+ bye/triangle) is a structurally valid round
+ * Whether a set of team matches (+ bye/triple) is a structurally valid round
  * for a field of `teams` teams: every team appears exactly once across the
- * matches, the bye, and the triangle, and each is a real team id. Advisory
+ * matches, the bye, and the triple, and each is a real team id. Advisory
  * issues (a repeat pairing) are NOT checked here — those are the director's
  * call and don't block a commit.
  */
@@ -449,12 +529,12 @@ function isStructurallyValidTeamsRound(
   teams: number,
   matches: TeamsMatch[],
   byeTeamId: TeamId | null,
-  triangle: TeamsTriangle | null,
+  triple: TeamsTriple | null,
 ): boolean {
   const seen: TeamId[] = [];
   for (const m of matches) seen.push(m.a, m.b);
   if (byeTeamId != null) seen.push(byeTeamId);
-  if (triangle != null) seen.push(triangle.a, triangle.b, triangle.c);
+  if (triple != null) seen.push(triple.a, triple.b, triple.c);
 
   const expected = teamIds(teams);
   if (seen.length !== expected.length) return false;
@@ -467,7 +547,7 @@ function isStructurallyValidTeamsRound(
  * accepted. Re-checks the same preconditions (so a stale commit can't slip a
  * round in after the event moved on), then validates that the round is
  * structurally sound (every team placed exactly once). Materializes that round
- * — the open/closed-room board rows plus any bye sit-out or triangle — and
+ * — the open/closed-room board rows plus any bye sit-out or triple — and
  * reports the round number. It does NOT advance the timer; the caller
  * broadcasts the live updates.
  *
@@ -480,14 +560,14 @@ export async function commitNextSwissTeamsRound(
   section: SectionLetter,
   matches: TeamsMatch[],
   byeTeamId: TeamId | null,
-  triangle: TeamsTriangle | null,
+  triple: TeamsTriple | null,
 ): Promise<CommitSwissTeamsResult> {
   const ctx = await resolveTeamsDrawContext(gameId, section);
   if ("reason" in ctx) {
     return { ok: false, reason: ctx.reason };
   }
 
-  if (!isStructurallyValidTeamsRound(ctx.teams, matches, byeTeamId, triangle)) {
+  if (!isStructurallyValidTeamsRound(ctx.teams, matches, byeTeamId, triple)) {
     return { ok: false, reason: "INVALID_MATCHES" };
   }
 
@@ -496,9 +576,10 @@ export async function commitNextSwissTeamsRound(
     section,
     ctx.nextRound,
     ctx.boardsPerRound,
+    ctx.totalRounds,
     matches,
     byeTeamId,
-    triangle,
+    triple,
   );
 
   return { ok: true, roundNumber: ctx.nextRound };

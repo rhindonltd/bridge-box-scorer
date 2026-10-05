@@ -374,4 +374,63 @@ describe("generateUsebio", () => {
     expect(xml).toContain("<TEAM>1</TEAM>");
     expect(xml).toContain("<OPPOSING_TEAM>2</OPPOSING_TEAM>");
   });
+
+  it("emits a SHORT triple as three head-to-head MATCH nodes", async () => {
+    // Three teams (home tables 1,2,3), each a full NS+EW pair, playing a SHORT
+    // triple: three head-to-head comparisons on disjoint one-board sets
+    //   set A (board 1): 1 v 2, set B (board 2): 2 v 3, set C (board 3): 1 v 3
+    // Each comparison is a two-room same-boards match.
+    for (const seat of [
+      "A1NS",
+      "A1EW",
+      "A2NS",
+      "A2EW",
+      "A3NS",
+      "A3EW",
+    ]) {
+      await seatPair(seat, seat);
+    }
+    // set A board 1 — comparison 1-2
+    await makeBoard(1, 1, 1, "A1NS", "A2EW", "4SN=");
+    await makeBoard(1, 2, 1, "A2NS", "A1EW", "3NTN=");
+    // set B board 2 — comparison 2-3
+    await makeBoard(1, 2, 2, "A2NS", "A3EW", "4SN=");
+    await makeBoard(1, 3, 2, "A3NS", "A2EW", "3NTN=");
+    // set C board 3 — comparison 1-3
+    await makeBoard(1, 3, 3, "A3NS", "A1EW", "3NTN=");
+    await makeBoard(1, 1, 3, "A1NS", "A3EW", "4SN=");
+
+    const teamsGame: BridgeGame = {
+      ...game,
+      gameType: "TEAMS",
+      scoringType: "IMP_VP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS_TEAMS",
+        swissTeams: {
+          teams: 3,
+          rounds: 1,
+          boardsPerRound: 2,
+          oddHandling: "TRIPLE",
+          oddRoundPlan: ["SHORT"],
+        },
+      }),
+    };
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+
+    const xml = await generateUsebio(db, teamsGame, club);
+
+    expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_TEAMS">');
+    // Three head-to-head MATCH nodes, one per pairing (1v2, 1v3, 2v3). The
+    // comparisons are emitted home-vs-opponent in ascending (lo, hi) order, so
+    // opposing-team 3 appears twice (1v3, 2v3) and opposing-team 2 once (1v2).
+    const opposing2 = xml.split("<OPPOSING_TEAM>2</OPPOSING_TEAM>").length - 1;
+    const opposing3 = xml.split("<OPPOSING_TEAM>3</OPPOSING_TEAM>").length - 1;
+    expect(opposing2).toBe(1);
+    expect(opposing3).toBe(2);
+    // All three teams appear as a match's primary team across the three nodes.
+    expect(xml).toContain("<TEAM>1</TEAM>");
+    expect(xml).toContain("<TEAM>2</TEAM>");
+  });
 });

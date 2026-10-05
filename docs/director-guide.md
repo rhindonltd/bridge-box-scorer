@@ -173,9 +173,25 @@ moves to the opponents' table. The first round is a random draw; you draw each
 later round from the standings during play (see
 [Drawing the next Swiss round](#drawing-the-next-swiss-round)).
 
-Swiss Teams needs an **even number of teams** and a single section. If you have
-an odd number of tables, add or remove one before starting — the game won't
-start until the teams pair up evenly.
+Swiss Teams runs in a single section. With an **even number of teams** every
+round pairs cleanly. With an **odd number of teams** the dialog asks how to
+handle the odd team each round:
+
+- **Bye** (the default) — one team sits out each round (the lowest-ranked team
+  that hasn't had a bye) and is credited an above-average result. Simple, and
+  fine for most club events.
+- **Triple** — instead of a team sitting out, three teams play a **three-way**:
+  each of the three plays both of the others, so no one sits out. Choosing this
+  reveals a per-round plan where you set each round to:
+  - **Short** — the whole three-way runs in that one round (each pairing plays
+    half the round's boards), or
+  - **Long** — the three-way is spread over **two** rounds on full boards. A
+    long triple therefore takes two neighbouring rounds, so mark **Long** on two
+    rounds in a row.
+
+  The three teams are the lowest-ranked three that haven't had a triple
+  recently. These settings only take effect if your field is odd; an even field
+  ignores them.
 
 ### Timer tab (optional)
 
@@ -283,15 +299,19 @@ A **Swiss Teams** game has the same **Draw Next Round** button on the
 **Movement** screen, enabled once all the round's results are in. Drawing shows
 a **review** of the proposed round before anything is saved: each **match**
 between two teams (by name, with each team's current total), plus the team
-sitting out (the bye) or the three-way **triangle** when the field is odd.
+sitting out (the bye) or the three-way **triple** when the field is odd. A
+triple is shown as its three head-to-head pairings; a **long** triple notes
+that it runs over this round and the next. (A long triple's second round isn't
+drawn afresh — the same three teams carry over automatically — so you simply
+draw it like any other round when its first round is scored.)
 
 On the review screen you can **swap two teams** — tap one team, then another,
 and they exchange places for the round. Because a swap moves a team wherever it
 sits, one tap-pair can re-pair two matches, change which team sits out (swap a
 match team with the bye team) or reshape the three-way (swap a team in or out of
-the triangle). If a resulting match repeats an earlier-round opponent, that
-match card is highlighted and a note tells you so — you can swap again to avoid
-it or accept it as shown; the warning never blocks you.
+the triple). If a resulting match repeats an earlier-round opponent, that match
+card is highlighted and a note tells you so — you can swap again to avoid it or
+accept it as shown; the warning never blocks you.
 
 Tap **OK** to commit the round exactly as shown — edited or not — and it then
 appears on every device, with each team's away pair told which table to move to;
@@ -377,8 +397,9 @@ If a board was entered incorrectly, you can override it:
    For a **Teams** game the board is grouped into **team matches**: each card
    shows the two teams by name, with a row for each room — the open room at one
    team's table and the closed room at the other's — and the board's IMP margin.
-   Tap the room you want to correct; a three-way (triangle) shows its three
-   rooms. (A Pairs game shows the usual flat NS/EW list.)
+   Tap the room you want to correct. (A three-way triple's board belongs to one
+   of its pairings, so it shows as an ordinary two-team card too; a Pairs game
+   shows the usual flat NS/EW list.)
 4. Enter the correct result step by step, the same way players enter one
    (contract, or **Pass Out** / **Not Played**). You also get an extra
    **Adjusted Score** option for assigning a result such as a percentage split

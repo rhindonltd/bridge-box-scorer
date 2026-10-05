@@ -201,7 +201,6 @@ export const Teams: Story = {
           { table: 2, id: "A2NS", name: "Owls" },
         ],
         margin: 6,
-        triangle: false,
       },
       {
         // Only one room scored, so the board isn't comparable yet.
@@ -211,7 +210,6 @@ export const Teams: Story = {
           { table: 4, id: "A4NS", name: "Robins" },
         ],
         margin: null,
-        triangle: false,
       },
     ],
   },

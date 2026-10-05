@@ -6,11 +6,12 @@ import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findTeams } from "@/db/games/queries/find-teams";
 import {
-  groupTeamMatches,
-  groupTeamTriangles,
-  teamMatchBoardImps,
+  boardResult,
+  teamIdFor,
   type TeamMatchRow,
 } from "@/scoring/swiss/team-match";
+import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
+import { parseSeat } from "@/model/participants";
 import type { TeamTravellerMatch } from "@/model/participants";
 
 /**
@@ -60,13 +61,13 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
  * Robin), so the director traveller can present the flat per-table rows as
  * team-vs-team cards.
  *
- * Reconstructs the board's matches (and any three-way triangle) from its rows
- * with the shared, tested {@link groupTeamMatches}/{@link groupTeamTriangles}
+ * Reconstructs the board's matches (and any three-way triple) from its rows
+ * with the shared, tested {@link groupTeamMatches}/{@link groupTeamTriples}
  * reconstruction — each two-table match spans the home team's table (open room)
  * and the opponent's (closed room), keyed on the lower table number. Team names
  * come from {@link findTeams} (keyed by home NS seat), matching the leaderboard.
  * The per-board net IMP margin (home team's perspective) is included for a
- * two-team match; a triangle carries no single head-to-head margin.
+ * two-team match; a triple carries no single head-to-head margin.
  *
  * Returns an empty array when the board has no team structure (e.g. a pairs
  * game, or a board not yet materialized), so callers can treat "no framing" as
@@ -97,45 +98,72 @@ export async function buildTeamTravellerMatches(
   const nameById = new Map(teams.map((t) => [t.id, t.name]));
   const nameFor = (teamId: string) => nameById.get(teamId) ?? teamId;
 
-  const result: TeamTravellerMatch[] = [];
-
-  // Two-team head-to-head matches: home table (open room) vs opponent (closed).
-  for (const match of groupTeamMatches(rows)) {
-    // Single-board margin: teamMatchBoardImps spans this one board, so read the
-    // margin directly (null when a room hasn't a comparable scored result yet).
-    const { perBoard } = teamMatchBoardImps(match);
-    const boardImp = perBoard.find((p) => p.boardNumber === boardNumber);
-
-    result.push({
-      tables: [match.homeTable, match.opponentTable],
-      teams: [
-        {
-          table: match.homeTable,
-          id: match.homeTeamId,
-          name: nameFor(match.homeTeamId),
-        },
-        {
-          table: match.opponentTable,
-          id: match.opponentTeamId,
-          name: nameFor(match.opponentTeamId),
-        },
-      ],
-      margin: boardImp?.imps ?? null,
-      triangle: false,
-    });
+  // Group this board's rows by the unordered team pair they belong to. Each
+  // pair is one head-to-head comparison — its two rooms share this board, with
+  // the home room at the lower table (that team NS) and the opponent room at
+  // the higher. This frames EVERY teams encounter the same way: an ordinary
+  // two-team match, a short triple's x-y/y-z/z-x comparison (each on its own
+  // board set, so only one touches this board), and a long triple's comparison
+  // (whose two rooms share this board across its two rounds). A triple is thus
+  // shown as three ordinary two-team cards (one per board set), never a single
+  // three-way card. SIT_OUT / HALF_AVERAGE rows carry a phantom opponent and
+  // are already filtered out upstream.
+  const byPair = new Map<string, { section: string; lo: number; hi: number }>();
+  for (const row of rows) {
+    let home: number;
+    let opp: number;
+    try {
+      home = parseSeat(row.ns).tableNumber;
+      opp = parseSeat(row.ew).tableNumber;
+    } catch {
+      // A non-seat id (e.g. a phantom) is not a real team room; skip it.
+      continue;
+    }
+    const lo = Math.min(home, opp);
+    const hi = Math.max(home, opp);
+    byPair.set(`${row.section}|${lo}-${hi}`, { section: row.section, lo, hi });
   }
 
-  // Three-way triangles: three tables, compared cross-IMP (no single margin).
-  for (const tri of groupTeamTriangles(rows)) {
+  /** This board's final score for the team NS at `table` in `section`, else null. */
+  const scoreAt = (section: string, table: number): number | null => {
+    const row = rows.find((r) => {
+      if (r.section !== section) return false;
+      try {
+        return parseSeat(r.ns).tableNumber === table;
+      } catch {
+        return false;
+      }
+    });
+    if (!row) return null;
+    const outcome = boardResult(row);
+    return outcome != null ? outcomeToScore(boardNumber, outcome) : null;
+  };
+
+  const result: TeamTravellerMatch[] = [];
+  for (const { section, lo, hi } of [...byPair.values()].sort(
+    (a, b) =>
+      (a.section < b.section ? -1 : a.section > b.section ? 1 : 0) ||
+      a.lo - b.lo ||
+      a.hi - b.hi,
+  )) {
+    const loScore = scoreAt(section, lo);
+    const hiScore = scoreAt(section, hi);
+    // Net IMP margin from the lower (primary) team's perspective; null until
+    // both rooms have a comparable scored result on this board.
+    const margin =
+      loScore != null && hiScore != null
+        ? computeImps(loScore - hiScore)
+        : null;
+
+    const loId = teamIdFor(section, lo);
+    const hiId = teamIdFor(section, hi);
     result.push({
-      tables: tri.tables.map((t) => t.table),
-      teams: tri.tables.map((t) => ({
-        table: t.table,
-        id: t.teamId,
-        name: nameFor(t.teamId),
-      })),
-      margin: null,
-      triangle: true,
+      tables: [lo, hi],
+      teams: [
+        { table: lo, id: loId, name: nameFor(loId) },
+        { table: hi, id: hiId, name: nameFor(hiId) },
+      ],
+      margin,
     });
   }
 

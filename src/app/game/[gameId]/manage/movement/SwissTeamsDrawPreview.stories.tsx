@@ -11,14 +11,14 @@ const basePreview: SwissTeamsPreviewAck = {
     { a: 2, b: 4 },
   ],
   byeTeamId: null,
-  triangle: null,
+  triple: null,
   named: {
     matches: [
       { a: { teamId: 1, name: "Sharks" }, b: { teamId: 3, name: "Owls" } },
       { a: { teamId: 2, name: "Dragons" }, b: { teamId: 4, name: "Eagles" } },
     ],
     bye: null,
-    triangle: null,
+    triple: null,
   },
   standings: [
     { id: 1, name: "Sharks", total: 34.0, rank: 1, tied: false },
@@ -89,27 +89,54 @@ export const WithBye: Story = {
           { a: { teamId: 3, name: "Owls" }, b: { teamId: 4, name: "Eagles" } },
         ],
         bye: { teamId: 5, name: "Robins" },
-        triangle: null,
+        triple: null,
       },
       advisoryInputs: { teams: 5, playedOpponents: [] },
     },
   },
 };
 
-/** An odd field resolved with a three-way triangle. */
-export const WithTriangle: Story = {
+/** An odd field resolved with a SHORT three-way triple (one round). */
+export const WithShortTriple: Story = {
   args: {
     preview: {
       ...basePreview,
       teams: 5,
       matches: [{ a: 4, b: 5 }],
-      triangle: { a: 1, b: 2, c: 3 },
+      triple: { a: 1, b: 2, c: 3, kind: "SHORT", group: null, slot: null },
       named: {
         matches: [
           { a: { teamId: 4, name: "Eagles" }, b: { teamId: 5, name: "Robins" } },
         ],
         bye: null,
-        triangle: {
+        triple: {
+          a: { teamId: 1, name: "Sharks" },
+          b: { teamId: 2, name: "Dragons" },
+          c: { teamId: 3, name: "Owls" },
+        },
+      },
+      advisoryInputs: { teams: 5, playedOpponents: [] },
+    },
+  },
+};
+
+/**
+ * An odd field resolved with a LONG three-way triple (slot 1 of two rounds):
+ * the heading notes it spans this round and the next.
+ */
+export const WithLongTriple: Story = {
+  args: {
+    preview: {
+      ...basePreview,
+      teams: 5,
+      matches: [{ a: 4, b: 5 }],
+      triple: { a: 1, b: 2, c: 3, kind: "LONG", group: 0, slot: 1 },
+      named: {
+        matches: [
+          { a: { teamId: 4, name: "Eagles" }, b: { teamId: 5, name: "Robins" } },
+        ],
+        bye: null,
+        triple: {
           a: { teamId: 1, name: "Sharks" },
           b: { teamId: 2, name: "Dragons" },
           c: { teamId: 3, name: "Owls" },

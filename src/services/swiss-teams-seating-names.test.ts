@@ -37,7 +37,7 @@ describe("resolveSwissTeamsMatchNames", () => {
       { a: { teamId: 3, name: "Owls" }, b: { teamId: 4, name: "Eagles" } },
     ]);
     expect(result.bye).toBeNull();
-    expect(result.triangle).toBeNull();
+    expect(result.triple).toBeNull();
   });
 
   it("names the bye team", async () => {
@@ -51,7 +51,7 @@ describe("resolveSwissTeamsMatchNames", () => {
     expect(result.bye).toEqual({ teamId: 3, name: "Owls" });
   });
 
-  it("names all three teams of a triangle", async () => {
+  it("names all three teams of a triple", async () => {
     const result = await resolveSwissTeamsMatchNames(
       {} as never,
       "A",
@@ -59,7 +59,7 @@ describe("resolveSwissTeamsMatchNames", () => {
       null,
       { a: 1, b: 2, c: 3 },
     );
-    expect(result.triangle).toEqual({
+    expect(result.triple).toEqual({
       a: { teamId: 1, name: "Sharks" },
       b: { teamId: 2, name: "Dragons" },
       c: { teamId: 3, name: "Owls" },

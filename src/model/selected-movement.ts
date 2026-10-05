@@ -23,7 +23,7 @@ import { z } from "zod";
  *   table (open/closed room), so a match spans two tables playing the same
  *   boards. The selection carries only the setup parameters (team count, total
  *   rounds, boards-per-round); no per-round layout is stored. The team count
- *   must be even (three-way "triangle" handling is not yet supported).
+ *   must be even (three-way "triple" handling is not yet supported).
  * - ROUND_ROBIN_TEAMS: a Teams Round Robin movement. Like SWISS_TEAMS a team is
  *   the two pairs at one home table and matches use the same open/closed-room
  *   layout, but the schedule is fixed and fully known up front (every team
@@ -136,26 +136,103 @@ export type SwissPairsOddRound = z.infer<typeof swissPairsOddRoundSchema>;
  *
  * An odd team count is handled per `oddHandling`: "BYE" (the default) sits one
  * team out each round (the bottom table in round 1, then the lowest-ranked team
- * without a prior bye); "TRIANGLE" (three-way matches) is not yet implemented
- * and is rejected at start. An even count ignores `oddHandling`.
+ * without a prior bye); "TRIPLE" resolves the odd team with a three-way per the
+ * per-round `oddRoundPlan` (a bye, a short triple, or part of a long triple).
+ * An even count ignores both. See `docs/swiss-teams-triples-design.md`.
  */
-export const swissTeamsSpecSchema = z.object({
-  teams: z.number().int().positive(),
-  rounds: z.number().int().positive(),
-  boardsPerRound: z.number().int().positive(),
-  /**
-   * How an odd team count is resolved. Defaults to "BYE". Only meaningful when
-   * `teams` is odd.
-   */
-  oddHandling: z.enum(["BYE", "TRIANGLE"]).optional(),
-});
+export const swissTeamsOddHandlingSchema = z.enum(["BYE", "TRIPLE"]);
+
+/**
+ * How a single Swiss Teams round resolves the odd team, under "TRIPLE":
+ * - "BYE": one team sits the round out (average-plus), as under plain "BYE".
+ * - "SHORT": a short triple — three teams play a round-robin of three
+ *   head-to-head half-matches within the one round.
+ * - { kind: "LONG"; group }: part of a long triple — the three teams play the
+ *   same round-robin over FULL boards, spread across two consecutive rounds. A
+ *   long triple's two rounds share the same `group` id so its halves are
+ *   unambiguously linked (even when two long triples sit back to back).
+ */
+export const swissTeamsOddRoundSchema = z.union([
+  z.literal("BYE"),
+  z.literal("SHORT"),
+  z.object({
+    kind: z.literal("LONG"),
+    group: z.number().int().nonnegative(),
+  }),
+]);
+
+export const swissTeamsSpecSchema = z
+  .object({
+    teams: z.number().int().positive(),
+    rounds: z.number().int().positive(),
+    boardsPerRound: z.number().int().positive(),
+    /**
+     * How an odd team count is resolved. Defaults to "BYE". Only meaningful when
+     * `teams` is odd.
+     */
+    oddHandling: swissTeamsOddHandlingSchema.optional(),
+    /**
+     * The per-round odd-field plan, one entry per round, set at setup. Only used
+     * (and only required) when `oddHandling === "TRIPLE"`, in which case its
+     * length must equal `rounds`. Each entry resolves that round's odd team with
+     * a bye, a short triple, or (as two adjacent same-`group` LONG entries) a
+     * long triple. (For "BYE" or an even field it is omitted.)
+     */
+    oddRoundPlan: z.array(swissTeamsOddRoundSchema).optional(),
+  })
+  .superRefine((spec, ctx) => {
+    if (spec.oddHandling !== "TRIPLE") {
+      if (spec.oddRoundPlan !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "oddRoundPlan is only valid when oddHandling is TRIPLE",
+          path: ["oddRoundPlan"],
+        });
+      }
+      return;
+    }
+
+    // Under TRIPLE the plan is required and must cover exactly the rounds.
+    const plan = spec.oddRoundPlan;
+    if (!plan || plan.length !== spec.rounds) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "oddRoundPlan must have exactly one entry per round when oddHandling is TRIPLE",
+        path: ["oddRoundPlan"],
+      });
+      return;
+    }
+
+    // Each LONG group id must appear in EXACTLY two positions, and those two
+    // must be adjacent (rounds R and R+1) — one long triple = two consecutive
+    // rounds.
+    const longPositions = new Map<number, number[]>();
+    plan.forEach((entry, i) => {
+      if (typeof entry === "object" && entry.kind === "LONG") {
+        const list = longPositions.get(entry.group) ?? [];
+        list.push(i);
+        longPositions.set(entry.group, list);
+      }
+    });
+    for (const [group, positions] of longPositions) {
+      if (positions.length !== 2 || positions[1] !== positions[0] + 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `LONG group ${group} must occupy exactly two adjacent rounds`,
+          path: ["oddRoundPlan"],
+        });
+      }
+    }
+  });
 
 export type SwissTeamsMovementSpec = z.infer<typeof swissTeamsSpecSchema>;
 
+/** One round's odd-team resolution in a Swiss Teams plan. */
+export type SwissTeamsOddRound = z.infer<typeof swissTeamsOddRoundSchema>;
+
 /** How an odd Swiss Teams field is resolved (`oddHandling`); default "BYE". */
-export type SwissTeamsOddHandling = NonNullable<
-  SwissTeamsMovementSpec["oddHandling"]
->;
+export type SwissTeamsOddHandling = z.infer<typeof swissTeamsOddHandlingSchema>;
 
 /**
  * Setup parameters for a Teams Round Robin movement. As with Swiss Teams a team
@@ -283,7 +360,11 @@ export function selectedMovementsEqual(
         a.swissTeams.rounds === y.rounds &&
         a.swissTeams.boardsPerRound === y.boardsPerRound &&
         // Absent oddHandling means the default "BYE".
-        (a.swissTeams.oddHandling ?? "BYE") === (y.oddHandling ?? "BYE")
+        (a.swissTeams.oddHandling ?? "BYE") === (y.oddHandling ?? "BYE") &&
+        // The per-round triple plan (absent === none); structural JSON compare
+        // since entries are a mix of string literals and {kind,group} objects.
+        JSON.stringify(a.swissTeams.oddRoundPlan ?? null) ===
+          JSON.stringify(y.oddRoundPlan ?? null)
       );
     }
     case "ROUND_ROBIN_TEAMS": {
