@@ -260,6 +260,61 @@ describe("board-service", () => {
       expect(result[0].currentResult).toBeNull();
       expect(result[0].status).toBeNull();
     });
+
+    it("excludes SIT_OUT (bye) and HALF_AVERAGE (half-match compensation) rows", async () => {
+      // Board 3 as seen on a "2 half matches" round: a real anchor-vs-opponent
+      // line, a bye row, and a compensation row (phantom opponent). Only the
+      // real line belongs on the traveller.
+      const mockDb = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([
+              {
+                roundNumber: 2,
+                tableNumber: 1,
+                boardNumber: 3,
+                ns: "1NS",
+                ew: "2NS",
+                confirmedResult: "3NTN=",
+                directorOverrideResult: null,
+                status: "CONFIRMED",
+              },
+              {
+                roundNumber: 2,
+                tableNumber: 7,
+                boardNumber: 3,
+                ns: "2EW",
+                ew: "PHANTOM",
+                confirmedResult: null,
+                directorOverrideResult: null,
+                status: "HALF_AVERAGE",
+              },
+              {
+                roundNumber: 2,
+                tableNumber: 8,
+                boardNumber: 3,
+                ns: "3NS",
+                ew: "PHANTOM",
+                confirmedResult: null,
+                directorOverrideResult: null,
+                status: "SIT_OUT",
+              },
+            ]),
+          }),
+        }),
+      } as unknown as Db;
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
+      vi.mocked(findPairs).mockResolvedValue([]);
+
+      const result = await getBoardInstances(mockDb, 3);
+
+      // Only the real played line survives; the phantom rows are filtered out.
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe("CONFIRMED");
+      if (result[0].participants.type === "PAIRS") {
+        expect(result[0].participants.ew).not.toBe("PHANTOM");
+      }
+    });
   });
 
   describe("buildTeamTravellerMatches", () => {

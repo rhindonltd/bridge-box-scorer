@@ -63,6 +63,20 @@ export interface SwissDrawInput {
   /** Pairs that have already had a bye (each may only have one all event). */
   hadBye: ReadonlySet<SwissPairId>;
   /**
+   * Pairs that have already been in a 2-half-matches group (as anchor or
+   * non-anchor). Consulted alongside `hadBye` when choosing a half-match group,
+   * so the burden of a shortened round is spread fairly. Optional; defaults to
+   * none.
+   */
+  hadHalfMatch?: ReadonlySet<SwissPairId>;
+  /**
+   * How to resolve an odd field THIS round: "BYE" (one pair sits out, the
+   * default) or "HALF_MATCHES" (three pairs play two half matches — an anchor
+   * plus the two it faces across the halves). Ignored when the field is even.
+   * Driven by the director's per-round plan (`oddRoundPlan`); defaults to BYE.
+   */
+  oddHandling?: "BYE" | "HALF_MATCHES";
+  /**
    * Per-pair count of how many rounds each has sat North/South vs East/West so
    * far. Used to balance direction for non-stationary pairs. Missing pairs are
    * treated as `{ ns: 0, ew: 0 }`.
@@ -92,6 +106,26 @@ export interface SwissDrawResult {
    * returned; the director is alerted so they can adjust if desired.
    */
   hadStationaryConflict: boolean;
+  /**
+   * The 2-half-matches group for this round, or null when the odd field is
+   * handled by a bye (or the field is even). When set, its three pairs are NOT
+   * in `seating` (they play at the anchor's own table across two halves), and
+   * `sitOutPairId` is null. The anchor's seat is where the group plays all
+   * round; the two non-anchors swap in/out at the midpoint.
+   */
+  halfMatch: SwissHalfMatchSeating | null;
+}
+
+/**
+ * A drawn 2-half-matches group with its anchor seated. The anchor plays the
+ * whole round at `anchorTable`/`anchorDirection` against `halfOneOpponent`
+ * then `halfTwoOpponent`; the two non-anchors take the opposite seat for their
+ * half. Produced by the draw and consumed by the materialize layer.
+ */
+export interface SwissHalfMatchSeating {
+  group: SwissHalfMatchGroup;
+  anchorTable: number;
+  anchorDirection: PairDirection;
 }
 
 /**
@@ -173,6 +207,134 @@ function chooseSitOut(
     }
   }
   return standings[standings.length - 1];
+}
+
+// --- 2 half matches (odd-field handling) ---------------------------------
+//
+// An alternative to a bye for an odd field: three pairs play "2 half matches".
+// One pair — the ANCHOR — plays the whole round, facing a different opponent in
+// each half; the other two each play one half (and are compensated for the half
+// they miss — see the scoring layer). This module computes only WHO is in the
+// group and WHICH half each non-anchor plays (the "who plays whom" phase). It
+// knows nothing about tables, directions, stationary pairs or board numbers —
+// those are the seating/materialize layers' job, exactly as `pairUp` is kept
+// separate from `seatMatches`. See docs/swiss-pairs-half-matches-design.md.
+
+/**
+ * A chosen 2-half-matches group: the three pair ids and which opponent the
+ * anchor faces in each half. The two non-anchors are `halfOneOpponent` (plays
+ * the first half) and `halfTwoOpponent` (plays the second half); each plays
+ * only its half, the anchor plays both.
+ */
+export interface SwissHalfMatchGroup {
+  /** The pair that plays the full round (both halves), one opponent per half. */
+  anchor: SwissPairId;
+  /** The non-anchor the anchor faces in the first half (plays half 1 only). */
+  halfOneOpponent: SwissPairId;
+  /** The non-anchor the anchor faces in the second half (plays half 2 only). */
+  halfTwoOpponent: SwissPairId;
+}
+
+/**
+ * Choose the three pairs for a 2-half-matches round and lay out the two halves.
+ *
+ * Selection mirrors {@link chooseSitOut}'s fairness idea, spread over three
+ * pairs: scanning from the bottom of the standings, prefer the lowest-ranked
+ * pairs that have NOT already been in a half-match or had a bye; once fewer than
+ * three such pairs remain (the field has been through a cycle) top up with the
+ * remaining lowest-ranked pairs so a group is always formed.
+ *
+ * Anchor: the highest-ranked (best-standing) of the three is the anchor — the
+ * "lucky" pair that plays the full round. This is a provisional, deterministic
+ * choice made WITHOUT stationary knowledge; the seating layer may re-anchor the
+ * group onto a stationary pair (which cannot move) when one is present, without
+ * changing which three pairs are involved. The two non-anchors are assigned to
+ * the halves by standing: the higher-ranked plays half 1, the lower half 2.
+ *
+ * Requires at least three pairs in `standings`.
+ */
+export function chooseHalfMatchGroup(
+  standings: SwissPairId[],
+  hadBye: ReadonlySet<SwissPairId>,
+  hadHalfMatch: ReadonlySet<SwissPairId>,
+): SwissHalfMatchGroup {
+  if (standings.length < 3) {
+    throw new Error("A 2-half-matches group needs at least three pairs");
+  }
+
+  const chosen: SwissPairId[] = [];
+
+  // Prefer the lowest-ranked pairs that haven't had a half-match or a bye.
+  for (let i = standings.length - 1; i >= 0 && chosen.length < 3; i--) {
+    const id = standings[i];
+    if (!hadHalfMatch.has(id) && !hadBye.has(id)) {
+      chosen.push(id);
+    }
+  }
+
+  // Top up (field exhausted) with the remaining lowest-ranked pairs.
+  for (let i = standings.length - 1; i >= 0 && chosen.length < 3; i--) {
+    if (!chosen.includes(standings[i])) {
+      chosen.push(standings[i]);
+    }
+  }
+
+  // Order the three by standing (best first) using their position in standings.
+  const rankOf = new Map(standings.map((id, idx) => [id, idx]));
+  const byStanding = chosen.sort(
+    (x, y) => (rankOf.get(x) ?? 0) - (rankOf.get(y) ?? 0),
+  );
+
+  // Best-standing pair anchors; the other two take halves 1 and 2 by standing.
+  const [anchor, halfOneOpponent, halfTwoOpponent] = byStanding;
+  return { anchor, halfOneOpponent, halfTwoOpponent };
+}
+
+/** The three pair ids of a half-match group, as a set (for membership tests). */
+export function halfMatchGroupIds(
+  group: SwissHalfMatchGroup,
+): Set<SwissPairId> {
+  return new Set([
+    group.anchor,
+    group.halfOneOpponent,
+    group.halfTwoOpponent,
+  ]);
+}
+
+/**
+ * Re-anchor a half-match group onto `newAnchor` (one of its three pairs),
+ * keeping the same three pairs. The displaced anchor takes the vacated
+ * non-anchor slot. Used by the seating layer when one of the three is a
+ * stationary pair (which must be the anchor, as it cannot move). The two
+ * non-anchors keep their half-1/half-2 order relative to each other where
+ * possible: the new anchor's old half slot is filled by the old anchor.
+ *
+ * Returns the group unchanged when `newAnchor` is already the anchor; throws
+ * when `newAnchor` is not a member of the group.
+ */
+export function reanchorHalfMatchGroup(
+  group: SwissHalfMatchGroup,
+  newAnchor: SwissPairId,
+): SwissHalfMatchGroup {
+  if (newAnchor === group.anchor) return { ...group };
+  if (!halfMatchGroupIds(group).has(newAnchor)) {
+    throw new Error("newAnchor must be one of the group's three pairs");
+  }
+
+  const oldAnchor = group.anchor;
+  // Swap the old anchor into whichever half slot the new anchor vacated.
+  if (newAnchor === group.halfOneOpponent) {
+    return {
+      anchor: newAnchor,
+      halfOneOpponent: oldAnchor,
+      halfTwoOpponent: group.halfTwoOpponent,
+    };
+  }
+  return {
+    anchor: newAnchor,
+    halfOneOpponent: group.halfOneOpponent,
+    halfTwoOpponent: oldAnchor,
+  };
 }
 
 /**
@@ -301,11 +463,22 @@ export function drawSwissRound(input: SwissDrawInput): SwissDrawResult {
     standings,
     playedOpponents,
     hadBye,
+    hadHalfMatch,
+    oddHandling = "BYE",
     directionCounts,
     stationary,
   } = input;
 
   const isOdd = standings.length % 2 === 1;
+
+  // An odd field handled by "2 half matches": pull the three-pair group out of
+  // the field, pair/seat the rest normally, then seat the anchor (honouring a
+  // stationary group member). The two non-anchors are NOT in `seating` — they
+  // swap through the anchor's table across the two halves.
+  if (isOdd && oddHandling === "HALF_MATCHES" && standings.length >= 3) {
+    return drawHalfMatchRound(input, hadBye, hadHalfMatch ?? new Set());
+  }
+
   const sitOutPairId = isOdd ? chooseSitOut(standings, hadBye) : null;
 
   const playing =
@@ -328,7 +501,99 @@ export function drawSwissRound(input: SwissDrawInput): SwissDrawResult {
     sitOutPairId,
     hadUnavoidableRepeat,
     hadStationaryConflict,
+    halfMatch: null,
   };
+}
+
+/**
+ * Draw an odd round as a 2-half-matches group plus ordinary matches.
+ *
+ * The three group pairs are chosen by {@link chooseHalfMatchGroup}; if one of
+ * them is stationary it is re-anchored onto that pair ({@link reanchorHalfMatchGroup})
+ * so the anchor keeps its home seat (the two non-anchors travel to it). The
+ * remaining `2*tables - 3` pairs are an even field that is paired and seated
+ * exactly as a normal round — on the tables NOT used by the anchor. The anchor
+ * is seated last: at its stationary home seat if it has one, else at the single
+ * leftover table in its direction-balancing seat.
+ */
+function drawHalfMatchRound(
+  input: SwissDrawInput,
+  hadBye: ReadonlySet<SwissPairId>,
+  hadHalfMatch: ReadonlySet<SwissPairId>,
+): SwissDrawResult {
+  const { tables, standings, playedOpponents, directionCounts, stationary } =
+    input;
+
+  // Choose the three pairs, then make a stationary group member the anchor.
+  let group = chooseHalfMatchGroup(standings, hadBye, hadHalfMatch);
+  const groupIds = halfMatchGroupIds(group);
+  const stationaryInGroup = [...groupIds].find((id) => stationary.has(id));
+  let hadStationaryConflict = false;
+  if (stationaryInGroup != null) {
+    group = reanchorHalfMatchGroup(group, stationaryInGroup);
+  }
+
+  // The rest of the field (an even set) is paired and seated as usual.
+  const rest = standings.filter((id) => !groupIds.has(id));
+  const { matches, hadUnavoidableRepeat } = pairUp(rest, playedOpponents);
+
+  // Seat the ordinary matches first so they claim their tables (a stationary
+  // non-group pair keeps its home); the anchor takes a leftover table.
+  const { seating, hadStationaryConflict: restConflict } = seatMatches(
+    matches,
+    tables,
+    stationary,
+    directionCounts,
+    // No bye this round; occupancy is reduced by the group's single table.
+    null,
+  );
+  hadStationaryConflict = hadStationaryConflict || restConflict;
+
+  const anchorSeat = seatHalfMatchAnchor(
+    group.anchor,
+    tables,
+    stationary,
+    directionCounts,
+    seating,
+  );
+
+  return {
+    seating,
+    sitOutPairId: null,
+    hadUnavoidableRepeat,
+    hadStationaryConflict,
+    halfMatch: {
+      group,
+      anchorTable: anchorSeat.tableNumber,
+      anchorDirection: anchorSeat.direction,
+    },
+  };
+}
+
+/**
+ * Choose the anchor's seat for a half-match round. A stationary anchor keeps
+ * its home table/direction; otherwise the anchor takes the lowest-numbered
+ * table not used by the ordinary matches, in the direction that best balances
+ * its NS/EW history (ties → NS).
+ */
+function seatHalfMatchAnchor(
+  anchor: SwissPairId,
+  tables: number,
+  stationary: ReadonlyMap<SwissPairId, SwissHomeSeat>,
+  directionCounts: ReadonlyMap<SwissPairId, { ns: number; ew: number }>,
+  restSeating: SwissSeating[],
+): SwissHomeSeat {
+  const home = stationary.get(anchor);
+  if (home) return home;
+
+  const usedTables = new Set(restSeating.map((s) => s.tableNumber));
+  let tableNumber = 1;
+  while (tableNumber <= tables && usedTables.has(tableNumber)) tableNumber += 1;
+
+  const counts = directionCounts.get(anchor) ?? { ns: 0, ew: 0 };
+  // A positive NS surplus means the anchor should now sit EW to even out.
+  const direction: PairDirection = counts.ns > counts.ew ? "EW" : "NS";
+  return { tableNumber, direction };
 }
 
 /**

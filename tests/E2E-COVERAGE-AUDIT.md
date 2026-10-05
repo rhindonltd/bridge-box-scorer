@@ -32,6 +32,7 @@ surface. Test files present at audit time:
 - Journeys: `navigation`, `create-form`, `sections-setup`, `table-management`,
   `movement-types`, `seating-detail`, `play-flow`, `played-contract`,
   `contract-variants`, `mismatch`, `sit-out`, `deal-entry`, `swiss-pairs`,
+  `swiss-pairs-half-matches`,
   `director-override`, `traveller-live`, `leaderboard-live`, `display-detail`,
   `request-on-mount`, `realtime-internals`, `reconnect`, `timer`,
   `multi-section`, `share-code`, `delete-game`, `usebio`, `pbn`,
@@ -76,6 +77,12 @@ below:
   show-hand on traveller (`deal-entry.journey.ts`).
 - **Swiss Pairs**: single-section setup, play round 1, draw round 2 from the
   Movement screen (`swiss-pairs.journey.ts`).
+- **Swiss Pairs "2 half matches"** (odd field): set up a Swiss game with a
+  half-matches odd-handling plan, seat an odd field (one seat short), start so
+  round 1 materialises as a half-match group (HALF_AVERAGE compensation rows,
+  not a sit-out), score the played halves over a socket, draw round 2, and
+  assert the leaderboard credits exactly the seated pairs with no phantom line
+  (`swiss-pairs-half-matches.journey.ts`).
 - **Swiss Teams**: create a Teams game, pick Swiss Teams, seat a full field with
   team names, play round 1 across the open/closed rooms, draw round 2, and see
   the named teams on the leaderboard (`swiss-teams.journey.ts`).

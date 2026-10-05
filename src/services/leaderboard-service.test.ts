@@ -53,8 +53,8 @@ vi.mock("@/db/games/queries/get-section-movement", () => ({
 
 // The Swiss/Teams VP overall calculators are exercised elsewhere; here we mock
 // them to assert routing and return canned overalls.
-vi.mock("@/scoring/swiss/swiss-vp-overall", () => ({
-  calculateSwissVpOverall: vi.fn(),
+vi.mock("@/scoring/swiss/swiss-ximp-vp-overall", () => ({
+  calculateSwissXimpVpOverall: vi.fn(),
 }));
 vi.mock("@/scoring/swiss/swiss-mp-vp-overall", () => ({
   calculateSwissMpVpOverall: vi.fn(),
@@ -69,7 +69,7 @@ import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { scoreBoard } from "@/scoring/traveller/score-traveller";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
-import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
+import { calculateSwissXimpVpOverall } from "@/scoring/swiss/swiss-ximp-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
@@ -526,7 +526,7 @@ describe("Swiss Pairs VP routing", () => {
     vi.mocked(findGameById).mockResolvedValue({
       gameId: "game-1",
       gameType: "PAIRS",
-      scoringType: "IMP",
+      scoringType: "XIMP",
       selectedMovement: JSON.stringify({
         source: "SWISS",
         swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
@@ -535,15 +535,15 @@ describe("Swiss Pairs VP routing", () => {
     vi.mocked(findPairs).mockResolvedValue([]);
   });
 
-  it("uses the Swiss IMP-VP overall for a Swiss + IMP game", async () => {
-    vi.mocked(calculateSwissVpOverall).mockReturnValue({
+  it("uses the Swiss cross-IMP VP overall for a Swiss + Cross-IMP game", async () => {
+    vi.mocked(calculateSwissXimpVpOverall).mockReturnValue({
       type: "SWISS_VP",
       lines: [],
     } as any);
 
     const result = await computeLeaderboard(dbWithBoards([]), "game-1");
 
-    expect(calculateSwissVpOverall).toHaveBeenCalledTimes(1);
+    expect(calculateSwissXimpVpOverall).toHaveBeenCalledTimes(1);
     expect(calculateSwissMpVpOverall).not.toHaveBeenCalled();
     expect(result.type).toBe("SWISS_VP");
   });

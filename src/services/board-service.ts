@@ -13,11 +13,24 @@ import {
 } from "@/scoring/swiss/team-match";
 import type { TeamTravellerMatch } from "@/model/participants";
 
+/**
+ * Board statuses that are NOT a real played line and so never belong on a
+ * traveller: a Swiss bye (`SIT_OUT`) and a Swiss Pairs "2 half matches"
+ * compensation block (`HALF_AVERAGE`). Both carry a phantom opponent and no
+ * played result, so including them would show a stray placeholder row (and let
+ * a director tap a meaningless phantom row to "override"). The real half-match
+ * lines (anchor vs each opponent on their own board subset) are ordinary rows
+ * and are unaffected.
+ */
+const NON_TRAVELLER_STATUSES = new Set(["SIT_OUT", "HALF_AVERAGE"]);
+
 export async function getBoardInstances(db: Db, boardNumber: number) {
-  const records = await db
-    .select()
-    .from(pairsBoards)
-    .where(eq(pairsBoards.boardNumber, boardNumber));
+  const records = (
+    await db
+      .select()
+      .from(pairsBoards)
+      .where(eq(pairsBoards.boardNumber, boardNumber))
+  ).filter((b) => !NON_TRAVELLER_STATUSES.has(b.status ?? ""));
 
   const pairs = await findPairs(db);
   const pairNameMap = new Map<string, string>();

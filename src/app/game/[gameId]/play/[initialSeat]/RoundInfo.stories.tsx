@@ -105,3 +105,80 @@ export const DifferentTable: Story = {
     },
   },
 };
+
+// --- Swiss Pairs "2 half matches" rounds -------------------------------------
+
+const opponentOne = {
+  E: { id: 5, firstName: "Op", lastName: "One", nationalId: null },
+  W: { id: 6, firstName: "Opp", lastName: "One", nationalId: null },
+};
+const opponentTwo = {
+  E: { id: 7, firstName: "Op", lastName: "Two", nationalId: null },
+  W: { id: 8, firstName: "Opp", lastName: "Two", nationalId: null },
+};
+
+/**
+ * The ANCHOR of a half-match round: stays at the table all round and plays two
+ * half matches, swapping opponents at the midpoint. Shows both halves + the
+ * switch instruction.
+ */
+export const HalfMatchAnchor: Story = {
+  args: {
+    table: 1,
+    boards: [1, 2, 3, 4],
+    players,
+    halfMatch: {
+      role: "anchor",
+      segments: [
+        {
+          half: "first",
+          boards: [1, 2],
+          players: { N: players.N, S: players.S, ...opponentOne },
+        },
+        {
+          half: "second",
+          boards: [3, 4],
+          players: { N: players.N, S: players.S, ...opponentTwo },
+        },
+      ],
+    },
+  },
+};
+
+/** A non-anchor that plays the FIRST half, then is done for the round. */
+export const HalfMatchFirstHalf: Story = {
+  args: {
+    table: 1,
+    boards: [1, 2],
+    players,
+    halfMatch: {
+      role: "firstHalf",
+      segments: [
+        {
+          half: "first",
+          boards: [1, 2],
+          players: { N: players.N, S: players.S, ...opponentOne },
+        },
+      ],
+    },
+  },
+};
+
+/** A non-anchor that comes in for the SECOND half. */
+export const HalfMatchSecondHalf: Story = {
+  args: {
+    table: 1,
+    boards: [3, 4],
+    players,
+    halfMatch: {
+      role: "secondHalf",
+      segments: [
+        {
+          half: "second",
+          boards: [3, 4],
+          players: { N: players.N, S: players.S, ...opponentTwo },
+        },
+      ],
+    },
+  },
+};

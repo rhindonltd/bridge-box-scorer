@@ -4,6 +4,7 @@ import RoundInfo from "@/app/game/[gameId]/play/[initialSeat]/RoundInfo";
 import React from "react";
 import { Player } from "@/db/games/tables/players";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import type { RoundHalfMatch } from "@/hooks/play-state-machine";
 
 interface Props {
   round: number;
@@ -15,6 +16,8 @@ interface Props {
     E: Player;
     W: Player;
   };
+  /** Present for a "2 half matches" round this pair is in. */
+  halfMatch?: RoundHalfMatch;
   onEnterRound: () => void;
   /** Right-hand header content (the play header menu). */
   headerRight?: React.ReactNode;
@@ -25,6 +28,7 @@ export function RoundInfoPage({
   table,
   boards,
   players,
+  halfMatch,
   onEnterRound,
   headerRight,
 }: Props) {
@@ -44,7 +48,12 @@ export function RoundInfoPage({
         </button>
       }
     >
-      <RoundInfo boards={boards} table={table} players={players} />
+      <RoundInfo
+        boards={boards}
+        table={table}
+        players={players}
+        halfMatch={halfMatch}
+      />
     </GamePageLayout>
   );
 }

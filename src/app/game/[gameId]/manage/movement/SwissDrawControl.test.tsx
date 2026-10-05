@@ -48,7 +48,9 @@ function previewAck(over: Record<string, unknown> = {}) {
         },
       ],
       bye: null,
+      halfMatch: null,
     },
+    halfMatch: null,
     advisoryInputs: {
       tables: 2,
       playedOpponents: [],
@@ -121,6 +123,7 @@ describe("SwissDrawControl", () => {
           { tableNumber: 1, ns: 1, ew: 3 },
           { tableNumber: 2, ns: 2, ew: 4 },
         ],
+        null,
         null,
       ),
     );

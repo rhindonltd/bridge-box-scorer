@@ -143,6 +143,19 @@ be avoided. Tap **Swiss Pairs**, set the **rounds** and **boards per round**
 each later round during play from the game menu (see
 [Drawing the next Swiss round](#drawing-the-next-swiss-round)).
 
+The dialog also asks how to handle an **odd number of pairs** each round:
+
+- **Bye** (the default) — one pair sits out each round and is credited an
+  above-average result. Simple, and fine for most club events.
+- **2 half matches** — instead of a pair sitting out, three pairs play a group
+  at one table: one pair (the **anchor**) plays the full round, split into two
+  halves against two different opponents, and the other two each play one half
+  (and are credited an average-plus for the half they miss). No one sits out a
+  whole round. Choosing this reveals a per-round plan so you can pick **Bye** or
+  **Half matches** for each round individually — the usual EBU practice is to
+  vary it across the event. These settings only take effect if your field turns
+  out to be odd; an even field ignores them.
+
 Swiss Pairs is offered only when the game has a single section.
 
 #### Swiss Teams
@@ -253,9 +266,14 @@ a pairing repeats an earlier-round opponent, a stationary pair is off its home
 seat, or the pair you've given the bye has already had one. You're free to
 accept an override anyway — the warnings are advice, not a barrier.
 
-- An odd number of pairs means one pair gets a **bye** that round (the app
-  suggests one from near the bottom who hasn't yet had one) and is credited an
-  above-average score.
+- An odd number of pairs is handled the way you chose when you set the movement
+  up. With **Bye**, one pair sits out that round (the app suggests one from near
+  the bottom who hasn't yet had one) and is credited an above-average score.
+  With **2 half matches** for that round, three pairs instead play a group at
+  one table — the review shows that group with the anchor and its two
+  opponents — so no one sits out the whole round; each of the three is credited
+  for the boards they play plus, for the two non-anchors, an average-plus for
+  the half they miss. Draw and score it exactly like any other round.
 
 Repeat this each round until the event is complete.
 

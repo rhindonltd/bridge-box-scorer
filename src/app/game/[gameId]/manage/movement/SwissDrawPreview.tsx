@@ -46,6 +46,15 @@ function useNameLookup(named: NamedSeating) {
         pairNames(named.bye.players.player1, named.bye.players.player2),
       );
     }
+    if (named.halfMatch) {
+      for (const p of [
+        named.halfMatch.anchor,
+        named.halfMatch.halfOneOpponent,
+        named.halfMatch.halfTwoOpponent,
+      ]) {
+        byPairId.set(p.pairId, pairNames(p.players.player1, p.players.player2));
+      }
+    }
     return byPairId;
   }, [named]);
 }
@@ -56,8 +65,12 @@ export interface SwissDrawPreviewProps {
   committing: boolean;
   /** Inline error from a failed commit, if any. */
   error: string | null;
-  /** Accept the (possibly edited) seating. */
-  onConfirm: (seating: SwissSeating[], sitOutPairId: SwissPairId | null) => void;
+  /** Accept the (possibly edited) seating, plus the (read-only) half-match group. */
+  onConfirm: (
+    seating: SwissSeating[],
+    sitOutPairId: SwissPairId | null,
+    halfMatch: SwissPreviewAck["halfMatch"],
+  ) => void;
   onCancel: () => void;
 }
 
@@ -118,6 +131,20 @@ export function SwissDrawPreview({
 
   const nameLines = (id: SwissPairId): [string, string] =>
     names.get(id) ?? [`Pair ${id}`, ""];
+
+  // Short "First / First" labels for the half-match sentence (first names only
+  // where available, falling back to the pair id).
+  const shortLabel = (id: SwissPairId): string => {
+    const [a, b] = nameLines(id);
+    const first = (s: string) => s.split(" ")[0] || s;
+    return a && a !== "—" ? `${first(a)} & ${first(b)}` : `Pair ${id}`;
+  };
+  const anchorLabel = () =>
+    preview.halfMatch ? shortLabel(preview.halfMatch.group.anchor) : "";
+  const halfOneLabel = () =>
+    preview.halfMatch ? shortLabel(preview.halfMatch.group.halfOneOpponent) : "";
+  const halfTwoLabel = () =>
+    preview.halfMatch ? shortLabel(preview.halfMatch.group.halfTwoOpponent) : "";
 
   // Running VP total per pair, from the standings the draw ranked on. Shown on
   // each card so the director sees the field's totals inline (no separate list).
@@ -284,6 +311,29 @@ export function SwissDrawPreview({
               )}
             </button>
           )}
+
+          {preview.halfMatch != null && (
+            <div
+              data-testid="draw-half-match"
+              className="rounded-xl border border-indigo-300 bg-indigo-50 p-3"
+            >
+              <div className="-mx-3 -mt-3 mb-2 rounded-t-xl bg-indigo-200 px-3 py-1.5">
+                <span className="text-xs font-semibold text-indigo-900">
+                  2 half matches — table {preview.halfMatch.anchorTable}
+                </span>
+              </div>
+              <p className="mb-2 text-xs text-indigo-800">
+                {anchorLabel()} plays the whole round at table{" "}
+                {preview.halfMatch.anchorTable}: {halfOneLabel()} in the first
+                half, then {halfTwoLabel()} swaps in for the second half.
+              </p>
+              <div className="flex flex-col gap-1.5">
+                <HalfMatchRow role="Anchor (plays both halves)" names={nameLines(preview.halfMatch.group.anchor)} />
+                <HalfMatchRow role="First half" names={nameLines(preview.halfMatch.group.halfOneOpponent)} />
+                <HalfMatchRow role="Second half" names={nameLines(preview.halfMatch.group.halfTwoOpponent)} />
+              </div>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -311,8 +361,15 @@ export function SwissDrawPreview({
           </button>
           <button
             type="button"
-            onClick={() => onConfirm(seating, sitOutPairId)}
-            disabled={committing || advisories.structuralError}
+            onClick={() => onConfirm(seating, sitOutPairId, preview.halfMatch)}
+            // A half-match round's three group pairs aren't in `seating`, so the
+            // ordinary structural check (which expects a complete field) would
+            // flag them as missing. The group isn't editable here, so trust the
+            // server's draw and don't block on that advisory for a half-match.
+            disabled={
+              committing ||
+              (preview.halfMatch == null && advisories.structuralError)
+            }
             className={primaryButtonClass}
             data-testid="draw-confirm"
           >
@@ -320,6 +377,28 @@ export function SwissDrawPreview({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** One read-only pair row within the half-match card: a role label + names. */
+function HalfMatchRow({
+  role,
+  names,
+}: {
+  role: string;
+  names: [string, string];
+}) {
+  return (
+    <div className="rounded-lg border border-indigo-200 bg-white px-2 py-1.5">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-indigo-500">
+        {role}
+      </div>
+      {names.map((n, i) => (
+        <div key={i} className="text-sm text-gray-800">
+          {n}
+        </div>
+      ))}
     </div>
   );
 }

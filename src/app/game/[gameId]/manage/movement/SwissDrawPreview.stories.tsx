@@ -43,7 +43,9 @@ const basePreview: SwissPreviewAck = {
       },
     ],
     bye: null,
+    halfMatch: null,
   },
+  halfMatch: null,
   advisoryInputs: {
     tables: 2,
     playedOpponents: [],
@@ -172,6 +174,49 @@ export const WithBye: Story = {
         bye: {
           pairId: 2,
           players: { player1: p("Erin", "North"), player2: p("Frank", "South") },
+        },
+        halfMatch: null,
+      },
+    },
+  },
+};
+
+/**
+ * An odd field resolved with a 2-half-matches group: three pairs play at the
+ * anchor's table (the anchor stays all round; the two others swap in/out at the
+ * midpoint). Shown read-only — the group isn't director-editable here. The
+ * ordinary field (if any) still renders as swap-able table cards above it.
+ */
+export const WithHalfMatch: Story = {
+  args: {
+    preview: {
+      ...basePreview,
+      // The three group pairs are not in the ordinary seating.
+      seating: [],
+      sitOutPairId: null,
+      halfMatch: {
+        group: { anchor: 1, halfOneOpponent: 2, halfTwoOpponent: 3 },
+        anchorTable: 1,
+        anchorDirection: "NS",
+      },
+      named: {
+        tables: [],
+        bye: null,
+        halfMatch: {
+          anchorTable: 1,
+          anchorDirection: "NS",
+          anchor: {
+            pairId: 1,
+            players: { player1: p("Alice", "North"), player2: p("Bob", "South") },
+          },
+          halfOneOpponent: {
+            pairId: 2,
+            players: { player1: p("Erin", "North"), player2: p("Frank", "South") },
+          },
+          halfTwoOpponent: {
+            pairId: 3,
+            players: { player1: p("Carol", "East"), player2: p("Dave", "West") },
+          },
         },
       },
     },

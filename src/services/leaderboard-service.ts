@@ -26,7 +26,7 @@ import {
   isTwoWinnerPairs,
   SwissVpMode,
 } from "@/model/event-format";
-import { calculateSwissVpOverall } from "@/scoring/swiss/swiss-vp-overall";
+import { calculateSwissXimpVpOverall } from "@/scoring/swiss/swiss-ximp-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
 import { calculateTeamsImpAggregateOverall } from "@/scoring/swiss/teams-imp-aggregate-overall";
@@ -77,7 +77,7 @@ function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
  * standard board-pooled overall.
  */
 function scoreSwissVp(boardRows: Board[], mode: SwissVpMode) {
-  if (mode === "IMP") return calculateSwissVpOverall(boardRows);
+  if (mode === "XIMP") return calculateSwissXimpVpOverall(boardRows);
   if (mode === "MP") return calculateSwissMpVpOverall(boardRows);
   return null;
 }

@@ -4,7 +4,11 @@ import { Db } from "@/db/games";
 import type { Player } from "@/db/games/tables/players";
 import { buildAssignmentPlayerLookup } from "@/db/games/queries/assignment-players";
 import { swissPairMovementId } from "@/services/materialize-swiss-round";
-import type { SwissPairId, SwissSeating } from "@/movement/swiss/swiss-pairing";
+import type {
+  SwissHalfMatchSeating,
+  SwissPairId,
+  SwissSeating,
+} from "@/movement/swiss/swiss-pairing";
 import type { SectionLetter } from "@/model/participants";
 
 /** One table's seating with resolved player names, ready to render. */
@@ -28,10 +32,33 @@ export interface NamedByePair {
   players: { player1: Player | null; player2: Player | null };
 }
 
-/** A round's seating with names: the played tables plus the optional bye pair. */
+/** One pair in a half-match group, with its two player names. */
+export interface NamedHalfMatchPair {
+  pairId: SwissPairId;
+  players: { player1: Player | null; player2: Player | null };
+}
+
+/**
+ * A drawn 2-half-matches group with names, for the preview. The anchor plays
+ * both halves at its table; `halfOneOpponent` plays the first half, then
+ * swaps out for `halfTwoOpponent` in the second.
+ */
+export interface NamedHalfMatch {
+  anchorTable: number;
+  anchorDirection: "NS" | "EW";
+  anchor: NamedHalfMatchPair;
+  halfOneOpponent: NamedHalfMatchPair;
+  halfTwoOpponent: NamedHalfMatchPair;
+}
+
+/**
+ * A round's seating with names: the played tables, the optional bye pair, and
+ * the optional 2-half-matches group (mutually exclusive with the bye).
+ */
 export interface NamedSeating {
   tables: NamedSeatingTable[];
   bye: NamedByePair | null;
+  halfMatch: NamedHalfMatch | null;
 }
 
 /**
@@ -49,6 +76,7 @@ export async function resolveSwissSeatingNames(
   tables: number,
   seating: SwissSeating[],
   sitOutPairId: SwissPairId | null,
+  halfMatch: SwissHalfMatchSeating | null = null,
 ): Promise<NamedSeating> {
   const lookup = await buildAssignmentPlayerLookup(db);
 
@@ -85,5 +113,26 @@ export async function resolveSwissSeatingNames(
     };
   }
 
-  return { tables: namedTables, bye };
+  const namedPair = (pairId: SwissPairId): NamedHalfMatchPair => {
+    const players = lookup.get(seatId(pairId));
+    return {
+      pairId,
+      players: {
+        player1: players?.player1 ?? null,
+        player2: players?.player2 ?? null,
+      },
+    };
+  };
+
+  const namedHalfMatch: NamedHalfMatch | null = halfMatch
+    ? {
+        anchorTable: halfMatch.anchorTable,
+        anchorDirection: halfMatch.anchorDirection,
+        anchor: namedPair(halfMatch.group.anchor),
+        halfOneOpponent: namedPair(halfMatch.group.halfOneOpponent),
+        halfTwoOpponent: namedPair(halfMatch.group.halfTwoOpponent),
+      }
+    : null;
+
+  return { tables: namedTables, bye, halfMatch: namedHalfMatch };
 }

@@ -11,9 +11,15 @@ import {
 } from "@/services/materialize-movement";
 import {
   swissPairHomeSeat,
+  type SwissHalfMatchGroup,
   type SwissPairId,
   type SwissSeating,
 } from "@/movement/swiss/swiss-pairing";
+import { PairDirection } from "@/model/common";
+import type {
+  MaterializableRound,
+  MaterializableTable,
+} from "@/services/materialize-movement";
 
 /**
  * Phantom participant id used for the empty seat on a Swiss sit-out row. It is
@@ -54,6 +60,154 @@ export function swissRoundBoardRange(
   return { boardStart, boardEnd: boardStart + boardsPerRound - 1 };
 }
 
+/** A contiguous inclusive board-number range. */
+export interface BoardSpan {
+  start: number;
+  end: number;
+}
+
+/**
+ * Split a round's board range into the two halves of a "2 half matches" group.
+ *
+ * The round's `boardsPerRound` boards are split down the middle into two equal
+ * halves; an ODD count rounds **down** (the final board of the round is
+ * discarded for the group so each half is the same size and no pair plays a
+ * board the anchor can't also play once). So a 6-board round → S1 boards 1–3,
+ * S2 boards 4–6; an 8-board round → 1–4 / 5–8; a 7-board round → 1–3 / 4–6 with
+ * board 7 dropped. Returns `null` when fewer than two boards would be in each
+ * half (nothing to split), so the caller can fall back to a bye.
+ *
+ * `halfSize` is the common size of each half (`floor(boardsPerRound / 2)`).
+ */
+export function swissHalfMatchBoardSplit(
+  roundNumber: number,
+  boardsPerRound: number,
+): { halfOne: BoardSpan; halfTwo: BoardSpan; halfSize: number } | null {
+  const halfSize = Math.floor(boardsPerRound / 2);
+  if (halfSize < 1) return null;
+
+  const { boardStart } = swissRoundBoardRange(roundNumber, boardsPerRound);
+  const halfOne: BoardSpan = {
+    start: boardStart,
+    end: boardStart + halfSize - 1,
+  };
+  const halfTwo: BoardSpan = {
+    start: boardStart + halfSize,
+    end: boardStart + 2 * halfSize - 1,
+  };
+  return { halfOne, halfTwo, halfSize };
+}
+
+/**
+ * The seat the anchor occupies for the whole half-match round. The anchor stays
+ * put; each non-anchor takes the opposite seat for its half (and the two
+ * non-anchors swap in/out at the midpoint — Q11). Supplied by the seating layer
+ * (so a stationary anchor keeps its home seat); defaults to NS when the group
+ * is seated at a free table.
+ */
+export interface SwissHalfMatchSeat {
+  tableNumber: number;
+  anchorDirection: PairDirection;
+}
+
+/**
+ * Materialize a "2 half matches" group into table entries for one round.
+ *
+ * The anchor sits `seat.anchorDirection` at `seat.tableNumber` for the whole
+ * round, facing `halfOneOpponent` over the first board subset (S1) and
+ * `halfTwoOpponent` over the second (S2) — two real round entries at the one
+ * table (the non-anchors swap in/out at the midpoint; no phantom second table).
+ * Each non-anchor is then compensated for the half it missed with a
+ * HALF_AVERAGE block on those boards (`ns` = the non-anchor, `ew` = a phantom):
+ * `halfOneOpponent` missed S2, `halfTwoOpponent` missed S1.
+ *
+ * The two real entries are grouped by their OPPONENT (distinct `ew`/`ns`), which
+ * is exactly how the half-match scorer re-splits the anchor's round into its two
+ * halves. The compensation blocks are parked on free table numbers above the
+ * played tables so they never collide with a real table's primary key.
+ *
+ * Returns `null` when the round is too short to split (see
+ * {@link swissHalfMatchBoardSplit}); the caller should fall back to a bye.
+ */
+export function swissHalfMatchToMaterializable(
+  tables: number,
+  roundNumber: number,
+  boardsPerRound: number,
+  group: SwissHalfMatchGroup,
+  seat: SwissHalfMatchSeat,
+  firstFreeCompensationTable: number,
+): MaterializableTable[] | null {
+  const split = swissHalfMatchBoardSplit(roundNumber, boardsPerRound);
+  if (!split) return null;
+
+  const anchorId = swissPairMovementId(tables, group.anchor);
+  const oppOneId = swissPairMovementId(tables, group.halfOneOpponent);
+  const oppTwoId = swissPairMovementId(tables, group.halfTwoOpponent);
+
+  // Seat the anchor in its fixed direction; the opponent takes the opposite.
+  const seatHalf = (
+    opponentId: string,
+    span: BoardSpan,
+  ): MaterializableRound => {
+    const ns = seat.anchorDirection === "NS" ? anchorId : opponentId;
+    const ew = seat.anchorDirection === "NS" ? opponentId : anchorId;
+    return {
+      roundNumber,
+      ns,
+      ew,
+      boardStart: span.start,
+      boardEnd: span.end,
+    };
+  };
+
+  // Both real halves sit at the anchor's one table.
+  const anchorTable: MaterializableTable = {
+    tableNumber: seat.tableNumber,
+    rounds: [
+      seatHalf(oppOneId, split.halfOne),
+      seatHalf(oppTwoId, split.halfTwo),
+    ],
+  };
+
+  // Compensation blocks for each non-anchor's missed half (phantom opponent).
+  const compensation = (
+    nonAnchorId: string,
+    missed: BoardSpan,
+    tableNumber: number,
+  ): MaterializableTable => ({
+    tableNumber,
+    rounds: [
+      {
+        roundNumber,
+        ns: nonAnchorId,
+        ew: SWISS_SIT_OUT_PHANTOM,
+        boardStart: missed.start,
+        boardEnd: missed.end,
+        halfAverage: true,
+      },
+    ],
+  });
+
+  return [
+    anchorTable,
+    // halfOneOpponent played S1, so it is compensated on S2; and vice versa.
+    compensation(oppOneId, split.halfTwo, firstFreeCompensationTable),
+    compensation(oppTwoId, split.halfOne, firstFreeCompensationTable + 1),
+  ];
+}
+
+/**
+ * A drawn "2 half matches" group plus where its anchor is seated. The three
+ * group pairs are NOT in the round's ordinary `seating`; this is materialized
+ * separately (two real halves at the anchor's table + two HALF_AVERAGE
+ * compensation blocks). The anchor seat is chosen by the seating layer, so a
+ * stationary anchor keeps its home seat.
+ */
+export interface SwissHalfMatchMaterialization {
+  group: SwissHalfMatchGroup;
+  seat: SwissHalfMatchSeat;
+}
+
 /**
  * Turn a drawn Swiss round into the {@link MaterializableMovement} shape (one
  * "table" per seating entry, each with the single round R). Pair ids become the
@@ -64,6 +218,12 @@ export function swissRoundBoardRange(
  * pair on the NS seat with a phantom opponent and is flagged `sitOut`, so its
  * boards are written with status SIT_OUT (played by no one) and the board-history
  * reader can recover the bye.
+ *
+ * For a "2 half matches" round, pass `halfMatch` instead of (or alongside) a
+ * sit-out: its three pairs are materialized via
+ * {@link swissHalfMatchToMaterializable} and must NOT also appear in `seating`.
+ * The compensation blocks are parked on table numbers above every other table
+ * (played or sit-out) so they never collide.
  */
 export function swissRoundToMaterializable(
   tables: number,
@@ -71,6 +231,7 @@ export function swissRoundToMaterializable(
   boardsPerRound: number,
   seating: SwissSeating[],
   sitOutPairId: SwissPairId | null,
+  halfMatch: SwissHalfMatchMaterialization | null = null,
 ): MaterializableMovement {
   const { boardStart, boardEnd } = swissRoundBoardRange(
     roundNumber,
@@ -90,13 +251,18 @@ export function swissRoundToMaterializable(
     ],
   }));
 
+  // Highest table number used so far by a played table (for parking phantom /
+  // compensation tables above it without a primary-key collision).
+  const maxPlayedTable = seating.reduce(
+    (max, s) => Math.max(max, s.tableNumber),
+    0,
+  );
+
   if (sitOutPairId != null) {
     // Park the sit-out on the next free table number so it doesn't collide with
     // a played table's PK. The board rows are flagged sitOut.
-    const sitOutTable =
-      seating.reduce((max, s) => Math.max(max, s.tableNumber), 0) + 1;
     tablesOut.push({
-      tableNumber: sitOutTable,
+      tableNumber: maxPlayedTable + 1,
       rounds: [
         {
           roundNumber,
@@ -108,6 +274,28 @@ export function swissRoundToMaterializable(
         },
       ],
     });
+  }
+
+  if (halfMatch != null) {
+    // Park the two compensation blocks above every other table used this round
+    // (played tables, the anchor's table, and any sit-out table).
+    const firstFreeCompensationTable =
+      Math.max(maxPlayedTable, halfMatch.seat.tableNumber, sitOutPairId != null ? maxPlayedTable + 1 : 0) + 1;
+
+    const halfMatchTables = swissHalfMatchToMaterializable(
+      tables,
+      roundNumber,
+      boardsPerRound,
+      halfMatch.group,
+      halfMatch.seat,
+      firstFreeCompensationTable,
+    );
+    if (halfMatchTables == null) {
+      throw new Error(
+        `Round ${roundNumber} has too few boards (${boardsPerRound}) to split into two half matches`,
+      );
+    }
+    tablesOut.push(...halfMatchTables);
   }
 
   return tablesOut;
@@ -135,6 +323,7 @@ export async function materializeSwissRound(
   boardsPerRound: number,
   seating: SwissSeating[],
   sitOutPairId: SwissPairId | null,
+  halfMatch: SwissHalfMatchMaterialization | null = null,
 ): Promise<{ written: boolean }> {
   const db = await getDb(gameId);
   if (!db) {
@@ -158,6 +347,7 @@ export async function materializeSwissRound(
     boardsPerRound,
     seating,
     sitOutPairId,
+    halfMatch,
   );
 
   const { boardRows, assignmentRows } = buildSectionRows(section, movement);

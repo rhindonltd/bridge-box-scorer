@@ -511,7 +511,7 @@ describe("SectionMovementPicker", () => {
       expect(setSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
         tables: 6,
         rounds: 7,
-        boardsPerRound: 3,
+        boardsPerRound: 7,
       }),
     );
     expect(onDone).toHaveBeenCalled();

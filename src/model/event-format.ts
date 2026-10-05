@@ -34,11 +34,12 @@ export type EventFormat =
 /**
  * How a Swiss Pairs game derives its per-round Victory Points, or null when the
  * game is not a Swiss Pairs VP game (any non-Swiss movement, or a Swiss Pairs
- * game whose scoring method has no VP mapping). "IMP" converts each round's
- * head-to-head IMP margin; "MP" converts each round's field matchpoint
- * percentage.
+ * game whose scoring method has no VP mapping). "XIMP" converts each pair's
+ * per-round cross-IMP (Butler) total against the field; "MP" converts each
+ * round's field matchpoint percentage. (Swiss Pairs is scored by matchpoints or
+ * cross-IMP only — head-to-head IMP is a teams method.)
  */
-export type SwissVpMode = "IMP" | "MP" | null;
+export type SwissVpMode = "XIMP" | "MP" | null;
 
 /**
  * The full classification of a game's event format, plus the scoring type and
@@ -139,11 +140,11 @@ export function classifyEvent(
 
   if (movement?.source === "SWISS") {
     // Swiss Pairs derive per-round VP from either matchpoint percentage (MP) or
-    // head-to-head IMP margin (Butler). "IMP" and its VP-labelled alias
-    // "IMP_VP" both select the Butler (IMP) VP mode.
+    // cross-IMP (Butler, "XIMP"). Any other scoring type has no Swiss Pairs VP
+    // mapping, so the leaderboard falls back to the board-pooled overall.
     const swissVpMode: SwissVpMode =
-      scoringType === "IMP" || scoringType === "IMP_VP"
-        ? "IMP"
+      scoringType === "XIMP"
+        ? "XIMP"
         : scoringType === "MP"
           ? "MP"
           : null;

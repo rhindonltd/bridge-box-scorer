@@ -8,9 +8,10 @@ import type { NewBoard } from "@/db/games/tables/boards";
 
 /**
  * Integration coverage for getResultsSummary against a real migrated per-game
- * database: it should count playable boards (excluding SIT_OUT), treat
- * CONFIRMED / OVERRIDDEN as finalized, and only report allResultsIn once every
- * playable board is finalized.
+ * database: it should count playable boards (excluding SIT_OUT and the Swiss
+ * "2 half matches" HALF_AVERAGE compensation blocks), treat CONFIRMED /
+ * OVERRIDDEN as finalized, and only report allResultsIn once every playable
+ * board is finalized.
  */
 describe("getResultsSummary", () => {
   let harness: DbHarness;
@@ -136,6 +137,45 @@ describe("getResultsSummary", () => {
 
   it("reports not complete when only SIT_OUT boards exist", async () => {
     await seed([makeBoard({ boardNumber: 1, status: "SIT_OUT" })]);
+
+    const { getResultsSummary } = await import(
+      "@/db/games/queries/get-results-summary"
+    );
+    const db = (await harness.getDb()) as Db;
+
+    expect(await getResultsSummary(db)).toEqual({
+      totalPlayable: 0,
+      finalized: 0,
+      allResultsIn: false,
+    });
+  });
+
+  it("excludes HALF_AVERAGE compensation boards from the playable denominator", async () => {
+    // A Swiss "2 half matches" round: the anchor's two played halves are
+    // CONFIRMED, and the two non-anchors' missed halves are HALF_AVERAGE
+    // compensation blocks the scorer resolves. The round is complete once the
+    // played halves are in — the HALF_AVERAGE rows must not keep it open.
+    await seed([
+      makeBoard({ boardNumber: 1, status: "CONFIRMED" }),
+      makeBoard({ boardNumber: 2, status: "CONFIRMED" }),
+      makeBoard({ boardNumber: 2, tableNumber: 2, status: "HALF_AVERAGE" }),
+      makeBoard({ boardNumber: 1, tableNumber: 3, status: "HALF_AVERAGE" }),
+    ]);
+
+    const { getResultsSummary } = await import(
+      "@/db/games/queries/get-results-summary"
+    );
+    const db = (await harness.getDb()) as Db;
+
+    expect(await getResultsSummary(db)).toEqual({
+      totalPlayable: 2,
+      finalized: 2,
+      allResultsIn: true,
+    });
+  });
+
+  it("reports not complete when only HALF_AVERAGE boards exist", async () => {
+    await seed([makeBoard({ boardNumber: 1, status: "HALF_AVERAGE" })]);
 
     const { getResultsSummary } = await import(
       "@/db/games/queries/get-results-summary"

@@ -85,7 +85,7 @@ describe("registerPreviewNextRoundHandler", () => {
   });
 
   it("acks the proposed seating + advisories and writes/broadcasts nothing", async () => {
-    const named = { tables: [], bye: null };
+    const named = { tables: [], bye: null, halfMatch: null };
     const advisoryInputs = {
       tables: 2,
       playedOpponents: [],
@@ -102,6 +102,7 @@ describe("registerPreviewNextRoundHandler", () => {
       tables: 2,
       seating,
       sitOutPairId: null,
+      halfMatch: null,
       named,
       advisoryInputs,
       standings,
@@ -126,6 +127,7 @@ describe("registerPreviewNextRoundHandler", () => {
         tables: 2,
         seating,
         sitOutPairId: null,
+        halfMatch: null,
         named,
         advisoryInputs,
         standings,
@@ -206,7 +208,13 @@ describe("registerDrawNextRoundHandler (commit)", () => {
       ack,
     );
 
-    expect(commitNextSwissRound).toHaveBeenCalledWith("g1", "A", seating, null);
+    expect(commitNextSwissRound).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      seating,
+      null,
+      null,
+    );
     expect(io.to).toHaveBeenCalled();
     expect(broadcastLeaderboardChanged).toHaveBeenCalledWith(io, "g1");
     expect(ack).toHaveBeenCalledWith({

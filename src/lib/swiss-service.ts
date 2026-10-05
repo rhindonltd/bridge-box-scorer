@@ -3,7 +3,10 @@ import { emitWithAck } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import type { NamedSeating } from "@/services/swiss-seating-names";
 import type { NamedTeamsSeating } from "@/services/swiss-teams-seating-names";
-import type { SerializableAdvisoryInputs } from "@/movement/swiss/swiss-pairing";
+import type {
+  SerializableAdvisoryInputs,
+  SwissHalfMatchSeating,
+} from "@/movement/swiss/swiss-pairing";
 import type { SerializableTeamsAdvisoryInputs } from "@/movement/swiss-teams/swiss-teams-pairing";
 import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
 
@@ -24,6 +27,12 @@ export interface SwissPreviewAck {
   tables: number;
   seating: SwissSeatingEntry[];
   sitOutPairId: number | null;
+  /**
+   * The drawn 2-half-matches group for this round, or null for a bye/even
+   * round. Shown read-only on the preview and echoed back on commit so the
+   * server materializes exactly what was reviewed.
+   */
+  halfMatch: SwissHalfMatchSeating | null;
   named: NamedSeating;
   advisoryInputs: SerializableAdvisoryInputs;
   /** Current standings (best first) with running VP totals — the draw order. */
@@ -67,6 +76,7 @@ export async function commitNextSwissRound(
   section: string,
   seating: SwissSeatingEntry[],
   sitOutPairId: number | null,
+  halfMatch: SwissHalfMatchSeating | null = null,
 ): Promise<SwissCommitAck> {
   return emitWithAck<SwissCommitAck>(SocketEvents.DRAW_NEXT_SWISS_ROUND, {
     gameId,
@@ -74,6 +84,7 @@ export async function commitNextSwissRound(
     directorToken: getDirectorToken(gameId) ?? "",
     seating,
     sitOutPairId,
+    halfMatch,
   });
 }
 

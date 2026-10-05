@@ -52,6 +52,15 @@ function board(
   } as Board;
 }
 
+/** A three-table round on one board with a spread of NS results (a real field). */
+function threeTableRound(): Board[] {
+  return [
+    board(1, 1, 1, "A1NS", "A1EW", "6NTN=" as BoardOutcome), // field top (NS)
+    board(1, 2, 1, "A2NS", "A2EW", "3NTN=" as BoardOutcome), // mid
+    board(1, 3, 1, "A3NS", "A3EW", "3NTN-1" as BoardOutcome), // floor
+  ];
+}
+
 describe("assembleSwissPairs", () => {
   it("emits SWISS_PAIRS data with a global pair roster", () => {
     const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
@@ -65,7 +74,7 @@ describe("assembleSwissPairs", () => {
     expect(data.pairs[1].direction).toBe("E");
   });
 
-  it("builds one match per (round, table) with the boards' traveller lines", () => {
+  it("builds one match per table with the boards' traveller lines", () => {
     const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
     const boards = [
       board(1, 1, 1, "A1NS", "A1EW", "3NTN+1" as BoardOutcome, "HK"),
@@ -88,21 +97,44 @@ describe("assembleSwissPairs", () => {
     });
   });
 
-  it("splits an integer VP total of 20 across the two pairs of a match", () => {
+  it("scores a table's match cross-IMP vs the field (NS + EW sum to 20)", () => {
+    const pairs = [
+      pair("A1NS", "Al"),
+      pair("A1EW", "Cy"),
+      pair("A2NS", "Ed"),
+      pair("A2EW", "Gu"),
+      pair("A3NS", "Iv"),
+      pair("A3EW", "Ka"),
+    ];
+
+    const data = assembleSwissPairs(game, club, pairs, threeTableRound());
+
+    // Table 1's NS tops the field, EW is the mirror; a real-field match's two
+    // integer VPs sum to 20 (equal and opposite cross-IMP).
+    const t1 = data.matches.find((m) => m.nsPairNumber === "A1NS")!;
+    expect(Number.isInteger(t1.nsScore)).toBe(true);
+    expect(Number.isInteger(t1.ewScore)).toBe(true);
+    expect(t1.nsScore + t1.ewScore).toBe(20);
+    expect(t1.nsScore).toBeGreaterThan(t1.ewScore);
+    // The field floor table: its NS loses, so NS < EW.
+    const t3 = data.matches.find((m) => m.nsPairNumber === "A3NS")!;
+    expect(t3.nsScore).toBeLessThan(t3.ewScore);
+  });
+
+  it("scores a single-table round (no field to compare) as a neutral 10/10", () => {
+    // Cross-IMP needs at least two results on a board to compare; a lone table
+    // has no field, so both pairs sit at the neutral 10.
     const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
-    // NS makes a vulnerable game; EW go down: NS should win the match.
     const boards = [board(1, 1, 1, "A1NS", "A1EW", "4SN+1" as BoardOutcome)];
 
     const data = assembleSwissPairs(game, club, pairs, boards);
     const match = data.matches[0];
 
-    expect(Number.isInteger(match.nsScore)).toBe(true);
-    expect(Number.isInteger(match.ewScore)).toBe(true);
-    expect(match.nsScore + match.ewScore).toBe(20);
-    expect(match.nsScore).toBeGreaterThanOrEqual(match.ewScore);
+    expect(match.nsScore).toBe(10);
+    expect(match.ewScore).toBe(10);
   });
 
-  it("scores an unplayed match as a neutral 10/10", () => {
+  it("scores an unplayed table as a neutral 10/10", () => {
     const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
     const boards = [board(1, 1, 1, "A1NS", "A1EW", null)];
 
@@ -113,24 +145,20 @@ describe("assembleSwissPairs", () => {
     expect(match.ewScore).toBe(10);
   });
 
-  it("ranks pairs by total VP across rounds, highest first", () => {
+  it("ranks pairs by total VP across the field, highest first", () => {
     const pairs = [
       pair("A1NS", "Al"),
       pair("A1EW", "Cy"),
       pair("A2NS", "Ed"),
       pair("A2EW", "Gu"),
-    ];
-    const boards = [
-      // Round 1, table 1: A1NS wins big.
-      board(1, 1, 1, "A1NS", "A1EW", "6SN=" as BoardOutcome),
-      // Round 1, table 2: a flat board (both pairs near average).
-      board(1, 2, 2, "A2NS", "A2EW", "2NTN=" as BoardOutcome),
+      pair("A3NS", "Iv"),
+      pair("A3EW", "Ka"),
     ];
 
-    const data = assembleSwissPairs(game, club, pairs, boards);
+    const data = assembleSwissPairs(game, club, pairs, threeTableRound());
 
     expect(data.ranking[0].place).toBe(1);
-    // The winning NS pair from table 1 should top the ranking.
+    // The field-topping NS pair (table 1) tops the ranking.
     expect(data.ranking[0].number).toBe("A1NS");
     expect(data.ranking[0].totalVP).toBeGreaterThanOrEqual(
       data.ranking[data.ranking.length - 1].totalVP,
@@ -156,27 +184,142 @@ describe("assembleSwissPairs", () => {
     expect(data.sectionName).toBe("A");
   });
 
-  it("awards the winner's VP to EW when the margin favours them (negative margin)", () => {
-    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
-    // NS go down in a vulnerable game; EW win the board and thus the match.
-    const boards = [board(1, 1, 1, "A1NS", "A1EW", "4SN-3" as BoardOutcome)];
-
-    const data = assembleSwissPairs(game, club, pairs, boards);
-    const match = data.matches[0];
-
-    expect(match.nsScore + match.ewScore).toBe(20);
-    // EW took the winner's (larger) share.
-    expect(match.ewScore).toBeGreaterThan(match.nsScore);
-  });
-
   it("falls back to section 'A' for a pair id that isn't a section-qualified seat", () => {
-    // A non-standard participant id (no section/table/direction) exercises the
-    // sectionOf fallback in the ranking.
     const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
-    const boards = [board(1, 1, 1, "ODD", "A1EW", "3NTN=" as BoardOutcome)];
+    const boards = threeTableRound().map((b, i) =>
+      i === 0 ? { ...b, ns: "ODD" } : b,
+    );
 
     const data = assembleSwissPairs(game, club, pairs, boards);
     const oddEntry = data.ranking.find((r) => r.number === "ODD");
     expect(oddEntry?.sectionId).toBe("A");
+  });
+
+  describe("matchpoint mode", () => {
+    it("scores each table's match on the matchpoint field", () => {
+      const pairs = [
+        pair("A1NS", "Al"),
+        pair("A1EW", "Cy"),
+        pair("A2NS", "Ed"),
+        pair("A2EW", "Gu"),
+        pair("A3NS", "Iv"),
+        pair("A3EW", "Ka"),
+      ];
+
+      const data = assembleSwissPairs(
+        game,
+        club,
+        pairs,
+        threeTableRound(),
+        "MP",
+      );
+
+      // The field-topping table's NS beats its EW (independent MP VP).
+      const t1 = data.matches.find((m) => m.nsPairNumber === "A1NS")!;
+      expect(t1.nsScore).toBeGreaterThan(t1.ewScore);
+      // Integer VP on the discrete scale.
+      expect(Number.isInteger(t1.nsScore)).toBe(true);
+    });
+  });
+
+  describe("2 half matches (odd field)", () => {
+    // An 8-board round. The anchor (A1NS) plays X (A2EW) on boards 1-4 and
+    // Y (A3EW) on boards 5-8, at its table 1. Two ordinary tables (2, 3) play
+    // all 8 boards as the field. X is compensated on boards 5-8, Y on 1-4.
+    const TOP: BoardOutcome = "6NTN=";
+    const MID: BoardOutcome = "3NTN=";
+    const LOW: BoardOutcome = "3NTN-1";
+
+    function halfMatchRound(): Board[] {
+      const rows: Board[] = [];
+      // Anchor table: half 1 (boards 1-4) vs X, half 2 (boards 5-8) vs Y.
+      for (let b = 1; b <= 4; b++) {
+        rows.push(board(1, 1, b, "A1NS", "A2EW", TOP));
+      }
+      for (let b = 5; b <= 8; b++) {
+        rows.push(board(1, 1, b, "A1NS", "A3EW", TOP));
+      }
+      // Two ordinary field tables over all 8 boards.
+      for (let b = 1; b <= 8; b++) {
+        rows.push(board(1, 2, b, "A2NS", "A2EW2", MID));
+        rows.push(board(1, 3, b, "A3NS", "A3EW3", LOW));
+      }
+      // Compensation: X (A2EW) missed boards 5-8; Y (A3EW) missed boards 1-4.
+      for (let b = 5; b <= 8; b++) {
+        rows.push({
+          ...board(1, 4, b, "A2EW", "APHANTOM", null),
+          status: "HALF_AVERAGE",
+        } as Board);
+      }
+      for (let b = 1; b <= 4; b++) {
+        rows.push({
+          ...board(1, 5, b, "A3EW", "APHANTOM", null),
+          status: "HALF_AVERAGE",
+        } as Board);
+      }
+      return rows;
+    }
+
+    const pairs = [
+      pair("A1NS", "An"),
+      pair("A2EW", "Ex"),
+      pair("A3EW", "Wy"),
+      pair("A2NS", "Fa"),
+      pair("A2EW2", "Fb"),
+      pair("A3NS", "Fc"),
+      pair("A3EW3", "Fd"),
+    ];
+
+    it("emits the anchor's two real halves as two matches, one per opponent", () => {
+      const data = assembleSwissPairs(game, club, pairs, halfMatchRound());
+
+      const anchorMatches = data.matches.filter(
+        (m) => m.nsPairNumber === "A1NS" || m.ewPairNumber === "A1NS",
+      );
+      expect(anchorMatches).toHaveLength(2);
+      const opponents = anchorMatches
+        .map((m) => (m.nsPairNumber === "A1NS" ? m.ewPairNumber : m.nsPairNumber))
+        .sort();
+      expect(opponents).toEqual(["A2EW", "A3EW"]);
+      // Each half covers four boards.
+      for (const m of anchorMatches) {
+        expect(m.boards).toHaveLength(4);
+      }
+    });
+
+    it("never emits a MATCH for a compensated (phantom) half", () => {
+      const data = assembleSwissPairs(game, club, pairs, halfMatchRound());
+      const phantomMatch = data.matches.some(
+        (m) => m.nsPairNumber === "APHANTOM" || m.ewPairNumber === "APHANTOM",
+      );
+      expect(phantomMatch).toBe(false);
+    });
+
+    it("credits each non-anchor a TOTAL_SCORE including its compensated half", () => {
+      const data = assembleSwissPairs(game, club, pairs, halfMatchRound());
+
+      // X (A2EW) plays one real half (as the anchor's EW opponent) and is
+      // compensated for the other. Its ranking total is the sum of both halves
+      // — strictly more than the single real-half MATCH score it appears in.
+      const xTotal = data.ranking.find((r) => r.number === "A2EW")!.totalVP;
+      const xMatch = data.matches.find(
+        (m) => m.nsPairNumber === "A2EW" || m.ewPairNumber === "A2EW",
+      )!;
+      const xMatchVp =
+        xMatch.nsPairNumber === "A2EW" ? xMatch.nsScore : xMatch.ewScore;
+      // Compensation (AVE+/AVE) is strictly above 0, so the total exceeds the
+      // one real-half match score alone.
+      expect(xTotal).toBeGreaterThan(xMatchVp);
+      // The phantom is never ranked.
+      expect(data.ranking.some((r) => r.number === "APHANTOM")).toBe(false);
+    });
+
+    it("sums the anchor's two real halves into its /20 round total", () => {
+      const data = assembleSwissPairs(game, club, pairs, halfMatchRound());
+      const anchorTotal = data.ranking.find((r) => r.number === "A1NS")!.totalVP;
+      // The anchor blitzes the field on every board (6NT= vs 3NT=/3NT-1), so
+      // both halves max out: 10 + 10 = 20.
+      expect(anchorTotal).toBe(20);
+    });
   });
 });

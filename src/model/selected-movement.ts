@@ -48,26 +48,83 @@ export const mitchellSpecSchema = z.object({
 });
 
 /**
+ * How an odd Swiss Pairs field is resolved each round:
+ * - "BYE" (the default): one pair sits the whole round out, credited an
+ *   average-plus result.
+ * - "HALF_MATCHES": three pairs play "2 half matches" — one anchor pair plays
+ *   the full round against a different opponent in each half, and the other two
+ *   each play one half (and are compensated for the half they miss). See
+ *   `docs/swiss-pairs-half-matches-design.md`.
+ *
+ * Only meaningful when the pair count is odd. There is no "long" variant for
+ * pairs (it would be equivalent to two byes).
+ */
+export const swissPairsOddHandlingSchema = z.enum(["BYE", "HALF_MATCHES"]);
+
+/** How a single Swiss Pairs round resolves the odd pair. */
+export const swissPairsOddRoundSchema = z.enum(["BYE", "HALF_MATCHES"]);
+
+/**
  * Setup parameters for a Swiss Pairs movement. There is no per-round layout:
  * round 1 is positional and later rounds are drawn from standings, so all a
  * Swiss selection needs is the table count, the number of rounds to play, and
  * the boards played per round (which also fixes each round's board range).
  */
-export const swissSpecSchema = z.object({
-  tables: z.number().int().positive(),
-  rounds: z.number().int().positive(),
-  boardsPerRound: z.number().int().positive(),
-  /**
-   * Stable ids of pairs the director has marked as stationary: they keep their
-   * round-1 table and direction for the whole event, and each round's drawn
-   * opponent comes to them. Pair ids are the Swiss stable numbering — 1..tables
-   * are the pairs that start North/South, tables+1..2*tables the pairs that
-   * start East/West. Optional and defaults to none.
-   */
-  stationaryPairs: z.array(z.number().int().positive()).optional(),
-});
+export const swissSpecSchema = z
+  .object({
+    tables: z.number().int().positive(),
+    rounds: z.number().int().positive(),
+    boardsPerRound: z.number().int().positive(),
+    /**
+     * Stable ids of pairs the director has marked as stationary: they keep their
+     * round-1 table and direction for the whole event, and each round's drawn
+     * opponent comes to them. Pair ids are the Swiss stable numbering — 1..tables
+     * are the pairs that start North/South, tables+1..2*tables the pairs that
+     * start East/West. Optional and defaults to none.
+     */
+    stationaryPairs: z.array(z.number().int().positive()).optional(),
+    /**
+     * How an odd pair count is resolved. Defaults to "BYE". Only meaningful when
+     * there is an odd number of pairs (i.e. one empty seat in the field).
+     */
+    oddHandling: swissPairsOddHandlingSchema.optional(),
+    /**
+     * The per-round odd-field plan, one entry per round, set at setup. Only used
+     * (and only required) when `oddHandling === "HALF_MATCHES"`, in which case
+     * its length must equal `rounds`. Each entry says whether that round resolves
+     * the odd pair with a bye or a 2-half-matches group. (For "BYE" or an even
+     * field it is omitted.)
+     */
+    oddRoundPlan: z.array(swissPairsOddRoundSchema).optional(),
+  })
+  .superRefine((spec, ctx) => {
+    // The per-round plan is only meaningful under HALF_MATCHES, and must then
+    // cover exactly the declared rounds.
+    if (spec.oddHandling === "HALF_MATCHES") {
+      if (!spec.oddRoundPlan || spec.oddRoundPlan.length !== spec.rounds) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "oddRoundPlan must have exactly one entry per round when oddHandling is HALF_MATCHES",
+          path: ["oddRoundPlan"],
+        });
+      }
+    } else if (spec.oddRoundPlan !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "oddRoundPlan is only valid when oddHandling is HALF_MATCHES",
+        path: ["oddRoundPlan"],
+      });
+    }
+  });
 
 export type SwissMovementSpec = z.infer<typeof swissSpecSchema>;
+
+/** How an odd Swiss Pairs field is resolved (`oddHandling`); default "BYE". */
+export type SwissPairsOddHandling = z.infer<typeof swissPairsOddHandlingSchema>;
+
+/** One round's odd-pair resolution in a Swiss Pairs plan. */
+export type SwissPairsOddRound = z.infer<typeof swissPairsOddRoundSchema>;
 
 /**
  * Setup parameters for a Swiss Teams movement. A team is the two pairs seated
@@ -200,11 +257,22 @@ export function selectedMovementsEqual(
       );
     }
     case "SWISS": {
+      const x = a.swiss;
       const y = (b as Extract<SelectedMovement, { source: "SWISS" }>).swiss;
+      const samePlan =
+        JSON.stringify(x.oddRoundPlan ?? null) ===
+        JSON.stringify(y.oddRoundPlan ?? null);
+      const sameStationary =
+        JSON.stringify([...(x.stationaryPairs ?? [])].sort((m, n) => m - n)) ===
+        JSON.stringify([...(y.stationaryPairs ?? [])].sort((m, n) => m - n));
       return (
-        a.swiss.tables === y.tables &&
-        a.swiss.rounds === y.rounds &&
-        a.swiss.boardsPerRound === y.boardsPerRound
+        x.tables === y.tables &&
+        x.rounds === y.rounds &&
+        x.boardsPerRound === y.boardsPerRound &&
+        // Absent oddHandling means the default "BYE".
+        (x.oddHandling ?? "BYE") === (y.oddHandling ?? "BYE") &&
+        samePlan &&
+        sameStationary
       );
     }
     case "SWISS_TEAMS": {

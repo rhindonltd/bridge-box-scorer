@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 import { calculateSwissMpVpOverall } from "./swiss-mp-vp-overall";
+import { BoardOutcome } from "@/model/score";
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
   return {
@@ -159,5 +160,85 @@ describe("calculateSwissMpVpOverall", () => {
 
     const result = calculateSwissMpVpOverall(rows);
     expect(result.lines.find((l) => l.pairId === "A5NS")).toBeUndefined();
+  });
+
+  // --- "2 half matches" (odd-field) rounds -----------------------------------
+
+  describe("2 half matches round", () => {
+    // An 8-board round. Two ordinary tables (T2, T3) play all 8 boards and form
+    // the field. The half-match group: ANCHOR plays X on boards 1-4 (S1) and Y
+    // on boards 5-8 (S2); X is compensated on S2, Y on S1. ANCHOR tops the
+    // field on every board (6NT=, vs the ordinary tables' 3NT=), and the X/Y
+    // seats are the field floor on the boards they play.
+    const TOP: BoardOutcome = "6NTN=";
+    const MID: BoardOutcome = "3NTN=";
+
+    function halfMatchRows(): SwissVpBoardRow[] {
+      const rows: SwissVpBoardRow[] = [];
+      // Anchor table: half 1 (boards 1-4) vs X, half 2 (boards 5-8) vs Y.
+      for (let b = 1; b <= 4; b++) {
+        rows.push(row({ tableNumber: 1, boardNumber: b, ns: "ANCHOR", ew: "X", confirmedResult: TOP }));
+      }
+      for (let b = 5; b <= 8; b++) {
+        rows.push(row({ tableNumber: 1, boardNumber: b, ns: "ANCHOR", ew: "Y", confirmedResult: TOP }));
+      }
+      // Two ordinary tables playing all 8 boards. A2 sits second of the field
+      // on every board (3NT=, between the anchor's 6NT= and A3's 3NT-1), so it
+      // lands exactly mid-field — the neutral 10 over a full ordinary round.
+      for (let b = 1; b <= 8; b++) {
+        rows.push(row({ tableNumber: 2, boardNumber: b, ns: "A2NS", ew: "A2EW", confirmedResult: MID }));
+        rows.push(row({ tableNumber: 3, boardNumber: b, ns: "A3NS", ew: "A3EW", confirmedResult: "3NTN-1" }));
+      }
+      // Compensation: X missed S2 (boards 5-8), Y missed S1 (boards 1-4).
+      for (let b = 5; b <= 8; b++) {
+        rows.push(row({ tableNumber: 1, boardNumber: b, ns: "X", ew: "PHANTOM", status: "HALF_AVERAGE", confirmedResult: null }));
+      }
+      for (let b = 1; b <= 4; b++) {
+        rows.push(row({ tableNumber: 1, boardNumber: b, ns: "Y", ew: "PHANTOM", status: "HALF_AVERAGE", confirmedResult: null }));
+      }
+      return rows;
+    }
+
+    const vpOf = (
+      result: ReturnType<typeof calculateSwissMpVpOverall>,
+      id: string,
+    ) => result.lines.find((l) => l.pairId === id)!.vpByRound[1];
+
+    it("credits the anchor its two real halves summed to /20", () => {
+      const result = calculateSwissMpVpOverall(halfMatchRows());
+      // Anchor tops a 3-result field on every board → 100% each half → 10 + 10.
+      expect(vpOf(result, "ANCHOR")).toBe(20);
+    });
+
+    it("credits a non-anchor its played half plus the AVE+/AVE compensation", () => {
+      const result = calculateSwissMpVpOverall(halfMatchRows());
+      // X plays the EW seat opposite the field-topping anchor on S1 → field
+      // floor → 0% real half → 0 VP. Its compensated half of 4 boards is AVE+ on
+      // 2 (60%) + AVE on 2 (50%) = 55%. On the 10-VP half table, the 4-board
+      // column puts 55% in the 7-3 band (>54.03, ≤57.03) → 7 VP.
+      expect(vpOf(result, "X")).toBe(0 + 7);
+      // Y mirrors X (played S2 as the floor, compensated on S1).
+      expect(vpOf(result, "Y")).toBe(0 + 7);
+    });
+
+    it("still scores an ordinary field table as one full-round segment (20-VP scale)", () => {
+      const result = calculateSwissMpVpOverall(halfMatchRows());
+      // A2 plays all 8 boards against one set of opponents — a single ordinary
+      // segment, NOT two halves. Sitting exactly mid-field (second of three on
+      // every board → 50%) it earns the neutral 10 over the full round.
+      expect(vpOf(result, "A2NS")).toBe(10);
+    });
+
+    it("never emits a line for the phantom opponent of a compensated half", () => {
+      // The HALF_AVERAGE rows carry a phantom EW ("PHANTOM"); it is not a real
+      // pair and must not be scored as one (which would leak a spurious extra
+      // leaderboard line). The field is exactly ANCHOR, X, Y and the two
+      // ordinary tables' four pairs — never the phantom.
+      const result = calculateSwissMpVpOverall(halfMatchRows());
+      expect(result.lines.some((l) => l.pairId === "PHANTOM")).toBe(false);
+      expect(result.lines.map((l) => l.pairId).sort()).toEqual(
+        ["A2EW", "A2NS", "A3EW", "A3NS", "ANCHOR", "X", "Y"].sort(),
+      );
+    });
   });
 });

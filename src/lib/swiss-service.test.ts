@@ -22,7 +22,8 @@ const previewAck: SwissPreviewAck = {
     { tableNumber: 2, ns: 2, ew: 4 },
   ],
   sitOutPairId: null,
-  named: { tables: [], bye: null },
+  halfMatch: null,
+  named: { tables: [], bye: null, halfMatch: null },
   advisoryInputs: {
     tables: 2,
     playedOpponents: [],
@@ -97,6 +98,7 @@ describe("commitNextSwissRound", () => {
       directorToken: "dir-tok",
       seating,
       sitOutPairId: null,
+      halfMatch: null,
     });
   });
 

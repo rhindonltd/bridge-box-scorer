@@ -16,7 +16,11 @@ export type StartProblemCode =
   // (that would be half a team) and the team count must be even (odd counts
   // need three-way handling, which is not yet supported).
   | "TEAMS_SIT_OUT_NOT_ALLOWED"
-  | "ODD_TEAM_COUNT";
+  | "ODD_TEAM_COUNT"
+  // A Swiss Pairs "2 half matches" round needs three pairs to form the group
+  // (an anchor plus the two it faces across the two halves), i.e. at least two
+  // tables of an odd field. A one-table odd field (a single pair) is too small.
+  | "HALF_MATCH_FIELD_TOO_SMALL";
 
 export interface StartProblem {
   code: StartProblemCode;

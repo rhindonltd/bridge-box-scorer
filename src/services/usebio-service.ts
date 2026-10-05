@@ -35,7 +35,11 @@ import { BoardOutcome } from "@/model/score";
  */
 export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
   const movement = parseSelectedMovement(game.selectedMovement);
-  const { format } = classifyEvent(game.gameType, game.scoringType, movement);
+  const { format, swissVpMode } = classifyEvent(
+    game.gameType,
+    game.scoringType,
+    movement,
+  );
 
   switch (format) {
     case "TEAMS_VP": {
@@ -72,8 +76,12 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
         findPairs(db),
         db.select().from(boards),
       ]);
+      // A matchpoint-scored Swiss exports in MP mode; cross-IMP and (null-mode)
+      // IMP-scored Swiss both export as cross-IMP vs the field, so the file
+      // agrees with how the leaderboard scores an XIMP/MP Swiss event.
+      const mode = swissVpMode === "MP" ? "MP" : "XIMP";
       return generateUsebioXml(
-        assembleSwissPairs(game, club, pairs, boardRows),
+        assembleSwissPairs(game, club, pairs, boardRows, mode),
       );
     }
     case "PAIRS_BOARD":

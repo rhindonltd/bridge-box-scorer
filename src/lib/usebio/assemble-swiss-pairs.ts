@@ -4,14 +4,16 @@ import { BridgeGame } from "@/db/game-index/schema";
 import { Club } from "@/db/system/schema";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
-import { scoreIMP } from "@/scoring/traveller/pair/imp";
-import { calculateWbfVP } from "@/scoring/swiss/wbf-vp";
-import { compareByRoundSectionTable } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
+import {
+  scoreSwissVpRound,
+  type SwissRoundMode,
+} from "@/scoring/swiss/swiss-vp-round";
 import { buildTravellerLine } from "./traveller-line";
 import {
   UsebioClub,
   UsebioPair,
+  UsebioSwissBoard,
   UsebioSwissPairsData,
   UsebioSwissPairsMatch,
   UsebioVpRankEntry,
@@ -20,22 +22,30 @@ import {
 /**
  * Assemble the USEBIO Swiss Pairs data from a game's pairs and board rows.
  *
- * A Swiss round is one head-to-head match per table over a set of boards. We
- * bucket boards by (section, round, table), then for each match convert the net
- * IMP margin over its scored boards to WHOLE-integer Victory Points on the WBF
- * 20-point scale (the winner takes `winnerVP`, the other `loserVP`). A pair's
- * ranking total is the sum of its per-round match VPs.
+ * The export is scored EXACTLY as the live leaderboard: each pair is measured
+ * against the whole section field (cross-IMP or matchpoint, by `mode`) over the
+ * round's boards, converted to Victory Points on the discrete (integer) scale.
+ * Both consume the same per-round routine ({@link scoreSwissVpRound}), so the
+ * file and the standings cannot drift.
  *
- * This mirrors `calculateSwissVpOverall` but keeps the per-match NS/EW split
- * (which the overall standings collapse away) so the export can emit each
- * MATCH's NS_SCORE/EW_SCORE. Integer VPs are used throughout per the export's
- * requirement.
+ * One `MATCH` is emitted per REAL head-to-head half: an ordinary round's table
+ * (a full-round match on the 20-VP scale) or one of a "2 half matches" group's
+ * two real halves (on the 10-VP half-scale). The anchor of a half-match group
+ * therefore emits TWO matches (one per opponent) and each non-anchor one. The
+ * compensated half a non-anchor missed has only a phantom opponent, so it is
+ * NOT a match — its VP is folded into that pair's `TOTAL_SCORE` (the ranking)
+ * only.
+ *
+ * `mode` is the game's Swiss VP mode (`"XIMP"` or `"MP"`); an IMP-scored Swiss
+ * game (which has no leaderboard VP mode) is exported as cross-IMP ("XIMP") so
+ * the file is a coherent Swiss VP document.
  */
 export function assembleSwissPairs(
   game: BridgeGame,
   club: Club,
   pairs: Pair[],
   boardRows: Board[],
+  mode: SwissRoundMode = "XIMP",
 ): UsebioSwissPairsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -49,7 +59,7 @@ export function assembleSwissPairs(
     player2: pair.player2,
   }));
 
-  const { matches, totals } = buildMatches(boardRows);
+  const { matches, totals } = buildMatches(boardRows, mode);
   const ranking = buildRanking(totals);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
@@ -73,111 +83,84 @@ function boardResultOf(row: Board): BoardOutcome | null {
 }
 
 /**
- * Group board rows into per-(section, round, table) matches, emitting each
- * match's traveller lines and integer VP split, and accumulating per-pair VP
- * totals for the ranking. Matches are ordered by round then section then table.
+ * Score every round with the shared per-round routine, turning each real-half
+ * MATCH into a USEBIO match and accumulating each pair's round VP into the
+ * session total (which the ranking is built from).
+ *
+ * The per-pair session total is the SUM of each round's `pairVp` — NOT the sum
+ * of the emitted match scores — because a non-anchor's compensated half carries
+ * VP but is never a match. This keeps `TOTAL_SCORE` equal to the leaderboard.
  */
-function buildMatches(boardRows: Board[]): {
+function buildMatches(
+  boardRows: Board[],
+  mode: SwissRoundMode,
+): {
   matches: UsebioSwissPairsMatch[];
   totals: Map<string, number>;
 } {
-  type MatchGroup = {
-    section: string;
-    round: number;
-    table: number;
-    nsId: string;
-    ewId: string;
-    rows: Board[];
-  };
-
-  const groups = new Map<string, MatchGroup>();
+  // Group rows by round so each round is scored against its own field, and so
+  // the emitted MATCH carries the right round number.
+  const rowsByRound = new Map<number, Board[]>();
   for (const row of boardRows) {
     if (row.status === "SIT_OUT") continue;
-    const key = `${row.section}|${row.roundNumber}|${row.tableNumber}`;
-    const group =
-      groups.get(key) ??
-      ({
-        section: row.section,
-        round: row.roundNumber,
-        table: row.tableNumber,
-        nsId: row.ns,
-        ewId: row.ew,
-        rows: [],
-      } satisfies MatchGroup);
-    group.rows.push(row);
-    groups.set(key, group);
+    const arr = rowsByRound.get(row.roundNumber) ?? [];
+    arr.push(row);
+    rowsByRound.set(row.roundNumber, arr);
   }
-
-  const ordered = Array.from(groups.values()).sort((a, b) =>
-    compareByRoundSectionTable(a, b),
-  );
 
   const totals = new Map<string, number>();
   const addVp = (pairId: string, vp: number): void => {
     totals.set(pairId, (totals.get(pairId) ?? 0) + vp);
   };
 
-  const matches: UsebioSwissPairsMatch[] = ordered.map((group) => {
-    const { nsScore, ewScore } = matchVp(group.nsId, group.ewId, group.rows);
-    addVp(group.nsId, nsScore);
-    addVp(group.ewId, ewScore);
+  const matches: UsebioSwissPairsMatch[] = [];
 
-    const boards = group.rows
-      .slice()
-      .sort((a, b) => a.boardNumber - b.boardNumber)
-      .map((row) => {
-        const outcome = boardResultOf(row) ?? ("NP" as BoardOutcome);
-        const lead = (row.directorOverrideLead ??
-          row.confirmedLead ??
-          null) as Card | null;
-        const line = buildTravellerLine(row.boardNumber, outcome, lead);
-        return { boardNumber: row.boardNumber, ...line };
+  for (const round of Array.from(rowsByRound.keys()).sort((a, b) => a - b)) {
+    const rows = rowsByRound.get(round)!;
+    const { pairVp, matches: roundMatches } = scoreSwissVpRound(rows, mode);
+
+    // Session total: sum each real pair's round VP (incl. a compensated half).
+    for (const [pairId, vp] of pairVp) addVp(pairId, vp);
+
+    // One USEBIO MATCH per real head-to-head half this round.
+    for (const m of roundMatches) {
+      matches.push({
+        round,
+        nsPairNumber: m.nsId,
+        ewPairNumber: m.ewId,
+        nsScore: m.nsVp,
+        ewScore: m.ewVp,
+        boards: travellerBoards(rows, m.nsId, m.ewId, m.boardNumbers),
       });
-
-    return {
-      round: group.round,
-      nsPairNumber: group.nsId,
-      ewPairNumber: group.ewId,
-      nsScore,
-      ewScore,
-      boards,
-    };
-  });
+    }
+  }
 
   return { matches, totals };
 }
 
 /**
- * The integer VP split for one match: sum per-board IMPs across the scored
- * boards to a net margin, then convert on the WBF 20-VP discrete (integer)
- * scale. A match with no scored boards yet is a neutral 10/10.
+ * Build the traveller boards for one match: the physical table row for each of
+ * the half's board numbers (the row where this NS/EW pair sat), in board order.
  */
-function matchVp(
+function travellerBoards(
+  rows: Board[],
   nsId: string,
   ewId: string,
-  rows: Board[],
-): { nsScore: number; ewScore: number } {
-  const scored = rows.filter((r) => boardResultOf(r) != null);
-  if (scored.length === 0) return { nsScore: 10, ewScore: 10 };
-
-  let nsImps = 0;
-  let ewImps = 0;
-  for (const row of scored) {
-    const outcome = boardResultOf(row)!;
-    const [line] = scoreIMP(row.boardNumber, [{ nsId, ewId, outcome }]);
-    nsImps += line.nsImps;
-    ewImps += line.ewImps;
-  }
-
-  const margin = nsImps - ewImps;
-  const { winnerVP, loserVP } = calculateWbfVP(
-    scored.length,
-    margin,
-    "discrete",
-  );
-  return margin >= 0
-    ? { nsScore: winnerVP, ewScore: loserVP }
-    : { nsScore: loserVP, ewScore: winnerVP };
+  boardNumbers: number[],
+): UsebioSwissBoard[] {
+  return boardNumbers.map((boardNumber) => {
+    const row = rows.find(
+      (r) =>
+        r.boardNumber === boardNumber &&
+        ((r.ns === nsId && r.ew === ewId) || (r.ns === ewId && r.ew === nsId)),
+    );
+    const outcome = (row ? boardResultOf(row) : null) ?? ("NP" as BoardOutcome);
+    const lead = (row?.directorOverrideLead ??
+      row?.confirmedLead ??
+      null) as Card | null;
+    const line = buildTravellerLine(boardNumber, outcome, lead);
+    return { boardNumber, ...line };
+  });
 }
 
 /** Rank pairs by total VP (highest first), ties share a place. */

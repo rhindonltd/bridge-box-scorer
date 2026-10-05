@@ -169,7 +169,9 @@ export const SwissPairs: Story = {
           },
         ],
         bye: null,
+        halfMatch: null,
       },
+      halfMatch: null,
       advisoryInputs: {
         tables: 2,
         playedOpponents: [],

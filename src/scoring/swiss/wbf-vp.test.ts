@@ -1,5 +1,41 @@
 import { describe, expect, it } from "vitest";
-import { calculateWbfVP } from "./wbf-vp";
+import { calculateWbfVP, impsToVp } from "./wbf-vp";
+
+describe("impsToVp", () => {
+  it("scores a dead-even 0 IMPs as exactly 10 VP", () => {
+    expect(impsToVp(16, 0)).toBe(10);
+  });
+
+  it("scores a positive result above 10 (the winner side of the WBF split)", () => {
+    // Matches calculateWbfVP's winnerVP for the same magnitude.
+    expect(impsToVp(16, 15, "continuous")).toBe(13.97);
+  });
+
+  it("scores a negative result as the mirror below 10 (the loser side)", () => {
+    expect(impsToVp(16, -15, "continuous")).toBe(6.03);
+    // Positive and negative of the same magnitude sum to the 20 pool.
+    expect(
+      Math.round((impsToVp(16, 15) + impsToVp(16, -15)) * 100) / 100,
+    ).toBe(20);
+  });
+
+  it("caps at 20 at/above the blitz point and 0 at the mirror", () => {
+    // Blitz point for 12 boards ≈ 51.96, so 52 IMPs reaches the cap.
+    expect(impsToVp(12, 52)).toBe(20);
+    expect(impsToVp(12, -52)).toBe(0);
+  });
+
+  it("rounds to whole VPs on the discrete scale", () => {
+    expect(impsToVp(16, 15, "discrete")).toBe(14);
+    expect(impsToVp(16, -15, "discrete")).toBe(6);
+  });
+
+  it("is the independent building block of the two-sided split", () => {
+    const { winnerVP, loserVP } = calculateWbfVP(16, 15, "continuous");
+    expect(impsToVp(16, 15)).toBe(winnerVP);
+    expect(impsToVp(16, -15)).toBe(loserVP);
+  });
+});
 
 describe("calculateWbfVP", () => {
   it("awards a partial-win VP on the continuous scale (16 boards, 15 IMPs)", () => {

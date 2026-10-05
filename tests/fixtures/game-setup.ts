@@ -186,6 +186,61 @@ export async function pickSwissMovement(page: Page): Promise<void> {
 }
 
 /**
+ * Open the Movement tab and set up a Swiss Pairs movement that uses "2 half
+ * matches" for an odd field. Taps the Swiss card to open its dialog, trims the
+ * round count down to `rounds` (default 2 — enough for the half-match journey),
+ * selects the "2 half matches" odd-handling radio (which reveals the per-round
+ * plan, defaulting every round to a half match), and confirms. Used by the
+ * odd-field half-match journey.
+ *
+ * The rounds are trimmed FIRST, before expanding the per-round plan, so the
+ * dialog stays short: on the narrow phone viewport the full 7-round plan pushes
+ * the "Select Movement" button below the (non-scrolling) dialog, and the
+ * confirm click can never land. Fewer rounds keeps the whole dialog on-screen.
+ */
+export async function pickSwissHalfMatchMovement(
+  page: Page,
+  rounds = 2,
+): Promise<void> {
+  await openSetupStep(page, "Movement");
+  const swiss = page.getByTestId("swiss-movement-option");
+  await expect(swiss).toBeVisible({ timeout: 15000 });
+  await swiss.click();
+
+  // Wait for the Swiss setup dialog to open (its confirm button is present)
+  // before interacting with it.
+  const confirm = page.getByRole("button", { name: "Select Movement" });
+  await expect(confirm).toBeVisible({ timeout: 15000 });
+
+  // Trim rounds down to the requested count via the Rounds stepper, so the
+  // revealed per-round plan is short and the dialog fits the viewport.
+  const decreaseRounds = page.getByRole("button", {
+    name: "Decrease Rounds",
+    exact: true,
+  });
+  for (let guard = 0; guard < 40; guard++) {
+    const value = Number(
+      await page.getByRole("spinbutton", { name: "Rounds" }).inputValue(),
+    );
+    if (value <= rounds) break;
+    await decreaseRounds.click();
+    await page.waitForTimeout(50);
+  }
+
+  // Choose "2 half matches" so every round resolves an odd pair with a group.
+  const halfMatches = page.getByRole("radio", { name: /2 half matches/i });
+  await expect(halfMatches).toBeVisible({ timeout: 15000 });
+  await halfMatches.click();
+  await expect(halfMatches).toBeChecked({ timeout: 5000 });
+
+  await expect(confirm).toBeEnabled({ timeout: 15000 });
+  await confirm.click();
+  await expect(
+    page.getByRole("button", { name: /Select Movement|Saving/ }),
+  ).toHaveCount(0, { timeout: 15000 });
+}
+
+/**
  * Open the Movement tab and set up a Swiss Teams movement. Like Swiss Pairs it
  * is offered only for a single-section game, in place of the Swiss Pairs card
  * when the game's event type is Teams. Its option (`swiss-teams-movement-option`)

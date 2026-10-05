@@ -14,6 +14,27 @@ const meta: Meta<typeof Leaderboard> = {
 export default meta;
 type Story = StoryObj<typeof Leaderboard>;
 
+/**
+ * A minimal assigned-pair participant for the leaderboard stories. `seat` is a
+ * section-qualified seat id (e.g. "A1NS") used as both the participant id and
+ * its initial seat — the Swiss VP table keys name lookups on the id.
+ */
+function pairParticipant(
+  seat: `${string}${number}NS` | `${string}${number}EW`,
+  p1First: string,
+  p1Last: string,
+  p2First: string,
+  p2Last: string,
+) {
+  return {
+    type: "PAIR" as const,
+    id: seat,
+    initialSeat: seat,
+    player1: { id: 1, firstName: p1First, lastName: p1Last, nationalId: null },
+    player2: { id: 2, firstName: p2First, lastName: p2Last, nationalId: null },
+  };
+}
+
 export const PairIMP: Story = {
   args: {
     overallScoreAndParticipant: {
@@ -89,6 +110,45 @@ export const PairMP: Story = {
             totalMP: 10,
             maxMP: 20,
           },
+        ],
+      },
+    },
+  },
+};
+
+/**
+ * A Swiss Pairs VP leaderboard after a round that used "2 half matches" for an
+ * odd field. The leaderboard view is round-agnostic — it just shows each pair's
+ * VP per round and total — so a half-match round needs no special rendering;
+ * the scorer already credits the anchor its full /20 and each non-anchor its
+ * played half + averaged half. This story documents that result: in round 1 the
+ * anchor (A3) nears 20, while the two non-anchors (A4, A5) sit lower from a
+ * played + compensated half; everyone plays a normal round 2.
+ */
+export const SwissPairsHalfMatchRound: Story = {
+  args: {
+    overallScoreAndParticipant: {
+      type: "PAIR_SWISS_VP",
+      participants: [
+        pairParticipant("A1NS", "Al", "North", "Bo", "South"),
+        pairParticipant("A2NS", "Cy", "East", "Di", "West"),
+        pairParticipant("A3NS", "Ed", "North", "Fay", "South"),
+        pairParticipant("A1EW", "Gus", "East", "Hal", "West"),
+        pairParticipant("A2EW", "Ivy", "North", "Jo", "South"),
+      ],
+      overallScore: {
+        type: "PAIR_SWISS_VP",
+        mode: "PAIR",
+        scoring: "SWISS_VP",
+        lines: [
+          // Anchor (A3NS): full /20 in the half-match round 1, strong round 2.
+          { tied: false, rank: 1, pairId: "A3NS", totalVP: 33.5, vpByRound: { 1: 18.5, 2: 15 } },
+          { tied: false, rank: 2, pairId: "A1NS", totalVP: 24, vpByRound: { 1: 12, 2: 12 } },
+          // Non-anchor (A1EW): a played half + compensated half in round 1.
+          { tied: false, rank: 3, pairId: "A1EW", totalVP: 16.65, vpByRound: { 1: 6.65, 2: 10 } },
+          { tied: false, rank: 4, pairId: "A2NS", totalVP: 15, vpByRound: { 1: 8, 2: 7 } },
+          // Non-anchor (A2EW): the other played + compensated half.
+          { tied: false, rank: 5, pairId: "A2EW", totalVP: 13.4, vpByRound: { 1: 6.4, 2: 7 } },
         ],
       },
     },
