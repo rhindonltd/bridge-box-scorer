@@ -75,9 +75,9 @@ describe("SwissTeamsDrawControl", () => {
     expect(commitNextSwissTeamsRound).not.toHaveBeenCalled();
     expect(screen.getByText("Sharks")).toBeInTheDocument();
     expect(screen.getByText("Owls")).toBeInTheDocument();
-    // Each team's running total is shown inline on its match card (2 dp, "VP").
-    // Team 1 (Sharks) has a total of 30 in the fixture standings.
-    expect(screen.getByText("30.00 VP")).toBeInTheDocument();
+    // Each team's running total is shown inline on its match card as a whole
+    // integer (the discrete Swiss Teams VP scale). Team 1 (Sharks) has 30.
+    expect(screen.getByText("30 VP")).toBeInTheDocument();
   });
 
   it("commits the shown round on OK and shows a confirmation", async () => {

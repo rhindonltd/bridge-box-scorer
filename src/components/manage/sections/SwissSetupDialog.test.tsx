@@ -67,8 +67,9 @@ describe("SwissSetupDialog", () => {
     // Round 1's "Bye" radio — scoped to the per-round plan (the top-level
     // handling also has a "Bye" radio).
     const plan = screen.getByTestId("odd-round-plan");
-    const round1Bye = within(plan)
-      .getAllByRole("radio", { name: "Bye" })[0];
+    const round1Bye = within(plan).getByRole("radio", {
+      name: "Bye for round 1",
+    });
     fireEvent.click(round1Bye);
 
     fireEvent.click(confirmButton());

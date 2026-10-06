@@ -305,14 +305,18 @@ export async function pickSwissTeamsTripleMovement(
   await expect(triple).toBeVisible({ timeout: 15000 });
   await triple.click();
 
-  // Set each round to its planned kind. The per-round radios are grouped by
-  // `teamsOddRound-{i}` with labels Bye / Short / Long; "Short" is the default.
+  // Set each round to its planned kind. The per-round plan is a table of radios
+  // labelled "Bye for round N" / "Short for round N" / "Long for round N";
+  // "Short" is the default.
   const planBuilder = page.getByTestId("teams-odd-round-plan");
   await expect(planBuilder).toBeVisible({ timeout: 15000 });
-  const rows = planBuilder.getByRole("listitem");
   for (let i = 0; i < plan.length; i++) {
-    const label = { BYE: "Bye", SHORT: "Short", LONG: "Long" }[plan[i]];
-    await rows.nth(i).getByRole("radio", { name: label }).click();
+    const label = {
+      BYE: `Bye for round ${i + 1}`,
+      SHORT: `Short for round ${i + 1}`,
+      LONG: `Long for round ${i + 1}`,
+    }[plan[i]];
+    await planBuilder.getByRole("radio", { name: label }).click();
   }
 
   await expect(confirm).toBeEnabled({ timeout: 15000 });

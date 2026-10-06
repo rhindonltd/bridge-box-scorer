@@ -21,6 +21,15 @@ const primaryButtonClass =
 const secondaryButtonClass =
   "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50";
 
+/**
+ * Format a Swiss Teams VP total. The EBU discrete scale credits whole-integer
+ * VP each round, so a session total is a whole number — show it as such (no
+ * forced "2 dp"), trimming any stray fractional part defensively.
+ */
+function formatVp(total: number): string {
+  return Number.isInteger(total) ? String(total) : String(Math.round(total));
+}
+
 export interface SwissTeamsDrawPreviewProps {
   preview: SwissTeamsPreviewAck;
   /** True while the commit request is in flight. */
@@ -170,14 +179,17 @@ export function SwissTeamsDrawPreview({
                       : "border-gray-200"
                   }`}
                 >
-                  {isRepeat && (
-                    <div className="mb-1 text-right">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-gray-500">
+                      Tables {m.a} &amp; {m.b}
+                    </span>
+                    {isRepeat && (
                       <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950">
                         Repeat — check this match
                       </span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between gap-3">
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
                     <TeamChip
                       teamId={m.a}
                       name={teamName(m.a)}
@@ -185,14 +197,12 @@ export function SwissTeamsDrawPreview({
                       selected={selected === m.a}
                       onClick={() => pick(m.a)}
                     />
-                    <span className="shrink-0 text-sm text-gray-400">v</span>
                     <TeamChip
                       teamId={m.b}
                       name={teamName(m.b)}
                       total={totalFor(m.b)}
                       selected={selected === m.b}
                       onClick={() => pick(m.b)}
-                      alignRight
                     />
                   </div>
                 </div>
@@ -217,7 +227,7 @@ export function SwissTeamsDrawPreview({
                     : ", each on its own board set within this round."}{" "}
                   Tap a team to swap it.
                 </p>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-2">
                   {(
                     [
                       [round.triple.a, round.triple.b],
@@ -228,7 +238,7 @@ export function SwissTeamsDrawPreview({
                     <div
                       key={`${x}-${y}`}
                       data-testid="teams-triple-comparison"
-                      className="flex items-center justify-between gap-3"
+                      className="grid grid-cols-2 gap-2"
                     >
                       <TeamChip
                         teamId={x}
@@ -237,14 +247,12 @@ export function SwissTeamsDrawPreview({
                         selected={selected === x}
                         onClick={() => pick(x)}
                       />
-                      <span className="shrink-0 text-sm text-gray-400">v</span>
                       <TeamChip
                         teamId={y}
                         name={teamName(y)}
                         total={totalFor(y)}
                         selected={selected === y}
                         onClick={() => pick(y)}
-                        alignRight
                       />
                     </div>
                   ))}
@@ -312,9 +320,12 @@ export function SwissTeamsDrawPreview({
 }
 
 /**
- * A tappable team with its name and current VP total (e.g. "Sharks — 34.00
- * VP"). Tapping selects it for a swap; tapping a second team swaps their places.
- * The total is omitted when the team has no leaderboard line yet.
+ * A tappable team container, mirroring the Swiss Pairs preview's pair card: a
+ * header band with the team's home table ("Table N") and its running VP total,
+ * then the team name in the body. A team's stable id is its home table number,
+ * so the band doubles as the table label. Tapping selects it for a swap;
+ * tapping a second team swaps their places. The total is omitted when the team
+ * has no leaderboard line yet.
  */
 function TeamChip({
   teamId,
@@ -322,18 +333,15 @@ function TeamChip({
   total,
   selected,
   onClick,
-  alignRight = false,
 }: {
   teamId: TeamId;
   name: string;
   total: number | null;
   selected: boolean;
   onClick: () => void;
-  alignRight?: boolean;
 }) {
-  void teamId;
   const base =
-    "flex items-baseline gap-2 rounded-lg border px-2 py-1 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500";
+    "relative overflow-hidden rounded-lg border text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500";
   const stateClasses = selected
     ? "border-blue-500 bg-blue-50 ring-1 ring-blue-400"
     : "border-gray-200 bg-gray-50 hover:bg-gray-100";
@@ -342,14 +350,22 @@ function TeamChip({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`${base} ${stateClasses} ${alignRight ? "flex-row-reverse text-right" : ""}`}
+      className={`${base} ${stateClasses}`}
     >
-      <span className="text-base font-semibold text-gray-800">{name}</span>
-      {total != null && (
-        <span className="text-xs font-medium text-gray-600 tabular-nums">
-          {total.toFixed(2)} VP
+      {/* Header band: the team's home table + running total, on a darker grey. */}
+      <div className="flex items-baseline justify-between gap-2 bg-gray-200 px-2 py-1">
+        <span className="text-xs font-semibold text-gray-600">
+          Table {teamId}
         </span>
-      )}
+        {total != null && (
+          <span className="text-xs font-medium text-gray-600 tabular-nums">
+            {formatVp(total)} VP
+          </span>
+        )}
+      </div>
+      <div className="px-2 py-1.5">
+        <span className="text-sm font-semibold text-gray-800">{name}</span>
+      </div>
     </button>
   );
 }
