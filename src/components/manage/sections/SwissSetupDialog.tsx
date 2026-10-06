@@ -166,12 +166,6 @@ function SwissSetupForm({
       </Dialog.Title>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <p className="text-sm text-gray-600">
-          In Swiss Pairs, every pair plays the same boards each round, then you
-          draw the next round based on the standings. Set the size below;
-          you&apos;ll draw each round as the event runs.
-        </p>
-
         <div className="space-y-3">
           <label className="flex items-center justify-between gap-4">
             <span className="text-sm font-medium text-gray-700">Tables</span>
@@ -264,43 +258,49 @@ function SwissSetupForm({
                 Choose how each round resolves an odd pair. This only applies if
                 your field is odd.
               </p>
-              <ul className="space-y-1.5">
-                {Array.from({ length: rounds }, (_, i) => {
-                  const value = plan[i] ?? "HALF_MATCHES";
-                  return (
-                    <li
-                      key={i}
-                      className="flex items-center justify-between gap-3"
-                    >
-                      <span className="text-sm text-gray-700">
-                        Round {i + 1}
-                      </span>
-                      <div className="flex gap-3 text-sm">
-                        <label className="flex items-center gap-1">
+              <table className="w-full table-fixed text-sm">
+                <thead>
+                  <tr className="bg-gray-100 text-xs font-medium uppercase tracking-wide text-gray-600">
+                    <th className="w-14 px-2 py-1.5 text-left font-medium">
+                      Round
+                    </th>
+                    <th className="px-2 py-1.5 text-center font-medium">Bye</th>
+                    <th className="px-2 py-1.5 text-center font-medium">
+                      Half matches
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: rounds }, (_, i) => {
+                    const value = plan[i] ?? "HALF_MATCHES";
+                    return (
+                      <tr key={i} className="border-t border-gray-100">
+                        <td className="px-2 py-1.5 text-gray-700">{i + 1}</td>
+                        <td className="px-2 py-1.5 text-center">
                           <input
                             type="radio"
+                            aria-label={`Bye for round ${i + 1}`}
                             name={`oddRound-${i}`}
                             value="BYE"
                             checked={value === "BYE"}
                             onChange={() => setRoundPlan(i, "BYE")}
                           />
-                          Bye
-                        </label>
-                        <label className="flex items-center gap-1">
+                        </td>
+                        <td className="px-2 py-1.5 text-center">
                           <input
                             type="radio"
+                            aria-label={`Half matches for round ${i + 1}`}
                             name={`oddRound-${i}`}
                             value="HALF_MATCHES"
                             checked={value === "HALF_MATCHES"}
                             onChange={() => setRoundPlan(i, "HALF_MATCHES")}
                           />
-                          Half matches
-                        </label>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </fieldset>

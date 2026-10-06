@@ -232,13 +232,6 @@ function SwissTeamsSetupForm({
       </Dialog.Title>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <p className="text-sm text-gray-600">
-          In Swiss Teams, the two pairs at each table make up a team. Each round
-          two teams play the same boards in two rooms, then you draw the next
-          round based on the standings. Set the size below; you&apos;ll draw
-          each round as the event runs.
-        </p>
-
         <div className="space-y-3">
           <label className="flex items-center justify-between gap-4">
             <span className="text-sm font-medium text-gray-700">Teams</span>
@@ -341,53 +334,66 @@ function SwissTeamsSetupForm({
                   on two neighbouring rounds. This only applies if your field is
                   odd.
                 </p>
-                <ul className="space-y-1.5">
-                  {Array.from({ length: rounds }, (_, i) => {
-                    const value = plan[i] ?? "SHORT";
-                    return (
-                      <li
-                        key={i}
-                        className="flex items-center justify-between gap-3"
-                      >
-                        <span className="text-sm text-gray-700">
-                          Round {i + 1}
-                        </span>
-                        <div className="flex gap-3 text-sm">
-                          <label className="flex items-center gap-1">
+                <table className="w-full table-fixed text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 text-xs font-medium uppercase tracking-wide text-gray-600">
+                      <th className="w-14 px-2 py-1.5 text-left font-medium">
+                        Round
+                      </th>
+                      <th className="px-2 py-1.5 text-center font-medium">
+                        Bye
+                      </th>
+                      <th className="px-2 py-1.5 text-center font-medium">
+                        Short
+                      </th>
+                      <th className="px-2 py-1.5 text-center font-medium">
+                        Long
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: rounds }, (_, i) => {
+                      const value = plan[i] ?? "SHORT";
+                      return (
+                        <tr key={i} className="border-t border-gray-100">
+                          <td className="px-2 py-1.5 text-gray-700">
+                            {i + 1}
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
                             <input
                               type="radio"
+                              aria-label={`Bye for round ${i + 1}`}
                               name={`teamsOddRound-${i}`}
                               value="BYE"
                               checked={value === "BYE"}
                               onChange={() => setRoundKind(i, "BYE")}
                             />
-                            Bye
-                          </label>
-                          <label className="flex items-center gap-1">
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
                             <input
                               type="radio"
+                              aria-label={`Short for round ${i + 1}`}
                               name={`teamsOddRound-${i}`}
                               value="SHORT"
                               checked={value === "SHORT"}
                               onChange={() => setRoundKind(i, "SHORT")}
                             />
-                            Short
-                          </label>
-                          <label className="flex items-center gap-1">
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
                             <input
                               type="radio"
+                              aria-label={`Long for round ${i + 1}`}
                               name={`teamsOddRound-${i}`}
                               value="LONG"
                               checked={value === "LONG"}
                               onChange={() => setRoundKind(i, "LONG")}
                             />
-                            Long
-                          </label>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
 
                 {planInvalid && (
                   <p

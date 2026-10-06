@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import {
   SwissTeamsSetupDialog,
   resolveTeamsOddRoundPlan,
@@ -114,12 +114,15 @@ describe("SwissTeamsSetupDialog", () => {
     const { onConfirm } = renderDialog();
 
     fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
-    const plan = screen.getByTestId("teams-odd-round-plan");
-    const rows = within(plan).getAllByRole("listitem");
+    expect(screen.getByTestId("teams-odd-round-plan")).toBeInTheDocument();
 
     // Set rounds 1 and 2 to Long (a long triple spanning them).
-    fireEvent.click(within(rows[0]).getByRole("radio", { name: "Long" }));
-    fireEvent.click(within(rows[1]).getByRole("radio", { name: "Long" }));
+    fireEvent.click(
+      screen.getByRole("radio", { name: "Long for round 1" }),
+    );
+    fireEvent.click(
+      screen.getByRole("radio", { name: "Long for round 2" }),
+    );
 
     fireEvent.click(confirmButton());
 
@@ -133,11 +136,12 @@ describe("SwissTeamsSetupDialog", () => {
     const { onConfirm } = renderDialog();
 
     fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
-    const plan = screen.getByTestId("teams-odd-round-plan");
-    const rows = within(plan).getAllByRole("listitem");
+    expect(screen.getByTestId("teams-odd-round-plan")).toBeInTheDocument();
 
     // Round 1 Long, round 2 left as Short -> unpaired long -> invalid.
-    fireEvent.click(within(rows[0]).getByRole("radio", { name: "Long" }));
+    fireEvent.click(
+      screen.getByRole("radio", { name: "Long for round 1" }),
+    );
 
     expect(screen.getByRole("alert")).toHaveTextContent(/long triple takes two/i);
     expect(confirmButton()).toBeDisabled();
@@ -145,7 +149,9 @@ describe("SwissTeamsSetupDialog", () => {
     expect(onConfirm).not.toHaveBeenCalled();
 
     // Pairing round 2 as Long clears the error and allows confirm.
-    fireEvent.click(within(rows[1]).getByRole("radio", { name: "Long" }));
+    fireEvent.click(
+      screen.getByRole("radio", { name: "Long for round 2" }),
+    );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(confirmButton()).toBeEnabled();
   });
@@ -184,11 +190,18 @@ describe("SwissTeamsSetupDialog", () => {
     });
 
     expect(screen.getByRole("radio", { name: /triple/i })).toBeChecked();
-    const plan = screen.getByTestId("teams-odd-round-plan");
-    const rows = within(plan).getAllByRole("listitem");
-    expect(within(rows[0]).getByRole("radio", { name: "Short" })).toBeChecked();
-    expect(within(rows[1]).getByRole("radio", { name: "Long" })).toBeChecked();
-    expect(within(rows[2]).getByRole("radio", { name: "Long" })).toBeChecked();
-    expect(within(rows[3]).getByRole("radio", { name: "Bye" })).toBeChecked();
+    expect(screen.getByTestId("teams-odd-round-plan")).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "Short for round 1" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "Long for round 2" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "Long for round 3" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "Bye for round 4" }),
+    ).toBeChecked();
   });
 });

@@ -20,11 +20,13 @@ const basePreview: SwissTeamsPreviewAck = {
     bye: null,
     triple: null,
   },
+  // Swiss Teams VP totals are whole integers (the EBU discrete 20-VP scale,
+  // summed per round), so these are plausible two-round session totals.
   standings: [
-    { id: 1, name: "Sharks", total: 34.0, rank: 1, tied: false },
-    { id: 3, name: "Owls", total: 27.5, rank: 2, tied: false },
-    { id: 2, name: "Dragons", total: 22.0, rank: 3, tied: false },
-    { id: 4, name: "Eagles", total: 16.5, rank: 4, tied: false },
+    { id: 1, name: "Sharks", total: 34, rank: 1, tied: false },
+    { id: 3, name: "Owls", total: 28, rank: 2, tied: false },
+    { id: 2, name: "Dragons", total: 22, rank: 3, tied: false },
+    { id: 4, name: "Eagles", total: 17, rank: 4, tied: false },
   ],
   repeatMatchKeys: [],
   advisoryInputs: { teams: 4, playedOpponents: [] },
