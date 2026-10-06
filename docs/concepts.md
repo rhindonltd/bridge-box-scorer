@@ -80,8 +80,12 @@ step-by-step instructions.
   one side re-enters.
 - **Override / correction** — a director can change a recorded result from the
   **Travellers** screen.
-- **Adjusted score** — a director-assigned result such as a percentage split
-  (e.g. 60/40) instead of a normal contract.
+- **Adjusted score** — a director-assigned result given as a direct percentage
+  split (e.g. 60/40 or 50/50) instead of a normal contract.
+- **Weighted score** — a director-assigned result made of several possible
+  contract results, each with a percentage weight that together total 100% (e.g.
+  80% of 3NT making, 20% of 3NT+1). Each part is scored against the field and
+  the parts are averaged by their weights.
 
 ## Travellers and leaderboards
 

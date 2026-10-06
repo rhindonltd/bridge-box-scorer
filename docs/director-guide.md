@@ -17,26 +17,41 @@ share a code (see [Sharing director access](#sharing-director-access)).
 
 From the home screen, tap **Create New Game**.
 
-### Step 2: Fill in the details
+The create form is split across two pages so neither screen is crowded.
+
+### Step 2: Name the event and director
+
+| Field             | Description                                   |
+| ----------------- | --------------------------------------------- |
+| **Event Name**    | The name of your event (e.g. "Monday Pairs"). |
+| **Director Name** | Your name.                                     |
+
+Both are required: **Next** stays greyed out until you've entered an event name
+and a director, and a reminder to that effect sits above the fields.
+
+The session is always dated today, so there is no date to set.
+
+If your club has set up BridgeWebs (see the settings guide) and there are
+BridgeWebs events listed for today, a **Use BridgeWebs Event** switch appears
+above **Event Name**. Turn it **on** to pick the event from a list of the day's
+BridgeWebs events instead of typing the name; picking one fills in the event
+name for you. Turn it **off** to type the name yourself. The switch is hidden
+when BridgeWebs isn't set up or there are no events for today, so you just type
+the name as normal.
+
+Tap **Next**.
+
+### Step 3: Choose the event options
 
 | Field                   | Description                                                       |
 | ----------------------- | ----------------------------------------------------------------- |
-| **Event Name**          | The name of your event (e.g. "Monday Pairs").                     |
-| **Director Name**       | Your name.                                                        |
 | **Event Type**          | **Pairs** or **Teams**.                                           |
 | **Scoring**             | How the event is scored. For **Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). Defaults to Matchpoints for Pairs and IMP for Teams. |
 | **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
 | **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
 
-The session is always dated today, so there is no date to set.
-
-If your club has set up BridgeWebs (see the settings guide) and there are
-BridgeWebs events listed for the date you chose, a **Use BridgeWebs Event**
-switch appears above **Event Name**. Turn it **on** to pick the event from a
-list of that day's BridgeWebs events instead of typing the name; picking one
-fills in the event name for you. Turn it **off** to type the name yourself. The
-switch is hidden when BridgeWebs isn't set up or there are no events for the
-chosen date, so you just type the name as normal.
+Need to change the name or director? Tap the back arrow to return to the first
+page — what you entered is kept.
 
 Tap **Create Game**.
 
@@ -44,7 +59,7 @@ Tap **Create Game**.
 > director on the phone or tablet they used — there is no director PIN to
 > choose. Director access stays on that phone or tablet; to let someone else
 > direct, you share a code (see below). The number of tables, sections, and the
-> movement are all chosen on the next screen, not on this form.
+> movement are all chosen on the next screen, not on these pages.
 
 You are taken to the **setup** screen for the new game.
 
@@ -401,9 +416,20 @@ If a board was entered incorrectly, you can override it:
    of its pairings, so it shows as an ordinary two-team card too; a Pairs game
    shows the usual flat NS/EW list.)
 4. Enter the correct result step by step, the same way players enter one
-   (contract, or **Pass Out** / **Not Played**). You also get an extra
-   **Adjusted Score** option for assigning a result such as a percentage split
-   (for example 60/40).
+   (contract, or **Pass Out** / **Not Played**). You also get two extra
+   director-only options:
+   - **Adjusted Score** — a direct percentage award to each side (for example
+     60/40 or 50/50). Use this when you want to assign a flat average, average
+     plus, or average minus without reference to any particular contract.
+   - **Weighted Score** — a probability-weighted combination of real contract
+     results (for example 80% of 3NT making, 20% of 3NT+1). Use this when the
+     ruling calls for a weighted split between possible outcomes. You add one or
+     more contract results, each with a percentage weight that together must
+     total 100%, and the app scores each component against the rest of the
+     field, then takes the weighted average.
+
+   Both types of assigned score count towards the live leaderboard and the
+   exported results.
 5. The correction is saved, and anyone viewing that board sees the updated
    result.
 

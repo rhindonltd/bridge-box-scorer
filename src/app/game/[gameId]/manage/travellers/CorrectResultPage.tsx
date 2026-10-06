@@ -6,6 +6,10 @@ import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { parseContract } from "@/model/contract";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
+import {
+  buildAdjustedScore,
+  buildWeightedScore,
+} from "@/model/adjusted-score";
 import { getDirectorToken } from "@/lib/director-token";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
@@ -113,7 +117,17 @@ export function CorrectResultPage({
         wizardStep.roundNumber,
         wizardStep.tableNumber,
         wizardStep.boardNumber,
-        `A${data.nsPercent}/${data.ewPercent}`,
+        buildAdjustedScore(data.nsPercent, data.ewPercent),
+      );
+      return;
+    }
+
+    if (data.type === "weighted") {
+      saveOverride(
+        wizardStep.roundNumber,
+        wizardStep.tableNumber,
+        wizardStep.boardNumber,
+        buildWeightedScore(data.components),
       );
       return;
     }

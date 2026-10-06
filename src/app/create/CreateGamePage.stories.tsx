@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { http, HttpResponse } from "msw";
+import { userEvent, within } from "storybook/test";
 import { CreateGamePage } from "@/app/create/CreateGamePage";
 
 // The BridgeWebs events endpoint takes a ?date= query; match on path so the
@@ -77,5 +78,26 @@ export const ConfiguredNoEvents: Story = {
         ),
       ],
     },
+  },
+};
+
+/**
+ * The second step of the create flow: the "Next" button on step 1 advances to
+ * the event type, scoring, and per-game toggles, with the primary action now
+ * reading "Create Game". The play function clicks through from step 1.
+ */
+export const OptionsStep: Story = {
+  parameters: {
+    msw: {
+      handlers: [
+        http.get(BRIDGEWEBS_EVENTS, () =>
+          HttpResponse.json({ result: { configured: false, events: [] } }),
+        ),
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Next" }));
   },
 };

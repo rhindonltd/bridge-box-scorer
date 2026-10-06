@@ -7,12 +7,14 @@ type Props = {
   onLevelSelected: (level: Level) => void;
   onSpecialOutcome: (outcome: SpecialBoardOutcome) => void;
   onAdjustedScore?: () => void;
+  onWeightedScore?: () => void;
 };
 
 export function StepLevel({
   onLevelSelected,
   onSpecialOutcome,
   onAdjustedScore,
+  onWeightedScore,
 }: Props) {
   return (
     <div className="flex-1 flex flex-col p-4 min-h-0">
@@ -44,6 +46,19 @@ export function StepLevel({
             onClick={onAdjustedScore}
           >
             Adjusted Score
+          </button>
+        </div>
+      )}
+
+      {/* Weighted score — director only */}
+      {onWeightedScore && (
+        <div className="shrink-0 mb-3">
+          <button
+            type="button"
+            className="w-full py-3 rounded-xl text-center border-2 border-purple-300 bg-purple-50 hover:bg-purple-100 active:scale-[0.98] transition text-lg font-semibold text-purple-800"
+            onClick={onWeightedScore}
+          >
+            Weighted Score
           </button>
         </div>
       )}
