@@ -22,8 +22,10 @@ describe("swrKeys", () => {
     expect(swrKeys.sections("g1")).toBe("/api/games/g1/sections");
   });
 
-  it("schedule returns correct API path", () => {
-    expect(swrKeys.schedule("g1", "A1NS")).toBe("/api/games/g1/schedule/A1NS");
+  it("playState returns correct API path", () => {
+    expect(swrKeys.playState("g1", "A1NS")).toBe(
+      "/api/games/g1/play-state/A1NS",
+    );
   });
 
   it("boards returns correct API path", () => {

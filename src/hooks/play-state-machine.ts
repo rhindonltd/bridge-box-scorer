@@ -76,6 +76,38 @@ export interface Schedule {
   teamRoundResults?: boolean;
 }
 
+/**
+ * The server-resolved play state, as returned by
+ * `GET /api/games/[gameId]/play-state/[seat]`. This mirrors `ResolvedPlayState`
+ * in `src/services/resolve-play-state.ts` — redeclared here (rather than
+ * imported) because that module is server-only, and the client needs only the
+ * wire shape. Keep the two in sync.
+ */
+export interface ResolvedPlayStateResponse {
+  assignmentId: string;
+  side: "NS" | "EW";
+  phase:
+    | { kind: "round"; roundIndex: number; position: ResolvedWithinRound }
+    | { kind: "sitOut"; roundIndex: number }
+    | { kind: "awaitingNextRound"; completedRound: number }
+    | { kind: "complete" };
+  rounds: RoundSchedule[];
+}
+
+/** The within-round position carried by a resolved `round` phase. */
+export type ResolvedWithinRound =
+  | { at: "entering"; boardNumber: number }
+  | { at: "waitingConfirmation"; boardNumber: number }
+  | {
+      at: "mismatch";
+      boardNumber: number;
+      nsBoardNumber: number;
+      nsResult: string;
+      ewBoardNumber: number;
+      ewResult: string;
+    }
+  | { at: "roundComplete" };
+
 export type PlayState =
   | { state: "loading" }
   | { state: "roundInfo"; roundIndex: number }
@@ -105,6 +137,15 @@ export type PlayState =
    */
   | { state: "enterDeals"; roundIndex: number; nextRoundIndex: number }
   | { state: "moveInfo"; nextRoundIndex: number }
+  /**
+   * Between rounds in an event that expects more rounds than are drawn yet
+   * (Swiss, awaiting the director's draw of the next round). The player has
+   * finished every materialized round; `completedRound` is how many they have
+   * played. Resolved by the server; the client shows a waiting screen that
+   * advances automatically when the next round is drawn (GAME_UPDATED
+   * revalidation).
+   */
+  | { state: "awaitingNextRound"; completedRound: number }
   | { state: "gameComplete" };
 
 /**
@@ -141,39 +182,75 @@ export type PlayAction =
     };
 
 /**
- * Given a freshly loaded schedule, find the first incomplete round and return
- * the play state the flow should start in.
+ * Map the server-resolved play state to the initial {@link PlayState} the flow
+ * should start (or resume) in. The server reconstructs the current round, the
+ * within-round position, and the between-rounds verdict from durable truth, so
+ * a player who leaves and returns resumes where they were, and a Swiss player
+ * between rounds sees a waiting screen rather than a false "game complete".
+ *
+ * Pure: given the resolved response it returns the matching state. The round
+ * granularity mirrors the old flow — a `round` phase enters via `roundInfo`
+ * (the contract wizard then skips already-confirmed boards), while a seat that
+ * had submitted resumes directly on `waiting` / `mismatch` for its board.
  */
-export function initialPlayState(schedule: Schedule): PlayState {
-  let startRoundIndex = 0;
+export function playStateFromResolved(
+  resolved: ResolvedPlayStateResponse,
+): PlayState {
+  const { phase } = resolved;
 
-  for (let i = 0; i < schedule.rounds.length; i++) {
-    const round = schedule.rounds[i];
+  switch (phase.kind) {
+    case "complete":
+      return { state: "gameComplete" };
 
-    if (round.sitOut) {
-      startRoundIndex = i + 1;
-      continue;
+    case "awaitingNextRound":
+      return {
+        state: "awaitingNextRound",
+        completedRound: phase.completedRound,
+      };
+
+    case "sitOut":
+      // The router renders the sit-out page when the round at this index is a
+      // sit-out; roundInfo is the shared entry for both playable and bye rounds.
+      return { state: "roundInfo", roundIndex: phase.roundIndex };
+
+    case "round": {
+      const { roundIndex, position } = phase;
+      const round = resolved.rounds[roundIndex];
+
+      switch (position.at) {
+        case "waitingConfirmation": {
+          const boardIndex = round.boards.indexOf(position.boardNumber);
+          // Defensive: a board the schedule doesn't list → fall back to the
+          // round entry rather than a bad index.
+          /* v8 ignore next */
+          if (boardIndex === -1) return { state: "roundInfo", roundIndex };
+          return { state: "waiting", roundIndex, boardIndex };
+        }
+
+        case "mismatch": {
+          const boardIndex = round.boards.indexOf(position.boardNumber);
+          /* v8 ignore next */
+          if (boardIndex === -1) return { state: "roundInfo", roundIndex };
+          return {
+            state: "mismatch",
+            roundIndex,
+            boardIndex,
+            nsBoardNumber: position.nsBoardNumber,
+            nsResult: position.nsResult,
+            ewBoardNumber: position.ewBoardNumber,
+            ewResult: position.ewResult,
+          };
+        }
+
+        // `entering` and the defensive `roundComplete` both start at the round
+        // entry: the player sees the round info and taps in, and the wizard
+        // skips any board already confirmed.
+        case "entering":
+        case "roundComplete":
+          return { state: "roundInfo", roundIndex };
+      }
     }
-
-    const roundComplete = round.boardStatuses.every(
-      (b) => b.status === "CONFIRMED",
-    );
-
-    if (roundComplete) {
-      startRoundIndex = i + 1;
-      continue;
-    }
-
-    // First incomplete round.
-    startRoundIndex = i;
-    break;
   }
-
-  if (startRoundIndex >= schedule.rounds.length) {
-    return { state: "gameComplete" };
-  }
-
-  return { state: "roundInfo", roundIndex: startRoundIndex };
 }
 
 /** Advance from the end of a round to the next round, or complete the game. */

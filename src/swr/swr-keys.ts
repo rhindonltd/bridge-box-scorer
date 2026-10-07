@@ -14,8 +14,8 @@ export const swrKeys = {
   movementDetail: (movementType: string, movementId: number) =>
     `/api/movements/detail/${movementType}/${movementId}`,
 
-  schedule: (gameId: string, seat: string) =>
-    `/api/games/${gameId}/schedule/${seat}`,
+  playState: (gameId: string, seat: string) =>
+    `/api/games/${gameId}/play-state/${seat}`,
 
   boards: (gameId: string) => `/api/games/${gameId}/boards`,
 

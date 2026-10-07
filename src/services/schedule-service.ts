@@ -127,7 +127,10 @@ type ActiveRound = {
   halfMatch?: ScheduleHalfMatch;
 };
 
-type ScheduleRound = Omit<ActiveRound, "tableNumber" | "side" | "sitOut"> & {
+export type ScheduleRound = Omit<
+  ActiveRound,
+  "tableNumber" | "side" | "sitOut"
+> & {
   tableNumber: number | null;
   side?: "NS" | "EW";
   sitOut?: boolean;

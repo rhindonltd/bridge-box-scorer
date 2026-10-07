@@ -140,6 +140,21 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/GameComplete", () => ({
   GameComplete: () => <div data-testid="game-complete" />,
 }));
 
+vi.mock("@/app/game/[gameId]/play/[initialSeat]/AwaitingNextRoundPage", () => ({
+  AwaitingNextRoundPage: ({
+    completedRound,
+    headerRight,
+  }: {
+    completedRound: number;
+    headerRight: React.ReactNode;
+  }) => (
+    <div data-testid="awaiting-next-round">
+      {`done:${completedRound}`}
+      {headerRight}
+    </div>
+  ),
+}));
+
 // BoardResults path: stub the traveller provider/hook + scored-board hook and
 // the leaf page so the loader renders deterministically.
 vi.mock("@/context/TravellerContext", () => ({
@@ -342,6 +357,14 @@ describe("PlayStateRouter", () => {
     const moveInfo = screen.getByTestId("move-info");
     expect(moveInfo).toHaveTextContent("r1");
     expect(moveInfo).not.toHaveTextContent("sitout");
+  });
+
+  it("renders the between-rounds wait, with the completed round and header menu", () => {
+    renderRouter({ state: "awaitingNextRound", completedRound: 3 });
+    expect(screen.getByTestId("awaiting-next-round")).toHaveTextContent(
+      "done:3",
+    );
+    expect(screen.getByTestId("header-menu")).toHaveTextContent("g1:1NS");
   });
 
   it("renders GameComplete in the terminal state", () => {

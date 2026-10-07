@@ -26,7 +26,12 @@ vi.mock("@/lib/player-token", () => ({
 
 import { usePlayFlow } from "./play-flow";
 import { SocketEvents } from "../socket/socket-events";
+import type {
+  ResolvedPlayStateResponse,
+  ResolvedWithinRound,
+} from "./play-state-machine";
 
+/** A materialized round, defaulting to table 1 and NOT_PLAYED boards. */
 function round(
   roundNumber: number,
   boards: number[],
@@ -45,12 +50,41 @@ function round(
   };
 }
 
-function withSchedule(schedule: unknown) {
-  mockUseSWR.mockReturnValue({ data: schedule });
+/** A `round` phase at `roundIndex`, entering `boardNumber` (the common case). */
+function enteringPhase(
+  roundIndex: number,
+  boardNumber: number,
+): ResolvedPlayStateResponse["phase"] {
+  const position: ResolvedWithinRound = { at: "entering", boardNumber };
+  return { kind: "round", roundIndex, position };
 }
 
-/** Simulate the schedule fetch failing with a given HTTP status. */
-function withScheduleError(status: number) {
+/**
+ * Set the resolved play state the SWR fetch returns. The hook derives the
+ * INITIAL play state from `phase`; forward progression from there is driven by
+ * the reducer + socket events, so most flow tests start on an `entering` round
+ * phase and then dispatch.
+ */
+function withResolved(resolved: unknown) {
+  mockUseSWR.mockReturnValue({ data: resolved });
+}
+
+/** Convenience: a resolved state on round 0, entering its first board. */
+function withEnteringRound(
+  rounds: ReturnType<typeof round>[],
+  roundIndex = 0,
+) {
+  const first = rounds[roundIndex].boards[0];
+  withResolved({
+    assignmentId: "A1",
+    side: "NS",
+    rounds,
+    phase: enteringPhase(roundIndex, first),
+  });
+}
+
+/** Simulate the play-state fetch failing with a given HTTP status. */
+function withResolvedError(status: number) {
   const error = Object.assign(new Error("fetch failed"), { status });
   mockUseSWR.mockReturnValue({ data: undefined, error });
 }
@@ -64,30 +98,30 @@ describe("usePlayFlow", () => {
     });
   });
 
-  it("is in the loading state until a schedule arrives", () => {
-    withSchedule(undefined);
+  it("is in the loading state until a resolved play state arrives", () => {
+    withResolved(undefined);
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
     expect(result.current.playState.state).toBe("loading");
-    // No schedule and no error yet: this is the brief initial load, not the
+    // No data and no error yet: this is the brief initial load, not the
     // "waiting for the game to start" state.
     expect(result.current.waitingToStart).toBe(false);
   });
 
-  it("reports waitingToStart when the schedule 404s (game not started)", () => {
-    withScheduleError(404);
+  it("reports waitingToStart when the play state 404s (game not started)", () => {
+    withResolvedError(404);
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
     expect(result.current.schedule).toBeNull();
     expect(result.current.waitingToStart).toBe(true);
   });
 
-  it("does not treat a non-404 schedule error as waiting-to-start", () => {
-    withScheduleError(500);
+  it("does not treat a non-404 play-state error as waiting-to-start", () => {
+    withResolvedError(500);
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
     expect(result.current.waitingToStart).toBe(false);
   });
 
-  it("revalidates the schedule when the game is updated (e.g. started)", () => {
-    withScheduleError(404);
+  it("revalidates the play state when the game is updated (e.g. started)", () => {
+    withResolvedError(404);
     renderHook(() => usePlayFlow("g1", "A1NS"));
 
     const call = socketOn.mock.calls.find(
@@ -95,18 +129,19 @@ describe("usePlayFlow", () => {
     );
     expect(call).toBeTruthy();
 
-    // Firing GAME_UPDATED revalidates the seat's schedule SWR key so a waiting
+    // Firing GAME_UPDATED revalidates the seat's play-state key so a waiting
     // player advances into play without a manual refresh.
     const handler = call![1] as () => void;
     handler();
-    expect(mockMutate).toHaveBeenCalledWith("/api/games/g1/schedule/A1NS");
+    expect(mockMutate).toHaveBeenCalledWith("/api/games/g1/play-state/A1NS");
   });
 
-  it("starts at the first incomplete round", () => {
-    withSchedule({
+  it("starts on the round the server resolved as current", () => {
+    withResolved({
       assignmentId: "A1",
       side: "NS",
       rounds: [round(1, [1, 2], { confirmed: true }), round(2, [3, 4])],
+      phase: enteringPhase(1, 3),
     });
 
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
@@ -116,23 +151,83 @@ describe("usePlayFlow", () => {
     });
   });
 
-  it("reports gameComplete when all rounds are confirmed", () => {
-    withSchedule({
+  it("reports gameComplete when the server resolves the event complete", () => {
+    withResolved({
       assignmentId: "A1",
       side: "NS",
       rounds: [round(1, [1], { confirmed: true })],
+      phase: { kind: "complete" },
     });
 
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
     expect(result.current.playState.state).toBe("gameComplete");
   });
 
-  it("enters a round then submits a result, emitting SUBMIT_RESULT", () => {
-    withSchedule({
+  it("shows the between-rounds wait when the server resolves awaitingNextRound", () => {
+    withResolved({
+      assignmentId: "A1",
+      side: "NS",
+      rounds: [round(1, [1], { confirmed: true })],
+      phase: { kind: "awaitingNextRound", completedRound: 1 },
+    });
+
+    const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+    expect(result.current.playState).toEqual({
+      state: "awaitingNextRound",
+      completedRound: 1,
+    });
+  });
+
+  it("resumes directly on waiting when the server resolved a pending submission", () => {
+    const position: ResolvedWithinRound = {
+      at: "waitingConfirmation",
+      boardNumber: 2,
+    };
+    withResolved({
       assignmentId: "A1",
       side: "NS",
       rounds: [round(1, [1, 2])],
+      phase: { kind: "round", roundIndex: 0, position },
     });
+
+    const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+    expect(result.current.playState).toEqual({
+      state: "waiting",
+      roundIndex: 0,
+      boardIndex: 1,
+    });
+  });
+
+  it("resumes directly on a mismatch when the server resolved one", () => {
+    const position: ResolvedWithinRound = {
+      at: "mismatch",
+      boardNumber: 1,
+      nsBoardNumber: 1,
+      nsResult: "3NTN=",
+      ewBoardNumber: 1,
+      ewResult: "3NTN+1",
+    };
+    withResolved({
+      assignmentId: "A1",
+      side: "NS",
+      rounds: [round(1, [1])],
+      phase: { kind: "round", roundIndex: 0, position },
+    });
+
+    const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+    expect(result.current.playState).toEqual({
+      state: "mismatch",
+      roundIndex: 0,
+      boardIndex: 0,
+      nsBoardNumber: 1,
+      nsResult: "3NTN=",
+      ewBoardNumber: 1,
+      ewResult: "3NTN+1",
+    });
+  });
+
+  it("enters a round then submits a result, emitting SUBMIT_RESULT", () => {
+    withEnteringRound([round(1, [1, 2])]);
 
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
@@ -164,11 +259,7 @@ describe("usePlayFlow", () => {
 
   it("emits an empty token when no player token is stored", () => {
     mockGetPlayerToken.mockReturnValue(null);
-    withSchedule({
-      assignmentId: "A1",
-      side: "NS",
-      rounds: [round(1, [1, 2])],
-    });
+    withEnteringRound([round(1, [1, 2])]);
 
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
@@ -182,11 +273,7 @@ describe("usePlayFlow", () => {
   });
 
   it("submits the board chosen in the wizard, not the positional first board", () => {
-    withSchedule({
-      assignmentId: "A1",
-      side: "NS",
-      rounds: [round(1, [1, 2])],
-    });
+    withEnteringRound([round(1, [1, 2])]);
 
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
@@ -207,7 +294,7 @@ describe("usePlayFlow", () => {
   });
 
   it("registers and cleans up board socket listeners", () => {
-    withSchedule({ assignmentId: "A1", side: "NS", rounds: [round(1, [1])] });
+    withEnteringRound([round(1, [1])]);
 
     const { unmount } = renderHook(() => usePlayFlow("g1", "A1NS"));
     expect(socketOn).toHaveBeenCalledWith(
@@ -241,11 +328,7 @@ describe("usePlayFlow", () => {
 
   describe("BOARD_CONFIRMED socket handler", () => {
     it("transitions a matching waiting board to boardResults", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
@@ -265,11 +348,7 @@ describe("usePlayFlow", () => {
     });
 
     it("ignores a confirmation while not waiting/mismatch", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       // Still in roundInfo, not waiting.
@@ -282,11 +361,7 @@ describe("usePlayFlow", () => {
     });
 
     it("ignores a confirmation for a different round/table", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
@@ -301,11 +376,7 @@ describe("usePlayFlow", () => {
     });
 
     it("ignores a confirmation for a different board", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
@@ -320,8 +391,8 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      // A schedule without rounds => hook keeps scheduleRef null.
-      withSchedule({ assignmentId: "A1", side: "NS" });
+      // A resolved object without rounds => hook keeps scheduleRef null.
+      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       expect(result.current.schedule).toBeNull();
@@ -329,18 +400,14 @@ describe("usePlayFlow", () => {
       act(() =>
         onConfirmed({ roundNumber: 1, tableNumber: 1, boardNumber: 1 }),
       );
-      // Nothing to transition; still loading.
-      expect(result.current.playState.state).toBe("loading");
+      // schedule ref null; nothing to transition.
+      expect(result.current.playState.state).toBe("gameComplete");
     });
   });
 
   describe("BOARD_MISMATCH socket handler", () => {
     it("transitions a matching waiting board to mismatch", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
@@ -370,11 +437,7 @@ describe("usePlayFlow", () => {
     });
 
     it("ignores a mismatch while not waiting", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       const onMismatch = onMismatchHandler();
@@ -392,11 +455,7 @@ describe("usePlayFlow", () => {
     });
 
     it("ignores a mismatch for a different round/table", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
@@ -417,7 +476,7 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      withSchedule({ assignmentId: "A1", side: "NS" });
+      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       const onMismatch = onMismatchHandler();
@@ -431,17 +490,13 @@ describe("usePlayFlow", () => {
           ewResult: "y",
         }),
       );
-      expect(result.current.playState.state).toBe("loading");
+      expect(result.current.playState.state).toBe("gameComplete");
     });
   });
 
   describe("handleReenter", () => {
     it("moves from mismatch back to enterContract", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
@@ -467,11 +522,7 @@ describe("usePlayFlow", () => {
     });
 
     it("is a no-op outside the mismatch state", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleReenter());
@@ -499,11 +550,7 @@ describe("usePlayFlow", () => {
 
   describe("handleBoardResultsNext", () => {
     it("advances to the next board in the same round", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       toBoardResults(result, 1);
@@ -518,11 +565,7 @@ describe("usePlayFlow", () => {
     });
 
     it("offers the deal-entry step when the round completes and hand entry is on", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1]), round(2, [2])],
-      });
+      withEnteringRound([round(1, [1]), round(2, [2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS", true));
 
       toBoardResults(result, 1);
@@ -542,11 +585,7 @@ describe("usePlayFlow", () => {
     });
 
     it("skips the deal-entry step and shows move info when hand entry is off", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1]), round(2, [2])],
-      });
+      withEnteringRound([round(1, [1]), round(2, [2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       toBoardResults(result, 1);
@@ -558,11 +597,7 @@ describe("usePlayFlow", () => {
     });
 
     it("completes the game after the last board of the last round with hand entry on", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS", true));
 
       toBoardResults(result, 1);
@@ -573,11 +608,7 @@ describe("usePlayFlow", () => {
     });
 
     it("completes the game after the last board of the last round with hand entry off", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       toBoardResults(result, 1);
@@ -586,11 +617,7 @@ describe("usePlayFlow", () => {
     });
 
     it("is a no-op outside the boardResults state", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleBoardResultsNext());
@@ -598,21 +625,17 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      withSchedule({ assignmentId: "A1", side: "NS" });
+      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleBoardResultsNext());
-      expect(result.current.playState.state).toBe("loading");
+      expect(result.current.playState.state).toBe("gameComplete");
     });
   });
 
   describe("handleMoveInfoContinue", () => {
     it("moves from moveInfo to the next roundInfo", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1]), round(2, [2])],
-      });
+      withEnteringRound([round(1, [1]), round(2, [2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS", true));
 
       toBoardResults(result, 1);
@@ -629,11 +652,7 @@ describe("usePlayFlow", () => {
     });
 
     it("is a no-op outside the moveInfo state", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleMoveInfoContinue());
@@ -643,14 +662,20 @@ describe("usePlayFlow", () => {
 
   describe("handleSitOutContinue", () => {
     it("moves to move info when more rounds remain", () => {
-      withSchedule({
+      // The server resolves the current round as a sit-out the player is
+      // resting on; Continue advances past it.
+      withResolved({
         assignmentId: "A1",
         side: "NS",
-        rounds: [round(1, [1]), round(2, [2])],
+        rounds: [round(1, [], { sitOut: true }), round(2, [2])],
+        phase: { kind: "sitOut", roundIndex: 0 },
       });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
-      expect(result.current.playState.state).toBe("roundInfo");
+      expect(result.current.playState).toEqual({
+        state: "roundInfo",
+        roundIndex: 0,
+      });
       act(() => result.current.handleSitOutContinue());
       expect(result.current.playState).toEqual({
         state: "moveInfo",
@@ -659,10 +684,11 @@ describe("usePlayFlow", () => {
     });
 
     it("completes the game when on the last round", () => {
-      withSchedule({
+      withResolved({
         assignmentId: "A1",
         side: "NS",
-        rounds: [round(1, [1])],
+        rounds: [round(1, [], { sitOut: true })],
+        phase: { kind: "sitOut", roundIndex: 0 },
       });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
@@ -671,11 +697,7 @@ describe("usePlayFlow", () => {
     });
 
     it("is a no-op outside the roundInfo state", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       // Enter the round so we're in enterContract, not roundInfo.
@@ -685,21 +707,17 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      withSchedule({ assignmentId: "A1", side: "NS" });
+      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleSitOutContinue());
-      expect(result.current.playState.state).toBe("loading");
+      expect(result.current.playState.state).toBe("gameComplete");
     });
   });
 
   describe("submitResult guards", () => {
     it("is a no-op when not in enterContract", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       // Still in roundInfo.
@@ -709,11 +727,7 @@ describe("usePlayFlow", () => {
     });
 
     it("is a no-op when the board is not part of the round", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+      withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
@@ -724,7 +738,7 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      withSchedule({ assignmentId: "A1", side: "NS" });
+      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.submitResult(1, "3NTN="));
@@ -732,29 +746,28 @@ describe("usePlayFlow", () => {
     });
   });
 
-  describe("initialPlayState sit-out handling", () => {
-    it("skips a leading sit-out round when selecting the start round", () => {
-      withSchedule({
+  describe("resolved sit-out handling", () => {
+    it("rests on a sit-out round the server resolved as current", () => {
+      withResolved({
         assignmentId: "A1",
         side: "NS",
         rounds: [round(1, [], { sitOut: true }), round(2, [3, 4])],
+        phase: { kind: "sitOut", roundIndex: 0 },
       });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
+      // The router renders the sit-out page off round.sitOut; the flow sits on
+      // the round entry for that index.
       expect(result.current.playState).toEqual({
         state: "roundInfo",
-        roundIndex: 1,
+        roundIndex: 0,
       });
     });
   });
 
   describe("handleEnterRound guard", () => {
     it("is a no-op outside the roundInfo state", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       // First enter moves roundInfo -> enterContract.
@@ -768,39 +781,36 @@ describe("usePlayFlow", () => {
   });
 
   describe("re-initialisation guard on background revalidation", () => {
-    it("does not reset play state when SWR hands back a fresh schedule for the same key", () => {
-      const schedule = {
+    it("does not reset play state when a fresh resolved object arrives for the same key", () => {
+      const resolved = {
         assignmentId: "A1",
         side: "NS",
         rounds: [round(1, [1, 2])],
+        phase: enteringPhase(0, 1),
       };
-      withSchedule(schedule);
+      withResolved(resolved);
       const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       expect(result.current.playState.state).toBe("enterContract");
 
       // A background revalidation returns a new (but equivalent) object.
-      withSchedule({ ...schedule, rounds: [round(1, [1, 2])] });
+      withResolved({ ...resolved, rounds: [round(1, [1, 2])] });
       rerender();
 
       // State is preserved, not reset to roundInfo.
       expect(result.current.playState.state).toBe("enterContract");
     });
 
-    it("does not fall back to loading when a revalidation transiently drops the schedule", () => {
-      withSchedule({
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1, 2])],
-      });
+    it("does not fall back to loading when a revalidation transiently drops the data", () => {
+      withEnteringRound([round(1, [1, 2])]);
       const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       expect(result.current.playState.state).toBe("enterContract");
 
       // SWR transiently returns no data (still the same key).
-      withSchedule(undefined);
+      withResolved(undefined);
       rerender();
 
       // Already initialised for this key, so we keep the current state
@@ -809,29 +819,88 @@ describe("usePlayFlow", () => {
     });
   });
 
-  // Reaching the defensive `!round` guards requires the schedule to shrink out
-  // from under a play state that already references a now-missing round index.
-  // A 0-round schedule stays non-null (rounds is a truthy empty array), so the
-  // ref updates but the play state is preserved by the init guard.
-  describe("defensive missing-round guards after the schedule shrinks", () => {
-    function emptyRoundsSchedule() {
-      return { assignmentId: "A1", side: "NS", rounds: [] as unknown[] };
-    }
-
-    it("BOARD_CONFIRMED no-ops when the referenced round has vanished", () => {
-      const schedule = {
+  describe("auto-advance from the between-rounds wait (Stage 4)", () => {
+    it("advances a waiting player when a fresh resolved draws the next round", () => {
+      withResolved({
         assignmentId: "A1",
         side: "NS",
-        rounds: [round(1, [1])],
-      };
-      withSchedule(schedule);
+        rounds: [round(1, [1], { confirmed: true })],
+        phase: { kind: "awaitingNextRound", completedRound: 1 },
+      });
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+      expect(result.current.playState).toEqual({
+        state: "awaitingNextRound",
+        completedRound: 1,
+      });
+
+      // The director draws round 2: a fresh resolved arrives (same key) with a
+      // playable round now current.
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        rounds: [round(1, [1], { confirmed: true }), round(2, [2])],
+        phase: enteringPhase(1, 2),
+      });
+      rerender();
+
+      expect(result.current.playState).toEqual({
+        state: "roundInfo",
+        roundIndex: 1,
+      });
+    });
+
+    it("does not clobber an active round when a fresh resolved arrives", () => {
+      withEnteringRound([round(1, [1, 2])]);
       const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       act(() => result.current.submitResult(1, "3NTN="));
       expect(result.current.playState.state).toBe("waiting");
 
-      withSchedule(emptyRoundsSchedule());
+      // A background revalidation hands back a resolved object that would, if
+      // applied, move the player — but they are mid-round, so it must be
+      // ignored.
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        rounds: [round(1, [1, 2]), round(2, [3])],
+        phase: enteringPhase(1, 3),
+      });
+      rerender();
+
+      // Still waiting on their own board; local progress preserved.
+      expect(result.current.playState).toEqual({
+        state: "waiting",
+        roundIndex: 0,
+        boardIndex: 0,
+      });
+    });
+  });
+
+  // Reaching the defensive `!round` guards requires the schedule to shrink out
+  // from under a play state that already references a now-missing round index.
+  // A 0-round resolved object stays non-null (rounds is a truthy empty array),
+  // so the ref updates but the play state is preserved by the init guard.
+  describe("defensive missing-round guards after the schedule shrinks", () => {
+    function emptyRoundsResolved() {
+      return {
+        assignmentId: "A1",
+        side: "NS",
+        rounds: [] as unknown[],
+        phase: { kind: "complete" as const },
+      };
+    }
+
+    it("BOARD_CONFIRMED no-ops when the referenced round has vanished", () => {
+      withEnteringRound([round(1, [1])]);
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+      act(() => result.current.handleEnterRound());
+      act(() => result.current.submitResult(1, "3NTN="));
+      expect(result.current.playState.state).toBe("waiting");
+
+      withResolved(emptyRoundsResolved());
       rerender();
 
       act(() =>
@@ -845,18 +914,13 @@ describe("usePlayFlow", () => {
     });
 
     it("BOARD_MISMATCH no-ops when the referenced round has vanished", () => {
-      const schedule = {
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      };
-      withSchedule(schedule);
+      withEnteringRound([round(1, [1])]);
       const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       act(() => result.current.submitResult(1, "3NTN="));
 
-      withSchedule(emptyRoundsSchedule());
+      withResolved(emptyRoundsResolved());
       rerender();
 
       act(() =>
@@ -873,18 +937,13 @@ describe("usePlayFlow", () => {
     });
 
     it("submitResult no-ops when the referenced round has vanished", () => {
-      const schedule = {
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      };
-      withSchedule(schedule);
+      withEnteringRound([round(1, [1])]);
       const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleEnterRound());
       expect(result.current.playState.state).toBe("enterContract");
 
-      withSchedule(emptyRoundsSchedule());
+      withResolved(emptyRoundsResolved());
       rerender();
 
       act(() => result.current.submitResult(1, "3NTN="));
@@ -894,18 +953,13 @@ describe("usePlayFlow", () => {
     });
 
     it("handleBoardResultsNext no-ops when the referenced round has vanished", () => {
-      const schedule = {
-        assignmentId: "A1",
-        side: "NS",
-        rounds: [round(1, [1])],
-      };
-      withSchedule(schedule);
+      withEnteringRound([round(1, [1])]);
       const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       toBoardResults(result, 1);
       expect(result.current.playState.state).toBe("boardResults");
 
-      withSchedule(emptyRoundsSchedule());
+      withResolved(emptyRoundsResolved());
       rerender();
 
       act(() => result.current.handleBoardResultsNext());
@@ -913,12 +967,12 @@ describe("usePlayFlow", () => {
     });
   });
 
-  describe("schedule SWR retry policy", () => {
+  describe("play-state SWR retry policy", () => {
     // The hook configures SWR to retry on error EXCEPT on a 404 (the expected
     // "seated, waiting for the game to start" state). We drive the option
     // predicate directly since SWR itself is mocked.
     function shouldRetryOnError() {
-      withScheduleError(404);
+      withResolvedError(404);
       renderHook(() => usePlayFlow("g1", "A1NS"));
       const opts = mockUseSWR.mock.calls.at(-1)?.[2] as {
         shouldRetryOnError: (e: Error & { status?: number }) => boolean;
@@ -942,7 +996,7 @@ describe("usePlayFlow", () => {
   describe("submitDeal", () => {
     it("emits DEAL_SUBMIT with the seat token and resolves the ack", async () => {
       mockEmitWithAck.mockResolvedValue({ stored: true });
-      withSchedule({ assignmentId: "A1", side: "NS", rounds: [round(1, [1])] });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       const deal = { N: "SAKQ", E: "", S: "", W: "" } as unknown as never;
@@ -967,7 +1021,7 @@ describe("usePlayFlow", () => {
     it("sends an empty token when none is stored", async () => {
       mockGetPlayerToken.mockReturnValue(null);
       mockEmitWithAck.mockResolvedValue({ stored: false });
-      withSchedule({ assignmentId: "A1", side: "NS", rounds: [round(1, [1])] });
+      withEnteringRound([round(1, [1])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       await act(async () => {

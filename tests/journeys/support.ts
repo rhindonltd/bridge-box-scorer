@@ -89,7 +89,7 @@ import {
 export async function setUpStartedTwoTableGame(
   browser: Browser,
   eventName: string,
-  opts: { recordOpeningLead?: boolean } = {},
+  opts: { recordOpeningLead?: boolean; handEntry?: boolean } = {},
 ): Promise<{
   directorPage: Page;
   gameId: string;
@@ -100,6 +100,7 @@ export async function setUpStartedTwoTableGame(
   const { gameId } = await createGame(directorPage, {
     eventName,
     recordOpeningLead: opts.recordOpeningLead,
+    handEntry: opts.handEntry,
   });
   await setTableCount(directorPage, 2);
   await pickFirstMovement(directorPage);
