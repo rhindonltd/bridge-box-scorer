@@ -37,14 +37,15 @@ test.describe("Board deal capture", () => {
     const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
       browser,
       `Deal Entry Player ${Date.now()}`,
-      { recordOpeningLead: false },
+      // Player hand entry on, so the post-round "Enter cards" step is offered.
+      { recordOpeningLead: false, handEntry: true },
     );
     const nsPage = seats["A1NS"];
     const ewPage = seats["A1EW"];
 
     try {
       // Read round 1's boards so we drive its exact board list to completion.
-      const res = await request.get(`/api/games/${gameId}/schedule/A1NS`);
+      const res = await request.get(`/api/games/${gameId}/play-state/A1NS`);
       expect(res.ok()).toBeTruthy();
       const schedule: Schedule = (await res.json()).result;
       const round1 = schedule.rounds.find((r) => r.roundNumber === 1);
@@ -122,7 +123,7 @@ test.describe("Board deal capture", () => {
 
     try {
       // Read round 1's first board and confirm it so there's a board to view.
-      const res = await request.get(`/api/games/${gameId}/schedule/A1NS`);
+      const res = await request.get(`/api/games/${gameId}/play-state/A1NS`);
       expect(res.ok()).toBeTruthy();
       const schedule: Schedule = (await res.json()).result;
       const board = schedule.rounds.find((r) => r.roundNumber === 1)!.boards[0];
@@ -148,12 +149,16 @@ test.describe("Board deal capture", () => {
         { timeout: 15000 },
       );
 
-      // The player's still-mounted board-results traveller can now reveal the
-      // deal via the "Show hand" toggle.
-      await expect(nsPage.getByTestId("show-hand-toggle")).toBeVisible({
-        timeout: 15000,
-      });
-      await nsPage.getByTestId("show-hand-toggle").click();
+      // The player's still-mounted board-results traveller now holds the deal
+      // (pushed live). The player reveals it from the play header menu: once a
+      // deal exists, the menu gains a "Deal" view option that switches the
+      // board-results body to the hand diagram. Open the menu and pick "Deal".
+      await nsPage.getByRole("button", { name: "Menu" }).click();
+      const dealItem = nsPage.getByRole("menuitem", { name: "Deal", exact: true });
+      // The "Deal" item only appears once the live deal has arrived, so this
+      // also waits out the push.
+      await expect(dealItem).toBeVisible({ timeout: 15000 });
+      await dealItem.click();
       await expect(nsPage.getByTestId("deal-display")).toBeVisible({
         timeout: 15000,
       });

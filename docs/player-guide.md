@@ -58,9 +58,12 @@ You are now seated and ready to play.
 
 ## Playing a round
 
-The app walks you through the session one round at a time. It automatically
-starts you at the first round that still needs results, so if you rejoin
-part-way through you won't have to skip past finished rounds.
+The app walks you through the session one round at a time. It always picks up
+exactly where you are: if you close the app, switch devices, or your screen
+goes to sleep and you come back, you return to the same place — the right round,
+the board you were on, and whether you were waiting for the other pair or
+looking at a mismatch. You never have to skip past finished rounds or re-enter a
+board you had already submitted.
 
 ### Round information
 
@@ -164,6 +167,13 @@ which table and direction to go to for the next round. Tap continue when you
 have moved. After the final round you see the **leaderboard**, with your own
 pair highlighted.
 
+> **Playing a Swiss event?** In Swiss Pairs and Swiss Teams the next round is
+> drawn by the director once the current one is fully scored, so when you finish
+> a round you may see a **Waiting for the director to draw the next round**
+> screen. There is nothing to tap — keep the screen open and it moves on by
+> itself to your next-round details the moment the director draws. It only
+> finishes to the leaderboard once the event's final round has been played.
+
 ### The play menu
 
 Every play screen has a **menu** button in the top-right corner. Tap it for:
@@ -196,3 +206,5 @@ Every play screen has a **menu** button in the top-right corner. Tap it for:
   played.
 - If you get lost, the round and move screens always tell you where you should
   be.
+- Your place is kept for you — if your device locks or you reopen the app
+  mid-round, you come straight back to the same board, not the start.

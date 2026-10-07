@@ -39,10 +39,12 @@ test.describe("Game API Endpoints", () => {
     expect(body.success).toBe(false);
   });
 
-  test("GET /api/games/nonexistent/schedule/1NS returns 404", async ({
+  test("GET /api/games/nonexistent/play-state/1NS returns 404", async ({
     request,
   }) => {
-    const response = await request.get("/api/games/nonexistent/schedule/1NS");
+    const response = await request.get(
+      "/api/games/nonexistent/play-state/1NS",
+    );
     expect(response.status()).toBe(404);
     const body = await response.json();
     expect(body.success).toBe(false);

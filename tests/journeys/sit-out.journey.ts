@@ -134,7 +134,7 @@ test.describe("Sit-out flow", () => {
       // normal UI never offers a sit-out board for entry, so we discover a real
       // SIT_OUT board instance from the boards API and assert the rejection ack
       // over a direct socket connection from the test process.
-      const ack = await submitAgainstSitOutBoard(request, gameId);
+      const ack = await submitAgainstSitOutBoard(gameId);
       expect(ack.success).toBe(false);
       expect((ack.error ?? "").toLowerCase()).toContain("sit-out");
     } finally {
@@ -152,13 +152,13 @@ type RoundInfo = {
   boards: number[];
 };
 
-/** Fetch a seat's schedule rounds (round/table/sitOut/boards). */
+/** Fetch a seat's resolved rounds (round/table/sitOut/boards). */
 async function seatSchedule(
   request: import("@playwright/test").APIRequestContext,
   gameId: string,
   seat: string,
 ): Promise<RoundInfo[]> {
-  const res = await request.get(`/api/games/${gameId}/schedule/${seat}`);
+  const res = await request.get(`/api/games/${gameId}/play-state/${seat}`);
   expect(res.ok()).toBeTruthy();
   const rounds = (await res.json()).result.rounds as Array<{
     roundNumber: number;
@@ -296,46 +296,27 @@ async function passOutSpecificBoard(page: Page, board: number): Promise<void> {
 }
 
 /**
- * Discover a real SIT_OUT board instance from the boards API, then submit a
- * result against it over a direct socket connection and return the ack. The
- * server must refuse it with "This board is a sit-out".
+ * Discover a real SIT_OUT board from the game DB, then submit a result against
+ * it over a direct socket connection and return the ack. The server must
+ * refuse it with "This board is a sit-out".
  *
  * Which table sits out in which round is decided by the movement's phantom
- * rotation, so we don't assume it — we scan the board instances for one whose
- * status is SIT_OUT and target that exact (round, table, board).
+ * rotation, so we don't assume it — we read the SIT_OUT board row straight from
+ * the game's SQLite file and target that exact (round, table, board). (The
+ * boards API can't help here: it filters SIT_OUT rows off travellers.)
  */
 async function submitAgainstSitOutBoard(
-  request: import("@playwright/test").APIRequestContext,
   gameId: string,
 ): Promise<{ success: boolean; error?: string }> {
-  // Find a SIT_OUT instance.
-  const boardsRes = await request.get(`/api/games/${gameId}/boards`);
-  const boardNumbers: number[] = (await boardsRes.json()).result.boards;
-
-  let target:
-    | { roundNumber: number; tableNumber: number; boardNumber: number }
-    | null = null;
-  for (const boardNumber of boardNumbers) {
-    const res = await request.get(`/api/games/${gameId}/boards/${boardNumber}`);
-    const rows: Array<{
-      roundNumber: number;
-      tableNumber: number;
-      boardNumber: number;
-      status: string | null;
-    }> = (await res.json()).result.instances;
-    const sitOut = rows.find((r) => r.status === "SIT_OUT");
-    if (sitOut) {
-      target = {
-        roundNumber: sitOut.roundNumber,
-        tableNumber: sitOut.tableNumber,
-        boardNumber: sitOut.boardNumber,
-      };
-      break;
-    }
-  }
-
+  // Find a SIT_OUT board row straight from the game DB. We cannot discover it
+  // via the boards API: the per-board instances endpoint intentionally filters
+  // SIT_OUT (and HALF_AVERAGE) rows out — they are byes with a phantom
+  // opponent and never belong on a traveller — so a SIT_OUT board is invisible
+  // there. The DB row carries the exact (section, round, table, board) the
+  // server's sit-out guard keys on.
+  const target = readSitOutBoard(gameId);
   if (!target) {
-    throw new Error("no SIT_OUT board instance found for the short field");
+    throw new Error("no SIT_OUT board row found for the short field");
   }
 
   const socket: Socket = ioClient("http://localhost:3000");
@@ -372,6 +353,37 @@ async function submitAgainstSitOutBoard(
     });
   } finally {
     socket.disconnect();
+  }
+}
+
+/**
+ * Read a SIT_OUT board row straight from the game's SQLite file. The sit-out
+ * (bye) boards are materialized with status "SIT_OUT" on the sitting table,
+ * carrying a phantom opponent; this returns the first such row's identifying
+ * (round, table, board) so the test can submit a result against it and assert
+ * the server's sit-out guard rejects it. Returns null when the field has no
+ * sit-out (so callers can surface a clear error).
+ */
+function readSitOutBoard(gameId: string): {
+  roundNumber: number;
+  tableNumber: number;
+  boardNumber: number;
+} | null {
+  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dbFile = path.join(dataDir, `${gameId}.db`);
+  const db = new Database(dbFile, { readonly: true });
+  try {
+    const row = db
+      .prepare(
+        "SELECT round_number AS roundNumber, table_number AS tableNumber, board_number AS boardNumber " +
+          "FROM boards WHERE status = 'SIT_OUT' ORDER BY round_number, table_number, board_number LIMIT 1",
+      )
+      .get() as
+      | { roundNumber: number; tableNumber: number; boardNumber: number }
+      | undefined;
+    return row ?? null;
+  } finally {
+    db.close();
   }
 }
 

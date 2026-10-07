@@ -291,6 +291,35 @@ export function serializeSelectedMovement(selected: SelectedMovement): string {
 }
 
 /**
+ * The number of rounds a movement is configured to run. For the three movements
+ * that carry an explicit `rounds` in their spec (MITCHELL, SWISS, SWISS_TEAMS,
+ * ROUND_ROBIN_TEAMS) that value is authoritative. A SPEC (movement-library)
+ * selection does not carry a round count in the stored selection — its schedule
+ * is defined by the referenced spec and is fully materialized at start — so
+ * null is returned and callers fall back to the materialized round count.
+ *
+ * Used to tell "all drawn rounds are done but more are expected" (Swiss, before
+ * the director draws the next round) apart from "the event is genuinely over".
+ */
+export function expectedRounds(
+  selected: SelectedMovement | null,
+): number | null {
+  if (!selected) return null;
+  switch (selected.source) {
+    case "MITCHELL":
+      return selected.mitchell.rounds;
+    case "SWISS":
+      return selected.swiss.rounds;
+    case "SWISS_TEAMS":
+      return selected.swissTeams.rounds;
+    case "ROUND_ROBIN_TEAMS":
+      return selected.roundRobinTeams.rounds;
+    case "SPEC":
+      return null;
+  }
+}
+
+/**
  * Structural equality for two (possibly null) selected movements. Used to
  * decide whether a movement selection actually changed — e.g. so a no-op
  * re-selection doesn't needlessly clear the section's derived timer.

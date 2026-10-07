@@ -38,6 +38,12 @@ export async function createGame(
      * (the form's default). Ignored for a Pairs game.
      */
     teamsScoring?: "IMP" | "IMP_VP" | "BAM" | "PAB";
+    /**
+     * Whether the game allows players to enter the dealt cards. Defaults to
+     * false (the app's default). When true, the "Allow Hand Entry" toggle is
+     * switched on so the post-round "Enter cards" step is offered.
+     */
+    handEntry?: boolean;
   },
 ): Promise<CreatedGame> {
   await page.goto("/create");
@@ -50,6 +56,12 @@ export async function createGame(
 
   await page.getByLabel("Event Name").fill(opts.eventName);
   await page.getByLabel("Director Name").fill(opts.directorName ?? "E2E Director");
+
+  // The create form is a two-step wizard: step 1 collects the event + director
+  // name (gated behind "Next"), step 2 the event type / scoring / toggles with
+  // the final "Create Game" action. Advance past the details step before
+  // touching any options-step control.
+  await page.getByRole("button", { name: "Next", exact: true }).click();
 
   // Event Type is a native <select> ("Pairs" / "Teams"), defaulting to Pairs.
   // Switching to Teams re-renders the Scoring dropdown with the teams options.
@@ -69,6 +81,16 @@ export async function createGame(
     await page
       .getByLabel("Record Opening Lead")
       .getByRole("button", { name: "No", exact: true })
+      .click();
+  }
+
+  // "Allow Hand Entry" is a two-button toggle (No / Yes), defaulting to No.
+  // Only click when the caller wants it on. Scope to the toggle by its label
+  // so the "Yes" match isn't ambiguous with the other No/Yes toggles.
+  if (opts.handEntry === true) {
+    await page
+      .getByLabel("Allow Hand Entry")
+      .getByRole("button", { name: "Yes", exact: true })
       .click();
   }
 

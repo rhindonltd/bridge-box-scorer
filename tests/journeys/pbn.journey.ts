@@ -58,7 +58,7 @@ test.describe("PBN export", () => {
       // emit (a game with no entered deals produces an empty file). Confirm the
       // board first so it exists, then enter its deal on the director Enter
       // Deals screen.
-      const res = await request.get(`/api/games/${gameId}/schedule/A1NS`);
+      const res = await request.get(`/api/games/${gameId}/play-state/A1NS`);
       expect(res.ok()).toBeTruthy();
       const schedule: Schedule = (await res.json()).result;
       const board = schedule.rounds.find((r) => r.roundNumber === 1)!.boards[0];

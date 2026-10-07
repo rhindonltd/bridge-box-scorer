@@ -121,15 +121,16 @@ test.describe("API contract — games (existing game)", () => {
     expect(body.success).toBe(false);
   });
 
-  test("GET /api/games/[id]/schedule/[seat] returns a schedule; unknown seat 404", async ({
+  test("GET /api/games/[id]/play-state/[seat] returns resolved play state; unknown seat 404", async ({
     request,
   }) => {
-    const ok = await request.get(`/api/games/${gameId}/schedule/A1NS`);
+    const ok = await request.get(`/api/games/${gameId}/play-state/A1NS`);
     expect(ok.ok()).toBe(true);
-    const sched = (await ok.json()).result;
-    expect(Array.isArray(sched.rounds)).toBe(true);
+    const resolved = (await ok.json()).result;
+    expect(Array.isArray(resolved.rounds)).toBe(true);
+    expect(resolved.phase?.kind).toBeTruthy();
 
-    const unknown = await request.get(`/api/games/${gameId}/schedule/Z9NS`);
+    const unknown = await request.get(`/api/games/${gameId}/play-state/Z9NS`);
     expect(unknown.status()).toBe(404);
   });
 

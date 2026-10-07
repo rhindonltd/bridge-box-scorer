@@ -121,7 +121,7 @@ test.describe("Leaderboard & traveller display detail", () => {
       // so the pair's own traveller row carries data-highlighted="true" and its
       // cells show that assignment id.
       const scheduleRes = await request.get(
-        `/api/games/${gameId}/schedule/A1NS`,
+        `/api/games/${gameId}/play-state/A1NS`,
       );
       expect(scheduleRes.ok()).toBeTruthy();
       const assignmentId: string = (await scheduleRes.json()).result

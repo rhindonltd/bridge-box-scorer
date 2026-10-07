@@ -19,6 +19,7 @@ import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
 import type { PlayState, Schedule } from "@/hooks/play-state-machine";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
+import { AwaitingNextRoundPage } from "@/app/game/[gameId]/play/[initialSeat]/AwaitingNextRoundPage";
 import { RoundResultsLoader } from "@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage";
 import { PlayHeaderMenu } from "@/app/game/[gameId]/play/[initialSeat]/PlayHeaderMenu";
 import type { HeaderMenuItem } from "@/components/layout/HeaderMenu";
@@ -213,6 +214,17 @@ export function PlayStateRouter({
         />
       );
     }
+
+    case "awaitingNextRound":
+      // Between rounds, waiting for the director to draw the next round (Swiss).
+      // No Continue — the player can't advance until the draw; the flow
+      // revalidates on GAME_UPDATED (Stage 4) and moves on by itself.
+      return (
+        <AwaitingNextRoundPage
+          completedRound={playState.completedRound}
+          headerRight={headerRight}
+        />
+      );
 
     case "gameComplete":
       return <GameComplete headerRight={headerRight} />;

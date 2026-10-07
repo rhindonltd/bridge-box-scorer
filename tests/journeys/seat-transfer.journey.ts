@@ -77,7 +77,7 @@ test.describe("Seat transfer (Change device)", () => {
 
       // Behavioural proof: submit a round-1 board result for A1NS over a raw
       // socket. The OLD secret is now rejected; the NEW secret is accepted.
-      const res = await request.get(`/api/games/${gameId}/schedule/A1NS`);
+      const res = await request.get(`/api/games/${gameId}/play-state/A1NS`);
       expect(res.ok()).toBeTruthy();
       const schedule: Schedule = (await res.json()).result;
       const round1 = schedule.rounds.find((r) => r.roundNumber === 1)!;

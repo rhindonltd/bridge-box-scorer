@@ -23,17 +23,17 @@ export interface SeatedPair {
 }
 
 /*
- * The schedule endpoint is keyed by `initialSeat` and, when a movement
+ * The play-state endpoint is keyed by `initialSeat` and, when a movement
  * exists, resolves the pair's movement-facing identity (its assignment id).
  * `initialSeat` is the stable identity of the pair (independent of the
- * movement); the assignment id only exists once a movement has been
- * selected, and is what movement-related features and traveller/leaderboard
- * highlighting key off.
+ * movement); the assignment id only exists once a movement has been selected,
+ * and is what movement-related features and traveller/leaderboard highlighting
+ * key off. We read only `assignmentId` here (the full resolved play state —
+ * phase, rounds, within-round position — is consumed by `usePlayFlow`, which
+ * shares this same SWR key, so the fetch is deduped).
  */
-interface ScheduleResponse {
+interface PlayStateIdentity {
   assignmentId: string;
-  side: "NS" | "EW";
-  rounds: unknown[];
 }
 
 interface ContextType {
@@ -59,7 +59,7 @@ export function AssignmentProvider({
   initialSeat: Seat;
   children: ReactNode;
 }) {
-  const key = swrKeys.schedule(gameId, initialSeat);
+  const key = swrKeys.playState(gameId, initialSeat);
 
   // This pair's section, derived from its (section-qualified) initial seat.
   const mySection = useMemo(() => {
@@ -71,11 +71,11 @@ export function AssignmentProvider({
   }, [initialSeat]);
 
   /*
-   * When no movement has been selected the schedule route responds 404, so
+   * When no movement has been selected the play-state endpoint responds 404, so
    * `data` stays undefined and `assignment` resolves to null. That is the
    * expected "no assignment yet" state, so a 404 is not retried.
    */
-  const { data, isLoading } = useSWR<ScheduleResponse>(key, fetcher, {
+  const { data, isLoading } = useSWR<PlayStateIdentity>(key, fetcher, {
     shouldRetryOnError: (error: Error & { status?: number }) =>
       error.status !== 404,
   });
@@ -88,7 +88,7 @@ export function AssignmentProvider({
 
   /*
    * The director can change the movement mid-session, which re-derives every
-   * pair's assignment id. Revalidate the schedule whenever the game updates
+   * pair's assignment id. Revalidate the play state whenever the game updates
    * (and on reconnect) so the assignment id stays in sync. A section-scoped
    * update only concerns this pair when it names this pair's section (the
    * server also scopes the emit to the section room, so this is a

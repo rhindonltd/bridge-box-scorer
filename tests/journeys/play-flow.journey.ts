@@ -38,7 +38,7 @@ test.describe("Play flow mount & board dropdown", () => {
       // Read round 1's board numbers from the schedule so the test adapts to
       // the movement. The dropdown switch needs at least two boards in the
       // round.
-      const res = await request.get(`/api/games/${gameId}/schedule/A1NS`);
+      const res = await request.get(`/api/games/${gameId}/play-state/A1NS`);
       expect(res.ok()).toBeTruthy();
       const schedule: Schedule = (await res.json()).result;
       const round1 = schedule.rounds.find((r) => r.roundNumber === 1);
@@ -95,7 +95,7 @@ test.describe("Play flow mount & board dropdown", () => {
     try {
       // Confirm EVERY board of round 1 at table 1 (both sides), so round 1 is
       // fully complete for the A1NS pair.
-      const res = await request.get(`/api/games/${gameId}/schedule/A1NS`);
+      const res = await request.get(`/api/games/${gameId}/play-state/A1NS`);
       expect(res.ok()).toBeTruthy();
       const schedule: Schedule = (await res.json()).result;
       const round1 = schedule.rounds.find((r) => r.roundNumber === 1);

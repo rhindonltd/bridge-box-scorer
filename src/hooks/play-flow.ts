@@ -10,10 +10,11 @@ import { swrKeys } from "@/swr/swr-keys";
 import { getPlayerToken } from "@/lib/player-token";
 import { useSocketRevalidate } from "./use-socket-revalidate";
 import {
-  initialPlayState,
+  playStateFromResolved,
   playReducer,
   type PlayAction,
   type PlayState,
+  type ResolvedPlayStateResponse,
   type Schedule,
 } from "./play-state-machine";
 
@@ -31,42 +32,49 @@ export function usePlayFlow(
   });
 
   /*
-   * Fetch the schedule via SWR. The route returns the Schedule object
-   * directly (unwrapped from the success envelope by `fetcher`).
+   * Fetch the server-resolved play state via SWR. The route returns the
+   * resolved object directly (unwrapped from the success envelope by
+   * `fetcher`): the materialized rounds plus the server's verdict on which
+   * round is current, the within-round position, and the between-rounds state.
    *
    * Before the director starts the game there is no assignment for this seat,
    * so the route responds 404 and `error.status` is 404. That is the expected
    * "seated, waiting for the game to start" state (not a failure), so we don't
    * retry on 404 — a `GAME_UPDATED` broadcast at start revalidates instead.
    */
-  const scheduleKey = swrKeys.schedule(gameId, seat);
-  const { data: fetchedSchedule, error: scheduleError } = useSWR<Schedule>(
-    scheduleKey,
-    fetcher,
-    {
+  const playStateKey = swrKeys.playState(gameId, seat);
+  const { data: resolved, error: resolvedError } =
+    useSWR<ResolvedPlayStateResponse>(playStateKey, fetcher, {
       shouldRetryOnError: (error: Error & { status?: number }) =>
         error.status !== 404,
-    },
-  );
+    });
 
-  // The schedule route (per-game DB) doesn't know the game-level
+  // The play-state route (per-game DB) doesn't know the game-level
   // `handEntryEnabled` flag, which lives on the game-index row and reaches us
-  // via GameContext (same path as `leadCardRequired`). Stamp it onto the
-  // schedule so the pure reducer can gate the optional post-round deal step.
-  const schedule = useMemo(
+  // via GameContext (same path as `leadCardRequired`). Build the `Schedule` the
+  // pure reducer consumes from the resolved rounds, stamping the game-level
+  // flags so the reducer can gate the optional post-round deal / summary steps.
+  const schedule = useMemo<Schedule | null>(
     () =>
-      fetchedSchedule && fetchedSchedule.rounds
-        ? { ...fetchedSchedule, handEntryEnabled, teamRoundResults }
+      resolved && resolved.rounds
+        ? {
+            assignmentId: resolved.assignmentId,
+            side: resolved.side,
+            rounds: resolved.rounds,
+            handEntryEnabled,
+            teamRoundResults,
+          }
         : null,
-    [fetchedSchedule, handEntryEnabled, teamRoundResults],
+    [resolved, handEntryEnabled, teamRoundResults],
   );
 
-  // The seat has no schedule yet because the game hasn't been started
-  // (materialization creates the assignment rows the schedule needs). Distinct
-  // from the brief initial load, where there is neither data nor error yet.
+  // The seat has no resolved play state yet because the game hasn't been
+  // started (materialization creates the assignment rows the resolver needs).
+  // Distinct from the brief initial load, where there is neither data nor error
+  // yet.
   const waitingToStart =
     !schedule &&
-    (scheduleError as (Error & { status?: number }) | undefined)?.status ===
+    (resolvedError as (Error & { status?: number }) | undefined)?.status ===
       404;
 
   /*
@@ -94,34 +102,58 @@ export function usePlayFlow(
    * then (and on reconnect) so a waiting player advances into play without a
    * manual refresh.
    */
-  useSocketRevalidate(scheduleKey, [SocketEvents.GAME_UPDATED], [scheduleKey]);
+  useSocketRevalidate(playStateKey, [SocketEvents.GAME_UPDATED], [playStateKey]);
 
   /*
-   * Initialise the play state once per (gameId, seat). Background SWR
-   * revalidations may hand back a fresh schedule object, but we must not
-   * reset the player back to the starting round mid-session, so the
-   * derived starting state is computed only the first time a schedule is
-   * seen for this key.
+   * Initialise the play state once per (gameId, seat), and auto-advance a
+   * between-rounds waiter when the next round is drawn.
+   *
+   * Background SWR revalidations may hand back a fresh resolved object, but we
+   * must not reset the player mid-session (e.g. back to the start of a round
+   * they are partway through on this device), so the derived starting state is
+   * computed only the first time a resolved play state is seen for this key.
+   * Live progression from there is driven by the socket actions through the
+   * reducer.
+   *
+   * The one exception is the between-rounds wait: a player sitting on
+   * `awaitingNextRound` has no local progress to protect, and the whole point
+   * of that screen is to move on when the director draws. So when fresh
+   * resolved data arrives (via the `GAME_UPDATED` / reconnect revalidation
+   * wired above) and the player is still waiting, re-derive from it — advancing
+   * them into the new
+   * round the moment it is drawn. The re-derive is gated on the *current* local
+   * state being `awaitingNextRound` (read through the functional updater, so
+   * this effect need not depend on `playState`), which is why it can never
+   * clobber an active round.
    */
   const initialisedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const key = `${gameId}/${seat}`;
 
-    if (!schedule) {
+    if (!resolved) {
       if (initialisedKeyRef.current !== key) {
         setPlayState({ state: "loading" });
       }
       return;
     }
 
-    if (initialisedKeyRef.current === key) {
+    if (initialisedKeyRef.current !== key) {
+      initialisedKeyRef.current = key;
+      setPlayState(playStateFromResolved(resolved));
       return;
     }
 
-    initialisedKeyRef.current = key;
-    setPlayState(initialPlayState(schedule));
-  }, [schedule, gameId, seat]);
+    // Already initialised for this seat: only re-derive to advance a player who
+    // is still waiting between rounds. Every other state owns its own forward
+    // progression (reducer + socket events) and must not be reset by a
+    // background revalidation.
+    setPlayState((prev) =>
+      prev.state === "awaitingNextRound"
+        ? playStateFromResolved(resolved)
+        : prev,
+    );
+  }, [resolved, gameId, seat]);
 
   /*
    * Socket listeners.
