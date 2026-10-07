@@ -1,5 +1,12 @@
 import { BoardOutcome } from "@/model/score";
 import { isPlayedContractCode, parsePlayedContract } from "@/model/result";
+import {
+  isAdjustedScore,
+  isAssignedOutcome,
+  isWeightedScore,
+  parseAdjustedScore,
+  parseWeightedScore,
+} from "@/model/adjusted-score";
 
 /**
  * USEBIO contract format: "4 S", "3 NT", "6 H x" (space-separated, x/xx suffix
@@ -16,25 +23,15 @@ export type UsebioResult = {
   result: string;
 };
 
-const ADJUSTED_REGEX = /^A(\d+)\/(\d+)$/;
-
-/**
- * Returns true if the outcome is an adjusted score in A<ns>/<ew> format.
- */
-export function isAdjustedScore(outcome: string): boolean {
-  return ADJUSTED_REGEX.test(outcome);
-}
-
-/**
- * Parses an adjusted score string (e.g., "A60/40") into NS and EW percentages.
- */
-export function parseAdjustedScore(
-  outcome: string,
-): { ns: number; ew: number } | null {
-  const match = outcome.match(ADJUSTED_REGEX);
-  if (!match) return null;
-  return { ns: Number(match[1]), ew: Number(match[2]) };
-}
+// Re-export the adjusted/weighted predicates so existing callers that import
+// them from here continue to work without changes.
+export {
+  isAdjustedScore,
+  isWeightedScore,
+  parseAdjustedScore,
+  parseWeightedScore,
+  isAssignedOutcome,
+};
 
 /**
  * Converts our internal BoardOutcome format to USEBIO result fields.
@@ -46,6 +43,7 @@ export function parseAdjustedScore(
  *   "PO"       → { contract: "PASS", declarer: "", result: "" }
  *   "NP"       → { contract: "", declarer: "", result: "" }
  *   "A60/40"   → { contract: "", declarer: "", result: "" }  (adjusted score)
+ *   "W80*..."  → { contract: "", declarer: "", result: "" }  (weighted score)
  */
 export function formatOutcomeForUsebio(outcome: BoardOutcome): UsebioResult {
   if (outcome === "PO") {
@@ -56,7 +54,9 @@ export function formatOutcomeForUsebio(outcome: BoardOutcome): UsebioResult {
     return { contract: "", declarer: "", result: "" };
   }
 
-  if (isAdjustedScore(outcome)) {
+  // Any director-assigned ruling (artificial or weighted) has no single
+  // contract to report in the USEBIO contract fields.
+  if (isAssignedOutcome(outcome)) {
     return { contract: "", declarer: "", result: "" };
   }
 
@@ -101,12 +101,12 @@ export function formatLeadForUsebio(lead: string | null): string {
  *   "4SXS+2"  -> "4Sx"
  *   "3HXXE-1" -> "3Hxx"
  *   "PO"      -> "PASS"
- *   "NP" / adjusted / unrecognised -> ""
+ *   "NP" / adjusted / weighted / unrecognised -> ""
  */
 export function formatContractCompact(outcome: BoardOutcome): string {
   if (outcome === "PO") return "PASS";
   if (outcome === "NP") return "";
-  if (isAdjustedScore(outcome)) return "";
+  if (isAssignedOutcome(outcome)) return "";
   if (!isPlayedContractCode(outcome)) return "";
 
   const parsed = parsePlayedContract(outcome);

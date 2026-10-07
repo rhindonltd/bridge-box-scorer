@@ -17,26 +17,41 @@ share a code (see [Sharing director access](#sharing-director-access)).
 
 From the home screen, tap **Create New Game**.
 
-### Step 2: Fill in the details
+The create form is split across two pages so neither screen is crowded.
 
-| Field                   | Description                                                       |
-| ----------------------- | ----------------------------------------------------------------- |
-| **Event Name**          | The name of your event (e.g. "Monday Pairs").                     |
-| **Director Name**       | Your name.                                                        |
-| **Event Type**          | **Pairs** or **Teams**.                                           |
-| **Scoring**             | How the event is scored. For **Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). Defaults to Matchpoints for Pairs and IMP for Teams. |
-| **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
-| **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
+### Step 2: Name the event and director
+
+| Field             | Description                                   |
+| ----------------- | --------------------------------------------- |
+| **Event Name**    | The name of your event (e.g. "Monday Pairs"). |
+| **Director Name** | Your name.                                     |
+
+Both are required: **Next** stays greyed out until you've entered an event name
+and a director, and a reminder to that effect sits above the fields.
 
 The session is always dated today, so there is no date to set.
 
 If your club has set up BridgeWebs (see the settings guide) and there are
-BridgeWebs events listed for the date you chose, a **Use BridgeWebs Event**
-switch appears above **Event Name**. Turn it **on** to pick the event from a
-list of that day's BridgeWebs events instead of typing the name; picking one
-fills in the event name for you. Turn it **off** to type the name yourself. The
-switch is hidden when BridgeWebs isn't set up or there are no events for the
-chosen date, so you just type the name as normal.
+BridgeWebs events listed for today, a **Use BridgeWebs Event** switch appears
+above **Event Name**. Turn it **on** to pick the event from a list of the day's
+BridgeWebs events instead of typing the name; picking one fills in the event
+name for you. Turn it **off** to type the name yourself. The switch is hidden
+when BridgeWebs isn't set up or there are no events for today, so you just type
+the name as normal.
+
+Tap **Next**.
+
+### Step 3: Choose the event options
+
+| Field                   | Description                                                       |
+| ----------------------- | ----------------------------------------------------------------- |
+| **Event Type**          | **Pairs**, **Teams**, **Swiss Pairs**, or **Swiss Teams**. The Swiss options are drawn round by round as the event runs (see the Movements tab); the Pairs and Teams options use a fixed movement you pick from a list. |
+| **Scoring**             | How the event is scored. For **Pairs** and **Swiss Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). **Swiss Teams** is always scored by **IMP (Victory Points)** — the only method that fits the round-by-round draw — so no scoring choice is shown for it. Defaults to Matchpoints for Pairs and IMP for Teams. |
+| **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
+| **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
+
+Need to change the name or director? Tap the back arrow to return to the first
+page — what you entered is kept.
 
 Tap **Create Game**.
 
@@ -44,7 +59,7 @@ Tap **Create Game**.
 > director on the phone or tablet they used — there is no director PIN to
 > choose. Director access stays on that phone or tablet; to let someone else
 > direct, you share a code (see below). The number of tables, sections, and the
-> movement are all chosen on the next screen, not on this form.
+> movement are all chosen on the next screen, not on these pages.
 
 You are taken to the **setup** screen for the new game.
 
@@ -101,7 +116,17 @@ When you're ready, tap **Start Game**.
 ### Movements tab
 
 Here you choose the movement — the schedule of who plays whom, at which table,
-on which boards.
+on which boards. What this tab shows depends on the **Event Type** you picked
+when creating the game:
+
+- **Pairs** and **Teams** show the movement picker — a list of ready-made
+  movements to choose from (described below).
+- **Swiss Pairs** and **Swiss Teams** show only the Swiss setup instead, since
+  a Swiss event has no fixed schedule to pick — it is drawn round by round as
+  the event runs (see [Swiss Pairs](#swiss-pairs) and
+  [Swiss Teams](#swiss-teams) below).
+
+For a **Pairs** or **Teams** game you can also split the event into sections:
 
 - **Single section (the common case):** you go straight to the movement
   picker. An amber **"Add Section"** banner lets you split the game into
@@ -109,6 +134,9 @@ on which boards.
 - **Multiple sections:** you get a section manager where you can add, rename,
   and delete sections, and choose a movement **for each section**
   independently.
+
+A Swiss event always runs as a single section, so it has no "Add Section"
+option.
 
 When you have more than one section, the section manager also has a **Combined /
 Separate** switch for the rankings:
@@ -134,16 +162,13 @@ another.
 
 #### Swiss Pairs
 
-For a **single-section** game the picker also offers **Swiss Pairs** at the top.
-Swiss Pairs has no fixed schedule to preview: everyone plays the same boards
-each round, then you draw the next round from the current standings so
-close-ranked pairs meet and no pair plays the same opponents twice where it can
-be avoided. Tap **Swiss Pairs**, set the **rounds** and **boards per round**
-(the table count comes from your section), and tap **Select Movement**. You draw
-each later round during play from the game menu (see
+When you pick **Swiss Pairs** as the event type, the Movements tab shows the
+Swiss setup directly — the number of rounds, boards per round, and how to handle
+an odd number of pairs. Set these and tap **Select Movement** to confirm. You
+draw each later round during play from the game menu (see
 [Drawing the next Swiss round](#drawing-the-next-swiss-round)).
 
-The dialog also asks how to handle an **odd number of pairs** each round:
+The setup also asks how to handle an **odd number of pairs** each round:
 
 - **Bye** (the default) — one pair sits out each round and is credited an
   above-average result. Simple, and fine for most club events.
@@ -156,16 +181,15 @@ The dialog also asks how to handle an **odd number of pairs** each round:
   vary it across the event. These settings only take effect if your field turns
   out to be odd; an even field ignores them.
 
-Swiss Pairs is offered only when the game has a single section.
+Swiss Pairs always runs as a single section.
 
 #### Swiss Teams
 
-When you create the game as a **Teams** event, the same spot in the picker
-offers **Swiss Teams** instead of Swiss Pairs. A team is simply the two pairs
-you seat at one table — the North/South pair and the East/West pair — so there
-is no separate team sign-up. Tap **Swiss Teams**, set the **rounds** and
-**boards per round** (the number of teams comes from your table count), and tap
-**Select Movement**.
+When you pick **Swiss Teams** as the event type, the Movements tab shows the
+Swiss Teams setup directly. A team is simply the two pairs you seat at one
+table — the North/South pair and the East/West pair — so there is no separate
+team sign-up. Set the **rounds** and **boards per round** (the number of teams
+comes from your table count), and tap **Select Movement**.
 
 Each round, two teams play the same boards against each other in two rooms:
 every team's North/South pair stays at their home table, and their other pair
@@ -344,6 +368,15 @@ When you pick a movement, the timer starts from a sensible default: **7 minutes
 30 seconds of play per board** with a **1 minute 30 second** changeover. Adjust
 any of these to suit your event.
 
+> **Swiss events time differently.** In a **Swiss Pairs** or **Swiss Teams**
+> event there is no fixed changeover between rounds — the next round only begins
+> once you draw it from the standings. So the Timer tab for a Swiss event shows
+> no **Move Duration** and no **Breaks**: you set only the play duration (and
+> warning). When a round's play time runs out the timer simply shows that it is
+> waiting for the next round; drawing the next round (see
+> [Drawing the next Swiss round](#drawing-the-next-swiss-round)) starts that
+> round's play clock automatically.
+
 The panel previews the **session length** and an estimated **finish time**.
 
 Tap **Save** to keep the settings for this section. In a multi-section game,
@@ -401,9 +434,20 @@ If a board was entered incorrectly, you can override it:
    of its pairings, so it shows as an ordinary two-team card too; a Pairs game
    shows the usual flat NS/EW list.)
 4. Enter the correct result step by step, the same way players enter one
-   (contract, or **Pass Out** / **Not Played**). You also get an extra
-   **Adjusted Score** option for assigning a result such as a percentage split
-   (for example 60/40).
+   (contract, or **Pass Out** / **Not Played**). You also get two extra
+   director-only options:
+   - **Adjusted Score** — a direct percentage award to each side (for example
+     60/40 or 50/50). Use this when you want to assign a flat average, average
+     plus, or average minus without reference to any particular contract.
+   - **Weighted Score** — a probability-weighted combination of real contract
+     results (for example 80% of 3NT making, 20% of 3NT+1). Use this when the
+     ruling calls for a weighted split between possible outcomes. You add one or
+     more contract results, each with a percentage weight that together must
+     total 100%, and the app scores each component against the rest of the
+     field, then takes the weighted average.
+
+   Both types of assigned score count towards the live leaderboard and the
+   exported results.
 5. The correction is saved, and anyone viewing that board sees the updated
    result.
 

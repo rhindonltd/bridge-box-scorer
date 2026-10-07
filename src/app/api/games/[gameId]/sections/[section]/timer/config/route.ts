@@ -9,6 +9,9 @@ import { buildConfiguredTimerState } from "@/timer/timer-state";
 import { clearEngine } from "@/timer/game-store";
 import { broadcastTimerConfigSaved } from "@/socket/broadcast/timer-broadcast";
 import { breakConfigSchema, toBreakConfigs } from "@/socket/handlers/timer/payload";
+import { getDb } from "@/db/games";
+import { getSectionMovement } from "@/db/games/queries/get-section-movement";
+import { isSwissMovement } from "@/model/event-format";
 
 const bodySchema = z.object({
   boardsPerRound: z.number().int().positive(),
@@ -53,6 +56,12 @@ export const PUT = withDirectorRoute(async ({ gameId, section, req }) => {
   } = parsed.data;
 
   try {
+    // A Swiss section waits for the director to draw each round rather than
+    // auto-advancing through a move gap, so stamp that onto the saved config.
+    const db = await getDb(gameId);
+    const movement = db ? await getSectionMovement(db, section) : null;
+    const requiresDrawBetweenRounds = isSwissMovement(movement);
+
     const timerState = buildConfiguredTimerState({
       boardsPerRound,
       totalRounds,
@@ -61,6 +70,7 @@ export const PUT = withDirectorRoute(async ({ gameId, section, req }) => {
       timingMode,
       breaks: toBreakConfigs(breaks),
       warningSeconds,
+      requiresDrawBetweenRounds,
     });
 
     await updateTimerState(gameId, section, timerState);

@@ -71,6 +71,11 @@ export class BridgeTimerEngine {
       return this.state.breakDurationMs ?? 0;
     }
 
+    // `awaitingDraw` is open-ended (no countdown) — it has no duration.
+    if (this.state.phase === "awaitingDraw") {
+      return 0;
+    }
+
     return (
       (this.state.phase === "move"
         ? this.state.moveDuration
@@ -158,6 +163,35 @@ export class BridgeTimerEngine {
     this.clearRuntimeFields();
   }
 
+  /**
+   * Enter the open-ended `awaitingDraw` phase at the end of a Swiss round. The
+   * timer stops (not running, no remaining time) and waits for the director to
+   * draw the next round; {@link resumeAfterDraw} resumes into that round's play.
+   * The round number is NOT advanced here — it advances when the draw resumes
+   * play, mirroring how an ordinary move gap belongs to the round it precedes.
+   */
+  private enterAwaitingDraw() {
+    this.state.phase = "awaitingDraw";
+    this.clearRuntimeFields();
+  }
+
+  /**
+   * Resume into the next round's play after the director has committed the next
+   * Swiss round's draw. Only valid from `awaitingDraw`; a no-op otherwise so a
+   * stray/duplicate draw commit cannot disturb a running phase. Advances the
+   * round and starts the clock (the draw is the deliberate action, so play
+   * begins immediately — the director can still pause).
+   */
+  resumeAfterDraw() {
+    if (this.state.phase !== "awaitingDraw") {
+      return;
+    }
+
+    this.state.round += 1;
+    this.enterPlay();
+    this.start();
+  }
+
   /** Transition into the terminal finished phase. */
   private finish() {
     this.state.phase = "finished";
@@ -182,6 +216,15 @@ export class BridgeTimerEngine {
     // phase === "play"
     if (this.state.round >= this.state.totalRounds) {
       this.finish();
+      return;
+    }
+
+    // Swiss events have no fixed next round to move into: the director must
+    // draw it from standings first. Enter the open-ended `awaitingDraw` phase
+    // and stop — committing the draw (resumeAfterDraw) starts the next round's
+    // play. No move/break gap applies.
+    if (this.state.requiresDrawBetweenRounds) {
+      this.enterAwaitingDraw();
       return;
     }
 
@@ -271,6 +314,15 @@ export class BridgeTimerEngine {
       return;
     }
 
+    if (this.state.phase === "awaitingDraw") {
+      // `awaitingDraw` sits after the just-played round's play (the round has
+      // not advanced yet). Step back into that round's play, restarted.
+      this.state.phase = "play";
+      this.state.breakDurationMs = null;
+      this.restartPhase();
+      return;
+    }
+
     if (this.state.phase === "move" || this.state.phase === "break") {
       // The gap follows the previous round's play. Step back to that play,
       // decrementing round to that previous round.
@@ -312,7 +364,11 @@ export class BridgeTimerEngine {
    * governs future phases, changes).
    */
   adjustTime(deltaMs: number, applyToFutureSameType = false) {
-    if (this.state.phase === "finished" || this.state.phase == null) {
+    if (
+      this.state.phase === "finished" ||
+      this.state.phase === "awaitingDraw" ||
+      this.state.phase == null
+    ) {
       return;
     }
 

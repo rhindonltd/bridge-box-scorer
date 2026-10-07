@@ -28,7 +28,17 @@ const DEFAULT_SECTION_TABLES = 5;
  * The current selection is preserved across an add so the director stays where
  * they were; the new section simply appears as a pill.
  */
-export function useSetupSections(gameId: string): {
+export function useSetupSections(
+  gameId: string,
+  options?: {
+    /**
+     * Whether the director may add sections. Defaults to true. A Swiss event is
+     * a single pool drawn round by round, so it is single-section only — the
+     * Swiss setup pages pass false to hide the "+ Add section" affordance.
+     */
+    allowAddSection?: boolean;
+  },
+): {
   sections: ClientSection[];
   selected: string | null;
   setSelected: (section: string) => void;
@@ -37,6 +47,7 @@ export function useSetupSections(gameId: string): {
   /** The add-section modal, ready to render (renders nothing when closed). */
   modal: ReactNode;
 } {
+  const allowAddSection = options?.allowAddSection ?? true;
   const { sections, selected, setSelected } = useSectionSelection(gameId);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -72,7 +83,8 @@ export function useSetupSections(gameId: string): {
       sections={sections}
       selected={selected ?? ""}
       onSelect={setSelected}
-      onAddSection={() => setModalOpen(true)}
+      // Swiss events are single-section, so the add affordance is withheld.
+      onAddSection={allowAddSection ? () => setModalOpen(true) : undefined}
     />
   );
 

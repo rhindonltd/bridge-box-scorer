@@ -154,7 +154,11 @@ export function TimerLiveView({
       <div className="flex justify-between">
         <span className="text-gray-500">Status</span>
         <span className="capitalize font-medium">
-          {timer.isRunning ? timer.phase : "paused"}
+          {timer.phase === "awaitingDraw"
+            ? "Awaiting next round draw"
+            : timer.isRunning
+              ? timer.phase
+              : "paused"}
         </span>
       </div>
       <div className="flex justify-between mt-3">

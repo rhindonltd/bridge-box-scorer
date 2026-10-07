@@ -4,7 +4,7 @@ type TimerDisplayProps = {
   title: string;
   boardLabel: string | null;
   remaining: number;
-  phase: "play" | "move" | "break" | "finished" | null;
+  phase: "play" | "move" | "break" | "awaitingDraw" | "finished" | null;
   isRunning: boolean;
   projectedEndDate: Date;
   /** Seconds before end of play at which the "last minute" warning shows. */
@@ -33,6 +33,7 @@ export function DisplayTimerPage({
   const isMoving = phase === "move";
   const isBreak = phase === "break";
   const isFinished = phase === "finished";
+  const isAwaitingDraw = phase === "awaitingDraw";
 
   const textClass = isMoving ? "text-cyan-400" : "text-white";
 
@@ -73,20 +74,29 @@ export function DisplayTimerPage({
         )}
       </div>
 
-      {/* Timer */}
-      <div className={`text-[30vw] font-bold tabular-nums ${timerClass}`}>
-        {phase === "finished" ? "00:00" : formatTime(remaining)}
-      </div>
+      {/* Timer — a Swiss between-rounds wait shows a message rather than a
+          countdown, since there is no fixed time until the next round. */}
+      {isAwaitingDraw ? (
+        <div className="px-8 text-center text-5xl font-semibold opacity-80">
+          The director is drawing the next round
+        </div>
+      ) : (
+        <div className={`text-[30vw] font-bold tabular-nums ${timerClass}`}>
+          {phase === "finished" ? "00:00" : formatTime(remaining)}
+        </div>
+      )}
 
-      {/* Paused */}
-      {!isRunning && phase !== "finished" && (
+      {/* Paused — not shown while awaiting a draw (it is a deliberate wait, not
+          a paused clock). */}
+      {!isRunning && phase !== "finished" && !isAwaitingDraw && (
         <div className="absolute bottom-16 text-3xl text-yellow-400 mb-8">
           PAUSED
         </div>
       )}
 
-      {/* Projected end */}
-      {!isFinished && (
+      {/* Projected end — meaningless mid-Swiss (the next round starts on the
+          director's draw), so omit it while awaiting a draw. */}
+      {!isFinished && !isAwaitingDraw && (
         <div className="absolute bottom-8 text-2xl opacity-70">
           Projected end: {projectedEndTime}
         </div>

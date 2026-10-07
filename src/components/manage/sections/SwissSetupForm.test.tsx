@@ -1,18 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import { SwissSetupDialog } from "./SwissSetupDialog";
+import { SwissSetupForm } from "./SwissSetupForm";
 
-/** Render the dialog open with sensible defaults, returning the confirm spy. */
-function renderDialog(
-  props: Partial<React.ComponentProps<typeof SwissSetupDialog>> = {},
+/** Render the form with sensible defaults, returning the confirm spy. */
+function renderForm(
+  props: Partial<React.ComponentProps<typeof SwissSetupForm>> = {},
 ) {
   const onConfirm = vi.fn();
   render(
-    <SwissSetupDialog
-      open
+    <SwissSetupForm
       tables={5}
       saving={false}
-      onCancel={vi.fn()}
       onConfirm={onConfirm}
       {...props}
     />,
@@ -23,9 +21,9 @@ function renderDialog(
 const confirmButton = () =>
   screen.getByRole("button", { name: "Select Movement" });
 
-describe("SwissSetupDialog", () => {
+describe("SwissSetupForm", () => {
   it("defaults to a bye and omits the per-round plan on confirm", () => {
-    const { onConfirm } = renderDialog();
+    const { onConfirm } = renderForm();
 
     // The per-round plan is hidden under the default (bye) handling.
     expect(screen.queryByTestId("odd-round-plan")).not.toBeInTheDocument();
@@ -40,7 +38,7 @@ describe("SwissSetupDialog", () => {
   });
 
   it("reveals the per-round plan and emits HALF_MATCHES with a full plan", () => {
-    const { onConfirm } = renderDialog();
+    const { onConfirm } = renderForm();
 
     fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
 
@@ -61,7 +59,7 @@ describe("SwissSetupDialog", () => {
   });
 
   it("lets the director set an individual round to a bye", () => {
-    const { onConfirm } = renderDialog();
+    const { onConfirm } = renderForm();
 
     fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
     // Round 1's "Bye" radio — scoped to the per-round plan (the top-level
@@ -81,7 +79,7 @@ describe("SwissSetupDialog", () => {
   });
 
   it("resizes the per-round plan when the round count changes", () => {
-    const { onConfirm } = renderDialog();
+    const { onConfirm } = renderForm();
 
     fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
     // Drop to 3 rounds via the Rounds input (the number field, not the label).
@@ -96,8 +94,8 @@ describe("SwissSetupDialog", () => {
     expect(spec.oddRoundPlan).toEqual(Array(3).fill("HALF_MATCHES"));
   });
 
-  it("re-opens with an existing HALF_MATCHES plan selected", () => {
-    renderDialog({
+  it("seeds from an existing HALF_MATCHES plan", () => {
+    renderForm({
       initial: {
         tables: 5,
         rounds: 3,

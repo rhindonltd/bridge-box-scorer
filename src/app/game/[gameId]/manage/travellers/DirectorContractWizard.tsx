@@ -10,7 +10,7 @@ import {
   buildContractCode,
 } from "@/model/contract";
 import { Card, Direction, Rank, Suit } from "@/model/common";
-import { SpecialBoardOutcome } from "@/model/result";
+import { PlayedContractCode, SpecialBoardOutcome } from "@/model/result";
 
 import { StepLevel } from "@/components/contract-wizard/StepLevel";
 import { StepSuit } from "@/components/contract-wizard/StepSuit";
@@ -19,6 +19,7 @@ import { StepOpeningLead } from "@/components/contract-wizard/StepOpeningLead";
 import { StepResult } from "@/components/contract-wizard/StepResult";
 import { StepConfirm } from "@/components/contract-wizard/StepConfirm";
 import { StepAdjustedScore } from "@/components/contract-wizard/StepAdjustedScore";
+import { StepWeightedScore } from "@/components/contract-wizard/StepWeightedScore";
 import { WizardShell } from "@/components/contract-wizard/WizardShell";
 
 export type DirectorWizardResult =
@@ -32,6 +33,10 @@ export type DirectorWizardResult =
       type: "adjusted";
       nsPercent: number;
       ewPercent: number;
+    }
+  | {
+      type: "weighted";
+      components: { contract: PlayedContractCode; weight: number }[];
     };
 
 interface DirectorContractWizardProps {
@@ -48,8 +53,9 @@ interface DirectorContractWizardProps {
  * Skips the board selection step (board is pre-selected from the traveller).
  * Does not require AssignmentContext. Shares the {@link WizardShell} chrome and
  * the {@link buildContractCode} assembly with the player wizard; the state
- * machine differs (starts at Level, has an adjusted-score step) so it is kept
- * inline here rather than forced onto the player's `useBoardFlow`.
+ * machine differs (starts at Level, has adjusted-score and weighted-score
+ * steps) so it is kept inline here rather than forced onto the player's
+ * `useBoardFlow`.
  */
 export function DirectorContractWizard({
   boardNumber,
@@ -59,7 +65,8 @@ export function DirectorContractWizard({
   onComplete,
   onBack,
 }: DirectorContractWizardProps) {
-  // Steps: 1=Level, 2=Suit, 3=Declarer, 4=OpeningLead, 5=Result, 6=Confirm, 7=AdjustedScore
+  // Steps: 1=Level, 2=Suit, 3=Declarer, 4=OpeningLead, 5=Result, 6=Confirm,
+  //        7=AdjustedScore, 8=WeightedScore
   const [step, setStep] = useState(1);
 
   // Contract state
@@ -150,6 +157,12 @@ export function DirectorContractWizard({
     onComplete({ type: "adjusted", nsPercent, ewPercent });
   };
 
+  const onWeightedScoreSubmit = (
+    components: { contract: PlayedContractCode; weight: number }[],
+  ) => {
+    onComplete({ type: "weighted", components });
+  };
+
   // --- Back arrow logic ---
 
   const handleBack = () => {
@@ -175,6 +188,9 @@ export function DirectorContractWizard({
       case 7:
         setStep(1);
         break;
+      case 8:
+        setStep(1);
+        break;
     }
   };
 
@@ -190,6 +206,8 @@ export function DirectorContractWizard({
         return "Confirm";
       case 7:
         return "Adjusted Score";
+      case 8:
+        return "Weighted Score";
       default:
         return "Enter Contract";
     }
@@ -205,6 +223,7 @@ export function DirectorContractWizard({
             onLevelSelected={onLevelSelected}
             onSpecialOutcome={onSpecialOutcome}
             onAdjustedScore={() => setStep(7)}
+            onWeightedScore={() => setStep(8)}
           />
         );
       case 2:
@@ -248,7 +267,9 @@ export function DirectorContractWizard({
         );
       case 7:
         return <StepAdjustedScore onSubmit={onAdjustedScoreSubmit} />;
-      /* v8 ignore next 2 -- unreachable: `step` is only ever set to 1..7 */
+      case 8:
+        return <StepWeightedScore onSubmit={onWeightedScoreSubmit} />;
+      /* v8 ignore next 2 -- unreachable: `step` is only ever set to 1..8 */
       default:
         return null;
     }

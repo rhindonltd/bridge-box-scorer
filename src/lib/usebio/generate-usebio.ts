@@ -3,8 +3,7 @@ import {
   formatOutcomeForUsebio,
   formatContractCompact,
   formatLeadForUsebio,
-  isAdjustedScore,
-  parseAdjustedScore,
+  isAssignedOutcome,
 } from "./format-contract";
 import { totalTricksFor } from "./traveller-line";
 import { outcomeToScore } from "@/scoring/traveller/common";
@@ -287,38 +286,27 @@ const SCORING_TYPE_MAP: Record<ScoringType, string> = {
 };
 
 /* ============================================================
-   ADJUSTED SCORE IMP VALUES
-
-   For IMP/XIMP scoring, adjusted scores are assigned fixed IMP values:
-     AVE+ (>50%) → +3 IMPs for that side
-     AVE  (50%)  →  0 IMPs
-     AVE- (<50%) → -3 IMPs for that side
-============================================================ */
-
-function adjustedImps(percent: number): number {
-  if (percent > 50) return 3;
-  if (percent < 50) return -3;
-  return 0;
-}
-
-/* ============================================================
    SCORING-TYPE DESCRIPTORS
 
    The one place USEBIO branches on scoring type. Each descriptor knows how to
-   turn a board's scorable lines into normalised { ns, ew } numbers, how to
-   value an adjusted score, and whether its scores contribute to a MAX (only MP
-   ranks as a percentage of a per-board maximum; IMP/XIMP accumulate raw IMPs).
-   Adding a scoring type is one entry here rather than edits scattered across
-   the board loop, computeBoardScores, and the ranking accumulator.
+   turn a board's lines into normalised { ns, ew } numbers, and whether its
+   scores contribute to a MAX (only MP ranks as a percentage of a per-board
+   maximum; IMP/XIMP accumulate raw IMPs).
+
+   Director-assigned lines (artificial adjusted `A<ns>/<ew>` and weighted
+   assigned `W…`) are NOT handled here any more: the shared per-board scorers
+   (`scorePairMP` / `scorePairIMP` / `scorePairXIMP`) now value them inline
+   alongside the real played lines, so the live leaderboard and this export use
+   exactly the same matchpointing (convention (b): an assigned line occupies a
+   seat in the field). The descriptor therefore just forwards every line to the
+   scorer.
 ============================================================ */
 
 type ScoreResult = { ns: number; ew: number };
 
 interface UsebioScoreDescriptor {
-  /** Score a board's scorable (non-adjusted) lines to { ns, ew } per line. */
+  /** Score all of a board's lines to { ns, ew } per line. */
   scoreLines: (board: number, lines: PairScoringLine[]) => LineScore[];
-  /** Value an adjusted score for a board with `lineCount` results on it. */
-  adjusted: (adj: { ns: number; ew: number }, lineCount: number) => ScoreResult;
   /** Whether a line's ns+ew contributes to the ranking MAX (MP only). */
   contributesToMax: boolean;
 }
@@ -335,14 +323,6 @@ const SCORE_DESCRIPTORS: Record<string, UsebioScoreDescriptor> = {
         ns: l.nsMatchPoints,
         ew: l.ewMatchPoints,
       })),
-    adjusted: (adj, lineCount) => {
-      // MP: assign matchpoints as a percentage of the per-board maximum.
-      const maxMp = 2 * (lineCount - 1);
-      return {
-        ns: Math.round((adj.ns / 100) * maxMp),
-        ew: Math.round((adj.ew / 100) * maxMp),
-      };
-    },
     contributesToMax: true,
   },
   IMP: {
@@ -353,7 +333,6 @@ const SCORE_DESCRIPTORS: Record<string, UsebioScoreDescriptor> = {
         ns: l.nsImps,
         ew: l.ewImps,
       })),
-    adjusted: (adj) => ({ ns: adjustedImps(adj.ns), ew: adjustedImps(adj.ew) }),
     contributesToMax: false,
   },
   XIMP: {
@@ -364,7 +343,6 @@ const SCORE_DESCRIPTORS: Record<string, UsebioScoreDescriptor> = {
         ns: l.nsCrossImps,
         ew: l.ewCrossImps,
       })),
-    adjusted: (adj) => ({ ns: adjustedImps(adj.ns), ew: adjustedImps(adj.ew) }),
     contributesToMax: false,
   },
 };
@@ -551,23 +529,20 @@ function appendSectionContent(
       lineEl.ele("NS_PAIR_NUMBER").txt(result.nsPairNumber);
       lineEl.ele("EW_PAIR_NUMBER").txt(result.ewPairNumber);
 
-      if (isAdjustedScore(result.outcome)) {
-        const adj = parseAdjustedScore(result.outcome);
+      if (isAssignedOutcome(result.outcome)) {
+        // A director-assigned line (artificial adjusted or weighted assigned)
+        // has no single played contract to report; its matchpoint / IMP values
+        // come from the shared scorer via the scored-lines map.
         lineEl.ele("CONTRACT").txt("");
         lineEl.ele("PLAYED_BY").txt("");
         lineEl.ele("LEAD").txt("");
         lineEl.ele("TRICKS").txt("");
         lineEl.ele("SCORE").txt("0");
 
-        // `adj` is always non-null here because isAdjustedScore() and
-        // parseAdjustedScore() share the same regex; `?? { ns: 0, ew: 0 }` is
-        // unreachable defensive code.
-        /* v8 ignore next */
-        const line = scoreDescriptorFor(scoringType).adjusted(
-          adj ?? { ns: 0, ew: 0 },
-          results.length,
-        );
-        appendLineScore(lineEl, scoringType, line);
+        const lineScore = scoredLines.get(key);
+        if (lineScore) {
+          appendLineScore(lineEl, scoringType, lineScore);
+        }
       } else {
         const contract = formatContractCompact(result.outcome);
         const declarer = formatOutcomeForUsebio(result.outcome).declarer;
@@ -894,23 +869,23 @@ function accumulate(
 }
 
 /**
- * Computes per-line scores for a board, excluding adjusted scores from the
- * computation. Returns MP for MP scoring, or IMPs for IMP/XIMP scoring,
- * normalised to { ns, ew } via the scoring-type descriptor.
+ * Computes per-line scores for a board — ALL lines (real, artificial adjusted,
+ * weighted assigned) — via the shared per-board scorer. Returns MP for MP
+ * scoring, or IMPs for IMP/XIMP scoring, normalised to { ns, ew }.
  */
 function computeBoardScores(
   board: number,
   results: UsebioBoardResult[],
   scoringType: ScoringType,
 ): Map<string, ScoreResult> {
-  // Filter out adjusted scores — they don't participate in normal scoring.
-  const lines: PairScoringLine[] = results
-    .filter((r) => !isAdjustedScore(r.outcome))
-    .map((r) => ({
-      outcome: r.outcome,
-      nsId: r.nsPairNumber,
-      ewId: r.ewPairNumber,
-    }));
+  // Every line (real played, artificial adjusted, or weighted assigned) is
+  // scored by the shared per-board scorer — assigned lines are valued inline,
+  // so there is no longer a separate adjusted-score pass.
+  const lines: PairScoringLine[] = results.map((r) => ({
+    outcome: r.outcome,
+    nsId: r.nsPairNumber,
+    ewId: r.ewPairNumber,
+  }));
 
   const map = new Map<string, ScoreResult>();
   for (const line of scoreDescriptorFor(scoringType).scoreLines(board, lines)) {
@@ -949,8 +924,8 @@ function computeOverallRanking(
   for (const [boardNum, results] of boardGroups) {
     const scoredLines = computeBoardScores(boardNum, results, scoringType);
 
-    // Normally scored lines. For MP the per-board maximum a pair can earn is
-    // ns+ew (they split the same pot); IMP/XIMP have no such maximum.
+    // All lines — real played and director-assigned — are already in the
+    // scored-lines map. Accumulate every one into the pair totals.
     for (const [key, lineScore] of scoredLines) {
       const [, nsId, ewId] = key.split("-");
       const maxForBoard = descriptor.contributesToMax
@@ -958,22 +933,6 @@ function computeOverallRanking(
         : 0;
       accumulate(totals, nsId, "NS", lineScore.ns, maxForBoard);
       accumulate(totals, ewId, "EW", lineScore.ew, maxForBoard);
-    }
-
-    // Adjusted scores, valued via the same descriptor as the board loop.
-    for (const result of results) {
-      if (!isAdjustedScore(result.outcome)) continue;
-      const adj = parseAdjustedScore(result.outcome);
-      /* v8 ignore next -- unreachable: isAdjustedScore() passing guarantees
-         parseAdjustedScore() returns non-null (shared regex). */
-      if (!adj) continue;
-
-      const line = descriptor.adjusted(adj, results.length);
-      const maxForBoard = descriptor.contributesToMax
-        ? 2 * (results.length - 1)
-        : 0;
-      accumulate(totals, result.nsPairNumber, "NS", line.ns, maxForBoard);
-      accumulate(totals, result.ewPairNumber, "EW", line.ew, maxForBoard);
     }
   }
 

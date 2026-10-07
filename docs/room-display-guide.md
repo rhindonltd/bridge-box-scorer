@@ -34,6 +34,10 @@ A full-screen countdown designed to be read from across the room:
 - During the **changeover** between rounds ("move" phase) the clock is shown
   in a different colour.
 - During a **break** it shows a tea-cup icon and **"Next round starts at …"**.
+- In a **Swiss** event, when a round's play time ends the display shows
+  **"The director is drawing the next round"** instead of a countdown — there
+  is no fixed time until the next round, which begins once the director draws
+  it. The play clock reappears automatically for the new round.
 - **PAUSED** appears if the director has paused the timer.
 - The **projected end time** of the session is shown at the bottom.
 

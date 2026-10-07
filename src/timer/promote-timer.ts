@@ -37,7 +37,11 @@ async function promoteSection(
       saved.totalRounds,
       saved.playDuration,
       saved.moveDuration,
-      { breaks: saved.breaks, warningSeconds: saved.warningSeconds },
+      {
+        breaks: saved.breaks,
+        warningSeconds: saved.warningSeconds,
+        requiresDrawBetweenRounds: saved.requiresDrawBetweenRounds,
+      },
     );
 
     // Begin running immediately: the game has started, so the clock starts too.

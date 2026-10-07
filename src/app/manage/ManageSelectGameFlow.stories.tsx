@@ -8,6 +8,7 @@ const games: BridgeGame[] = [
     eventName: "Monday AM Pairs",
     director: "Jane Director",
     gameType: "PAIRS",
+    eventFormat: "STANDARD",
     scoringType: "MP",
     sectionName: "",
     gameId: "game-1",

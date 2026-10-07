@@ -1,90 +1,12 @@
 "use client";
 
-import { Fragment, useState } from "react";
-import { Dialog, Transition } from "@headlessui/react";
+import { useState } from "react";
 import { StepperInput } from "@/components/common/StepperInput";
 import type {
   SwissTeamsMovementSpec,
   SwissTeamsOddHandling,
   SwissTeamsOddRound,
 } from "@/model/selected-movement";
-
-/**
- * Setup popup for a Swiss Teams movement. A team is the two pairs seated at one
- * table, so the team count equals the section's table count (shown read-only;
- * the director changes it on the Tables step). Like Swiss Pairs there is no
- * schedule to preview — round 1 is a random draw and each later round is drawn
- * from the standings as the event runs. Confirming hands back a
- * {@link SwissTeamsMovementSpec}.
- *
- * A match pits two teams across two tables, so an even count pairs cleanly.
- * With an odd count the director chooses how to handle the odd team: "Bye" (the
- * default) sits one team out each round, or "Triple" — three teams play a
- * three-way. A triple is set per round as a SHORT triple (the whole three-way
- * in one round) or a LONG triple (spread over two consecutive rounds); a long
- * triple therefore occupies two adjacent rounds. The chosen mode is carried on
- * the spec as `oddHandling` plus the per-round `oddRoundPlan`; an even count
- * omits both.
- */
-export function SwissTeamsSetupDialog({
-  open,
-  teams,
-  initial,
-  saving,
-  onCancel,
-  onConfirm,
-}: {
-  open: boolean;
-  /** The section's table count = the number of teams; sized to the room. */
-  teams: number;
-  /** Existing spec when re-opening to edit, else sensible defaults. */
-  initial?: SwissTeamsMovementSpec | null;
-  saving: boolean;
-  onCancel: () => void;
-  onConfirm: (spec: SwissTeamsMovementSpec) => void;
-}) {
-  return (
-    <Transition show={open} as={Fragment}>
-      <Dialog onClose={onCancel} className="relative z-50">
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-150"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-100"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        </Transition.Child>
-
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-150"
-            enterFrom="opacity-0 scale-95"
-            enterTo="opacity-100 scale-100"
-            leave="ease-in duration-100"
-            leaveFrom="opacity-100 scale-100"
-            leaveTo="opacity-0 scale-95"
-          >
-            <Dialog.Panel className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
-              {open && (
-                <SwissTeamsSetupForm
-                  teams={teams}
-                  initial={initial}
-                  saving={saving}
-                  onCancel={onCancel}
-                  onConfirm={onConfirm}
-                />
-              )}
-            </Dialog.Panel>
-          </Transition.Child>
-        </div>
-      </Dialog>
-    </Transition>
-  );
-}
 
 /** A per-round plan entry as the UI tracks it (group ids are derived on confirm). */
 type RoundKind = "BYE" | "SHORT" | "LONG";
@@ -152,17 +74,34 @@ function kindsFromPlan(
   });
 }
 
-function SwissTeamsSetupForm({
+/**
+ * Swiss Teams setup, shown inline on the Movements tab when the event is a
+ * Swiss Teams game. A team is the two pairs seated at one table, so the team
+ * count equals the section's table count (shown read-only; the director changes
+ * it on the Tables step). Like Swiss Pairs there is no schedule to preview —
+ * round 1 is a random draw and each later round is drawn from the standings as
+ * the event runs. Confirming hands back a {@link SwissTeamsMovementSpec}.
+ *
+ * A match pits two teams across two tables, so an even count pairs cleanly.
+ * With an odd count the director chooses how to handle the odd team: "Bye" (the
+ * default) sits one team out each round, or "Triple" — three teams play a
+ * three-way. A triple is set per round as a SHORT triple (the whole three-way
+ * in one round) or a LONG triple (spread over two consecutive rounds); a long
+ * triple therefore occupies two adjacent rounds. The chosen mode is carried on
+ * the spec as `oddHandling` plus the per-round `oddRoundPlan`; an even count
+ * omits both.
+ */
+export function SwissTeamsSetupForm({
   teams,
   initial,
   saving,
-  onCancel,
   onConfirm,
 }: {
+  /** The section's table count = the number of teams; sized to the room. */
   teams: number;
+  /** Existing spec when the section already has a movement, else defaults. */
   initial?: SwissTeamsMovementSpec | null;
   saving: boolean;
-  onCancel: () => void;
   onConfirm: (spec: SwissTeamsMovementSpec) => void;
 }) {
   const [rounds, setRounds] = useState(initial?.rounds ?? 7);
@@ -208,8 +147,7 @@ function SwissTeamsSetupForm({
   const resolved = resolveTeamsOddRoundPlan(
     Array.from({ length: rounds }, (_, i) => plan[i] ?? "SHORT"),
   );
-  const planInvalid =
-    oddTeams && oddHandling === "TRIPLE" && !resolved.valid;
+  const planInvalid = oddTeams && oddHandling === "TRIPLE" && !resolved.valid;
 
   const blocked = tooFewForTriple || planInvalid;
 
@@ -227,10 +165,6 @@ function SwissTeamsSetupForm({
 
   return (
     <>
-      <Dialog.Title className="shrink-0 rounded-t-2xl bg-gray-300 p-4 text-md font-bold text-gray-800">
-        Swiss Teams
-      </Dialog.Title>
-
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
         <div className="space-y-3">
           <label className="flex items-center justify-between gap-4">
@@ -330,9 +264,9 @@ function SwissTeamsSetupForm({
               >
                 <p className="mb-2 text-xs text-gray-500">
                   Choose how each round resolves the odd team. A long triple
-                  takes two rounds, so pick <span className="font-medium">Long</span>{" "}
-                  on two neighbouring rounds. This only applies if your field is
-                  odd.
+                  takes two rounds, so pick{" "}
+                  <span className="font-medium">Long</span> on two neighbouring
+                  rounds. This only applies if your field is odd.
                 </p>
                 <table className="w-full table-fixed text-sm">
                   <thead>
@@ -412,14 +346,6 @@ function SwissTeamsSetupForm({
       </div>
 
       <div className="flex shrink-0 justify-end gap-2 border-t border-gray-200 p-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={saving}
-          className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-        >
-          Cancel
-        </button>
         <button
           type="button"
           onClick={confirm}

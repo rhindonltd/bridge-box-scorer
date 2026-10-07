@@ -14,6 +14,12 @@ interface Props {
    * (the live "Apply Changes" screen) they are editable here.
    */
   lockedStructure?: boolean;
+  /**
+   * When true, this is a Swiss event with no fixed move/changeover between
+   * rounds (the director draws each round when ready), so the Move Duration
+   * field is hidden.
+   */
+  swiss?: boolean;
 }
 
 /**
@@ -30,6 +36,7 @@ export function TimerConfigFields({
   config,
   onConfigChange,
   lockedStructure = false,
+  swiss = false,
 }: Props) {
   return (
     <div className="flex w-full max-w-md flex-col gap-5 rounded-xl border border-gray-200 bg-white p-4">
@@ -98,15 +105,20 @@ export function TimerConfigFields({
         onSecondsChange={(v) => onConfigChange("playSeconds", v)}
       />
 
-      <DurationField
-        label="Move Duration"
-        minutes={config.moveMinutes}
-        seconds={config.moveSeconds}
-        minutesLabel="Move minutes"
-        secondsLabel="Move seconds"
-        onMinutesChange={(v) => onConfigChange("moveMinutes", v)}
-        onSecondsChange={(v) => onConfigChange("moveSeconds", v)}
-      />
+      {/* A Swiss event has no fixed move/changeover between rounds — the gap is
+          however long the director takes to draw the next round — so there is
+          no Move Duration to set. */}
+      {!swiss && (
+        <DurationField
+          label="Move Duration"
+          minutes={config.moveMinutes}
+          seconds={config.moveSeconds}
+          minutesLabel="Move minutes"
+          secondsLabel="Move seconds"
+          onMinutesChange={(v) => onConfigChange("moveMinutes", v)}
+          onSecondsChange={(v) => onConfigChange("moveSeconds", v)}
+        />
+      )}
 
       <div className="flex flex-col gap-1.5">
         <label

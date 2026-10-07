@@ -527,9 +527,10 @@ describe("generateUsebioXml", () => {
       // Blank contract fields + zero score for the adjusted line.
       expect(xml).toContain("<CONTRACT/>");
       expect(xml).toContain("<SCORE>0</SCORE>");
-      // maxMp = 2 * (2 - 1) = 2. NS 60% -> round(0.6*2)=1, EW 40% -> round(0.4*2)=1.
-      expect(xml).toContain("<NS_MATCH_POINTS>1</NS_MATCH_POINTS>");
-      expect(xml).toContain("<EW_MATCH_POINTS>1</EW_MATCH_POINTS>");
+      // 2 total lines (1 adjusted + 1 real), max = 2*(2-1) = 2.
+      // NS 60% of 2 = 1.2, EW 40% of 2 = 0.8 (convention (b): no rounding).
+      expect(xml).toContain("<NS_MATCH_POINTS>1.2</NS_MATCH_POINTS>");
+      expect(xml).toContain("<EW_MATCH_POINTS>0.8</EW_MATCH_POINTS>");
     });
 
     it("emits AVE+ (>50%) as +3 IMPs and AVE- (<50%) as -3 IMPs for IMP scoring", () => {

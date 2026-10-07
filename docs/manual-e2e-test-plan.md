@@ -67,18 +67,20 @@ Pick simple, memorable names so mismatches are obvious:
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ CREATE-1 | From home tap **Create New Game**. | The **"Create Game"** form. |
+| ☐ CREATE-1 | From home tap **Create New Game**. | The **"Create Game"** form, first page (Event Name + Director Name), with **Next** at the bottom. |
 | ☐ CREATE-2 | In **Event Name**, type `Manual Test Pairs`. | Text entered. |
 | ☐ CREATE-3 | In **Director Name**, type `Test Director`. | Text entered. |
-| ☐ CREATE-4 | **Event Type**: leave on **Pairs**. | "Pairs" selected. |
-| ☐ CREATE-5 | **Scoring**: confirm options are **Matchpoints** and **Cross-IMPs**; leave on **Matchpoints**. | Correct options. |
-| ☐ CREATE-6 | **Record Opening Lead**: set the toggle to **No** (keeps entry short for the test). | Toggle reads "No". |
-| ☐ CREATE-7 | **Allow Hand Entry**: set the toggle to **Yes** (so we can test deal entry later). | Toggle reads "Yes". |
-| ☐ CREATE-8 | Tap **Create Game** (bottom). | You land on the **setup** screen for the new game (Tables view). |
-| ☐ CREATE-9 | **Validation check:** create a second game but leave **Event Name** blank, then tap **Create Game**. | A red error message appears; no game is created. Then go back. |
+| ☐ CREATE-4 | Tap **Next**. | Second page appears: **Event Type**, **Scoring**, **Record Opening Lead**, **Allow Hand Entry**. |
+| ☐ CREATE-5 | **Event Type**: leave on **Pairs**. | "Pairs" selected. |
+| ☐ CREATE-6 | **Scoring**: confirm options are **Matchpoints** and **Cross-IMPs**; leave on **Matchpoints**. | Correct options. |
+| ☐ CREATE-7 | **Record Opening Lead**: set the toggle to **No** (keeps entry short for the test). | Toggle reads "No". |
+| ☐ CREATE-8 | **Allow Hand Entry**: set the toggle to **Yes** (so we can test deal entry later). | Toggle reads "Yes". |
+| ☐ CREATE-9 | Tap **Create Game** (bottom). | You land on the **setup** screen for the new game (Tables view). |
+| ☐ CREATE-10 | **Back-navigation check:** start another game, fill in the two fields, tap **Next**, then tap the back arrow. | You return to the first page with **Event Name** and **Director Name** still filled in. |
+| ☐ CREATE-11 | **Validation check:** on the first page, clear **Event Name** (or **Director Name**). | **Next** is greyed out / cannot be tapped, and a reminder to enter an event name and director is shown above the fields. Then go back. |
 
 > If your club has **BridgeWebs** configured and has events for today, a **Use
-> BridgeWebs Event** toggle appears above Event Name. Optional: toggle it **Yes**,
+> BridgeWebs Event** toggle appears above Event Name on the first page. Optional: toggle it **Yes**,
 > confirm a dropdown ("— Select an event —") lists events, pick one, and confirm
 > the name prefills. Toggle **No** to type freely.
 

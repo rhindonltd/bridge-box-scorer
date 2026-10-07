@@ -10,7 +10,9 @@ import {
   commitNextSwissTeamsRound,
 } from "@/services/draw-swiss-teams-round-service";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
+import { resumeTimerAfterDraw } from "@/socket/handlers/swiss/resume-timer-after-draw";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import type { SectionLetter } from "@/model/participants";
 import type { NamedTeamsSeating } from "@/services/swiss-teams-seating-names";
 import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
 import type {
@@ -184,6 +186,10 @@ export function registerDrawNextTeamsRoundHandler(socket: Socket, io: Server) {
 
         // Push a fresh leaderboard snapshot to viewers (occupancy-gated).
         await broadcastLeaderboardChanged(io, gameId);
+
+        // Start the newly-drawn round's clock: a Swiss timer waits in
+        // `awaitingDraw` between rounds, and committing the draw resumes it.
+        await resumeTimerAfterDraw(io, gameId, section as SectionLetter);
 
         ack({ success: true, data: { roundNumber: result.roundNumber } });
       },

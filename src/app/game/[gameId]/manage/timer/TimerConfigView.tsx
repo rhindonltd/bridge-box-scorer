@@ -33,6 +33,12 @@ export interface TimerConfigViewProps extends TimerConfigHandlers {
    * and the director is prompted to choose a movement first.
    */
   noMovement?: boolean;
+  /**
+   * When true, this is a Swiss event: there is no fixed move/changeover between
+   * rounds (the director draws each round when ready), so the Move duration
+   * field and the breaks editor are hidden.
+   */
+  swiss?: boolean;
 }
 
 /**
@@ -56,6 +62,7 @@ export function TimerConfigView({
   embedded = false,
   lockedStructure = false,
   noMovement = false,
+  swiss = false,
 }: TimerConfigViewProps) {
   const status = (
     <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm">
@@ -129,14 +136,20 @@ export function TimerConfigView({
         config={config}
         onConfigChange={onConfigChange}
         lockedStructure={lockedStructure}
+        swiss={swiss}
       />
-      <TimerBreaksEditor
-        breaks={config.breaks}
-        totalRounds={config.totalRounds}
-        onAddBreak={onAddBreak}
-        onRemoveBreak={onRemoveBreak}
-        onBreakChange={onBreakChange}
-      />
+      {/* A Swiss event has no fixed move/changeover and no mid-session breaks
+          to schedule — the gap between rounds is however long the director
+          takes to draw the next round — so the breaks editor is hidden. */}
+      {!swiss && (
+        <TimerBreaksEditor
+          breaks={config.breaks}
+          totalRounds={config.totalRounds}
+          onAddBreak={onAddBreak}
+          onRemoveBreak={onRemoveBreak}
+          onBreakChange={onBreakChange}
+        />
+      )}
     </>
   );
 

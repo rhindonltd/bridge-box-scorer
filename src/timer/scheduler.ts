@@ -79,6 +79,13 @@ export function scheduleGame(
     return;
   }
 
+  // `awaitingDraw` is open-ended: a Swiss round waits for the director to draw
+  // the next round, with no timed auto-advance. Do not arm a timeout — the draw
+  // commit resumes the timer into the next round's play.
+  if (state.phase === "awaitingDraw") {
+    return;
+  }
+
   // Intentional 1-second buffer: ensures the phase transition fires slightly
   // after the displayed timer hits 00:00, giving clients time to render the
   // final tick before the state changes.

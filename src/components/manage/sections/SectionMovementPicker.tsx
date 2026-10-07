@@ -20,13 +20,14 @@ import {
   movementMatchesSelection,
 } from "./movement-recommendations";
 import { MovementPreviewDialog } from "./MovementPreviewDialog";
-import { SwissSetupDialog } from "./SwissSetupDialog";
-import { SwissTeamsSetupDialog } from "./SwissTeamsSetupDialog";
+import { SwissSetupForm } from "./SwissSetupForm";
+import { SwissTeamsSetupForm } from "./SwissTeamsSetupForm";
 import type {
   SwissMovementSpec,
   SwissTeamsMovementSpec,
 } from "@/model/selected-movement";
 import type { GameType } from "@/db/games/types/game-type";
+import type { EventFormat } from "@/db/games/types/event-format";
 
 interface Props {
   gameId: string;
@@ -63,15 +64,14 @@ interface Props {
    */
   onAddSection?: () => void;
   /**
-   * Whether the game currently has exactly one section. Swiss Pairs is a
-   * single-pool movement (one field, drawn round by round), so its option is
-   * shown only when true.
+   * The game's structural format. A SWISS game shows only the Swiss setup (the
+   * draw-as-you-go movement is the only option); a STANDARD game shows only the
+   * normal movement recommendations. Defaults to STANDARD.
    */
-  singleSection?: boolean;
+  eventFormat?: EventFormat;
   /**
-   * The game's event type. A TEAMS game offers Swiss Teams (each table's two
-   * pairs form a team) in place of Swiss Pairs; a PAIRS game offers Swiss
-   * Pairs. Defaults to PAIRS.
+   * The game's event type. For a SWISS game this picks Swiss Teams (each
+   * table's two pairs form a team) vs Swiss Pairs. Defaults to PAIRS.
    */
   gameType?: GameType;
 }
@@ -93,10 +93,11 @@ export function SectionMovementPicker({
   onDone,
   onSelected,
   onAddSection,
-  singleSection = false,
+  eventFormat = "STANDARD",
   gameType = "PAIRS",
 }: Props) {
   const isTeams = gameType === "TEAMS";
+  const isSwiss = eventFormat === "SWISS";
   // Seeded specs for this table count, used to resolve a SPEC recommendation's
   // concrete id/type at selection time (recommendations reference specs by
   // name, not id).
@@ -119,9 +120,6 @@ export function SectionMovementPicker({
   // is only persisted once the director confirms with "Select Movement".
   const [preview, setPreview] = useState<RecommendedMovement | null>(null);
   const [saving, setSaving] = useState(false);
-  // Whether the Swiss Pairs / Swiss Teams setup dialog is open.
-  const [swissOpen, setSwissOpen] = useState(false);
-  const [swissTeamsOpen, setSwissTeamsOpen] = useState(false);
 
   const selectedSwiss =
     selectedMovement?.source === "SWISS" ? selectedMovement.swiss : null;
@@ -134,7 +132,6 @@ export function SectionMovementPicker({
     setSaving(true);
     try {
       await setSectionSwissMovement(gameId, section, spec);
-      setSwissOpen(false);
       onDone?.();
       onSelected?.();
     } catch (err) {
@@ -148,7 +145,6 @@ export function SectionMovementPicker({
     setSaving(true);
     try {
       await setSectionSwissTeamsMovement(gameId, section, spec);
-      setSwissTeamsOpen(false);
       onDone?.();
       onSelected?.();
     } catch (err) {
@@ -221,63 +217,61 @@ export function SectionMovementPicker({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {singleSection && (
-          <section className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-            <h2 className="border-b border-gray-200 bg-gray-100 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-              Swiss
-            </h2>
-            <div className="p-3">
-              {isTeams ? (
-                <SwissOptionCard
-                  testId="swiss-teams-movement-option"
-                  title="Swiss Teams"
-                  description="The two pairs at each table form a team; teams are re-drawn each round by standing. You draw each round as the event runs."
-                  selected={selectedSwissTeams != null}
-                  onClick={() => setSwissTeamsOpen(true)}
-                />
-              ) : (
-                <SwissOptionCard
-                  testId="swiss-movement-option"
-                  title="Swiss Pairs"
-                  description="Pairs are re-drawn each round by standing; you draw each round as the event runs."
-                  selected={selectedSwiss != null}
-                  onClick={() => setSwissOpen(true)}
-                />
-              )}
-            </div>
-          </section>
-        )}
-
-        {groups.length === 0 ? (
-          <p className="text-gray-500 text-sm italic px-1">
-            No recommended movements are available for this table count yet.
-          </p>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {isSwiss ? (
+          // A Swiss game has no fixed movement to choose — the setup fields
+          // (rounds, boards per round, odd-handling) are rendered directly on the
+          // movement page rather than behind a card that opens a dialog.
+          <div className="flex h-full min-h-0 flex-col">
+            {isTeams ? (
+              <SwissTeamsSetupForm
+                teams={tables}
+                initial={selectedSwissTeams}
+                saving={saving}
+                onConfirm={handleConfirmSwissTeams}
+              />
+            ) : (
+              <SwissSetupForm
+                tables={tables}
+                initial={selectedSwiss}
+                saving={saving}
+                onConfirm={handleConfirmSwiss}
+              />
+            )}
+          </div>
         ) : (
-          <div className="space-y-4">
-            {groups.map(({ boardsPerPair, movements }) => (
-              <section
-                key={boardsPerPair}
-                className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50"
-              >
-                <h2 className="border-b border-gray-200 bg-gray-100 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-                  {boardsPerPair} boards
-                </h2>
-                <div className="grid gap-3 p-3 md:grid-cols-2">
-                  {movements.map((movement, index) => (
-                    <RecommendedMovementCard
-                      key={`${movement.source}-${movement.name}-${index}`}
-                      movement={movement}
-                      selected={movementMatchesSelection(
-                        movement.specRef,
-                        selectedMovement,
-                      )}
-                      onSelect={() => setPreview(movement)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+          <div className="p-4">
+            {groups.length === 0 ? (
+              <p className="text-gray-500 text-sm italic px-1">
+                No recommended movements are available for this table count yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {groups.map(({ boardsPerPair, movements }) => (
+                  <section
+                    key={boardsPerPair}
+                    className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50"
+                  >
+                    <h2 className="border-b border-gray-200 bg-gray-100 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
+                      {boardsPerPair} boards
+                    </h2>
+                    <div className="grid gap-3 p-3 md:grid-cols-2">
+                      {movements.map((movement, index) => (
+                        <RecommendedMovementCard
+                          key={`${movement.source}-${movement.name}-${index}`}
+                          movement={movement}
+                          selected={movementMatchesSelection(
+                            movement.specRef,
+                            selectedMovement,
+                          )}
+                          onSelect={() => setPreview(movement)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -291,68 +285,6 @@ export function SectionMovementPicker({
         onConfirm={handleConfirm}
       />
 
-      <SwissSetupDialog
-        open={swissOpen}
-        tables={tables}
-        initial={selectedSwiss}
-        saving={saving}
-        onCancel={() => {
-          if (!saving) setSwissOpen(false);
-        }}
-        onConfirm={handleConfirmSwiss}
-      />
-
-      <SwissTeamsSetupDialog
-        open={swissTeamsOpen}
-        teams={tables}
-        initial={selectedSwissTeams}
-        saving={saving}
-        onCancel={() => {
-          if (!saving) setSwissTeamsOpen(false);
-        }}
-        onConfirm={handleConfirmSwissTeams}
-      />
     </div>
-  );
-}
-
-/**
- * The single Swiss option button shown in the single-section setup — one card
- * for Swiss Pairs, one for Swiss Teams. Clicking it opens the matching setup
- * dialog. It reads "Selected" once a Swiss movement is chosen, otherwise
- * "Set up", and highlights when selected.
- */
-function SwissOptionCard({
-  testId,
-  title,
-  description,
-  selected,
-  onClick,
-}: {
-  testId: string;
-  title: string;
-  description: string;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      data-testid={testId}
-      className={`flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left transition hover:bg-white ${
-        selected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"
-      }`}
-    >
-      <span>
-        <span className="block text-sm font-semibold text-gray-900">
-          {title}
-        </span>
-        <span className="block text-xs text-gray-500">{description}</span>
-      </span>
-      <span className="shrink-0 text-xs font-medium text-blue-600">
-        {selected ? "Selected" : "Set up"}
-      </span>
-    </button>
   );
 }

@@ -15,6 +15,7 @@ const game: BridgeGame = {
   eventName: "Monday Pairs",
   director: "Jacqui",
   gameType: "PAIRS",
+  eventFormat: "STANDARD",
   scoringType: "MP",
   combinedRanking: true,
   sectionName: "A",

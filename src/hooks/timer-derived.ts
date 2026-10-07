@@ -34,6 +34,13 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       return 0;
     }
 
+    // A Swiss timer between rounds has no fixed remaining session — the next
+    // round starts whenever the director draws it — so there is no projected
+    // end time to compute.
+    if (state.phase === "awaitingDraw") {
+      return 0;
+    }
+
     let remainingCurrentPhaseMs: number;
 
     if (!state.isRunning) {
@@ -95,6 +102,9 @@ export function useTimerDerived(state: TimerState | null, now: number) {
   const getRemaining = () => {
     if (state.phase === "finished") return 0;
 
+    // `awaitingDraw` is open-ended — there is no countdown to show.
+    if (state.phase === "awaitingDraw") return 0;
+
     if (state.phase === "break") {
       if (!state.isRunning) {
         return Math.ceil((state.remainingMs ?? 0) / 1000);
@@ -133,9 +143,11 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       ? "Session Complete"
       : state.phase === "break"
         ? "Break"
-        : state.phase === "play"
-          ? `Round ${state.round} of ${state.totalRounds}`
-          : `Move for Round ${state.round}`;
+        : state.phase === "awaitingDraw"
+          ? "Waiting for next round"
+          : state.phase === "play"
+            ? `Round ${state.round} of ${state.totalRounds}`
+            : `Move for Round ${state.round}`;
 
   const boardLabel =
     state.phase === "play"
