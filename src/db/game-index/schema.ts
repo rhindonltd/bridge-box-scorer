@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { GameTypes } from "@/db/games/types/game-type";
+import { EventFormats } from "@/db/games/types/event-format";
 import { ScoringTypes } from "@/db/games/types/scoring-type";
 
 export const games = sqliteTable("games", {
@@ -13,6 +14,15 @@ export const games = sqliteTable("games", {
   gameType: text("game_type", {
     enum: GameTypes,
   }).notNull(),
+  // The structural format (STANDARD vs SWISS), orthogonal to gameType. Together
+  // they form the four event types the director picks (Pairs, Teams, Swiss
+  // Pairs, Swiss Teams). Defaults to STANDARD so existing rows read as a plain
+  // pairs/teams game. See src/db/games/types/event-format.ts.
+  eventFormat: text("event_format", {
+    enum: EventFormats,
+  })
+    .notNull()
+    .default("STANDARD"),
   scoringType: text("scoring_type", {
     enum: ScoringTypes,
   })

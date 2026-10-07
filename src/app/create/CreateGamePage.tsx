@@ -6,6 +6,7 @@ import { createGame } from "@/lib/game-service";
 import { useId, useState } from "react";
 import useSWR from "swr";
 import { GameType } from "@/db/games/types/game-type";
+import { EventFormat } from "@/db/games/types/event-format";
 import { ScoringType } from "@/db/games/types/scoring-type";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
@@ -17,6 +18,36 @@ import { useTranslations } from "@/i18n/useTranslations";
 import type { BridgewebsEventsResponse } from "@/app/api/games/bridgewebs/events/route";
 
 const DEFAULT_TABLES = 5;
+
+/**
+ * The four event types offered on the create form. Each is a (game-type family
+ * × format) pair under the hood: the "Swiss" choices are the same pairs/teams
+ * family in the SWISS format, which only changes how the movement is set up
+ * (drawn round by round) — not how it is scored.
+ */
+type EventTypeChoice = "PAIRS" | "TEAMS" | "SWISS_PAIRS" | "SWISS_TEAMS";
+
+const EVENT_TYPE_MAP: Record<
+  EventTypeChoice,
+  { gameType: GameType; eventFormat: EventFormat }
+> = {
+  PAIRS: { gameType: "PAIRS", eventFormat: "STANDARD" },
+  TEAMS: { gameType: "TEAMS", eventFormat: "STANDARD" },
+  SWISS_PAIRS: { gameType: "PAIRS", eventFormat: "SWISS" },
+  SWISS_TEAMS: { gameType: "TEAMS", eventFormat: "SWISS" },
+};
+
+const EVENT_TYPE_OPTIONS: { label: string; value: EventTypeChoice }[] = [
+  { label: "Pairs", value: "PAIRS" },
+  { label: "Teams", value: "TEAMS" },
+  { label: "Swiss Pairs", value: "SWISS_PAIRS" },
+  { label: "Swiss Teams", value: "SWISS_TEAMS" },
+];
+
+/** Whether a choice is in the pairs family (vs the teams family). */
+function isPairsChoice(choice: EventTypeChoice): boolean {
+  return choice === "PAIRS" || choice === "SWISS_PAIRS";
+}
 
 // The create flow is split across two steps so neither screen feels crowded:
 //   1. "details"  — event name (free text or BridgeWebs picker) + director name
@@ -35,7 +66,11 @@ export function CreateGamePage() {
   const [step, setStep] = useState<Step>("details");
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
-  const [gameType, setGameType] = useState<GameType>("PAIRS");
+  // The four event-type choices the director picks from. Each maps to a
+  // (gameType family × eventFormat) pair: Swiss Pairs is a PAIRS game in the
+  // SWISS format, Swiss Teams a TEAMS game in the SWISS format, and so on.
+  const [eventType, setEventType] = useState<EventTypeChoice>("PAIRS");
+  const { gameType, eventFormat } = EVENT_TYPE_MAP[eventType];
   // Teams scoring choice, only surfaced (and only meaningful) for a Teams game.
   // Defaults to IMP Victory Points; the board-comparison alternative offered is
   // locale-specific (Point-a-Board / PAB in the UK, Board-a-Match / BAM in the
@@ -125,9 +160,17 @@ export function CreateGamePage() {
       eventName,
       director,
       gameType,
-      // Both game types carry an explicit scoring choice: Teams pick
-      // IMP/BAM/PAB, Pairs pick MP/XIMP.
-      scoringType: gameType === "TEAMS" ? teamsScoring : pairsScoring,
+      eventFormat,
+      // Pairs/Swiss Pairs pick MP/XIMP; Teams picks IMP/BAM/PAB; Swiss Teams
+      // is always IMP (VP) — it is the only scoring that powers the VP-based
+      // draw (aggregate IMP and board-comparison lack a VP total, so the draw
+      // cannot rank the field).
+      scoringType:
+        eventType === "SWISS_TEAMS"
+          ? "IMP_VP"
+          : isPairsChoice(eventType)
+            ? pairsScoring
+            : teamsScoring,
       eventDate,
       sectionName: "",
       tables: DEFAULT_TABLES,
@@ -256,16 +299,20 @@ export function CreateGamePage() {
             <>
               <SelectField
                 label="Event Type"
-                value={gameType}
-                options={[
-                  { label: "Pairs", value: "PAIRS" },
-                  { label: "Teams", value: "TEAMS" },
-                ]}
-                onSelect={setGameType}
+                value={eventType}
+                options={EVENT_TYPE_OPTIONS}
+                onSelect={setEventType}
                 inline
               />
 
-              {gameType === "PAIRS" && (
+              {eventType === "SWISS_TEAMS" ? (
+                // Swiss Teams is always scored by IMP (Victory Points) — the
+                // round-by-round draw depends on VP standings, so no other
+                // scoring method applies. No dropdown needed.
+                <p className="text-sm text-gray-500">
+                  Scoring: <span className="font-semibold text-gray-700">IMP (Victory Points)</span>
+                </p>
+              ) : isPairsChoice(eventType) ? (
                 <SelectField
                   label="Scoring"
                   value={pairsScoring}
@@ -276,9 +323,7 @@ export function CreateGamePage() {
                   onSelect={setPairsScoring}
                   inline
                 />
-              )}
-
-              {gameType === "TEAMS" && (
+              ) : (
                 <SelectField
                   label="Scoring"
                   value={teamsScoring}

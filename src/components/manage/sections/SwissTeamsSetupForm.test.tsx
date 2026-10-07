@@ -1,21 +1,19 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import {
-  SwissTeamsSetupDialog,
+  SwissTeamsSetupForm,
   resolveTeamsOddRoundPlan,
-} from "./SwissTeamsSetupDialog";
+} from "./SwissTeamsSetupForm";
 
-/** Render the dialog open with sensible defaults, returning the confirm spy. */
-function renderDialog(
-  props: Partial<React.ComponentProps<typeof SwissTeamsSetupDialog>> = {},
+/** Render the form with sensible defaults, returning the confirm spy. */
+function renderForm(
+  props: Partial<React.ComponentProps<typeof SwissTeamsSetupForm>> = {},
 ) {
   const onConfirm = vi.fn();
   render(
-    <SwissTeamsSetupDialog
-      open
+    <SwissTeamsSetupForm
       teams={5}
       saving={false}
-      onCancel={vi.fn()}
       onConfirm={onConfirm}
       {...props}
     />,
@@ -76,12 +74,14 @@ describe("resolveTeamsOddRoundPlan", () => {
   });
 });
 
-describe("SwissTeamsSetupDialog", () => {
+describe("SwissTeamsSetupForm", () => {
   it("defaults to a bye and omits the plan on confirm", () => {
-    const { onConfirm } = renderDialog();
+    const { onConfirm } = renderForm();
 
     // The per-round plan is hidden under the default (bye) handling.
-    expect(screen.queryByTestId("teams-odd-round-plan")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("teams-odd-round-plan"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(confirmButton());
 
@@ -94,7 +94,7 @@ describe("SwissTeamsSetupDialog", () => {
   });
 
   it("reveals the per-round plan and emits a full all-SHORT plan under Triple", () => {
-    const { onConfirm } = renderDialog();
+    const { onConfirm } = renderForm();
 
     fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
     expect(screen.getByTestId("teams-odd-round-plan")).toBeInTheDocument();
@@ -111,18 +111,14 @@ describe("SwissTeamsSetupDialog", () => {
   });
 
   it("emits grouped LONG entries when two adjacent rounds are set to Long", () => {
-    const { onConfirm } = renderDialog();
+    const { onConfirm } = renderForm();
 
     fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
     expect(screen.getByTestId("teams-odd-round-plan")).toBeInTheDocument();
 
     // Set rounds 1 and 2 to Long (a long triple spanning them).
-    fireEvent.click(
-      screen.getByRole("radio", { name: "Long for round 1" }),
-    );
-    fireEvent.click(
-      screen.getByRole("radio", { name: "Long for round 2" }),
-    );
+    fireEvent.click(screen.getByRole("radio", { name: "Long for round 1" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Long for round 2" }));
 
     fireEvent.click(confirmButton());
 
@@ -133,48 +129,52 @@ describe("SwissTeamsSetupDialog", () => {
   });
 
   it("blocks confirm on a lone LONG round until it is paired", () => {
-    const { onConfirm } = renderDialog();
+    const { onConfirm } = renderForm();
 
     fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
     expect(screen.getByTestId("teams-odd-round-plan")).toBeInTheDocument();
 
     // Round 1 Long, round 2 left as Short -> unpaired long -> invalid.
-    fireEvent.click(
-      screen.getByRole("radio", { name: "Long for round 1" }),
-    );
+    fireEvent.click(screen.getByRole("radio", { name: "Long for round 1" }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/long triple takes two/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /long triple takes two/i,
+    );
     expect(confirmButton()).toBeDisabled();
     fireEvent.click(confirmButton());
     expect(onConfirm).not.toHaveBeenCalled();
 
     // Pairing round 2 as Long clears the error and allows confirm.
-    fireEvent.click(
-      screen.getByRole("radio", { name: "Long for round 2" }),
-    );
+    fireEvent.click(screen.getByRole("radio", { name: "Long for round 2" }));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(confirmButton()).toBeEnabled();
   });
 
   it("blocks a Triple with too few teams to form a three-way", () => {
-    const { onConfirm } = renderDialog({ teams: 1 });
+    const { onConfirm } = renderForm({ teams: 1 });
 
     // An odd field of one team can't form a triple; selecting it blocks.
     fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
-    expect(screen.getByRole("alert")).toHaveTextContent(/needs at least three/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /needs at least three/i,
+    );
     expect(confirmButton()).toBeDisabled();
     fireEvent.click(confirmButton());
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
   it("hides the odd-team options entirely for an even field", () => {
-    renderDialog({ teams: 6 });
-    expect(screen.queryByRole("radio", { name: /triple/i })).not.toBeInTheDocument();
-    expect(screen.queryByTestId("teams-odd-round-plan")).not.toBeInTheDocument();
+    renderForm({ teams: 6 });
+    expect(
+      screen.queryByRole("radio", { name: /triple/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("teams-odd-round-plan"),
+    ).not.toBeInTheDocument();
   });
 
-  it("re-opens with an existing Triple plan selected", () => {
-    renderDialog({
+  it("seeds from an existing Triple plan", () => {
+    renderForm({
       initial: {
         teams: 5,
         rounds: 4,

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
+vi.mock("@/db/games/queries/get-section-movement", () => ({
+  getSectionMovement: vi.fn(),
+}));
 vi.mock("@/socket/middleware/director-auth", () => ({
   validateDirectorToken: vi.fn(),
 }));
@@ -16,6 +19,7 @@ vi.mock("@/lib/log", () => ({
 }));
 
 import { getDb } from "@/db/games";
+import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { broadcastTimerConfigSaved } from "@/socket/broadcast/timer-broadcast";
@@ -73,6 +77,36 @@ describe("PUT /api/games/[gameId]/sections/[section]/timer/config", () => {
       "g1",
       "A",
       expect.objectContaining({ isRunning: false }),
+    );
+  });
+
+  it("stamps requiresDrawBetweenRounds true for a Swiss section", async () => {
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS",
+      swiss: { tables: 5, rounds: 7, boardsPerRound: 7 },
+    } as never);
+
+    await invoke("g1", "A", validBody);
+
+    expect(updateTimerState).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      expect.objectContaining({ requiresDrawBetweenRounds: true }),
+    );
+  });
+
+  it("leaves requiresDrawBetweenRounds false for a non-Swiss section", async () => {
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "MITCHELL",
+      mitchell: { tables: 5, rounds: 8, boardsPerRound: 3 },
+    } as never);
+
+    await invoke("g1", "A", validBody);
+
+    expect(updateTimerState).toHaveBeenCalledWith(
+      "g1",
+      "A",
+      expect.objectContaining({ requiresDrawBetweenRounds: false }),
     );
   });
 

@@ -1018,3 +1018,123 @@ describe("BridgeTimerEngine - restartPhase / nextPhase edge branches", () => {
     expect(engine.getRemainingMs(now)).toBe(40_000);
   });
 });
+
+describe("BridgeTimerEngine — Swiss awaitingDraw", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-01-01T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("enters awaitingDraw at end of a play round instead of move (round not advanced)", () => {
+    const engine = new BridgeTimerEngine(
+      makeState({
+        phase: "play",
+        round: 1,
+        totalRounds: 5,
+        isRunning: true,
+        requiresDrawBetweenRounds: true,
+      }),
+    );
+
+    engine.nextPhase();
+    const state = engine.getState();
+
+    expect(state.phase).toBe("awaitingDraw");
+    // Round is NOT advanced yet — the draw does that.
+    expect(state.round).toBe(1);
+    // The wait is open-ended: stopped, no countdown.
+    expect(state.isRunning).toBe(false);
+    expect(engine.getRemainingMs()).toBe(0);
+  });
+
+  it("finishes (not awaitingDraw) when the last Swiss round's play ends", () => {
+    const engine = new BridgeTimerEngine(
+      makeState({
+        phase: "play",
+        round: 5,
+        totalRounds: 5,
+        isRunning: true,
+        requiresDrawBetweenRounds: true,
+      }),
+    );
+
+    engine.nextPhase();
+    expect(engine.getState().phase).toBe("finished");
+  });
+
+  it("resumeAfterDraw advances the round, enters play and starts the clock", () => {
+    const engine = new BridgeTimerEngine(
+      makeState({
+        phase: "awaitingDraw",
+        round: 1,
+        totalRounds: 5,
+        requiresDrawBetweenRounds: true,
+      }),
+    );
+
+    engine.resumeAfterDraw();
+    const state = engine.getState();
+
+    expect(state.phase).toBe("play");
+    expect(state.round).toBe(2);
+    expect(state.isRunning).toBe(true);
+    expect(engine.getRemainingMs()).toBe(420_000);
+  });
+
+  it("resumeAfterDraw is a no-op outside awaitingDraw", () => {
+    const engine = new BridgeTimerEngine(
+      makeState({ phase: "play", round: 2, isRunning: true }),
+    );
+
+    engine.resumeAfterDraw();
+    const state = engine.getState();
+    // Unchanged: still the same play round.
+    expect(state.phase).toBe("play");
+    expect(state.round).toBe(2);
+  });
+
+  it("a non-Swiss timer still auto-advances play → move", () => {
+    const engine = new BridgeTimerEngine(
+      makeState({ phase: "play", round: 1, totalRounds: 5, isRunning: true }),
+    );
+
+    engine.nextPhase();
+    const state = engine.getState();
+    expect(state.phase).toBe("move");
+    expect(state.round).toBe(2);
+  });
+
+  it("stepping back (Previous) from awaitingDraw returns to the round's play, restarted", () => {
+    const engine = new BridgeTimerEngine(
+      makeState({
+        phase: "awaitingDraw",
+        round: 3,
+        totalRounds: 5,
+        requiresDrawBetweenRounds: true,
+      }),
+    );
+
+    engine.previousPhase();
+    const state = engine.getState();
+    expect(state.phase).toBe("play");
+    // Round unchanged (awaitingDraw sits after this round's play).
+    expect(state.round).toBe(3);
+  });
+
+  it("adjustTime is a no-op while awaiting a draw", () => {
+    const engine = new BridgeTimerEngine(
+      makeState({
+        phase: "awaitingDraw",
+        round: 1,
+        requiresDrawBetweenRounds: true,
+      }),
+    );
+
+    engine.adjustTime(60_000);
+    expect(engine.getRemainingMs()).toBe(0);
+  });
+});

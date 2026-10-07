@@ -1,4 +1,22 @@
-export type Phase = "move" | "play" | "break" | "finished" | null;
+/**
+ * Timer phases.
+ *
+ * - `play` / `move` / `break`: the normal rhythm — play a round, then a short
+ *   move changeover (or a scheduled break) into the next round's play.
+ * - `awaitingDraw`: a Swiss-only, open-ended pause between rounds. When a Swiss
+ *   round's play ends there is no fixed next round to move into — the director
+ *   must draw the next round from standings first. The timer stops counting and
+ *   sits in this phase until the draw is committed, which starts the next
+ *   round's play. It has no duration and is never scheduled to auto-advance.
+ * - `finished`: terminal. `null`: configured but not started.
+ */
+export type Phase =
+  | "move"
+  | "play"
+  | "break"
+  | "awaitingDraw"
+  | "finished"
+  | null;
 
 /**
  * A break scheduled in the gap after a given round. Breaks replace the `move`
@@ -62,6 +80,17 @@ export type TimerState = {
    */
   warningSeconds?: number;
 
+  /**
+   * Whether this timer must wait for the director to draw the next round
+   * between rounds (Swiss Pairs / Swiss Teams), rather than auto-advancing
+   * through a move/break into the next round's play. When true, the end of a
+   * round's play enters the open-ended {@link Phase} `awaitingDraw` instead,
+   * and committing the next round's draw starts its play. Absent/false for
+   * ordinary events with a fixed, fully-known movement. Optional for backwards
+   * compatibility with previously-persisted timer state.
+   */
+  requiresDrawBetweenRounds?: boolean;
+
   isRunning: boolean;
 
   phaseStartedAt: number | null;
@@ -89,6 +118,11 @@ export interface TimerConfig {
   moveDuration: number;
   breaks?: BreakConfig[];
   warningSeconds?: number;
+  /**
+   * Whether rounds are gated on the director drawing the next round (Swiss).
+   * See {@link TimerState.requiresDrawBetweenRounds}.
+   */
+  requiresDrawBetweenRounds?: boolean;
   /**
    * How the play duration was entered ("perRound" total vs a "perBoard" figure
    * multiplied up). Recorded so the setup form can restore the toggle on
@@ -118,6 +152,7 @@ export function buildConfiguredTimerState(config: TimerConfig): TimerState {
     timingMode: config.timingMode,
     breaks: config.breaks ?? [],
     warningSeconds: config.warningSeconds,
+    requiresDrawBetweenRounds: config.requiresDrawBetweenRounds,
     isRunning: false,
     phaseStartedAt: null,
     remainingMs: null,

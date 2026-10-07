@@ -48,7 +48,9 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
   const key = swrKeys.pairs(gameId);
 
   const { data: pairs } = useSWR<Pair[], Error>(key, pairsFetcher);
-  const { sections, selected, pills, modal } = useSetupSections(gameId);
+  const { sections, selected, pills, modal } = useSetupSections(gameId, {
+    allowAddSection: game.eventFormat !== "SWISS",
+  });
 
   // The table whose management dialog (evict / stationary) is open, or null.
   const [openTable, setOpenTable] = useState<DirectorTable | null>(null);

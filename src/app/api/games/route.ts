@@ -3,6 +3,7 @@ import { z } from "zod";
 import { withBasicRoute } from "@/lib/api/basicRoute";
 import { ClientError, respondToActionError } from "@/lib/api/client-error";
 import { GameTypes } from "@/db/games/types/game-type";
+import { EventFormats } from "@/db/games/types/event-format";
 import { ScoringTypes } from "@/db/games/types/scoring-type";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
@@ -14,6 +15,7 @@ const bodySchema = z.object({
   eventName: z.string().min(1),
   director: z.string().nullish(),
   gameType: z.enum(GameTypes),
+  eventFormat: z.enum(EventFormats).optional(),
   scoringType: z.enum(ScoringTypes).optional(),
   sectionName: z.string(),
   eventDate: z.string().min(1),

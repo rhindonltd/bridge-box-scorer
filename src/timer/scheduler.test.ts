@@ -213,3 +213,50 @@ describe("scheduleGame", () => {
     );
   });
 });
+
+describe("scheduleGame — Swiss awaitingDraw", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    cancelGameSchedule("g-swiss", "A");
+  });
+
+  function makeAwaitingEngine(): BridgeTimerEngine {
+    const state: TimerState = {
+      version: 1,
+      phase: "awaitingDraw",
+      board: 1,
+      round: 1,
+      boardsPerRound: 3,
+      totalRounds: 4,
+      playDuration: 10,
+      moveDuration: 5,
+      requiresDrawBetweenRounds: true,
+      // isRunning stays false in awaitingDraw, but even if a stale true slipped
+      // through, the phase guard must prevent scheduling.
+      isRunning: true,
+      phaseStartedAt: Date.now(),
+      remainingMs: null,
+    };
+    return new BridgeTimerEngine(state);
+  }
+
+  it("does not schedule a timeout while awaiting a draw", async () => {
+    const engine = makeAwaitingEngine();
+    const deps = {
+      updateTimerState: vi.fn().mockResolvedValue(undefined),
+      broadcast: vi.fn(),
+    };
+
+    scheduleGame("g-swiss", "A", engine, deps);
+
+    // No timeout should fire regardless of how far time advances.
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+
+    expect(deps.updateTimerState).not.toHaveBeenCalled();
+    expect(deps.broadcast).not.toHaveBeenCalled();
+  });
+});

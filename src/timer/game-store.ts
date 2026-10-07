@@ -43,6 +43,7 @@ export async function createEngine(
   options?: {
     breaks?: TimerState["breaks"];
     warningSeconds?: number;
+    requiresDrawBetweenRounds?: boolean;
   },
 ) {
   const newTimerState: TimerState = {
@@ -56,6 +57,7 @@ export async function createEngine(
     moveDuration,
     breaks: options?.breaks ?? [],
     warningSeconds: options?.warningSeconds,
+    requiresDrawBetweenRounds: options?.requiresDrawBetweenRounds,
     isRunning: false,
     phaseStartedAt: null,
     remainingMs: playDuration * 1000,

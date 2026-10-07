@@ -10,7 +10,9 @@ step-by-step instructions.
 
 - **Game / session** — one duplicate bridge session with an event name, date,
   and type.
-- **Event type** — **Pairs** or **Teams**.
+- **Event type** — **Pairs**, **Teams**, **Swiss Pairs**, or **Swiss Teams**.
+  The Pairs and Teams options use a fixed movement you pick from a list; the
+  Swiss options are drawn round by round as the event runs.
 - **Record opening lead** — a per-game setting. When on, players are asked to
   enter the opening lead card as part of each result.
 - **Allow hand entry** — a per-game setting. When on, players can enter the
@@ -142,8 +144,11 @@ step-by-step instructions.
 
 - **Phases:**
   - **Play** — time to play the round's boards.
-  - **Move** — changeover between rounds.
-  - **Break** — a scheduled pause after a round.
+  - **Move** — changeover between rounds (not used in Swiss events).
+  - **Break** — a scheduled pause after a round (not used in Swiss events).
+  - **Waiting for the next round** — in a Swiss event, the gap after a round's
+    play while the director draws the next round; it has no countdown and ends
+    when the draw starts the next round's play.
   - **Finished** — the session is over.
 - **Timing mode** — **Per Round** (one play period per round) or **Per Board**
   (play time per board × boards).

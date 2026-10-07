@@ -3,6 +3,7 @@ export const mockGame = {
   eventName: "Monday AM Pairs",
   director: "Jacqui Collier",
   gameType: "PAIRS" as const,
+  eventFormat: "STANDARD" as const,
   scoringType: "MP" as const,
   sectionName: "A",
   eventDate: new Date().toISOString(),

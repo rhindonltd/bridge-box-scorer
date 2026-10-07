@@ -1,0 +1,1 @@
+ALTER TABLE `games` ADD `event_format` text DEFAULT 'STANDARD' NOT NULL;

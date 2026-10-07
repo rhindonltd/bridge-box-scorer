@@ -443,7 +443,55 @@ describe("CreateGamePage", () => {
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
     const payload = mockCreateGame.mock.calls[0][0];
     expect(payload.gameType).toBe("PAIRS");
+    expect(payload.eventFormat).toBe("STANDARD");
     expect(payload.scoringType).toBe("MP");
+  });
+
+  it("submits a Swiss Pairs game as PAIRS + SWISS, keeping pairs scoring", async () => {
+    render(<CreateGamePage />);
+    goToOptionsStep();
+
+    fireEvent.change(screen.getByLabelText("Event Type"), {
+      target: { value: "SWISS_PAIRS" },
+    });
+
+    // Swiss Pairs offers the same scoring choices as Pairs.
+    const scoring = screen.getByLabelText("Scoring") as HTMLSelectElement;
+    expect(scoring.value).toBe("MP");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gameType: "PAIRS",
+        eventFormat: "SWISS",
+        scoringType: "MP",
+      }),
+    );
+  });
+
+  it("submits a Swiss Teams game as TEAMS + SWISS with IMP_VP scoring (fixed)", async () => {
+    render(<CreateGamePage />);
+    goToOptionsStep();
+
+    fireEvent.change(screen.getByLabelText("Event Type"), {
+      target: { value: "SWISS_TEAMS" },
+    });
+
+    // Swiss Teams has no scoring dropdown — it is always IMP (VP).
+    expect(screen.queryByLabelText("Scoring")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
+
+    await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
+    expect(mockCreateGame).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gameType: "TEAMS",
+        eventFormat: "SWISS",
+        scoringType: "IMP_VP",
+      }),
+    );
   });
 
   it("submits XIMP when a Pairs game selects Cross-IMPs", async () => {

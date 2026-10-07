@@ -17,12 +17,17 @@ vi.mock("@/socket/handlers/results/broadcast-results", () => ({
   broadcastLeaderboardChanged: vi.fn(),
 }));
 
+vi.mock("@/socket/handlers/swiss/resume-timer-after-draw", () => ({
+  resumeTimerAfterDraw: vi.fn(),
+}));
+
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import {
   previewNextSwissTeamsRound,
   commitNextSwissTeamsRound,
 } from "@/services/draw-swiss-teams-round-service";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
+import { resumeTimerAfterDraw } from "@/socket/handlers/swiss/resume-timer-after-draw";
 import {
   registerDrawNextTeamsRoundHandler,
   registerPreviewNextTeamsRoundHandler,

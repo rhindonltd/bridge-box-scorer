@@ -91,6 +91,18 @@ function isTeamsVpMovement(movement: SelectedMovement | null): boolean {
 }
 
 /**
+ * Whether a movement is a Swiss draw-as-you-go movement (Swiss Pairs or Swiss
+ * Teams) — one whose later rounds are not fixed up front but drawn from the
+ * current standings between rounds. Round Robin Teams is NOT Swiss: its whole
+ * schedule is known in advance. Used to decide, among other things, that the
+ * session timer must wait for the director to draw each round rather than
+ * auto-advancing through a move gap.
+ */
+export function isSwissMovement(movement: SelectedMovement | null): boolean {
+  return movement?.source === "SWISS" || movement?.source === "SWISS_TEAMS";
+}
+
+/**
  * Whether a pairs game is a **two-winner** movement — one where North/South and
  * East/West never swap seats, so the two directions form separate fields with
  * their own winners (a standard Mitchell). Such an event is ranked as two

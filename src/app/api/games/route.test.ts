@@ -72,6 +72,22 @@ describe("POST /api/games", () => {
     expect(broadcastJoinableGames).toHaveBeenCalled();
   });
 
+  it("accepts and forwards eventFormat (e.g. a Swiss game)", async () => {
+    const res = await invoke({ ...validBody, eventFormat: "SWISS" });
+
+    expect(res.status).toBe(201);
+    expect(createBridgeGame).toHaveBeenCalledWith(
+      expect.objectContaining({ eventFormat: "SWISS" }),
+    );
+  });
+
+  it("rejects an unknown eventFormat value", async () => {
+    const res = await invoke({ ...validBody, eventFormat: "ROUND_ROBIN" });
+
+    expect(res.status).toBe(400);
+    expect(createBridgeGame).not.toHaveBeenCalled();
+  });
+
   it("returns 400 for an invalid body (client error)", async () => {
     const res = await invoke({ eventName: "" });
 

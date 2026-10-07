@@ -146,6 +146,7 @@ function TimerConfigContainer({
       previewEnd={previewEnd}
       lockedStructure={structureLocked}
       noMovement={noMovement}
+      swiss={game.eventFormat === "SWISS"}
       {...configHandlers}
     />
   );
@@ -234,7 +235,9 @@ function useTicker(setTick: (t: number) => void) {
  */
 export function TimerSetup({ embedded = false }: { embedded?: boolean }) {
   const { game } = useRequiredGame();
-  const { selected, pills, modal } = useSetupSections(game.gameId);
+  const { selected, pills, modal } = useSetupSections(game.gameId, {
+    allowAddSection: game.eventFormat !== "SWISS",
+  });
 
   if (!selected) return null;
 
@@ -263,7 +266,9 @@ export function TimerSetup({ embedded = false }: { embedded?: boolean }) {
  */
 export function TimerManager({ started }: { started: boolean }) {
   const { game } = useRequiredGame();
-  const setup = useSetupSections(game.gameId);
+  const setup = useSetupSections(game.gameId, {
+    allowAddSection: game.eventFormat !== "SWISS",
+  });
   const { sections, selected, setSelected } = setup;
 
   if (!selected) return null;

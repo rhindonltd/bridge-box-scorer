@@ -312,3 +312,22 @@ describe("useTimerDerived - breaks and warning", () => {
     expect(endWithBreak - endNoBreak).toBe(540_000);
   });
 });
+
+describe("useTimerDerived — Swiss awaitingDraw", () => {
+  it("shows the waiting title with no countdown or projected end", () => {
+    const state = makeState({
+      phase: "awaitingDraw",
+      round: 3,
+      requiresDrawBetweenRounds: true,
+    });
+    const now = Date.now();
+    const result = useTimerDerived(state, now);
+
+    expect(result.phase).toBe("awaitingDraw");
+    expect(result.title).toBe("Waiting for next round");
+    expect(result.remaining).toBe(0);
+    // No projected session end mid-Swiss: it collapses to "now".
+    expect(result.projectedEndDate.getTime()).toBe(now);
+    expect(result.boardLabel).toBeNull();
+  });
+});
