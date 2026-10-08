@@ -1,11 +1,26 @@
 import { describe, it, expect } from "vitest";
-import { assembleSwissPairs } from "./assemble-swiss-pairs";
+import { assembleSwissPairs as assembleSwissPairsImpl } from "./assemble-swiss-pairs";
+import { swissVpStructureFromRows } from "@/scoring/swiss/swiss-vp-test-structure";
+import type { SwissRoundMode } from "@/scoring/swiss/swiss-vp-round";
 import type { Board } from "@/db/games/tables/boards";
 import type { Pair } from "@/model/participants";
 import type { BridgeGame } from "@/db/game-index/schema";
 import type { Club } from "@/db/system/schema";
 import type { BoardOutcome } from "@/model/score";
 import type { Card } from "@/model/common";
+
+// assembleSwissPairs now takes the PAIRS `matches` rows; derive them from each
+// scenario's board rows via the test-only helper. Int tests cover the real path.
+function assembleSwissPairs(
+  g: BridgeGame,
+  c: Club,
+  pairs: Pair[],
+  boardRows: Board[],
+  mode: SwissRoundMode = "XIMP",
+) {
+  const { matchRows } = swissVpStructureFromRows(boardRows as never);
+  return assembleSwissPairsImpl(g, c, pairs, boardRows, matchRows, mode);
+}
 
 const club: Club = { id: 1, name: "Test Club", clubNumber: "999" };
 
@@ -49,6 +64,7 @@ function board(
     directorOverrideResult: null,
     directorOverrideLead: null,
     status: "CONFIRMED",
+    matchId: 1,
   } as Board;
 }
 

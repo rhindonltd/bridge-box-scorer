@@ -22,6 +22,21 @@ import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
 import { parseMismatch, adjustMismatchVp } from "@/model/swiss-mismatch";
 
 /**
+ * The minimal `matches`-row shape the Swiss Pairs VP scorer needs for the
+ * match-level rulings (§3.3.8 void-pair, §3.5 mismatch). A PAIRS match is one
+ * table; its `ruling` (home-relative) drives the void/mismatch adjustment. Kept
+ * structural so the scorer stays a pure module.
+ */
+export interface SwissVpMatchRow {
+  id: number;
+  roundNumber: number;
+  kind: string;
+  home: string;
+  opponent: string | null;
+  ruling: string | null;
+}
+
+/**
  * Clamp a matchpoint percentage into the [0, 100] range the VP tables accept.
  *
  * A pair's `mp / max` can legitimately brush just past 100% (or dip below 0%)
@@ -110,10 +125,16 @@ function rowsForPair(
  * each voided pair is instead credited an AVE+/AVE−/AVE compensation separately
  * (see {@link scoreSwissVpRound}).
  */
-function byBoardOf(rows: SwissVpBoardRow[]): Map<number, SwissVpBoardRow[]> {
+function byBoardOf(
+  rows: SwissVpBoardRow[],
+  voidedMatchIds: Set<number>,
+): Map<number, SwissVpBoardRow[]> {
   const byBoard = new Map<number, SwissVpBoardRow[]>();
   for (const row of rows) {
-    if (row.status === "SIT_OUT" || row.status === "VOID_PAIR") continue;
+    if (row.status === "SIT_OUT") continue;
+    // A voided pairs match's results must NOT sit in the field (its pairs get a
+    // separate AVE+/AVE−/AVE compensation); identify it by its match ruling.
+    if (row.matchId != null && voidedMatchIds.has(row.matchId)) continue;
     const arr = byBoard.get(row.boardNumber) ?? [];
     arr.push(row);
     byBoard.set(row.boardNumber, arr);
@@ -553,19 +574,30 @@ export function scoreSwissVpRound(
   rows: SwissVpBoardRow[],
   mode: SwissRoundMode,
   expectedBoards?: number,
+  matchRows: SwissVpMatchRow[] = [],
 ): SwissVpRound {
-  const byBoard = byBoardOf(rows);
+  // The §3.3.8 void-pair matches (ruling VOIDP:) are excluded from the field;
+  // the §3.5 mismatch matches (ruling MM:) stay in the field but adjust the
+  // mismatched side's VP afterwards. Both are read off the match rows.
+  const voidedMatchIds = new Set<number>();
+  for (const m of matchRows) {
+    if (m.kind === "PAIRS" && m.ruling != null && parsePairVoid(m.ruling) != null) {
+      voidedMatchIds.add(m.id);
+    }
+  }
+
+  const byBoard = byBoardOf(rows, voidedMatchIds);
   const result = mode === "MP" ? mpRound(byBoard) : ximpRound(byBoard);
 
   // §3.3.8/§3.3.9 voided pairs: credited an AVE+/AVE−/AVE half-board blend,
   // scored off the (void-excluded) field top, and added to `pairVp`. Their
   // rows were kept out of `byBoard` so they never skew the field.
-  creditVoidPairs(rows, byBoard, mode, expectedBoards, result.pairVp);
+  creditVoidPairs(rows, byBoard, mode, expectedBoards, result.pairVp, matchRows);
 
   // §3.5 mismatch: the match was played for real (its rows stay in the field),
   // but the director has ruled the mismatched side's round VP be adjusted per
   // §3.5.2. Applied LAST, on the already-computed actual VP.
-  creditMismatch(rows, result.pairVp);
+  creditMismatch(rows, result.pairVp, matchRows);
   return result;
 }
 
@@ -582,25 +614,22 @@ export function scoreSwissVpRound(
 function creditMismatch(
   rows: SwissVpBoardRow[],
   pairVp: Map<string, number>,
+  matchRows: SwissVpMatchRow[],
 ): void {
-  // One ruling per mismatched table; dedupe by the mismatched pair id so the
-  // adjustment is applied once even though every board row carries the token.
-  const adjusted = new Set<string>();
-
-  for (const row of rows) {
-    if (row.status !== "MISMATCH") continue;
-    const ruling =
-      row.matchRuling != null ? parseMismatch(row.matchRuling) : null;
+  for (const m of matchRows) {
+    if (m.kind !== "PAIRS" || m.ruling == null) continue;
+    const ruling = parseMismatch(m.ruling);
     if (ruling == null) continue;
 
-    const mismatchedPairId = ruling.side === "NS" ? row.ns : row.ew;
-    if (adjusted.has(mismatchedPairId)) continue;
+    // The ruling's side is home-relative: NS = the match's `home` pair, EW =
+    // its `opponent`. Recompute only the mismatched side's round VP.
+    const mismatchedPairId = ruling.side === "NS" ? m.home : m.opponent;
+    if (mismatchedPairId == null) continue;
 
     const actual = pairVp.get(mismatchedPairId);
     if (actual == null) continue;
 
     pairVp.set(mismatchedPairId, adjustMismatchVp(actual, ruling, 20));
-    adjusted.add(mismatchedPairId);
   }
 }
 
@@ -618,7 +647,10 @@ interface VoidPairRound {
  * cause assigns (`pairVoidFaults`). Emits one entry per pair (NS and EW), keyed
  * by pair id, with the distinct board numbers voided.
  */
-function voidPairRounds(rows: SwissVpBoardRow[]): VoidPairRound[] {
+function voidPairRounds(
+  rows: SwissVpBoardRow[],
+  matchRows: SwissVpMatchRow[],
+): VoidPairRound[] {
   const byPair = new Map<string, { fault: PairVoidFault; boards: Set<number> }>();
 
   const add = (pairId: string, fault: PairVoidFault, board: number) => {
@@ -628,16 +660,26 @@ function voidPairRounds(rows: SwissVpBoardRow[]): VoidPairRound[] {
     byPair.set(pairId, entry);
   };
 
+  // Group board numbers by matchId so a voided match's boards are recovered.
+  const boardsByMatch = new Map<number, Set<number>>();
   for (const row of rows) {
-    if (row.status !== "VOID_PAIR") continue;
-    const cause =
-      row.directorOverrideResult != null
-        ? parsePairVoid(row.directorOverrideResult)
-        : null;
+    if (row.matchId == null) continue;
+    const set = boardsByMatch.get(row.matchId) ?? new Set<number>();
+    set.add(row.boardNumber);
+    boardsByMatch.set(row.matchId, set);
+  }
+
+  for (const m of matchRows) {
+    if (m.kind !== "PAIRS" || m.ruling == null) continue;
+    const cause = parsePairVoid(m.ruling);
     if (cause == null) continue;
+    // The cause is home-relative: NS = `home`, EW = `opponent`.
     const { ns, ew } = pairVoidFaults(cause);
-    add(row.ns, ns, row.boardNumber);
-    add(row.ew, ew, row.boardNumber);
+    const boards = boardsByMatch.get(m.id) ?? new Set<number>();
+    for (const board of boards) {
+      add(m.home, ns, board);
+      if (m.opponent != null) add(m.opponent, ew, board);
+    }
   }
 
   return Array.from(byPair.entries()).map(([pairId, v]) => ({
@@ -657,8 +699,9 @@ function creditVoidPairs(
   mode: SwissRoundMode,
   expectedBoards: number | undefined,
   pairVp: Map<string, number>,
+  matchRows: SwissVpMatchRow[],
 ): void {
-  const voids = voidPairRounds(rows);
+  const voids = voidPairRounds(rows, matchRows);
   if (voids.length === 0) return;
 
   if (mode === "MP") {

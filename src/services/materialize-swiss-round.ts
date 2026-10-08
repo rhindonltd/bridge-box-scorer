@@ -1,12 +1,12 @@
 import "server-only";
 
 import { getDb } from "@/db/games";
-import { boards, NewBoard } from "@/db/games/tables/boards";
-import { assignments, Assignment } from "@/db/games/tables/assignments";
+import { boards } from "@/db/games/tables/boards";
 import { and, eq } from "drizzle-orm";
 import { SectionLetter } from "@/model/participants";
 import {
   buildSectionRows,
+  insertSectionDrafts,
   type MaterializableMovement,
 } from "@/services/materialize-movement";
 import {
@@ -144,6 +144,10 @@ export function swissHalfMatchToMaterializable(
   const oppOneId = swissPairMovementId(tables, group.halfOneOpponent);
   const oppTwoId = swissPairMovementId(tables, group.halfTwoOpponent);
 
+  // All rows of this half-match group share one groupId so the group's two real
+  // comparisons and the two compensation blocks are explicit sibling rows.
+  const groupId = `hm|r${roundNumber}|t${seat.tableNumber}`;
+
   // Seat the anchor in its fixed direction; the opponent takes the opposite.
   const seatHalf = (
     opponentId: string,
@@ -157,6 +161,17 @@ export function swissHalfMatchToMaterializable(
       ew,
       boardStart: span.start,
       boardEnd: span.end,
+      // One of the half-match's two REAL comparisons (a /10 half pool), keyed
+      // by its own board span so the anchor's two halves stay distinct rows.
+      match: {
+        kind: "HALF_MATCH",
+        scoredAsUnit: true,
+        key: `${groupId}|${span.start}-${span.end}`,
+        home: ns,
+        opponent: ew,
+        groupId,
+        vpPool: 10,
+      },
     };
   };
 
@@ -184,6 +199,17 @@ export function swissHalfMatchToMaterializable(
         boardStart: missed.start,
         boardEnd: missed.end,
         halfAverage: true,
+        // The compensated (unplayed) half of a non-anchor: part of the same
+        // half-match group, but a phantom opponent (no real comparison).
+        match: {
+          kind: "HALF_MATCH",
+          scoredAsUnit: true,
+          key: `${groupId}|comp|${nonAnchorId}|${missed.start}-${missed.end}`,
+          home: nonAnchorId,
+          opponent: null,
+          groupId,
+          vpPool: 10,
+        },
       },
     ],
   });
@@ -238,18 +264,32 @@ export function swissRoundToMaterializable(
     boardsPerRound,
   );
 
-  const tablesOut: MaterializableMovement = seating.map((seat) => ({
-    tableNumber: seat.tableNumber,
-    rounds: [
-      {
-        roundNumber,
-        ns: swissPairMovementId(tables, seat.ns),
-        ew: swissPairMovementId(tables, seat.ew),
-        boardStart,
-        boardEnd,
-      },
-    ],
-  }));
+  const tablesOut: MaterializableMovement = seating.map((seat) => {
+    const ns = swissPairMovementId(tables, seat.ns);
+    const ew = swissPairMovementId(tables, seat.ew);
+    return {
+      tableNumber: seat.tableNumber,
+      rounds: [
+        {
+          roundNumber,
+          ns,
+          ew,
+          boardStart,
+          boardEnd,
+          // An ordinary Swiss Pairs table-round is a full /20 match scored as a
+          // unit (its per-round VP), keyed by its (round, table).
+          match: {
+            kind: "PAIRS",
+            scoredAsUnit: true,
+            key: `${roundNumber}|t${seat.tableNumber}`,
+            home: ns,
+            opponent: ew,
+            vpPool: 20,
+          },
+        },
+      ],
+    };
+  });
 
   // Highest table number used so far by a played table (for parking phantom /
   // compensation tables above it without a primary-key collision).
@@ -261,16 +301,26 @@ export function swissRoundToMaterializable(
   if (sitOutPairId != null) {
     // Park the sit-out on the next free table number so it doesn't collide with
     // a played table's PK. The board rows are flagged sitOut.
+    const sitOutNs = swissPairMovementId(tables, sitOutPairId);
     tablesOut.push({
       tableNumber: maxPlayedTable + 1,
       rounds: [
         {
           roundNumber,
-          ns: swissPairMovementId(tables, sitOutPairId),
+          ns: sitOutNs,
           ew: SWISS_SIT_OUT_PHANTOM,
           boardStart,
           boardEnd,
           sitOut: true,
+          // A bye: one participant, no opponent, scored as a unit (an average
+          // VP credit for the round).
+          match: {
+            kind: "BYE",
+            scoredAsUnit: true,
+            key: `${roundNumber}|bye|${sitOutNs}`,
+            home: sitOutNs,
+            opponent: null,
+          },
         },
       ],
     });
@@ -350,29 +400,12 @@ export async function materializeSwissRound(
     halfMatch,
   );
 
-  const { boardRows, assignmentRows } = buildSectionRows(section, movement);
+  const { boardRows, matchRows, assignmentRows } = buildSectionRows(
+    section,
+    movement,
+  );
 
-  insertRows(db, boardRows, assignmentRows);
+  insertSectionDrafts(db, matchRows, boardRows, assignmentRows);
 
   return { written: true };
-}
-
-/**
- * Insert board and assignment rows in a single transaction. Mirrors the private
- * insert used by the static materializer; kept local so the Swiss path owns its
- * own transaction without widening the static module's surface.
- */
-function insertRows(
-  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
-  boardRows: NewBoard[],
-  assignmentRows: Assignment[],
-): void {
-  db.transaction((tx) => {
-    if (boardRows.length > 0) {
-      tx.insert(boards).values(boardRows).run();
-    }
-    if (assignmentRows.length > 0) {
-      tx.insert(assignments).values(assignmentRows).run();
-    }
-  });
 }

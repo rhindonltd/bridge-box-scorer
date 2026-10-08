@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
 import type { BoardOutcome } from "@/model/score";
+import { withFixtureMatchId, seedFixtureMatch } from "@/mocks/fixtures/db-rows";
 
 // The game-index lookup only supplies the scoring type; mock it so this test
 // stays focused on the per-game DB and real scoring.
@@ -39,6 +40,7 @@ describe("section-aware leaderboard (real scoring)", () => {
     await create.createGameDb(gameId);
     const db = await games.getDb(gameId);
     if (!db) throw new Error("db not created");
+    seedFixtureMatch(db);
     return db;
   }
 
@@ -117,7 +119,7 @@ describe("section-aware leaderboard (real scoring)", () => {
         status: "CONFIRMED" as const,
       },
     ];
-    db.insert(boards).values(rows).run();
+    db.insert(boards).values(rows.map(withFixtureMatchId)).run();
 
     // --- Per-section leaderboards ---
     const perSection = await computeSectionLeaderboards(db, gameId);
@@ -190,7 +192,7 @@ describe("section-aware leaderboard (real scoring)", () => {
           ew: "PHANTOM",
           status: "SIT_OUT" as const,
         },
-      ])
+      ].map(withFixtureMatchId))
       .run();
 
     const perSection = await computeSectionLeaderboards(db, gameId);

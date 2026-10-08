@@ -17,11 +17,7 @@ import {
   type TeamsMatch,
   type TeamsTriple,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
-import {
-  detectTriples,
-  type DetectedTriple,
-  type TeamMatchRow,
-} from "@/scoring/swiss/team-match";
+import { type TeamTripleKind } from "@/scoring/swiss/team-match";
 import type { SwissTeamsOddRound } from "@/model/selected-movement";
 import {
   resolveSwissTeamsMatchNames,
@@ -83,95 +79,113 @@ export type CommitSwissTeamsResult =
   | { ok: true; roundNumber: number }
   | { ok: false; reason: DrawSwissTeamsRejection | "INVALID_MATCHES" };
 
-/** The current-round number and the matches already played, from board rows. */
+/** A triple recovered from the match rows, for the draw's slot-2 continuation. */
+interface DrawTriple {
+  kind: TeamTripleKind;
+  teams: [number, number, number];
+  rounds: number[];
+}
+
+/** The current-round number and the matches already played, from match rows. */
 interface SwissTeamsHistory {
   highestRound: number;
   playedOpponents: Set<string>;
-  /** Teams that have already had a bye (recovered from SIT_OUT rows). */
+  /** Teams that have already had a bye (recovered from BYE match rows). */
   hadBye: Set<TeamId>;
-  /** Teams that have already been in a triple (recovered from the triples). */
+  /** Teams that have already been in a triple (recovered from TRIPLE rows). */
   hadTriple: Set<TeamId>;
-  /** Every triple played so far (short + long), as detected from the rows. */
-  triples: DetectedTriple[];
+  /** Every triple played so far (short + long), recovered from the match rows. */
+  triples: DrawTriple[];
+}
+
+/** Safe home-table id of a seat string, or null when it is not a seat. */
+function teamTableOf(seat: string): TeamId | null {
+  try {
+    return parseSeat(seat).tableNumber;
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Reduce a section's board rows to the Swiss Teams history the draw needs: the
- * highest round materialized so far, the set of team matchups already played,
- * the teams that have already had a bye, and every triple played so far (with
- * the teams in each, so a long triple's second slot can reuse its first slot's
- * teams).
+ * Reduce a section's `matches` rows to the Swiss Teams history the draw needs:
+ * the highest round materialized so far, the set of team matchups already
+ * played, the teams that have already had a bye, and every triple played so far
+ * (with the teams in each, so a long triple's second slot can reuse its first
+ * slot's teams).
  *
- * A played match is recovered from each home table's row — the NS seat is the
- * home team and the EW seat encodes the opponent's home table. A bye is a
- * SIT_OUT row (NS = the bye team, EW = a phantom), recorded as a bye not a
- * match. Triples are recovered with the SAME detector the scorer uses
- * ({@link detectTriples}): a SHORT triple is a home table facing two opponents
- * in one round; a LONG triple is two consecutive 3-cycle rounds for one trio.
- * Each triple's three teams are recorded in `hadTriple`, and all three of its
- * pairwise matchups in `playedOpponents`.
+ * The authoritative `matches` table is read directly — no triple re-detection.
+ * A TEAMS or TRIPLE row's `home`/`opponent` are the two teams' home-NS seats
+ * (a played matchup); a BYE row names the sitting team; a triple's TRIPLE rows
+ * share a `groupId` and together name its three teams and the round(s) it spans
+ * (SHORT one round, LONG two).
  */
 async function getSwissTeamsHistory(
   db: Db,
   section: SectionLetter,
 ): Promise<SwissTeamsHistory> {
-  const { boards } = await import("@/db/games/tables/boards");
+  const { matches } = await import("@/db/games/tables/matches");
   const { eq } = await import("drizzle-orm");
 
-  const rows = await db
-    .select({
-      roundNumber: boards.roundNumber,
-      ns: boards.ns,
-      ew: boards.ew,
-      status: boards.status,
-    })
-    .from(boards)
-    .where(eq(boards.section, section));
+  const matchRows = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.section, section));
 
   const playedOpponents = new Set<string>();
   const hadBye = new Set<TeamId>();
+  const hadTriple = new Set<TeamId>();
   let highestRound = 0;
 
-  // Minimal TeamMatchRow-shaped rows for the shared triple detector (it reads
-  // only section / roundNumber / ns / ew / status).
-  const detectorRows: TeamMatchRow[] = [];
+  // Per groupId, a triple's teams and the rounds it spans.
+  const tripleByGroup = new Map<
+    string,
+    { kind: TeamTripleKind; teams: Set<number>; rounds: Set<number> }
+  >();
 
-  for (const row of rows) {
-    highestRound = Math.max(highestRound, row.roundNumber);
+  for (const m of matchRows) {
+    highestRound = Math.max(highestRound, m.roundNumber);
+    const home = teamTableOf(m.home);
+    const away = m.opponent != null ? teamTableOf(m.opponent) : null;
 
-    // A SIT_OUT row is a bye: record the sitting team, not a played match.
-    if (row.status === "SIT_OUT") {
-      try {
-        hadBye.add(parseSeat(row.ns).tableNumber);
-      } catch {
-        // A non-seat NS id (should not occur) is skipped.
-      }
+    if (m.kind === "BYE") {
+      if (home != null) hadBye.add(home);
       continue;
     }
 
-    try {
-      const home = parseSeat(row.ns);
-      const away = parseSeat(row.ew);
-      playedOpponents.add(teamOpponentKey(home.tableNumber, away.tableNumber));
-    } catch {
-      // A non-seat id (should not occur for teams) is skipped.
+    if (home != null && away != null) {
+      playedOpponents.add(teamOpponentKey(home, away));
     }
 
-    detectorRows.push({
-      section,
-      roundNumber: row.roundNumber,
-      boardNumber: 0,
-      ns: row.ns,
-      ew: row.ew,
-      confirmedResult: null,
-      directorOverrideResult: null,
-      status: row.status,
-    });
+    if (m.kind === "TRIPLE" && m.groupId != null) {
+      const entry =
+        tripleByGroup.get(m.groupId) ??
+        {
+          kind: (m.vpPool === 20 ? "LONG" : "SHORT") as TeamTripleKind,
+          teams: new Set<number>(),
+          rounds: new Set<number>(),
+        };
+      if (home != null) entry.teams.add(home);
+      if (away != null) entry.teams.add(away);
+      entry.rounds.add(m.roundNumber);
+      tripleByGroup.set(m.groupId, entry);
+    }
   }
 
-  const triples = detectTriples(detectorRows);
-  const hadTriple = new Set<TeamId>();
-  for (const t of triples) for (const team of t.teams) hadTriple.add(team);
+  const triples: DrawTriple[] = [];
+  for (const { kind, teams, rounds } of tripleByGroup.values()) {
+    for (const t of teams) hadTriple.add(t);
+    const sortedTeams = [...teams].sort((a, b) => a - b);
+    triples.push({
+      kind,
+      teams: [sortedTeams[0], sortedTeams[1], sortedTeams[2]] as [
+        number,
+        number,
+        number,
+      ],
+      rounds: [...rounds].sort((a, b) => a - b),
+    });
+  }
 
   return { highestRound, playedOpponents, hadBye, hadTriple, triples };
 }
@@ -188,11 +202,15 @@ async function isRoundComplete(
   roundNumber: number,
 ): Promise<boolean> {
   const { boards } = await import("@/db/games/tables/boards");
+  const { matches } = await import("@/db/games/tables/matches");
   const { and, eq } = await import("drizzle-orm");
 
+  // Join each board to its match so a voided / mismatched match (ruling now on
+  // `matches.ruling`) counts as resolved even if its boards were never played.
   const rows = await db
-    .select({ status: boards.status })
+    .select({ status: boards.status, ruling: matches.ruling })
     .from(boards)
+    .innerJoin(matches, eq(boards.matchId, matches.id))
     .where(
       and(eq(boards.section, section), eq(boards.roundNumber, roundNumber)),
     );
@@ -204,9 +222,9 @@ async function isRoundComplete(
       r.status === "OVERRIDDEN" ||
       r.status === "CANCELLED" ||
       r.status === "REMOVED_TEAMS" ||
-      r.status === "VOID_MATCH" ||
-      r.status === "MISMATCH" ||
-      r.status === "SIT_OUT",
+      r.status === "SIT_OUT" ||
+      // A match-level void / mismatch ruling resolves the board.
+      r.ruling != null,
   );
 }
 
@@ -322,7 +340,7 @@ function resolveOddRound(
   oddHandling: OddHandling,
   oddRoundPlan: SwissTeamsOddRound[] | undefined,
   nextRound: number,
-  triples: DetectedTriple[],
+  triples: DrawTriple[],
 ): { oddRound: OddRoundResolution; fixedTriple: TeamsTriple | null } {
   const plan = oddRoundPlan as OddRoundResolution[] | undefined;
   const oddRound = roundOddResolution(oddHandling, plan, nextRound);

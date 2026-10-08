@@ -2,6 +2,7 @@ import "server-only";
 
 import { Db } from "@/db/games";
 import { boards, Board } from "@/db/games/tables/boards";
+import { matches, type Match } from "@/db/games/tables/matches";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { equaliseMpBoards } from "@/scoring/traveller/pair/neuberg-across-boards";
@@ -82,13 +83,14 @@ function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
  */
 function scoreSwissVp(
   boardRows: Board[],
+  matchRows: Match[],
   mode: SwissVpMode,
   expectedBoards: number | undefined,
 ) {
   if (mode === "XIMP")
-    return calculateSwissXimpVpOverall(boardRows, { expectedBoards });
+    return calculateSwissXimpVpOverall(boardRows, matchRows, { expectedBoards });
   if (mode === "MP")
-    return calculateSwissMpVpOverall(boardRows, { expectedBoards });
+    return calculateSwissMpVpOverall(boardRows, matchRows, { expectedBoards });
   return null;
 }
 
@@ -370,6 +372,7 @@ type Pairs = Awaited<ReturnType<typeof findPairs>>;
  */
 function computeCombined(
   boardRows: Board[],
+  matchRows: Match[],
   pairs: Pairs,
   gameId: string,
   scoringType: ScoringType,
@@ -387,28 +390,34 @@ function computeCombined(
   // ranks teams on total net IMPs; every other game ranks pairs (Swiss VP or
   // the standard board-pooled overall).
   if (teamsBoardComparison !== null) {
-    const overallScore = calculateTeamsBoardComparisonOverall(boardRows, {
-      barometer,
-      scoring: teamsBoardComparison,
-      expectedBoards,
-    });
+    const overallScore = calculateTeamsBoardComparisonOverall(
+      boardRows,
+      matchRows,
+      {
+        barometer,
+        scoring: teamsBoardComparison,
+        expectedBoards,
+      },
+    );
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
   if (teamsImpAggregate) {
-    const overallScore = calculateTeamsImpAggregateOverall(boardRows, {
+    const overallScore = calculateTeamsImpAggregateOverall(boardRows, matchRows, {
       barometer,
     });
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
   if (isTeamsVp) {
-    const overallScore = calculateTeamsVpOverall(boardRows, { expectedBoards });
+    const overallScore = calculateTeamsVpOverall(boardRows, matchRows, {
+      expectedBoards,
+    });
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
   const overallScore =
-    scoreSwissVp(boardRows, swissVpMode, expectedBoards) ??
+    scoreSwissVp(boardRows, matchRows, swissVpMode, expectedBoards) ??
     scoreBoardsToOverall(boardRows, scoringType, gameId);
   const participants = pairs.map(toParticipant);
   return {
@@ -430,6 +439,7 @@ function computeCombined(
  */
 function computeSections(
   boardRows: Board[],
+  matchRows: Match[],
   pairs: Pairs,
   scoringType: ScoringType,
   swissVpMode: SwissVpMode,
@@ -446,6 +456,13 @@ function computeSections(
     const arr = rowsBySection.get(row.section) ?? [];
     arr.push(row);
     rowsBySection.set(row.section, arr);
+  }
+
+  const matchesBySection = new Map<string, Match[]>();
+  for (const m of matchRows) {
+    const arr = matchesBySection.get(m.section) ?? [];
+    arr.push(m);
+    matchesBySection.set(m.section, arr);
   }
 
   const pairsBySection = new Map<string, Pairs>();
@@ -471,13 +488,18 @@ function computeSections(
 
   return sections.map((section): SectionLeaderboard => {
     const sectionRows = rowsBySection.get(section) ?? [];
+    const sectionMatches = matchesBySection.get(section) ?? [];
 
     if (teamsBoardComparison !== null) {
-      const overallScore = calculateTeamsBoardComparisonOverall(sectionRows, {
-        barometer,
-        scoring: teamsBoardComparison,
-        expectedBoards,
-      });
+      const overallScore = calculateTeamsBoardComparisonOverall(
+        sectionRows,
+        sectionMatches,
+        {
+          barometer,
+          scoring: teamsBoardComparison,
+          expectedBoards,
+        },
+      );
       return {
         section,
         type: overallScore.type,
@@ -487,9 +509,13 @@ function computeSections(
     }
 
     if (teamsImpAggregate) {
-      const overallScore = calculateTeamsImpAggregateOverall(sectionRows, {
-        barometer,
-      });
+      const overallScore = calculateTeamsImpAggregateOverall(
+        sectionRows,
+        sectionMatches,
+        {
+          barometer,
+        },
+      );
       return {
         section,
         type: overallScore.type,
@@ -499,7 +525,7 @@ function computeSections(
     }
 
     if (isTeamsVp) {
-      const overallScore = calculateTeamsVpOverall(sectionRows, {
+      const overallScore = calculateTeamsVpOverall(sectionRows, sectionMatches, {
         expectedBoards,
       });
       return {
@@ -511,7 +537,7 @@ function computeSections(
     }
 
     const overallScore =
-      scoreSwissVp(sectionRows, swissVpMode, expectedBoards) ??
+      scoreSwissVp(sectionRows, sectionMatches, swissVpMode, expectedBoards) ??
       scoreBoardsToOverall(sectionRows, scoringType, section);
     const sectionParticipants = (pairsBySection.get(section) ?? []).map(
       toParticipant,
@@ -546,6 +572,7 @@ async function readLeaderboardInputs(
   twoWinner: boolean;
   expectedBoards: number | undefined;
   boardRows: Board[];
+  matchRows: Match[];
   pairs: Pairs;
   teams: AssignedTeam[];
 }> {
@@ -599,14 +626,23 @@ async function readLeaderboardInputs(
       ? movement.boardsPerRound
       : undefined;
 
-  const [boardRows, pairs, teams] = await Promise.all([
+  const needsTeams =
+    isTeamsVp || teamsImpAggregate || teamsBoardComparison !== null;
+
+  // Match rows carry the structure the teams scorers read AND the §3.3.8/§3.5
+  // match-level rulings the Swiss Pairs VP scorer applies, so load them for any
+  // teams game OR a Swiss Pairs VP (XIMP/MP) game.
+  const needsMatches = needsTeams || swissVpMode !== null;
+
+  const [boardRows, matchRows, pairs, teams] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
+    needsMatches
+      ? (db.select().from(matches) as Promise<Match[]>)
+      : Promise.resolve([] as Match[]),
     findPairs(db),
     // Teams are derived from the seating; needed for any teams game (VP,
     // aggregate IMP, BAM, or PAB).
-    isTeamsVp || teamsImpAggregate || teamsBoardComparison !== null
-      ? findTeams(db)
-      : Promise.resolve([] as AssignedTeam[]),
+    needsTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
   ]);
 
   return {
@@ -620,6 +656,7 @@ async function readLeaderboardInputs(
     twoWinner,
     expectedBoards,
     boardRows,
+    matchRows,
     pairs,
     teams,
   };
@@ -650,12 +687,14 @@ export async function buildLeaderboards(
     twoWinner,
     expectedBoards,
     boardRows,
+    matchRows,
     pairs,
     teams,
   } = await readLeaderboardInputs(db, gameId);
 
   const sections = computeSections(
     boardRows,
+    matchRows,
     pairs,
     scoringType,
     swissVpMode,
@@ -678,6 +717,7 @@ export async function buildLeaderboards(
     leaderboard: showCombined
       ? computeCombined(
           boardRows,
+          matchRows,
           pairs,
           gameId,
           scoringType,
@@ -715,11 +755,13 @@ export async function computeLeaderboard(
     twoWinner,
     expectedBoards,
     boardRows,
+    matchRows,
     pairs,
     teams,
   } = await readLeaderboardInputs(db, gameId);
   return computeCombined(
     boardRows,
+    matchRows,
     pairs,
     gameId,
     scoringType,
@@ -754,11 +796,13 @@ export async function computeSectionLeaderboards(
     twoWinner,
     expectedBoards,
     boardRows,
+    matchRows,
     pairs,
     teams,
   } = await readLeaderboardInputs(db, gameId);
   return computeSections(
     boardRows,
+    matchRows,
     pairs,
     scoringType,
     swissVpMode,
@@ -800,14 +844,19 @@ export async function computeSectionLeaderboardsAsOf(
     twoWinner,
     expectedBoards,
     boardRows,
+    matchRows,
     pairs,
     teams,
   } = await readLeaderboardInputs(db, gameId);
   const earlierRows = boardRows.filter(
     (r) => r.roundNumber < maxRoundExclusive,
   );
+  const earlierMatches = matchRows.filter(
+    (m) => m.roundNumber < maxRoundExclusive,
+  );
   return computeSections(
     earlierRows,
+    earlierMatches,
     pairs,
     scoringType,
     swissVpMode,

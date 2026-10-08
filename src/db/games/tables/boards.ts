@@ -7,6 +7,7 @@ import {
 import { BoardStatuses } from "@/db/games/types/board-status";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
+import { matches } from "@/db/games/tables/matches";
 
 export const boards = sqliteTable(
   "boards",
@@ -24,14 +25,15 @@ export const boards = sqliteTable(
       "director_override_result",
     ).$type<BoardOutcome>(),
     directorOverrideLead: text("director_override_lead").$type<Card>(),
-    // A MATCH-LEVEL director ruling token that is NOT a board score, so it is
-    // kept separate from `confirmedResult`/`directorOverrideResult` (which the
-    // scoring field reads). Currently carries the EBU §3.5 mismatch ruling
-    // (`MM:<side>:<direction>:<fault>`, see `model/swiss-mismatch.ts`) stamped
-    // across every board row of a MISMATCH match: the board keeps its real
-    // played result in the field, and the Swiss VP scorers read this column to
-    // apply the §3.5.2 one-sided VP adjustment.
-    matchRuling: text("match_ruling").$type<string>(),
+    // The match this board belongs to (FK → matches.id). Every board belongs to
+    // exactly one match: its structural/seating record. The match row is
+    // authoritative for "which participants met over which boards in which
+    // round"; this board row holds only the per-board result. Written at
+    // materialisation (in the same transaction as the board insert); never
+    // written by the player submit/confirm path. See docs/design/matches-table.md.
+    matchId: integer("match_id")
+      .notNull()
+      .references(() => matches.id),
     status: text("status", {
       enum: BoardStatuses,
     }),

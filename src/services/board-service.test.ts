@@ -21,19 +21,13 @@ vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-vi.mock("@/db/games/queries/find-teams", () => ({
-  findTeams: vi.fn(),
-}));
-
-vi.mock("drizzle-orm", () => ({
-  eq: vi.fn((...args: any[]) => args),
-}));
-
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
-import { findTeams } from "@/db/games/queries/find-teams";
-import { getBoardInstances, buildTeamTravellerMatches } from "./board-service";
+import { getBoardInstances } from "./board-service";
 
+// NOTE: buildTeamTravellerMatches now reads the first-class `matches` table, so
+// its coverage lives in board-service-teams.int.test.ts (a real materialised
+// db) rather than against mocked board rows here.
 describe("board-service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -314,185 +308,6 @@ describe("board-service", () => {
       if (result[0].participants.type === "PAIRS") {
         expect(result[0].participants.ew).not.toBe("PHANTOM");
       }
-    });
-  });
-
-  describe("buildTeamTravellerMatches", () => {
-    /** A mock db whose object-arg `select().from().where()` resolves to rows. */
-    function dbWithRows(rows: unknown[]): Db {
-      return {
-        select: vi.fn().mockReturnValue({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue(rows),
-          }),
-        }),
-      } as unknown as Db;
-    }
-
-    it("groups a board's two rooms into one team match with names and margin", async () => {
-      // Board 5, round 1: team 1 (home table 1) v team 2 (home table 2).
-      //  - open room at table 1: A1NS (home team 1) vs A2EW, 4H by N making = +620
-      //  - closed room at table 2: A2NS (home team 2) vs A1EW, 3NT by N making = +400
-      const db = dbWithRows([
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 1,
-          boardNumber: 5,
-          ns: "A1NS",
-          ew: "A2EW",
-          confirmedResult: "4HN=",
-          directorOverrideResult: null,
-          status: "CONFIRMED",
-        },
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 2,
-          boardNumber: 5,
-          ns: "A2NS",
-          ew: "A1EW",
-          confirmedResult: "3NTN=",
-          directorOverrideResult: null,
-          status: "CONFIRMED",
-        },
-      ]);
-
-      vi.mocked(findTeams).mockResolvedValue([
-        { type: "TEAM", id: "A1NS", name: "Sharks" } as any,
-        { type: "TEAM", id: "A2NS", name: "Owls" } as any,
-      ]);
-
-      const matches = await buildTeamTravellerMatches(db, 5);
-
-      expect(matches).toHaveLength(1);
-      const m = matches[0];
-      // Keyed on the lower table; both rooms present.
-      expect(m.tables).toEqual([1, 2]);
-      expect(m.teams).toEqual([
-        { table: 1, id: "A1NS", name: "Sharks" },
-        { table: 2, id: "A2NS", name: "Owls" },
-      ]);
-      // 620 − 400 = 220 → a positive IMP margin for the home team.
-      expect(typeof m.margin).toBe("number");
-      expect(m.margin).toBeGreaterThan(0);
-    });
-
-    it("reports a null margin when a room has no comparable result yet", async () => {
-      const db = dbWithRows([
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 1,
-          boardNumber: 5,
-          ns: "A1NS",
-          ew: "A2EW",
-          confirmedResult: "4HN=",
-          directorOverrideResult: null,
-          status: "CONFIRMED",
-        },
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 2,
-          boardNumber: 5,
-          ns: "A2NS",
-          ew: "A1EW",
-          confirmedResult: null,
-          directorOverrideResult: null,
-          status: "NOT_PLAYED",
-        },
-      ]);
-      vi.mocked(findTeams).mockResolvedValue([]);
-
-      const matches = await buildTeamTravellerMatches(db, 5);
-
-      expect(matches).toHaveLength(1);
-      expect(matches[0].margin).toBeNull();
-      // Falls back to the raw team id when the team name isn't resolved.
-      expect(matches[0].teams[0].name).toBe("A1NS");
-    });
-
-    it("frames a LONG triple comparison (two rooms on this board, two rounds) as one two-team card", async () => {
-      // A long triple comparison x-y on set A board 5: the two rooms share the
-      // board but sit in different rounds (x·NS v y in round R, y·NS v x in
-      // R+1). It must still group into ONE two-team card, not two one-room ones.
-      const db = dbWithRows([
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 1,
-          boardNumber: 5,
-          ns: "A1NS",
-          ew: "A2EW",
-          confirmedResult: "4HN=",
-          directorOverrideResult: null,
-          status: "CONFIRMED",
-        },
-        {
-          section: "A",
-          roundNumber: 2,
-          tableNumber: 2,
-          boardNumber: 5,
-          ns: "A2NS",
-          ew: "A1EW",
-          confirmedResult: "3NTN=",
-          directorOverrideResult: null,
-          status: "CONFIRMED",
-        },
-      ]);
-      vi.mocked(findTeams).mockResolvedValue([
-        { type: "TEAM", id: "A1NS", name: "Sharks" } as any,
-        { type: "TEAM", id: "A2NS", name: "Owls" } as any,
-      ]);
-
-      const matches = await buildTeamTravellerMatches(db, 5);
-
-      expect(matches).toHaveLength(1);
-      expect(matches[0].tables).toEqual([1, 2]);
-      expect(matches[0].teams.map((t) => t.name)).toEqual(["Sharks", "Owls"]);
-      expect(matches[0].margin).toBeGreaterThan(0); // 620 − 400
-    });
-
-    it("frames each short-triple board set as its own two-team card", async () => {
-      // Board 5 is a short triple's set A (comparison 1 v 2); its two mutual
-      // rooms on this board form one two-team card. (Sets B/C live on other
-      // boards, so only this comparison appears for board 5.)
-      const db = dbWithRows([
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 1,
-          boardNumber: 5,
-          ns: "A1NS",
-          ew: "A2EW",
-          confirmedResult: "4HN=",
-          directorOverrideResult: null,
-          status: "CONFIRMED",
-        },
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 2,
-          boardNumber: 5,
-          ns: "A2NS",
-          ew: "A1EW",
-          confirmedResult: "3NTN=",
-          directorOverrideResult: null,
-          status: "CONFIRMED",
-        },
-      ]);
-      vi.mocked(findTeams).mockResolvedValue([]);
-
-      const matches = await buildTeamTravellerMatches(db, 5);
-      expect(matches).toHaveLength(1);
-      expect(matches[0].tables).toEqual([1, 2]);
-    });
-
-    it("returns an empty array for a board with no rows", async () => {
-      const db = dbWithRows([]);
-      vi.mocked(findTeams).mockResolvedValue([]);
-      expect(await buildTeamTravellerMatches(db, 9)).toEqual([]);
     });
   });
 });

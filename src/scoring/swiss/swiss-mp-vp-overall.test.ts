@@ -1,9 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
-import { calculateSwissMpVpOverall } from "./swiss-mp-vp-overall";
+import { calculateSwissMpVpOverall as calculateSwissMpVpOverallImpl } from "./swiss-mp-vp-overall";
+import { swissVpStructureFromRows } from "./swiss-vp-test-structure";
 import { BoardOutcome } from "@/model/score";
 
-function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
+// The Swiss VP scorer now takes the PAIRS `matches` rows (which carry the
+// §3.3.8/§3.5 rulings). These unit tests derive them from each scenario's board
+// rows via the test-only helper (which also lifts the old board-token rulings
+// onto the match rows); the materialiser + director-action path is covered by
+// the leaderboard/mismatch int tests.
+function calculateSwissMpVpOverall(
+  boardRows: SwissVpBoardRow[],
+  options: { expectedBoards?: number } = {},
+) {
+  const { matchRows, boardRows: stamped } = swissVpStructureFromRows(boardRows);
+  return calculateSwissMpVpOverallImpl(stamped, matchRows, options);
+}
+
+// A scenario row may carry a legacy `matchRuling` token (the MM: mismatch
+// ruling); the structure helper lifts it onto the derived PAIRS match row.
+type ScenarioRow = Partial<SwissVpBoardRow> & { matchRuling?: string | null };
+
+function row(overrides: ScenarioRow): SwissVpBoardRow {
   return {
     section: "A",
     roundNumber: 1,
@@ -15,7 +33,7 @@ function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
     directorOverrideResult: null,
     status: "COMPLETE",
     ...overrides,
-  };
+  } as SwissVpBoardRow;
 }
 
 describe("calculateSwissMpVpOverall", () => {

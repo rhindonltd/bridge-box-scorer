@@ -9,6 +9,7 @@ import {
   groupTeamTriples,
   teamMatchBoardWins,
   boardResult,
+  type TeamMatchStructureRow,
 } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
@@ -45,6 +46,7 @@ export function assembleBoardComparisonTeams(
   club: Club,
   teams: AssignedTeam[],
   boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
   scoring: UsebioBoardComparisonScoring,
 ): UsebioBoardComparisonTeamsData {
   const usebioClub: UsebioClub = {
@@ -73,6 +75,7 @@ export function assembleBoardComparisonTeams(
 
   const { matches, totals } = buildMatches(
     boardRows,
+    matchRows,
     numberByTeamId,
     winPoints,
   );
@@ -104,6 +107,7 @@ function leadOf(row: Board): Card | null {
  */
 function buildMatches(
   boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
   numberByTeamId: Map<string, string>,
   winPoints: number,
 ): { matches: UsebioBoardComparisonMatch[]; totals: Map<string, number> } {
@@ -114,7 +118,7 @@ function buildMatches(
 
   const matches: UsebioBoardComparisonMatch[] = [];
 
-  for (const match of groupTeamMatches(boardRows)) {
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
     const { homeTeamId, opponentTeamId } = match;
     const teamNumber = numberByTeamId.get(homeTeamId) ?? homeTeamId;
     const opposingNumber = numberByTeamId.get(opponentTeamId) ?? opponentTeamId;
@@ -170,7 +174,7 @@ function buildMatches(
   // its total is its CROSS board-comparison result (win/tie/loss vs BOTH other
   // tables), added once here (Option A: the export total agrees with the live
   // board-comparison standings).
-  for (const triple of groupTeamTriples(boardRows)) {
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
     for (const sub of triple.comparisons) {
       const teamNumber = numberByTeamId.get(sub.homeTeamId) ?? sub.homeTeamId;
       const opposingNumber =

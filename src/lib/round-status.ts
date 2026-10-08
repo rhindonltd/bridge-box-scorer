@@ -36,10 +36,7 @@ export function isBoardEntered(board: {
     board.status === "PENDING_CONFIRMATION" ||
     board.status === "OVERRIDDEN" ||
     board.status === "CANCELLED" ||
-    board.status === "REMOVED_TEAMS" ||
-    board.status === "VOID_MATCH" ||
-    board.status === "VOID_PAIR" ||
-    board.status === "MISMATCH"
+    board.status === "REMOVED_TEAMS"
   )
     return true;
   return false;

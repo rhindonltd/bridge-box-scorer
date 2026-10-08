@@ -24,24 +24,6 @@ export const BoardStatuses = [
   // board count). Finalized/playable like OVERRIDDEN. Teams IMP formats only;
   // not interpreted by the pairs scorers.
   "REMOVED_TEAMS",
-  // Every board of a TEAMS match that has been declared VOID (EBU White Book
-  // §3.3.6.1 incorrect seating / §3.3.9 less-than-half-playable). The match's
-  // margin→VP conversion no longer applies; instead each team is credited a
-  // ruling VP (flat 40%/60%, or the §3.3.9 AVE+/AVE− half-board split) derived
-  // from a `VOID:<cause>` token in `directorOverrideResult` (see
-  // `model/teams-match-void.ts`). All of the match's board rows (both rooms)
-  // carry this status so the scorer recognises the match as void. Finalized/
-  // playable like OVERRIDDEN. Teams VP only.
-  "VOID_MATCH",
-  // A board of a SWISS-PAIRS match that has been declared VOID (§3.3.8 /
-  // §3.3.9). Unlike teams (head-to-head), pairs are scored against the whole
-  // section field, so a voided pairs match (a) is REMOVED from the field the
-  // other pairs are matchpointed against, and (b) credits each affected pair an
-  // AVE+/AVE−/AVE blend over the match's boards. Each pair's rows carry a
-  // `VOIDP:<fault>` token (its own AVE+/AVE−/AVE standing) in
-  // `directorOverrideResult` (see `model/pairs-match-void.ts`). Finalized/
-  // playable like OVERRIDDEN; never counted in the field. Swiss-pairs VP only.
-  "VOID_PAIR",
   // A board that is not played at a given table in a given round because the
   // pair there is sitting out (one-pair-short session). Never played, scored,
   // or submittable.
@@ -53,17 +35,12 @@ export const BoardStatuses = [
   // played or submittable, and the half-match scorer recomputes the AVE+/AVE
   // split across them (board rows stay dumb — no fraction is stored).
   "HALF_AVERAGE",
-  // Every board of a SWISS match the director has declared a MISMATCH (EBU
-  // White Book §3.5): a contestant was drawn against the wrong opponents. The
-  // boards are REAL and still played/scored normally — the result stands and
-  // stays in the field — but the mismatched side's per-round VP is recomputed
-  // via the §3.5.2 one-sided adjustment, derived from an `MM:<side>:<dir>:<fault>`
-  // token in `directorOverrideResult` (see `model/swiss-mismatch.ts`). All of
-  // the match's board rows carry this status + token so the Swiss VP scorers
-  // (pairs and teams) recognise the match and adjust only the mismatched side.
-  // Finalized/playable like OVERRIDDEN; the opponent side is unaffected. Swiss
-  // VP only.
-  "MISMATCH",
+  // NOTE: the §3.3.6/§3.3.9 teams void (VOID_MATCH), §3.3.8/§3.3.9 pairs void
+  // (VOID_PAIR) and §3.5 mismatch (MISMATCH) are NO LONGER board statuses —
+  // they are match-level director rulings on `matches.ruling` (home-relative
+  // `VOID:` / `VOIDP:` / `MM:` tokens). A voided/mismatched match's board rows
+  // keep their ordinary status + real result; the scorers read the ruling off
+  // the match row. See docs/design/matches-table.md §6.3.
 ] as const;
 
 export type BoardStatus = (typeof BoardStatuses)[number];

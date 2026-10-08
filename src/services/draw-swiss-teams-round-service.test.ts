@@ -31,21 +31,78 @@ import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import { materializeSwissTeamsRound } from "@/services/materialize-swiss-teams-round";
 
+/** A `matches`-row shape for the history read, with sensible teams defaults. */
+interface StubMatch {
+  roundNumber: number;
+  kind: "TEAMS" | "TRIPLE" | "BYE";
+  home: string;
+  opponent: string | null;
+  groupId?: string | null;
+  vpPool?: number | null;
+}
+
+/** Build a full match row from the stub shorthand. */
+function matchRow(m: StubMatch) {
+  return {
+    id: 0,
+    section: "A",
+    roundNumber: m.roundNumber,
+    kind: m.kind,
+    scoredAsUnit: true,
+    home: m.home,
+    opponent: m.opponent,
+    groupId: m.groupId ?? null,
+    slot: null,
+    vpPool: m.vpPool ?? (m.kind === "BYE" ? null : 20),
+    boardStart: 1,
+    boardEnd: 1,
+    ruling: null,
+  };
+}
+
+/** An ordinary TEAMS head-to-head match row for round `r`, teams `a` v `b`. */
+function teamsMatch(r: number, a: number, b: number): StubMatch {
+  return { roundNumber: r, kind: "TEAMS", home: `A${a}NS`, opponent: `A${b}NS` };
+}
+
+/** A BYE match row for round `r`, team `t`. */
+function byeMatch(r: number, t: number): StubMatch {
+  return { roundNumber: r, kind: "BYE", home: `A${t}NS`, opponent: null };
+}
+
+/** The three TRIPLE comparison rows of a triple {a,b,c} in round `r`. */
+function tripleMatches(
+  r: number,
+  a: number,
+  b: number,
+  c: number,
+  kind: "SHORT" | "LONG" = "SHORT",
+): StubMatch[] {
+  const groupId = `triple|A|${[a, b, c].sort((x, y) => x - y).join("-")}`;
+  const vpPool = kind === "LONG" ? 20 : 10;
+  return [
+    { roundNumber: r, kind: "TRIPLE", home: `A${a}NS`, opponent: `A${b}NS`, groupId, vpPool },
+    { roundNumber: r, kind: "TRIPLE", home: `A${b}NS`, opponent: `A${c}NS`, groupId, vpPool },
+    { roundNumber: r, kind: "TRIPLE", home: `A${a}NS`, opponent: `A${c}NS`, groupId, vpPool },
+  ];
+}
+
 /**
- * A db stub whose two selects (history rows, then round-status rows) resolve to
- * `historyRows` and `statusRows` in call order. History rows carry ns/ew/round;
- * status rows carry `status`.
+ * A db stub whose two selects resolve in call order: first the section's
+ * `matches` rows (the history read, now the authoritative structure), then the
+ * round-status `boards` rows. `matchRows` are the stub shorthand expanded via
+ * {@link matchRow}; status rows carry `status`.
  */
-function stubDb(
-  historyRows: { roundNumber: number; ns: string; ew: string }[],
-  statusRows: { status: string }[] = [],
-) {
+function stubDb(matchRows: StubMatch[], statusRows: { status: string }[] = []) {
+  const matches = matchRows.map(matchRow);
   let call = 0;
   const select = () => {
     const which = call++;
     const chain: any = {
       from: () => chain,
-      where: () => Promise.resolve(which === 0 ? historyRows : statusRows),
+      // isRoundComplete now joins boards→matches (select().from().innerJoin().where()).
+      innerJoin: () => chain,
+      where: () => Promise.resolve(which === 0 ? matches : statusRows),
     };
     return chain;
   };
@@ -123,9 +180,7 @@ describe("previewNextSwissTeamsRound", () => {
   });
 
   it("rejects once every round has been drawn (event complete)", async () => {
-    vi.mocked(getDb).mockResolvedValue(
-      stubDb([{ roundNumber: 2, ns: "A1NS", ew: "A2EW" }]) as any,
-    );
+    vi.mocked(getDb).mockResolvedValue(stubDb([teamsMatch(2, 1, 2)]) as any);
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
       swissTeams: { teams: 4, rounds: 2, boardsPerRound: 3 },
@@ -139,10 +194,7 @@ describe("previewNextSwissTeamsRound", () => {
 
   it("rejects while the current round is not fully scored", async () => {
     vi.mocked(getDb).mockResolvedValue(
-      stubDb(
-        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
-        [{ status: "NOT_PLAYED" }],
-      ) as any,
+      stubDb([teamsMatch(1, 1, 2)], [{ status: "NOT_PLAYED" }]) as any,
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
@@ -158,7 +210,7 @@ describe("previewNextSwissTeamsRound", () => {
   it("computes the next round's matches WITHOUT writing anything", async () => {
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
-        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
+        [teamsMatch(1, 1, 2)],
         [{ status: "CONFIRMED" }, { status: "OVERRIDDEN" }],
       ) as any,
     );
@@ -196,10 +248,7 @@ describe("previewNextSwissTeamsRound", () => {
   it("previews an odd (BYE) round, reporting the bye team", async () => {
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
-        [
-          { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
-          { roundNumber: 1, ns: "A5NS", ew: "PHANTOM", status: "SIT_OUT" },
-        ] as any,
+        [teamsMatch(1, 1, 2), byeMatch(1, 5)],
         [{ status: "CONFIRMED" }, { status: "SIT_OUT" }],
       ) as any,
     );
@@ -221,13 +270,7 @@ describe("previewNextSwissTeamsRound", () => {
   it("previews an odd (TRIPLE) round, reporting the triple", async () => {
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
-        [
-          { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
-          { roundNumber: 1, ns: "A2NS", ew: "A1EW" },
-          { roundNumber: 1, ns: "A3NS", ew: "A4EW" },
-          { roundNumber: 1, ns: "A4NS", ew: "A5EW" },
-          { roundNumber: 1, ns: "A5NS", ew: "A3EW" },
-        ] as any,
+        [teamsMatch(1, 1, 2), ...tripleMatches(1, 3, 4, 5)],
         [{ status: "CONFIRMED" }],
       ) as any,
     );
@@ -278,17 +321,7 @@ describe("previewNextSwissTeamsRound", () => {
     // or 2 rather than re-tripling {3,4,5}.
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
-        [
-          { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
-          { roundNumber: 1, ns: "A2NS", ew: "A1EW" },
-          // SHORT triple {3,4,5}: A (3 v 4), B (4 v 5), C (5 v 3), both rooms.
-          { roundNumber: 1, ns: "A3NS", ew: "A4EW" },
-          { roundNumber: 1, ns: "A4NS", ew: "A3EW" },
-          { roundNumber: 1, ns: "A4NS", ew: "A5EW" },
-          { roundNumber: 1, ns: "A5NS", ew: "A4EW" },
-          { roundNumber: 1, ns: "A5NS", ew: "A3EW" },
-          { roundNumber: 1, ns: "A3NS", ew: "A5EW" },
-        ] as any,
+        [teamsMatch(1, 1, 2), ...tripleMatches(1, 3, 4, 5)],
         [{ status: "CONFIRMED" }],
       ) as any,
     );
@@ -322,13 +355,7 @@ describe("previewNextSwissTeamsRound", () => {
     // {3,4,5} as slot 2 rather than choosing a new three-way.
     vi.mocked(getDb).mockResolvedValue(
       stubDb(
-        [
-          { roundNumber: 1, ns: "A1NS", ew: "A2EW" },
-          { roundNumber: 1, ns: "A2NS", ew: "A1EW" },
-          { roundNumber: 1, ns: "A3NS", ew: "A4EW" }, // A half-1
-          { roundNumber: 1, ns: "A4NS", ew: "A5EW" }, // B half-1
-          { roundNumber: 1, ns: "A5NS", ew: "A3EW" }, // C half-1
-        ] as any,
+        [teamsMatch(1, 1, 2), ...tripleMatches(1, 3, 4, 5, "LONG")],
         [{ status: "CONFIRMED" }],
       ) as any,
     );
@@ -373,10 +400,7 @@ describe("commitNextSwissTeamsRound", () => {
   /** Seed a drawable 4-team round-1-complete section. */
   function seedDrawable() {
     vi.mocked(getDb).mockResolvedValue(
-      stubDb(
-        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
-        [{ status: "CONFIRMED" }],
-      ) as any,
+      stubDb([teamsMatch(1, 1, 2)], [{ status: "CONFIRMED" }]) as any,
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
@@ -426,10 +450,7 @@ describe("commitNextSwissTeamsRound", () => {
 
   it("propagates a precondition rejection (e.g. round incomplete)", async () => {
     vi.mocked(getDb).mockResolvedValue(
-      stubDb(
-        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
-        [{ status: "NOT_PLAYED" }],
-      ) as any,
+      stubDb([teamsMatch(1, 1, 2)], [{ status: "NOT_PLAYED" }]) as any,
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
@@ -450,10 +471,7 @@ describe("commitNextSwissTeamsRound", () => {
 
   it("accepts a valid bye round (odd field)", async () => {
     vi.mocked(getDb).mockResolvedValue(
-      stubDb(
-        [{ roundNumber: 1, ns: "A1NS", ew: "A2EW" }],
-        [{ status: "CONFIRMED" }],
-      ) as any,
+      stubDb([teamsMatch(1, 1, 2)], [{ status: "CONFIRMED" }]) as any,
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",

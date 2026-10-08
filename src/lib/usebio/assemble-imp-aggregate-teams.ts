@@ -9,6 +9,7 @@ import {
   groupTeamTriples,
   teamMatchBoardImps,
   boardResult,
+  type TeamMatchStructureRow,
 } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
@@ -44,6 +45,7 @@ export function assembleImpAggregateTeams(
   club: Club,
   teams: AssignedTeam[],
   boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
 ): UsebioSwissTeamsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -68,7 +70,11 @@ export function assembleImpAggregateTeams(
     };
   });
 
-  const { matches, totals } = buildImpMatches(boardRows, numberByTeamId);
+  const { matches, totals } = buildImpMatches(
+    boardRows,
+    matchRows,
+    numberByTeamId,
+  );
   const ranking = buildRanking(totals, numberByTeamId);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
@@ -107,6 +113,7 @@ function teamTravellerLine(
  */
 function buildImpMatches(
   boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
   numberByTeamId: Map<string, string>,
 ): { matches: UsebioSwissTeamsMatch[]; totals: Map<string, number> } {
   const totals = new Map<string, number>();
@@ -155,7 +162,7 @@ function buildImpMatches(
     });
   };
 
-  for (const match of groupTeamMatches(boardRows)) {
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
     const { perBoard, margin } = teamMatchBoardImps(match);
     emitMatch(
       match.round,
@@ -175,7 +182,7 @@ function buildImpMatches(
   // z-x), each an authoritative two-room MATCH node. A team's aggregate is the
   // sum of its comparison margins (home +margin, away −margin) — the export
   // total agrees with the live head-to-head standings.
-  for (const triple of groupTeamTriples(boardRows)) {
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
     for (const sub of triple.comparisons) {
       const { perBoard, margin } = teamMatchBoardImps(sub);
       emitMatch(

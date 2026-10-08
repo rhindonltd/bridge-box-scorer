@@ -22,7 +22,8 @@ import {
 import { swissRoundBoardRange } from "@/services/materialize-swiss-round";
 import { parseMismatch } from "@/model/swiss-mismatch";
 import { boards } from "@/db/games/tables/boards";
-import { and, eq } from "drizzle-orm";
+import { matches } from "@/db/games/tables/matches";
+import { eq } from "drizzle-orm";
 import {
   detectRoundMismatches,
   type MismatchCandidate,
@@ -114,12 +115,12 @@ async function alreadyRuledRounds(
   section: SectionLetter,
 ): Promise<Set<number>> {
   const rows = await db
-    .select({ roundNumber: boards.roundNumber, matchRuling: boards.matchRuling })
-    .from(boards)
-    .where(and(eq(boards.section, section), eq(boards.status, "MISMATCH")));
+    .select({ roundNumber: matches.roundNumber, ruling: matches.ruling })
+    .from(matches)
+    .where(eq(matches.section, section));
   const ruled = new Set<number>();
   for (const r of rows) {
-    if (r.matchRuling != null && parseMismatch(r.matchRuling) != null) {
+    if (r.ruling != null && parseMismatch(r.ruling) != null) {
       ruled.add(r.roundNumber);
     }
   }

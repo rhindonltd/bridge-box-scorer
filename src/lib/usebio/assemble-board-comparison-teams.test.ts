@@ -1,10 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { assembleBoardComparisonTeams } from "./assemble-board-comparison-teams";
+import { assembleBoardComparisonTeams as assembleBoardComparisonTeamsImpl } from "./assemble-board-comparison-teams";
+import { teamMatchStructureFromRows } from "@/scoring/swiss/team-match-test-structure";
 import type { Board } from "@/db/games/tables/boards";
 import type { AssignedTeam, Pair } from "@/model/participants";
 import type { BridgeGame } from "@/db/game-index/schema";
 import type { Club } from "@/db/system/schema";
 import type { BoardOutcome } from "@/model/score";
+import type { UsebioBoardComparisonScoring } from "./generate-usebio";
+
+// assembleBoardComparisonTeams now takes the first-class `matches` rows; derive
+// them from each scenario's board rows via the test-only helper. The
+// materialiser-written path is covered by the usebio-service int test.
+function assembleBoardComparisonTeams(
+  g: BridgeGame,
+  c: Club,
+  teams: AssignedTeam[],
+  boardRows: Board[],
+  scoring: UsebioBoardComparisonScoring,
+) {
+  return assembleBoardComparisonTeamsImpl(
+    g,
+    c,
+    teams,
+    boardRows,
+    teamMatchStructureFromRows(boardRows),
+    scoring,
+  );
+}
 
 const club: Club = { id: 1, name: "Test Club", clubNumber: "999" };
 
@@ -57,6 +79,7 @@ function board(
     directorOverrideResult: null,
     directorOverrideLead: null,
     status: "CONFIRMED",
+    matchId: 1,
   } as Board;
 }
 

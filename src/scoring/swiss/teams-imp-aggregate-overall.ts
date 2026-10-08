@@ -6,6 +6,7 @@ import {
   teamByeRounds,
   teamMatchBoardImps,
   tripleTeamStakes,
+  type TeamMatchStructureRow,
 } from "./team-match";
 import type { TeamImpAggOverallScore } from "@/model/leaderboard";
 
@@ -61,11 +62,12 @@ function creditImps(
  */
 export function calculateTeamsImpAggregateOverall(
   boardRows: SwissVpBoardRow[],
+  matchRows: TeamMatchStructureRow[],
   options: { barometer: boolean },
 ): TeamImpAggOverallScore {
   const totals = new Map<string, ImpAccumulator>();
 
-  for (const match of groupTeamMatches(boardRows)) {
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
     const { round, homeTeamId, opponentTeamId } = match;
     const { margin } = teamMatchBoardImps(match);
 
@@ -78,7 +80,7 @@ export function calculateTeamsImpAggregateOverall(
 
   // A bye contributes no IMPs, but record the round so the sitting team stays
   // on the table.
-  for (const bye of teamByeRounds(boardRows)) {
+  for (const bye of teamByeRounds(matchRows)) {
     creditImps(totals, bye.teamId, bye.round, 0);
   }
 
@@ -87,7 +89,7 @@ export function calculateTeamsImpAggregateOverall(
   // the round(s) its NS pair hosted them in (SHORT: one round; LONG: split
   // across R and R+1). Nothing comparable yet contributes 0, exactly like a
   // two-team match.
-  for (const triple of groupTeamTriples(boardRows)) {
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
     const byTeamRound = new Map<string, number>();
     for (const stake of tripleTeamStakes(triple)) {
       const { margin } = teamMatchBoardImps(stake.comparison);

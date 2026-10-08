@@ -107,11 +107,16 @@ async function isRoundComplete(
   roundNumber: number,
 ): Promise<boolean> {
   const { boards } = await import("@/db/games/tables/boards");
+  const { matches } = await import("@/db/games/tables/matches");
   const { and, eq } = await import("drizzle-orm");
 
+  // Join each board to its match so a voided / mismatched match (whose ruling
+  // now lives on `matches.ruling`, not the board) counts as resolved even if
+  // its boards were never played.
   const rows = await db
-    .select({ status: boards.status })
+    .select({ status: boards.status, ruling: matches.ruling })
     .from(boards)
+    .innerJoin(matches, eq(boards.matchId, matches.id))
     .where(
       and(eq(boards.section, section), eq(boards.roundNumber, roundNumber)),
     );
@@ -126,9 +131,8 @@ async function isRoundComplete(
       r.status === "OVERRIDDEN" ||
       r.status === "CANCELLED" ||
       r.status === "REMOVED_TEAMS" ||
-      r.status === "VOID_MATCH" ||
-      r.status === "VOID_PAIR" ||
-      r.status === "MISMATCH",
+      // A match-level void / mismatch ruling resolves the board.
+      r.ruling != null,
   );
 }
 

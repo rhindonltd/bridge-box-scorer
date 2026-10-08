@@ -3,7 +3,9 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { boards } from "@/db/games/tables/boards";
+import { matches } from "@/db/games/tables/matches";
 import { BoardOutcome } from "@/model/score";
+import { parseSeat } from "@/model/participants";
 
 /**
  * Minimal shape of the game db handle this action needs. Kept structural so
@@ -128,73 +130,133 @@ function matchRoomWhere(key: MatchRoomKey) {
 }
 
 /**
- * Void a whole TEAMS match (EBU White Book §3.3.6.1 / §3.3.9). Flips every
- * board row of the selected room (the (round, table) the director acted from)
- * to VOID_MATCH and stamps the `VOID:<cause>` token into `directorOverrideResult`.
- * Marking one room suffices: the teams VP scorer reads the cause from whichever
- * room carries it (inverting the offender side for the opponent room), and
- * treats the whole match as void. The cause is expressed relative to the acted
- * row's NS/EW seats.
+ * A db handle that can both read (to resolve the match) and write a match-level
+ * ruling. Match-level rulings now live on the `matches` row, so these writers
+ * need select + update (not just update like the per-board writers).
+ */
+type MatchRulingWriter = Pick<BetterSQLite3Database, "select" | "update">;
+
+/**
+ * Resolve the `matches` row the acted room belongs to, and whether the acted
+ * table is that match's HOME (lower-table / canonical primary) side.
+ *
+ * The ruling token the director supplies is expressed relative to the ACTED
+ * room's seats; the match row stores it home-relative, so the caller inverts
+ * the offender side / mismatched side when the acted table is the opponent's.
+ */
+async function resolveActedMatch(
+  db: MatchRulingWriter,
+  key: MatchRoomKey,
+): Promise<{ matchId: number; actedIsHome: boolean } | null> {
+  const boardRow = (
+    await db
+      .select({ matchId: boards.matchId })
+      .from(boards)
+      .where(matchRoomWhere(key))
+      .limit(1)
+  )[0];
+  if (!boardRow) return null;
+
+  const matchRow = (
+    await db
+      .select({ home: matches.home })
+      .from(matches)
+      .where(eq(matches.id, boardRow.matchId))
+      .limit(1)
+  )[0];
+  if (!matchRow) return null;
+
+  let homeTable: number;
+  try {
+    homeTable = parseSeat(matchRow.home).tableNumber;
+  } catch {
+    // Should not happen (home is always a seat id); treat the acted room as home.
+    return { matchId: boardRow.matchId, actedIsHome: true };
+  }
+  return { matchId: boardRow.matchId, actedIsHome: homeTable === key.tableNumber };
+}
+
+/** Write a ruling token onto a match row. */
+async function writeMatchRuling(
+  db: MatchRulingWriter,
+  matchId: number,
+  ruling: string,
+): Promise<void> {
+  await db.update(matches).set({ ruling }).where(eq(matches.id, matchId));
+}
+
+/**
+ * Void a whole TEAMS match (EBU White Book §3.3.6.1 / §3.3.9). Writes the
+ * `VOID:<cause>` ruling onto the match's `matches.ruling` (home-relative). The
+ * teams VP scorer reads it and credits each team a ruling VP instead of a
+ * margin → VP. The `cause` is supplied relative to the acted room's seats; it
+ * is inverted to home-relative when the director acted from the opponent room.
  */
 export async function voidTeamsMatch(
-  db: BoardsWriter,
+  db: MatchRulingWriter,
   key: MatchRoomKey,
   causeToken: string,
 ): Promise<void> {
-  await db
-    .update(boards)
-    .set({
-      directorOverrideResult: causeToken as BoardOutcome,
-      status: "VOID_MATCH",
-    })
-    .where(matchRoomWhere(key));
+  const resolved = await resolveActedMatch(db, key);
+  if (!resolved) return;
+  const ruling = resolved.actedIsHome
+    ? causeToken
+    : invertVoidCauseToken(causeToken);
+  await writeMatchRuling(db, resolved.matchId, ruling);
 }
 
 /**
  * Void a whole SWISS-PAIRS match (EBU White Book §3.3.8 / §3.3.9). A pairs
- * match is one table (NS vs EW on the same board rows), so this flips every
- * board row of the (round, table) to VOID_PAIR and stamps the `VOIDP:<cause>`
- * token into `directorOverrideResult`. The scorer removes these rows from the
- * field the other pairs are matchpointed against and credits each of the two
- * pairs an AVE+/AVE−/AVE compensation per the cause. The cause is expressed
- * relative to the acted row's NS/EW seats.
+ * match is one table, so the acted room IS the match (home = its NS). Writes
+ * the `VOIDP:<cause>` ruling onto `matches.ruling`. The scorer removes the
+ * match from the field the other pairs are matchpointed against and credits
+ * each of the two pairs an AVE+/AVE−/AVE compensation per the cause.
  */
 export async function voidPairsMatch(
-  db: BoardsWriter,
+  db: MatchRulingWriter,
   key: MatchRoomKey,
   causeToken: string,
 ): Promise<void> {
-  await db
-    .update(boards)
-    .set({
-      directorOverrideResult: causeToken as BoardOutcome,
-      status: "VOID_PAIR",
-    })
-    .where(matchRoomWhere(key));
+  const resolved = await resolveActedMatch(db, key);
+  if (!resolved) return;
+  // A pairs match is a single table: the acted room is always the home side
+  // (home = this table's NS), so no inversion is needed.
+  await writeMatchRuling(db, resolved.matchId, causeToken);
 }
 
 /**
  * Mark a whole SWISS match (pairs or teams) a MISMATCH (EBU White Book §3.5).
- * Flips every board row of the acted room (round + table) to MISMATCH and
- * stamps the `MM:<side>:<direction>:<fault>` token into `directorOverrideResult`.
- * The boards are NOT cancelled — they stay real and in the field; the Swiss VP
- * scorers read the token and recompute ONLY the mismatched side's round VP via
- * the §3.5.2 adjustment. The ruling is expressed relative to the acted row's
- * seats (NS = this table / home team, EW = the opponents).
+ * Writes the `MM:<side>:<direction>:<fault>` ruling onto `matches.ruling`
+ * (home-relative). The boards are NOT cancelled — they stay real and in the
+ * field; the Swiss VP scorers read the ruling and recompute ONLY the mismatched
+ * side's round VP via the §3.5.2 adjustment. The ruling is supplied relative to
+ * the acted room's seats; its `side` is flipped when the acted table is the
+ * opponent's (teams) room.
  */
 export async function markMismatch(
-  db: BoardsWriter,
+  db: MatchRulingWriter,
   key: MatchRoomKey,
   rulingToken: string,
 ): Promise<void> {
-  await db
-    .update(boards)
-    .set({
-      // The ruling goes in its OWN column so the board keeps its real played
-      // result in `confirmedResult`/`directorOverrideResult` and still scores
-      // normally in the field; only the final per-round VP is adjusted.
-      matchRuling: rulingToken,
-      status: "MISMATCH",
-    })
-    .where(matchRoomWhere(key));
+  const resolved = await resolveActedMatch(db, key);
+  if (!resolved) return;
+  const ruling = resolved.actedIsHome
+    ? rulingToken
+    : invertMismatchSideToken(rulingToken);
+  await writeMatchRuling(db, resolved.matchId, ruling);
+}
+
+/** Flip the offender side of a `VOID:SHORT_OFFENDER_NS/EW` token; others as-is. */
+function invertVoidCauseToken(token: string): string {
+  if (token === "VOID:SHORT_OFFENDER_NS") return "VOID:SHORT_OFFENDER_EW";
+  if (token === "VOID:SHORT_OFFENDER_EW") return "VOID:SHORT_OFFENDER_NS";
+  return token;
+}
+
+/** Flip the `side` field (NS↔EW) of an `MM:<side>:<dir>:<fault>` token. */
+function invertMismatchSideToken(token: string): string {
+  const parts = token.split(":");
+  if (parts.length !== 4 || parts[0] !== "MM") return token;
+  parts[1] = parts[1] === "NS" ? "EW" : "NS";
+  return parts.join(":");
 }

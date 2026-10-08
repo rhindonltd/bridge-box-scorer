@@ -183,15 +183,15 @@ describe("detectSectionMismatches (§3.5 detection)", () => {
     await setResult(2, 2, "3NTN=");
     await setResult(2, 3, "3NTN=");
 
-    // Stamp a MISMATCH ruling on round 2 → detection must skip the round.
+    // Stamp a MISMATCH ruling on round 2's matches → detection must skip it.
     const games = await import("@/db/games");
-    const { boards } = await import("@/db/games/tables/boards");
+    const { matches } = await import("@/db/games/tables/matches");
     const { eq } = await import("drizzle-orm");
     const db = (await games.getDb(gameId))!;
     await db
-      .update(boards)
-      .set({ status: "MISMATCH", matchRuling: "MM:NS:HIGHER:NOT" })
-      .where(eq(boards.roundNumber, 2));
+      .update(matches)
+      .set({ ruling: "MM:NS:HIGHER:NOT" })
+      .where(eq(matches.roundNumber, 2));
 
     const { detectSectionMismatches } = await import(
       "@/services/detect-swiss-mismatch-service"

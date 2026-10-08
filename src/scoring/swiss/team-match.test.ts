@@ -2,16 +2,32 @@ import { describe, it, expect } from "vitest";
 import {
   boardResult,
   teamIdFor,
-  groupTeamMatches,
-  groupTeamTriples,
+  groupTeamMatches as groupTeamMatchesImpl,
+  groupTeamTriples as groupTeamTriplesImpl,
   tripleTeamStakes,
   tripleVpPool,
-  teamByeRounds,
+  teamByeRounds as teamByeRoundsImpl,
   teamMatchBoardImps,
   teamMatchBoardWins,
   type TeamMatchRow,
 } from "./team-match";
+import { teamMatchStructureFromRows } from "./team-match-test-structure";
 import type { BoardOutcome } from "@/model/score";
+
+// The structure readers now consume the first-class `matches` rows. These unit
+// tests drive them from board-row scenarios by deriving the implied match rows
+// via the test-only {@link teamMatchStructureFromRows} helper (the inference
+// the production readers no longer do — see that module's note). The real
+// materialiser-written path is covered by the int tests.
+function groupTeamMatches<R extends TeamMatchRow>(rows: R[]) {
+  return groupTeamMatchesImpl(rows, teamMatchStructureFromRows(rows));
+}
+function groupTeamTriples<R extends TeamMatchRow>(rows: R[]) {
+  return groupTeamTriplesImpl(rows, teamMatchStructureFromRows(rows));
+}
+function teamByeRounds<R extends TeamMatchRow>(rows: R[]) {
+  return teamByeRoundsImpl(teamMatchStructureFromRows(rows));
+}
 
 function row(
   round: number,

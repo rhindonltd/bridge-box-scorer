@@ -2,7 +2,7 @@ import { PairSwissVpOverallScore } from "@/model/leaderboard";
 import { rank } from "@/scoring/overall/rank";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 import { VpAccumulator, creditVp } from "./vp-accumulator";
-import { scoreSwissVpRound } from "./swiss-vp-round";
+import { scoreSwissVpRound, type SwissVpMatchRow } from "./swiss-vp-round";
 
 /**
  * Compute the Cross-IMP (Butler) Swiss Pairs Victory-Point overall standings.
@@ -31,6 +31,7 @@ import { scoreSwissVpRound } from "./swiss-vp-round";
  */
 export function calculateSwissXimpVpOverall(
   boardRows: SwissVpBoardRow[],
+  matchRows: SwissVpMatchRow[],
   options: { expectedBoards?: number } = {},
 ): PairSwissVpOverallScore {
   const rounds = new Map<number, SwissVpBoardRow[]>();
@@ -41,9 +42,22 @@ export function calculateSwissXimpVpOverall(
     rounds.set(row.roundNumber, arr);
   }
 
+  // The §3.3.8/§3.5 rulings live on the PAIRS match rows, grouped by round.
+  const matchesByRound = new Map<number, SwissVpMatchRow[]>();
+  for (const m of matchRows) {
+    const arr = matchesByRound.get(m.roundNumber) ?? [];
+    arr.push(m);
+    matchesByRound.set(m.roundNumber, arr);
+  }
+
   const totals = new Map<string, VpAccumulator>();
   for (const [round, rows] of rounds) {
-    const { pairVp } = scoreSwissVpRound(rows, "XIMP", options.expectedBoards);
+    const { pairVp } = scoreSwissVpRound(
+      rows,
+      "XIMP",
+      options.expectedBoards,
+      matchesByRound.get(round) ?? [],
+    );
     for (const [pairId, vp] of pairVp) {
       creditVp(totals, pairId, round, vp);
     }

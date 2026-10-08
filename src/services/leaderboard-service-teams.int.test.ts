@@ -4,6 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
 import type { BoardOutcome } from "@/model/score";
+import {
+  withFixtureMatchId,
+  seedFixtureTeamsMatch,
+} from "@/mocks/fixtures/db-rows";
 
 // A Swiss Teams game: the game-index lookup supplies the game type + the
 // SWISS_TEAMS movement selection so the leaderboard service routes to the team
@@ -44,6 +48,7 @@ describe("Swiss Teams leaderboard (real scoring)", () => {
     await create.createGameDb(gameId);
     const db = await games.getDb(gameId);
     if (!db) throw new Error("db not created");
+    seedFixtureTeamsMatch(db);
     return db;
   }
 
@@ -114,7 +119,7 @@ describe("Swiss Teams leaderboard (real scoring)", () => {
           confirmedResult: "3NTN=" as BoardOutcome,
           status: "CONFIRMED" as const,
         },
-      ])
+      ].map(withFixtureMatchId))
       .run();
 
     const result = await computeLeaderboard(db, gameId);

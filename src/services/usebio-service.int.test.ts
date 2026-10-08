@@ -7,6 +7,7 @@ import type { BridgeGame } from "@/db/game-index/schema";
 import type { Club } from "@/db/system/schema";
 import type { PairSeat } from "@/model/participants";
 import type { Card, Rank } from "@/model/common";
+import { FIXTURE_MATCH_ID, seedFixtureMatch } from "@/mocks/fixtures/db-rows";
 
 const club: Club = { id: 1, name: "Test Bridge Club", clubNumber: "12345" };
 
@@ -39,6 +40,7 @@ describe("generateUsebio", () => {
   beforeEach(async () => {
     harness = createDbHarness("games");
     await harness.setup();
+    seedFixtureMatch((await harness.getDb()) as Db);
   });
 
   afterEach(() => {
@@ -78,6 +80,7 @@ describe("generateUsebio", () => {
       ew: "A1EW",
       status: "CONFIRMED",
       confirmedResult: "3NTN=",
+      matchId: FIXTURE_MATCH_ID,
     });
   }
 
@@ -157,6 +160,7 @@ describe("generateUsebio", () => {
         ew: `${section}1EW`,
         status: "CONFIRMED",
         confirmedResult: "3NTN=",
+        matchId: FIXTURE_MATCH_ID,
       });
     }
 
@@ -225,7 +229,92 @@ describe("generateUsebio", () => {
       ew,
       status: "CONFIRMED",
       confirmedResult: result as never,
+      matchId: FIXTURE_MATCH_ID,
     });
+  }
+
+  /**
+   * Replace the section's `matches` rows with the given teams structure, then
+   * repoint each board at the match whose two team tables and board span cover
+   * it. Lets a teams usebio case seed its real TEAMS/TRIPLE match rows after
+   * laying down the board rows (which the beforeEach stamps with the placeholder
+   * match id).
+   */
+  async function setTeamsStructure(
+    db: Db,
+    rows: {
+      id: number;
+      kind: "TEAMS" | "TRIPLE";
+      home: string;
+      opponent: string;
+      vpPool: number;
+      boardStart: number;
+      boardEnd: number;
+      groupId?: string;
+    }[],
+  ) {
+    const { matches } = await import("@/db/games/tables/matches");
+    const { boards } = await import("@/db/games/tables/boards");
+    const { and, eq, notInArray } = await import("drizzle-orm");
+    const { parseSeat } = await import("@/model/participants");
+
+    // Insert the new rows first (boards still reference the placeholder, so we
+    // can't delete it yet without violating the FK). Repoint boards, THEN drop
+    // any match no board references.
+    for (const r of rows) {
+      await db.insert(matches).values({
+        id: r.id,
+        section: "A",
+        roundNumber: 1,
+        kind: r.kind,
+        scoredAsUnit: true,
+        home: r.home,
+        opponent: r.opponent,
+        groupId: r.groupId ?? null,
+        vpPool: r.vpPool,
+        boardStart: r.boardStart,
+        boardEnd: r.boardEnd,
+      });
+    }
+
+    // Repoint every board at its covering match (two team tables + board span).
+    const allBoards = await db.select().from(boards);
+    for (const b of allBoards) {
+      const nsTable = parseSeat(b.ns).tableNumber;
+      let ewTable: number | null = null;
+      try {
+        ewTable = parseSeat(b.ew).tableNumber;
+      } catch {
+        ewTable = null;
+      }
+      const match = rows.find((r) => {
+        const lo = parseSeat(r.home).tableNumber;
+        const hi = parseSeat(r.opponent).tableNumber;
+        const tables = new Set([lo, hi]);
+        return (
+          b.boardNumber >= r.boardStart &&
+          b.boardNumber <= r.boardEnd &&
+          tables.has(nsTable) &&
+          (ewTable == null || tables.has(ewTable))
+        );
+      });
+      if (match) {
+        await db
+          .update(boards)
+          .set({ matchId: match.id })
+          .where(
+            and(
+              eq(boards.section, b.section),
+              eq(boards.tableNumber, b.tableNumber),
+              eq(boards.boardNumber, b.boardNumber),
+            ),
+          );
+      }
+    }
+
+    // Drop any match (e.g. the beforeEach placeholder) now unreferenced.
+    const keepIds = rows.map((r) => r.id);
+    await db.delete(matches).where(notInArray(matches.id, keepIds));
   }
 
   it("emits a SWISS_PAIRS file for a Swiss Pairs game", async () => {
@@ -284,6 +373,7 @@ describe("generateUsebio", () => {
         ew,
         status: "CONFIRMED",
         confirmedResult: result as never,
+        matchId: FIXTURE_MATCH_ID,
       });
 
     const compensation = (table: number, b: number, ns: string) =>
@@ -297,6 +387,7 @@ describe("generateUsebio", () => {
         ew: "APHANTOM",
         status: "HALF_AVERAGE",
         confirmedResult: null as never,
+        matchId: FIXTURE_MATCH_ID,
       });
 
     // Anchor table 1: half 1 (boards 1-2) vs A2EW, half 2 (boards 3-4) vs A3NS.
@@ -354,6 +445,15 @@ describe("generateUsebio", () => {
     await makeBoard(1, 1, 1, "A1NS", "A2EW", "4SN=");
     await makeBoard(1, 2, 1, "A2NS", "A1EW", "3NTN=");
 
+    const db = (await harness.getDb()) as Db;
+    // The TEAMS scorer reads the first-class match rows: one head-to-head
+    // (team 1 v team 2) spanning both rooms' board. The placeholder match from
+    // beforeEach is id 1, which every seeded board already points at — repoint
+    // it to a TEAMS match.
+    await setTeamsStructure(db, [
+      { id: 10, kind: "TEAMS", home: "A1NS", opponent: "A2NS", vpPool: 20, boardStart: 1, boardEnd: 1 },
+    ]);
+
     const teamsGame: BridgeGame = {
       ...game,
       gameType: "TEAMS",
@@ -365,7 +465,6 @@ describe("generateUsebio", () => {
     };
 
     const { generateUsebio } = await import("@/services/usebio-service");
-    const db = (await harness.getDb()) as Db;
 
     const xml = await generateUsebio(db, teamsGame, club);
 
@@ -401,6 +500,15 @@ describe("generateUsebio", () => {
     await makeBoard(1, 3, 3, "A3NS", "A1EW", "3NTN=");
     await makeBoard(1, 1, 3, "A1NS", "A3EW", "4SN=");
 
+    const db = (await harness.getDb()) as Db;
+    // The three TRIPLE comparison match rows (SHORT ⇒ 10-VP half pool), one per
+    // board set; repoint the boards onto them by their team tables + span.
+    await setTeamsStructure(db, [
+      { id: 10, kind: "TRIPLE", home: "A1NS", opponent: "A2NS", vpPool: 10, boardStart: 1, boardEnd: 1, groupId: "triple|A|1-2-3" },
+      { id: 11, kind: "TRIPLE", home: "A2NS", opponent: "A3NS", vpPool: 10, boardStart: 2, boardEnd: 2, groupId: "triple|A|1-2-3" },
+      { id: 12, kind: "TRIPLE", home: "A1NS", opponent: "A3NS", vpPool: 10, boardStart: 3, boardEnd: 3, groupId: "triple|A|1-2-3" },
+    ]);
+
     const teamsGame: BridgeGame = {
       ...game,
       gameType: "TEAMS",
@@ -418,7 +526,6 @@ describe("generateUsebio", () => {
     };
 
     const { generateUsebio } = await import("@/services/usebio-service");
-    const db = (await harness.getDb()) as Db;
 
     const xml = await generateUsebio(db, teamsGame, club);
 

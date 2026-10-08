@@ -7,7 +7,12 @@ import {
 import { BoardOutcome } from "@/model/score";
 import { parseSeat } from "@/model/participants";
 import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
-import { groupTeamMatches, TeamMatchRow } from "./team-match";
+import {
+  groupTeamMatches,
+  teamIdFor,
+  TeamMatchRow,
+  type TeamMatchStructureRow,
+} from "./team-match";
 
 /**
  * The minimal per-board line a Team Result table is built from: one table's
@@ -73,9 +78,42 @@ export function buildTeamBoardResultTable(
 ): ScoreTable | null {
   const myTable = parseSeat(viewingSeat).tableNumber;
 
-  const matches = groupTeamMatches(
-    instances.map((line) => toMatchRow(boardNumber, line)),
-  );
+  // This client-side view holds only the board's flat per-table lines (no
+  // `matches` rows), so synthesise the one TEAMS encounter they form: each
+  // line's NS seat is a room's home team; the two tables are paired on the
+  // lower table number (the match's canonical home side).
+  const rows = instances.map((line) => toMatchRow(boardNumber, line));
+  const matchStructure: TeamMatchStructureRow[] = [];
+  const seenMatch = new Set<string>();
+  for (const row of rows) {
+    if (row.status === "SIT_OUT" || row.status === "HALF_AVERAGE") continue;
+    let homeTable: number;
+    let oppTable: number;
+    try {
+      homeTable = parseSeat(row.ns).tableNumber;
+      oppTable = parseSeat(row.ew).tableNumber;
+    } catch {
+      continue;
+    }
+    const lo = Math.min(homeTable, oppTable);
+    const hi = Math.max(homeTable, oppTable);
+    const key = `${row.section}|${lo}-${hi}`;
+    if (seenMatch.has(key)) continue;
+    seenMatch.add(key);
+    matchStructure.push({
+      section: row.section,
+      roundNumber: row.roundNumber,
+      kind: "TEAMS",
+      home: teamIdFor(row.section, lo),
+      opponent: teamIdFor(row.section, hi),
+      groupId: null,
+      vpPool: 20,
+      boardStart: boardNumber,
+      boardEnd: boardNumber,
+    });
+  }
+
+  const matches = groupTeamMatches(rows, matchStructure);
 
   // Find the match this table is part of, and orient it so the "home" side is
   // the viewing player's table (groupTeamMatches keys the primary side on the

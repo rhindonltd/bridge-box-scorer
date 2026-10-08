@@ -21,11 +21,14 @@ import { getDb } from "@/db/games";
  * and whose `transaction(cb)` runs the callback with a chainable tx.
  */
 function stubDb(existingRows: unknown[]) {
-  const run = vi.fn();
+  // Each insert().values().run() returns an incrementing lastInsertRowid, so
+  // the match→board id resolution in insertSectionDrafts has real ids to use.
+  let nextId = 0;
+  const run = vi.fn(() => ({ lastInsertRowid: ++nextId }));
   const values = vi.fn(() => ({ run }));
   const insert = vi.fn(() => ({ values }));
   const tx = { insert };
-  const transaction = vi.fn((cb: (tx: unknown) => void) => cb(tx));
+  const transaction = vi.fn((cb: (tx: unknown) => unknown) => cb(tx));
 
   const selectChain = {
     from: () => selectChain,

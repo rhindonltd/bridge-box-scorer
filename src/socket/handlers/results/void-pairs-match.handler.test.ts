@@ -36,11 +36,27 @@ function createMockSocket() {
   return { on: vi.fn() } as any;
 }
 
+/**
+ * A db mock for the ruling writer: selects the acted board's matchId, then the
+ * match's home seat, then updates matches.ruling. A pairs match is one table,
+ * so the acted room is always the home side (no inversion).
+ */
 function makeDb() {
+  let selectCall = 0;
+  const select = vi.fn(() => {
+    const which = selectCall++;
+    const chain: any = {
+      from: () => chain,
+      where: () => chain,
+      limit: () =>
+        Promise.resolve(which === 0 ? [{ matchId: 1 }] : [{ home: "A2NS" }]),
+    };
+    return chain;
+  });
   const where = vi.fn().mockResolvedValue(undefined);
   const set = vi.fn(() => ({ where }));
   const update = vi.fn(() => ({ set }));
-  return { update, _set: set, _where: where };
+  return { select, update, _set: set, _where: where };
 }
 
 const validPayload = {
@@ -79,10 +95,7 @@ describe("registerVoidPairsMatchHandler", () => {
     const cb = vi.fn();
     await handler(validPayload, cb);
 
-    expect(db._set).toHaveBeenCalledWith({
-      directorOverrideResult: "VOIDP:OFFENDER_EW",
-      status: "VOID_PAIR",
-    });
+    expect(db._set).toHaveBeenCalledWith({ ruling: "VOIDP:OFFENDER_EW" });
     expect(cb).toHaveBeenCalledWith({ success: true, data: null });
     expect(broadcastResultsChanged).toHaveBeenCalledWith(io, "g1", 3);
   });

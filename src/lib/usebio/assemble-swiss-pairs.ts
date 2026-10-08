@@ -8,6 +8,7 @@ import { rank } from "@/scoring/overall/rank";
 import {
   scoreSwissVpRound,
   type SwissRoundMode,
+  type SwissVpMatchRow,
 } from "@/scoring/swiss/swiss-vp-round";
 import { buildTravellerLine } from "./traveller-line";
 import {
@@ -45,6 +46,7 @@ export function assembleSwissPairs(
   club: Club,
   pairs: Pair[],
   boardRows: Board[],
+  matchRows: SwissVpMatchRow[],
   mode: SwissRoundMode = "XIMP",
 ): UsebioSwissPairsData {
   const usebioClub: UsebioClub = {
@@ -59,7 +61,7 @@ export function assembleSwissPairs(
     player2: pair.player2,
   }));
 
-  const { matches, totals } = buildMatches(boardRows, mode);
+  const { matches, totals } = buildMatches(boardRows, matchRows, mode);
   const ranking = buildRanking(totals);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
@@ -93,6 +95,7 @@ function boardResultOf(row: Board): BoardOutcome | null {
  */
 function buildMatches(
   boardRows: Board[],
+  matchRows: SwissVpMatchRow[],
   mode: SwissRoundMode,
 ): {
   matches: UsebioSwissPairsMatch[];
@@ -108,6 +111,14 @@ function buildMatches(
     rowsByRound.set(row.roundNumber, arr);
   }
 
+  // The §3.3.8/§3.5 rulings live on the PAIRS match rows, grouped by round.
+  const matchesByRound = new Map<number, SwissVpMatchRow[]>();
+  for (const m of matchRows) {
+    const arr = matchesByRound.get(m.roundNumber) ?? [];
+    arr.push(m);
+    matchesByRound.set(m.roundNumber, arr);
+  }
+
   const totals = new Map<string, number>();
   const addVp = (pairId: string, vp: number): void => {
     totals.set(pairId, (totals.get(pairId) ?? 0) + vp);
@@ -117,7 +128,12 @@ function buildMatches(
 
   for (const round of Array.from(rowsByRound.keys()).sort((a, b) => a - b)) {
     const rows = rowsByRound.get(round)!;
-    const { pairVp, matches: roundMatches } = scoreSwissVpRound(rows, mode);
+    const { pairVp, matches: roundMatches } = scoreSwissVpRound(
+      rows,
+      mode,
+      undefined,
+      matchesByRound.get(round) ?? [],
+    );
 
     // Session total: sum each real pair's round VP (incl. a compensated half).
     for (const [pairId, vp] of pairVp) addVp(pairId, vp);

@@ -36,11 +36,27 @@ function createMockSocket() {
   return { on: vi.fn() } as any;
 }
 
+/**
+ * A db mock for the ruling writer: selects the acted board's matchId, then the
+ * match's home seat, then updates matches.ruling. The acted table is 2 and the
+ * match's home is "A2NS" (table 2), so the acted room IS home (no side flip).
+ */
 function makeDb() {
+  let selectCall = 0;
+  const select = vi.fn(() => {
+    const which = selectCall++;
+    const chain: any = {
+      from: () => chain,
+      where: () => chain,
+      limit: () =>
+        Promise.resolve(which === 0 ? [{ matchId: 1 }] : [{ home: "A2NS" }]),
+    };
+    return chain;
+  });
   const where = vi.fn().mockResolvedValue(undefined);
   const set = vi.fn(() => ({ where }));
   const update = vi.fn(() => ({ set }));
-  return { update, _set: set, _where: where };
+  return { select, update, _set: set, _where: where };
 }
 
 const validPayload = {
@@ -81,12 +97,9 @@ describe("registerMarkMismatchHandler", () => {
     const cb = vi.fn();
     await handler(validPayload, cb);
 
-    // The ruling goes in matchRuling (NOT directorOverrideResult), so the board
-    // keeps its real result in the field.
-    expect(db._set).toHaveBeenCalledWith({
-      matchRuling: "MM:NS:HIGHER:NOT",
-      status: "MISMATCH",
-    });
+    // The ruling now lives on the match row (matches.ruling); the board keeps
+    // its real result in the field, so the match stays scored normally.
+    expect(db._set).toHaveBeenCalledWith({ ruling: "MM:NS:HIGHER:NOT" });
     expect(cb).toHaveBeenCalledWith({ success: true, data: null });
     expect(broadcastResultsChanged).toHaveBeenCalledWith(io, "g1", 3);
   });
