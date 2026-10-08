@@ -10,6 +10,14 @@ import {
   buildAdjustedScore,
   buildWeightedScore,
 } from "@/model/adjusted-score";
+import { TeamsRemovalFault } from "@/model/teams-removed-board";
+import { VoidCause } from "@/model/teams-match-void";
+import { PairsVoidCause } from "@/model/pairs-match-void";
+import {
+  MismatchSide,
+  MismatchDirection,
+  MismatchFault,
+} from "@/model/swiss-mismatch";
 import { getDirectorToken } from "@/lib/director-token";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
@@ -77,6 +85,25 @@ export function CorrectResultPage({
 
   const { game } = useRequiredGame();
 
+  // The §3.3.7 board-removal and §3.3.6/§3.3.9 void rulings apply to every teams
+  // game. Board-comparison teams (BAM/PAB) score the indemnity in board-win
+  // units rather than IMPs/VP, so the ruling steps adapt their wording.
+  const allowTeamsRulings = game.gameType === "TEAMS";
+  const boardComparison =
+    game.scoringType === "BAM" || game.scoringType === "PAB";
+
+  // The §3.3.8/§3.3.9 pairs void applies to Swiss Pairs (scored by VP), where a
+  // voided match is removed from the field and each pair gets an AVE
+  // compensation.
+  const allowPairsVoid =
+    game.gameType === "PAIRS" && game.eventFormat === "SWISS";
+
+  // The §3.5 mismatch ruling applies to any SWISS game (pairs or teams), where
+  // a wrong draw can pit a contestant against the wrong-strength opponents. The
+  // step labels sides as teams rather than pairs for a teams game.
+  const allowMismatch = game.eventFormat === "SWISS";
+  const teamsMismatch = game.gameType === "TEAMS";
+
   const [wizardStep, setWizardStep] = useState<WizardStep>({
     step: "selectBoard",
   });
@@ -128,6 +155,58 @@ export function CorrectResultPage({
         wizardStep.tableNumber,
         wizardStep.boardNumber,
         buildWeightedScore(data.components),
+      );
+      return;
+    }
+
+    if (data.type === "cancel") {
+      saveCancel(
+        wizardStep.roundNumber,
+        wizardStep.tableNumber,
+        wizardStep.boardNumber,
+        buildAdjustedScore(data.nsPercent, data.ewPercent),
+      );
+      return;
+    }
+
+    if (data.type === "removeTeams") {
+      saveRemoveTeams(
+        wizardStep.roundNumber,
+        wizardStep.tableNumber,
+        wizardStep.boardNumber,
+        data.fault,
+      );
+      return;
+    }
+
+    if (data.type === "voidMatch") {
+      saveVoidMatch(
+        wizardStep.roundNumber,
+        wizardStep.tableNumber,
+        wizardStep.boardNumber,
+        data.cause,
+      );
+      return;
+    }
+
+    if (data.type === "voidPairs") {
+      saveVoidPairs(
+        wizardStep.roundNumber,
+        wizardStep.tableNumber,
+        wizardStep.boardNumber,
+        data.cause,
+      );
+      return;
+    }
+
+    if (data.type === "mismatch") {
+      saveMismatch(
+        wizardStep.roundNumber,
+        wizardStep.tableNumber,
+        wizardStep.boardNumber,
+        data.side,
+        data.direction,
+        data.fault,
       );
       return;
     }
@@ -189,6 +268,142 @@ export function CorrectResultPage({
     }
   }
 
+  async function saveCancel(
+    roundNumber: number,
+    tableNumber: number,
+    boardNumber: number,
+    result: string,
+  ) {
+    setWizardStep({ step: "saving" });
+    setError(null);
+
+    try {
+      await emitWithAck(SocketEvents.CANCEL_BOARD_TRAVELLER, {
+        gameId: game.gameId,
+        directorToken: getDirectorToken(game.gameId),
+        boardNumber,
+        roundNumber,
+        tableNumber,
+        result,
+      });
+
+      onResultCorrected();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to cancel board");
+      setWizardStep({ step: "selectBoard" });
+    }
+  }
+
+  async function saveRemoveTeams(
+    roundNumber: number,
+    tableNumber: number,
+    boardNumber: number,
+    fault: TeamsRemovalFault,
+  ) {
+    setWizardStep({ step: "saving" });
+    setError(null);
+
+    try {
+      await emitWithAck(SocketEvents.REMOVE_TEAMS_BOARD_TRAVELLER, {
+        gameId: game.gameId,
+        directorToken: getDirectorToken(game.gameId),
+        boardNumber,
+        roundNumber,
+        tableNumber,
+        fault,
+      });
+
+      onResultCorrected();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to remove teams board",
+      );
+      setWizardStep({ step: "selectBoard" });
+    }
+  }
+
+  async function saveVoidMatch(
+    roundNumber: number,
+    tableNumber: number,
+    boardNumber: number,
+    cause: VoidCause,
+  ) {
+    setWizardStep({ step: "saving" });
+    setError(null);
+
+    try {
+      await emitWithAck(SocketEvents.VOID_TEAMS_MATCH_TRAVELLER, {
+        gameId: game.gameId,
+        directorToken: getDirectorToken(game.gameId),
+        boardNumber,
+        roundNumber,
+        tableNumber,
+        cause,
+      });
+
+      onResultCorrected();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to void match");
+      setWizardStep({ step: "selectBoard" });
+    }
+  }
+
+  async function saveVoidPairs(
+    roundNumber: number,
+    tableNumber: number,
+    boardNumber: number,
+    cause: PairsVoidCause,
+  ) {
+    setWizardStep({ step: "saving" });
+    setError(null);
+
+    try {
+      await emitWithAck(SocketEvents.VOID_PAIRS_MATCH_TRAVELLER, {
+        gameId: game.gameId,
+        directorToken: getDirectorToken(game.gameId),
+        boardNumber,
+        roundNumber,
+        tableNumber,
+        cause,
+      });
+
+      onResultCorrected();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to void match");
+      setWizardStep({ step: "selectBoard" });
+    }
+  }
+
+  async function saveMismatch(
+    roundNumber: number,
+    tableNumber: number,
+    boardNumber: number,
+    side: MismatchSide,
+    direction: MismatchDirection,
+    fault: MismatchFault,
+  ) {
+    setWizardStep({ step: "saving" });
+    setError(null);
+
+    try {
+      await emitWithAck(SocketEvents.MISMATCH_TRAVELLER, {
+        gameId: game.gameId,
+        directorToken: getDirectorToken(game.gameId),
+        boardNumber,
+        roundNumber,
+        tableNumber,
+        side,
+        direction,
+        fault,
+      });
+
+      onResultCorrected();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to mark mismatch");
+      setWizardStep({ step: "selectBoard" });
+    }
+  }
+
   switch (wizardStep.step) {
     case "selectBoard":
       return (
@@ -224,6 +439,11 @@ export function CorrectResultPage({
           round={wizardStep.roundNumber}
           table={wizardStep.tableNumber}
           leadCardRequired={game.leadCardRequired}
+          allowTeamsRulings={allowTeamsRulings}
+          boardComparison={boardComparison}
+          allowPairsVoid={allowPairsVoid}
+          allowMismatch={allowMismatch}
+          teamsMismatch={teamsMismatch}
           onComplete={handleWizardComplete}
           onBack={() =>
             setWizardStep({

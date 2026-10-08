@@ -20,9 +20,10 @@ export interface ResultsSummary {
  * Summarise how many playable boards have a final result recorded.
  *
  * A board is "playable" when it is neither a SIT_OUT nor a HALF_AVERAGE. It is
- * "finalized" once it has a confirmed or director-overridden result —
- * equivalently a status of CONFIRMED or OVERRIDDEN. Boards still NOT_PLAYED,
- * PENDING_CONFIRMATION, or with no status yet count as outstanding.
+ * "finalized" once it has a confirmed, director-overridden, or cancelled
+ * (fouled) result — equivalently a status of CONFIRMED, OVERRIDDEN, or
+ * CANCELLED. Boards still NOT_PLAYED, PENDING_CONFIRMATION, or with no status
+ * yet count as outstanding.
  *
  * SIT_OUT (a bye) and HALF_AVERAGE (a Swiss "2 half matches" compensation
  * block for the half a non-anchor pair misses) are both resolved by the scorer,
@@ -43,7 +44,14 @@ export async function getResultsSummary(db: Db): Promise<ResultsSummary> {
     (r) => r.status !== "SIT_OUT" && r.status !== "HALF_AVERAGE",
   );
   const finalized = playable.filter(
-    (r) => r.status === "CONFIRMED" || r.status === "OVERRIDDEN",
+    (r) =>
+      r.status === "CONFIRMED" ||
+      r.status === "OVERRIDDEN" ||
+      r.status === "CANCELLED" ||
+      r.status === "REMOVED_TEAMS" ||
+      r.status === "VOID_MATCH" ||
+      r.status === "VOID_PAIR" ||
+      r.status === "MISMATCH",
   );
 
   const totalPlayable = playable.length;

@@ -7,10 +7,12 @@ import { SwissVpBoardRow } from "./swiss-vp-overall";
 import {
   groupTeamMatches,
   groupTeamTriples,
+  matchVoidCause,
   teamByeRounds,
   teamMatchBoardWins,
   tripleTeamStakes,
 } from "./team-match";
+import { voidMatchWon } from "@/model/teams-match-void";
 
 /**
  * The fraction of a round's boards a bye team is credited (average-plus, i.e.
@@ -71,12 +73,29 @@ function credit(
  */
 export function calculateTeamsBoardComparisonOverall(
   boardRows: SwissVpBoardRow[],
-  options: { barometer: boolean; scoring: BoardComparisonScoring },
+  options: {
+    barometer: boolean;
+    scoring: BoardComparisonScoring;
+    expectedBoards?: number;
+  },
 ): TeamBamOverallScore | TeamPabOverallScore {
   const totals = new Map<string, Accumulator>();
+  const { expectedBoards } = options;
 
   for (const match of groupTeamMatches(boardRows)) {
     const { round, homeTeamId, opponentTeamId } = match;
+
+    // §3.3.6 / §3.3.9 void match: credit each team a ruling boards-won total
+    // (flat 40%/60% of N, or the §3.3.9 AVE+/AVE− half-board split) instead of
+    // a real board comparison — the board-win analogue of the teams-VP void.
+    const voidCause = matchVoidCause(match);
+    if (voidCause != null) {
+      const { home, opponent, boards } = voidMatchWon(voidCause, expectedBoards);
+      credit(totals, homeTeamId, round, home, boards);
+      credit(totals, opponentTeamId, round, opponent, boards);
+      continue;
+    }
+
     const { won, boardsPlayed } = teamMatchBoardWins(match);
 
     // Both teams are credited every round so the field is complete; a match
@@ -137,7 +156,7 @@ export function calculateTeamsBoardComparisonOverall(
  */
 export function calculateTeamsBamOverall(
   boardRows: SwissVpBoardRow[],
-  options: { barometer: boolean },
+  options: { barometer: boolean; expectedBoards?: number },
 ): TeamBamOverallScore {
   return calculateTeamsBoardComparisonOverall(boardRows, {
     ...options,
@@ -151,7 +170,7 @@ export function calculateTeamsBamOverall(
  */
 export function calculateTeamsPabOverall(
   boardRows: SwissVpBoardRow[],
-  options: { barometer: boolean },
+  options: { barometer: boolean; expectedBoards?: number },
 ): TeamPabOverallScore {
   return calculateTeamsBoardComparisonOverall(boardRows, {
     ...options,

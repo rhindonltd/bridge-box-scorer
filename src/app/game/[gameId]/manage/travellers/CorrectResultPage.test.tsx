@@ -188,6 +188,98 @@ describe("CorrectResultPage", () => {
     );
   });
 
+  it("saves a cancel/foul board via the cancel-board event", async () => {
+    const onResultCorrected = vi.fn();
+    render(<CorrectResultPage onResultCorrected={onResultCorrected} />);
+    await goToWizard();
+
+    wizardOnComplete({ type: "cancel", nsPercent: 60, ewPercent: 60 });
+
+    await waitFor(() => expect(onResultCorrected).toHaveBeenCalled());
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      "traveller:cancelBoard",
+      expect.objectContaining({
+        gameId: "g1",
+        boardNumber: 2,
+        roundNumber: 4,
+        tableNumber: 5,
+        result: "A60/60",
+      }),
+    );
+  });
+
+  it("removes a teams board via the remove-teams-board event", async () => {
+    const onResultCorrected = vi.fn();
+    render(<CorrectResultPage onResultCorrected={onResultCorrected} />);
+    await goToWizard();
+
+    wizardOnComplete({ type: "removeTeams", fault: "EW_FAULT" });
+
+    await waitFor(() => expect(onResultCorrected).toHaveBeenCalled());
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      "traveller:removeTeamsBoard",
+      expect.objectContaining({
+        gameId: "g1",
+        boardNumber: 2,
+        roundNumber: 4,
+        tableNumber: 5,
+        fault: "EW_FAULT",
+      }),
+    );
+  });
+
+  it("voids a teams match via the void-teams-match event", async () => {
+    const onResultCorrected = vi.fn();
+    render(<CorrectResultPage onResultCorrected={onResultCorrected} />);
+    await goToWizard();
+
+    wizardOnComplete({ type: "voidMatch", cause: "SEATING_STANDARD" });
+
+    await waitFor(() => expect(onResultCorrected).toHaveBeenCalled());
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      "traveller:voidTeamsMatch",
+      expect.objectContaining({
+        gameId: "g1",
+        boardNumber: 2,
+        roundNumber: 4,
+        tableNumber: 5,
+        cause: "SEATING_STANDARD",
+      }),
+    );
+  });
+
+  it("voids a swiss-pairs match via the void-pairs-match event", async () => {
+    const onResultCorrected = vi.fn();
+    render(<CorrectResultPage onResultCorrected={onResultCorrected} />);
+    await goToWizard();
+
+    wizardOnComplete({ type: "voidPairs", cause: "OFFENDER_EW" });
+
+    await waitFor(() => expect(onResultCorrected).toHaveBeenCalled());
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      "traveller:voidPairsMatch",
+      expect.objectContaining({
+        gameId: "g1",
+        boardNumber: 2,
+        roundNumber: 4,
+        tableNumber: 5,
+        cause: "OFFENDER_EW",
+      }),
+    );
+  });
+
+  it("shows a cancel-specific error message when the cancel fails", async () => {
+    mockEmitWithAck.mockRejectedValue("nope");
+    render(<CorrectResultPage onResultCorrected={vi.fn()} />);
+    await goToWizard();
+
+    wizardOnComplete({ type: "cancel", nsPercent: 50, ewPercent: 50 });
+
+    await waitFor(() =>
+      expect(screen.getByText("Failed to cancel board")).toBeInTheDocument(),
+    );
+  });
+
   it("saves a special-outcome override (PO/NP) without parsing a contract", async () => {
     const onResultCorrected = vi.fn();
     render(<CorrectResultPage onResultCorrected={onResultCorrected} />);

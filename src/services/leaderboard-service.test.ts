@@ -713,11 +713,13 @@ describe("Swiss sit-out synthetic scoring", () => {
     );
 
     // The aggregator receives the real board line plus one synthetic sit-out
-    // line crediting pair 5 with 0.6 * 2 = 1.2 matchpoints.
+    // line crediting pair 5 with 0.6 * 2 = 1.2 matchpoints, which EBU §4.2.6.1
+    // per-board rounding then rounds to the nearest whole matchpoint → 1 (1.2
+    // is below the board average of 1, nearest integer).
     const passed = aggregate.mock.calls[0][0] as { lines: any[] }[];
     const allLines = passed.flatMap((b) => b.lines);
     expect(
-      allLines.some((l) => l.nsId === "5" && l.nsMatchPoints === 1.2),
+      allLines.some((l) => l.nsId === "5" && l.nsMatchPoints === 1),
     ).toBe(true);
   });
 

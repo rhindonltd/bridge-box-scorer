@@ -92,8 +92,9 @@ export type CommitSwissResult =
 /**
  * Whether every playable board in a given round has a final result, so the
  * round is safe to draw from. A board is playable when it is neither a SIT_OUT
- * nor a HALF_AVERAGE; final means CONFIRMED or OVERRIDDEN. An empty round (no
- * playable boards) is not "complete" — there is nothing to score from.
+ * nor a HALF_AVERAGE; final means CONFIRMED, OVERRIDDEN, or CANCELLED (a fouled
+ * board carrying its §3.3.2 adjusted score). An empty round (no playable
+ * boards) is not "complete" — there is nothing to score from.
  *
  * SIT_OUT (a bye) and HALF_AVERAGE (a "2 half matches" compensation block for
  * the half a non-anchor misses) are both resolved by the scorer, never
@@ -120,7 +121,14 @@ async function isRoundComplete(
   );
   if (playable.length === 0) return false;
   return playable.every(
-    (r) => r.status === "CONFIRMED" || r.status === "OVERRIDDEN",
+    (r) =>
+      r.status === "CONFIRMED" ||
+      r.status === "OVERRIDDEN" ||
+      r.status === "CANCELLED" ||
+      r.status === "REMOVED_TEAMS" ||
+      r.status === "VOID_MATCH" ||
+      r.status === "VOID_PAIR" ||
+      r.status === "MISMATCH",
   );
 }
 

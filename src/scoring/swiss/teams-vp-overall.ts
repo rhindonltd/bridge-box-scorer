@@ -6,11 +6,15 @@ import { VpAccumulator, creditVp } from "./vp-accumulator";
 import {
   groupTeamMatches,
   groupTeamTriples,
+  matchMismatch,
+  matchVoidCause,
   teamByeRounds,
   teamMatchBoardImps,
   tripleTeamStakes,
   tripleVpPool,
 } from "./team-match";
+import { voidMatchVp } from "@/model/teams-match-void";
+import { adjustMismatchVp } from "@/model/swiss-mismatch";
 
 /**
  * Victory Points awarded to a team that sits out a round (an odd-field bye).
@@ -41,11 +45,26 @@ const BYE_VP = 12;
  */
 export function calculateTeamsVpOverall(
   boardRows: SwissVpBoardRow[],
+  options: { expectedBoards?: number } = {},
 ): TeamSwissVpOverallScore {
   const totals = new Map<string, VpAccumulator>();
+  const { expectedBoards } = options;
 
   for (const match of groupTeamMatches(boardRows)) {
     const { round, homeTeamId, opponentTeamId } = match;
+
+    // §3.3.6 / §3.3.9 void match: credit each team a ruling VP (flat 40%/60%,
+    // or the §3.3.9 AVE+/AVE− half-board split) instead of a margin → VP. This
+    // also distinguishes "both at fault" from "neither at fault" (per-side
+    // absolute VP), which a single zero-sum margin cannot.
+    const voidCause = matchVoidCause(match);
+    if (voidCause != null) {
+      const { home, opponent } = voidMatchVp(voidCause, 20, expectedBoards);
+      creditVp(totals, homeTeamId, round, home);
+      creditVp(totals, opponentTeamId, round, opponent);
+      continue;
+    }
+
     const { margin, boardsPlayed } = teamMatchBoardImps(match);
 
     if (boardsPlayed === 0) {
@@ -56,17 +75,27 @@ export function calculateTeamsVpOverall(
     }
 
     // The match's IMP margin → VP on the EBU 20-VP discrete scale; the loser
-    // takes the mirror (20 − winner).
+    // takes the mirror (20 − winner). A non-negative margin means the home team
+    // won (zero is a tie: both get 10).
     const winnerVP = impVpWinner(Math.abs(margin), boardsPlayed, 20);
     const loserVP = 20 - winnerVP;
-    // A non-negative margin means the home team won (zero is a tie: both get 10).
-    if (margin >= 0) {
-      creditVp(totals, homeTeamId, round, winnerVP);
-      creditVp(totals, opponentTeamId, round, loserVP);
-    } else {
-      creditVp(totals, opponentTeamId, round, winnerVP);
-      creditVp(totals, homeTeamId, round, loserVP);
+    let homeVp = margin >= 0 ? winnerVP : loserVP;
+    let opponentVp = margin >= 0 ? loserVP : winnerVP;
+
+    // §3.5 mismatch: the match was played and scored normally, but the director
+    // has ruled one side mismatched; recompute ONLY that side's round VP via
+    // the §3.5.2 one-sided adjustment (home-relative: NS = home, EW = opponent).
+    const mismatch = matchMismatch(match);
+    if (mismatch != null) {
+      if (mismatch.side === "NS") {
+        homeVp = adjustMismatchVp(homeVp, mismatch, 20);
+      } else {
+        opponentVp = adjustMismatchVp(opponentVp, mismatch, 20);
+      }
     }
+
+    creditVp(totals, homeTeamId, round, homeVp);
+    creditVp(totals, opponentTeamId, round, opponentVp);
   }
 
   // Credit each bye team an average-plus result for the round it sat out.

@@ -20,7 +20,20 @@ import { StepResult } from "@/components/contract-wizard/StepResult";
 import { StepConfirm } from "@/components/contract-wizard/StepConfirm";
 import { StepAdjustedScore } from "@/components/contract-wizard/StepAdjustedScore";
 import { StepWeightedScore } from "@/components/contract-wizard/StepWeightedScore";
+import { StepAdjustmentType } from "@/components/contract-wizard/StepAdjustmentType";
+import { StepTeamsRemoval } from "@/components/contract-wizard/StepTeamsRemoval";
+import { StepVoidMatch } from "@/components/contract-wizard/StepVoidMatch";
+import { StepPairsVoid } from "@/components/contract-wizard/StepPairsVoid";
+import { StepMismatch } from "@/components/contract-wizard/StepMismatch";
 import { WizardShell } from "@/components/contract-wizard/WizardShell";
+import { TeamsRemovalFault } from "@/model/teams-removed-board";
+import { VoidCause } from "@/model/teams-match-void";
+import { PairsVoidCause } from "@/model/pairs-match-void";
+import {
+  MismatchSide,
+  MismatchDirection,
+  MismatchFault,
+} from "@/model/swiss-mismatch";
 
 export type DirectorWizardResult =
   | {
@@ -37,6 +50,29 @@ export type DirectorWizardResult =
   | {
       type: "weighted";
       components: { contract: PlayedContractCode; weight: number }[];
+    }
+  | {
+      type: "cancel";
+      nsPercent: number;
+      ewPercent: number;
+    }
+  | {
+      type: "removeTeams";
+      fault: TeamsRemovalFault;
+    }
+  | {
+      type: "voidMatch";
+      cause: VoidCause;
+    }
+  | {
+      type: "voidPairs";
+      cause: PairsVoidCause;
+    }
+  | {
+      type: "mismatch";
+      side: MismatchSide;
+      direction: MismatchDirection;
+      fault: MismatchFault;
     };
 
 interface DirectorContractWizardProps {
@@ -44,6 +80,31 @@ interface DirectorContractWizardProps {
   round: number;
   table: number;
   leadCardRequired: boolean;
+  /**
+   * Whether to offer the §3.3.7 "Board Not Played (Teams)" and §3.3.6/§3.3.9
+   * "Void Match (Teams)" branches on the hub. True for every teams game.
+   */
+  allowTeamsRulings?: boolean;
+  /**
+   * Whether this is a board-comparison teams game (BAM/PAB), so the teams
+   * ruling steps phrase the indemnity in board-win terms rather than IMPs/VP.
+   */
+  boardComparison?: boolean;
+  /**
+   * Whether to offer the §3.3.8/§3.3.9 "Void Match (Pairs)" branch. True only
+   * for Swiss Pairs games.
+   */
+  allowPairsVoid?: boolean;
+  /**
+   * Whether to offer the §3.5 "Mismatch (Swiss)" branch. True for any Swiss
+   * game (pairs or teams), where a wrong draw can create a mismatch.
+   */
+  allowMismatch?: boolean;
+  /**
+   * Whether this is a teams game, so the mismatch step labels the sides as
+   * teams rather than pairs.
+   */
+  teamsMismatch?: boolean;
   onComplete: (data: DirectorWizardResult) => void;
   onBack: () => void;
 }
@@ -53,21 +114,36 @@ interface DirectorContractWizardProps {
  * Skips the board selection step (board is pre-selected from the traveller).
  * Does not require AssignmentContext. Shares the {@link WizardShell} chrome and
  * the {@link buildContractCode} assembly with the player wizard; the state
- * machine differs (starts at Level, has adjusted-score and weighted-score
- * steps) so it is kept inline here rather than forced onto the player's
- * `useBoardFlow`.
+ * machine differs (starts at an adjustment-type hub, and has adjusted-score,
+ * weighted-score and cancel/foul branches) so it is kept inline here rather
+ * than forced onto the player's `useBoardFlow`.
+ *
+ * Flow: tapping a traveller row lands on the hub (step 0), which routes to one
+ * of four sub-flows — Enter Contract (the Level→…→Confirm steps), Adjusted
+ * Score, Weighted Score, or Cancel/Foul Board (the §3.3.2 reason picker). The
+ * contract path keeps its Confirm review; the other three commit on their own
+ * action. Back from any sub-flow returns to the hub; back from the hub calls
+ * `onBack`.
  */
 export function DirectorContractWizard({
   boardNumber,
   round,
   table,
   leadCardRequired,
+  allowTeamsRulings = false,
+  boardComparison = false,
+  allowPairsVoid = false,
+  allowMismatch = false,
+  teamsMismatch = false,
   onComplete,
   onBack,
 }: DirectorContractWizardProps) {
-  // Steps: 1=Level, 2=Suit, 3=Declarer, 4=OpeningLead, 5=Result, 6=Confirm,
-  //        7=AdjustedScore, 8=WeightedScore
-  const [step, setStep] = useState(1);
+  // Steps: 0=Hub (choose adjustment type), 1=Level, 2=Suit, 3=Declarer,
+  //        4=OpeningLead, 5=Result, 6=Confirm, 7=AdjustedScore,
+  //        8=WeightedScore, 9=Cancel (adjusted-score screen),
+  //        10=TeamsRemoval, 11=VoidMatch(Teams), 12=VoidMatch(Pairs),
+  //        13=Mismatch(Swiss)
+  const [step, setStep] = useState(0);
 
   // Contract state
   const [level, setLevel] = useState<Level | null>(null);
@@ -163,12 +239,55 @@ export function DirectorContractWizard({
     onComplete({ type: "weighted", components });
   };
 
+  const onCancelSubmit = (nsPercent: number, ewPercent: number) => {
+    onComplete({ type: "cancel", nsPercent, ewPercent });
+  };
+
+  const onTeamsRemovalSubmit = (fault: TeamsRemovalFault) => {
+    onComplete({ type: "removeTeams", fault });
+  };
+
+  const onVoidMatchSubmit = (cause: VoidCause) => {
+    onComplete({ type: "voidMatch", cause });
+  };
+
+  const onVoidPairsSubmit = (cause: PairsVoidCause) => {
+    onComplete({ type: "voidPairs", cause });
+  };
+
+  const onMismatchSubmit = (ruling: {
+    side: MismatchSide;
+    direction: MismatchDirection;
+    fault: MismatchFault;
+  }) => {
+    onComplete({ type: "mismatch", ...ruling });
+  };
+
+  // --- Hub routing: entering any contract branch clears any stale state so a
+  // re-entry (back to hub, pick a different branch) starts fresh. ---
+
+  const onEnterContract = () => {
+    setLevel(null);
+    setSuit(null);
+    setDeclarer(null);
+    setDbl("");
+    setSpecialOutcome(null);
+    setLeadSuit(null);
+    setLeadRank(null);
+    setResultMode("made");
+    setResultValue(0);
+    setStep(1);
+  };
+
   // --- Back arrow logic ---
 
   const handleBack = () => {
     switch (step) {
-      case 1:
+      case 0:
         onBack();
+        break;
+      case 1:
+        setStep(0);
         break;
       case 2:
         setStep(1);
@@ -185,11 +304,16 @@ export function DirectorContractWizard({
       case 6:
         setStep(specialOutcome ? 1 : 5);
         break;
+      // Adjusted / Weighted / Cancel / Teams-removal / Void(s) / Mismatch are
+      // hub branches.
       case 7:
-        setStep(1);
-        break;
       case 8:
-        setStep(1);
+      case 9:
+      case 10:
+      case 11:
+      case 12:
+      case 13:
+        setStep(0);
         break;
     }
   };
@@ -198,6 +322,8 @@ export function DirectorContractWizard({
   // build the contract, so they share one title.
   const stepTitle = (() => {
     switch (step) {
+      case 0:
+        return "Adjust Result";
       case 4:
         return "Opening Lead";
       case 5:
@@ -208,6 +334,16 @@ export function DirectorContractWizard({
         return "Adjusted Score";
       case 8:
         return "Weighted Score";
+      case 9:
+        return "Cancel / Foul Board";
+      case 10:
+        return "Board Not Played (Teams)";
+      case 11:
+        return "Void Match (Teams)";
+      case 12:
+        return "Void Match (Pairs)";
+      case 13:
+        return "Mismatch (Swiss)";
       default:
         return "Enter Contract";
     }
@@ -217,13 +353,30 @@ export function DirectorContractWizard({
 
   const renderStep = () => {
     switch (step) {
+      case 0:
+        return (
+          <StepAdjustmentType
+            onEnterContract={onEnterContract}
+            onAdjustedScore={() => setStep(7)}
+            onWeightedScore={() => setStep(8)}
+            onCancelBoard={() => setStep(9)}
+            onRemoveTeamsBoard={
+              allowTeamsRulings ? () => setStep(10) : undefined
+            }
+            onVoidTeamsMatch={
+              allowTeamsRulings ? () => setStep(11) : undefined
+            }
+            onVoidPairsMatch={
+              allowPairsVoid ? () => setStep(12) : undefined
+            }
+            onMismatch={allowMismatch ? () => setStep(13) : undefined}
+          />
+        );
       case 1:
         return (
           <StepLevel
             onLevelSelected={onLevelSelected}
             onSpecialOutcome={onSpecialOutcome}
-            onAdjustedScore={() => setStep(7)}
-            onWeightedScore={() => setStep(8)}
           />
         );
       case 2:
@@ -269,7 +422,29 @@ export function DirectorContractWizard({
         return <StepAdjustedScore onSubmit={onAdjustedScoreSubmit} />;
       case 8:
         return <StepWeightedScore onSubmit={onWeightedScoreSubmit} />;
-      /* v8 ignore next 2 -- unreachable: `step` is only ever set to 1..8 */
+      case 9:
+        return <StepAdjustedScore onSubmit={onCancelSubmit} />;
+      case 10:
+        return (
+          <StepTeamsRemoval
+            onSubmit={onTeamsRemovalSubmit}
+            boardComparison={boardComparison}
+          />
+        );
+      case 11:
+        return (
+          <StepVoidMatch
+            onSubmit={onVoidMatchSubmit}
+            boardComparison={boardComparison}
+          />
+        );
+      case 12:
+        return <StepPairsVoid onSubmit={onVoidPairsSubmit} />;
+      case 13:
+        return (
+          <StepMismatch teams={teamsMismatch} onSubmit={onMismatchSubmit} />
+        );
+      /* v8 ignore next 2 -- unreachable: `step` is only ever set to 0..13 */
       default:
         return null;
     }

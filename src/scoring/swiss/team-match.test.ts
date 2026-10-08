@@ -233,6 +233,45 @@ describe("teamMatchBoardWins", () => {
     expect(won).toBe(1);
     expect(boardsPlayed).toBe(1);
   });
+
+  it("§3.3.7: a removed board is a win for the home team when opponents are at fault", () => {
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", null, {
+        status: "REMOVED_TEAMS",
+        directorOverrideResult: "TRM:EW_FAULT" as BoardOutcome,
+      }),
+    ];
+    const [match] = groupTeamMatches(rows);
+    const { perBoard, won, boardsPlayed } = teamMatchBoardWins(match);
+    expect(perBoard).toEqual([{ boardNumber: 1, result: 1 }]);
+    expect(won).toBe(1);
+    expect(boardsPlayed).toBe(1);
+  });
+
+  it("§3.3.7: a removed board is a loss when the home table is at fault", () => {
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", null, {
+        status: "REMOVED_TEAMS",
+        directorOverrideResult: "TRM:NS_FAULT" as BoardOutcome,
+      }),
+    ];
+    const [match] = groupTeamMatches(rows);
+    const { won } = teamMatchBoardWins(match);
+    expect(won).toBe(0);
+  });
+
+  it("§3.3.7: a removed board is a tie for neither-/both-at-fault", () => {
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", null, {
+        status: "REMOVED_TEAMS",
+        directorOverrideResult: "TRM:BOTH_FAULT" as BoardOutcome,
+      }),
+    ];
+    const [match] = groupTeamMatches(rows);
+    const { won, boardsPlayed } = teamMatchBoardWins(match);
+    expect(won).toBe(0.5);
+    expect(boardsPlayed).toBe(1);
+  });
 });
 
 describe("teamByeRounds", () => {

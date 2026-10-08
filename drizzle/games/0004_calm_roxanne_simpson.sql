@@ -1,0 +1,1 @@
+ALTER TABLE `boards` ADD `match_ruling` text;

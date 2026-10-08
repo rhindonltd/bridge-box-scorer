@@ -1,6 +1,6 @@
 import { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
-import { eq } from "drizzle-orm";
+import { and, eq, lt } from "drizzle-orm";
 import { SectionLetter, parseSeat } from "@/model/participants";
 import {
   opponentKey,
@@ -76,7 +76,21 @@ export async function getSwissBoardHistory(
   db: Db,
   section: SectionLetter,
   tables: number,
+  /**
+   * When set, only rounds BEFORE this one are reduced (`roundNumber < max`).
+   * Used by §3.5 mismatch detection to rebuild the history the round-R draw
+   * consumed; omit for the live "as of now" history the next draw uses.
+   */
+  maxRoundExclusive?: number,
 ): Promise<SwissBoardHistory> {
+  const where =
+    maxRoundExclusive != null
+      ? and(
+          eq(boards.section, section),
+          lt(boards.roundNumber, maxRoundExclusive),
+        )
+      : eq(boards.section, section);
+
   const rows = await db
     .select({
       roundNumber: boards.roundNumber,
@@ -86,7 +100,7 @@ export async function getSwissBoardHistory(
       status: boards.status,
     })
     .from(boards)
-    .where(eq(boards.section, section));
+    .where(where);
 
   const playedOpponents = new Set<string>();
   const hadBye = new Set<SwissPairId>();
