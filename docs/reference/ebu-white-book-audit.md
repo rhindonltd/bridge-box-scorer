@@ -648,12 +648,33 @@ service dispatches pairs → `detectPairsSectionMismatches`, teams →
 `detectTeamsSectionMismatches`, behind one `SectionMismatchCandidate`
 (`participantKind: PAIR | TEAM`); the review screen renders either.
 
-**Granularity (pairs and teams).** A 2-half-matches group (pairs) or a
-triple/bye (teams) in a round is NOT skipped wholesale: only the participants
-actually IN the half-match group / triple / bye are excluded (for pairs, in
-EITHER the committed round or the corrected replay — a corrected draw can itself
-produce a half-match), and the ordinary head-to-head tables of that round are
-still assessed. The excluded cases are left to a manual director ruling.
+**Granularity (pairs and teams).** A 2-half-matches group (pairs) in a round is
+NOT skipped wholesale: only the participants actually IN the half-match group
+are excluded (in EITHER the committed round or the corrected replay — a
+corrected draw can itself produce a half-match), and the ordinary head-to-head
+tables of that round are still assessed. A pairs half-match group and a teams
+BYE are left to a manual director ruling.
+
+**Triple mismatch — F21 "Part B" (DONE).** A teams TRIPLE is no longer skipped
+wholesale. A triple is three head-to-head comparisons (x-y, y-z, z-x), each a
+first-class `matches` row on its own 10-VP (SHORT) / 20-VP (LONG) pool, so a
+§3.5 mismatch inside a triple is now both DETECTABLE and SCOREABLE:
+
+- *Scoring.* `calculateTeamsVpOverall`'s triple loop reads each comparison's
+  `matches.ruling` and runs the one-sided §3.5.2 `adjustMismatchVp` on the ruled
+  side using the comparison's own pool — so the quarter-pool base is **2.5** on
+  a SHORT comparison's 10-VP half pool, 5 on a LONG's full pool.
+- *Targeting.* A ruling is keyed to a specific comparison by the acted board
+  (`MatchRoomKey.boardNumber`): a triple's two comparisons at a shared home
+  table are two separate `matches` rows on disjoint board sets, so the board
+  resolves exactly one.
+- *Detection.* `detectTripleMismatches` replays the deterministic trio selection
+  (`chooseTeamTriple`) on the corrected standings and, when the committed trio
+  differs from the correct one, flags a committed member that faced the wrong
+  third team by > 5 current VP, carrying the board of that comparison so the
+  director's confirm applies to the right 10-VP match. A LONG triple's second
+  slot (its three teams fixed by the first slot, not re-chosen) and a member
+  dropped from the correct trio are left to a manual director ruling.
 
 ### F22 — Repeat avoidance is binary; odd-field selection differs — DIVERGENCE (Low)
 

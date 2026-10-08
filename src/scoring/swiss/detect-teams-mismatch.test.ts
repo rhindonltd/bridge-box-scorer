@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { detectTeamsRoundMismatches } from "./detect-teams-mismatch";
+import {
+  detectTeamsRoundMismatches,
+  detectTripleMismatches,
+} from "./detect-teams-mismatch";
 import {
   drawSwissTeamsRound,
   type TeamId,
@@ -157,6 +160,81 @@ describe("detectTeamsRoundMismatches", () => {
       committedOpponentByTeam: new Map(),
       currentVpByTeam: new Map(),
       excludedTeams: new Set(),
+    });
+    expect(candidates).toHaveLength(0);
+  });
+});
+
+describe("detectTripleMismatches", () => {
+  // A committed triple {3,4,5}; comparisons 3-4 (board 20), 3-5 (board 25),
+  // 4-5 (board 30). The corrected trio is {4,5,6} (team 3 should be out, team 6
+  // in). So teams 4 and 5 each faced team 3 when they should have faced team 6.
+  const comparisons = [
+    { low: 3, high: 4, boardStart: 20, boardEnd: 22 },
+    { low: 3, high: 5, boardStart: 25, boardEnd: 27 },
+    { low: 4, high: 5, boardStart: 30, boardEnd: 32 },
+  ];
+
+  it("flags a team that faced the wrong third team (> 5 VP gap)", () => {
+    const vp = new Map<TeamId, number>([
+      [3, 2], // the wrong opponent (committed, dropped from correct trio)
+      [4, 10],
+      [5, 10],
+      [6, 18], // the correct opponent → |2 - 18| = 16 > 5
+    ]);
+
+    const candidates = detectTripleMismatches({
+      roundNumber: 4,
+      committedMembers: [3, 4, 5],
+      correctMembers: [4, 5, 6],
+      comparisons,
+      currentVpByTeam: vp,
+    });
+
+    // Teams 4 and 5 each faced team 3 (wrong) instead of team 6 (correct).
+    const t4 = candidates.find((c) => c.mismatchedTeam === 4);
+    const t5 = candidates.find((c) => c.mismatchedTeam === 5);
+    expect(t4).toBeDefined();
+    expect(t4!.actualOpponent).toBe(3);
+    expect(t4!.correctOpponent).toBe(6);
+    expect(t4!.direction).toBe("LOWER"); // actual (2) < correct (18)
+    // The board pins comparison 3-4 (board 20), so the ruling hits that match.
+    expect(t4!.boardNumber).toBe(20);
+    expect(t5).toBeDefined();
+    expect(t5!.actualOpponent).toBe(3);
+    expect(t5!.boardNumber).toBe(25); // comparison 3-5
+    // Team 3 was dropped from the correct trio → not reported (manual ruling).
+    expect(candidates.every((c) => c.mismatchedTeam !== 3)).toBe(true);
+  });
+
+  it("flags nothing when the committed trio equals the correct trio", () => {
+    const candidates = detectTripleMismatches({
+      roundNumber: 4,
+      committedMembers: [3, 4, 5],
+      correctMembers: [3, 4, 5],
+      comparisons,
+      currentVpByTeam: new Map([
+        [3, 1],
+        [4, 20],
+        [5, 10],
+      ]),
+    });
+    expect(candidates).toHaveLength(0);
+  });
+
+  it("does not flag a wrong-third-team swap within the 5 VP threshold", () => {
+    const vp = new Map<TeamId, number>([
+      [3, 13], // wrong opponent
+      [4, 10],
+      [5, 10],
+      [6, 18], // correct opponent → |13 - 18| = 5, not > 5
+    ]);
+    const candidates = detectTripleMismatches({
+      roundNumber: 4,
+      committedMembers: [3, 4, 5],
+      correctMembers: [4, 5, 6],
+      comparisons,
+      currentVpByTeam: vp,
     });
     expect(candidates).toHaveLength(0);
   });

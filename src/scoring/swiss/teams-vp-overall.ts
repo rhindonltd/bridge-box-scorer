@@ -134,6 +134,17 @@ export function calculateTeamsVpOverall(
         // A non-negative margin favours the home side; the away side mirrors.
         const homeWon = margin >= 0;
         vp = stake.isHome === homeWon ? winnerVP : loserVP;
+
+        // §3.5 mismatch (F21 Part B): the director may rule ONE side of a
+        // comparison mismatched. The ruling is home-relative to the comparison
+        // (NS = its home side, EW = its opponent side); apply the one-sided
+        // §3.5.2 adjustment to THIS stake only when it is that side. The pool
+        // is this comparison's pool (10 SHORT / 20 LONG), so `base = pool/4`
+        // gives the 2.5 constant on the triangular 10-VP half pool.
+        const mismatch = matchMismatch(stake.comparison);
+        if (mismatch != null && (mismatch.side === "NS") === stake.isHome) {
+          vp = adjustMismatchVp(vp, mismatch, pool);
+        }
       }
       const key = `${stake.teamId}|${stake.round}`;
       byTeamRound.set(key, (byTeamRound.get(key) ?? 0) + vp);

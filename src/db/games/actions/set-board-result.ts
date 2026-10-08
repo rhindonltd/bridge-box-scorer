@@ -111,11 +111,21 @@ export async function removeTeamsBoardResult(
     .where(boardWhere(key));
 }
 
-/** Locates a whole (section?, round, table) of boards — one room of a match. */
+/**
+ * Locates a whole (section?, round, table) of boards — one room of a match.
+ *
+ * `boardNumber` disambiguates a TRIPLE: a triple's home table hosts TWO
+ * separate 10-VP comparisons (two distinct `matches` rows) on two disjoint
+ * board sets, so (round, table) alone does not pick one. The board the director
+ * acted from belongs to exactly one comparison (via `boards.matchId`), so
+ * supplying it resolves the right match. Ordinary matches have one match per
+ * (round, table) and are unaffected whether or not a board is supplied.
+ */
 export interface MatchRoomKey {
   section?: string;
   roundNumber: number;
   tableNumber: number;
+  boardNumber?: number;
 }
 
 function matchRoomWhere(key: MatchRoomKey) {
@@ -125,6 +135,9 @@ function matchRoomWhere(key: MatchRoomKey) {
   ];
   if (key.section !== undefined) {
     clauses.unshift(eq(boards.section, key.section));
+  }
+  if (key.boardNumber !== undefined) {
+    clauses.push(eq(boards.boardNumber, key.boardNumber));
   }
   return and(...clauses);
 }

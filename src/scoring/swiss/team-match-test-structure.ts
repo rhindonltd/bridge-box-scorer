@@ -128,6 +128,10 @@ export function teamMatchStructureFromRows<R extends TeamMatchRow>(
           vpPool: 10,
           boardStart: span.start,
           boardEnd: span.end,
+          // A triple comparison can carry its own §3.5 mismatch (F21 Part B),
+          // lifted home-relative to its lower (lo) table from the board tokens
+          // within this comparison's own board span.
+          ruling: tripleRulingHomeRelative(rows, section, lo, hi, span),
         });
       }
     }
@@ -185,6 +189,7 @@ export function teamMatchStructureFromRows<R extends TeamMatchRow>(
         vpPool: 20,
         boardStart: span.start,
         boardEnd: span.end,
+        ruling: tripleRulingHomeRelative(rows, section, lo, hi, span),
       });
     }
   }
@@ -314,4 +319,48 @@ function spanAcrossRounds(
   }
   const sorted = [...boards].sort((a, b) => a - b);
   return { start: sorted[0] ?? 0, end: sorted[sorted.length - 1] ?? 0 };
+}
+
+/**
+ * The home-relative §3.5 mismatch (or void) ruling for ONE triple comparison
+ * {lo, hi}, lifted from the board tokens that fall within this comparison's own
+ * board span. A triple's home table hosts two separate comparisons on disjoint
+ * board sets, so the span is what pins a token to the right comparison. A token
+ * on the lower (lo) team's room is home-relative already; one on the higher
+ * (hi) team's room is inverted (NS↔EW). Returns null when neither room carries
+ * one within the span.
+ */
+function tripleRulingHomeRelative<R extends TeamMatchRow>(
+  rows: R[],
+  section: string,
+  lo: number,
+  hi: number,
+  span: { start: number; end: number },
+): string | null {
+  const tokenAt = (table: number): string | null => {
+    for (const r of rows) {
+      if (r.section !== section) continue;
+      if (r.boardNumber < span.start || r.boardNumber > span.end) continue;
+      let home: number;
+      try {
+        home = parseSeat(r.ns).tableNumber;
+      } catch {
+        continue;
+      }
+      if (home !== table) continue;
+      if (r.status === "VOID_MATCH" && r.directorOverrideResult != null) {
+        return r.directorOverrideResult as string;
+      }
+      if (r.status === "MISMATCH" && r.matchRuling != null) {
+        return r.matchRuling;
+      }
+    }
+    return null;
+  };
+
+  const homeToken = tokenAt(lo);
+  if (homeToken != null) return homeToken;
+  const oppToken = tokenAt(hi);
+  if (oppToken != null) return invertTeamsRuling(oppToken);
+  return null;
 }

@@ -107,8 +107,33 @@ export interface SwissTeamsCommittedRound {
   opponentByTeam: Map<TeamId, TeamId>;
   /** Home table number each team sat at this round (NS = home team). */
   homeTableByTeam: Map<TeamId, number>;
-  /** Teams in a triple or on a bye this round — excluded from detection. */
+  /** Teams in a triple or on a bye this round — excluded from the ORDINARY scan. */
   excludedTeams: Set<TeamId>;
+  /**
+   * The round's committed triples, each as its three teams and its three
+   * head-to-head comparisons (with board spans). Empty when the round had no
+   * triple. Triple-internal §3.5 detection (F21 Part B) runs over these; the
+   * ordinary scan still ignores the triple teams via `excludedTeams`.
+   */
+  triples: CommittedTriple[];
+}
+
+/** One committed triple: its three teams and its three head-to-head comparisons. */
+export interface CommittedTriple {
+  /** The three teams' home-table ids, ascending. */
+  members: TeamId[];
+  comparisons: CommittedTripleComparison[];
+}
+
+/** One head-to-head comparison inside a committed triple. */
+export interface CommittedTripleComparison {
+  /** The lower-table team of this comparison. */
+  low: TeamId;
+  /** The higher-table team of this comparison. */
+  high: TeamId;
+  /** Inclusive board range this comparison was played over. */
+  boardStart: number;
+  boardEnd: number;
 }
 
 /**
@@ -130,6 +155,9 @@ export async function getSwissTeamsCommittedRound(
   const excludedTeams = new Set<TeamId>();
   const opponentByTeam = new Map<TeamId, TeamId>();
   const homeTableByTeam = new Map<TeamId, number>();
+  // Committed triple comparisons, grouped by the triple's groupId.
+  const tripleComparisonsByGroup = new Map<string, CommittedTripleComparison[]>();
+  const tripleMembersByGroup = new Map<string, Set<TeamId>>();
 
   for (const m of matchRows) {
     const home = tableOf(m.home);
@@ -141,9 +169,24 @@ export async function getSwissTeamsCommittedRound(
     }
 
     if (m.kind === "TRIPLE") {
-      // A triple's teams are excluded from the ordinary head-to-head scan.
+      // A triple's teams are excluded from the ordinary head-to-head scan, but
+      // its comparisons are collected for triple-internal §3.5 detection.
       if (home != null) excludedTeams.add(home);
       if (away != null) excludedTeams.add(away);
+      if (home != null && away != null && m.groupId != null) {
+        const comps = tripleComparisonsByGroup.get(m.groupId) ?? [];
+        comps.push({
+          low: Math.min(home, away),
+          high: Math.max(home, away),
+          boardStart: m.boardStart,
+          boardEnd: m.boardEnd,
+        });
+        tripleComparisonsByGroup.set(m.groupId, comps);
+        const members = tripleMembersByGroup.get(m.groupId) ?? new Set<TeamId>();
+        members.add(home);
+        members.add(away);
+        tripleMembersByGroup.set(m.groupId, members);
+      }
       continue;
     }
 
@@ -167,5 +210,18 @@ export async function getSwissTeamsCommittedRound(
     if (excludedTeams.has(opp)) opponentByTeam.delete(team);
   }
 
-  return { roundNumber, opponentByTeam, homeTableByTeam, excludedTeams };
+  const triples: CommittedTriple[] = [];
+  for (const [groupId, comps] of tripleComparisonsByGroup) {
+    const members = [...(tripleMembersByGroup.get(groupId) ?? new Set())].sort(
+      (a, b) => a - b,
+    );
+    triples.push({
+      members,
+      comparisons: comps.sort(
+        (a, b) => a.low - b.low || a.high - b.high,
+      ),
+    });
+  }
+
+  return { roundNumber, opponentByTeam, homeTableByTeam, excludedTeams, triples };
 }

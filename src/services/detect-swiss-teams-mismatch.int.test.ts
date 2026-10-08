@@ -148,4 +148,54 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     );
     expect(await detectSectionMismatches(gameId, "A")).toEqual([]);
   });
+
+  it("exposes a committed round's TRIPLE as three comparisons with board spans", async () => {
+    // A committed SHORT triple {1,2,3} in round 2 is read back from the matches
+    // table as three head-to-head comparisons (x-y, y-z, z-x), each with its own
+    // board span — the structure the triple-internal §3.5 detector consumes.
+    await setup();
+    const { materializeSwissTeamsRound } = await import(
+      "@/services/materialize-swiss-teams-round"
+    );
+    // 4 boards/round so a SHORT triple can split into half-sized board sets.
+    await materializeSwissTeamsRound(
+      gameId,
+      "A",
+      2,
+      4,
+      5,
+      [{ a: 4, b: 5 }],
+      null,
+      { a: 1, b: 2, c: 3, kind: "SHORT" },
+    );
+
+    const { getSwissTeamsCommittedRound } = await import(
+      "@/db/games/queries/swiss-teams-committed"
+    );
+    const games = await import("@/db/games");
+    const db = (await games.getDb(gameId))!;
+    const committed = await getSwissTeamsCommittedRound(db, "A", 2);
+
+    // The ordinary 4v5 table is still an ordinary head-to-head.
+    expect(committed.opponentByTeam.get(4)).toBe(5);
+    // The triple's three teams are excluded from the ordinary scan…
+    expect([...committed.excludedTeams].sort()).toEqual([1, 2, 3]);
+    // …and surfaced as one committed triple with three comparisons.
+    expect(committed.triples).toHaveLength(1);
+    const triple = committed.triples[0];
+    expect(triple.members).toEqual([1, 2, 3]);
+    expect(triple.comparisons).toHaveLength(3);
+    const pairs = new Set(
+      triple.comparisons.map((c) => `${c.low}-${c.high}`),
+    );
+    expect(pairs).toEqual(new Set(["1-2", "1-3", "2-3"]));
+    // Each comparison carries a real (non-empty) board span.
+    for (const c of triple.comparisons) {
+      expect(c.boardEnd).toBeGreaterThanOrEqual(c.boardStart);
+      expect(c.boardStart).toBeGreaterThan(0);
+    }
+    // The three comparisons use three DISJOINT board sets (A/B/C).
+    const starts = triple.comparisons.map((c) => c.boardStart).sort();
+    expect(new Set(starts).size).toBe(3);
+  });
 });

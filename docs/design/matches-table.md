@@ -92,9 +92,12 @@ board row of a table:
 
 ### 2.4 Features that get simpler if we do this first
 
-- **Triple mismatch detection (F21 "Part B")** — detecting a §3.5 mismatch
-  inside a triple becomes "compare match rows", not "infer the triple then
-  infer the comparison".
+- **Triple mismatch detection (F21 "Part B")** — DONE. Detecting a §3.5 mismatch
+  inside a triple is now "compare match rows", not "infer the triple then infer
+  the comparison": a triple's three comparisons are first-class `matches` rows,
+  so detection replays the trio selection and diffs membership, the ruling is
+  keyed to one comparison by its board, and the scorer applies the §3.5.2
+  adjustment on that comparison's own 10/20-VP pool.
 - **Withdrawals / late arrivals (F24 / F25)** — fundamentally match-level
   (a match cancelled, replayed, or scored against a withdrawn contestant); a
   match row is the natural carrier.
