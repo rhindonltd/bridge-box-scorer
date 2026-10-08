@@ -349,7 +349,7 @@ function chooseTeamBye(
  * Analogous to {@link chooseTeamBye}. Used for both SHORT triples and the
  * FIRST slot of a LONG triple (the second slot reuses the first's teams).
  */
-function chooseTeamTriple(
+export function chooseTeamTriple(
   standings: TeamId[],
   hadTriple: ReadonlySet<TeamId>,
 ): [TeamId, TeamId, TeamId] {

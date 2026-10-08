@@ -5,7 +5,11 @@ import {
   getSwissTeamsPriorHistory,
   getSwissTeamsCommittedRound,
 } from "@/db/games/queries/swiss-teams-committed";
-import { detectTeamsRoundMismatches } from "@/scoring/swiss/detect-teams-mismatch";
+import {
+  detectTeamsRoundMismatches,
+  detectTripleMismatches,
+} from "@/scoring/swiss/detect-teams-mismatch";
+import { chooseTeamTriple } from "@/movement/swiss-teams/swiss-teams-pairing";
 import {
   computeSectionLeaderboards,
   computeSectionLeaderboardsAsOf,
@@ -316,10 +320,12 @@ function teamStandingsOrder(board: SectionLeaderboard | undefined): number[] {
  *
  * Mirrors the pairs path, with two teams-specific points: the deterministic
  * teams draw is replayed (its round-1 RNG is never involved in later rounds),
- * and the odd-field TRIPLE/BYE teams of a round are EXCLUDED (the ordinary
- * tables are still assessed). For round R the corrected standings are reduced
- * to the ordinary field — the round's actual triple/bye teams removed — so the
- * engine simply pairs the ordinary teams with no odd-handling.
+ * and the odd-field handling is assessed in two passes. For round R the
+ * corrected standings are reduced to the ordinary field (triple/bye teams
+ * removed) and the ordinary head-to-head tables are diffed as normal; then the
+ * round's committed TRIPLE is assessed separately (F21 Part B) by replaying the
+ * deterministic trio selection and flagging a team that faced the wrong third
+ * team. A BYE team is still left alone.
  */
 async function detectTeamsSectionMismatches(
   gameId: string,
@@ -347,8 +353,11 @@ async function detectTeamsSectionMismatches(
     if (ruled.has(round)) continue;
 
     const committed = await getSwissTeamsCommittedRound(db, section, round);
-    // Nothing to assess if every team this round was in the triple/bye.
-    if (committed.opponentByTeam.size === 0) continue;
+    // Skip only when there is nothing to assess at all — no ordinary tables AND
+    // no triple. (A round can be all-triple with no ordinary tables.)
+    if (committed.opponentByTeam.size === 0 && committed.triples.length === 0) {
+      continue;
+    }
 
     const asOf = await computeSectionLeaderboardsAsOf(db, gameId, round);
     const fullOrder = teamStandingsOrder(asOf.find((s) => s.section === section));
@@ -359,39 +368,86 @@ async function detectTeamsSectionMismatches(
 
     const prior = await getSwissTeamsPriorHistory(db, section, round);
 
-    const found = detectTeamsRoundMismatches({
-      roundNumber: round,
-      teams,
-      orderedOrdinary,
-      playedOpponents: prior.playedOpponents,
-      committedOpponentByTeam: committed.opponentByTeam,
-      currentVpByTeam: vpByTeam,
-      excludedTeams: committed.excludedTeams,
-    });
-
-    const { boardStart } = swissRoundBoardRange(round, boardsPerRound);
-
-    for (const c of found) {
-      // The mismatched team sits NS at its own home table; the ruling token is
-      // home-relative, so `side` is always NS for the acted (home) team.
-      const tableNumber = committed.homeTableByTeam.get(c.mismatchedTeam);
-      /* v8 ignore next */
-      if (tableNumber == null) continue;
-
-      candidates.push({
-        section,
-        participantKind: "TEAM",
-        roundNumber: c.roundNumber,
-        mismatchedId: c.mismatchedTeam,
-        actualOpponent: c.actualOpponent,
-        correctOpponent: c.correctOpponent,
-        actualOpponentVp: c.actualOpponentVp,
-        correctOpponentVp: c.correctOpponentVp,
-        direction: c.direction,
-        tableNumber,
-        side: "NS",
-        boardNumber: boardStart,
+    // --- Ordinary head-to-head tables ---
+    if (committed.opponentByTeam.size > 0) {
+      const found = detectTeamsRoundMismatches({
+        roundNumber: round,
+        teams,
+        orderedOrdinary,
+        playedOpponents: prior.playedOpponents,
+        committedOpponentByTeam: committed.opponentByTeam,
+        currentVpByTeam: vpByTeam,
+        excludedTeams: committed.excludedTeams,
       });
+
+      const { boardStart } = swissRoundBoardRange(round, boardsPerRound);
+
+      for (const c of found) {
+        // The mismatched team sits NS at its own home table; the ruling token is
+        // home-relative, so `side` is always NS for the acted (home) team.
+        const tableNumber = committed.homeTableByTeam.get(c.mismatchedTeam);
+        /* v8 ignore next */
+        if (tableNumber == null) continue;
+
+        candidates.push({
+          section,
+          participantKind: "TEAM",
+          roundNumber: c.roundNumber,
+          mismatchedId: c.mismatchedTeam,
+          actualOpponent: c.actualOpponent,
+          correctOpponent: c.correctOpponent,
+          actualOpponentVp: c.actualOpponentVp,
+          correctOpponentVp: c.correctOpponentVp,
+          direction: c.direction,
+          tableNumber,
+          side: "NS",
+          boardNumber: boardStart,
+        });
+      }
+    }
+
+    // --- Triple-internal §3.5 detection (F21 Part B) ---
+    // The correct trio is the deterministic bottom-3 of the corrected FULL
+    // standings that have not already been in a triple — the same selection the
+    // draw used. If it differs from the committed trio, a team faced the wrong
+    // third team.
+    for (const triple of committed.triples) {
+      // Only the round that CHOSE the trio is a clean replay. A LONG triple's
+      // second slot reuses the first slot's teams (not re-chosen), which shows
+      // up as its members already being in `prior.hadTriple`; skip those (and
+      // any other already-tripled member) rather than replay a fresh choice
+      // that would falsely diff. Left to a manual director ruling.
+      if (triple.members.some((m) => prior.hadTriple.has(m))) continue;
+
+      const correctMembers = chooseTeamTriple(fullOrder, prior.hadTriple);
+
+      const found = detectTripleMismatches({
+        roundNumber: round,
+        committedMembers: triple.members,
+        correctMembers,
+        comparisons: triple.comparisons,
+        currentVpByTeam: vpByTeam,
+      });
+
+      for (const c of found) {
+        // In a triple each team sits NS at its own home table; the ruling is
+        // home-relative so `side` is NS for the mismatched (home) team. The
+        // candidate's boardNumber pins the specific 10-VP comparison.
+        candidates.push({
+          section,
+          participantKind: "TEAM",
+          roundNumber: c.roundNumber,
+          mismatchedId: c.mismatchedTeam,
+          actualOpponent: c.actualOpponent,
+          correctOpponent: c.correctOpponent,
+          actualOpponentVp: c.actualOpponentVp,
+          correctOpponentVp: c.correctOpponentVp,
+          direction: c.direction,
+          tableNumber: c.mismatchedTeam,
+          side: "NS",
+          boardNumber: c.boardNumber,
+        });
+      }
     }
   }
 

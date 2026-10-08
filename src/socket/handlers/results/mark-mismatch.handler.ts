@@ -63,7 +63,9 @@ export function registerMarkMismatchHandler(socket: Socket, io: Server) {
         try {
           await markMismatch(
             db,
-            { roundNumber, tableNumber },
+            // boardNumber disambiguates a triple: a triple home table hosts two
+            // separate 10-VP comparisons, so the acted board picks the right one.
+            { roundNumber, tableNumber, boardNumber },
             buildMismatch({ side, direction, fault }),
           );
         } catch (err) {

@@ -57,7 +57,9 @@ export function registerVoidTeamsMatchHandler(socket: Socket, io: Server) {
         try {
           await voidTeamsMatch(
             db,
-            { roundNumber, tableNumber },
+            // boardNumber disambiguates a triple: a triple home table hosts two
+            // separate 10-VP comparisons, so the acted board picks the right one.
+            { roundNumber, tableNumber, boardNumber },
             buildVoidMatch(cause),
           );
         } catch (err) {

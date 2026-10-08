@@ -231,6 +231,97 @@ describe("calculateTeamsVpOverall", () => {
     expect(t1.vpByRound[1] + t2.vpByRound[1] + t3.vpByRound[1]).toBe(30);
   });
 
+  it("applies a §3.5 mismatch to ONE triple comparison on the 2.5 (pool/4) base", () => {
+    // Same SHORT triple as above, but comparison 1-3 (set C, board 3) is ruled
+    // a mismatch: the home side (team 1, the comparison's lo table) played a
+    // LOWER opponent through its OWN fault. Team 1 won that half 6-4, so on the
+    // 10-VP half pool (base = 10/4 = 2.5) its 6 is docked a quarter of its
+    // excess over 2.5: 6 - (6 - 2.5)/4 = 5.125. Its OTHER comparison (1-2) and
+    // every other team's VP are untouched.
+    const rows: SwissVpBoardRow[] = [
+      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+      row({ boardNumber: 2, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 2, tableNumber: 3, ns: "A3NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+      // Comparison 1-3 on set C (board 3), ruled a mismatch on BOTH its rooms.
+      row({
+        boardNumber: 3,
+        tableNumber: 3,
+        ns: "A3NS",
+        ew: "A1EW",
+        confirmedResult: "3NTN=",
+        status: "MISMATCH",
+        matchRuling: "MM:EW:LOWER:OWN",
+      }),
+      row({
+        boardNumber: 3,
+        tableNumber: 1,
+        ns: "A1NS",
+        ew: "A3EW",
+        confirmedResult: "4SN=",
+        status: "MISMATCH",
+        matchRuling: "MM:EW:LOWER:OWN",
+      }),
+    ];
+
+    const result = calculateTeamsVpOverall(rows);
+    const t1 = result.lines.find((l) => l.teamId === "A1NS")!.vpByRound[1];
+    const t2 = result.lines.find((l) => l.teamId === "A2NS")!.vpByRound[1];
+    const t3 = result.lines.find((l) => l.teamId === "A3NS")!.vpByRound[1];
+
+    // The token is home-relative to comparison 1-3 (home = team 1 = NS,
+    // opponent = team 3 = EW), so MM:EW:LOWER:OWN targets TEAM 3. Team 3 lost
+    // that half (4 VP); LOWER+OWN docks a quarter of its excess over base 2.5:
+    // 4 - (4 - 2.5)/4 = 3.625. Its 2-3 half (4) is untouched → 7.625.
+    expect(t3).toBeCloseTo(4 - (4 - 2.5) / 4 + 4, 5);
+    // Team 1 (comparison 1-3's NS side) is NOT the ruled side → untouched:
+    // 6 (1-2) + 6 (1-3) = 12.
+    expect(t1).toBeCloseTo(12, 5);
+    // Team 2 is not in comparison 1-3 at all → untouched: 4 (1-2) + 6 (2-3) = 10.
+    expect(t2).toBeCloseTo(10, 5);
+  });
+
+  it("docks a triple comparison's winner (LOWER + own fault) on the 2.5 base", () => {
+    // Comparison 1-3 again, but now rule the HOME side (team 1) the mismatched
+    // one: MM:NS:LOWER:OWN. Team 1 won that half 6 VP; LOWER+OWN docks a
+    // quarter of the excess over base 2.5 → 6 - (6 - 2.5)/4 = 5.125. Only team
+    // 1's 1-3 half changes; its 1-2 half and teams 2 & 3 are untouched.
+    const rows: SwissVpBoardRow[] = [
+      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+      row({ boardNumber: 2, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 2, tableNumber: 3, ns: "A3NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+      row({
+        boardNumber: 3,
+        tableNumber: 3,
+        ns: "A3NS",
+        ew: "A1EW",
+        confirmedResult: "3NTN=",
+        status: "MISMATCH",
+        matchRuling: "MM:NS:LOWER:OWN",
+      }),
+      row({
+        boardNumber: 3,
+        tableNumber: 1,
+        ns: "A1NS",
+        ew: "A3EW",
+        confirmedResult: "4SN=",
+        status: "MISMATCH",
+        matchRuling: "MM:NS:LOWER:OWN",
+      }),
+    ];
+
+    const result = calculateTeamsVpOverall(rows);
+    const t1 = result.lines.find((l) => l.teamId === "A1NS")!.vpByRound[1];
+    const t2 = result.lines.find((l) => l.teamId === "A2NS")!.vpByRound[1];
+    const t3 = result.lines.find((l) => l.teamId === "A3NS")!.vpByRound[1];
+
+    // Team 1: 6 (1-2) + [6 docked to 5.125] (1-3) = 11.125.
+    expect(t1).toBeCloseTo(6 + (6 - (6 - 2.5) / 4), 5);
+    expect(t2).toBeCloseTo(10, 5);
+    expect(t3).toBeCloseTo(8, 5);
+  });
+
   it("sits triple teams at the neutral 10 when nothing is comparable yet", () => {
     // Only one room of the SHORT triple entered a result, so no comparison has
     // both rooms scored -> each comparison sits at its 5-neutral half, and a

@@ -36,8 +36,12 @@ export function ReviewMismatchesPage({ gameId }: { gameId: string }) {
   const [resolved, setResolved] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState<string | null>(null);
 
+  // Include the board: a team can be a candidate in two of a triple's three
+  // comparisons in one round (each a distinct 10-VP match on its own board set),
+  // so the board number is what makes those rows distinct and independently
+  // resolvable.
   const candidateKey = (c: SectionMismatchCandidate) =>
-    `${c.section}:${c.roundNumber}:${c.mismatchedId}`;
+    `${c.section}:${c.roundNumber}:${c.mismatchedId}:${c.boardNumber}`;
 
   // Fetch candidates for every section once the section list is known. The
   // async work lives inside the effect (behind an `active` guard for cleanup)
