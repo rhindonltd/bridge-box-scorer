@@ -36,11 +36,28 @@ function createMockSocket() {
   return { on: vi.fn() } as any;
 }
 
+/**
+ * A db mock for the ruling writer, which now (1) selects the acted board's
+ * matchId, (2) selects the match's home seat, then (3) updates matches.ruling.
+ * The acted table is 2 and the match's home is "A2NS" (table 2), so the acted
+ * room IS the home side and the stored ruling is home-relative (no inversion).
+ */
 function makeDb() {
+  let selectCall = 0;
+  const select = vi.fn(() => {
+    const which = selectCall++;
+    const chain: any = {
+      from: () => chain,
+      where: () => chain,
+      limit: () =>
+        Promise.resolve(which === 0 ? [{ matchId: 1 }] : [{ home: "A2NS" }]),
+    };
+    return chain;
+  });
   const where = vi.fn().mockResolvedValue(undefined);
   const set = vi.fn(() => ({ where }));
   const update = vi.fn(() => ({ set }));
-  return { update, _set: set, _where: where };
+  return { select, update, _set: set, _where: where };
 }
 
 const validPayload = {
@@ -79,10 +96,7 @@ describe("registerVoidTeamsMatchHandler", () => {
     const cb = vi.fn();
     await handler(validPayload, cb);
 
-    expect(db._set).toHaveBeenCalledWith({
-      directorOverrideResult: "VOID:SEATING_STANDARD",
-      status: "VOID_MATCH",
-    });
+    expect(db._set).toHaveBeenCalledWith({ ruling: "VOID:SEATING_STANDARD" });
     expect(cb).toHaveBeenCalledWith({ success: true, data: null });
     expect(broadcastResultsChanged).toHaveBeenCalledWith(io, "g1", 3);
   });
@@ -95,10 +109,8 @@ describe("registerVoidTeamsMatchHandler", () => {
     const handler = socket.on.mock.calls[0][1];
 
     await handler({ ...validPayload, cause: "SHORT_OFFENDER_EW" }, vi.fn());
-    expect(db._set).toHaveBeenCalledWith({
-      directorOverrideResult: "VOID:SHORT_OFFENDER_EW",
-      status: "VOID_MATCH",
-    });
+    // Acted table 2 is the match home (A2NS), so the cause is stored as-is.
+    expect(db._set).toHaveBeenCalledWith({ ruling: "VOID:SHORT_OFFENDER_EW" });
   });
 
   it("rejects an invalid cause", async () => {

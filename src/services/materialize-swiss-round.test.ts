@@ -28,11 +28,12 @@ import { getDb } from "@/db/games";
  * chainable `insert().values().run()`.
  */
 function stubDb(existingRows: unknown[]) {
-  const run = vi.fn();
+  let nextId = 0;
+  const run = vi.fn(() => ({ lastInsertRowid: ++nextId }));
   const values = vi.fn(() => ({ run }));
   const insert = vi.fn(() => ({ values }));
   const tx = { insert };
-  const transaction = vi.fn((cb: (tx: unknown) => void) => cb(tx));
+  const transaction = vi.fn((cb: (tx: unknown) => unknown) => cb(tx));
 
   const selectChain = {
     from: () => selectChain,
@@ -75,7 +76,21 @@ describe("swissRoundToMaterializable", () => {
     expect(out[0]).toEqual({
       tableNumber: 1,
       rounds: [
-        { roundNumber: 1, ns: "1NS", ew: "1EW", boardStart: 1, boardEnd: 3 },
+        {
+          roundNumber: 1,
+          ns: "1NS",
+          ew: "1EW",
+          boardStart: 1,
+          boardEnd: 3,
+          match: {
+            kind: "PAIRS",
+            scoredAsUnit: true,
+            key: "1|t1",
+            home: "1NS",
+            opponent: "1EW",
+            vpPool: 20,
+          },
+        },
       ],
     });
     expect(out.some((t) => t.rounds[0].sitOut)).toBe(false);

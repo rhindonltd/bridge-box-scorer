@@ -27,11 +27,11 @@ export interface SwissVpBoardRow {
   /** Board status; "SIT_OUT" rows are byes and carry no head-to-head result. */
   status: string | null;
   /**
-   * A match-level director ruling token that is NOT a board score (so it never
-   * feeds `boardResult`). Currently the EBU §3.5 mismatch ruling
-   * (`MM:<side>:<direction>:<fault>`); null for an ordinary board.
+   * The match this board belongs to (FK → matches.id). Used to attach the
+   * match-level director rulings (§3.3.8 void-pair, §3.5 mismatch), which now
+   * live on the match row, not the board.
    */
-  matchRuling?: string | null;
+  matchId?: number;
 }
 
 /**

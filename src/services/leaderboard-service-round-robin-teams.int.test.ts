@@ -4,6 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
 import type { BoardOutcome } from "@/model/score";
+import {
+  withFixtureMatchId,
+  seedFixtureTeamsMatch,
+} from "@/mocks/fixtures/db-rows";
 
 // A Teams Round Robin game: the game-index lookup supplies the TEAMS game type
 // and a ROUND_ROBIN_TEAMS movement selection. The leaderboard service must
@@ -45,6 +49,7 @@ describe("Teams Round Robin leaderboard (real scoring, shared teams-VP path)", (
     await create.createGameDb(gameId);
     const db = await games.getDb(gameId);
     if (!db) throw new Error("db not created");
+    seedFixtureTeamsMatch(db);
     return db;
   }
 
@@ -112,7 +117,7 @@ describe("Teams Round Robin leaderboard (real scoring, shared teams-VP path)", (
           confirmedResult: "3NTN=" as BoardOutcome,
           status: "CONFIRMED" as const,
         },
-      ])
+      ].map(withFixtureMatchId))
       .run();
 
     const result = await computeLeaderboard(db, gameId);

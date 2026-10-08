@@ -1,12 +1,12 @@
 import "server-only";
 
 import { getDb } from "@/db/games";
-import { boards, NewBoard } from "@/db/games/tables/boards";
-import { assignments, Assignment } from "@/db/games/tables/assignments";
+import { boards } from "@/db/games/tables/boards";
 import { and, eq } from "drizzle-orm";
 import { SectionLetter } from "@/model/participants";
 import {
   buildSectionRows,
+  insertSectionDrafts,
   type MaterializableMovement,
 } from "@/services/materialize-movement";
 import {
@@ -161,6 +161,14 @@ function tripleTables(
   // (e.g. x hosts y on A and z on C), so a table can carry two round-entries —
   // merge rows by table number into one MaterializableTable (like the Swiss
   // Pairs half-match anchor table) rather than emitting duplicate table objects.
+  // Stable grouping id for the whole three-way (its three teams, order-free), so
+  // every comparison row of the triple shares a groupId — and, for a LONG
+  // triple, the two rooms of a comparison (emitted in different slots/rounds)
+  // share the comparison's match key.
+  const trioId = [triple.a, triple.b, triple.c].sort((p, q) => p - q).join("-");
+  // A SHORT triple's comparisons are /10 half pools; a LONG triple's are /20.
+  const vpPool = kind === "LONG" ? 20 : 10;
+
   const byTable = new Map<number, MaterializableTable>();
   for (const comparison of expandTeamTriple(triple)) {
     const span = sets[comparison.boardSet];
@@ -176,6 +184,19 @@ function tripleTables(
         ew: awayPairId(row.ewTeam),
         boardStart: span.start,
         boardEnd: span.end,
+        // One head-to-head comparison of the three-way: its two rooms (which may
+        // fall in different rounds for a LONG triple) share this key.
+        match: {
+          kind: "TRIPLE",
+          scoredAsUnit: true,
+          key: `triple|${trioId}|${comparison.boardSet}`,
+          home: homePairId(comparison.low),
+          opponent: homePairId(comparison.high),
+          groupId: `triple|${trioId}`,
+          vpPool,
+          boardStart: span.start,
+          boardEnd: span.end,
+        },
       });
       byTable.set(row.tableNumber, entry);
     }
@@ -221,18 +242,32 @@ export function swissTeamsRoundToMaterializable(
   );
 
   const tablesOut: MaterializableMovement = expandTeamMatches(matches).map(
-    (placement) => ({
-      tableNumber: placement.tableNumber,
-      rounds: [
-        {
-          roundNumber,
-          ns: homePairId(placement.nsTeam),
-          ew: awayPairId(placement.ewTeam),
-          boardStart,
-          boardEnd,
-        },
-      ],
-    }),
+    (placement) => {
+      // The encounter's two rooms are at the two teams' home tables; group them
+      // into one TEAMS match keyed by the unordered home-table pair this round.
+      const lo = Math.min(placement.nsTeam, placement.ewTeam);
+      const hi = Math.max(placement.nsTeam, placement.ewTeam);
+      return {
+        tableNumber: placement.tableNumber,
+        rounds: [
+          {
+            roundNumber,
+            ns: homePairId(placement.nsTeam),
+            ew: awayPairId(placement.ewTeam),
+            boardStart,
+            boardEnd,
+            match: {
+              kind: "TEAMS",
+              scoredAsUnit: true,
+              key: `${roundNumber}|teams|${lo}-${hi}`,
+              home: homePairId(lo),
+              opponent: homePairId(hi),
+              vpPool: 20,
+            },
+          },
+        ],
+      };
+    },
   );
 
   // Odd field (triple): a round-robin of three head-to-head comparisons across
@@ -258,6 +293,13 @@ export function swissTeamsRoundToMaterializable(
           boardStart,
           boardEnd,
           sitOut: true,
+          match: {
+            kind: "BYE",
+            scoredAsUnit: true,
+            key: `${roundNumber}|bye|${byeTeamId}`,
+            home: homePairId(byeTeamId),
+            opponent: null,
+          },
         },
       ],
     });
@@ -306,25 +348,12 @@ export async function materializeSwissTeamsRound(
     triple,
   );
 
-  const { boardRows, assignmentRows } = buildSectionRows(section, movement);
+  const { boardRows, matchRows, assignmentRows } = buildSectionRows(
+    section,
+    movement,
+  );
 
-  insertRows(db, boardRows, assignmentRows);
+  insertSectionDrafts(db, matchRows, boardRows, assignmentRows);
 
   return { written: true };
-}
-
-/** Insert board and assignment rows in a single transaction. */
-function insertRows(
-  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
-  boardRows: NewBoard[],
-  assignmentRows: Assignment[],
-): void {
-  db.transaction((tx) => {
-    if (boardRows.length > 0) {
-      tx.insert(boards).values(boardRows).run();
-    }
-    if (assignmentRows.length > 0) {
-      tx.insert(assignments).values(assignmentRows).run();
-    }
-  });
 }

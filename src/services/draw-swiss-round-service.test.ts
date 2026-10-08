@@ -77,6 +77,8 @@ function stubDb(
   assignmentRows: { id: string }[] = [],
 ) {
   const fromResult = {
+    // `isRoundComplete` now joins boards→matches: select().from().innerJoin().where().
+    innerJoin: () => fromResult,
     where: () => Promise.resolve(statusRows),
     then: (resolve: (rows: { id: string }[]) => unknown) =>
       resolve(assignmentRows),

@@ -1,9 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 import {
-  calculateTeamsBamOverall,
-  calculateTeamsPabOverall,
+  calculateTeamsBamOverall as calculateTeamsBamOverallImpl,
+  calculateTeamsPabOverall as calculateTeamsPabOverallImpl,
 } from "./teams-board-comparison-overall";
+import { teamMatchStructureFromRows } from "./team-match-test-structure";
+
+// The teams scorers now take `matches` rows as structure; derive them from each
+// scenario's board rows via the test-only helper (the inference the production
+// readers no longer do). Int tests cover the materialiser-written path.
+function calculateTeamsBamOverall(
+  boardRows: SwissVpBoardRow[],
+  options: { barometer: boolean; expectedBoards?: number },
+) {
+  return calculateTeamsBamOverallImpl(
+    boardRows,
+    teamMatchStructureFromRows(boardRows),
+    options,
+  );
+}
+function calculateTeamsPabOverall(
+  boardRows: SwissVpBoardRow[],
+  options: { barometer: boolean; expectedBoards?: number },
+) {
+  return calculateTeamsPabOverallImpl(
+    boardRows,
+    teamMatchStructureFromRows(boardRows),
+    options,
+  );
+}
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
   return {

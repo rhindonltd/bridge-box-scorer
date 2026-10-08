@@ -1,8 +1,28 @@
 import { describe, expect, it } from "vitest";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
-import { calculateTeamsVpOverall } from "./teams-vp-overall";
+import { calculateTeamsVpOverall as calculateTeamsVpOverallImpl } from "./teams-vp-overall";
+import { teamMatchStructureFromRows } from "./team-match-test-structure";
 
-function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
+// The teams scorers now take the first-class `matches` rows as structure. These
+// unit tests derive them from each scenario's board rows via the test-only
+// helper (the inference the production readers no longer do); the real
+// materialiser-written path is covered by the leaderboard int tests.
+function calculateTeamsVpOverall(
+  boardRows: SwissVpBoardRow[],
+  options: { expectedBoards?: number } = {},
+) {
+  return calculateTeamsVpOverallImpl(
+    boardRows,
+    teamMatchStructureFromRows(boardRows),
+    options,
+  );
+}
+
+// A scenario row may carry a legacy `matchRuling` (MM:) token; the structure
+// helper lifts it onto the derived TEAMS match row.
+type ScenarioRow = Partial<SwissVpBoardRow> & { matchRuling?: string | null };
+
+function row(overrides: ScenarioRow): SwissVpBoardRow {
   return {
     section: "A",
     roundNumber: 1,
@@ -14,7 +34,7 @@ function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
     directorOverrideResult: null,
     status: "COMPLETE",
     ...overrides,
-  };
+  } as SwissVpBoardRow;
 }
 
 describe("calculateTeamsVpOverall", () => {

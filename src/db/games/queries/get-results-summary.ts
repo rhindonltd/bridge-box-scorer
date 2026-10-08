@@ -1,5 +1,7 @@
 import { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
+import { matches } from "@/db/games/tables/matches";
+import { eq } from "drizzle-orm";
 
 export interface ResultsSummary {
   /**
@@ -36,9 +38,12 @@ export interface ResultsSummary {
  * the Swiss "draw next round" control.
  */
 export async function getResultsSummary(db: Db): Promise<ResultsSummary> {
+  // Join each board to its match so a voided / mismatched match (ruling now on
+  // `matches.ruling`) counts as finalized even if its boards were never played.
   const rows = await db
-    .select({ status: boards.status })
-    .from(boards);
+    .select({ status: boards.status, ruling: matches.ruling })
+    .from(boards)
+    .innerJoin(matches, eq(boards.matchId, matches.id));
 
   const playable = rows.filter(
     (r) => r.status !== "SIT_OUT" && r.status !== "HALF_AVERAGE",
@@ -49,9 +54,8 @@ export async function getResultsSummary(db: Db): Promise<ResultsSummary> {
       r.status === "OVERRIDDEN" ||
       r.status === "CANCELLED" ||
       r.status === "REMOVED_TEAMS" ||
-      r.status === "VOID_MATCH" ||
-      r.status === "VOID_PAIR" ||
-      r.status === "MISMATCH",
+      // A match-level void / mismatch ruling resolves the board.
+      r.ruling != null,
   );
 
   const totalPlayable = playable.length;

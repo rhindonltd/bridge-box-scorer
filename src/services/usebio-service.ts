@@ -3,6 +3,7 @@ import { Db } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { boards } from "@/db/games/tables/boards";
+import { matches } from "@/db/games/tables/matches";
 import { findSections } from "@/db/games/queries/find-sections";
 import { formatPairNumber, sectionOf } from "@/model/participants";
 import { Club } from "@/db/system/schema";
@@ -43,45 +44,56 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
 
   switch (format) {
     case "TEAMS_VP": {
-      const [teams, boardRows] = await Promise.all([
+      const [teams, boardRows, matchRows] = await Promise.all([
         findTeams(db),
         db.select().from(boards),
+        db.select().from(matches),
       ]);
       return generateUsebioXml(
-        assembleSwissTeams(game, club, teams, boardRows),
+        assembleSwissTeams(game, club, teams, boardRows, matchRows),
       );
     }
     case "TEAMS_IMP_AGG": {
-      const [teams, boardRows] = await Promise.all([
+      const [teams, boardRows, matchRows] = await Promise.all([
         findTeams(db),
         db.select().from(boards),
+        db.select().from(matches),
       ]);
       return generateUsebioXml(
-        assembleImpAggregateTeams(game, club, teams, boardRows),
+        assembleImpAggregateTeams(game, club, teams, boardRows, matchRows),
       );
     }
     case "TEAMS_BAM":
     case "TEAMS_PAB": {
-      const [teams, boardRows] = await Promise.all([
+      const [teams, boardRows, matchRows] = await Promise.all([
         findTeams(db),
         db.select().from(boards),
+        db.select().from(matches),
       ]);
       const scoring = format === "TEAMS_PAB" ? "PAB" : "BAM";
       return generateUsebioXml(
-        assembleBoardComparisonTeams(game, club, teams, boardRows, scoring),
+        assembleBoardComparisonTeams(
+          game,
+          club,
+          teams,
+          boardRows,
+          matchRows,
+          scoring,
+        ),
       );
     }
     case "SWISS_PAIRS_VP": {
-      const [pairs, boardRows] = await Promise.all([
+      const [pairs, boardRows, matchRows] = await Promise.all([
         findPairs(db),
         db.select().from(boards),
+        db.select().from(matches),
       ]);
       // A matchpoint-scored Swiss exports in MP mode; cross-IMP and (null-mode)
       // IMP-scored Swiss both export as cross-IMP vs the field, so the file
       // agrees with how the leaderboard scores an XIMP/MP Swiss event.
       const mode = swissVpMode === "MP" ? "MP" : "XIMP";
       return generateUsebioXml(
-        assembleSwissPairs(game, club, pairs, boardRows, mode),
+        assembleSwissPairs(game, club, pairs, boardRows, matchRows, mode),
       );
     }
     case "PAIRS_BOARD":

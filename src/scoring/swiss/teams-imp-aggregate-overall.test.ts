@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
 
 import { SwissVpBoardRow } from "./swiss-vp-overall";
-import { calculateTeamsImpAggregateOverall } from "./teams-imp-aggregate-overall";
+import { calculateTeamsImpAggregateOverall as calculateTeamsImpAggregateOverallImpl } from "./teams-imp-aggregate-overall";
+import { teamMatchStructureFromRows } from "./team-match-test-structure";
+
+// The teams scorers now take `matches` rows as structure; derive them from each
+// scenario's board rows via the test-only helper. Int tests cover the
+// materialiser-written path.
+function calculateTeamsImpAggregateOverall(
+  boardRows: SwissVpBoardRow[],
+  options: { barometer: boolean },
+) {
+  return calculateTeamsImpAggregateOverallImpl(
+    boardRows,
+    teamMatchStructureFromRows(boardRows),
+    options,
+  );
+}
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
   return {

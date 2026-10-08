@@ -3,7 +3,11 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import type { Db } from "@/db/games";
-import { makeBoard, makeSubmission } from "@/mocks/fixtures/db-rows";
+import {
+  makeBoard,
+  makeSubmission,
+  seedFixtureMatch,
+} from "@/mocks/fixtures/db-rows";
 import type { NewBoardSubmission } from "@/db/games/tables/submissions";
 
 /**
@@ -17,6 +21,7 @@ describe("games db: boards and submissions", () => {
   beforeEach(async () => {
     harness = createDbHarness("games");
     await harness.setup();
+    seedFixtureMatch((await harness.getDb()) as Db);
   });
 
   afterEach(() => {

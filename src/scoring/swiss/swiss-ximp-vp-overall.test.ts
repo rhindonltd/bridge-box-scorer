@@ -1,9 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { calculateSwissXimpVpOverall } from "./swiss-ximp-vp-overall";
+import { calculateSwissXimpVpOverall as calculateSwissXimpVpOverallImpl } from "./swiss-ximp-vp-overall";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
+import { swissVpStructureFromRows } from "./swiss-vp-test-structure";
 import { outcomeToScore, computeCrossImps } from "@/scoring/traveller/common";
 import { impVpSided } from "./imp-vp-table";
 import { BoardOutcome } from "@/model/score";
+
+// The Swiss VP scorer now takes the PAIRS `matches` rows; derive them from each
+// scenario's board rows via the test-only helper. Int tests cover the real path.
+function calculateSwissXimpVpOverall(
+  boardRows: SwissVpBoardRow[],
+  options: { expectedBoards?: number } = {},
+) {
+  const { matchRows, boardRows: stamped } = swissVpStructureFromRows(boardRows);
+  return calculateSwissXimpVpOverallImpl(stamped, matchRows, options);
+}
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
   return {

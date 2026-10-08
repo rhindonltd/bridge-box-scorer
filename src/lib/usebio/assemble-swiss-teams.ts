@@ -11,6 +11,7 @@ import {
   teamMatchBoardImps,
   tripleVpPool,
   boardResult,
+  type TeamMatchStructureRow,
 } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
@@ -44,6 +45,7 @@ export function assembleSwissTeams(
   club: Club,
   teams: AssignedTeam[],
   boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
 ): UsebioSwissTeamsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -70,7 +72,11 @@ export function assembleSwissTeams(
     };
   });
 
-  const { matches, totals } = buildUsebioMatches(boardRows, numberByTeamId);
+  const { matches, totals } = buildUsebioMatches(
+    boardRows,
+    matchRows,
+    numberByTeamId,
+  );
   const ranking = buildRanking(totals, numberByTeamId);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
@@ -101,6 +107,7 @@ function leadOf(row: Board): Card | null {
  */
 function buildUsebioMatches(
   boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
   numberByTeamId: Map<string, string>,
 ): { matches: UsebioSwissTeamsMatch[]; totals: Map<string, number> } {
   const totals = new Map<string, number>();
@@ -110,7 +117,7 @@ function buildUsebioMatches(
 
   const matches: UsebioSwissTeamsMatch[] = [];
 
-  for (const match of groupTeamMatches(boardRows)) {
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
     const { homeTeamId, opponentTeamId } = match;
     const teamNumber = numberByTeamId.get(homeTeamId) ?? homeTeamId;
     const opposingNumber = numberByTeamId.get(opponentTeamId) ?? opponentTeamId;
@@ -159,7 +166,7 @@ function buildUsebioMatches(
   // LONG one. Each node's own VP is also the team's contribution, so the per-
   // team total is just the sum of its comparison nodes (no separate cross-IMP
   // credit) — the export total agrees with the live head-to-head standings.
-  for (const triple of groupTeamTriples(boardRows)) {
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
     const pool = tripleVpPool(triple);
     for (const sub of triple.comparisons) {
       const teamNumber = numberByTeamId.get(sub.homeTeamId) ?? sub.homeTeamId;

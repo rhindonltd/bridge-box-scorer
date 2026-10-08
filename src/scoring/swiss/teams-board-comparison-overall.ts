@@ -11,6 +11,7 @@ import {
   teamByeRounds,
   teamMatchBoardWins,
   tripleTeamStakes,
+  type TeamMatchStructureRow,
 } from "./team-match";
 import { voidMatchWon } from "@/model/teams-match-void";
 
@@ -73,6 +74,7 @@ function credit(
  */
 export function calculateTeamsBoardComparisonOverall(
   boardRows: SwissVpBoardRow[],
+  matchRows: TeamMatchStructureRow[],
   options: {
     barometer: boolean;
     scoring: BoardComparisonScoring;
@@ -82,7 +84,7 @@ export function calculateTeamsBoardComparisonOverall(
   const totals = new Map<string, Accumulator>();
   const { expectedBoards } = options;
 
-  for (const match of groupTeamMatches(boardRows)) {
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
     const { round, homeTeamId, opponentTeamId } = match;
 
     // §3.3.6 / §3.3.9 void match: credit each team a ruling boards-won total
@@ -106,7 +108,7 @@ export function calculateTeamsBoardComparisonOverall(
 
   // Credit each bye team an average-plus result (60% of the round's boards) for
   // the round it sat out, so a forced bye slightly favours the sitting team.
-  for (const bye of teamByeRounds(boardRows)) {
+  for (const bye of teamByeRounds(matchRows)) {
     credit(
       totals,
       bye.teamId,
@@ -122,7 +124,7 @@ export function calculateTeamsBoardComparisonOverall(
   // round the team's NS pair hosted it (SHORT: one round; LONG: split across R
   // and R+1). `credit` accumulates within a round, so a team's two comparisons
   // add up for a SHORT triple's single round.
-  for (const triple of groupTeamTriples(boardRows)) {
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
     for (const stake of tripleTeamStakes(triple)) {
       const { won, boardsPlayed } = teamMatchBoardWins(stake.comparison);
       const teamWon = stake.isHome ? won : boardsPlayed - won;
@@ -156,9 +158,10 @@ export function calculateTeamsBoardComparisonOverall(
  */
 export function calculateTeamsBamOverall(
   boardRows: SwissVpBoardRow[],
+  matchRows: TeamMatchStructureRow[],
   options: { barometer: boolean; expectedBoards?: number },
 ): TeamBamOverallScore {
-  return calculateTeamsBoardComparisonOverall(boardRows, {
+  return calculateTeamsBoardComparisonOverall(boardRows, matchRows, {
     ...options,
     scoring: "BAM",
   }) as TeamBamOverallScore;
@@ -170,9 +173,10 @@ export function calculateTeamsBamOverall(
  */
 export function calculateTeamsPabOverall(
   boardRows: SwissVpBoardRow[],
+  matchRows: TeamMatchStructureRow[],
   options: { barometer: boolean; expectedBoards?: number },
 ): TeamPabOverallScore {
-  return calculateTeamsBoardComparisonOverall(boardRows, {
+  return calculateTeamsBoardComparisonOverall(boardRows, matchRows, {
     ...options,
     scoring: "PAB",
   }) as TeamPabOverallScore;

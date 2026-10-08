@@ -41,6 +41,34 @@ export function compareByRoundSectionTable(
 }
 
 /**
+ * The minimal `matches`-row shape the Swiss Teams structure readers consume.
+ * Kept structural (not the Drizzle `Match` type) so this stays a pure module
+ * unit tests can drive with plain objects. A TEAMS row is one ordinary
+ * head-to-head; TRIPLE rows sharing a `groupId` are one three-way's three
+ * comparisons; a BYE row is a sit-out. `home`/`opponent` are the two teams'
+ * stable home-NS seat ids (e.g. "A1NS"); `vpPool` is 10 (SHORT triple half) or
+ * 20 (ordinary / LONG triple).
+ */
+export interface TeamMatchStructureRow {
+  section: string;
+  roundNumber: number;
+  kind: string;
+  home: string;
+  opponent: string | null;
+  groupId: string | null;
+  vpPool: number | null;
+  boardStart: number;
+  boardEnd: number;
+  /**
+   * The match-level director ruling, home-relative (`VOID:<cause>` /
+   * `MM:<side>:<direction>:<fault>`), or null. Read by {@link matchVoidCause} /
+   * {@link matchMismatch} — no side inversion, the writer stored it relative to
+   * this match's `home` team.
+   */
+  ruling?: string | null;
+}
+
+/**
  * The minimal board-row shape the Swiss Teams match reconstruction needs. Kept
  * structural (rather than importing the Drizzle `Board` type) so this stays a
  * pure module unit tests can drive with plain objects — and so both the pure
@@ -84,6 +112,8 @@ export interface TeamMatch<R extends TeamMatchRow> {
   opponentTeamId: string;
   homeRowsByBoard: Map<number, R>;
   opponentRowsByBoard: Map<number, R>;
+  /** The match-level director ruling (home-relative), or null. */
+  ruling: string | null;
 }
 
 /** The final result on a board: a director override wins over the confirmed. */
@@ -101,98 +131,86 @@ export function teamIdFor(section: string, homeTable: number): string {
 }
 
 /**
- * Reconstruct the Swiss Teams matches from a game's board rows.
+ * Index a game's board rows by `(section, round, homeTable)` → its boards keyed
+ * by board number, where homeTable is the NS seat's table (the room's home
+ * team). Shared by the TEAMS and TRIPLE readers to gather each room's rows.
+ */
+function indexRoomsByHomeTable<R extends TeamMatchRow>(
+  rows: R[],
+): Map<string, Map<number, R>> {
+  const byRoom = new Map<string, Map<number, R>>();
+  for (const row of rows) {
+    if (row.status === "SIT_OUT" || row.status === "HALF_AVERAGE") continue;
+    let homeTable: number;
+    try {
+      homeTable = parseSeat(row.ns).tableNumber;
+    } catch {
+      continue;
+    }
+    const key = `${row.section}|${row.roundNumber}|${homeTable}`;
+    const map = byRoom.get(key) ?? new Map<number, R>();
+    map.set(row.boardNumber, row);
+    byRoom.set(key, map);
+  }
+  return byRoom;
+}
+
+/**
+ * Reconstruct the Swiss Teams two-team matches from the authoritative `matches`
+ * rows (the TEAMS kind), gathering each encounter's two rooms' board rows.
  *
- * A team match spans two home tables in the same (section, round): at each
- * table the NS seat is that table's home team and the EW seat encodes the
- * opponent's home table (its away pair travelled there). Rows are indexed by
- * `(section, round, homeTable)`, then each home table is paired with its
- * opponent's home table and the unordered match is emitted once — keyed on the
- * lower table number, which becomes the match's primary `homeTable`.
- *
- * SIT_OUT rows are skipped (Swiss Teams has no byes, but the guard keeps the
- * function total). Matches are returned ordered by round, then section, then
- * home table — the order both the scorer's crediting and the USEBIO export rely
- * on.
+ * A match row names the two teams (`home`/`opponent` as home-NS seat ids) and
+ * the round; the home room is the board rows at the home team's own table (NS =
+ * home team), the opponent room the rows at the opponent's table. This replaces
+ * the former board-seating reconstruction (and its triple-table exclusion
+ * heuristic): triples are their own `TRIPLE` rows, so they never appear here.
+ * Matches are returned ordered by round, then section, then home table.
  */
 export function groupTeamMatches<R extends TeamMatchRow>(
   rows: R[],
+  matchRows: TeamMatchStructureRow[],
 ): TeamMatch<R>[] {
-  interface HomeEntry {
-    section: string;
-    round: number;
-    homeTable: number;
-    opponentTable: number;
-    rowsByBoard: Map<number, R>;
-  }
+  const byRoom = indexRoomsByHomeTable(rows);
+  const roomFor = (section: string, round: number, seat: string): Map<number, R> => {
+    let table: number;
+    try {
+      table = parseSeat(seat).tableNumber;
+    } catch {
+      return new Map<number, R>();
+    }
+    return byRoom.get(`${section}|${round}|${table}`) ?? new Map<number, R>();
+  };
 
-  // Triple tables score cross-IMP across three tables (see groupTeamTriples),
-  // not as two-table head-to-heads, so exclude them here to avoid mis-pairing.
-  const tripleTables = tripleTableKeys(rows);
-
-  // Index each home table's rows by (section, round, homeTable).
-  const homeTables = new Map<string, HomeEntry>();
-  for (const row of rows) {
-    if (row.status === "SIT_OUT") continue;
-
-    const nsSeat = parseSeat(row.ns);
-    const ewSeat = parseSeat(row.ew);
-    const homeTable = nsSeat.tableNumber;
-    const opponentTable = ewSeat.tableNumber;
-
-    if (tripleTables.has(`${row.section}|${row.roundNumber}|${homeTable}`)) {
+  const matches: TeamMatch<R>[] = [];
+  for (const m of matchRows) {
+    if (m.kind !== "TEAMS" || m.opponent == null) continue;
+    let homeTable: number;
+    let opponentTable: number;
+    try {
+      homeTable = parseSeat(m.home).tableNumber;
+      opponentTable = parseSeat(m.opponent).tableNumber;
+    } catch {
       continue;
     }
-
-    const key = `${row.section}|${row.roundNumber}|${homeTable}`;
-    const entry =
-      homeTables.get(key) ??
-      ({
-        section: row.section,
-        round: row.roundNumber,
-        homeTable,
-        opponentTable,
-        rowsByBoard: new Map<number, R>(),
-      } satisfies HomeEntry);
-    entry.rowsByBoard.set(row.boardNumber, row);
-    homeTables.set(key, entry);
+    matches.push({
+      section: m.section,
+      round: m.roundNumber,
+      homeTable,
+      opponentTable,
+      homeTeamId: m.home,
+      opponentTeamId: m.opponent,
+      homeRowsByBoard: roomFor(m.section, m.roundNumber, m.home),
+      opponentRowsByBoard: roomFor(m.section, m.roundNumber, m.opponent),
+      ruling: m.ruling ?? null,
+    });
   }
 
-  const ordered = Array.from(homeTables.values()).sort((a, b) =>
+  return matches.sort((a, b) =>
     compareByRoundSectionTable(
       { round: a.round, section: a.section, table: a.homeTable },
       { round: b.round, section: b.section, table: b.homeTable },
     ),
   );
-
-  const matches: TeamMatch<R>[] = [];
-  const processed = new Set<string>();
-
-  for (const entry of ordered) {
-    const { section, round, homeTable, opponentTable } = entry;
-    // Process each unordered match once, keyed on the lower home table.
-    if (homeTable >= opponentTable) continue;
-
-    const key = `${section}|${round}|${homeTable}`;
-    /* v8 ignore next -- defensive: homeTables is keyed by this exact (section,round,homeTable) string so each entry is unique; the dedup guard never actually fires */
-    if (processed.has(key)) continue;
-    processed.add(key);
-
-    const other = homeTables.get(`${section}|${round}|${opponentTable}`);
-
-    matches.push({
-      section,
-      round,
-      homeTable,
-      opponentTable,
-      homeTeamId: teamIdFor(section, homeTable),
-      opponentTeamId: teamIdFor(section, opponentTable),
-      homeRowsByBoard: entry.rowsByBoard,
-      opponentRowsByBoard: other?.rowsByBoard ?? new Map<number, R>(),
-    });
-  }
-
-  return matches;
 }
 
 /** One board's net IMPs from the primary team's perspective. */
@@ -258,78 +276,26 @@ export function teamMatchBoardImps<R extends TeamMatchRow>(
 
 /**
  * The §3.3.6/§3.3.9 void cause of a match, from the HOME team's perspective, or
- * null when the match is not void. A match is void when any of its rows carries
- * the `VOID_MATCH` status; the cause is read from a home row (whose NS seat is
- * the home team). If only an opponent row carries it, the offender side is
- * inverted (its NS seat is the opponent team) so the returned cause is always
- * home-relative. SEATING_* causes are side-independent and returned as-is.
+ * null when the match is not void. Read directly off the match row's `ruling`
+ * (a `VOID:<cause>` token the writer stored home-relative to this match's `home`
+ * team), so no side inversion is needed. SEATING_* causes are side-independent.
  */
 export function matchVoidCause<R extends TeamMatchRow>(
   match: TeamMatch<R>,
 ): VoidCause | null {
-  const homeCause = voidCauseOfRows(match.homeRowsByBoard);
-  if (homeCause != null) return homeCause;
-
-  const oppCause = voidCauseOfRows(match.opponentRowsByBoard);
-  if (oppCause != null) return invertVoidCause(oppCause);
-
-  return null;
-}
-
-/** The void cause carried by any VOID_MATCH row in the map, else null. */
-function voidCauseOfRows<R extends TeamMatchRow>(
-  rowsByBoard: Map<number, R>,
-): VoidCause | null {
-  for (const row of rowsByBoard.values()) {
-    if (row.status !== "VOID_MATCH") continue;
-    const cause =
-      row.directorOverrideResult != null
-        ? parseVoidMatch(row.directorOverrideResult)
-        : null;
-    if (cause != null) return cause;
-  }
-  return null;
-}
-
-/** Flip the offender side of a SHORT_* cause (NS↔EW); others unchanged. */
-function invertVoidCause(cause: VoidCause): VoidCause {
-  if (cause === "SHORT_OFFENDER_NS") return "SHORT_OFFENDER_EW";
-  if (cause === "SHORT_OFFENDER_EW") return "SHORT_OFFENDER_NS";
-  return cause;
+  return match.ruling != null ? parseVoidMatch(match.ruling) : null;
 }
 
 /**
  * The §3.5 mismatch ruling for a match, home-relative (NS = home team, EW =
- * opponent), or null if the match is not a mismatch. A MISMATCH token names the
- * mismatched side relative to the room it was stamped on; if only the opponent
- * room carries it, the side is flipped (NS↔EW) so the returned ruling is always
- * home-relative — the same convention `matchVoidCause` uses.
+ * opponent), or null if the match is not a mismatch. Read directly off the
+ * match row's `ruling` (an `MM:<side>:<direction>:<fault>` token stored
+ * home-relative), so no side flip is needed.
  */
 export function matchMismatch<R extends TeamMatchRow>(
   match: TeamMatch<R>,
 ): MismatchRuling | null {
-  const home = mismatchOfRows(match.homeRowsByBoard);
-  if (home != null) return home;
-
-  const opp = mismatchOfRows(match.opponentRowsByBoard);
-  if (opp != null) {
-    return { ...opp, side: opp.side === "NS" ? "EW" : "NS" };
-  }
-
-  return null;
-}
-
-/** The mismatch ruling carried by any MISMATCH row in the map, else null. */
-function mismatchOfRows<R extends TeamMatchRow>(
-  rowsByBoard: Map<number, R>,
-): MismatchRuling | null {
-  for (const row of rowsByBoard.values()) {
-    if (row.status !== "MISMATCH") continue;
-    const ruling =
-      row.matchRuling != null ? parseMismatch(row.matchRuling) : null;
-    if (ruling != null) return ruling;
-  }
-  return null;
+  return match.ruling != null ? parseMismatch(match.ruling) : null;
 }
 
 /** One board's Board-a-Match result from the primary/home team's perspective. */
@@ -408,50 +374,25 @@ export interface TeamByeRound {
 }
 
 /**
- * Recover the team byes from a game's board rows.
+ * Recover the team byes from the authoritative `matches` rows (the BYE kind).
  *
- * A Swiss Teams bye is written as SIT_OUT rows on the bye team's home table:
- * the NS seat is the bye team (e.g. "A3NS") and the EW seat is a phantom. These
- * rows are skipped by {@link groupTeamMatches} (they are not a real match), so
- * the teams overall scorers use this to credit the sitting team an average-plus
- * result for the round. One entry per (section, round, home table), with the
- * board count taken from the distinct board numbers of that bye's rows.
+ * A BYE match names the sitting team (`home`) and the round; its board span
+ * gives the board count the average-plus credit is sized on. The teams overall
+ * scorers use this to credit the sitting team for the round it sat out.
  */
-export function teamByeRounds<R extends TeamMatchRow>(
-  rows: R[],
+export function teamByeRounds(
+  matchRows: TeamMatchStructureRow[],
 ): TeamByeRound[] {
-  // Group SIT_OUT rows by (section, round, home table); count distinct boards.
-  const byes = new Map<
-    string,
-    { teamId: string; round: number; boards: Set<number> }
-  >();
-
-  for (const row of rows) {
-    if (row.status !== "SIT_OUT") continue;
-
-    let homeTable: number;
-    try {
-      homeTable = parseSeat(row.ns).tableNumber;
-    } catch {
-      // A non-seat NS id (should not occur) is skipped.
-      continue;
-    }
-
-    const key = `${row.section}|${row.roundNumber}|${homeTable}`;
-    const entry = byes.get(key) ?? {
-      teamId: teamIdFor(row.section, homeTable),
-      round: row.roundNumber,
-      boards: new Set<number>(),
-    };
-    entry.boards.add(row.boardNumber);
-    byes.set(key, entry);
+  const byes: TeamByeRound[] = [];
+  for (const m of matchRows) {
+    if (m.kind !== "BYE") continue;
+    byes.push({
+      teamId: m.home,
+      round: m.roundNumber,
+      boards: m.boardEnd - m.boardStart + 1,
+    });
   }
-
-  return Array.from(byes.values()).map((b) => ({
-    teamId: b.teamId,
-    round: b.round,
-    boards: b.boards.size,
-  }));
+  return byes;
 }
 
 /** A table row's final score (override ?? confirmed), or null when unscored. */
@@ -612,174 +553,6 @@ export interface TeamTriple<R extends TeamMatchRow> {
 }
 
 /**
- * A detected triple: its three teams (ascending home-table order), its kind,
- * and the round(s) it spans (one for SHORT, two consecutive for LONG). This is
- * the shape {@link detectTriples} returns before the comparison rows are
- * gathered; the draw-history reader also consumes it to recover `hadTriple`
- * and a long triple's first-slot teams.
- */
-export interface DetectedTriple {
-  section: string;
-  teams: [number, number, number];
-  kind: TeamTripleKind;
-  rounds: number[];
-}
-
-/** Build the per-(section,round) map of home table → set of opponent tables. */
-function opponentsByRound<R extends TeamMatchRow>(
-  rows: R[],
-): Map<string, Map<number, Set<number>>> {
-  const perRound = new Map<string, Map<number, Set<number>>>();
-  for (const row of rows) {
-    if (row.status === "SIT_OUT") continue;
-    let homeTable: number;
-    let opponentTable: number;
-    try {
-      homeTable = parseSeat(row.ns).tableNumber;
-      opponentTable = parseSeat(row.ew).tableNumber;
-    } catch {
-      continue;
-    }
-    const key = `${row.section}|${row.roundNumber}`;
-    const byHome = perRound.get(key) ?? new Map<number, Set<number>>();
-    const opps = byHome.get(homeTable) ?? new Set<number>();
-    opps.add(opponentTable);
-    byHome.set(homeTable, opps);
-    perRound.set(key, byHome);
-  }
-  return perRound;
-}
-
-/**
- * Detect every triple from the board rows: SHORT triples (one round, some table
- * with two opponents) and LONG triples (two consecutive rounds, each a
- * non-mutual 3-cycle for the same trio). Exported so the draw-history reader
- * can recover `hadTriple` and a long triple's first-slot teams with the SAME
- * detection the scorer uses (no divergent logic). Only the `section`,
- * `roundNumber`, `ns`, `ew` and `status` fields of each row are read.
- */
-export function detectTriples<R extends TeamMatchRow>(
-  rows: R[],
-): DetectedTriple[] {
-  const perRound = opponentsByRound(rows);
-
-  const shorts: DetectedTriple[] = [];
-  // LONG rounds collected per (section, trio) so the two consecutive rounds of
-  // one long triple can be paired up.
-  const longRounds = new Map<
-    string,
-    { section: string; teams: [number, number, number]; rounds: number[] }
-  >();
-
-  for (const [key, byHome] of perRound) {
-    const [section, roundStr] = key.split("|");
-    const round = Number(roundStr);
-
-    // SHORT: a table with >=2 distinct opponents. Its trio is that table plus
-    // its two opponents (each of which also has two opponents in the trio).
-    const shortSeen = new Set<number>();
-    let hadShort = false;
-    for (const [home, opps] of byHome) {
-      if (opps.size < 2 || shortSeen.has(home)) continue;
-      const members = [home, ...opps].sort((a, b) => a - b);
-      if (members.length !== 3) continue; // a well-formed triple has three
-      hadShort = true;
-      for (const m of members) shortSeen.add(m);
-      shorts.push({
-        section,
-        teams: [members[0], members[1], members[2]],
-        kind: "SHORT",
-        rounds: [round],
-      });
-    }
-    if (hadShort) continue;
-
-    // LONG round: a non-mutual directed 3-cycle x→y→z→x among single-opponent
-    // tables. Each triple table references exactly one opponent this round.
-    const single = new Map<number, number>();
-    for (const [home, opps] of byHome) {
-      if (opps.size === 1) single.set(home, [...opps][0]!);
-    }
-    const seen = new Set<number>();
-    for (const [x, y] of single) {
-      if (seen.has(x)) continue;
-      if (single.get(y) === x) continue; // mutual = ordinary two-team match
-      const z = single.get(y);
-      if (z === undefined) continue;
-      if (single.get(z) === x && new Set([x, y, z]).size === 3) {
-        for (const m of [x, y, z]) seen.add(m);
-        const teams = [x, y, z].sort((a, b) => a - b) as [
-          number,
-          number,
-          number,
-        ];
-        const trioKey = `${section}|${teams.join("-")}`;
-        const entry = longRounds.get(trioKey) ?? { section, teams, rounds: [] };
-        entry.rounds.push(round);
-        longRounds.set(trioKey, entry);
-      }
-    }
-  }
-
-  // Group each trio's long rounds into long triples. A fully-played long triple
-  // spans two consecutive rounds, paired here; a long triple whose SECOND slot
-  // isn't materialized yet shows just its first round (an unpaired long round) —
-  // still emitted as a LONG triple so (a) the scorer sits it at the neutral
-  // 10/10 until the second slot is scored (its comparisons have only one room so
-  // nothing is comparable), and (b) the draw can recover its three teams to
-  // reuse for the second slot.
-  const longs: DetectedTriple[] = [];
-  for (const { section, teams, rounds } of longRounds.values()) {
-    const sorted = [...rounds].sort((a, b) => a - b);
-    for (let i = 0; i < sorted.length; i += 2) {
-      const pair =
-        i + 1 < sorted.length ? [sorted[i], sorted[i + 1]] : [sorted[i]];
-      longs.push({ section, teams, kind: "LONG", rounds: pair });
-    }
-  }
-
-  return [...shorts, ...longs];
-}
-
-/**
- * The set of `(section|round|table)` keys that belong to a triple, so
- * {@link groupTeamMatches} can exclude them from the two-team reconstruction.
- */
-function tripleTableKeys<R extends TeamMatchRow>(rows: R[]): Set<string> {
-  const keys = new Set<string>();
-  for (const t of detectTriples(rows)) {
-    for (const round of t.rounds) {
-      for (const table of t.teams) {
-        keys.add(`${t.section}|${round}|${table}`);
-      }
-    }
-  }
-  return keys;
-}
-
-/**
- * Keep only the rows of one home table that face a given opponent table. A
- * triple's home table hosts TWO opponents (on two board sets), so a comparison
- * must take only the rooms against its opponent. Returns rows keyed by board.
- */
-function restrictRowsToOpponent<R extends TeamMatchRow>(
-  rowsByBoard: Map<number, R>,
-  opponentTable: number,
-): Map<number, R> {
-  const out = new Map<number, R>();
-  for (const [board, row] of rowsByBoard) {
-    try {
-      if (parseSeat(row.ew).tableNumber === opponentTable) {
-        out.set(board, row);
-      }
-    } catch {
-      // Non-seat EW (should not occur for a triple row) is skipped.
-    }
-  }
-  return out;
-}
-
-/**
  * The round a comparison is ordered/credited by: the smallest round number any
  * of its rooms' rows carry, falling back to the triple's first round when the
  * comparison has no rows yet.
@@ -799,87 +572,112 @@ function comparisonMinRound<R extends TeamMatchRow>(
 }
 
 /**
- * Reconstruct the three-way triples from a game's board rows as their three
- * head-to-head comparisons.
+ * Reconstruct the three-way triples from the authoritative `matches` rows (the
+ * TRIPLE kind), as their three head-to-head comparisons.
  *
- * Each detected triple's rows (restricted to its rounds and three teams) are
- * grouped by unordered team pair into three {@link TeamMatch} comparisons
- * (x-y, x-z, y-z), each an ordinary two-room same-boards match the standard
- * two-team scorers consume. Triples are returned ordered by first round, then
- * section, then lowest table — matching {@link groupTeamMatches}.
+ * A triple is one `groupId`; its three TRIPLE match rows are its x-y, y-z, z-x
+ * comparisons (each `home`/`opponent` naming two of the trio's teams, with its
+ * own board span). Each comparison's two rooms are the board rows at the two
+ * teams' tables restricted to that comparison's board span — so a home table
+ * hosting two opponents on two sets contributes the right rooms to each. `kind`
+ * is read from the comparison pool (10 = SHORT half, 20 = LONG full). Triples
+ * are returned ordered by first round, then section, then lowest table.
  */
 export function groupTeamTriples<R extends TeamMatchRow>(
   rows: R[],
+  matchRows: TeamMatchStructureRow[],
 ): TeamTriple<R>[] {
-  const detected = detectTriples(rows);
-  if (detected.length === 0) return [];
+  // Group the TRIPLE match rows by their triple's groupId.
+  const byGroup = new Map<string, TeamMatchStructureRow[]>();
+  for (const m of matchRows) {
+    if (m.kind !== "TRIPLE" || m.groupId == null) continue;
+    const list = byGroup.get(m.groupId) ?? [];
+    list.push(m);
+    byGroup.set(m.groupId, list);
+  }
+  if (byGroup.size === 0) return [];
+
+  const byRoom = indexRoomsByHomeTable(rows);
+  /** The board rows at `seat`'s table within `[start,end]`, keyed by board. */
+  const roomBoards = (
+    section: string,
+    seat: string,
+    start: number,
+    end: number,
+  ): Map<number, R> => {
+    let table: number;
+    try {
+      table = parseSeat(seat).tableNumber;
+    } catch {
+      return new Map<number, R>();
+    }
+    const out = new Map<number, R>();
+    // A triple home table hosts two opponents across two rounds (LONG) / two
+    // sets (SHORT); gather this comparison's own board span from whichever
+    // round-keyed rooms hold those boards.
+    for (const [key, map] of byRoom) {
+      const [sec, , tbl] = key.split("|");
+      if (sec !== section || Number(tbl) !== table) continue;
+      for (const [board, row] of map) {
+        if (board >= start && board <= end) out.set(board, row);
+      }
+    }
+    return out;
+  };
 
   const triples: TeamTriple<R>[] = [];
+  for (const comparisonRows of byGroup.values()) {
+    const section = comparisonRows[0].section;
+    const kind: TeamTripleKind =
+      comparisonRows[0].vpPool === 20 ? "LONG" : "SHORT";
 
-  for (const det of detected) {
-    const { section, teams, rounds } = det;
-    const roundSet = new Set(rounds);
-    const teamSet = new Set<number>(teams);
-
-    // rowsByBoard for each of the three home tables (this triple only).
-    const rowsByTable = new Map<number, Map<number, R>>();
-    for (const t of teams) rowsByTable.set(t, new Map<number, R>());
-
-    for (const row of rows) {
-      if (row.status === "SIT_OUT") continue;
-      if (row.section !== section || !roundSet.has(row.roundNumber)) continue;
-      let homeTable: number;
-      let opponentTable: number;
-      try {
-        homeTable = parseSeat(row.ns).tableNumber;
-        opponentTable = parseSeat(row.ew).tableNumber;
-      } catch {
-        continue;
-      }
-      // Only rows between two of this triple's teams belong to it.
-      if (!teamSet.has(homeTable) || !teamSet.has(opponentTable)) continue;
-      rowsByTable.get(homeTable)!.set(row.boardNumber, row);
-    }
-
-    // The three unordered pairs become three head-to-head comparisons. For a
-    // pair (lo, hi) the home room is lo-NS and the opponent room is hi-NS; both
-    // rooms share the comparison's board set, so teamMatchBoardImps lines them
-    // up by board number.
-    const pairs: Array<[number, number]> = [
-      [teams[0], teams[1]],
-      [teams[0], teams[2]],
-      [teams[1], teams[2]],
-    ];
-
-    const comparisons = pairs.map(([lo, hi]) => {
-      const homeRowsByBoard = restrictRowsToOpponent(rowsByTable.get(lo)!, hi);
-      const opponentRowsByBoard = restrictRowsToOpponent(
-        rowsByTable.get(hi)!,
-        lo,
+    const teamTables = new Set<number>();
+    const rounds = new Set<number>();
+    const comparisons = comparisonRows.map((c) => {
+      const lo = parseSeat(c.home).tableNumber;
+      const hi = parseSeat(c.opponent!).tableNumber;
+      teamTables.add(lo);
+      teamTables.add(hi);
+      const homeRowsByBoard = roomBoards(section, c.home, c.boardStart, c.boardEnd);
+      const opponentRowsByBoard = roomBoards(
+        section,
+        c.opponent!,
+        c.boardStart,
+        c.boardEnd,
       );
+      // The round(s) a triple spans come from the actual board rows (a LONG
+      // triple's two rooms sit in different rounds), not the match row's single
+      // first-slot round.
+      for (const map of [homeRowsByBoard, opponentRowsByBoard]) {
+        for (const bRow of map.values()) rounds.add(bRow.roundNumber);
+      }
+      if (rounds.size === 0) rounds.add(c.roundNumber);
       const round = comparisonMinRound(
         homeRowsByBoard,
         opponentRowsByBoard,
-        rounds,
+        [c.roundNumber],
       );
       return {
         section,
         round,
         homeTable: lo,
         opponentTable: hi,
-        homeTeamId: teamIdFor(section, lo),
-        opponentTeamId: teamIdFor(section, hi),
+        homeTeamId: c.home,
+        opponentTeamId: c.opponent!,
         homeRowsByBoard,
         opponentRowsByBoard,
+        ruling: c.ruling ?? null,
       } satisfies TeamMatch<R>;
     }) as [TeamMatch<R>, TeamMatch<R>, TeamMatch<R>];
 
+    const sortedTables = [...teamTables].sort((a, b) => a - b);
+    const sortedRounds = [...rounds].sort((a, b) => a - b);
     triples.push({
       section,
-      round: Math.min(...rounds),
-      kind: det.kind,
-      rounds: [...rounds].sort((a, b) => a - b),
-      tables: teams.map((table) => ({
+      round: Math.min(...sortedRounds),
+      kind,
+      rounds: sortedRounds,
+      tables: sortedTables.map((table) => ({
         table,
         teamId: teamIdFor(section, table),
       })) as [TripleTable, TripleTable, TripleTable],

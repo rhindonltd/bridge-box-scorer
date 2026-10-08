@@ -12,6 +12,7 @@ import {
   teamMatchBoardImps,
   tripleTeamStakes,
   tripleVpPool,
+  type TeamMatchStructureRow,
 } from "./team-match";
 import { voidMatchVp } from "@/model/teams-match-void";
 import { adjustMismatchVp } from "@/model/swiss-mismatch";
@@ -45,12 +46,13 @@ const BYE_VP = 12;
  */
 export function calculateTeamsVpOverall(
   boardRows: SwissVpBoardRow[],
+  matchRows: TeamMatchStructureRow[],
   options: { expectedBoards?: number } = {},
 ): TeamSwissVpOverallScore {
   const totals = new Map<string, VpAccumulator>();
   const { expectedBoards } = options;
 
-  for (const match of groupTeamMatches(boardRows)) {
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
     const { round, homeTeamId, opponentTeamId } = match;
 
     // §3.3.6 / §3.3.9 void match: credit each team a ruling VP (flat 40%/60%,
@@ -99,7 +101,7 @@ export function calculateTeamsVpOverall(
   }
 
   // Credit each bye team an average-plus result for the round it sat out.
-  for (const bye of teamByeRounds(boardRows)) {
+  for (const bye of teamByeRounds(matchRows)) {
     creditVp(totals, bye.teamId, bye.round, BYE_VP);
   }
 
@@ -112,7 +114,7 @@ export function calculateTeamsVpOverall(
   // comparable yet sits at the neutral 10 — so a long triple reads 10/10 across
   // both rounds until its second round is scored (both rooms of a comparison
   // are needed for a margin), without lurching the standings.
-  for (const triple of groupTeamTriples(boardRows)) {
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
     const pool = tripleVpPool(triple);
     // Aggregate each (team, round) VP across the team's comparisons, then
     // credit once (creditVp assigns the round value, so it must be pre-summed).

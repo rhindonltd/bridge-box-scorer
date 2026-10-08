@@ -11,6 +11,7 @@ import * as schema from "@/db/games/schema";
 import { sections } from "@/db/games/tables/sections";
 import { boards } from "@/db/games/tables/boards";
 import { boardSubmissions } from "@/db/games/tables/submissions";
+import { FIXTURE_MATCH_ID, seedFixtureMatch } from "@/mocks/fixtures/db-rows";
 
 /**
  * Builds a fresh per-game DB from the generated games migration and asserts the
@@ -28,6 +29,7 @@ describe("games migration (section-aware schema)", () => {
     );
     db = drizzle(new Database(dbFile), { schema });
     migrate(db, { migrationsFolder: "./drizzle/games" });
+    seedFixtureMatch(db);
   });
 
   afterEach(() => {
@@ -62,6 +64,7 @@ describe("games migration (section-aware schema)", () => {
       ns: "n",
       ew: "e",
       status: "NOT_PLAYED" as const,
+      matchId: FIXTURE_MATCH_ID,
     };
 
     db.insert(boards)
@@ -85,6 +88,7 @@ describe("games migration (section-aware schema)", () => {
       ns: "n",
       ew: "e",
       status: "NOT_PLAYED" as const,
+      matchId: FIXTURE_MATCH_ID,
     };
 
     db.insert(boards).values(row).run();

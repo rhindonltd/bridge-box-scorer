@@ -1,5 +1,6 @@
 import { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
+import { matches } from "@/db/games/tables/matches";
 import { and, eq, lt } from "drizzle-orm";
 import { SectionLetter, parseSeat } from "@/model/participants";
 import {
@@ -83,7 +84,14 @@ export async function getSwissBoardHistory(
    */
   maxRoundExclusive?: number,
 ): Promise<SwissBoardHistory> {
-  const where =
+  const matchWhere =
+    maxRoundExclusive != null
+      ? and(
+          eq(matches.section, section),
+          lt(matches.roundNumber, maxRoundExclusive),
+        )
+      : eq(matches.section, section);
+  const boardWhere =
     maxRoundExclusive != null
       ? and(
           eq(boards.section, section),
@@ -91,16 +99,21 @@ export async function getSwissBoardHistory(
         )
       : eq(boards.section, section);
 
-  const rows = await db
-    .select({
-      roundNumber: boards.roundNumber,
-      tableNumber: boards.tableNumber,
-      ns: boards.ns,
-      ew: boards.ew,
-      status: boards.status,
-    })
-    .from(boards)
-    .where(where);
+  // Structure (who met whom, byes, half-matches) comes from the first-class
+  // `matches` table; the per-pair direction counts and the highest round are
+  // per-board-row facts, so those stay a `boards` read.
+  const [matchRows, boardRows] = await Promise.all([
+    db.select().from(matches).where(matchWhere),
+    db
+      .select({
+        roundNumber: boards.roundNumber,
+        ns: boards.ns,
+        ew: boards.ew,
+        status: boards.status,
+      })
+      .from(boards)
+      .where(boardWhere),
+  ]);
 
   const playedOpponents = new Set<string>();
   const hadBye = new Set<SwissPairId>();
@@ -108,23 +121,37 @@ export async function getSwissBoardHistory(
   const directionCounts = new Map<SwissPairId, { ns: number; ew: number }>();
   let highestRound = 0;
 
-  // Per (round, table, pair) the set of distinct opponents that pair faced at
-  // that table. A half-match ANCHOR faces two different opponents at its one
-  // table in a round (its two halves), which no ordinary round produces — that
-  // is how the anchor is recovered. Keyed by `${round}@${table}@${pairId}`.
-  const opponentsAtTable = new Map<string, Set<SwissPairId>>();
-  const noteOpponent = (
-    round: number,
-    table: number,
-    pair: SwissPairId,
-    opponent: SwissPairId,
-  ): void => {
-    const key = `${round}@${table}@${pair}`;
-    const set = opponentsAtTable.get(key) ?? new Set<SwissPairId>();
-    set.add(opponent);
-    opponentsAtTable.set(key, set);
-  };
+  // --- Structure, from `matches` ---
+  for (const m of matchRows) {
+    const homeId = swissPairIdFromParticipant(m.home, tables);
+    const oppId =
+      m.opponent != null ? swissPairIdFromParticipant(m.opponent, tables) : null;
 
+    if (m.kind === "BYE") {
+      if (homeId != null) hadBye.add(homeId);
+      continue;
+    }
+
+    if (m.kind === "HALF_MATCH") {
+      // Every pair in the 2-half-matches group (anchor via its two real halves,
+      // each non-anchor via its real half + compensation block) was in a
+      // half-match. Both the home and opponent seats recorded here cover them.
+      if (homeId != null) hadHalfMatch.add(homeId);
+      if (oppId != null) hadHalfMatch.add(oppId);
+      // A real half-match comparison is still a played opponent pairing.
+      if (homeId != null && oppId != null) {
+        playedOpponents.add(opponentKey(homeId, oppId));
+      }
+      continue;
+    }
+
+    // Ordinary PAIRS head-to-head.
+    if (homeId != null && oppId != null) {
+      playedOpponents.add(opponentKey(homeId, oppId));
+    }
+  }
+
+  // --- Direction counts + highest round, from `boards` ---
   // Dedupe direction tallies to one per (pair, round): a round has many board
   // rows but a single seating.
   const nsCounted = new Set<string>();
@@ -144,44 +171,18 @@ export async function getSwissBoardHistory(
     directionCounts.set(id, counts);
   };
 
-  for (const row of rows) {
+  for (const row of boardRows) {
     highestRound = Math.max(highestRound, row.roundNumber);
+
+    // Sit-out / half-average compensation rows carry a phantom opponent and the
+    // pair played no real boards that direction/round, matching the original
+    // reducer which skipped them before bumping direction counts.
+    if (row.status === "SIT_OUT" || row.status === "HALF_AVERAGE") continue;
 
     const nsId = swissPairIdFromParticipant(row.ns, tables);
     const ewId = swissPairIdFromParticipant(row.ew, tables);
-
-    if (row.status === "SIT_OUT") {
-      // A sit-out row's occupied seat carries the sitting-out pair; the other
-      // seat is a phantom. Whichever id(s) resolve get a bye recorded.
-      if (nsId != null) hadBye.add(nsId);
-      if (ewId != null) hadBye.add(ewId);
-      continue;
-    }
-
-    if (row.status === "HALF_AVERAGE") {
-      // A compensation row: `ns` is the non-anchor being credited for the half
-      // it sat out; `ew` is a phantom. The non-anchor was in a half-match.
-      if (nsId != null) hadHalfMatch.add(nsId);
-      continue;
-    }
-
-    if (nsId != null && ewId != null) {
-      playedOpponents.add(opponentKey(nsId, ewId));
-      // Track each pair's distinct opponents at this table/round (anchor test).
-      noteOpponent(row.roundNumber, row.tableNumber, nsId, ewId);
-      noteOpponent(row.roundNumber, row.tableNumber, ewId, nsId);
-    }
     if (nsId != null) bump(nsId, "ns", row.roundNumber);
     if (ewId != null) bump(ewId, "ew", row.roundNumber);
-  }
-
-  // A pair that faced two or more DIFFERENT opponents at the same table in a
-  // single round is a half-match anchor (its two halves). Record it.
-  for (const [key, opponents] of opponentsAtTable) {
-    if (opponents.size >= 2) {
-      const pairId = Number(key.slice(key.lastIndexOf("@") + 1));
-      hadHalfMatch.add(pairId);
-    }
   }
 
   return { playedOpponents, hadBye, hadHalfMatch, directionCounts, highestRound };
