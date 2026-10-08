@@ -1,6 +1,12 @@
 import { BoardOutcome } from "@/model/score";
 import { parseSeat } from "@/model/participants";
 import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
+import {
+  parseRemovedTeamsBoard,
+  removedBoardNsSwing,
+} from "@/model/teams-removed-board";
+import { VoidCause, parseVoidMatch } from "@/model/teams-match-void";
+import { MismatchRuling, parseMismatch } from "@/model/swiss-mismatch";
 
 /**
  * The ascending union of the board numbers keyed in the given rows-by-board
@@ -52,6 +58,12 @@ export interface TeamMatchRow {
   confirmedResult: BoardOutcome | null;
   directorOverrideResult: BoardOutcome | null;
   status: string | null;
+  /**
+   * A match-level director ruling token that is NOT a board score (never read
+   * by `boardResult`). Currently the EBU §3.5 mismatch ruling
+   * (`MM:<side>:<direction>:<fault>`); absent/null for an ordinary board.
+   */
+  matchRuling?: string | null;
 }
 
 /**
@@ -194,11 +206,14 @@ export interface TeamMatchBoardImp {
  * The per-board net IMPs (from the primary/home team's perspective), the summed
  * IMP margin, and the number of boards that counted, for one team match.
  *
- * A board counts only when BOTH rooms have a comparable scored result (a
- * pass-out / not-played / unentered board maps to a null score and is skipped).
- * The per-board list spans every board either room has a row for, in ascending
- * board order, so the USEBIO export can emit a traveller entry per board even
- * when only one room has played it yet.
+ * A board counts when BOTH rooms have a comparable scored result (a pass-out /
+ * not-played / unentered board maps to a null score and is skipped), OR when it
+ * is a REMOVED_TEAMS board (§3.3.7): a removed board contributes a fixed ±3 IMP
+ * swing (from the home team's perspective, by the director's fault ruling) and
+ * counts as played, so the VP scale uses the full board count. The per-board
+ * list spans every board either room has a row for, in ascending board order,
+ * so the USEBIO export can emit a traveller entry per board even when only one
+ * room has played it yet.
  */
 export function teamMatchBoardImps<R extends TeamMatchRow>(
   match: TeamMatch<R>,
@@ -213,8 +228,20 @@ export function teamMatchBoardImps<R extends TeamMatchRow>(
   const perBoard: TeamMatchBoardImp[] = [];
 
   for (const boardNumber of boardNumbers) {
-    const homeScore = scoreOfRow(match.homeRowsByBoard.get(boardNumber));
-    const awayScore = scoreOfRow(match.opponentRowsByBoard.get(boardNumber));
+    const homeRow = match.homeRowsByBoard.get(boardNumber);
+    const awayRow = match.opponentRowsByBoard.get(boardNumber);
+
+    // §3.3.7 removed board: a fixed ±3 IMP indemnity instead of a comparison.
+    const removedSwing = removedBoardHomeSwing(homeRow, awayRow);
+    if (removedSwing != null) {
+      margin += removedSwing;
+      boardsPlayed += 1;
+      perBoard.push({ boardNumber, imps: removedSwing });
+      continue;
+    }
+
+    const homeScore = scoreOfRow(homeRow);
+    const awayScore = scoreOfRow(awayRow);
 
     if (homeScore != null && awayScore != null) {
       const imps = computeImps(homeScore - awayScore);
@@ -227,6 +254,82 @@ export function teamMatchBoardImps<R extends TeamMatchRow>(
   }
 
   return { perBoard, margin, boardsPlayed };
+}
+
+/**
+ * The §3.3.6/§3.3.9 void cause of a match, from the HOME team's perspective, or
+ * null when the match is not void. A match is void when any of its rows carries
+ * the `VOID_MATCH` status; the cause is read from a home row (whose NS seat is
+ * the home team). If only an opponent row carries it, the offender side is
+ * inverted (its NS seat is the opponent team) so the returned cause is always
+ * home-relative. SEATING_* causes are side-independent and returned as-is.
+ */
+export function matchVoidCause<R extends TeamMatchRow>(
+  match: TeamMatch<R>,
+): VoidCause | null {
+  const homeCause = voidCauseOfRows(match.homeRowsByBoard);
+  if (homeCause != null) return homeCause;
+
+  const oppCause = voidCauseOfRows(match.opponentRowsByBoard);
+  if (oppCause != null) return invertVoidCause(oppCause);
+
+  return null;
+}
+
+/** The void cause carried by any VOID_MATCH row in the map, else null. */
+function voidCauseOfRows<R extends TeamMatchRow>(
+  rowsByBoard: Map<number, R>,
+): VoidCause | null {
+  for (const row of rowsByBoard.values()) {
+    if (row.status !== "VOID_MATCH") continue;
+    const cause =
+      row.directorOverrideResult != null
+        ? parseVoidMatch(row.directorOverrideResult)
+        : null;
+    if (cause != null) return cause;
+  }
+  return null;
+}
+
+/** Flip the offender side of a SHORT_* cause (NS↔EW); others unchanged. */
+function invertVoidCause(cause: VoidCause): VoidCause {
+  if (cause === "SHORT_OFFENDER_NS") return "SHORT_OFFENDER_EW";
+  if (cause === "SHORT_OFFENDER_EW") return "SHORT_OFFENDER_NS";
+  return cause;
+}
+
+/**
+ * The §3.5 mismatch ruling for a match, home-relative (NS = home team, EW =
+ * opponent), or null if the match is not a mismatch. A MISMATCH token names the
+ * mismatched side relative to the room it was stamped on; if only the opponent
+ * room carries it, the side is flipped (NS↔EW) so the returned ruling is always
+ * home-relative — the same convention `matchVoidCause` uses.
+ */
+export function matchMismatch<R extends TeamMatchRow>(
+  match: TeamMatch<R>,
+): MismatchRuling | null {
+  const home = mismatchOfRows(match.homeRowsByBoard);
+  if (home != null) return home;
+
+  const opp = mismatchOfRows(match.opponentRowsByBoard);
+  if (opp != null) {
+    return { ...opp, side: opp.side === "NS" ? "EW" : "NS" };
+  }
+
+  return null;
+}
+
+/** The mismatch ruling carried by any MISMATCH row in the map, else null. */
+function mismatchOfRows<R extends TeamMatchRow>(
+  rowsByBoard: Map<number, R>,
+): MismatchRuling | null {
+  for (const row of rowsByBoard.values()) {
+    if (row.status !== "MISMATCH") continue;
+    const ruling =
+      row.matchRuling != null ? parseMismatch(row.matchRuling) : null;
+    if (ruling != null) return ruling;
+  }
+  return null;
 }
 
 /** One board's Board-a-Match result from the primary/home team's perspective. */
@@ -266,8 +369,21 @@ export function teamMatchBoardWins<R extends TeamMatchRow>(
   const perBoard: TeamMatchBoardWin[] = [];
 
   for (const boardNumber of boardNumbers) {
-    const homeScore = scoreOfRow(match.homeRowsByBoard.get(boardNumber));
-    const awayScore = scoreOfRow(match.opponentRowsByBoard.get(boardNumber));
+    const homeRow = match.homeRowsByBoard.get(boardNumber);
+    const awayRow = match.opponentRowsByBoard.get(boardNumber);
+
+    // §3.3.7 removed board: a win/tie/loss indemnity by fault instead of a
+    // comparison (the board-win analogue of the ±3 IMP swing).
+    const removedResult = removedBoardHomeWin(homeRow, awayRow);
+    if (removedResult != null) {
+      won += removedResult;
+      boardsPlayed += 1;
+      perBoard.push({ boardNumber, result: removedResult });
+      continue;
+    }
+
+    const homeScore = scoreOfRow(homeRow);
+    const awayScore = scoreOfRow(awayRow);
 
     if (homeScore != null && awayScore != null) {
       const result = homeScore > awayScore ? 1 : homeScore < awayScore ? 0 : 0.5;
@@ -343,6 +459,96 @@ function scoreOfRow<R extends TeamMatchRow>(row: R | undefined): number | null {
   if (!row) return null;
   const outcome = boardResult(row);
   return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
+}
+
+/**
+ * The removal fault token on a row, if it is a REMOVED_TEAMS board (§3.3.7),
+ * else null. The fault is stored in `directorOverrideResult` as a `TRM:<fault>`
+ * token; a row only counts as removed when its status says so.
+ */
+function removalFaultOfRow<R extends TeamMatchRow>(row: R | undefined) {
+  if (!row || row.status !== "REMOVED_TEAMS") return null;
+  return row.directorOverrideResult != null
+    ? parseRemovedTeamsBoard(row.directorOverrideResult)
+    : null;
+}
+
+/**
+ * The §3.3.7 IMP swing a removed board contributes to the match margin, from
+ * the HOME team's perspective, or null when neither room's row is a removed
+ * board. The fault is read from the home row (whose NS seat is the home team);
+ * if only the opponent row carries it, the swing is inverted (its NS seat is
+ * the opponent team). A removed row missing its token defaults to a 0 swing
+ * (both-indemnified) rather than dropping the board.
+ */
+function removedBoardHomeSwing<R extends TeamMatchRow>(
+  homeRow: R | undefined,
+  awayRow: R | undefined,
+): number | null {
+  const homeFault = removalFaultOfRow(homeRow);
+  if (homeFault != null) return removedBoardNsSwing(homeFault);
+
+  const awayFault = removalFaultOfRow(awayRow);
+  if (awayFault != null) return -removedBoardNsSwing(awayFault);
+
+  // A REMOVED_TEAMS row with no parseable token: treat as a 0 (neither-fault)
+  // swing so the board still counts, rather than silently dropping it.
+  if (homeRow?.status === "REMOVED_TEAMS" || awayRow?.status === "REMOVED_TEAMS") {
+    return 0;
+  }
+  return null;
+}
+
+/**
+ * The §3.3.7 Board-a-Match result a removed board awards the HOME team, or null
+ * when neither room's row is a removed board. The board-win analogue of
+ * {@link removedBoardHomeSwing}: the non-offending side WINS the board (1), the
+ * offender loses (0), and both-/neither-at-fault is a tie (0.5) — a board-win
+ * total cannot give both teams a win or both a loss, so the per-board result is
+ * complementary (home + opponent = 1). The both-vs-neither distinction is only
+ * expressible at the match level, via a VOID_MATCH ruling.
+ */
+function removedBoardHomeWin<R extends TeamMatchRow>(
+  homeRow: R | undefined,
+  awayRow: R | undefined,
+): number | null {
+  const homeFault = removalFaultOfRow(homeRow);
+  const fault = homeFault ?? invertRemovalFaultForOpponent(awayRow);
+  if (fault === "UNRESOLVED") {
+    // A REMOVED_TEAMS row with no parseable token → a tie, so it still counts.
+    return 0.5;
+  }
+  if (fault == null) return null;
+
+  switch (fault) {
+    case "EW_FAULT":
+      return 1; // opponents at fault → home wins the board
+    case "NS_FAULT":
+      return 0; // home at fault → home loses the board
+    case "BOTH_FAULT":
+    case "NEITHER_FAULT":
+      return 0.5; // tie (both-vs-neither is a match-level void concern)
+  }
+}
+
+/**
+ * The removal fault from the HOME team's perspective when only the OPPONENT
+ * room carries it (its NS seat is the opponent team, so NS/EW fault flips).
+ * Returns `"UNRESOLVED"` when the opponent row is a removed board but carries no
+ * parseable token (so the caller can still count it), or null when it is not a
+ * removed board.
+ */
+function invertRemovalFaultForOpponent<R extends TeamMatchRow>(
+  awayRow: R | undefined,
+) {
+  const awayFault = removalFaultOfRow(awayRow);
+  if (awayFault != null) {
+    if (awayFault === "EW_FAULT") return "NS_FAULT" as const;
+    if (awayFault === "NS_FAULT") return "EW_FAULT" as const;
+    return awayFault; // BOTH/NEITHER are side-symmetric
+  }
+  if (awayRow?.status === "REMOVED_TEAMS") return "UNRESOLVED" as const;
+  return null;
 }
 
 /* =========================================================================

@@ -17,9 +17,9 @@ export interface TableRoundStatus {
 /**
  * Determines if a board should be considered "entered" (resolved).
  * A board is entered if any of:
- * - directorOverrideResult is non-null (director override exists)
+ * - directorOverrideResult is non-null (director override or cancellation)
  * - confirmedResult is non-null
- * - status is CONFIRMED, PENDING_CONFIRMATION, or OVERRIDDEN
+ * - status is CONFIRMED, PENDING_CONFIRMATION, OVERRIDDEN, or CANCELLED
  *
  * Note: NOT_PLAYED is the initial state set when boards are created and does
  * NOT indicate a result has been entered.
@@ -34,7 +34,12 @@ export function isBoardEntered(board: {
   if (
     board.status === "CONFIRMED" ||
     board.status === "PENDING_CONFIRMATION" ||
-    board.status === "OVERRIDDEN"
+    board.status === "OVERRIDDEN" ||
+    board.status === "CANCELLED" ||
+    board.status === "REMOVED_TEAMS" ||
+    board.status === "VOID_MATCH" ||
+    board.status === "VOID_PAIR" ||
+    board.status === "MISMATCH"
   )
     return true;
   return false;

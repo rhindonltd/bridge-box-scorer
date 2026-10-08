@@ -178,9 +178,9 @@ async function getSwissTeamsHistory(
 
 /**
  * Whether a round is safe to draw from: every playable board has a final result
- * (CONFIRMED or OVERRIDDEN). A bye's SIT_OUT boards are never played, so they
- * count as complete (they don't block the next draw). An empty round is not
- * "complete".
+ * (CONFIRMED, OVERRIDDEN, or CANCELLED). A bye's SIT_OUT boards are never
+ * played, so they count as complete (they don't block the next draw). An empty
+ * round is not "complete".
  */
 async function isRoundComplete(
   db: Db,
@@ -202,6 +202,10 @@ async function isRoundComplete(
     (r) =>
       r.status === "CONFIRMED" ||
       r.status === "OVERRIDDEN" ||
+      r.status === "CANCELLED" ||
+      r.status === "REMOVED_TEAMS" ||
+      r.status === "VOID_MATCH" ||
+      r.status === "MISMATCH" ||
       r.status === "SIT_OUT",
   );
 }

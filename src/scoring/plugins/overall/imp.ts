@@ -12,6 +12,9 @@ const impView = buildImpView<ImpOverall["lines"][number]>({
   id: "imps",
   label: "IMP",
   value: (row) => row.imps,
+  // §4.2.5: the overall IMP figure is now the AVERAGE IMP per board (scaled by
+  // boards played), which is fractional — show to 2 decimal places.
+  decimals: 2,
 });
 
 export const impOverallPlugin: OverallScoringPlugin<ImpScored, ImpOverall> = {

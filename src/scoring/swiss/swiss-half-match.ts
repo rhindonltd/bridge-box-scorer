@@ -35,10 +35,14 @@ export const HALF_AVERAGE_STATUS = "HALF_AVERAGE";
 export const HALF_MATCH_MP_AVE_PLUS = 0.6;
 /** Matchpoint average award for a compensated board: 50% of the top. */
 export const HALF_MATCH_MP_AVE = 0.5;
+/** Matchpoint average-minus award for a compensated board: 40% of the top. */
+export const HALF_MATCH_MP_AVE_MINUS = 0.4;
 /** Cross-IMP average-plus award for a compensated board: +2 IMP / comparison. */
 export const HALF_MATCH_XIMP_AVE_PLUS = 2;
 /** Cross-IMP average award for a compensated board: 0 IMP / comparison. */
 export const HALF_MATCH_XIMP_AVE = 0;
+/** Cross-IMP average-minus award for a compensated board: −2 IMP / comparison. */
+export const HALF_MATCH_XIMP_AVE_MINUS = -2;
 
 /**
  * How a pair's round splits into segments. A segment is identified by the
@@ -156,3 +160,60 @@ export function compensationXimpPerComparison(boards: number): number[] {
   );
 }
 
+
+/* ============================================================
+   §3.3.9 VOID-MATCH COMPENSATION (per-pair, with an AVE− offender side)
+
+   A voided Swiss-pairs match (§3.3.8 / §3.3.9) credits each affected pair an
+   AVE+/AVE−/AVE blend over the match's `boards`: AVE+ (non-offender) or AVE−
+   (offender) on the first ⌈boards/2⌉, AVE on the rest; a pair neither helped
+   nor penalised is AVE throughout. This extends the half-match compensation
+   with the AVE− side the benign (bye) compensation never needed.
+============================================================ */
+
+/** A voided pair's standing on the §3.3.9 half-board split. */
+export type PairVoidFault = "AVE_PLUS" | "AVE_MINUS" | "AVE";
+
+/**
+ * The per-board matchpoint fraction (0–1 of top) a voided pair earns over
+ * `boards`: for AVE_PLUS, the first ⌈boards/2⌉ at 0.6 and the rest at 0.5; for
+ * AVE_MINUS, the first ⌈boards/2⌉ at 0.4 and the rest at 0.5; for AVE, 0.5
+ * throughout. Mirrors {@link compensationMpFractions} with the offender side.
+ */
+export function voidMpFractions(
+  boards: number,
+  fault: PairVoidFault,
+): number[] {
+  const { avePlus: half } = compensationSplit(boards);
+  const splitValue =
+    fault === "AVE_PLUS"
+      ? HALF_MATCH_MP_AVE_PLUS
+      : fault === "AVE_MINUS"
+        ? HALF_MATCH_MP_AVE_MINUS
+        : HALF_MATCH_MP_AVE;
+  return Array.from({ length: Math.max(boards, 0) }, (_, i) =>
+    i < half ? splitValue : HALF_MATCH_MP_AVE,
+  );
+}
+
+/**
+ * The per-board cross-IMP credit (IMP per comparison) a voided pair earns over
+ * `boards`: AVE_PLUS → first ⌈boards/2⌉ at +2, rest 0; AVE_MINUS → first
+ * ⌈boards/2⌉ at −2, rest 0; AVE → 0 throughout. Mirrors
+ * {@link compensationXimpPerComparison} with the offender side.
+ */
+export function voidXimpPerComparison(
+  boards: number,
+  fault: PairVoidFault,
+): number[] {
+  const { avePlus: half } = compensationSplit(boards);
+  const splitValue =
+    fault === "AVE_PLUS"
+      ? HALF_MATCH_XIMP_AVE_PLUS
+      : fault === "AVE_MINUS"
+        ? HALF_MATCH_XIMP_AVE_MINUS
+        : HALF_MATCH_XIMP_AVE;
+  return Array.from({ length: Math.max(boards, 0) }, (_, i) =>
+    i < half ? splitValue : HALF_MATCH_XIMP_AVE,
+  );
+}

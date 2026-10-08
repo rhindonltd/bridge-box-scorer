@@ -11,6 +11,7 @@ export interface DirectorMenuPageProps {
   onEnterDealsClick: () => void;
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
+  onReviewMismatchesClick: () => void;
   onDownloadUsebioClick: () => void;
   onDownloadPbnClick: () => void;
   onUploadBridgewebsClick: () => void;
@@ -23,6 +24,11 @@ export interface DirectorMenuPageProps {
   showEnterDeals: boolean;
   /** Show "Movement" — only after the game has started. */
   showMovement: boolean;
+  /**
+   * Show "Review Mismatches" — only for a started Swiss game, where a
+   * retroactive score adjustment can create an EBU §3.5 mismatch to review.
+   */
+  showReviewMismatches: boolean;
   /** Show "Download USEBIO" — only once the game has started. */
   showDownloadUsebio: boolean;
   /**
@@ -55,6 +61,7 @@ export function ManageGameMenuPage({
   onEnterDealsClick,
   onMovementClick,
   onShareDirectorAccessClick,
+  onReviewMismatchesClick,
   onDownloadUsebioClick,
   onDownloadPbnClick,
   onUploadBridgewebsClick,
@@ -63,6 +70,7 @@ export function ManageGameMenuPage({
   showTravellers,
   showEnterDeals,
   showMovement,
+  showReviewMismatches,
   showDownloadUsebio,
   downloadUsebioDisabled,
   showDownloadPbn,
@@ -112,6 +120,15 @@ export function ManageGameMenuPage({
         >
           <span className="flex items-center gap-3">Share Director Access</span>
         </button>
+
+        {showReviewMismatches && (
+          <button
+            onClick={onReviewMismatchesClick}
+            className={standardButtonClass}
+          >
+            <span className="flex items-center gap-3">Review Mismatches</span>
+          </button>
+        )}
 
         {showDownloadUsebio && (
           <button

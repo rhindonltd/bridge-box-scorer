@@ -7,11 +7,36 @@ import { boardResult } from "./team-match";
 import {
   COMPENSATION_SEGMENT,
   PairSegment,
+  PairVoidFault,
   compensationMpFractions,
   compensationXimpPerComparison,
   isHalfMatchRound,
   segmentsForPair,
+  voidMpFractions,
+  voidXimpPerComparison,
 } from "./swiss-half-match";
+import { parsePairVoid, pairVoidFaults } from "@/model/pairs-match-void";
+import { ScoredMpBoard } from "@/scoring/traveller/pair/neuberg-across-boards";
+import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
+import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
+import { parseMismatch, adjustMismatchVp } from "@/model/swiss-mismatch";
+
+/**
+ * Clamp a matchpoint percentage into the [0, 100] range the VP tables accept.
+ *
+ * A pair's `mp / max` can legitimately brush just past 100% (or dip below 0%)
+ * on a mixed artificial+real board: Neuberg convention (b) over-projects a real
+ * pair's matchpoints to compensate for the artificial lines, so the summed `mp`
+ * can exceed the summed `max` by a fraction. That is a benign scaling artifact,
+ * not a programmer error, so we clamp here rather than let `mpVpFromPercent`
+ * throw its out-of-range invariant guard. The guard stays meaningful for
+ * genuinely wild inputs elsewhere.
+ */
+function clampPercent(pct: number): number {
+  if (pct < 0) return 0;
+  if (pct > 100) return 100;
+  return pct;
+}
 
 /**
  * Shared per-ROUND Swiss Pairs Victory-Point scoring, used by BOTH the live
@@ -78,11 +103,17 @@ function rowsForPair(
   return rows;
 }
 
-/** Group a round's non-sit-out rows by board number. */
+/**
+ * Group a round's field rows by board number. SIT_OUT rows (byes) and VOID_PAIR
+ * rows (a §3.3.8/§3.3.9 voided pairs match) are excluded: a voided match's
+ * results must NOT sit in the field the other pairs are matchpointed against —
+ * each voided pair is instead credited an AVE+/AVE−/AVE compensation separately
+ * (see {@link scoreSwissVpRound}).
+ */
 function byBoardOf(rows: SwissVpBoardRow[]): Map<number, SwissVpBoardRow[]> {
   const byBoard = new Map<number, SwissVpBoardRow[]>();
   for (const row of rows) {
-    if (row.status === "SIT_OUT") continue;
+    if (row.status === "SIT_OUT" || row.status === "VOID_PAIR") continue;
     const arr = byBoard.get(row.boardNumber) ?? [];
     arr.push(row);
     byBoard.set(row.boardNumber, arr);
@@ -275,15 +306,30 @@ function buildMpByBoard(byBoard: Map<number, SwissVpBoardRow[]>): {
     return m;
   };
 
+  // Score every board of the round, then apply the §4.1.1.1 "better than
+  // average" override across the WHOLE round (the Swiss window = the match):
+  // an AVE+/AVE− board gives the pair the greater-of-60%/lesser-of-40% vs its
+  // average on its other boards THIS round, in the standings. The per-board
+  // traveller display (a separate path) keeps the flat 60/40.
+  const scoredBoards: ScoredMpBoard[] = [];
   for (const [boardNumber, rows] of byBoard) {
-    const scored = scoreMP(
+    const lines = scoreMP(
       boardNumber,
       rows
         .filter((r) => boardResult(r) != null)
         .map((r) => ({ nsId: r.ns, ewId: r.ew, outcome: boardResult(r)! })),
     );
+    scoredBoards.push({ board: boardNumber, lines });
+  }
 
-    for (const line of scored) {
+  // §4.2.6.1: round each board to the nearest whole matchpoint (halves away
+  // from average) LAST, after the better-than-average uplift, so the per-round
+  // percentage is built from the same rounded board scores the MP leaderboard
+  // and USEBIO export use.
+  for (const { board: boardNumber, lines } of roundMpBoards(
+    applyBetterThanAverage(scoredBoards),
+  )) {
+    for (const line of lines) {
       if (line.maxMatchPoints > 0) topByBoard.set(boardNumber, line.maxMatchPoints);
       ensure(line.nsId).set(boardNumber, {
         mp: line.nsMatchPoints,
@@ -319,7 +365,7 @@ function mpRealHalfVp(
     boards += 1;
   }
   if (max === 0) return NEUTRAL_VP / 2;
-  return mpVpFromPercent((mp / max) * 100, boards, 10);
+  return mpVpFromPercent(clampPercent((mp / max) * 100), boards, 10);
 }
 
 /**
@@ -342,7 +388,7 @@ function mpCompensationHalfVp(
     boards += 1;
   });
   if (max === 0) return NEUTRAL_VP / 2;
-  return mpVpFromPercent((mp / max) * 100, boards, 10);
+  return mpVpFromPercent(clampPercent((mp / max) * 100), boards, 10);
 }
 
 /**
@@ -358,7 +404,7 @@ function mpOrdinaryVp(boardMp: Map<number, BoardMp>): number {
     max += b.max;
   }
   if (max === 0) return NEUTRAL_VP;
-  return mpVpFromPercent((mp / max) * 100, boardMp.size, 20);
+  return mpVpFromPercent(clampPercent((mp / max) * 100), boardMp.size, 20);
 }
 
 /** Score one round in matchpoint mode: per-pair VP + real-half MATCH splits. */
@@ -497,11 +543,202 @@ export type SwissRoundMode = "XIMP" | "MP";
  * pair's round VP and the real-half MATCH splits. SIT_OUT rows are ignored;
  * HALF_AVERAGE compensation rows contribute to a non-anchor's `pairVp` but are
  * never a MATCH.
+ *
+ * `expectedBoards` is the match's full board count (the movement's
+ * `boardsPerRound`), used only to size a §3.3.8/§3.3.9 VOID_PAIR pair's
+ * AVE+/AVE−/AVE half-board compensation; when absent, a void pair falls back to
+ * the number of VOID_PAIR rows it has.
  */
 export function scoreSwissVpRound(
   rows: SwissVpBoardRow[],
   mode: SwissRoundMode,
+  expectedBoards?: number,
 ): SwissVpRound {
   const byBoard = byBoardOf(rows);
-  return mode === "MP" ? mpRound(byBoard) : ximpRound(byBoard);
+  const result = mode === "MP" ? mpRound(byBoard) : ximpRound(byBoard);
+
+  // §3.3.8/§3.3.9 voided pairs: credited an AVE+/AVE−/AVE half-board blend,
+  // scored off the (void-excluded) field top, and added to `pairVp`. Their
+  // rows were kept out of `byBoard` so they never skew the field.
+  creditVoidPairs(rows, byBoard, mode, expectedBoards, result.pairVp);
+
+  // §3.5 mismatch: the match was played for real (its rows stay in the field),
+  // but the director has ruled the mismatched side's round VP be adjusted per
+  // §3.5.2. Applied LAST, on the already-computed actual VP.
+  creditMismatch(rows, result.pairVp);
+  return result;
+}
+
+/**
+ * Apply the §3.5.2 mismatch adjustment to the mismatched pair's round VP.
+ *
+ * A MISMATCH table's two rows carry an `MM:<side>:<direction>:<fault>` token
+ * naming which seat (NS/EW) is the mismatched side. The match itself was scored
+ * normally (its boards stay in the field), so `pairVp` already holds each
+ * pair's actual round VP; we recompute only the mismatched side's value and
+ * leave the opponent untouched. The round pool is 20 (a Swiss Pairs round is a
+ * full /20 match; §3.5.2's constants are on the 20–0 scale).
+ */
+function creditMismatch(
+  rows: SwissVpBoardRow[],
+  pairVp: Map<string, number>,
+): void {
+  // One ruling per mismatched table; dedupe by the mismatched pair id so the
+  // adjustment is applied once even though every board row carries the token.
+  const adjusted = new Set<string>();
+
+  for (const row of rows) {
+    if (row.status !== "MISMATCH") continue;
+    const ruling =
+      row.matchRuling != null ? parseMismatch(row.matchRuling) : null;
+    if (ruling == null) continue;
+
+    const mismatchedPairId = ruling.side === "NS" ? row.ns : row.ew;
+    if (adjusted.has(mismatchedPairId)) continue;
+
+    const actual = pairVp.get(mismatchedPairId);
+    if (actual == null) continue;
+
+    pairVp.set(mismatchedPairId, adjustMismatchVp(actual, ruling, 20));
+    adjusted.add(mismatchedPairId);
+  }
+}
+
+/** One voided pair's round: its id, per-pair fault, and the boards it voided. */
+interface VoidPairRound {
+  pairId: string;
+  fault: PairVoidFault;
+  boardNumbers: number[];
+}
+
+/**
+ * Recover the §3.3.8/§3.3.9 voided pairs from a round's raw rows. A VOID_PAIR
+ * row is one table (NS vs EW on the same boards) carrying the void CAUSE in
+ * `directorOverrideResult`; both seats are voided, each with the fault the
+ * cause assigns (`pairVoidFaults`). Emits one entry per pair (NS and EW), keyed
+ * by pair id, with the distinct board numbers voided.
+ */
+function voidPairRounds(rows: SwissVpBoardRow[]): VoidPairRound[] {
+  const byPair = new Map<string, { fault: PairVoidFault; boards: Set<number> }>();
+
+  const add = (pairId: string, fault: PairVoidFault, board: number) => {
+    const entry = byPair.get(pairId) ?? { fault, boards: new Set<number>() };
+    entry.fault = fault;
+    entry.boards.add(board);
+    byPair.set(pairId, entry);
+  };
+
+  for (const row of rows) {
+    if (row.status !== "VOID_PAIR") continue;
+    const cause =
+      row.directorOverrideResult != null
+        ? parsePairVoid(row.directorOverrideResult)
+        : null;
+    if (cause == null) continue;
+    const { ns, ew } = pairVoidFaults(cause);
+    add(row.ns, ns, row.boardNumber);
+    add(row.ew, ew, row.boardNumber);
+  }
+
+  return Array.from(byPair.entries()).map(([pairId, v]) => ({
+    pairId,
+    fault: v.fault,
+    boardNumbers: Array.from(v.boards).sort((a, b) => a - b),
+  }));
+}
+
+/**
+ * Credit each voided pair its §3.3.9 AVE+/AVE−/AVE compensation VP for the
+ * round, scored off the void-excluded field, and write it into `pairVp`.
+ */
+function creditVoidPairs(
+  rows: SwissVpBoardRow[],
+  byBoard: Map<number, SwissVpBoardRow[]>,
+  mode: SwissRoundMode,
+  expectedBoards: number | undefined,
+  pairVp: Map<string, number>,
+): void {
+  const voids = voidPairRounds(rows);
+  if (voids.length === 0) return;
+
+  if (mode === "MP") {
+    const { topByBoard } = buildMpByBoard(byBoard);
+    for (const v of voids) {
+      pairVp.set(v.pairId, voidMpVp(v, topByBoard, expectedBoards));
+    }
+  } else {
+    const { fieldByBoard } = buildXimpByBoard(byBoard);
+    for (const v of voids) {
+      pairVp.set(v.pairId, voidXimpVp(v, fieldByBoard, expectedBoards));
+    }
+  }
+}
+
+/**
+ * A voided pair's matchpoint VP/20: an AVE+/AVE−/AVE blend over the match's
+ * boards, matchpointed off the (void-excluded) field top per board. The number
+ * of boards is `expectedBoards` (the full match) when known, else the count of
+ * the pair's voided rows. Boards whose field top is unknown (nobody else played
+ * them) fall back to a flat 50% top so the blend is still defined.
+ */
+function voidMpVp(
+  v: VoidPairRound,
+  topByBoard: Map<number, number>,
+  expectedBoards: number | undefined,
+): number {
+  const boards = expectedBoards && expectedBoards > 0
+    ? expectedBoards
+    : v.boardNumbers.length;
+  if (boards <= 0) return NEUTRAL_VP;
+
+  const fractions = voidMpFractions(boards, v.fault);
+  // Use the pair's own voided board tops where known; otherwise the median-ish
+  // top of the round, so the AVE blend has a scale even for a board nobody else
+  // played. We approximate an unknown top with the max known top of the round.
+  const knownTops = Array.from(topByBoard.values());
+  const fallbackTop =
+    knownTops.length > 0 ? Math.max(...knownTops) : 0;
+
+  let mp = 0;
+  let max = 0;
+  for (let i = 0; i < boards; i++) {
+    const boardNumber = v.boardNumbers[i];
+    const top =
+      (boardNumber != null ? topByBoard.get(boardNumber) : undefined) ??
+      fallbackTop;
+    if (top <= 0) continue;
+    mp += fractions[i] * top;
+    max += top;
+  }
+  if (max === 0) return NEUTRAL_VP;
+  return mpVpFromPercent(clampPercent((mp / max) * 100), boards, 20);
+}
+
+/**
+ * A voided pair's cross-IMP VP/20: an AVE+/AVE−/AVE blend over the match's
+ * boards in XIMPQ, off the (void-excluded) field metadata per board. Boards
+ * with no field metadata contribute nothing (no comparison to scale against).
+ */
+function voidXimpVp(
+  v: VoidPairRound,
+  fieldByBoard: Map<number, XimpField>,
+  expectedBoards: number | undefined,
+): number {
+  const boards = expectedBoards && expectedBoards > 0
+    ? expectedBoards
+    : v.boardNumbers.length;
+  if (boards <= 0) return NEUTRAL_VP;
+
+  const perComparison = voidXimpPerComparison(boards, v.fault);
+  let ximpq = 0;
+  let boardsScored = 0;
+  for (let i = 0; i < boards; i++) {
+    const boardNumber = v.boardNumbers[i];
+    const field = boardNumber != null ? fieldByBoard.get(boardNumber) : undefined;
+    if (!field) continue;
+    ximpq += (perComparison[i] * field.comparisons) / field.normaliser;
+    boardsScored += 1;
+  }
+  if (boardsScored === 0) return NEUTRAL_VP;
+  return impVpSided(roundHalfAwayFromZero(ximpq), boards, 20);
 }

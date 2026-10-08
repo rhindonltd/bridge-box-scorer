@@ -4,6 +4,10 @@ import { Db } from "@/db/games";
 import { boards, Board } from "@/db/games/tables/boards";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
+import { equaliseMpBoards } from "@/scoring/traveller/pair/neuberg-across-boards";
+import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
+import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
+import { MatchpointLine } from "@/scoring/traveller/pair/mp";
 import { PairTraveller } from "@/model/traveller";
 import { BoardOutcome } from "@/model/score";
 import { OverallScore } from "@/model/leaderboard";
@@ -76,9 +80,15 @@ function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
  * Returns null when there is no Swiss VP mode, so callers fall back to the
  * standard board-pooled overall.
  */
-function scoreSwissVp(boardRows: Board[], mode: SwissVpMode) {
-  if (mode === "XIMP") return calculateSwissXimpVpOverall(boardRows);
-  if (mode === "MP") return calculateSwissMpVpOverall(boardRows);
+function scoreSwissVp(
+  boardRows: Board[],
+  mode: SwissVpMode,
+  expectedBoards: number | undefined,
+) {
+  if (mode === "XIMP")
+    return calculateSwissXimpVpOverall(boardRows, { expectedBoards });
+  if (mode === "MP")
+    return calculateSwissMpVpOverall(boardRows, { expectedBoards });
   return null;
 }
 
@@ -129,6 +139,30 @@ function scoreBoardsToOverall(
     scoredBoards.push(scoreBoard(pairTraveller, scoringType));
   }
 
+  // EBU White Book §4.2.3: for matchpoints, equalise boards played a different
+  // number of times (half-table, fouled/short boards) by scaling each short
+  // board up to the full field via Neuberg (or the §4.2.3.3 small-sub-field
+  // rule). A no-op when every board was played the same number of times. Done
+  // before the sit-out synthesis below so the per-board top the byes are
+  // credited against (`maxMatchPoints`) is the equalised full-field top.
+  if (getCombination(scoringType).perBoard === "MP") {
+    const equalised = equaliseMpBoards(
+      scoredBoards.map((b) => ({
+        board: b.board,
+        lines: b.lines as MatchpointLine[],
+      })),
+    );
+    // EBU White Book §4.1.1.1: in the STANDINGS, an AVE+/AVE− board gives the
+    // pair the greater-of-60%/lesser-of-40% vs its windowed average on its
+    // other boards. Applied after Neuberg equalisation (so the board tops are
+    // the equalised full-field tops) and only to the copy fed to the overall
+    // aggregator — the per-board traveller keeps the flat 60/40.
+    const adjusted = applyBetterThanAverage(equalised);
+    adjusted.forEach((b, i) => {
+      scoredBoards[i].lines = b.lines;
+    });
+  }
+
   // Swiss sit-outs: credit each idle (bye) pair a compensatory result for the
   // boards it missed, so a forced bye doesn't drag its standing down. This adds
   // synthetic scored lines alongside the real ones before aggregation, keyed by
@@ -137,6 +171,24 @@ function scoreBoardsToOverall(
   scoredBoards.push(
     ...swissSitOutScoredBoards(boardMap, scoringType, scoredBoards),
   );
+
+  // EBU White Book §4.2.6.1: round each board's matchpoints to the nearest
+  // whole matchpoint (exact halves away from the board average) as the LAST
+  // step — after Neuberg equalisation, the better-than-average uplift, and the
+  // sit-out synthesis above, all of which must be computed at full precision.
+  // The overall ranking sums these rounded per-board scores, so a published
+  // total equals the sum of the shown board scores.
+  if (getCombination(scoringType).perBoard === "MP") {
+    const rounded = roundMpBoards(
+      scoredBoards.map((b) => ({
+        board: b.board,
+        lines: b.lines as MatchpointLine[],
+      })),
+    );
+    rounded.forEach((b, i) => {
+      scoredBoards[i].lines = b.lines;
+    });
+  }
 
   // This board-pooled overall path is only reached for pairs scorings (MP /
   // Cross-IMP, and the IMP-family fallback), which always declare an `overall`
@@ -328,6 +380,7 @@ function computeCombined(
   barometer: boolean,
   twoWinner: boolean,
   teams: AssignedTeam[],
+  expectedBoards: number | undefined,
 ): LeaderboardResult {
   // A board-comparison teams game (BAM/PAB) ranks teams on boards won; a
   // teams-VP game ranks teams on Victory Points; an aggregate-IMP teams game
@@ -337,6 +390,7 @@ function computeCombined(
     const overallScore = calculateTeamsBoardComparisonOverall(boardRows, {
       barometer,
       scoring: teamsBoardComparison,
+      expectedBoards,
     });
     return { type: overallScore.type, overallScore, participants: teams };
   }
@@ -349,12 +403,12 @@ function computeCombined(
   }
 
   if (isTeamsVp) {
-    const overallScore = calculateTeamsVpOverall(boardRows);
+    const overallScore = calculateTeamsVpOverall(boardRows, { expectedBoards });
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
   const overallScore =
-    scoreSwissVp(boardRows, swissVpMode) ??
+    scoreSwissVp(boardRows, swissVpMode, expectedBoards) ??
     scoreBoardsToOverall(boardRows, scoringType, gameId);
   const participants = pairs.map(toParticipant);
   return {
@@ -385,6 +439,7 @@ function computeSections(
   barometer: boolean,
   twoWinner: boolean,
   teams: AssignedTeam[],
+  expectedBoards: number | undefined,
 ): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
   for (const row of boardRows) {
@@ -421,6 +476,7 @@ function computeSections(
       const overallScore = calculateTeamsBoardComparisonOverall(sectionRows, {
         barometer,
         scoring: teamsBoardComparison,
+        expectedBoards,
       });
       return {
         section,
@@ -443,7 +499,9 @@ function computeSections(
     }
 
     if (isTeamsVp) {
-      const overallScore = calculateTeamsVpOverall(sectionRows);
+      const overallScore = calculateTeamsVpOverall(sectionRows, {
+        expectedBoards,
+      });
       return {
         section,
         type: overallScore.type,
@@ -453,7 +511,7 @@ function computeSections(
     }
 
     const overallScore =
-      scoreSwissVp(sectionRows, swissVpMode) ??
+      scoreSwissVp(sectionRows, swissVpMode, expectedBoards) ??
       scoreBoardsToOverall(sectionRows, scoringType, section);
     const sectionParticipants = (pairsBySection.get(section) ?? []).map(
       toParticipant,
@@ -486,6 +544,7 @@ async function readLeaderboardInputs(
   teamsBoardComparison: BoardComparisonScoring | null;
   barometer: boolean;
   twoWinner: boolean;
+  expectedBoards: number | undefined;
   boardRows: Board[];
   pairs: Pairs;
   teams: AssignedTeam[];
@@ -531,6 +590,15 @@ async function readLeaderboardInputs(
   // and EW fields.
   const twoWinner = isTwoWinnerPairs(game!.gameType, movement);
 
+  // The expected boards per teams match — needed only to size the §3.3.9 void
+  // split (AVE+/AVE− over ⌈N/2⌉ boards). Taken from the movement's per-round
+  // board count; undefined when unknown (the void scorer then falls back to the
+  // flat §3.3.6.1 scoring).
+  const expectedBoards =
+    movement && "boardsPerRound" in movement
+      ? movement.boardsPerRound
+      : undefined;
+
   const [boardRows, pairs, teams] = await Promise.all([
     db.select().from(boards) as Promise<Board[]>,
     findPairs(db),
@@ -550,6 +618,7 @@ async function readLeaderboardInputs(
     teamsBoardComparison,
     barometer,
     twoWinner,
+    expectedBoards,
     boardRows,
     pairs,
     teams,
@@ -579,6 +648,7 @@ export async function buildLeaderboards(
     teamsBoardComparison,
     barometer,
     twoWinner,
+    expectedBoards,
     boardRows,
     pairs,
     teams,
@@ -595,6 +665,7 @@ export async function buildLeaderboards(
     barometer,
     twoWinner,
     teams,
+    expectedBoards,
   );
 
   // The director can turn off the combined overall ranking for a multi-section
@@ -617,6 +688,7 @@ export async function buildLeaderboards(
           barometer,
           twoWinner,
           teams,
+          expectedBoards,
         )
       : null,
     sections,
@@ -641,6 +713,7 @@ export async function computeLeaderboard(
     teamsBoardComparison,
     barometer,
     twoWinner,
+    expectedBoards,
     boardRows,
     pairs,
     teams,
@@ -657,6 +730,7 @@ export async function computeLeaderboard(
     barometer,
     twoWinner,
     teams,
+    expectedBoards,
   );
 }
 
@@ -678,6 +752,7 @@ export async function computeSectionLeaderboards(
     teamsBoardComparison,
     barometer,
     twoWinner,
+    expectedBoards,
     boardRows,
     pairs,
     teams,
@@ -693,5 +768,55 @@ export async function computeSectionLeaderboards(
     barometer,
     twoWinner,
     teams,
+    expectedBoards,
+  );
+}
+
+/**
+ * Section leaderboards computed over only the rounds BEFORE `maxRoundExclusive`
+ * (i.e. `roundNumber < maxRoundExclusive`), using the CURRENT board values.
+ *
+ * This reconstructs the "corrected standings as of round R" that EBU §3.5
+ * mismatch detection needs: the standings the round-R draw SHOULD have used,
+ * were today's (possibly retroactively adjusted) earlier-round scores known at
+ * the time. It is NOT draw-time fidelity — it deliberately reflects later
+ * adjustments on earlier-round boards, which is exactly the "correct opponents"
+ * the §3.5 comparison is against. `computeSections` is a pure function of the
+ * board rows, so filtering the rows by round is sufficient; nothing else about
+ * the aggregation changes.
+ */
+export async function computeSectionLeaderboardsAsOf(
+  db: Db,
+  gameId: string,
+  maxRoundExclusive: number,
+): Promise<SectionLeaderboard[]> {
+  const {
+    scoringType,
+    swissVpMode,
+    isTeamsVp,
+    teamsImpAggregate,
+    teamsBoardComparison,
+    barometer,
+    twoWinner,
+    expectedBoards,
+    boardRows,
+    pairs,
+    teams,
+  } = await readLeaderboardInputs(db, gameId);
+  const earlierRows = boardRows.filter(
+    (r) => r.roundNumber < maxRoundExclusive,
+  );
+  return computeSections(
+    earlierRows,
+    pairs,
+    scoringType,
+    swissVpMode,
+    isTeamsVp,
+    teamsImpAggregate,
+    teamsBoardComparison,
+    barometer,
+    twoWinner,
+    teams,
+    expectedBoards,
   );
 }

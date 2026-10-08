@@ -26,6 +26,12 @@ export interface SwissVpBoardRow {
   directorOverrideResult: BoardOutcome | null;
   /** Board status; "SIT_OUT" rows are byes and carry no head-to-head result. */
   status: string | null;
+  /**
+   * A match-level director ruling token that is NOT a board score (so it never
+   * feeds `boardResult`). Currently the EBU §3.5 mismatch ruling
+   * (`MM:<side>:<direction>:<fault>`); null for an ordinary board.
+   */
+  matchRuling?: string | null;
 }
 
 /**

@@ -222,3 +222,76 @@ describe("board-comparison bye credit", () => {
     expect(pab.lines.find((l) => l.teamId === "A3NS")!.totalWon).toBe(0.6);
   });
 });
+
+describe("board-comparison §3.3.7 removed boards", () => {
+  function removed(fault: string, overrides: Partial<SwissVpBoardRow>) {
+    return row({
+      status: "REMOVED_TEAMS",
+      directorOverrideResult: `TRM:${fault}` as never,
+      confirmedResult: null,
+      ...overrides,
+    });
+  }
+
+  it("awards the removed board to the non-offending team (EW at fault → home wins)", () => {
+    const rows: SwissVpBoardRow[] = [
+      removed("EW_FAULT", { boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW" }),
+    ];
+    const bam = calculateTeamsBamOverall(rows, { barometer: true });
+    const t1 = bam.lines.find((l) => l.teamId === "A1NS")!;
+    const t2 = bam.lines.find((l) => l.teamId === "A2NS")!;
+    expect(t1.totalWon).toBe(1); // home wins the board
+    expect(t2.totalWon).toBe(0); // opponent loses
+    expect(t1.totalPlayed).toBe(1);
+  });
+
+  it("ties the removed board for neither-/both-at-fault", () => {
+    const rows: SwissVpBoardRow[] = [
+      removed("NEITHER_FAULT", { boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW" }),
+    ];
+    const bam = calculateTeamsBamOverall(rows, { barometer: true });
+    for (const line of bam.lines) {
+      expect(line.totalWon).toBe(0.5);
+    }
+  });
+});
+
+describe("board-comparison §3.3.6/§3.3.9 void", () => {
+  function voided(cause: string, overrides: Partial<SwissVpBoardRow>) {
+    return row({
+      status: "VOID_MATCH",
+      directorOverrideResult: `VOID:${cause}` as never,
+      confirmedResult: null,
+      ...overrides,
+    });
+  }
+
+  it("credits both teams 40% of the boards for a seating void (§3.3.6.1)", () => {
+    const rows: SwissVpBoardRow[] = [
+      voided("SEATING_STANDARD", { boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW" }),
+    ];
+    const bam = calculateTeamsBamOverall(rows, {
+      barometer: true,
+      expectedBoards: 8,
+    });
+    for (const line of bam.lines) {
+      expect(line.totalWon).toBe(3.2); // 0.4 * 8
+      expect(line.totalPlayed).toBe(8);
+    }
+  });
+
+  it("applies the §3.3.9 split in board-won units (one side at fault)", () => {
+    const rows: SwissVpBoardRow[] = [
+      voided("SHORT_OFFENDER_EW", { boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW" }),
+    ];
+    const bam = calculateTeamsBamOverall(rows, {
+      barometer: true,
+      expectedBoards: 8,
+    });
+    const t1 = bam.lines.find((l) => l.teamId === "A1NS")!;
+    const t2 = bam.lines.find((l) => l.teamId === "A2NS")!;
+    // EW offended -> home (A1) non-offender 4.4, opponent 3.6.
+    expect(t1.totalWon).toBeCloseTo(4.4);
+    expect(t2.totalWon).toBeCloseTo(3.6);
+  });
+});

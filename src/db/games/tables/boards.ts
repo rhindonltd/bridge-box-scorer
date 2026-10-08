@@ -24,6 +24,14 @@ export const boards = sqliteTable(
       "director_override_result",
     ).$type<BoardOutcome>(),
     directorOverrideLead: text("director_override_lead").$type<Card>(),
+    // A MATCH-LEVEL director ruling token that is NOT a board score, so it is
+    // kept separate from `confirmedResult`/`directorOverrideResult` (which the
+    // scoring field reads). Currently carries the EBU §3.5 mismatch ruling
+    // (`MM:<side>:<direction>:<fault>`, see `model/swiss-mismatch.ts`) stamped
+    // across every board row of a MISMATCH match: the board keeps its real
+    // played result in the field, and the Swiss VP scorers read this column to
+    // apply the §3.5.2 one-sided VP adjustment.
+    matchRuling: text("match_ruling").$type<string>(),
     status: text("status", {
       enum: BoardStatuses,
     }),

@@ -28,6 +28,7 @@ import { scoreSwissVpRound } from "./swiss-vp-round";
  */
 export function calculateSwissMpVpOverall(
   boardRows: SwissVpBoardRow[],
+  options: { expectedBoards?: number } = {},
 ): PairSwissVpOverallScore {
   const rounds = new Map<number, SwissVpBoardRow[]>();
   for (const row of boardRows) {
@@ -39,7 +40,7 @@ export function calculateSwissMpVpOverall(
 
   const totals = new Map<string, VpAccumulator>();
   for (const [round, rows] of rounds) {
-    const { pairVp } = scoreSwissVpRound(rows, "MP");
+    const { pairVp } = scoreSwissVpRound(rows, "MP", options.expectedBoards);
     for (const [pairId, vp] of pairVp) {
       creditVp(totals, pairId, round, vp);
     }

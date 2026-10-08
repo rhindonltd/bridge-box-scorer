@@ -2,81 +2,35 @@ import { describe, expect, it } from "vitest";
 import { ScoredTravellerOfType } from "@/scoring/overall/scored-traveller";
 import { calculateOverallXIMPResults } from "./x-imp";
 
+/** A one-line PAIR_XIMP board for the given pair and NS cross-IMP value. */
+function board(
+  boardNo: number,
+  nsId: string,
+  ewId: string,
+  nsCrossImps: number,
+): ScoredTravellerOfType<"PAIR_XIMP"> {
+  return {
+    type: "PAIR_XIMP",
+    board: boardNo,
+    lines: [
+      {
+        outcome: "1NTS=",
+        score: 90,
+        nsId,
+        ewId,
+        nsCrossImps,
+        ewCrossImps: -nsCrossImps,
+      },
+    ],
+  };
+}
+
 describe("calculateOverallXIMPResults", () => {
-  // it("aggregates cross imps for all four players", () => {
-  //   const travellers: ScoredTravellerOfType<"PAIR_XIMP">[] = [
-  //     {
-  //       type: "PAIR_XIMP",
-  //       board: 1,
-  //       lines: [
-  //         {
-  //           outcome: "1NTS=",
-  //           score: 90,
-  //
-  //           nsId: "NS",
-  //           ewId: "EW",
-  //
-  //           nsCrossImps: 5,
-  //           ewCrossImps: -5,
-  //         },
-  //       ],
-  //     },
-  //   ];
-  //
-  //   const result = calculateOverallXIMPResults(travellers);
-  //
-  //   expect(result.type).toBe("PAIR_XIMP");
-  //   expect(result.mode).toBe("PAIR");
-  //   expect(result.scoring).toBe("XIMP");
-  //
-  //   expect(result.lines).toEqual([
-  //     {
-  //       rank: 1,
-  //       playerId: "NS",
-  //       crossImps: 5,
-  //     },
-  //     {
-  //       rank: 2,
-  //       playerId: "EW",
-  //       crossImps: -5,
-  //     },
-  //   ]);
-  // });
-
-  it("sums cross imps across multiple boards", () => {
-    const travellers: ScoredTravellerOfType<"PAIR_XIMP">[] = [
-      {
-        type: "PAIR_XIMP",
-        board: 1,
-        lines: [
-          {
-            outcome: "1NTS=",
-            score: 90,
-
-            nsId: "NS",
-            ewId: "EW",
-
-            nsCrossImps: 5,
-            ewCrossImps: -5,
-          },
-        ],
-      },
-      {
-        type: "PAIR_XIMP",
-        board: 2,
-        lines: [
-          {
-            outcome: "2HS=",
-            score: 110,
-
-            nsId: "NS",
-            ewId: "EW",
-
-            nsCrossImps: 3,
-            ewCrossImps: -3,
-          },
-        ],
-      },
+  it("ranks on the AVERAGE cross-IMP per board (§4.2.5)", () => {
+    // NS scores +5 then +3 over two boards → average +4 (not the raw +8).
+    const travellers = [
+      board(1, "NS", "EW", 5),
+      board(2, "NS", "EW", 3),
     ];
 
     const result = calculateOverallXIMPResults(travellers);
@@ -84,108 +38,38 @@ describe("calculateOverallXIMPResults", () => {
     const ns = result.lines.find((x) => x.pairId === "NS");
     const ew = result.lines.find((x) => x.pairId === "EW");
 
-    expect(ns?.crossImps).toBe(8);
-    expect(ew?.crossImps).toBe(-8);
+    expect(ns?.crossImps).toBe(4);
+    expect(ew?.crossImps).toBe(-4);
   });
 
-  // it("ranks players by total cross imps", () => {
-  //   const travellers: ScoredTravellerOfType<"PAIR_XIMP">[] = [
-  //     {
-  //       type: "PAIR_XIMP",
-  //       board: 1,
-  //       lines: [
-  //         {
-  //           outcome: "1NTS=",
-  //           score: 90,
-  //
-  //           nsId: "A",
-  //           ewId: "C",
-  //
-  //           nsCrossImps: 10,
-  //           ewCrossImps: -10,
-  //         },
-  //       ],
-  //     },
-  //     {
-  //       type: "PAIR_XIMP",
-  //       board: 2,
-  //       lines: [
-  //         {
-  //           outcome: "2HS=",
-  //           score: 110,
-  //
-  //           nsId: "A",
-  //           ewId: "E",
-  //
-  //           nsCrossImps: 5,
-  //           ewCrossImps: -5,
-  //         },
-  //       ],
-  //     },
-  //   ];
-  //
-  //   const result = calculateOverallXIMPResults(travellers);
-  //
-  //   expect(result.lines[0]).toMatchObject({
-  //     playerId: "A",
-  //     crossImps: 15,
-  //     rank: 1,
-  //   });
-  // });
-  //
-  // it("gives equal ranks for tied scores", () => {
-  //   const travellers: ScoredTravellerOfType<"PAIR_XIMP">[] = [
-  //     {
-  //       type: "PAIR_XIMP",
-  //       board: 1,
-  //       lines: [
-  //         {
-  //           outcome: "1NTS=",
-  //           score: 90,
-  //
-  //           nsId: "A",
-  //           ewId: "C",
-  //
-  //           nsCrossImps: 5,
-  //           ewCrossImps: -5,
-  //         },
-  //       ],
-  //     },
-  //     {
-  //       type: "PAIR_XIMP",
-  //       board: 2,
-  //       lines: [
-  //         {
-  //           outcome: "1NTS=",
-  //           score: 90,
-  //
-  //           nsId: "E",
-  //           ewId: "G",
-  //
-  //           nsCrossImps: 5,
-  //           ewCrossImps: -5,
-  //         },
-  //       ],
-  //     },
-  //   ];
-  //
-  //   const result = calculateOverallXIMPResults(travellers);
-  //
-  //   expect(result.lines.filter((x) => x.crossImps === 5)).toHaveLength(4);
-  //
-  //   expect(
-  //     result.lines.filter((x) => x.crossImps === 5).every((x) => x.rank === 1),
-  //   ).toBe(true);
-  // });
-  //
-  // it("returns an empty leaderboard when there are no travellers", () => {
-  //   const result = calculateOverallXIMPResults([]);
-  //
-  //   expect(result).toEqual({
-  //     type: "PAIR_XIMP",
-  //     mode: "PAIR",
-  //     scoring: "XIMP",
-  //     lines: [],
-  //   });
-  // });
+  it("compares a pair that played fewer boards on its average, not its total", () => {
+    // Pair A plays THREE boards at +4 each → raw total +12, average +4.
+    // Pair B plays TWO boards at +5 each (sat out the third) → raw total +10,
+    // average +5. On a raw total A (12) would beat B (10); on the §4.2.5
+    // per-board average B (+5) correctly outranks A (+4).
+    const travellers = [
+      board(1, "A", "X", 4),
+      board(2, "A", "X", 4),
+      board(3, "A", "X", 4),
+      board(1, "B", "Y", 5),
+      board(2, "B", "Y", 5),
+      // Board 3 not played by B.
+    ];
+
+    const result = calculateOverallXIMPResults(travellers);
+
+    const a = result.lines.find((x) => x.pairId === "A")!;
+    const b = result.lines.find((x) => x.pairId === "B")!;
+
+    expect(a.crossImps).toBe(4);
+    expect(b.crossImps).toBe(5);
+    // B ranks ahead of A despite A's larger raw total.
+    expect(b.rank).toBeLessThan(a.rank);
+  });
+
+  it("returns an empty leaderboard when there are no travellers", () => {
+    const result = calculateOverallXIMPResults([]);
+    expect(result.type).toBe("PAIR_XIMP");
+    expect(result.lines).toEqual([]);
+  });
 });

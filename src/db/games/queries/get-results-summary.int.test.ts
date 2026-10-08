@@ -10,8 +10,8 @@ import type { NewBoard } from "@/db/games/tables/boards";
  * Integration coverage for getResultsSummary against a real migrated per-game
  * database: it should count playable boards (excluding SIT_OUT and the Swiss
  * "2 half matches" HALF_AVERAGE compensation blocks), treat CONFIRMED /
- * OVERRIDDEN as finalized, and only report allResultsIn once every playable
- * board is finalized.
+ * OVERRIDDEN / CANCELLED as finalized, and only report allResultsIn once every
+ * playable board is finalized.
  */
 describe("getResultsSummary", () => {
   let harness: DbHarness;
@@ -67,6 +67,51 @@ describe("getResultsSummary", () => {
     await seed([
       makeBoard({ boardNumber: 1, status: "CONFIRMED" }),
       makeBoard({ boardNumber: 2, status: "OVERRIDDEN" }),
+    ]);
+
+    const { getResultsSummary } = await import(
+      "@/db/games/queries/get-results-summary"
+    );
+    const db = (await harness.getDb()) as Db;
+
+    expect(await getResultsSummary(db)).toEqual({
+      totalPlayable: 2,
+      finalized: 2,
+      allResultsIn: true,
+    });
+  });
+
+  it("counts a CANCELLED (fouled) board as finalized", async () => {
+    await seed([
+      makeBoard({ boardNumber: 1, status: "CONFIRMED" }),
+      makeBoard({
+        boardNumber: 2,
+        status: "CANCELLED",
+        directorOverrideResult: "A60/60" as NewBoard["directorOverrideResult"],
+      }),
+    ]);
+
+    const { getResultsSummary } = await import(
+      "@/db/games/queries/get-results-summary"
+    );
+    const db = (await harness.getDb()) as Db;
+
+    expect(await getResultsSummary(db)).toEqual({
+      totalPlayable: 2,
+      finalized: 2,
+      allResultsIn: true,
+    });
+  });
+
+  it("counts a REMOVED_TEAMS board as finalized", async () => {
+    await seed([
+      makeBoard({ boardNumber: 1, status: "CONFIRMED" }),
+      makeBoard({
+        boardNumber: 2,
+        status: "REMOVED_TEAMS",
+        directorOverrideResult:
+          "TRM:EW_FAULT" as NewBoard["directorOverrideResult"],
+      }),
     ]);
 
     const { getResultsSummary } = await import(

@@ -5,9 +5,10 @@ import useSWR from "swr";
 import { ManageGameMenuPage } from "@/app/game/[gameId]/manage/ManageGameMenuPage";
 import { useGameStarted } from "@/hooks/game-started";
 import { useResultsComplete } from "@/hooks/results-complete";
-import { fetcher } from "@/lib/fetcher";
+import { fetcher, unwrapFetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import type { BridgewebsStatus } from "@/db/system/queries/bridgewebs-credentials";
+import type { BridgeGame } from "@/db/game-index/schema";
 
 export function ManageGameMenu({ gameId }: { gameId: string }) {
   const router = useRouter();
@@ -23,6 +24,14 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
     fetcher,
   );
   const bridgewebsConfigured = bridgewebs?.configured ?? false;
+
+  // "Review Mismatches" (§3.5) only applies to a Swiss game, where a
+  // retroactive score adjustment can retro-change a later round's correct draw.
+  const { data: game } = useSWR<BridgeGame>(
+    swrKeys.game(gameId),
+    unwrapFetcher<BridgeGame>("game"),
+  );
+  const isSwiss = game?.eventFormat === "SWISS";
 
   // Until we know whether the game has started, hide the state-gated buttons to
   // avoid flicker (e.g. briefly showing "Set Up Game" on an already-started
@@ -43,6 +52,9 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       onShareDirectorAccessClick={() =>
         router.push(`/game/${gameId}/manage/share-access`)
       }
+      onReviewMismatchesClick={() =>
+        router.push(`/game/${gameId}/manage/mismatches`)
+      }
       onDownloadUsebioClick={() =>
         router.push(`/game/${gameId}/manage/download-usebio`)
       }
@@ -59,6 +71,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       showTravellers={started}
       showEnterDeals={started}
       showMovement={started}
+      showReviewMismatches={started && isSwiss}
       showDownloadUsebio={showDownloadUsebio}
       downloadUsebioDisabled={!allResultsIn}
       showDownloadPbn={started}

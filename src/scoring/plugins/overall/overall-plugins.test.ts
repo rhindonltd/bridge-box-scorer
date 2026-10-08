@@ -107,6 +107,12 @@ describe("imp overall plugin", () => {
 
     const table = impOverallPlugin.views[0].toTable(leaderboard, participants);
     expect(table.columns.map((c) => c.label)).toEqual(["Rank", "Pair", "IMP"]);
-    expect(table.rows[0].cells[2]).toEqual({ kind: "number", value: 12 });
+    // The IMP overall is now a per-board average (§4.2.5), so it is fractional
+    // and shown to 2 decimals.
+    expect(table.rows[0].cells[2]).toEqual({
+      kind: "number",
+      value: 12,
+      decimals: 2,
+    });
   });
 });

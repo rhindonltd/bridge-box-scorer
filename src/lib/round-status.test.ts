@@ -22,6 +22,22 @@ describe("isBoardEntered", () => {
     expect(isBoardEntered({ status: "OVERRIDDEN" })).toBe(true);
   });
 
+  it("returns true when status is CANCELLED (fouled board)", () => {
+    expect(isBoardEntered({ status: "CANCELLED" })).toBe(true);
+  });
+
+  it("returns true when status is REMOVED_TEAMS (teams board removed)", () => {
+    expect(isBoardEntered({ status: "REMOVED_TEAMS" })).toBe(true);
+  });
+
+  it("returns true when status is VOID_MATCH (teams match void)", () => {
+    expect(isBoardEntered({ status: "VOID_MATCH" })).toBe(true);
+  });
+
+  it("returns true when status is VOID_PAIR (swiss-pairs match void)", () => {
+    expect(isBoardEntered({ status: "VOID_PAIR" })).toBe(true);
+  });
+
   it("returns false when all fields are null/undefined", () => {
     expect(isBoardEntered({})).toBe(false);
     expect(

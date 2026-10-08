@@ -10,6 +10,9 @@ import { outcomeToScore } from "@/scoring/traveller/common";
 import { scoreMP as scorePairMP } from "@/scoring/traveller/pair/mp";
 import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
 import { scoreXIMP as scorePairXIMP } from "@/scoring/traveller/pair/x-imp";
+import { equaliseMpBoards } from "@/scoring/traveller/pair/neuberg-across-boards";
+import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
+import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import { ScoringType } from "@/db/games/types/scoring-type";
@@ -921,18 +924,53 @@ function computeOverallRanking(
 
   const boardGroups = groupBy(boardResults, (r) => r.board);
 
-  for (const [boardNum, results] of boardGroups) {
-    const scoredLines = computeBoardScores(boardNum, results, scoringType);
+  // Matchpoints pool across boards into a percentage ranking, so — exactly as
+  // the live leaderboard does — short boards must be equalised to the full
+  // field (EBU White Book §4.2.3) before accumulation. IMP/XIMP accumulate raw
+  // (datum-less) IMPs with no per-board maximum, so no equalisation applies.
+  if (scoringType === "MP") {
+    const scoredBoards = Array.from(boardGroups, ([boardNum, results]) => ({
+      board: boardNum,
+      lines: scorePairMP(
+        boardNum,
+        results.map((r) => ({
+          outcome: r.outcome,
+          nsId: r.nsPairNumber,
+          ewId: r.ewPairNumber,
+        })),
+      ),
+    }));
 
-    // All lines — real played and director-assigned — are already in the
-    // scored-lines map. Accumulate every one into the pair totals.
-    for (const [key, lineScore] of scoredLines) {
-      const [, nsId, ewId] = key.split("-");
-      const maxForBoard = descriptor.contributesToMax
-        ? lineScore.ns + lineScore.ew
-        : 0;
-      accumulate(totals, nsId, "NS", lineScore.ns, maxForBoard);
-      accumulate(totals, ewId, "EW", lineScore.ew, maxForBoard);
+    // §4.1.1.1 "better than average" applies to the RANKING only (not the
+    // per-board TRAVELLER_LINE detail, which keeps the flat 60/40), matching the
+    // live leaderboard and the on-screen board display. §4.2.6.1: round each
+    // board to the nearest whole matchpoint (halves away from average) LAST, so
+    // the exported ranking sums the same rounded board scores the leaderboard
+    // does.
+    const ranked = roundMpBoards(
+      applyBetterThanAverage(equaliseMpBoards(scoredBoards)),
+    );
+    for (const b of ranked) {
+      for (const line of b.lines) {
+        const maxForBoard = line.maxMatchPoints;
+        accumulate(totals, line.nsId, "NS", line.nsMatchPoints, maxForBoard);
+        accumulate(totals, line.ewId, "EW", line.ewMatchPoints, maxForBoard);
+      }
+    }
+  } else {
+    for (const [boardNum, results] of boardGroups) {
+      const scoredLines = computeBoardScores(boardNum, results, scoringType);
+
+      // All lines — real played and director-assigned — are already in the
+      // scored-lines map. Accumulate every one into the pair totals.
+      for (const [key, lineScore] of scoredLines) {
+        const [, nsId, ewId] = key.split("-");
+        const maxForBoard = descriptor.contributesToMax
+          ? lineScore.ns + lineScore.ew
+          : 0;
+        accumulate(totals, nsId, "NS", lineScore.ns, maxForBoard);
+        accumulate(totals, ewId, "EW", lineScore.ew, maxForBoard);
+      }
     }
   }
 

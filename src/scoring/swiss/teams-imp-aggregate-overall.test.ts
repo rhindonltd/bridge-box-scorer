@@ -102,3 +102,24 @@ describe("calculateTeamsImpAggregateOverall", () => {
     expect(t1.totalImps).toBe(2);
   });
 });
+
+describe("calculateTeamsImpAggregateOverall — §3.3.7 removed boards", () => {
+  it("adds the ±3 IMP indemnity to the aggregate (EW at fault → +3 home / -3 away)", () => {
+    const rows: SwissVpBoardRow[] = [
+      row({
+        boardNumber: 1,
+        tableNumber: 1,
+        ns: "A1NS",
+        ew: "A2EW",
+        status: "REMOVED_TEAMS",
+        directorOverrideResult: "TRM:EW_FAULT" as never,
+      }),
+    ];
+
+    const result = calculateTeamsImpAggregateOverall(rows, { barometer: false });
+    const t1 = result.lines.find((l) => l.teamId === "A1NS")!;
+    const t2 = result.lines.find((l) => l.teamId === "A2NS")!;
+    expect(t1.totalImps).toBe(3);
+    expect(t2.totalImps).toBe(-3);
+  });
+});

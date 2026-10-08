@@ -121,7 +121,15 @@ async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
   // Build board results — each tagged with the section it was played in (from
   // the board row), with unprefixed pair numbers.
   const boardResults: UsebioBoardResult[] = allBoards
-    .filter((b) => b.confirmedResult || b.status === "NOT_PLAYED")
+    .filter(
+      (b) =>
+        b.confirmedResult ||
+        // A director assignment / cancellation (fouled board, §3.3.2) has a
+        // directorOverrideResult but no confirmedResult — it must still be
+        // exported, not dropped as if it had no result.
+        b.directorOverrideResult ||
+        b.status === "NOT_PLAYED",
+    )
     .map((b) => ({
       table: b.tableNumber,
       board: b.boardNumber,

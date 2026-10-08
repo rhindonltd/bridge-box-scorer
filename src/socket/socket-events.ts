@@ -106,6 +106,29 @@ export const SocketEvents = {
   LEAVE_ROUND_RESULTS: "roundResults:leave",
   // Client-initiated (director): override a board result.
   OVERRIDE_RESULT_TRAVELLER: "traveller:overrideResult",
+  // Client-initiated (director): cancel a board copy that could not be played
+  // (fouled / mis-dealt / arrow-switched). Assigns the §3.3.2 artificial
+  // adjusted score (AVE+/AVE+ or AVE) and flips the row to CANCELLED.
+  CANCEL_BOARD_TRAVELLER: "traveller:cancelBoard",
+  // Client-initiated (director): remove a board from a TEAMS match that could
+  // not be played (§3.3.7). Awards a ±3 IMP indemnity by the director's fault
+  // ruling and flips the row to REMOVED_TEAMS.
+  REMOVE_TEAMS_BOARD_TRAVELLER: "traveller:removeTeamsBoard",
+  // Client-initiated (director): VOID a whole TEAMS match (§3.3.6.1 incorrect
+  // seating / §3.3.9 less-than-half-playable). Credits each team a ruling VP
+  // (flat 40%/60% or the §3.3.9 split) and flips the match's rows to VOID_MATCH.
+  VOID_TEAMS_MATCH_TRAVELLER: "traveller:voidTeamsMatch",
+  // Client-initiated (director): VOID a whole SWISS-PAIRS match (§3.3.8/§3.3.9).
+  // Removes the match from the field and credits each pair an AVE+/AVE−/AVE
+  // compensation by fault; flips the match's rows to VOID_PAIR.
+  VOID_PAIRS_MATCH_TRAVELLER: "traveller:voidPairsMatch",
+  // Client-initiated (director): declare a SWISS match a MISMATCH (§3.5). The
+  // boards stay real/scored; only the mismatched side's round VP is recomputed
+  // via the §3.5.2 one-sided adjustment. Flips the match's rows to MISMATCH.
+  // (§3.5 mismatch CANDIDATE DETECTION is a read-only director HTTP GET —
+  // `/api/games/[gameId]/mismatch-candidates` — not a socket event, since it is
+  // a one-shot read with no live push, unlike this mutating declaration.)
+  MISMATCH_TRAVELLER: "traveller:markMismatch",
 
   // Client-initiated (player): submit the dealt cards for a board after the
   // round is complete. First entry for a board wins (global across sections);

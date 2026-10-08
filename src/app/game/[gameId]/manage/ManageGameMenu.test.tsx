@@ -8,12 +8,24 @@ vi.mock("next/navigation", () => ({
 }));
 
 let bridgewebsData: unknown = { configured: true };
+let gameData: unknown = { eventFormat: "STANDARD" };
+// Key-aware SWR mock: the bridgewebs key returns the bridgewebs status, the
+// game key returns the game. Keys come from the swrKeys mock below.
 vi.mock("swr", () => ({
-  default: () => ({ data: bridgewebsData }),
+  default: (key: string) =>
+    key === "/api/games/g1"
+      ? { data: gameData }
+      : { data: bridgewebsData },
 }));
-vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
+vi.mock("@/lib/fetcher", () => ({
+  fetcher: vi.fn(),
+  unwrapFetcher: () => vi.fn(),
+}));
 vi.mock("@/swr/swr-keys", () => ({
-  swrKeys: { bridgewebs: () => "/api/system/bridgewebs" },
+  swrKeys: {
+    bridgewebs: () => "/api/system/bridgewebs",
+    game: (gameId: string) => `/api/games/${gameId}`,
+  },
 }));
 
 const mockUseGameStarted = vi.fn();
@@ -56,6 +68,7 @@ describe("ManageGameMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     bridgewebsData = { configured: true };
+    gameData = { eventFormat: "STANDARD" };
     mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
     mockUseResultsComplete.mockReturnValue({
       allResultsIn: false,
@@ -169,5 +182,23 @@ describe("ManageGameMenu", () => {
 
     expect(flag("showDownloadUsebio")).toBe("true");
     expect(flag("downloadUsebioDisabled")).toBe("false");
+  });
+
+  it("shows Review Mismatches only for a started Swiss game and routes it", () => {
+    gameData = { eventFormat: "SWISS" };
+    mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
+    render(<ManageGameMenu gameId="g1" />);
+
+    expect(flag("showReviewMismatches")).toBe("true");
+    fireEvent.click(
+      screen.getByRole("button", { name: "onReviewMismatchesClick" }),
+    );
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/mismatches");
+  });
+
+  it("hides Review Mismatches for a non-Swiss game", () => {
+    gameData = { eventFormat: "STANDARD" };
+    render(<ManageGameMenu gameId="g1" />);
+    expect(flag("showReviewMismatches")).toBe("false");
   });
 });

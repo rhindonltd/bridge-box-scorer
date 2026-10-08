@@ -105,6 +105,9 @@ export async function overrideRowToContract(
 ): Promise<void> {
   await page.getByTestId(rowTestId).click();
 
+  // Hub: choose "Enter Contract" to begin the Level→…→Confirm flow.
+  await page.getByRole("button", { name: "Enter Contract", exact: true }).click();
+
   // Step: Level.
   await clickButtonByText(page, String(spec.level));
   // Step: Suit.
@@ -153,9 +156,9 @@ export async function overrideRowToOneNotrump(
 /**
  * Override a traveller row to an ADJUSTED score via the director wizard's
  * Adjusted Score path. From the row, opens the wizard, clicks "Adjusted Score"
- * on the level step, then either taps a preset (matched by its "(ns/ew)"
- * fragment) or fills the custom NS%/EW% inputs and submits. Waits for the
- * redirect back to the manage menu.
+ * on the adjustment-type hub, then either taps a preset (matched by its
+ * "(ns/ew)" fragment) or fills the custom NS%/EW% inputs and submits. Waits for
+ * the redirect back to the manage menu.
  *
  * The result is stored as `A{ns}/{ew}` and rendered in the traveller as
  * "Adj {ns}%/{ew}%".
@@ -167,7 +170,7 @@ export async function overrideRowToAdjusted(
 ): Promise<void> {
   await page.getByTestId(rowTestId).click();
 
-  // Level step exposes the director-only "Adjusted Score" button.
+  // The hub exposes the "Adjusted Score" branch.
   await page.getByRole("button", { name: "Adjusted Score", exact: true }).click();
 
   // Custom entry: fill NS%/EW% and submit (covers arbitrary splits).
@@ -194,6 +197,7 @@ export async function overrideRowToAdjustedPreset(
 ): Promise<void> {
   await page.getByTestId(rowTestId).click();
 
+  // The hub exposes the "Adjusted Score" branch.
   await page.getByRole("button", { name: "Adjusted Score", exact: true }).click();
 
   // Tap the preset whose parenthetical split matches, e.g. "(60/40)".
