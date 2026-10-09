@@ -46,6 +46,7 @@ export function assembleImpAggregateTeams(
   teams: AssignedTeam[],
   boardRows: Board[],
   matchRows: TeamMatchStructureRow[],
+  excludedFromRanking: ReadonlySet<string> = new Set(),
 ): UsebioSwissTeamsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -75,7 +76,7 @@ export function assembleImpAggregateTeams(
     matchRows,
     numberByTeamId,
   );
-  const ranking = buildRanking(totals, numberByTeamId);
+  const ranking = buildRanking(totals, numberByTeamId, excludedFromRanking);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
 
@@ -202,16 +203,23 @@ function buildImpMatches(
   return { matches, totals };
 }
 
-/** Rank teams by total net IMPs (highest first); ties share a place. */
+/**
+ * Rank teams by total net IMPs (highest first); ties share a place. A §2.4.9
+ * without-standing / removed-withdrawn team is dropped from the ranking; its
+ * results still counted for opponents (already in `totals`).
+ */
 function buildRanking(
   totals: Map<string, number>,
   numberByTeamId: Map<string, string>,
+  excludedFromRanking: ReadonlySet<string>,
 ): UsebioVpRankEntry[] {
   const ranked = rank(
-    Array.from(totals.entries()).map(([teamId, totalImps]) => ({
-      teamId,
-      totalImps,
-    })),
+    Array.from(totals.entries())
+      .filter(([teamId]) => !excludedFromRanking.has(teamId))
+      .map(([teamId, totalImps]) => ({
+        teamId,
+        totalImps,
+      })),
     (row) => row.totalImps,
   );
 

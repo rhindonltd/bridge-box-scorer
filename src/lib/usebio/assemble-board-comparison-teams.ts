@@ -48,6 +48,7 @@ export function assembleBoardComparisonTeams(
   boardRows: Board[],
   matchRows: TeamMatchStructureRow[],
   scoring: UsebioBoardComparisonScoring,
+  excludedFromRanking: ReadonlySet<string> = new Set(),
 ): UsebioBoardComparisonTeamsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -79,7 +80,7 @@ export function assembleBoardComparisonTeams(
     numberByTeamId,
     winPoints,
   );
-  const ranking = buildRanking(totals, numberByTeamId);
+  const ranking = buildRanking(totals, numberByTeamId, excludedFromRanking);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
 
@@ -229,16 +230,23 @@ function teamTravellerLine(
   return { direction, ...line };
 }
 
-/** Rank teams by total points won (highest first); ties share a place. */
+/**
+ * Rank teams by total points won (highest first); ties share a place. A §2.4.9
+ * without-standing / removed-withdrawn team is dropped from the ranking; its
+ * results still counted for opponents (already in `totals`).
+ */
 function buildRanking(
   totals: Map<string, number>,
   numberByTeamId: Map<string, string>,
+  excludedFromRanking: ReadonlySet<string>,
 ): UsebioBoardComparisonRankEntry[] {
   const ranked = rank(
-    Array.from(totals.entries()).map(([teamId, totalWon]) => ({
-      teamId,
-      totalWon,
-    })),
+    Array.from(totals.entries())
+      .filter(([teamId]) => !excludedFromRanking.has(teamId))
+      .map(([teamId, totalWon]) => ({
+        teamId,
+        totalWon,
+      })),
     (row) => row.totalWon,
   );
 

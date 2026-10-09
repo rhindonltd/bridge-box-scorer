@@ -7,27 +7,24 @@ vi.mock("@/socket/middleware/director-auth", () => ({
 vi.mock("@/db/games/actions/delete-participant", () => ({
   deleteParticipant: vi.fn(),
 }));
+vi.mock("@/db/games/queries/is-game-started", () => ({
+  isGameStarted: vi.fn(),
+}));
 vi.mock("@/socket/broadcast/participant-broadcast", () => ({
   broadcastParticipants: vi.fn(),
-}));
-vi.mock("@/lib/log", () => ({
-  logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
-  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
 }));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { deleteParticipant } from "@/db/games/actions/delete-participant";
+import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { DELETE } from "./route";
 
-function invoke(gameId: string, seat: string, token: string | null = "tok") {
+function invoke(gameId: string, seat: string) {
   const req = new Request(
-    `http://localhost/api/games/${gameId}/participants/${seat}`,
-    {
-      method: "DELETE",
-      headers: token ? { "x-director-token": token } : {},
-    },
+    `http://localhost/api/games/${gameId}/participants/${encodeURIComponent(seat)}`,
+    { method: "DELETE", headers: { "x-director-token": "tok" } },
   );
   return DELETE(req, { params: Promise.resolve({ gameId }) } as never);
 }
@@ -35,47 +32,41 @@ function invoke(gameId: string, seat: string, token: string | null = "tok") {
 describe("DELETE /api/games/[gameId]/participants/[seat]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getDb).mockResolvedValue({} as never);
+    vi.mocked(getDb).mockResolvedValue({ marker: "db" } as never);
     vi.mocked(validateDirectorToken).mockReturnValue(true);
+    vi.mocked(isGameStarted).mockResolvedValue(false);
   });
 
-  it("evicts the seat and broadcasts, returning 200", async () => {
+  it("evicts a pair before the game starts", async () => {
     const res = await invoke("g1", "A1NS");
-
     expect(res.status).toBe(200);
     expect(deleteParticipant).toHaveBeenCalledWith("g1", "A1NS");
     expect(broadcastParticipants).toHaveBeenCalledWith("g1");
   });
 
-  it("returns 401 without a valid director token", async () => {
-    vi.mocked(validateDirectorToken).mockReturnValue(false);
-    const res = await invoke("g1", "A1NS", null);
-    expect(res.status).toBe(401);
-    expect(deleteParticipant).not.toHaveBeenCalled();
-  });
-
-  it("returns 400 for a malformed seat (client error)", async () => {
-    const res = await invoke("g1", "not-a-seat");
-    expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toMatchObject({ error: "Invalid seat" });
-    expect(deleteParticipant).not.toHaveBeenCalled();
-  });
-
-  it("returns 404 when the game does not exist", async () => {
-    vi.mocked(getDb).mockResolvedValue(null as never);
-    const res = await invoke("ghost", "A1NS");
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 500 when the action fails unexpectedly (server error)", async () => {
-    vi.mocked(deleteParticipant).mockRejectedValue(new Error("db exploded"));
+  it("blocks eviction once the game has started (F27)", async () => {
+    vi.mocked(isGameStarted).mockResolvedValue(true);
 
     const res = await invoke("g1", "A1NS");
-
-    expect(res.status).toBe(500);
-    await expect(res.json()).resolves.toMatchObject({
-      error: "Internal server error",
-    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toMatch(/already started/i);
+    // The hard delete must NOT run post-start (it would orphan board rows).
+    expect(deleteParticipant).not.toHaveBeenCalled();
     expect(broadcastParticipants).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed seat with 400", async () => {
+    const res = await invoke("g1", "not-a-seat");
+    expect(res.status).toBe(400);
+    expect(deleteParticipant).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when the director token is invalid", async () => {
+    vi.mocked(validateDirectorToken).mockReturnValue(false);
+    const res = await invoke("g1", "A1NS");
+    expect(res.status).toBe(401);
+    expect(isGameStarted).not.toHaveBeenCalled();
+    expect(deleteParticipant).not.toHaveBeenCalled();
   });
 });

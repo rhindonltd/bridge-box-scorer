@@ -48,6 +48,7 @@ export function assembleSwissPairs(
   boardRows: Board[],
   matchRows: SwissVpMatchRow[],
   mode: SwissRoundMode = "XIMP",
+  excludedFromRanking: ReadonlySet<string> = new Set(),
 ): UsebioSwissPairsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -62,7 +63,7 @@ export function assembleSwissPairs(
   }));
 
   const { matches, totals } = buildMatches(boardRows, matchRows, mode);
-  const ranking = buildRanking(totals);
+  const ranking = buildRanking(totals, excludedFromRanking);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
 
@@ -179,13 +180,23 @@ function travellerBoards(
   });
 }
 
-/** Rank pairs by total VP (highest first), ties share a place. */
-function buildRanking(totals: Map<string, number>): UsebioVpRankEntry[] {
+/**
+ * Rank pairs by total VP (highest first), ties share a place. A §2.4.9
+ * "without standing" / removed-withdrawn pair is dropped from the ranking (its
+ * results still contributed to opponents' totals, which are already in
+ * `totals`), matching the live leaderboard.
+ */
+function buildRanking(
+  totals: Map<string, number>,
+  excludedFromRanking: ReadonlySet<string>,
+): UsebioVpRankEntry[] {
   const ranked = rank(
-    Array.from(totals.entries()).map(([pairId, totalVP]) => ({
-      pairId,
-      totalVP,
-    })),
+    Array.from(totals.entries())
+      .filter(([pairId]) => !excludedFromRanking.has(pairId))
+      .map(([pairId, totalVP]) => ({
+        pairId,
+        totalVP,
+      })),
     (row) => row.totalVP,
   );
 

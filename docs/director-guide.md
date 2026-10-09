@@ -89,7 +89,10 @@ From this tab you can:
   pairs seated there (North/South and East/West).
 - **Evict a pair** — in a table's dialog, tap **Evict pair** next to a pair and
   confirm "Evict this pair from the table?" (useful if someone sat in the wrong
-  place).
+  place). Eviction is only for sorting out seating **before the game starts**.
+  Once play is under way a pair cannot be evicted this way, because their
+  results are already part of the scoring — removing a pair mid-session is a
+  withdrawal, which is handled separately.
 
 Once you've chosen a movement for the section, each table also shows the
 **boards to put out there** at the start — for example "Boards 1–3". This is a

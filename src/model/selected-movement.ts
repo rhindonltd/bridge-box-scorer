@@ -320,6 +320,35 @@ export function expectedRounds(
 }
 
 /**
+ * The boards-per-round a movement is configured for, or null when unknown. This
+ * sizes the EBU §3.3.9 teams void split (AVE+/AVE− over ⌈N/2⌉ boards): without
+ * it the void falls back to the flat §3.3.6.1 40%.
+ *
+ * `boardsPerRound` lives at the TOP level only for a SPEC selection; every
+ * other source nests it inside its own spec object, so a plain
+ * `"boardsPerRound" in movement` check silently misses the teams movements —
+ * exactly where the void split needs it. This reads the right nested field per
+ * source.
+ */
+export function boardsPerRoundOf(
+  selected: SelectedMovement | null,
+): number | null {
+  if (!selected) return null;
+  switch (selected.source) {
+    case "MITCHELL":
+      return selected.mitchell.boardsPerRound;
+    case "SWISS":
+      return selected.swiss.boardsPerRound;
+    case "SWISS_TEAMS":
+      return selected.swissTeams.boardsPerRound;
+    case "ROUND_ROBIN_TEAMS":
+      return selected.roundRobinTeams.boardsPerRound;
+    case "SPEC":
+      return selected.boardsPerRound;
+  }
+}
+
+/**
  * Structural equality for two (possibly null) selected movements. Used to
  * decide whether a movement selection actually changed — e.g. so a no-op
  * re-selection doesn't needlessly clear the section's derived timer.

@@ -17,6 +17,12 @@ vi.mock("@/db/games/queries/find-sections", () => ({
   findSections: vi.fn(async () => [{ section: "A" }]),
 }));
 
+vi.mock("@/db/games/queries/get-section-movement", () => ({
+  // No section-level movement in these mocked-db unit tests; the fallback the
+  // service does when the game-index movement is null returns null here.
+  getAnySectionMovement: vi.fn(async () => null),
+}));
+
 // Capture the data passed to the XML generator so we can assert the branch
 // fallbacks (direction, outcome, lead, sectionName) without exercising the real
 // serializer.

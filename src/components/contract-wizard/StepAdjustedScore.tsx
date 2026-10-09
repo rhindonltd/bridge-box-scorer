@@ -79,6 +79,15 @@ export function StepAdjustedScore({ onSubmit }: Props) {
             />
           </div>
         </div>
+        {nsPercent + ewPercent > 100 && (
+          <p
+            role="alert"
+            className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 text-center"
+          >
+            NS + EW total {nsPercent + ewPercent}%. Only award more than 100% when
+            an outside agency was at fault (e.g. average-plus to both sides).
+          </p>
+        )}
         <button
           type="button"
           onClick={() => onSubmit(nsPercent, ewPercent)}

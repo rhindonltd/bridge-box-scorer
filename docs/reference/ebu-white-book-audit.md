@@ -49,9 +49,9 @@ code **diverges** from the White Book and where a required behaviour is a
 | F20 | Swiss void-match formula | DONE | Medium | §3.3.9 half-split DONE for teams VP (`VOID_MATCH`) AND Swiss pairs (`VOID_PAIR`: match removed from the field, each pair credited an AVE+/AVE−/AVE blend by fault). Director-triggered void with the AVE− offender side |
 | F21 | Swiss mismatch VP adjustment | DONE | Medium | FIXED (§3.5 + §3.5.2): the one-sided VP adjustment (higher+not-fault → 5+¾·actual; lower+own-fault → actual−¼·excess-over-5; else unchanged) for Swiss PAIRS and TEAMS (`swiss-mismatch.ts` + `MISMATCH` status + `match_ruling` column + director hub step), AND assisted DETECTION for BOTH pairs and teams: after a retroactive adjustment, the deterministic draw is replayed on round-scoped corrected standings to flag participants whose committed opponent is >5 VP from the correct one (teams exclude only the triple/bye participants of a round, not the whole round). Candidates surface in a director review screen (`/api/games/[gameId]/mismatch-candidates`) where the TD confirms fault → the existing adjustment. Judgement clauses (fault, the §3.5 "several valid alternatives" exception) stay with the director |
 | F26 | "Without standing" | GAP | Medium (known) | Ranking excludes nobody; no opponents-count-but-not-self (§2.4.9) |
-| F3  | Weighted-score precision | DIVERGENCE | Low | Integer % weights only; WB recommends up to 5 results, 2dp weights |
-| F5  | AVE sum > 100% guard | note | Low | `A60/60` allowed with no outside-agency check (§4.1.1.1) |
-| F6  | Bare AVE token dropped | note | Low | A plain `AVE` override is non-scoring; must be encoded `A50/50` |
+| F3  | Weighted-score precision | DONE | Low | FIXED: weighted-score weights now accept up to 2 decimal places (e.g. 33.33/33.33/33.34), summed/validated in integer basis points; `StepWeightedScore` enters decimals |
+| F5  | AVE sum > 100% guard | DONE | Low | FIXED: `StepAdjustedScore` shows a non-blocking advisory when NS%+EW% > 100 (only an outside-agency fault warrants it); `A60/60` still submittable |
+| F6  | Bare AVE token dropped | DONE | Low | FIXED: `normalizeAdjustedToken` decodes a bare `AVE`/`AVE+`/`AVE-` to its `A../..` equivalent, so it scores (50/50, 60/40, 40/60) instead of being dropped from the field |
 | F10 | Pairs Butler/datum | note | Low | Datum-less IMP; no nearest-10 datum — not a selectable pairs mode |
 | F11 / F28 | IMP/XIMP overall not board-scaled | DONE | Low | FIXED (§4.2.5): `overall/pair/{imp,x-imp}.ts` now rank and display the AVERAGE IMP/cross-IMP per board (`value / boards`), not the raw total, so a sit-out / removed-board pair is compared fairly. IMP overall view given 2dp (now fractional). Equal board counts leave the order unchanged |
 | F15 | Long-match VP columns dropped | DIVERGENCE | Low (by design) | Swiss Pairs VP table omits 28–55 board columns; UI caps boards |
@@ -145,16 +145,21 @@ offended (it does not) and would risk overriding a legitimate TD decision — th
 director already enters exactly the figure they intend. The director applies the
 lean manually when choosing weights. No code change.
 
-### F3 — Weighted-score weights are integer-percent only — DIVERGENCE (Low)
+### F3 — Weighted-score weights are integer-percent only — DONE (Low)
 
 **White Book §4.1.1.4.** Recommends software supporting up to 5 component
 results with 2-decimal-place weightings (e.g. 0.33).
 
-**Code.** `parseWeightedScore`/`buildWeightedScore` (`model/adjusted-score.ts`)
-require integer percentages summing to exactly 100, any number of components.
-
-**Effect.** A 33.33% weighting cannot be expressed exactly. Minor; integer
-percentages cover almost all real rulings.
+**Fix.** `parseWeightedScore`/`buildWeightedScore` (`model/adjusted-score.ts`)
+now accept a weight with up to two decimal places (`WEIGHT_REGEX`, 0 < w ≤ 100),
+and validate that the components sum to exactly 100 **in integer basis points**
+(`toBasisPoints` = round(w×100), `FULL_WEIGHT_BP` = 10000) so a 33.33 / 33.33 /
+33.34 split is accepted without binary-float drift. `buildWeightedScore`
+serialises each weight trimming trailing zeros (`80` stays `80`, `33.33` keeps
+its places), so integer rulings round-trip unchanged. The director UI
+(`StepWeightedScore`) enters decimals (`step=0.01`) and tracks the running total
+in whole cents to avoid drift; the scorer already applied `weight/100` as a
+float. The number of components was never capped.
 
 ### F4 — Weighted scoring converts each component first, then blends — OK
 
@@ -166,29 +171,38 @@ component against the real field (`matchpointsAgainst` + `neuberg`,
 `componentCrossImps`, `componentImps`) and then weight-average
 (`weightedComponentScores`, weights as fractions). Correct.
 
-### F5 — Artificial percentages may exceed 100% with no guard — note (Low)
+### F5 — Artificial percentages may exceed 100% with no guard — DONE (Low)
 
 **White Book §4.1.1.1.** The TD should not give adjusted scores summing to more
 than 100% unless an outside agency was at fault (e.g. `A6060`).
 
 **Code.** `A<ns>/<ew>` explicitly allows sides that don't sum to 100 (by
-design — `A60/60` is a documented valid "AVE+ to both"). No outside-agency check.
+design — `A60/60` is a documented valid "AVE+ to both"). This is director
+discretion, so the fix is a **non-blocking advisory**, not a hard block.
 
-**Effect.** Acceptable as director discretion, but there is no guard-rail or
-prompt. Leave as-is unless a prompt is wanted.
+**Fix.** `StepAdjustedScore` shows an inline warning on the custom-entry path
+when `NS% + EW% > 100`, reminding the director that over-100 is only for an
+outside-agency fault. Submission is still allowed (the `A60/60` preset and a
+deliberate custom over-100 both go through), so legitimate rulings are never
+obstructed.
 
-### F6 — A bare `AVE` override is silently dropped — note (Low)
+### F6 — A bare `AVE` override is silently dropped — DONE (Low)
 
-**Code.** On the pairs traveller path, `outcomeToScore` returns null for any
-string that isn't a played contract / `PO` / `A…` / `W…`. A director override of
-the literal string `AVE`/`AVE+` is therefore treated as a non-scoring line and
-excluded from the field, rather than scored as 50%/60%. Averages must be entered
-as `A50/50` etc.
+**White Book.** A plain `AVE` / `AVE+` / `AVE-` is a legitimate average award.
 
-**Effect.** A data-model trap for any future code (or import) that writes a bare
-`AVE`. The USEBIO test fixture already stores `directorOverrideResult: "AVE"`,
-which the pairs scorer would drop. Worth a validation guard or an explicit
-decode.
+**Code (before).** On the pairs traveller path, `outcomeToScore` returns null
+for any string that isn't a played contract / `PO` / `A…` / `W…`. A director
+override of the literal string `AVE`/`AVE+` was therefore treated as a
+non-scoring line and excluded from the field, rather than scored as 50%/60%.
+
+**Fix.** `normalizeAdjustedToken` (`model/adjusted-score.ts`) maps a bare
+`AVE` → `A50/50`, `AVE+` → `A60/40`, `AVE-` → `A40/60` (case-insensitive;
+NS-perspective). `isAdjustedScore` / `parseAdjustedScore` normalise first, so a
+bare token is recognised and valued as its explicit `A../..` equivalent
+everywhere — the pairs scorer's `artificial` branch, `classifyOutcome`, the
+USEBIO contract fields (still empty, as for any assigned score) and the
+traveller display. A bare `AVE` now scores instead of being dropped from the
+field.
 
 ---
 
@@ -764,9 +778,10 @@ Grouped by what delivers correct published results soonest:
 5. ~~**F14**~~ — RESOLVED. The XIMPQ normaliser is correct as implemented (no
    code change).
 6. ~~**F9**~~ DONE (per-board §4.2.6.1 rounding), ~~**F11/F28**~~ DONE (§4.2.5
-   board-scaling), ~~**F21**~~ DONE (§3.5.2 director-declared mismatch VP). Still
-   open: **F3, F5, F6** — correctness-polish and nuance items. Plus the latent
-   crash ~~**F29**~~ DONE.
+   board-scaling), ~~**F21**~~ DONE (§3.5.2 director-declared mismatch VP,
+   including Part B triple mismatches). ~~**F3, F5, F6**~~ DONE — the
+   correctness-polish items (2dp weighted-score weights; over-100% advisory;
+   bare-`AVE` decode). Plus the latent crash ~~**F29**~~ DONE.
 
 ---
 

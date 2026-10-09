@@ -21,11 +21,20 @@ import {
 import "@/scoring/plugins/register";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { rank } from "@/scoring/overall/rank";
+import { applyRankingExclusion } from "@/scoring/overall/exclude-ranking";
+import {
+  readRankingExclusions,
+  readWithdrawals,
+  type WithdrawalRecord,
+} from "@/db/games/queries/ranking-exclusions";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { ScoringType } from "@/db/games/types/scoring-type";
-import { parseSelectedMovement } from "@/model/selected-movement";
+import {
+  parseSelectedMovement,
+  boardsPerRoundOf,
+} from "@/model/selected-movement";
 import {
   classifyEvent,
   isTwoWinnerPairs,
@@ -34,6 +43,7 @@ import {
 import { calculateSwissXimpVpOverall } from "@/scoring/swiss/swiss-ximp-vp-overall";
 import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
 import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
+import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
 import { calculateTeamsImpAggregateOverall } from "@/scoring/swiss/teams-imp-aggregate-overall";
 import {
   BoardComparisonScoring,
@@ -77,6 +87,44 @@ function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
 }
 
 /**
+ * Apply the §2.4.9 "without standing" ranking exclusion to a computed
+ * leaderboard: drop the excluded participants from the overall ranking (and
+ * from each directional sub-ranking) while leaving their results in the field.
+ * A no-op when nothing is excluded. Applied at the entry points so the pure
+ * compute functions stay exclusion-agnostic.
+ */
+function excludeFromLeaderboard<T extends LeaderboardResult>(
+  result: T,
+  excludedIds: ReadonlySet<string>,
+): T {
+  if (excludedIds.size === 0) return result;
+  return {
+    ...result,
+    overallScore: applyRankingExclusion(result.overallScore, excludedIds),
+    ...(result.directional
+      ? {
+          directional: {
+            ns: {
+              ...result.directional.ns,
+              overallScore: applyRankingExclusion(
+                result.directional.ns.overallScore,
+                excludedIds,
+              ),
+            },
+            ew: {
+              ...result.directional.ew,
+              overallScore: applyRankingExclusion(
+                result.directional.ew.overallScore,
+                excludedIds,
+              ),
+            },
+          },
+        }
+      : {}),
+  };
+}
+
+/**
  * Compute the Swiss VP overall for a set of board rows under the given VP mode.
  * Returns null when there is no Swiss VP mode, so callers fall back to the
  * standard board-pooled overall.
@@ -108,6 +156,7 @@ function scoreBoardsToOverall(
   boardRows: Board[],
   scoringType: ScoringType,
   sectionLabel: string,
+  withdrawers: WithdrawalRecord[] = [],
 ): OverallScore {
   const boardMap = new Map<number, Board[]>();
   for (const row of boardRows) {
@@ -172,6 +221,14 @@ function scoreBoardsToOverall(
   // SIT_OUT rows (i.e. for every non-Swiss / even-field game).
   scoredBoards.push(
     ...swissSitOutScoredBoards(boardMap, scoringType, scoredBoards),
+  );
+
+  // EBU §2.4.3–§2.4.6: the withdrawal credits — the withdrawer's own AVE−
+  // (PENALISED) and its opponents' AVE+ (after-half) / cancel (before-half) on
+  // the boards it did not play. Added as synthetic lines like the sit-out
+  // credit; a no-op when nobody withdrew.
+  scoredBoards.push(
+    ...withdrawalCreditBoards(boardMap, scoringType, scoredBoards, withdrawers),
   );
 
   // EBU White Book §4.2.6.1: round each board's matchpoints to the nearest
@@ -362,6 +419,165 @@ function swissSitOutScoredBoards(
   return synthetic;
 }
 
+/** AVE−/AVE+ as a fraction of the board top. */
+const AVE_MINUS_FRACTION = 0.4;
+const AVE_PLUS_FRACTION = 0.6;
+
+/**
+ * Build synthetic scored boards for the §2.4.3–§2.4.6 withdrawal credits on a
+ * board-pooled pairs event — BOTH the withdrawer's own score (§2.4.5/§2.4.6)
+ * and its opponents' indemnity (§2.4.4). Both act on the SAME rows: the
+ * withdrawer's unplayed (no-result) board rows, each a real head-to-head cell
+ * with the withdrawer on one seat and an opponent on the other.
+ *
+ * Per unplayed row, keyed off whether the withdrawal is BEFORE or AFTER half
+ * the event (counted in boards the withdrawer actually played — §3.2):
+ *
+ * - **Withdrawer seat** (§2.4.5): a PENALISED withdrawer gets AVE−-minus-fine
+ *   `(40 − fine)/100` of the board top, capped at half the event's boards. A
+ *   REMOVE withdrawer gets nothing here (it is dropped from the ranking by the
+ *   §2.4.9 exclusion — crediting it would be pointless).
+ * - **Opponent seat** (§2.4.4): AFTER half → AVE+ (60% of the board top); the
+ *   result against the withdrawer stands and the opponent is indemnified for
+ *   the board it can no longer play. BEFORE half → nothing (the score against
+ *   the withdrawer is CANCELLED, so the opponent simply has one fewer board,
+ *   which the §4.2.3 short-board equalisation already handles — the design §7
+ *   worked example).
+ *
+ * MP uses the board top (read from a real scored board, like the sit-out
+ * credit). IMP/XIMP have no per-board maximum, so both sides get the
+ * field-average (0 net) — the board still counts so neither pair is
+ * under-boarded, matching the sit-out treatment. (Swiss unplayed boards don't
+ * exist as rows; teams / Swiss-VP withdrawals are match-level — see
+ * `teamWithdrawalRulings`.)
+ */
+function withdrawalCreditBoards(
+  boardMap: Map<number, Board[]>,
+  scoringType: ScoringType,
+  playedScoredBoards: ScoredBoard[],
+  withdrawers: WithdrawalRecord[],
+): ScoredBoard[] {
+  if (withdrawers.length === 0) return [];
+  const pluginId = getCombination(scoringType).perBoard;
+  const bySeat = new Map(withdrawers.map((w) => [w.seat, w]));
+
+  // The event's scheduled board count = the distinct board numbers present (the
+  // whole movement is materialised up front for static pairs), for the §2.4.5
+  // half-event AVE− cap and the §2.4.4 before/after-half split.
+  const totalScheduledBoards = boardMap.size;
+  const halfThreshold = Math.ceil(totalScheduledBoards / 2);
+
+  // Boards each withdrawer actually PLAYED (rows with a result), to decide the
+  // before/after-half split per §3.2.
+  const playedBySeat = new Map<string, number>();
+  for (const rows of boardMap.values()) {
+    for (const row of rows) {
+      const result = row.directorOverrideResult ?? row.confirmedResult;
+      if (result == null) continue;
+      for (const seat of [row.ns, row.ew]) {
+        if (bySeat.has(seat)) {
+          playedBySeat.set(seat, (playedBySeat.get(seat) ?? 0) + 1);
+        }
+      }
+    }
+  }
+
+  // Per-round matchpoint top, keyed by board number, from a real scored line.
+  const topByBoard = new Map<number, number>();
+  if (pluginId === "MP") {
+    for (const sb of playedScoredBoards) {
+      const lines = sb.lines as { maxMatchPoints?: number }[];
+      const withTop = lines.find(
+        (l) => typeof l.maxMatchPoints === "number" && l.maxMatchPoints > 0,
+      );
+      if (withTop) topByBoard.set(sb.board, withTop.maxMatchPoints!);
+    }
+  }
+
+  // §2.4.5 cap: the withdrawer's own AVE− applies to at most half the event's
+  // boards, counted per withdrawer.
+  const selfCredited = new Map<string, number>();
+
+  const synthetic: ScoredBoard[] = [];
+
+  for (const [boardNumber, rows] of boardMap) {
+    for (const row of rows) {
+      const result = row.directorOverrideResult ?? row.confirmedResult;
+      if (result != null) continue; // a played board, not an unplayed one
+
+      const nsW = bySeat.get(row.ns);
+      const ewW = bySeat.get(row.ew);
+      const w = nsW ?? ewW;
+      if (!w) continue; // no withdrawer on this unplayed row
+      const withdrawerOnNs = nsW != null;
+
+      const afterHalf = (playedBySeat.get(w.seat) ?? 0) >= halfThreshold;
+
+      // Withdrawer's own §2.4.5 AVE−-minus-fine (PENALISED only, capped).
+      let withdrawerFraction = 0;
+      if (w.treatment === "PENALISED") {
+        const used = selfCredited.get(w.seat) ?? 0;
+        if (used < halfThreshold) {
+          selfCredited.set(w.seat, used + 1);
+          withdrawerFraction = Math.max(0, AVE_MINUS_FRACTION - w.finePercent / 100);
+        }
+      }
+
+      // Opponent's §2.4.4 indemnity: AVE+ after half, nothing (cancel) before.
+      const opponentFraction = afterHalf ? AVE_PLUS_FRACTION : 0;
+
+      // Nothing to credit either side on this row (e.g. before-half REMOVE).
+      if (withdrawerFraction === 0 && opponentFraction === 0) continue;
+
+      const nsFraction = withdrawerOnNs ? withdrawerFraction : opponentFraction;
+      const ewFraction = withdrawerOnNs ? opponentFraction : withdrawerFraction;
+
+      if (pluginId === "MP") {
+        const top = topByBoard.get(boardNumber);
+        if (top == null) continue; // no scored sibling board yet
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            {
+              nsId: row.ns,
+              ewId: row.ew,
+              score: null,
+              maxMatchPoints: top,
+              nsMatchPoints: nsFraction * top,
+              ewMatchPoints: ewFraction * top,
+            },
+          ],
+        });
+      } else if (pluginId === "IMP") {
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            { nsId: row.ns, ewId: row.ew, score: null, nsImps: 0, ewImps: 0 },
+          ],
+        });
+      } else {
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            {
+              nsId: row.ns,
+              ewId: row.ew,
+              score: null,
+              nsCrossImps: 0,
+              ewCrossImps: 0,
+            },
+          ],
+        });
+      }
+    }
+  }
+
+  return synthetic;
+}
+
 type Pairs = Awaited<ReturnType<typeof findPairs>>;
 
 /**
@@ -384,6 +600,7 @@ function computeCombined(
   twoWinner: boolean,
   teams: AssignedTeam[],
   expectedBoards: number | undefined,
+  withdrawals: WithdrawalRecord[],
 ): LeaderboardResult {
   // A board-comparison teams game (BAM/PAB) ranks teams on boards won; a
   // teams-VP game ranks teams on Victory Points; an aggregate-IMP teams game
@@ -410,7 +627,15 @@ function computeCombined(
   }
 
   if (isTeamsVp) {
-    const overallScore = calculateTeamsVpOverall(boardRows, matchRows, {
+    // §2.4.3–§2.4.6: a withdrawn team's unplayed matches score as a §3.3.9
+    // void (withdrawer AVE−, opponent AVE+). Synthesise those rulings in-memory
+    // onto the match rows before scoring — never persisted.
+    const ruledMatches = applyTeamWithdrawalRulings(
+      matchRows,
+      withdrawals,
+      boardRows,
+    );
+    const overallScore = calculateTeamsVpOverall(boardRows, ruledMatches, {
       expectedBoards,
     });
     return { type: overallScore.type, overallScore, participants: teams };
@@ -418,7 +643,7 @@ function computeCombined(
 
   const overallScore =
     scoreSwissVp(boardRows, matchRows, swissVpMode, expectedBoards) ??
-    scoreBoardsToOverall(boardRows, scoringType, gameId);
+    scoreBoardsToOverall(boardRows, scoringType, gameId, withdrawals);
   const participants = pairs.map(toParticipant);
   return {
     type: overallScore.type,
@@ -450,12 +675,23 @@ function computeSections(
   twoWinner: boolean,
   teams: AssignedTeam[],
   expectedBoards: number | undefined,
+  withdrawals: WithdrawalRecord[],
 ): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
   for (const row of boardRows) {
     const arr = rowsBySection.get(row.section) ?? [];
     arr.push(row);
     rowsBySection.set(row.section, arr);
+  }
+
+  // Withdrawers are section-qualified by seat (e.g. "A1NS"); bucket per section
+  // so each section's board-pooled scoring sees only its own withdrawers.
+  const withdrawersBySection = new Map<string, WithdrawalRecord[]>();
+  for (const w of withdrawals) {
+    const section = sectionOf(w.seat);
+    const arr = withdrawersBySection.get(section) ?? [];
+    arr.push(w);
+    withdrawersBySection.set(section, arr);
   }
 
   const matchesBySection = new Map<string, Match[]>();
@@ -525,7 +761,13 @@ function computeSections(
     }
 
     if (isTeamsVp) {
-      const overallScore = calculateTeamsVpOverall(sectionRows, sectionMatches, {
+      // §2.4.3–§2.4.6: void a withdrawn team's unplayed matches (per section).
+      const ruledMatches = applyTeamWithdrawalRulings(
+        sectionMatches,
+        withdrawersBySection.get(section) ?? [],
+        sectionRows,
+      );
+      const overallScore = calculateTeamsVpOverall(sectionRows, ruledMatches, {
         expectedBoards,
       });
       return {
@@ -538,7 +780,12 @@ function computeSections(
 
     const overallScore =
       scoreSwissVp(sectionRows, sectionMatches, swissVpMode, expectedBoards) ??
-      scoreBoardsToOverall(sectionRows, scoringType, section);
+      scoreBoardsToOverall(
+        sectionRows,
+        scoringType,
+        section,
+        withdrawersBySection.get(section) ?? [],
+      );
     const sectionParticipants = (pairsBySection.get(section) ?? []).map(
       toParticipant,
     );
@@ -575,6 +822,8 @@ async function readLeaderboardInputs(
   matchRows: Match[];
   pairs: Pairs;
   teams: AssignedTeam[];
+  excludedFromRanking: Set<string>;
+  withdrawals: WithdrawalRecord[];
 }> {
   const game = await findGameById(gameId);
   // The movement drives event classification (teams VP / Swiss VP / board
@@ -621,10 +870,7 @@ async function readLeaderboardInputs(
   // split (AVE+/AVE− over ⌈N/2⌉ boards). Taken from the movement's per-round
   // board count; undefined when unknown (the void scorer then falls back to the
   // flat §3.3.6.1 scoring).
-  const expectedBoards =
-    movement && "boardsPerRound" in movement
-      ? movement.boardsPerRound
-      : undefined;
+  const expectedBoards = boardsPerRoundOf(movement) ?? undefined;
 
   const needsTeams =
     isTeamsVp || teamsImpAggregate || teamsBoardComparison !== null;
@@ -634,16 +880,25 @@ async function readLeaderboardInputs(
   // teams game OR a Swiss Pairs VP (XIMP/MP) game.
   const needsMatches = needsTeams || swissVpMode !== null;
 
-  const [boardRows, matchRows, pairs, teams] = await Promise.all([
-    db.select().from(boards) as Promise<Board[]>,
-    needsMatches
-      ? (db.select().from(matches) as Promise<Match[]>)
-      : Promise.resolve([] as Match[]),
-    findPairs(db),
-    // Teams are derived from the seating; needed for any teams game (VP,
-    // aggregate IMP, BAM, or PAB).
-    needsTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
-  ]);
+  const [
+    boardRows,
+    matchRows,
+    pairs,
+    teams,
+    excludedFromRanking,
+    withdrawals,
+  ] = await Promise.all([
+      db.select().from(boards) as Promise<Board[]>,
+      needsMatches
+        ? (db.select().from(matches) as Promise<Match[]>)
+        : Promise.resolve([] as Match[]),
+      findPairs(db),
+      // Teams are derived from the seating; needed for any teams game (VP,
+      // aggregate IMP, BAM, or PAB).
+      needsTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
+      readRankingExclusions(db),
+      readWithdrawals(db),
+    ]);
 
   return {
     scoringType: game!.scoringType,
@@ -659,6 +914,8 @@ async function readLeaderboardInputs(
     matchRows,
     pairs,
     teams,
+    excludedFromRanking,
+    withdrawals,
   };
 }
 
@@ -690,6 +947,8 @@ export async function buildLeaderboards(
     matchRows,
     pairs,
     teams,
+    excludedFromRanking,
+    withdrawals,
   } = await readLeaderboardInputs(db, gameId);
 
   const sections = computeSections(
@@ -705,7 +964,8 @@ export async function buildLeaderboards(
     twoWinner,
     teams,
     expectedBoards,
-  );
+    withdrawals,
+  ).map((s) => excludeFromLeaderboard(s, excludedFromRanking));
 
   // The director can turn off the combined overall ranking for a multi-section
   // event, keeping sections separate. It stays on by default, and is always
@@ -715,20 +975,24 @@ export async function buildLeaderboards(
 
   return {
     leaderboard: showCombined
-      ? computeCombined(
-          boardRows,
-          matchRows,
-          pairs,
-          gameId,
-          scoringType,
-          swissVpMode,
-          isTeamsVp,
-          teamsImpAggregate,
-          teamsBoardComparison,
-          barometer,
-          twoWinner,
-          teams,
-          expectedBoards,
+      ? excludeFromLeaderboard(
+          computeCombined(
+            boardRows,
+            matchRows,
+            pairs,
+            gameId,
+            scoringType,
+            swissVpMode,
+            isTeamsVp,
+            teamsImpAggregate,
+            teamsBoardComparison,
+            barometer,
+            twoWinner,
+            teams,
+            expectedBoards,
+            withdrawals,
+          ),
+          excludedFromRanking,
         )
       : null,
     sections,
@@ -758,21 +1022,27 @@ export async function computeLeaderboard(
     matchRows,
     pairs,
     teams,
+    excludedFromRanking,
+    withdrawals,
   } = await readLeaderboardInputs(db, gameId);
-  return computeCombined(
-    boardRows,
-    matchRows,
-    pairs,
-    gameId,
-    scoringType,
-    swissVpMode,
-    isTeamsVp,
-    teamsImpAggregate,
-    teamsBoardComparison,
-    barometer,
-    twoWinner,
-    teams,
-    expectedBoards,
+  return excludeFromLeaderboard(
+    computeCombined(
+      boardRows,
+      matchRows,
+      pairs,
+      gameId,
+      scoringType,
+      swissVpMode,
+      isTeamsVp,
+      teamsImpAggregate,
+      teamsBoardComparison,
+      barometer,
+      twoWinner,
+      teams,
+      expectedBoards,
+      withdrawals,
+    ),
+    excludedFromRanking,
   );
 }
 
@@ -799,6 +1069,8 @@ export async function computeSectionLeaderboards(
     matchRows,
     pairs,
     teams,
+    excludedFromRanking,
+    withdrawals,
   } = await readLeaderboardInputs(db, gameId);
   return computeSections(
     boardRows,
@@ -813,7 +1085,8 @@ export async function computeSectionLeaderboards(
     twoWinner,
     teams,
     expectedBoards,
-  );
+    withdrawals,
+  ).map((s) => excludeFromLeaderboard(s, excludedFromRanking));
 }
 
 /**
@@ -854,6 +1127,13 @@ export async function computeSectionLeaderboardsAsOf(
   const earlierMatches = matchRows.filter(
     (m) => m.roundNumber < maxRoundExclusive,
   );
+  // NOTE: neither the §2.4.9 ranking exclusion NOR the §2.4.5/§2.4.6 withdrawer
+  // self-credit is applied here (hence the empty withdrawers list). This
+  // function reconstructs the standings order that drove a past round's Swiss
+  // draw, for §3.5 mismatch detection. The draw at the time ranked EVERY seated
+  // contestant on their REAL results — withdrawal is a scoring-time concern, not
+  // a draw-time one — so applying either here would make the replayed "correct
+  // opponents" diverge from the deterministic draw and flag false mismatches.
   return computeSections(
     earlierRows,
     earlierMatches,
@@ -867,5 +1147,6 @@ export async function computeSectionLeaderboardsAsOf(
     twoWinner,
     teams,
     expectedBoards,
+    [],
   );
 }

@@ -37,8 +37,15 @@ export function StepWeightedScore({ onSubmit }: Props) {
   const [phase, setPhase] = useState<Phase>({ step: "list" });
   const [weight, setWeight] = useState(100);
 
-  const totalWeight = components.reduce((sum, c) => sum + c.weight, 0);
-  const remaining = 100 - totalWeight;
+  // Weights may carry up to 2 decimal places (e.g. a 33.33/33.33/33.34 split),
+  // so track totals in whole "cents of a percent" to avoid binary-float drift
+  // and round the displayed figures to 2dp.
+  const totalCents = components.reduce(
+    (sum, c) => sum + Math.round(c.weight * 100),
+    0,
+  );
+  const totalWeight = totalCents / 100;
+  const remaining = (10000 - totalCents) / 100;
 
   function removeComponent(index: number) {
     setComponents((prev) => prev.filter((_, i) => i !== index));
@@ -84,7 +91,9 @@ export function StepWeightedScore({ onSubmit }: Props) {
 
   function handleWeightConfirmed() {
     if (phase.step !== "weight") return;
-    const clamped = Math.min(Math.max(1, Math.round(weight)), remaining);
+    // Allow up to 2 decimal places; clamp into (0, remaining].
+    const rounded = Math.round(weight * 100) / 100;
+    const clamped = Math.min(Math.max(0.01, rounded), remaining);
     setComponents((prev) => [
       ...prev,
       { contract: phase.contract, weight: clamped },
@@ -243,8 +252,9 @@ export function StepWeightedScore({ onSubmit }: Props) {
           </p>
           <input
             type="number"
-            min={1}
+            min={0.01}
             max={maxWeight}
+            step={0.01}
             value={weight}
             onChange={(e) => setWeight(Number(e.target.value))}
             className="w-24 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -252,7 +262,7 @@ export function StepWeightedScore({ onSubmit }: Props) {
           />
           <button
             type="button"
-            disabled={weight < 1 || weight > maxWeight}
+            disabled={weight <= 0 || weight > maxWeight}
             onClick={handleWeightConfirmed}
             className="w-full max-w-xs bg-blue-600 text-white py-3 text-lg font-bold rounded-xl disabled:opacity-40"
           >
