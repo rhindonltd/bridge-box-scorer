@@ -21,8 +21,14 @@ describe("isAdjustedScore", () => {
     expect(isAdjustedScore("3NTN=")).toBe(false);
     expect(isAdjustedScore("PO")).toBe(false);
     expect(isAdjustedScore("NP")).toBe(false);
-    expect(isAdjustedScore("AVE")).toBe(false);
     expect(isAdjustedScore("W80*3NTN=;20*3NTN+1")).toBe(false);
+  });
+
+  it("recognises bare average tokens (F6)", () => {
+    expect(isAdjustedScore("AVE")).toBe(true);
+    expect(isAdjustedScore("AVE+")).toBe(true);
+    expect(isAdjustedScore("AVE-")).toBe(true);
+    expect(isAdjustedScore("ave")).toBe(true); // case-insensitive
   });
 });
 
@@ -32,9 +38,14 @@ describe("parseAdjustedScore", () => {
     expect(parseAdjustedScore("A100/0")).toEqual({ ns: 100, ew: 0 });
   });
 
+  it("decodes bare average tokens to their percentages (F6)", () => {
+    expect(parseAdjustedScore("AVE")).toEqual({ ns: 50, ew: 50 });
+    expect(parseAdjustedScore("AVE+")).toEqual({ ns: 60, ew: 40 });
+    expect(parseAdjustedScore("AVE-")).toEqual({ ns: 40, ew: 60 });
+  });
+
   it("returns null for a non-adjusted outcome", () => {
     expect(parseAdjustedScore("3NTN=")).toBeNull();
-    expect(parseAdjustedScore("AVE")).toBeNull();
   });
 });
 
@@ -112,6 +123,37 @@ describe("parseWeightedScore", () => {
   it("returns null for weights not summing to 100", () => {
     expect(parseWeightedScore("W50*3NTN=")).toBeNull();
   });
+
+  it("parses 2-decimal-place weights summing to 100 (F3)", () => {
+    expect(
+      parseWeightedScore("W33.33*3NTN=;33.33*3NTN+1;33.34*3NTN-1"),
+    ).toEqual([
+      { weight: 33.33, contract: "3NTN=" },
+      { weight: 33.33, contract: "3NTN+1" },
+      { weight: 33.34, contract: "3NTN-1" },
+    ]);
+  });
+
+  it("accepts a single decimal place", () => {
+    expect(parseWeightedScore("W12.5*3NTN=;87.5*3NTN+1")).toEqual([
+      { weight: 12.5, contract: "3NTN=" },
+      { weight: 87.5, contract: "3NTN+1" },
+    ]);
+  });
+
+  it("rejects more than 2 decimal places", () => {
+    expect(parseWeightedScore("W33.333*3NTN=;66.667*3NTN+1")).toBeNull();
+  });
+
+  it("rejects 2dp weights that miss 100 by a basis point", () => {
+    expect(
+      parseWeightedScore("W33.33*3NTN=;33.33*3NTN+1;33.33*3NTN-1"),
+    ).toBeNull();
+  });
+
+  it("rejects a zero weight", () => {
+    expect(parseWeightedScore("W0*3NTN=;100*3NTN+1")).toBeNull();
+  });
 });
 
 describe("buildWeightedScore", () => {
@@ -147,6 +189,39 @@ describe("buildWeightedScore", () => {
     expect(() =>
       buildWeightedScore([{ weight: 50, contract: "3NTN=" }]),
     ).toThrow("sum to 100");
+  });
+
+  it("serialises 2dp weights, trimming trailing zeros (F3)", () => {
+    const components: WeightedComponent[] = [
+      { weight: 33.33, contract: "3NTN=" },
+      { weight: 33.33, contract: "3NTN+1" },
+      { weight: 33.34, contract: "3NTN-1" },
+    ];
+    expect(buildWeightedScore(components)).toBe(
+      "W33.33*3NTN=;33.33*3NTN+1;33.34*3NTN-1",
+    );
+    expect(parseWeightedScore(buildWeightedScore(components))).toEqual(
+      components,
+    );
+  });
+
+  it("keeps integer weights integer and a single decimal single", () => {
+    expect(
+      buildWeightedScore([
+        { weight: 12.5, contract: "3NTN=" },
+        { weight: 87.5, contract: "3NTN+1" },
+      ]),
+    ).toBe("W12.5*3NTN=;87.5*3NTN+1");
+  });
+
+  it("accepts 2dp weights that sum to 100 in basis points", () => {
+    expect(() =>
+      buildWeightedScore([
+        { weight: 33.33, contract: "3NTN=" },
+        { weight: 33.33, contract: "3NTN+1" },
+        { weight: 33.34, contract: "3NTN-1" },
+      ]),
+    ).not.toThrow();
   });
 });
 

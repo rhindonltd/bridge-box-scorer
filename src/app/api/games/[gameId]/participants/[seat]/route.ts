@@ -2,6 +2,7 @@ import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { ClientError, respondToActionError } from "@/lib/api/client-error";
 import { deleteParticipant } from "@/db/games/actions/delete-participant";
+import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { isPairSeat, type Seat } from "@/model/participants";
 
@@ -28,6 +29,18 @@ export const DELETE = withDirectorRoute(async ({ gameId, req }) => {
     if (!seat || !isPairSeat(seat as Seat)) {
       // A malformed seat is a caller error, not a server fault.
       throw new ClientError("Invalid seat");
+    }
+
+    // Eviction hard-deletes the participant (and its player rows). Once the
+    // game has started, the pair owns board rows (and a matches FK), so a hard
+    // delete would orphan them. Removing a seated pair mid-game is a WITHDRAWAL
+    // (a scored event — see docs/design/withdrawals-late-arrivals.md), not an
+    // eviction. Block it here, mirroring the player `leave-table` post-start
+    // guard; the withdrawal flow will supersede this path.
+    if (await isGameStarted(gameId)) {
+      throw new ClientError(
+        "The game has already started; a seated pair can no longer be evicted.",
+      );
     }
 
     await deleteParticipant(gameId, seat as Seat);

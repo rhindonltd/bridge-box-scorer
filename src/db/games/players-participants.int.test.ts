@@ -128,4 +128,108 @@ describe("games db: players and participants", () => {
       deleteParticipant(harness.gameId, "Z9NS" as PairSeat),
     ).resolves.toBeUndefined();
   });
+
+  it("a freshly seated participant defaults to ACTIVE standing", async () => {
+    await seatPair("A4NS");
+    const db = (await harness.getDb()) as Db;
+    const { participants } = await import("@/db/games/tables/participants");
+    const row = db.select().from(participants).all()[0];
+    expect(row.standing).toBe("ACTIVE");
+    expect(row.withdrawnInRound).toBeNull();
+    expect(row.withdrawalTreatment).toBeNull();
+    expect(row.withdrawalFinePercent).toBeNull();
+  });
+
+  it("withdraws a participant (PENALISED) without deleting any rows", async () => {
+    const { p1, p2 } = await seatPair("A5NS");
+    const { withdrawParticipant } = await import(
+      "@/db/games/actions/withdraw-participant"
+    );
+    const db = (await harness.getDb()) as Db;
+
+    const ok = await withdrawParticipant(harness.gameId, "A5NS", {
+      standing: "WITHDRAWN",
+      withdrawnInRound: 3,
+      treatment: "PENALISED",
+      finePercent: 20,
+    });
+    expect(ok).toBe(true);
+
+    const { participants } = await import("@/db/games/tables/participants");
+    const { players } = await import("@/db/games/tables/players");
+    const row = db.select().from(participants).all()[0];
+    expect(row.standing).toBe("WITHDRAWN");
+    expect(row.withdrawnInRound).toBe(3);
+    expect(row.withdrawalTreatment).toBe("PENALISED");
+    expect(row.withdrawalFinePercent).toBe(20);
+    // The participant and BOTH player rows survive (unlike eviction).
+    const remainingIds = db.select().from(players).all().map((r) => r.id);
+    expect(remainingIds).toContain(p1.id);
+    expect(remainingIds).toContain(p2.id);
+  });
+
+  it("clamps the §2.4.5 fine into 0..40 and clears it for REMOVE", async () => {
+    await seatPair("A6NS");
+    const { withdrawParticipant } = await import(
+      "@/db/games/actions/withdraw-participant"
+    );
+    const { participants } = await import("@/db/games/tables/participants");
+    const db = (await harness.getDb()) as Db;
+
+    // Over-max fine is clamped to 40.
+    await withdrawParticipant(harness.gameId, "A6NS", {
+      standing: "WITHDRAWN",
+      withdrawnInRound: 2,
+      treatment: "PENALISED",
+      finePercent: 99,
+    });
+    expect(db.select().from(participants).all()[0].withdrawalFinePercent).toBe(40);
+
+    // REMOVE carries no fine, even if a stale one was set before.
+    await withdrawParticipant(harness.gameId, "A6NS", {
+      standing: "WITHDRAWN",
+      withdrawnInRound: 2,
+      treatment: "REMOVE",
+    });
+    const removed = db.select().from(participants).all()[0];
+    expect(removed.withdrawalTreatment).toBe("REMOVE");
+    expect(removed.withdrawalFinePercent).toBeNull();
+  });
+
+  it("marks a WITHOUT_STANDING substitute and clears withdrawal fields", async () => {
+    await seatPair("A7NS");
+    const { withdrawParticipant } = await import(
+      "@/db/games/actions/withdraw-participant"
+    );
+    const { participants } = await import("@/db/games/tables/participants");
+    const db = (await harness.getDb()) as Db;
+
+    // First withdraw, then flip to without-standing: the withdrawal fields clear.
+    await withdrawParticipant(harness.gameId, "A7NS", {
+      standing: "WITHDRAWN",
+      withdrawnInRound: 1,
+      treatment: "PENALISED",
+      finePercent: 10,
+    });
+    await withdrawParticipant(harness.gameId, "A7NS", {
+      standing: "WITHOUT_STANDING",
+    });
+    const row = db.select().from(participants).all()[0];
+    expect(row.standing).toBe("WITHOUT_STANDING");
+    expect(row.withdrawnInRound).toBeNull();
+    expect(row.withdrawalTreatment).toBeNull();
+    expect(row.withdrawalFinePercent).toBeNull();
+  });
+
+  it("is a no-op (false) withdrawing a participant that does not exist", async () => {
+    const { withdrawParticipant } = await import(
+      "@/db/games/actions/withdraw-participant"
+    );
+    const ok = await withdrawParticipant(harness.gameId, "Z9NS", {
+      standing: "WITHDRAWN",
+      withdrawnInRound: 1,
+      treatment: "REMOVE",
+    });
+    expect(ok).toBe(false);
+  });
 });

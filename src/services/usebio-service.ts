@@ -5,6 +5,12 @@ import { findTeams } from "@/db/games/queries/find-teams";
 import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { findSections } from "@/db/games/queries/find-sections";
+import {
+  readRankingExclusions,
+  readWithdrawals,
+} from "@/db/games/queries/ranking-exclusions";
+import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
+import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
 import { formatPairNumber, sectionOf } from "@/model/participants";
 import { Club } from "@/db/system/schema";
 import {
@@ -17,7 +23,10 @@ import { assembleSwissPairs } from "@/lib/usebio/assemble-swiss-pairs";
 import { assembleSwissTeams } from "@/lib/usebio/assemble-swiss-teams";
 import { assembleImpAggregateTeams } from "@/lib/usebio/assemble-imp-aggregate-teams";
 import { assembleBoardComparisonTeams } from "@/lib/usebio/assemble-board-comparison-teams";
-import { parseSelectedMovement } from "@/model/selected-movement";
+import {
+  parseSelectedMovement,
+  boardsPerRoundOf,
+} from "@/model/selected-movement";
 import { classifyEvent } from "@/model/event-format";
 import { Card } from "@/model/common";
 import { BoardOutcome } from "@/model/score";
@@ -35,22 +44,53 @@ import { BoardOutcome } from "@/model/score";
  *  - everything else -> the standard MP/Butler/XIMP pairs file.
  */
 export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
-  const movement = parseSelectedMovement(game.selectedMovement);
+  // The movement is stored PER SECTION for Swiss/Swiss-Teams games (not on the
+  // game-index row), so fall back to a section movement when the index copy is
+  // absent — matching the leaderboard's classification (and needed to size the
+  // §3.3.9 withdrawal void split).
+  const movement =
+    parseSelectedMovement(game.selectedMovement) ??
+    (await getAnySectionMovement(db));
   const { format, swissVpMode } = classifyEvent(
     game.gameType,
     game.scoringType,
     movement,
   );
 
+  // The expected boards per teams match, to size the §3.3.9 void split; the
+  // void scorer falls back to the flat §3.3.6.1 40% when it is unknown.
+  const expectedBoards = boardsPerRoundOf(movement) ?? undefined;
+
+  // EBU §2.4.9 — the without-standing / removed-withdrawn contestants dropped
+  // from the ranking (but whose results still count for opponents). The same
+  // set the live leaderboard uses, so the published file and the board agree.
+  const excludedFromRanking = await readRankingExclusions(db);
+
   switch (format) {
     case "TEAMS_VP": {
-      const [teams, boardRows, matchRows] = await Promise.all([
+      const [teams, boardRows, matchRows, withdrawals] = await Promise.all([
         findTeams(db),
         db.select().from(boards),
         db.select().from(matches),
+        readWithdrawals(db),
       ]);
+      // §2.4.3–§2.4.6: void a withdrawn team's unplayed matches in-memory
+      // (never persisted), so the published file matches the live leaderboard.
+      const ruledMatches = applyTeamWithdrawalRulings(
+        matchRows,
+        withdrawals,
+        boardRows,
+      );
       return generateUsebioXml(
-        assembleSwissTeams(game, club, teams, boardRows, matchRows),
+        assembleSwissTeams(
+          game,
+          club,
+          teams,
+          boardRows,
+          ruledMatches,
+          excludedFromRanking,
+          expectedBoards,
+        ),
       );
     }
     case "TEAMS_IMP_AGG": {
@@ -60,7 +100,14 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
         db.select().from(matches),
       ]);
       return generateUsebioXml(
-        assembleImpAggregateTeams(game, club, teams, boardRows, matchRows),
+        assembleImpAggregateTeams(
+          game,
+          club,
+          teams,
+          boardRows,
+          matchRows,
+          excludedFromRanking,
+        ),
       );
     }
     case "TEAMS_BAM":
@@ -79,6 +126,7 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
           boardRows,
           matchRows,
           scoring,
+          excludedFromRanking,
         ),
       );
     }
@@ -93,15 +141,28 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
       // agrees with how the leaderboard scores an XIMP/MP Swiss event.
       const mode = swissVpMode === "MP" ? "MP" : "XIMP";
       return generateUsebioXml(
-        assembleSwissPairs(game, club, pairs, boardRows, matchRows, mode),
+        assembleSwissPairs(
+          game,
+          club,
+          pairs,
+          boardRows,
+          matchRows,
+          mode,
+          excludedFromRanking,
+        ),
       );
     }
     case "PAIRS_BOARD":
-      return generateMpPairsUsebio(db, game, club);
+      return generateMpPairsUsebio(db, game, club, excludedFromRanking);
   }
 }
 
-async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
+async function generateMpPairsUsebio(
+  db: Db,
+  game: BridgeGame,
+  club: Club,
+  excludedFromRanking: ReadonlySet<string>,
+) {
   // Get participants (pairs)
   const pairs = await findPairs(db);
 
@@ -172,6 +233,7 @@ async function generateMpPairsUsebio(db: Db, game: BridgeGame, club: Club) {
     boards: boardNumbers.size,
     pairs: usebioPairs,
     boardResults,
+    excludedFromRanking,
   };
 
   return generateUsebioXml(usebioData);

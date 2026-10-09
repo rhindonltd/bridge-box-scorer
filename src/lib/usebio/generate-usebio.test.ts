@@ -169,6 +169,31 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("<PLACE>1</PLACE>");
     });
 
+    it("drops a §2.4.9 without-standing pair from the placings but keeps it a participant", () => {
+      const data = makeBasicGameData();
+      // The default section is "A", so the section-qualified id of pair "2NS"
+      // is "A2NS".
+      const xml = generateUsebioXml({
+        ...data,
+        excludedFromRanking: new Set(["A2NS"]),
+      });
+
+      // 2NS is still listed as a PARTICIPANT...
+      expect(xml).toContain("<PAIR_NUMBER>2NS</PAIR_NUMBER>");
+      // ...but its PAIR element carries no PERCENTAGE / PLACE.
+      const block2ns = xml
+        .split("<PAIR_NUMBER>2NS</PAIR_NUMBER>")[1]
+        .split("</PAIR>")[0];
+      expect(block2ns).not.toContain("<PERCENTAGE>");
+      expect(block2ns).not.toContain("<PLACE>");
+
+      // Its opponent 1NS still has a placing (its results stood).
+      const block1ns = xml
+        .split("<PAIR_NUMBER>1NS</PAIR_NUMBER>")[1]
+        .split("</PAIR>")[0];
+      expect(block1ns).toContain("<PLACE>");
+    });
+
     it("includes player names", () => {
       const xml = generateUsebioXml(makeBasicGameData());
       expect(xml).toContain("<PLAYER_NAME>Alice Smith</PLAYER_NAME>");

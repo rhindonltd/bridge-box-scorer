@@ -358,3 +358,76 @@ describe("assembleSwissTeams", () => {
     expect(match.opposingTeamScore).toBeGreaterThan(match.teamScore);
   });
 });
+
+import { voidMatchVp } from "@/model/teams-match-void";
+import type { TeamMatchStructureRow } from "@/scoring/swiss/team-match";
+
+describe("assembleSwissTeams — §3.3.9 void match (whole-team withdrawal)", () => {
+  const teams = [team(1, "Sharks"), team(2, "Dragons")];
+
+  /** A single unplayed TEAMS match row carrying a void ruling, over N boards. */
+  function voidMatchRows(
+    ruling: string,
+    boardStart: number,
+    boardEnd: number,
+  ): TeamMatchStructureRow[] {
+    return [
+      {
+        section: "A",
+        roundNumber: 1,
+        kind: "TEAMS",
+        home: "A1NS",
+        opponent: "A2NS",
+        groupId: null,
+        vpPool: 20,
+        boardStart,
+        boardEnd,
+        ruling,
+      },
+    ];
+  }
+
+  it("credits the void VP split (withdrawer AVE−, opponent AVE+) over the expected boards", () => {
+    // An unplayed, voided 2-board match: no board rows, VOID:SHORT_OFFENDER_NS
+    // (home = withdrawer). The export must mirror the leaderboard's void VP.
+    const expectedBoards = 2;
+    const data = assembleSwissTeamsImpl(
+      game,
+      club,
+      teams,
+      [],
+      voidMatchRows("VOID:SHORT_OFFENDER_NS", 1, 2),
+      new Set(),
+      expectedBoards,
+    );
+
+    const expected = voidMatchVp("SHORT_OFFENDER_NS", 20, expectedBoards);
+    const match = data.matches[0];
+    expect(match.teamScore).toBe(expected.home);
+    expect(match.opposingTeamScore).toBe(expected.opponent);
+    // Opponent indemnified above average, withdrawer below it.
+    expect(match.opposingTeamScore).toBeGreaterThan(10);
+    expect(match.teamScore).toBeLessThan(10);
+  });
+
+  it("falls back to the flat 40% (both sides) when the board count is unknown", () => {
+    // Without a board count a SHORT_* void cannot be sized, so the model falls
+    // back to the §3.3.6.1 flat 40% to BOTH sides (8/8) — the export mirrors it.
+    const data = assembleSwissTeamsImpl(
+      game,
+      club,
+      teams,
+      [],
+      voidMatchRows("VOID:SHORT_OFFENDER_NS", 1, 2),
+      new Set(),
+      undefined,
+    );
+
+    const expected = voidMatchVp("SHORT_OFFENDER_NS", 20, undefined);
+    const match = data.matches[0];
+    expect(match.teamScore).toBe(expected.home);
+    expect(match.opposingTeamScore).toBe(expected.opponent);
+    expect(match.teamScore).toBe(8);
+    expect(match.opposingTeamScore).toBe(8);
+  });
+});

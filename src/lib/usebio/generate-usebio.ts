@@ -94,6 +94,13 @@ export type UsebioPairsData = {
   boards: number;
   pairs: UsebioPair[];
   boardResults: UsebioBoardResult[];
+  /**
+   * EBU §2.4.9 — section-qualified seats (e.g. "A1NS") whose pair is "without
+   * standing" / removed-withdrawn: dropped from the exported placing (no
+   * PERCENTAGE / PLACE), though its results still count for its opponents.
+   * Optional; absent/empty means nobody is excluded.
+   */
+  excludedFromRanking?: ReadonlySet<string>;
 };
 
 /**
@@ -460,6 +467,8 @@ function generateMpPairsXml(data: UsebioPairsData): string {
   // its own participants, boards and (independently computed) placings.
   const session = event.ele("SESSION", { SESSION_ID: "1" });
 
+  const excludedQualified = data.excludedFromRanking ?? new Set<string>();
+
   for (const sectionId of sectionIds) {
     const sectionPairs = data.pairs.filter(
       (p) => (p.section ?? defaultSection) === sectionId,
@@ -468,8 +477,24 @@ function generateMpPairsXml(data: UsebioPairsData): string {
       (r) => (r.section ?? defaultSection) === sectionId,
     );
 
+    // Pair numbers in this path are section-LOCAL (e.g. "1NS"); the exclusion
+    // set is section-QUALIFIED ("A1NS"). Reduce it to the section-local numbers
+    // whose qualified id (sectionId + number) is excluded.
+    const excludedLocal = new Set<string>();
+    for (const pair of sectionPairs) {
+      if (excludedQualified.has(sectionId + pair.pairNumber)) {
+        excludedLocal.add(pair.pairNumber);
+      }
+    }
+
     const section = session.ele("SECTION", { SECTION_ID: sectionId });
-    appendSectionContent(section, data.scoringType, sectionPairs, sectionResults);
+    appendSectionContent(
+      section,
+      data.scoringType,
+      sectionPairs,
+      sectionResults,
+      excludedLocal,
+    );
   }
 
   return doc.end({ prettyPrint: true, indent: "  " });
@@ -487,10 +512,17 @@ function appendSectionContent(
   scoringType: ScoringType,
   pairs: UsebioPair[],
   boardResults: UsebioBoardResult[],
+  excludedPairNumbers: ReadonlySet<string> = new Set(),
 ): void {
   // Placings per pair (inline on each PAIR, USEBIO-style) rather than a
-  // separate RANKING block — scoped to this section's field.
-  const ranking = computeOverallRanking(scoringType, boardResults);
+  // separate RANKING block — scoped to this section's field. A §2.4.9
+  // without-standing pair is dropped from the placings (it stays a PARTICIPANT
+  // but carries no PERCENTAGE/PLACE); its results still counted for opponents.
+  const ranking = computeOverallRanking(
+    scoringType,
+    boardResults,
+    excludedPairNumbers,
+  );
   const rankByPair = new Map(ranking.map((r) => [r.pairNumber, r]));
 
   // PARTICIPANTS — each pair carries its placing inline.
@@ -918,6 +950,7 @@ type RankEntry = {
 function computeOverallRanking(
   scoringType: ScoringType,
   boardResults: UsebioBoardResult[],
+  excludedPairNumbers: ReadonlySet<string> = new Set(),
 ): RankEntry[] {
   const totals = new Map<string, PairTotals>();
   const descriptor = scoreDescriptorFor(scoringType);
@@ -976,6 +1009,10 @@ function computeOverallRanking(
 
   const entries: RankEntry[] = [];
   for (const [pairNumber, pairData] of totals) {
+    // §2.4.9: a without-standing pair is dropped from the placings. Its board
+    // results already accumulated into every opponent's totals above, so the
+    // opponents' percentages stand; only this pair gets no ranked entry.
+    if (excludedPairNumbers.has(pairNumber)) continue;
     const percentage =
       pairData.max > 0
         ? ((pairData.total / pairData.max) * 100).toFixed(2)

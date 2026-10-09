@@ -155,7 +155,12 @@ describe("isAdjustedScore", () => {
   it("returns false for non-adjusted outcomes", () => {
     expect(isAdjustedScore("3NTN=")).toBe(false);
     expect(isAdjustedScore("PO")).toBe(false);
-    expect(isAdjustedScore("AVE")).toBe(false);
+  });
+
+  it("recognises bare average tokens (F6)", () => {
+    expect(isAdjustedScore("AVE")).toBe(true);
+    expect(isAdjustedScore("AVE+")).toBe(true);
+    expect(isAdjustedScore("AVE-")).toBe(true);
   });
 });
 
@@ -165,9 +170,12 @@ describe("parseAdjustedScore", () => {
     expect(parseAdjustedScore("A100/0")).toEqual({ ns: 100, ew: 0 });
   });
 
+  it("decodes a bare AVE token (F6)", () => {
+    expect(parseAdjustedScore("AVE")).toEqual({ ns: 50, ew: 50 });
+  });
+
   it("returns null for a non-adjusted outcome", () => {
     expect(parseAdjustedScore("3NTN=")).toBeNull();
-    expect(parseAdjustedScore("AVE")).toBeNull();
   });
 });
 

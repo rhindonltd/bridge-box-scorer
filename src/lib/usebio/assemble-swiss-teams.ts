@@ -8,11 +8,15 @@ import { impVpWinner } from "@/scoring/swiss/imp-vp-table";
 import {
   groupTeamMatches,
   groupTeamTriples,
+  matchVoidCause,
   teamMatchBoardImps,
   tripleVpPool,
   boardResult,
+  type TeamMatch,
+  type TeamMatchRow,
   type TeamMatchStructureRow,
 } from "@/scoring/swiss/team-match";
+import { voidMatchVp } from "@/model/teams-match-void";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
 import {
@@ -46,6 +50,8 @@ export function assembleSwissTeams(
   teams: AssignedTeam[],
   boardRows: Board[],
   matchRows: TeamMatchStructureRow[],
+  excludedFromRanking: ReadonlySet<string> = new Set(),
+  expectedBoards?: number,
 ): UsebioSwissTeamsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -76,8 +82,9 @@ export function assembleSwissTeams(
     boardRows,
     matchRows,
     numberByTeamId,
+    expectedBoards,
   );
-  const ranking = buildRanking(totals, numberByTeamId);
+  const ranking = buildRanking(totals, numberByTeamId, excludedFromRanking);
 
   const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
 
@@ -109,6 +116,7 @@ function buildUsebioMatches(
   boardRows: Board[],
   matchRows: TeamMatchStructureRow[],
   numberByTeamId: Map<string, string>,
+  expectedBoards?: number,
 ): { matches: UsebioSwissTeamsMatch[]; totals: Map<string, number> } {
   const totals = new Map<string, number>();
   const addVp = (teamId: string, vp: number): void => {
@@ -144,7 +152,13 @@ function buildUsebioMatches(
     const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
     /* v8 ignore stop */
 
-    const { teamScore, opposingTeamScore } = matchVp(margin, boardsPlayed);
+    const { teamScore, opposingTeamScore } = teamsVpSplit(
+      match,
+      margin,
+      boardsPlayed,
+      20,
+      expectedBoards,
+    );
     addVp(homeTeamId, teamScore);
     addVp(opponentTeamId, opposingTeamScore);
 
@@ -215,6 +229,30 @@ function teamTravellerLine(row: Board, direction: string): UsebioTeamTravellerLi
 }
 
 /**
+ * The integer VP split for an ordinary two-team match, honouring a §3.3.6 /
+ * §3.3.9 VOID ruling the match may carry (incl. the whole-team withdrawal void
+ * the leaderboard synthesises): a void match credits each team a ruling VP
+ * (flat 40%/60%, or the §3.3.9 AVE+/AVE− half-board split over `expectedBoards`)
+ * instead of a margin → VP, exactly as `calculateTeamsVpOverall` does — so the
+ * published file agrees with the live standings. Falls back to the ordinary
+ * margin → VP split ({@link matchVp}) when the match is not void.
+ */
+function teamsVpSplit(
+  match: TeamMatch<TeamMatchRow>,
+  margin: number,
+  boardsPlayed: number,
+  pool: 10 | 20,
+  expectedBoards: number | undefined,
+): { teamScore: number; opposingTeamScore: number } {
+  const voidCause = matchVoidCause(match);
+  if (voidCause != null) {
+    const { home, opponent } = voidMatchVp(voidCause, pool, expectedBoards);
+    return { teamScore: home, opposingTeamScore: opponent };
+  }
+  return matchVp(margin, boardsPlayed, pool);
+}
+
+/**
  * The integer VP split for a match given the primary team's net IMP margin over
  * the boards both rooms have scored, on the given pool (20 for an ordinary
  * full match or a long-triple comparison; 10 for a short-triple half
@@ -238,16 +276,23 @@ function matchVp(
     : { teamScore: loserVP, opposingTeamScore: winnerVP };
 }
 
-/** Rank teams by total VP (highest first), ties share a place. */
+/**
+ * Rank teams by total VP (highest first), ties share a place. A §2.4.9
+ * without-standing / removed-withdrawn team is dropped from the ranking; its
+ * results still counted for opponents (already in `totals`).
+ */
 function buildRanking(
   totals: Map<string, number>,
   numberByTeamId: Map<string, string>,
+  excludedFromRanking: ReadonlySet<string>,
 ): UsebioVpRankEntry[] {
   const ranked = rank(
-    Array.from(totals.entries()).map(([teamId, totalVP]) => ({
-      teamId,
-      totalVP,
-    })),
+    Array.from(totals.entries())
+      .filter(([teamId]) => !excludedFromRanking.has(teamId))
+      .map(([teamId, totalVP]) => ({
+        teamId,
+        totalVP,
+      })),
     (row) => row.totalVP,
   );
 
