@@ -4,6 +4,7 @@ import { getDb } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { and, eq } from "drizzle-orm";
 import { SectionLetter } from "@/model/participants";
+import { PHANTOM_SEAT } from "@/model/phantom-seat";
 import {
   buildSectionRows,
   insertSectionDrafts,
@@ -21,12 +22,10 @@ import type {
 } from "@/services/materialize-movement";
 
 /**
- * Phantom participant id used for the empty seat on a Swiss sit-out row. It is
- * not a valid seat, so the board-history reader ignores it (only the real
- * sitting-out pair is recorded as having had a bye). Kept distinct from any
- * real pair's seat id.
+ * Phantom participant id for the empty seat on a Swiss sit-out / HALF_AVERAGE
+ * row. Re-exported local alias of the shared {@link PHANTOM_SEAT}.
  */
-const SWISS_SIT_OUT_PHANTOM = "PHANTOM";
+const SWISS_SIT_OUT_PHANTOM = PHANTOM_SEAT;
 
 /**
  * The stable, section-UNqualified movement id for a Swiss pair: its bare pair

@@ -212,6 +212,8 @@ describe("registerDrawNextTeamsRoundHandler (commit)", () => {
     );
     expect(io.to).toHaveBeenCalled();
     expect(broadcastLeaderboardChanged).toHaveBeenCalledWith(io, "g1");
+    // The newly-drawn round's clock is resumed for the section.
+    expect(resumeTimerAfterDraw).toHaveBeenCalledWith(io, "g1", "A");
     expect(ack).toHaveBeenCalledWith({
       success: true,
       data: { roundNumber: 2 },

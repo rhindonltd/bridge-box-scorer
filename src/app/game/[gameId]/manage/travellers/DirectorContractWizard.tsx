@@ -2,15 +2,10 @@
 
 import { useState } from "react";
 
-import {
-  ContractCode,
-  ContractSuit,
-  Doubling,
-  Level,
-  buildContractCode,
-} from "@/model/contract";
-import { Card, Direction, Rank, Suit } from "@/model/common";
+import { ContractCode, buildContractCode } from "@/model/contract";
+import { Card } from "@/model/common";
 import { PlayedContractCode, SpecialBoardOutcome } from "@/model/result";
+import { useContractEntry } from "@/hooks/use-contract-entry";
 
 import { StepLevel } from "@/components/contract-wizard/StepLevel";
 import { StepSuit } from "@/components/contract-wizard/StepSuit";
@@ -145,64 +140,29 @@ export function DirectorContractWizard({
   //        13=Mismatch(Swiss)
   const [step, setStep] = useState(0);
 
-  // Contract state
-  const [level, setLevel] = useState<Level | null>(null);
-  const [suit, setSuit] = useState<ContractSuit | null>(null);
-  const [declarer, setDeclarer] = useState<Direction | null>(null);
-  const [dbl, setDbl] = useState<Doubling>("");
-  const [specialOutcome, setSpecialOutcome] =
-    useState<SpecialBoardOutcome | null>(null);
-
-  // Lead state
-  const [leadSuit, setLeadSuit] = useState<Suit | null>(null);
-  const [leadRank, setLeadRank] = useState<Rank | null>(null);
-
-  // Result state
-  const [resultMode, setResultMode] = useState<"made" | "down">("made");
-  const [resultValue, setResultValue] = useState(0);
-
-  // --- Step transition handlers ---
-
-  const onLevelSelected = (selectedLevel: Level) => {
-    setLevel(selectedLevel);
-    setSpecialOutcome(null);
-    setStep(2);
-  };
-
-  const onSpecialOutcome = (outcome: SpecialBoardOutcome) => {
-    setSpecialOutcome(outcome);
-    setLevel(null);
-    setSuit(null);
-    setDeclarer(null);
-    setDbl("");
-    setStep(6);
-  };
-
-  const onSuitSelected = (selectedSuit: ContractSuit) => {
-    setSuit(selectedSuit);
-    setStep(3);
-  };
-
-  const onDeclarerSelected = (
-    selectedDeclarer: Direction,
-    selectedDbl: Doubling,
-  ) => {
-    setDeclarer(selectedDeclarer);
-    setDbl(selectedDbl);
-    setStep(leadCardRequired ? 4 : 5);
-  };
-
-  const onLeadComplete = (selectedSuit: Suit, selectedRank: Rank) => {
-    setLeadSuit(selectedSuit);
-    setLeadRank(selectedRank);
-    setStep(5);
-  };
-
-  const onResultComplete = (mode: "made" | "down", value: number) => {
-    setResultMode(mode);
-    setResultValue(value);
-    setStep(6);
-  };
+  // The Level → … → Confirm contract-entry sub-flow (steps 1–6), shared with
+  // the player board wizard. Owns the contract / lead / result state, the
+  // forward transitions, the reset, and back-navigation for steps 2–6.
+  const contract = useContractEntry(leadCardRequired, setStep);
+  const {
+    level,
+    suit,
+    declarer,
+    dbl,
+    specialOutcome,
+    leadSuit,
+    leadRank,
+    resultMode,
+    resultValue,
+    setLeadSuit,
+    setLeadRank,
+    onLevelSelected,
+    onSpecialOutcome,
+    onSuitSelected,
+    onDeclarerSelected,
+    onLeadComplete,
+    onResultComplete,
+  } = contract;
 
   const onSubmit = () => {
     if (specialOutcome) {
@@ -220,12 +180,17 @@ export function DirectorContractWizard({
     // "incomplete contract" else path here is defensive and unreachable.
     /* v8 ignore next -- unreachable: confirm requires a complete contract */
     if (level && suit && declarer !== null) {
-      const contract = buildContractCode(level, suit, dbl, declarer);
+      const contractCode = buildContractCode(level, suit, dbl, declarer);
       const lead: Card | null =
         leadSuit && leadRank ? (`${leadSuit}${leadRank}` as Card) : null;
 
       const numericResult = resultMode === "down" ? -resultValue : resultValue;
-      onComplete({ type: "contract", contract, result: numericResult, lead });
+      onComplete({
+        type: "contract",
+        contract: contractCode,
+        result: numericResult,
+        lead,
+      });
     }
   };
 
@@ -263,46 +228,25 @@ export function DirectorContractWizard({
     onComplete({ type: "mismatch", ...ruling });
   };
 
-  // --- Hub routing: entering any contract branch clears any stale state so a
-  // re-entry (back to hub, pick a different branch) starts fresh. ---
+  // --- Hub routing: entering the contract branch clears any stale state so a
+  // re-entry (back to hub, pick a different branch) starts fresh. `reset` moves
+  // to step 1. ---
 
-  const onEnterContract = () => {
-    setLevel(null);
-    setSuit(null);
-    setDeclarer(null);
-    setDbl("");
-    setSpecialOutcome(null);
-    setLeadSuit(null);
-    setLeadRank(null);
-    setResultMode("made");
-    setResultValue(0);
-    setStep(1);
-  };
+  const onEnterContract = () => contract.reset();
 
   // --- Back arrow logic ---
 
   const handleBack = () => {
+    // Steps 2–6 are the shared contract sub-flow.
+    if (contract.contractBack(step) !== null) return;
+
     switch (step) {
       case 0:
         onBack();
         break;
       case 1:
+        // Level: back to the hub (the director's step-0 entry).
         setStep(0);
-        break;
-      case 2:
-        setStep(1);
-        break;
-      case 3:
-        setStep(2);
-        break;
-      case 4:
-        setStep(3);
-        break;
-      case 5:
-        setStep(leadCardRequired ? 4 : 3);
-        break;
-      case 6:
-        setStep(specialOutcome ? 1 : 5);
         break;
       // Adjusted / Weighted / Cancel / Teams-removal / Void(s) / Mismatch are
       // hub branches.

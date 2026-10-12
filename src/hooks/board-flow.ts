@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ContractSuit, Doubling, Level } from "../model/contract";
-import { SpecialBoardOutcome } from "../model/result";
-import { Direction, Rank, Suit } from "../model/common";
+import { useContractEntry } from "./use-contract-entry";
 
 type Props = {
   leadCardRequired: boolean;
@@ -36,111 +34,41 @@ export function useBoardFlow({
     autoSelectedBoard,
   );
 
-  // Contract state
-  const [level, setLevel] = useState<Level | null>(null);
-  const [suit, setSuit] = useState<ContractSuit | null>(null);
-  const [declarer, setDeclarer] = useState<Direction | null>(null);
-  const [dbl, setDbl] = useState<Doubling>("");
-  const [specialOutcome, setSpecialOutcome] =
-    useState<SpecialBoardOutcome | null>(null);
+  // The shared Level → … → Confirm contract-entry sub-flow (steps 1–6).
+  const contract = useContractEntry(leadCardRequired, setStep);
 
-  // Lead state
-  const [leadSuit, setLeadSuit] = useState<Suit | null>(null);
-  const [leadRank, setLeadRank] = useState<Rank | null>(null);
-
-  // Result state
-  const [resultMode, setResultMode] = useState<"made" | "down">("made");
-  const [resultValue, setResultValue] = useState(0);
-
-  // --- Step transition handlers ---
+  // --- Step 0 (board selection) transition, player-only ---
 
   const onBoardSelected = (board: number) => {
     setSelectedBoard(board);
     setStep(1);
   };
 
-  const onLevelSelected = (selectedLevel: Level) => {
-    setLevel(selectedLevel);
-    setSpecialOutcome(null);
-    setStep(2);
-  };
-
-  const onSpecialOutcome = (outcome: SpecialBoardOutcome) => {
-    setSpecialOutcome(outcome);
-    setLevel(null);
-    setSuit(null);
-    setDeclarer(null);
-    setDbl("");
-    setStep(6);
-  };
-
-  const onSuitSelected = (selectedSuit: ContractSuit) => {
-    setSuit(selectedSuit);
-    setStep(3);
-  };
-
-  const onDeclarerSelected = (
-    selectedDeclarer: Direction,
-    selectedDbl: Doubling,
-  ) => {
-    setDeclarer(selectedDeclarer);
-    setDbl(selectedDbl);
-    setStep(leadCardRequired ? 4 : 5);
-  };
-
-  const onLeadComplete = (selectedSuit: Suit, selectedRank: Rank) => {
-    setLeadSuit(selectedSuit);
-    setLeadRank(selectedRank);
-    setStep(5);
-  };
-
-  const onResultComplete = (mode: "made" | "down", value: number) => {
-    setResultMode(mode);
-    setResultValue(value);
-    setStep(6);
-  };
-
   // --- Back arrow logic ---
 
   const handleBack = () => {
-    switch (step) {
-      case 1:
-        // When the board was auto-selected (only one selectable), there is no
-        // board-selection screen to go back to, so stay put.
-        if (autoSelectedBoard !== null) {
-          break;
-        }
-        setSelectedBoard(null);
-        setStep(0);
-        break;
-      case 2:
-        setStep(1);
-        break;
-      case 3:
-        setStep(2);
-        break;
-      case 4:
-        setStep(3);
-        break;
-      case 5:
-        setStep(leadCardRequired ? 4 : 3);
-        break;
-      case 6:
-        setStep(specialOutcome ? 1 : 5);
-        break;
+    // Steps 2–6 are the shared contract sub-flow.
+    if (contract.contractBack(step) !== null) return;
+
+    // Step 1 is the player-specific entry back to the board picker (unless the
+    // board was auto-selected, in which case there is no picker to return to).
+    if (step === 1) {
+      if (autoSelectedBoard !== null) return;
+      setSelectedBoard(null);
+      setStep(0);
     }
   };
 
   return {
-    level,
-    suit,
-    declarer,
-    dbl,
-    specialOutcome,
-    leadSuit,
-    leadRank,
-    resultMode,
-    resultValue,
+    level: contract.level,
+    suit: contract.suit,
+    declarer: contract.declarer,
+    dbl: contract.dbl,
+    specialOutcome: contract.specialOutcome,
+    leadSuit: contract.leadSuit,
+    leadRank: contract.leadRank,
+    resultMode: contract.resultMode,
+    resultValue: contract.resultValue,
     step,
     selectedBoard,
     // True when there was only one selectable board and it was auto-selected,
@@ -149,13 +77,13 @@ export function useBoardFlow({
 
     handleBack,
     onBoardSelected,
-    onLeadComplete,
-    setLeadSuit,
-    setLeadRank,
-    onResultComplete,
-    onLevelSelected,
-    onSpecialOutcome,
-    onSuitSelected,
-    onDeclarerSelected,
+    onLeadComplete: contract.onLeadComplete,
+    setLeadSuit: contract.setLeadSuit,
+    setLeadRank: contract.setLeadRank,
+    onResultComplete: contract.onResultComplete,
+    onLevelSelected: contract.onLevelSelected,
+    onSpecialOutcome: contract.onSpecialOutcome,
+    onSuitSelected: contract.onSuitSelected,
+    onDeclarerSelected: contract.onDeclarerSelected,
   };
 }

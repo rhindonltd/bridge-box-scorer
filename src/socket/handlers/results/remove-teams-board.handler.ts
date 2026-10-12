@@ -1,19 +1,14 @@
 import { Server, Socket } from "socket.io";
 import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
-import { getDb } from "@/db/games";
 import { buildRemovedTeamsBoard } from "@/model/teams-removed-board";
 import { removeTeamsBoardResult } from "@/db/games/actions/set-board-result";
-import { assertDirector } from "@/socket/middleware/director-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
-import { broadcastResultsChanged } from "./broadcast-results";
+import {
+  registerDirectorBoardRuling,
+  directorRulingSchema,
+} from "./director-board-ruling";
 
-const payloadSchema = z.object({
-  gameId: z.string().min(1),
-  directorToken: z.string().min(1),
-  boardNumber: z.number().int().positive(),
-  roundNumber: z.number().int().min(1),
-  tableNumber: z.number().int().min(1),
+const payloadSchema = directorRulingSchema({
   // Which side (if any) was at fault for the removed board (§3.3.7), expressed
   // relative to the selected row's NS/EW seats. Drives the ±3 IMP indemnity:
   // EW_FAULT → NS +3; NS_FAULT → NS −3; NEITHER/BOTH → 0 net (see
@@ -29,39 +24,15 @@ const payloadSchema = z.object({
  * broadcaster. Mirrors the cancel-board handler.
  */
 export function registerRemoveTeamsBoardHandler(socket: Socket, io: Server) {
-  registerHandler<z.infer<typeof payloadSchema>, null>(
-    socket,
-    io,
-    SocketEvents.REMOVE_TEAMS_BOARD_TRAVELLER,
-    {
-      schema: payloadSchema,
-      handler: async ({ payload, ack, log }) => {
-        const { gameId, directorToken, boardNumber, roundNumber, tableNumber, fault } =
-          payload;
-
-        // assertDirector acks its own Unauthorized failure via the guarded ack.
-        if (!assertDirector(directorToken, gameId, ack)) return;
-
-        const db = await getDb(gameId);
-        if (!db) {
-          throw new HandlerError("Game not found");
-        }
-
-        try {
-          await removeTeamsBoardResult(
-            db,
-            { roundNumber, tableNumber, boardNumber },
-            buildRemovedTeamsBoard(fault),
-          );
-        } catch (err) {
-          log.error({ err, gameId, boardNumber }, "Failed to remove teams board");
-          throw new HandlerError("Failed to remove teams board");
-        }
-
-        ack({ success: true, data: null });
-
-        await broadcastResultsChanged(io, gameId, boardNumber);
-      },
-    },
-  );
+  registerDirectorBoardRuling(socket, io, {
+    event: SocketEvents.REMOVE_TEAMS_BOARD_TRAVELLER,
+    schema: payloadSchema,
+    apply: (db, { roundNumber, tableNumber, boardNumber, fault }) =>
+      removeTeamsBoardResult(
+        db,
+        { roundNumber, tableNumber, boardNumber },
+        buildRemovedTeamsBoard(fault),
+      ),
+    errorMessage: "Failed to remove teams board",
+  });
 }

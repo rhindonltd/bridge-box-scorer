@@ -4,20 +4,13 @@ import { useState } from "react";
 import { Spinner } from "@/components/common/Spinner";
 import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
-import { parseContract } from "@/model/contract";
+import { parseContract, ContractCode } from "@/model/contract";
+import { SpecialBoardOutcome } from "@/model/result";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import {
   buildAdjustedScore,
   buildWeightedScore,
 } from "@/model/adjusted-score";
-import { TeamsRemovalFault } from "@/model/teams-removed-board";
-import { VoidCause } from "@/model/teams-match-void";
-import { PairsVoidCause } from "@/model/pairs-match-void";
-import {
-  MismatchSide,
-  MismatchDirection,
-  MismatchFault,
-} from "@/model/swiss-mismatch";
 import { getDirectorToken } from "@/lib/director-token";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
@@ -132,6 +125,107 @@ export function CorrectResultPage({
     });
   }
 
+  /**
+   * Emit one director ruling and advance the wizard. Owns the shared scaffold
+   * every ruling repeats: flip to the saving spinner, clear any prior error,
+   * emit the event with the standard `{ gameId, directorToken, round/table/board }`
+   * envelope plus the ruling's own `extra` fields, then either finish (on
+   * success) or surface a ruling-specific error and return to the board picker.
+   *
+   * `location` is captured from the `enterContract` step the wizard was opened
+   * on; `handleWizardComplete` passes it through so this stays independent of
+   * which `wizardStep` React has committed by the time the promise resolves.
+   */
+  async function submitRuling(
+    location: { roundNumber: number; tableNumber: number; boardNumber: number },
+    event: string,
+    extra: Record<string, unknown>,
+    errorMessage: string,
+  ) {
+    setWizardStep({ step: "saving" });
+    setError(null);
+
+    try {
+      await emitWithAck(event, {
+        gameId: game.gameId,
+        directorToken: getDirectorToken(game.gameId),
+        boardNumber: location.boardNumber,
+        roundNumber: location.roundNumber,
+        tableNumber: location.tableNumber,
+        ...extra,
+      });
+
+      onResultCorrected();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : errorMessage);
+      setWizardStep({ step: "selectBoard" });
+    }
+  }
+
+  /**
+   * Map a completed wizard result to the ruling it emits: the socket event, the
+   * ruling-specific payload fields, and the error message shown if it fails.
+   * The `contract` / special-outcome (PO/NP) / played-contract cases are not in
+   * this table — they all override with a computed `result` string and are
+   * handled as the default in `handleWizardComplete`.
+   */
+  function rulingFor(
+    data: DirectorWizardResult,
+  ): { event: string; extra: Record<string, unknown>; errorMessage: string } | null {
+    switch (data.type) {
+      case "adjusted":
+        return {
+          event: SocketEvents.OVERRIDE_RESULT_TRAVELLER,
+          extra: { result: buildAdjustedScore(data.nsPercent, data.ewPercent) },
+          errorMessage: "Failed to save override",
+        };
+      case "weighted":
+        return {
+          event: SocketEvents.OVERRIDE_RESULT_TRAVELLER,
+          extra: { result: buildWeightedScore(data.components) },
+          errorMessage: "Failed to save override",
+        };
+      case "cancel":
+        return {
+          event: SocketEvents.CANCEL_BOARD_TRAVELLER,
+          extra: { result: buildAdjustedScore(data.nsPercent, data.ewPercent) },
+          errorMessage: "Failed to cancel board",
+        };
+      case "removeTeams":
+        return {
+          event: SocketEvents.REMOVE_TEAMS_BOARD_TRAVELLER,
+          extra: { fault: data.fault },
+          errorMessage: "Failed to remove teams board",
+        };
+      case "voidMatch":
+        return {
+          event: SocketEvents.VOID_TEAMS_MATCH_TRAVELLER,
+          extra: { cause: data.cause },
+          errorMessage: "Failed to void match",
+        };
+      case "voidPairs":
+        return {
+          event: SocketEvents.VOID_PAIRS_MATCH_TRAVELLER,
+          extra: { cause: data.cause },
+          errorMessage: "Failed to void match",
+        };
+      case "mismatch":
+        return {
+          event: SocketEvents.MISMATCH_TRAVELLER,
+          extra: {
+            side: data.side,
+            direction: data.direction,
+            fault: data.fault,
+          },
+          errorMessage: "Failed to mark mismatch",
+        };
+      // A `contract` result (and any non-ruling result) overrides with a
+      // computed `result` string instead — handled by the caller's default.
+      default:
+        return null;
+    }
+  }
+
   function handleWizardComplete(data: DirectorWizardResult) {
     // Defensive type-narrowing guard. `handleWizardComplete` is only ever wired
     // to the wizard rendered in the "enterContract" state, so this early return
@@ -139,269 +233,48 @@ export function CorrectResultPage({
     /* v8 ignore next */
     if (wizardStep.step !== "enterContract") return;
 
-    if (data.type === "adjusted") {
-      saveOverride(
-        wizardStep.roundNumber,
-        wizardStep.tableNumber,
-        wizardStep.boardNumber,
-        buildAdjustedScore(data.nsPercent, data.ewPercent),
-      );
+    const location = {
+      roundNumber: wizardStep.roundNumber,
+      tableNumber: wizardStep.tableNumber,
+      boardNumber: wizardStep.boardNumber,
+    };
+
+    // Every ruling that overrides to a FIXED payload is a straight table
+    // lookup. A `contract` result overrides with a COMPUTED `result` string, so
+    // it is not in the table and falls through to the contract path below.
+    const ruling = rulingFor(data);
+    if (ruling) {
+      submitRuling(location, ruling.event, ruling.extra, ruling.errorMessage);
       return;
     }
 
-    if (data.type === "weighted") {
-      saveOverride(
-        wizardStep.roundNumber,
-        wizardStep.tableNumber,
-        wizardStep.boardNumber,
-        buildWeightedScore(data.components),
-      );
-      return;
-    }
+    // A played or special-outcome (PO/NP) contract: both override with a
+    // computed `result` string. PO/NP pass straight through; a played contract
+    // is parsed and reassembled into its full result code first.
+    const { contract, result } = data as {
+      contract: ContractCode | SpecialBoardOutcome;
+      result: number;
+    };
+    const resultCode =
+      contract === "PO" || contract === "NP"
+        ? contract
+        : (() => {
+            const parsed = parseContract(contract);
+            return buildPlayedContractCode(
+              parsed.level,
+              parsed.suit,
+              parsed.doubling,
+              parsed.declarer,
+              result,
+            );
+          })();
 
-    if (data.type === "cancel") {
-      saveCancel(
-        wizardStep.roundNumber,
-        wizardStep.tableNumber,
-        wizardStep.boardNumber,
-        buildAdjustedScore(data.nsPercent, data.ewPercent),
-      );
-      return;
-    }
-
-    if (data.type === "removeTeams") {
-      saveRemoveTeams(
-        wizardStep.roundNumber,
-        wizardStep.tableNumber,
-        wizardStep.boardNumber,
-        data.fault,
-      );
-      return;
-    }
-
-    if (data.type === "voidMatch") {
-      saveVoidMatch(
-        wizardStep.roundNumber,
-        wizardStep.tableNumber,
-        wizardStep.boardNumber,
-        data.cause,
-      );
-      return;
-    }
-
-    if (data.type === "voidPairs") {
-      saveVoidPairs(
-        wizardStep.roundNumber,
-        wizardStep.tableNumber,
-        wizardStep.boardNumber,
-        data.cause,
-      );
-      return;
-    }
-
-    if (data.type === "mismatch") {
-      saveMismatch(
-        wizardStep.roundNumber,
-        wizardStep.tableNumber,
-        wizardStep.boardNumber,
-        data.side,
-        data.direction,
-        data.fault,
-      );
-      return;
-    }
-
-    const { contract, result } = data;
-
-    if (contract === "PO" || contract === "NP") {
-      saveOverride(
-        wizardStep.roundNumber,
-        wizardStep.tableNumber,
-        wizardStep.boardNumber,
-        contract,
-      );
-      return;
-    }
-
-    const parsed = parseContract(contract);
-    const fullResult = buildPlayedContractCode(
-      parsed.level,
-      parsed.suit,
-      parsed.doubling,
-      parsed.declarer,
-      result,
+    submitRuling(
+      location,
+      SocketEvents.OVERRIDE_RESULT_TRAVELLER,
+      { result: resultCode },
+      "Failed to save override",
     );
-
-    saveOverride(
-      wizardStep.roundNumber,
-      wizardStep.tableNumber,
-      wizardStep.boardNumber,
-      fullResult,
-    );
-  }
-
-  async function saveOverride(
-    roundNumber: number,
-    tableNumber: number,
-    boardNumber: number,
-    result: string,
-  ) {
-    setWizardStep({ step: "saving" });
-    setError(null);
-
-    try {
-      await emitWithAck(SocketEvents.OVERRIDE_RESULT_TRAVELLER, {
-        gameId: game.gameId,
-        directorToken: getDirectorToken(game.gameId),
-        boardNumber,
-        roundNumber,
-        tableNumber,
-        result,
-      });
-
-      onResultCorrected();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to save override",
-      );
-      setWizardStep({ step: "selectBoard" });
-    }
-  }
-
-  async function saveCancel(
-    roundNumber: number,
-    tableNumber: number,
-    boardNumber: number,
-    result: string,
-  ) {
-    setWizardStep({ step: "saving" });
-    setError(null);
-
-    try {
-      await emitWithAck(SocketEvents.CANCEL_BOARD_TRAVELLER, {
-        gameId: game.gameId,
-        directorToken: getDirectorToken(game.gameId),
-        boardNumber,
-        roundNumber,
-        tableNumber,
-        result,
-      });
-
-      onResultCorrected();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to cancel board");
-      setWizardStep({ step: "selectBoard" });
-    }
-  }
-
-  async function saveRemoveTeams(
-    roundNumber: number,
-    tableNumber: number,
-    boardNumber: number,
-    fault: TeamsRemovalFault,
-  ) {
-    setWizardStep({ step: "saving" });
-    setError(null);
-
-    try {
-      await emitWithAck(SocketEvents.REMOVE_TEAMS_BOARD_TRAVELLER, {
-        gameId: game.gameId,
-        directorToken: getDirectorToken(game.gameId),
-        boardNumber,
-        roundNumber,
-        tableNumber,
-        fault,
-      });
-
-      onResultCorrected();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to remove teams board",
-      );
-      setWizardStep({ step: "selectBoard" });
-    }
-  }
-
-  async function saveVoidMatch(
-    roundNumber: number,
-    tableNumber: number,
-    boardNumber: number,
-    cause: VoidCause,
-  ) {
-    setWizardStep({ step: "saving" });
-    setError(null);
-
-    try {
-      await emitWithAck(SocketEvents.VOID_TEAMS_MATCH_TRAVELLER, {
-        gameId: game.gameId,
-        directorToken: getDirectorToken(game.gameId),
-        boardNumber,
-        roundNumber,
-        tableNumber,
-        cause,
-      });
-
-      onResultCorrected();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to void match");
-      setWizardStep({ step: "selectBoard" });
-    }
-  }
-
-  async function saveVoidPairs(
-    roundNumber: number,
-    tableNumber: number,
-    boardNumber: number,
-    cause: PairsVoidCause,
-  ) {
-    setWizardStep({ step: "saving" });
-    setError(null);
-
-    try {
-      await emitWithAck(SocketEvents.VOID_PAIRS_MATCH_TRAVELLER, {
-        gameId: game.gameId,
-        directorToken: getDirectorToken(game.gameId),
-        boardNumber,
-        roundNumber,
-        tableNumber,
-        cause,
-      });
-
-      onResultCorrected();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to void match");
-      setWizardStep({ step: "selectBoard" });
-    }
-  }
-
-  async function saveMismatch(
-    roundNumber: number,
-    tableNumber: number,
-    boardNumber: number,
-    side: MismatchSide,
-    direction: MismatchDirection,
-    fault: MismatchFault,
-  ) {
-    setWizardStep({ step: "saving" });
-    setError(null);
-
-    try {
-      await emitWithAck(SocketEvents.MISMATCH_TRAVELLER, {
-        gameId: game.gameId,
-        directorToken: getDirectorToken(game.gameId),
-        boardNumber,
-        roundNumber,
-        tableNumber,
-        side,
-        direction,
-        fault,
-      });
-
-      onResultCorrected();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to mark mismatch");
-      setWizardStep({ step: "selectBoard" });
-    }
   }
 
   switch (wizardStep.step) {

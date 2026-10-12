@@ -237,33 +237,53 @@ export function usePlayFlow(
     [gameId, seat, playState],
   );
 
-  const handleEnterRound = useCallback(
-    () => dispatch({ type: "enterRound" }),
+  /*
+   * The no-payload "continue"/"advance" buttons each just dispatch their own
+   * action type. One memoised factory builds the stable handler for each,
+   * rather than seven near-identical `useCallback(() => dispatch({ type }))`.
+   * The listed types are exactly the PlayAction members that carry only a
+   * `type` (every action except `submit` / `boardConfirmed` / `boardMismatch`).
+   */
+  type PayloadlessActionType =
+    | "enterRound"
+    | "reenter"
+    | "boardResultsNext"
+    | "roundResultsContinue"
+    | "dealsContinue"
+    | "moveInfoContinue"
+    | "sitOutContinue";
+  const makeDispatcher = useCallback(
+    (type: PayloadlessActionType) => () => dispatch({ type } as PlayAction),
     [dispatch],
   );
-  const handleReenter = useCallback(
-    () => dispatch({ type: "reenter" }),
-    [dispatch],
+
+  const handleEnterRound = useMemo(
+    () => makeDispatcher("enterRound"),
+    [makeDispatcher],
   );
-  const handleBoardResultsNext = useCallback(
-    () => dispatch({ type: "boardResultsNext" }),
-    [dispatch],
+  const handleReenter = useMemo(
+    () => makeDispatcher("reenter"),
+    [makeDispatcher],
   );
-  const handleMoveInfoContinue = useCallback(
-    () => dispatch({ type: "moveInfoContinue" }),
-    [dispatch],
+  const handleBoardResultsNext = useMemo(
+    () => makeDispatcher("boardResultsNext"),
+    [makeDispatcher],
   );
-  const handleSitOutContinue = useCallback(
-    () => dispatch({ type: "sitOutContinue" }),
-    [dispatch],
+  const handleMoveInfoContinue = useMemo(
+    () => makeDispatcher("moveInfoContinue"),
+    [makeDispatcher],
   );
-  const handleDealsContinue = useCallback(
-    () => dispatch({ type: "dealsContinue" }),
-    [dispatch],
+  const handleSitOutContinue = useMemo(
+    () => makeDispatcher("sitOutContinue"),
+    [makeDispatcher],
   );
-  const handleRoundResultsContinue = useCallback(
-    () => dispatch({ type: "roundResultsContinue" }),
-    [dispatch],
+  const handleDealsContinue = useMemo(
+    () => makeDispatcher("dealsContinue"),
+    [makeDispatcher],
+  );
+  const handleRoundResultsContinue = useMemo(
+    () => makeDispatcher("roundResultsContinue"),
+    [makeDispatcher],
   );
 
   /**

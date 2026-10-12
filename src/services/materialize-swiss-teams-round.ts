@@ -4,6 +4,7 @@ import { getDb } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { and, eq } from "drizzle-orm";
 import { SectionLetter } from "@/model/participants";
+import { PHANTOM_SEAT } from "@/model/phantom-seat";
 import {
   buildSectionRows,
   insertSectionDrafts,
@@ -57,11 +58,10 @@ function awayPairId(tableNumber: number): string {
 }
 
 /**
- * Phantom opponent id for a bye team's sit-out row. Not a valid seat, so the
- * board-history reader and match reconstruction never treat it as a real
- * opponent — matching the Swiss Pairs sit-out convention.
+ * Phantom opponent id for a bye team's sit-out row. Local alias of the shared
+ * {@link PHANTOM_SEAT}, matching the Swiss Pairs sit-out convention.
  */
-const TEAMS_BYE_PHANTOM = "PHANTOM";
+const TEAMS_BYE_PHANTOM = PHANTOM_SEAT;
 
 /**
  * The board span each of a triple's three sets (A, B, C) occupies, for a triple
