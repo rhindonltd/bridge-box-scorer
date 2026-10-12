@@ -5,64 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1788348506205,
-      "tag": "0000_spicy_phantom_reporter",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1788423410142,
-      "tag": "0001_sleepy_colossus",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1789578327204,
-      "tag": "0002_hesitant_radioactive_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1789629779284,
-      "tag": "0003_absurd_bushwacker",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1791409145226,
-      "tag": "0004_calm_roxanne_simpson",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1791453843586,
-      "tag": "0005_tearful_blue_shield",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1791461560269,
-      "tag": "0006_cool_snowbird",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1791468140361,
-      "tag": "0007_messy_retro_girl",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1791549181622,
-      "tag": "0008_parallel_ravenous",
+      "when": 1791794002027,
+      "tag": "0000_shallow_tarantula",
       "breakpoints": true
     }
   ]

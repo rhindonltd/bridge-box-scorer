@@ -1,16 +1,25 @@
 # Seat occupancy as a first-class entity (stand-by → real-pair handover) — design
 
-Status: **proposed** (not committed code). Supersedes the earlier *sidecar*
-version of this document. Covers EBU White Book §2.3.3 / §2.4.7 — the
-mid-session **stand-by → real-pair handover** that
+Status: **COMPLETE — all slices landed** (identity-layer refactor, per-board
+scoring attribution including the general §4.1.1.1 AVE-valuation refactor,
+occupant-aware auth, and the director handover UX; see §4a, §6 and §8).
+Supersedes the earlier *sidecar* version of this document. Covers EBU White Book
+§2.3.3 / §2.4.7 — the mid-session **stand-by → real-pair handover** that
 `docs/design/withdrawals-late-arrivals.md` §9 deliberately deferred.
 
-This is a deliberate **identity-layer refactor**. The user has explicitly
-authorised a large, system-wide change on the grounds that the codebase is not
-yet live ("change whatever you think will lead to the cleanest design"). So
-rather than bolt a sidecar onto the existing single-participant-per-seat model,
-we make **seat occupancy the primary entity** and let everything else derive
-from it.
+This is a deliberate **identity-layer refactor**. The user explicitly authorised
+a large, system-wide change on the grounds that the codebase is not yet live
+("change whatever you think will lead to the cleanest design"). So rather than
+bolt a sidecar onto the existing single-participant-per-seat model, we make
+**seat occupancy the primary entity** and let everything else derive from it.
+
+> **What's built (slice 1).** `seat_occupancy` is the primary table;
+> `participant` and `assignment` are gone; every reader/writer/auth path is
+> repointed; the games migrations were collapsed to a single fresh baseline. All
+> games still run with exactly one whole-seat occupancy per seat, so behaviour
+> is unchanged. The one design point that differs from the first draft below is
+> the **`anchorId`** column (§2.2): a board id is NOT always the physical seat,
+> so the occupancy carries both.
 
 Source of truth for the rules: `docs/reference/ebu-white-book-scoring.md`
 §6.1 ("without standing", §2.4.9), §6.5 (score to a late/missing contestant,
@@ -65,7 +74,9 @@ occupancy**:
 ```ts
 // seat_occupancy  (per-game `games` db)   — THE primary participant entity
 id:                   int   // surrogate PK (autoincrement)
-seat:                 text  // movement position, section-qualified: "A3NS"
+seat:                 text  // PHYSICAL chair, section-qualified: "A3NS"
+anchorId:             text  // the board id (boards.ns/ew) for this seat; see §2.2
+                            //   null until materialisation stamps it
 boards:               text  // JSON array of the board numbers this occupant played
                             //   null / absent = "all of this seat's boards"
                             //   (the whole-event common case)
@@ -76,6 +87,7 @@ standing:             text  // "ACTIVE" | "WITHDRAWN" | "WITHOUT_STANDING" | "LA
 withdrawnInRound:     int   | null
 withdrawalTreatment:  text  | null   // "REMOVE" | "PENALISED"
 withdrawalFinePercent:int   | null
+// unique(player1, player2) — one person occupies a single position.
 // invariant: the `boards` sets of the occupancies for one seat are disjoint,
 //            so every board resolves to exactly one occupant.
 ```
@@ -100,36 +112,60 @@ truth and described exceptions beside it (two sources of truth, an implicit
 "real pair owns the gaps" rule). Here there is **one** source of truth and the
 ordinary game is just its degenerate single-row form.
 
-### 2.2 `assignments` is subsumed and removed
+### 2.2 `assignments` is subsumed — and why `anchorId` exists
 
-The reconnaissance (the context-gather map) showed `assignments` is a thin
-indirection: `boards.ns/ew` holds an assignment id; `assignments.initialSeat`
-maps that id back to a round-1 home seat; the row's only load-bearing job is the
-**Swiss/teams anchor-id → round-1-seat** mapping (for static movements the
-assignment id, `initialSeat`, and `boards.ns/ew` are literally the same string).
+`assignments` was a thin indirection: `boards.ns/ew` held an assignment id, and
+`assignments.initialSeat` mapped that id back to a physical round-1 home seat.
+The first draft of this doc assumed the id and the seat were "literally the same
+string" and that `assignments` could therefore just evaporate.
 
-A board-scoped occupancy row keyed by seat **is** that mapping — the anchor id
-*is* a seat, and the occupancy says which pair sat at that seat for which boards.
-So `assignments` collapses into `seat_occupancy` entirely. This is the single
-clearest structural win of the refactor: one fewer indirection in the identity
-chain, and the Swiss "id stays stable while the pair physically moves" rule is
-expressed directly as "this occupancy owns this anchor seat for these boards."
+**That assumption was wrong, and the build caught it.** The value on
+`boards.ns/ew` — call it the **board id** or **anchor id** — equals the physical
+seat only for a movement where a pair holds a fixed compass direction all event:
+a **standard Mitchell with no arrow switch**. There the id genuinely is a
+directional seat (`A1NS`), because NS pairs stay NS and EW pairs stay EW.
+
+For every **direction-changing** movement the board id is a bare, direction-less
+pair number instead — because a compass direction in the id would be meaningless
+when the pair switches sides round to round:
+
+- **Arrow-switch Mitchell** and **file-based / SPEC pairs & teams**: `A1`, `A6`…
+- **Swiss Pairs**: the stable pair number (`A1`, `A5`…), anchored to where the
+  pair sat down in round 1 (NS pairs `1..tables`, EW pairs `tables+1..2·tables`).
+  The physical round-1 chair (`A1NS`) is a *separate* fact.
+
+So a seat has two identities that coincide only in the fixed-direction Mitchell
+case: the **physical chair** the director seats and the device authenticates on
+(`seat`, always directional, e.g. `A1NS`), and the **board id** the movement
+assigns and every board row / leaderboard line / match carries (`anchorId`,
+directional only for fixed Mitchell, bare otherwise). `assignments` was the
+bridge between them; the occupancy now carries both columns, so the bridge lives
+on the one entity.
+
+`anchorId` is written at a different time from `seat`: the occupancy is created
+when the director seats a pair (pre-start), when only the physical chair is
+known; materialisation then stamps `anchorId` from the round-1 layout (the same
+seat→id mapping the old round-1 `assignment` rows recorded). Readers that join a
+board row to its occupant use `anchorId` (falling back to `seat` when the two are
+equal / not yet stamped); readers about the chair itself (auth, the director UI,
+the ranked identity) use `seat`.
 
 New identity chain:
 
 ```
-boards.ns / boards.ew   (anchor seat id, e.g. "A3NS")
-        │
-        └──▶  seat_occupancy  (seat + board set → players, standing, secret)
-                      │
+boards.ns / boards.ew   (the board / anchor id — "A1NS" for fixed Mitchell,
+        │                 bare "A1" for Swiss / arrow-switch / SPEC)
+        └──▶  seat_occupancy  (matched on anchorId; carries the physical seat,
+                      │         board set, players, standing, secret)
                       └──▶  players
 ```
 
-`participants` as a table also goes away in its current form — its columns
-(player1/2, secretKey, standing, withdrawal fields, the player-pair uniqueness)
-all move onto `seat_occupancy`. What was "the participant at seat S" becomes
-"the occupancy of seat S covering board N" (and for the ordinary whole-event
-single occupancy, that's just "the occupancy of seat S").
+`participants` as a table also goes away — its columns (player1/2, secretKey,
+standing, withdrawal fields, the player-pair uniqueness) all move onto
+`seat_occupancy`. What was "the participant at seat S" becomes "the occupancy
+whose board set covers board N for the seat with that anchor" (and for the
+ordinary whole-event single occupancy, that's just "the occupancy for that
+seat").
 
 ### 2.3 How a board resolves to an occupant
 
@@ -205,6 +241,67 @@ out of occupancy-as-primary.
 
 ---
 
+## 4a. Slice-3 build (as implemented)
+
+The §4 sketch's `A3NS#<occId>` id and "feed the real pair to the withdrawal
+pass" are right in spirit, but the build pins down three things the sketch left
+loose (confirmed by a full trace of the MP → overall path):
+
+### Synthetic id — a parser-level suffix, not an ad-hoc string
+
+A scored-field id is `<seat>` for the primary occupant and `<seat>#<occId>` for
+a non-primary one. `#<occId>` is taught to the shared seat parser
+(`model/participants.ts`): `SEAT_REGEX` gains an optional `(?:#(\d+))?`,
+`parseSeat` returns an extra `occupancyId`, `formatPairNumber` preserves it, and
+`scoredIdFor` / `baseSeatOf` build / strip it. The suffix lives ONLY on a
+transient scored-field id in the ranking path; it is never persisted (board
+rows, matches, `seat_occupancy.seat` carry the bare seat), so every DB-id
+`parseSeat` caller is untouched (real ids never contain `#`). `splitByDirection`
+and USEBIO keep working because the direction still parses.
+
+### Injection — rewrite board-row ids up front, once
+
+Rather than thread a resolver through every `compute*` signature,
+`readLeaderboardInputs` rewrites each board row's `ns`/`ew` to its **occupant's**
+scored-field id before scoring (`buildOccupantScoredIdResolver` over the
+occupancies). For every ordinary game (0/1 occupancy per seat) this is the
+identity, so the whole pipeline is byte-for-byte unchanged; only a handover seat
+sees a `#<occId>` on the sub's boards. The sub's id is added to
+`excludedFromRanking` (`nonPrimaryOccupantScoredIds`) — a no-participant id does
+NOT drop by itself, so the exclusion is what unranks it (§2.4.9), exactly like
+`WITHOUT_STANDING`.
+
+### The real pair's gap — explicit unplayed set
+
+After the rewrite the real pair's early rows carry the SUB's id, so there is no
+row carrying the real pair's id on those boards for `withdrawalCreditBoards`'
+`result == null` test to find. The real pair's `WithdrawalRecord` therefore
+carries an explicit `unplayedBoards` set (= the boards its occupancy does NOT
+cover), and the credit pass emits the real pair's AVE− on exactly those board
+numbers. No opponent indemnity on the gap: the opponent already has a real
+result against the sub, so no board was lost to it (unlike an ordinary
+withdrawal or an empty-late seat).
+
+### §4.1.1.1 for EVERY AVE award (general rule)
+
+Previously only director artificial rulings got the §4.1.1.1 "better than
+average" uplift (AVE+ → max(60%, own avg); AVE− → min(40%, own avg)); the
+synthesised withdrawal / sit-out / empty-late credits were flat 60/40 — a latent
+gap. Slice 3 generalises: **every** synthetic AVE credit is emitted as an
+artificial-outcome (`A<ns>/<ew>`) line, and `applyBetterThanAverage` runs ONCE
+over the real + synthetic set (reordered after synthesis, before the final
+round). So the handover gap, ordinary withdrawals, sit-outs and empty-late all
+get the uplift uniformly. A PENALISED fine (e.g. AVE−-minus-25%) is NOT an exact
+AVE−, so the uplift leaves it alone — correct, a fined figure is the director's
+deliberate value. IMP/XIMP have no per-board max, so §4.1.1.1 does not apply
+there (unchanged, 0-net credits).
+
+New MP ordering in `scoreBoardsToOverall`: score real → `equaliseMpBoards`
+(real) → synthesise artificial-outcome AVE credits at the equalised top →
+`applyBetterThanAverage` (real + synthetic) → `roundMpBoards` → aggregate.
+
+---
+
 ## 5. Migration
 
 One schema change, mechanical data move:
@@ -222,24 +319,60 @@ identically. New games write the same single-occupancy shape at create time.
 `boards = null` sidesteps needing the event's highest board at migration time —
 "all of this seat's boards" is resolved from the `boards` rows when read.
 
-(There is one games schema and a per-game DB migrated at creation via
-`drizzle.config.games.ts`; generate with `npm run generate_games_migration`.
-This will be migration `0009`.)
+**As shipped:** because the codebase is not yet live, the games migrations were
+collapsed to a **single fresh baseline** (`drizzle/games/0000_*.sql`) that
+creates `seat_occupancy` directly, rather than an incremental drop/create of the
+old tables. There is one games schema and a per-game DB migrated at creation via
+`drizzle.config.games.ts` (`npm run generate_games_migration`). No data-migration
+step was needed since there is no production data to carry over.
 
 ---
 
-## 6. Director UX
+## 6. Director UX (as built — slices 4 & 5)
 
-On the Tables screen (mid-game), a seat gets a **"Hand over to real pair"**
-action:
-1. Confirm / record the **stand-in's names** and the **boards they played**
-   (defaults to "up to now") → closes the sub's occupancy at the current board.
-2. Seat the **real pair** → opens a new occupancy from the next board to the end,
-   minting a fresh secret for the arriving pair's device.
+On the Tables screen (post-start), a seated pair's per-table dialog
+(`DirectorTableModal`) gains a **"Hand over to real pair"** action beside
+"Change standing". It opens an inline form that collects only the **arriving
+real pair's two names** and how their pre-arrival (unplayed) boards are
+treated (REMOVE / PENALISED + 0..40% fine, mirroring the withdrawal form).
 
-The symmetric case (sub present from the start, real pair arrives) is the same
-action. Multiple handovers at one seat are just more occupancy rows — no special
-handling.
+**The boards-played split is DERIVED, not entered.** The director does not pick
+a cutoff. On submit, the server (`handoverSeat` action) reads the seat's board
+rows and splits them by whether each board already carries a result (a director
+override over the confirmed result — the same rule the scorer uses):
+
+1. The stand-in's occupancy is pinned to the boards that **already have a
+   result** and demoted to `WITHOUT_STANDING` — those boards score normally for
+   its opponents (§2.4.9) and the stand-in drops from the ranking. Its
+   withdrawal fields are cleared (a stand-in carries no fine).
+2. The arriving real pair is inserted as a §2.4.7 `LATE` occupancy over the
+   **remaining (unresolved) boards**, carrying the chosen treatment/fine, with
+   fresh player rows and a freshly minted device secret (returned on the ack so
+   the director can hand it to that pair's device).
+
+So the handover is always "from the next board without a result" — no in-flight
+board can be split across the two occupancies, and the two board sets are
+disjoint and jointly cover the seat by construction. Because the primary pick is
+semantic (`primaryOf` prefers the non-`WITHOUT_STANDING` occupant), demoting the
+stand-in automatically makes the real pair the ranked primary; insert order is
+irrelevant.
+
+The action is director-authed (`assertDirector`), and — like a withdrawal — it
+is a scored event, so it re-broadcasts PARTICIPANTS + a fresh leaderboard
+snapshot. Auth after the handover resolves to the real pair: `findParticipantSecret`
+and `rotateParticipantSecret` resolve the seat's **primary** occupant (slice 4),
+so the stand-in's (now dead) secret cannot authenticate and a "change device"
+transfer only rotates the active pair's secret.
+
+**Guards (rejected, surfaced to the director):** no pair seated at the seat; the
+seat already has more than one occupancy (v1 supports a single handover per
+seat); every board of the seat already has a result (nothing left to hand over).
+
+**v1 scope:** pairs only (decision B). National-id dedupe for the arriving pair
+is limited to the "same EBU number for both players" check — the arriving pair
+is NOT cross-checked against other seated players (open question C), because the
+stand-in they replace still occupies the same seat as an occupancy; a full
+cross-seat dedupe that excludes the same-seat stand-in is future work.
 
 ---
 
@@ -257,14 +390,27 @@ handling.
   null` means the migration never needs the number, and reads resolve "all of
   this seat's boards" from the materialised board rows. No schema column added.
 
-**Still open:**
+**Resolved since (slices 3–5):**
 
-- **C. National-id dedupe semantics.** Should a sub's players be dedupe-checked
-  against seated players, given they may be transient? Lean: yes, read all
-  occupancies, but allow the same person to appear in disjoint board sets at the
-  same seat.
-- **D. USEBIO.** Confirm the published file omits without-standing occupancies
-  and matches the live ranking.
+- **D. USEBIO.** Confirmed. The published file omits the without-standing
+  stand-in from the placings while still declaring it as a `<PAIR>` (so its
+  traveller lines reference a real pair), mirroring the live ranking. The one
+  divergence — the real pair's gap AVE− is absent from the exported ranking
+  because USEBIO re-scores with no AVE− synthesis — is documented in §8 slice 3
+  and is a pre-existing leaderboard/USEBIO difference, out of scope.
+- **F. Handover split point.** The boards-played split is DERIVED from entered
+  results, not chosen by the director: the stand-in keeps every board with a
+  result, the real pair takes the rest (§6). This is cleaner and less
+  error-prone than a director-entered cutoff and cannot split an in-flight
+  board.
+
+**Still open (deferred, not blocking):**
+
+- **C. National-id dedupe semantics.** v1 only rejects the same EBU number for
+  the arriving pair's two players; it does NOT cross-check the arriving pair
+  against other seated players. A full cross-seat dedupe that correctly excludes
+  the same-seat stand-in (so replacing a sub isn't flagged as a clash with
+  itself) is future work.
 
 ---
 
@@ -272,20 +418,53 @@ handling.
 
 Each slice is independently testable; the suite must stay green after each.
 
-1. **Table + migration + writers (inert).** Add `seat_occupancy`, migrate
-   existing participants → one whole-event occupancy, repoint create/materialise
-   writers. Drop `assignments`/`participants`. Everything still single-occupancy,
-   so behaviour is unchanged — this is the big mechanical slice, verified by the
-   existing suite passing unchanged.
-2. **Board-aware name lookup.** Fold `buildAssignmentPlayerLookup` into an
-   occupancy lookup; schedule / traveller / board-service read it. Still inert
-   (one occupancy), still green.
-3. **Per-board scoring attribution.** Synthetic per-occupancy ranked id;
-   without-standing sub boards → opponents only; real-pair gap → AVE− via the
-   existing withdrawal pass. New tests cover a two-occupancy seat.
-4. **Auth on occupancy.** Secret + seat-transfer rotation resolve per occupant.
-5. **Director handover UX.** The Tables-screen action that writes the second
-   occupancy.
+1. **Table + migration + writers (inert). ✅ DONE.** Added `seat_occupancy`
+   (with `anchorId`, §2.2), collapsed the games migrations to one baseline,
+   repointed every create/materialise writer and reader/auth path, dropped
+   `assignment`/`participant`. Everything is still single-occupancy, so
+   behaviour is unchanged — verified by the full suite passing unchanged plus a
+   green build. A follow-up change normalised the **Swiss board id to the bare
+   pair number** (so only fixed-direction Mitchell keeps a directional id),
+   which is what made `anchorId` necessary and now consistent across movements.
+2. **Board-aware name lookup. ✅ (effectively done in slice 1.)**
+   `buildAssignmentPlayerLookup` now keys on `anchorId ?? seat`, and
+   `board-service` resolves traveller names through it; `schedule-service`
+   resolves a seat's board rows via its `anchorId`. Still inert (one occupancy),
+   still green. The remaining per-*board* resolution (vs per-seat) only matters
+   once a seat has two occupancies — that is slice 3.
+3. **Per-board scoring attribution. ✅ DONE.** The scored-field id carries a
+   parser-level `#<occId>` suffix for a non-primary occupant (§4a); board rows
+   are rewritten to the occupant id up front in `readLeaderboardInputs`; the
+   stand-in's id is excluded from the ranking (counted for opponents only); the
+   real pair's gap boards are scored AVE− via `handoverRealPairGaps` →
+   `withdrawalCreditBoards` (no opponent indemnity on the gap). Landed together
+   with the **general §4.1.1.1 AVE-valuation refactor** (§4a): every synthetic
+   AVE+/AVE− award (withdrawal, sit-out, empty-late, handover gap) now flows
+   through `applyBetterThanAverage` uniformly. Leaderboard + USEBIO tests cover a
+   two-occupancy seat. **USEBIO caveat:** the stand-in is correctly exported
+   (counted for opponents, no placing), but USEBIO re-scores independently and
+   has no withdrawal/sit-out/handover AVE− synthesis, so the real pair's gap
+   AVE− is absent from the exported ranking — exactly as an ordinary
+   withdrawer's AVE− gap already is (a pre-existing USEBIO/leaderboard
+   divergence, out of scope here).
+4. **Auth on occupancy. ✅ DONE.** `findParticipantSecret` and
+   `rotateParticipantSecret` resolve the seat's PRIMARY (current, active)
+   occupant via `primaryOf` rather than an arbitrary / all rows: the lookup
+   returns the active pair's secret and the rotation targets that occupancy's
+   `id` alone. Per-*board* auth proved unnecessary — the stand-in and the real
+   pair never occupy the seat at the same instant (the handover demotes the sub
+   and seats the real pair in one step), so "current occupant" is a single
+   unambiguous answer. The submit-result/auth signatures are unchanged
+   (`boardNumber` stays out of the auth path).
+5. **Director handover UX. ✅ DONE.** The Tables-screen "Hand over to real pair"
+   action (post-start, in `DirectorTableModal`) → `game:handoverSeat` →
+   `handoverSeat` DB action, which writes the second occupancy. The real pair is
+   PRIMARY because `primaryOf` is semantic (the non-`WITHOUT_STANDING`
+   occupant), so the action just demotes the stand-in and seats the arriving
+   pair `LATE`; insert order does not matter. The boards-played split is DERIVED
+   server-side from the entered results (the stand-in keeps every board with a
+   result; the real pair takes the rest), so the director enters only the
+   arriving pair's names + treatment — see §6.
 
 ---
 

@@ -4,17 +4,19 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import type { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
-import { assignments } from "@/db/games/tables/assignments";
 import { eq, and } from "drizzle-orm";
 
 /**
  * Integration coverage for the incremental Swiss round materializer against a
- * real migrated per-game database: each call appends exactly one round's boards
- * (and only round 1's assignments), writes sit-out rows correctly, and is
- * idempotent per round.
+ * real migrated per-game database: each call appends exactly one round's boards,
+ * writes sit-out rows correctly, and is idempotent per round. (Seats are no
+ * longer written by the materialiser — a pair's `seat_occupancy` is created
+ * when the director seats it — so the board rows are the only output.)
  *
- * A Swiss pair's participant id is its round-1 home seat: with 2 tables, pair 1
- * -> A1NS, pair 2 -> A2NS, pair 3 -> A1EW, pair 4 -> A2EW.
+ * A Swiss pair's board id is its bare, direction-less pair number (NS pairs
+ * 1..tables, EW pairs tables+1..2·tables). With 2 tables, pair 1 -> A1, pair 2
+ * -> A2, pair 3 -> A3, pair 4 -> A4. (The physical round-1 chair A1NS lives on
+ * the occupancy's seat, not the board.)
  */
 describe("materializeSwissRound", () => {
   let harness: DbHarness;
@@ -29,7 +31,7 @@ describe("materializeSwissRound", () => {
     harness.teardown();
   });
 
-  it("appends round 1 boards and assignments (positional seating)", async () => {
+  it("appends round 1 boards (positional seating)", async () => {
     const { materializeSwissRound } = await import(
       "@/services/materialize-swiss-round"
     );
@@ -55,23 +57,13 @@ describe("materializeSwissRound", () => {
     expect(rows).toHaveLength(6);
     expect(new Set(rows.map((r) => r.boardNumber))).toEqual(new Set([1, 2, 3]));
     const t1 = rows.filter((r) => r.tableNumber === 1);
-    // Pair 1 -> A1NS, pair 3 -> A1EW (home seats).
-    expect(t1[0].ns).toBe("A1NS");
-    expect(t1[0].ew).toBe("A1EW");
+    // Pair 1 -> A1, pair 3 -> A3 (bare pair ids).
+    expect(t1[0].ns).toBe("A1");
+    expect(t1[0].ew).toBe("A3");
     expect(rows.every((r) => r.status === "NOT_PLAYED")).toBe(true);
-
-    // Round 1 seeds the assignment seat map (4 pairs), keyed by home seat.
-    const assigns = await db.select().from(assignments);
-    expect(assigns).toHaveLength(4);
-    expect(assigns.map((a) => a.id).sort()).toEqual([
-      "A1EW",
-      "A1NS",
-      "A2EW",
-      "A2NS",
-    ]);
   });
 
-  it("appends a later round's boards with the correct board range and no assignments", async () => {
+  it("appends a later round's boards with the correct board range", async () => {
     const { materializeSwissRound } = await import(
       "@/services/materialize-swiss-round"
     );
@@ -97,10 +89,6 @@ describe("materializeSwissRound", () => {
       .where(and(eq(boards.section, "A"), eq(boards.roundNumber, 2)));
 
     expect(new Set(rows.map((r) => r.boardNumber))).toEqual(new Set([4, 5, 6]));
-
-    // No assignments written for a non-first round.
-    const assigns = await db.select().from(assignments);
-    expect(assigns).toHaveLength(0);
   });
 
   it("writes SIT_OUT rows for the bye pair and records only the real pair", async () => {
@@ -113,13 +101,11 @@ describe("materializeSwissRound", () => {
     const db = (await harness.getDb()) as Db;
 
     // 5 pairs at 2 tables + a spare: pairs 1v3, 2v4 play; pair 5 sits out.
-    // Pair 5 = a third NS pair; with 3 tables its home seat is A3NS, but for a
-    // 2-table draw we model the bye as pair id 5 which must map to a seat — use
-    // TABLES=3 here so pair 5 -> A2EW is a valid seat.
+    // Use TABLES=3 so pair id 5 is a valid pair; its board id is the bare "A5".
     await materializeSwissRound(
       harness.gameId,
       "A",
-      3, // 3 tables so pair 5 (id 5) maps to home seat A2EW
+      3, // 3 tables so pair id 5 is valid (board id "A5")
       1,
       2,
       [
@@ -135,8 +121,8 @@ describe("materializeSwissRound", () => {
       .where(and(eq(boards.section, "A"), eq(boards.status, "SIT_OUT")));
 
     expect(sitOutRows.length).toBe(2); // boards per round = 2
-    // Pair 5 with 3 tables -> home seat A2EW.
-    expect(sitOutRows.every((r) => r.ns === "A2EW")).toBe(true);
+    // Sit-out pair 5 -> bare board id A5.
+    expect(sitOutRows.every((r) => r.ns === "A5")).toBe(true);
 
     // The bye is recovered; the phantom seat is not treated as a pair.
     const history = await getSwissBoardHistory(db, "A", 3);

@@ -1,1 +1,0 @@
-ALTER TABLE `boards` DROP COLUMN `match_ruling`;

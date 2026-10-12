@@ -3,7 +3,7 @@ import "server-only";
 import { eq, or } from "drizzle-orm";
 import { Db } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
-import { assignments as pairAssignments } from "@/db/games/tables/assignments";
+import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import type { Player } from "@/db/games/tables/players";
 import { PairSeat } from "@/model/participants";
 import {
@@ -31,12 +31,15 @@ type PairBoardRow = {
  * total-round padding). The DB reads run in a fixed order.
  */
 export async function getSchedule(db: Db, seat: string) {
-  const assignment = await findAssignment(db, seat);
-  if (!assignment) {
+  const anchorId = await seatAnchorId(db, seat);
+  if (anchorId == null) {
     return null;
   }
 
-  const assignmentId = assignment.id;
+  // A board row's ns/ew carries the seat's ANCHOR id (equal to the seat for
+  // direction-qualified movements, a bare id otherwise), so the schedule joins
+  // on the anchor id.
+  const assignmentId = anchorId;
   // The pair's side for submission is based on the initialSeat suffix.
   const side: "NS" | "EW" = seat.endsWith("NS") ? "NS" : "EW";
 
@@ -64,13 +67,20 @@ export async function getSchedule(db: Db, seat: string) {
 
 // --- DB reads (kept in a fixed call order the tests rely on) -------------
 
-/** Look up this seat's assignment row (null when the seat has none yet). */
-function findAssignment(db: Db, seat: string) {
-  return db
-    .select()
-    .from(pairAssignments)
-    .where(eq(pairAssignments.initialSeat, seat as PairSeat))
+/**
+ * The board id (anchor) for a seat's occupancy, or null when the seat is still
+ * empty. Falls back to the seat itself when the anchor has not been stamped
+ * (the id equals the seat for direction-qualified movements, and a game may not
+ * have been materialised yet).
+ */
+async function seatAnchorId(db: Db, seat: string): Promise<string | null> {
+  const row = await db
+    .select({ seat: seatOccupancy.seat, anchorId: seatOccupancy.anchorId })
+    .from(seatOccupancy)
+    .where(eq(seatOccupancy.seat, seat as PairSeat))
     .get();
+  if (row == null) return null;
+  return row.anchorId ?? row.seat;
 }
 
 /** All board rows in which this pair appears as NS or EW. */

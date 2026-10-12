@@ -21,8 +21,10 @@ import {
 } from "@/lib/section-service";
 import { evictParticipant } from "@/lib/participant-service";
 import {
+  handoverSeat,
   setParticipantStanding,
   setSeatExpectedLate,
+  type HandoverRequest,
   type StandingChange,
 } from "@/lib/standing-service";
 import { useGameStarted } from "@/hooks/game-started";
@@ -201,6 +203,18 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
     }
   }
 
+  // Hand a seat over from its stand-in to the arriving real pair (§2.4.7). The
+  // server derives the boards-played split from the entered results and
+  // re-broadcasts PARTICIPANTS + a leaderboard snapshot, so no manual mutate is
+  // needed here.
+  async function handleHandover(seat: Seat, request: HandoverRequest) {
+    try {
+      await handoverSeat(gameId, seat, request);
+    } catch (err) {
+      alert(errorMessage(err, "Failed to hand over the seat"));
+    }
+  }
+
   // Mark/unmark an empty seat "expected late". The expected-late set is HTTP
   // (not pushed), so mutate it after a successful toggle to reflect immediately.
   async function handleToggleExpectedLate(seat: Seat, next: boolean) {
@@ -347,6 +361,7 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
         onToggleStationary={handleToggleStationary}
         onChangeStanding={handleChangeStanding}
         onToggleExpectedLate={handleToggleExpectedLate}
+        onHandover={handleHandover}
         onClose={() => setOpenTable(null)}
       />
     </GamePageLayout>

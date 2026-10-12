@@ -14,6 +14,16 @@ sequences the work so each step is independently shippable and testable.
 
 ## 1. What this is
 
+> **Note (post-refactor).** This document was written against the original
+> `participants` + `assignment` tables, which have since been replaced by the
+> first-class **`seat_occupancy`** entity (see
+> [`seat-occupancy-handover.md`](./seat-occupancy-handover.md)). The withdrawal /
+> late-arrival **lifecycle columns** described below (`standing`,
+> `withdrawnInRound`, `withdrawalTreatment`, `withdrawalFinePercent`) now live on
+> `seat_occupancy` rather than `participants`, and the behaviour is otherwise
+> exactly as described. Read "`participants` row" throughout as "the seat's
+> occupancy". §9 is updated in place.
+
 Today a seated pair/team is a bare identity row (`participants`: seat +
 two players + secret key — no state). The only way to remove one is
 `deleteParticipant`, a **hard delete** that also deletes the player rows and
@@ -382,11 +392,12 @@ is a direct payoff of that work, as the matches-table design predicted.
      starts one pair short: `SIT_OUT` rows credited 0.6 (`swissSitOutScoredBoards`).
      No new work — a one-pair-short start IS the pre-scheduled sit-out.
    - **(c) Half-table at the start, pair ARRIVES mid-session and plays the
-     rest — DEFERRED (§9).** This is the only part that needs the per-seat,
-     per-board-range substitute identity the model does not have (a seat whose
-     early boards belong to a without-standing sub and whose later boards belong
-     to the real pair). It is the same seat-occupancy model build-order step 8
-     defers, so it stays there. Relaxing the "at most one sit-out"
+     rest — DEFERRED (§9).** This is the part that needs a seat held by two
+     pairs over disjoint board sets (early boards = without-standing sub, later
+     boards = the real pair). That **identity layer now exists** — the
+     first-class `seat_occupancy` model (`seat-occupancy-handover.md`, slice 1) —
+     but the scoring/UX on top of it (that doc's slices 3–5) is deferred, so
+     this case stays deferred too. Relaxing the "at most one sit-out"
      start rule (`start-validator.ts`) is only needed for THIS case, so it is
      deferred with it — case (a) needs no start-validator change (a latecomer is
      seated for the whole event and simply has unplayed early board rows).
@@ -395,10 +406,11 @@ is a direct payoff of that work, as the matches-table design predicted.
    unit/int tests first; the UI lands once the scoring is trustworthy.
 8. **(Deferred to the end) Stand-by → real-pair handover (§2.4.7 swap-in).** The
    mid-session case where a sub plays some boards "without standing" and the
-   real pair reclaims the seat for the rest. This needs a model the appliance
-   does not yet have (a per-seat, per-board-range substitute identity) — see
-   §9. Intentionally last, and only if real demand appears; the director can
-   approximate it until then.
+   real pair reclaims the seat for the rest. The identity layer it needs — a seat
+   held by two pairs over disjoint board sets — **is now built** (the first-class
+   `seat_occupancy` model); its scoring/auth/UX remain (see §9 and
+   `seat-occupancy-handover.md` §8, slices 3–5). Intentionally last, and only if
+   real demand appears; the director can approximate it until then.
 
 ---
 
@@ -500,51 +512,41 @@ results count for opponents, not for themselves). The real pair then arrives in
 time to play half the boards, reclaims the seat, and keeps its standing for the
 rest; the stand-by's boards are handled per §2.4.7.
 
-**Why the current model can't represent it.** `standing` is a single enum on
-**one `participants` row keyed by `initialSeat`**, and board rows are keyed by
-**seat** (`ns` / `ew` = e.g. `A1NS`), not by _who_ sat there. So a seat holds
-exactly one pair identity and one standing. The model can say "the pair at seat
-A1NS does not count" (whole-session without-standing) and "the pair at A1NS
-withdrew", but it has **no way to say** "boards 1–6 at A1NS were played by a
-_different_, without-standing pair, and boards 7–24 by the real pair who then
-counts". The seat's results are an undifferentiated whole, and there is no
-second identity for the sub nor a board-range link crediting each pair its own
-boards. The §3 model deliberately conflates "this seat's pair doesn't count"
-with "a sub is temporarily here" — fine for the whole-session case, wrong for a
-handover.
+**Why the OLD model couldn't represent it.** `standing` used to be a single
+enum on **one `participants` row keyed by `initialSeat`**, with board rows keyed
+by **seat**, not by _who_ sat there — so a seat held exactly one pair identity
+and one standing. It could say "the pair at A1NS does not count" or "withdrew",
+but had **no way to say** "boards 1–6 at A1NS were played by a _different_,
+without-standing pair, and boards 7–24 by the real pair who then counts". The
+seat's results were an undifferentiated whole.
 
-**What a real implementation would need** (any one of):
+**The model change has since LANDED.** The identity layer was rebuilt around a
+first-class **`seat_occupancy`** entity (see
+[`seat-occupancy-handover.md`](./seat-occupancy-handover.md)), replacing
+`participants` and `assignment`. An occupancy is `(seat, anchorId, board set,
+players, standing, secret)`; a seat can now hold **different pairs over disjoint
+board sets, each with its own standing**. The ordinary game is the degenerate
+single whole-seat occupancy, so behaviour is unchanged until a handover is
+recorded. This is the **clean occupancy-as-primary model, not the sidecar** the
+first draft of that doc proposed — the sidecar (keeping `participants` primary
+and bolting exceptions beside it) was rejected as blast-radius avoidance.
 
-1. A **per-seat substitute identity over a board range** — e.g. a
-   `seat_occupancy` sidecar (`seat`, `playerPair`, `boardStart`, `boardEnd`,
-   `standing`) so a seat can be held by different pairs over disjoint board
-   ranges, each with its own standing, and the scorers credit each pair only its
-   own boards. This is the faithful model but a real schema + scoring change.
-2. A **director-driven approximation** (no new identity): the director marks the
-   seat `WITHOUT_STANDING` while the sub plays, then flips it back to `ACTIVE`
-   on arrival — accepting that the handful of boards the sub played are credited
-   to the real pair as if they had played them. Physically the cards sit at the
-   table, so this is close to what happens anyway; it is wrong only in that the
-   sub's boards count for the real pair's own score (the §2.4.7 nuance of
-   scoring those boards AVE+/AVE− to the real pair is not applied).
+So the schema the faithful implementation needs now **exists**. What remains is
+the behaviour on top of it (slices 3–5 of the handover doc): the per-board
+scoring attribution (sub boards → opponents only; real-pair gap → AVE−), auth
+resolving the occupant of a specific board, and the director handover UX.
 
-**Decision: defer to the end** (build-order step 8), and only if real demand
-appears. A mid-session stand-by handover is a rare club occurrence, option 1 is
-disproportionate to that frequency, and option 2 is a director workaround — and,
-as the §2.4.9 rules confirm, option 2 is actually **wrong**: it would transfer
-the stand-in's board results to the real pair, whereas the White Book scores the
-sub's boards "without standing" (opponents only) and gives the real pair AVE− for
-its unplayed early boards (no credit transfer). The whole-session without-standing
-case (step 3) and the withdrawal cases (steps 4–5) cover the common ground; this
-item is the remaining §2.4.7 refinement.
+**The director workaround is still wrong — do not use it.** Marking the seat
+`WITHOUT_STANDING` for the whole session under-credits the real pair; flipping
+it to `ACTIVE` on arrival **transfers the stand-in's board results to the real
+pair**, which §2.4.9 forbids (the sub's boards are "without standing" — opponents
+only — and the real pair gets AVE− for its unplayed early boards, no credit
+transfer). Neither single-standing-per-seat value scores a handover correctly;
+that is precisely what the occupancy model was built to fix.
 
-**The faithful design is written up** — see
-[`seat-occupancy-handover.md`](./seat-occupancy-handover.md): a `seat_occupancy`
-sidecar lets two standings apply to disjoint board ranges of one seat (sub =
-without-standing on its boards; real pair = late arrival, AVE− for the gap),
-without disturbing the one-row-per-seat `participants` invariant. Still deferred;
-the doc exists so the next person building it starts from the right model and
-does not fall into the "flip to ACTIVE" credit-transfer trap.
+**Still deferred:** the handover *feature* (slices 3–5) is not built yet — only
+the identity layer it needs. Build it when real demand appears; a mid-session
+stand-by handover is a rare club occurrence.
 
 ---
 
@@ -570,9 +572,9 @@ Two linked things:
 
 This is distinct from the deferred §9 "stand-by handover": there is **no
 substitute** playing the seat's early boards — the seat is simply empty until
-the real pair arrives. That makes it representable without the per-board-range
-`seat_occupancy` identity §9 needs, because an empty seat already flows through
-the whole stack as a seat-id string with no participant (see §10.4).
+the real pair arrives. That makes it representable without the per-board
+occupancy *scoring* §9 needs (slices 3–5), because an empty seat already flows
+through the whole stack as a seat-id string with no occupancy (see §10.4).
 
 ### 10.2 Scope decisions (user-confirmed)
 
@@ -737,7 +739,8 @@ home-NS seat), as the scoring already handles.
 ### 10.8 Non-goals (unchanged from §9)
 
 The mid-session **stand-by handover** (a substitute plays the early boards
-"without standing", then the real pair takes over) remains deferred — that still
-needs the per-board-range `seat_occupancy` identity. The expected-late case here
+"without standing", then the real pair takes over) remains deferred — its
+`seat_occupancy` identity layer is built, but the per-board scoring on top of it
+is not (§9; `seat-occupancy-handover.md` slices 3–5). The expected-late case here
 is strictly the **empty-seat** form (nobody plays the early boards), which is why
 it is buildable now.

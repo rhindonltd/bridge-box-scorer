@@ -58,7 +58,7 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
     const db = (await games.getDb(gameId))!;
 
     const { players } = await import("@/db/games/tables/players");
-    const { participants } = await import("@/db/games/tables/participants");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { matches } = await import("@/db/games/tables/matches");
     const { boards } = await import("@/db/games/tables/boards");
 
@@ -75,9 +75,10 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
         .values({ firstName: `${s}2`, lastName: "y" })
         .returning()
         .get();
-      db.insert(participants)
+      db.insert(seatOccupancy)
         .values({
-          initialSeat: s as `${string}${number}NS`,
+          seat: s as `${string}${number}NS`,
+          boards: null,
           player1: p1.id,
           player2: p2.id,
           secretKey: s,

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getDb } from "@/db/games";
-import { participants } from "@/db/games/tables/participants";
+import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { eq } from "drizzle-orm";
 import { PairSeat } from "@/model/participants";
 
@@ -56,7 +56,7 @@ export type StandingChange =
  * withdrawal/late-arrival is always whole-team, so the caller passes that home
  * seat.
  *
- * Returns true when a participant row was updated, false when no pair is seated
+ * Returns true when an occupancy was updated, false when no pair is seated
  * at `seat`. Clears the withdrawal-specific fields when moving to a standing
  * that does not use them, so the row never carries stale treatment data.
  */
@@ -97,10 +97,10 @@ export async function withdrawParticipant(
         };
 
   const result = await db
-    .update(participants)
+    .update(seatOccupancy)
     .set(values)
-    .where(eq(participants.initialSeat, seat as PairSeat))
-    .returning({ initialSeat: participants.initialSeat });
+    .where(eq(seatOccupancy.seat, seat as PairSeat))
+    .returning({ seat: seatOccupancy.seat });
 
   return result.length > 0;
 }

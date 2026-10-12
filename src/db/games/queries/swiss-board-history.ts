@@ -39,21 +39,49 @@ export interface SwissBoardHistory {
   highestRound: number;
 }
 
+/** A section-qualified bare Swiss board id: a section letter + the pair number. */
+const SWISS_BOARD_ID_REGEX = /^[A-Z]+(\d+)$/;
+
 /**
- * Recover a Swiss stable pair id from the participant id stored on a board row.
+ * Recover a Swiss stable pair id from the id stored on a board row's `ns`/`ew`
+ * (equivalently a leaderboard line's `pairId`, or a match's `home`/`opponent`).
  *
- * Swiss participant ids are a pair's round-1 home seat (section-qualified, e.g.
- * "A1NS"): the table + direction decode to the stable integer id via the same
- * numbering the pairing engine uses. Returns null for anything that isn't a
- * valid seat (e.g. the sit-out phantom), so callers skip non-pair seats.
+ * A Swiss board id is the pair's bare, section-qualified number, e.g. "A1" or
+ * "A5" — the stable id from the pairing engine (NS pairs 1..tables, EW pairs
+ * tables+1..2·tables), with no compass direction (a Swiss pair changes
+ * direction round to round). Returns null for anything that isn't such an id
+ * (e.g. the sit-out phantom "APHANTOM"), so callers skip non-pair ids.
+ *
+ * NB: this takes a BOARD id, not a physical seat. To decode a physical seat
+ * (e.g. "A1NS", a round-1 home chair) use {@link swissPairIdFromSeat}.
  */
 export function swissPairIdFromParticipant(
   participantId: string,
+  _tables: number,
+): SwissPairId | null {
+  const match = SWISS_BOARD_ID_REGEX.exec(participantId);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
+
+/**
+ * Recover a Swiss stable pair id from a PHYSICAL seat (section-qualified, with
+ * a compass direction, e.g. "A1NS") — the round-1 home chair a pair sat down
+ * at. The table + direction decode to the stable integer id via the pairing
+ * engine's numbering. Returns null for anything that isn't a valid seat.
+ *
+ * Used where the input is a physical seat rather than a board id: the Swiss
+ * round-1 odd-field sit-out seat (from the expected-seat derivation) and the
+ * seated-set read from `seat_occupancy.seat`.
+ */
+export function swissPairIdFromSeat(
+  seat: string,
   tables: number,
 ): SwissPairId | null {
   let parsed;
   try {
-    parsed = parseSeat(participantId);
+    parsed = parseSeat(seat);
   } catch {
     return null;
   }

@@ -51,7 +51,7 @@ describe("buildSectionRows", () => {
     expect(boardRows[1].boardNumber).toBe(2);
   });
 
-  it("only emits assignment rows for round 1, section-qualified and seated", () => {
+  it("only derives seat anchors from round 1, section-qualified and seated", () => {
     const movement: MaterializableMovement = [
       {
         tableNumber: 2,
@@ -62,11 +62,13 @@ describe("buildSectionRows", () => {
       },
     ];
 
-    const { assignmentRows } = buildSectionRows("B", movement);
+    const { anchors } = buildSectionRows("B", movement);
 
-    expect(assignmentRows).toEqual([
-      { id: "B5", initialSeat: "B2NS" },
-      { id: "B9", initialSeat: "B2EW" },
+    // Round 1 maps each physical seat to the board id ("anchor") written to its
+    // rows. Table 2: NS seat B2NS -> board id B5, EW seat B2EW -> board id B9.
+    expect(anchors).toEqual([
+      { seat: "B2NS", anchorId: "B5" },
+      { seat: "B2EW", anchorId: "B9" },
     ]);
   });
 
@@ -118,9 +120,9 @@ describe("buildSectionRows", () => {
   });
 
   it("returns empty rows for an empty movement", () => {
-    const { boardRows, assignmentRows } = buildSectionRows("A", []);
+    const { boardRows, anchors } = buildSectionRows("A", []);
     expect(boardRows).toEqual([]);
-    expect(assignmentRows).toEqual([]);
+    expect(anchors).toEqual([]);
   });
 });
 

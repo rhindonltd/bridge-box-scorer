@@ -6,9 +6,9 @@ import type { Db } from "@/db/games";
 import type { PairSeat } from "@/model/participants";
 
 /**
- * Integration coverage for the players + participants slice of the per-game
+ * Integration coverage for the players + seat-occupancy slice of the per-game
  * database: createPlayer, createParticipant, deleteParticipant, and the
- * findPairs / findPairForPlayerId queries, against a real migrated SQLite file.
+ * findPairs query, against a real migrated SQLite file.
  */
 describe("games db: players and participants", () => {
   let harness: DbHarness;
@@ -76,29 +76,6 @@ describe("games db: players and participants", () => {
     });
   });
 
-  it("finds the participant for either seated player id", async () => {
-    const { p1, p2 } = await seatPair("A2NS");
-
-    const { findPairForPlayerId } = await import(
-      "@/db/games/queries/find-pair-for-player-id"
-    );
-
-    const byP1 = await findPairForPlayerId(harness.gameId, p1.id);
-    const byP2 = await findPairForPlayerId(harness.gameId, p2.id);
-
-    expect(byP1?.initialSeat).toBe("A2NS");
-    expect(byP2?.initialSeat).toBe("A2NS");
-  });
-
-  it("returns undefined when no participant matches the player id", async () => {
-    const { findPairForPlayerId } = await import(
-      "@/db/games/queries/find-pair-for-player-id"
-    );
-
-    const result = await findPairForPlayerId(harness.gameId, 9999);
-    expect(result).toBeUndefined();
-  });
-
   it("deletes a participant and both of their player rows", async () => {
     const { p1, p2 } = await seatPair("A3NS");
 
@@ -132,8 +109,8 @@ describe("games db: players and participants", () => {
   it("a freshly seated participant defaults to ACTIVE standing", async () => {
     await seatPair("A4NS");
     const db = (await harness.getDb()) as Db;
-    const { participants } = await import("@/db/games/tables/participants");
-    const row = db.select().from(participants).all()[0];
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const row = db.select().from(seatOccupancy).all()[0];
     expect(row.standing).toBe("ACTIVE");
     expect(row.withdrawnInRound).toBeNull();
     expect(row.withdrawalTreatment).toBeNull();
@@ -155,9 +132,9 @@ describe("games db: players and participants", () => {
     });
     expect(ok).toBe(true);
 
-    const { participants } = await import("@/db/games/tables/participants");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { players } = await import("@/db/games/tables/players");
-    const row = db.select().from(participants).all()[0];
+    const row = db.select().from(seatOccupancy).all()[0];
     expect(row.standing).toBe("WITHDRAWN");
     expect(row.withdrawnInRound).toBe(3);
     expect(row.withdrawalTreatment).toBe("PENALISED");
@@ -173,7 +150,7 @@ describe("games db: players and participants", () => {
     const { withdrawParticipant } = await import(
       "@/db/games/actions/withdraw-participant"
     );
-    const { participants } = await import("@/db/games/tables/participants");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const db = (await harness.getDb()) as Db;
 
     // Over-max fine is clamped to 40.
@@ -183,7 +160,7 @@ describe("games db: players and participants", () => {
       treatment: "PENALISED",
       finePercent: 99,
     });
-    expect(db.select().from(participants).all()[0].withdrawalFinePercent).toBe(40);
+    expect(db.select().from(seatOccupancy).all()[0].withdrawalFinePercent).toBe(40);
 
     // REMOVE carries no fine, even if a stale one was set before.
     await withdrawParticipant(harness.gameId, "A6NS", {
@@ -191,7 +168,7 @@ describe("games db: players and participants", () => {
       withdrawnInRound: 2,
       treatment: "REMOVE",
     });
-    const removed = db.select().from(participants).all()[0];
+    const removed = db.select().from(seatOccupancy).all()[0];
     expect(removed.withdrawalTreatment).toBe("REMOVE");
     expect(removed.withdrawalFinePercent).toBeNull();
   });
@@ -201,7 +178,7 @@ describe("games db: players and participants", () => {
     const { withdrawParticipant } = await import(
       "@/db/games/actions/withdraw-participant"
     );
-    const { participants } = await import("@/db/games/tables/participants");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const db = (await harness.getDb()) as Db;
 
     // First withdraw, then flip to without-standing: the withdrawal fields clear.
@@ -214,7 +191,7 @@ describe("games db: players and participants", () => {
     await withdrawParticipant(harness.gameId, "A7NS", {
       standing: "WITHOUT_STANDING",
     });
-    const row = db.select().from(participants).all()[0];
+    const row = db.select().from(seatOccupancy).all()[0];
     expect(row.standing).toBe("WITHOUT_STANDING");
     expect(row.withdrawnInRound).toBeNull();
     expect(row.withdrawalTreatment).toBeNull();

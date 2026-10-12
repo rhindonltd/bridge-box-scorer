@@ -46,6 +46,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -62,6 +63,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -84,6 +86,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -109,6 +112,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -126,6 +130,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -153,6 +158,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -170,6 +176,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -196,6 +203,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -213,6 +221,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={onClose}
       />,
     );
@@ -232,6 +241,7 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -239,5 +249,105 @@ describe("DirectorTableModal", () => {
     expect(
       screen.getAllByRole("button", { name: "No" }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("offers a handover action for a seated pair once the game has started", () => {
+    render(
+      <DirectorTableModal
+        table={fullTable()}
+        isSwiss={false}
+        onEvict={vi.fn()}
+        onToggleStationary={vi.fn()}
+        started
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Hand North / South over to the real pair" }),
+    ).toBeInTheDocument();
+  });
+
+  it("emits a handover request with the arriving pair's names and treatment", () => {
+    const onHandover = vi.fn();
+    render(
+      <DirectorTableModal
+        table={fullTable()}
+        isSwiss={false}
+        onEvict={vi.fn()}
+        onToggleStationary={vi.fn()}
+        started
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
+        onHandover={onHandover}
+        onClose={vi.fn()}
+      />,
+    );
+
+    // Open the North/South handover form.
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Hand North / South over to the real pair",
+      }),
+    );
+
+    fireEvent.change(screen.getByLabelText("Player 1 first name"), {
+      target: { value: "Ann" },
+    });
+    fireEvent.change(screen.getByLabelText("Player 1 surname"), {
+      target: { value: "Arrival" },
+    });
+    fireEvent.change(screen.getByLabelText("Player 2 first name"), {
+      target: { value: "Ben" },
+    });
+    fireEvent.change(screen.getByLabelText("Player 2 surname"), {
+      target: { value: "Berry" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
+
+    expect(onHandover).toHaveBeenCalledWith("A1NS", {
+      player1: { firstName: "Ann", lastName: "Arrival" },
+      player2: { firstName: "Ben", lastName: "Berry" },
+      treatment: "PENALISED",
+      finePercent: 0,
+    });
+  });
+
+  it("disables the handover until both arriving players have a surname", () => {
+    render(
+      <DirectorTableModal
+        table={fullTable()}
+        isSwiss={false}
+        onEvict={vi.fn()}
+        onToggleStationary={vi.fn()}
+        started
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Hand North / South over to the real pair",
+      }),
+    );
+
+    const submit = screen.getByRole("button", { name: "Hand over" });
+    expect(submit).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Player 1 surname"), {
+      target: { value: "Only" },
+    });
+    expect(submit).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Player 2 surname"), {
+      target: { value: "Both" },
+    });
+    expect(submit).toBeEnabled();
   });
 });

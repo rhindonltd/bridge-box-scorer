@@ -140,8 +140,8 @@ describe("section queries and actions", () => {
     );
     const { db } = await setup();
     const { players } = await import("@/db/games/tables/players");
-    const { participants } = await import(
-      "@/db/games/tables/participants"
+    const { seatOccupancy } = await import(
+      "@/db/games/tables/seat-occupancy"
     );
 
     await createSection(gameId, { section: "A", tables: 8 });
@@ -157,9 +157,10 @@ describe("section queries and actions", () => {
       .values({ firstName: "C", lastName: "D" })
       .returning()
       .get();
-    db.insert(participants)
+    db.insert(seatOccupancy)
       .values({
-        initialSeat: "A5NS",
+        seat: "A5NS",
+        boards: null,
         player1: p1.id,
         player2: p2.id,
         secretKey: "k",
@@ -186,8 +187,8 @@ describe("section queries and actions", () => {
     );
     const { db } = await setup();
     const { players } = await import("@/db/games/tables/players");
-    const { participants } = await import(
-      "@/db/games/tables/participants"
+    const { seatOccupancy } = await import(
+      "@/db/games/tables/seat-occupancy"
     );
 
     await createSection(gameId, { section: "A", tables: 8 });
@@ -203,9 +204,10 @@ describe("section queries and actions", () => {
       .values({ firstName: "C", lastName: "D" })
       .returning()
       .get();
-    db.insert(participants)
+    db.insert(seatOccupancy)
       .values({
-        initialSeat: "A1NS",
+        seat: "A1NS",
+        boards: null,
         player1: p1.id,
         player2: p2.id,
         secretKey: "k",

@@ -53,6 +53,7 @@ const meta: Meta<typeof DirectorTableModal> = {
     onToggleStationary: fn(),
     onChangeStanding: fn(),
     onToggleExpectedLate: fn(),
+    onHandover: fn(),
     onClose: fn(),
   },
 };

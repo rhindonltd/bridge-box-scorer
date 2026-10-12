@@ -29,6 +29,12 @@ export const SocketEvents = {
   // (§2.4.7), so the game can start short with that seat unfilled. Broadcasts
   // PARTICIPANTS + a leaderboard snapshot (opponents' indemnity changes).
   SET_SEAT_EXPECTED_LATE: "game:setSeatExpectedLate",
+  // Client-initiated (director): EBU §2.3.3/§2.4.7 stand-in → real-pair
+  // handover. The stand-in sitting the seat is demoted to "without standing"
+  // over the boards it already played, and the arriving real pair is seated as
+  // a LATE arrival over the remaining (unplayed) boards. A scored event, so it
+  // broadcasts PARTICIPANTS + a fresh leaderboard snapshot.
+  HANDOVER_SEAT: "game:handoverSeat",
   SELECT_MOVEMENT: "game:selectMovement",
   // NOTE: starting a game is an HTTP route (POST /api/games/[gameId]/start),
   // not a socket event; it promotes the timer and broadcasts GAME_UPDATED from

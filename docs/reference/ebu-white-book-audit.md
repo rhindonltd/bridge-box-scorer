@@ -50,9 +50,9 @@ checklist of what has been implemented and what remains.
 | F7  | Neuberg for short boards | DONE | **High** | FIXED: `neuberg-across-boards.ts` equalises short boards to the full field (E/A Neuberg) at both MP pooling seams |
 | F18 | Cancel/foul a board | DONE | **High** | FIXED: `CANCELLED` status + `cancelBoardResult` + `traveller:cancelBoard`, plus a director UI — a "Cancel / Foul Board" branch on the adjustment hub using the same adjusted-score screen (any A<ns>/<ew> fault split), differing from a normal adjusted score only in the stored status |
 | F19 | Teams unplayable / void match | DONE | **High** | §3.3.7 removed-board indemnity + §3.3.6/§3.3.9 whole-match void (flat 40/60, TD converse, §3.3.9 half-split) + §3.3.6.2 average-the-rest, for ALL teams formats: IMP-based (VP + aggregate IMP, ±3 IMP / per-team VP) and board-comparison (BAM/PAB, win-tie-loss / per-team boards-won). `REMOVED_TEAMS` + `VOID_MATCH` statuses, director UI |
-| F24 | Withdrawals | DONE (scoring) | **High** | §2.4.3–§2.4.6 implemented: a `WITHDRAWN` lifecycle on `participants` (standing + round + `REMOVE`/`PENALISED` treatment + 0–40% fine, via `withdrawParticipant`), with the scoring split by boards actually played. Board-pooled pairs: `withdrawalCreditBoards` credits the withdrawer's own AVE−-minus-fine (PENALISED, capped at half the event) and the opponents' §2.4.4 indemnity (after-half AVE+, before-half cancel→§4.2.3 equalisation). Teams-VP: `applyTeamWithdrawalRulings` voids a withdrawn team's UNPLAYED matches (§3.3.9, withdrawer AVE−/opponent AVE+), honoured by the live scorer AND the USEBIO export. REMOVE drops from the ranking (F26); PENALISED stays. Remaining: director UI to trigger it (build-order step 7); all-play-all own-average indemnity out of scope |
-| F25 | Late arrivals | PARTIAL | **High** (known) | §2.4.7 "retaining standing" DONE: a `LATE` standing (reusing the withdrawal treatment/fine), with the half-boards retain-standing gate in `resolveStandings` — a latecomer present < half the event's boards is scored per §2.4.6 like a withdrawer (pairs + teams-VP). "Never arrives" half-table == the existing pre-scheduled sit-out. Expected-late empty seats at start DONE. Mid-session stand-by→real-pair swap-in deferred: a faithful design (no credit transfer — sub boards without-standing, real pair AVE− for the gap) is written up in `docs/design/seat-occupancy-handover.md` but needs the identity-layer `seat_occupancy` change, so it is unbuilt |
-| F1  | AVE+/AVE− "better than average" | DONE (MP) | Medium | FIXED for matchpoints (standings): AVE+ = max(60%, windowed avg), AVE− = min(40%, avg), via `better-than-average.ts` at the MP leaderboard / Swiss-match / USEBIO-ranking seams; per-board display stays flat. IMP/XIMP deferred |
+| F24 | Withdrawals | DONE (scoring) | **High** | §2.4.3–§2.4.6 implemented: a `WITHDRAWN` lifecycle on the seat occupancy (standing + round + `REMOVE`/`PENALISED` treatment + 0–40% fine, via `withdrawParticipant`), with the scoring split by boards actually played. Board-pooled pairs: `withdrawalCreditBoards` credits the withdrawer's own AVE−-minus-fine (PENALISED, capped at half the event) and the opponents' §2.4.4 indemnity (after-half AVE+, before-half cancel→§4.2.3 equalisation). Teams-VP: `applyTeamWithdrawalRulings` voids a withdrawn team's UNPLAYED matches (§3.3.9, withdrawer AVE−/opponent AVE+), honoured by the live scorer AND the USEBIO export. REMOVE drops from the ranking (F26); PENALISED stays. Remaining: director UI to trigger it (build-order step 7); all-play-all own-average indemnity out of scope |
+| F25 | Late arrivals | DONE | **High** | §2.4.7 "retaining standing" DONE: a `LATE` standing (reusing the withdrawal treatment/fine), with the half-boards retain-standing gate in `resolveStandings` — a latecomer present < half the event's boards is scored per §2.4.6 like a withdrawer (pairs + teams-VP). "Never arrives" half-table == the existing pre-scheduled sit-out. Expected-late empty seats at start DONE. Mid-session stand-by→real-pair swap-in COMPLETE (all 5 slices, see `docs/design/seat-occupancy-handover.md`): a seat holds different pairs over disjoint board sets, each with its own standing; the sub plays without-standing (counted for opponents, unranked via a `#<occId>` scored-field id) and the real pair's gap boards score AVE− (no credit transfer), with the general §4.1.1.1 AVE-valuation rule applied to EVERY synthetic AVE award (§4a/§8). Auth resolves the seat's current (primary) occupant — secret lookup + change-device rotation target the active pair only (slice 4). Director UX: a post-start "Hand over to real pair" action (`game:handoverSeat` → `handoverSeat`) that records the arriving pair + treatment; the boards-played split is DERIVED from the entered results (stand-in keeps boards with a result, real pair takes the rest), so the handover is always from the next board without a result (slice 5, §6). USEBIO caveat: the sub is exported correctly (unranked), but the real pair's gap AVE− is absent from the USEBIO independent ranking, as an ordinary withdrawer's gap already is. v1 limits: pairs only; arriving-pair national-id dedupe is self-only (open question C) |
+| F1  | AVE+/AVE− "better than average" | DONE (MP) | Medium | FIXED for matchpoints (standings): AVE+ = max(60%, windowed avg), AVE− = min(40%, avg), via `better-than-average.ts` at the MP leaderboard / Swiss-match / USEBIO-ranking seams; per-board display stays flat. Now applied to EVERY AVE+/AVE− award, not just director artificial rulings: the synthesised withdrawal / sit-out / empty-late / handover-gap credits are emitted as `A<ns>/<ew>` outcome lines and run through the SAME `applyBetterThanAverage` pass (one post-synthesis pass in `scoreBoardsToOverall`), so a strong indemnified pair keeps its average rather than a flat 60/40. A PENALISED-fined fraction is a non-exact AVE− and is left untouched (the director's deliberate figure). IMP/XIMP deferred (no per-board max) |
 | F2  | "Offenders must not gain" | WONTFIX | Medium | §4.1.1.4 / Law 12C1b is a TD-judgement rule: the director chooses the weighted ruling and the weights that avoid favouring the offending side. The software's role is to support that judgement, not enforce it. No "offender" concept in the model; automating a clamp would risk overriding legitimate TD decisions. No code change — the director applies the lean manually |
 | F8  | Small sub-fields | DONE | Medium | FIXED: §4.2.3.3 65/55 (2 results) / 70/60/50 (3 results) applied in `neuberg-across-boards.ts` when A∈{2,3} and A≤E/3 |
 | F9  | Rounding "away from average" | DONE | Medium | FIXED (§4.2.6.1): each MP board is rounded to the nearest whole matchpoint, exact halves away from the board average (`max/2`), via `round-mp-boards.ts` as the LAST pass (after Neuberg equalisation + better-than-average + sit-out synthesis). Wired at the MP leaderboard / USEBIO-ranking / Swiss-MP-VP seams AND the per-board display, so a published total equals the sum of the shown board scores. Full precision carried through all intermediate calculation |
@@ -791,9 +791,17 @@ short of half is folded into the existing §2.4.4–§2.4.6 passes
 so its unplayed EARLY boards score AVE−/void exactly like a withdrawer's.
 
 Still not implemented (deliberately): the stand-by 45/90-minute rights (TD
-procedure, not scoring) and the mid-session stand-by→real-pair swap-in (needs
-the per-seat/per-board-range substitute identity deferred in design §9/step 8).
-Note **SIT_OUT remains a pre-planned one-pair-short movement/phantom construct**
+procedure, not scoring) and the mid-session stand-by→real-pair swap-in. The
+**identity layer AND per-board scoring that swap-in needs have since been
+built** — the first-class `seat_occupancy` model (slice 1) plus the per-board
+scoring attribution (slice 3): a seat holds different pairs over disjoint board
+sets, the stand-in plays without-standing (counted for opponents, unranked) and
+the real pair's gap scores AVE− with no credit transfer (design
+`seat-occupancy-handover.md` §4a/§8). This also landed the general §4.1.1.1
+rule — every synthetic AVE+/AVE− award (withdrawal, sit-out, empty-late,
+handover) now gets the better-than-average uplift uniformly. What remains for the
+swap-in is per-board auth (slice 4) and the director handover UX (slice 5). Note
+**SIT_OUT remains a pre-planned one-pair-short movement/phantom construct**
 (`start-validator.ts` `sitOutSeat`, `start-game-service.ts` `applySitOut`); the
 White Book's "pair never arrives → treat the forced sit-out as pre-scheduled" is
 exactly that existing path, so it needs no separate code.
@@ -840,9 +848,13 @@ Grouped by what delivers correct published results soonest:
    §2.4.4–§2.4.6 pairs credits, the §3.3.9 teams-VP void, the §2.4.9 ranking
    exclusion (live + USEBIO), and the post-start eviction guard. **F25** PARTIAL
    — §2.4.7 "retaining standing" DONE (the `LATE` standing + half-boards gate);
-   the mid-session stand-by→real-pair swap-in is deferred (seat-occupancy model,
-   design §9). The only remaining withdrawal/late-arrival work is the **director
-   UI** to trigger these states (build-order step 7) — the scoring is complete.
+   the mid-session stand-by→real-pair swap-in's **identity layer (slice 1) AND
+   per-board scoring (slice 3) are now built** (first-class `seat_occupancy` +
+   per-occupant scored-field ids + the general §4.1.1.1 AVE-valuation rule),
+   with per-board auth (slice 4) and the director handover UX (slice 5) deferred
+   (design `seat-occupancy-handover.md` §8). The only remaining
+   withdrawal/late-arrival work is the **director UI** to trigger these states
+   (build-order step 7) — the scoring is complete.
 4. **F1** DONE for matchpoints (IMP/XIMP deferred); **F2** WONTFIX (TD-judgement
    rule, no mechanical clamp). AVE+/AVE− "better than average" + the offenders
    constraint.
@@ -870,8 +882,9 @@ items are small:
   flow on the manage screen so a TD can set the `WITHDRAWN` / `WITHOUT_STANDING`
   / `LATE` standing (the scoring already runs; today the standing is set via the
   action/DB only). Plus a `docs/director-guide.md` update.
-- **F25 mid-session stand-by→real-pair swap-in** — deferred (needs the per-seat,
-  per-board-range substitute identity; design `withdrawals-late-arrivals.md` §9).
+- **F25 mid-session stand-by→real-pair swap-in** — identity layer (slice 1) and
+  per-board scoring (slice 3) built; per-board auth (slice 4) and the director
+  handover UX (slice 5) remain. Design `seat-occupancy-handover.md` §4a/§8.
 - **F1 IMP/XIMP "better than average"** — deferred; the matchpoint case is done.
   Faithful IMP handling needs an IMP-average pass and interacts with the floored
   Butler sign convention.

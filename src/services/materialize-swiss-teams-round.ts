@@ -348,12 +348,9 @@ export async function materializeSwissTeamsRound(
     triple,
   );
 
-  const { boardRows, matchRows, assignmentRows } = buildSectionRows(
-    section,
-    movement,
-  );
+  const { boardRows, matchRows, anchors } = buildSectionRows(section, movement);
 
-  insertSectionDrafts(db, matchRows, boardRows, assignmentRows);
+  insertSectionDrafts(db, matchRows, boardRows, anchors);
 
   return { written: true };
 }

@@ -49,7 +49,7 @@ import {
   type SwissHomeSeat,
   type SwissPairId,
 } from "@/movement/swiss/swiss-pairing";
-import { swissPairIdFromParticipant } from "@/db/games/queries/swiss-board-history";
+import { swissPairIdFromSeat } from "@/db/games/queries/swiss-board-history";
 import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
 
 /**
@@ -254,8 +254,9 @@ function resolveRoundOneHalfMatch(
 ): MaterializableMovement {
   const { tables, boardsPerRound, stationaryPairs } = selected.swiss;
 
-  // The phantom position is the empty seat; every other id is a real pair.
-  const phantomId = swissPairIdFromParticipant(sitOutSeat, tables);
+  // The phantom position is the empty seat (a physical round-1 home chair);
+  // every other id is a real pair.
+  const phantomId = swissPairIdFromSeat(sitOutSeat, tables);
   const standings = swissPairIds(tables).filter((id) => id !== phantomId);
 
   const stationary = new Map<SwissPairId, SwissHomeSeat>();

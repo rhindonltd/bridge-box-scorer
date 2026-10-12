@@ -7,10 +7,11 @@ import Button from "@/components/common/Button";
 import { Toggle } from "@/components/common/Toggle";
 import { PillToggle } from "@/components/common/PillToggle";
 import { NumberStepper } from "@/components/common/NumberStepper";
+import TextField from "@/components/common/TextField";
 import type { Player } from "@/db/games/tables/players";
 import type { ParticipantStanding, Seat } from "@/model/participants";
 import type { DirectorTable } from "@/components/tables/DirectorTableControls";
-import type { StandingChange } from "@/lib/standing-service";
+import type { HandoverRequest, StandingChange } from "@/lib/standing-service";
 
 type StandingValue = ParticipantStanding["standing"];
 
@@ -40,6 +41,12 @@ interface Props {
   onChangeStanding: (seat: Seat, change: StandingChange) => void;
   /** Mark/unmark an empty `seat` as expected-late. */
   onToggleExpectedLate: (seat: Seat, next: boolean) => void;
+  /**
+   * Hand `seat` over from the stand-in sitting it to the arriving real pair
+   * (EBU §2.4.7). The boards-played split is derived server-side from the
+   * entered results.
+   */
+  onHandover: (seat: Seat, request: HandoverRequest) => void;
   /** Close the dialog. */
   onClose: () => void;
 }
@@ -72,6 +79,7 @@ export function DirectorTableModal({
   onToggleStationary,
   onChangeStanding,
   onToggleExpectedLate,
+  onHandover,
   onClose,
 }: Props) {
   const open = table != null;
@@ -111,6 +119,7 @@ export function DirectorTableModal({
                   onToggleStationary={onToggleStationary}
                   onChangeStanding={onChangeStanding}
                   onToggleExpectedLate={onToggleExpectedLate}
+                  onHandover={onHandover}
                   onClose={onClose}
                 />
               )}
@@ -130,6 +139,7 @@ function TableModalBody({
   onToggleStationary,
   onChangeStanding,
   onToggleExpectedLate,
+  onHandover,
   onClose,
 }: {
   table: DirectorTable;
@@ -139,6 +149,7 @@ function TableModalBody({
   onToggleStationary: (tableNumber: number, ns: boolean) => void;
   onChangeStanding: (seat: Seat, change: StandingChange) => void;
   onToggleExpectedLate: (seat: Seat, next: boolean) => void;
+  onHandover: (seat: Seat, request: HandoverRequest) => void;
   onClose: () => void;
 }) {
   return (
@@ -166,6 +177,7 @@ function TableModalBody({
           onToggleStationary={() => onToggleStationary(table.tableNumber, true)}
           onChangeStanding={onChangeStanding}
           onToggleExpectedLate={onToggleExpectedLate}
+          onHandover={onHandover}
         />
         <PairRow
           label="East / West"
@@ -184,6 +196,7 @@ function TableModalBody({
           }
           onChangeStanding={onChangeStanding}
           onToggleExpectedLate={onToggleExpectedLate}
+          onHandover={onHandover}
         />
       </div>
 
@@ -234,6 +247,7 @@ function PairRow({
   onToggleStationary,
   onChangeStanding,
   onToggleExpectedLate,
+  onHandover,
 }: {
   label: string;
   player1: Omit<Player, "id"> | null;
@@ -250,14 +264,18 @@ function PairRow({
   onToggleStationary: () => void;
   onChangeStanding: (seat: Seat, change: StandingChange) => void;
   onToggleExpectedLate: (seat: Seat, next: boolean) => void;
+  onHandover: (seat: Seat, request: HandoverRequest) => void;
 }) {
   const occupied = seat != null;
   const stationaryLabelId = `stationary-${label.replace(/\W+/g, "-")}`;
   const withoutStandingLabelId = `without-standing-${label.replace(/\W+/g, "-")}`;
   const expectedLateLabelId = `expected-late-${label.replace(/\W+/g, "-")}`;
 
-  // Whether the post-start inline standing form is open for this pair.
-  const [editing, setEditing] = useState(false);
+  // Which post-start inline form (if any) is open for this pair: the standing
+  // editor, the stand-in → real-pair handover form, or none.
+  const [openForm, setOpenForm] = useState<"none" | "standing" | "handover">(
+    "none",
+  );
 
   const badge =
     standing && standing !== "ACTIVE" ? STANDING_BADGE[standing] : null;
@@ -333,25 +351,44 @@ function PairRow({
                 Evict pair
               </button>
             </>
-          ) : editing ? (
+          ) : openForm === "standing" ? (
             <StandingForm
               label={label}
               current={standing ?? "ACTIVE"}
-              onCancel={() => setEditing(false)}
+              onCancel={() => setOpenForm("none")}
               onSave={(change) => {
                 onChangeStanding(seat, change);
-                setEditing(false);
+                setOpenForm("none");
+              }}
+            />
+          ) : openForm === "handover" ? (
+            <HandoverForm
+              label={label}
+              onCancel={() => setOpenForm("none")}
+              onSave={(request) => {
+                onHandover(seat, request);
+                setOpenForm("none");
               }}
             />
           ) : (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              aria-label={`Change standing for ${label} pair`}
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              Change standing
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setOpenForm("standing")}
+                aria-label={`Change standing for ${label} pair`}
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Change standing
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpenForm("handover")}
+                aria-label={`Hand ${label} over to the real pair`}
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                Hand over to real pair
+              </button>
+            </>
           )}
         </div>
       ) : !started ? (
@@ -522,6 +559,110 @@ function StandingForm({
           className="flex-1 rounded-lg border border-blue-600 bg-blue-600 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The post-start inline handover editor (EBU §2.4.7 stand-in → real pair). The
+ * stand-in currently sitting the seat keeps the boards it has already scored;
+ * the director records the ARRIVING real pair's names and how their unplayed
+ * (pre-arrival) boards are treated. The boards-played split itself is NOT
+ * entered here — it is derived server-side from the results already in, so the
+ * handover is always from the next board without a result. Local state only;
+ * emits a {@link HandoverRequest} via `onSave`.
+ */
+function HandoverForm({
+  label,
+  onSave,
+  onCancel,
+}: {
+  label: string;
+  onSave: (request: HandoverRequest) => void;
+  onCancel: () => void;
+}) {
+  const [firstName1, setFirstName1] = useState("");
+  const [lastName1, setLastName1] = useState("");
+  const [firstName2, setFirstName2] = useState("");
+  const [lastName2, setLastName2] = useState("");
+  const [treatment, setTreatment] = useState<"REMOVE" | "PENALISED">(
+    "PENALISED",
+  );
+  const [finePercent, setFinePercent] = useState(0);
+
+  const fineLabelId = `handover-fine-${label.replace(/\W+/g, "-")}`;
+
+  // Both players need at least a surname before the handover can be recorded.
+  const canSave = lastName1.trim().length > 0 && lastName2.trim().length > 0;
+
+  function handleSave() {
+    if (!canSave) return;
+    onSave({
+      player1: { firstName: firstName1.trim(), lastName: lastName1.trim() },
+      player2: { firstName: firstName2.trim(), lastName: lastName2.trim() },
+      treatment,
+      ...(treatment === "PENALISED" ? { finePercent } : {}),
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+      <p className="text-sm text-gray-600">
+        Seat the arriving pair for {label}. The stand-in keeps the boards they
+        have already scored; the real pair takes over from the next board
+        without a result.
+      </p>
+
+      <TextField label="Player 1 first name" value={firstName1} onChange={setFirstName1} />
+      <TextField label="Player 1 surname" value={lastName1} onChange={setLastName1} />
+      <TextField label="Player 2 first name" value={firstName2} onChange={setFirstName2} />
+      <TextField label="Player 2 surname" value={lastName2} onChange={setLastName2} />
+
+      <PillToggle<"REMOVE" | "PENALISED">
+        name={`handover-treatment-${label.replace(/\W+/g, "-")}`}
+        legend={`Unplayed boards for the real pair at ${label}`}
+        options={[
+          { value: "REMOVE", label: "Remove" },
+          { value: "PENALISED", label: "Penalised" },
+        ]}
+        value={treatment}
+        onChange={setTreatment}
+      />
+
+      {treatment === "PENALISED" && (
+        <div className="flex items-center justify-between gap-3">
+          <span id={fineLabelId} className="text-sm font-medium text-gray-700">
+            Fine %
+          </span>
+          <div aria-labelledby={fineLabelId}>
+            <NumberStepper
+              min={0}
+              max={40}
+              value={finePercent}
+              zeroCharacter="0"
+              onChange={setFinePercent}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canSave}
+          className="flex-1 rounded-lg border border-blue-600 bg-blue-600 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300"
+        >
+          Hand over
         </button>
       </div>
     </div>

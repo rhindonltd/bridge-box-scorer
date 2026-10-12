@@ -28,6 +28,12 @@ import {
   type WithdrawalRecord,
 } from "@/db/games/queries/ranking-exclusions";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
+import {
+  readSeatOccupancies,
+  buildOccupantScoredIdResolver,
+  nonPrimaryOccupantScoredIds,
+  handoverRealPairGaps,
+} from "@/db/games/queries/seat-occupancy";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { findTeams } from "@/db/games/queries/find-teams";
@@ -180,6 +186,11 @@ function scoreBoardsToOverall(
       mode: "PAIR",
       board: boardNumber,
       section: sectionLabel,
+      // `r.ns`/`r.ew` already carry the OCCUPANT's scored-field id: ordinary
+      // seats keep their bare board id, while a §2.4.7 handover seat's stand-in
+      // boards carry a distinct `#<occId>` id (rewritten up front in
+      // `readLeaderboardInputs`), so the stand-in ranks as its own (excluded)
+      // line while still counting for opponents.
       lines: linesWithResults.map((r) => ({
         nsId: r.ns,
         ewId: r.ew,
@@ -195,8 +206,9 @@ function scoreBoardsToOverall(
   // number of times (half-table, fouled/short boards) by scaling each short
   // board up to the full field via Neuberg (or the §4.2.3.3 small-sub-field
   // rule). A no-op when every board was played the same number of times. Done
-  // before the sit-out synthesis below so the per-board top the byes are
-  // credited against (`maxMatchPoints`) is the equalised full-field top.
+  // before the sit-out / withdrawal synthesis below so the per-board top those
+  // credits are awarded against (`maxMatchPoints`) is the equalised full-field
+  // top.
   if (getCombination(scoringType).perBoard === "MP") {
     const equalised = equaliseMpBoards(
       scoredBoards.map((b) => ({
@@ -204,13 +216,7 @@ function scoreBoardsToOverall(
         lines: b.lines as MatchpointLine[],
       })),
     );
-    // EBU White Book §4.1.1.1: in the STANDINGS, an AVE+/AVE− board gives the
-    // pair the greater-of-60%/lesser-of-40% vs its windowed average on its
-    // other boards. Applied after Neuberg equalisation (so the board tops are
-    // the equalised full-field tops) and only to the copy fed to the overall
-    // aggregator — the per-board traveller keeps the flat 60/40.
-    const adjusted = applyBetterThanAverage(equalised);
-    adjusted.forEach((b, i) => {
+    equalised.forEach((b, i) => {
       scoredBoards[i].lines = b.lines;
     });
   }
@@ -231,6 +237,28 @@ function scoreBoardsToOverall(
   scoredBoards.push(
     ...withdrawalCreditBoards(boardMap, scoringType, scoredBoards, withdrawers),
   );
+
+  // EBU White Book §4.1.1.1: in the STANDINGS, an AVE+/AVE− award gives the
+  // pair the greater-of-60% / lesser-of-40% vs its windowed average on the
+  // boards it actually played. This runs over the REAL boards AND the synthetic
+  // sit-out / withdrawal / handover credits together, so EVERY AVE+/AVE− award
+  // — a director's artificial ruling and every synthesised credit alike — gets
+  // the uplift uniformly (the synthetic credits carry an `A<ns>/<ew>` outcome
+  // so this pass recognises them). A pair's windowed average is computed from
+  // its real played boards only, so adding synthetic lines does not perturb it.
+  // The per-board traveller display keeps the flat 60/40 (this touches only the
+  // copy fed to the aggregator).
+  if (getCombination(scoringType).perBoard === "MP") {
+    const adjusted = applyBetterThanAverage(
+      scoredBoards.map((b) => ({
+        board: b.board,
+        lines: b.lines as MatchpointLine[],
+      })),
+    );
+    adjusted.forEach((b, i) => {
+      scoredBoards[i].lines = b.lines;
+    });
+  }
 
   // EBU White Book §4.2.6.1: round each board's matchpoints to the nearest
   // whole matchpoint (exact halves away from the board average) as the LAST
@@ -384,6 +412,10 @@ function swissSitOutScoredBoards(
               nsId: byePair,
               ewId: phantom,
               score: null,
+              // AVE+ to the bye pair (NS); the phantom (EW) gets nothing. The
+              // outcome token lets §4.1.1.1 uplift the AVE+ from the pair's own
+              // average (a strong pair keeps its average, not a flat 60%).
+              outcome: syntheticAveOutcome(SIT_OUT_MP_FRACTION, 0),
               maxMatchPoints: top,
               nsMatchPoints: SIT_OUT_MP_FRACTION * top,
               ewMatchPoints: 0,
@@ -423,6 +455,20 @@ function swissSitOutScoredBoards(
 /** AVE−/AVE+ as a fraction of the board top. */
 const AVE_MINUS_FRACTION = 0.4;
 const AVE_PLUS_FRACTION = 0.6;
+
+/**
+ * The artificial-outcome token (`A<ns>/<ew>`) for a synthetic MP credit line,
+ * from the two sides' fractions of the board top. This labels the line so the
+ * single §4.1.1.1 `applyBetterThanAverage` pass can recognise it and apply the
+ * better-than-average uplift to an exact AVE+ (60) / AVE− (40) side — while
+ * leaving a PENALISED-fined side (a non-exact percentage, the director's
+ * deliberate figure) and a phantom 0 side untouched. The flat matchpoints the
+ * synthesiser also sets are the fallback the uplift uses when a pair has no
+ * windowed average.
+ */
+function syntheticAveOutcome(nsFraction: number, ewFraction: number): string {
+  return `A${Math.round(nsFraction * 100)}/${Math.round(ewFraction * 100)}`;
+}
 
 /**
  * Build synthetic scored boards for the §2.4.3–§2.4.7 withdrawal/late-arrival
@@ -466,7 +512,17 @@ function withdrawalCreditBoards(
 ): ScoredBoard[] {
   if (withdrawers.length === 0) return [];
   const pluginId = getCombination(scoringType).perBoard;
-  const bySeat = new Map(withdrawers.map((w) => [w.seat, w]));
+
+  // §2.4.7 HANDOVER gap records carry an explicit `unplayedBoards` set and are
+  // handled separately (their gap boards carry the STAND-IN's result, so the
+  // ordinary "no result on the row" scan below cannot find them, and they take
+  // no opponent indemnity). The rest are ordinary withdrawals / empty-late
+  // seats located from the no-result rows.
+  const handoverRecords = withdrawers.filter((w) => w.unplayedBoards != null);
+  const ordinaryWithdrawers = withdrawers.filter(
+    (w) => w.unplayedBoards == null,
+  );
+  const bySeat = new Map(ordinaryWithdrawers.map((w) => [w.seat, w]));
 
   // The event's scheduled board count = the distinct board numbers present (the
   // whole movement is materialised up front for static pairs), for the §2.4.5
@@ -555,6 +611,11 @@ function withdrawalCreditBoards(
               nsId: row.ns,
               ewId: row.ew,
               score: null,
+              // The outcome token lets §4.1.1.1 uplift an EXACT AVE+ (opponent
+              // indemnity) or AVE− (an unfined withdrawer) from the pair's own
+              // average, while leaving a PENALISED-fined fraction (a non-exact
+              // percentage) and a 0 side untouched.
+              outcome: syntheticAveOutcome(nsFraction, ewFraction),
               maxMatchPoints: top,
               nsMatchPoints: nsFraction * top,
               ewMatchPoints: ewFraction * top,
@@ -577,6 +638,70 @@ function withdrawalCreditBoards(
             {
               nsId: row.ns,
               ewId: row.ew,
+              score: null,
+              nsCrossImps: 0,
+              ewCrossImps: 0,
+            },
+          ],
+        });
+      }
+    }
+  }
+
+  // §2.4.7 HANDOVER gaps: the real pair's AVE− on each board the stand-in
+  // played. Keyed to the real pair's own id (the record's seat), on a solo line
+  // with a phantom opponent so NO opponent is indemnified (the opponent already
+  // has a real result against the stand-in). AVE− is uplifted by §4.1.1.1 like
+  // any other, via the artificial outcome token; a PENALISED real pair's fine
+  // reduces it below AVE−. IMP/XIMP: a 0-net line (no per-board max), matching
+  // the ordinary gap treatment.
+  const HANDOVER_PHANTOM = "HANDOVER_GAP_PHANTOM";
+  for (const w of handoverRecords) {
+    // A REMOVE real pair is dropped from the ranking entirely (excluded), so a
+    // self-credit would be pointless — emit nothing for it.
+    if (w.treatment === "REMOVE") continue;
+
+    // §2.4.5/§2.4.6: AVE− minus any fine. A full 40% fine takes it to 0%, but
+    // the board STILL counts — the gap boards are the pair's own boards, so they
+    // belong in its denominator (`max`); a 0% line is emitted, NOT skipped,
+    // otherwise a fined pair would be ranked only on its stronger real boards.
+    const fraction = Math.max(0, AVE_MINUS_FRACTION - w.finePercent / 100);
+
+    for (const boardNumber of w.unplayedBoards!) {
+      if (pluginId === "MP") {
+        const top = topByBoard.get(boardNumber);
+        if (top == null) continue; // no scored sibling board yet
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            {
+              nsId: w.seat,
+              ewId: HANDOVER_PHANTOM,
+              score: null,
+              outcome: syntheticAveOutcome(fraction, 0),
+              maxMatchPoints: top,
+              nsMatchPoints: fraction * top,
+              ewMatchPoints: 0,
+            },
+          ],
+        });
+      } else if (pluginId === "IMP") {
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            { nsId: w.seat, ewId: HANDOVER_PHANTOM, score: null, nsImps: 0, ewImps: 0 },
+          ],
+        });
+      } else {
+        synthetic.push({
+          pluginId,
+          board: boardNumber,
+          lines: [
+            {
+              nsId: w.seat,
+              ewId: HANDOVER_PHANTOM,
               score: null,
               nsCrossImps: 0,
               ewCrossImps: 0,
@@ -892,7 +1017,7 @@ async function readLeaderboardInputs(
   // teams game OR a Swiss Pairs VP (XIMP/MP) game.
   const needsMatches = needsTeams || swissVpMode !== null;
 
-  const [boardRows, matchRows, pairs, teams, standings, lateSeats] =
+  const [rawBoardRows, matchRows, pairs, teams, standings, lateSeats, occupancies] =
     await Promise.all([
       db.select().from(boards) as Promise<Board[]>,
       needsMatches
@@ -904,7 +1029,23 @@ async function readLeaderboardInputs(
       needsTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
       readParticipantStandings(db),
       readExpectedLateSeats(db),
+      readSeatOccupancies(db),
     ]);
+
+  // §2.4.7 HANDOVER: rewrite each board row's ns/ew to its OCCUPANT's
+  // scored-field id. For every ordinary game (0/1 occupancy per seat) this is
+  // the identity, so the whole scoring pipeline is unchanged; only a handover
+  // seat's stand-in boards gain a distinct `#<occId>` id, so the stand-in ranks
+  // as its own line (counted for opponents, dropped from the ranking) while the
+  // real pair keeps the bare seat id. Done ONCE here so every downstream
+  // consumer (scoreBoardsToOverall, resolveStandings, splitByDirection) sees the
+  // occupant ids with no further plumbing.
+  const resolveScoredId = buildOccupantScoredIdResolver(occupancies);
+  const boardRows: Board[] = rawBoardRows.map((b) => ({
+    ...b,
+    ns: resolveScoredId(b.ns, b.boardNumber),
+    ew: resolveScoredId(b.ew, b.boardNumber),
+  }));
 
   // §2.4.9 exclusions and §2.4.3–§2.4.7 withdrawal credits are derived from the
   // standings AND the board rows together — the §2.4.7 LATE retain-standing
@@ -913,6 +1054,20 @@ async function readLeaderboardInputs(
     standings,
     boardRows,
   );
+
+  // §2.4.7 HANDOVER (stand-in → real pair). The stand-in plays "without
+  // standing" (§2.4.9): its results count for opponents (via the rewritten
+  // board rows above) but it is dropped from the ranking.
+  for (const id of nonPrimaryOccupantScoredIds(occupancies)) {
+    excludedFromRanking.add(id);
+  }
+  // The real pair's PRE-ARRIVAL boards (played by the stand-in) are its unplayed
+  // boards → AVE− (§6.5), independent of whether it retained standing. The gap
+  // is credited to the real pair's own id; no opponent indemnity (the opponent
+  // already has a real result against the stand-in). Computed from the RAW board
+  // rows (bare seat id on every one of the seat's boards) — the rewritten rows
+  // carry the stand-in's id on the gap boards, which would hide them.
+  withdrawals.push(...handoverRealPairGaps(occupancies, rawBoardRows));
 
   // §2.4.7 "half-table at the start": a director-marked EMPTY expected-late seat
   // (no participant row yet) credits its opponents AVE+ on the boards they

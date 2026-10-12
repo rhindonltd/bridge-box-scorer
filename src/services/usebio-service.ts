@@ -10,6 +10,11 @@ import {
   resolveStandings,
 } from "@/db/games/queries/ranking-exclusions";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
+import {
+  readSeatOccupancies,
+  buildOccupantScoredIdResolver,
+  findNonPrimaryOccupantPairs,
+} from "@/db/games/queries/seat-occupancy";
 import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
 import { formatPairNumber, sectionOf } from "@/model/participants";
 import { Club } from "@/db/system/schema";
@@ -169,11 +174,24 @@ async function generateMpPairsUsebio(
   club: Club,
   excludedFromRanking: ReadonlySet<string>,
 ) {
-  // Get participants (pairs)
+  // Get participants (pairs) — one per seat (the primary occupant).
   const pairs = await findPairs(db);
 
   // Get all board results
   const allBoards = await db.select().from(boards);
+
+  // §2.4.7 HANDOVER: resolve each board row's ns/ew to its OCCUPANT's
+  // scored-field id (the stand-in's boards get a `#<occId>` id), and surface the
+  // stand-ins so each gets its own `<PAIR>` (so no TRAVELLER_LINE references an
+  // undeclared pair) while being excluded from the placings. All no-ops for an
+  // ordinary game (one occupancy per seat).
+  const occupancies = await readSeatOccupancies(db);
+  const resolveScoredId = buildOccupantScoredIdResolver(occupancies);
+  const standIns = await findNonPrimaryOccupantPairs(db);
+  const excludedWithStandIns = new Set<string>([
+    ...excludedFromRanking,
+    ...standIns.map((s) => s.scoredId),
+  ]);
 
   // The ordered section ids to emit (one <SECTION> each). Each section is its
   // own scoring field, so pair numbers are always emitted UNPREFIXED (e.g.
@@ -197,6 +215,18 @@ async function generateMpPairsUsebio(
     };
   });
 
+  // A `<PAIR>` for each handover stand-in, keyed by its scored-field id (so its
+  // TRAVELLER_LINEs resolve) but excluded from the placings (§2.4.9).
+  for (const standIn of standIns) {
+    usebioPairs.push({
+      pairNumber: formatPairNumber(standIn.scoredId, false),
+      direction: standIn.seat.endsWith("NS") ? "N" : "E",
+      section: sectionOf(standIn.seat),
+      player1: standIn.player1,
+      player2: standIn.player2,
+    });
+  }
+
   // Build board results — each tagged with the section it was played in (from
   // the board row), with unprefixed pair numbers.
   const boardResults: UsebioBoardResult[] = allBoards
@@ -213,8 +243,16 @@ async function generateMpPairsUsebio(
       table: b.tableNumber,
       board: b.boardNumber,
       round: b.roundNumber,
-      nsPairNumber: formatPairNumber(b.ns, false),
-      ewPairNumber: formatPairNumber(b.ew, false),
+      // Resolve to the occupant's scored-field id so a stand-in's boards carry
+      // its `#<occId>` pair number (unchanged bare id for an ordinary seat).
+      nsPairNumber: formatPairNumber(
+        resolveScoredId(b.ns, b.boardNumber),
+        false,
+      ),
+      ewPairNumber: formatPairNumber(
+        resolveScoredId(b.ew, b.boardNumber),
+        false,
+      ),
       outcome: (b.directorOverrideResult ??
         b.confirmedResult ??
         "NP") as BoardOutcome,
@@ -239,7 +277,7 @@ async function generateMpPairsUsebio(
     boards: boardNumbers.size,
     pairs: usebioPairs,
     boardResults,
-    excludedFromRanking,
+    excludedFromRanking: excludedWithStandIns,
   };
 
   return generateUsebioXml(usebioData);

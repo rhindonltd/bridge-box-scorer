@@ -32,7 +32,12 @@ function stubDb(existingRows: unknown[]) {
   const run = vi.fn(() => ({ lastInsertRowid: ++nextId }));
   const values = vi.fn(() => ({ run }));
   const insert = vi.fn(() => ({ values }));
-  const tx = { insert };
+  // Anchor-stamping chain: `update().set().where().run()`.
+  const updateRun = vi.fn();
+  const update = vi.fn(() => ({
+    set: () => ({ where: () => ({ run: updateRun }) }),
+  }));
+  const tx = { insert, update };
   const transaction = vi.fn((cb: (tx: unknown) => unknown) => cb(tx));
 
   const selectChain = {
@@ -42,16 +47,26 @@ function stubDb(existingRows: unknown[]) {
   };
   const select = vi.fn(() => selectChain);
 
-  return { db: { select, transaction }, insert, values, run, transaction };
+  return {
+    db: { select, transaction },
+    insert,
+    values,
+    run,
+    update,
+    updateRun,
+    transaction,
+  };
 }
 
 describe("swissPairMovementId", () => {
-  it("maps a pair id to its round-1 home seat id (2 tables)", () => {
-    // pair 1 -> 1NS, pair 2 -> 2NS, pair 3 -> 1EW, pair 4 -> 2EW.
-    expect(swissPairMovementId(2, 1)).toBe("1NS");
-    expect(swissPairMovementId(2, 2)).toBe("2NS");
-    expect(swissPairMovementId(2, 3)).toBe("1EW");
-    expect(swissPairMovementId(2, 4)).toBe("2EW");
+  it("is the pair's bare stable id, direction-less (2 tables)", () => {
+    // The board id is the engine's bare pair number, direction-less (a Swiss
+    // pair changes direction round to round). The physical round-1 chair (1NS,
+    // 2EW) lives on the occupancy's seat, not here.
+    expect(swissPairMovementId(2, 1)).toBe("1");
+    expect(swissPairMovementId(2, 2)).toBe("2");
+    expect(swissPairMovementId(2, 3)).toBe("3");
+    expect(swissPairMovementId(2, 4)).toBe("4");
   });
 });
 
@@ -78,16 +93,16 @@ describe("swissRoundToMaterializable", () => {
       rounds: [
         {
           roundNumber: 1,
-          ns: "1NS",
-          ew: "1EW",
+          ns: "1",
+          ew: "3",
           boardStart: 1,
           boardEnd: 3,
           match: {
             kind: "PAIRS",
             scoredAsUnit: true,
             key: "1|t1",
-            home: "1NS",
-            opponent: "1EW",
+            home: "1",
+            opponent: "3",
             vpPool: 20,
           },
         },
@@ -103,7 +118,7 @@ describe("swissRoundToMaterializable", () => {
     const sitOut = out[out.length - 1];
     expect(sitOut.tableNumber).toBe(3);
     expect(sitOut.rounds[0].sitOut).toBe(true);
-    expect(sitOut.rounds[0].ns).toBe("2EW"); // pair 5 with 3 tables
+    expect(sitOut.rounds[0].ns).toBe("5"); // sit-out pair 5 (bare id)
     expect(sitOut.rounds[0].ew).toBe("PHANTOM");
   });
 });
@@ -144,8 +159,8 @@ describe("materializeSwissRound", () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  it("writes the round's board and assignment rows inside a transaction", async () => {
-    const { db, insert, values, run, transaction } = stubDb([]);
+  it("writes the round's board rows and stamps anchors inside a transaction", async () => {
+    const { db, insert, values, run, update, transaction } = stubDb([]);
     vi.mocked(getDb).mockResolvedValue(db as any);
 
     const result = await materializeSwissRound(
@@ -160,23 +175,27 @@ describe("materializeSwissRound", () => {
 
     expect(result).toEqual({ written: true });
     expect(transaction).toHaveBeenCalledTimes(1);
-    // Round 1 writes both board rows and assignment rows.
+    // Round 1 writes board rows (insert) and stamps each seat's anchor id
+    // (update) — one update per round-1 seat.
     expect(insert).toHaveBeenCalled();
     expect(values).toHaveBeenCalled();
     expect(run).toHaveBeenCalled();
+    expect(update).toHaveBeenCalled();
   });
 
   it("runs the transaction but inserts nothing when there are no rows to write", async () => {
-    const { db, insert, transaction } = stubDb([]);
+    const { db, insert, update, transaction } = stubDb([]);
     vi.mocked(getDb).mockResolvedValue(db as any);
 
     // Empty seating on a later round -> no board rows and (round > 1) no
-    // assignment rows, so both insert guards inside the transaction are false.
+    // anchors, so the insert guard inside the transaction is false and no
+    // anchor update runs.
     const result = await materializeSwissRound("g1", "A", 2, 2, 3, [], null);
 
     expect(result).toEqual({ written: true });
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(insert).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
   });
 });
 
@@ -216,8 +235,9 @@ describe("swissHalfMatchBoardSplit", () => {
 });
 
 describe("swissHalfMatchToMaterializable", () => {
-  // 3-table event (6 pairs). Group: anchor=1 ("1NS"), halfOne=2 ("2NS"),
-  // halfTwo=4 ("1EW"). Anchor seated NS at table 1; compensation parked at 7,8.
+  // 3-table event (6 pairs). Group: anchor=1 ("1"), halfOne=2 ("2"),
+  // halfTwo=4 ("4"). Anchor seated NS at table 1; compensation parked at 7,8.
+  // Board ids are the bare pair numbers (no compass direction).
   const group: SwissHalfMatchGroup = {
     anchor: 1,
     halfOneOpponent: 2,
@@ -230,26 +250,26 @@ describe("swissHalfMatchToMaterializable", () => {
     expect(anchorTable.tableNumber).toBe(1);
     expect(anchorTable.rounds).toHaveLength(2);
     // Half 1: anchor NS vs halfOneOpponent on boards 1-4.
-    expect(anchorTable.rounds[0]).toMatchObject({ ns: "1NS", ew: "2NS", boardStart: 1, boardEnd: 4 });
+    expect(anchorTable.rounds[0]).toMatchObject({ ns: "1", ew: "2", boardStart: 1, boardEnd: 4 });
     // Half 2: anchor NS vs halfTwoOpponent on boards 5-8.
-    expect(anchorTable.rounds[1]).toMatchObject({ ns: "1NS", ew: "1EW", boardStart: 5, boardEnd: 8 });
+    expect(anchorTable.rounds[1]).toMatchObject({ ns: "1", ew: "4", boardStart: 5, boardEnd: 8 });
   });
 
   it("compensates each non-anchor on the half it missed, as HALF_AVERAGE blocks", () => {
     const out = swissHalfMatchToMaterializable(3, 1, 8, group, { tableNumber: 1, anchorDirection: "NS" }, 7)!;
     const [, compOne, compTwo] = out;
-    // halfOneOpponent (2 → "2NS") played S1, so is compensated on S2 (5-8).
+    // halfOneOpponent (2 → "2") played S1, so is compensated on S2 (5-8).
     expect(compOne).toMatchObject({ tableNumber: 7 });
-    expect(compOne.rounds[0]).toMatchObject({ ns: "2NS", ew: "PHANTOM", boardStart: 5, boardEnd: 8, halfAverage: true });
-    // halfTwoOpponent (4 → "1EW") played S2, so is compensated on S1 (1-4).
+    expect(compOne.rounds[0]).toMatchObject({ ns: "2", ew: "PHANTOM", boardStart: 5, boardEnd: 8, halfAverage: true });
+    // halfTwoOpponent (4 → "4") played S2, so is compensated on S1 (1-4).
     expect(compTwo).toMatchObject({ tableNumber: 8 });
-    expect(compTwo.rounds[0]).toMatchObject({ ns: "1EW", ew: "PHANTOM", boardStart: 1, boardEnd: 4, halfAverage: true });
+    expect(compTwo.rounds[0]).toMatchObject({ ns: "4", ew: "PHANTOM", boardStart: 1, boardEnd: 4, halfAverage: true });
   });
 
   it("puts the anchor EW (opponents NS) when the anchor is seated EW", () => {
     const out = swissHalfMatchToMaterializable(3, 1, 8, group, { tableNumber: 1, anchorDirection: "EW" }, 7)!;
-    expect(out[0].rounds[0]).toMatchObject({ ns: "2NS", ew: "1NS" });
-    expect(out[0].rounds[1]).toMatchObject({ ns: "1EW", ew: "1NS" });
+    expect(out[0].rounds[0]).toMatchObject({ ns: "2", ew: "1" });
+    expect(out[0].rounds[1]).toMatchObject({ ns: "4", ew: "1" });
   });
 
   it("returns null for a round too short to split", () => {
@@ -280,9 +300,11 @@ describe("swissRoundToMaterializable — half-match round", () => {
     // The scorer consumes SwissVpBoardRow[]; the materialized NewBoard rows are
     // structurally compatible (section-qualified ids, status set).
     const rows = boardRows as unknown as SwissVpBoardRow[];
-    const anchor = "A1NS";
-    const oppOne = "A2NS"; // pair 2 → 2NS → A2NS
-    const oppTwo = "A1EW"; // pair 5 (4 tables) → 1EW → A1EW
+    // Board ids are the bare pair numbers (section-qualified): anchor 1 → A1,
+    // halfOne 2 → A2, halfTwo 5 → A5.
+    const anchor = "A1";
+    const oppOne = "A2";
+    const oppTwo = "A5";
 
     const anchorSegs = segmentsForPair(anchor, rowsFor(rows, anchor));
     expect(anchorSegs).toHaveLength(2);
@@ -311,16 +333,21 @@ describe("swissRoundToMaterializable — half-match round", () => {
     expect(halfAvg.every((r) => r.ew === "APHANTOM")).toBe(true);
   });
 
-  it("assigns the anchor a single round-1 seat despite playing two halves", () => {
+  it("derives a single round-1 anchor for the anchor pair despite two halves", () => {
     const movement = swissRoundToMaterializable(4, 1, 8, emptySeating, null, {
       group,
       seat: { tableNumber: 1, anchorDirection: "NS" },
     });
-    const { assignmentRows } = buildSectionRows("A", movement);
-    const anchorAssignments = assignmentRows.filter((a) => a.id === "A1NS");
-    expect(anchorAssignments).toHaveLength(1);
-    // Compensation (phantom) rows never seed an assignment.
-    expect(assignmentRows.some((a) => a.id === "APHANTOM")).toBe(false);
+    const { anchors } = buildSectionRows("A", movement);
+    // The anchor's physical seat A1NS is derived once (not duplicated across its
+    // two halves). Its board-anchor is the bare pair id "A1" (Swiss ids carry no
+    // compass direction).
+    const anchorSeats = anchors.filter((a) => a.seat === "A1NS");
+    expect(anchorSeats).toHaveLength(1);
+    expect(anchorSeats[0].anchorId).toBe("A1");
+    // Compensation (phantom) rows never seed an anchor: every anchor is a real
+    // physical seat (ends NS/EW), never the phantom id ("APHANTOM").
+    expect(anchors.every((a) => /(?:NS|EW)$/.test(a.seat))).toBe(true);
   });
 });
 

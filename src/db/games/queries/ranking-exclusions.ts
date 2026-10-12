@@ -1,5 +1,8 @@
 import { Db } from "@/db/games";
-import { participants } from "@/db/games/tables/participants";
+import {
+  readSeatOccupancies,
+  scoredIdByOccupancyId,
+} from "@/db/games/queries/seat-occupancy";
 
 /**
  * The minimal participant lifecycle row the standing resolver needs. Kept
@@ -49,26 +52,37 @@ export interface WithdrawalRecord {
    * §2.4.4 before-half-cancel / after-half-AVE+ behaviour.
    */
   alwaysIndemnifyOpponent?: boolean;
+  /**
+   * §2.4.7 handover: the EXACT set of board numbers to score AVE− for this
+   * contestant — the real pair's PRE-ARRIVAL (stand-in-played) boards. Used ONLY
+   * for the arriving half of a stand-by → real-pair handover, where the
+   * contestant's gap boards already carry the STAND-IN's result (so the ordinary
+   * "no result on the row" test cannot find them). When set, the credit pass
+   * awards the contestant AVE− on exactly these boards and does NOT indemnify
+   * the opponent (the opponent already has a real result against the stand-in —
+   * no board was lost to it). Absent for an ordinary withdrawal / empty-late
+   * seat, which locate unplayed boards from the no-result rows.
+   */
+  unplayedBoards?: Set<number>;
 }
 
-/** Read every participant's lifecycle standing (seat + treatment + fine). */
+/** Read every occupancy's lifecycle standing (seat + treatment + fine). */
 export async function readParticipantStandings(
   db: Db,
 ): Promise<ParticipantStandingRow[]> {
-  const rows = await db
-    .select({
-      initialSeat: participants.initialSeat,
-      standing: participants.standing,
-      withdrawalTreatment: participants.withdrawalTreatment,
-      withdrawalFinePercent: participants.withdrawalFinePercent,
-    })
-    .from(participants);
+  const occupancies = await readSeatOccupancies(db);
+  // Key each occupancy's standing to its SCORED-FIELD id — the bare seat for an
+  // ordinary occupant, `<seat>#<occId>` for a handover stand-in. This matches
+  // the id its board rows carry after the scoring-path rewrite, so a stand-in's
+  // WITHOUT_STANDING no longer collides with the real pair's standing on the
+  // shared seat (which would wrongly exclude the whole seat from the ranking).
+  const scoredIdById = scoredIdByOccupancyId(occupancies);
 
-  return rows.map((r) => ({
-    seat: r.initialSeat,
-    standing: r.standing,
-    treatment: r.withdrawalTreatment,
-    finePercent: r.withdrawalFinePercent,
+  return occupancies.map((o) => ({
+    seat: scoredIdById.get(o.id) ?? o.anchorId ?? o.seat,
+    standing: o.standing,
+    treatment: o.withdrawalTreatment,
+    finePercent: o.withdrawalFinePercent,
   }));
 }
 

@@ -142,14 +142,16 @@ describe("games db: coverage gaps", () => {
   });
 
   describe("`if (!db) throw` guards on actions and queries", () => {
-    it("createAssignment throws for a missing game db", async () => {
-      const { createAssignment } = await import(
-        "@/db/games/actions/create-assignment"
+    it("createParticipant throws for a missing game db", async () => {
+      const { createParticipant } = await import(
+        "@/db/games/actions/create-participant"
       );
       await expect(
-        createAssignment(missingGameId, {
-          seat: "A1N",
-          playerId: 1,
+        createParticipant(missingGameId, {
+          initialSeat: "A1NS",
+          player1: 1,
+          player2: 2,
+          secretKey: "k",
         } as never),
       ).rejects.toThrow(/Game db does not exist/);
     });
@@ -265,15 +267,6 @@ describe("games db: coverage gaps", () => {
       await expect(
         updateSectionTables(missingGameId, "A", 4),
       ).rejects.toThrow(/Game db does not exist/);
-    });
-
-    it("findPairForPlayerId throws for a missing game db", async () => {
-      const { findPairForPlayerId } = await import(
-        "@/db/games/queries/find-pair-for-player-id"
-      );
-      await expect(findPairForPlayerId(missingGameId, 1)).rejects.toThrow(
-        /Game db does not exist/,
-      );
     });
 
     it("findBoardSubmissions throws for a missing game db", async () => {

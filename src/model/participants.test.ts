@@ -34,6 +34,7 @@ describe("parseSeat", () => {
       section: "A",
       tableNumber: 3,
       direction: "NS",
+      occupancyId: null,
     });
   });
 
@@ -42,6 +43,7 @@ describe("parseSeat", () => {
       section: "A",
       tableNumber: 7,
       direction: "EW",
+      occupancyId: null,
     });
   });
 
@@ -50,6 +52,7 @@ describe("parseSeat", () => {
       section: "B",
       tableNumber: 12,
       direction: "EW",
+      occupancyId: null,
     });
   });
 
@@ -58,6 +61,7 @@ describe("parseSeat", () => {
       section: "C",
       tableNumber: 1,
       direction: "NS",
+      occupancyId: null,
     });
   });
 
@@ -77,6 +81,7 @@ describe("seatFor", () => {
       section: "C",
       tableNumber: 5,
       direction: "EW",
+      occupancyId: null,
     });
   });
 });
@@ -143,6 +148,7 @@ describe("parseSeat accepts a plain string", () => {
       section: "A",
       tableNumber: 3,
       direction: "NS",
+      occupancyId: null,
     });
   });
 
