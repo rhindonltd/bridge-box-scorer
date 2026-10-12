@@ -13,6 +13,7 @@ export const mockGame = {
   handEntryEnabled: false,
   combinedRanking: true,
   bridgewebsEventId: null,
+  tournamentLevel: "NORMAL_CLUB" as const,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };

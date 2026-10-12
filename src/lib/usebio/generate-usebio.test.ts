@@ -150,6 +150,25 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain('<SESSION SESSION_ID="1">');
       expect(xml).toContain('<SECTION SECTION_ID="A">');
     });
+
+    it("emits the default masterpoint fields when no level is set", () => {
+      // makeBasicGameData omits tournamentLevel, so it falls back to NORMAL_CLUB.
+      const xml = generateUsebioXml(makeBasicGameData());
+      expect(xml).toContain("<MASTER_POINT_SCALE>Club</MASTER_POINT_SCALE>");
+      expect(xml).toContain("<MASTER_POINT_TYPE>BLACK</MASTER_POINT_TYPE>");
+      expect(xml).toContain("<P2P_CHARGE_RATE>10</P2P_CHARGE_RATE>");
+    });
+
+    it("emits the masterpoint fields for the chosen tournament level", () => {
+      const data = makeBasicGameData();
+      data.tournamentLevel = "NATIONAL_HEAT";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain(
+        "<MASTER_POINT_SCALE>National</MASTER_POINT_SCALE>",
+      );
+      expect(xml).toContain("<MASTER_POINT_TYPE>GREEN</MASTER_POINT_TYPE>");
+      expect(xml).toContain("<P2P_CHARGE_RATE>30</P2P_CHARGE_RATE>");
+    });
   });
 
   describe("PARTICIPANTS section", () => {

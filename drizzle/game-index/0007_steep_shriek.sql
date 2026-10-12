@@ -1,0 +1,1 @@
+ALTER TABLE `games` ADD `tournament_level` text DEFAULT 'NORMAL_CLUB' NOT NULL;

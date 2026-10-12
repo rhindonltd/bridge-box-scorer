@@ -8,6 +8,8 @@ import useSWR from "swr";
 import { GameType } from "@/db/games/types/game-type";
 import { EventFormat } from "@/db/games/types/event-format";
 import { ScoringType } from "@/db/games/types/scoring-type";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { TOURNAMENT_LEVEL_OPTIONS } from "@/model/tournament-level";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import { Toggle } from "@/components/common/Toggle";
@@ -83,6 +85,10 @@ export function CreateGamePage() {
   const [pairsScoring, setPairsScoring] = useState<
     Extract<ScoringType, "MP" | "XIMP">
   >("MP");
+  // The EBU tournament level, fixing the USEBIO masterpoint/charge fields on
+  // export. Defaults to a normal weekly club session.
+  const [tournamentLevel, setTournamentLevel] =
+    useState<TournamentLevel>("NORMAL_CLUB");
   const [leadCardRequired, setLeadCardRequired] = useState(true);
   const [handEntryEnabled, setHandEntryEnabled] = useState(false);
   const [bridgewebsEventId, setBridgewebsEventId] = useState("");
@@ -174,6 +180,7 @@ export function CreateGamePage() {
       eventDate,
       sectionName: "",
       tables: DEFAULT_TABLES,
+      tournamentLevel,
       leadCardRequired,
       handEntryEnabled,
       // Only attach a BridgeWebs event id when the picker is actually shown, so
@@ -332,6 +339,14 @@ export function CreateGamePage() {
                   inline
                 />
               )}
+
+              <SelectField
+                label="Tournament Level"
+                value={tournamentLevel}
+                options={TOURNAMENT_LEVEL_OPTIONS}
+                onSelect={setTournamentLevel}
+                inline
+              />
 
               <div className="flex items-center justify-between">
                 <label

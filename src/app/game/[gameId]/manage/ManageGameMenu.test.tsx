@@ -98,6 +98,11 @@ describe("ManageGameMenu", () => {
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
 
     fireEvent.click(
+      screen.getByRole("button", { name: "onTournamentLevelClick" }),
+    );
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/tournament-level");
+
+    fireEvent.click(
       screen.getByRole("button", { name: "onDownloadUsebioClick" }),
     );
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/download-usebio");

@@ -1,4 +1,5 @@
 import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
 import { SocketEvents } from "@/socket/socket-events";
 import { emitWithAck, emitEvent } from "@/lib/socket";
 import { NewParticipant } from "@/model/participants";
@@ -93,6 +94,31 @@ export async function updateCombinedRanking(
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     throw new Error(data?.error ?? "Failed to update setting");
+  }
+}
+
+/**
+ * Change a game's EBU tournament level after creation (director-only), so a
+ * level chosen wrongly at setup can be corrected before the results are
+ * submitted. The fresh game row is broadcast to every device. Throws with the
+ * server's error message on failure.
+ */
+export async function updateTournamentLevel(
+  gameId: string,
+  tournamentLevel: TournamentLevel,
+): Promise<void> {
+  const res = await fetch(`/api/games/${gameId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "x-director-token": getDirectorToken(gameId) ?? "",
+    },
+    body: JSON.stringify({ tournamentLevel }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to update tournament level");
   }
 }
 

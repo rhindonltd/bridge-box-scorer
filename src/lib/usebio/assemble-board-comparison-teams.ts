@@ -88,6 +88,7 @@ export function assembleBoardComparisonTeams(
     kind: "BOARD_COMPARISON_TEAMS",
     scoring,
     club: usebioClub,
+    tournamentLevel: game.tournamentLevel,
     eventName: game.eventName,
     eventDate: game.eventDate,
     sectionName: game.sectionName || "A",

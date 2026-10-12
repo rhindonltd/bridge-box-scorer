@@ -20,6 +20,7 @@ const games: BridgeGame[] = [
     handEntryEnabled: false,
     combinedRanking: true,
     bridgewebsEventId: null,
+    tournamentLevel: "NORMAL_CLUB",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

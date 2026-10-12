@@ -3,6 +3,7 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { GameTypes } from "@/db/games/types/game-type";
 import { EventFormats } from "@/db/games/types/event-format";
 import { ScoringTypes } from "@/db/games/types/scoring-type";
+import { TournamentLevels } from "@/db/games/types/tournament-level";
 
 export const games = sqliteTable("games", {
   gameId: text("game_id")
@@ -39,6 +40,15 @@ export const games = sqliteTable("games", {
   // when BridgeWebs is configured). Null when unset; used as `event_id` on the
   // results upload so BridgeWebs attaches results to the right calendar entry.
   bridgewebsEventId: text("bridgewebs_event_id"),
+  // The EBU tournament level the director assigned to this event. Fixes the
+  // three USEBIO EVENT masterpoint/charge fields on export (see
+  // src/model/tournament-level.ts). Defaults to NORMAL_CLUB so existing rows
+  // and games created without a choice still export a valid standard-club event.
+  tournamentLevel: text("tournament_level", {
+    enum: TournamentLevels,
+  })
+    .notNull()
+    .default("NORMAL_CLUB"),
   leadCardRequired: integer("lead_card_required", { mode: "boolean" })
     .notNull()
     .default(true),

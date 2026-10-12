@@ -38,6 +38,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onEnterDealsClick: fn(),
     onMovementClick: fn(),
     onShareDirectorAccessClick: fn(),
+    onTournamentLevelClick: fn(),
     onReviewMismatchesClick: fn(),
     onDownloadUsebioClick: fn(),
     onDownloadPbnClick: fn(),

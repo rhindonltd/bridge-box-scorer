@@ -12,6 +12,7 @@ export interface DirectorMenuPageProps {
   onEnterDealsClick: () => void;
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
+  onTournamentLevelClick: () => void;
   onReviewMismatchesClick: () => void;
   onDownloadUsebioClick: () => void;
   onDownloadPbnClick: () => void;
@@ -80,6 +81,7 @@ export function ManageGameMenuPage({
   onEnterDealsClick,
   onMovementClick,
   onShareDirectorAccessClick,
+  onTournamentLevelClick,
   onReviewMismatchesClick,
   onDownloadUsebioClick,
   onDownloadPbnClick,
@@ -151,6 +153,13 @@ export function ManageGameMenuPage({
           className={standardButtonClass}
         >
           <span className="flex items-center gap-3">Share Director Access</span>
+        </button>
+
+        <button
+          onClick={onTournamentLevelClick}
+          className={standardButtonClass}
+        >
+          <span className="flex items-center gap-3">Tournament Level</span>
         </button>
 
         {showReviewMismatches && (

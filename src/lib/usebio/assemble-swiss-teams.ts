@@ -91,6 +91,7 @@ export function assembleSwissTeams(
   return {
     kind: "SWISS_TEAMS",
     club: usebioClub,
+    tournamentLevel: game.tournamentLevel,
     eventName: game.eventName,
     eventDate: game.eventDate,
     sectionName: game.sectionName || "A",

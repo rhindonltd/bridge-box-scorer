@@ -84,6 +84,7 @@ export function assembleImpAggregateTeams(
     kind: "SWISS_TEAMS",
     matchScoringMethod: "IMPS",
     club: usebioClub,
+    tournamentLevel: game.tournamentLevel,
     eventName: game.eventName,
     eventDate: game.eventDate,
     sectionName: game.sectionName || "A",

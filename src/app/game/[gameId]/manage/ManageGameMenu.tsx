@@ -60,6 +60,9 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       onShareDirectorAccessClick={() =>
         router.push(`/game/${gameId}/manage/share-access`)
       }
+      onTournamentLevelClick={() =>
+        router.push(`/game/${gameId}/manage/tournament-level`)
+      }
       onReviewMismatchesClick={() =>
         router.push(`/game/${gameId}/manage/mismatches`)
       }
