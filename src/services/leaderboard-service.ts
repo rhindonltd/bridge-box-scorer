@@ -7,8 +7,14 @@ import { findPairs } from "@/db/games/queries/find-pairs";
 import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { equaliseMpBoards } from "@/scoring/traveller/pair/neuberg-across-boards";
 import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
+import {
+  applyBetterThanAverageImpBoards,
+  applyBetterThanAverageXimpBoards,
+} from "@/scoring/traveller/pair/better-than-average-imp";
 import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
 import { MatchpointLine } from "@/scoring/traveller/pair/mp";
+import { ImpLine } from "@/scoring/traveller/pair/imp";
+import { XimpLine } from "@/scoring/traveller/pair/x-imp";
 import { PairTraveller } from "@/model/traveller";
 import { BoardOutcome } from "@/model/score";
 import { OverallScore } from "@/model/leaderboard";
@@ -254,6 +260,30 @@ function scoreBoardsToOverall(
         board: b.board,
         lines: b.lines as MatchpointLine[],
       })),
+    );
+    adjusted.forEach((b, i) => {
+      scoredBoards[i].lines = b.lines;
+    });
+  }
+
+  // EBU White Book §4.1.1.1 at IMP / Cross-IMP: the same "better than average"
+  // uplift, but on the IMP scale — an AVE+ board gives the pair the greater of
+  // +3 and its average IMP on its other boards, AVE− the lesser of −3 and its
+  // average. Standings only, like the MP pass; the per-board display keeps the
+  // flat ±3. The synthetic sit-out / withdrawal / handover credits are 0-net
+  // IMP lines with no outcome, so they are neither uplifted nor counted in the
+  // windowed average (which uses real played lines only).
+  const perBoardId = getCombination(scoringType).perBoard;
+  if (perBoardId === "IMP") {
+    const adjusted = applyBetterThanAverageImpBoards(
+      scoredBoards.map((b) => ({ board: b.board, lines: b.lines as ImpLine[] })),
+    );
+    adjusted.forEach((b, i) => {
+      scoredBoards[i].lines = b.lines;
+    });
+  } else if (perBoardId === "XIMP") {
+    const adjusted = applyBetterThanAverageXimpBoards(
+      scoredBoards.map((b) => ({ board: b.board, lines: b.lines as XimpLine[] })),
     );
     adjusted.forEach((b, i) => {
       scoredBoards[i].lines = b.lines;

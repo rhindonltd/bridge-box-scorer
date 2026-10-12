@@ -272,8 +272,9 @@ describe("calculateTeamsVpOverall", () => {
     // The token is home-relative to comparison 1-3 (home = team 1 = NS,
     // opponent = team 3 = EW), so MM:EW:LOWER:OWN targets TEAM 3. Team 3 lost
     // that half (4 VP); LOWER+OWN docks a quarter of its excess over base 2.5:
-    // 4 - (4 - 2.5)/4 = 3.625. Its 2-3 half (4) is untouched → 7.625.
-    expect(t3).toBeCloseTo(4 - (4 - 2.5) / 4 + 4, 5);
+    // 4 - (4 - 2.5)/4 = 3.625, rounded UP to the next 0.5 (§3.5.2) → 4.0. Its
+    // 2-3 half (4) is untouched → 8.0.
+    expect(t3).toBeCloseTo(8, 5);
     // Team 1 (comparison 1-3's NS side) is NOT the ruled side → untouched:
     // 6 (1-2) + 6 (1-3) = 12.
     expect(t1).toBeCloseTo(12, 5);
@@ -284,8 +285,9 @@ describe("calculateTeamsVpOverall", () => {
   it("docks a triple comparison's winner (LOWER + own fault) on the 2.5 base", () => {
     // Comparison 1-3 again, but now rule the HOME side (team 1) the mismatched
     // one: MM:NS:LOWER:OWN. Team 1 won that half 6 VP; LOWER+OWN docks a
-    // quarter of the excess over base 2.5 → 6 - (6 - 2.5)/4 = 5.125. Only team
-    // 1's 1-3 half changes; its 1-2 half and teams 2 & 3 are untouched.
+    // quarter of the excess over base 2.5 → 6 - (6 - 2.5)/4 = 5.125, rounded UP
+    // to the next 0.5 (§3.5.2) → 5.5. Only team 1's 1-3 half changes; its 1-2
+    // half and teams 2 & 3 are untouched.
     const rows: SwissVpBoardRow[] = [
       row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
       row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
@@ -316,8 +318,8 @@ describe("calculateTeamsVpOverall", () => {
     const t2 = result.lines.find((l) => l.teamId === "A2NS")!.vpByRound[1];
     const t3 = result.lines.find((l) => l.teamId === "A3NS")!.vpByRound[1];
 
-    // Team 1: 6 (1-2) + [6 docked to 5.125] (1-3) = 11.125.
-    expect(t1).toBeCloseTo(6 + (6 - (6 - 2.5) / 4), 5);
+    // Team 1: 6 (1-2) + [6 docked to 5.125 → rounded up to 5.5] (1-3) = 11.5.
+    expect(t1).toBeCloseTo(11.5, 5);
     expect(t2).toBeCloseTo(10, 5);
     expect(t3).toBeCloseTo(8, 5);
   });
@@ -592,7 +594,9 @@ describe("calculateTeamsVpOverall — §3.5 mismatch adjustment", () => {
     );
     const ruledOpp = ruled.lines.find((l) => l.teamId === "A2NS")!.vpByRound[1];
 
-    expect(ruledOpp).toBeCloseTo(5 + 0.75 * baseOpp, 5);
+    // 5 + ¾ × actual, then rounded UP to the next 0.5 VP (§3.5.2).
+    const expected = Math.ceil((5 + 0.75 * baseOpp) * 2) / 2;
+    expect(ruledOpp).toBeCloseTo(expected, 5);
     expect(ruledOpp).toBeGreaterThan(baseOpp);
   });
 });

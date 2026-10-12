@@ -462,9 +462,11 @@ describe("calculateSwissMpVpOverall — §3.5 mismatch adjustment", () => {
     const ruledA1 = ruled.lines.find((l) => l.pairId === "A1NS")!.vpByRound[1];
     const ruledA2 = ruled.lines.find((l) => l.pairId === "A2EW")!.vpByRound[1];
 
-    // A1NS topped the field (20 VP actual) → docked to 20 − (20−5)/4 = 16.25.
+    // A1NS topped the field (20 VP actual) → docked to 20 − (20−5)/4 = 16.25,
+    // then rounded UP to the next 0.5 VP in the competitor's favour (§3.5.2) →
+    // 16.5.
     expect(baseA1).toBe(20);
-    expect(ruledA1).toBeCloseTo(16.25, 5);
+    expect(ruledA1).toBeCloseTo(16.5, 5);
     // The opponent (A2EW) is untouched by the ruling.
     expect(ruledA2).toBe(baseA2);
   });
