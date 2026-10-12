@@ -270,6 +270,7 @@ async function generateMpPairsUsebio(
     },
     eventName: game.eventName,
     eventDate: game.eventDate,
+    tournamentLevel: game.tournamentLevel,
     scoringType: game.scoringType,
     tables: game.tables,
     sectionName: game.sectionName || "A",

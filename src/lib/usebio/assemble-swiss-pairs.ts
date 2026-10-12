@@ -70,6 +70,7 @@ export function assembleSwissPairs(
   return {
     kind: "SWISS_PAIRS",
     club: usebioClub,
+    tournamentLevel: game.tournamentLevel,
     eventName: game.eventName,
     eventDate: game.eventDate,
     sectionName: game.sectionName || "A",

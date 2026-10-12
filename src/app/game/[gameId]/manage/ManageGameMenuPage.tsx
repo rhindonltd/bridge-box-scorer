@@ -12,10 +12,12 @@ export interface DirectorMenuPageProps {
   onEnterDealsClick: () => void;
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
+  onTournamentLevelClick: () => void;
   onReviewMismatchesClick: () => void;
   onDownloadUsebioClick: () => void;
   onDownloadPbnClick: () => void;
   onUploadBridgewebsClick: () => void;
+  onUploadEbuClick: () => void;
   onDeleteGameClick: () => void;
   /** Show "Set Up Game" — only before the game has started. */
   showSetUpGame: boolean;
@@ -59,6 +61,16 @@ export interface DirectorMenuPageProps {
    * (results are what get uploaded) and while the completion signal loads.
    */
   uploadBridgewebsDisabled: boolean;
+  /**
+   * Show "Submit to EBU" — only once the game has started AND EBU is configured
+   * in Settings. Hidden entirely when unconfigured.
+   */
+  showUploadEbu: boolean;
+  /**
+   * Render "Submit to EBU" as disabled — used until every result is in (results
+   * are what get submitted) and while the completion signal loads.
+   */
+  uploadEbuDisabled: boolean;
 }
 
 export function ManageGameMenuPage({
@@ -69,10 +81,12 @@ export function ManageGameMenuPage({
   onEnterDealsClick,
   onMovementClick,
   onShareDirectorAccessClick,
+  onTournamentLevelClick,
   onReviewMismatchesClick,
   onDownloadUsebioClick,
   onDownloadPbnClick,
   onUploadBridgewebsClick,
+  onUploadEbuClick,
   onDeleteGameClick,
   showSetUpGame,
   showManageTables,
@@ -85,6 +99,8 @@ export function ManageGameMenuPage({
   showDownloadPbn,
   showUploadBridgewebs,
   uploadBridgewebsDisabled,
+  showUploadEbu,
+  uploadEbuDisabled,
 }: DirectorMenuPageProps) {
   const standardButtonClass =
     "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed pl-4";
@@ -139,6 +155,13 @@ export function ManageGameMenuPage({
           <span className="flex items-center gap-3">Share Director Access</span>
         </button>
 
+        <button
+          onClick={onTournamentLevelClick}
+          className={standardButtonClass}
+        >
+          <span className="flex items-center gap-3">Tournament Level</span>
+        </button>
+
         {showReviewMismatches && (
           <button
             onClick={onReviewMismatchesClick}
@@ -171,6 +194,16 @@ export function ManageGameMenuPage({
             className={standardButtonClass}
           >
             <span className="flex items-center gap-3">Upload to BridgeWebs</span>
+          </button>
+        )}
+
+        {showUploadEbu && (
+          <button
+            onClick={onUploadEbuClick}
+            disabled={uploadEbuDisabled}
+            className={standardButtonClass}
+          >
+            <span className="flex items-center gap-3">Submit to EBU</span>
           </button>
         )}
 

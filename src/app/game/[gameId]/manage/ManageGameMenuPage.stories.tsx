@@ -38,10 +38,12 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onEnterDealsClick: fn(),
     onMovementClick: fn(),
     onShareDirectorAccessClick: fn(),
+    onTournamentLevelClick: fn(),
     onReviewMismatchesClick: fn(),
     onDownloadUsebioClick: fn(),
     onDownloadPbnClick: fn(),
     onUploadBridgewebsClick: fn(),
+    onUploadEbuClick: fn(),
     onDeleteGameClick: fn(),
     showSetUpGame: true,
     showTravellers: false,
@@ -53,6 +55,8 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     showDownloadPbn: false,
     showUploadBridgewebs: false,
     uploadBridgewebsDisabled: false,
+    showUploadEbu: false,
+    uploadEbuDisabled: false,
   },
 };
 

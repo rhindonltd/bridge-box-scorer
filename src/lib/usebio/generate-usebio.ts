@@ -20,6 +20,8 @@ import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import { ScoringType } from "@/db/games/types/scoring-type";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { masterPointFieldsFor } from "@/model/tournament-level";
 
 /**
  * USEBIO 1.2 XML Generator
@@ -82,6 +84,12 @@ export type UsebioPairsData = {
   club: UsebioClub;
   eventName: string;
   eventDate: string;
+  /**
+   * The EBU tournament level, resolved to the three USEBIO EVENT masterpoint/
+   * charge fields on export. Optional: when absent the default level
+   * (NORMAL_CLUB) is used.
+   */
+  tournamentLevel?: TournamentLevel;
   scoringType: ScoringType;
   tables: number;
   /**
@@ -156,6 +164,8 @@ export type UsebioSwissPairsData = {
   club: UsebioClub;
   eventName: string;
   eventDate: string;
+  /** EBU tournament level → USEBIO masterpoint/charge EVENT fields. */
+  tournamentLevel?: TournamentLevel;
   sectionName: string;
   boards: number;
   pairs: UsebioPair[];
@@ -210,6 +220,8 @@ export type UsebioSwissTeamsData = {
   club: UsebioClub;
   eventName: string;
   eventDate: string;
+  /** EBU tournament level → USEBIO masterpoint/charge EVENT fields. */
+  tournamentLevel?: TournamentLevel;
   sectionName: string;
   boards: number;
   teams: UsebioTeam[];
@@ -276,6 +288,8 @@ export type UsebioBoardComparisonTeamsData = {
   club: UsebioClub;
   eventName: string;
   eventDate: string;
+  /** EBU tournament level → USEBIO masterpoint/charge EVENT fields. */
+  tournamentLevel?: TournamentLevel;
   sectionName: string;
   boards: number;
   teams: UsebioTeam[];
@@ -422,6 +436,25 @@ function startUsebioDoc(
 }
 
 /**
+ * Append the EBU masterpoint/charge EVENT fields derived from the game's
+ * tournament level: `<MASTER_POINT_SCALE>`, `<MASTER_POINT_TYPE>` and
+ * `<P2P_CHARGE_RATE>`. The EBU reads these to set the charge rate and decide
+ * which Master Points / NGS updates to award. Emitted for every event kind so
+ * all exported files are consistent; a missing level falls back to the default
+ * (NORMAL_CLUB).
+ */
+function appendMasterPointFields(
+  event: ReturnType<ReturnType<typeof create>["ele"]>,
+  tournamentLevel: TournamentLevel | undefined,
+): void {
+  const { masterPointScale, masterPointType, p2pChargeRate } =
+    masterPointFieldsFor(tournamentLevel);
+  event.ele("MASTER_POINT_SCALE").txt(masterPointScale);
+  event.ele("MASTER_POINT_TYPE").txt(masterPointType);
+  event.ele("P2P_CHARGE_RATE").txt(p2pChargeRate);
+}
+
+/**
  * Open the single `<SESSION><SECTION>` wrapper the USEBIO structure nests
  * participants and boards inside, returning the SECTION element for the caller
  * to populate. The appliance runs one session per game; multi-section games
@@ -459,6 +492,7 @@ function generateMpPairsXml(data: UsebioPairsData): string {
     .txt(SCORING_TYPE_MAP[data.scoringType] ?? "MATCH_POINTS");
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
+  appendMasterPointFields(event, data.tournamentLevel);
   event.ele("SESSION_COUNT").txt("1");
   event.ele("SECTION_COUNT").txt(String(sectionIds.length));
   event.ele("PAIRS").txt(String(data.pairs.length));
@@ -616,6 +650,7 @@ function generateSwissPairsXml(data: UsebioSwissPairsData): string {
   event.ele("MATCH_SCORING_METHOD").txt("VPS");
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
+  appendMasterPointFields(event, data.tournamentLevel);
   event.ele("SESSION_COUNT").txt("1");
   event.ele("SECTION_COUNT").txt("1");
   event.ele("PAIRS").txt(String(data.pairs.length));
@@ -679,6 +714,7 @@ function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
   event.ele("MATCH_SCORING_METHOD").txt(data.matchScoringMethod ?? "VPS");
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
+  appendMasterPointFields(event, data.tournamentLevel);
   event.ele("SESSION_COUNT").txt("1");
   event.ele("SECTION_COUNT").txt("1");
   event.ele("BOARDS_PLAYED").txt(String(data.boards));
@@ -754,6 +790,7 @@ function generateBoardComparisonTeamsXml(
   event.ele("MATCH_SCORING_METHOD").txt(data.scoring);
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
+  appendMasterPointFields(event, data.tournamentLevel);
   event.ele("SESSION_COUNT").txt("1");
   event.ele("SECTION_COUNT").txt("1");
   event.ele("BOARDS_PLAYED").txt(String(data.boards));

@@ -25,6 +25,10 @@ export function SettingsMenuPage() {
           BridgeWebs
         </Link>
 
+        <Link href="/settings/ebu" className={settingsButtonClasses}>
+          EBU
+        </Link>
+
         <Link href="/settings/cloud-sync" className={settingsButtonClasses}>
           Cloud Backup
         </Link>

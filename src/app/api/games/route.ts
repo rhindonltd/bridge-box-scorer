@@ -5,6 +5,7 @@ import { ClientError, respondToActionError } from "@/lib/api/client-error";
 import { GameTypes } from "@/db/games/types/game-type";
 import { EventFormats } from "@/db/games/types/event-format";
 import { ScoringTypes } from "@/db/games/types/scoring-type";
+import { TournamentLevels } from "@/db/games/types/tournament-level";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
@@ -23,6 +24,7 @@ const bodySchema = z.object({
   leadCardRequired: z.boolean().optional(),
   handEntryEnabled: z.boolean().optional(),
   bridgewebsEventId: z.string().nullish(),
+  tournamentLevel: z.enum(TournamentLevels).optional(),
 });
 
 /**

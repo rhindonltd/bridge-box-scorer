@@ -24,6 +24,7 @@ const game: BridgeGame = {
   tables: 1,
   selectedMovement: null,
   bridgewebsEventId: null,
+  tournamentLevel: "NORMAL_CLUB",
   leadCardRequired: true,
   handEntryEnabled: false,
   createdAt: "2024-11-18 00:00:00",
