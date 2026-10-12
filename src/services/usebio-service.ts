@@ -6,8 +6,8 @@ import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { findSections } from "@/db/games/queries/find-sections";
 import {
-  readRankingExclusions,
-  readWithdrawals,
+  readParticipantStandings,
+  resolveStandings,
 } from "@/db/games/queries/ranking-exclusions";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
@@ -61,21 +61,27 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
   // void scorer falls back to the flat §3.3.6.1 40% when it is unknown.
   const expectedBoards = boardsPerRoundOf(movement) ?? undefined;
 
-  // EBU §2.4.9 — the without-standing / removed-withdrawn contestants dropped
-  // from the ranking (but whose results still count for opponents). The same
-  // set the live leaderboard uses, so the published file and the board agree.
-  const excludedFromRanking = await readRankingExclusions(db);
+  // EBU §2.4.3–§2.4.9 — resolve the contestant standings once (needs the board
+  // rows for the §2.4.7 LATE half-boards test): the ids dropped from the
+  // ranking and the withdrawal credits. The same facts the live leaderboard
+  // uses, so the published file and the board agree.
+  const allBoards = await db.select().from(boards);
+  const standings = await readParticipantStandings(db);
+  const { excludedFromRanking, withdrawals } = resolveStandings(
+    standings,
+    allBoards,
+  );
 
   switch (format) {
     case "TEAMS_VP": {
-      const [teams, boardRows, matchRows, withdrawals] = await Promise.all([
+      const [teams, matchRows] = await Promise.all([
         findTeams(db),
-        db.select().from(boards),
         db.select().from(matches),
-        readWithdrawals(db),
       ]);
-      // §2.4.3–§2.4.6: void a withdrawn team's unplayed matches in-memory
-      // (never persisted), so the published file matches the live leaderboard.
+      const boardRows = allBoards;
+      // §2.4.3–§2.4.7: void a withdrawn/short-late team's unplayed matches
+      // in-memory (never persisted), so the published file matches the live
+      // leaderboard.
       const ruledMatches = applyTeamWithdrawalRulings(
         matchRows,
         withdrawals,
@@ -94,11 +100,11 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
       );
     }
     case "TEAMS_IMP_AGG": {
-      const [teams, boardRows, matchRows] = await Promise.all([
+      const [teams, matchRows] = await Promise.all([
         findTeams(db),
-        db.select().from(boards),
         db.select().from(matches),
       ]);
+      const boardRows = allBoards;
       return generateUsebioXml(
         assembleImpAggregateTeams(
           game,
@@ -112,11 +118,11 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
     }
     case "TEAMS_BAM":
     case "TEAMS_PAB": {
-      const [teams, boardRows, matchRows] = await Promise.all([
+      const [teams, matchRows] = await Promise.all([
         findTeams(db),
-        db.select().from(boards),
         db.select().from(matches),
       ]);
+      const boardRows = allBoards;
       const scoring = format === "TEAMS_PAB" ? "PAB" : "BAM";
       return generateUsebioXml(
         assembleBoardComparisonTeams(
@@ -131,11 +137,11 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
       );
     }
     case "SWISS_PAIRS_VP": {
-      const [pairs, boardRows, matchRows] = await Promise.all([
+      const [pairs, matchRows] = await Promise.all([
         findPairs(db),
-        db.select().from(boards),
         db.select().from(matches),
       ]);
+      const boardRows = allBoards;
       // A matchpoint-scored Swiss exports in MP mode; cross-IMP and (null-mode)
       // IMP-scored Swiss both export as cross-IMP vs the field, so the file
       // agrees with how the leaderboard scores an XIMP/MP Swiss event.

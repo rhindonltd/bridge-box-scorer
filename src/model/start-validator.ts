@@ -40,9 +40,19 @@ export interface StartValidationResult {
   problems: StartProblem[];
   /**
    * The single empty expected seat that will become a sit-out, when the seating
-   * is valid but one pair short. Null when the movement is exactly filled.
+   * is valid but one UNMARKED pair short. Null when the movement is exactly
+   * filled or the only empty seats are expected-late (which are NOT sit-outs).
    */
   sitOutSeat: PairSeat | null;
+  /**
+   * The expected seats the director has marked "expected late" (§2.4.7) that
+   * are genuinely empty — i.e. in `expected`, not seated. These start UNFILLED
+   * but PLAYABLE (a real seat id awaiting a latecomer), distinct from the single
+   * `sitOutSeat`. Absent/empty when none are marked — only the generic pairs
+   * path produces them (teams reject sit-outs; Swiss resolves its own round-1
+   * bye), so the other result constructors omit it.
+   */
+  lateSeats?: PairSeat[];
 }
 
 function tableOf(seat: PairSeat): number {
@@ -68,6 +78,7 @@ function tableOf(seat: PairSeat): number {
 export function validateStart(
   expected: ExpectedSeats | null,
   seatedSeats: Iterable<PairSeat>,
+  expectedLateSeats: Iterable<PairSeat> = [],
 ): StartValidationResult {
   const seated = new Set<PairSeat>(seatedSeats);
 
@@ -75,6 +86,7 @@ export function validateStart(
     return {
       canStart: false,
       sitOutSeat: null,
+      lateSeats: [],
       problems: [
         {
           code: "NO_MOVEMENT_SELECTED",
@@ -88,6 +100,7 @@ export function validateStart(
     return {
       canStart: false,
       sitOutSeat: null,
+      lateSeats: [],
       problems: [
         {
           code: "NO_PAIRS_SEATED",
@@ -142,28 +155,47 @@ export function validateStart(
     }
   }
 
-  if (missing.length >= 2) {
-    const halfFilled = halfFilledTables(missing, seated);
+  // §2.4.7: a seat the director marked "expected late" is ACCOUNTED FOR — it
+  // starts empty-but-playable (a latecomer will fill it), not a sit-out. Only
+  // seats that are neither seated nor marked-late count toward the
+  // "at most one sit-out" rule. A late mark on an expected seat that IS seated
+  // is moot (the pair already arrived); a mark on a non-expected seat is
+  // ignored. So the effective late set is the marked seats intersected with the
+  // genuinely-missing expected seats.
+  const lateMarks = new Set<PairSeat>(expectedLateSeats);
+  const lateSeats = missing.filter((seat) => lateMarks.has(seat));
+  const unaccounted = missing.filter((seat) => !lateMarks.has(seat));
+
+  if (unaccounted.length >= 2) {
+    // A half-filled table is still invalid only when its empty side is
+    // UNACCOUNTED (an expected-late empty side is the allowed half-table).
+    const halfFilled = halfFilledTables(unaccounted, seated);
     if (halfFilled.length > 0) {
       problems.push({
         code: "HALF_FILLED_TABLE",
         message:
-          "One or more tables have only one pair seated. Seat both pairs or leave the whole table empty.",
+          "One or more tables have only one pair seated. Seat both pairs, mark the empty seat as expected late, or leave the whole table empty.",
         seats: halfFilled.sort(seatSort),
       });
     }
     problems.push({
       code: "MULTIPLE_EMPTY_POSITIONS",
       message:
-        "More than one pair is missing. A session allows at most one sit-out.",
-      seats: missing.sort(seatSort),
+        "More than one pair is missing. A session allows at most one sit-out — mark the other empty seats as expected late to start without them.",
+      seats: unaccounted.sort(seatSort),
     });
   }
 
   const canStart = problems.length === 0;
-  const sitOutSeat = canStart && missing.length === 1 ? missing[0] : null;
+  const sitOutSeat =
+    canStart && unaccounted.length === 1 ? unaccounted[0] : null;
 
-  return { canStart, problems, sitOutSeat };
+  return {
+    canStart,
+    problems,
+    sitOutSeat,
+    lateSeats: canStart ? lateSeats.sort(seatSort) : [],
+  };
 }
 
 function maxExpectedTable(expected: ExpectedSeats): number | null {

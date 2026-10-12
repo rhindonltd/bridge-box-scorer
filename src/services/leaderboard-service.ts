@@ -23,10 +23,11 @@ import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { rank } from "@/scoring/overall/rank";
 import { applyRankingExclusion } from "@/scoring/overall/exclude-ranking";
 import {
-  readRankingExclusions,
-  readWithdrawals,
+  readParticipantStandings,
+  resolveStandings,
   type WithdrawalRecord,
 } from "@/db/games/queries/ranking-exclusions";
+import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { findTeams } from "@/db/games/queries/find-teams";
@@ -424,14 +425,20 @@ const AVE_MINUS_FRACTION = 0.4;
 const AVE_PLUS_FRACTION = 0.6;
 
 /**
- * Build synthetic scored boards for the §2.4.3–§2.4.6 withdrawal credits on a
- * board-pooled pairs event — BOTH the withdrawer's own score (§2.4.5/§2.4.6)
- * and its opponents' indemnity (§2.4.4). Both act on the SAME rows: the
- * withdrawer's unplayed (no-result) board rows, each a real head-to-head cell
- * with the withdrawer on one seat and an opponent on the other.
+ * Build synthetic scored boards for the §2.4.3–§2.4.7 withdrawal/late-arrival
+ * credits on a board-pooled pairs event — BOTH the contestant's own score
+ * (§2.4.5/§2.4.6) and its opponents' indemnity (§2.4.4). Both act on the SAME
+ * rows: the contestant's unplayed (no-result) board rows, each a real
+ * head-to-head cell with the withdrawer/latecomer on one seat and an opponent
+ * on the other. The `withdrawers` list already folds in short §2.4.7 LATE
+ * arrivals (resolved by `resolveStandings`): a latecomer's unplayed boards are
+ * its EARLY (pre-arrival) cells, and because it played fewer than half the
+ * boards the "before half" branch below applies to it uniformly — exactly the
+ * §2.4.6 treatment the White Book prescribes for a latecomer short of half.
  *
- * Per unplayed row, keyed off whether the withdrawal is BEFORE or AFTER half
- * the event (counted in boards the withdrawer actually played — §3.2):
+ * Per unplayed row, keyed off whether the contestant played BEFORE or AFTER
+ * half the event (counted in boards it actually played — §3.2). A short LATE
+ * arrival is by definition below half, so it always takes the "before" branch:
  *
  * - **Withdrawer seat** (§2.4.5): a PENALISED withdrawer gets AVE−-minus-fine
  *   `(40 − fine)/100` of the board top, capped at half the event's boards. A
@@ -523,8 +530,13 @@ function withdrawalCreditBoards(
         }
       }
 
-      // Opponent's §2.4.4 indemnity: AVE+ after half, nothing (cancel) before.
-      const opponentFraction = afterHalf ? AVE_PLUS_FRACTION : 0;
+      // Opponent's indemnity. For an ordinary withdrawal this is the §2.4.4
+      // split: AVE+ after half, nothing (cancel) before. For a §2.4.7
+      // expected-late empty seat (`alwaysIndemnifyOpponent`) the opponents get
+      // AVE+ unconditionally while the pair is still expected (reference §6.6),
+      // regardless of how many boards have been played.
+      const opponentFraction =
+        afterHalf || w.alwaysIndemnifyOpponent ? AVE_PLUS_FRACTION : 0;
 
       // Nothing to credit either side on this row (e.g. before-half REMOVE).
       if (withdrawerFraction === 0 && opponentFraction === 0) continue;
@@ -880,14 +892,8 @@ async function readLeaderboardInputs(
   // teams game OR a Swiss Pairs VP (XIMP/MP) game.
   const needsMatches = needsTeams || swissVpMode !== null;
 
-  const [
-    boardRows,
-    matchRows,
-    pairs,
-    teams,
-    excludedFromRanking,
-    withdrawals,
-  ] = await Promise.all([
+  const [boardRows, matchRows, pairs, teams, standings, lateSeats] =
+    await Promise.all([
       db.select().from(boards) as Promise<Board[]>,
       needsMatches
         ? (db.select().from(matches) as Promise<Match[]>)
@@ -896,9 +902,41 @@ async function readLeaderboardInputs(
       // Teams are derived from the seating; needed for any teams game (VP,
       // aggregate IMP, BAM, or PAB).
       needsTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
-      readRankingExclusions(db),
-      readWithdrawals(db),
+      readParticipantStandings(db),
+      readExpectedLateSeats(db),
     ]);
+
+  // §2.4.9 exclusions and §2.4.3–§2.4.7 withdrawal credits are derived from the
+  // standings AND the board rows together — the §2.4.7 LATE retain-standing
+  // test counts boards actually played.
+  const { excludedFromRanking, withdrawals } = resolveStandings(
+    standings,
+    boardRows,
+  );
+
+  // §2.4.7 "half-table at the start": a director-marked EMPTY expected-late seat
+  // (no participant row yet) credits its opponents AVE+ on the boards they
+  // cannot play while the pair is still expected. Inject one synthetic record
+  // per such seat into the withdrawal pass — `resolveStandings` can't see a
+  // participant-less seat. REMOVE ⇒ no self-credit (no contestant to score);
+  // `alwaysIndemnifyOpponent` forces the AVE+ branch regardless of the half
+  // split. A seat drops out of this set the moment its pair is seated (the mark
+  // is cleared), at which point its boards start carrying real results.
+  const seatedSeats = new Set<string>(pairs.map((p) => p.initialSeat));
+  for (const seat of lateSeats) {
+    if (seatedSeats.has(seat)) continue; // the latecomer has already arrived
+    withdrawals.push({
+      seat,
+      treatment: "REMOVE",
+      finePercent: 0,
+      alwaysIndemnifyOpponent: true,
+    });
+    // The empty seat is not a contestant — it must not appear in the ranking.
+    // (The indemnity synthesises a 0-credit line on its seat id; without this
+    // it would otherwise surface as a 0% ranked line, since — unlike a sit-out
+    // phantom — it is a real seat id, just one with no participant.)
+    excludedFromRanking.add(seat);
+  }
 
   return {
     scoringType: game!.scoringType,

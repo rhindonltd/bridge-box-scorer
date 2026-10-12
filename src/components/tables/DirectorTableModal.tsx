@@ -1,13 +1,18 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 
 import Button from "@/components/common/Button";
 import { Toggle } from "@/components/common/Toggle";
+import { PillToggle } from "@/components/common/PillToggle";
+import { NumberStepper } from "@/components/common/NumberStepper";
 import type { Player } from "@/db/games/tables/players";
-import type { Seat } from "@/model/participants";
+import type { ParticipantStanding, Seat } from "@/model/participants";
 import type { DirectorTable } from "@/components/tables/DirectorTableControls";
+import type { StandingChange } from "@/lib/standing-service";
+
+type StandingValue = ParticipantStanding["standing"];
 
 interface Props {
   /** The table whose seats are being managed; null closes the dialog. */
@@ -18,6 +23,12 @@ interface Props {
    * otherwise.
    */
   isSwiss: boolean;
+  /**
+   * Whether the game has started. Before start the director can evict pairs and
+   * mark empty seats "expected late"; after start those are replaced by the
+   * lifecycle standing controls (§2.4).
+   */
+  started: boolean;
   /** Evict the pair occupying `seat` (a whole NS or EW pair). */
   onEvict: (seat: Seat) => void;
   /**
@@ -25,6 +36,10 @@ interface Props {
    * North/South pair, false for the East/West pair.
    */
   onToggleStationary: (tableNumber: number, ns: boolean) => void;
+  /** Change the lifecycle standing of the pair occupying `seat`. */
+  onChangeStanding: (seat: Seat, change: StandingChange) => void;
+  /** Mark/unmark an empty `seat` as expected-late. */
+  onToggleExpectedLate: (seat: Seat, next: boolean) => void;
   /** Close the dialog. */
   onClose: () => void;
 }
@@ -36,20 +51,27 @@ function playerName(player: Omit<Player, "id"> | null): string {
 }
 
 /**
- * Per-table management dialog for the director's Tables setup screen. Shows the
- * two pairs seated at the table (North/South and East/West) with their player
- * names, and provides controls to evict a pair from its position and — for
- * Swiss movements — to keep a pair stationary at this table.
+ * Per-table management dialog for the director's Tables screen. Shows the two
+ * pairs seated at the table (North/South and East/West) with their player
+ * names, and provides context-sensitive controls:
+ *
+ *  - Before start: evict a pair, keep a pair stationary (Swiss), mark a pair
+ *    "without standing", or mark an empty seat "expected late".
+ *  - After start: change a pair's EBU §2.4 lifecycle standing (active /
+ *    withdrawn / late / without standing) and see expected-late status.
  *
  * Presentational: it renders from the passed {@link DirectorTable} and emits
- * `onEvict` / `onToggleStationary` / `onClose`; the caller performs the
- * mutations (and typically closes the dialog after an eviction).
+ * callbacks; the caller performs the mutations (and typically closes the dialog
+ * after an eviction).
  */
 export function DirectorTableModal({
   table,
   isSwiss,
+  started,
   onEvict,
   onToggleStationary,
+  onChangeStanding,
+  onToggleExpectedLate,
   onClose,
 }: Props) {
   const open = table != null;
@@ -84,8 +106,11 @@ export function DirectorTableModal({
                 <TableModalBody
                   table={table}
                   isSwiss={isSwiss}
+                  started={started}
                   onEvict={onEvict}
                   onToggleStationary={onToggleStationary}
+                  onChangeStanding={onChangeStanding}
+                  onToggleExpectedLate={onToggleExpectedLate}
                   onClose={onClose}
                 />
               )}
@@ -100,14 +125,20 @@ export function DirectorTableModal({
 function TableModalBody({
   table,
   isSwiss,
+  started,
   onEvict,
   onToggleStationary,
+  onChangeStanding,
+  onToggleExpectedLate,
   onClose,
 }: {
   table: DirectorTable;
   isSwiss: boolean;
+  started: boolean;
   onEvict: (seat: Seat) => void;
   onToggleStationary: (tableNumber: number, ns: boolean) => void;
+  onChangeStanding: (seat: Seat, change: StandingChange) => void;
+  onToggleExpectedLate: (seat: Seat, next: boolean) => void;
   onClose: () => void;
 }) {
   return (
@@ -125,22 +156,34 @@ function TableModalBody({
           player1={table.players.N}
           player2={table.players.S}
           seat={table.seats.N}
+          pairSeat={table.pairSeats.ns}
           stationary={table.stationary?.N ?? false}
+          standing={table.standing?.N ?? null}
+          expectedLate={table.expectedLate?.N ?? false}
           isSwiss={isSwiss}
+          started={started}
           onEvict={onEvict}
           onToggleStationary={() => onToggleStationary(table.tableNumber, true)}
+          onChangeStanding={onChangeStanding}
+          onToggleExpectedLate={onToggleExpectedLate}
         />
         <PairRow
           label="East / West"
           player1={table.players.E}
           player2={table.players.W}
           seat={table.seats.E}
+          pairSeat={table.pairSeats.ew}
           stationary={table.stationary?.E ?? false}
+          standing={table.standing?.E ?? null}
+          expectedLate={table.expectedLate?.E ?? false}
           isSwiss={isSwiss}
+          started={started}
           onEvict={onEvict}
           onToggleStationary={() =>
             onToggleStationary(table.tableNumber, false)
           }
+          onChangeStanding={onChangeStanding}
+          onToggleExpectedLate={onToggleExpectedLate}
         />
       </div>
 
@@ -157,31 +200,80 @@ function TableModalBody({
   );
 }
 
+/** The human label + pill styling for a non-active standing badge. */
+const STANDING_BADGE: Record<
+  Exclude<StandingValue, "ACTIVE">,
+  { label: string; className: string }
+> = {
+  WITHDRAWN: {
+    label: "Withdrawn",
+    className: "bg-red-100 text-red-700",
+  },
+  LATE: {
+    label: "Late",
+    className: "bg-amber-100 text-amber-800",
+  },
+  WITHOUT_STANDING: {
+    label: "Without standing",
+    className: "bg-gray-200 text-gray-700",
+  },
+};
+
 function PairRow({
   label,
   player1,
   player2,
   seat,
+  pairSeat,
   stationary,
+  standing,
+  expectedLate,
   isSwiss,
+  started,
   onEvict,
   onToggleStationary,
+  onChangeStanding,
+  onToggleExpectedLate,
 }: {
   label: string;
   player1: Omit<Player, "id"> | null;
   player2: Omit<Player, "id"> | null;
   seat: Seat | null;
+  /** This pair's seat, present even when empty (drives expected-late). */
+  pairSeat: Seat;
   stationary: boolean;
+  standing: StandingValue | null;
+  expectedLate: boolean;
   isSwiss: boolean;
+  started: boolean;
   onEvict: (seat: Seat) => void;
   onToggleStationary: () => void;
+  onChangeStanding: (seat: Seat, change: StandingChange) => void;
+  onToggleExpectedLate: (seat: Seat, next: boolean) => void;
 }) {
   const occupied = seat != null;
   const stationaryLabelId = `stationary-${label.replace(/\W+/g, "-")}`;
+  const withoutStandingLabelId = `without-standing-${label.replace(/\W+/g, "-")}`;
+  const expectedLateLabelId = `expected-late-${label.replace(/\W+/g, "-")}`;
+
+  // Whether the post-start inline standing form is open for this pair.
+  const [editing, setEditing] = useState(false);
+
+  const badge =
+    standing && standing !== "ACTIVE" ? STANDING_BADGE[standing] : null;
 
   return (
     <div className="rounded-xl border border-gray-200 p-3">
-      <div className="text-sm font-semibold text-gray-700">{label}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold text-gray-700">{label}</div>
+        {badge && (
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
+          >
+            {badge.label}
+          </span>
+        )}
+      </div>
       <div className="mt-1 text-base text-gray-900">
         <div>{playerName(player1)}</div>
         <div>{playerName(player2)}</div>
@@ -207,18 +299,231 @@ function PairRow({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => onEvict(seat)}
-            aria-label={`Evict ${label} pair`}
-            className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-          >
-            Evict pair
-          </button>
+          {!started ? (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <span
+                  id={withoutStandingLabelId}
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Without standing
+                </span>
+                <Toggle
+                  value={standing === "WITHOUT_STANDING"}
+                  offLabel="No"
+                  onLabel="Yes"
+                  labelledBy={withoutStandingLabelId}
+                  onChange={(next) =>
+                    onChangeStanding(
+                      seat,
+                      next
+                        ? { standing: "WITHOUT_STANDING" }
+                        : { standing: "ACTIVE" },
+                    )
+                  }
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onEvict(seat)}
+                aria-label={`Evict ${label} pair`}
+                className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                Evict pair
+              </button>
+            </>
+          ) : editing ? (
+            <StandingForm
+              label={label}
+              current={standing ?? "ACTIVE"}
+              onCancel={() => setEditing(false)}
+              onSave={(change) => {
+                onChangeStanding(seat, change);
+                setEditing(false);
+              }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              aria-label={`Change standing for ${label} pair`}
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              Change standing
+            </button>
+          )}
+        </div>
+      ) : !started ? (
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <span
+              id={expectedLateLabelId}
+              className="text-sm font-medium text-gray-700"
+            >
+              Expected late
+            </span>
+            <Toggle
+              value={expectedLate}
+              offLabel="No"
+              onLabel="Yes"
+              labelledBy={expectedLateLabelId}
+              onChange={(next) => onToggleExpectedLate(pairSeat, next)}
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Start without this pair; seat them when they arrive.
+          </p>
+          {!expectedLate && (
+            <div className="text-sm italic text-gray-500">Empty</div>
+          )}
+        </div>
+      ) : expectedLate ? (
+        <div className="mt-2 flex flex-col gap-1">
+          <div className="text-sm font-medium text-amber-800">
+            Expected late — not yet seated
+          </div>
+          <p className="text-xs text-gray-500">
+            The pair can join from a device when they arrive.
+          </p>
         </div>
       ) : (
         <div className="mt-2 text-sm italic text-gray-500">Empty</div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The post-start inline standing editor for a single pair. Local state only;
+ * emits a {@link StandingChange} via `onSave`. Offers Active / Withdrawn / Late
+ * / Without standing, and — for Withdrawn / Late — a round number, a REMOVE vs
+ * PENALISED treatment, and (when PENALISED) a 0..40 fine percentage.
+ */
+function StandingForm({
+  label,
+  current,
+  onSave,
+  onCancel,
+}: {
+  label: string;
+  current: StandingValue;
+  onSave: (change: StandingChange) => void;
+  onCancel: () => void;
+}) {
+  const [standing, setStanding] = useState<StandingValue>(current);
+  const [round, setRound] = useState(1);
+  const [treatment, setTreatment] = useState<"REMOVE" | "PENALISED">("REMOVE");
+  const [finePercent, setFinePercent] = useState(0);
+
+  const needsDetail = standing === "WITHDRAWN" || standing === "LATE";
+  const roundLabelId = `standing-round-${label.replace(/\W+/g, "-")}`;
+  const fineLabelId = `standing-fine-${label.replace(/\W+/g, "-")}`;
+
+  function handleSave() {
+    if (standing === "WITHDRAWN") {
+      onSave({
+        standing: "WITHDRAWN",
+        withdrawnInRound: round,
+        treatment,
+        ...(treatment === "PENALISED" ? { finePercent } : {}),
+      });
+      return;
+    }
+    if (standing === "LATE") {
+      onSave({
+        standing: "LATE",
+        arrivedInRound: round,
+        treatment,
+        ...(treatment === "PENALISED" ? { finePercent } : {}),
+      });
+      return;
+    }
+    if (standing === "WITHOUT_STANDING") {
+      onSave({ standing: "WITHOUT_STANDING" });
+      return;
+    }
+    onSave({ standing: "ACTIVE" });
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+      <PillToggle<StandingValue>
+        name={`standing-${label.replace(/\W+/g, "-")}`}
+        legend={`Standing for ${label}`}
+        options={[
+          { value: "ACTIVE", label: "Active" },
+          { value: "WITHDRAWN", label: "Withdrawn" },
+          { value: "LATE", label: "Late" },
+          { value: "WITHOUT_STANDING", label: "No standing" },
+        ]}
+        value={standing}
+        onChange={setStanding}
+      />
+
+      {needsDetail && (
+        <>
+          <div className="flex items-center justify-between gap-3">
+            <span
+              id={roundLabelId}
+              className="text-sm font-medium text-gray-700"
+            >
+              {standing === "WITHDRAWN" ? "Withdrew in round" : "Arrived in round"}
+            </span>
+            <div aria-labelledby={roundLabelId}>
+              <NumberStepper min={1} value={round} onChange={setRound} />
+            </div>
+          </div>
+
+          <PillToggle<"REMOVE" | "PENALISED">
+            name={`treatment-${label.replace(/\W+/g, "-")}`}
+            legend={`Treatment for ${label}`}
+            options={[
+              { value: "REMOVE", label: "Remove" },
+              { value: "PENALISED", label: "Penalised" },
+            ]}
+            value={treatment}
+            onChange={setTreatment}
+          />
+
+          {treatment === "PENALISED" && (
+            <div className="flex items-center justify-between gap-3">
+              <span
+                id={fineLabelId}
+                className="text-sm font-medium text-gray-700"
+              >
+                Fine %
+              </span>
+              <div aria-labelledby={fineLabelId}>
+                <NumberStepper
+                  min={0}
+                  max={40}
+                  value={finePercent}
+                  zeroCharacter="0"
+                  onChange={setFinePercent}
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          className="flex-1 rounded-lg border border-blue-600 bg-blue-600 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        >
+          Save
+        </button>
+      </div>
     </div>
   );
 }

@@ -95,6 +95,7 @@ export function PlayStateRouter({
             round.players as { N: Player; S: Player; E: Player; W: Player }
           }
           halfMatch={round.halfMatch}
+          opponentExpectedLate={round.opponentExpectedLate}
           onEnterRound={handlers.handleEnterRound}
           headerRight={headerRight}
         />

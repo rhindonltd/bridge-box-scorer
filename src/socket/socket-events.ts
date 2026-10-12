@@ -21,6 +21,14 @@ export const SocketEvents = {
   // NOTE: participant eviction is an HTTP route
   // (DELETE /api/games/[gameId]/participants/[seat]), not a socket event; it
   // broadcasts PARTICIPANTS from that route.
+  // Client-initiated (director): set a seated contestant's EBU §2.4 standing
+  // (WITHDRAWN / LATE / WITHOUT_STANDING / back to ACTIVE). A scored event, so
+  // it broadcasts PARTICIPANTS + a fresh leaderboard snapshot.
+  SET_PARTICIPANT_STANDING: "game:setParticipantStanding",
+  // Client-initiated (director): mark/unmark an EMPTY seat as "expected late"
+  // (§2.4.7), so the game can start short with that seat unfilled. Broadcasts
+  // PARTICIPANTS + a leaderboard snapshot (opponents' indemnity changes).
+  SET_SEAT_EXPECTED_LATE: "game:setSeatExpectedLate",
   SELECT_MOVEMENT: "game:selectMovement",
   // NOTE: starting a game is an HTTP route (POST /api/games/[gameId]/start),
   // not a socket event; it promotes the timer and broadcasts GAME_UPDATED from

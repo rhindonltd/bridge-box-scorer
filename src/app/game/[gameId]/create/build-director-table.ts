@@ -20,6 +20,7 @@ export function buildDirectorTable(
   pairs: Pair[] | undefined,
   stationary: StationaryByTable,
   placement: PlacementByTable,
+  expectedLateSeats: Set<string>,
 ): DirectorTable {
   const nsSeat = seatFor(section, tableNumber, "NS");
   const ewSeat = seatFor(section, tableNumber, "EW");
@@ -43,11 +44,30 @@ export function buildDirectorTable(
       E: ewParticipant ? ewSeat : null,
       W: ewParticipant ? ewSeat : null,
     },
+    pairSeats: {
+      ns: nsSeat,
+      ew: ewSeat,
+    },
     stationary: {
       N: dirs?.ns ?? false,
       S: dirs?.ns ?? false,
       E: dirs?.ew ?? false,
       W: dirs?.ew ?? false,
+    },
+    // Lifecycle standing applies to both compass points of each pair.
+    standing: {
+      N: nsParticipant?.standing ?? null,
+      S: nsParticipant?.standing ?? null,
+      E: ewParticipant?.standing ?? null,
+      W: ewParticipant?.standing ?? null,
+    },
+    // Expected-late is a property of the (empty) seat, shared by its two
+    // compass points.
+    expectedLate: {
+      N: expectedLateSeats.has(nsSeat),
+      S: expectedLateSeats.has(nsSeat),
+      E: expectedLateSeats.has(ewSeat),
+      W: expectedLateSeats.has(ewSeat),
     },
     // Board setup facts for this table (undefined when no movement is
     // resolved for the section, or the table count doesn't match).

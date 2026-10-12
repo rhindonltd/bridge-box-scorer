@@ -44,6 +44,12 @@ vi.mock("@/db/games/queries/find-teams", () => ({
   findTeams: vi.fn(),
 }));
 
+// §2.4.7 expected-late seats: mock to empty so the mock db's board rows aren't
+// mis-read as seats. (These routing tests don't exercise late arrivals.)
+vi.mock("@/db/games/queries/expected-late-seats", () => ({
+  readExpectedLateSeats: vi.fn(async () => new Set<string>()),
+}));
+
 // The movement classification falls back to the section movement when the
 // game-index copy is null; mock it so these tests control the movement purely
 // through the game-index `findGameById` mock (default: no section movement).

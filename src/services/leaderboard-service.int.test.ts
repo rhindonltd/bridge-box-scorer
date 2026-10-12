@@ -531,4 +531,254 @@ describe("section-aware leaderboard (real scoring)", () => {
     const perBoardTop = (lines.find((l) => l.pairId === "A2NS")?.maxMP ?? 0) / 4;
     expect(a1ew!.maxMP).toBeCloseTo(perBoardTop, 5);
   });
+
+  it("retains standing for a LATE arrival present for at least half the boards (§2.4.7)", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { participants } = await import("@/db/games/tables/participants");
+    const { eq } = await import("drizzle-orm");
+    const { computeSectionLeaderboards } = await import("./leaderboard-service");
+
+    // 4-board event. A1NS arrives late and plays only boards 3 & 4 (2 of 4 =
+    // ceil(4/2) → RETAINS standing). Its early boards 1 & 2 are NOT_PLAYED.
+    await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+    await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
+
+    const played = (bn: number, t: number, ns: string, ew: string) => ({
+      section: "A", roundNumber: bn, tableNumber: t, boardNumber: bn,
+      ns, ew, confirmedResult: "3NTN=" as BoardOutcome, status: "CONFIRMED" as const,
+    });
+    db.insert(boards)
+      .values(
+        [
+          // Other tables play all four boards (field tops exist on every board).
+          played(1, 2, "A2NS", "A2EW"), played(1, 3, "A3NS", "A3EW"),
+          played(2, 2, "A2NS", "A2EW"), played(2, 3, "A3NS", "A3EW"),
+          played(3, 2, "A2NS", "A2EW"), played(3, 3, "A3NS", "A3EW"),
+          played(4, 2, "A2NS", "A2EW"), played(4, 3, "A3NS", "A3EW"),
+          // A1NS arrives for boards 3 & 4; boards 1 & 2 are its unplayed early cells.
+          { section: "A", roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" as const },
+          { section: "A", roundNumber: 2, tableNumber: 1, boardNumber: 2, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" as const },
+          played(3, 1, "A1NS", "A1EW"),
+          played(4, 1, "A1NS", "A1EW"),
+        ].map(withFixtureMatchId),
+      )
+      .run();
+
+    // LATE + PENALISED 0% fine: were it treated as a withdrawer it would be
+    // self-credited AVE− on boards 1 & 2. Because it reached half, it RETAINS
+    // standing and gets NO such credit — scored only on the boards it played.
+    db.update(participants)
+      .set({
+        standing: "LATE",
+        withdrawnInRound: 2,
+        withdrawalTreatment: "PENALISED",
+        withdrawalFinePercent: 0,
+      })
+      .where(eq(participants.initialSeat, "A1NS"))
+      .run();
+
+    const a = (await computeSectionLeaderboards(db, gameId)).find(
+      (s) => s.section === "A",
+    )!;
+    const lines = a.overallScore.lines as {
+      pairId: string;
+      totalMP: number;
+      maxMP: number;
+    }[];
+
+    const a1 = lines.find((l) => l.pairId === "A1NS");
+    expect(a1).toBeDefined(); // retains standing → ranked
+    // Scored on the 2 boards it actually played (boards 3 & 4), NOT credited the
+    // early boards: its max equals two per-board tops, half of A2NS's four.
+    const perBoardTop = (lines.find((l) => l.pairId === "A2NS")?.maxMP ?? 0) / 4;
+    expect(a1!.maxMP).toBeCloseTo(perBoardTop * 2, 5);
+  });
+
+  it("scores a short LATE arrival per §2.4.6 — REMOVE drops it from the ranking", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { participants } = await import("@/db/games/tables/participants");
+    const { eq } = await import("drizzle-orm");
+    const { computeSectionLeaderboards } = await import("./leaderboard-service");
+
+    // 4-board event. A1NS arrives very late and plays only board 4 (1 of 4 <
+    // ceil(4/2)=2 → SHORT): its unplayed early boards 1–3 score per §2.4.6.
+    await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+    await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
+
+    const played = (bn: number, t: number, ns: string, ew: string) => ({
+      section: "A", roundNumber: bn, tableNumber: t, boardNumber: bn,
+      ns, ew, confirmedResult: "3NTN=" as BoardOutcome, status: "CONFIRMED" as const,
+    });
+    db.insert(boards)
+      .values(
+        [
+          played(1, 2, "A2NS", "A2EW"), played(1, 3, "A3NS", "A3EW"),
+          played(2, 2, "A2NS", "A2EW"), played(2, 3, "A3NS", "A3EW"),
+          played(3, 2, "A2NS", "A2EW"), played(3, 3, "A3NS", "A3EW"),
+          played(4, 2, "A2NS", "A2EW"), played(4, 3, "A3NS", "A3EW"),
+          { section: "A", roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" as const },
+          { section: "A", roundNumber: 2, tableNumber: 1, boardNumber: 2, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" as const },
+          { section: "A", roundNumber: 3, tableNumber: 1, boardNumber: 3, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" as const },
+          played(4, 1, "A1NS", "A1EW"),
+        ].map(withFixtureMatchId),
+      )
+      .run();
+
+    db.update(participants)
+      .set({ standing: "LATE", withdrawnInRound: 4, withdrawalTreatment: "REMOVE" })
+      .where(eq(participants.initialSeat, "A1NS"))
+      .run();
+
+    const a = (await computeSectionLeaderboards(db, gameId)).find(
+      (s) => s.section === "A",
+    )!;
+    const ids = (a.overallScore.lines as { pairId: string }[]).map(
+      (l) => l.pairId,
+    );
+    // Short LATE + REMOVE → scored per §2.4.6 like a REMOVE withdrawer: dropped
+    // from the ranking entirely.
+    expect(ids).not.toContain("A1NS");
+  });
+
+  it("self-credits a short LATE + PENALISED arrival its AVE−-minus-fine on the early boards", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { participants } = await import("@/db/games/tables/participants");
+    const { eq } = await import("drizzle-orm");
+    const { computeSectionLeaderboards } = await import("./leaderboard-service");
+
+    // 4-board event, A1NS plays only board 4 (short). PENALISED 0% → its three
+    // unplayed early boards each score AVE− (40% of the board top).
+    await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+    await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
+
+    const played = (bn: number, t: number, ns: string, ew: string) => ({
+      section: "A", roundNumber: bn, tableNumber: t, boardNumber: bn,
+      ns, ew, confirmedResult: "3NTN=" as BoardOutcome, status: "CONFIRMED" as const,
+    });
+    db.insert(boards)
+      .values(
+        [
+          played(1, 2, "A2NS", "A2EW"), played(1, 3, "A3NS", "A3EW"),
+          played(2, 2, "A2NS", "A2EW"), played(2, 3, "A3NS", "A3EW"),
+          played(3, 2, "A2NS", "A2EW"), played(3, 3, "A3NS", "A3EW"),
+          played(4, 2, "A2NS", "A2EW"), played(4, 3, "A3NS", "A3EW"),
+          { section: "A", roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" as const },
+          { section: "A", roundNumber: 2, tableNumber: 1, boardNumber: 2, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" as const },
+          { section: "A", roundNumber: 3, tableNumber: 1, boardNumber: 3, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" as const },
+          played(4, 1, "A1NS", "A1EW"),
+        ].map(withFixtureMatchId),
+      )
+      .run();
+
+    db.update(participants)
+      .set({
+        standing: "LATE",
+        withdrawnInRound: 4,
+        withdrawalTreatment: "PENALISED",
+        withdrawalFinePercent: 0,
+      })
+      .where(eq(participants.initialSeat, "A1NS"))
+      .run();
+
+    const a = (await computeSectionLeaderboards(db, gameId)).find(
+      (s) => s.section === "A",
+    )!;
+    const lines = a.overallScore.lines as {
+      pairId: string;
+      totalMP: number;
+      maxMP: number;
+    }[];
+
+    const a1 = lines.find((l) => l.pairId === "A1NS");
+    // PENALISED → stays ranked. The §2.4.5 AVE− cap limits the self-credit to
+    // at most HALF the event's boards (ceil(4/2) = 2 of the 3 unplayed early
+    // boards), so A1NS has a line on its 1 played board + 2 credited boards =
+    // 3 boards; its max is three per-board tops (NOT the full four — the 3rd
+    // early board is uncredited).
+    expect(a1).toBeDefined();
+    const perBoardTop = (lines.find((l) => l.pairId === "A2NS")?.maxMP ?? 0) / 4;
+    expect(a1!.maxMP).toBeCloseTo(perBoardTop * 3, 5);
+  });
+
+  it("credits the opponent of an EMPTY expected-late seat AVE+ (§2.4.7)", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { expectedLateSeats } = await import(
+      "@/db/games/tables/expected-late-seats"
+    );
+    const { computeSectionLeaderboards } = await import(
+      "./leaderboard-service"
+    );
+
+    // Two tables play board 1 (field top = 2). A3NS/A3EW's board 1 is NOT
+    // played because A3EW is an empty seat the director marked expected-late:
+    // there is NO participant row for A3EW. A3NS IS seated (the opponent of the
+    // latecomer at this table-share) and must be indemnified AVE+.
+    await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+    // A3NS seated; A3EW deliberately NOT seated (the late pair).
+    const { players } = await import("@/db/games/tables/players");
+    const { participants } = await import("@/db/games/tables/participants");
+    const p1 = db
+      .insert(players)
+      .values({ firstName: "N3", lastName: "x" })
+      .returning()
+      .get();
+    const p2 = db
+      .insert(players)
+      .values({ firstName: "N3b", lastName: "y" })
+      .returning()
+      .get();
+    db.insert(participants)
+      .values({
+        initialSeat: "A3NS",
+        player1: p1.id,
+        player2: p2.id,
+        secretKey: "A3NS",
+      })
+      .run();
+
+    // Mark A3EW expected-late.
+    db.insert(expectedLateSeats).values({ seat: "A3EW" }).run();
+
+    db.insert(boards)
+      .values(
+        [
+          { section: "A", roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "A1NS", ew: "A1EW", confirmedResult: "3NTN+1" as BoardOutcome, status: "CONFIRMED" as const },
+          { section: "A", roundNumber: 1, tableNumber: 2, boardNumber: 1, ns: "A2NS", ew: "A2EW", confirmedResult: "3NTN=" as BoardOutcome, status: "CONFIRMED" as const },
+          // A3NS vs the empty late seat A3EW — no result (the pair isn't here).
+          { section: "A", roundNumber: 1, tableNumber: 3, boardNumber: 1, ns: "A3NS", ew: "A3EW", status: "NOT_PLAYED" as const },
+        ].map(withFixtureMatchId),
+      )
+      .run();
+
+    const a = (await computeSectionLeaderboards(db, gameId)).find(
+      (s) => s.section === "A",
+    )!;
+    const lines = a.overallScore.lines as {
+      pairId: string;
+      totalMP: number;
+      maxMP: number;
+    }[];
+
+    const a3ns = lines.find((l) => l.pairId === "A3NS");
+    expect(a3ns).toBeDefined();
+    // A3NS is indemnified AVE+ (0.6 of the board top) on board 1 — it is
+    // credited the board (its max includes it) and sits AT OR ABOVE the board
+    // average, never below. (On this tiny 2-top board the §4.2.6.1 whole-MP
+    // rounding collapses 0.6×2 = 1.2 to 1 = exactly average, per the F9 note;
+    // the un-rounded AVE+ fraction is asserted at the unit level. The key int
+    // guarantee here is that an empty-late seat indemnifies — never penalises —
+    // its opponent, unlike a before-half cancel which would drop the board.)
+    expect(a3ns!.maxMP).toBeGreaterThan(0);
+    expect(a3ns!.totalMP / a3ns!.maxMP).toBeGreaterThanOrEqual(0.5);
+    // The empty late seat itself produces no ranked line (no participant).
+    expect(lines.some((l) => l.pairId === "A3EW")).toBe(false);
+  });
 });

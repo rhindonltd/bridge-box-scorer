@@ -79,6 +79,12 @@ Tap **Enter Round** when you are ready to start entering results.
 > movements and table counts), you will see a **sit-out** screen instead. Tap
 > continue and the app tells you where to go next.
 
+> **Opponents not there yet?** If the pair you are due to play against is
+> running late, the round summary shows a note that they **haven't arrived
+> yet**. Wait for them rather than starting — the director will seat them when
+> they get here, and you simply play the boards then. You are looked after in
+> the scoring for any boards you cannot play while you wait.
+
 ### Entering a board
 
 For each board you build up the contract step by step. A board selector at the

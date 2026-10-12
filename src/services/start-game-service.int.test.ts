@@ -22,6 +22,11 @@ vi.mock("@/db/games/queries/get-section-movement", () => ({
   getSectionMovement: vi.fn(),
 }));
 
+vi.mock("@/db/games/queries/expected-late-seats", () => ({
+  // No expected-late seats by default; the §2.4.7 tests below override this.
+  readExpectedLateSeats: vi.fn(async () => new Set<string>()),
+}));
+
 vi.mock("@/services/materialize-movement", async (importActual) => {
   // Mock only the DB write (materializeSections); keep the real pure mappers
   // (e.g. roundRobinTeamsToMaterializable) so the resolver produces its real
@@ -38,6 +43,7 @@ import { getDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findSections } from "@/db/games/queries/find-sections";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
+import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 import { materializeSections } from "@/services/materialize-movement";
 import { checkStart, startGame } from "./start-game-service";
 import { PairSeat } from "@/model/participants";
@@ -355,6 +361,74 @@ describe("startGame (Round Robin Teams)", () => {
 
     expect(result.canStart).toBe(false);
     expect(result.problems.map((p) => p.code)).toContain("ODD_TEAM_COUNT");
+    expect(materializeSections).not.toHaveBeenCalled();
+  });
+});
+
+describe("startGame (§2.4.7 expected-late seats)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(readExpectedLateSeats).mockResolvedValue(new Set<string>());
+  });
+
+  it("starts a short field when the empty seats are marked expected-late", async () => {
+    vi.mocked(getDb).mockResolvedValue(mockEmptyDb() as any);
+    vi.mocked(findSections).mockResolvedValue([section("A", 5)] as any);
+    vi.mocked(getSectionMovement).mockResolvedValue(mitchell(5));
+    // TWO pairs missing — normally MULTIPLE_EMPTY_POSITIONS...
+    vi.mocked(findPairs).mockResolvedValue(
+      seatedPairs(5, "A", ["A3EW", "A5EW"]) as any,
+    );
+    // ...but both are marked expected-late, so the game starts.
+    vi.mocked(readExpectedLateSeats).mockResolvedValue(
+      new Set(["A3EW", "A5EW"]),
+    );
+
+    const result = await startGame("g1");
+
+    expect(result.canStart).toBe(true);
+    expect(materializeSections).toHaveBeenCalledTimes(1);
+  });
+
+  it("materialises a marked-late seat as a PLAYABLE real seat, not a sit-out", async () => {
+    vi.mocked(getDb).mockResolvedValue(mockEmptyDb() as any);
+    vi.mocked(findSections).mockResolvedValue([section("A", 5)] as any);
+    vi.mocked(getSectionMovement).mockResolvedValue(mitchell(5));
+    vi.mocked(findPairs).mockResolvedValue(
+      seatedPairs(5, "A", ["A3EW"]) as any,
+    );
+    vi.mocked(readExpectedLateSeats).mockResolvedValue(new Set(["A3EW"]));
+
+    await startGame("g1");
+
+    const [, sections] = vi.mocked(materializeSections).mock.calls[0];
+    const movement = sections[0].movement;
+    // No round anywhere is flagged a sit-out: the late seat is a normal,
+    // playable position in the layout — distinct from the phantom/SIT_OUT a
+    // genuine one-pair-short section would produce.
+    const anySitOut = movement.some((table) =>
+      table.rounds.some((r) => r.sitOut),
+    );
+    expect(anySitOut).toBe(false);
+  });
+
+  it("still blocks when a second gap is left UNMARKED", async () => {
+    vi.mocked(getDb).mockResolvedValue(mockEmptyDb() as any);
+    vi.mocked(findSections).mockResolvedValue([section("A", 5)] as any);
+    vi.mocked(getSectionMovement).mockResolvedValue(mitchell(5));
+    // A3EW + A5EW missing; only A3EW marked late → A5EW is a second gap... but
+    // one UNMARKED gap is a legal single sit-out. Leave THREE missing instead.
+    vi.mocked(findPairs).mockResolvedValue(
+      seatedPairs(5, "A", ["A2EW", "A4EW", "A5EW"]) as any,
+    );
+    vi.mocked(readExpectedLateSeats).mockResolvedValue(new Set(["A2EW"]));
+
+    const result = await startGame("g1");
+
+    expect(result.canStart).toBe(false);
+    expect(result.problems.map((p) => p.code)).toContain(
+      "MULTIPLE_EMPTY_POSITIONS",
+    );
     expect(materializeSections).not.toHaveBeenCalled();
   });
 });

@@ -3,15 +3,25 @@
 An audit of the Bridge Box Scorer code against
 [docs/reference/ebu-white-book-scoring.md](./ebu-white-book-scoring.md) (the
 captured EBU White Book 2025 scoring rules). It records, per topic, where the
-code **diverges** from the White Book and where a required behaviour is a
-**gap** (not implemented).
+code **diverges** from the White Book and where a required behaviour was a
+**gap** — and tracks each finding through to its fix, so it doubles as a
+checklist of what has been implemented and what remains.
 
 ## How to read this
 
 - **Status tags:**
   - **GAP** — the White Book requires a behaviour the app does not implement.
+  - **DONE** — a finding that WAS a gap/divergence and has since been fixed; the
+    description records what was built and where. (Some carry a scope qualifier,
+    e.g. "DONE (MP)" or "DONE (scoring)", meaning done for that case with the
+    remainder noted.)
+  - **PARTIAL** — implemented for the common case, with a defined remainder
+    deliberately deferred (recorded in the description).
   - **DIVERGENCE** — the app implements the behaviour but differently from the
     White Book.
+  - **WONTFIX** — a rule that is a director/TD judgement, not a mechanical
+    scoring step, so the software supports rather than enforces it; no code.
+  - **note** — a by-design or low-impact observation, not an action item.
   - **FLAG** — a possible divergence that needs an EBU/regulatory decision to
     resolve (the "correct" value is genuinely ambiguous).
   - **OK** — verified to match the White Book (recorded so the audit is
@@ -23,9 +33,11 @@ code **diverges** from the White Book and where a required behaviour is a
     difference with usually-small numeric effect.
   - **Low** — cosmetic, by-design, or only reachable in configurations the app
     doesn't currently offer.
-- **This is findings only.** No code was changed. Each finding notes a
-  suggested direction, not a committed plan. Section numbers (§x.y) are the
-  White Book's; `file:func` references are the app's.
+- **Living document.** This began as a findings-only audit; findings that have
+  since been actioned are marked **DONE**/**PARTIAL** with a note of what was
+  built and where. Open findings note a suggested direction, not a committed
+  plan. Section numbers (§x.y) are the White Book's; `file:func` references are
+  the app's.
 - **Scope note.** The app runs Pairs, Teams, Swiss Pairs and Swiss Teams on a
   club LAN. Multi-stage qualifying, knockouts, teams-of-eight and all-play-all
   "events" (as a formal Conditions-of-Contest construct) are out of scope, so
@@ -38,8 +50,8 @@ code **diverges** from the White Book and where a required behaviour is a
 | F7  | Neuberg for short boards | DONE | **High** | FIXED: `neuberg-across-boards.ts` equalises short boards to the full field (E/A Neuberg) at both MP pooling seams |
 | F18 | Cancel/foul a board | DONE | **High** | FIXED: `CANCELLED` status + `cancelBoardResult` + `traveller:cancelBoard`, plus a director UI — a "Cancel / Foul Board" branch on the adjustment hub using the same adjusted-score screen (any A<ns>/<ew> fault split), differing from a normal adjusted score only in the stored status |
 | F19 | Teams unplayable / void match | DONE | **High** | §3.3.7 removed-board indemnity + §3.3.6/§3.3.9 whole-match void (flat 40/60, TD converse, §3.3.9 half-split) + §3.3.6.2 average-the-rest, for ALL teams formats: IMP-based (VP + aggregate IMP, ±3 IMP / per-team VP) and board-comparison (BAM/PAB, win-tie-loss / per-team boards-won). `REMOVED_TEAMS` + `VOID_MATCH` statuses, director UI |
-| F24 | Withdrawals | GAP | **High** (known) | No withdrawal concept, indemnities, or score-to-withdrawer (§2.4) |
-| F25 | Late arrivals | GAP | **High** (known) | No late-arrival / half-table-pending / stand-by handling (§2.3.3, §2.4.7) |
+| F24 | Withdrawals | DONE (scoring) | **High** | §2.4.3–§2.4.6 implemented: a `WITHDRAWN` lifecycle on `participants` (standing + round + `REMOVE`/`PENALISED` treatment + 0–40% fine, via `withdrawParticipant`), with the scoring split by boards actually played. Board-pooled pairs: `withdrawalCreditBoards` credits the withdrawer's own AVE−-minus-fine (PENALISED, capped at half the event) and the opponents' §2.4.4 indemnity (after-half AVE+, before-half cancel→§4.2.3 equalisation). Teams-VP: `applyTeamWithdrawalRulings` voids a withdrawn team's UNPLAYED matches (§3.3.9, withdrawer AVE−/opponent AVE+), honoured by the live scorer AND the USEBIO export. REMOVE drops from the ranking (F26); PENALISED stays. Remaining: director UI to trigger it (build-order step 7); all-play-all own-average indemnity out of scope |
+| F25 | Late arrivals | PARTIAL | **High** (known) | §2.4.7 "retaining standing" DONE: a `LATE` standing (reusing the withdrawal treatment/fine), with the half-boards retain-standing gate in `resolveStandings` — a latecomer present < half the event's boards is scored per §2.4.6 like a withdrawer (pairs + teams-VP). "Never arrives" half-table == the existing pre-scheduled sit-out. Expected-late empty seats at start DONE. Mid-session stand-by→real-pair swap-in deferred: a faithful design (no credit transfer — sub boards without-standing, real pair AVE− for the gap) is written up in `docs/design/seat-occupancy-handover.md` but needs the identity-layer `seat_occupancy` change, so it is unbuilt |
 | F1  | AVE+/AVE− "better than average" | DONE (MP) | Medium | FIXED for matchpoints (standings): AVE+ = max(60%, windowed avg), AVE− = min(40%, avg), via `better-than-average.ts` at the MP leaderboard / Swiss-match / USEBIO-ranking seams; per-board display stays flat. IMP/XIMP deferred |
 | F2  | "Offenders must not gain" | WONTFIX | Medium | §4.1.1.4 / Law 12C1b is a TD-judgement rule: the director chooses the weighted ruling and the weights that avoid favouring the offending side. The software's role is to support that judgement, not enforce it. No "offender" concept in the model; automating a clamp would risk overriding legitimate TD decisions. No code change — the director applies the lean manually |
 | F8  | Small sub-fields | DONE | Medium | FIXED: §4.2.3.3 65/55 (2 results) / 70/60/50 (3 results) applied in `neuberg-across-boards.ts` when A∈{2,3} and A≤E/3 |
@@ -48,7 +60,7 @@ code **diverges** from the White Book and where a required behaviour is a
 | F29 | Swiss MP-VP overshoot crash | DONE | Medium | FIXED: a mixed artificial+real board in a Swiss MP-VP round could Neuberg-overshoot a real pair fractionally past 100%, which `mpVpFromPercent` rejected (threw). Now clamped to `[0, 100]` via `clampPercent` at all four MP VP seams in `swiss-vp-round.ts` before the VP-table lookup; the table's invariant guard stays for genuine misuse. Regression test in `swiss-mp-vp-overall.test.ts` |
 | F20 | Swiss void-match formula | DONE | Medium | §3.3.9 half-split DONE for teams VP (`VOID_MATCH`) AND Swiss pairs (`VOID_PAIR`: match removed from the field, each pair credited an AVE+/AVE−/AVE blend by fault). Director-triggered void with the AVE− offender side |
 | F21 | Swiss mismatch VP adjustment | DONE | Medium | FIXED (§3.5 + §3.5.2): the one-sided VP adjustment (higher+not-fault → 5+¾·actual; lower+own-fault → actual−¼·excess-over-5; else unchanged) for Swiss PAIRS and TEAMS (`swiss-mismatch.ts` + `MISMATCH` status + `match_ruling` column + director hub step), AND assisted DETECTION for BOTH pairs and teams: after a retroactive adjustment, the deterministic draw is replayed on round-scoped corrected standings to flag participants whose committed opponent is >5 VP from the correct one (teams exclude only the triple/bye participants of a round, not the whole round). Candidates surface in a director review screen (`/api/games/[gameId]/mismatch-candidates`) where the TD confirms fault → the existing adjustment. Judgement clauses (fault, the §3.5 "several valid alternatives" exception) stay with the director |
-| F26 | "Without standing" | GAP | Medium (known) | Ranking excludes nobody; no opponents-count-but-not-self (§2.4.9) |
+| F26 | "Without standing" | DONE | Medium | §2.4.9 implemented: a `WITHOUT_STANDING` standing whose results count IN FULL for opponents but who is dropped from the ranking. `resolveStandings`/`readRankingExclusions` build the excluded-id set (WITHOUT_STANDING, plus REMOVE-withdrawn and short-LATE-REMOVE); `applyRankingExclusion` (`scoring/overall/exclude-ranking.ts`) drops those lines and re-ranks the survivors, applied at the four leaderboard-service entry points (`excludeFromLeaderboard`) and in the four VP/teams + MP-pairs USEBIO assemblers, so the live board and the published file agree. `computeSectionLeaderboardsAsOf` deliberately does NOT exclude (it reconstructs a past draw's standings) |
 | F3  | Weighted-score precision | DONE | Low | FIXED: weighted-score weights now accept up to 2 decimal places (e.g. 33.33/33.33/33.34), summed/validated in integer basis points; `StepWeightedScore` enters decimals |
 | F5  | AVE sum > 100% guard | DONE | Low | FIXED: `StepAdjustedScore` shows a non-blocking advisory when NS%+EW% > 100 (only an outside-agency fault warrants it); `A60/60` still submittable |
 | F6  | Bare AVE token dropped | DONE | Low | FIXED: `normalizeAdjustedToken` decodes a bare `AVE`/`AVE+`/`AVE-` to its `A../..` equivalent, so it scores (50/50, 60/40, 40/60) instead of being dropped from the field |
@@ -57,7 +69,7 @@ code **diverges** from the White Book and where a required behaviour is a
 | F15 | Long-match VP columns dropped | DIVERGENCE | Low (by design) | Swiss Pairs VP table omits 28–55 board columns; UI caps boards |
 | F17 | Teams bye = 12 VP (hardcoded) | note | Low | Flat average-plus; consistent with EBU convention |
 | F22 | Swiss draw repeat nuance | DIVERGENCE | Low | Avoid-repeat is binary; no 1.5×/triangle nuance; odd-field pick is bottom-of-field, not "near but below average" |
-| F27 | Eviction post-start guard | note | Low | Director eviction route lacks the post-start guard `leave-table` has |
+| F27 | Eviction post-start guard | DONE | Low | FIXED: the director eviction route (`participants/[seat]` DELETE) now blocks once the game has started (`isGameStarted`), mirroring the player `leave-table` guard, so a seated pair can no longer be hard-deleted mid-game — removing one is a WITHDRAWN lifecycle change (F24) instead |
 | F4, F12, F13, F16 | Weighted blend; teams VP scale; Swiss Pairs VP; half-matches | OK | — | Verified to match the White Book |
 
 ---
@@ -717,46 +729,101 @@ diverge.
 
 ## 6. Late arrivals and withdrawals (§2.3–§2.4)
 
-This whole area is **known-unimplemented** — `ebu-white-book-scoring.md` §6
-carries a "Not yet implemented" banner. Recorded here so the audit is complete
-and the gaps are itemised for the implementation work.
+Largely **implemented** now — the withdrawal / without-standing / late-arrival
+scoring is built and tested (design: `docs/design/withdrawals-late-arrivals.md`).
+What remains is the director UI to trigger these states (build-order step 7) and
+the deliberately-deferred mid-session stand-by→real-pair handover (design §9).
+The findings below record the current state.
 
-### F24 — Withdrawals entirely unimplemented — GAP (High, known)
+### F24 — Withdrawals (§2.4.3–§2.4.6) — DONE (scoring; UI pending) (High)
 
-**White Book §2.4.** No withdrawal concept exists. `deleteParticipant`
-(`src/db/games/actions/delete-participant.ts`) hard-deletes the participant and
-player rows and leaves any entered board rows orphaned; there is no "withdrawn"
-state or column (`participants.ts` has none). None of the §2.4 scoring applies:
-no cancel-before-half / stand-after-half, no indemnity to opponents (own
-average / converse / 60% of max VPs / first-3-boards-AVE+), no AVE−-plus-fine to
-the withdrawer. Leaving/eviction are **setup-only** (`leave-table.handler.ts`
-blocks after start via `isGameStarted`).
+**White Book §2.4.** The withdrawal scoring is implemented end to end.
 
-### F25 — Late arrivals entirely unimplemented — GAP (High, known)
+**Lifecycle.** `participants` carries a `standing`
+(`ACTIVE | WITHDRAWN | WITHOUT_STANDING | LATE`) plus `withdrawnInRound`,
+`withdrawalTreatment` (`REMOVE | PENALISED`) and `withdrawalFinePercent` (0–40).
+`withdrawParticipant` (`db/games/actions/withdraw-participant.ts`) stamps these
+and NEVER deletes rows — a withdrawal is a scored event, so the participant and
+its board rows survive. For teams the standing lives on the home-NS participant
+row (a withdrawal is always whole-team). The former hard-delete path
+(`deleteParticipant`) is now setup-only and the director eviction route is
+guarded post-start (F27).
 
-**White Book §2.3.3 / §2.4.7.** No late-arrival handling: no half-table-pending
-state, no stand-by 45/90-minute rights, no "retain standing if present for half
-the boards", no AVE+/AVE− for boards unplayable due to lateness. **SIT_OUT is a
-pre-planned one-pair-short movement/phantom construct** (`start-validator.ts`
-`sitOutSeat`, `start-game-service.ts` `applySitOut`), decided at start from the
-gap between seated pairs and the movement — it is **not** a late/missing-pair
-mechanism and must not be confused with one.
+**Played vs unplayed** is read per board from the board rows (which of a
+contestant's scheduled cells carry a result), never from a stored board
+threshold — robust to wrap-around board numbering and mid-round withdrawals.
 
-### F26 — "Without standing" ranking exclusion absent — GAP (Medium, known)
+**Board-pooled pairs (§2.4.4–§2.4.6).** `withdrawalCreditBoards`
+(`services/leaderboard-service.ts`) synthesises, on each of the withdrawer's
+UNPLAYED cells: the withdrawer's own §2.4.5 AVE−-minus-fine `(40 − fine)/100` of
+the board top (PENALISED only, capped at half the event's boards); and the
+opponent's §2.4.4 indemnity — AVE+ (60%) when the withdrawal is AFTER half,
+nothing (CANCEL) BEFORE half, where the cancelled board simply shrinks the
+opponent's field and the §4.2.3 Neuberg equalisation already compensates. The
+before/after-half split is computed from boards the withdrawer actually played.
+IMP/XIMP credit both sides the field-average (0) so the board still counts.
 
-**White Book §2.4.9.** No concept of a contestant whose results count for
-opponents but not for themselves. `rank.ts` ranks every id present in the
-aggregated totals; `overall/common.ts:buildOverallScore` has no exclusion hook.
+**Teams-VP (§2.4.3/§3.3.9).** `applyTeamWithdrawalRulings`
+(`scoring/swiss/team-withdrawal.ts`) synthesises an in-memory
+`VOID:SHORT_OFFENDER_*` ruling on every UNPLAYED teams match a withdrawn team
+was drawn into — withdrawer AVE−, opponent AVE+ — honoured by the live teams-VP
+scorer AND the USEBIO teams export (`assembleSwissTeams`), so both agree. Never
+persisted; never clobbers a real director ruling.
 
-### F27 — Director eviction lacks the post-start guard — note (Low)
+**Score to the withdrawer (§2.4.5).** REMOVE → dropped from the ranking (F26);
+PENALISED → stays with the AVE−-minus-fine above.
 
-The player `leave-table` path blocks leaving once the game has started
-(`isGameStarted`), but the director eviction route
+**Remaining:** the director-facing "Withdraw / mark absent" UI to set the
+standing (build-order step 7 — today it is set via the action/DB). The
+all-play-all §6.2 "own average over the event" indemnity is out of scope (not an
+all-play-all appliance).
+
+### F25 — Late arrivals (§2.3.3 / §2.4.7) — PARTIAL (High, known)
+
+**White Book §2.3.3 / §2.4.7.** The §2.4.7 "retaining standing" rule
+is now implemented: a `LATE` participant standing records a latecomer (reusing
+the withdrawal `withdrawalTreatment`/`withdrawalFinePercent`), and
+`resolveStandings` (`src/db/games/queries/ranking-exclusions.ts`) applies the
+half-boards gate — "retain standing if present for at least half the event's
+boards", measured from boards actually played against `⌈total/2⌉`. A latecomer
+short of half is folded into the existing §2.4.4–§2.4.6 passes
+(`withdrawalCreditBoards` for pairs, `applyTeamWithdrawalRulings` for teams-VP),
+so its unplayed EARLY boards score AVE−/void exactly like a withdrawer's.
+
+Still not implemented (deliberately): the stand-by 45/90-minute rights (TD
+procedure, not scoring) and the mid-session stand-by→real-pair swap-in (needs
+the per-seat/per-board-range substitute identity deferred in design §9/step 8).
+Note **SIT_OUT remains a pre-planned one-pair-short movement/phantom construct**
+(`start-validator.ts` `sitOutSeat`, `start-game-service.ts` `applySitOut`); the
+White Book's "pair never arrives → treat the forced sit-out as pre-scheduled" is
+exactly that existing path, so it needs no separate code.
+
+### F26 — "Without standing" ranking exclusion (§2.4.9) — DONE (Medium)
+
+**White Book §2.4.9.** A contestant whose results count IN FULL for its
+opponents but who is itself dropped from the ranking — now implemented.
+
+**Code.** A `WITHOUT_STANDING` standing (and a REMOVE-withdrawn / short-LATE-REMOVE
+contestant) is collected into an excluded-id set by `resolveStandings` /
+`readRankingExclusions` (`db/games/queries/ranking-exclusions.ts`), keyed on the
+same `initialSeat` a pair line (`pairId`) and a team line (`teamId`, the home-NS
+seat) carry. `applyRankingExclusion` (`scoring/overall/exclude-ranking.ts`) drops
+those lines AFTER aggregation (so their results still counted for opponents) and
+re-ranks the survivors. It is applied at the four `leaderboard-service` entry
+points via `excludeFromLeaderboard`, and in the four VP/teams USEBIO assemblers
+plus the MP-pairs USEBIO placing, so the live board and the published file agree.
+`computeSectionLeaderboardsAsOf` deliberately does NOT exclude — it reconstructs a
+past draw's standings, where every contestant must still be present.
+
+### F27 — Director eviction post-start guard — DONE (Low)
+
+**Fixed.** The director eviction route
 (`src/app/api/games/[gameId]/participants/[seat]/route.ts` DELETE →
-`deleteParticipant`) has **no** post-start guard. A director could evict a seated
-pair mid-game, hard-deleting it with no defined scoring consequence. Worth either
-a guard or (better) folding eviction into a proper mid-game
-withdrawal/without-standing flow once that exists.
+`deleteParticipant`) now blocks once `isGameStarted(gameId)` is true, mirroring
+the player `leave-table` post-start guard. A seated pair can no longer be
+hard-deleted mid-game (which would orphan its board rows and the `matches` FK);
+removing one is a WITHDRAWN lifecycle change (F24) instead. `deleteParticipant`
+remains for the pre-start case (a pair leaves before the game starts).
 
 ---
 
@@ -768,10 +835,14 @@ Grouped by what delivers correct published results soonest:
    to E, small sub-fields, cancel/foul status).
 2. ~~**F19 + F20**~~ — DONE. Teams unplayable / void-match VP (incl. BAM/PAB) and
    Swiss-pairs void.
-3. **F24 + F25 + F26 (+ F27)** — the late-arrival / withdrawal / without-standing
-   feature. Large and already flagged as a planned feature; folds in F27 and
-   much of §6 of the reference doc. Also the usual cause of F19. **Still open —
-   deferred to the end by request.**
+3. **F24 + F26 + F27** — DONE (scoring). The withdrawal / without-standing /
+   eviction-guard feature: the `WITHDRAWN`/`WITHOUT_STANDING` lifecycle, the
+   §2.4.4–§2.4.6 pairs credits, the §3.3.9 teams-VP void, the §2.4.9 ranking
+   exclusion (live + USEBIO), and the post-start eviction guard. **F25** PARTIAL
+   — §2.4.7 "retaining standing" DONE (the `LATE` standing + half-boards gate);
+   the mid-session stand-by→real-pair swap-in is deferred (seat-occupancy model,
+   design §9). The only remaining withdrawal/late-arrival work is the **director
+   UI** to trigger these states (build-order step 7) — the scoring is complete.
 4. **F1** DONE for matchpoints (IMP/XIMP deferred); **F2** WONTFIX (TD-judgement
    rule, no mechanical clamp). AVE+/AVE− "better than average" + the offenders
    constraint.
@@ -785,6 +856,24 @@ Grouped by what delivers correct published results soonest:
 
 ---
 
-*Audit date: against the repo state at the time of writing. Source of truth for
-the rules: [ebu-white-book-scoring.md](./ebu-white-book-scoring.md) (EBU White
-Book 2025). This document records findings only; no code was changed.*
+*Reflects the repo state at the time of writing. Source of truth for the rules:
+[ebu-white-book-scoring.md](./ebu-white-book-scoring.md) (EBU White Book 2025).
+A living document: findings marked DONE/PARTIAL have been actioned in code; the
+remainder are open or deliberately out of scope.*
+
+## Remaining work
+
+With the withdrawal / without-standing / late-arrival scoring landed, the open
+items are small:
+
+- **Director UI (build-order step 7)** — a "Withdraw / mark absent / mark late"
+  flow on the manage screen so a TD can set the `WITHDRAWN` / `WITHOUT_STANDING`
+  / `LATE` standing (the scoring already runs; today the standing is set via the
+  action/DB only). Plus a `docs/director-guide.md` update.
+- **F25 mid-session stand-by→real-pair swap-in** — deferred (needs the per-seat,
+  per-board-range substitute identity; design `withdrawals-late-arrivals.md` §9).
+- **F1 IMP/XIMP "better than average"** — deferred; the matchpoint case is done.
+  Faithful IMP handling needs an IMP-average pass and interacts with the floored
+  Butler sign convention.
+- **F2** — WONTFIX (TD judgement). **F10, F15, F17, F22** — by-design notes /
+  divergences, no action planned.

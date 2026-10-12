@@ -6,6 +6,8 @@ import { registerCreateParticipantHandler } from "./create-participant/create-pa
 import { registerLeaveTableHandler } from "./leave-table/leave-table.handler";
 import { registerSeatTransferHandlers } from "./seat-transfer/seat-transfer.handler";
 import { registerSubmitResultHandler } from "./submit-result/submit-result.handler";
+import { registerSetParticipantStandingHandler } from "./set-participant-standing/set-participant-standing";
+import { registerSetSeatExpectedLateHandler } from "./set-seat-expected-late/set-seat-expected-late";
 
 // Director-only / one-shot mutations that are HTTP routes rather than socket
 // events:
@@ -25,6 +27,8 @@ export function registerGameHandlers(socket: Socket, io: Server) {
   registerCreateParticipantHandler(socket, io);
   registerLeaveTableHandler(socket, io);
   registerSeatTransferHandlers(socket, io);
+  registerSetParticipantStandingHandler(socket, io);
+  registerSetSeatExpectedLateHandler(socket, io);
   registerJoinGameHandler(socket, io);
   registerLeaveGameHandler(socket, io);
   registerSelectMovementHandler(socket, io);

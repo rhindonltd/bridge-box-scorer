@@ -25,6 +25,13 @@ export async function findPairs(db: Db): Promise<Pair[]> {
         lastName: player2.lastName,
         nationalId: player2.nationalId,
       },
+      // EBU §2.4 lifecycle, surfaced so the director UI can show/edit a pair's
+      // standing. ACTIVE for an ordinary pair; the withdrawal fields are null
+      // unless the pair is WITHDRAWN or a short LATE arrival.
+      standing: participants.standing,
+      withdrawnInRound: participants.withdrawnInRound,
+      withdrawalTreatment: participants.withdrawalTreatment,
+      withdrawalFinePercent: participants.withdrawalFinePercent,
     })
     .from(participants)
     .innerJoin(player1, eq(participants.player1, player1.id))

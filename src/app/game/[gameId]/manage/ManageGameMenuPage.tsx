@@ -7,6 +7,7 @@ export interface DirectorMenuPageProps {
   /** Header right-hand content — the play⇄manage switch on a director device. */
   headerRight?: ReactNode;
   onSetUpGameClick: () => void;
+  onManageTablesClick: () => void;
   onTravellersClick: () => void;
   onEnterDealsClick: () => void;
   onMovementClick: () => void;
@@ -18,6 +19,12 @@ export interface DirectorMenuPageProps {
   onDeleteGameClick: () => void;
   /** Show "Set Up Game" — only before the game has started. */
   showSetUpGame: boolean;
+  /**
+   * Show "Manage Tables" — only after the game has started. Routes to the same
+   * Tables screen used in setup (`/create`), which also works mid-game for
+   * withdrawals / late arrivals.
+   */
+  showManageTables: boolean;
   /** Show "Travellers" — only after the game has started. */
   showTravellers: boolean;
   /** Show "Enter Deals" — only after the game has started. */
@@ -57,6 +64,7 @@ export interface DirectorMenuPageProps {
 export function ManageGameMenuPage({
   headerRight,
   onSetUpGameClick,
+  onManageTablesClick,
   onTravellersClick,
   onEnterDealsClick,
   onMovementClick,
@@ -67,6 +75,7 @@ export function ManageGameMenuPage({
   onUploadBridgewebsClick,
   onDeleteGameClick,
   showSetUpGame,
+  showManageTables,
   showTravellers,
   showEnterDeals,
   showMovement,
@@ -93,6 +102,15 @@ export function ManageGameMenuPage({
         {showSetUpGame && (
           <button onClick={onSetUpGameClick} className={standardButtonClass}>
             <span className="flex items-center gap-3">Set Up Game</span>
+          </button>
+        )}
+
+        {showManageTables && (
+          <button
+            onClick={onManageTablesClick}
+            className={standardButtonClass}
+          >
+            <span className="flex items-center gap-3">Manage Tables</span>
           </button>
         )}
 

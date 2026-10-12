@@ -18,6 +18,8 @@ interface Props {
   };
   /** Present for a "2 half matches" round this pair is in. */
   halfMatch?: RoundHalfMatch;
+  /** §2.4.7: the opponent is an empty "expected late" seat (not yet arrived). */
+  opponentExpectedLate?: boolean;
   onEnterRound: () => void;
   /** Right-hand header content (the play header menu). */
   headerRight?: React.ReactNode;
@@ -29,6 +31,7 @@ export function RoundInfoPage({
   boards,
   players,
   halfMatch,
+  opponentExpectedLate,
   onEnterRound,
   headerRight,
 }: Props) {
@@ -53,6 +56,7 @@ export function RoundInfoPage({
         table={table}
         players={players}
         halfMatch={halfMatch}
+        opponentExpectedLate={opponentExpectedLate}
       />
     </GamePageLayout>
   );

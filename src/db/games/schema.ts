@@ -8,3 +8,4 @@ export { boardSubmissions } from "@/db/games/tables/submissions";
 export { sections } from "@/db/games/tables/sections";
 export { teams } from "@/db/games/tables/teams";
 export { deals } from "@/db/games/tables/deals";
+export { expectedLateSeats } from "@/db/games/tables/expected-late-seats";

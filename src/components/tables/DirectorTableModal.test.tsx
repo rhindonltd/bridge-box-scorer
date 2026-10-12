@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { DirectorTableModal } from "./DirectorTableModal";
 import type { DirectorTable } from "./DirectorTableControls";
 
@@ -18,6 +18,7 @@ function fullTable(overrides: Partial<DirectorTable> = {}): DirectorTable {
       W: player("West"),
     },
     seats: { N: "A1NS", S: "A1NS", E: "A1EW", W: "A1EW" },
+    pairSeats: { ns: "A1NS", ew: "A1EW" },
     stationary: { N: false, S: false, E: false, W: false },
     ...overrides,
   } as DirectorTable;
@@ -29,6 +30,7 @@ function halfEmptyTable(): DirectorTable {
     tableNumber: 2,
     players: { N: player("North"), S: player("South"), E: null, W: null },
     seats: { N: "A2NS", S: "A2NS", E: null, W: null },
+    pairSeats: { ns: "A2NS", ew: "A2EW" },
     stationary: { N: false, S: false, E: false, W: false },
   } as DirectorTable;
 }
@@ -41,6 +43,9 @@ describe("DirectorTableModal", () => {
         isSwiss={false}
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -54,6 +59,9 @@ describe("DirectorTableModal", () => {
         isSwiss={false}
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -73,6 +81,9 @@ describe("DirectorTableModal", () => {
         isSwiss={false}
         onEvict={onEvict}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -95,6 +106,9 @@ describe("DirectorTableModal", () => {
         isSwiss={false}
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -109,16 +123,23 @@ describe("DirectorTableModal", () => {
         isSwiss
         onEvict={vi.fn()}
         onToggleStationary={onToggleStationary}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );
 
-    // Two "Yes" toggles (one per occupied pair). Clicking the first fires the
-    // NS toggle (ns=true), the second the EW toggle (ns=false).
-    const yesButtons = screen.getAllByRole("button", { name: "Yes" });
-    fireEvent.click(yesButtons[0]);
+    // One "Stationary" toggle group per occupied pair (each row also has a
+    // separate "Without standing" toggle, so scope to the Stationary groups).
+    // Clicking the first group's "Yes" fires the NS toggle (ns=true), the
+    // second the EW toggle (ns=false).
+    const stationaryGroups = screen.getAllByRole("group", {
+      name: "Stationary",
+    });
+    fireEvent.click(within(stationaryGroups[0]).getByRole("button", { name: "Yes" }));
     expect(onToggleStationary).toHaveBeenCalledWith(1, true);
-    fireEvent.click(yesButtons[1]);
+    fireEvent.click(within(stationaryGroups[1]).getByRole("button", { name: "Yes" }));
     expect(onToggleStationary).toHaveBeenCalledWith(1, false);
   });
 
@@ -129,6 +150,9 @@ describe("DirectorTableModal", () => {
         isSwiss
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -143,6 +167,9 @@ describe("DirectorTableModal", () => {
         isSwiss
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -166,6 +193,9 @@ describe("DirectorTableModal", () => {
         isSwiss={false}
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -180,6 +210,9 @@ describe("DirectorTableModal", () => {
         isSwiss={false}
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={onClose}
       />,
     );
@@ -196,6 +229,9 @@ describe("DirectorTableModal", () => {
         isSwiss
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
         onClose={vi.fn()}
       />,
     );

@@ -10,6 +10,7 @@ import {
   buildAssignmentPlayerLookup,
   type PairPlayers,
 } from "@/db/games/queries/assignment-players";
+import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 
 /** A board row as this pair sees it, grouped under its round. */
 type PairBoardRow = {
@@ -44,7 +45,17 @@ export async function getSchedule(db: Db, seat: string) {
   // Game-wide lookup from an assignment id to the two players sitting there.
   const assignmentToPlayers = await buildAssignmentPlayerLookup(db);
 
-  const rounds = assembleRounds(pairBoards, assignmentToPlayers, assignmentId);
+  // §2.4.7: the empty seats a director marked "expected late", so a round whose
+  // opponent is one of them is shown as "running late" rather than a blank
+  // table or a sit-out.
+  const expectedLateSeats = await readExpectedLateSeats(db);
+
+  const rounds = assembleRounds(
+    pairBoards,
+    assignmentToPlayers,
+    assignmentId,
+    expectedLateSeats,
+  );
 
   const totalRounds = await countTotalRounds(db);
 
@@ -125,6 +136,13 @@ type ActiveRound = {
   players: TablePlayers;
   /** Present only for a 2-half-matches round this pair is in; else absent. */
   halfMatch?: ScheduleHalfMatch;
+  /**
+   * §2.4.7: true when the opponent seat this round is an empty "expected late"
+   * seat — the pair is still to arrive. The player's screen shows a "running
+   * late" message rather than treating the empty opponent as a sit-out or a
+   * blank table. False/absent for an ordinary round.
+   */
+  opponentExpectedLate?: boolean;
 };
 
 export type ScheduleRound = Omit<
@@ -145,6 +163,7 @@ function assembleRounds(
   pairBoards: PairBoardRow[],
   assignmentToPlayers: Map<string, PairPlayers>,
   assignmentId: string,
+  expectedLateSeats: Set<string>,
 ): ActiveRound[] {
   // Group this pair's rows by round, keeping ALL rows (a 2-half-matches round
   // has rows for two opponents and/or HALF_AVERAGE compensation rows, so a
@@ -159,7 +178,13 @@ function assembleRounds(
   return Array.from(roundMap.entries())
     .sort(([a], [b]) => a - b)
     .map(([roundNumber, rows]) =>
-      assembleRound(roundNumber, rows, assignmentToPlayers, assignmentId),
+      assembleRound(
+        roundNumber,
+        rows,
+        assignmentToPlayers,
+        assignmentId,
+        expectedLateSeats,
+      ),
     );
 }
 
@@ -185,6 +210,7 @@ function assembleRound(
   rows: PairBoardRow[],
   lookup: Map<string, PairPlayers>,
   assignmentId: string,
+  expectedLateSeats: Set<string>,
 ): ActiveRound {
   const tableNumber = rows[0].tableNumber;
 
@@ -202,6 +228,17 @@ function assembleRound(
   const side: "NS" | "EW" =
     (playedRows[0] ?? rows[0]).ns === assignmentId ? "NS" : "EW";
 
+  // §2.4.7: this round's opponent is "running late" when its seat is marked
+  // expected-late AND nobody is sitting there yet (no players resolve). The
+  // opponent is the other side of this pair's played row.
+  const opponentId = playedRows.length > 0
+    ? (playedRows[0].ns === assignmentId ? playedRows[0].ew : playedRows[0].ns)
+    : null;
+  const opponentExpectedLate =
+    opponentId != null &&
+    expectedLateSeats.has(opponentId) &&
+    !lookup.has(opponentId);
+
   // The played boards (never SIT_OUT / HALF_AVERAGE), ascending.
   const boardStatuses = playedRows
     .map((r) => ({ boardNumber: r.boardNumber, status: r.status }))
@@ -216,6 +253,7 @@ function assembleRound(
     boardStatuses: isSitOut ? [] : boardStatuses,
     sitOut: isSitOut,
     players: tablePlayersFor(rows[0].ns, rows[0].ew, lookup),
+    ...(opponentExpectedLate ? { opponentExpectedLate: true } : {}),
   };
 
   if (isSitOut) return base;

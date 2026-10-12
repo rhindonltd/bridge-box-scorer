@@ -130,12 +130,29 @@ export type NewPair = {
   player2: NewPlayer;
 };
 
+/**
+ * A seated contestant's lifecycle standing (EBU White Book §2.4), surfaced to
+ * the client so the director UI can show/edit it. Mirrors the `participants`
+ * lifecycle columns. Optional on {@link Pair} so the many existing `Pair`
+ * literals (tests, teams assemblers) that predate this stay valid; `findPairs`
+ * always populates it from the DB.
+ */
+export type ParticipantStanding = {
+  standing: "ACTIVE" | "WITHDRAWN" | "WITHOUT_STANDING" | "LATE";
+  /** The round the pair withdrew in / arrived in (coarse context). */
+  withdrawnInRound: number | null;
+  /** §2.4.5 treatment for a WITHDRAWN / short-LATE pair. */
+  withdrawalTreatment: "REMOVE" | "PENALISED" | null;
+  /** 0..40 fine percentage (PENALISED only). */
+  withdrawalFinePercent: number | null;
+};
+
 export type Pair = {
   type: "PAIR";
   initialSeat: PairSeat;
   player1: Player;
   player2: Player;
-};
+} & Partial<ParticipantStanding>;
 
 export type Team = {
   type: "TEAM";

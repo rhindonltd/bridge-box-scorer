@@ -54,12 +54,13 @@ const longNamePlayers = {
 };
 
 const emptySeats = { N: null, S: null, E: null, W: null };
+const pairSeats = { ns: "A1NS", ew: "A1EW" } as const;
 
 export const Default: Story = {
   args: {
     tables: [
-      { tableNumber: 1, players: yoshiPlayers, seats: emptySeats },
-      { tableNumber: 2, players: yoshiPlayers, seats: emptySeats },
+      { tableNumber: 1, players: yoshiPlayers, seats: emptySeats, pairSeats },
+      { tableNumber: 2, players: yoshiPlayers, seats: emptySeats, pairSeats },
     ],
   },
 };
@@ -72,7 +73,9 @@ export const Default: Story = {
  */
 export const LongNames: Story = {
   args: {
-    tables: [{ tableNumber: 1, players: longNamePlayers, seats: emptySeats }],
+    tables: [
+      { tableNumber: 1, players: longNamePlayers, seats: emptySeats, pairSeats },
+    ],
   },
 };
 
@@ -87,12 +90,14 @@ export const WithBoardPlacement: Story = {
         tableNumber: 1,
         players: yoshiPlayers,
         seats: emptySeats,
+        pairSeats,
         placement: { boardStart: 1, boardEnd: 3 },
       },
       {
         tableNumber: 2,
         players: yoshiPlayers,
         seats: emptySeats,
+        pairSeats,
         placement: { boardStart: 4, boardEnd: 6 },
       },
     ],
@@ -110,12 +115,14 @@ export const WithBoardCopies: Story = {
         tableNumber: 1,
         players: yoshiPlayers,
         seats: emptySeats,
+        pairSeats,
         placement: { boardStart: 1, boardEnd: 3, boardCopy: "A" },
       },
       {
         tableNumber: 2,
         players: yoshiPlayers,
         seats: emptySeats,
+        pairSeats,
         placement: { boardStart: 1, boardEnd: 3, boardCopy: "B" },
       },
     ],
@@ -133,24 +140,28 @@ export const WithShareAndRelay: Story = {
         tableNumber: 1,
         players: yoshiPlayers,
         seats: emptySeats,
+        pairSeats,
         placement: { boardStart: 1, boardEnd: 2, sharesWith: [4] },
       },
       {
         tableNumber: 2,
         players: yoshiPlayers,
         seats: emptySeats,
+        pairSeats,
         placement: { boardStart: 3, boardEnd: 4, relayWith: 3 },
       },
       {
         tableNumber: 3,
         players: yoshiPlayers,
         seats: emptySeats,
+        pairSeats,
         placement: { boardStart: 7, boardEnd: 8, relayWith: 2 },
       },
       {
         tableNumber: 4,
         players: yoshiPlayers,
         seats: emptySeats,
+        pairSeats,
         placement: { boardStart: 1, boardEnd: 2, sharesWith: [1] },
       },
     ],

@@ -92,7 +92,32 @@ From this tab you can:
   place). Eviction is only for sorting out seating **before the game starts**.
   Once play is under way a pair cannot be evicted this way, because their
   results are already part of the scoring — removing a pair mid-session is a
-  withdrawal, which is handled separately.
+  withdrawal (see **Withdraw, mark late, or without standing** below).
+- **Mark a pair "without standing"** — before the game starts, a table's dialog
+  lets you flip a seated pair to **Without standing**. Use this for a
+  substitute pair who is sitting in for the whole session: their results still
+  count for the pairs they play against, but they do not appear in the final
+  ranking themselves.
+- **Expect a pair to arrive late** — if a pair hasn't turned up yet, you don't
+  have to wait. Open their empty seat's table dialog and turn on **Expected
+  late**. You can mark as many empty seats as you need, then start the session;
+  those tables play on as soon as the pair arrives, and the pairs who face an
+  empty seat meanwhile are looked after in the scoring (see **Late arrivals**).
+  When the pair arrives they simply join and sit down in the usual way.
+- **Withdraw, mark late, or without standing (after the game starts)** — once
+  play is under way, a table's dialog replaces "Evict" with a **Change
+  standing** button for each pair. From there you can mark a pair:
+  - **Withdrawn** — they have stopped playing. Choose the round it happened in,
+    and whether to **Remove** them from the ranking (e.g. illness) or keep them
+    in with a **Penalty** (and a fine percentage). Their unplayed boards and
+    their opponents' are handled per the scoring rules.
+  - **Late** — they arrived part-way through. If they played at least half the
+    boards they keep their place in the ranking; if not, their missed boards
+    are scored like a withdrawal (choose Remove or Penalty as above).
+  - **Without standing** — as above, their results count for opponents but not
+    for themselves.
+  - **Active** — put a pair back to normal if you marked them by mistake.
+  A small badge on the pair shows its current standing at a glance.
 
 Once you've chosen a movement for the section, each table also shows the
 **boards to put out there** at the start — for example "Boards 1–3". This is a
@@ -106,7 +131,10 @@ until the counts line up again.
 
 The app also checks the setup and flags anything that would stop the game
 starting. If a table isn't full, it shows which seat will **sit out** each
-round so the movement still works.
+round so the movement still works. A session allows **one** such sit-out; if
+more than one seat is empty, start is blocked **unless** you mark the extra
+empty seats **Expected late** (above), which lets you get under way with any
+number of seats still to be filled.
 
 For a **Swiss Pairs** section, a table's dialog also lets you mark **stationary
 pairs**: turn on **Stationary** for a pair to keep them at their table and
@@ -271,6 +299,7 @@ example, to correct a board and then return to enter your own table's result.
 | Option                    | What it does                                                              |
 | ------------------------- | ------------------------------------------------------------------------- |
 | **Set Up Game**           | Returns to the Tables / Movements / Timer setup tabs.                     |
+| **Manage Tables**         | Opens the Tables view while the game is in progress — to withdraw, mark late, or re-seat pairs. |
 | **Travellers**            | View results by board and correct any that were entered wrong.            |
 | **Enter Deals**           | Enter or correct the dealt cards (the four hands) for any board.          |
 | **Movement**              | View or change the movement.                                              |
@@ -519,6 +548,9 @@ hands are included in the exported file alongside that board's results.
   players can sit down straight away.
 - **Odd number of pairs?** A sit-out is handled for you — the app shows which
   seat sits out each round, so you can start with a half table.
+- **Someone running late?** Mark their empty seat **Expected late** on the
+  Tables tab and start on time; seat them when they arrive. You can do this for
+  as many missing pairs as you need.
 - **Use sections** for large events — each section gets its own tables and
   movement, and the leaderboard shows both per-section and combined standings.
 - **Share access** so a co-director can help — they manage from their own phone

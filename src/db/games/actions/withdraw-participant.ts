@@ -6,9 +6,10 @@ import { eq } from "drizzle-orm";
 import { PairSeat } from "@/model/participants";
 
 /**
- * How a withdrawing contestant's own score is treated (EBU White Book §2.4.5):
+ * How a contestant's own score is treated for its UNPLAYED boards (EBU White
+ * Book §2.4.5/§2.4.6):
  *   - REMOVE     drop from the ranking entirely (a genuine illness)
- *   - PENALISED  AVE− plus a 0..40% fine on the boards after withdrawal
+ *   - PENALISED  AVE− plus a 0..40% fine on the unplayed boards
  */
 export type WithdrawalTreatment = "REMOVE" | "PENALISED";
 
@@ -23,6 +24,19 @@ export type StandingChange =
       /** 0..40 fine percentage; required for PENALISED, ignored for REMOVE. */
       finePercent?: number;
     }
+  | {
+      // EBU §2.4.7 late arrival. Carries the SAME treatment/fine as a
+      // withdrawal: it only takes effect if the latecomer fails the half-boards
+      // retain-standing test (computed from board rows at scoring time); if it
+      // played at least half the event's boards it keeps standing and the
+      // treatment is moot. `arrivedInRound` is coarse UI context, stored on the
+      // same `withdrawnInRound` column.
+      standing: "LATE";
+      arrivedInRound: number;
+      treatment: WithdrawalTreatment;
+      /** 0..40 fine percentage; required for PENALISED, ignored for REMOVE. */
+      finePercent?: number;
+    }
   | { standing: "WITHOUT_STANDING" }
   | { standing: "ACTIVE" };
 
@@ -30,13 +44,17 @@ export type StandingChange =
  * Change the standing of the contestant seated at `seat` (EBU White Book §2.4).
  *
  * Unlike {@link import("./delete-participant").deleteParticipant}, this NEVER
- * deletes rows — a withdrawal is a scored event, so the participant and its
- * board rows must survive (opponents' results against it still count, and the
- * withdrawer's own unplayed boards are scored per §2.4.5/§2.4.6). It only
- * stamps the lifecycle fields.
+ * deletes rows — a withdrawal/late-arrival is a scored event, so the
+ * participant and its board rows must survive (opponents' results against it
+ * still count, and the contestant's own unplayed boards are scored per
+ * §2.4.5/§2.4.6). It only stamps the lifecycle fields. A `LATE` arrival
+ * (§2.4.7) is stored with the same treatment/fine as a withdrawal; whether it
+ * actually scores that way is decided at scoring time by the half-boards
+ * retain-standing test.
  *
  * For teams the standing lives on the team's home-NS participant row and a
- * withdrawal is always whole-team, so the caller passes that home seat.
+ * withdrawal/late-arrival is always whole-team, so the caller passes that home
+ * seat.
  *
  * Returns true when a participant row was updated, false when no pair is seated
  * at `seat`. Clears the withdrawal-specific fields when moving to a standing
@@ -54,10 +72,16 @@ export async function withdrawParticipant(
   }
 
   const values =
-    change.standing === "WITHDRAWN"
+    change.standing === "WITHDRAWN" || change.standing === "LATE"
       ? {
-          standing: "WITHDRAWN" as const,
-          withdrawnInRound: change.withdrawnInRound,
+          standing: change.standing,
+          // WITHDRAWN stores the round it stopped; LATE the round it arrived —
+          // both coarse UI context on the same column (scoring reads the board
+          // rows, not this).
+          withdrawnInRound:
+            change.standing === "WITHDRAWN"
+              ? change.withdrawnInRound
+              : change.arrivedInRound,
           withdrawalTreatment: change.treatment,
           // A fine only applies to PENALISED; REMOVE clears it.
           withdrawalFinePercent:

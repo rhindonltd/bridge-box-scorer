@@ -19,6 +19,7 @@ const fullTable: DirectorTable = {
     E: "A3EW" as Seat,
     W: "A3EW" as Seat,
   },
+  pairSeats: { ns: "A3NS" as Seat, ew: "A3EW" as Seat },
   stationary: { N: true, S: true, E: false, W: false },
 };
 
@@ -36,6 +37,7 @@ const partialTable: DirectorTable = {
     E: null,
     W: null,
   },
+  pairSeats: { ns: "A5NS" as Seat, ew: "A5EW" as Seat },
 };
 
 const meta: Meta<typeof DirectorTableModal> = {
@@ -46,8 +48,11 @@ const meta: Meta<typeof DirectorTableModal> = {
   },
   tags: ["autodocs"],
   args: {
+    started: false,
     onEvict: fn(),
     onToggleStationary: fn(),
+    onChangeStanding: fn(),
+    onToggleExpectedLate: fn(),
     onClose: fn(),
   },
 };

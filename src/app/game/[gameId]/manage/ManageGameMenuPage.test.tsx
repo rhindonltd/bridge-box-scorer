@@ -23,6 +23,7 @@ import { ManageGameMenuPage } from "./ManageGameMenuPage";
 
 const handlers = {
   onSetUpGameClick: vi.fn(),
+  onManageTablesClick: vi.fn(),
   onTravellersClick: vi.fn(),
   onEnterDealsClick: vi.fn(),
   onMovementClick: vi.fn(),
@@ -36,6 +37,7 @@ const handlers = {
 
 const flags = {
   showSetUpGame: false,
+  showManageTables: false,
   showTravellers: false,
   showEnterDeals: false,
   showMovement: false,
