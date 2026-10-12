@@ -12,6 +12,10 @@ import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
 import { scoreXIMP as scorePairXIMP } from "@/scoring/traveller/pair/x-imp";
 import { equaliseMpBoards } from "@/scoring/traveller/pair/neuberg-across-boards";
 import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
+import {
+  applyBetterThanAverageImpBoards,
+  applyBetterThanAverageXimpBoards,
+} from "@/scoring/traveller/pair/better-than-average-imp";
 import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
@@ -988,6 +992,50 @@ function computeOverallRanking(
         const maxForBoard = line.maxMatchPoints;
         accumulate(totals, line.nsId, "NS", line.nsMatchPoints, maxForBoard);
         accumulate(totals, line.ewId, "EW", line.ewMatchPoints, maxForBoard);
+      }
+    }
+  } else if (scoringType === "IMP" || scoringType === "XIMP") {
+    // IMP / Cross-IMP: score every board (keeping the per-board scored lines so
+    // the §4.1.1.1 uplift can see each pair's own board results), apply the
+    // "better than average" AVE+/AVE− uplift across the whole field, THEN
+    // accumulate — mirroring the MP branch so the exported totals match the
+    // live leaderboard. IMP/XIMP lines never contribute to a ranking MAX
+    // (`contributesToMax` is false for them), so `maxForBoard` stays 0.
+    if (scoringType === "IMP") {
+      const scored = Array.from(boardGroups, ([boardNum, results]) => ({
+        board: boardNum,
+        lines: scorePairIMP(
+          boardNum,
+          results.map((r) => ({
+            outcome: r.outcome,
+            nsId: r.nsPairNumber,
+            ewId: r.ewPairNumber,
+          })),
+        ),
+      }));
+      for (const b of applyBetterThanAverageImpBoards(scored)) {
+        for (const line of b.lines) {
+          accumulate(totals, line.nsId, "NS", line.nsImps, 0);
+          accumulate(totals, line.ewId, "EW", line.ewImps, 0);
+        }
+      }
+    } else {
+      const scored = Array.from(boardGroups, ([boardNum, results]) => ({
+        board: boardNum,
+        lines: scorePairXIMP(
+          boardNum,
+          results.map((r) => ({
+            outcome: r.outcome,
+            nsId: r.nsPairNumber,
+            ewId: r.ewPairNumber,
+          })),
+        ),
+      }));
+      for (const b of applyBetterThanAverageXimpBoards(scored)) {
+        for (const line of b.lines) {
+          accumulate(totals, line.nsId, "NS", line.nsCrossImps, 0);
+          accumulate(totals, line.ewId, "EW", line.ewCrossImps, 0);
+        }
       }
     }
   } else {

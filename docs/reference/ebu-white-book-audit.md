@@ -1,892 +1,326 @@
 # EBU White Book — App Audit
 
-An audit of the Bridge Box Scorer code against
-[docs/reference/ebu-white-book-scoring.md](./ebu-white-book-scoring.md) (the
-captured EBU White Book 2025 scoring rules). It records, per topic, where the
-code **diverges** from the White Book and where a required behaviour was a
-**gap** — and tracks each finding through to its fix, so it doubles as a
-checklist of what has been implemented and what remains.
+A fresh audit of the Bridge Box Scorer code against the **definitive source**:
+the EBU White Book 2025 (`docs/reference/ebu-white-book-2025.pdf`, "29 July 2025
+FINAL DRAFT"). Section numbers (§x.y) are that PDF's. Each finding was derived by
+reading the White Book text and then the actual code it governs; `file:function`
+references are the app's.
+
+This audit was written from scratch against the PDF and does **not** inherit the
+conclusions of any earlier audit or of `ebu-white-book-scoring.md`.
 
 ## How to read this
 
 - **Status tags:**
+  - **OK** — code verified to match the White Book.
   - **GAP** — the White Book requires a behaviour the app does not implement.
-  - **DONE** — a finding that WAS a gap/divergence and has since been fixed; the
-    description records what was built and where. (Some carry a scope qualifier,
-    e.g. "DONE (MP)" or "DONE (scoring)", meaning done for that case with the
-    remainder noted.)
-  - **PARTIAL** — implemented for the common case, with a defined remainder
-    deliberately deferred (recorded in the description).
-  - **DIVERGENCE** — the app implements the behaviour but differently from the
-    White Book.
-  - **WONTFIX** — a rule that is a director/TD judgement, not a mechanical
-    scoring step, so the software supports rather than enforces it; no code.
-  - **note** — a by-design or low-impact observation, not an action item.
-  - **FLAG** — a possible divergence that needs an EBU/regulatory decision to
-    resolve (the "correct" value is genuinely ambiguous).
-  - **OK** — verified to match the White Book (recorded so the audit is
-    complete, not just a list of problems).
-- **Severity** reflects scoring impact and likelihood, not effort:
-  - **High** — can produce a materially wrong published result in a realistic
-    club session, or a whole scenario is unhandled.
-  - **Medium** — wrong in specific/edge situations, or a rule-of-correctness
-    difference with usually-small numeric effect.
-  - **Low** — cosmetic, by-design, or only reachable in configurations the app
-    doesn't currently offer.
-- **Living document.** This began as a findings-only audit; findings that have
-  since been actioned are marked **DONE**/**PARTIAL** with a note of what was
-  built and where. Open findings note a suggested direction, not a committed
-  plan. Section numbers (§x.y) are the White Book's; `file:func` references are
-  the app's.
-- **Scope note.** The app runs Pairs, Teams, Swiss Pairs and Swiss Teams on a
-  club LAN. Multi-stage qualifying, knockouts, teams-of-eight and all-play-all
-  "events" (as a formal Conditions-of-Contest construct) are out of scope, so
-  findings that only bite there are marked accordingly.
+  - **DIVERGENCE** — the app implements the behaviour but differently.
+  - **PARTIAL** — implemented for some scoring methods / cases but not all.
+  - **FLAG** — a point needing an EBU/regulatory decision or where the correct
+    value is genuinely ambiguous.
+  - **WONT-IMPLEMENT** — a divergence that is a deliberate product decision; the
+    app knowingly does not follow this rule and that is accepted. No action.
+  - **TD-JUDGEMENT** — a director/TD ruling, not a mechanical scoring step; the
+    software supports it (lets the director enter the ruling) rather than
+    enforcing it. No code gap.
+- **Severity** reflects scoring impact × likelihood in the app's scope, not
+  effort: High / Medium / Low.
+- **Scope.** The app runs **Pairs, Teams, Swiss Pairs and Swiss Teams on a club
+  LAN**. Out of scope (findings that only bite there are not raised): teams-of-
+  eight-or-more (§3.1.4, §3.1.5, §3.7), knockout events (§3.2.2, §3.3.4),
+  multi-stage / qualifying competitions, the formal all-play-all construct
+  (§2.4.2), hybrid/Pachabo scoring (§3.1.6), and online/BBO specifics.
 
 ## Summary
 
-| # | Topic | Status | Severity | Short description |
-|---|-------|--------|----------|-------------------|
-| F7  | Neuberg for short boards | DONE | **High** | FIXED: `neuberg-across-boards.ts` equalises short boards to the full field (E/A Neuberg) at both MP pooling seams |
-| F18 | Cancel/foul a board | DONE | **High** | FIXED: `CANCELLED` status + `cancelBoardResult` + `traveller:cancelBoard`, plus a director UI — a "Cancel / Foul Board" branch on the adjustment hub using the same adjusted-score screen (any A<ns>/<ew> fault split), differing from a normal adjusted score only in the stored status |
-| F19 | Teams unplayable / void match | DONE | **High** | §3.3.7 removed-board indemnity + §3.3.6/§3.3.9 whole-match void (flat 40/60, TD converse, §3.3.9 half-split) + §3.3.6.2 average-the-rest, for ALL teams formats: IMP-based (VP + aggregate IMP, ±3 IMP / per-team VP) and board-comparison (BAM/PAB, win-tie-loss / per-team boards-won). `REMOVED_TEAMS` + `VOID_MATCH` statuses, director UI |
-| F24 | Withdrawals | DONE (scoring) | **High** | §2.4.3–§2.4.6 implemented: a `WITHDRAWN` lifecycle on the seat occupancy (standing + round + `REMOVE`/`PENALISED` treatment + 0–40% fine, via `withdrawParticipant`), with the scoring split by boards actually played. Board-pooled pairs: `withdrawalCreditBoards` credits the withdrawer's own AVE−-minus-fine (PENALISED, capped at half the event) and the opponents' §2.4.4 indemnity (after-half AVE+, before-half cancel→§4.2.3 equalisation). Teams-VP: `applyTeamWithdrawalRulings` voids a withdrawn team's UNPLAYED matches (§3.3.9, withdrawer AVE−/opponent AVE+), honoured by the live scorer AND the USEBIO export. REMOVE drops from the ranking (F26); PENALISED stays. Remaining: director UI to trigger it (build-order step 7); all-play-all own-average indemnity out of scope |
-| F25 | Late arrivals | DONE | **High** | §2.4.7 "retaining standing" DONE: a `LATE` standing (reusing the withdrawal treatment/fine), with the half-boards retain-standing gate in `resolveStandings` — a latecomer present < half the event's boards is scored per §2.4.6 like a withdrawer (pairs + teams-VP). "Never arrives" half-table == the existing pre-scheduled sit-out. Expected-late empty seats at start DONE. Mid-session stand-by→real-pair swap-in COMPLETE (all 5 slices, see `docs/design/seat-occupancy-handover.md`): a seat holds different pairs over disjoint board sets, each with its own standing; the sub plays without-standing (counted for opponents, unranked via a `#<occId>` scored-field id) and the real pair's gap boards score AVE− (no credit transfer), with the general §4.1.1.1 AVE-valuation rule applied to EVERY synthetic AVE award (§4a/§8). Auth resolves the seat's current (primary) occupant — secret lookup + change-device rotation target the active pair only (slice 4). Director UX: a post-start "Hand over to real pair" action (`game:handoverSeat` → `handoverSeat`) that records the arriving pair + treatment; the boards-played split is DERIVED from the entered results (stand-in keeps boards with a result, real pair takes the rest), so the handover is always from the next board without a result (slice 5, §6). USEBIO caveat: the sub is exported correctly (unranked), but the real pair's gap AVE− is absent from the USEBIO independent ranking, as an ordinary withdrawer's gap already is. v1 limits: pairs only; arriving-pair national-id dedupe is self-only (open question C) |
-| F1  | AVE+/AVE− "better than average" | DONE (MP) | Medium | FIXED for matchpoints (standings): AVE+ = max(60%, windowed avg), AVE− = min(40%, avg), via `better-than-average.ts` at the MP leaderboard / Swiss-match / USEBIO-ranking seams; per-board display stays flat. Now applied to EVERY AVE+/AVE− award, not just director artificial rulings: the synthesised withdrawal / sit-out / empty-late / handover-gap credits are emitted as `A<ns>/<ew>` outcome lines and run through the SAME `applyBetterThanAverage` pass (one post-synthesis pass in `scoreBoardsToOverall`), so a strong indemnified pair keeps its average rather than a flat 60/40. A PENALISED-fined fraction is a non-exact AVE− and is left untouched (the director's deliberate figure). IMP/XIMP deferred (no per-board max) |
-| F2  | "Offenders must not gain" | WONTFIX | Medium | §4.1.1.4 / Law 12C1b is a TD-judgement rule: the director chooses the weighted ruling and the weights that avoid favouring the offending side. The software's role is to support that judgement, not enforce it. No "offender" concept in the model; automating a clamp would risk overriding legitimate TD decisions. No code change — the director applies the lean manually |
-| F8  | Small sub-fields | DONE | Medium | FIXED: §4.2.3.3 65/55 (2 results) / 70/60/50 (3 results) applied in `neuberg-across-boards.ts` when A∈{2,3} and A≤E/3 |
-| F9  | Rounding "away from average" | DONE | Medium | FIXED (§4.2.6.1): each MP board is rounded to the nearest whole matchpoint, exact halves away from the board average (`max/2`), via `round-mp-boards.ts` as the LAST pass (after Neuberg equalisation + better-than-average + sit-out synthesis). Wired at the MP leaderboard / USEBIO-ranking / Swiss-MP-VP seams AND the per-board display, so a published total equals the sum of the shown board scores. Full precision carried through all intermediate calculation |
-| F14 | XIMPQ normaliser | OK | Medium | RESOLVED (confirmed against the §3.1.3 source text): the White Book formula is `XIMPQ = XIMP / sqrt(rc/2)` with `r` = results, `c = r−1`, and XIMP = the pair's cross-IMP **sum** for the board. The code matches line-for-line: `computeCrossImps` (the sum) ÷ `Math.sqrt((r*c)/2)`. The earlier "√(N(N−1))" entry was an audit transcription error that dropped the `/2`. No code change |
-| F29 | Swiss MP-VP overshoot crash | DONE | Medium | FIXED: a mixed artificial+real board in a Swiss MP-VP round could Neuberg-overshoot a real pair fractionally past 100%, which `mpVpFromPercent` rejected (threw). Now clamped to `[0, 100]` via `clampPercent` at all four MP VP seams in `swiss-vp-round.ts` before the VP-table lookup; the table's invariant guard stays for genuine misuse. Regression test in `swiss-mp-vp-overall.test.ts` |
-| F20 | Swiss void-match formula | DONE | Medium | §3.3.9 half-split DONE for teams VP (`VOID_MATCH`) AND Swiss pairs (`VOID_PAIR`: match removed from the field, each pair credited an AVE+/AVE−/AVE blend by fault). Director-triggered void with the AVE− offender side |
-| F21 | Swiss mismatch VP adjustment | DONE | Medium | FIXED (§3.5 + §3.5.2): the one-sided VP adjustment (higher+not-fault → 5+¾·actual; lower+own-fault → actual−¼·excess-over-5; else unchanged) for Swiss PAIRS and TEAMS (`swiss-mismatch.ts` + `MISMATCH` status + `match_ruling` column + director hub step), AND assisted DETECTION for BOTH pairs and teams: after a retroactive adjustment, the deterministic draw is replayed on round-scoped corrected standings to flag participants whose committed opponent is >5 VP from the correct one (teams exclude only the triple/bye participants of a round, not the whole round). Candidates surface in a director review screen (`/api/games/[gameId]/mismatch-candidates`) where the TD confirms fault → the existing adjustment. Judgement clauses (fault, the §3.5 "several valid alternatives" exception) stay with the director |
-| F26 | "Without standing" | DONE | Medium | §2.4.9 implemented: a `WITHOUT_STANDING` standing whose results count IN FULL for opponents but who is dropped from the ranking. `resolveStandings`/`readRankingExclusions` build the excluded-id set (WITHOUT_STANDING, plus REMOVE-withdrawn and short-LATE-REMOVE); `applyRankingExclusion` (`scoring/overall/exclude-ranking.ts`) drops those lines and re-ranks the survivors, applied at the four leaderboard-service entry points (`excludeFromLeaderboard`) and in the four VP/teams + MP-pairs USEBIO assemblers, so the live board and the published file agree. `computeSectionLeaderboardsAsOf` deliberately does NOT exclude (it reconstructs a past draw's standings) |
-| F3  | Weighted-score precision | DONE | Low | FIXED: weighted-score weights now accept up to 2 decimal places (e.g. 33.33/33.33/33.34), summed/validated in integer basis points; `StepWeightedScore` enters decimals |
-| F5  | AVE sum > 100% guard | DONE | Low | FIXED: `StepAdjustedScore` shows a non-blocking advisory when NS%+EW% > 100 (only an outside-agency fault warrants it); `A60/60` still submittable |
-| F6  | Bare AVE token dropped | DONE | Low | FIXED: `normalizeAdjustedToken` decodes a bare `AVE`/`AVE+`/`AVE-` to its `A../..` equivalent, so it scores (50/50, 60/40, 40/60) instead of being dropped from the field |
-| F10 | Pairs Butler/datum | note | Low | Datum-less IMP; no nearest-10 datum — not a selectable pairs mode |
-| F11 / F28 | IMP/XIMP overall not board-scaled | DONE | Low | FIXED (§4.2.5): `overall/pair/{imp,x-imp}.ts` now rank and display the AVERAGE IMP/cross-IMP per board (`value / boards`), not the raw total, so a sit-out / removed-board pair is compared fairly. IMP overall view given 2dp (now fractional). Equal board counts leave the order unchanged |
-| F15 | Long-match VP columns dropped | DIVERGENCE | Low (by design) | Swiss Pairs VP table omits 28–55 board columns; UI caps boards |
-| F17 | Teams bye = 12 VP (hardcoded) | note | Low | Flat average-plus; consistent with EBU convention |
-| F22 | Swiss draw repeat nuance | DIVERGENCE | Low | Avoid-repeat is binary; no 1.5×/triangle nuance; odd-field pick is bottom-of-field, not "near but below average" |
-| F27 | Eviction post-start guard | DONE | Low | FIXED: the director eviction route (`participants/[seat]` DELETE) now blocks once the game has started (`isGameStarted`), mirroring the player `leave-table` guard, so a seated pair can no longer be hard-deleted mid-game — removing one is a WITHDRAWN lifecycle change (F24) instead |
-| F4, F12, F13, F16 | Weighted blend; teams VP scale; Swiss Pairs VP; half-matches | OK | — | Verified to match the White Book |
+| # | White Book | Topic | Status | Severity |
+|---|-----------|-------|--------|----------|
+| B1 | §3.1.1 | Teams-of-four IMP→VP discrete scale | OK | — |
+| B2 | §3.1.2 | Triangular (10–0) VP scale | OK | — |
+| B3 | §3.1.3 | Cross-IMP XIMPQ normaliser √(rc/2) | OK | — |
+| B4 | §3.1.7 | Swiss pairs %→VP tables + borderline | OK | — |
+| B5 | §3.3.2 | Pairs unplayable board (cancel / sub-field) | OK | — |
+| B6 | §3.3.6 | Teams incorrect seating void (40%/60%) | OK | — |
+| B7 | §3.3.7 | Teams removed board ±3 IMP indemnity | OK | — |
+| B8 | §3.3.9 | Void match AVE+/AVE−/AVE half-split | OK | — |
+| B9 | §3.5 / §3.5.2 | Swiss mismatch detection + VP adjustment (0.5-VP round-up) | OK | — |
+| B10 | §4.1.1.1 | AVE+/AVE− "better than average" at MP | OK | — |
+| B10b | §4.1.1.1 | AVE+/AVE− "better than average" at IMP/XIMP | OK | — |
+| B11 | §4.1.1.4 | Weighted scores (convert-then-blend, 2dp) | OK | — |
+| B12 | §4.2.3.2 | Neuberg's formula + application condition | OK | — |
+| B13 | §4.2.3.3 | Small sub-fields (65/55, 70/50) | OK | — |
+| B14 | §4.2.5 | All boards count equally / scale by boards | OK | — |
+| B15 | §4.2.6.1 | No mid-calc rounding; halves away from average | OK | — |
+| B16 | §4.2.6.3 | Cross-IMP total rounded to whole IMP | OK | — |
+| B17 | §2.4.3–§2.4.7 | Withdrawals / late arrival | OK | — |
+| D1 | §3.2 | Split-tie / tie-break ordering | WONT-IMPLEMENT | — |
+| D2 | §4.2.4 / §4.2.6.2 | Butler datum (nearest 10) IMP pairs | WONT-IMPLEMENT | — |
+| D3 | §3.5.3 | Mismatch in a match-point-scored Swiss event | WONT-IMPLEMENT | — |
+| C1 | §4.1.1.4 | "Offenders must not gain" | TD-JUDGEMENT | — |
+| C2 | §3.3.6.2 | ≥half / <half void decision | TD-JUDGEMENT | — |
+| C3 | §3.3.10 | Wrong board number → AVE−/AVE− | TD-JUDGEMENT | — |
 
 ---
 
-## 1. Adjusted scores (§4.1)
+## Verified-correct (OK)
 
-The adjustment encodings live in `src/model/adjusted-score.ts`: an **artificial
-adjusted** score `A<ns>/<ew>` (e.g. `A60/40`) and a **weighted assigned** score
-`W<pct>*<contract>;…`. Both are stored in `directorOverrideResult` with board
-status `OVERRIDDEN` (`src/db/games/actions/set-board-result.ts:overrideBoardResult`).
-The director enters them via the correction wizard
-(`src/app/game/[gameId]/manage/travellers/CorrectResultPage.tsx`,
-`StepAdjustedScore.tsx`, `StepWeightedScore.tsx`). Board-time valuation is in
-`src/scoring/traveller/pair/{mp,imp,x-imp}.ts` + `assigned.ts`.
+### B1 — Teams-of-four IMP→VP discrete scale — OK
+**§3.1.1.** `src/scoring/swiss/imp-vp-table.ts` is ported verbatim from the EBU's
+own VP generator (`vps.js`): golden-ratio decay constant `R`, the `imap` inverse
+curve, `discrete` band construction (`blitz = 15·√boards`), and the `discreteCC`
+concavity-correction pass. `impVpWinner` / `impVpSided` read the bands; the loser
+takes `pool − winner`. This reproduces the published discrete tables rather than
+rounding a continuous curve.
 
-### F1 — AVE+/AVE− "better than average" override — DONE (matchpoints; IMP/XIMP deferred) (Medium)
+### B2 — Triangular / short-triangle 10–0 scale — OK
+**§3.1.2 / §3.4.3.** The 10-VP pool is the same `imp-vp-table.ts` machinery with
+the EBU "triangular" board indexing (`boardArg` uses `H/2`). Teams triples pick
+the pool via `tripleVpPool` (10 SHORT / 20 LONG) in
+`src/scoring/swiss/team-match.ts`.
 
-> **Resolved for matchpoints (standings only).** Added
-> `src/scoring/traveller/pair/better-than-average.ts`:
-> `applyBetterThanAverage(scoredMpBoards)` re-values each pair's AVE+ side to
-> `greater(60%, windowed average)` of the board top and its AVE− side to
-> `lesser(40%, average)`, computed over the pair's REAL (non-artificial) boards
-> in the window. It triggers only on an EXACT AVE+ (`60`) / AVE− (`40`) side — a
-> custom percentage is the director's deliberate figure and left untouched — and
-> falls back to the flat value when the pair has no real boards in the window.
-> Each side is re-valued independently (so `A60/60` can legitimately exceed
-> 100%, as the flat award already does).
->
-> **Window = the aggregation seam's board set**, matching §8.80.6 for this
-> single-session box: the Swiss *match* (applied per round in
-> `swiss-vp-round.ts` `buildMpByBoard`) and the *session* / whole event
-> otherwise (applied in `scoreBoardsToOverall` after Neuberg equalisation, and
-> in the USEBIO MP *ranking*). The multi-session all-play-all window does not
-> apply on this appliance.
->
-> **Standings only, by design.** The per-board traveller/USEBIO `TRAVELLER_LINE`
-> still shows the flat `A60/40` the board was awarded; only the pair's ranking
-> reflects the uplift — exactly as commercial scoring programs present it. So a
-> board can read "Adj 60%/40%" while the pair's leaderboard % reflects a higher
-> value; that is intended, not a bug.
->
-> **Deferred:** the IMP/XIMP "better than average" (a pair averaging +4 keeps +4
-> for AVE+) — it shares the model but needs an IMP-average pass, and the
-> Swiss-cross-IMP artificial path is a separate pre-existing gap. A
-> **pre-existing latent crash** this surfaced (a mixed artificial+real board in a
-> Swiss MP-VP round Neuberg-overshooting a real pair past 100%, which
-> `mpVpFromPercent` rejected) has since been fixed separately as **F29**.
+### B3 — Cross-IMP XIMPQ normaliser — OK
+**§3.1.3 / §4.2.6.3.** In `src/scoring/swiss/swiss-vp-round.ts`
+(`buildXimpByBoard`) the per-board normaliser is `Math.sqrt((r * c) / 2)` with
+`r` = results and `c = r − 1`, matching `XIMP / √(rc/2)` exactly. The round total
+is rounded to a whole IMP (halves away from zero, `roundHalfAwayFromZero`) before
+the VP lookup, per §4.2.6.3.
 
-**White Book §4.1.1.1 / §8.80.6.** AVE+ is the *greater* of 60% and the pair's
-actual average on the session's other boards; AVE− the *lesser* of 40% and the
-pair's actual average. At IMPs, a pair averaging +4 keeps +4 for AVE+. The
-averaging window ("session") is the match in Swiss, the stage in all-play-all,
-else to the next major movement.
+### B4 — Swiss pairs %→VP tables + borderline — OK
+**§3.1.7.** `src/scoring/swiss/mp-vp-table.ts` holds the board-count-banded
+threshold tables (full 20-VP and half 10-VP). The lookup is "not exceeding"
+(`pct <= threshold` keeps the lower band) and the percentage is rounded to 2 dp
+first, matching the published precision. Below 50% a pair mirrors
+(`pool − winnerVp(100 − pct)`); because the winner side uses the nearer-average
+(lower) band on an exact threshold, the mirrored side lands on its complement —
+consistent with note (b) "the VP nearer to average is taken".
 
-**Code.** `StepAdjustedScore.tsx` offers flat presets (AVE 50/50, AVE+/−
-60/40, …) and a free 0–100 custom entry; `artificialPercents`/`parseAdjustedScore`
-store exactly what's entered. `artificialImps` (`traveller/pair/assigned.ts`)
-awards a flat **±3 / 0** by side. There is no code that computes a pair's
-average on its other boards, and no session-window concept.
-
-**Effect.** A strong pair given AVE+ gets 60% even if they were averaging 72% —
-under-compensating the non-offender. Director could manually type the higher
-percentage, but nothing computes it.
-
-**Suggestion.** When valuing an artificial score, compute the side's average
-over the appropriate window and take max(60%, avg) for AVE+ / min(40%, avg) for
-AVE−. Requires a "session window" notion (trivially "the match" for Swiss;
-"the session" otherwise). Consider deferring until the §8.80.6 window is modelled.
-
-### F2 — No "offenders must not gain" constraint — WONTFIX (Medium)
-
-**White Book §4.1.1.4 (Law 12C1b).** A weighted/assigned ruling must not let the
-offending side gain; the weighting should lean to the non-offenders.
-
-**Code.** There is no concept of which side offended anywhere in the scoring or
-override path; weighted components are blended and applied symmetrically. No
-clamp exists.
-
-**Resolution — no code change.** This is a director-judgement rule, not a
-mechanical scoring one. Under Law 12C1b the TD *decides* the assigned/weighted
-score and chooses the components and weights so the offending side does not
-gain; the White Book positions the software as *supporting* that ruling, not
-enforcing it. Automating a clamp would require the model to know which side
-offended (it does not) and would risk overriding a legitimate TD decision — the
-director already enters exactly the figure they intend. The director applies the
-lean manually when choosing weights. No code change.
-
-### F3 — Weighted-score weights are integer-percent only — DONE (Low)
-
-**White Book §4.1.1.4.** Recommends software supporting up to 5 component
-results with 2-decimal-place weightings (e.g. 0.33).
-
-**Fix.** `parseWeightedScore`/`buildWeightedScore` (`model/adjusted-score.ts`)
-now accept a weight with up to two decimal places (`WEIGHT_REGEX`, 0 < w ≤ 100),
-and validate that the components sum to exactly 100 **in integer basis points**
-(`toBasisPoints` = round(w×100), `FULL_WEIGHT_BP` = 10000) so a 33.33 / 33.33 /
-33.34 split is accepted without binary-float drift. `buildWeightedScore`
-serialises each weight trimming trailing zeros (`80` stays `80`, `33.33` keeps
-its places), so integer rulings round-trip unchanged. The director UI
-(`StepWeightedScore`) enters decimals (`step=0.01`) and tracks the running total
-in whole cents to avoid drift; the scorer already applied `weight/100` as a
-float. The number of components was never capped.
-
-### F4 — Weighted scoring converts each component first, then blends — OK
-
-**White Book §4.1.1.4 / §4.2.1.** Each component result is converted to
-matchpoints/IMPs *before* the weighting is applied.
-
-**Code.** Verified: `scoreMP`/`scoreXIMP`/`scoreIMP` each matchpoint/IMP a
-component against the real field (`matchpointsAgainst` + `neuberg`,
-`componentCrossImps`, `componentImps`) and then weight-average
-(`weightedComponentScores`, weights as fractions). Correct.
-
-### F5 — Artificial percentages may exceed 100% with no guard — DONE (Low)
-
-**White Book §4.1.1.1.** The TD should not give adjusted scores summing to more
-than 100% unless an outside agency was at fault (e.g. `A6060`).
-
-**Code.** `A<ns>/<ew>` explicitly allows sides that don't sum to 100 (by
-design — `A60/60` is a documented valid "AVE+ to both"). This is director
-discretion, so the fix is a **non-blocking advisory**, not a hard block.
-
-**Fix.** `StepAdjustedScore` shows an inline warning on the custom-entry path
-when `NS% + EW% > 100`, reminding the director that over-100 is only for an
-outside-agency fault. Submission is still allowed (the `A60/60` preset and a
-deliberate custom over-100 both go through), so legitimate rulings are never
-obstructed.
-
-### F6 — A bare `AVE` override is silently dropped — DONE (Low)
-
-**White Book.** A plain `AVE` / `AVE+` / `AVE-` is a legitimate average award.
-
-**Code (before).** On the pairs traveller path, `outcomeToScore` returns null
-for any string that isn't a played contract / `PO` / `A…` / `W…`. A director
-override of the literal string `AVE`/`AVE+` was therefore treated as a
-non-scoring line and excluded from the field, rather than scored as 50%/60%.
-
-**Fix.** `normalizeAdjustedToken` (`model/adjusted-score.ts`) maps a bare
-`AVE` → `A50/50`, `AVE+` → `A60/40`, `AVE-` → `A40/60` (case-insensitive;
-NS-perspective). `isAdjustedScore` / `parseAdjustedScore` normalise first, so a
-bare token is recognised and valued as its explicit `A../..` equivalent
-everywhere — the pairs scorer's `artificial` branch, `classifyOutcome`, the
-USEBIO contract fields (still empty, as for any assigned score) and the
-traveller display. A bare `AVE` now scores instead of being dropped from the
+### B5 — Pairs unplayable board — OK
+**§3.3.2.** A board played once in a form is cancelled and given an artificial
+adjusted score (`cancel-board.handler.ts` → `A<ns>/<ew>`); a board played in two
+forms becomes two sub-fields, which the §4.2.3 cross-board equalisation
+(`equaliseMpBoards`) scores correctly by scaling each short group to the full
 field.
 
----
+### B6 — Teams incorrect seating void — OK
+**§3.3.6.1.** `src/model/teams-match-void.ts`: `SEATING_STANDARD` → both teams
+40% of the pool (8/20); `SEATING_TD` → both 60% (the TD-at-fault converse).
+Board-a-match variants mirror this in board-won units.
 
-## 2. Methods of scoring (§4.2)
+### B7 — Teams removed board ±3 IMP — OK
+**§3.3.7.** `src/model/teams-removed-board.ts`: `REMOVED_BOARD_IMPS = 3`, a fixed
+±3 IMP swing per removed board by fault, consumed by `teamMatchBoardImps` as a
+board that counts as played. (Documented limitation: `NEITHER_FAULT` +3/+3 and
+`BOTH_FAULT` −3/−3 both net to a zero swing in the single IMP margin; the
+per-side distinction is carried only by the whole-match void path. Minor, no
+scope impact.)
 
-Per-board pairs scoring: `src/scoring/traveller/pair/{mp,x-imp,imp}.ts`,
-`assigned.ts`, `common.ts`; overall aggregation `src/scoring/overall/pair/*.ts`
-+ `overall/common.ts`.
+### B8 — Void match AVE+/AVE−/AVE half-split — OK
+**§3.3.9.** `voidSplitVp` awards AVE+/AVE− on `⌈N/2⌉` boards (±3 IMP each) and
+AVE on the rest, reading each side's VP independently off the N-board scale, so
+both-at-fault correctly gives both teams a below-average VP. The Swiss-pairs
+analogue is `src/model/pairs-match-void.ts` (`VOIDP:<cause>` per-pair
+AVE+/AVE−/AVE blend via `voidMpFractions` / `voidXimpPerComparison`).
 
-### F7 — Neuberg is not applied to boards with fewer real results — DONE (High)
+### B9 — Swiss mismatch detection + VP adjustment — OK
+**§3.5 / §3.5.2.** `detect-mismatch.ts` replays the deterministic draw on
+corrected standings and flags a swap only when the opponents' current VPs differ
+by **more than 5** (`MISMATCH_VP_THRESHOLD = 5`). `adjustMismatchVp` applies the
+one-sided §3.5.2 formula with `base = pool/4` (5 on 20–0, 2.5 on the 10–0
+triangular pool): HIGHER+NOT → `base + ¾·actual`; LOWER+OWN →
+`actual − ¼·max(0, actual − base)`; the other two cases unchanged. The adjusted
+VP is then rounded **up to the next 0.5 VP** ("in the competitor's favour",
+§3.5.2, via `roundUpToHalf`), since the ¾/¼ formulas can land on a quarter-VP
+(e.g. `5 + ¾·7 = 10.25 → 10.5`). Reproduces both worked examples (12-8 → 14,
+13-7 → 11). The "several valid alternatives" exception and fault attribution are
+left to the director (correctly — they are judgement calls). The match-point-
+scored-Swiss variant (§3.5.3) is not applicable — see D3.
 
-> **Resolved.** Added `src/scoring/traveller/pair/neuberg-across-boards.ts`:
-> `equaliseMpBoards(boards)` computes `E` = the largest line count of any board
-> in the pooled field and scales every shorter board up to the common full-field
-> top `2*(E−1)` via the existing `neuberg(doubledMp, A, E)` (which applies the
-> White Book `((M+1)/A)·E − 1` through the `E/A` ratio). Director-assigned lines
-> keep their chosen percentage (rescaled to the new top, not re-matchpointed);
-> only real played lines are Neuberg-scaled. It runs post-scoring at both MP
-> pooling seams — `scoreBoardsToOverall` in `leaderboard-service.ts` (before the
-> sit-out synthesis, so byes are credited against the equalised top) and the MP
-> branch of `computeOverallRanking` in `generate-usebio.ts` — and is a no-op when
-> every board was played the same number of times. The Swiss-VP-per-round path
-> is deliberately untouched (it converts each round's percentage to VP via the
-> EBU table, which already normalises for boards played). Tests:
-> `neuberg-across-boards.test.ts`.
+### B10 — AVE+/AVE− "better than average" at matchpoints — OK
+**§4.1.1.1.** `src/scoring/traveller/pair/better-than-average.ts`: AVE+ =
+`max(60%, pair's windowed average)`, AVE− = `min(40%, average)`, computed over
+the pair's real boards in the window (the Swiss match's round, or the session
+otherwise) and applied to the standings only (the per-board traveller keeps the
+flat 60/40). Applied uniformly to every synthesised AVE award (sit-out,
+withdrawal, late/handover credits), not just director rulings. (IMP/XIMP: see
+B10b.)
 
-**White Book §4.2.3.** A board played fewer times than the rest (sit-out,
-fouled, played at fewer tables) must be matchpointed then **scaled by E/A**
-(Neuberg: `((M+1)/A)·E − 1`), so every board is worth the same across the field.
+### B10b — AVE+/AVE− "better than average" at IMP and Cross-IMP — OK
+**§4.1.1.1.** The same principle on the IMP scale: a pair averaging +5 IMPs
+given AVE+ keeps +5, not a flat +3 (the White Book example: +4 average → +4 for
+AVE+). `src/scoring/traveller/pair/better-than-average-imp.ts`
+(`applyBetterThanAverageImpBoards` / `applyBetterThanAverageXimpBoards`) uplifts
+AVE+ to `max(+3, pair's windowed average IMP)` and AVE− to `min(−3, average)`,
+over the pair's real played boards, standings only — mirroring the matchpoint
+module. Wired at the board-pooled leaderboard seam
+(`leaderboard-service.ts:scoreBoardsToOverall`) and the USEBIO export
+(`generate-usebio.ts:computeOverallRanking`); the per-board traveller display
+keeps the flat ±3. Note: the datum-less Butler IMP scale floors each side at 0,
+so an AVE− downlift only bites on the signed Cross-IMP scale; AVE+ works on
+both. (The Swiss Cross-IMP VP path handles an artificial award differently — the
+row is dropped from the field rather than valued at a flat ±3 — so this uplift
+does not apply there.)
 
-**Code.** The Neuberg formula is implemented correctly in
-`traveller/pair/assigned.ts:neuberg`, **but** `scoreMP` (`traveller/pair/mp.ts`)
-only uses it to scale from the real-line comparison count up to
-`fullComparisons = totalLines - 1`, where `totalLines` = real lines **+
-same-board director-assigned lines**. It is never scaled up to the session's
-*expected* field size `E`. A board genuinely played at fewer tables is
-matchpointed over its own smaller `max = 2*(N-1)` with no equalisation to the
-other boards. The overall aggregator ranks by `totalMP / maxMP`
-(`overall/pair/mp.ts`), which equalises board *weight* only in the weak sense
-that a smaller board contributes a smaller `max` — this is **not** the White
-Book per-board Neuberg and gives different matchpoints.
+### B11 — Weighted scores — OK
+**§4.1.1.4 / §4.2.1.** `src/model/adjusted-score.ts` encodes `W<pct>*<contract>;…`
+with weights 0 < w ≤ 100 at up to 2 decimal places summing to 100 (checked in
+integer basis points, so 33.33/33.33/33.34 is accepted). `assigned.ts` converts
+each component to matchpoints/IMPs/cross-IMPs **first** and then blends by
+weight, per §4.1.1.4. The ≥5-component, 2-dp recommendation is met (components
+are unbounded).
 
-**Effect.** In any session where boards are played a different number of times
-(e.g. a sit-out table, a board fouled at one table, most Mitchell/skip
-movements with a half-table), the matchpoints on the short boards are wrong
-relative to full boards, skewing the ranking. This is the single most
-impactful scoring correctness gap.
+### B12 — Neuberg's formula + condition — OK
+**§4.2.3.2.** `src/scoring/traveller/pair/neuberg-across-boards.ts`: Neuberg is
+used unless the small-sub-field rule applies —
+`useSmallSubField = (a === 2 || a === 3) && a*3 <= e`, i.e. Neuberg when
+`A > 3` **or** `A > E/3`. The formula `((M+1)/A)·E − 1` is applied via the `E/A`
+ratio in `neuberg()`. Full precision is kept through the calculation (the
+"nearest 0.0001" rounding is subsumed by the single final per-board rounding,
+B15).
 
-**Suggestion.** Thread the expected field size `E` (the maximum results any
-board of the session has, or the movement's expected top) into `scoreMP` and
-apply `neuberg(raw, A, E)` for real-played short boards — reusing the existing
-`neuberg`. Also decide the §4.2.3.3 small-sub-field path (F8) for A ≤ 3.
+### B13 — Small sub-fields — OK
+**§4.2.3.3.** `smallSubFieldFraction = 60 + (singleMp − (A−1)/2)·10` (percent),
+yielding top 65% / bottom 55% for a group of 2 and 70/60/50 for a group of 3,
+with intermediate/tied results between — and summing to 120% (AVE+/AVE+) as the
+note prescribes. Guarded by `A ∈ {2,3}` and `A ≤ E/3`.
 
-### F8 — Small sub-fields (65/55, 70/50) not implemented — DONE (Medium)
+### B14 — All boards count equally / scale by boards played — OK
+**§4.2.5.** MP ranks on `totalMP / maxMP` (a percentage of available
+matchpoints); IMP and cross-IMP rank on the **average** per board
+(`value / boards`) with the §4.2.5 citation in
+`src/scoring/overall/pair/{imp,x-imp}.ts`. Combined with the §4.2.3 equalisation
+that lifts every board to a common top, all boards carry equal weight and a
+contestant playing fewer boards is compared fairly.
 
-> **Resolved** alongside F7, in the same `neuberg-across-boards.ts`. When a
-> board's real group is `A ∈ {2,3}` AND at most a third of the field (`A·3 ≤ E`),
-> `rescaleBoard` awards fixed percentages of the full-field top instead of
-> Neuberg: a group of 2 → 65% / 55%, a group of 3 → 70% / 60% / 50%, with ties
-> landing midway. Implemented as `Percentage = 60% + (m − (A−1)/2) × 10%` on the
-> single-matchpoint scale `m`. (Note: this corrected the reference doc, which
-> printed the EBU form `60% + (M − (A−1)) × 5%` without noting `M` is on the
-> *doubled* scale — see §2.3 of `ebu-white-book-scoring.md`.) Tests cover both
-> the 2- and 3-result cases and the fall-back to Neuberg when the group exceeds a
-> third of the field.
+### B15 — No mid-calculation rounding; halves away from average — OK
+**§4.2.6.1.** `src/scoring/traveller/pair/round-mp-boards.ts`
+(`roundHalfAwayFromAverage`, around `avg = max/2`) runs **last** in the pipeline —
+after Neuberg equalisation and the better-than-average uplift, all of which run
+at full precision. Only NS is rounded; EW is kept as `max − roundedNs` so the two
+seats sum to the top, and the published total equals the sum of the shown board
+scores.
 
-**White Book §4.2.3.3.** When a board's group of results is at most 3 (and ≤ a
-third of the field), score it with top=65%/bottom=55% (2 results) or
-70%/50% (3 results), not the Neuberg formula.
+### B16 — Cross-IMP total rounded to whole IMP — OK
+**§4.2.6.3.** The XIMPQ round total is rounded to a whole IMP (halves away from
+zero) in `swiss-vp-round.ts` before the VP-scale lookup, exactly as the text
+requires so swings never fall in the gaps of the VP scale.
 
-**Code (before fix).** Not present. A 2-result board was matchpointed 2/1/0.
-
-**Effect.** Fouled/odd-count boards with 2–3 results are compensated less
-generously than the regulation. Pairs with it. Lower frequency than F7 but same
-root (short-board handling).
-
-### F9 — "Halves away from the average" per-board rounding — DONE (Medium)
-
-**White Book §4.2.6.** No rounding mid-calculation; a single board's score is
-rounded to the nearest scoring unit with **exact halves rounded away from the
-average**. For matchpoint pairs the unit is **one matchpoint** on this
-codebase's doubled scale (a pair beaten = 2, a tie = 1), and a board's average
-is half its top (`max / 2`).
-
-**Fix.** A pure pass `roundMpBoards` (`src/scoring/traveller/pair/round-mp-boards.ts`)
-rounds each line's matchpoints to the nearest whole matchpoint, breaking an
-exact half AWAY from `max/2` (above-average halves up, below-average halves
-down), and keeps `ew = max − roundedNs` so each board still sums to its top.
-Because `max = 2*(A−1)` is always even, the average is integral and a `.5` value
-can never equal the average, so the direction is always unambiguous.
-
-Per §4.2.6.1 it runs **LAST**, after everything that must be computed at full
-precision: per-board `scoreMP`, the §4.2.3 cross-board Neuberg / small-sub-field
-equalisation (`equaliseMpBoards`), the §4.1.1.1 better-than-average standings
-uplift (`applyBetterThanAverage`), and the Swiss sit-out synthesis. It is wired
-at all three standings seams (`leaderboard-service.ts`, the USEBIO MP ranking in
-`generate-usebio.ts`, and `swiss-vp-round.ts buildMpByBoard`) and on the
-per-board display plugin (`plugins/per-board/mp.ts`), so the overall ranking
-sums exactly the rounded board scores the traveller shows — the consistency
-§4.2.6.1 exists to guarantee.
-
-**Note.** On a very small field (e.g. a top of 2) there is no whole matchpoint
-that represents 60%, so a rounded AVE+ can collapse to the nearest unit (1.2 →
-1). That is a faithful consequence of the 1-MP scoring unit, not a bug.
-
-**Earlier state (for reference).** The pairs per-board scorers previously
-returned full-precision floats with no rounding; the percentage display used
-`numberCell(.., 2)` → `toFixed(2)` (JS half-to-even/up, not "away from
-average"); only `swiss/swiss-vp-round.ts` had a `roundHalfAwayFromZero` helper
-(correct there because signed IMP totals have zero as their average).
-
-### F10 — Pairs IMP scorer is datum-less; no Butler datum — note (Low)
-
-**White Book §4.2.4 / §4.2.6.2.** Butler/datum IMP scoring computes a datum
-(rounded to nearest 10) and IMPs each result against it.
-
-**Code.** `traveller/pair/imp.ts` IMPs each line against an implicit datum of 0
-(both sides floored at 0). No datum is computed. However, IMP is not a
-selectable *final* scoring type for pairs (pairs are MP or Cross-IMP); this path
-is a traveller display only. Low impact / not reached in normal play.
-
-### F11 / F28 — IMP/Cross-IMP overall scaled by boards played — DONE (Low)
-
-**White Book §4.2.5.** All boards count equally; when contestants play different
-numbers of boards the final score is scaled by the number of boards played (the
-worked example expresses matchpoints as a percentage, i.e. a per-unit average).
-
-**Fix.** `overall/pair/x-imp.ts` and `overall/pair/imp.ts` now rank AND display
-the **average** per board — `data.value / data.boards` (guarding a zero board
-count) — the cross-IMP/IMP analogue of the matchpoint percentage the MP overall
-(`overall/pair/mp.ts`) already uses. The shared `Totals` accumulator already
-tracks each pair's board count, so this is a one-line change per scorer. A
-Swiss sit-out credits 0 cross-IMPs/IMPs for the missed board (a neutral par
-board) and that board counts toward the divisor, so a forced bye neither helps
-nor hurts the average.
-
-**Display.** The IMP overall view now shows 2 decimals (it is an average, so
-fractional), matching the Cross-IMP view; `buildImpView`'s `decimals` doc was
-updated accordingly.
-
-**Effect.** Fixes the real inconsistency with the MP path: a pair that sat out
-or had a board removed in a Cross-IMP (or IMP) pairs game is now compared on its
-per-board average rather than a smaller raw total. With equal board counts every
-pair is divided by the same count, so the order is unchanged.
+### B17 — Withdrawals / late or non-arrival — OK
+**§2.4.3–§2.4.7.** `src/services/leaderboard-service.ts` (`withdrawalCreditBoards`)
+plus `src/db/games/queries/ranking-exclusions.ts` (`resolveStandings`) implement:
+withdrawal part-way through a session (§2.4.4) — opponent gets AVE+ after half,
+score cancelled before half, split on boards actually played; the withdrawer's
+own score (§2.4.5) — PENALISED gets `(40 − fine)%` capped at half the event,
+REMOVE drops from the ranking (§2.4.9); the missing-contestant rule (§2.4.6) —
+AVE− per unplayed board for pairs, the §3.3.9 void for Swiss teams
+(`team-withdrawal.ts`); and late arrival (§2.4.7) — a latecomer retains standing
+only if present for ≥ half the boards, empty half-table seats get AVE+/AVE−
+cancelled if the pair never arrives, and a mid-session handover to a real pair is
+supported. Strong, scope-complete coverage.
 
 ---
 
-## 3. Victory Points (§3.1)
+## Won't-implement (deliberate product decisions)
 
-Swiss VP code: `src/scoring/swiss/{imp-vp-table,mp-vp-table,swiss-vp-round,teams-vp-overall}.ts`.
+### D1 — Tied contestants share a rank; no split-tie procedure — WONT-IMPLEMENT
 
-### F12 — Teams-of-four IMP→VP scale matches EBU — OK
+**White Book §3.2 (esp. §3.2.7).** When a tie *must* be broken — for the winner,
+the last qualifying position, or an indivisible prize (§3.2.4) — there is a
+defined order of tests. For two contestants (§3.2.7.1): (a) the result of the
+head-to-head match/round (final method, then basic method); (b) number of
+matches/rounds won in the final method (a draw = half a win, a short triangle =
+half a match); (c) tie-break ("Swiss") points — the sum of each direct
+opponent's final score; (d) the basic method over all boards in the stage; (e)
+point-a-board count-back; (f) random ballot. §3.2.7.2/§3.2.7.3 give the
+analogous order for three or more.
 
-**White Book §3.1.1.** The WBF discrete teams-of-four VP scale.
+**Code.** The only ranking primitive is `rank` in
+`src/scoring/overall/rank.ts`: it sorts on a **single numeric key**, groups
+values within an epsilon, and gives tied contestants a **shared rank** with a
+`tied: true` flag. There is no secondary ordering — no head-to-head, no
+matches-won, no Swiss-points, no basic-method fallback, no point-a-board
+count-back.
 
-**Code.** `imp-vp-table.ts` is ported verbatim from the EBU's own `vps.js`
-generator (continuous-curve inversion at half-integer VPs + concavity
-correction), with a comment to that effect, used on the 20-VP pool. Verified to
-reproduce the published tables. Correct.
+**Decision.** Shared-rank behaviour is **intentional** for this app. The Bridge
+Box runs club sessions on a local network, not EBU-sponsored events with
+trophies or qualifying places — the context §3.2.4 reserves tie-splitting for.
+Genuinely tied contestants are shown as joint (e.g. "=1st") with the `tied`
+flag, which is the correct and expected outcome for club play; a director who
+must separate a tie for a club prize does so by the club's own convention
+(§3.2.4 lets tied contestants share Master Points and cash/voucher prizes
+anyway, and an event with no trophy leaves the tie unresolved by §3.2.4(a)).
+Implementing the full §3.2.7 chain — which needs head-to-head results,
+matches-won, Swiss points, and per-board point-a-board count-back all threaded
+to the ranking seam, plus a director-triggered random ballot — is disproportionate
+to the club use case and is not planned. This divergence is accepted.
 
-### F13 — Swiss Pairs %→VP scale matches EBU — OK
+### D2 — IMP pairs is datum-less; no Butler datum rounded to nearest 10 — WONT-IMPLEMENT
 
-**White Book §3.1.7.** VP from a pair's percentage of available matchpoints,
-keyed by board count, "not exceeding" boundaries.
+**White Book §4.2.4 / §4.2.6.2.** Butler/datum IMP pairs scoring computes a
+datum for each board (the mean of the field's scores, with top/bottom optionally
+discarded), **rounds the datum to the nearest 10** (exact 5s away from average),
+and IMPs each result against it.
 
-**Code.** `mp-vp-table.ts` holds the EBU threshold tables (10-VP half, 20-VP
-full), "not exceeding" lookup, 2-dp pre-rounding. Matches the captured scale
-(sample rows cross-checked). Correct. See F15 for the dropped long-match columns.
+**Code.** The pairs `IMP` scoring type (`src/scoring/traveller/pair/imp.ts`,
+`scoreIMP`) is **datum-less Butler**: each table's raw score is IMPed against a
+notional zero (`computeImps(score)`), not against a field datum. No datum is
+computed anywhere, so the "round the datum to the nearest 10" step does not
+exist. The cross-IMP type (`XIMP`, `scoreXIMP`) sidesteps a datum entirely by
+averaging pairwise IMPs.
 
-### F14 — Cross-IMP→VP normaliser √(rc/2) matches the source — OK (Medium)
+**Decision.** The app deliberately offers cross-IMP (and a datum-less IMP)
+rather than datum Butler for pairs. This divergence is accepted and will not be
+implemented; the §4.2.6.2 datum-rounding rule is moot while no datum is computed.
 
-**White Book §3.1.3 (verbatim).** On each board, the cross-IMPs for a pair are
-divided by √(rc/2):
+### D3 — No mismatch handling for a match-point-scored Swiss event — WONT-IMPLEMENT
 
-```
-XIMPQ = XIMP / sqrt(rc/2)
-```
+**White Book §3.5.3.** A Swiss event may be scored as **total match points**
+(presented as a percentage) rather than converted to Victory Points; the
+mismatch regulations then use ¼ of the match points available for a round as the
+threshold (in place of 5 VP) and apply the one-sided adjustment in match-point
+terms.
 
-where **r** = number of results, **c = r − 1** = number of comparisons, and
-**XIMP** = the pair's cross-IMP total (sum) for the board. The round/match
-XIMPQ total is rounded to whole IMPs (§4.2.6.3) and the §3.1.1 teams-of-four VP
-scale applied. The source explicitly identifies this as EBUScore SwissPairs'
-`( / sqrt(rc/2))`.
+**Code.** The app does not offer a total-match-point Swiss final method: a Swiss
+Pairs game with scoring type `MP` is **always** converted to per-round Victory
+Points (`classifyEvent` → `swissVpMode: "MP"` → the §3.1.7 MP%→VP table). Swiss
+mismatch detection and adjustment therefore work in VP throughout
+(`detect-mismatch.ts`, `adjustMismatchVp`); there is deliberately no
+match-point-terms variant.
 
-**Resolution.** The code matches the source line-for-line.
-`swiss-vp-round.ts:buildXimpByBoard` computes
-`computeCrossImps(score, field) / Math.sqrt((r * c) / 2)`, where
-`computeCrossImps` is the per-board cross-IMP **sum** over the field (the
-self-term `score − score` contributes 0, so it is the sum over the `c = r − 1`
-comparisons — exactly the XIMP numerator) and `r`/`c` are defined as above. The
-earlier "√(N(N−1))" entry in this audit was a transcription error that dropped
-the `/2`; the implementation was correct all along.
+**Decision.** Like datum Butler (D2), the total-match-point Swiss final method
+is a scoring mode the app chose not to support — Swiss Pairs is VP-converted
+here. The §3.5.3 match-point mismatch rule has no supported path to apply to, so
+it is not planned. (The VP mismatch rule it mirrors is fully implemented — see
+B9.)
 
-**Verification.** The identical `sqrt(r*c/2)` factor is used everywhere XIMPQ is
-computed — the per-round scorer, the overall scorer, the void-pairs path, and
-the independent re-derivation in `swiss-ximp-vp-overall.test.ts` — and the
-resulting VP outputs were cross-checked against the captured EBU scales. No code
-change.
+## TD-judgement items (software supports, does not enforce)
 
-### F15 — Swiss Pairs VP table drops 28–55 board columns — DIVERGENCE (Low, by design)
+### C1 — "Offenders must not gain" — TD-JUDGEMENT
+**§4.1.1.4 (Law 12C1b).** A weighted ruling must not let the offending side gain;
+the weighting leans to the non-offenders ("sympathetic weighting"). The model has
+no concept of which side offended, and the director chooses the components and
+weights. Automating a clamp would risk overriding a legitimate ruling. The
+software's role is to calculate the ruling the director enters, which it does.
 
-**Code.** `mp-vp-table.ts` intentionally omits the 28–39 and 40–55 board
-columns, and the UI caps boards/round so a match never needs them. Documented as
-a decision. Fine for club-length matches; recorded for completeness.
+### C2 — ≥half / <half void decision — TD-JUDGEMENT
+**§3.3.6.2 / §3.3.7.** Whether at least half a match was played correctly (so the
+rest is averaged) versus the match being void is a director determination that
+also depends on time available (§3.3.7(c)). The director selects the void cause
+(`SEATING_*` vs `SHORT_*`); the mechanical consequence of each choice is scored
+correctly (B6/B8). No automatic half-detection is required or desirable.
 
-### F16 — Half-matches scored on 10-VP with AVE+/AVE compensation — OK
-
-**White Book §3.1.7(c) + §3.3.9-style half credit.** Odd-field "2 half matches":
-each half on a 10-VP scale; the missing half credited AVE+/AVE.
-
-**Code.** `swiss-vp-round.ts` scores each real half via `mpVpFromPercent(..,10)`
-/ `impVpSided(..,10)` and the compensated half via `compensationSplit`
-(`ceil(n/2)` boards AVE+ at 0.6 MP / +2 XIMP, the rest AVE at 0.5 / 0). Matches
-the captured rule. Correct.
-
-### F17 — Teams bye = 12 VP (hardcoded) — note (Low)
-
-**Code.** `teams-vp-overall.ts:BYE_VP = 12` (an average-plus on the 20-VP pool =
-60%). The captured doc doesn't give a fixed teams-bye VP, but the EBU convention
-is average-plus, so 12/20 is consistent. Hardcoded; fine.
-
----
-
-## 4. Unplayable / cancelled boards (§3.3)
-
-### F18 — No way to cancel/foul a board; pairs §3.3 handling is manual-only — DONE (High)
-
-> **Resolved (backend + director UI).** Added a first-class fouled-board
-> path:
-> - New board status `CANCELLED` (`db/games/types/board-status.ts`): a board a
->   director declares could not be played in its intended form (fouled,
->   mis-dealt, arrow-switched, out of time). It carries an artificial adjusted
->   score in `directorOverrideResult`, so it still occupies a seat in the field
->   and the correctly-played copies form a Neuberg-scaled sub-field (via the
->   F7/F8 work) — while being distinguishable from a plain `OVERRIDDEN` score
->   correction.
-> - `cancelBoardResult` DB action (`db/games/actions/set-board-result.ts`) takes
->   the director's chosen artificial adjusted score (`A<ns>/<ew>`) and writes it
->   with `status = CANCELLED`. A director-authed `traveller:cancelBoard` socket
->   event + handler (`socket/handlers/results/cancel-board.handler.ts`) validates
->   the result is an adjusted score, mirrors the override handler, and fans out
->   the usual occupancy-gated live snapshots. The TD chooses the fault split
->   freely (per §3.3.2 / §4.1.1.1: A60/60 outside agency, A50/50 extenuating,
->   A60/40 or A40/60 one side at fault, A40/40 both) — the app does not constrain
->   it to a fixed menu.
-> - `CANCELLED` is now treated as finalized/playable everywhere `OVERRIDDEN` is:
->   `get-results-summary.ts`, `round-status.ts` `isBoardEntered`, and both
->   Swiss draw-complete checks. Also fixed a latent `usebio-service.ts` filter
->   bug that dropped any board with a `directorOverrideResult` but no
->   `confirmedResult` (a pure director assignment / cancellation) from the
->   export.
->
-> **Director UI.** Tapping a traveller row now opens an adjustment-type hub
-> (`StepAdjustmentType`) with four branches: Enter Contract, Adjusted Score,
-> Weighted Score, and **Cancel / Foul Board**. The cancel branch reuses the same
-> `StepAdjustedScore` screen as the Adjusted Score branch — the director picks
-> any A<ns>/<ew> split (presets or custom) — and emits `traveller:cancelBoard`
-> (`CorrectResultPage.saveCancel`). The *only* difference from a normal adjusted
-> score is the stored status (`CANCELLED` vs `OVERRIDDEN`); the outcome and its
-> "Adj X%/Y%" rendering are identical. The contract branch keeps its Confirm
-> review; the adjusted/weighted/cancel branches commit on their own action. The
-> director-only Adjusted/Weighted buttons that used to sit on the Level step
-> moved to the hub, so `StepLevel` is now identical to the player view. Note the
-> §3.3.2 **sub-field** path (played more than once) is handled separately by
-> F7/F8.
-
-**White Book §3.3.2.** A pairs board played once in a form is cancelled and
-given an artificial adjusted score; played more than once, scored as a sub-field.
-
-**Code.** The board-status enum (`src/db/games/types/board-status.ts`) has
-`NOT_PLAYED / PENDING_CONFIRMATION / CONFIRMED / OVERRIDDEN / SIT_OUT /
-HALF_AVERAGE` — **no** fouled/cancelled/unplayable/void state. The only director
-board mutation is `overrideBoardResult` (→ `OVERRIDDEN` with a result/`A…`/`W…`).
-So "cancel this board" does not exist; the §3.3.2 adjusted-score outcome is only
-reachable if the director manually types an `A<ns>/<ew>`, and sub-field scoring
-is subsumed by the (missing) Neuberg short-board path (F7).
-
-**Effect.** No first-class "this board couldn't be played / was fouled" action;
-directors must improvise with an override, and the short-board scoring that
-should follow isn't applied (F7/F8).
-
-**Suggestion.** Add a cancelled/fouled board status (or a dedicated adjust
-action) that drives the §3.3.2 outcome and the §4.2.3 short-board scoring.
-
-### F19 — Teams unplayable / void-match handling — DONE (High)
-
-> **§3.3.6 / §3.3.9 whole-match void: DONE for teams VP.** Added a `VOID_MATCH`
-> board status + `model/teams-match-void.ts` (`VoidCause` + `VOID:<cause>` token
-> + `voidMatchVp`): `SEATING_STANDARD` → both 40%, `SEATING_TD` → both 60%
-> (§3.3.6.1 flat/converse), and `SHORT_*` → the §3.3.9 AVE+/AVE− half-board
-> split (`±3·⌈N/2⌉` IMPs, read per-side off the N-board scale). The teams VP
-> scorer (`calculateTeamsVpOverall`) detects a void match via `matchVoidCause`
-> and credits each team its ruling VP directly instead of margin→VP; the
-> expected board count N is threaded in from the movement's `boardsPerRound` via
-> `readLeaderboardInputs`. `voidTeamsMatch` DB action + `traveller:voidTeamsMatch`
-> socket event/handler, and a director "Void Match (Teams)" hub branch →
-> `StepVoidMatch` (two seating options + four §3.3.9 fault options). **This also
-> resolves the F19 ±3 limitation**: because a void gives each team an absolute
-> VP, both-at-fault (both below average) and neither-at-fault (both above) are
-> now distinguishable. §3.3.6.2 ("≥half played, average the rest, full scale")
-> is handled by the existing removed-board path with a `NEITHER_FAULT` (0-swing)
-> removal per un-played board, which counts toward the full board total so the
-> VP scale is the full N.
->
-> **Board-comparison teams (BAM/PAB): DONE too.** The same `REMOVED_TEAMS` /
-> `VOID_MATCH` rulings apply in native board-won units — a removed board is a
-> win/tie/loss for the home team by fault (`teamMatchBoardWins`), and a void
-> credits each team a boards-won total: flat `0.4·N` / `0.6·N` (§3.3.6.1) or the
-> §3.3.9 per-board `0.6/0.5` vs `0.4/0.5` half-split (`voidMatchWon`).
-> `expectedBoards` is threaded into the board-comparison scorer the same way,
-> the hub branches show for every teams game, and the ruling steps adapt their
-> wording (board wins vs IMPs/VP) via a `boardComparison` flag.
-
-> **§3.3.7 removed-board indemnity: DONE for IMP-based teams (VP + aggregate
-> IMP).** Added:
-> - New board status `REMOVED_TEAMS` (`db/games/types/board-status.ts`): a board
->   removed from a teams match that could not be played, carrying a `TRM:<fault>`
->   token in `directorOverrideResult`.
-> - `model/teams-removed-board.ts`: the 4-way `TeamsRemovalFault`
->   (`EW_FAULT`/`NS_FAULT`/`BOTH_FAULT`/`NEITHER_FAULT`), token build/parse, and
->   `removedBoardNsSwing` (±3 / 0 to the NS seat).
-> - `teamMatchBoardImps` (`scoring/swiss/team-match.ts`) now detects a removed
->   board and contributes the fixed ±3 IMP swing (home perspective, inverting
->   when the token sits on the opponent room) and counts it toward
->   `boardsPlayed`, so the VP scale uses the full board count. This flows into
->   both `calculateTeamsVpOverall` and `calculateTeamsImpAggregateOverall`.
-> - `removeTeamsBoardResult` DB action + director-authed
->   `traveller:removeTeamsBoard` socket event/handler, and a director UI: a
->   "Board Not Played (Teams)" branch on the adjustment hub (shown only for
->   IMP-based teams games) → a 4-way fault step (`StepTeamsRemoval`).
-> - `REMOVED_TEAMS` treated as finalized/playable everywhere OVERRIDDEN/CANCELLED
->   are.
->
-> **Known limitation (deferred to the void work).** The match margin is a single
-> zero-sum figure, so `NEITHER_FAULT` (both +3) and `BOTH_FAULT` (both −3) both
-> net to a 0 swing in the margin alone; the whole-match void path (above) now
-> resolves this with per-team absolute scores, and the stored fault token
-> preserves the director's choice.
->
-> **Now fully implemented for all teams formats** (IMP-based + board-comparison).
-> The Swiss-*pairs* void (§3.3.8/§3.3.9) is also done — see F20 (`VOID_PAIR`).
-
-**White Book §3.3.6–3.3.9.** Incorrect seating / void match → both teams 40% of
-VPs (converse if the TD erred); ≥ half the boards played → averages on the rest,
-same VP scale; part-match → +3/−3 IMPs per removed board; < half → void.
-
-**Code (before fix).** `swiss/team-match.ts:teamMatchBoardImps` silently
-**skips** any board without a comparable result in both rooms and scores over
-`boardsPlayed`; `teams-vp-overall.ts` converts the resulting margin to VP with no
-void/averaging/removed-board logic.
-
-**Effect.** A teams match that is partly or wholly unplayable (late arrival,
-foul, seating error) is scored only on whatever boards happen to compare, with
-no indemnity or void treatment — can produce a materially wrong VP result.
-
-**Suggestion.** Model a "removed board" / "void match" outcome and apply the
-§3.3.7–3.3.9 VP effects. Overlaps with the late-arrival/withdrawal work (§6
-below), since those are the usual causes.
-
-### F20 — Swiss void-match formula — DONE (Medium)
-
-> **DONE for teams VP** (part of F19) and **DONE for Swiss pairs**.
->
-> **Teams:** the §3.3.9 half-board AVE+/AVE− split is in `teams-match-void.ts`
-> (`voidSplitVp`), applied by the teams VP scorer on a `VOID_MATCH` `SHORT_*`.
->
-> **Swiss pairs:** because pairs are scored against the whole section field (not
-> head-to-head), a voided pairs match is handled per-pair: the match's rows are
-> a new `VOID_PAIR` status, **excluded from the field** the other pairs are
-> matchpointed against (`byBoardOf` in `swiss-vp-round.ts`), and each of the two
-> pairs is credited an AVE+/AVE−/AVE blend over the match's boards by fault.
-> This reuses the odd-field compensation primitive
-> (`swiss-half-match.ts` `compensationSplit` → ⌈n/2⌉), extended with the AVE−
-> **offender** side the bye compensation never needed (`voidMpFractions` /
-> `voidXimpPerComparison`, 0.4 top / −2 IMP). The cause is recorded as a
-> `VOIDP:<cause>` token (`model/pairs-match-void.ts`); `creditVoidPairs` in
-> `swiss-vp-round.ts` scores both pairs off the void-excluded field. Director
-> UI: a "Void Match (Pairs)" hub branch (gated to Swiss Pairs) →
-> `StepPairsVoid` → `voidPairsMatch` / `traveller:voidPairsMatch`. `expectedBoards`
-> (from the movement) sizes the ⌈N/2⌉ split, threaded through the pairs VP
-> scorers the same way as teams.
->
-> This is independent of the missing-contestant work (F24/F25): a director can
-> void any pairs match directly. F24/F25 would later *drive* this automatically
-> for a withdrawn/absent pair.
-
-**White Book §3.3.9.** A void match: AVE+/AVE− to NOS/OS on half the boards
-(rounded up), AVE/AVE on the rest. Referenced by §2.4.6 (missing contestant in a
-Swiss event).
+### C3 — Wrong board number → AVE−/AVE− — TD-JUDGEMENT
+**§3.3.10.** Making a board unplayable by scoring against the wrong board number
+is AVE−/AVE−. The director enters this as `A40/40`; there is no dedicated
+automation (nor is one needed — it is a specific ruling).
 
 ---
 
-## 5. Swiss mismatches and the draw (§3.5, §3.6)
+## Scope exclusions (not audited)
 
-Draw engines: `src/movement/swiss/swiss-pairing.ts`,
-`src/movement/swiss-teams/swiss-teams-pairing.ts`; orchestration
-`src/services/draw-swiss-round-service.ts`.
-
-### F21 — Mismatch VP adjustment (director-declared) — DONE (Medium)
-
-**White Book §3.5 / §3.5.2.** If a contestant is drawn against opponents whose
-score differs from the correct opponents' by > 5 VP, it's a mismatch. Typically
-ONE side is mismatched; its VP is adjusted (not-at-fault vs a higher opponent →
-`pool/4 + ¾·actual`; own-fault vs a lower opponent → `actual − ¼·(VPs over
-pool/4)`; the other two combinations leave the actual score). The constant is a
-quarter of the VP pool: **5** on the ordinary 20–0 scale, **2.5** on the 10–0
-scale of a triangular (triple) comparison. The opponent is untouched and the
-match result stands.
-
-**Fix (the §3.5.2 adjustment).** `src/model/swiss-mismatch.ts` holds the pure
-formula `adjustMismatchVp(actual, ruling, pool)` (worked examples verified: a
-12-VP win → 14; a 13-VP win → 11) and the `MM:<side>:<direction>:<fault>` token
-codec. The ruling is director-DECLARED through the correction hub (a new
-"Mismatch (Swiss)" step → side, then the §3.5.2 treatment), persisted via a
-`traveller:markMismatch` socket handler that stamps a new `MISMATCH` board
-status and the token into a NEW `match_ruling` column (games migration 0004) on
-every row of the match room. Because the boards stay REAL and in the field
-(only the ruling, not a score, lives in the new column), the Swiss VP scorers
-read `match_ruling` and recompute ONLY the mismatched side's round VP: pairs via
-a `creditMismatch` pass in `scoreSwissVpRound`, teams via `matchMismatch` +
-`adjustMismatchVp` in `calculateTeamsVpOverall` (home-relative, side inverted if
-the token sits on the opponent room). Covers Swiss PAIRS and TEAMS.
-
-**Assisted DETECTION (pairs).** The real trigger is a retroactive adjustment: a
-later round is drawn from round-N standings, then a director adjusts an EARLIER
-round's board, so the committed later draw no longer matches what the corrected
-standings would have produced. Because the Swiss draw is deterministic this is
-reconstructable:
-
-- `computeSectionLeaderboardsAsOf(db, gameId, R)` recomputes the standings over
-  rounds `< R` using CURRENT (adjusted) values — the "corrected standings as of
-  R" the round-R draw should have used.
-- `getSwissBoardHistory(…, R)` (round-filtered) + that order rebuild the exact
-  `SwissDrawInput`; `drawSwissRound` replays it to get the "correct" opponents.
-- `getSwissCommittedRound` recovers the opponents actually played, verbatim from
-  the board rows.
-- `detectRoundMismatches` (`scoring/swiss/detect-mismatch.ts`) diffs the two and
-  flags a pair when its actual vs correct opponent differ by > 5 CURRENT VP,
-  tagging the higher/lower direction. `detectSectionMismatches` scans every
-  committed round, skipping rounds already ruled and half-match rounds.
-
-Candidates are read via a director GET (`/api/games/[gameId]/mismatch-candidates`)
-and shown on a "Review Mismatches" screen; the director confirms fault (or
-dismisses — the §3.5 "several valid alternatives" exception), which emits the
-existing `markMismatch` adjustment. Detection ASSISTS; the two irreducible §3.5
-judgements — fault attribution and the valid-alternatives exception — remain the
-director's. The draw advisories (`evaluateSwissSeating`) are unchanged.
-
-**Teams detection.** Done too — the teams draw (`drawSwissTeamsRound`) is
-deterministic for later rounds (its RNG is only in round 1, never replayed), so
-the same replay-and-diff works. `detect-teams-mismatch.ts` +
-`swiss-teams-committed.ts` rebuild the corrected teams draw and diff each team's
-committed vs correct opponent. An odd-field TRIPLE or BYE round is NOT skipped
-wholesale: only the teams actually IN the triple/bye are excluded, and the
-ordinary head-to-head tables of that round are still assessed. The detection
-service dispatches pairs → `detectPairsSectionMismatches`, teams →
-`detectTeamsSectionMismatches`, behind one `SectionMismatchCandidate`
-(`participantKind: PAIR | TEAM`); the review screen renders either.
-
-**Granularity (pairs and teams).** A 2-half-matches group (pairs) in a round is
-NOT skipped wholesale: only the participants actually IN the half-match group
-are excluded (in EITHER the committed round or the corrected replay — a
-corrected draw can itself produce a half-match), and the ordinary head-to-head
-tables of that round are still assessed. A pairs half-match group and a teams
-BYE are left to a manual director ruling.
-
-**Triple mismatch — F21 "Part B" (DONE).** A teams TRIPLE is no longer skipped
-wholesale. A triple is three head-to-head comparisons (x-y, y-z, z-x), each a
-first-class `matches` row on its own 10-VP (SHORT) / 20-VP (LONG) pool, so a
-§3.5 mismatch inside a triple is now both DETECTABLE and SCOREABLE:
-
-- *Scoring.* `calculateTeamsVpOverall`'s triple loop reads each comparison's
-  `matches.ruling` and runs the one-sided §3.5.2 `adjustMismatchVp` on the ruled
-  side using the comparison's own pool — so the quarter-pool base is **2.5** on
-  a SHORT comparison's 10-VP half pool, 5 on a LONG's full pool.
-- *Targeting.* A ruling is keyed to a specific comparison by the acted board
-  (`MatchRoomKey.boardNumber`): a triple's two comparisons at a shared home
-  table are two separate `matches` rows on disjoint board sets, so the board
-  resolves exactly one.
-- *Detection.* `detectTripleMismatches` replays the deterministic trio selection
-  (`chooseTeamTriple`) on the corrected standings and, when the committed trio
-  differs from the correct one, flags a committed member that faced the wrong
-  third team by > 5 current VP, carrying the board of that comparison so the
-  director's confirm applies to the right 10-VP match. A LONG triple's second
-  slot (its three teams fixed by the first slot, not re-chosen) and a member
-  dropped from the correct trio are left to a manual director ruling.
-
-### F22 — Repeat avoidance is binary; odd-field selection differs — DIVERGENCE (Low)
-
-**White Book §3.6.** Re-matches tolerated at "one and a half times"
-(ordinary/long + short triangle); the odd competitor should be placed "near but
-below average".
-
-**Code.** `pairUp` (both engines) treats any prior meeting as cost 1 and
-minimises total repeats (`hadUnavoidableRepeat` flag). There's no 1.5×
-weighting, no triangle-aware repeat logic, and no avoidance of repeats *within* a
-formed triple (reported as an advisory only). `chooseSitOut` /
-`chooseHalfMatchGroup` / `chooseTeamBye` / `chooseTeamTriple` pick from the
-**bottom of the field** (with once-per-event fairness), not "near but below
-average".
-
-**Effect.** Draw-quality nuance, not a scoring error — the draws are legal and
-avoid repeats where possible. Divergence from EBU practice, low priority.
-
-### F23 — Draw fundamentals present — OK
-
-Repeat-avoiding pairing, director override of the draw, and odd-field handling
-(bye / 2-half-matches / triples) all exist and work. Only the §3.6 nuances above
-diverge.
-
----
-
-## 6. Late arrivals and withdrawals (§2.3–§2.4)
-
-Largely **implemented** now — the withdrawal / without-standing / late-arrival
-scoring is built and tested (design: `docs/design/withdrawals-late-arrivals.md`).
-What remains is the director UI to trigger these states (build-order step 7) and
-the deliberately-deferred mid-session stand-by→real-pair handover (design §9).
-The findings below record the current state.
-
-### F24 — Withdrawals (§2.4.3–§2.4.6) — DONE (scoring; UI pending) (High)
-
-**White Book §2.4.** The withdrawal scoring is implemented end to end.
-
-**Lifecycle.** `participants` carries a `standing`
-(`ACTIVE | WITHDRAWN | WITHOUT_STANDING | LATE`) plus `withdrawnInRound`,
-`withdrawalTreatment` (`REMOVE | PENALISED`) and `withdrawalFinePercent` (0–40).
-`withdrawParticipant` (`db/games/actions/withdraw-participant.ts`) stamps these
-and NEVER deletes rows — a withdrawal is a scored event, so the participant and
-its board rows survive. For teams the standing lives on the home-NS participant
-row (a withdrawal is always whole-team). The former hard-delete path
-(`deleteParticipant`) is now setup-only and the director eviction route is
-guarded post-start (F27).
-
-**Played vs unplayed** is read per board from the board rows (which of a
-contestant's scheduled cells carry a result), never from a stored board
-threshold — robust to wrap-around board numbering and mid-round withdrawals.
-
-**Board-pooled pairs (§2.4.4–§2.4.6).** `withdrawalCreditBoards`
-(`services/leaderboard-service.ts`) synthesises, on each of the withdrawer's
-UNPLAYED cells: the withdrawer's own §2.4.5 AVE−-minus-fine `(40 − fine)/100` of
-the board top (PENALISED only, capped at half the event's boards); and the
-opponent's §2.4.4 indemnity — AVE+ (60%) when the withdrawal is AFTER half,
-nothing (CANCEL) BEFORE half, where the cancelled board simply shrinks the
-opponent's field and the §4.2.3 Neuberg equalisation already compensates. The
-before/after-half split is computed from boards the withdrawer actually played.
-IMP/XIMP credit both sides the field-average (0) so the board still counts.
-
-**Teams-VP (§2.4.3/§3.3.9).** `applyTeamWithdrawalRulings`
-(`scoring/swiss/team-withdrawal.ts`) synthesises an in-memory
-`VOID:SHORT_OFFENDER_*` ruling on every UNPLAYED teams match a withdrawn team
-was drawn into — withdrawer AVE−, opponent AVE+ — honoured by the live teams-VP
-scorer AND the USEBIO teams export (`assembleSwissTeams`), so both agree. Never
-persisted; never clobbers a real director ruling.
-
-**Score to the withdrawer (§2.4.5).** REMOVE → dropped from the ranking (F26);
-PENALISED → stays with the AVE−-minus-fine above.
-
-**Remaining:** the director-facing "Withdraw / mark absent" UI to set the
-standing (build-order step 7 — today it is set via the action/DB). The
-all-play-all §6.2 "own average over the event" indemnity is out of scope (not an
-all-play-all appliance).
-
-### F25 — Late arrivals (§2.3.3 / §2.4.7) — PARTIAL (High, known)
-
-**White Book §2.3.3 / §2.4.7.** The §2.4.7 "retaining standing" rule
-is now implemented: a `LATE` participant standing records a latecomer (reusing
-the withdrawal `withdrawalTreatment`/`withdrawalFinePercent`), and
-`resolveStandings` (`src/db/games/queries/ranking-exclusions.ts`) applies the
-half-boards gate — "retain standing if present for at least half the event's
-boards", measured from boards actually played against `⌈total/2⌉`. A latecomer
-short of half is folded into the existing §2.4.4–§2.4.6 passes
-(`withdrawalCreditBoards` for pairs, `applyTeamWithdrawalRulings` for teams-VP),
-so its unplayed EARLY boards score AVE−/void exactly like a withdrawer's.
-
-Still not implemented (deliberately): the stand-by 45/90-minute rights (TD
-procedure, not scoring) and the mid-session stand-by→real-pair swap-in. The
-**identity layer AND per-board scoring that swap-in needs have since been
-built** — the first-class `seat_occupancy` model (slice 1) plus the per-board
-scoring attribution (slice 3): a seat holds different pairs over disjoint board
-sets, the stand-in plays without-standing (counted for opponents, unranked) and
-the real pair's gap scores AVE− with no credit transfer (design
-`seat-occupancy-handover.md` §4a/§8). This also landed the general §4.1.1.1
-rule — every synthetic AVE+/AVE− award (withdrawal, sit-out, empty-late,
-handover) now gets the better-than-average uplift uniformly. What remains for the
-swap-in is per-board auth (slice 4) and the director handover UX (slice 5). Note
-**SIT_OUT remains a pre-planned one-pair-short movement/phantom construct**
-(`start-validator.ts` `sitOutSeat`, `start-game-service.ts` `applySitOut`); the
-White Book's "pair never arrives → treat the forced sit-out as pre-scheduled" is
-exactly that existing path, so it needs no separate code.
-
-### F26 — "Without standing" ranking exclusion (§2.4.9) — DONE (Medium)
-
-**White Book §2.4.9.** A contestant whose results count IN FULL for its
-opponents but who is itself dropped from the ranking — now implemented.
-
-**Code.** A `WITHOUT_STANDING` standing (and a REMOVE-withdrawn / short-LATE-REMOVE
-contestant) is collected into an excluded-id set by `resolveStandings` /
-`readRankingExclusions` (`db/games/queries/ranking-exclusions.ts`), keyed on the
-same `initialSeat` a pair line (`pairId`) and a team line (`teamId`, the home-NS
-seat) carry. `applyRankingExclusion` (`scoring/overall/exclude-ranking.ts`) drops
-those lines AFTER aggregation (so their results still counted for opponents) and
-re-ranks the survivors. It is applied at the four `leaderboard-service` entry
-points via `excludeFromLeaderboard`, and in the four VP/teams USEBIO assemblers
-plus the MP-pairs USEBIO placing, so the live board and the published file agree.
-`computeSectionLeaderboardsAsOf` deliberately does NOT exclude — it reconstructs a
-past draw's standings, where every contestant must still be present.
-
-### F27 — Director eviction post-start guard — DONE (Low)
-
-**Fixed.** The director eviction route
-(`src/app/api/games/[gameId]/participants/[seat]/route.ts` DELETE →
-`deleteParticipant`) now blocks once `isGameStarted(gameId)` is true, mirroring
-the player `leave-table` post-start guard. A seated pair can no longer be
-hard-deleted mid-game (which would orphan its board rows and the `matches` FK);
-removing one is a WITHDRAWN lifecycle change (F24) instead. `deleteParticipant`
-remains for the pre-start case (a pair leaves before the game starts).
-
----
-
-## Suggested priority order
-
-Grouped by what delivers correct published results soonest:
-
-1. ~~**F7 + F8 + F18**~~ — DONE. Short-board / cancelled-board scoring (Neuberg
-   to E, small sub-fields, cancel/foul status).
-2. ~~**F19 + F20**~~ — DONE. Teams unplayable / void-match VP (incl. BAM/PAB) and
-   Swiss-pairs void.
-3. **F24 + F26 + F27** — DONE (scoring). The withdrawal / without-standing /
-   eviction-guard feature: the `WITHDRAWN`/`WITHOUT_STANDING` lifecycle, the
-   §2.4.4–§2.4.6 pairs credits, the §3.3.9 teams-VP void, the §2.4.9 ranking
-   exclusion (live + USEBIO), and the post-start eviction guard. **F25** PARTIAL
-   — §2.4.7 "retaining standing" DONE (the `LATE` standing + half-boards gate);
-   the mid-session stand-by→real-pair swap-in's **identity layer (slice 1) AND
-   per-board scoring (slice 3) are now built** (first-class `seat_occupancy` +
-   per-occupant scored-field ids + the general §4.1.1.1 AVE-valuation rule),
-   with per-board auth (slice 4) and the director handover UX (slice 5) deferred
-   (design `seat-occupancy-handover.md` §8). The only remaining
-   withdrawal/late-arrival work is the **director UI** to trigger these states
-   (build-order step 7) — the scoring is complete.
-4. **F1** DONE for matchpoints (IMP/XIMP deferred); **F2** WONTFIX (TD-judgement
-   rule, no mechanical clamp). AVE+/AVE− "better than average" + the offenders
-   constraint.
-5. ~~**F14**~~ — RESOLVED. The XIMPQ normaliser is correct as implemented (no
-   code change).
-6. ~~**F9**~~ DONE (per-board §4.2.6.1 rounding), ~~**F11/F28**~~ DONE (§4.2.5
-   board-scaling), ~~**F21**~~ DONE (§3.5.2 director-declared mismatch VP,
-   including Part B triple mismatches). ~~**F3, F5, F6**~~ DONE — the
-   correctness-polish items (2dp weighted-score weights; over-100% advisory;
-   bare-`AVE` decode). Plus the latent crash ~~**F29**~~ DONE.
-
----
-
-*Reflects the repo state at the time of writing. Source of truth for the rules:
-[ebu-white-book-scoring.md](./ebu-white-book-scoring.md) (EBU White Book 2025).
-A living document: findings marked DONE/PARTIAL have been actioned in code; the
-remainder are open or deliberately out of scope.*
-
-## Remaining work
-
-With the withdrawal / without-standing / late-arrival scoring landed, the open
-items are small:
-
-- **Director UI (build-order step 7)** — a "Withdraw / mark absent / mark late"
-  flow on the manage screen so a TD can set the `WITHDRAWN` / `WITHOUT_STANDING`
-  / `LATE` standing (the scoring already runs; today the standing is set via the
-  action/DB only). Plus a `docs/director-guide.md` update.
-- **F25 mid-session stand-by→real-pair swap-in** — identity layer (slice 1) and
-  per-board scoring (slice 3) built; per-board auth (slice 4) and the director
-  handover UX (slice 5) remain. Design `seat-occupancy-handover.md` §4a/§8.
-- **F1 IMP/XIMP "better than average"** — deferred; the matchpoint case is done.
-  Faithful IMP handling needs an IMP-average pass and interacts with the floored
-  Butler sign convention.
-- **F2** — WONTFIX (TD judgement). **F10, F15, F17, F22** — by-design notes /
-  divergences, no action planned.
+- **§3.1.4, §3.1.5, §3.7** teams-of-eight-or-more (cross-IMP Tollemache, Garden
+  Cities, modified IMP scale, teams-of-eight fouled-board formulae).
+- **§3.1.6** hybrid-IMP / Pachabo scoring.
+- **§3.2.2, §3.3.4** knockout events (extra-board tie splitting, replay rules).
+- **§2.4.2** the formal all-play-all withdrawal construct.
+- Multi-stage / qualifying competitions and carry-forward (§3.8).
+- Online / BBO specifics (§1.1.2, §2.3.7–§2.3.9).

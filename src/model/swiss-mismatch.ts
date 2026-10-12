@@ -30,7 +30,9 @@
  *
  * The opponent's VP is NEVER changed by this ruling. The result of the match
  * itself stands (the boards are real and remain in the field); only the
- * mismatched side's round VP is recomputed.
+ * mismatched side's round VP is recomputed. Per §3.5.2 the adjusted VP is then
+ * rounded UP to the next 0.5 VP ("in the competitor's favour"), since the ¾/¼
+ * formulas can land on a quarter-VP.
  *
  * Worked examples from the White Book:
  *   20–0 scale, higher + not-fault, win 12–8 → 5 + ¾×12 = 14
@@ -117,19 +119,35 @@ export function adjustMismatchVp(
   const base = pool / 4;
 
   let adjusted = actual;
+  let changed = false;
 
   if (direction === "HIGHER" && fault === "NOT") {
     // Compensated upward for an undeservedly tougher draw.
     adjusted = base + 0.75 * actual;
+    changed = true;
   } else if (direction === "LOWER" && fault === "OWN") {
     // Dock a quarter of any VPs won in excess of the base (never below it from
     // this rule — a side at or under the base keeps its actual score).
     const excess = Math.max(0, actual - base);
     adjusted = actual - 0.25 * excess;
+    changed = true;
   }
+
+  // §3.5.2: "all fractions are rounded in the competitor's favour to the next
+  // higher minimum unit of scoring" — 0.5 VP on both the 20–0 and the 10–0
+  // (triangular) scales. The ×¾ / ×¼ formulas can land on a quarter-VP
+  // (e.g. 5 + ¾×7 = 10.25), so round UP to the next 0.5. Only the two cases
+  // that change the value are rounded; an untouched `actual` is already a whole
+  // VP off the discrete scale, so rounding would be a no-op there anyway.
+  if (changed) adjusted = roundUpToHalf(adjusted);
 
   // HIGHER+OWN and LOWER+NOT leave `actual` unchanged (handled by the default).
   return clamp(adjusted, 0, pool);
+}
+
+/** Round UP to the next higher 0.5 unit (the §3.5.2 competitor's-favour unit). */
+function roundUpToHalf(value: number): number {
+  return Math.ceil(value * 2) / 2;
 }
 
 function clamp(value: number, lo: number, hi: number): number {

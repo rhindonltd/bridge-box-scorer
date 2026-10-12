@@ -84,15 +84,52 @@ describe("adjustMismatchVp — §3.5.2", () => {
     const r: MismatchRuling = { side: "NS", direction: "HIGHER", fault: "NOT" };
     // §3.5.2 triangular rule: 2.5 + ¾ × 6 = 7.
     expect(adjustMismatchVp(6, r, 10)).toBe(7);
-    // 2.5 + ¾ × 8 = 8.5 (not clamped — within the 10 pool).
+    // 2.5 + ¾ × 8 = 8.5 (already a 0.5 unit; not clamped — within the 10 pool).
     expect(adjustMismatchVp(8, r, 10)).toBe(8.5);
   });
 
   it("docks over base = 2.5 for a LOWER + own-fault 10-VP comparison", () => {
     const r: MismatchRuling = { side: "NS", direction: "LOWER", fault: "OWN" };
-    // 8 − (8 − 2.5)/4 = 8 − 1.375 = 6.625.
-    expect(adjustMismatchVp(8, r, 10)).toBeCloseTo(6.625, 5);
+    // 8 − (8 − 2.5)/4 = 8 − 1.375 = 6.625 → rounded UP to the next 0.5 = 6.5...
+    // no: 6.625 rounds up to 7.0 (the next 0.5 unit above 6.625 is 7.0).
+    expect(adjustMismatchVp(8, r, 10)).toBe(7);
     // At/under base: unchanged.
     expect(adjustMismatchVp(2, r, 10)).toBe(2);
+  });
+
+  describe("§3.5.2 rounding — up to the next 0.5 VP in the competitor's favour", () => {
+    it("rounds a quarter-VP HIGHER + not-fault result UP to the next 0.5", () => {
+      const r: MismatchRuling = {
+        side: "NS",
+        direction: "HIGHER",
+        fault: "NOT",
+      };
+      // 5 + ¾ × 7 = 10.25 → up to 10.5.
+      expect(adjustMismatchVp(7, r, 20)).toBe(10.5);
+      // 5 + ¾ × 11 = 13.25 → up to 13.5.
+      expect(adjustMismatchVp(11, r, 20)).toBe(13.5);
+      // 5 + ¾ × 13 = 14.75 → up to 15.
+      expect(adjustMismatchVp(13, r, 20)).toBe(15);
+    });
+
+    it("rounds a LOWER + own-fault dock UP (less docking = competitor's favour)", () => {
+      const r: MismatchRuling = { side: "NS", direction: "LOWER", fault: "OWN" };
+      // 11 − (11 − 5)/4 = 11 − 1.5 = 9.5 → already a 0.5 unit.
+      expect(adjustMismatchVp(11, r, 20)).toBe(9.5);
+      // 12 − (12 − 5)/4 = 12 − 1.75 = 10.25 → up to 10.5.
+      expect(adjustMismatchVp(12, r, 20)).toBe(10.5);
+      // 14 − (14 − 5)/4 = 14 − 2.25 = 11.75 → up to 12.
+      expect(adjustMismatchVp(14, r, 20)).toBe(12);
+    });
+
+    it("leaves whole-VP results whole (round-up is a no-op)", () => {
+      const r: MismatchRuling = {
+        side: "NS",
+        direction: "HIGHER",
+        fault: "NOT",
+      };
+      // 5 + ¾ × 12 = 14 (whole) stays 14.
+      expect(adjustMismatchVp(12, r, 20)).toBe(14);
+    });
   });
 });
