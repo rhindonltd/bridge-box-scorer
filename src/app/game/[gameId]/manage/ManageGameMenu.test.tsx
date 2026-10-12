@@ -24,6 +24,7 @@ vi.mock("@/lib/fetcher", () => ({
 vi.mock("@/swr/swr-keys", () => ({
   swrKeys: {
     bridgewebs: () => "/api/system/bridgewebs",
+    ebu: () => "/api/system/ebu",
     game: (gameId: string) => `/api/games/${gameId}`,
   },
 }));

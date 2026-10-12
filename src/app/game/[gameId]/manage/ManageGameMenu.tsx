@@ -8,6 +8,7 @@ import { useResultsComplete } from "@/hooks/results-complete";
 import { fetcher, unwrapFetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import type { BridgewebsStatus } from "@/db/system/queries/bridgewebs-credentials";
+import type { EbuStatus } from "@/db/system/queries/ebu-credentials";
 import type { BridgeGame } from "@/db/game-index/schema";
 
 export function ManageGameMenu({ gameId }: { gameId: string }) {
@@ -24,6 +25,12 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
     fetcher,
   );
   const bridgewebsConfigured = bridgewebs?.configured ?? false;
+
+  // Whether EBU is configured (device setting). Controls whether the "Submit to
+  // EBU" button appears — no point offering it with no credentials to submit
+  // with.
+  const { data: ebu } = useSWR<EbuStatus>(swrKeys.ebu(), fetcher);
+  const ebuConfigured = ebu?.configured ?? false;
 
   // "Review Mismatches" (§3.5) only applies to a Swiss game, where a
   // retroactive score adjustment can retro-change a later round's correct draw.
@@ -65,6 +72,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       onUploadBridgewebsClick={() =>
         router.push(`/game/${gameId}/manage/upload-bridgewebs`)
       }
+      onUploadEbuClick={() => router.push(`/game/${gameId}/manage/upload-ebu`)}
       onDeleteGameClick={() =>
         router.push(`/game/${gameId}/manage/delete-game`)
       }
@@ -79,6 +87,8 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       showDownloadPbn={started}
       showUploadBridgewebs={started && bridgewebsConfigured}
       uploadBridgewebsDisabled={!allResultsIn}
+      showUploadEbu={started && ebuConfigured}
+      uploadEbuDisabled={!allResultsIn}
     />
   );
 }

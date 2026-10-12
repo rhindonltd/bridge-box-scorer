@@ -32,6 +32,7 @@ const handlers = {
   onDownloadUsebioClick: vi.fn(),
   onDownloadPbnClick: vi.fn(),
   onUploadBridgewebsClick: vi.fn(),
+  onUploadEbuClick: vi.fn(),
   onDeleteGameClick: vi.fn(),
 };
 
@@ -47,6 +48,8 @@ const flags = {
   showDownloadPbn: false,
   showUploadBridgewebs: false,
   uploadBridgewebsDisabled: false,
+  showUploadEbu: false,
+  uploadEbuDisabled: false,
 };
 
 describe("ManageGameMenuPage", () => {

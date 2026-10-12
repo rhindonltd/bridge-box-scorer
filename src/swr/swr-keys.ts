@@ -28,6 +28,8 @@ export const swrKeys = {
 
   bridgewebs: () => "/api/system/bridgewebs",
 
+  ebu: () => "/api/system/ebu",
+
   cloudSync: () => "/api/system/cloud-sync",
 
   cloudSyncStatus: () => "/api/system/cloud-sync/status",
