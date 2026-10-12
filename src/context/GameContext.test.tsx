@@ -3,8 +3,10 @@ import { renderHook, act } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 const mockUseSWR = vi.fn();
+const globalMutate = vi.fn();
 vi.mock("swr", () => ({
   default: (...args: unknown[]) => mockUseSWR(...args),
+  mutate: (...args: unknown[]) => globalMutate(...args),
 }));
 
 const socketOn = vi.fn();
@@ -27,6 +29,7 @@ vi.mock("@/lib/fetcher", () => ({
 
 import { GameProvider, useGame, useRequiredGame } from "./GameContext";
 import { SocketEvents } from "@/socket/socket-events";
+import { swrKeys } from "@/swr/swr-keys";
 import type { BridgeGame } from "@/db/game-index/schema";
 
 const initialGame = { gameId: "g1", eventName: "Monday Pairs" } as BridgeGame;
@@ -124,6 +127,12 @@ describe("GameContext", () => {
 
     const updated = { gameId: "g1", eventName: "Tuesday Pairs" } as BridgeGame;
     act(() => handlerFor(SocketEvents.GAME_UPDATED)({ game: updated }));
-    expect(mutate).toHaveBeenCalledWith(updated, false);
+    // The shared socket→SWR sync writes the pushed game into the game key's
+    // cache entry without revalidating (the `false` flag).
+    expect(globalMutate).toHaveBeenCalledWith(
+      swrKeys.game("g1"),
+      updated,
+      false,
+    );
   });
 });

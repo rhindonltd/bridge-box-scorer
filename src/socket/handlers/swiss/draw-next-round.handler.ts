@@ -2,16 +2,17 @@ import { Server, Socket } from "socket.io";
 import { z } from "zod";
 
 import { SocketEvents } from "@/socket/socket-events";
-import { Rooms } from "@/socket/rooms";
 import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import {
   previewNextSwissRound,
   commitNextSwissRound,
 } from "@/services/draw-swiss-round-service";
-import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
-import { resumeTimerAfterDraw } from "@/socket/handlers/swiss/resume-timer-after-draw";
-import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import {
+  broadcastAfterDrawCommit,
+  COMMON_DRAW_REJECTION_MESSAGE,
+  DEFAULT_DRAW_REJECTION,
+} from "@/socket/handlers/swiss/broadcast-after-draw-commit";
 import type { SectionLetter } from "@/model/participants";
 import type { NamedSeating } from "@/services/swiss-seating-names";
 import type {
@@ -88,10 +89,8 @@ interface CommitAck {
 
 /** Human-facing messages for the reasons a draw can be refused. */
 const REJECTION_MESSAGE: Record<string, string> = {
+  ...COMMON_DRAW_REJECTION_MESSAGE,
   NOT_SWISS: "This section is not a Swiss Pairs movement.",
-  ROUND_INCOMPLETE:
-    "All results for the current round must be in before drawing the next round.",
-  EVENT_COMPLETE: "All rounds have already been drawn.",
   INVALID_SEATING:
     "That seating isn't valid — every pair must be seated exactly once.",
 };
@@ -122,8 +121,7 @@ export function registerPreviewNextRoundHandler(socket: Socket, io: Server) {
 
         if (!result.ok) {
           throw new HandlerError(
-            REJECTION_MESSAGE[result.reason] ??
-              "Could not draw the next round.",
+            REJECTION_MESSAGE[result.reason] ?? DEFAULT_DRAW_REJECTION,
           );
         }
 
@@ -185,22 +183,11 @@ export function registerDrawNextRoundHandler(socket: Socket, io: Server) {
 
         if (!result.ok) {
           throw new HandlerError(
-            REJECTION_MESSAGE[result.reason] ??
-              "Could not draw the next round.",
+            REJECTION_MESSAGE[result.reason] ?? DEFAULT_DRAW_REJECTION,
           );
         }
 
-        // Notify the whole game room so player/display schedules refresh into
-        // the newly-drawn round.
-        const game = await findGameById(gameId);
-        io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, { game });
-
-        // Push a fresh leaderboard snapshot to viewers (occupancy-gated).
-        await broadcastLeaderboardChanged(io, gameId);
-
-        // Start the newly-drawn round's clock: a Swiss timer waits in
-        // `awaitingDraw` between rounds, and committing the draw resumes it.
-        await resumeTimerAfterDraw(io, gameId, section as SectionLetter);
+        await broadcastAfterDrawCommit(io, gameId, section as SectionLetter);
 
         ack({ success: true, data: { roundNumber: result.roundNumber } });
       },

@@ -3,6 +3,7 @@ import "server-only";
 import { getDb, type Db } from "@/db/games";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
+import { isSwissRoundComplete } from "@/services/swiss-round-completion";
 import {
   getSwissBoardHistory,
   swissPairIdFromParticipant,
@@ -102,39 +103,23 @@ export type CommitSwissResult =
  * submitted by players, so they must not count as outstanding — otherwise a
  * round containing a half-match group could never be drawn from.
  */
-async function isRoundComplete(
+function isRoundComplete(
   db: Db,
   section: SectionLetter,
   roundNumber: number,
 ): Promise<boolean> {
-  const { boards } = await import("@/db/games/tables/boards");
-  const { matches } = await import("@/db/games/tables/matches");
-  const { and, eq } = await import("drizzle-orm");
-
-  // Join each board to its match so a voided / mismatched match (whose ruling
-  // now lives on `matches.ruling`, not the board) counts as resolved even if
-  // its boards were never played.
-  const rows = await db
-    .select({ status: boards.status, ruling: matches.ruling })
-    .from(boards)
-    .innerJoin(matches, eq(boards.matchId, matches.id))
-    .where(
-      and(eq(boards.section, section), eq(boards.roundNumber, roundNumber)),
-    );
-
-  const playable = rows.filter(
-    (r) => r.status !== "SIT_OUT" && r.status !== "HALF_AVERAGE",
-  );
-  if (playable.length === 0) return false;
-  return playable.every(
-    (r) =>
-      r.status === "CONFIRMED" ||
-      r.status === "OVERRIDDEN" ||
-      r.status === "CANCELLED" ||
-      r.status === "REMOVED_TEAMS" ||
-      // A match-level void / mismatch ruling resolves the board.
-      r.ruling != null,
-  );
+  // Pairs: a bye's SIT_OUT and a "2 half matches" HALF_AVERAGE block are
+  // scorer-resolved and never submitted, so they are dropped from the playable
+  // set rather than counted — a round of only those has nothing to draw from.
+  return isSwissRoundComplete(db, section, roundNumber, {
+    completeStatuses: [
+      "CONFIRMED",
+      "OVERRIDDEN",
+      "CANCELLED",
+      "REMOVED_TEAMS",
+    ],
+    ignoreStatuses: ["SIT_OUT", "HALF_AVERAGE"],
+  });
 }
 
 /**

@@ -1,5 +1,5 @@
 import { getDb, type Db } from "@/db/games";
-import { SectionLetter, parseSeat } from "@/model/participants";
+import { SectionLetter } from "@/model/participants";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import {
   getSwissTeamsPriorHistory,
@@ -15,7 +15,13 @@ import {
   computeSectionLeaderboardsAsOf,
   type SectionLeaderboard,
 } from "@/services/leaderboard-service";
-import { getSwissBoardHistory, swissPairIdFromParticipant } from "@/db/games/queries/swiss-board-history";
+import { getSwissBoardHistory } from "@/db/games/queries/swiss-board-history";
+import {
+  decodeStandingsOrder,
+  decodeVpById,
+  pairLeaderboardDecoder,
+  teamLeaderboardDecoder,
+} from "@/services/leaderboard-standings-decode";
 import { getSwissCommittedRound } from "@/db/games/queries/swiss-committed-seating";
 import {
   swissPairHomeSeat,
@@ -83,17 +89,7 @@ function standingsOrder(
   board: SectionLeaderboard | undefined,
   tables: number,
 ): SwissPairId[] {
-  if (!board) return [];
-  const order: SwissPairId[] = [];
-  const seen = new Set<SwissPairId>();
-  for (const line of board.overallScore.lines as { pairId: string }[]) {
-    const id = swissPairIdFromParticipant(line.pairId, tables);
-    if (id != null && !seen.has(id)) {
-      order.push(id);
-      seen.add(id);
-    }
-  }
-  return order;
+  return decodeStandingsOrder(board, pairLeaderboardDecoder(tables));
 }
 
 /** A pair-id → current total VP map from the (as-of-now) section leaderboard. */
@@ -101,16 +97,7 @@ function currentVpByPair(
   board: SectionLeaderboard | undefined,
   tables: number,
 ): Map<SwissPairId, number> {
-  const map = new Map<SwissPairId, number>();
-  if (!board) return map;
-  for (const line of board.overallScore.lines as {
-    pairId: string;
-    totalVP?: number;
-  }[]) {
-    const id = swissPairIdFromParticipant(line.pairId, tables);
-    if (id != null) map.set(id, line.totalVP ?? 0);
-  }
-  return map;
+  return decodeVpById(board, pairLeaderboardDecoder(tables));
 }
 
 /** Rounds that already carry a MISMATCH ruling, so detection won't re-flag. */
@@ -275,44 +262,16 @@ async function detectPairsSectionMismatches(
   return candidates;
 }
 
-/** Decode a teams leaderboard line's seat id into its home-table team id. */
-function teamIdOf(pairId: string): number | null {
-  try {
-    return parseSeat(pairId).tableNumber;
-  } catch {
-    return null;
-  }
-}
-
 /** Each team's current (as-of-now) total VP, from the teams leaderboard. */
 function currentVpByTeam(
   board: SectionLeaderboard | undefined,
 ): Map<number, number> {
-  const map = new Map<number, number>();
-  if (!board) return map;
-  for (const line of board.overallScore.lines as {
-    teamId: string;
-    totalVP?: number;
-  }[]) {
-    const id = teamIdOf(line.teamId);
-    if (id != null) map.set(id, line.totalVP ?? 0);
-  }
-  return map;
+  return decodeVpById(board, teamLeaderboardDecoder);
 }
 
 /** Team ids in corrected standing order (best first), from the as-of board. */
 function teamStandingsOrder(board: SectionLeaderboard | undefined): number[] {
-  if (!board) return [];
-  const order: number[] = [];
-  const seen = new Set<number>();
-  for (const line of board.overallScore.lines as { teamId: string }[]) {
-    const id = teamIdOf(line.teamId);
-    if (id != null && !seen.has(id)) {
-      order.push(id);
-      seen.add(id);
-    }
-  }
-  return order;
+  return decodeStandingsOrder(board, teamLeaderboardDecoder);
 }
 
 /**

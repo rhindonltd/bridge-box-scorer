@@ -8,6 +8,7 @@ import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 
 import { PairSeat, SectionLetter, parseSeat } from "@/model/participants";
+import { PHANTOM_SEAT } from "@/model/phantom-seat";
 import { SelectedMovement } from "@/model/selected-movement";
 import { deriveExpectedSeats } from "@/model/expected-seats";
 import {
@@ -628,7 +629,7 @@ function applySwissRoundOneSitOut(
           // matching the representation the board-history reader expects (the
           // phantom is not a valid seat, so it is never read as a pair).
           ns: byePair,
-          ew: "PHANTOM",
+          ew: PHANTOM_SEAT,
           sitOut: true,
         },
       ],

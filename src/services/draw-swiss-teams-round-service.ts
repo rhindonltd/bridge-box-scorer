@@ -3,6 +3,7 @@ import "server-only";
 import { getDb, type Db } from "@/db/games";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
+import { isSwissRoundComplete } from "@/services/swiss-round-completion";
 import { materializeSwissTeamsRound } from "@/services/materialize-swiss-teams-round";
 import {
   continueLongTriple,
@@ -196,36 +197,23 @@ async function getSwissTeamsHistory(
  * played, so they count as complete (they don't block the next draw). An empty
  * round is not "complete".
  */
-async function isRoundComplete(
+function isRoundComplete(
   db: Db,
   section: SectionLetter,
   roundNumber: number,
 ): Promise<boolean> {
-  const { boards } = await import("@/db/games/tables/boards");
-  const { matches } = await import("@/db/games/tables/matches");
-  const { and, eq } = await import("drizzle-orm");
-
-  // Join each board to its match so a voided / mismatched match (ruling now on
-  // `matches.ruling`) counts as resolved even if its boards were never played.
-  const rows = await db
-    .select({ status: boards.status, ruling: matches.ruling })
-    .from(boards)
-    .innerJoin(matches, eq(boards.matchId, matches.id))
-    .where(
-      and(eq(boards.section, section), eq(boards.roundNumber, roundNumber)),
-    );
-
-  if (rows.length === 0) return false;
-  return rows.every(
-    (r) =>
-      r.status === "CONFIRMED" ||
-      r.status === "OVERRIDDEN" ||
-      r.status === "CANCELLED" ||
-      r.status === "REMOVED_TEAMS" ||
-      r.status === "SIT_OUT" ||
-      // A match-level void / mismatch ruling resolves the board.
-      r.ruling != null,
-  );
+  // Teams: a bye's SIT_OUT boards are never played, so they count as resolved
+  // (they don't block the next draw) rather than being filtered out. Teams has
+  // no HALF_AVERAGE compensation blocks.
+  return isSwissRoundComplete(db, section, roundNumber, {
+    completeStatuses: [
+      "CONFIRMED",
+      "OVERRIDDEN",
+      "CANCELLED",
+      "REMOVED_TEAMS",
+      "SIT_OUT",
+    ],
+  });
 }
 
 /**
