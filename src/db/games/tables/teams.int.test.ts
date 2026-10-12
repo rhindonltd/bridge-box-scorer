@@ -23,7 +23,7 @@ describe("games db: teams table migration", () => {
     harness.teardown();
   });
 
-  it("creates the teams table alongside participant and players", async () => {
+  it("creates the teams table alongside seat_occupancy and players", async () => {
     const db = (await harness.getDb()) as Db;
 
     const rows = db.all<{ name: string }>(
@@ -32,7 +32,7 @@ describe("games db: teams table migration", () => {
     const names = rows.map((r) => r.name);
 
     expect(names).toContain("teams");
-    expect(names).toContain("participant");
+    expect(names).toContain("seat_occupancy");
     expect(names).toContain("players");
   });
 

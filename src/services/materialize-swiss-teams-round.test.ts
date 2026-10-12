@@ -27,7 +27,11 @@ function stubDb(existingRows: unknown[]) {
   const run = vi.fn(() => ({ lastInsertRowid: ++nextId }));
   const values = vi.fn(() => ({ run }));
   const insert = vi.fn(() => ({ values }));
-  const tx = { insert };
+  // Anchor-stamping chain: `update().set().where().run()`.
+  const update = vi.fn(() => ({
+    set: () => ({ where: () => ({ run: vi.fn() }) }),
+  }));
+  const tx = { insert, update };
   const transaction = vi.fn((cb: (tx: unknown) => unknown) => cb(tx));
 
   const selectChain = {
@@ -37,7 +41,14 @@ function stubDb(existingRows: unknown[]) {
   };
   const select = vi.fn(() => selectChain);
 
-  return { db: { select, transaction }, insert, values, run, transaction };
+  return {
+    db: { select, transaction },
+    insert,
+    values,
+    run,
+    update,
+    transaction,
+  };
 }
 
 describe("swissTeamsRoundOneSeed", () => {

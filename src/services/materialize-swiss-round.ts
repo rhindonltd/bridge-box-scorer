@@ -10,7 +10,6 @@ import {
   type MaterializableMovement,
 } from "@/services/materialize-movement";
 import {
-  swissPairHomeSeat,
   type SwissHalfMatchGroup,
   type SwissPairId,
   type SwissSeating,
@@ -30,21 +29,24 @@ import type {
 const SWISS_SIT_OUT_PHANTOM = "PHANTOM";
 
 /**
- * The stable, section-UNqualified movement id for a Swiss pair: its round-1
- * home position, e.g. "1NS" or "3EW". `buildSectionRows` later prefixes the
- * section (→ "A1NS"), exactly as the Mitchell family's ids ("1NS") are treated.
+ * The stable, section-UNqualified movement id for a Swiss pair: its bare pair
+ * integer, e.g. "1" or "5". `buildSectionRows` later prefixes the section
+ * (→ "A1"), exactly as the other direction-changing movements (arrow-switch
+ * Mitchell, file/SPEC pairs) carry a bare id.
  *
- * Anchoring the id to the round-1 seat — rather than a bare integer — keeps
- * Swiss consistent with every other movement, where a board's ns/ew equals the
- * seated pair's assignment id / initialSeat. That identity is what the
- * schedule, leaderboard and player screens all join on.
+ * A Swiss pair changes compass direction round to round, so its movement id —
+ * the value written to `boards.ns`/`ew` — must NOT carry a direction. It is the
+ * pair's stable number from the pairing engine (NS pairs 1..tables, EW pairs
+ * tables+1..2·tables). The PHYSICAL seat a pair sits (its round-1 home, e.g.
+ * "A1NS") is a separate thing, recorded on `seat_occupancy.seat`; this bare id
+ * is the occupancy's `anchorId`, which is what the schedule, leaderboard and
+ * player screens join a board row on.
  */
 export function swissPairMovementId(
-  tables: number,
+  _tables: number,
   pairId: SwissPairId,
 ): string {
-  const home = swissPairHomeSeat(tables, pairId);
-  return `${home.tableNumber}${home.direction}`;
+  return `${pairId}`;
 }
 
 /**
@@ -352,8 +354,8 @@ export function swissRoundToMaterializable(
 }
 
 /**
- * Append a single Swiss round's boards (and, for round 1, the seat assignments)
- * to a game's database, in one transaction.
+ * Append a single Swiss round's boards to a game's database, in one
+ * transaction.
  *
  * This is the incremental counterpart to the up-front materialization used by
  * static movements: Swiss draws one round at a time, so only that round's rows
@@ -361,9 +363,9 @@ export function swissRoundToMaterializable(
  * (e.g. a retried draw), nothing is written and the call is a no-op — so a
  * double draw can't duplicate a round.
  *
- * Assignments are only meaningful for round 1 (they seed the initial seat map
- * consumed elsewhere); `buildSectionRows` already restricts assignment rows to
- * round 1, so later rounds contribute board rows only.
+ * Seats are not written here: a pair's `seat_occupancy` row is created when the
+ * director seats it (pre-start), and a Swiss board row carries that occupancy's
+ * seat id on `ns`/`ew`.
  */
 export async function materializeSwissRound(
   gameId: string,
@@ -400,12 +402,9 @@ export async function materializeSwissRound(
     halfMatch,
   );
 
-  const { boardRows, matchRows, assignmentRows } = buildSectionRows(
-    section,
-    movement,
-  );
+  const { boardRows, matchRows, anchors } = buildSectionRows(section, movement);
 
-  insertSectionDrafts(db, matchRows, boardRows, assignmentRows);
+  insertSectionDrafts(db, matchRows, boardRows, anchors);
 
   return { written: true };
 }

@@ -1,6 +1,9 @@
 export const swrKeys = {
   pairs: (gameId: string) => `/api/games/${gameId}/participants`,
 
+  expectedLateSeats: (gameId: string) =>
+    `/api/games/${gameId}/expected-late-seats`,
+
   joinableGames: () => "/api/games/joinable",
 
   game: (gameId: string) => {

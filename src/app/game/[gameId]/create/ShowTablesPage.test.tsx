@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import type { Pair } from "@/model/participants";
 
 // ---- mocks ----
@@ -18,10 +24,14 @@ let capturedFetcher: ((url: string) => Promise<Pair[]>) | null = null;
 const mockMutate = vi.fn();
 vi.mock("swr", () => ({
   default: (key: string | null, fetcher: (url: string) => Promise<Pair[]>) => {
-    // The page mounts more than one useSWR (pairs + the selected-movement-name
-    // lookup, which passes a null key when no SPEC movement is chosen). Only the
-    // pairs subscription carries a live string key here, so capture that one's
-    // fetcher and back it with the configured pairs data.
+    // The page mounts several useSWR calls: pairs, the expected-late seat set,
+    // and the selected-movement-name lookup (null key when no SPEC movement).
+    // The expected-late subscription must yield a Set (the page calls `.has`);
+    // the pairs subscription carries the configured pairs data and its fetcher
+    // is captured for the fetcher-unwrap test.
+    if (key != null && key.includes("expected-late-seats")) {
+      return { data: new Set<string>() };
+    }
     if (key != null) {
       capturedFetcher = fetcher;
       return { data: currentPairs };
@@ -29,6 +39,17 @@ vi.mock("swr", () => ({
     return { data: undefined };
   },
   useSWRConfig: () => ({ mutate: mockMutate }),
+}));
+
+// Pre-start by default; the page swaps evict/expected-late for the standing
+// controls once the game has started.
+vi.mock("@/hooks/game-started", () => ({
+  useGameStarted: () => ({ started: false, isLoading: false }),
+}));
+
+vi.mock("@/lib/standing-service", () => ({
+  setParticipantStanding: vi.fn().mockResolvedValue(undefined),
+  setSeatExpectedLate: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Capture the sync selector so a test can invoke it directly.
@@ -123,6 +144,17 @@ import { ShowTablesPage } from "./ShowTablesPage";
 
 function makePlayer(name: string) {
   return { id: name, firstName: name, lastName: name } as never;
+}
+
+/**
+ * Click the on/off button of the "Stationary" toggle inside the open table
+ * dialog. Scoped to the Stationary group's accessible name because the pair row
+ * now also carries a "Without standing" toggle (another Yes/No pair), so an
+ * unscoped `getByRole("button", { name: "Yes" })` would be ambiguous.
+ */
+async function clickStationary(choice: "Yes" | "No") {
+  const group = await screen.findByRole("group", { name: "Stationary" });
+  fireEvent.click(within(group).getByRole("button", { name: choice }));
 }
 
 function pairAt(seat: string): Pair {
@@ -571,8 +603,10 @@ describe("ShowTablesPage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
       // The stationary toggle for the NS pair (table 1, ns=true -> pairId 1).
       // The Toggle renders "No"/"Yes" buttons; clicking either fires the
-      // handler, which flips membership regardless of the value passed.
-      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+      // handler, which flips membership regardless of the value passed. Scope
+      // to the "Stationary" group — the row now also has a "Without standing"
+      // toggle with its own Yes/No.
+      await clickStationary("Yes");
 
       await waitFor(() =>
         expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
@@ -592,7 +626,7 @@ describe("ShowTablesPage", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
       // Single occupied pair (EW) -> one toggle; click "No" to un-mark.
-      fireEvent.click(await screen.findByRole("button", { name: "No" }));
+      await clickStationary("No");
 
       await waitFor(() =>
         expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
@@ -611,7 +645,7 @@ describe("ShowTablesPage", () => {
 
       render(<ShowTablesPage />);
       fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
-      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+      await clickStationary("Yes");
 
       await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("boom"));
     });
@@ -635,7 +669,7 @@ describe("ShowTablesPage", () => {
 
       render(<ShowTablesPage />);
       fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
-      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+      await clickStationary("Yes");
 
       await waitFor(() =>
         expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
@@ -656,7 +690,7 @@ describe("ShowTablesPage", () => {
       render(<ShowTablesPage />);
       fireEvent.click(screen.getByRole("button", { name: "Manage table 2" }));
       // Table 2 NS -> pairId 2, not currently stationary, so it is added.
-      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+      await clickStationary("Yes");
 
       await waitFor(() =>
         expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
@@ -675,7 +709,7 @@ describe("ShowTablesPage", () => {
 
       render(<ShowTablesPage />);
       fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
-      fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+      await clickStationary("Yes");
 
       await waitFor(() =>
         expect(alertSpy).toHaveBeenCalledWith("Failed to update stationary"),

@@ -46,13 +46,42 @@ describe("section-aware materialization", () => {
     },
   ];
 
-  it("writes section-tagged boards and section-qualified assignments", async () => {
+  it("writes section-tagged boards and stamps each occupancy's anchor id", async () => {
     const db = await setup();
     const { materializePairLikeMovement } = await import(
       "@/services/materialize-movement"
     );
     const { boards } = await import("@/db/games/tables/boards");
-    const { assignments } = await import("@/db/games/tables/assignments");
+    const { seatOccupancy } = await import(
+      "@/db/games/tables/seat-occupancy"
+    );
+    const { players } = await import("@/db/games/tables/players");
+    const { eq } = await import("drizzle-orm");
+
+    // Seat the four pairs FIRST (occupancy exists before materialisation, as in
+    // the real start flow). The physical seats are B1NS/B1EW/B2NS/B2EW; the
+    // movement's bare ids ("1"/"3"/...) become the board ids "B1"/"B3"/...
+    for (const seat of ["B1NS", "B1EW", "B2NS", "B2EW"]) {
+      const p1 = db
+        .insert(players)
+        .values({ firstName: `${seat}a`, lastName: "x" })
+        .returning()
+        .get();
+      const p2 = db
+        .insert(players)
+        .values({ firstName: `${seat}b`, lastName: "y" })
+        .returning()
+        .get();
+      db.insert(seatOccupancy)
+        .values({
+          seat: seat as `${string}${number}NS` | `${string}${number}EW`,
+          boards: null,
+          player1: p1.id,
+          player2: p2.id,
+          secretKey: seat,
+        })
+        .run();
+    }
 
     await materializePairLikeMovement("B", twoTable, gameId);
 
@@ -61,21 +90,24 @@ describe("section-aware materialization", () => {
     expect(boardRows.every((b) => b.section === "B")).toBe(true);
     expect(boardRows.every((b) => b.status === "NOT_PLAYED")).toBe(true);
 
-    const assignmentRows = db.select().from(assignments).all();
-    const seats = assignmentRows.map((a) => a.initialSeat).sort();
-    expect(seats).toEqual(["B1EW", "B1NS", "B2EW", "B2NS"]);
-    // Assignment ids are the section-qualified movement participant ids, and
-    // match the board ns/ew values so the schedule join holds.
-    const byId = Object.fromEntries(
-      assignmentRows.map((a) => [a.id, a.initialSeat]),
-    );
-    expect(byId["B1"]).toBe("B1NS");
-    expect(byId["B3"]).toBe("B1EW");
-
-    // Board ns/ew use the same section-qualified ids.
+    // Board ns/ew carry the bare section-qualified movement ids.
     const board1 = boardRows.find((b) => b.boardNumber === 1)!;
     expect(board1.ns).toBe("B1");
     expect(board1.ew).toBe("B3");
+
+    // Materialisation stamped each seat's occupancy with the anchor id written
+    // to its board rows, bridging the physical seat ("B1NS") to the board id
+    // ("B1") so the schedule / name joins hold.
+    const anchorOf = (seat: string) =>
+      db
+        .select({ anchorId: seatOccupancy.anchorId })
+        .from(seatOccupancy)
+        .where(eq(seatOccupancy.seat, seat as `${string}${number}NS`))
+        .get()?.anchorId;
+    expect(anchorOf("B1NS")).toBe("B1");
+    expect(anchorOf("B1EW")).toBe("B3");
+    expect(anchorOf("B2NS")).toBe("B2");
+    expect(anchorOf("B2EW")).toBe("B4");
   });
 
   it("defaults the board copy to 'A' when the round omits it", async () => {

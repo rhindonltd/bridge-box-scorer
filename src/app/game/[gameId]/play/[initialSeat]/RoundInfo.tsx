@@ -21,9 +21,21 @@ interface Props {
    * non-anchor plays only its half. Drives an explicit switch instruction.
    */
   halfMatch?: RoundHalfMatch;
+  /**
+   * §2.4.7: the opponent at this table has not arrived yet (a seat the director
+   * marked "expected late"). Shows a "running late" note so the pair knows to
+   * wait for them, rather than reading the empty seats as a sit-out.
+   */
+  opponentExpectedLate?: boolean;
 }
 
-export default function RoundInfo({ table, boards, players, halfMatch }: Props) {
+export default function RoundInfo({
+  table,
+  boards,
+  players,
+  halfMatch,
+  opponentExpectedLate,
+}: Props) {
   if (halfMatch) {
     return (
       <HalfMatchRoundInfo table={table} halfMatch={halfMatch} />
@@ -37,6 +49,16 @@ export default function RoundInfo({ table, boards, players, halfMatch }: Props) 
           {boards.length === 1 ? "Board" : "Boards"} {formatBoardRange(boards)}
         </div>
       </header>
+      {opponentExpectedLate && (
+        <div
+          data-testid="opponent-running-late"
+          className="mb-6 max-w-md rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-900"
+        >
+          Your opponents haven&rsquo;t arrived yet — they&rsquo;re running late.
+          Please wait for them before starting; the director will seat them when
+          they get here.
+        </div>
+      )}
       <CardTable tableNumber={table} players={players} />
     </div>
   );

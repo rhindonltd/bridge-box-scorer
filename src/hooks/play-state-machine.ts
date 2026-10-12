@@ -60,6 +60,12 @@ export interface RoundSchedule {
   sitOut?: boolean;
   /** Present for a Swiss Pairs "2 half matches" round this pair is in. */
   halfMatch?: RoundHalfMatch;
+  /**
+   * §2.4.7: true when this round's opponent is an empty "expected late" seat —
+   * the pair has not arrived yet. The round-info screen shows a "running late"
+   * note instead of treating the empty opponent as a sit-out or blank table.
+   */
+  opponentExpectedLate?: boolean;
 }
 
 export interface Schedule {

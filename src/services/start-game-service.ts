@@ -5,6 +5,7 @@ import { boards } from "@/db/games/tables/boards";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findSections } from "@/db/games/queries/find-sections";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
+import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 
 import { PairSeat, SectionLetter, parseSeat } from "@/model/participants";
 import { SelectedMovement } from "@/model/selected-movement";
@@ -48,7 +49,7 @@ import {
   type SwissHomeSeat,
   type SwissPairId,
 } from "@/movement/swiss/swiss-pairing";
-import { swissPairIdFromParticipant } from "@/db/games/queries/swiss-board-history";
+import { swissPairIdFromSeat } from "@/db/games/queries/swiss-board-history";
 import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
 
 /**
@@ -111,10 +112,11 @@ export async function resolveSectionStart(
   selected: SelectedMovement | null,
   seatedSeats: PairSeat[],
   gameId: string,
+  expectedLateSeats: PairSeat[] = [],
 ): Promise<ResolvedStart> {
   if (selected === null) {
     return {
-      validation: validateStart(null, seatedSeats),
+      validation: validateStart(null, seatedSeats, expectedLateSeats),
       movement: null,
     };
   }
@@ -129,7 +131,7 @@ export async function resolveSectionStart(
     rehydrated.missingPair != null ? Number(rehydrated.missingPair) : null,
   );
 
-  const validation = validateStart(expected, seatedSeats);
+  const validation = validateStart(expected, seatedSeats, expectedLateSeats);
 
   // Swiss Teams has extra structural requirements the generic validator does
   // not know about: every table must be a complete team (no sit-out — that
@@ -252,8 +254,9 @@ function resolveRoundOneHalfMatch(
 ): MaterializableMovement {
   const { tables, boardsPerRound, stationaryPairs } = selected.swiss;
 
-  // The phantom position is the empty seat; every other id is a real pair.
-  const phantomId = swissPairIdFromParticipant(sitOutSeat, tables);
+  // The phantom position is the empty seat (a physical round-1 home chair);
+  // every other id is a real pair.
+  const phantomId = swissPairIdFromSeat(sitOutSeat, tables);
   const standings = swissPairIds(tables).filter((id) => id !== phantomId);
 
   const stationary = new Map<SwissPairId, SwissHomeSeat>();
@@ -443,7 +446,11 @@ async function resolveAllSections(
   aggregate: AllSectionsValidationResult;
   resolutions: SectionResolution[];
 }> {
-  const [sections, pairs] = await Promise.all([findSections(db), findPairs(db)]);
+  const [sections, pairs, expectedLateSeats] = await Promise.all([
+    findSections(db),
+    findPairs(db),
+    readExpectedLateSeats(db),
+  ]);
 
   // Group seated seats by their section prefix.
   const seatsBySection = new Map<SectionLetter, PairSeat[]>();
@@ -454,17 +461,29 @@ async function resolveAllSections(
     seatsBySection.set(section, list);
   }
 
+  // §2.4.7: the director-marked "expected late" empty seats, grouped by section
+  // so each section's validation treats its own marked seats as accounted-for.
+  const lateBySection = new Map<SectionLetter, PairSeat[]>();
+  for (const seat of expectedLateSeats) {
+    const { section } = parseSeat(seat);
+    const list = lateBySection.get(section) ?? [];
+    list.push(seat as PairSeat);
+    lateBySection.set(section, list);
+  }
+
   // Sections are independent, so resolve them concurrently (each reads its own
   // movement and rehydrates it). Promise.all preserves `sections` order.
   const resolutions: SectionResolution[] = await Promise.all(
     sections.map(async (s) => {
       const selected = await getSectionMovement(db, s.section);
       const seatedSeats = seatsBySection.get(s.section) ?? [];
+      const lateSeats = lateBySection.get(s.section) ?? [];
       const resolved = await resolveSectionStart(
         s.section,
         selected,
         seatedSeats,
         gameId,
+        lateSeats,
       );
       return { section: s.section, resolved };
     }),

@@ -6,11 +6,11 @@ import type { Db } from "@/db/games";
 import type { PairSeat } from "@/model/participants";
 
 /**
- * Integration coverage for assignments (createAssignment), the section
- * movement round-trip (setSectionMovement / getSectionMovement) and the
- * highestOccupiedTableInSection guard query, against a real per-game database.
+ * Integration coverage for the section movement round-trip (setSectionMovement
+ * / getSectionMovement) and the highestOccupiedTableInSection guard query,
+ * against a real per-game database.
  */
-describe("games db: assignments, movement, occupancy", () => {
+describe("games db: movement, occupancy", () => {
   let harness: DbHarness;
 
   beforeEach(async () => {
@@ -20,22 +20,6 @@ describe("games db: assignments, movement, occupancy", () => {
 
   afterEach(() => {
     harness.teardown();
-  });
-
-  it("creates an assignment row", async () => {
-    const { createAssignment } = await import(
-      "@/db/games/actions/create-assignment"
-    );
-    await createAssignment(harness.gameId, {
-      id: "A1",
-      initialSeat: "A1NS" as PairSeat,
-    });
-
-    const db = (await harness.getDb()) as Db;
-    const { assignments } = await import("@/db/games/tables/assignments");
-    const rows = db.select().from(assignments).all();
-
-    expect(rows).toEqual([{ id: "A1", initialSeat: "A1NS" }]);
   });
 
   it("round-trips a section movement (null before, value after)", async () => {

@@ -541,4 +541,57 @@ describe("generateUsebio", () => {
     expect(xml).toContain("<TEAM>1</TEAM>");
     expect(xml).toContain("<TEAM>2</TEAM>");
   });
+
+  it("exports a §2.4.7 handover: the stand-in is a PAIR with no placing, and its boards reference it", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { players } = await import("@/db/games/tables/players");
+
+    // Table 1 NS is a handover: a real pair (LATE, plays boards 3–4) and a
+    // stand-in (WITHOUT_STANDING, plays boards 1–2). A1EW + table 2 are
+    // ordinary.
+    const mk = (first: string) => {
+      const p1 = db.insert(players).values({ firstName: first, lastName: "N" }).returning().get();
+      const p2 = db.insert(players).values({ firstName: first, lastName: "S" }).returning().get();
+      return [p1.id, p2.id] as const;
+    };
+    const [r1, r2] = mk("RealNorth");
+    db.insert(seatOccupancy).values({ seat: "A1NS", boards: [3, 4], player1: r1, player2: r2, secretKey: "A1NS-real", standing: "LATE" }).run();
+    const [s1, s2] = mk("StandIn");
+    const subRow = db
+      .insert(seatOccupancy)
+      .values({ seat: "A1NS", boards: [1, 2], player1: s1, player2: s2, secretKey: "A1NS-sub", standing: "WITHOUT_STANDING" })
+      .returning()
+      .get();
+    await seatPair("A1EW", "East");
+    await seatPair("A2NS", "North2");
+    await seatPair("A2EW", "East2");
+
+    for (const bn of [1, 2, 3, 4]) {
+      await makeBoard(bn, 1, bn, "A1NS", "A1EW", "3NTN=");
+      await makeBoard(bn, 2, bn, "A2NS", "A2EW", "3NTN=");
+    }
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const xml = await generateUsebio(db, game, club);
+
+    // The stand-in is a declared PAIR (so its TRAVELLER_LINEs resolve), with a
+    // `#<occId>` pair number, both players, and NO placing (§2.4.9: it is not
+    // ranked — its results counted for its opponents only).
+    const subPairNumber = `1NS#${subRow.id}`;
+    expect(xml).toContain(`<PAIR_NUMBER>${subPairNumber}</PAIR_NUMBER>`);
+    expect(xml).toContain("StandIn");
+    // The real pair is a declared PAIR too (ranked).
+    expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+    // The stand-in's early boards reference it as the NS pair number.
+    expect(xml).toContain(`<NS_PAIR_NUMBER>${subPairNumber}</NS_PAIR_NUMBER>`);
+
+    // The stand-in PAIR carries no PLACE (excluded from the placings). Extract
+    // the stand-in's <PAIR> element and assert it has no <PLACE>.
+    const subBlock = xml.slice(
+      xml.indexOf(`<PAIR_NUMBER>${subPairNumber}</PAIR_NUMBER>`),
+    );
+    const subPairEnd = subBlock.indexOf("</PAIR>");
+    expect(subBlock.slice(0, subPairEnd)).not.toContain("<PLACE>");
+  });
 });

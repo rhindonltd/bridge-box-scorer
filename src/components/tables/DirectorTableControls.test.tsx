@@ -26,6 +26,7 @@ function tables(): DirectorTable[] {
         E: null,
         W: null,
       },
+      pairSeats: { ns: "A1NS" as Seat, ew: "A1EW" as Seat },
     },
   ];
 }
@@ -72,6 +73,7 @@ describe("DirectorTableControls", () => {
         tableNumber: 1,
         players: { N: null, S: null, E: null, W: null },
         seats: { N: null, S: null, E: null, W: null },
+        pairSeats: { ns: "A1NS" as Seat, ew: "A1EW" as Seat },
         stationary: { N: true, S: true, E: false, W: false },
       },
     ];

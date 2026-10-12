@@ -86,6 +86,18 @@ export default mergeConfig(
             globals: true,
             setupFiles: ["./vitest.setup.ts"],
             include: ["src/**/*.test.{ts,tsx}"],
+            // The suite mixes fast unit tests with heavier `*.int.test.ts`
+            // integration tests that spin up a real, freshly-migrated SQLite
+            // database per test (better-sqlite3 runs its migrations and inserts
+            // SYNCHRONOUSLY, blocking the worker). Under the default fork pool
+            // every CPU runs such a file at once, so a DB-heavy test can be
+            // starved well past the 5s default and time out — producing a
+            // SHIFTING set of failures (and knock-on `UNIQUE`/`db does not
+            // exist` errors when a timed-out test's teardown is skipped) that
+            // never reproduces in isolation. A 20s budget clears the contention
+            // headroom while still surfacing a genuinely hung test.
+            testTimeout: 20000,
+            hookTimeout: 20000,
           },
         },
         {

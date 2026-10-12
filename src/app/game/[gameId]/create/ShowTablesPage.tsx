@@ -20,6 +20,14 @@ import {
   setSectionSwissMovement,
 } from "@/lib/section-service";
 import { evictParticipant } from "@/lib/participant-service";
+import {
+  handoverSeat,
+  setParticipantStanding,
+  setSeatExpectedLate,
+  type HandoverRequest,
+  type StandingChange,
+} from "@/lib/standing-service";
+import { useGameStarted } from "@/hooks/game-started";
 import { useMovementResolution } from "@/hooks/stationary-pairs";
 import { useSelectedMovementName } from "@/hooks/selected-movement-name";
 import { DirectorTableModal } from "@/components/tables/DirectorTableModal";
@@ -30,6 +38,12 @@ import { useMemo, useState, type ReactNode } from "react";
 async function pairsFetcher(url: string): Promise<Pair[]> {
   const response: { pairs: Pair[] } = await fetcher(url);
   return response.pairs;
+}
+
+/** Unwrap the `{ seats }` envelope into a Set for cheap membership checks. */
+async function expectedLateFetcher(url: string): Promise<Set<string>> {
+  const response: { seats: string[] } = await fetcher(url);
+  return new Set(response.seats);
 }
 
 type Props = {
@@ -48,6 +62,18 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
   const key = swrKeys.pairs(gameId);
 
   const { data: pairs } = useSWR<Pair[], Error>(key, pairsFetcher);
+
+  // Whether the game is in progress. Pre-start the table dialog offers evict /
+  // expected-late; post-start it offers EBU §2.4 standing changes instead.
+  const { started } = useGameStarted(gameId);
+
+  // The set of empty seats marked "expected late" (§2.4.7). Not pushed over a
+  // socket, so it is read over HTTP and re-mutated after a late toggle.
+  const { data: expectedLateSeats } = useSWR<Set<string>, Error>(
+    swrKeys.expectedLateSeats(gameId),
+    expectedLateFetcher,
+  );
+
   const { sections, selected, pills, modal } = useSetupSections(gameId, {
     allowAddSection: game.eventFormat !== "SWISS",
   });
@@ -110,6 +136,7 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
   // section, its size, the seated pairs, or the resolved movement facts change.
   const tables = useMemo<DirectorTable[]>(() => {
     if (!currentSection) return [];
+    const lateSeats = expectedLateSeats ?? new Set<string>();
     return Array.from({ length: currentSection.tables }, (_, i) =>
       buildDirectorTable(
         currentSection.section,
@@ -117,9 +144,10 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
         pairs,
         stationaryPairs,
         placement,
+        lateSeats,
       ),
     );
-  }, [currentSection, pairs, stationaryPairs, placement]);
+  }, [currentSection, pairs, stationaryPairs, placement, expectedLateSeats]);
 
   async function handleResizeSection(section: string, tables: number) {
     const sectionsKey = swrKeys.sections(gameId);
@@ -161,6 +189,40 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
       setOpenTable(null);
     } catch (err) {
       alert(errorMessage(err, "Failed to evict participant"));
+    }
+  }
+
+  // Change a seated pair's EBU §2.4 standing. The server re-broadcasts the
+  // participant list (and leaderboard), which revalidates the pairs SWR, so no
+  // explicit mutate is needed here.
+  async function handleChangeStanding(seat: Seat, change: StandingChange) {
+    try {
+      await setParticipantStanding(gameId, seat, change);
+    } catch (err) {
+      alert(errorMessage(err, "Failed to update standing"));
+    }
+  }
+
+  // Hand a seat over from its stand-in to the arriving real pair (§2.4.7). The
+  // server derives the boards-played split from the entered results and
+  // re-broadcasts PARTICIPANTS + a leaderboard snapshot, so no manual mutate is
+  // needed here.
+  async function handleHandover(seat: Seat, request: HandoverRequest) {
+    try {
+      await handoverSeat(gameId, seat, request);
+    } catch (err) {
+      alert(errorMessage(err, "Failed to hand over the seat"));
+    }
+  }
+
+  // Mark/unmark an empty seat "expected late". The expected-late set is HTTP
+  // (not pushed), so mutate it after a successful toggle to reflect immediately.
+  async function handleToggleExpectedLate(seat: Seat, next: boolean) {
+    try {
+      await setSeatExpectedLate(gameId, seat, next);
+      void mutate(swrKeys.expectedLateSeats(gameId));
+    } catch (err) {
+      alert(errorMessage(err, "Failed to update expected late"));
     }
   }
 
@@ -294,8 +356,12 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
             : null
         }
         isSwiss={swissSpec != null}
+        started={started}
         onEvict={handleEvict}
         onToggleStationary={handleToggleStationary}
+        onChangeStanding={handleChangeStanding}
+        onToggleExpectedLate={handleToggleExpectedLate}
+        onHandover={handleHandover}
         onClose={() => setOpenTable(null)}
       />
     </GamePageLayout>

@@ -1,15 +1,23 @@
 import { getDb } from "@/db/games";
-import { participants } from "@/db/games/tables/participants";
+import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
+import { primaryOf } from "@/db/games/queries/seat-occupancy";
 import { PairSeat } from "@/model/participants";
 import { eq } from "drizzle-orm";
 
 /**
- * Look up the secret key issued to the participant seated at `seat` (a
- * section-qualified initial seat, e.g. "A1NS") in the given game.
+ * Look up the secret key issued to the CURRENT occupant seated at `seat` (a
+ * section-qualified seat, e.g. "A1NS") in the given game.
  *
  * Returns the stored `secretKey`, or `null` when the game database does not
- * exist or no participant is seated there. Used by the participant-auth
+ * exist or no occupancy is seated there. Used by the participant-auth
  * middleware to verify that a result submission came from the seat's owner.
+ *
+ * A seat usually has one occupancy, so this returns its secret. A §2.4.7
+ * handover seat holds two rows — the arriving real pair and the stand-in it
+ * replaced (marked `WITHOUT_STANDING`). The stand-in and the real pair never
+ * occupy the seat at the same instant (the handover action rotates the secret
+ * and demotes the sub in one step), so auth resolves to the seat's PRIMARY
+ * occupant via {@link primaryOf} — the active pair, same pick scoring uses.
  */
 export async function findParticipantSecret(
   gameId: string,
@@ -21,11 +29,20 @@ export async function findParticipantSecret(
     return null;
   }
 
-  const row = await db
-    .select({ secretKey: participants.secretKey })
-    .from(participants)
-    .where(eq(participants.initialSeat, seat as PairSeat))
-    .get();
+  const rows = await db
+    .select({
+      id: seatOccupancy.id,
+      boards: seatOccupancy.boards,
+      standing: seatOccupancy.standing,
+      secretKey: seatOccupancy.secretKey,
+    })
+    .from(seatOccupancy)
+    .where(eq(seatOccupancy.seat, seat as PairSeat))
+    .all();
 
-  return row?.secretKey ?? null;
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return primaryOf(rows).secretKey;
 }

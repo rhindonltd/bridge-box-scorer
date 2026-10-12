@@ -70,6 +70,25 @@ step-by-step instructions.
   **bye**) each round; no pair is given more than one bye, and a pair on a bye
   is credited an above-average score so the break doesn't hurt their standing.
 
+## Contestant standing
+
+A pair or team usually just plays the whole session. For the cases where they
+don't, the director can set a **standing** from a table's dialog (see the
+director guide):
+
+- **Withdrawn** — a pair/team that stops partway through. The director records
+  whether to drop them from the ranking or keep them in with a penalty; the
+  boards they and their opponents can no longer play are scored by the rules.
+- **Late** — a pair that arrives after the start. If present for at least half
+  the boards they keep their place in the ranking; otherwise their missed
+  boards are scored like a withdrawal.
+- **Without standing** — a substitute pair whose results **count for their
+  opponents** but who does **not appear in the final ranking** themselves.
+- **Expected late** — before the game starts, the director can mark an empty
+  seat as expected-late so the session can begin without that pair. The seat
+  stays open until they arrive and sit down; the pairs who face the empty seat
+  meanwhile are compensated in the scoring.
+
 ## Results
 
 - **Contract** — level + suit + declarer + doubling (e.g. `4♠ by South,

@@ -19,7 +19,7 @@ import { createPairWithPlayers } from "./create-pair-with-players";
  * Stub a db whose `transaction(cb)` runs the callback synchronously against a
  * recording tx. Insert chains support the two shapes the action uses:
  *   - players: `.values().returning().get()` (returns a generated id)
- *   - participants: `.values().run()`
+ *   - seat_occupancy: `.values().run()`
  *   - teams: `.values().onConflictDoUpdate().run()`
  */
 function stubDb() {
@@ -69,7 +69,7 @@ describe("createPairWithPlayers", () => {
     ).rejects.toThrow("Game db does not exist");
   });
 
-  it("inserts two players and a participant, and upserts a team for a named NS pair", async () => {
+  it("inserts two players and an occupancy, and upserts a team for a named NS pair", async () => {
     const { db, inserts, transaction } = stubDb();
     vi.mocked(getDb).mockResolvedValue(db as never);
 

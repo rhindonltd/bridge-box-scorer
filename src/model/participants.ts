@@ -31,10 +31,43 @@ export type PairSeat = SectionedSeat;
 
 export type Seat = PairSeat;
 
-const SEAT_REGEX = /^([A-Z]+)(\d+)(NS|EW)$/;
+/**
+ * A seat, optionally carrying a trailing `#<occupancyId>` suffix.
+ *
+ * The suffix identifies ONE occupant of a seat held by more than one pair over
+ * the event — a mid-session stand-by → real-pair handover (EBU §2.4.7; see
+ * `docs/design/seat-occupancy-handover.md`). It only ever appears on a
+ * TRANSIENT scored-field id in the leaderboard / USEBIO ranking path, so a
+ * second occupant of a seat ranks as its own line; it is NEVER persisted (board
+ * rows, matches, and `seat_occupancy.seat` carry the bare seat). The parser
+ * accepts and discards it so the seat identity (section / table / direction) is
+ * unchanged, and exposes it separately as `occupancyId` for callers that care.
+ *
+ * `([A-Z]+)(\d+)(NS|EW)` is the seat; `(?:#(\d+))?` is the optional occupant id.
+ */
+const SEAT_REGEX = /^([A-Z]+)(\d+)(NS|EW)(?:#(\d+))?$/;
 
 export function isPairSeat(seat: Seat): seat is PairSeat {
   return SEAT_REGEX.test(seat);
+}
+
+/**
+ * Build a scored-field id for one occupant of a seat. The PRIMARY occupant uses
+ * the bare seat (so every ordinary game is unchanged); a non-primary occupant
+ * (a handover stand-in) gets a `<seat>#<occupancyId>` id so it ranks as its own
+ * line. See {@link SEAT_REGEX}.
+ */
+export function scoredIdFor(seat: string, occupancyId?: number | null): string {
+  return occupancyId == null ? seat : `${seat}#${occupancyId}`;
+}
+
+/**
+ * Strip any `#<occupancyId>` suffix from a scored-field id, returning the bare
+ * seat. A no-op for an ordinary seat / board id.
+ */
+export function baseSeatOf(id: string): string {
+  const hash = id.indexOf("#");
+  return hash === -1 ? id : id.slice(0, hash);
 }
 
 /**
@@ -54,17 +87,20 @@ export function parseSeat(seat: string): {
   section: SectionLetter;
   tableNumber: number;
   direction: PairDirection;
+  /** The occupant id from a `#<id>` handover suffix, or null for a bare seat. */
+  occupancyId: number | null;
 } {
   const match = SEAT_REGEX.exec(seat);
   if (!match) {
     throw new Error(`Invalid seat: ${seat}`);
   }
 
-  const [, section, table, direction] = match;
+  const [, section, table, direction, occupancyId] = match;
   return {
     section,
     tableNumber: Number(table),
     direction: direction as PairDirection,
+    occupancyId: occupancyId != null ? Number(occupancyId) : null,
   };
 }
 
@@ -97,6 +133,9 @@ export function seatFor(
  * dropped (e.g. "A1NS" -> "1NS"); with multiple sections the full qualified
  * seat is kept so pairs stay distinguishable across sections. A value that is
  * not a valid section-qualified seat is returned unchanged.
+ *
+ * A `#<occupancyId>` handover suffix is PRESERVED (e.g. "A1NS#5" -> "1NS#5"),
+ * so a stand-in occupant stays a distinct pair number for export/display.
  */
 export function formatPairNumber(
   seat: string,
@@ -105,8 +144,9 @@ export function formatPairNumber(
   if (includeSection) return seat;
   const match = SEAT_REGEX.exec(seat);
   if (!match) return seat;
-  const [, , table, direction] = match;
-  return `${table}${direction}`;
+  const [, , table, direction, occupancyId] = match;
+  const suffix = occupancyId != null ? `#${occupancyId}` : "";
+  return `${table}${direction}${suffix}`;
 }
 
 /**
@@ -130,12 +170,29 @@ export type NewPair = {
   player2: NewPlayer;
 };
 
+/**
+ * A seated contestant's lifecycle standing (EBU White Book §2.4), surfaced to
+ * the client so the director UI can show/edit it. Mirrors the `participants`
+ * lifecycle columns. Optional on {@link Pair} so the many existing `Pair`
+ * literals (tests, teams assemblers) that predate this stay valid; `findPairs`
+ * always populates it from the DB.
+ */
+export type ParticipantStanding = {
+  standing: "ACTIVE" | "WITHDRAWN" | "WITHOUT_STANDING" | "LATE";
+  /** The round the pair withdrew in / arrived in (coarse context). */
+  withdrawnInRound: number | null;
+  /** §2.4.5 treatment for a WITHDRAWN / short-LATE pair. */
+  withdrawalTreatment: "REMOVE" | "PENALISED" | null;
+  /** 0..40 fine percentage (PENALISED only). */
+  withdrawalFinePercent: number | null;
+};
+
 export type Pair = {
   type: "PAIR";
   initialSeat: PairSeat;
   player1: Player;
   player2: Player;
-};
+} & Partial<ParticipantStanding>;
 
 export type Team = {
   type: "TEAM";

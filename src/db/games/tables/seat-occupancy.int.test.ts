@@ -2,18 +2,19 @@
 import { describe, it, expect } from "vitest";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
 
-import { participants } from "@/db/games/tables/participants";
+import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { players } from "@/db/games/tables/players";
 
 /**
- * The `participant` table declares two foreign keys via `.references(() =>
- * players.id)` thunks and a `(table) => ({ uniquePair })` config callback.
- * Drizzle evaluates those callbacks lazily. Inspecting the table config with
- * `getTableConfig` forces them to run, covering the reference/config closures.
+ * The `seat_occupancy` table declares two foreign keys via `.references(() =>
+ * players.id)` thunks and a `(table) => ({ ... })` config callback (two indexes
+ * plus a unique constraint). Drizzle evaluates those callbacks lazily;
+ * inspecting the table config with `getTableConfig` forces them to run,
+ * covering the reference/config closures.
  */
-describe("participants table schema", () => {
+describe("seat_occupancy table schema", () => {
   it("resolves its foreign keys to players.id and its unique constraint", () => {
-    const config = getTableConfig(participants);
+    const config = getTableConfig(seatOccupancy);
 
     // Two foreign keys (player1, player2) both referencing players.id.
     expect(config.foreignKeys.length).toBe(2);

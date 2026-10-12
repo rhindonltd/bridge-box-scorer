@@ -10,12 +10,14 @@ vi.mock("@/services/leaderboard-service", () => ({
 vi.mock("@/db/games/queries/swiss-board-history", () => ({
   getSwissBoardHistory: vi.fn(),
   swissPairIdFromParticipant: vi.fn(),
+  swissPairIdFromSeat: vi.fn(),
 }));
 vi.mock("@/services/materialize-swiss-round", () => ({
   materializeSwissRound: vi.fn(),
   // The real swissPairMovementId is pure; keep it so resolveSwissSeatingNames
-  // (mocked below) isn't needed to import it. Not used directly here.
-  swissPairMovementId: (_t: number, id: number) => `${id}NS`,
+  // (mocked below) isn't needed to import it. Not used directly here. The real
+  // one returns the bare pair id.
+  swissPairMovementId: (_t: number, id: number) => `${id}`,
 }));
 // Preview resolves player names; stub it so the service test stays DB-free.
 vi.mock("@/services/swiss-seating-names", () => ({
@@ -39,19 +41,32 @@ import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import {
   getSwissBoardHistory,
   swissPairIdFromParticipant,
+  swissPairIdFromSeat,
 } from "@/db/games/queries/swiss-board-history";
 import { materializeSwissRound } from "@/services/materialize-swiss-round";
 
 /**
  * Decode a seat id (qualified "A1NS" or unqualified "1NS") to a stable pair id
  * for a 2-table event: 1NS→1, 2NS→2, 1EW→3, 2EW→4. Stands in for the real
- * swissPairIdFromParticipant across both the leaderboard ids and the seat ids.
+ * swissPairIdFromSeat (physical seats, e.g. the seated set from occupancy.seat).
  */
 function decodeSeat(id: string): number | null {
   const m = /(\d+)(NS|EW)$/.exec(id);
   if (!m) return null;
   const table = Number(m[1]);
   return m[2] === "NS" ? table : 2 + table;
+}
+
+/**
+ * Decode a BARE board id (section letter + pair number, e.g. "A1" or "1") to
+ * its pair id. Stands in for the real swissPairIdFromParticipant (board ids /
+ * leaderboard pairIds, which carry no compass direction).
+ */
+function decodeBareId(id: string): number | null {
+  const m = /^[A-Z]*(\d+)$/.exec(id);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n > 0 ? n : null;
 }
 
 /** A minimal Swiss board history for 2 tables (4 pairs), nothing played yet. */
@@ -69,26 +84,26 @@ function emptyHistory(highestRound: number) {
  * A db stub for the draw service's two reads:
  *  - `isRoundComplete`: `select().from().where()` → `statusRows`.
  *  - `seatedPairIdsForSection`: `select().from()` (then awaited) → the seated
- *    assignment rows (`{ id }`). `from()` therefore returns a THENABLE that also
- *    exposes `.where()`, so both call shapes resolve correctly.
+ *    `seat_occupancy` rows (`{ seat }`). `from()` therefore returns a THENABLE
+ *    that also exposes `.where()`, so both call shapes resolve correctly.
  */
 function stubDb(
   statusRows: { status: string }[],
-  assignmentRows: { id: string }[] = [],
+  occupancyRows: { seat: string }[] = [],
 ) {
   const fromResult = {
     // `isRoundComplete` now joins boards→matches: select().from().innerJoin().where().
     innerJoin: () => fromResult,
     where: () => Promise.resolve(statusRows),
-    then: (resolve: (rows: { id: string }[]) => unknown) =>
-      resolve(assignmentRows),
+    then: (resolve: (rows: { seat: string }[]) => unknown) =>
+      resolve(occupancyRows),
   };
   return { select: () => ({ from: () => fromResult }) };
 }
 
-/** Section-qualified assignment-id rows for the given seats (e.g. "A1NS"). */
-function assignmentsFor(seats: string[]): { id: string }[] {
-  return seats.map((id) => ({ id }));
+/** Seated-seat occupancy rows for the given seats (e.g. "A1NS"). */
+function assignmentsFor(seats: string[]): { seat: string }[] {
+  return seats.map((seat) => ({ seat }));
 }
 
 /** Seed a Swiss section + fully-scored round-1 history so a draw proceeds. */
@@ -110,13 +125,14 @@ function seedDrawable(over: { stationaryPairs?: number[] } = {}) {
       section: "A",
       overallScore: {
         lines: [
-          { pairId: "1NS", totalVP: 30, rank: 1, tied: false },
-          { pairId: "1EW", totalVP: 25, rank: 2, tied: false },
+          { pairId: "1", totalVP: 30, rank: 1, tied: false },
+          { pairId: "3", totalVP: 25, rank: 2, tied: false },
         ],
       },
     },
   ] as never);
-  vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeSeat);
+  vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeBareId);
+  vi.mocked(swissPairIdFromSeat).mockImplementation(decodeSeat);
 }
 
 /**
@@ -149,14 +165,15 @@ function seedHalfMatch() {
       section: "A",
       overallScore: {
         lines: [
-          { pairId: "1NS", totalVP: 30, rank: 1, tied: false },
-          { pairId: "2NS", totalVP: 20, rank: 2, tied: false },
-          { pairId: "1EW", totalVP: 10, rank: 3, tied: false },
+          { pairId: "1", totalVP: 30, rank: 1, tied: false },
+          { pairId: "2", totalVP: 20, rank: 2, tied: false },
+          { pairId: "3", totalVP: 10, rank: 3, tied: false },
         ],
       },
     },
   ] as never);
-  vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeSeat);
+  vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeBareId);
+  vi.mocked(swissPairIdFromSeat).mockImplementation(decodeSeat);
 }
 
 describe("previewNextSwissRound", () => {
@@ -273,9 +290,10 @@ describe("previewNextSwissRound", () => {
     } as never);
     vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(0) as never);
     vi.mocked(computeSectionLeaderboards).mockResolvedValue([
-      { section: "B", overallScore: { lines: [{ pairId: "1NS" }] } },
+      { section: "B", overallScore: { lines: [{ pairId: "1" }] } },
     ] as never);
-    vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeSeat);
+    vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeBareId);
+    vi.mocked(swissPairIdFromSeat).mockImplementation(decodeSeat);
 
     const result = await previewNextSwissRound("g1", "A");
 
@@ -284,7 +302,7 @@ describe("previewNextSwissRound", () => {
     expect(result.roundNumber).toBe(1);
     // The section-"B" leaderboard line is never decoded for section "A".
     expect(swissPairIdFromParticipant).not.toHaveBeenCalledWith(
-      "1NS",
+      "1",
       expect.anything(),
     );
   });

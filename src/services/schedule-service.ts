@@ -3,13 +3,14 @@ import "server-only";
 import { eq, or } from "drizzle-orm";
 import { Db } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
-import { assignments as pairAssignments } from "@/db/games/tables/assignments";
+import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import type { Player } from "@/db/games/tables/players";
 import { PairSeat } from "@/model/participants";
 import {
   buildAssignmentPlayerLookup,
   type PairPlayers,
 } from "@/db/games/queries/assignment-players";
+import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 
 /** A board row as this pair sees it, grouped under its round. */
 type PairBoardRow = {
@@ -30,12 +31,15 @@ type PairBoardRow = {
  * total-round padding). The DB reads run in a fixed order.
  */
 export async function getSchedule(db: Db, seat: string) {
-  const assignment = await findAssignment(db, seat);
-  if (!assignment) {
+  const anchorId = await seatAnchorId(db, seat);
+  if (anchorId == null) {
     return null;
   }
 
-  const assignmentId = assignment.id;
+  // A board row's ns/ew carries the seat's ANCHOR id (equal to the seat for
+  // direction-qualified movements, a bare id otherwise), so the schedule joins
+  // on the anchor id.
+  const assignmentId = anchorId;
   // The pair's side for submission is based on the initialSeat suffix.
   const side: "NS" | "EW" = seat.endsWith("NS") ? "NS" : "EW";
 
@@ -44,7 +48,17 @@ export async function getSchedule(db: Db, seat: string) {
   // Game-wide lookup from an assignment id to the two players sitting there.
   const assignmentToPlayers = await buildAssignmentPlayerLookup(db);
 
-  const rounds = assembleRounds(pairBoards, assignmentToPlayers, assignmentId);
+  // §2.4.7: the empty seats a director marked "expected late", so a round whose
+  // opponent is one of them is shown as "running late" rather than a blank
+  // table or a sit-out.
+  const expectedLateSeats = await readExpectedLateSeats(db);
+
+  const rounds = assembleRounds(
+    pairBoards,
+    assignmentToPlayers,
+    assignmentId,
+    expectedLateSeats,
+  );
 
   const totalRounds = await countTotalRounds(db);
 
@@ -53,13 +67,20 @@ export async function getSchedule(db: Db, seat: string) {
 
 // --- DB reads (kept in a fixed call order the tests rely on) -------------
 
-/** Look up this seat's assignment row (null when the seat has none yet). */
-function findAssignment(db: Db, seat: string) {
-  return db
-    .select()
-    .from(pairAssignments)
-    .where(eq(pairAssignments.initialSeat, seat as PairSeat))
+/**
+ * The board id (anchor) for a seat's occupancy, or null when the seat is still
+ * empty. Falls back to the seat itself when the anchor has not been stamped
+ * (the id equals the seat for direction-qualified movements, and a game may not
+ * have been materialised yet).
+ */
+async function seatAnchorId(db: Db, seat: string): Promise<string | null> {
+  const row = await db
+    .select({ seat: seatOccupancy.seat, anchorId: seatOccupancy.anchorId })
+    .from(seatOccupancy)
+    .where(eq(seatOccupancy.seat, seat as PairSeat))
     .get();
+  if (row == null) return null;
+  return row.anchorId ?? row.seat;
 }
 
 /** All board rows in which this pair appears as NS or EW. */
@@ -125,6 +146,13 @@ type ActiveRound = {
   players: TablePlayers;
   /** Present only for a 2-half-matches round this pair is in; else absent. */
   halfMatch?: ScheduleHalfMatch;
+  /**
+   * §2.4.7: true when the opponent seat this round is an empty "expected late"
+   * seat — the pair is still to arrive. The player's screen shows a "running
+   * late" message rather than treating the empty opponent as a sit-out or a
+   * blank table. False/absent for an ordinary round.
+   */
+  opponentExpectedLate?: boolean;
 };
 
 export type ScheduleRound = Omit<
@@ -145,6 +173,7 @@ function assembleRounds(
   pairBoards: PairBoardRow[],
   assignmentToPlayers: Map<string, PairPlayers>,
   assignmentId: string,
+  expectedLateSeats: Set<string>,
 ): ActiveRound[] {
   // Group this pair's rows by round, keeping ALL rows (a 2-half-matches round
   // has rows for two opponents and/or HALF_AVERAGE compensation rows, so a
@@ -159,7 +188,13 @@ function assembleRounds(
   return Array.from(roundMap.entries())
     .sort(([a], [b]) => a - b)
     .map(([roundNumber, rows]) =>
-      assembleRound(roundNumber, rows, assignmentToPlayers, assignmentId),
+      assembleRound(
+        roundNumber,
+        rows,
+        assignmentToPlayers,
+        assignmentId,
+        expectedLateSeats,
+      ),
     );
 }
 
@@ -185,6 +220,7 @@ function assembleRound(
   rows: PairBoardRow[],
   lookup: Map<string, PairPlayers>,
   assignmentId: string,
+  expectedLateSeats: Set<string>,
 ): ActiveRound {
   const tableNumber = rows[0].tableNumber;
 
@@ -202,6 +238,17 @@ function assembleRound(
   const side: "NS" | "EW" =
     (playedRows[0] ?? rows[0]).ns === assignmentId ? "NS" : "EW";
 
+  // §2.4.7: this round's opponent is "running late" when its seat is marked
+  // expected-late AND nobody is sitting there yet (no players resolve). The
+  // opponent is the other side of this pair's played row.
+  const opponentId = playedRows.length > 0
+    ? (playedRows[0].ns === assignmentId ? playedRows[0].ew : playedRows[0].ns)
+    : null;
+  const opponentExpectedLate =
+    opponentId != null &&
+    expectedLateSeats.has(opponentId) &&
+    !lookup.has(opponentId);
+
   // The played boards (never SIT_OUT / HALF_AVERAGE), ascending.
   const boardStatuses = playedRows
     .map((r) => ({ boardNumber: r.boardNumber, status: r.status }))
@@ -216,6 +263,7 @@ function assembleRound(
     boardStatuses: isSitOut ? [] : boardStatuses,
     sitOut: isSitOut,
     players: tablePlayersFor(rows[0].ns, rows[0].ew, lookup),
+    ...(opponentExpectedLate ? { opponentExpectedLate: true } : {}),
   };
 
   if (isSitOut) return base;

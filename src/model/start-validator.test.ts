@@ -177,4 +177,85 @@ describe("validateStart", () => {
     expect(tooMany).toBeDefined();
     expect(tooMany?.message).toContain("The movement has 1 table,");
   });
+
+  describe("§2.4.7 expected-late seats", () => {
+    it("lets the game start with TWO empty seats when both are marked late", () => {
+      // Two whole positions missing (A3EW, A5EW) would normally be
+      // MULTIPLE_EMPTY_POSITIONS; marking both expected-late accounts for them.
+      const seated = allSeats(5).filter(
+        (s) => s !== "A3EW" && s !== "A5EW",
+      );
+
+      const result = validateStart(expectedFor(5), seated, ["A3EW", "A5EW"]);
+
+      expect(result.canStart).toBe(true);
+      expect(result.problems).toHaveLength(0);
+      // Marked-late seats are NOT the sit-out; they are reported as lateSeats.
+      expect(result.sitOutSeat).toBeNull();
+      expect(result.lateSeats).toEqual(["A3EW", "A5EW"]);
+    });
+
+    it("still allows ONE unmarked sit-out alongside marked-late seats", () => {
+      // A3EW marked late (accounted for) + A5EW genuinely a sit-out.
+      const seated = allSeats(5).filter(
+        (s) => s !== "A3EW" && s !== "A5EW",
+      );
+
+      const result = validateStart(expectedFor(5), seated, ["A3EW"]);
+
+      expect(result.canStart).toBe(true);
+      expect(result.sitOutSeat).toBe("A5EW"); // the lone UNMARKED gap
+      expect(result.lateSeats).toEqual(["A3EW"]);
+    });
+
+    it("rejects when two UNMARKED gaps remain even if a third is marked late", () => {
+      // A2EW marked late; A4EW and A5EW are both unmarked → still invalid.
+      const seated = allSeats(5).filter(
+        (s) => s !== "A2EW" && s !== "A4EW" && s !== "A5EW",
+      );
+
+      const result = validateStart(expectedFor(5), seated, ["A2EW"]);
+
+      expect(result.canStart).toBe(false);
+      const codes = result.problems.map((p) => p.code);
+      expect(codes).toContain("MULTIPLE_EMPTY_POSITIONS");
+      // The marked-late seat is excluded from the reported unaccounted seats.
+      const multi = result.problems.find(
+        (p) => p.code === "MULTIPLE_EMPTY_POSITIONS",
+      );
+      expect(multi?.seats).toEqual(["A4EW", "A5EW"]);
+    });
+
+    it("allows a half-filled table when its empty side is marked late", () => {
+      // Table 3 has A3NS seated, A3EW empty — a half-filled table. Marking
+      // A3EW late accounts for it, and it is the only gap, so the game starts.
+      const seated = allSeats(5).filter((s) => s !== "A3EW");
+
+      const result = validateStart(expectedFor(5), seated, ["A3EW"]);
+
+      expect(result.canStart).toBe(true);
+      expect(result.problems).toHaveLength(0);
+      expect(result.sitOutSeat).toBeNull();
+      expect(result.lateSeats).toEqual(["A3EW"]);
+    });
+
+    it("ignores a late mark on a seat that is actually seated", () => {
+      // A3EW is seated AND marked late (stale mark). It is not missing, so the
+      // mark is moot: a full field starts cleanly with no late seats.
+      const result = validateStart(expectedFor(5), allSeats(5), ["A3EW"]);
+
+      expect(result.canStart).toBe(true);
+      expect(result.lateSeats).toEqual([]);
+    });
+
+    it("defaults to no late seats when the argument is omitted", () => {
+      const seated = allSeats(5).filter((s) => s !== "A3EW");
+      const result = validateStart(expectedFor(5), seated);
+
+      // Back-compat: omitting the arg behaves exactly as before (single sit-out).
+      expect(result.canStart).toBe(true);
+      expect(result.sitOutSeat).toBe("A3EW");
+      expect(result.lateSeats).toEqual([]);
+    });
+  });
 });

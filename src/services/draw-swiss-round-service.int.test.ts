@@ -45,12 +45,43 @@ describe("preview/commit next Swiss round", () => {
     const { materializeSwissRound } = await import(
       "@/services/materialize-swiss-round"
     );
+    const games = await import("@/db/games");
+    const { seatOccupancy } = await import(
+      "@/db/games/tables/seat-occupancy"
+    );
+    const { players } = await import("@/db/games/tables/players");
 
     await createGameDb(gameId, 2);
     await setSectionMovement(gameId, "A", {
       source: "SWISS",
       swiss: { tables: 2, rounds: totalRounds, boardsPerRound },
     });
+
+    // Seat the four pairs (as the director would, pre-draw). Their home seats
+    // are the Swiss round-1 anchors A1NS / A2NS / A1EW / A2EW, which is the
+    // seated set the draw ranks and re-pairs.
+    const db = (await games.getDb(gameId))!;
+    for (const seat of ["A1NS", "A2NS", "A1EW", "A2EW"] as const) {
+      const p1 = db
+        .insert(players)
+        .values({ firstName: `${seat}a`, lastName: "x" })
+        .returning()
+        .get();
+      const p2 = db
+        .insert(players)
+        .values({ firstName: `${seat}b`, lastName: "y" })
+        .returning()
+        .get();
+      db.insert(seatOccupancy)
+        .values({
+          seat,
+          boards: null,
+          player1: p1.id,
+          player2: p2.id,
+          secretKey: seat,
+        })
+        .run();
+    }
 
     // Round 1 positional: T1 pair1(NS) vs pair3(EW); T2 pair2(NS) vs pair4(EW).
     await materializeSwissRound(
@@ -151,8 +182,9 @@ describe("preview/commit next Swiss round", () => {
     const round2Pairings = new Set(
       round2.map((r) => [r.ns, r.ew].sort().join("|")),
     );
-    expect(round2Pairings.has(["A1NS", "A1EW"].sort().join("|"))).toBe(false);
-    expect(round2Pairings.has(["A2NS", "A2EW"].sort().join("|"))).toBe(false);
+    // Board ids are the bare pair numbers: round 1 paired A1 vs A3, A2 vs A4.
+    expect(round2Pairings.has(["A1", "A3"].sort().join("|"))).toBe(false);
+    expect(round2Pairings.has(["A2", "A4"].sort().join("|"))).toBe(false);
   });
 
   it("commit persists a director-EDITED seating verbatim (Option B)", async () => {
@@ -177,7 +209,8 @@ describe("preview/commit next Swiss round", () => {
     // proving advisories don't block a commit).
     const round2 = await round2Boards();
     const pairings = new Set(round2.map((r) => [r.ns, r.ew].sort().join("|")));
-    expect(pairings.has(["A1NS", "A1EW"].sort().join("|"))).toBe(true);
+    // The repeat round-1 pairing (pair 1 vs pair 3) is present as bare ids.
+    expect(pairings.has(["A1", "A3"].sort().join("|"))).toBe(true);
   });
 
   it("commit rejects a structurally-invalid seating and writes nothing", async () => {

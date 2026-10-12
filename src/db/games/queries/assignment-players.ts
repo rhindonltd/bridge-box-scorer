@@ -1,6 +1,5 @@
 import { Db } from "@/db/games";
-import { assignments as pairAssignments } from "@/db/games/tables/assignments";
-import { participants as pairParticipants } from "@/db/games/tables/participants";
+import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { players } from "@/db/games/tables/players";
 import type { Player } from "@/db/games/tables/players";
 
@@ -8,44 +7,37 @@ import type { Player } from "@/db/games/tables/players";
 export type PairPlayers = { player1: Player; player2: Player };
 
 /**
- * Build a map from assignment id to the two players sitting at that
- * assignment's initial seat.
+ * Build a map from a BOARD id (the value stored on a board row's `ns`/`ew`) to
+ * the two players occupying that seat.
  *
- * Joins assignments → initialSeat → participant pair → player rows: an
- * assignment's `initialSeat` is the seat the pair was seated at, and the
- * participant row for that seat names the two players. This is the single
- * source used to turn a board row's `ns`/`ew` assignment id into player names,
- * shared by the player schedule and the Swiss draw preview.
+ * A board row's `ns`/`ew` is a seat's ANCHOR id, which usually equals the
+ * physical seat but can be a bare/renumbered id for one-winner movements. Each
+ * occupancy records both (`seat` and `anchorId`), so this keys by the anchor id
+ * (falling back to the seat when the anchor is not yet stamped — e.g. a game
+ * materialised before this column existed, or a seat whose id equals the
+ * anchor). In the common single-occupancy case this is one entry per seat.
+ * (Resolving a specific board to the right occupant of a handover seat is a
+ * later slice; this whole-seat lookup serves the player schedule and the Swiss
+ * draw preview, where the single occupancy applies.)
+ *
+ * The name is kept (`buildAssignmentPlayerLookup`) for its existing call sites.
  */
 export async function buildAssignmentPlayerLookup(
   db: Db,
 ): Promise<Map<string, PairPlayers>> {
-  const allAssignmentRows = await db.select().from(pairAssignments);
-  const allParticipantRows = await db.select().from(pairParticipants);
+  const occupancyRows = await db.select().from(seatOccupancy);
   const allPlayerRows = await db.select().from(players);
 
   const playerById = new Map(allPlayerRows.map((p) => [p.id, p]));
 
-  // initialSeat -> { player1, player2 }
-  const seatToPlayers = new Map<string, PairPlayers>();
-  for (const p of allParticipantRows) {
-    const p1 = playerById.get(p.player1);
-    const p2 = playerById.get(p.player2);
-    if (p1 && p2 && p.initialSeat) {
-      seatToPlayers.set(p.initialSeat, { player1: p1, player2: p2 });
+  const byBoardId = new Map<string, PairPlayers>();
+  for (const o of occupancyRows) {
+    const p1 = playerById.get(o.player1);
+    const p2 = playerById.get(o.player2);
+    if (p1 && p2) {
+      byBoardId.set(o.anchorId ?? o.seat, { player1: p1, player2: p2 });
     }
   }
 
-  // assignment id -> { player1, player2 } (via the assignment's initial seat)
-  const assignmentToPlayers = new Map<string, PairPlayers>();
-  for (const a of allAssignmentRows) {
-    const playersForSeat = a.initialSeat
-      ? seatToPlayers.get(a.initialSeat)
-      : undefined;
-    if (playersForSeat) {
-      assignmentToPlayers.set(a.id, playersForSeat);
-    }
-  }
-
-  return assignmentToPlayers;
+  return byBoardId;
 }

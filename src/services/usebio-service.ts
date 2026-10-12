@@ -6,10 +6,15 @@ import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { findSections } from "@/db/games/queries/find-sections";
 import {
-  readRankingExclusions,
-  readWithdrawals,
+  readParticipantStandings,
+  resolveStandings,
 } from "@/db/games/queries/ranking-exclusions";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
+import {
+  readSeatOccupancies,
+  buildOccupantScoredIdResolver,
+  findNonPrimaryOccupantPairs,
+} from "@/db/games/queries/seat-occupancy";
 import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
 import { formatPairNumber, sectionOf } from "@/model/participants";
 import { Club } from "@/db/system/schema";
@@ -61,21 +66,27 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
   // void scorer falls back to the flat §3.3.6.1 40% when it is unknown.
   const expectedBoards = boardsPerRoundOf(movement) ?? undefined;
 
-  // EBU §2.4.9 — the without-standing / removed-withdrawn contestants dropped
-  // from the ranking (but whose results still count for opponents). The same
-  // set the live leaderboard uses, so the published file and the board agree.
-  const excludedFromRanking = await readRankingExclusions(db);
+  // EBU §2.4.3–§2.4.9 — resolve the contestant standings once (needs the board
+  // rows for the §2.4.7 LATE half-boards test): the ids dropped from the
+  // ranking and the withdrawal credits. The same facts the live leaderboard
+  // uses, so the published file and the board agree.
+  const allBoards = await db.select().from(boards);
+  const standings = await readParticipantStandings(db);
+  const { excludedFromRanking, withdrawals } = resolveStandings(
+    standings,
+    allBoards,
+  );
 
   switch (format) {
     case "TEAMS_VP": {
-      const [teams, boardRows, matchRows, withdrawals] = await Promise.all([
+      const [teams, matchRows] = await Promise.all([
         findTeams(db),
-        db.select().from(boards),
         db.select().from(matches),
-        readWithdrawals(db),
       ]);
-      // §2.4.3–§2.4.6: void a withdrawn team's unplayed matches in-memory
-      // (never persisted), so the published file matches the live leaderboard.
+      const boardRows = allBoards;
+      // §2.4.3–§2.4.7: void a withdrawn/short-late team's unplayed matches
+      // in-memory (never persisted), so the published file matches the live
+      // leaderboard.
       const ruledMatches = applyTeamWithdrawalRulings(
         matchRows,
         withdrawals,
@@ -94,11 +105,11 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
       );
     }
     case "TEAMS_IMP_AGG": {
-      const [teams, boardRows, matchRows] = await Promise.all([
+      const [teams, matchRows] = await Promise.all([
         findTeams(db),
-        db.select().from(boards),
         db.select().from(matches),
       ]);
+      const boardRows = allBoards;
       return generateUsebioXml(
         assembleImpAggregateTeams(
           game,
@@ -112,11 +123,11 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
     }
     case "TEAMS_BAM":
     case "TEAMS_PAB": {
-      const [teams, boardRows, matchRows] = await Promise.all([
+      const [teams, matchRows] = await Promise.all([
         findTeams(db),
-        db.select().from(boards),
         db.select().from(matches),
       ]);
+      const boardRows = allBoards;
       const scoring = format === "TEAMS_PAB" ? "PAB" : "BAM";
       return generateUsebioXml(
         assembleBoardComparisonTeams(
@@ -131,11 +142,11 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
       );
     }
     case "SWISS_PAIRS_VP": {
-      const [pairs, boardRows, matchRows] = await Promise.all([
+      const [pairs, matchRows] = await Promise.all([
         findPairs(db),
-        db.select().from(boards),
         db.select().from(matches),
       ]);
+      const boardRows = allBoards;
       // A matchpoint-scored Swiss exports in MP mode; cross-IMP and (null-mode)
       // IMP-scored Swiss both export as cross-IMP vs the field, so the file
       // agrees with how the leaderboard scores an XIMP/MP Swiss event.
@@ -163,11 +174,24 @@ async function generateMpPairsUsebio(
   club: Club,
   excludedFromRanking: ReadonlySet<string>,
 ) {
-  // Get participants (pairs)
+  // Get participants (pairs) — one per seat (the primary occupant).
   const pairs = await findPairs(db);
 
   // Get all board results
   const allBoards = await db.select().from(boards);
+
+  // §2.4.7 HANDOVER: resolve each board row's ns/ew to its OCCUPANT's
+  // scored-field id (the stand-in's boards get a `#<occId>` id), and surface the
+  // stand-ins so each gets its own `<PAIR>` (so no TRAVELLER_LINE references an
+  // undeclared pair) while being excluded from the placings. All no-ops for an
+  // ordinary game (one occupancy per seat).
+  const occupancies = await readSeatOccupancies(db);
+  const resolveScoredId = buildOccupantScoredIdResolver(occupancies);
+  const standIns = await findNonPrimaryOccupantPairs(db);
+  const excludedWithStandIns = new Set<string>([
+    ...excludedFromRanking,
+    ...standIns.map((s) => s.scoredId),
+  ]);
 
   // The ordered section ids to emit (one <SECTION> each). Each section is its
   // own scoring field, so pair numbers are always emitted UNPREFIXED (e.g.
@@ -191,6 +215,18 @@ async function generateMpPairsUsebio(
     };
   });
 
+  // A `<PAIR>` for each handover stand-in, keyed by its scored-field id (so its
+  // TRAVELLER_LINEs resolve) but excluded from the placings (§2.4.9).
+  for (const standIn of standIns) {
+    usebioPairs.push({
+      pairNumber: formatPairNumber(standIn.scoredId, false),
+      direction: standIn.seat.endsWith("NS") ? "N" : "E",
+      section: sectionOf(standIn.seat),
+      player1: standIn.player1,
+      player2: standIn.player2,
+    });
+  }
+
   // Build board results — each tagged with the section it was played in (from
   // the board row), with unprefixed pair numbers.
   const boardResults: UsebioBoardResult[] = allBoards
@@ -207,8 +243,16 @@ async function generateMpPairsUsebio(
       table: b.tableNumber,
       board: b.boardNumber,
       round: b.roundNumber,
-      nsPairNumber: formatPairNumber(b.ns, false),
-      ewPairNumber: formatPairNumber(b.ew, false),
+      // Resolve to the occupant's scored-field id so a stand-in's boards carry
+      // its `#<occId>` pair number (unchanged bare id for an ordinary seat).
+      nsPairNumber: formatPairNumber(
+        resolveScoredId(b.ns, b.boardNumber),
+        false,
+      ),
+      ewPairNumber: formatPairNumber(
+        resolveScoredId(b.ew, b.boardNumber),
+        false,
+      ),
       outcome: (b.directorOverrideResult ??
         b.confirmedResult ??
         "NP") as BoardOutcome,
@@ -233,7 +277,7 @@ async function generateMpPairsUsebio(
     boards: boardNumbers.size,
     pairs: usebioPairs,
     boardResults,
-    excludedFromRanking,
+    excludedFromRanking: excludedWithStandIns,
   };
 
   return generateUsebioXml(usebioData);

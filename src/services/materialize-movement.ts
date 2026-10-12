@@ -4,9 +4,10 @@ import { getDb, type Db } from "@/db/games";
 
 import { boards, NewBoard } from "@/db/games/tables/boards";
 import { matches, NewMatch, MatchKind } from "@/db/games/tables/matches";
-import { assignments, Assignment } from "@/db/games/tables/assignments";
+import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
+import { eq } from "drizzle-orm";
 import { Tables } from "@/model/movement";
-import { SectionLetter, seatFor } from "@/model/participants";
+import { PairSeat, SectionLetter, seatFor } from "@/model/participants";
 
 /**
  * A round in a movement ready to be materialized. Mirrors the DB round spec
@@ -138,10 +139,33 @@ function matchDraftFor(
 }
 
 /**
- * Build the board, match, and assignment rows for a single section's movement.
- * Every round becomes board rows (tagged with the section) grouped under a
- * first-class match, and round 1 becomes the section-qualified seat
- * assignments.
+ * The anchor-id a seat's `seat_occupancy` row should carry: `seat` is the
+ * physical round-1 seat (`A1NS`) and `anchorId` is the id written to that seat's
+ * `boards.ns`/`ew` (equal to the seat for direction-qualified movements, or a
+ * bare/renumbered id for one-winner movements that number pairs rather than
+ * seats). Produced by {@link buildSectionRows} from the round-1 layout so the
+ * insert layer can stamp each occupancy — the occupancy was created at seating
+ * time, before the movement (and hence the anchor id) was known.
+ */
+export interface SeatAnchor {
+  seat: PairSeat;
+  anchorId: string;
+}
+
+/**
+ * Build the board and match rows for a single section's movement, plus the
+ * round-1 seat→anchor mapping. Every round becomes board rows (tagged with the
+ * section) grouped under a first-class match.
+ *
+ * Seat rows are NOT created here — in the seat-occupancy model a seat's
+ * occupancy is written when the director seats a pair (pre-start), so by
+ * materialisation time it already exists. What this DOES produce is the
+ * `anchors` list: for each round-1 seat, the id written to its board rows'
+ * `ns`/`ew`. The insert layer stamps that onto the matching occupancy, so the
+ * identity joins (player schedule, traveller names) can map a board row back to
+ * its occupant even when the board id is a bare/renumbered one-winner id that
+ * differs from the physical seat. (This replaces the old round-1 `assignment`
+ * rows, which recorded the same id↔seat mapping.)
  *
  * Rounds flagged `sitOut` still produce board rows (keeping their real board
  * numbers and table) but with status SIT_OUT, so the sitting-out pair's screen
@@ -159,19 +183,17 @@ export function buildSectionRows(
 ): {
   boardRows: BoardDraft[];
   matchRows: MatchDraft[];
-  assignmentRows: Assignment[];
+  anchors: SeatAnchor[];
 } {
   const boardRows: BoardDraft[] = [];
-  const assignmentRows: Assignment[] = [];
   // One match row per distinct match key seen this section (first round wins
   // its structural fields; a multi-room match's board span is widened below).
   const matchByKey = new Map<string, MatchDraft>();
-  // Participant ids already given a round-1 assignment. A Swiss "2 half
-  // matches" round can seat the anchor in two round-1 entries (its two halves);
-  // its assignment must be written once, not duplicated (a duplicate PK insert
-  // would fail). Every other movement seats each pair once in round 1, so this
-  // guard is a no-op there.
-  const assigned = new Set<string>();
+  // Round-1 seat → anchor id. A seat is stamped once (a Swiss "2 half matches"
+  // round can seat the anchor in two round-1 entries; the first wins). A
+  // half-average (compensation) block is a phantom, never a real seat, so it is
+  // excluded.
+  const anchorBySeat = new Map<PairSeat, string>();
 
   for (const m of movement) {
     for (const r of m.rounds) {
@@ -209,24 +231,15 @@ export function buildSectionRows(
         });
       }
 
-      // A half-average (compensation) block is a phantom placeholder, never a
-      // real seat — it must not seed a round-1 assignment (that would clash
-      // with the non-anchor pair's real seat in its played half). Sit-out rows
-      // keep assigning (the sitting pair's NS seat is its real home).
       if (r.roundNumber === 1 && !r.halfAverage) {
         const seats = [
           { direction: "NS", movementId: r.ns },
           { direction: "EW", movementId: r.ew },
         ] as const;
-
         for (const { direction, movementId } of seats) {
-          const id = sectionParticipantId(section, movementId);
-          if (assigned.has(id)) continue;
-          assigned.add(id);
-          assignmentRows.push({
-            id,
-            initialSeat: seatFor(section, m.tableNumber, direction),
-          });
+          const seat = seatFor(section, m.tableNumber, direction);
+          if (anchorBySeat.has(seat)) continue;
+          anchorBySeat.set(seat, sectionParticipantId(section, movementId));
         }
       }
     }
@@ -235,7 +248,10 @@ export function buildSectionRows(
   return {
     boardRows,
     matchRows: Array.from(matchByKey.values()),
-    assignmentRows,
+    anchors: Array.from(anchorBySeat, ([seat, anchorId]) => ({
+      seat,
+      anchorId,
+    })),
   };
 }
 
@@ -267,18 +283,19 @@ export function resolveMatchIds(
 }
 
 /**
- * Insert a section's match drafts, board drafts, and assignment rows into a
- * single better-sqlite3 transaction. Shared by every materialiser (static
- * pairs, Swiss pairs, teams) so the match→board id resolution and transaction
- * shape live in one place. Match rows go in first (so their autoincrement ids
- * exist), each board's `matchId` is resolved from its transient key, then the
- * boards and assignments are written.
+ * Insert a section's match drafts and board drafts into a single better-sqlite3
+ * transaction. Shared by every materialiser (static pairs, Swiss pairs, teams)
+ * so the match→board id resolution and transaction shape live in one place.
+ * Match rows go in first (so their autoincrement ids exist), each board's
+ * `matchId` is resolved from its transient key, then the boards are written.
+ * (Seats are not written here — the `seat_occupancy` rows already exist; see
+ * {@link buildSectionRows}.)
  */
 export function insertSectionDrafts(
   db: Db,
   matchRows: MatchDraft[],
   boardRows: BoardDraft[],
-  assignmentRows: Assignment[],
+  anchors: SeatAnchor[] = [],
 ): void {
   db.transaction((tx) => {
     const resolved = resolveMatchIds(matchRows, boardRows, (row) => {
@@ -288,8 +305,14 @@ export function insertSectionDrafts(
     if (resolved.length > 0) {
       tx.insert(boards).values(resolved).run();
     }
-    if (assignmentRows.length > 0) {
-      tx.insert(assignments).values(assignmentRows).run();
+    // Stamp each seated occupancy with the anchor id written to its board rows
+    // (the id↔seat bridge the old `assignment` rows provided). A seat with no
+    // occupancy yet (e.g. an expected-late empty seat) simply updates nothing.
+    for (const { seat, anchorId } of anchors) {
+      tx.update(seatOccupancy)
+        .set({ anchorId })
+        .where(eq(seatOccupancy.seat, seat))
+        .run();
     }
   });
 }
@@ -297,9 +320,9 @@ export function insertSectionDrafts(
 /**
  * Movement participant ids (the numeric position ids) restart within each
  * section, so they must be section-qualified before being written to the DB to
- * stay globally unique. This id is stored on both the assignment row (`id`) and
- * the board rows (`ns`/`ew`); keeping them prefixed identically preserves the
- * schedule join between assignment.id and boards.ns/ew.
+ * stay globally unique. This id is stored on the board rows (`ns`/`ew`) and is
+ * the same id used as a `seat_occupancy.seat`, so the schedule join between a
+ * seat's occupancy and its board rows holds.
  */
 export function sectionParticipantId(
   section: SectionLetter,
@@ -321,11 +344,8 @@ export async function materializePairLikeMovement(
   movement: MaterializableMovement,
   gameId: string,
 ) {
-  const { boardRows, matchRows, assignmentRows } = buildSectionRows(
-    section,
-    movement,
-  );
-  await insertSectionRows(gameId, matchRows, boardRows, assignmentRows);
+  const { boardRows, matchRows, anchors } = buildSectionRows(section, movement);
+  await insertSectionRows(gameId, matchRows, boardRows, anchors);
 }
 
 /**
@@ -338,16 +358,16 @@ export async function materializeSections(
 ) {
   const boardRows: BoardDraft[] = [];
   const matchRows: MatchDraft[] = [];
-  const assignmentRows: Assignment[] = [];
+  const anchors: SeatAnchor[] = [];
 
   for (const { section, movement } of sections) {
     const rows = buildSectionRows(section, movement);
     boardRows.push(...rows.boardRows);
     matchRows.push(...rows.matchRows);
-    assignmentRows.push(...rows.assignmentRows);
+    anchors.push(...rows.anchors);
   }
 
-  await insertSectionRows(gameId, matchRows, boardRows, assignmentRows);
+  await insertSectionRows(gameId, matchRows, boardRows, anchors);
 }
 
 /**
@@ -359,7 +379,7 @@ async function insertSectionRows(
   gameId: string,
   matchRows: MatchDraft[],
   boardRows: BoardDraft[],
-  assignmentRows: Assignment[],
+  anchors: SeatAnchor[] = [],
 ) {
   const db = await getDb(gameId);
 
@@ -367,7 +387,7 @@ async function insertSectionRows(
     throw new Error("Game db does not exist");
   }
 
-  insertSectionDrafts(db, matchRows, boardRows, assignmentRows);
+  insertSectionDrafts(db, matchRows, boardRows, anchors);
 }
 
 /**

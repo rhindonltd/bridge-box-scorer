@@ -58,7 +58,7 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
     const db = (await games.getDb(gameId))!;
 
     const { players } = await import("@/db/games/tables/players");
-    const { participants } = await import("@/db/games/tables/participants");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { matches } = await import("@/db/games/tables/matches");
     const { boards } = await import("@/db/games/tables/boards");
 
@@ -75,9 +75,10 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
         .values({ firstName: `${s}2`, lastName: "y" })
         .returning()
         .get();
-      db.insert(participants)
+      db.insert(seatOccupancy)
         .values({
-          initialSeat: s as `${string}${number}NS`,
+          seat: s as `${string}${number}NS`,
+          boards: null,
           player1: p1.id,
           player2: p2.id,
           secretKey: s,
@@ -217,5 +218,32 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
     // But its opponent is still indemnified (AVE+) for the voided round.
     const expected = voidMatchVp("SHORT_OFFENDER_NS", 20, 2);
     expect(r2("A2NS")).toBe(expected.opponent);
+  });
+
+  it("does NOT void the unplayed match of a LATE team that retained standing (§2.4.7)", async () => {
+    await setup();
+    const { withdrawParticipant } = await import(
+      "@/db/games/actions/withdraw-participant"
+    );
+    // Team 1 played round 1 (its 2 boards = ceil(4/2) half of the event) before
+    // being marked LATE, so it RETAINS standing: its unplayed round-2 match is
+    // NOT voided — it scores as an ordinary unplayed round (neutral 10/10),
+    // exactly like the no-withdrawer 3 v 4 match.
+    await withdrawParticipant(gameId, "A1NS", {
+      standing: "LATE",
+      arrivedInRound: 1,
+      treatment: "REMOVE",
+    });
+
+    const { r2, ids } = await round2Vp();
+
+    // Retained standing → the round-2 1 v 2 match is a plain unplayed neutral,
+    // NOT a §3.3.9 void. Both teams sit at 10, like 3 v 4.
+    expect(r2("A1NS")).toBe(10);
+    expect(r2("A2NS")).toBe(10);
+    expect(r2("A3NS")).toBe(10);
+    expect(r2("A4NS")).toBe(10);
+    // Retained standing → still ranked.
+    expect(ids).toContain("A1NS");
   });
 });

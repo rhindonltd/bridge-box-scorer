@@ -60,7 +60,7 @@ describe("Board-a-Match teams leaderboard (real scoring)", () => {
     first2: string,
   ) {
     const { players } = await import("@/db/games/tables/players");
-    const { participants } = await import("@/db/games/tables/participants");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const p1 = db
       .insert(players)
       .values({ firstName: first1, lastName: "x" })
@@ -71,9 +71,10 @@ describe("Board-a-Match teams leaderboard (real scoring)", () => {
       .values({ firstName: first2, lastName: "y" })
       .returning()
       .get();
-    db.insert(participants)
+    db.insert(seatOccupancy)
       .values({
-        initialSeat: seat,
+        seat: seat,
+        boards: null,
         player1: p1.id,
         player2: p2.id,
         secretKey: seat,

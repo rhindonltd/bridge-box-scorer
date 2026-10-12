@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Player } from "@/db/games/tables/players";
-import { Seat } from "@/model/participants";
+import { ParticipantStanding, Seat } from "@/model/participants";
 import PlayerCard from "@/components/common/PlayerCard";
 import TableCompassLayout from "@/components/layout/TableCompassLayout";
 
@@ -24,11 +24,44 @@ export interface DirectorTable {
     W: Seat | null;
   };
   /**
+   * The section-qualified NS/EW seat identifiers for this table, always present
+   * regardless of occupancy. `seats` above is null for empty positions (it
+   * drives eviction, which only applies to a seated pair); this carries the
+   * seat even when empty so the director can mark an empty seat "expected late".
+   */
+  pairSeats: {
+    ns: Seat;
+    ew: Seat;
+  };
+  /**
    * Which compass positions belong to a stationary pair (stay at this table for
    * the whole movement). Purely informational for the director. N/S share the
    * NS pair and E/W share the EW pair, so they are flagged together.
    */
   stationary?: {
+    N: boolean;
+    S: boolean;
+    E: boolean;
+    W: boolean;
+  };
+  /**
+   * The EBU §2.4 lifecycle standing of each compass position's pair (null when
+   * the seat is empty or the pair is plain ACTIVE). N/S share the NS pair and
+   * E/W share the EW pair, so each pair's standing is flagged on both of its
+   * compass points — same grouping as {@link stationary}.
+   */
+  standing?: {
+    N: ParticipantStanding["standing"] | null;
+    S: ParticipantStanding["standing"] | null;
+    E: ParticipantStanding["standing"] | null;
+    W: ParticipantStanding["standing"] | null;
+  };
+  /**
+   * Whether each compass position's seat is marked "expected late" (§2.4.7) —
+   * an empty seat the director declared will be filled by a latecomer, letting
+   * the game start short. N/S share the NS seat; E/W share the EW seat.
+   */
+  expectedLate?: {
     N: boolean;
     S: boolean;
     E: boolean;

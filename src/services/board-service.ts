@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { Db } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
-import { findPairs } from "@/db/games/queries/find-pairs";
+import { buildAssignmentPlayerLookup } from "@/db/games/queries/assignment-players";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { boardResult, type TeamMatchRow } from "@/scoring/swiss/team-match";
 import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
@@ -30,11 +30,13 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
       .where(eq(pairsBoards.boardNumber, boardNumber))
   ).filter((b) => !NON_TRAVELLER_STATUSES.has(b.status ?? ""));
 
-  const pairs = await findPairs(db);
+  // Keyed by the BOARD id (anchor), matching `b.ns`/`b.ew` — which is the seat
+  // for direction-qualified movements and a bare id otherwise.
+  const playersByBoardId = await buildAssignmentPlayerLookup(db);
   const pairNameMap = new Map<string, string>();
-  for (const pair of pairs) {
+  for (const [boardId, pair] of playersByBoardId) {
     const names = `${pair.player1.firstName} ${pair.player1.lastName} & ${pair.player2.firstName} ${pair.player2.lastName}`;
-    pairNameMap.set(pair.initialSeat, names);
+    pairNameMap.set(boardId, names);
   }
 
   return records.map((b) => ({

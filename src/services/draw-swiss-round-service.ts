@@ -6,6 +6,7 @@ import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import {
   getSwissBoardHistory,
   swissPairIdFromParticipant,
+  swissPairIdFromSeat,
 } from "@/db/games/queries/swiss-board-history";
 import {
   materializeSwissRound,
@@ -153,34 +154,38 @@ async function isRoundComplete(
  */
 /**
  * The stable Swiss pair ids actually SEATED in a section — one per real pair,
- * read from the ASSIGNMENTS table (each `id` is the pair's section-qualified
- * round-1 home seat). An odd field leaves one of the `2*tables` positions
- * unseated; that phantom position has no assignment row, so it is absent here.
- * Used to keep an odd field's `order` genuinely odd for the draw engine.
+ * read from the `seat_occupancy` table (each `seat` is the pair's
+ * section-qualified round-1 home seat). An odd field leaves one of the
+ * `2*tables` positions unseated; that phantom position has no occupancy, so it
+ * is absent here. Used to keep an odd field's `order` genuinely odd for the
+ * draw engine.
  *
- * Assignments (not participant/player rows) are the authoritative seated set:
- * they are written for every real pair when a round is materialized, so this
- * works even before player details are attached.
+ * Occupancies are the authoritative seated set: one is written for every real
+ * pair when the director seats it (pre-start), before the first round is drawn.
  */
 async function seatedPairIdsForSection(
   db: Db,
   section: SectionLetter,
   tables: number,
 ): Promise<Set<SwissPairId>> {
-  const { assignments } = await import("@/db/games/tables/assignments");
-  const rows = await db.select({ id: assignments.id }).from(assignments);
+  const { seatOccupancy } = await import(
+    "@/db/games/tables/seat-occupancy"
+  );
+  const rows = await db.select({ seat: seatOccupancy.seat }).from(seatOccupancy);
 
   const ids = new Set<SwissPairId>();
   for (const row of rows) {
-    if (row.id == null) continue;
+    if (row.seat == null) continue;
     let parsed;
     try {
-      parsed = parseSeat(row.id);
+      parsed = parseSeat(row.seat);
     } catch {
       continue;
     }
     if (parsed.section !== section) continue;
-    const id = swissPairIdFromParticipant(row.id, tables);
+    // `row.seat` is a physical seat (occupancy.seat, e.g. "A1NS"), so decode it
+    // via the seat decoder rather than the bare board-id one.
+    const id = swissPairIdFromSeat(row.seat, tables);
     if (id != null) ids.add(id);
   }
   return ids;
