@@ -27,7 +27,7 @@ export interface Messages {
 
 const enGB: Messages = {
   teamsScoringOptions: [
-    { label: "IMP (aggregate)", value: "IMP" },
+    { label: "IMP (Aggregate)", value: "IMP" },
     { label: "IMP (Victory Points)", value: "IMP_VP" },
     { label: "Point-a-Board", value: "PAB" },
   ],
@@ -35,7 +35,7 @@ const enGB: Messages = {
 
 const enUS: Messages = {
   teamsScoringOptions: [
-    { label: "IMP (aggregate)", value: "IMP" },
+    { label: "IMP (Aggregate)", value: "IMP" },
     { label: "IMP (Victory Points)", value: "IMP_VP" },
     { label: "Board-a-Match", value: "BAM" },
   ],

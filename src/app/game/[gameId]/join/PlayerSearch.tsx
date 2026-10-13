@@ -11,6 +11,8 @@ interface Props {
   label: string;
   value: NewPlayer | null;
   onChange: (player: NewPlayer | null) => void;
+  /** Show the selected player in error colours (e.g. already seated). */
+  invalid?: boolean;
 }
 
 /**
@@ -33,7 +35,12 @@ export function guestFromQuery(query: string): NewPlayer | null {
   return { firstName, lastName, nationalId: null };
 }
 
-export default function PlayerSearch({ label, value, onChange }: Props) {
+export default function PlayerSearch({
+  label,
+  value,
+  onChange,
+  invalid = false,
+}: Props) {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -74,6 +81,7 @@ export default function PlayerSearch({ label, value, onChange }: Props) {
       results={results}
       guestOption={guestOption}
       loading={shouldSearch && isLoading}
+      invalid={invalid}
       onQueryChange={setQuery}
       onPlayerSelected={select}
       onGuestSelected={select}

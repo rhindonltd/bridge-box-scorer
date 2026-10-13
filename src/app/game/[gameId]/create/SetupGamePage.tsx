@@ -83,9 +83,19 @@ export function SetupGamePage() {
 
   const menu = <HeaderMenu items={menuItems} label="Setup menu" />;
 
+  // The back arrow on every setup view returns to the create form's options
+  // step (the screen the director came from when creating the game). The game
+  // was created with router.replace, so there is no history entry to pop — go
+  // to /create explicitly.
+  const backToCreateForm = () => router.push("/create");
+
   if (step === "tables") {
     return (
-      <ShowTablesPage menu={menu} onEditMovement={() => goTo("movements")} />
+      <ShowTablesPage
+        menu={menu}
+        onEditMovement={() => goTo("movements")}
+        backAction={backToCreateForm}
+      />
     );
   }
 
@@ -97,7 +107,7 @@ export function SetupGamePage() {
       <GamePageLayout
         headerTitle="Movement"
         headerRight={menu}
-        backAction={() => goTo("tables")}
+        backAction={backToCreateForm}
       >
         {/* Selecting a movement stays on the Movement screen: the popup closes
             and the (now highlighted) selection remains visible, rather than
@@ -115,7 +125,7 @@ export function SetupGamePage() {
       <GamePageLayout
         headerTitle="Manage Sections"
         headerRight={menu}
-        backAction={() => goTo("tables")}
+        backAction={backToCreateForm}
       >
         <div className="flex h-full min-h-0 flex-col">
           <ManageSectionsScreen gameId={game.gameId} />
@@ -143,7 +153,7 @@ export function SetupGamePage() {
     <GamePageLayout
       headerTitle="Timer"
       headerRight={menu}
-      backAction={() => goTo("tables")}
+      backAction={backToCreateForm}
     >
       <TimerSetup embedded />
     </GamePageLayout>

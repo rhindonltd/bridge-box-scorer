@@ -41,23 +41,25 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       return 0;
     }
 
+    // Before the game is started the timer is configured but not yet running
+    // (phase `null`): it is about to begin round `state.round` (1) in play, so
+    // treat it exactly like the start of a play phase for the projected-end
+    // walk. Without this the session total collapses to 0 and the projected
+    // end shows the current time.
+    const phase = state.phase ?? "play";
+
     let remainingCurrentPhaseMs: number;
 
     if (!state.isRunning) {
       remainingCurrentPhaseMs =
         state.remainingMs ??
-        (state.phase === "play"
-          ? playMs
-          : state.phase === "move"
-            ? moveMs
-            : /* v8 ignore next -- unreachable: the outer `state.remainingMs ??` only reaches here when remainingMs is nullish, so this inner `?? 0` always uses 0 */
-              (state.remainingMs ?? 0));
+        (phase === "move" ? moveMs : playMs);
     } else {
       const elapsed = clock - state.phaseStartedAt!;
       const phaseDurationMs =
-        state.phase === "play"
+        phase === "play"
           ? playMs
-          : state.phase === "move"
+          : phase === "move"
             ? moveMs
             : (state.remainingMs ?? 0);
       remainingCurrentPhaseMs = Math.max(0, phaseDurationMs - elapsed);
@@ -69,7 +71,7 @@ export function useTimerDerived(state: TimerState | null, now: number) {
     let total = remainingCurrentPhaseMs;
     let cursor = clock + remainingCurrentPhaseMs;
 
-    if (state.phase === "play") {
+    if (phase === "play") {
       // The gap after the current round, then every subsequent round.
       for (let round = state.round; round < state.totalRounds; round++) {
         const gap = gapMsAfterRound(round, cursor);
@@ -81,7 +83,7 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       return total;
     }
 
-    if (state.phase === "move" || state.phase === "break") {
+    if (phase === "move" || phase === "break") {
       // The current gap belongs to the round after the previous play; the play
       // for `state.round` still needs to happen, then subsequent rounds.
       total += playMs;
@@ -145,9 +147,14 @@ export function useTimerDerived(state: TimerState | null, now: number) {
         ? "Break"
         : state.phase === "awaitingDraw"
           ? "Waiting for next round"
-          : state.phase === "play"
-            ? `Round ${state.round} of ${state.totalRounds}`
-            : `Move for Round ${state.round}`;
+          : state.phase === "move"
+            ? // A move only ever leads INTO the next round, so this is always
+              // round ≥ 2 — round 1 begins in play with no preceding move.
+              `Move for Round ${state.round}`
+            : // play, or the configured-but-not-started (`null`) phase the
+              // display briefly holds at the very start: show the round label
+              // rather than defaulting to "Move for Round 1".
+              `Round ${state.round} of ${state.totalRounds}`;
 
   const boardLabel =
     state.phase === "play"

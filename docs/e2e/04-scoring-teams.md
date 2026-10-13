@@ -8,7 +8,7 @@ the **same** boards. Teams can be scored four ways, chosen on the create form:
 | Method | Internal | Ranked on | Leaderboard shows |
 |---|---|---|---|
 | **IMP (Victory Points)** | `IMP_VP` | per-round IMP margin → **Victory Points** (WBF 20-VP scale), summed | VP total |
-| **IMP (aggregate)** | `IMP` | **total net IMPs** across all boards, no VP conversion | net IMPs (can be negative) |
+| **IMP (Aggregate)** | `IMP` | **total net IMPs** across all boards, no VP conversion | net IMPs (can be negative) |
 | **Board-a-Match** | `BAM` | **boards won** (win 1 / tie ½ / loss 0) | boards won, 1 pt/board scale |
 | **Point-a-Board** | `PAB` | **boards won** — same ranking as BAM | boards won, 2 pt/board scale |
 

@@ -20,12 +20,6 @@ this file uses a plain **Pairs · Matchpoints** game.
 | ☐ HOME-4 | Tap **Manage Games**, then back. | List (likely empty), then home. | Y (empty list)
 | ☐ HOME-5 | Tap **Room Display**, then back. | "Display Game" list, then home. | Y (empty list)
 
-To be changed: Menu items do not match title of the page you go to:
-  - Join Game -> Join Game (OK)
-  - Create New Game -> Create Game (Not OK - Should consistently be 'Create Game')
-  - Manage Games -> Manage Game (Not OK - Should consistently be 'Manage Game')
-  - Room Display -> Display Game (Not OK - Should consistently be 'Display Game')
-
 ---
 
 ## 2. Create a game (DIRECTOR)
@@ -46,7 +40,7 @@ The create form is **two steps**: details, then options.
 | ☐ CREATE-10 | **Back-nav:** tap the back arrow. | Returns to step 1 with Event Name + Director still filled. | Y
 | ☐ CREATE-11 | Tap **Next**, then **Create Game**. | Lands on the **setup** screen (Tables view) for the new game. | Y
 
-To be changed:
+| ☐ CREATE-7 | Switch **Event Type** to **Teams**. | **Scoring** now offers the teams methods: **IMP (Victory Points)**, **IMP (Aggregate)**, and a board-comparison option (**Point-a-Board** UK / **Board-a-Match** US). | Y
 For CREATE-3, the descriptive text at the top should be replaced by the field being highlighted when the 'Next' button is pressed if not filled in.
 For CREATE-7, the option just says 'IMP', not 'IMP (Aggregate)'.  Should be changed.
 
@@ -64,8 +58,7 @@ For CREATE-7, the option just says 'IMP', not 'IMP (Aggregate)'.  Should be chan
 Setup has three views reachable from the header **Setup menu**: **Tables**,
 **Movement**, **Timer**.
 
-Testers Note: It also has 'Start Game' and 'Return to main menu'.
-To be changed:
+
 These screens dont have 'Back Arrow' functionality to go back to the setup screen (the screen from CREATE-4).
 
 

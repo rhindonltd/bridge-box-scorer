@@ -109,7 +109,7 @@ export function DirectorTableModal({
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <Dialog.Panel className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
+            <Dialog.Panel className="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
               {table && (
                 <TableModalBody
                   table={table}
@@ -155,13 +155,15 @@ function TableModalBody({
   return (
     <>
       {/* Grey heading bar matching the movement preview dialog. */}
-      <div className="border-b border-gray-200">
+      <div className="shrink-0 border-b border-gray-200">
         <Dialog.Title className="bg-gray-300 p-4 text-lg font-semibold text-gray-900">
           Table {table.tableNumber}
         </Dialog.Title>
       </div>
 
-      <div className="p-6">
+      {/* Scrollable body, so a tall table (expanded controls) never pushes the
+          panel past the viewport and clips the rounded corners / margins. */}
+      <div className="min-h-0 flex-1 overflow-y-auto p-6">
         <Dialog.Description className="text-sm text-gray-600">
           Manage the pairs seated at this table.
         </Dialog.Description>
@@ -203,17 +205,18 @@ function TableModalBody({
           onToggleExpectedLate={onToggleExpectedLate}
           onHandover={onHandover}
         />
+        </div>
       </div>
 
-        <div className="mt-6 flex">
-          <Button
-            value="Done"
-            onClick={onClose}
-            bgColour="bg-gray-100"
-            textColour="text-gray-900"
-            hoverColour="hover:bg-gray-200"
-          />
-        </div>
+      {/* Fixed footer (outside the scroll area), matching the movement dialog. */}
+      <div className="flex shrink-0 border-t border-gray-200 p-3">
+        <Button
+          value="Done"
+          onClick={onClose}
+          bgColour="bg-gray-100"
+          textColour="text-gray-900"
+          hoverColour="hover:bg-gray-200"
+        />
       </div>
     </>
   );

@@ -103,17 +103,19 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   return (
     <GamePageLayout headerTitle="Select Seat">
       <>
+        {/* Take over a seat already entered on another device. Pinned at the
+            top (under the header, above the table list) like the director's
+            movement banner, so it is visible without scrolling. */}
+        <div className="flex shrink-0 justify-center border-b border-yellow-300 bg-yellow-50 px-4 py-3">
+          <ClaimSeatTransfer />
+        </div>
+
         {/* Main table selection */}
         <SelectTable
           onSeatSelected={handleSeatSelected}
           sections={sections}
           startingPositions={data ?? []}
         />
-
-        {/* Take over a seat already entered on another device. */}
-        <div className="mt-6 flex justify-center">
-          <ClaimSeatTransfer />
-        </div>
 
         {/* Backdrop */}
         {selectedSeat && (

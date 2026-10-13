@@ -50,7 +50,7 @@ export function ClaimSeatTransfer() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-sm font-semibold text-blue-600 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        className="text-sm font-semibold text-yellow-900 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"
       >
         Moving from another device? Enter a code
       </button>
