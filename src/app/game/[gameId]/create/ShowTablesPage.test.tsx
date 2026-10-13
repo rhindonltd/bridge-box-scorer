@@ -442,15 +442,31 @@ describe("ShowTablesPage", () => {
   });
 
   it("shows a 'select a movement' banner when the section has no movement", () => {
-    // Default section has selectedMovement: null.
+    // Default section has selectedMovement: null. A single-section event omits
+    // the "for this section" qualifier.
     const onEditMovement = vi.fn();
     render(<ShowTablesPage onEditMovement={onEditMovement} />);
 
     const banner = screen.getByTestId("movement-warning-banner");
-    expect(banner).toHaveTextContent("Select a movement for this section.");
+    expect(banner).toHaveTextContent("Select a movement.");
+    expect(banner).not.toHaveTextContent("for this section");
 
     fireEvent.click(banner);
     expect(onEditMovement).toHaveBeenCalledOnce();
+  });
+
+  it("qualifies the 'select a movement' banner with the section when multi-section", () => {
+    // Two sections → the prompt disambiguates which section needs a movement.
+    currentSections = [
+      { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
+      { section: "B", label: "B", tables: 2, ordinal: 1, selectedMovement: null },
+    ];
+
+    render(<ShowTablesPage />);
+
+    expect(screen.getByTestId("movement-warning-banner")).toHaveTextContent(
+      "Select a movement for this section.",
+    );
   });
 
   it("shows an 'update the movement' banner when the movement no longer fits the table count", () => {

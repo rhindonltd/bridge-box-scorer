@@ -10,8 +10,8 @@ Anyone can open a display; it is read-only and does not need director access.
 
 ## Opening a display
 
-1. From the home screen, tap **Room Display**.
-2. Choose the game from the list (**Display Game**).
+1. From the home screen, tap **Display Game**.
+2. Choose the game from the **Display Game** list.
 3. Choose what to show:
    - **Timer** — the round countdown.
    - **Leaderboard** — live standings.

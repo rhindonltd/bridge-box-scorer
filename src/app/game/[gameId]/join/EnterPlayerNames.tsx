@@ -11,6 +11,13 @@ interface Props {
    * third argument to `onSubmitPair`.
    */
   showTeamName?: boolean;
+  /**
+   * EBU numbers already seated elsewhere in the event. A player chosen from the
+   * search whose number is in this set is flagged immediately (rather than only
+   * on submit). Defaults to empty. The server still enforces this on submit as
+   * the authority (and covers seats filled concurrently on other devices).
+   */
+  seatedNationalIds?: Set<string>;
   onSubmitPair: (
     player1: NewPlayer,
     player2: NewPlayer,
@@ -21,6 +28,7 @@ interface Props {
 export default function EnterPlayerNames({
   seat,
   showTeamName = false,
+  seatedNationalIds,
   onSubmitPair,
 }: Props) {
   const [player1, setPlayer1] = useState<NewPlayer | null>(null);
@@ -39,7 +47,23 @@ export default function EnterPlayerNames({
     player1?.nationalId != null &&
     player1.nationalId === player2?.nationalId;
 
-  const canSubmit = player1 !== null && player2 !== null && !sameNationalId;
+  // An EBU number already seated elsewhere in the event, flagged the moment the
+  // player is chosen from the search rather than only on submit. The first such
+  // clash drives the message. Guests (no national id) can never clash.
+  const alreadySeated = seatedNationalIds ?? new Set<string>();
+  const clashingNationalId =
+    (player1?.nationalId && alreadySeated.has(player1.nationalId)
+      ? player1.nationalId
+      : null) ??
+    (player2?.nationalId && alreadySeated.has(player2.nationalId)
+      ? player2.nationalId
+      : null);
+
+  const canSubmit =
+    player1 !== null &&
+    player2 !== null &&
+    !sameNationalId &&
+    clashingNationalId === null;
 
   return (
     <div className="w-full">
@@ -96,6 +120,13 @@ export default function EnterPlayerNames({
           <p role="alert" className="text-sm font-medium text-red-700">
             Both players have the same EBU number ({player1!.nationalId}). Each
             player can only take one seat.
+          </p>
+        )}
+
+        {!sameNationalId && clashingNationalId && (
+          <p role="alert" className="text-sm font-medium text-red-700">
+            A player with EBU number {clashingNationalId} is already seated in
+            this event. Pick a different player.
           </p>
         )}
 

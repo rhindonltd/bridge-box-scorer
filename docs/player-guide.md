@@ -186,7 +186,9 @@ Every play screen has a **menu** button in the top-right corner. Tap it for:
 
 - **Change device** — shows a short code you can enter on another device to
   move your seat there (handy if your phone is running low on battery). Once the
-  code is used, this device is signed out of the seat.
+  code is used, this device is signed out of the seat: it shows a short "this
+  seat has moved to another device" message with a **Back to main menu** button,
+  and play carries on from the other device.
 - **Pair details** — shows your pair number, which direction you're playing,
   and both players' names.
 

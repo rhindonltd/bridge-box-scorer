@@ -54,6 +54,15 @@ describe("resolvePlayState", () => {
     expect(await resolvePlayState(db, "g1", "A1NS")).toBeNull();
   });
 
+  it("returns null when the seat is seated but the game is not started yet (no rounds)", async () => {
+    // A seated pair has an occupancy row (schedule is non-null) but, before the
+    // director starts the game, no boards are materialized so there are no
+    // rounds. This must resolve to null (→ 404 → WaitingToStartPage), NOT to a
+    // `complete` phase that would show the Game Complete screen.
+    withSchedule([]);
+    expect(await resolvePlayState(db, "g1", "A1NS")).toBeNull();
+  });
+
   it("positions the player on the first unconfirmed board, entering it", async () => {
     withSchedule([
       round(1, [

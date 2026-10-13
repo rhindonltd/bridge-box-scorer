@@ -15,7 +15,7 @@ share a code (see [Sharing director access](#sharing-director-access)).
 
 ### Step 1: Open the create form
 
-From the home screen, tap **Create New Game**.
+From the home screen, tap **Create Game**.
 
 The create form is split across two pages so neither screen is crowded.
 
@@ -26,8 +26,9 @@ The create form is split across two pages so neither screen is crowded.
 | **Event Name**    | The name of your event (e.g. "Monday Pairs"). |
 | **Director Name** | Your name.                                     |
 
-Both are required: **Next** stays greyed out until you've entered an event name
-and a director, and a reminder to that effect sits above the fields.
+Both are required. If you tap **Next** with either box empty, the empty box is
+highlighted so you can see what's missing; fill both in and tap **Next** again
+to continue.
 
 The session is always dated today, so there is no date to set.
 
@@ -46,7 +47,7 @@ Tap **Next**.
 | Field                   | Description                                                       |
 | ----------------------- | ----------------------------------------------------------------- |
 | **Event Type**          | **Pairs**, **Teams**, **Swiss Pairs**, or **Swiss Teams**. The Swiss options are drawn round by round as the event runs (see the Movements tab); the Pairs and Teams options use a fixed movement you pick from a list. |
-| **Scoring**             | How the event is scored. For **Pairs** and **Swiss Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). **Swiss Teams** is always scored by **IMP (Victory Points)** — the only method that fits the round-by-round draw — so no scoring choice is shown for it. Defaults to Matchpoints for Pairs and IMP for Teams. |
+| **Scoring**             | How the event is scored. For **Pairs** and **Swiss Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP (aggregate)** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). **Swiss Teams** is always scored by **IMP (Victory Points)** — the only method that fits the round-by-round draw — so no scoring choice is shown for it. Defaults to Matchpoints for Pairs and IMP for Teams. |
 | **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
 | **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
 
@@ -76,8 +77,10 @@ Tables  →  Movements  →  Timer
 
 ### Tables tab
 
-This shows each table with its four seats. As players sit down and enter their
-names, they appear here.
+This shows each table with its four seats, filling in live as players sit down.
+On a larger screen each taken seat shows the player's name; on a small screen it
+simply shows the seat as **Taken** to keep the tables readable — tap the table
+to open its dialog and see who is sitting there.
 
 From this tab you can:
 
@@ -271,7 +274,7 @@ all sections** to copy it to them all.
 
 ### Opening the director menu
 
-1. From the home screen, tap **Manage Games**.
+1. From the home screen, tap **Manage Game**.
 2. Tap your game in the list.
 3. If you created the game on this device, you go straight to the **Manage
    Game Menu**.
@@ -514,7 +517,7 @@ share access with a short code:
 
 1. From the Manage Game Menu, tap **Share Director Access**.
 2. A short share code appears on screen.
-3. The other person opens **Manage Games**, taps the same game, and enters the
+3. The other person opens **Manage Game**, taps the same game, and enters the
    code on the **Claim Director Code** screen.
 4. They now have full director access to that game from their device.
 

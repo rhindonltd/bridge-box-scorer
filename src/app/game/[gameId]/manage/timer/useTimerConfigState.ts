@@ -210,9 +210,25 @@ export function useTimerConfigState(
       case "moveSeconds":
         setMoveSeconds(value as number);
         break;
-      case "timingMode":
-        setTimingMode(value as "perRound" | "perBoard");
+      case "timingMode": {
+        const nextMode = value as "perRound" | "perBoard";
+        // The entered Play Duration is interpreted in the current mode, so
+        // flipping the mode must re-scale it by boards-per-round to keep the
+        // actual per-round play time the same: a per-round total splits down to
+        // a per-board figure (÷ boards/round), and a per-board figure scales up
+        // to the per-round total (× boards/round). Guard against a zero
+        // boards/round (no movement resolved yet) so we never divide by zero.
+        if (nextMode !== timingMode && boardsPerRound > 0) {
+          const converted =
+            nextMode === "perBoard"
+              ? Math.round(enteredPlaySeconds / boardsPerRound)
+              : enteredPlaySeconds * boardsPerRound;
+          setPlayMinutes(Math.floor(converted / 60));
+          setPlaySeconds(converted % 60);
+        }
+        setTimingMode(nextMode);
         break;
+      }
       case "warningSeconds":
         setWarningSeconds(value as number);
         break;

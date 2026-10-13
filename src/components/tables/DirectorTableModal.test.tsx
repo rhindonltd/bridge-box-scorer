@@ -166,7 +166,7 @@ describe("DirectorTableModal", () => {
     expect(screen.getAllByText("Stationary")).toHaveLength(2);
   });
 
-  it("shows an Empty placeholder for an unoccupied pair and no evict button", () => {
+  it("shows the Expected late control for an unoccupied pair and no evict button", () => {
     render(
       <DirectorTableModal
         table={halfEmptyTable()}
@@ -181,7 +181,10 @@ describe("DirectorTableModal", () => {
       />,
     );
 
-    expect(screen.getByText("Empty")).toBeInTheDocument();
+    // The empty seat offers the "Expected late" control (pre-start) rather than
+    // a bare "Empty" placeholder.
+    expect(screen.queryByText("Empty")).not.toBeInTheDocument();
+    expect(screen.getByText("Expected late")).toBeInTheDocument();
     // Only the occupied NS pair has an evict button.
     expect(
       screen.getByRole("button", { name: "Evict North / South pair" }),

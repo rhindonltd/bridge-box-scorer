@@ -34,7 +34,7 @@ export function RecommendedMovementCard({
         ${
           selected
             ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-offset-1"
-            : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md active:scale-[0.98] active:bg-blue-50"
+            : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md active:scale-[0.98] active:bg-gray-50"
         }`}
     >
       <div

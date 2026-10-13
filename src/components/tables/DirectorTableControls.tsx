@@ -116,7 +116,22 @@ function CompassPlayerCard({
           : "relative"
       }
     >
-      <PlayerCard label={label} player={player} />
+      {/* On small screens an occupied position shows only that it is TAKEN;
+          the names appear on larger screens, or on any screen by tapping the
+          card to open the table dialog. An empty seat still shows the normal
+          placeholder everywhere, so free positions stay obvious. */}
+      {player ? (
+        <>
+          <div className="sm:hidden">
+            <TakenPositionCard label={label} />
+          </div>
+          <div className="hidden sm:block">
+            <PlayerCard label={label} player={player} />
+          </div>
+        </>
+      ) : (
+        <PlayerCard label={label} player={player} />
+      )}
       {stationary && (
         <span
           className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-950"
@@ -125,6 +140,22 @@ function CompassPlayerCard({
           Stationary
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * A compact "Taken" indicator for an occupied position on small screens: it
+ * mirrors {@link PlayerCard}'s label-above-card shape but hides the names,
+ * which the director reveals by tapping the card to open the table dialog.
+ */
+function TakenPositionCard({ label }: { label: string }) {
+  return (
+    <div className="flex w-full flex-col items-center">
+      <div className="mb-1 text-center text-sm font-bold">{label}</div>
+      <div className="w-full max-w-[120px] rounded-md border border-blue-200 bg-blue-100 px-2 py-1.5 text-center text-sm font-semibold text-blue-900 shadow">
+        Taken
+      </div>
     </div>
   );
 }

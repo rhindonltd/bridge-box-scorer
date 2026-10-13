@@ -109,7 +109,7 @@ export function DirectorTableModal({
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <Dialog.Panel className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <Dialog.Panel className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl">
               {table && (
                 <TableModalBody
                   table={table}
@@ -154,14 +154,19 @@ function TableModalBody({
 }) {
   return (
     <>
-      <Dialog.Title className="text-lg font-semibold text-gray-900">
-        Table {table.tableNumber}
-      </Dialog.Title>
-      <Dialog.Description className="mt-1 text-sm text-gray-600">
-        Manage the pairs seated at this table.
-      </Dialog.Description>
+      {/* Grey heading bar matching the movement preview dialog. */}
+      <div className="border-b border-gray-200">
+        <Dialog.Title className="bg-gray-300 p-4 text-lg font-semibold text-gray-900">
+          Table {table.tableNumber}
+        </Dialog.Title>
+      </div>
 
-      <div className="mt-4 flex flex-col gap-3">
+      <div className="p-6">
+        <Dialog.Description className="text-sm text-gray-600">
+          Manage the pairs seated at this table.
+        </Dialog.Description>
+
+        <div className="mt-4 flex flex-col gap-3">
         <PairRow
           label="North / South"
           player1={table.players.N}
@@ -200,14 +205,15 @@ function TableModalBody({
         />
       </div>
 
-      <div className="mt-6 flex">
-        <Button
-          value="Done"
-          onClick={onClose}
-          bgColour="bg-gray-100"
-          textColour="text-gray-900"
-          hoverColour="hover:bg-gray-200"
-        />
+        <div className="mt-6 flex">
+          <Button
+            value="Done"
+            onClick={onClose}
+            bgColour="bg-gray-100"
+            textColour="text-gray-900"
+            hoverColour="hover:bg-gray-200"
+          />
+        </div>
       </div>
     </>
   );
@@ -411,9 +417,6 @@ function PairRow({
           <p className="text-xs text-gray-500">
             Start without this pair; seat them when they arrive.
           </p>
-          {!expectedLate && (
-            <div className="text-sm italic text-gray-500">Empty</div>
-          )}
         </div>
       ) : expectedLate ? (
         <div className="mt-2 flex flex-col gap-1">
@@ -424,9 +427,7 @@ function PairRow({
             The pair can join from a device when they arrive.
           </p>
         </div>
-      ) : (
-        <div className="mt-2 text-sm italic text-gray-500">Empty</div>
-      )}
+      ) : null}
     </div>
   );
 }

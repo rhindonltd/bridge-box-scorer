@@ -105,6 +105,53 @@ describe("EnterPlayerNames", () => {
     expect(onSubmitPair).not.toHaveBeenCalled();
   });
 
+  it("flags and blocks submit the moment a player already seated elsewhere is picked", () => {
+    const onSubmitPair = vi.fn();
+    render(
+      <EnterPlayerNames
+        seat="A1NS"
+        seatedNationalIds={new Set(["999999"])}
+        onSubmitPair={onSubmitPair}
+      />,
+    );
+
+    // Choosing a player whose EBU is already seated flags it immediately —
+    // before the second seat is even filled and without clicking Enter Pair.
+    fireEvent.change(screen.getByLabelText("North EBU"), {
+      target: { value: "999999" },
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "A player with EBU number 999999 is already seated",
+    );
+
+    // Even once the other seat is filled, submit stays blocked until the clash
+    // is resolved.
+    fireEvent.change(screen.getByLabelText("South Player"), {
+      target: { value: "Grace" },
+    });
+    const submit = screen.getByRole("button", { name: "Enter Pair" });
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(onSubmitPair).not.toHaveBeenCalled();
+  });
+
+  it("does not flag an EBU number that is not already seated", () => {
+    render(
+      <EnterPlayerNames
+        seat="A1NS"
+        seatedNationalIds={new Set(["999999"])}
+        onSubmitPair={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("North EBU"), {
+      target: { value: "111111" },
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("allows two guests (no EBU number) with the same typed name", () => {
     const onSubmitPair = vi.fn();
     render(<EnterPlayerNames seat="A1NS" onSubmitPair={onSubmitPair} />);

@@ -70,34 +70,52 @@ export function StartGameScreen({ menu }: Props) {
       headerTitle="Start Game"
       headerRight={menu}
       hideBack
+      // In the ready state the Start Game button lives inside the centred
+      // card (below), so the pinned bottom action bar is only used while there
+      // are outstanding problems to resolve.
       actions={
-        <Button
-          value={starting ? "Starting…" : "Start Game"}
-          onClick={handleStartGame}
-          disabled={!canStart || starting}
-        />
+        canStart ? undefined : (
+          <Button
+            value={starting ? "Starting…" : "Start Game"}
+            onClick={handleStartGame}
+            disabled={!canStart || starting}
+          />
+        )
       }
     >
       <div className="flex h-full min-h-0 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
-          {canStart ? (
-            <div className="flex flex-col gap-3">
-              <div
-                role="status"
-                className="rounded-xl border-2 border-green-300 bg-green-50 p-4 text-sm text-green-900"
-              >
-                <div className="font-semibold">Everything&rsquo;s ready</div>
-                <p className="mt-1">
-                  Seating and movement are valid. Tap Start Game below to begin.
+        {canStart ? (
+          // Ready state: centre the card in the available space, with the
+          // Start Game button at the bottom of the card, horizontally centred.
+          <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+            <div
+              role="status"
+              className="flex w-full max-w-md flex-col items-center gap-5 rounded-xl border-2 border-green-300 bg-green-50 p-6 text-center text-green-900"
+            >
+              <div>
+                <div className="text-lg font-semibold">
+                  Everything&rsquo;s ready
+                </div>
+                <p className="mt-1 text-sm">
+                  Seating and movement are valid. Tap Start Game to begin.
                 </p>
+                {sitOutSeat && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    One pair short — {sitOutSeat} will sit out each round.
+                  </p>
+                )}
               </div>
-              {sitOutSeat && (
-                <p className="text-sm text-gray-600">
-                  One pair short — {sitOutSeat} will sit out each round.
-                </p>
-              )}
+              <div className="w-full max-w-xs">
+                <Button
+                  value={starting ? "Starting…" : "Start Game"}
+                  onClick={handleStartGame}
+                  disabled={!canStart || starting}
+                />
+              </div>
             </div>
-          ) : (
+          </div>
+        ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
             <div className="flex flex-col gap-4">
               <p className="text-sm text-gray-600">
                 Resolve the following before starting the game:
@@ -120,8 +138,8 @@ export function StartGameScreen({ menu }: Props) {
                 </section>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </GamePageLayout>
   );

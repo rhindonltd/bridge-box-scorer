@@ -39,6 +39,16 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   const { data } = useSWR<Pair[], Error>(key, pairsFetcher);
   const { sections } = useSections(gameId);
 
+  // EBU numbers already seated anywhere in the event. Derived from the same
+  // live pairs list the seat grid uses, so the name panel can flag a clash the
+  // instant a match is chosen from the search — the server still enforces this
+  // on submit as the authority (it also covers races from other devices).
+  const seatedNationalIds = new Set<string>();
+  for (const pair of data ?? []) {
+    if (pair.player1?.nationalId) seatedNationalIds.add(pair.player1.nationalId);
+    if (pair.player2?.nationalId) seatedNationalIds.add(pair.player2.nationalId);
+  }
+
   useSocketSWRSync(
     SocketEvents.PARTICIPANTS,
     (p) => ({
@@ -137,6 +147,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
               <EnterPlayerNames
                 seat={selectedSeat}
                 showTeamName={isTeamsNsSeat}
+                seatedNationalIds={seatedNationalIds}
                 onSubmitPair={handlePairSubmitted}
               />
             </>

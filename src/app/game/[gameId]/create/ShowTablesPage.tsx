@@ -78,6 +78,11 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
     allowAddSection: game.eventFormat !== "SWISS",
   });
 
+  // A single-section event has nothing to disambiguate, so the movement prompt
+  // drops the "for this section" qualifier that only makes sense when several
+  // sections each need their own movement.
+  const multiSection = sections.length > 1;
+
   // The table whose management dialog (evict / stationary) is open, or null.
   const [openTable, setOpenTable] = useState<DirectorTable | null>(null);
 
@@ -215,13 +220,36 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
     }
   }
 
-  // Mark/unmark an empty seat "expected late". The expected-late set is HTTP
-  // (not pushed), so mutate it after a successful toggle to reflect immediately.
+  // Mark/unmark an empty seat "expected late". The toggle is a controlled
+  // reflection of the expected-late SWR set, which is read over HTTP (not
+  // pushed). Update that cache optimistically so the switch flips the instant
+  // it is tapped — without this the switch appeared stuck until the server
+  // round-trip and re-read landed — then reconcile against the server (rolling
+  // back on failure).
   async function handleToggleExpectedLate(seat: Seat, next: boolean) {
+    const key = swrKeys.expectedLateSeats(gameId);
+
+    void mutate(
+      key,
+      (current?: Set<string>) => {
+        const updated = new Set(current ?? []);
+        if (next) {
+          updated.add(seat);
+        } else {
+          updated.delete(seat);
+        }
+        return updated;
+      },
+      { revalidate: false },
+    );
+
     try {
       await setSeatExpectedLate(gameId, seat, next);
-      void mutate(swrKeys.expectedLateSeats(gameId));
+      // Success: pull the authoritative set to reconcile with the server.
+      void mutate(key);
     } catch (err) {
+      // Roll back the optimistic flip to the server's truth.
+      void mutate(key);
       alert(errorMessage(err, "Failed to update expected late"));
     }
   }
@@ -275,7 +303,9 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
           >
             <span>
               {noMovement
-                ? "Select a movement for this section."
+                ? multiSection
+                  ? "Select a movement for this section."
+                  : "Select a movement."
                 : "This section’s movement no longer fits its table count. Update the movement."}
             </span>
             <span aria-hidden="true" className="shrink-0 font-semibold">

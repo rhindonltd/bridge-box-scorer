@@ -36,23 +36,23 @@ describe("MainMenuPage", () => {
     render(<MainMenuPage />);
 
     expect(
-      screen.getByRole("link", { name: "Create New Game" }),
+      screen.getByRole("link", { name: "Create Game" }),
     ).toHaveAttribute("href", "/create");
   });
 
-  it("links Manage Games to /manage", () => {
+  it("links Manage Game to /manage", () => {
     render(<MainMenuPage />);
 
-    expect(screen.getByRole("link", { name: "Manage Games" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Manage Game" })).toHaveAttribute(
       "href",
       "/manage",
     );
   });
 
-  it("links Room Display to /display", () => {
+  it("links Display Game to /display", () => {
     render(<MainMenuPage />);
 
-    expect(screen.getByRole("link", { name: "Room Display" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Display Game" })).toHaveAttribute(
       "href",
       "/display",
     );
@@ -76,8 +76,8 @@ describe("MainMenuPage", () => {
     render(<MainMenuPage />);
 
     expect(screen.getByText("Join Game")).toBeInTheDocument();
-    expect(screen.getByText("Create New Game")).toBeInTheDocument();
-    expect(screen.getByText("Manage Games")).toBeInTheDocument();
-    expect(screen.getByText("Room Display")).toBeInTheDocument();
+    expect(screen.getByText("Create Game")).toBeInTheDocument();
+    expect(screen.getByText("Manage Game")).toBeInTheDocument();
+    expect(screen.getByText("Display Game")).toBeInTheDocument();
   });
 });

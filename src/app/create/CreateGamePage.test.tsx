@@ -36,8 +36,9 @@ function todayDateOnly(): string {
 
 // The form is a two-step wizard: step 1 ("Next") collects the event + director
 // name, step 2 ("Create Game") the type/scoring/toggles. Most tests exercise
-// step 2, so advance past step 1 first. Next only unlocks once both details are
-// present, so fill them unless the caller already did (e.g. via the BridgeWebs
+// step 2, so advance past step 1 first. Next only advances once both details
+// are present (tapping it while blank highlights the empty field and stays
+// put), so fill them unless the caller already did (e.g. via the BridgeWebs
 // picker, which supplies the event name itself).
 function goToOptionsStep({ fillDetails = true }: { fillDetails?: boolean } = {}) {
   if (fillDetails) {
@@ -76,53 +77,58 @@ describe("CreateGamePage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("disables Next until both event name and director are filled", () => {
+  it("highlights the empty field(s) when Next is tapped with details missing", () => {
     render(<CreateGamePage />);
 
-    const next = screen.getByRole("button", { name: "Next" });
-    expect(next).toBeDisabled();
+    const eventName = screen.getByLabelText("Event Name");
+    const director = screen.getByLabelText("Director Name");
 
-    // Only the event name: still blocked on the missing director.
-    fireEvent.change(screen.getByLabelText("Event Name"), {
-      target: { value: "Tuesday Pairs" },
-    });
-    expect(next).toBeDisabled();
+    // Nothing highlighted until the director tries to continue.
+    expect(eventName).not.toHaveAttribute("aria-invalid");
+    expect(director).not.toHaveAttribute("aria-invalid");
 
-    // Both filled: Next unlocks.
-    fireEvent.change(screen.getByLabelText("Director Name"), {
-      target: { value: "Jane" },
-    });
-    expect(next).not.toBeDisabled();
+    // Tap Next with both blank: both fields are flagged and we stay on step 1.
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(eventName).toHaveAttribute("aria-invalid", "true");
+    expect(director).toHaveAttribute("aria-invalid", "true");
+    expect(screen.queryByLabelText("Event Type")).not.toBeInTheDocument();
+
+    // Filling the event name clears its flag; the director is still flagged.
+    fireEvent.change(eventName, { target: { value: "Tuesday Pairs" } });
+    expect(eventName).not.toHaveAttribute("aria-invalid");
+    expect(director).toHaveAttribute("aria-invalid", "true");
   });
 
-  it("keeps the helper text visible on the details step even once filled", () => {
+  it("does not highlight fields before Next is tapped", () => {
     render(<CreateGamePage />);
 
-    const hint = "Enter an event name and director to continue.";
-    expect(screen.getByText(hint)).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText("Event Name"), {
-      target: { value: "Tuesday Pairs" },
-    });
-    fireEvent.change(screen.getByLabelText("Director Name"), {
-      target: { value: "Jane" },
-    });
-
-    // Both filled, Next unlocked, but the standing instruction remains.
-    expect(screen.getByRole("button", { name: "Next" })).not.toBeDisabled();
-    expect(screen.getByText(hint)).toBeInTheDocument();
-  });
-
-  it("drops the helper text once past the details step", () => {
-    render(<CreateGamePage />);
-    goToOptionsStep();
-
+    // No standing instruction, and no field flagged, on first render.
     expect(
       screen.queryByText("Enter an event name and director to continue."),
     ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Event Name")).not.toHaveAttribute(
+      "aria-invalid",
+    );
+    expect(screen.getByLabelText("Director Name")).not.toHaveAttribute(
+      "aria-invalid",
+    );
   });
 
-  it("keeps Next disabled when the fields hold only whitespace", () => {
+  it("advances once both details are filled", () => {
+    render(<CreateGamePage />);
+
+    fireEvent.change(screen.getByLabelText("Event Name"), {
+      target: { value: "Tuesday Pairs" },
+    });
+    fireEvent.change(screen.getByLabelText("Director Name"), {
+      target: { value: "Jane" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(screen.getByLabelText("Event Type")).toBeInTheDocument();
+  });
+
+  it("does not advance when the fields hold only whitespace", () => {
     render(<CreateGamePage />);
 
     fireEvent.change(screen.getByLabelText("Event Name"), {
@@ -131,10 +137,14 @@ describe("CreateGamePage", () => {
     fireEvent.change(screen.getByLabelText("Director Name"), {
       target: { value: "   " },
     });
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
 
-    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
-    // Still on the details step; options fields never mounted.
+    // Still on the details step; options fields never mounted, fields flagged.
     expect(screen.queryByLabelText("Event Type")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Event Name")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
   });
 
   it("does not advance on Enter while the details are incomplete", () => {
