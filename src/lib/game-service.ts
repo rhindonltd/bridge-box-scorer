@@ -1,5 +1,8 @@
 import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
 import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { GameType } from "@/db/games/types/game-type";
+import { EventFormat } from "@/db/games/types/event-format";
+import { ScoringType } from "@/db/games/types/scoring-type";
 import { SocketEvents } from "@/socket/socket-events";
 import { emitWithAck, emitEvent } from "@/lib/socket";
 import { NewParticipant } from "@/model/participants";
@@ -119,6 +122,44 @@ export async function updateTournamentLevel(
   if (!res.ok) {
     const data = await res.json().catch(() => null);
     throw new Error(data?.error ?? "Failed to update tournament level");
+  }
+}
+
+/** The event-detail fields a director may edit after creation. */
+export interface EventDetailsUpdate {
+  eventName?: string;
+  director?: string | null;
+  gameType?: GameType;
+  eventFormat?: EventFormat;
+  scoringType?: ScoringType;
+  leadCardRequired?: boolean;
+  handEntryEnabled?: boolean;
+}
+
+/**
+ * Edit a game's core event details after creation (director-only): the event
+ * name/director plus the create-form options (event type, scoring, and the
+ * per-game toggles). A structural change (game type / format / scoring) clears
+ * the selected movement server-side so the director re-picks one that fits. The
+ * fresh game row is broadcast to every device. Throws with the server's error
+ * message on failure.
+ */
+export async function updateEventDetails(
+  gameId: string,
+  update: EventDetailsUpdate,
+): Promise<void> {
+  const res = await fetch(`/api/games/${gameId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "x-director-token": getDirectorToken(gameId) ?? "",
+    },
+    body: JSON.stringify(update),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to update event details");
   }
 }
 

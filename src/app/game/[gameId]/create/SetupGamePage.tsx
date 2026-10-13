@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { ShowTablesPage } from "@/app/game/[gameId]/create/ShowTablesPage";
 import { StartGameScreen } from "@/app/game/[gameId]/create/StartGameScreen";
+import { EditEventDetailsPage } from "@/app/game/[gameId]/create/EditEventDetailsPage";
 import { useRouter } from "next/navigation";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useRequiredGame } from "@/context/GameContext";
@@ -38,6 +40,12 @@ const setupGameFlow = createFlow(
 export function SetupGamePage() {
   const { game } = useRequiredGame();
   const router = useRouter();
+
+  // The back arrow on the setup views opens the "Edit Event Details" screen —
+  // the create-form options prefilled from the already-created game — rather
+  // than the (blank, already-submitted) create form. Shown as an overlay step
+  // here since it is not part of the setup menu's step flow.
+  const [editingDetails, setEditingDetails] = useState(false);
 
   const { step, goTo } = useFlow(
     setupGameFlow,
@@ -83,18 +91,24 @@ export function SetupGamePage() {
 
   const menu = <HeaderMenu items={menuItems} label="Setup menu" />;
 
-  // The back arrow on every setup view returns to the create form's options
-  // step (the screen the director came from when creating the game). The game
-  // was created with router.replace, so there is no history entry to pop — go
-  // to /create explicitly.
-  const backToCreateForm = () => router.push("/create");
+  // The back arrow on every setup view opens the editable event-details screen,
+  // prefilled from the created game — so the director can review/adjust the
+  // name, type, scoring, and options they set when creating, without losing
+  // anything or landing on a blank form.
+  const openEditDetails = () => setEditingDetails(true);
+
+  // The event-details editor overlays the whole setup flow (it is not a setup
+  // menu step), so render it ahead of the step switch.
+  if (editingDetails) {
+    return <EditEventDetailsPage onDone={() => setEditingDetails(false)} />;
+  }
 
   if (step === "tables") {
     return (
       <ShowTablesPage
         menu={menu}
         onEditMovement={() => goTo("movements")}
-        backAction={backToCreateForm}
+        backAction={openEditDetails}
       />
     );
   }
@@ -107,7 +121,7 @@ export function SetupGamePage() {
       <GamePageLayout
         headerTitle="Movement"
         headerRight={menu}
-        backAction={backToCreateForm}
+        backAction={openEditDetails}
       >
         {/* Selecting a movement stays on the Movement screen: the popup closes
             and the (now highlighted) selection remains visible, rather than
@@ -125,7 +139,7 @@ export function SetupGamePage() {
       <GamePageLayout
         headerTitle="Manage Sections"
         headerRight={menu}
-        backAction={backToCreateForm}
+        backAction={openEditDetails}
       >
         <div className="flex h-full min-h-0 flex-col">
           <ManageSectionsScreen gameId={game.gameId} />
@@ -153,7 +167,7 @@ export function SetupGamePage() {
     <GamePageLayout
       headerTitle="Timer"
       headerRight={menu}
-      backAction={backToCreateForm}
+      backAction={openEditDetails}
     >
       <TimerSetup embedded />
     </GamePageLayout>

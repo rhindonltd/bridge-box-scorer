@@ -58,8 +58,12 @@ For CREATE-7, the option just says 'IMP', not 'IMP (Aggregate)'.  Should be chan
 Setup has three views reachable from the header **Setup menu**: **Tables**,
 **Movement**, **Timer**.
 
-
-These screens dont have 'Back Arrow' functionality to go back to the setup screen (the screen from CREATE-4).
+> FIXED: The setup views (Tables / Movement / Timer) now have a back arrow. It
+> opens an **Edit Event Details** screen pre-filled from the created game (event
+> name, director, event type, scoring, tournament level, Record Opening Lead,
+> Allow Hand Entry) — not the blank create form — so nothing entered is lost.
+> Changing the event type or scoring asks for confirmation and clears the
+> selected movement (they must match).
 
 
 ### 3a. Tables

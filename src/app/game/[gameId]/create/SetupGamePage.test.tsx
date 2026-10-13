@@ -50,6 +50,15 @@ vi.mock("./StartGameScreen", () => ({
   ),
 }));
 
+vi.mock("./EditEventDetailsPage", () => ({
+  EditEventDetailsPage: ({ onDone }: { onDone: () => void }) => (
+    <div>
+      <div>edit-event-details-view</div>
+      <button onClick={onDone}>edit-done</button>
+    </div>
+  ),
+}));
+
 vi.mock("@/components/manage/sections/MovementStep", () => ({
   MovementStep: () => <div>sections-view</div>,
 }));
@@ -127,13 +136,19 @@ describe("SetupGamePage setup menu", () => {
     expect(mockGoTo).toHaveBeenCalledWith("tables");
   });
 
-  it("gives the Tables view a back action that returns to the create form", async () => {
+  it("opens the editable event-details screen from the Tables back action", async () => {
     render(<SetupGamePage />);
 
+    // Back from Tables shows the (prefilled) event-details editor, not the
+    // blank create form, and does not leave the setup flow.
     await userEvent.click(screen.getByRole("button", { name: "tables-back" }));
-    expect(mockPush).toHaveBeenCalledWith("/create");
-    // Back leaves the setup flow for the create form rather than switching step.
+    expect(screen.getByText("edit-event-details-view")).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
     expect(mockGoTo).not.toHaveBeenCalled();
+
+    // Finishing the editor returns to the setup view.
+    await userEvent.click(screen.getByRole("button", { name: "edit-done" }));
+    expect(screen.getByText("tables-view")).toBeInTheDocument();
   });
 
   it("jumps to the movements step from the Tables view's edit-movement action", async () => {
