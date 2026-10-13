@@ -86,6 +86,20 @@ export default mergeConfig(
             globals: true,
             setupFiles: ["./vitest.setup.ts"],
             include: ["src/**/*.test.{ts,tsx}"],
+            // Node 25+ ships Web Storage on by default, so `localStorage` /
+            // `sessionStorage` exist as global accessors. Vitest's
+            // `getWindowKeys` then drops jsdom's own Storage (it isn't in
+            // Vitest's allowlist), leaving `window.localStorage` === undefined
+            // and breaking every test that touches the token stores. Starting
+            // the worker with `--no-webstorage` removes Node's global so
+            // jsdom's real implementation lands normally. Guarded by major
+            // version: Node 22 (and the current `.nvmrc` floor's predecessors)
+            // reject the flag outright with "bad option". See
+            // https://github.com/vitest-dev/vitest/issues/10867.
+            execArgv:
+              Number(process.versions.node.split(".")[0]) >= 25
+                ? ["--no-webstorage"]
+                : [],
             // The suite mixes fast unit tests with heavier `*.int.test.ts`
             // integration tests that spin up a real, freshly-migrated SQLite
             // database per test (better-sqlite3 runs its migrations and inserts

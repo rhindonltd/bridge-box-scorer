@@ -2,7 +2,7 @@
 
 ## Runtime & tooling
 
-- Node.js 24.19.0 (pinned in `.nvmrc`; run `nvm use`)
+- Node.js 26.11.1 (pinned in `.nvmrc`; run `nvm use`)
 - npm as the package manager (`package-lock.json`)
 - TypeScript in `strict` mode; path alias `@/*` maps to `src/*`
 - Custom server (`server.ts`) runs Next.js and Socket.IO together on one port, launched via `tsx`

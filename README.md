@@ -27,7 +27,7 @@ A real-time scoring application for duplicate bridge clubs. Designed to run on a
 
 ## Prerequisites
 
-- **Node.js 22+** (see `.nvmrc`)
+- **Node.js 26** (see `.nvmrc`)
 - npm 10+
 
 ## Getting Started
