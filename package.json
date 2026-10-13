@@ -38,7 +38,8 @@
     "seed-movements": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/seed-movements.ts",
     "seed-admin-key": "tsx --require ./scripts/allow-server-only.cjs --env-file=.env src/scripts/seed-admin-key.ts",
     "usebio-samples": "tsx --require ./scripts/allow-server-only.cjs --env-file-if-exists=.env src/scripts/generate-usebio-samples.ts",
-    "pbn-samples": "tsx --require ./scripts/allow-server-only.cjs --env-file-if-exists=.env src/scripts/generate-pbn-samples.ts"
+    "pbn-samples": "tsx --require ./scripts/allow-server-only.cjs --env-file-if-exists=.env src/scripts/generate-pbn-samples.ts",
+    "seed:e2e": "tsx --require ./scripts/allow-server-only.cjs --env-file-if-exists=.env src/scripts/seed-e2e-fixture.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
