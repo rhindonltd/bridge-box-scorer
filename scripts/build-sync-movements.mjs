@@ -29,7 +29,7 @@ await build({
   bundle: true,
   platform: "node",
   format: "cjs",
-  target: "node22",
+  target: "node26",
   packages: "external",
   tsconfig: "tsconfig.json",
   sourcemap: true,

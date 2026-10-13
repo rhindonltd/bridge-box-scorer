@@ -20,9 +20,8 @@ await build({
   bundle: true,
   platform: "node",
   format: "cjs",
-  // Target the Node major installed on the appliance (Node 24). node22 is a
-  // safe floor per the spec.
-  target: "node22",
+  // Target the Node major installed on the appliance (Node 26).
+  target: "node26",
   // Resolve bare packages (incl. native better-sqlite3) from node_modules at
   // runtime instead of bundling them.
   packages: "external",
