@@ -44,7 +44,9 @@ const percentageView: OverallView<MpOverall> = {
         cells: [
           rankCell(row),
           multilineCell(pairNameLines(participants, row.pairId)),
-          numberCell(row.maxMP === 0 ? 0 : (row.totalMP / row.maxMP) * 100, 2),
+          // Before any board is played (maxMP === 0) show the conventional 50%
+          // starting point rather than 0%.
+          numberCell(row.maxMP === 0 ? 50 : (row.totalMP / row.maxMP) * 100, 2),
         ],
       })),
     };

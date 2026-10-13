@@ -73,9 +73,10 @@ describe("mp overall plugin", () => {
     expect(pctCell.value).toBeCloseTo(expected, 5);
   });
 
-  it("percentage view shows 0 when maxMP is zero", () => {
-    // Hand-crafted leaderboard with a zero max (a single-round board where no
-    // comparisons exist) to exercise the maxMP === 0 guard.
+  it("percentage view shows 50 when maxMP is zero (no boards played yet)", () => {
+    // Hand-crafted leaderboard with a zero max (no boards played, so no
+    // comparisons exist) to exercise the maxMP === 0 baseline. The percentage
+    // view shows the conventional 50% starting point rather than 0%.
     const leaderboard = mpOverallPlugin.aggregate([scored(1, mpBoard1)]);
     const zeroed = {
       ...leaderboard,
@@ -86,6 +87,6 @@ describe("mp overall plugin", () => {
 
     const pctCell = table.rows[0].cells[2];
     if (pctCell.kind !== "number") throw new Error("expected number cell");
-    expect(pctCell.value).toBe(0);
+    expect(pctCell.value).toBe(50);
   });
 });

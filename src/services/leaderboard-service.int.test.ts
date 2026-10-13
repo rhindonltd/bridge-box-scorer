@@ -149,6 +149,32 @@ describe("section-aware leaderboard (real scoring)", () => {
     expect(a.overallScore.lines.length).toBe(2);
   });
 
+  it("lists every seated pair at a baseline before any board is played", async () => {
+    const db = await setup();
+    const { computeLeaderboard, computeSectionLeaderboards } = await import(
+      "./leaderboard-service"
+    );
+
+    // Two seated pairs (one table), but NO board rows inserted — the game has
+    // not been played yet.
+    await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
+
+    const combined = await computeLeaderboard(db, gameId);
+    // Both seated pairs appear at the 0/0 matchpoint baseline, even with no
+    // results — rather than an empty leaderboard.
+    const ids = combined.overallScore.lines.map((l: any) => l.pairId).sort();
+    expect(ids).toEqual(["A1EW", "A1NS"]);
+    expect(
+      combined.overallScore.lines.every(
+        (l: any) => l.totalMP === 0 && l.maxMP === 0,
+      ),
+    ).toBe(true);
+
+    // The per-section leaderboard lists them too.
+    const [a] = await computeSectionLeaderboards(db, gameId);
+    expect(a.overallScore.lines).toHaveLength(2);
+  });
+
   it("credits a Swiss sit-out pair 60% of the board top under matchpoints", async () => {
     const db = await setup();
     const { boards } = await import("@/db/games/tables/boards");

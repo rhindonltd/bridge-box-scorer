@@ -162,12 +162,20 @@ describe("leaderboard-service", () => {
         ],
       });
 
+      // Roster ids match the two scored lines ("1" and "3"), so no baseline
+      // padding is added — this case exercises computation from real results.
       vi.mocked(findPairs).mockResolvedValue([
         {
-          initialSeat: "1NS",
+          initialSeat: "1",
           type: "PAIR",
           player1: { id: 1, firstName: "A", lastName: "B", nationalId: null },
           player2: { id: 2, firstName: "C", lastName: "D", nationalId: null },
+        },
+        {
+          initialSeat: "3",
+          type: "PAIR",
+          player1: { id: 3, firstName: "E", lastName: "F", nationalId: null },
+          player2: { id: 4, firstName: "G", lastName: "H", nationalId: null },
         },
       ] as any);
 
@@ -176,7 +184,7 @@ describe("leaderboard-service", () => {
       expect(result.type).toBe("PAIR_MP");
       expect(result.overallScore).toBeDefined();
       expect(result.overallScore.lines).toHaveLength(2);
-      expect(result.participants).toHaveLength(1);
+      expect(result.participants).toHaveLength(2);
       expect(scoreBoard).toHaveBeenCalledTimes(1);
       expect(getCombination).toHaveBeenCalledWith("MP");
       expect(getOverallPlugin).toHaveBeenCalledWith("MP");
@@ -219,6 +227,40 @@ describe("leaderboard-service", () => {
 
       expect(scoreBoard).not.toHaveBeenCalled();
       expect(result.overallScore.lines).toHaveLength(0);
+    });
+
+    it("lists every seated pair at a 0/0 baseline when no boards are played", async () => {
+      const mockDb = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockResolvedValue([]),
+        }),
+      } as unknown as Db;
+      vi.mocked(getPairsDb).mockResolvedValue(mockDb);
+
+      // No scored boards → the aggregator returns an empty field.
+      mockOverallPlugin({
+        type: "PAIR_MP",
+        mode: "PAIR",
+        scoring: "MP",
+        lines: [],
+      });
+
+      // Two seated pairs, neither with any result yet.
+      vi.mocked(findPairs).mockResolvedValue([
+        { initialSeat: "A1NS", type: "PAIR" },
+        { initialSeat: "A1EW", type: "PAIR" },
+      ] as any);
+
+      const result = await computeLeaderboard(mockDb, "game-1");
+
+      // Both seated pairs appear, each at the 0/0 baseline (shown as 50%).
+      expect(result.overallScore.lines).toHaveLength(2);
+      expect(result.overallScore.lines).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ pairId: "A1NS", totalMP: 0, maxMP: 0 }),
+          expect.objectContaining({ pairId: "A1EW", totalMP: 0, maxMP: 0 }),
+        ]),
+      );
     });
 
     it("uses director override result when available", async () => {
@@ -596,7 +638,7 @@ describe("Teams VP routing", () => {
       { id: "A1NS", type: "TEAM" } as any,
     ]);
     vi.mocked(calculateTeamsVpOverall).mockReturnValue({
-      type: "TEAMS_VP",
+      type: "TEAM_SWISS_VP",
       lines: [],
     } as any);
 
@@ -604,8 +646,15 @@ describe("Teams VP routing", () => {
       dbWithBoards([{ boardNumber: 1, ns: "A1NS", ew: "A2EW", section: "A" }]),
       "game-1",
     );
-    expect(combined.type).toBe("TEAMS_VP");
+    expect(combined.type).toBe("TEAM_SWISS_VP");
     expect(combined.participants).toHaveLength(1);
+    // The seated team is baselined into the (empty) scored field so it shows
+    // from the start.
+    expect(combined.overallScore.lines).toHaveLength(1);
+    expect(combined.overallScore.lines[0]).toMatchObject({
+      teamId: "A1NS",
+      totalVP: 0,
+    });
 
     const sections = await computeSectionLeaderboards(
       dbWithBoards([
@@ -617,9 +666,12 @@ describe("Teams VP routing", () => {
       "game-1",
     );
     expect(sections.map((s) => s.section)).toEqual(["A", "B"]);
-    expect(sections[0].type).toBe("TEAMS_VP");
+    expect(sections[0].type).toBe("TEAM_SWISS_VP");
     expect(sections[0].participants).toHaveLength(1);
+    // Section A's lone team is baselined; section B has no team, so no baseline.
+    expect(sections[0].overallScore.lines).toHaveLength(1);
     expect(sections[1].participants).toHaveLength(0);
+    expect(sections[1].overallScore.lines).toHaveLength(0);
     // findTeams is consulted for a teams-VP game.
     expect(findTeams).toHaveBeenCalled();
   });
@@ -643,7 +695,7 @@ describe("Teams VP routing", () => {
       { id: "A1NS", type: "TEAM" } as any,
     ]);
     vi.mocked(calculateTeamsVpOverall).mockReturnValue({
-      type: "TEAMS_VP",
+      type: "TEAM_SWISS_VP",
       lines: [],
     } as any);
 
@@ -655,7 +707,7 @@ describe("Teams VP routing", () => {
     // Routed to the teams VP scorer, not the board-pooled overall.
     expect(getAnySectionMovement).toHaveBeenCalled();
     expect(calculateTeamsVpOverall).toHaveBeenCalledTimes(1);
-    expect(combined.type).toBe("TEAMS_VP");
+    expect(combined.type).toBe("TEAM_SWISS_VP");
   });
 });
 

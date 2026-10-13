@@ -30,7 +30,7 @@ export function RecommendedMovementCard({
       aria-pressed={selected}
       className={`flex w-full flex-col overflow-hidden rounded-xl border text-left shadow-sm
         transition-all duration-150
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1
         ${
           selected
             ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-offset-1"

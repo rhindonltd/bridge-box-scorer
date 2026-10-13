@@ -48,16 +48,19 @@ export default function EnterPlayerNames({
     player1.nationalId === player2?.nationalId;
 
   // An EBU number already seated elsewhere in the event, flagged the moment the
-  // player is chosen from the search rather than only on submit. The first such
+  // player is chosen from the search rather than only on submit. Tracked per
+  // player so the clashing one's chip is shown in error colours; the first
   // clash drives the message. Guests (no national id) can never clash.
   const alreadySeated = seatedNationalIds ?? new Set<string>();
-  const clashingNationalId =
-    (player1?.nationalId && alreadySeated.has(player1.nationalId)
-      ? player1.nationalId
-      : null) ??
-    (player2?.nationalId && alreadySeated.has(player2.nationalId)
-      ? player2.nationalId
-      : null);
+  const player1AlreadySeated =
+    player1?.nationalId != null && alreadySeated.has(player1.nationalId);
+  const player2AlreadySeated =
+    player2?.nationalId != null && alreadySeated.has(player2.nationalId);
+  const clashingNationalId = player1AlreadySeated
+    ? player1!.nationalId
+    : player2AlreadySeated
+      ? player2!.nationalId
+      : null;
 
   const canSubmit =
     player1 !== null &&
@@ -81,12 +84,14 @@ export default function EnterPlayerNames({
             label={player1Label}
             value={player1}
             onChange={setPlayer1}
+            invalid={player1AlreadySeated}
           />
 
           <PlayerSearch
             label={player2Label}
             value={player2}
             onChange={setPlayer2}
+            invalid={player2AlreadySeated}
           />
 
           {showTeamName && (

@@ -89,6 +89,16 @@ describe("useTimerDerived", () => {
       expect(result.title).toBe("Move for Round 3");
     });
 
+    it("shows the round label (not 'Move for Round 1') at the start before the clock is running", () => {
+      // The display briefly holds the configured-but-not-started state (phase
+      // null) at the very start of round 1. It must not fall through to the
+      // move label — the players are seated and about to play round 1.
+      const state = makeState({ phase: null, round: 1, totalRounds: 7 });
+      const result = useTimerDerived(state, Date.now());
+      expect(result.title).toBe("Round 1 of 7");
+      expect(result.title).not.toBe("Move for Round 1");
+    });
+
     it("shows session complete when finished", () => {
       const state = makeState({ phase: "finished" });
       const result = useTimerDerived(state, Date.now());
@@ -129,6 +139,24 @@ describe("useTimerDerived", () => {
       // remaining: full play (420s) + 1 future round of play (420s) + 1 move (60s)
       // = 420000 + 420000 + 60000 = 900000ms
       expect(result.projectedEndDate.getTime()).toBeGreaterThan(now);
+    });
+
+    it("projects the full session before the game is started (phase null)", () => {
+      // A configured-but-not-started timer (phase null) must still project the
+      // whole session, not collapse to the current time.
+      const now = 1_700_000_000_000;
+      const state = makeState({
+        phase: null,
+        round: 1,
+        totalRounds: 2,
+        playDuration: 420,
+        moveDuration: 60,
+        isRunning: false,
+        remainingMs: null,
+      });
+      const result = useTimerDerived(state, now);
+      // Two rounds of play (2 * 420s) + one move (60s) = 900s ahead of now.
+      expect(result.projectedEndDate.getTime()).toBe(now + 900_000);
     });
   });
 });
@@ -218,19 +246,24 @@ describe("useTimerDerived - breaks and warning", () => {
     expect(result.projectedEndDate.getTime()).toBe(now + 450_000);
   });
 
-  it("treats a null phase as a zero-length remaining session", () => {
+  it("projects the full session for a configured-but-not-started (null) phase", () => {
     const now = 1_700_000_000_000;
-    // A null phase is neither play nor move/break nor finished, so the
-    // session walk falls through to `return total` with only the current
-    // (paused, no remainingMs) phase contribution, which is 0.
+    // A configured-but-not-started timer (phase null) is about to begin its
+    // current round in play, so the projected end must cover the whole session
+    // from here — not collapse to the current time.
     const state = makeState({
       phase: null,
+      round: 3,
+      totalRounds: 7,
+      playDuration: 420,
+      moveDuration: 60,
       isRunning: false,
       remainingMs: null,
     });
     const result = useTimerDerived(state, now);
-    // sessionRemainingMs is 0 -> projectedEnd falls back to `now`.
-    expect(result.projectedEndDate.getTime()).toBe(now);
+    // Walk from round 3: play(420) + for rounds 3..6 a move(60) + play(420)
+    // each = 420 + 4 * 480 = 2340s ahead of now.
+    expect(result.projectedEndDate.getTime()).toBe(now + 2_340_000);
   });
 
   it("treats a paused break with no remainingMs as zero remaining", () => {

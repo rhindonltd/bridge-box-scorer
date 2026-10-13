@@ -379,6 +379,102 @@ function splitByDirection(
   return { ns: forDirection("NS"), ew: forDirection("EW") };
 }
 
+/**
+ * The "no boards played" baseline line for one competitor, matching the shape
+ * each scoring variant produces. Every value is the natural starting point:
+ * zero matchpoints out of zero (shown as 50% by the percentage view), zero
+ * IMPs / cross-IMPs / VPs / net IMPs, or nothing-won-of-nothing for a
+ * board-comparison teams game. The id field (`pairId` / `teamId`) is set from
+ * the roster id by the caller.
+ */
+function baselineLine(
+  type: OverallScore["type"],
+  id: string,
+): OverallScore["lines"][number] {
+  const idField =
+    type.startsWith("TEAM") ? { teamId: id } : { pairId: id };
+  switch (type) {
+    case "PAIR_MP":
+      return { ...idField, totalMP: 0, maxMP: 0 } as OverallScore["lines"][number];
+    case "PAIR_XIMP":
+      return { ...idField, crossImps: 0 } as OverallScore["lines"][number];
+    case "PAIR_IMP":
+      return { ...idField, imps: 0 } as OverallScore["lines"][number];
+    case "PAIR_SWISS_VP":
+    case "TEAM_SWISS_VP":
+      return {
+        ...idField,
+        totalVP: 0,
+        vpByRound: {},
+      } as OverallScore["lines"][number];
+    case "TEAM_IMP_AGG":
+      return {
+        ...idField,
+        totalImps: 0,
+        impsByRound: {},
+      } as OverallScore["lines"][number];
+    case "TEAM_BAM":
+    case "TEAM_PAB":
+      return {
+        ...idField,
+        totalWon: 0,
+        totalPlayed: 0,
+        byRound: {},
+      } as OverallScore["lines"][number];
+  }
+}
+
+/**
+ * Seed the leaderboard with every seated competitor so the standings list the
+ * whole field from the start — before any board is played — rather than being
+ * empty until results arrive. For each roster id not already in the scored
+ * lines (and not excluded from the ranking), a baseline line is appended
+ * (50% for matchpoints, zero for IMP/Cross-IMP/VP/net-IMP/boards-won), then the
+ * field is re-ranked so places stay contiguous. Competitors with real results
+ * keep them untouched; this only fills the gaps.
+ *
+ * Excluded ids (§2.4.9 without-standing, handover stand-ins, empty
+ * expected-late seats) are never baselined — the subsequent exclusion pass
+ * would drop them anyway, and they are not part of the ranked field.
+ */
+function padBaselineLines(
+  overallScore: OverallScore,
+  rosterIds: string[],
+  excludedIds: ReadonlySet<string>,
+): OverallScore {
+  // Only seed the baseline field when NOTHING has been scored yet — i.e. before
+  // any board is played. Once results exist, the scored lines are keyed by each
+  // seat's materialised scoring id (which, for non-direction-qualified
+  // movements, differs from the seat id this roster uses), so matching roster
+  // ids against them is unreliable; and a seated pair with results already
+  // appears. A pair that is seated but has no results mid-event (late arrival,
+  // withdrawal) is handled by the dedicated §2.4 credit logic, not here.
+  if (overallScore.lines.length > 0) return overallScore;
+
+  const baselineIds = rosterIds.filter((id) => !excludedIds.has(id));
+  if (baselineIds.length === 0) return overallScore;
+
+  return {
+    ...overallScore,
+    lines: rank(
+      baselineIds.map((id) => baselineLine(overallScore.type, id)),
+      pairOrTeamRankValue,
+    ),
+  } as OverallScore;
+}
+
+/** Rank value for any overall line variant (pairs or teams). */
+function pairOrTeamRankValue(line: OverallScore["lines"][number]): number {
+  if ("totalMP" in line) return line.maxMP > 0 ? line.totalMP / line.maxMP : 0;
+  if ("imps" in line) return line.imps;
+  if ("crossImps" in line) return line.crossImps;
+  if ("totalVP" in line) return line.totalVP;
+  if ("totalImps" in line) return line.totalImps;
+  if ("totalWon" in line) return line.totalWon;
+  /* v8 ignore next -- all OverallScore line variants are covered above */
+  return 0;
+}
+
 /** The 60% (average-plus) award a bye pair receives under matchpoints. */
 const SIT_OUT_MP_FRACTION = 0.6;
 
@@ -768,28 +864,32 @@ function computeCombined(
   teams: AssignedTeam[],
   expectedBoards: number | undefined,
   withdrawals: WithdrawalRecord[],
+  excludedFromRanking: ReadonlySet<string>,
 ): LeaderboardResult {
   // A board-comparison teams game (BAM/PAB) ranks teams on boards won; a
   // teams-VP game ranks teams on Victory Points; an aggregate-IMP teams game
   // ranks teams on total net IMPs; every other game ranks pairs (Swiss VP or
   // the standard board-pooled overall).
+  const teamIds = teams.map((t) => t.id);
   if (teamsBoardComparison !== null) {
-    const overallScore = calculateTeamsBoardComparisonOverall(
-      boardRows,
-      matchRows,
-      {
+    const overallScore = padBaselineLines(
+      calculateTeamsBoardComparisonOverall(boardRows, matchRows, {
         barometer,
         scoring: teamsBoardComparison,
         expectedBoards,
-      },
+      }),
+      teamIds,
+      excludedFromRanking,
     );
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
   if (teamsImpAggregate) {
-    const overallScore = calculateTeamsImpAggregateOverall(boardRows, matchRows, {
-      barometer,
-    });
+    const overallScore = padBaselineLines(
+      calculateTeamsImpAggregateOverall(boardRows, matchRows, { barometer }),
+      teamIds,
+      excludedFromRanking,
+    );
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
@@ -802,16 +902,21 @@ function computeCombined(
       withdrawals,
       boardRows,
     );
-    const overallScore = calculateTeamsVpOverall(boardRows, ruledMatches, {
-      expectedBoards,
-    });
+    const overallScore = padBaselineLines(
+      calculateTeamsVpOverall(boardRows, ruledMatches, { expectedBoards }),
+      teamIds,
+      excludedFromRanking,
+    );
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
-  const overallScore =
-    scoreSwissVp(boardRows, matchRows, swissVpMode, expectedBoards) ??
-    scoreBoardsToOverall(boardRows, scoringType, gameId, withdrawals);
   const participants = pairs.map(toParticipant);
+  const overallScore = padBaselineLines(
+    scoreSwissVp(boardRows, matchRows, swissVpMode, expectedBoards) ??
+      scoreBoardsToOverall(boardRows, scoringType, gameId, withdrawals),
+    participants.map((p) => p.id),
+    excludedFromRanking,
+  );
   return {
     type: overallScore.type,
     overallScore,
@@ -843,6 +948,11 @@ function computeSections(
   teams: AssignedTeam[],
   expectedBoards: number | undefined,
   withdrawals: WithdrawalRecord[],
+  excludedFromRanking: ReadonlySet<string>,
+  // Seed the full seated field at a baseline score so the standings list every
+  // competitor from the start. Disabled for the §3.5 "as-of" replay, which must
+  // reproduce the exact field that drove a past Swiss draw.
+  baseline = true,
 ): SectionLeaderboard[] {
   const rowsBySection = new Map<string, Board[]>();
   for (const row of boardRows) {
@@ -889,19 +999,26 @@ function computeSections(
     new Set([...rowsBySection.keys(), ...pairsBySection.keys()]),
   ).sort();
 
+  // Seed the baseline field unless this is the §3.5 as-of replay.
+  const pad = (overallScore: OverallScore, rosterIds: string[]) =>
+    baseline
+      ? padBaselineLines(overallScore, rosterIds, excludedFromRanking)
+      : overallScore;
+
   return sections.map((section): SectionLeaderboard => {
     const sectionRows = rowsBySection.get(section) ?? [];
     const sectionMatches = matchesBySection.get(section) ?? [];
 
+    const sectionTeamIds = (teamsBySection.get(section) ?? []).map((t) => t.id);
+
     if (teamsBoardComparison !== null) {
-      const overallScore = calculateTeamsBoardComparisonOverall(
-        sectionRows,
-        sectionMatches,
-        {
+      const overallScore = pad(
+        calculateTeamsBoardComparisonOverall(sectionRows, sectionMatches, {
           barometer,
           scoring: teamsBoardComparison,
           expectedBoards,
-        },
+        }),
+        sectionTeamIds,
       );
       return {
         section,
@@ -912,12 +1029,11 @@ function computeSections(
     }
 
     if (teamsImpAggregate) {
-      const overallScore = calculateTeamsImpAggregateOverall(
-        sectionRows,
-        sectionMatches,
-        {
+      const overallScore = pad(
+        calculateTeamsImpAggregateOverall(sectionRows, sectionMatches, {
           barometer,
-        },
+        }),
+        sectionTeamIds,
       );
       return {
         section,
@@ -934,9 +1050,12 @@ function computeSections(
         withdrawersBySection.get(section) ?? [],
         sectionRows,
       );
-      const overallScore = calculateTeamsVpOverall(sectionRows, ruledMatches, {
-        expectedBoards,
-      });
+      const overallScore = pad(
+        calculateTeamsVpOverall(sectionRows, ruledMatches, {
+          expectedBoards,
+        }),
+        sectionTeamIds,
+      );
       return {
         section,
         type: overallScore.type,
@@ -945,16 +1064,18 @@ function computeSections(
       };
     }
 
-    const overallScore =
-      scoreSwissVp(sectionRows, sectionMatches, swissVpMode, expectedBoards) ??
-      scoreBoardsToOverall(
-        sectionRows,
-        scoringType,
-        section,
-        withdrawersBySection.get(section) ?? [],
-      );
     const sectionParticipants = (pairsBySection.get(section) ?? []).map(
       toParticipant,
+    );
+    const overallScore = pad(
+      scoreSwissVp(sectionRows, sectionMatches, swissVpMode, expectedBoards) ??
+        scoreBoardsToOverall(
+          sectionRows,
+          scoringType,
+          section,
+          withdrawersBySection.get(section) ?? [],
+        ),
+      sectionParticipants.map((p) => p.id),
     );
     return {
       section,
@@ -1188,6 +1309,7 @@ export async function buildLeaderboards(
     teams,
     expectedBoards,
     withdrawals,
+    excludedFromRanking,
   ).map((s) => excludeFromLeaderboard(s, excludedFromRanking));
 
   // The director can turn off the combined overall ranking for a multi-section
@@ -1214,6 +1336,7 @@ export async function buildLeaderboards(
             teams,
             expectedBoards,
             withdrawals,
+            excludedFromRanking,
           ),
           excludedFromRanking,
         )
@@ -1264,6 +1387,7 @@ export async function computeLeaderboard(
       teams,
       expectedBoards,
       withdrawals,
+      excludedFromRanking,
     ),
     excludedFromRanking,
   );
@@ -1309,6 +1433,7 @@ export async function computeSectionLeaderboards(
     teams,
     expectedBoards,
     withdrawals,
+    excludedFromRanking,
   ).map((s) => excludeFromLeaderboard(s, excludedFromRanking));
 }
 
@@ -1371,5 +1496,9 @@ export async function computeSectionLeaderboardsAsOf(
     teams,
     expectedBoards,
     [],
+    new Set<string>(),
+    // No baseline padding: the replay must reproduce the exact field that drew
+    // the past Swiss round, not the full seated roster.
+    false,
   );
 }

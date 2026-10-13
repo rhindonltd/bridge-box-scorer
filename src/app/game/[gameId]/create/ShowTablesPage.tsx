@@ -51,9 +51,11 @@ type Props = {
   menu?: ReactNode;
   /** Navigate to the movement-selection step (e.g. from the movement banner). */
   onEditMovement?: () => void;
+  /** Back-arrow action — returns to the create form. Omit to hide the arrow. */
+  backAction?: () => void;
 };
 
-export function ShowTablesPage({ menu, onEditMovement }: Props) {
+export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
   const { game } = useRequiredGame();
   const { mutate } = useSWRConfig();
 
@@ -289,7 +291,12 @@ export function ShowTablesPage({ menu, onEditMovement }: Props) {
   }
 
   return (
-    <GamePageLayout headerTitle="Tables" headerRight={menu} hideBack>
+    <GamePageLayout
+      headerTitle="Tables"
+      headerRight={menu}
+      backAction={backAction}
+      hideBack={!backAction}
+    >
       <div className="flex h-full min-h-0 flex-col">
         {/* Yellow, clickable warning pinned under the header when the selected
             section has no movement, or a movement that no longer fits its table

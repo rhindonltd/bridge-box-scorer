@@ -24,14 +24,19 @@ vi.mock("./ShowTablesPage", () => ({
   ShowTablesPage: ({
     menu,
     onEditMovement,
+    backAction,
   }: {
     menu?: React.ReactNode;
     onEditMovement?: () => void;
+    backAction?: () => void;
   }) => (
     <div>
       {menu}
       <div>tables-view</div>
       <button onClick={() => onEditMovement?.()}>edit-movement</button>
+      <button onClick={() => backAction?.()} disabled={!backAction}>
+        tables-back
+      </button>
     </div>
   ),
 }));
@@ -120,6 +125,15 @@ describe("SetupGamePage setup menu", () => {
     await openSetupMenu();
     await userEvent.click(screen.getByRole("menuitem", { name: "Tables" }));
     expect(mockGoTo).toHaveBeenCalledWith("tables");
+  });
+
+  it("gives the Tables view a back action that returns to the create form", async () => {
+    render(<SetupGamePage />);
+
+    await userEvent.click(screen.getByRole("button", { name: "tables-back" }));
+    expect(mockPush).toHaveBeenCalledWith("/create");
+    // Back leaves the setup flow for the create form rather than switching step.
+    expect(mockGoTo).not.toHaveBeenCalled();
   });
 
   it("jumps to the movements step from the Tables view's edit-movement action", async () => {

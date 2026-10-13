@@ -47,7 +47,7 @@ Tap **Next**.
 | Field                   | Description                                                       |
 | ----------------------- | ----------------------------------------------------------------- |
 | **Event Type**          | **Pairs**, **Teams**, **Swiss Pairs**, or **Swiss Teams**. The Swiss options are drawn round by round as the event runs (see the Movements tab); the Pairs and Teams options use a fixed movement you pick from a list. |
-| **Scoring**             | How the event is scored. For **Pairs** and **Swiss Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP (aggregate)** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). **Swiss Teams** is always scored by **IMP (Victory Points)** — the only method that fits the round-by-round draw — so no scoring choice is shown for it. Defaults to Matchpoints for Pairs and IMP for Teams. |
+| **Scoring**             | How the event is scored. For **Pairs** and **Swiss Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP (Aggregate)** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). **Swiss Teams** is always scored by **IMP (Victory Points)** — the only method that fits the round-by-round draw — so no scoring choice is shown for it. Defaults to Matchpoints for Pairs and IMP for Teams. |
 | **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
 | **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
 
@@ -74,6 +74,10 @@ finish them in order.
 ```
 Tables  →  Movements  →  Timer
 ```
+
+The back arrow (top-left) on any of these tabs takes you back to the create form
+if you need to change the event name, type, or scoring; what you entered there
+is kept.
 
 ### Tables tab
 

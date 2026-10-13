@@ -15,6 +15,12 @@ export interface PlayerSearchViewProps {
    */
   guestOption: NewPlayer | null;
   loading: boolean;
+  /**
+   * Mark the selected player as invalid (e.g. their EBU number is already
+   * seated elsewhere). The selected-player chip is shown in error colours
+   * instead of the normal "valid" green.
+   */
+  invalid?: boolean;
   onQueryChange: (query: string) => void;
   onPlayerSelected: (player: NewPlayer) => void;
   onGuestSelected: (player: NewPlayer) => void;
@@ -28,6 +34,7 @@ export function PlayerSearchView({
   results,
   guestOption,
   loading,
+  invalid = false,
   onQueryChange,
   onPlayerSelected,
   onGuestSelected,
@@ -35,7 +42,13 @@ export function PlayerSearchView({
 }: PlayerSearchViewProps) {
   if (value) {
     return (
-      <div className="w-full rounded-xl border border-green-200 bg-green-50 p-4">
+      <div
+        className={`w-full rounded-xl border p-4 ${
+          invalid
+            ? "border-red-300 bg-red-50"
+            : "border-green-200 bg-green-50"
+        }`}
+      >
         <div className="flex items-start justify-between">
           <div>
             <h3 className="font-semibold text-slate-900">

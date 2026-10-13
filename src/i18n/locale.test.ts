@@ -29,7 +29,7 @@ describe("getMessages — teams scoring options", () => {
   it("offers aggregate IMP, IMP (VP) and Point-a-Board for en-GB", () => {
     const options = getMessages("en-GB").teamsScoringOptions;
     expect(options).toEqual([
-      { label: "IMP (aggregate)", value: "IMP" },
+      { label: "IMP (Aggregate)", value: "IMP" },
       { label: "IMP (Victory Points)", value: "IMP_VP" },
       { label: "Point-a-Board", value: "PAB" },
     ]);
@@ -38,7 +38,7 @@ describe("getMessages — teams scoring options", () => {
   it("offers aggregate IMP, IMP (VP) and Board-a-Match for en-US", () => {
     const options = getMessages("en-US").teamsScoringOptions;
     expect(options).toEqual([
-      { label: "IMP (aggregate)", value: "IMP" },
+      { label: "IMP (Aggregate)", value: "IMP" },
       { label: "IMP (Victory Points)", value: "IMP_VP" },
       { label: "Board-a-Match", value: "BAM" },
     ]);
