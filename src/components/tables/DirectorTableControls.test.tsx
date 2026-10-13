@@ -142,7 +142,9 @@ describe("DirectorTableControls", () => {
     const { rerender } = render(
       <DirectorTableControls tables={single} onOpenTable={vi.fn()} />,
     );
-    expect(screen.getByText("Shares with table 2")).toBeInTheDocument();
+    // The share note is shown on two lines: a label line, then the table list.
+    expect(screen.getByText("Shares with table")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
 
     const multi: DirectorTable[] = [
       {
@@ -151,7 +153,8 @@ describe("DirectorTableControls", () => {
       },
     ];
     rerender(<DirectorTableControls tables={multi} onOpenTable={vi.fn()} />);
-    expect(screen.getByText("Shares with tables 2, 3")).toBeInTheDocument();
+    expect(screen.getByText("Shares with tables")).toBeInTheDocument();
+    expect(screen.getByText("2, 3")).toBeInTheDocument();
   });
 
   it("shows a relay note", () => {

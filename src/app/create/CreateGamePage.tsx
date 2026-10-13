@@ -5,11 +5,16 @@ import { useRouter } from "next/navigation";
 import { createGame } from "@/lib/game-service";
 import { useId, useState } from "react";
 import useSWR from "swr";
-import { GameType } from "@/db/games/types/game-type";
-import { EventFormat } from "@/db/games/types/event-format";
 import { ScoringType } from "@/db/games/types/scoring-type";
 import { TournamentLevel } from "@/db/games/types/tournament-level";
 import { TOURNAMENT_LEVEL_OPTIONS } from "@/model/tournament-level";
+import {
+  type EventTypeChoice,
+  EVENT_TYPE_MAP,
+  EVENT_TYPE_OPTIONS,
+  isPairsChoice,
+  scoringTypeFor,
+} from "@/model/event-type-choice";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import { Toggle } from "@/components/common/Toggle";
@@ -20,36 +25,6 @@ import { useTranslations } from "@/i18n/useTranslations";
 import type { BridgewebsEventsResponse } from "@/app/api/games/bridgewebs/events/route";
 
 const DEFAULT_TABLES = 5;
-
-/**
- * The four event types offered on the create form. Each is a (game-type family
- * × format) pair under the hood: the "Swiss" choices are the same pairs/teams
- * family in the SWISS format, which only changes how the movement is set up
- * (drawn round by round) — not how it is scored.
- */
-type EventTypeChoice = "PAIRS" | "TEAMS" | "SWISS_PAIRS" | "SWISS_TEAMS";
-
-const EVENT_TYPE_MAP: Record<
-  EventTypeChoice,
-  { gameType: GameType; eventFormat: EventFormat }
-> = {
-  PAIRS: { gameType: "PAIRS", eventFormat: "STANDARD" },
-  TEAMS: { gameType: "TEAMS", eventFormat: "STANDARD" },
-  SWISS_PAIRS: { gameType: "PAIRS", eventFormat: "SWISS" },
-  SWISS_TEAMS: { gameType: "TEAMS", eventFormat: "SWISS" },
-};
-
-const EVENT_TYPE_OPTIONS: { label: string; value: EventTypeChoice }[] = [
-  { label: "Pairs", value: "PAIRS" },
-  { label: "Teams", value: "TEAMS" },
-  { label: "Swiss Pairs", value: "SWISS_PAIRS" },
-  { label: "Swiss Teams", value: "SWISS_TEAMS" },
-];
-
-/** Whether a choice is in the pairs family (vs the teams family). */
-function isPairsChoice(choice: EventTypeChoice): boolean {
-  return choice === "PAIRS" || choice === "SWISS_PAIRS";
-}
 
 // The create flow is split across two steps so neither screen feels crowded:
 //   1. "details"  — event name (free text or BridgeWebs picker) + director name
@@ -175,12 +150,7 @@ export function CreateGamePage() {
       // is always IMP (VP) — it is the only scoring that powers the VP-based
       // draw (aggregate IMP and board-comparison lack a VP total, so the draw
       // cannot rank the field).
-      scoringType:
-        eventType === "SWISS_TEAMS"
-          ? "IMP_VP"
-          : isPairsChoice(eventType)
-            ? pairsScoring
-            : teamsScoring,
+      scoringType: scoringTypeFor(eventType, pairsScoring, teamsScoring),
       eventDate,
       sectionName: "",
       tables: DEFAULT_TABLES,

@@ -189,9 +189,10 @@ function TablePlacementNote({
       </div>
       {sharesWith && sharesWith.length > 0 && (
         <div className="text-[11px] font-medium text-gray-600">
-          {sharesWith.length === 1
-            ? `Shares with table ${sharesWith[0]}`
-            : `Shares with tables ${sharesWith.join(", ")}`}
+          {/* Two lines: the "Shares with table(s)" label, then the table
+              number list beneath it, so a long list wraps cleanly. */}
+          <div>{sharesWith.length === 1 ? "Shares with table" : "Shares with tables"}</div>
+          <div>{sharesWith.join(", ")}</div>
         </div>
       )}
       {relayWith != null && (

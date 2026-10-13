@@ -75,9 +75,15 @@ finish them in order.
 Tables  →  Movements  →  Timer
 ```
 
-The back arrow (top-left) on any of these tabs takes you back to the create form
-if you need to change the event name, type, or scoring; what you entered there
-is kept.
+The back arrow (top-left) on any of these tabs opens an **Edit Event Details**
+screen, pre-filled with what you set when creating the game — the event name,
+director, event type, scoring, tournament level, and the Record Opening Lead /
+Allow Hand Entry switches. Adjust anything there and tap **Save** to return to
+setup, or use its back arrow to return without changes.
+
+> **Note:** changing the **event type** or **scoring** here clears the movement
+> you've already selected (the two have to match), so you'll be asked to confirm
+> and will need to pick a movement again on the Movements tab.
 
 ### Tables tab
 
