@@ -4,6 +4,15 @@ export const Rooms = {
   table: (gameId: string, tableId: string) => `game:${gameId}:table:${tableId}`,
 
   /**
+   * A room scoped to a single seat, joined by the device currently holding it
+   * when it mints a "change device" transfer code. When another device claims
+   * that code the server emits `SEAT_TAKEN_OVER` to this room so the old
+   * device learns it has been signed out (the claiming device has not joined
+   * the room yet, so it is not notified).
+   */
+  seat: (gameId: string, seat: string) => `game:${gameId}:seat:${seat}`,
+
+  /**
    * A room scoped to a single section of a game. Used to broadcast
    * section-specific updates (e.g. a section's movement changing) without
    * over-broadcasting to clients in other sections.

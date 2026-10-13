@@ -94,7 +94,11 @@ export function SetupGamePage() {
     // step fills the remaining height and owns its own scrolling so the pills
     // stay pinned while only the recommendations scroll.
     return (
-      <GamePageLayout headerTitle="Movement" headerRight={menu} hideBack>
+      <GamePageLayout
+        headerTitle="Movement"
+        headerRight={menu}
+        backAction={() => goTo("tables")}
+      >
         {/* Selecting a movement stays on the Movement screen: the popup closes
             and the (now highlighted) selection remains visible, rather than
             jumping to another step. */}
@@ -108,7 +112,11 @@ export function SetupGamePage() {
     // so this list shows no movement controls. Only reachable while the event
     // has more than one section.
     return (
-      <GamePageLayout headerTitle="Manage Sections" headerRight={menu} hideBack>
+      <GamePageLayout
+        headerTitle="Manage Sections"
+        headerRight={menu}
+        backAction={() => goTo("tables")}
+      >
         <div className="flex h-full min-h-0 flex-col">
           <ManageSectionsScreen gameId={game.gameId} />
         </div>
@@ -132,7 +140,11 @@ export function SetupGamePage() {
   // Optional timer configuration. Reuses the shared TimerSetup embedded;
   // configuring a timer here is never required to start the game.
   return (
-    <GamePageLayout headerTitle="Timer" headerRight={menu} hideBack>
+    <GamePageLayout
+      headerTitle="Timer"
+      headerRight={menu}
+      backAction={() => goTo("tables")}
+    >
       <TimerSetup embedded />
     </GamePageLayout>
   );

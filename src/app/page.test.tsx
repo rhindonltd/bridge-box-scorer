@@ -16,13 +16,13 @@ describe("MainMenu page", () => {
       "/join",
     );
     expect(
-      screen.getByRole("link", { name: "Create New Game" }),
+      screen.getByRole("link", { name: "Create Game" }),
     ).toHaveAttribute("href", "/create");
-    expect(screen.getByRole("link", { name: "Manage Games" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Manage Game" })).toHaveAttribute(
       "href",
       "/manage",
     );
-    expect(screen.getByRole("link", { name: "Room Display" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Display Game" })).toHaveAttribute(
       "href",
       "/display",
     );

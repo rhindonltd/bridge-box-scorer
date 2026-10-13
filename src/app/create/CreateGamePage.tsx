@@ -68,6 +68,11 @@ export function CreateGamePage() {
   const [step, setStep] = useState<Step>("details");
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
+  // Set once the director tries to advance from the details step with a
+  // required field still blank. Drives the red highlight on the empty field(s)
+  // in place of a standing instruction; cleared as soon as the details are
+  // complete so the highlight never lingers once fixed.
+  const [showDetailsErrors, setShowDetailsErrors] = useState(false);
   // The four event-type choices the director picks from. Each maps to a
   // (gameType family × eventFormat) pair: Swiss Pairs is a PAIRS game in the
   // SWISS format, Swiss Teams a TEAMS game in the SWISS format, and so on.
@@ -109,7 +114,6 @@ export function CreateGamePage() {
   const leadCardLabelId = useId();
   const handEntryLabelId = useId();
   const eventNameModeLabelId = useId();
-  const detailsHintId = useId();
 
   // BridgeWebs events for today. Only offered when the box has BridgeWebs
   // credentials configured and there are events for the day; a failed fetch
@@ -210,8 +214,6 @@ export function CreateGamePage() {
           <button
             type="submit"
             form="create-game-form"
-            disabled={!detailsComplete}
-            aria-describedby={detailsHintId}
             className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             Next
@@ -231,12 +233,15 @@ export function CreateGamePage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          // Step 1 advances to step 2 (only once both details are filled —
-          // guards against an Enter keypress bypassing the disabled button);
-          // step 2 submits the game.
+          // Step 1 advances to step 2 once both details are filled. If either
+          // is still blank, surface the empty field(s) with a red highlight
+          // (rather than a standing instruction) and stay on the step.
+          // Step 2 submits the game.
           if (isDetailsStep) {
             if (detailsComplete) {
               setStep("options");
+            } else {
+              setShowDetailsErrors(true);
             }
           } else {
             handleCreate();
@@ -248,13 +253,6 @@ export function CreateGamePage() {
         <div className="flex flex-col flex-1 justify-center gap-5">
           {isDetailsStep ? (
             <>
-              {/* Standing instruction above the fields. Always shown on the
-                  details step (even once filled) so the requirement stays
-                  visible rather than flickering away as the director types. */}
-              <p id={detailsHintId} className="text-sm text-gray-500">
-                Enter an event name and director to continue.
-              </p>
-
               <div className="flex flex-col gap-1">
                 {eventPickerAvailable && (
                   <div className="flex items-center justify-between">
@@ -292,6 +290,7 @@ export function CreateGamePage() {
                     label="Event Name"
                     value={eventName}
                     onChange={setEventName}
+                    invalid={showDetailsErrors && eventName.trim().length === 0}
                   />
                 )}
               </div>
@@ -300,6 +299,7 @@ export function CreateGamePage() {
                 label="Director Name"
                 value={director}
                 onChange={setDirector}
+                invalid={showDetailsErrors && director.trim().length === 0}
               />
             </>
           ) : (

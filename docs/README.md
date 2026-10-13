@@ -32,9 +32,9 @@ settings cog (top-right):
 | Button              | Who uses it | What it does                                                            |
 | ------------------- | ----------- | ----------------------------------------------------------------------- |
 | **Join Game**       | Players     | Pick a game and take a seat to start entering results.                  |
-| **Create New Game** | Directors   | Set up a brand-new session.                                             |
-| **Manage Games**    | Directors   | Open a game you are running to set it up, control it, or fix results.   |
-| **Room Display**    | Anyone      | Show the timer or leaderboard on a shared screen.                       |
+| **Create Game**     | Directors   | Set up a brand-new session.                                             |
+| **Manage Game**     | Directors   | Open a game you are running to set it up, control it, or fix results.   |
+| **Display Game**    | Anyone      | Show the timer or leaderboard on a shared screen.                       |
 | **⚙ Settings** (cog) | Device owner | WiFi, club information, and the admin key for the Bridge Box.           |
 
 ## Quick start
@@ -49,7 +49,7 @@ settings cog (top-right):
 
 ### For directors
 
-1. Tap **Create New Game** and fill in the event details.
+1. Tap **Create Game** and fill in the event details.
 2. On the **Tables** tab, wait for players to sit down (or add/adjust tables).
 3. On the **Movements** tab, pick a movement for the section.
 4. (Optional) On the **Timer** tab, set up the round timer.

@@ -91,6 +91,15 @@ export async function resolvePlayState(
   const { assignmentId, side, rounds } = schedule;
   const { section } = parseSeat(seat as PairSeat);
 
+  // A seated pair whose game has not been started yet has an occupancy row
+  // (so `getSchedule` returns non-null) but no materialized boards, hence no
+  // rounds. That is the "seated, waiting for the director to start" state, not
+  // a finished event — return null so the route 404s and the client shows the
+  // WaitingToStartPage. Without this guard an empty round list falls through to
+  // `findCurrentRoundIndex` returning -1 and the resolver reports `complete`,
+  // sending a freshly-seated player straight to the Game Complete screen.
+  if (rounds.length === 0) return null;
+
   // The player's current round is the first that isn't a completed PLAYED
   // round. A sit-out round is a resting state the player must acknowledge (the
   // sit-out page), so it counts as current until they move past it — the
@@ -154,7 +163,13 @@ function findCurrentRoundIndex(rounds: ScheduleRound[]): number {
   for (let i = 0; i < rounds.length; i++) {
     const round = rounds[i];
     if (round.sitOut) return i;
-    const complete = round.boardStatuses.every((b) => b.status === "CONFIRMED");
+    // `every` is true for an empty array, so a round with no board statuses
+    // (not yet materialized for this pair) would otherwise be misread as a
+    // completed round. Treat a round with no boards as not-complete so it is
+    // taken as the current round rather than skipped.
+    const complete =
+      round.boardStatuses.length > 0 &&
+      round.boardStatuses.every((b) => b.status === "CONFIRMED");
     if (!complete) return i;
   }
   return -1;

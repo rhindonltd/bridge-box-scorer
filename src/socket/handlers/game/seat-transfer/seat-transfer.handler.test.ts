@@ -17,10 +17,12 @@ import { validateAndClaimSeatTransferCode } from "@/db/system/queries/validate-s
 import { registerSeatTransferHandlers } from "./seat-transfer.handler";
 
 function makeSocket() {
-  return { data: {}, id: "test", on: vi.fn() } as any;
+  return { data: {}, id: "test", on: vi.fn(), join: vi.fn() } as any;
 }
 function makeIo() {
-  return { to: vi.fn(() => ({ emit: vi.fn() })) } as any;
+  // Capture the per-room emit so a test can assert what was broadcast.
+  const emit = vi.fn();
+  return { to: vi.fn(() => ({ emit })), __emit: emit } as any;
 }
 function handlerFor(socket: any, event: string) {
   const call = socket.on.mock.calls.find((c: any) => c[0] === event);
@@ -60,6 +62,8 @@ describe("registerSeatTransferHandlers", () => {
         expect.any(Function),
       );
       expect(createSeatTransferCode).toHaveBeenCalledWith("g1", "A1NS");
+      // Joins the seat room so this (old) device is notified on takeover.
+      expect(socket.join).toHaveBeenCalledWith("game:g1:seat:A1NS");
       expect(cb).toHaveBeenCalledWith({
         success: true,
         data: { code: "ABC234" },
@@ -109,7 +113,8 @@ describe("registerSeatTransferHandlers", () => {
         token: "new-token",
       });
       const socket = makeSocket();
-      registerSeatTransferHandlers(socket, makeIo());
+      const io = makeIo();
+      registerSeatTransferHandlers(socket, io);
       const cb = vi.fn();
 
       await handlerFor(socket, SocketEvents.CLAIM_SEAT_TRANSFER)(
@@ -120,6 +125,12 @@ describe("registerSeatTransferHandlers", () => {
       // Claiming is not player-authed — the code is the credential.
       expect(assertPlayer).not.toHaveBeenCalled();
       expect(validateAndClaimSeatTransferCode).toHaveBeenCalledWith("ABC234");
+      // Notifies the old device (in the seat room) that it has been signed out.
+      expect(io.to).toHaveBeenCalledWith("game:g1:seat:A1NS");
+      expect(io.__emit).toHaveBeenCalledWith(SocketEvents.SEAT_TAKEN_OVER, {
+        gameId: "g1",
+        seat: "A1NS",
+      });
       expect(cb).toHaveBeenCalledWith({
         success: true,
         data: { gameId: "g1", seat: "A1NS", token: "new-token" },

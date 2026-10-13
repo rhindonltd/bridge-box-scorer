@@ -41,15 +41,15 @@ export function MainMenuPage() {
         </Link>
 
         <Link href="/create" className={menuButtonClasses}>
-          Create New Game
+          Create Game
         </Link>
 
         <Link href="/manage" className={menuButtonClasses}>
-          Manage Games
+          Manage Game
         </Link>
 
         <Link href="/display" className={menuButtonClasses}>
-          Room Display
+          Display Game
         </Link>
       </div>
 

@@ -178,6 +178,80 @@ describe("useTimerConfigState", () => {
     });
   });
 
+  describe("timing mode toggle recomputes the displayed play duration", () => {
+    it("splits the per-round total down to per-board when switching to Per Board", () => {
+      // Per-round seed: 180s total over 3 boards/round -> 3m0s displayed.
+      const { result } = renderHook(() =>
+        useTimerConfigState(
+          seedState({
+            timingMode: "perRound",
+            boardsPerRound: 3,
+            playDuration: 180,
+          }),
+        ),
+      );
+
+      expect(result.current.config.playMinutes).toBe(3);
+      expect(result.current.config.playSeconds).toBe(0);
+
+      act(() =>
+        result.current.configHandlers.onConfigChange("timingMode", "perBoard"),
+      );
+
+      // Displayed value becomes per board: 180 / 3 = 60s -> 1m0s.
+      expect(result.current.config.timingMode).toBe("perBoard");
+      expect(result.current.config.playMinutes).toBe(1);
+      expect(result.current.config.playSeconds).toBe(0);
+      // The effective (stored) per-round total is unchanged: 60 * 3 = 180s.
+      expect(result.current.emitConfigFields.playDuration).toBe(180);
+    });
+
+    it("scales the per-board figure up to the per-round total when switching to Per Round", () => {
+      const { result } = renderHook(() =>
+        useTimerConfigState(
+          seedState({
+            timingMode: "perBoard",
+            boardsPerRound: 3,
+            playDuration: 180, // -> per-board display 60s (1m0s)
+          }),
+        ),
+      );
+
+      expect(result.current.config.playMinutes).toBe(1);
+      expect(result.current.config.playSeconds).toBe(0);
+
+      act(() =>
+        result.current.configHandlers.onConfigChange("timingMode", "perRound"),
+      );
+
+      // Displayed value becomes the per-round total: 60 * 3 = 180s -> 3m0s.
+      expect(result.current.config.timingMode).toBe("perRound");
+      expect(result.current.config.playMinutes).toBe(3);
+      expect(result.current.config.playSeconds).toBe(0);
+      expect(result.current.emitConfigFields.playDuration).toBe(180);
+    });
+
+    it("leaves the displayed value unchanged when the mode is re-selected", () => {
+      const { result } = renderHook(() =>
+        useTimerConfigState(
+          seedState({
+            timingMode: "perRound",
+            boardsPerRound: 3,
+            playDuration: 180,
+          }),
+        ),
+      );
+
+      act(() =>
+        result.current.configHandlers.onConfigChange("timingMode", "perRound"),
+      );
+
+      // Same mode -> no re-scale.
+      expect(result.current.config.playMinutes).toBe(3);
+      expect(result.current.config.playSeconds).toBe(0);
+    });
+  });
+
   describe("resume-time auto-fill", () => {
     afterEach(() => {
       vi.useRealTimers();

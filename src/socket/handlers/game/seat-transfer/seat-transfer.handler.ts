@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { z } from "zod";
 
 import { SocketEvents } from "@/socket/socket-events";
+import { Rooms } from "@/socket/rooms";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { createSeatTransferCode } from "@/db/system/actions/create-seat-transfer-code";
 import { validateAndClaimSeatTransferCode } from "@/db/system/queries/validate-seat-transfer-code";
@@ -41,6 +42,13 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
         }
 
         const code = await createSeatTransferCode(gameId, seat);
+
+        // Join this (old) device to the seat's room so it is notified when the
+        // code is claimed on another device. The claiming device never joins
+        // this room, so the takeover notice reaches only the device being
+        // signed out.
+        socket.join(Rooms.seat(gameId, seat));
+
         ack({ success: true, data: { code } });
       },
     },
@@ -58,6 +66,15 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
         // A stale / wrong code is a user-facing failure, not an internal error.
         throw new HandlerError(result.error);
       }
+
+      // Tell the device that previously held this seat it has been signed out,
+      // so it can leave the play screen and return home. Only the old device
+      // is in the seat room (it joined when minting the code); the claiming
+      // socket has not joined it, so it is not notified of its own takeover.
+      io.to(Rooms.seat(result.gameId, result.seat)).emit(
+        SocketEvents.SEAT_TAKEN_OVER,
+        { gameId: result.gameId, seat: result.seat },
+      );
 
       ack({
         success: true,

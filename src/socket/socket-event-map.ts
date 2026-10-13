@@ -66,4 +66,9 @@ export type SocketEventMap = {
     ewBoardNumber: number;
     ewResult: string;
   };
+
+  [SocketEvents.SEAT_TAKEN_OVER]: {
+    gameId: string;
+    seat: string;
+  };
 };

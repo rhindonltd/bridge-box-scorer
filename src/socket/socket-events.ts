@@ -18,6 +18,11 @@ export const SocketEvents = {
   // the seat. Backed by the seatTransferCodes table (system db).
   CREATE_SEAT_TRANSFER: "game:createSeatTransfer",
   CLAIM_SEAT_TRANSFER: "game:claimSeatTransfer",
+  // Server-initiated: emitted to a seat's room when another device claims its
+  // transfer code, so the device that previously held the seat learns it has
+  // been signed out and can leave the play screen. The claiming (new) device
+  // has not joined the seat room, so it does not receive this.
+  SEAT_TAKEN_OVER: "game:seatTakenOver",
   // NOTE: participant eviction is an HTTP route
   // (DELETE /api/games/[gameId]/participants/[seat]), not a socket event; it
   // broadcasts PARTICIPANTS from that route.

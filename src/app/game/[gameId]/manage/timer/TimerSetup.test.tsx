@@ -169,18 +169,18 @@ describe("TimerSetup (config screen)", () => {
     expect(mockSaveTimerConfig).not.toHaveBeenCalled();
   });
 
-  it("switching to per-round timing stores the entered play time as the round total", async () => {
+  it("switching to per-round timing scales the entered per-board time up to the round total", async () => {
     render(<TimerSetup />);
 
-    // Default is Per Board (play 7m30s = 450s per board). Switching to Per
-    // Round stores the entered play time directly, without multiplying by
-    // boards/round: 450s.
+    // Default is Per Board: 7m30s = 450s per board, 3 boards/round. Switching
+    // to Per Round re-scales the displayed play time to the round total so the
+    // actual play time is unchanged: 450s * 3 boards = 1350s.
     fireEvent.click(screen.getByLabelText("Per Round"));
     await waitFor(() =>
       expect(mockSaveTimerConfig).toHaveBeenLastCalledWith(
         "g1",
         "A",
-        expect.objectContaining({ timingMode: "perRound", playDuration: 450 }),
+        expect.objectContaining({ timingMode: "perRound", playDuration: 1350 }),
       ),
     );
   });
