@@ -150,6 +150,32 @@ export function formatPairNumber(
 }
 
 /**
+ * Format a pair's seat for display in a context whose column already names the
+ * direction (the per-board traveller's NS / EW columns): the NS/EW suffix is
+ * dropped as redundant, leaving just the pair's position.
+ *
+ * - Multi-section (`includeSection` true): keep the section so pairs stay
+ *   distinguishable across sections — "A1NS" -> "A1".
+ * - Single-section (`includeSection` false): the section is redundant too, so
+ *   only the table number remains — "A1NS" -> "1".
+ *
+ * A `#<occupancyId>` handover suffix is preserved (e.g. "A1NS#5" -> "A1#5" /
+ * "1#5") so a stand-in occupant stays distinct. A value that is not a valid
+ * section-qualified seat is returned unchanged.
+ */
+export function formatPairLabel(
+  seat: string,
+  includeSection: boolean,
+): string {
+  const match = SEAT_REGEX.exec(seat);
+  if (!match) return seat;
+  const [, section, table, , occupancyId] = match;
+  const suffix = occupancyId != null ? `#${occupancyId}` : "";
+  const prefix = includeSection ? section : "";
+  return `${prefix}${table}${suffix}`;
+}
+
+/**
  * The stable id of the TEAM whose home table a seat belongs to: the seat's
  * section + table number, with the NS/EW direction dropped (e.g. "A1NS" and
  * "A1EW" both map to "A1"). A team is the two pairs at one home table, so both

@@ -22,9 +22,20 @@ vi.mock("@/context/AssignmentContext", () => ({
   }),
 }));
 
+// Default: a single-section game (overridden in the multi-section test).
+const mockUseSections = vi.fn(() => ({
+  sections: [{ section: "A", label: "A", tables: 4, ordinal: 0 }],
+}));
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => mockUseSections(),
+}));
+
 vi.mock("@/components/traveller/Traveller", () => ({
-  Traveller: ({ scoredBoard }: any) => (
-    <div data-testid="traveller">
+  Traveller: ({ scoredBoard, includeSection }: any) => (
+    <div
+      data-testid="traveller"
+      data-include-section={String(includeSection)}
+    >
       Traveller {scoredBoard?.pluginId ?? "none"}
     </div>
   ),
@@ -46,6 +57,29 @@ describe("BoardResultsPage", () => {
   it("renders Traveller component", () => {
     render(<BoardResultsPage {...baseProps} />);
     expect(screen.getByTestId("traveller")).toBeInTheDocument();
+  });
+
+  it("tells the traveller to drop the section for a single-section game", () => {
+    render(<BoardResultsPage {...baseProps} />);
+    expect(screen.getByTestId("traveller")).toHaveAttribute(
+      "data-include-section",
+      "false",
+    );
+  });
+
+  it("tells the traveller to keep the section for a multi-section game", () => {
+    // Once-only so the default single-section return is restored afterwards.
+    mockUseSections.mockReturnValueOnce({
+      sections: [
+        { section: "A", label: "A", tables: 4, ordinal: 0 },
+        { section: "B", label: "B", tables: 4, ordinal: 1 },
+      ],
+    });
+    render(<BoardResultsPage {...baseProps} />);
+    expect(screen.getByTestId("traveller")).toHaveAttribute(
+      "data-include-section",
+      "true",
+    );
   });
 
   it("renders Next Board button when not last board", () => {

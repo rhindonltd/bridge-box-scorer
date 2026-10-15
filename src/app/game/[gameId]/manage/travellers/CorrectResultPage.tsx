@@ -14,6 +14,7 @@ import {
 import { getDirectorToken } from "@/lib/director-token";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
+import { useSections } from "@/hooks/sections";
 import { emitWithAck } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { SelectBoardPage } from "@/app/game/[gameId]/manage/travellers/SelectBoardPage";
@@ -40,10 +41,12 @@ interface CorrectResultPageProps {
  */
 function CorrectResultTraveller({
   boardNumber,
+  includeSection,
   onLineSelected,
   onBack,
 }: {
   boardNumber: number;
+  includeSection: boolean;
   onLineSelected: (instance: BoardInstance) => void;
   onBack: () => void;
 }) {
@@ -55,6 +58,7 @@ function CorrectResultTraveller({
       instances={instances}
       deal={deal}
       teamMatches={teamMatches}
+      includeSection={includeSection}
       isLoading={isLoading}
       onLineSelected={onLineSelected}
       onBack={onBack}
@@ -77,6 +81,13 @@ export function CorrectResultPage({
     | { step: "saving" };
 
   const { game } = useRequiredGame();
+
+  // A board number is shared across sections, so a multi-section traveller can
+  // list pairs from more than one section — keep the section in each pair label
+  // then. With one section it is redundant, so drop it. (The NS/EW direction is
+  // always dropped — the column header shows it.)
+  const { sections } = useSections(game.gameId);
+  const includeSection = sections.length > 1;
 
   // The §3.3.7 board-removal and §3.3.6/§3.3.9 void rulings apply to every teams
   // game. Board-comparison teams (BAM/PAB) score the indemnity in board-win
@@ -299,6 +310,7 @@ export function CorrectResultPage({
         <TravellerProvider boardNumber={wizardStep.boardNumber}>
           <CorrectResultTraveller
             boardNumber={wizardStep.boardNumber}
+            includeSection={includeSection}
             onLineSelected={handleLineSelected}
             onBack={() => setWizardStep({ step: "selectBoard" })}
           />

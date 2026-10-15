@@ -270,12 +270,16 @@ handle the odd team each round:
 
 Here you set up the round timer **before** the game starts: phase lengths,
 breaks, and the warning time. Tap **Save** to keep your settings. Setting up a
-timer is never required to start a game.
+timer is never required — every section always gets a timer when the game
+starts. If you never open this tab, each section simply starts on the sensible
+default timing (see [The timer](#the-timer)); come here only if you want to
+change it.
 
 Before the game starts you can only configure the timer here — you cannot run
-it. If you have saved a timer, it begins automatically when you tap **Start
-Game**, and from then on you control it (start, pause, adjust) from the Manage
-Game Menu. See [The timer](#the-timer).
+it. The timer begins automatically when you tap **Start Game**, using whatever
+you saved here or the default timing if you left it alone. From then on you
+control it (start, pause, adjust) from the Manage Game Menu. See
+[The timer](#the-timer).
 
 Each **section** has its own timer, so sections running at different speeds can
 be timed independently. When your game has more than one section, a section
@@ -414,9 +418,16 @@ settings below apply to the chosen section. The configuration has:
   turn red as a warning.
 - **Breaks** — see below.
 
-When you pick a movement, the timer starts from a sensible default: **7 minutes
-30 seconds of play per board** with a **1 minute 30 second** changeover. Adjust
-any of these to suit your event.
+When you pick a movement, the timer starts from your club's default timing —
+out of the box, **7 minutes 30 seconds of play per board** with a **1 minute
+30 second** changeover. Adjust any of these to suit this event. This same
+default is what each section runs on if you never open the Timer tab at all —
+so every game starts with a working timer whether or not you set one up.
+
+You can change the club-wide default (play per board, changeover, and the
+warning time) in **Settings → Default Timer**; see the
+[Settings Guide](settings-guide.md). The per-game Timer tab here always wins for
+the game you're setting up.
 
 > **Swiss events time differently.** In a **Swiss Pairs** or **Swiss Teams**
 > event there is no fixed changeover between rounds — the next round only begins

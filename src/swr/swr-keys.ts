@@ -24,6 +24,8 @@ export const swrKeys = {
 
   club: () => "/api/system/club",
 
+  defaultTimer: () => "/api/system/default-timer",
+
   bridgewebs: () => "/api/system/bridgewebs",
 
   ebu: () => "/api/system/ebu",

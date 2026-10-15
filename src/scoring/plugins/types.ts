@@ -18,6 +18,14 @@ export type OverallPluginId = "MP" | "IMP" | "XIMP";
  */
 export interface ViewOptions {
   highlightAssignmentId?: string;
+  /**
+   * Whether a pair's section should be kept in its traveller label. The NS/EW
+   * columns already name the direction, so the label drops it; the section is
+   * kept only for a multi-section game (where it disambiguates pairs across
+   * sections) and dropped for a single-section game. Defaults to true (keep
+   * the section) so callers that don't pass it stay unambiguous.
+   */
+  includeSection?: boolean;
 }
 
 /* =========================================================

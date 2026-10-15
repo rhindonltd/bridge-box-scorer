@@ -21,6 +21,7 @@ import { OverallScore } from "@/model/leaderboard";
 import {
   AssignedPair,
   AssignedTeam,
+  baseSeatOf,
   parseSeat,
   sectionOf,
 } from "@/model/participants";
@@ -95,8 +96,11 @@ export interface SectionLeaderboard extends LeaderboardResult {
   section: string;
 }
 
-function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
-  return { ...p, type: "PAIR" as const, id: p.initialSeat };
+function toParticipant(p: Pairs[number]) {
+  // `id` is the SCORED id (the pair's board-row id), so it matches the scored
+  // leaderboard lines and resolves names for both direction-qualified and
+  // one-winner movements. `initialSeat` is kept as the physical seat.
+  return { ...p, type: "PAIR" as const, id: p.scoredId };
 }
 
 /**
@@ -442,25 +446,40 @@ function padBaselineLines(
   rosterIds: string[],
   excludedIds: ReadonlySet<string>,
 ): OverallScore {
-  // Only seed the baseline field when NOTHING has been scored yet — i.e. before
-  // any board is played. Once results exist, the scored lines are keyed by each
-  // seat's materialised scoring id (which, for non-direction-qualified
-  // movements, differs from the seat id this roster uses), so matching roster
-  // ids against them is unreliable; and a seated pair with results already
-  // appears. A pair that is seated but has no results mid-event (late arrival,
-  // withdrawal) is handled by the dedicated §2.4 credit logic, not here.
-  if (overallScore.lines.length > 0) return overallScore;
-
+  // Every roster id that is not excluded should appear in the standings, so the
+  // field is the whole seated roster from the first board to the last — a pair
+  // with no result yet simply sits at the baseline (50% for matchpoints, zero
+  // elsewhere) rather than vanishing from the list.
   const baselineIds = rosterIds.filter((id) => !excludedIds.has(id));
   if (baselineIds.length === 0) return overallScore;
 
+  // Which roster ids already have a scored line, so we only fill the gaps and
+  // never double-list a pair that has results. A scored line's id can carry a
+  // handover `#<occupancyId>` suffix (a non-primary occupant); its base seat is
+  // what matches a roster id, so compare on the bare seat.
+  const scoredBaseIds = new Set(
+    overallScore.lines.map((line) => baseSeatOf(lineId(line))),
+  );
+
+  const missing = baselineIds.filter((id) => !scoredBaseIds.has(baseSeatOf(id)));
+
+  // Nothing to add: the scored field already covers every seated competitor.
+  if (missing.length === 0) return overallScore;
+
+  const padded = [
+    ...overallScore.lines,
+    ...missing.map((id) => baselineLine(overallScore.type, id)),
+  ];
+
   return {
     ...overallScore,
-    lines: rank(
-      baselineIds.map((id) => baselineLine(overallScore.type, id)),
-      pairOrTeamRankValue,
-    ),
+    lines: rank(padded, pairOrTeamRankValue),
   } as OverallScore;
+}
+
+/** The id field of an overall line, whichever variant it is (pair or team). */
+function lineId(line: OverallScore["lines"][number]): string {
+  return "teamId" in line ? line.teamId : line.pairId;
 }
 
 /** Rank value for any overall line variant (pairs or teams). */
@@ -841,7 +860,17 @@ function withdrawalCreditBoards(
   return synthetic;
 }
 
-type Pairs = Awaited<ReturnType<typeof findPairs>>;
+/**
+ * The seated pairs, each augmented with its SCORED id — the id its board rows
+ * carry (`anchorId`), which equals the seat for a direction-qualified movement
+ * (Mitchell) but is a bare/renumbered id for a one-winner movement. The
+ * leaderboard field, baseline padding and name resolution all key on this
+ * scored id so they line up with the scored lines; `initialSeat` is kept for
+ * section bucketing and the NS/EW directional split.
+ */
+type Pairs = (Awaited<ReturnType<typeof findPairs>>[number] & {
+  scoredId: string;
+})[];
 
 /**
  * Pure combined leaderboard: pool all sections' results per board number into
@@ -1198,6 +1227,19 @@ async function readLeaderboardInputs(
     ew: resolveScoredId(b.ew, b.boardNumber),
   }));
 
+  // A seat's SCORED id is the id its board rows carry — its `anchorId` (equal
+  // to the seat for a direction-qualified movement, a bare/renumbered id for a
+  // one-winner movement), falling back to the seat when no anchor was stamped.
+  // Attach it to each seated pair so the leaderboard field, baseline padding
+  // and name lookup all key on the same id the scored lines use.
+  const anchorBySeat = new Map<string, string>(
+    occupancies.map((o) => [o.seat, o.anchorId ?? o.seat]),
+  );
+  const scoredPairs: Pairs = pairs.map((p) => ({
+    ...p,
+    scoredId: anchorBySeat.get(p.initialSeat) ?? p.initialSeat,
+  }));
+
   // §2.4.9 exclusions and §2.4.3–§2.4.7 withdrawal credits are derived from the
   // standings AND the board rows together — the §2.4.7 LATE retain-standing
   // test counts boards actually played.
@@ -1256,7 +1298,7 @@ async function readLeaderboardInputs(
     expectedBoards,
     boardRows,
     matchRows,
-    pairs,
+    pairs: scoredPairs,
     teams,
     excludedFromRanking,
     withdrawals,

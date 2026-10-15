@@ -2,6 +2,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import { buildConfiguredTimerState } from "@/timer/timer-state";
+import type { Db } from "@/db/games";
+import { sections } from "@/db/games/tables/sections";
+import {
+  serializeSelectedMovement,
+  type SelectedMovement,
+} from "@/model/selected-movement";
 
 // The scheduler uses real timers; stub it so the test doesn't leave a pending
 // timeout, while still asserting it was asked to schedule the running timers.
@@ -39,7 +45,34 @@ describe("promoteTimerAtGameStart (real games db, per section)", () => {
     moveDuration: 90,
   };
 
+  /**
+   * Insert section rows for the game. `promoteTimerAtGameStart` iterates the
+   * game's sections (so it can also default-create timers for sections the
+   * director never configured), so a section must exist for its timer to be
+   * promoted. `movement` is the section's selected movement, if any.
+   */
+  async function createSections(
+    entries: { section: string; movement?: SelectedMovement }[],
+  ) {
+    const db = (await harness.getDb()) as Db;
+    db.insert(sections)
+      .values(
+        entries.map((e, i) => ({
+          section: e.section,
+          label: e.section,
+          tables: 6,
+          selectedMovement: e.movement
+            ? serializeSelectedMovement(e.movement)
+            : null,
+          ordinal: i,
+        })),
+      )
+      .run();
+  }
+
   it("promotes each configured section into an independent running timer", async () => {
+    await createSections([{ section: "A" }, { section: "B" }]);
+
     const { updateTimerState } = await import(
       "@/db/games/actions/update-timer-state"
     );
@@ -88,6 +121,9 @@ describe("promoteTimerAtGameStart (real games db, per section)", () => {
     );
     const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
 
+    // Only section A exists (and only it has a config). B is absent entirely,
+    // so there is nothing to default-create for it either.
+    await createSections([{ section: "A" }]);
     await updateTimerState(
       harness.gameId,
       "A",
@@ -98,8 +134,59 @@ describe("promoteTimerAtGameStart (real games db, per section)", () => {
     await promoteTimerAtGameStart(harness.gameId, io);
 
     expect((await findTimerState(harness.gameId, "A"))?.isRunning).toBe(true);
-    // Section B never had a config.
+    // Section B never existed/was configured.
     expect(await findTimerState(harness.gameId, "B")).toBeNull();
+  });
+
+  it("default-creates and starts a timer for a section with a movement but no saved config", async () => {
+    const { findTimerState } = await import(
+      "@/db/games/queries/find-timer-state"
+    );
+    const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
+    const { scheduleGame } = await import("@/timer/scheduler");
+
+    // Section A has a movement selected but the director never opened the timer
+    // page, so there is no saved timer config.
+    await createSections([
+      {
+        section: "A",
+        movement: {
+          source: "MITCHELL",
+          mitchell: { tables: 6, rounds: 5, boardsPerRound: 3 },
+        },
+      },
+    ]);
+
+    const { io } = makeIo();
+    await promoteTimerAtGameStart(harness.gameId, io);
+
+    const a = await findTimerState(harness.gameId, "A");
+    expect(a?.phase).toBe("play");
+    expect(a?.isRunning).toBe(true);
+    // Defaults from the timer page: 7:30/board over 3 boards = 1350s play, 90s
+    // move, sized to the movement's 5 rounds.
+    expect(a?.totalRounds).toBe(5);
+    expect(a?.boardsPerRound).toBe(3);
+    expect(a?.playDuration).toBe(1350);
+    expect(a?.moveDuration).toBe(90);
+    expect(scheduleGame).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a section with no saved config and no movement without a timer", async () => {
+    const { findTimerState } = await import(
+      "@/db/games/queries/find-timer-state"
+    );
+    const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
+    const { scheduleGame } = await import("@/timer/scheduler");
+
+    // Section exists but has no movement chosen, so no default can be sized.
+    await createSections([{ section: "A" }]);
+
+    const { io } = makeIo();
+    await promoteTimerAtGameStart(harness.gameId, io);
+
+    expect(await findTimerState(harness.gameId, "A")).toBeNull();
+    expect(scheduleGame).not.toHaveBeenCalled();
   });
 
   it("does nothing when no section was configured", async () => {
@@ -122,6 +209,7 @@ describe("promoteTimerAtGameStart (real games db, per section)", () => {
     );
     const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
 
+    await createSections([{ section: "A" }, { section: "B" }]);
     const startedAt = Date.now() - 5000;
     // A is already live; B is a fresh config.
     await updateTimerState(harness.gameId, "A", {

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { TimerState } from "@/timer/timer-state";
+import {
+  DEFAULT_TIMER_SETTINGS,
+  DefaultTimerSettings,
+  TimerState,
+} from "@/timer/timer-state";
 import { TimerConfig } from "./timer-view-types";
 import { computePlayEndByRound, formatDuration } from "./timer-format";
 import { useBreakEditor } from "./useBreakEditor";
@@ -34,6 +38,15 @@ export function useTimerConfigState(
    * fields editable (the live/adjust screen).
    */
   derived?: { boardsPerRound: number; totalRounds: number },
+  /**
+   * The club-wide default timer settings used to seed a fresh config (no saved
+   * state yet). Defaults to the built-in {@link DEFAULT_TIMER_SETTINGS}; the
+   * setup container passes the director-configured globals it loads from
+   * Settings so a new game's timer starts on the club's chosen defaults. These
+   * only seed the INITIAL state, so the container must have them resolved
+   * before this hook first renders (see `TimerConfigContainer`).
+   */
+  defaults: DefaultTimerSettings = DEFAULT_TIMER_SETTINGS,
 ) {
   const [tick, setTick] = useState(0);
 
@@ -49,17 +62,27 @@ export function useTimerConfigState(
   const [boardsPerRound, setBoardsPerRound] = useState(3);
   const [totalRounds, setTotalRounds] = useState(8);
   // Defaults for a fresh config (no persisted state yet): once a director
-  // selects a movement, the timer starts out at 7:30 of play per board and a
-  // 1:30 changeover, in Per Board timing mode. These are overridden by any
+  // selects a movement, the timer starts out at the club-wide default settings
+  // (`defaults`), which the container loads from Settings (falling back to the
+  // built-in DEFAULT_TIMER_SETTINGS). This keeps the setup form and the
+  // auto-created default timer at game start in lockstep. Overridden by any
   // saved config via the one-shot seed below.
-  const [playMinutes, setPlayMinutes] = useState(7);
-  const [playSeconds, setPlaySeconds] = useState(30);
-  const [moveMinutes, setMoveMinutes] = useState(1);
-  const [moveSeconds, setMoveSeconds] = useState(30);
-  const [timingMode, setTimingMode] = useState<"perRound" | "perBoard">(
-    "perBoard",
+  const [playMinutes, setPlayMinutes] = useState(
+    Math.floor(defaults.playSecondsPerBoard / 60),
   );
-  const [warningSeconds, setWarningSeconds] = useState(60);
+  const [playSeconds, setPlaySeconds] = useState(
+    defaults.playSecondsPerBoard % 60,
+  );
+  const [moveMinutes, setMoveMinutes] = useState(
+    Math.floor(defaults.moveSeconds / 60),
+  );
+  const [moveSeconds, setMoveSeconds] = useState(defaults.moveSeconds % 60);
+  const [timingMode, setTimingMode] = useState<"perRound" | "perBoard">(
+    defaults.timingMode,
+  );
+  const [warningSeconds, setWarningSeconds] = useState(
+    defaults.warningSeconds,
+  );
   const [adjustApplyToFuture, setAdjustApplyToFuture] = useState(false);
 
   const enteredPlaySeconds = playMinutes * 60 + playSeconds;

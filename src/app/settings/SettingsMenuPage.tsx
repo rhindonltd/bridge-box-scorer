@@ -21,6 +21,10 @@ export function SettingsMenuPage() {
           Club Information
         </Link>
 
+        <Link href="/settings/timer" className={settingsButtonClasses}>
+          Default Timer
+        </Link>
+
         <Link href="/settings/bridgewebs" className={settingsButtonClasses}>
           BridgeWebs
         </Link>

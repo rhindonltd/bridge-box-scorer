@@ -89,10 +89,11 @@ The board is designed to run hands-free on the screen:
 Standings update automatically whenever a result is confirmed or a director
 correction is made — there is nothing to refresh.
 
-Before any board has been played, the board already lists everyone who has sat
-down, each at a level starting point — **50%** for a matchpoint game, or **0**
-for IMP, Cross-IMP and teams games — so the full field is on screen from the
-start. Places then move as results come in.
+The board lists **everyone who has sat down** throughout the session, not just
+the pairs who have a result yet. Before any board has been played, each pair
+starts at a level starting point — **50%** for a matchpoint game, or **0** for
+IMP, Cross-IMP and teams games. A pair that hasn't played a board yet keeps that
+starting point and stays on the board; places then move as results come in.
 
 ---
 

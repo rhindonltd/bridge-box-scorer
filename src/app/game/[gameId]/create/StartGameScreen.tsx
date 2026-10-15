@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { Play } from "lucide-react";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import Button from "@/components/common/Button";
@@ -85,19 +86,23 @@ export function StartGameScreen({ menu }: Props) {
     >
       <div className="flex h-full min-h-0 flex-col">
         {canStart ? (
-          // Ready state: centre the card in the available space, with the
-          // Start Game button at the bottom of the card, horizontally centred.
+          // Ready state: the whole card is the Start Game affordance. Making
+          // the card itself the button avoids a blue button stranded on the
+          // green "ready" surface, and gives a large, easy tap target.
           <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-            <div
-              role="status"
-              className="flex w-full max-w-md flex-col items-center gap-5 rounded-xl border-2 border-green-300 bg-green-50 p-6 text-center text-green-900"
+            <button
+              type="button"
+              aria-label="Start Game"
+              onClick={handleStartGame}
+              disabled={!canStart || starting}
+              className="flex w-full max-w-md flex-col items-center gap-3 rounded-xl border-2 border-green-300 bg-green-50 p-6 text-center text-green-900 transition hover:border-green-400 hover:bg-green-100 active:scale-[0.99] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
             >
-              <div>
+              <div role="status">
                 <div className="text-lg font-semibold">
-                  Everything&rsquo;s ready
+                  {starting ? "Starting…" : "Everything\u2019s ready"}
                 </div>
                 <p className="mt-1 text-sm">
-                  Seating and movement are valid. Tap Start Game to begin.
+                  Seating and movement are valid. Tap to start the game.
                 </p>
                 {sitOutSeat && (
                   <p className="mt-2 text-sm text-gray-600">
@@ -105,14 +110,11 @@ export function StartGameScreen({ menu }: Props) {
                   </p>
                 )}
               </div>
-              <div className="w-full max-w-xs">
-                <Button
-                  value={starting ? "Starting…" : "Start Game"}
-                  onClick={handleStartGame}
-                  disabled={!canStart || starting}
-                />
-              </div>
-            </div>
+              <span className="mt-1 inline-flex items-center gap-2 text-base font-semibold text-green-700">
+                <Play className="h-5 w-5" aria-hidden="true" />
+                {starting ? "Starting…" : "Start Game"}
+              </span>
+            </button>
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto p-4">

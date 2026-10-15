@@ -2,6 +2,8 @@ import { Traveller } from "@/components/traveller/Traveller";
 import { ScoredBoard } from "@/scoring/traveller/score-traveller";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useAssignment } from "@/context/AssignmentContext";
+import { useRequiredGame } from "@/context/GameContext";
+import { useSections } from "@/hooks/sections";
 import { DealDisplay } from "@/components/deal/DealDisplay";
 import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
@@ -45,9 +47,21 @@ export function BoardResultsPage({
   headerRight,
 }: Props) {
   const { assignment } = useAssignment();
+  const { game } = useRequiredGame();
+  const { sections } = useSections(game.gameId);
+
+  // A board number is shared across sections, so a multi-section traveller can
+  // list pairs from more than one section — keep the section in each label then
+  // to tell them apart. With a single section it is redundant, so drop it. The
+  // NS/EW direction is always dropped (the column header already shows it).
+  const includeSection = sections.length > 1;
 
   const traveller = (
-    <Traveller scoredBoard={scoredBoard} highlightAssignmentId={assignment?.id} />
+    <Traveller
+      scoredBoard={scoredBoard}
+      highlightAssignmentId={assignment?.id}
+      includeSection={includeSection}
+    />
   );
 
   // The results view: for a teams game, an X-IMP / Team Result toggle over the

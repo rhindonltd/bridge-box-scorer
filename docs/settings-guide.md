@@ -7,6 +7,7 @@ Settings has these options:
 
 - **WiFi Settings**
 - **Club Information**
+- **Default Timer**
 - **Update Admin Key**
 - **Log Out**
 
@@ -55,6 +56,28 @@ credentials.
 
 Records your club's details, which are used when exporting results (for example
 the club name and number that appear in the USEBIO file).
+
+---
+
+## Default Timer
+
+Sets the timing every **new** game starts with, so you set your club's usual
+timing once rather than on every game:
+
+- **Play Duration (per board)** — how long each board gets. Because it is per
+  board, a round's play time is this figure multiplied by the number of boards
+  in the round.
+- **Changeover (move between rounds)** — how long players have to move between
+  rounds.
+- **Warning at** — how many seconds before play ends the countdown turns red as
+  a last-minute warning. Set it to 0 for no warning.
+
+Enter the play and changeover times as minutes and seconds, set the warning in
+seconds, and tap **Save**. These become the starting
+point for every game's timer. A director can still open a game's **Timer** tab
+and adjust the timing for that game — this screen only changes the default
+others start from. See the [Director Guide](director-guide.md) for the per-game
+timer.
 
 ---
 

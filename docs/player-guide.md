@@ -190,7 +190,8 @@ Every play screen has a **menu** button in the top-right corner. Tap it for:
   seat has moved to another device" message with a **Back to main menu** button,
   and play carries on from the other device.
 - **Pair details** — shows your pair number, which direction you're playing,
-  and both players' names.
+  and both players' names. In a game split into sections, your section (for
+  example A) is shown too.
 
 ---
 

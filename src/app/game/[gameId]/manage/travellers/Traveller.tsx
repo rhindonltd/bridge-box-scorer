@@ -3,7 +3,11 @@
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { CaptionedSpinner } from "@/components/common/Spinner";
 import { BoardResult as ContractDisplay } from "@/components/traveller/BoardResult";
-import { BoardInstance, TeamTravellerMatch } from "@/model/participants";
+import {
+  BoardInstance,
+  TeamTravellerMatch,
+  formatPairLabel,
+} from "@/model/participants";
 import { BoardOutcome } from "@/model/score";
 import { Deal } from "@/model/common";
 import { ShowHandToggle } from "@/components/deal/ShowHandToggle";
@@ -20,6 +24,13 @@ interface TravellerViewProps {
    * to none (pairs).
    */
   teamMatches?: TeamTravellerMatch[];
+  /**
+   * Whether to keep each pair's section in its NS/EW label. True for a
+   * multi-section game (so pairs stay distinguishable across sections), false
+   * for a single-section game (where the section is redundant). The NS/EW
+   * direction is always dropped — the column header shows it. Defaults to true.
+   */
+  includeSection?: boolean;
   isLoading: boolean;
   onLineSelected: (instance: BoardInstance) => void;
   onBack: () => void;
@@ -41,6 +52,7 @@ export function Traveller({
   instances,
   deal = null,
   teamMatches = [],
+  includeSection = true,
   isLoading,
   onLineSelected,
   onBack,
@@ -86,6 +98,7 @@ export function Traveller({
             ) : (
               <PairTravellerTable
                 instances={instances}
+                includeSection={includeSection}
                 onLineSelected={onLineSelected}
               />
             )}
@@ -99,9 +112,11 @@ export function Traveller({
 /** The plain pairs traveller: one selectable NS/EW row per table. */
 function PairTravellerTable({
   instances,
+  includeSection,
   onLineSelected,
 }: {
   instances: BoardInstance[];
+  includeSection: boolean;
   onLineSelected: (instance: BoardInstance) => void;
 }) {
   return (
@@ -126,7 +141,10 @@ function PairTravellerTable({
                 <>
                   <td className="border px-2 py-2">
                     <div className="font-medium">
-                      {instance.participants.ns}
+                      {formatPairLabel(
+                        instance.participants.ns,
+                        includeSection,
+                      )}
                     </div>
                     {instance.participants.nsNames && (
                       <div className="text-xs text-gray-500">
@@ -136,7 +154,10 @@ function PairTravellerTable({
                   </td>
                   <td className="border px-2 py-2">
                     <div className="font-medium">
-                      {instance.participants.ew}
+                      {formatPairLabel(
+                        instance.participants.ew,
+                        includeSection,
+                      )}
                     </div>
                     {instance.participants.ewNames && (
                       <div className="text-xs text-gray-500">

@@ -54,13 +54,18 @@ describe("section-aware leaderboard (real scoring)", () => {
     table: number,
     nsPlayers: [string, string],
     ewPlayers: [string, string],
+    // The board-row ids the two seats map to (their `anchorId`). Defaults to
+    // the seat itself — the direction-qualified (Mitchell) case where the board
+    // id equals the seat. Pass explicit ids for a one-winner movement whose
+    // board rows use renumbered ids (e.g. "A1"/"A2") that differ from the seat.
+    anchors?: { ns: string; ew: string },
   ) {
     const { players } = await import("@/db/games/tables/players");
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
 
-    for (const [seatDir, names] of [
-      ["NS", nsPlayers],
-      ["EW", ewPlayers],
+    for (const [seatDir, names, anchorId] of [
+      ["NS", nsPlayers, anchors?.ns ?? `${section}${table}NS`],
+      ["EW", ewPlayers, anchors?.ew ?? `${section}${table}EW`],
     ] as const) {
       const p1 = db
         .insert(players)
@@ -75,6 +80,7 @@ describe("section-aware leaderboard (real scoring)", () => {
       db.insert(seatOccupancy)
         .values({
           seat: `${section}${table}${seatDir}`,
+          anchorId,
           boards: null,
           player1: p1.id,
           player2: p2.id,
@@ -93,8 +99,16 @@ describe("section-aware leaderboard (real scoring)", () => {
 
     // Two sections, each with two pairs playing board 1. Section-qualified
     // movement ids: A -> A1/A2, B -> B1/B2.
-    await seatPair(db, "A", 1, ["A-NS", "A-NS2"], ["A-EW", "A-EW2"]);
-    await seatPair(db, "B", 1, ["B-NS", "B-NS2"], ["B-EW", "B-EW2"]);
+    // This movement renumbers pairs (board ids "A1"/"A2", not seat-equal), so
+    // bridge each seat to its board id via anchors.
+    await seatPair(db, "A", 1, ["A-NS", "A-NS2"], ["A-EW", "A-EW2"], {
+      ns: "A1",
+      ew: "A2",
+    });
+    await seatPair(db, "B", 1, ["B-NS", "B-NS2"], ["B-EW", "B-EW2"], {
+      ns: "B1",
+      ew: "B2",
+    });
 
     // Board 1 in each section, one result per section (single table each).
     // Give A a better NS score than B so combined ranking pools all four.
@@ -173,6 +187,56 @@ describe("section-aware leaderboard (real scoring)", () => {
     // The per-section leaderboard lists them too.
     const [a] = await computeSectionLeaderboards(db, gameId);
     expect(a.overallScore.lines).toHaveLength(2);
+  });
+
+  it("still lists every seated pair once the first result is in", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { computeLeaderboard } = await import("./leaderboard-service");
+
+    // Two tables seated (four pairs). Only table 1 has played board 1 so far.
+    await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+
+    db.insert(boards)
+      .values(
+        [
+          {
+            section: "A",
+            roundNumber: 1,
+            tableNumber: 1,
+            boardNumber: 1,
+            ns: "A1NS",
+            ew: "A1EW",
+            confirmedResult: "3NTN=" as BoardOutcome,
+            status: "CONFIRMED" as const,
+          },
+        ].map(withFixtureMatchId),
+      )
+      .run();
+
+    const combined = await computeLeaderboard(db, gameId);
+    const lines = combined.overallScore.lines as any[];
+
+    // All four seated pairs appear — not just the two that played table 1.
+    const ids = lines.map((l) => l.pairId).sort();
+    expect(ids).toEqual(["A1EW", "A1NS", "A2EW", "A2NS"]);
+
+    // Names resolve for every pair from the full seated roster (the scored
+    // pair included — no raw-id fallback).
+    const nameById = new Map(
+      combined.participants.map((p: any) => [
+        p.id,
+        `${p.player1.firstName} ${p.player2.firstName}`,
+      ]),
+    );
+    expect(nameById.get("A1NS")).toBe("N1 N1b");
+    expect(nameById.get("A2EW")).toBe("E2 E2b");
+
+    // Table 2 (no result yet) sits at the 0/0 matchpoint baseline.
+    const a2ns = lines.find((l) => l.pairId === "A2NS");
+    expect(a2ns.totalMP).toBe(0);
+    expect(a2ns.maxMP).toBe(0);
   });
 
   it("credits a Swiss sit-out pair 60% of the board top under matchpoints", async () => {

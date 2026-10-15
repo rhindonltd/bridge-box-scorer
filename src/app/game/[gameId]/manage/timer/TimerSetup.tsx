@@ -16,6 +16,10 @@ import { emitWithAck } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
 import { SocketEvents } from "@/socket/socket-events";
 import { saveTimerConfig } from "@/lib/timer-service";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
+import { DefaultTimerSettings } from "@/timer/timer-state";
 
 // Re-exported for existing consumers/tests; the implementations now live with
 // the shared config-state hook.
@@ -43,6 +47,41 @@ function TimerConfigContainer({
   section: string;
   embedded?: boolean;
   headerSlot?: React.ReactNode;
+}) {
+  // The club-wide default timer settings seed a fresh config (no saved state
+  // yet). The inner config-state hook reads them only for its INITIAL values,
+  // so we must have them resolved before it first mounts — otherwise it would
+  // seed on the built-in defaults and ignore the loaded ones. Load them here
+  // and defer mounting the inner container (keyed on the settings) until they
+  // arrive; on the appliance LAN this resolves effectively instantly, and SWR
+  // serves it from cache on subsequent section switches.
+  const { data } = useSWR<{ settings: DefaultTimerSettings }>(
+    swrKeys.defaultTimer(),
+    fetcher,
+  );
+
+  if (!data) return null;
+
+  return (
+    <TimerConfigContainerInner
+      section={section}
+      embedded={embedded}
+      headerSlot={headerSlot}
+      defaults={data.settings}
+    />
+  );
+}
+
+function TimerConfigContainerInner({
+  section,
+  embedded = false,
+  headerSlot,
+  defaults,
+}: {
+  section: string;
+  embedded?: boolean;
+  headerSlot?: React.ReactNode;
+  defaults: DefaultTimerSettings;
 }) {
   const { game } = useRequiredGame();
   const { timerState, breakProblems } = useTimerContext();
@@ -72,7 +111,7 @@ function TimerConfigContainer({
     sessionLength,
     previewEnd,
     configSignature,
-  } = useTimerConfigState(timerState, derived);
+  } = useTimerConfigState(timerState, derived, defaults);
 
   const noMovement = selectedMovement == null;
 

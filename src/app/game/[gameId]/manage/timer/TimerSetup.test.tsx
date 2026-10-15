@@ -38,6 +38,29 @@ vi.mock("@/lib/director-token", () => ({
   getDirectorToken: () => "token",
 }));
 
+// The config container loads the club-wide default timer settings via SWR and
+// defers rendering until they resolve. Stub `swr` so that lookup returns the
+// built-in defaults synchronously (a null key — e.g. MITCHELL's no-fetch
+// movement-round-info — yields no data, matching real SWR).
+vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
+vi.mock("swr", () => ({
+  default: (key: string | null) =>
+    key === "/api/system/default-timer"
+      ? {
+          data: {
+            settings: {
+              playSecondsPerBoard: 450,
+              moveSeconds: 90,
+              timingMode: "perBoard",
+              warningSeconds: 60,
+            },
+          },
+          isLoading: false,
+          mutate: vi.fn(),
+        }
+      : { data: undefined, isLoading: false, mutate: vi.fn() },
+}));
+
 const mockSaveTimerConfig = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/timer-service", () => ({
   saveTimerConfig: (...args: unknown[]) => mockSaveTimerConfig(...args),

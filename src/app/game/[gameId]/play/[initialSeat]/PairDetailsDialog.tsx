@@ -16,17 +16,33 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   /** This seat's pair (its two players + side), or null while still loading. */
   pair: SeatedPair | null;
-  /** The pair's number, shown when a movement has been selected. */
-  pairId: string | null;
+  /**
+   * This pair's section letter (e.g. "A"), or null to omit the section row.
+   * Omitted for a single-section game, where the section is redundant.
+   */
+  section: string | null;
+  /**
+   * This pair's number as the player should read it: table + direction for a
+   * two-winner (Mitchell) or teams game (e.g. "1NS"), or just the table number
+   * for a one-winner game (e.g. "1"). Null while the pair is still loading.
+   */
+  pairLabel: string | null;
 }
 
 /**
- * Shows the seated pair's own details: their pair number (once a movement is
- * set), which side they play, and the two players' names with each player's
- * national/EBU number when one is on record. Presentational only — the pair
- * comes from {@link useAssignment}; this component just renders it.
+ * Shows the seated pair's own details: their section (for a multi-section
+ * event), their pair number, which side they play, and the two players' names
+ * with each player's national/EBU number when one is on record. Presentational
+ * only — the values come from {@link useAssignment} and the game; this
+ * component just renders them.
  */
-export function PairDetailsDialog({ open, onOpenChange, pair, pairId }: Props) {
+export function PairDetailsDialog({
+  open,
+  onOpenChange,
+  pair,
+  section,
+  pairLabel,
+}: Props) {
   return (
     <Transition show={open} as={Fragment}>
       <Dialog onClose={() => onOpenChange(false)} className="relative z-50">
@@ -53,15 +69,32 @@ export function PairDetailsDialog({ open, onOpenChange, pair, pairId }: Props) {
             leaveTo="opacity-0 scale-95"
           >
             <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-              <Dialog.Title className="mb-1 text-lg font-semibold text-gray-900">
-                {pairId != null ? `Pair ${pairId}` : "Pair details"}
+              <Dialog.Title className="mb-3 text-lg font-semibold text-gray-900">
+                Pair details
               </Dialog.Title>
 
               {pair ? (
                 <>
-                  <p className="mb-4 text-sm text-gray-600">
-                    {DIRECTION_LABEL[pair.side]}
-                  </p>
+                  <dl className="mb-4 flex flex-col gap-1 text-sm">
+                    {section != null && (
+                      <div className="flex gap-2">
+                        <dt className="font-medium text-gray-600">Section:</dt>
+                        <dd className="text-gray-900">{section}</dd>
+                      </div>
+                    )}
+                    {pairLabel != null && (
+                      <div className="flex gap-2">
+                        <dt className="font-medium text-gray-600">Pair:</dt>
+                        <dd className="text-gray-900">{pairLabel}</dd>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <dt className="font-medium text-gray-600">Side:</dt>
+                      <dd className="text-gray-900">
+                        {DIRECTION_LABEL[pair.side]}
+                      </dd>
+                    </div>
+                  </dl>
 
                   <ul className="flex flex-col gap-3">
                     {pair.players.map((player) => (

@@ -23,20 +23,58 @@ const nsPair: SeatedPair = {
 };
 
 describe("PairDetailsDialog", () => {
-  it("shows the pair number, side, and both players' names", () => {
+  it("separates the section and pair, and shows the side and both players", () => {
     render(
       <PairDetailsDialog
         open
         onOpenChange={vi.fn()}
         pair={nsPair}
-        pairId="3"
+        section="A"
+        pairLabel="1NS"
       />,
     );
 
-    expect(screen.getByText("Pair 3")).toBeInTheDocument();
+    // Section and pair are shown as separate labelled rows (not "A1NS").
+    expect(screen.getByText("Section:")).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("Pair:")).toBeInTheDocument();
+    expect(screen.getByText("1NS")).toBeInTheDocument();
+    expect(screen.queryByText("A1NS")).toBeNull();
+
     expect(screen.getByText("North–South")).toBeInTheDocument();
     expect(screen.getByText("Ann Smith")).toBeInTheDocument();
     expect(screen.getByText("Ben Jones")).toBeInTheDocument();
+  });
+
+  it("omits the section row when no section is given (single-section game)", () => {
+    render(
+      <PairDetailsDialog
+        open
+        onOpenChange={vi.fn()}
+        pair={nsPair}
+        section={null}
+        pairLabel="1NS"
+      />,
+    );
+
+    expect(screen.queryByText("Section:")).toBeNull();
+    expect(screen.getByText("Pair:")).toBeInTheDocument();
+    expect(screen.getByText("1NS")).toBeInTheDocument();
+  });
+
+  it("shows a one-winner pair number without a direction", () => {
+    render(
+      <PairDetailsDialog
+        open
+        onOpenChange={vi.fn()}
+        pair={nsPair}
+        section={null}
+        pairLabel="1"
+      />,
+    );
+
+    expect(screen.getByText("Pair:")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
   });
 
   it("shows a player's national number when present and hides it when absent", () => {
@@ -45,7 +83,8 @@ describe("PairDetailsDialog", () => {
         open
         onOpenChange={vi.fn()}
         pair={nsPair}
-        pairId="3"
+        section="A"
+        pairLabel="1NS"
       />,
     );
 
@@ -61,20 +100,22 @@ describe("PairDetailsDialog", () => {
         open
         onOpenChange={vi.fn()}
         pair={{ side: "EW", players: nsPair.players }}
-        pairId="3"
+        section="A"
+        pairLabel="1EW"
       />,
     );
 
     expect(screen.getByText("East–West")).toBeInTheDocument();
   });
 
-  it("falls back to a generic title and loading text while the pair is null", () => {
+  it("shows the loading text while the pair is null", () => {
     render(
       <PairDetailsDialog
         open
         onOpenChange={vi.fn()}
         pair={null}
-        pairId={null}
+        section={null}
+        pairLabel={null}
       />,
     );
 
@@ -90,7 +131,8 @@ describe("PairDetailsDialog", () => {
         open
         onOpenChange={onOpenChange}
         pair={nsPair}
-        pairId="3"
+        section="A"
+        pairLabel="1NS"
       />,
     );
 
@@ -106,7 +148,8 @@ describe("PairDetailsDialog", () => {
         open
         onOpenChange={onOpenChange}
         pair={nsPair}
-        pairId="3"
+        section="A"
+        pairLabel="1NS"
       />,
     );
 

@@ -47,20 +47,18 @@ export function MoveInfoPage({
           </button>
         }
       >
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="w-full max-w-sm md:max-w-md lg:max-w-lg rounded-2xl border border-gray-200 bg-white p-10 md:p-14 text-center shadow-sm">
-            <div className="text-lg font-semibold uppercase tracking-wide text-gray-400">
-              Round {roundNumber}
-            </div>
-            <div className="mt-6 text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900">
-              Sit Out
-            </div>
-            {tableNumber != null && (
-              <div className="mt-4 text-2xl md:text-3xl font-medium text-gray-500">
-                at Table {tableNumber}
-              </div>
-            )}
+        <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+          <div className="text-lg font-semibold uppercase tracking-wide text-gray-500">
+            Round {roundNumber}
           </div>
+          <div className="mt-6 text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900">
+            Sit Out
+          </div>
+          {tableNumber != null && (
+            <div className="mt-4 text-2xl md:text-3xl font-medium text-gray-500">
+              at Table {tableNumber}
+            </div>
+          )}
         </div>
       </GamePageLayout>
     );
@@ -81,27 +79,25 @@ export function MoveInfoPage({
         </button>
       }
     >
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-sm md:max-w-md lg:max-w-lg rounded-2xl border border-gray-200 bg-white p-10 md:p-14 text-center shadow-sm">
-          <div className="text-lg font-semibold uppercase tracking-wide text-gray-400">
-            Round {roundNumber}
-          </div>
-
-          <div className="mt-6 text-2xl md:text-3xl font-medium text-gray-500">
-            Move to
-          </div>
-          <div className="mt-2 text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900">
-            Table {tableNumber}
-          </div>
-
-          {side && (
-            <div className="mt-8 flex flex-col items-center border-t border-gray-100 pt-8">
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-5 py-2 text-xl md:text-2xl font-bold text-blue-700">
-                Sit {SIDE_LABEL[side]}
-              </span>
-            </div>
-          )}
+      <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+        <div className="text-lg font-semibold uppercase tracking-wide text-gray-500">
+          Round {roundNumber}
         </div>
+
+        <div className="mt-6 text-2xl md:text-3xl font-medium text-gray-500">
+          Move to
+        </div>
+        <div className="mt-2 text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900">
+          Table {tableNumber}
+        </div>
+
+        {side && (
+          <div className="mt-8">
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-5 py-2 text-xl md:text-2xl font-bold text-blue-700">
+              Sit {SIDE_LABEL[side]}
+            </span>
+          </div>
+        )}
       </div>
     </GamePageLayout>
   );

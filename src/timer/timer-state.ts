@@ -163,6 +163,41 @@ export function buildConfiguredTimerState(config: TimerConfig): TimerState {
 /** Default warning threshold (seconds) when a state has none configured. */
 export const DEFAULT_WARNING_SECONDS = 60;
 
+/**
+ * The default timer settings a director sees when they first open the timer
+ * page for a section, before they change anything: 7:30 of play per board, a
+ * 1:30 changeover, entered in Per Board mode, with the standard 60s warning.
+ *
+ * These are the single source of truth for "the defaults from the timer page".
+ * Both the setup form (`useTimerConfigState`) and the server-side default timer
+ * created at game start (when the director never visited the timer page) read
+ * them, so the two can never drift apart.
+ *
+ * `boardsPerRound` and `totalRounds` are intentionally NOT part of this: they
+ * are always derived from the section's selected movement, never defaulted.
+ */
+export interface DefaultTimerSettings {
+  /** Play time per board, in seconds. */
+  playSecondsPerBoard: number;
+  /** Changeover / move time between rounds, in seconds. */
+  moveSeconds: number;
+  /** How the play figure is entered; the default is a per-board figure. */
+  timingMode: "perRound" | "perBoard";
+  /** Last-minute warning threshold, in seconds. */
+  warningSeconds: number;
+}
+
+export const DEFAULT_TIMER_SETTINGS: DefaultTimerSettings = {
+  /** Play time per board, in seconds (7:30). */
+  playSecondsPerBoard: 450,
+  /** Changeover / move time between rounds, in seconds (1:30). */
+  moveSeconds: 90,
+  /** How the play figure is entered; the default is a per-board figure. */
+  timingMode: "perBoard",
+  /** Last-minute warning threshold, in seconds. */
+  warningSeconds: DEFAULT_WARNING_SECONDS,
+};
+
 export function getWarningSeconds(state: Pick<TimerState, "warningSeconds">) {
   return state.warningSeconds ?? DEFAULT_WARNING_SECONDS;
 }

@@ -20,6 +20,9 @@ describe("SettingsMenuPage", () => {
     expect(
       screen.getByRole("link", { name: "Club Information" }),
     ).toHaveAttribute("href", "/settings/club");
+    expect(
+      screen.getByRole("link", { name: "Default Timer" }),
+    ).toHaveAttribute("href", "/settings/timer");
     expect(screen.getByRole("link", { name: "BridgeWebs" })).toHaveAttribute(
       "href",
       "/settings/bridgewebs",

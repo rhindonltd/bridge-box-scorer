@@ -8,6 +8,8 @@ type Props = {
   plugin: PerBoardScoringPlugin<unknown>;
   scored: unknown;
   highlightAssignmentId?: string;
+  /** Keep each pair's section in its NS/EW label (multi-section games). */
+  includeSection?: boolean;
 };
 
 /**
@@ -20,13 +22,17 @@ export function PerBoardTravellerView({
   plugin,
   scored,
   highlightAssignmentId,
+  includeSection = true,
 }: Props) {
   return (
     <PluginViewSwitcher
       views={plugin.views}
       renderView={(view) => (
         <ScoreTableView
-          table={view.toTable(scored, { highlightAssignmentId })}
+          table={view.toTable(scored, {
+            highlightAssignmentId,
+            includeSection,
+          })}
           highlightAssignmentId={highlightAssignmentId}
         />
       )}

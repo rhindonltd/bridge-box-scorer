@@ -15,6 +15,12 @@ vi.mock("@/swr/swr-keys", () => ({
   swrKeys: { boards: (id: string) => `/api/games/${id}/boards` },
 }));
 
+// The page reads the section count to decide whether traveller labels keep the
+// section; stub it (single section) so the test stays focused on the wizard.
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: [{ section: "A" }], isLoading: false }),
+}));
+
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
     game: { gameId: "g1", leadCardRequired: true },

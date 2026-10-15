@@ -132,6 +132,48 @@ describe("Traveller", () => {
     expect(onLineSelected).toHaveBeenCalledWith(instance);
   });
 
+  it("shows the pair's table number only for a single-section game (direction + section dropped)", () => {
+    const instance = pairInstance({
+      participants: { type: "PAIRS", ns: "A1NS", ew: "A2EW" },
+    });
+    render(
+      <Traveller
+        boardNumber={5}
+        instances={[instance]}
+        includeSection={false}
+        isLoading={false}
+        onLineSelected={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    // The full seat id is no longer shown.
+    expect(screen.queryByText("A1NS")).toBeNull();
+    expect(screen.queryByText("A2EW")).toBeNull();
+  });
+
+  it("keeps the section (but not the direction) for a multi-section game", () => {
+    const instance = pairInstance({
+      participants: { type: "PAIRS", ns: "B1NS", ew: "B2EW" },
+    });
+    render(
+      <Traveller
+        boardNumber={5}
+        instances={[instance]}
+        includeSection
+        isLoading={false}
+        onLineSelected={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("B1")).toBeInTheDocument();
+    expect(screen.getByText("B2")).toBeInTheDocument();
+    expect(screen.queryByText("B1NS")).toBeNull();
+  });
+
   it("renders a pair row without names and a dash when there is no result", () => {
     const instance = pairInstance({
       participants: {

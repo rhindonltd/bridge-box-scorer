@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   deriveTeamId,
+  formatPairLabel,
   formatPairNumber,
   isPairSeat,
   parseSeat,
@@ -100,6 +101,31 @@ describe("formatPairNumber", () => {
 
   it("returns a non-seat value unchanged", () => {
     expect(formatPairNumber("not-a-seat", false)).toBe("not-a-seat");
+  });
+});
+
+describe("formatPairLabel", () => {
+  it("drops the direction, keeping the section for a multi-section game", () => {
+    expect(formatPairLabel("A1NS", true)).toBe("A1");
+    expect(formatPairLabel("A1EW", true)).toBe("A1");
+    expect(formatPairLabel("B12EW", true)).toBe("B12");
+  });
+
+  it("drops both the direction and the section for a single-section game", () => {
+    expect(formatPairLabel("A1NS", false)).toBe("1");
+    expect(formatPairLabel("A1EW", false)).toBe("1");
+    expect(formatPairLabel("B12EW", false)).toBe("12");
+  });
+
+  it("preserves a handover occupancy suffix", () => {
+    expect(formatPairLabel("A1NS#5", true)).toBe("A1#5");
+    expect(formatPairLabel("A1NS#5", false)).toBe("1#5");
+  });
+
+  it("returns a non-seat value unchanged", () => {
+    expect(formatPairLabel("not-a-seat", false)).toBe("not-a-seat");
+    // A bare numeric id (used in some fixtures) is not a qualified seat.
+    expect(formatPairLabel("1", false)).toBe("1");
   });
 });
 
