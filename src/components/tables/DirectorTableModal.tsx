@@ -169,7 +169,14 @@ function TableModalBody({
         </Dialog.Description>
 
         <div className="mt-4 flex flex-col gap-3">
+        {/* Keyed by each pair's own seat so React keeps a stable identity for
+            the two rows. Without keys the siblings reconcile by position, and
+            because PairRow holds local state (openForm) and switches subtree
+            shape between its occupied and empty branches, a seated row and an
+            empty row would share instance state — making one row's toggle
+            appear to drive the other's. */}
         <PairRow
+          key={table.pairSeats.ns}
           label="North / South"
           player1={table.players.N}
           player2={table.players.S}
@@ -187,6 +194,7 @@ function TableModalBody({
           onHandover={onHandover}
         />
         <PairRow
+          key={table.pairSeats.ew}
           label="East / West"
           player1={table.players.E}
           player2={table.players.W}

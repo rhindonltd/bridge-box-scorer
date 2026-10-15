@@ -13,11 +13,15 @@ vi.mock("@/db/games/actions/delete-participant", () => ({
 vi.mock("@/socket/broadcast/participant-broadcast", () => ({
   broadcastParticipants: vi.fn(),
 }));
+vi.mock("@/socket/handlers/results/broadcast-results", () => ({
+  broadcastLeaderboardChanged: vi.fn().mockResolvedValue(undefined),
+}));
 
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { deleteParticipant } from "@/db/games/actions/delete-participant";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
+import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { registerLeaveTableHandler } from "./leave-table.handler";
 
 function makeSocket() {
@@ -70,6 +74,8 @@ describe("registerLeaveTableHandler", () => {
     );
     expect(deleteParticipant).toHaveBeenCalledWith("g1", "A1NS");
     expect(broadcastParticipants).toHaveBeenCalledWith("g1", io);
+    // The pair that left must drop off the leaderboard live too.
+    expect(broadcastLeaderboardChanged).toHaveBeenCalledWith(io, "g1");
     expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
   });
 

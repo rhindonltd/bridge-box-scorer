@@ -194,6 +194,45 @@ describe("DirectorTableModal", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps the two pair rows' toggles independent when one seat is empty", () => {
+    // Regression for the keyless-PairRow bug: with N/S seated and E/W empty,
+    // the N/S "Without standing" toggle and the E/W "Expected late" toggle must
+    // act only on their own pair — toggling one must not disturb the other.
+    const onChangeStanding = vi.fn();
+    const onToggleExpectedLate = vi.fn();
+
+    render(
+      <DirectorTableModal
+        table={halfEmptyTable()}
+        isSwiss={false}
+        onEvict={vi.fn()}
+        onToggleStationary={vi.fn()}
+        started={false}
+        onChangeStanding={onChangeStanding}
+        onToggleExpectedLate={onToggleExpectedLate}
+        onHandover={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    // N/S row: "Without standing" -> acts on A2NS only.
+    const withoutStanding = screen.getByRole("group", {
+      name: "Without standing",
+    });
+    fireEvent.click(within(withoutStanding).getByRole("button", { name: "Yes" }));
+    expect(onChangeStanding).toHaveBeenCalledWith("A2NS", {
+      standing: "WITHOUT_STANDING",
+    });
+    expect(onToggleExpectedLate).not.toHaveBeenCalled();
+
+    // E/W row: "Expected late" -> acts on A2EW only.
+    const expectedLate = screen.getByRole("group", { name: "Expected late" });
+    fireEvent.click(within(expectedLate).getByRole("button", { name: "Yes" }));
+    expect(onToggleExpectedLate).toHaveBeenCalledWith("A2EW", true);
+    // The standing handler was not called a second time by the other row.
+    expect(onChangeStanding).toHaveBeenCalledTimes(1);
+  });
+
   it("renders a placeholder dash for a missing player name", () => {
     const table = fullTable();
     (table.players as { N: unknown }).N = null;

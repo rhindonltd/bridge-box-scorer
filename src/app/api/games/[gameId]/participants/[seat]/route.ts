@@ -4,6 +4,8 @@ import { ClientError, respondToActionError } from "@/lib/api/client-error";
 import { deleteParticipant } from "@/db/games/actions/delete-participant";
 import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
+import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
+import { getIO } from "@/socket/websocket";
 import { isPairSeat, type Seat } from "@/model/participants";
 
 /**
@@ -45,6 +47,11 @@ export const DELETE = withDirectorRoute(async ({ gameId, req }) => {
 
     await deleteParticipant(gameId, seat as Seat);
     await broadcastParticipants(gameId);
+    // The leaderboard lists the seated field from the start, so an evicted pair
+    // must drop off it live too — not only after a refresh. (Occupancy-gated
+    // inside, and a no-op when no socket server is available.)
+    const io = getIO();
+    if (io) await broadcastLeaderboardChanged(io, gameId);
   } catch (err) {
     return respondToActionError(
       err,
