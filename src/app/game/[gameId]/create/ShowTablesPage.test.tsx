@@ -19,27 +19,89 @@ vi.mock("@/context/GameContext", () => ({
 // SWR returns whatever the current test sets as pairs data, and captures the
 // component's fetcher so a test can exercise it directly. `useSWRConfig().mutate`
 // is captured so the optimistic table-resize update can be asserted.
+//
+// The expected-late subscription is backed by a small stateful store so a test
+// can observe the optimistic flip: `mockMutate` applies the updater to
+// `expectedLateStore` (mirroring SWR's cache), and a re-render reads the new
+// value back. This matches how the real page reflects the toggle before the
+// server round-trip lands.
 let currentPairs: Pair[] = [];
 let capturedFetcher: ((url: string) => Promise<Pair[]>) | null = null;
-const mockMutate = vi.fn();
-vi.mock("swr", () => ({
-  default: (key: string | null, fetcher: (url: string) => Promise<Pair[]>) => {
+let expectedLateStore = new Set<string>();
+// What a bare `mutate(key)` revalidation (a fresh server read) would return.
+// Defaults to mirroring the optimistic store so success reconciles cleanly;
+// a test can point this at a stale value to model the server read racing the
+// write (the real "toggle snaps back" bug).
+let expectedLateServerValue: (() => Set<string>) | null = null;
+const mockMutate = vi.fn(
+  (key?: string, updater?: unknown, _opts?: unknown) => {
+    if (typeof key === "string" && key.includes("expected-late-seats")) {
+      if (typeof updater === "function") {
+        // Optimistic cache update.
+        expectedLateStore = (updater as (c?: Set<string>) => Set<string>)(
+          expectedLateStore,
+        );
+      } else {
+        // Bare revalidation: re-read from the "server".
+        expectedLateStore = expectedLateServerValue
+          ? expectedLateServerValue()
+          : expectedLateStore;
+      }
+      notifySwrSubscribers();
+    }
+    return Promise.resolve();
+  },
+);
+// Subscribers that should re-render when the mocked SWR cache changes (as real
+// SWR does when `mutate` updates a key). `mockMutate` bumps a version counter
+// and notifies them, so an optimistic update is observable in the rendered UI.
+const swrListeners = new Set<() => void>();
+function notifySwrSubscribers() {
+  for (const listener of swrListeners) listener();
+}
+vi.mock("swr", async () => {
+  const { useEffect, useState } = await import("react");
+
+  // Subscribe a hook instance to the mock cache so a mutate() triggers a
+  // re-render, the way real SWR notifies cache subscribers. Named with the
+  // `use` prefix so it is a legitimate custom hook (rules-of-hooks).
+  function useSwrMockSubscription() {
+    const [, force] = useState(0);
+    useEffect(() => {
+      const listener = () => force((n) => n + 1);
+      swrListeners.add(listener);
+      return () => {
+        swrListeners.delete(listener);
+      };
+    }, []);
+  }
+
+  function useSwrMock(
+    key: string | null,
+    fetcher: (url: string) => Promise<Pair[]>,
+  ) {
+    useSwrMockSubscription();
+
     // The page mounts several useSWR calls: pairs, the expected-late seat set,
     // and the selected-movement-name lookup (null key when no SPEC movement).
     // The expected-late subscription must yield a Set (the page calls `.has`);
     // the pairs subscription carries the configured pairs data and its fetcher
     // is captured for the fetcher-unwrap test.
     if (key != null && key.includes("expected-late-seats")) {
-      return { data: new Set<string>() };
+      return { data: expectedLateStore };
     }
     if (key != null) {
       capturedFetcher = fetcher;
       return { data: currentPairs };
     }
     return { data: undefined };
-  },
-  useSWRConfig: () => ({ mutate: mockMutate }),
-}));
+  }
+
+  return {
+    default: useSwrMock,
+    useSWRConfig: () => ({ mutate: mockMutate }),
+  };
+});
 
 // Pre-start by default; the page swaps evict/expected-late for the standing
 // controls once the game has started.
@@ -140,6 +202,7 @@ vi.mock("@/hooks/stationary-pairs", () => ({
 }));
 
 import { fetcher } from "@/lib/fetcher";
+import { setSeatExpectedLate } from "@/lib/standing-service";
 import { ShowTablesPage } from "./ShowTablesPage";
 
 function makePlayer(name: string) {
@@ -172,6 +235,8 @@ describe("ShowTablesPage", () => {
     currentPairs = [];
     syncSelector = null;
     capturedFetcher = null;
+    expectedLateStore = new Set<string>();
+    expectedLateServerValue = null;
     currentSections = [
       {
         section: "A",
@@ -384,6 +449,100 @@ describe("ShowTablesPage", () => {
     expect(mockEvictParticipant).not.toHaveBeenCalled();
   });
 
+  it("marks an empty seat expected-late and reflects the flip in the toggle", async () => {
+    // NS seated, EW empty -> the EW row offers the "Expected late" toggle.
+    currentPairs = [pairAt("A1NS")];
+
+    render(<ShowTablesPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+
+    // The Expected late toggle starts on "No".
+    const group = await screen.findByRole("group", { name: "Expected late" });
+    expect(within(group).getByRole("button", { name: "No" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    // Tapping "Yes" persists the empty EW seat and optimistically flips the
+    // control to the pressed state.
+    fireEvent.click(within(group).getByRole("button", { name: "Yes" }));
+
+    await waitFor(() =>
+      expect(setSeatExpectedLate).toHaveBeenCalledWith("g1", "A1EW", true),
+    );
+
+    const groupAfter = await screen.findByRole("group", {
+      name: "Expected late",
+    });
+    await waitFor(() =>
+      expect(
+        within(groupAfter).getByRole("button", { name: "Yes" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+  });
+
+  it("marks an expected-late seat when the whole table is empty (setup flow)", async () => {
+    // Fresh game, nobody seated — the SETUP-3 scenario. Both pairs are empty,
+    // so both rows offer an Expected late toggle.
+    currentPairs = [];
+
+    render(<ShowTablesPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+
+    const groups = await screen.findAllByRole("group", {
+      name: "Expected late",
+    });
+    expect(groups).toHaveLength(2);
+
+    // Tap "Yes" on the North/South row (the first group).
+    fireEvent.click(within(groups[0]).getByRole("button", { name: "Yes" }));
+
+    await waitFor(() =>
+      expect(setSeatExpectedLate).toHaveBeenCalledWith("g1", "A1NS", true),
+    );
+
+    const groupsAfter = await screen.findAllByRole("group", {
+      name: "Expected late",
+    });
+    await waitFor(() =>
+      expect(
+        within(groupsAfter[0]).getByRole("button", { name: "Yes" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+  });
+
+  it("keeps the expected-late flip when the reconcile read races the write (SETUP-3 bug)", async () => {
+    // Reproduces the reported "Expected late button doesn't toggle": the flip
+    // appears, then an immediate server re-read lands before the write is
+    // visible and returns the OLD (empty) set, snapping the toggle back.
+    // Model that stale read: a bare revalidation returns empty.
+    currentPairs = [pairAt("A1NS")];
+    expectedLateServerValue = () => new Set<string>();
+
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+
+    const group = await screen.findByRole("group", { name: "Expected late" });
+    fireEvent.click(within(group).getByRole("button", { name: "Yes" }));
+
+    await waitFor(() =>
+      expect(setSeatExpectedLate).toHaveBeenCalledWith("g1", "A1EW", true),
+    );
+
+    // The toggle must STAY on "Yes" — the just-made change wins over a racing
+    // stale read.
+    const groupAfter = await screen.findByRole("group", {
+      name: "Expected late",
+    });
+    await waitFor(() =>
+      expect(
+        within(groupAfter).getByRole("button", { name: "Yes" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+  });
+
   it("renders the section pills and add-section modal", () => {
     render(<ShowTablesPage />);
 
@@ -427,8 +586,13 @@ describe("ShowTablesPage", () => {
     expect(screen.getAllByText("Boards 1–3 (Copy A)").length).toBeGreaterThan(
       0,
     );
-    // Share and relay lines.
-    expect(screen.getByText("Shares with table 2")).toBeInTheDocument();
+    // Share and relay lines. The "shares" note now renders the label and the
+    // table-number list on two separate lines (so a long list wraps cleanly),
+    // so assert the label line and that its note carries the table number —
+    // scoped to the note so the bare "2" doesn't collide with the table badge.
+    const sharesLabel = screen.getByText("Shares with table");
+    expect(sharesLabel).toBeInTheDocument();
+    expect(sharesLabel.parentElement).toHaveTextContent("2");
     expect(screen.getByText("Relay → table 1")).toBeInTheDocument();
   });
 

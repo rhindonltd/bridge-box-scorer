@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ShowTablesPage } from "@/app/game/[gameId]/create/ShowTablesPage";
 import { StartGameScreen } from "@/app/game/[gameId]/create/StartGameScreen";
 import { EditEventDetailsPage } from "@/app/game/[gameId]/create/EditEventDetailsPage";
@@ -47,7 +47,7 @@ export function SetupGamePage() {
   // here since it is not part of the setup menu's step flow.
   const [editingDetails, setEditingDetails] = useState(false);
 
-  const { step, goTo } = useFlow(
+  const { step, goTo: rawGoTo } = useFlow(
     setupGameFlow,
     {},
     `/game/${game.gameId}/create`,
@@ -56,6 +56,22 @@ export function SetupGamePage() {
   // useFlow widens the step to `string`; the flow order guarantees it is one
   // of the SetupStep values.
   const activeStep = step as SetupStep;
+
+  // The step the director was on immediately before the current one. The step
+  // itself is URL-param driven and `useFlow` keeps no history, so we capture it
+  // at navigation time: every in-app move goes through `goTo`, which records
+  // the step being left before pushing the next one. Used by the Tables /
+  // Movement / Timer back arrows so "back" returns to whichever of those three
+  // the director came from, rather than always opening Edit Event Details.
+  const previousStepRef = useRef<SetupStep | null>(null);
+
+  const goTo = useCallback(
+    (next: SetupStep) => {
+      previousStepRef.current = activeStep;
+      rawGoTo(next);
+    },
+    [activeStep, rawGoTo],
+  );
 
   // "Manage sections" (rename/delete) is only meaningful once the event has
   // more than one section; a single-section game splits via the pills instead.
@@ -91,11 +107,41 @@ export function SetupGamePage() {
 
   const menu = <HeaderMenu items={menuItems} label="Setup menu" />;
 
-  // The back arrow on every setup view opens the editable event-details screen,
-  // prefilled from the created game — so the director can review/adjust the
-  // name, type, scoring, and options they set when creating, without losing
-  // anything or landing on a blank form.
+  // Opens the editable event-details screen, prefilled from the created game —
+  // so the director can review/adjust the name, type, scoring, and options they
+  // set when creating, without losing anything or landing on a blank form. Used
+  // as the back-arrow target on the Manage sections screen and as the fallback
+  // for the Tables / Movement / Timer back arrows (see handleSetupBack).
   const openEditDetails = () => setEditingDetails(true);
+
+  // Back-arrow action for the three interchangeable setup screens (Tables,
+  // Movement, Timer). Going "back" from any of them returns to whichever of
+  // the other two the director was last on — so arriving at Movement from
+  // Tables makes back return to Tables. When the previous screen was not one of
+  // these three (e.g. they arrived straight from creating the game, or came
+  // from Manage sections / Start), there is no sibling screen to return to, so
+  // it falls back to Edit Event Details.
+  //
+  // A back-arrow jump is itself navigation, but it deliberately does NOT record
+  // a new "previous step" — it uses rawGoTo and clears the ref — so a second
+  // back always exits to Edit Event Details rather than bouncing back and forth
+  // between the same two screens.
+  //
+  // The handler reads `previousStepRef` only when the arrow is tapped (never
+  // during render), so it always sees the step most recently left.
+  const handleSetupBack = useCallback(
+    (current: SetupStep) => {
+      const previous = previousStepRef.current;
+      const siblings: SetupStep[] = ["tables", "movements", "timer"];
+      if (previous && previous !== current && siblings.includes(previous)) {
+        previousStepRef.current = null;
+        rawGoTo(previous);
+      } else {
+        openEditDetails();
+      }
+    },
+    [rawGoTo],
+  );
 
   // The event-details editor overlays the whole setup flow (it is not a setup
   // menu step), so render it ahead of the step switch.
@@ -108,7 +154,7 @@ export function SetupGamePage() {
       <ShowTablesPage
         menu={menu}
         onEditMovement={() => goTo("movements")}
-        backAction={openEditDetails}
+        backAction={() => handleSetupBack("tables")}
       />
     );
   }
@@ -121,7 +167,7 @@ export function SetupGamePage() {
       <GamePageLayout
         headerTitle="Movement"
         headerRight={menu}
-        backAction={openEditDetails}
+        backAction={() => handleSetupBack("movements")}
       >
         {/* Selecting a movement stays on the Movement screen: the popup closes
             and the (now highlighted) selection remains visible, rather than
@@ -151,7 +197,10 @@ export function SetupGamePage() {
   if (step === "manage-sections") {
     // The event dropped back to a single section (e.g. a section was deleted
     // here), so this screen is no longer available — fall back to Movement.
-    goTo("movements");
+    // This is a programmatic bounce off an unavailable screen, not a director
+    // navigation, so it uses rawGoTo and is deliberately NOT recorded as a
+    // "previous step" (it would otherwise read/write the ref during render).
+    rawGoTo("movements");
     return null;
   }
 
@@ -167,7 +216,7 @@ export function SetupGamePage() {
     <GamePageLayout
       headerTitle="Timer"
       headerRight={menu}
-      backAction={openEditDetails}
+      backAction={() => handleSetupBack("timer")}
     >
       <TimerSetup embedded />
     </GamePageLayout>

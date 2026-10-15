@@ -50,6 +50,20 @@ export const AssignmentContext = createContext<ContextType | undefined>(
   undefined,
 );
 
+/**
+ * Unwrap the `{ pairs }` envelope the participants endpoint returns into a bare
+ * `Pair[]`. This MUST match the shape every other consumer of
+ * `swrKeys.pairs(gameId)` stores (SelectSeatPage, ShowTablesPage, and the
+ * PARTICIPANTS socket sync all use the array): they share one SWR cache key, so
+ * a provider that stored the raw `{ pairs }` object instead would poison the
+ * cache for a sibling that iterates it (`for (const p of data ?? [])` throws
+ * "… is not iterable" because `?? []` can't rescue a non-null object).
+ */
+async function pairsFetcher(url: string): Promise<Pair[]> {
+  const response: { pairs: Pair[] } = await fetcher(url);
+  return response.pairs;
+}
+
 export function AssignmentProvider({
   gameId,
   initialSeat,
@@ -84,7 +98,7 @@ export function AssignmentProvider({
   // The participants list is game-wide; we pick out this seat's row. It is
   // available before the game starts and in every play state.
   const pairsKey = swrKeys.pairs(gameId);
-  const { data: pairsData } = useSWR<{ pairs: Pair[] }>(pairsKey, fetcher);
+  const { data: pairsData } = useSWR<Pair[]>(pairsKey, pairsFetcher);
 
   /*
    * The director can change the movement mid-session, which re-derives every
@@ -126,7 +140,7 @@ export function AssignmentProvider({
   }, [data]);
 
   const pair = useMemo<SeatedPair | null>(() => {
-    const mine = pairsData?.pairs?.find((p) => p.initialSeat === initialSeat);
+    const mine = pairsData?.find((p) => p.initialSeat === initialSeat);
     if (!mine) {
       return null;
     }

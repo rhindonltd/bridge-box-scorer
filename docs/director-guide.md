@@ -75,11 +75,16 @@ finish them in order.
 Tables  →  Movements  →  Timer
 ```
 
-The back arrow (top-left) on any of these tabs opens an **Edit Event Details**
-screen, pre-filled with what you set when creating the game — the event name,
-director, event type, scoring, tournament level, and the Record Opening Lead /
-Allow Hand Entry switches. Adjust anything there and tap **Save** to return to
-setup, or use its back arrow to return without changes.
+The back arrow (top-left) on any of these tabs takes you back to whichever
+setup tab you were on just before — so if you came to Movements from Tables,
+back returns you to Tables. A second back from there doesn't bounce you between
+the two tabs; it opens the **Edit Event Details** screen instead. And if you
+haven't moved between the tabs yet (you've only just arrived at setup), the
+back arrow opens **Edit Event Details** straight away — pre-filled with what
+you set when creating the game — the
+event name, director, event type, scoring, tournament level, and the Record
+Opening Lead / Allow Hand Entry switches. Adjust anything there and tap **Save**
+to return to setup, or use its back arrow to return without changes.
 
 > **Note:** changing the **event type** or **scoring** here clears the movement
 > you've already selected (the two have to match), so you'll be asked to confirm

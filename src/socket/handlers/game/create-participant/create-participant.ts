@@ -5,6 +5,7 @@ import { SocketEvents } from "@/socket/socket-events";
 
 import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
+import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { findSeatedNationalIds } from "@/db/games/queries/find-seated-national-ids";
 
 import { NewParticipant } from "@/model/participants";
@@ -77,6 +78,12 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
         });
 
         await broadcastParticipants(gameId, io);
+        // The leaderboard lists the whole seated field from the start (everyone
+        // at a level starting score before any board is played), so a newly
+        // seated pair must appear on it live — not only after a refresh. Push a
+        // fresh snapshot to the leaderboard room (occupancy-gated inside), the
+        // same recompute every other standings-affecting change triggers.
+        await broadcastLeaderboardChanged(io, gameId);
         ack({ success: true, data: { key } });
       },
     },

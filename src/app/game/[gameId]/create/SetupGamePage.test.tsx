@@ -13,7 +13,14 @@ vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({ game: { gameId: "g1" } }),
 }));
 
-const mockGoTo = vi.fn();
+// The real goTo pushes a `?step=` param; the component recomputes `step` from
+// that param on the next render. The mock mirrors that by advancing
+// `currentStep`, so a test can navigate (recording a "previous step") and then
+// re-render to observe the new view — which is what the back-arrow
+// "return to the previous setup screen" behaviour depends on.
+const mockGoTo = vi.fn((next: string) => {
+  currentStep = next;
+});
 let currentStep = "tables";
 vi.mock("@/hooks/flow", () => ({
   createFlow: () => ({}),
@@ -88,14 +95,21 @@ vi.mock("@/app/game/[gameId]/manage/timer/TimerSetup", () => ({
 // regardless of which step owns the layout.
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
+    headerTitle,
     headerRight,
+    backAction,
     children,
   }: {
+    headerTitle?: string;
     headerRight?: React.ReactNode;
+    backAction?: () => void;
     children: React.ReactNode;
   }) => (
     <div>
       {headerRight}
+      {backAction && (
+        <button onClick={() => backAction()}>{`${headerTitle}-back`}</button>
+      )}
       {children}
     </div>
   ),
@@ -283,5 +297,132 @@ describe("SetupGamePage setup menu", () => {
     expect(mockPush).toHaveBeenCalledWith("/");
     // It leaves the flow rather than navigating within it.
     expect(mockGoTo).not.toHaveBeenCalled();
+  });
+});
+
+describe("SetupGamePage setup back arrow", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    currentStep = "tables";
+    mockSectionCount = 2;
+  });
+
+  // The "previous step" lives in a ref on a single mounted component, so these
+  // tests keep ONE render and advance the view with rerender() after each
+  // navigation (the goTo mock has already updated `currentStep`). Mounting a
+  // second component would reset the ref and lose the recorded previous step.
+
+  it("returns Movement's back arrow to Tables when the director came from Tables", async () => {
+    // Start on Tables, then open Movement from the menu — recording Tables as
+    // the screen just left.
+    const { rerender } = render(<SetupGamePage />);
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Movement" }));
+    expect(mockGoTo).toHaveBeenLastCalledWith("movements");
+
+    // The goTo mock advanced the step to Movement; re-render the same instance
+    // to show that view.
+    rerender(<SetupGamePage />);
+    expect(screen.getByText("sections-view")).toBeInTheDocument();
+
+    // Back from Movement goes to Tables (the screen it came from), not the
+    // event-details editor.
+    await userEvent.click(screen.getByRole("button", { name: "Movement-back" }));
+    expect(mockGoTo).toHaveBeenLastCalledWith("tables");
+    expect(screen.queryByText("edit-event-details-view")).toBeNull();
+  });
+
+  it("returns Movement's back arrow to Timer when the director came from Timer", async () => {
+    currentStep = "timer";
+    const { rerender } = render(<SetupGamePage />);
+
+    // Timer → Movement, recording Timer as the previous screen.
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Movement" }));
+    rerender(<SetupGamePage />);
+    expect(screen.getByText("sections-view")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Movement-back" }));
+    expect(mockGoTo).toHaveBeenLastCalledWith("timer");
+    expect(screen.queryByText("edit-event-details-view")).toBeNull();
+  });
+
+  it("returns Timer's back arrow to Tables when the director came from Tables", async () => {
+    const { rerender } = render(<SetupGamePage />);
+
+    // Tables → Timer, recording Tables as the previous screen.
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Timer" }));
+    rerender(<SetupGamePage />);
+    expect(screen.getByText(/timer-view/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Timer-back" }));
+    expect(mockGoTo).toHaveBeenLastCalledWith("tables");
+    expect(screen.queryByText("edit-event-details-view")).toBeNull();
+  });
+
+  it("returns Tables' back arrow to Movement when the director came from Movement", async () => {
+    currentStep = "movements";
+    const { rerender } = render(<SetupGamePage />);
+
+    // Movement → Tables, recording Movement as the previous screen.
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Tables" }));
+    rerender(<SetupGamePage />);
+    expect(screen.getByText("tables-view")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "tables-back" }));
+    expect(mockGoTo).toHaveBeenLastCalledWith("movements");
+    expect(screen.queryByText("edit-event-details-view")).toBeNull();
+  });
+
+  it("exits to the event-details editor on a second back rather than bouncing", async () => {
+    // Tables → Movement, so Movement's back returns to Tables.
+    const { rerender } = render(<SetupGamePage />);
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Movement" }));
+    rerender(<SetupGamePage />);
+
+    // First back: Movement → Tables.
+    await userEvent.click(screen.getByRole("button", { name: "Movement-back" }));
+    expect(mockGoTo).toHaveBeenLastCalledWith("tables");
+    rerender(<SetupGamePage />);
+    expect(screen.getByText("tables-view")).toBeInTheDocument();
+
+    // Second back does NOT bounce back to Movement; it opens the event-details
+    // editor instead. The two navigations so far are the menu "Movement" click
+    // and the first back to Tables — this second back triggers no further
+    // navigation.
+    await userEvent.click(screen.getByRole("button", { name: "tables-back" }));
+    expect(screen.getByText("edit-event-details-view")).toBeInTheDocument();
+    expect(mockGoTo).toHaveBeenCalledTimes(2);
+    expect(mockGoTo).not.toHaveBeenLastCalledWith("movements");
+  });
+
+  it("falls back to the event-details editor when there is no previous setup screen", async () => {
+    // No navigation has happened, so Tables' back arrow has no sibling screen
+    // to return to and opens the (prefilled) event-details editor instead.
+    render(<SetupGamePage />);
+
+    await userEvent.click(screen.getByRole("button", { name: "tables-back" }));
+    expect(screen.getByText("edit-event-details-view")).toBeInTheDocument();
+    expect(mockGoTo).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the event-details editor when the previous screen was Manage sections", async () => {
+    currentStep = "manage-sections";
+    const { rerender } = render(<SetupGamePage />);
+
+    // Manage sections → Movement, recording Manage sections as the previous
+    // screen. It is not one of the three interchangeable setup screens, so
+    // Movement's back arrow has no sibling to return to and opens the
+    // event-details editor.
+    await openSetupMenu();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Movement" }));
+    rerender(<SetupGamePage />);
+    expect(screen.getByText("sections-view")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Movement-back" }));
+    expect(screen.getByText("edit-event-details-view")).toBeInTheDocument();
   });
 });

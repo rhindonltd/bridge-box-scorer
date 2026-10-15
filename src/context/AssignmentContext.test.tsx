@@ -182,22 +182,22 @@ describe("AssignmentContext", () => {
 
   describe("seated pair", () => {
     it("resolves this seat's pair (players + side) from the participant list", () => {
-      setPairs({
-        pairs: [
-          {
-            type: "PAIR",
-            initialSeat: "A1NS",
-            player1: makePlayer(1, "Ann", "Smith", "1001"),
-            player2: makePlayer(2, "Ben", "Jones", null),
-          },
-          {
-            type: "PAIR",
-            initialSeat: "A1EW",
-            player1: makePlayer(3, "Cy", "Doe"),
-            player2: makePlayer(4, "Di", "Fox"),
-          },
-        ],
-      });
+      // The participants cache holds a bare Pair[] (the shape every consumer
+      // of swrKeys.pairs shares), so the provider reads it directly.
+      setPairs([
+        {
+          type: "PAIR",
+          initialSeat: "A1NS",
+          player1: makePlayer(1, "Ann", "Smith", "1001"),
+          player2: makePlayer(2, "Ben", "Jones", null),
+        },
+        {
+          type: "PAIR",
+          initialSeat: "A1EW",
+          player1: makePlayer(3, "Cy", "Doe"),
+          player2: makePlayer(4, "Di", "Fox"),
+        },
+      ]);
 
       const { result } = renderHook(() => useAssignment(), {
         wrapper: ({ children }) => wrapper(children),
@@ -224,16 +224,14 @@ describe("AssignmentContext", () => {
     it("is null when this seat's own record has an unparseable seat", () => {
       // The seat matches a participant row, but its seat string cannot be
       // parsed for a direction, so the pair resolves to null via the catch.
-      setPairs({
-        pairs: [
-          {
-            type: "PAIR",
-            initialSeat: "!!!",
-            player1: makePlayer(1, "Ann", "Smith"),
-            player2: makePlayer(2, "Ben", "Jones"),
-          },
-        ],
-      });
+      setPairs([
+        {
+          type: "PAIR",
+          initialSeat: "!!!",
+          player1: makePlayer(1, "Ann", "Smith"),
+          player2: makePlayer(2, "Ben", "Jones"),
+        },
+      ]);
 
       const { result } = renderHook(() => useAssignment(), {
         wrapper: ({ children }) => (
@@ -247,16 +245,14 @@ describe("AssignmentContext", () => {
     });
 
     it("is null when this seat has no participant record", () => {
-      setPairs({
-        pairs: [
-          {
-            type: "PAIR",
-            initialSeat: "A2EW",
-            player1: makePlayer(3, "Cy", "Doe"),
-            player2: makePlayer(4, "Di", "Fox"),
-          },
-        ],
-      });
+      setPairs([
+        {
+          type: "PAIR",
+          initialSeat: "A2EW",
+          player1: makePlayer(3, "Cy", "Doe"),
+          player2: makePlayer(4, "Di", "Fox"),
+        },
+      ]);
 
       const { result } = renderHook(() => useAssignment(), {
         wrapper: ({ children }) => wrapper(children),
