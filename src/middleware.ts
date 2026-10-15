@@ -10,18 +10,20 @@ import { isCaptiveProbe, matchProbePath } from "@/lib/system/captive-portal";
  * internet" and may drop the network (notably Fire OS). This middleware runs
  * before routing and answers probes the way each OS expects.
  *
- * Default strategy ("either pop the sheet or accept silently, whichever is
- * reliable"): respond `302 Found` with `Location: http://<box-ip>/`. A 302 to
- * the app root is what makes Android / Fire OS / iOS classify the network as a
- * captive portal and open the in-OS browser sheet showing the scoring app. The
- * `<box-ip>` is never hardcoded — it is the host the request already arrived
- * on.
+ * Default strategy ("accept silently — NO sign-in sheet"): answer each probe
+ * with the exact success response that OS expects (e.g. 204 empty for Android /
+ * Fire OS, the literal `Success` document for iOS), so the device concludes
+ * "internet is fine" and does NOT pop a captive-portal sheet. BridgeBox has no
+ * sign-in step, so a sheet is a dead-end nag — the player just opens the app
+ * (the DNS hijack + NAT route any address here). A 302 to the app would make
+ * the OS classify the network as a captive portal and show the sheet, which is
+ * exactly what we want to avoid, so it is NEVER the default.
  *
- * Per-OS escape hatch: a specific OS can be switched to its literal "online"
- * body (e.g. iOS `Success`) by setting `CAPTIVE_LITERAL_BODY_PATHS` to a
- * comma-separated list of probe paths. Those paths then get their expected 200
- * (or 204) literal response instead of the redirect, for cases where a device
- * refuses to settle on the 302 during testing.
+ * Per-OS escape hatch (last resort): if a specific OS refuses to settle on
+ * silent-accept during device testing, its probe paths can be switched to a
+ * 302-to-app by listing them in `CAPTIVE_REDIRECT_PATHS` (comma-separated).
+ * That reintroduces the sheet for that OS only — use sparingly and record which
+ * device needed it.
  *
  * Must stay allocation-light, synchronous, and free of network / Node-only
  * imports: it fires on every device join, sometimes repeatedly, and runs in the
@@ -29,12 +31,13 @@ import { isCaptiveProbe, matchProbePath } from "@/lib/system/captive-portal";
  */
 
 /**
- * Probe paths that should receive their OS-specific literal body instead of the
- * default 302-to-app, configured per-OS during device testing. Comma-separated
- * list of paths in `CAPTIVE_LITERAL_BODY_PATHS` (e.g. "/hotspot-detect.html").
+ * Probe paths that should fall back to a 302-to-app (reintroducing the sign-in
+ * sheet) instead of the default silent-accept success response. Last-resort
+ * per-OS escape hatch, configured during device testing via a comma-separated
+ * list in `CAPTIVE_REDIRECT_PATHS` (e.g. "/hotspot-detect.html").
  */
-const LITERAL_BODY_PATHS: ReadonlySet<string> = new Set(
-  (process.env.CAPTIVE_LITERAL_BODY_PATHS ?? "")
+const REDIRECT_PATHS: ReadonlySet<string> = new Set(
+  (process.env.CAPTIVE_REDIRECT_PATHS ?? "")
     .split(",")
     .map((p) => p.trim().toLowerCase())
     .filter(Boolean),
@@ -46,15 +49,25 @@ export function middleware(request: NextRequest): NextResponse {
 
   if (!isCaptiveProbe(host, pathname)) {
     // Not a probe: let the request fall through to normal routing. The DNS
-    // hijack already routes every hostname here, so the app's own UI (and its
-    // not-found handling) serves "open any address" lands on the app.
+    // hijack already routes every hostname here, so the app's own UI serves
+    // "open any address" and lands the user on the main menu.
     return NextResponse.next();
   }
 
   const probe = matchProbePath(pathname);
 
-  // Per-OS escape hatch: serve the literal "online" body this OS expects.
-  if (probe && probe.body !== null && LITERAL_BODY_PATHS.has(probe.path.toLowerCase())) {
+  // Last-resort per-OS escape hatch: 302 to the app root (this reintroduces the
+  // sign-in sheet, so it is only used for paths explicitly opted in).
+  if (probe && REDIRECT_PATHS.has(probe.path.toLowerCase())) {
+    const appRoot = new URL("/", request.nextUrl);
+    const redirect = NextResponse.redirect(appRoot, 302);
+    redirect.headers.set("Cache-Control", "no-store");
+    return redirect;
+  }
+
+  // Default: answer with the exact success response this OS expects so the
+  // device accepts the network silently and shows no sign-in sheet.
+  if (probe) {
     return new NextResponse(probe.body, {
       status: probe.status,
       headers: {
@@ -64,19 +77,10 @@ export function middleware(request: NextRequest): NextResponse {
     });
   }
 
-  // A host-only probe that already requested the app root has nowhere to
-  // redirect to — serving the app at "/" is the desired outcome, and a
-  // "/" → "/" 302 would just loop. Let it fall through to the app.
-  if (pathname === "/") {
-    return NextResponse.next();
-  }
-
-  // Default: 302 to the app root on the same host the request arrived on, so
-  // the OS pops the captive-portal sheet and lands the user on the scoring app.
-  const appRoot = new URL("/", request.nextUrl);
-  const response = NextResponse.redirect(appRoot, 302);
-  response.headers.set("Cache-Control", "no-store");
-  return response;
+  // A host-only probe (known detection domain, but a path with no descriptor,
+  // e.g. "/"): serve the app so the user lands on the main menu. The DNS hijack
+  // already routes it here, so falling through is the silent-accept outcome.
+  return NextResponse.next();
 }
 
 /**

@@ -6,6 +6,7 @@ import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { deleteParticipant } from "@/db/games/actions/delete-participant";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
+import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { PairSeat } from "@/model/participants";
 import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 
@@ -46,6 +47,9 @@ export function registerLeaveTableHandler(socket: Socket, io: Server) {
 
       await deleteParticipant(gameId, seat as PairSeat);
       await broadcastParticipants(gameId, io);
+      // The leaderboard lists the seated field from the start, so a pair that
+      // leaves must drop off it live too — not only after a refresh.
+      await broadcastLeaderboardChanged(io, gameId);
       ack({ success: true, data: undefined });
     },
   });

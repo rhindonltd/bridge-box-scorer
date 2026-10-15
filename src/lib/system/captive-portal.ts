@@ -44,24 +44,25 @@ export const PROBE_HOSTS: readonly string[] = [
  * Because Fire OS has varied its detection hosts across versions, the path is
  * the reliable signal: treat ANY host requesting one of these as a probe.
  *
- * `body === null` means "no OS-specific literal body is defined" (the probe is
- * handled by the default 302-to-app). A non-null `body`/`status` is the per-OS
- * escape hatch the contract describes — served only if the default redirect is
- * explicitly overridden for that path during device testing.
+ * Each descriptor carries the OS's expected "online" success response, which
+ * the middleware returns verbatim so the device accepts the network silently
+ * with NO sign-in sheet (see `captive-portal-app-contract.md`). `body === null`
+ * means the success response has no body (e.g. the Android/Fire OS `204`); the
+ * {@link status} and {@link contentType} still apply.
  */
 export type ProbePath = {
   /** The probe path, matched case-insensitively (exact or by suffix). */
   readonly path: string;
-  /** The literal "online" body this OS expects, if we fall back to serving it. */
+  /** The literal "online" body this OS expects (null = empty body). */
   readonly body: string | null;
-  /** The status that accompanies {@link body} (ignored when body is null). */
+  /** The success status this OS expects (e.g. 204 for Android, 200 otherwise). */
   readonly status: number;
   /** Content-Type for the literal body response. */
   readonly contentType: string;
 };
 
 export const PROBE_PATHS: readonly ProbePath[] = [
-  // Android / Fire OS — normally expects 204 empty; we prefer 302-to-app.
+  // Android / Fire OS — expects HTTP 204 with an empty body.
   {
     path: "/generate_204",
     body: null,
@@ -69,7 +70,7 @@ export const PROBE_PATHS: readonly ProbePath[] = [
     contentType: "text/plain",
   },
   { path: "/gen_204", body: null, status: 204, contentType: "text/plain" },
-  // Fire OS (Kindle) stub.
+  // Fire OS (Kindle) stub — a 200 is enough for silent accept.
   {
     path: "/kindle-wifi/wifistub.html",
     body: null,

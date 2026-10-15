@@ -10,6 +10,14 @@
 > `address=/#/<box-ip>`), and NAT redirects guest **:80 and :443 → the app on :3000**
 > (`bridge-box-nat.sh`). So the OS captive-detection probe already arrives at this app. What's missing
 > is the app answering those probe requests the way each OS expects.
+>
+> **:443 caveat.** The NAT rule redirects :443 as well as :80, but the app on :3000 serves **plain
+> HTTP**, so an *HTTPS* probe (e.g. `https://captive.apple.com/...`) hits a plaintext port and its TLS
+> handshake fails — the app can't return a usable response to an HTTPS probe. This is fine in
+> practice: OS captive **detection** probes are plain **HTTP :80** (that's the point of the probe —
+> it must be interceptable), so the handlers below only need to answer HTTP. The :443 redirect mainly
+> stops guest HTTPS traffic from leaking out; don't rely on it to answer a probe. All probe handling
+> and the redirect `Location` below are therefore `http://`.
 
 ## Why this is needed (the failure today)
 
@@ -21,7 +29,9 @@ judge the network by the HTTP response:
   network**. This is the current bug: the probe hits the app, and the app returns its normal homepage
   HTML (HTTP 200) or a 404 — neither is what the probe expects — so Fire OS reads it as "no internet".
 
-The fix: detect the probe requests (by host and/or path) and return an OS-appropriate response.
+The fix: detect the probe requests (by host and/or path) and return the OS's **expected success
+response** (the first outcome above) so the device goes "online" silently — no sign-in sheet. See
+"Required behaviour" below for exactly what to return.
 
 ## Detection
 
@@ -50,40 +60,53 @@ locally). Match case-insensitively; match the path exactly or by suffix.
 | Windows (legacy) | `/ncsi.txt` | 200 body exactly `Microsoft NCSI` |
 | Firefox | `/canonical.html`, `/success.txt` | 200 body `success` |
 
-## Required behaviour (strategy: "either pop the sheet or accept silently, whichever is reliable")
+## Required behaviour (strategy: "accept silently — NO sign-in sheet")
 
-The goal is that **every device accepts the network AND the user reaches the app**. The most reliable
-cross-device way is to **redirect probes to the app's landing page** so the OS classifies the network
-as a captive portal and opens the in-OS browser sheet showing the app:
+The desired UX: a device joining the hotspot should **accept the network silently and NOT show a
+"sign in to network" sheet**. BridgeBox has no sign-in step, so a sheet is just a dead-end nag — the
+player simply opens the app (`bridge.local` / any address, since the DNS hijack + NAT route it here).
+The way to get silent acceptance is to answer each OS's probe with **exactly the success response it
+expects**, so the OS concludes "internet is fine" and suppresses the portal sheet.
 
-- **Default for all probe requests: respond `302 Found` with `Location: http://<box-ip>/`** (the app
-  root). `<box-ip>` is the host the request already arrived on — use the request's `Host`/authority
-  or the server's own address; do not hardcode. A 302 to the app root is what triggers the
-  "sign in to network" sheet on Android/Fire OS/iOS and lands the user on the scoring app.
+- **Default for a probe request: return that OS's expected success response from the table above**,
+  verbatim:
+  - Android / Fire OS `/generate_204`, `/gen_204` → **HTTP 204**, empty body, no `Location`.
+  - iOS / macOS `/hotspot-detect.html`, `/library/test/success.html` → **200** with the exact body
+    `<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>`.
+  - Windows `/connecttest.txt` → **200** body exactly `Microsoft Connect Test`;
+    `/ncsi.txt` → **200** body exactly `Microsoft NCSI`.
+  - Firefox `/canonical.html`, `/success.txt` → **200** body `success`.
+  - Match the body/status/headers precisely — some OSes compare the body text, not just the status.
+    Serve `text/plain` for the text probes and `text/html` for the HTML ones; keep bodies byte-exact.
 
-- **Fire OS caveat (why we don't just always 204):** returning 204 makes the device decide "internet
-  is fine" and **suppress** the portal sheet — the player then sees nothing and has to open a browser
-  and type an address, which is the opposite of the auto-pop UX. So prefer the **302-to-app** for the
-  Google/Android/Fire `generate_204`/`gen_204` probes too, which Fire OS treats as "captive portal,
-  show sheet". (This satisfies "2=c": the device accepts the network, and the user is taken to the
-  app.)
+- **Do NOT 302 these probe paths to the app** — a redirect is exactly what makes the OS classify the
+  network as a captive portal and pop the sheet. We want the opposite. (This reverses an earlier draft
+  of this contract, which defaulted to 302-to-app to force the sheet. The product decision is: no
+  sheet, players open the app themselves.)
 
-- **If, in device testing, a specific OS refuses to settle on a 302** (some iOS versions want the
-  literal `Success` document to *stop* nagging), fall back to serving that OS its expected 200 body
-  for its probe path, and rely on the user opening the app manually. Decide per-OS during testing;
-  the 302-to-app is the default, the exact-body response is the per-OS escape hatch.
+- **Amazon Fire tablet is the risk to verify (priority device).** Silent-accept is the goal, but if a
+  Fire device does NOT get the precise response it wants it reads the network as "no internet" and may
+  **drop the hotspot** — the original symptom this whole effort is about. So the Fire probe
+  (`/generate_204` / `/gen_204`, and any Fire-specific `/kindle-wifi/wifistub.html`) MUST be answered
+  with its exact expected success response and verified on real hardware. If a specific OS version
+  genuinely refuses to settle on silent-accept in testing, the per-OS escape hatch is a 302-to-app for
+  *that* OS only — but that reintroduces the sheet for it, so treat it as a last resort and record
+  which device needed it.
 
-- **Everything else (non-probe requests to unknown hosts/paths):** the DNS hijack already routes all
-  hostnames here; the app should serve its normal UI (or 302 unknown paths to `/`) so "open any
-  address" lands on the app. This likely already happens — just make sure probe paths are handled
-  *before* a catch-all 404.
+- **Everything else (non-probe requests to unknown hosts/paths):** the DNS hijack routes all hostnames
+  here; serve the app's normal UI (or 302 unknown *non-probe* paths to `/`) so "open any address"
+  lands on the app. Make sure the probe paths above are matched *before* any catch-all redirect/404,
+  so a probe never accidentally gets 302'd (which would pop the sheet).
 
 ## Implementation notes (Next.js)
 
 - Add this as **middleware** (runs before routing) or dedicated route handlers, so probe paths are
   caught regardless of the app's page routes. Middleware is cleanest: inspect `request.nextUrl.pathname`
-  and `request.headers.get('host')`, and for a probe return `NextResponse.redirect(new URL('/', origin), 302)`
-  (or a `new NextResponse(body, {status})` for the per-OS literal-body fallback).
+  and `request.headers.get('host')`, and for a probe return the exact success response, e.g.
+  `new NextResponse(null, { status: 204 })` for `generate_204`, or
+  `new NextResponse('Microsoft Connect Test', { status: 200, headers: { 'content-type': 'text/plain' } })`
+  for the Windows probe. Reserve `NextResponse.redirect(new URL('/', origin), 302)` for the last-resort
+  per-OS escape hatch only — never as the default for a probe path.
 - Keep it allocation-light and synchronous — these fire on every device join, sometimes repeatedly.
 - No external calls (the box is offline-first; the handler must work with no internet).
 - Do not require auth on these paths (there is no login; see the box's captive design — DNS hijack,

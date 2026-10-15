@@ -13,12 +13,19 @@ vi.mock("@/db/games/queries/is-game-started", () => ({
 vi.mock("@/socket/broadcast/participant-broadcast", () => ({
   broadcastParticipants: vi.fn(),
 }));
+vi.mock("@/socket/handlers/results/broadcast-results", () => ({
+  broadcastLeaderboardChanged: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/socket/websocket", () => ({
+  getIO: vi.fn(() => ({ marker: "io" })),
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { deleteParticipant } from "@/db/games/actions/delete-participant";
 import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
+import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { DELETE } from "./route";
 
 function invoke(gameId: string, seat: string) {
@@ -42,6 +49,11 @@ describe("DELETE /api/games/[gameId]/participants/[seat]", () => {
     expect(res.status).toBe(200);
     expect(deleteParticipant).toHaveBeenCalledWith("g1", "A1NS");
     expect(broadcastParticipants).toHaveBeenCalledWith("g1");
+    // The evicted pair must drop off the leaderboard live too.
+    expect(broadcastLeaderboardChanged).toHaveBeenCalledWith(
+      { marker: "io" },
+      "g1",
+    );
   });
 
   it("blocks eviction once the game has started (F27)", async () => {

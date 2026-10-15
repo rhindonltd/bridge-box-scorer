@@ -228,3 +228,9 @@ TEST: Cannot test this since entering players takes them immediately to the 'Gam
 | ☐ RES-4 | Check `/<address>/healthz` again. | Still `"status":"ok"`. |
 
 TEST: Cannot test this since entering players takes them immediately to the 'Game Complete' screen.
+
+
+
+Additional tests:
+1) Test back button on setup screens
+2) Toggle on 'Expected late'

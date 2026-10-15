@@ -43,12 +43,14 @@ describe("isProbeHost", () => {
 });
 
 describe("matchProbePath", () => {
-  it("matches Android / Fire OS probe paths with no literal body (prefers 302)", () => {
+  it("matches Android / Fire OS probe paths with a 204 empty-body success", () => {
     expect(matchProbePath("/generate_204")?.body).toBeNull();
+    expect(matchProbePath("/generate_204")?.status).toBe(204);
     expect(matchProbePath("/gen_204")?.body).toBeNull();
+    expect(matchProbePath("/gen_204")?.status).toBe(204);
   });
 
-  it("returns the iOS Success document as the literal escape-hatch body", () => {
+  it("returns the iOS Success document as its success body", () => {
     const probe = matchProbePath("/hotspot-detect.html");
     expect(probe?.status).toBe(200);
     expect(probe?.body).toBe(
