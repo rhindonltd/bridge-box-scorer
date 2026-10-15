@@ -135,4 +135,20 @@ describe("GameContext", () => {
       false,
     );
   });
+
+  it("clears the game from the cache on GAME_DELETED (so the screen shows not-found)", () => {
+    renderHook(() => useGame(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    act(() => handlerFor(SocketEvents.GAME_DELETED)({ gameId: "g1" } as never));
+    // The game was deleted: the cache is set to undefined without revalidating
+    // (a refetch would 404), so `game` becomes null and GameGate renders the
+    // not-found screen live.
+    expect(globalMutate).toHaveBeenCalledWith(
+      swrKeys.game("g1"),
+      undefined,
+      false,
+    );
+  });
 });

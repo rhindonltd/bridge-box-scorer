@@ -100,3 +100,7 @@ start. Places then move as results come in.
 
 - Put the **timer** on the main screen during play and switch to the
   **leaderboard** at the end (or use two screens/devices, one for each).
+- If the director **deletes the game** while the display is showing its timer
+  or leaderboard, the screen changes by itself to a short **"page not found"**
+  message — there is no need to refresh it. This is expected: the game it was
+  showing no longer exists.

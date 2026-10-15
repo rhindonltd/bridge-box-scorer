@@ -231,24 +231,31 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
   async function handleToggleExpectedLate(seat: Seat, next: boolean) {
     const key = swrKeys.expectedLateSeats(gameId);
 
-    void mutate(
-      key,
-      (current?: Set<string>) => {
-        const updated = new Set(current ?? []);
-        if (next) {
-          updated.add(seat);
-        } else {
-          updated.delete(seat);
-        }
-        return updated;
-      },
-      { revalidate: false },
-    );
+    // Compute the post-toggle set once and use it for BOTH the optimistic flip
+    // and (on success) the committed cache value.
+    const applyToggle = (current?: Set<string>) => {
+      const updated = new Set(current ?? []);
+      if (next) {
+        updated.add(seat);
+      } else {
+        updated.delete(seat);
+      }
+      return updated;
+    };
+
+    void mutate(key, applyToggle, { revalidate: false });
 
     try {
       await setSeatExpectedLate(gameId, seat, next);
-      // Success: pull the authoritative set to reconcile with the server.
-      void mutate(key);
+      // Success: keep our just-applied value as the committed truth WITHOUT a
+      // blind re-read. An immediate `mutate(key)` revalidation here races the
+      // write — the GET is served by the Next route bundle while the mark was
+      // written through the socket-server bundle, so the re-read can land
+      // before the new row is visible and return the OLD set, snapping the
+      // toggle straight back (the SETUP-3 "doesn't toggle" bug). Writing the
+      // known-good set with revalidate:false leaves the flip in place; the set
+      // naturally reconciles on the next organic revalidation.
+      void mutate(key, applyToggle, { revalidate: false });
     } catch (err) {
       // Roll back the optimistic flip to the server's truth.
       void mutate(key);

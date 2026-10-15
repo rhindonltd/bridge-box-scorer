@@ -27,6 +27,10 @@ export default function ManageSelectGamePage({ onGameSelected }: Props) {
       games={data ?? []}
       isLoading={isLoading}
       onGameSelected={onGameSelected}
+      // Back always returns to the home menu this list opens from, rather than
+      // popping the history stack — deleting a game leaves its (now dead)
+      // per-game page one step back, which a plain back would otherwise land on.
+      backHref="/"
     />
   );
 }

@@ -72,6 +72,19 @@ export function GameProvider({
     [key],
   );
 
+  // The director deleted this game: clear it from the cache (no revalidation —
+  // the record is gone, a refetch would 404) so `game` becomes null and the
+  // downstream GameGate shows the "not found" screen. This is what makes a
+  // player/director/room-display screen react to a deletion live, matching the
+  // server layout's notFound() on a hard refresh.
+  useSocketSWRSync(
+    SocketEvents.GAME_DELETED,
+    // Setting the cache to `undefined` (the sync hook always mutates without
+    // revalidation) makes `game` null, so GameGate renders the not-found view.
+    () => ({ key, data: undefined }),
+    [key],
+  );
+
   return (
     <GameContext.Provider
       value={{

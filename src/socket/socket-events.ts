@@ -59,6 +59,12 @@ export const SocketEvents = {
   // Server initiated - Game specific
   PARTICIPANTS: "game:participants",
   GAME_UPDATED: "game:updated",
+  // Server-initiated: the game was deleted (director-authed HTTP DELETE
+  // /api/games/[gameId]/delete). Broadcast to the game room BEFORE the row/db
+  // are removed, so every connected device — players, the director, and public
+  // room displays — learns the game is gone and shows the "not found" screen
+  // live, without waiting for a refresh.
+  GAME_DELETED: "game:deleted",
   // Server initiated - Section specific (config/movement changed for a section)
   SECTION_UPDATED: "game:sectionUpdated",
 

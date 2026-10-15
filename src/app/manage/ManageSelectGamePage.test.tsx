@@ -22,16 +22,19 @@ vi.mock("@/components/common/SelectGame", () => ({
     games,
     isLoading,
     onGameSelected,
+    backHref,
   }: {
     headerTitle: string;
     games: BridgeGame[];
     isLoading: boolean;
     onGameSelected: (id: string, name?: string) => void;
+    backHref?: string;
   }) => (
     <div>
       <span>{headerTitle}</span>
       <span data-testid="count">{games.length}</span>
       <span data-testid="loading">{String(isLoading)}</span>
+      <span data-testid="back-href">{backHref ?? ""}</span>
       <button onClick={() => onGameSelected("g1", "Tuesday")}>pick</button>
     </div>
   ),
@@ -61,6 +64,13 @@ describe("ManageSelectGamePage", () => {
 
     fireEvent.click(screen.getByText("pick"));
     expect(onGameSelected).toHaveBeenCalledWith("g1", "Tuesday");
+  });
+
+  it("sends the back arrow to the home menu rather than popping the stack", () => {
+    // Deleting a game leaves its now-dead per-game page one step back in
+    // history; a fixed home href avoids a back press landing there.
+    render(<ManageSelectGamePage onGameSelected={vi.fn()} />);
+    expect(screen.getByTestId("back-href")).toHaveTextContent("/");
   });
 
   it("defaults to an empty list when no data is returned", () => {

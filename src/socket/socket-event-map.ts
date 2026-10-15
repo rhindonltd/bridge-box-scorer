@@ -29,6 +29,10 @@ export type SocketEventMap = {
     game: BridgeGame;
   };
 
+  [SocketEvents.GAME_DELETED]: {
+    gameId: string;
+  };
+
   [SocketEvents.BOARD_RESULT_UPDATED]: {
     gameId: string;
     roundNumber: number;

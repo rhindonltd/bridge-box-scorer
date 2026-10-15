@@ -7,6 +7,14 @@ interface Props {
   games: BridgeGame[];
   isLoading?: boolean;
   onGameSelected: (gameId: string, gameName?: string) => void;
+  /**
+   * Fixed URL for the back arrow. Prefer this over the default "pop the stack"
+   * for a game list that can be reached from, and can outlive, individual
+   * games: deleting a game leaves a dead per-game entry in history, so a plain
+   * `router.back()` would land on the just-deleted game's page. A fixed href
+   * (e.g. the home menu this list opens from) always goes somewhere live.
+   */
+  backHref?: string;
 }
 
 export function SelectGame({
@@ -14,9 +22,10 @@ export function SelectGame({
   games,
   isLoading,
   onGameSelected,
+  backHref,
 }: Props) {
   return (
-    <PageLayout headerTitle={headerTitle}>
+    <PageLayout headerTitle={headerTitle} backHref={backHref}>
       <div className="flex-1 overflow-y-auto">
         {isLoading && (
           <div className="flex justify-center py-12">

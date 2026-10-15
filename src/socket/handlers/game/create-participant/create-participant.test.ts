@@ -19,10 +19,15 @@ vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
+vi.mock("@/socket/handlers/results/broadcast-results", () => ({
+  broadcastLeaderboardChanged: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findSeatedNationalIds } from "@/db/games/queries/find-seated-national-ids";
 import { getDb } from "@/db/games";
+import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { registerCreateParticipantHandler } from "./create-participant";
 
 function makeDirectorSocket() {
@@ -99,12 +104,40 @@ describe("registerCreateParticipantHandler (unit)", () => {
         expect.objectContaining({ participants: expect.any(Array) }),
       );
 
+      // The newly-seated pair must show on the leaderboard live, so a fresh
+      // standings snapshot is pushed to the leaderboard room too.
+      expect(broadcastLeaderboardChanged).toHaveBeenCalledWith(io, "game-1");
+
       expect(cb).toHaveBeenCalledWith(
         expect.objectContaining({
           success: true,
           data: expect.objectContaining({ key: expect.any(String) }),
         }),
       );
+    });
+
+    it("does not touch the leaderboard when seating is rejected", async () => {
+      const socket = makeDirectorSocket();
+      registerCreateParticipantHandler(socket as any, makeIo() as any);
+      const handler = socket.on.mock.calls[0][1];
+      const cb = vi.fn();
+
+      vi.mocked(createPairWithPlayers).mockRejectedValue(new Error("fail"));
+
+      await handler(
+        {
+          gameId: "game-1",
+          newParticipant: {
+            type: "PAIR",
+            initialSeat: "A1NS",
+            player1: { firstName: "P1", lastName: "L1" },
+            player2: { firstName: "P2", lastName: "L2" },
+          },
+        },
+        cb,
+      );
+
+      expect(broadcastLeaderboardChanged).not.toHaveBeenCalled();
     });
 
     it("forwards an optional team name to createPairWithPlayers", async () => {

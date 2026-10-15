@@ -16,6 +16,10 @@ vi.mock("@/db/game-index/schema", () => ({ games: { gameId: "game_id" } }));
 vi.mock("fs", () => ({
   default: { existsSync: vi.fn(() => false), unlinkSync: vi.fn() },
 }));
+const broadcastGameDeleted = vi.fn();
+vi.mock("@/socket/broadcast/game-deleted-broadcast", () => ({
+  broadcastGameDeleted: (gameId: string) => broadcastGameDeleted(gameId),
+}));
 
 import fs from "fs";
 import { getDb as getGamesDb } from "@/db/games";
@@ -48,6 +52,33 @@ describe("DELETE /api/games/[gameId]/delete", () => {
           success: true,
           result: {},
         });
+      },
+    });
+  });
+
+  it("broadcasts the deletion to connected clients", async () => {
+    await testApiHandler({
+      appHandler,
+      params: { gameId: "g1" },
+      test: async ({ fetch }) => {
+        await fetch({ method: "DELETE", headers });
+        // Connected players / director / room displays are told the game is
+        // gone so their screens show "not found" live.
+        expect(broadcastGameDeleted).toHaveBeenCalledWith("g1");
+      },
+    });
+  });
+
+  it("does not broadcast a deletion to an unauthorised caller", async () => {
+    vi.mocked(validateDirectorToken).mockReturnValue(false);
+
+    await testApiHandler({
+      appHandler,
+      params: { gameId: "g1" },
+      test: async ({ fetch }) => {
+        const res = await fetch({ method: "DELETE", headers });
+        expect(res.status).toBe(401);
+        expect(broadcastGameDeleted).not.toHaveBeenCalled();
       },
     });
   });

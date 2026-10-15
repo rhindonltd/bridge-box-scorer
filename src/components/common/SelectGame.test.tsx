@@ -84,6 +84,19 @@ describe("SelectGame", () => {
     expect(buttons).toHaveLength(2);
   });
 
+  it("points the back arrow at the given href when backHref is set", () => {
+    render(
+      <SelectGame
+        headerTitle="Title"
+        games={[]}
+        onGameSelected={vi.fn()}
+        backHref="/"
+      />,
+    );
+    const back = screen.getByRole("link", { name: "Go back" });
+    expect(back).toHaveAttribute("href", "/");
+  });
+
   it("falls back to the raw date string when it is unparseable", () => {
     const games = [
       {
