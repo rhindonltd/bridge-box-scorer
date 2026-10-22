@@ -86,6 +86,18 @@ export default mergeConfig(
             globals: true,
             setupFiles: ["./vitest.setup.ts"],
             include: ["src/**/*.test.{ts,tsx}"],
+            // API route-handler tests (next-test-api-route-handler) construct a
+            // real Next `NextRequest`, whose constructor calls
+            // `signal.addEventListener` on an `AbortSignal`. Since jsdom 30.1,
+            // jsdom's `EventTarget` rejects a signal that isn't one of its own
+            // instances ("'addEventListener' called on an object that is not a
+            // valid instance of EventTarget"), so these tests cannot run under
+            // the jsdom environment. They exercise the HTTP boundary and need
+            // no DOM, so they run in the `node` project below instead.
+            exclude: [
+              "**/node_modules/**",
+              "src/app/api/**/route.test.ts",
+            ],
             // Node 25+ ships Web Storage on by default, so `localStorage` /
             // `sessionStorage` exist as global accessors. Vitest's
             // `getWindowKeys` then drops jsdom's own Storage (it isn't in
@@ -110,6 +122,21 @@ export default mergeConfig(
             // exist` errors when a timed-out test's teardown is skipped) that
             // never reproduces in isolation. A 20s budget clears the contention
             // headroom while still surfacing a genuinely hung test.
+            testTimeout: 20000,
+            hookTimeout: 20000,
+          },
+        },
+        {
+          extends: true,
+          test: {
+            // API route-handler tests run against real Node web globals
+            // (`Request`/`Response`/`AbortSignal`) rather than jsdom's, which
+            // is what `next-test-api-route-handler` + `NextRequest` require.
+            // See the note on the `unit` project's `exclude` above.
+            name: "unit-node",
+            environment: "node",
+            globals: true,
+            include: ["src/app/api/**/route.test.ts"],
             testTimeout: 20000,
             hookTimeout: 20000,
           },

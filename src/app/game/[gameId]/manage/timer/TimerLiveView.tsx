@@ -85,17 +85,25 @@ export function TimerLiveView({
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={onPrevious}
-          aria-label="Previous phase"
           className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400`}
         >
-          ‹<span className="hidden sm:inline"> Prev</span>
+          {/* The chevron/short label is decorative; the accessible name comes
+              from the visually-hidden text. Keeping the visible glyph out of
+              the a11y tree avoids a label-content-name-mismatch (WCAG 2.5.3)
+              while still naming the button "Previous phase" for assistive tech. */}
+          <span aria-hidden="true">
+            ‹<span className="hidden sm:inline"> Prev</span>
+          </span>
+          <span className="sr-only">Previous phase</span>
         </button>
         <button
           onClick={onNext}
-          aria-label="Next phase"
           className={`${btnBase} bg-gray-200 text-gray-900 hover:bg-gray-300 focus-visible:ring-gray-400`}
         >
-          <span className="hidden sm:inline">Next </span>›
+          <span aria-hidden="true">
+            <span className="hidden sm:inline">Next </span>›
+          </span>
+          <span className="sr-only">Next phase</span>
         </button>
       </div>
     </div>

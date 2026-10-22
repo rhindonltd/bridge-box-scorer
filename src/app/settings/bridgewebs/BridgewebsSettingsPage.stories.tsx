@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { http, HttpResponse, delay } from "msw";
+import { http, HttpResponse } from "msw/http";
+import { delay } from "msw/utils/delay";
 import { expect, waitFor, within } from "storybook/test";
 import { BridgewebsSettingsPage } from "@/app/settings/bridgewebs/BridgewebsSettingsPage";
 import { swrKeys } from "@/swr/swr-keys";

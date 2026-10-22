@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
 import type { BridgeGame } from "@/db/game-index/schema";
 import { swrKeys } from "@/swr/swr-keys";
 import { JoinGamePage } from "@/app/join/JoinGamePage";

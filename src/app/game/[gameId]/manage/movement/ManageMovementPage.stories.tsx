@@ -1,5 +1,6 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { http, HttpResponse, delay } from "msw";
+import { http, HttpResponse } from "msw/http";
+import { delay } from "msw/utils/delay";
 import { mocked } from "storybook/test";
 import { ManageMovementPage } from "@/app/game/[gameId]/manage/movement/ManageMovementPage";
 import { withGame } from "@storybook/decorators/GameDecorator";

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { mockGame } from "@/mocks/fixtures/game";
 import { swrKeys } from "@/swr/swr-keys";

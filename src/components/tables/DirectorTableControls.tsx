@@ -213,10 +213,15 @@ export default function DirectorTableControls({ tables, onOpenTable }: Props) {
             key={table.tableNumber}
             type="button"
             onClick={() => onOpenTable(table)}
-            aria-label={`Manage table ${table.tableNumber}`}
             className="block w-full rounded-2xl border border-gray-200 bg-white text-left shadow-md transition-shadow duration-200 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           >
-            <div className="p-4 sm:p-6">
+            {/* The card's rich visible content is hidden from the accessibility
+                tree and the button is named by the visually-hidden label, so
+                its accessible name ("Manage table N") does not disagree with
+                the visible text — which axe flags as a
+                label-content-name-mismatch (WCAG 2.5.3). */}
+            <span className="sr-only">Manage table {table.tableNumber}</span>
+            <div className="p-4 sm:p-6" aria-hidden="true">
               <TableCompassLayout
                 north={
                   <CompassPlayerCard
