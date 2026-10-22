@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
 import { userEvent, within } from "storybook/test";
 import { CreateGamePage } from "@/app/create/CreateGamePage";
 

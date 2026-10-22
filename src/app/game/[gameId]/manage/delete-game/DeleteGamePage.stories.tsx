@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn, expect, within, waitFor } from "storybook/test";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
 import { DeleteGamePage } from "@/app/game/[gameId]/manage/delete-game/DeleteGamePage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { mockGame } from "@/mocks/fixtures/game";

@@ -26,7 +26,7 @@ export function AwaitingNextRoundPage({ completedRound, headerRight }: Props) {
     >
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-sm md:max-w-md lg:max-w-lg rounded-2xl border border-gray-200 bg-white p-10 md:p-14 text-center shadow-sm">
-          <div className="text-lg font-semibold uppercase tracking-wide text-gray-400">
+          <div className="text-lg font-semibold uppercase tracking-wide text-gray-500">
             Round {completedRound} complete
           </div>
 
@@ -34,13 +34,15 @@ export function AwaitingNextRoundPage({ completedRound, headerRight }: Props) {
             <Spinner size="lg" />
           </div>
 
-          <h1
-            className="mt-8 text-2xl md:text-3xl font-bold tracking-tight text-gray-900"
-            role="status"
-            aria-live="polite"
-          >
-            Waiting for the director to draw the next round
-          </h1>
+          {/* The live region lives on a wrapping div: `role="status"` is not
+              an allowed role on a heading element (axe aria-allowed-role /
+              WCAG), but the heading still needs to be announced when it
+              appears, so the div carries the status role + aria-live. */}
+          <div role="status" aria-live="polite">
+            <h1 className="mt-8 text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
+              Waiting for the director to draw the next round
+            </h1>
+          </div>
 
           <p className="mt-4 text-base text-gray-500">
             Keep this screen open — it will move on by itself. No need to

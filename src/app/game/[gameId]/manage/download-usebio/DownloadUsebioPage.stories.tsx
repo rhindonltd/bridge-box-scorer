@@ -1,6 +1,6 @@
 import { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
 import { DownloadUsebioPage } from "@/app/game/[gameId]/manage/download-usebio/DownloadUsebioPage";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { mockGame } from "@/mocks/fixtures/game";

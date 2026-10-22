@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
 
 import { ShowTablesPage } from "@/app/game/[gameId]/create/ShowTablesPage";
 import { withGame } from "@storybook/decorators/GameDecorator";

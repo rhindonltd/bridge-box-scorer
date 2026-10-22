@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fireEvent, waitFor, within } from "storybook/test";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse } from "msw/http";
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { SetupGamePage } from "./SetupGamePage";
 import { mockGame } from "@/mocks/fixtures/game";

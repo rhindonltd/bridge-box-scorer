@@ -362,10 +362,14 @@ function PairRow({
               <button
                 type="button"
                 onClick={() => onEvict(seat)}
-                aria-label={`Evict ${label} pair`}
                 className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
-                Evict pair
+                {/* Visible text is the terse label; the full accessible name
+                    (which names the pair) is carried by the visually-hidden
+                    span, so the two do not disagree — a
+                    label-content-name-mismatch (WCAG 2.5.3). */}
+                <span aria-hidden="true">Evict pair</span>
+                <span className="sr-only">Evict {label} pair</span>
               </button>
             </>
           ) : openForm === "standing" ? (
@@ -392,18 +396,18 @@ function PairRow({
               <button
                 type="button"
                 onClick={() => setOpenForm("standing")}
-                aria-label={`Change standing for ${label} pair`}
                 className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
-                Change standing
+                <span aria-hidden="true">Change standing</span>
+                <span className="sr-only">Change standing for {label} pair</span>
               </button>
               <button
                 type="button"
                 onClick={() => setOpenForm("handover")}
-                aria-label={`Hand ${label} over to the real pair`}
                 className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
-                Hand over to real pair
+                <span aria-hidden="true">Hand over to real pair</span>
+                <span className="sr-only">Hand {label} over to the real pair</span>
               </button>
             </>
           )}
