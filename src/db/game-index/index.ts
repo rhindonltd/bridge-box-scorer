@@ -18,7 +18,8 @@ export function getDb() {
   /* v8 ignore stop */
 
   const dataDir = process.env.DATABASE_URL ?? "./data";
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(/*turbopackIgnore: true*/ dataDir))
+    fs.mkdirSync(/*turbopackIgnore: true*/ dataDir, { recursive: true });
 
   const dbFile = path.join(dataDir, "game-index.db");
   const sqlite = openDatabase(dbFile);

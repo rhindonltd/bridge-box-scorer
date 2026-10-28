@@ -24,7 +24,8 @@ export async function createDb(gameId: string): Promise<Db> {
   // directory already exists. The per-game "games" dir is a nested path
   // (e.g. /home/bridgebox/data/games) that may not be provisioned on a fresh
   // appliance, so create it — matching every other DB module.
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(/*turbopackIgnore: true*/ dataDir))
+    fs.mkdirSync(/*turbopackIgnore: true*/ dataDir, { recursive: true });
 
   const dbFile = path.join(dataDir, `${gameId}.db`);
 
@@ -63,7 +64,7 @@ export async function getDb(gameId: string): Promise<Db | null> {
 
   const dbFile = path.join(dataDir, `${gameId}.db`);
 
-  if (!fs.existsSync(dbFile)) {
+  if (!fs.existsSync(/*turbopackIgnore: true*/ dbFile)) {
     return null;
   }
 

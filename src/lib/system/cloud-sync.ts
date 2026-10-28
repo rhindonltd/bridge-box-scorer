@@ -81,9 +81,11 @@ function readJobStatus(raw: unknown): CloudSyncJobStatus {
  */
 export function readCloudSyncStatus(): CloudSyncStatus {
   const path = cloudSyncStatusPath();
-  if (!fs.existsSync(path)) return NOT_ENABLED_STATUS;
+  if (!fs.existsSync(/*turbopackIgnore: true*/ path)) return NOT_ENABLED_STATUS;
   try {
-    const parsed = JSON.parse(fs.readFileSync(path, "utf-8")) as Partial<CloudSyncStatus>;
+    const parsed = JSON.parse(
+      fs.readFileSync(/*turbopackIgnore: true*/ path, "utf-8"),
+    ) as Partial<CloudSyncStatus>;
     return {
       enabled: parsed.enabled ?? false,
       backup: readJobStatus(parsed.backup),
