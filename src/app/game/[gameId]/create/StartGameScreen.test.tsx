@@ -53,7 +53,7 @@ describe("StartGameScreen", () => {
     mockStartCheck = { canStart: false, problems: [], sitOutSeat: null };
   });
 
-  it("disables Start Game and lists issues when the game cannot start", () => {
+  it("lists issues and shows NO Start Game button when the game cannot start", () => {
     mockStartCheck = {
       canStart: false,
       problems: [
@@ -65,7 +65,10 @@ describe("StartGameScreen", () => {
     render(<StartGameScreen />);
 
     expect(screen.getByText("No pairs are seated yet.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start Game" })).toBeDisabled();
+    // In the error state only the issue list shows — no (disabled) button.
+    expect(
+      screen.queryByRole("button", { name: "Start Game" }),
+    ).not.toBeInTheDocument();
   });
 
   it("groups issues under section headings for a multi-section game", () => {
@@ -115,13 +118,17 @@ describe("StartGameScreen", () => {
     expect(screen.getByText("No pairs are seated yet.")).toBeInTheDocument();
   });
 
-  it("shows the ready state and enables Start Game when startable", () => {
+  it("shows the ready state as one clickable Start Game card", () => {
     mockStartCheck = { canStart: true, problems: [], sitOutSeat: null };
 
     render(<StartGameScreen />);
 
-    expect(screen.getByRole("status")).toHaveTextContent("Everything’s ready");
-    expect(screen.getByRole("button", { name: "Start Game" })).toBeEnabled();
+    // The whole card is the control (accessible name "Start game"); it carries
+    // the ready copy and is enabled.
+    const card = screen.getByRole("button", { name: "Start game" });
+    expect(card).toHaveTextContent("Everything’s ready");
+    expect(card).toHaveTextContent("Tap to Start Game");
+    expect(card).toBeEnabled();
   });
 
   it("shows the sit-out note when one pair short but startable", () => {
@@ -136,7 +143,7 @@ describe("StartGameScreen", () => {
     mockStartCheck = { canStart: true, problems: [], sitOutSeat: null };
 
     render(<StartGameScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start game" }));
 
     await waitFor(() => expect(mockStartGame).toHaveBeenCalledWith("g1"));
     await waitFor(() => expect(mockMutateGame).toHaveBeenCalled());
@@ -148,7 +155,7 @@ describe("StartGameScreen", () => {
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
     render(<StartGameScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start game" }));
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("nope"));
   });
@@ -160,7 +167,7 @@ describe("StartGameScreen", () => {
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
 
     render(<StartGameScreen />);
-    fireEvent.click(screen.getByRole("button", { name: "Start Game" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start game" }));
 
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith("Failed to start game"),

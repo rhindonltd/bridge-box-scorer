@@ -51,6 +51,18 @@ export type ResolvedPlayState = {
   phase:
     | { kind: "round"; roundIndex: number; position: WithinRoundPosition }
     | { kind: "sitOut"; roundIndex: number }
+    /**
+     * §2.4.7: the current round's opponent is an empty "expected late" seat
+     * that has not arrived. There is nothing for this pair to play — a result
+     * needs two pairs — so, like a sit-out, it is a resting phase the pair
+     * acknowledges (wait for the latecomers, or move on to the next round). It
+     * is distinct from `sitOut` so the screen can explain WHY the table is
+     * empty. If the director later seats the pair, the next resolve turns this
+     * back into a normal `round` phase (the mark clears); once the pair has
+     * moved past it (finalised a later round) strict round ordering keeps them
+     * from being pulled back here.
+     */
+    | { kind: "expectedLate"; roundIndex: number }
     | { kind: "awaitingNextRound"; completedRound: number }
     | { kind: "complete" };
   /**
@@ -141,6 +153,21 @@ export async function resolvePlayState(
     };
   }
 
+  // §2.4.7: the opponent this round is an empty "expected late" seat and has
+  // not arrived. There is no one to play, so — like a sit-out — this is a
+  // resting page the pair acknowledges (wait, or move on). Resolved as its own
+  // phase so a reload re-shows it (never a stuck, unenterable playable round).
+  // If the director seats the pair, the mark clears and the next resolve
+  // returns a normal `round` phase here instead.
+  if (round.opponentExpectedLate) {
+    return {
+      assignmentId,
+      side,
+      rounds,
+      phase: { kind: "expectedLate", roundIndex: currentRoundIndex },
+    };
+  }
+
   const position = await resolveWithinRound(gameId, section, side, round);
 
   return {
@@ -152,24 +179,68 @@ export async function resolvePlayState(
 }
 
 /**
+ * Board statuses that mean this pair has FINALISED a result on the board — it
+ * has played/finished that board, so the round it belongs to is behind them.
+ * CONFIRMED is the ordinary agreed result; OVERRIDDEN / CANCELLED /
+ * REMOVED_TEAMS are director rulings that likewise finalise the board. (SIT_OUT
+ * and HALF_AVERAGE are not played by the pair; NOT_PLAYED / PENDING_CONFIRMATION
+ * are still in progress.)
+ */
+const FINALISED_STATUSES = new Set([
+  "CONFIRMED",
+  "OVERRIDDEN",
+  "CANCELLED",
+  "REMOVED_TEAMS",
+]);
+
+/**
  * The index of the round the player is currently on: the first round that is
  * not a completed PLAYED round. A sit-out round is NOT skipped — it is a
  * resting state the player must acknowledge on the sit-out page, so it counts
  * as current until they move past it. A played round counts as done only once
  * every board is confirmed. Returns -1 when every materialized round is a
  * completed played round, i.e. the player is between rounds / at the end.
+ *
+ * STRICT ROUND ORDERING: play moves forward only. Once this pair has a
+ * finalised result in some round, it can never be sent back to an EARLIER
+ * round — even if that earlier round is left incomplete. That happens when the
+ * pair moved past a round whose opponent never arrived (an "expected late"
+ * no-show, whose boards never get confirmed), or when a director later corrects
+ * a board in a round the pair has already left. Both must NOT drag the pair
+ * backwards, so the search starts at the LATEST round that has any finalised
+ * board and never looks earlier. That latest round may itself still be current
+ * (a partly-played round has some finalised boards and some not), so the search
+ * includes it rather than skipping past it.
  */
 function findCurrentRoundIndex(rounds: ScheduleRound[]): number {
+  // The latest round index in which this pair has finalised a board. The pair
+  // is somewhere at or after this round; it can never be sent before it.
+  let lastResultIndex = -1;
   for (let i = 0; i < rounds.length; i++) {
+    if (
+      rounds[i].boardStatuses.some(
+        (b) => b.status != null && FINALISED_STATUSES.has(b.status),
+      )
+    ) {
+      lastResultIndex = i;
+    }
+  }
+
+  // Start at that round (it may be mid-played and still current), never before.
+  for (let i = Math.max(lastResultIndex, 0); i < rounds.length; i++) {
     const round = rounds[i];
     if (round.sitOut) return i;
     // `every` is true for an empty array, so a round with no board statuses
     // (not yet materialized for this pair) would otherwise be misread as a
     // completed round. Treat a round with no boards as not-complete so it is
-    // taken as the current round rather than skipped.
+    // taken as the current round rather than skipped. A board counts as done
+    // when it is FINALISED (confirmed OR a director ruling), so a round the
+    // director corrected (CONFIRMED → OVERRIDDEN) still reads as complete.
     const complete =
       round.boardStatuses.length > 0 &&
-      round.boardStatuses.every((b) => b.status === "CONFIRMED");
+      round.boardStatuses.every(
+        (b) => b.status != null && FINALISED_STATUSES.has(b.status),
+      );
     if (!complete) return i;
   }
   return -1;

@@ -22,13 +22,31 @@ describe("ChangeDeviceView", () => {
 
     render(<ChangeDeviceView gameId="g1" seat="A3NS" />);
 
-    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS");
+    // Defaults to a plain change-device code (same pair, new device).
+    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS", "CHANGE_DEVICE");
     expect(await screen.findByTestId("seat-transfer-code")).toHaveTextContent(
       "ABC234",
     );
     expect(screen.getByText(/Expires in 5:00/)).toBeInTheDocument();
     // Reassures the player their device loses the seat once claimed.
     expect(screen.getByText(/signed out of the seat/i)).toBeInTheDocument();
+  });
+
+  it("mints a HANDOVER code and shows arriving-pair copy when kind=HANDOVER", async () => {
+    mockGenerate.mockResolvedValue("HAND01");
+
+    render(<ChangeDeviceView gameId="g1" seat="A3NS" kind="HANDOVER" />);
+
+    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS", "HANDOVER");
+    expect(await screen.findByTestId("seat-transfer-code")).toHaveTextContent(
+      "HAND01",
+    );
+    // Copy is tailored to the arriving pair taking over (both the instructions
+    // and the footer mention them).
+    expect(screen.getAllByText(/arriving pair/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/enter their names/i),
+    ).toBeInTheDocument();
   });
 
   it("shows the server error when generation fails", async () => {

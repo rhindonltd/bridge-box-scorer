@@ -21,6 +21,7 @@ function assembleBoardComparisonTeams(
   return assembleBoardComparisonTeamsImpl(
     g,
     c,
+    "NORMAL_CLUB",
     teams,
     boardRows,
     teamMatchStructureFromRows(boardRows),

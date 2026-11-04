@@ -13,9 +13,20 @@ import path from "node:path";
  */
 
 /**
- * Read the current secret key for a section-qualified seat (e.g. "A1NS")
- * straight from the game's SQLite file. Mirrors how the participant-auth
- * middleware resolves the seat secret server-side.
+ * Read the ACTIVE device secret for a section-qualified seat (e.g. "A1NS")
+ * straight from the game's SQLite file. Mirrors how the seat-auth middleware
+ * resolves the seat secret server-side.
+ *
+ * The participant entity is a row in `seat_occupancy` (seat + board set +
+ * secret + standing). In the common case a seat has exactly one occupancy, so
+ * this returns its secret. A §2.4.7 stand-in → real-pair HANDOVER leaves the
+ * seat with TWO occupancies — the arriving real pair plus the demoted stand-in
+ * (standing WITHOUT_STANDING, whose secret was rotated to a dead value). The
+ * live credential is the NON-stand-in occupant's, so this excludes
+ * WITHOUT_STANDING rows: before a handover it returns the sole (ACTIVE)
+ * occupant's secret; after, the real pair's. A seat-transfer "change device"
+ * claim rotates the single occupancy's secret in place, which this also
+ * reflects.
  */
 export function readSeatSecret(gameId: string, seat: string): string | null {
   const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
@@ -25,7 +36,11 @@ export function readSeatSecret(gameId: string, seat: string): string | null {
   try {
     const row = db
       .prepare(
-        "SELECT secret_key AS secret FROM participant WHERE initial_seat = ?",
+        `SELECT secret_key AS secret
+           FROM seat_occupancy
+          WHERE seat = ? AND standing != 'WITHOUT_STANDING'
+          ORDER BY id DESC
+          LIMIT 1`,
       )
       .get(seat) as { secret: string } | undefined;
     return row?.secret ?? null;

@@ -1,6 +1,12 @@
 "use client";
 
-import { Assignment, Pair, Seat, parseSeat } from "@/model/participants";
+import {
+  Assignment,
+  Pair,
+  ParticipantStanding,
+  Seat,
+  parseSeat,
+} from "@/model/participants";
 import { Player } from "@/db/games/tables/players";
 
 import { createContext, useContext, ReactNode, useMemo } from "react";
@@ -20,6 +26,13 @@ import { useSocketRevalidate } from "@/hooks/use-socket-revalidate";
 export interface SeatedPair {
   players: [Player, Player];
   side: "NS" | "EW";
+  /**
+   * This seat's current lifecycle standing (EBU §2.4). A seat whose occupant is
+   * a §2.4.7 stand-in reads `WITHOUT_STANDING` — the signal the play-screen menu
+   * uses to offer the "Handover" action. `undefined` while the pairs list is
+   * still loading or for an older row with no standing.
+   */
+  standing?: ParticipantStanding["standing"];
 }
 
 /*
@@ -152,7 +165,11 @@ export function AssignmentProvider({
       return null;
     }
 
-    return { players: [mine.player1, mine.player2], side };
+    return {
+      players: [mine.player1, mine.player2],
+      side,
+      standing: mine.standing,
+    };
   }, [pairsData, initialSeat]);
 
   return (

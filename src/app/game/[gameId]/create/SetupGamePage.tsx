@@ -10,17 +10,10 @@ import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { HeaderMenu, type HeaderMenuItem } from "@/components/layout/HeaderMenu";
 import { MovementStep } from "@/components/manage/sections/MovementStep";
-import { ManageSectionsScreen } from "@/components/manage/sections/ManageSectionsScreen";
 import { TimerSetup } from "@/app/game/[gameId]/manage/timer/TimerSetup";
-import { useSections } from "@/hooks/sections";
 
 /** The ordered steps of the game setup flow. */
-export type SetupStep =
-  | "tables"
-  | "movements"
-  | "timer"
-  | "manage-sections"
-  | "start";
+export type SetupStep = "tables" | "movements" | "timer" | "start";
 
 const setupGameFlow = createFlow(
   {
@@ -29,12 +22,10 @@ const setupGameFlow = createFlow(
     // The timer is optional: it is always reachable but never required to
     // start the game.
     timer: {},
-    // Section rename/delete (and add). Reachable any time from the menu.
-    "manage-sections": {},
     // Start-check issues + the Start Game action.
     start: {},
   },
-  ["tables", "movements", "timer", "manage-sections", "start"] as const,
+  ["tables", "movements", "timer", "start"] as const,
 );
 
 export function SetupGamePage() {
@@ -73,11 +64,9 @@ export function SetupGamePage() {
     [activeStep, rawGoTo],
   );
 
-  // "Manage sections" (rename/delete) is only meaningful once the event has
-  // more than one section; a single-section game splits via the pills instead.
-  const { sections } = useSections(game.gameId);
-  const multiSection = sections.length > 1;
-
+  // Section rename/delete and the combined/separate ranking toggle now live on
+  // the Tables screen (surfaced there once the game has more than one section),
+  // so the setup menu no longer needs a dedicated "Manage sections" entry.
   const menuItems: HeaderMenuItem[] = [
     { label: "Tables", onSelect: () => goTo("tables"), active: activeStep === "tables" },
     {
@@ -86,15 +75,6 @@ export function SetupGamePage() {
       active: activeStep === "movements",
     },
     { label: "Timer", onSelect: () => goTo("timer"), active: activeStep === "timer" },
-    ...(multiSection
-      ? [
-          {
-            label: "Manage sections",
-            onSelect: () => goTo("manage-sections"),
-            active: activeStep === "manage-sections",
-          },
-        ]
-      : []),
     {
       label: "Start Game",
       onSelect: () => goTo("start"),
@@ -110,8 +90,8 @@ export function SetupGamePage() {
   // Opens the editable event-details screen, prefilled from the created game —
   // so the director can review/adjust the name, type, scoring, and options they
   // set when creating, without losing anything or landing on a blank form. Used
-  // as the back-arrow target on the Manage sections screen and as the fallback
-  // for the Tables / Movement / Timer back arrows (see handleSetupBack).
+  // as the fallback for the Tables / Movement / Timer back arrows (see
+  // handleSetupBack).
   const openEditDetails = () => setEditingDetails(true);
 
   // Back-arrow action for the three interchangeable setup screens (Tables,
@@ -119,8 +99,8 @@ export function SetupGamePage() {
   // the other two the director was last on — so arriving at Movement from
   // Tables makes back return to Tables. When the previous screen was not one of
   // these three (e.g. they arrived straight from creating the game, or came
-  // from Manage sections / Start), there is no sibling screen to return to, so
-  // it falls back to Edit Event Details.
+  // from Start), there is no sibling screen to return to, so it falls back to
+  // Edit Event Details.
   //
   // A back-arrow jump is itself navigation, but it deliberately does NOT record
   // a new "previous step" — it uses rawGoTo and clears the ref — so a second
@@ -175,33 +155,6 @@ export function SetupGamePage() {
         <MovementStep gameId={game.gameId} />
       </GamePageLayout>
     );
-  }
-
-  if (step === "manage-sections" && multiSection) {
-    // Rename / delete / add sections. Movement is chosen on the Movement step,
-    // so this list shows no movement controls. Only reachable while the event
-    // has more than one section.
-    return (
-      <GamePageLayout
-        headerTitle="Manage Sections"
-        headerRight={menu}
-        backAction={openEditDetails}
-      >
-        <div className="flex h-full min-h-0 flex-col">
-          <ManageSectionsScreen gameId={game.gameId} />
-        </div>
-      </GamePageLayout>
-    );
-  }
-
-  if (step === "manage-sections") {
-    // The event dropped back to a single section (e.g. a section was deleted
-    // here), so this screen is no longer available — fall back to Movement.
-    // This is a programmatic bounce off an unavailable screen, not a director
-    // navigation, so it uses rawGoTo and is deliberately NOT recorded as a
-    // "previous step" (it would otherwise read/write the ref during render).
-    rawGoTo("movements");
-    return null;
   }
 
   if (step === "start") {

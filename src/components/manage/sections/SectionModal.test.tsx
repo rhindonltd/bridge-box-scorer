@@ -3,19 +3,88 @@ import { render, screen, fireEvent } from "@testing-library/react";
 
 import { SectionModal } from "./SectionModal";
 
+const single = [{ letter: "A", label: "A", tables: 4 }];
+const multi = [
+  { letter: "A", label: "A", tables: 6 },
+  { letter: "B", label: "B", tables: 4 },
+];
+
 describe("SectionModal", () => {
-  it("renders a single field in one-field mode and returns the new label", () => {
+  it("defaults a single-section game to Split (minimum 2 tables each side)", () => {
     const onConfirm = vi.fn();
     render(
       <SectionModal
         open
+        sections={single}
+        newSectionLetter="B"
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    // A 4-table section splits 2/2; the stepper defaults to the minimum 2 and
+    // cannot go below it.
+    const stepper = screen.getByLabelText("Tables in new section");
+    expect(stepper).toHaveValue(2);
+    expect(stepper).toHaveAttribute("min", "2");
+    expect(stepper).toHaveAttribute("max", "2");
+
+    fireEvent.change(screen.getByLabelText("Section A name"), {
+      target: { value: "North" },
+    });
+    fireEvent.change(screen.getByLabelText("New section (B) name"), {
+      target: { value: "South" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Split" }));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      mode: "split",
+      from: "A",
+      tablesToNewSection: 2,
+      newLabel: "South",
+      fromLabel: "North",
+    });
+  });
+
+  it("adds a brand-new section (first add, two-field) when Add new is chosen", () => {
+    const onConfirm = vi.fn();
+    render(
+      <SectionModal
+        open
+        sections={single}
+        newSectionLetter="B"
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "Add new" }));
+
+    const existing = screen.getByLabelText("Existing section (A)");
+    const added = screen.getByLabelText("New section (B)");
+    fireEvent.change(existing, { target: { value: "North" } });
+    fireEvent.change(added, { target: { value: "South" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(onConfirm).toHaveBeenCalledWith({
+      mode: "add",
+      newLabel: "South",
+      existingLabel: "North",
+    });
+  });
+
+  it("defaults a multi-section game to Add (one field) and returns an add result", () => {
+    const onConfirm = vi.fn();
+    render(
+      <SectionModal
+        open
+        sections={multi}
         newSectionLetter="C"
         onConfirm={onConfirm}
         onCancel={vi.fn()}
       />,
     );
 
-    // Only the new-section field is present.
     expect(screen.getByLabelText("New section (C)")).toHaveValue("C");
     expect(screen.queryByLabelText(/Existing section/)).toBeNull();
 
@@ -24,47 +93,99 @@ describe("SectionModal", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-    expect(onConfirm).toHaveBeenCalledWith({ newLabel: "Red" });
+    expect(onConfirm).toHaveBeenCalledWith({ mode: "add", newLabel: "Red" });
   });
 
-  it("renders both fields in two-field mode and returns both labels", () => {
+  it("lets a multi-section game split a chosen section", () => {
     const onConfirm = vi.fn();
     render(
       <SectionModal
         open
-        existingSection={{ letter: "A", label: "A" }}
-        newSectionLetter="B"
+        sections={multi}
+        newSectionLetter="C"
         onConfirm={onConfirm}
         onCancel={vi.fn()}
       />,
     );
 
-    const existing = screen.getByLabelText("Existing section (A)");
-    const added = screen.getByLabelText("New section (B)");
-    expect(existing).toHaveValue("A");
-    expect(added).toHaveValue("B");
+    fireEvent.click(screen.getByRole("radio", { name: "Split existing" }));
 
-    fireEvent.change(existing, { target: { value: "North" } });
-    fireEvent.change(added, { target: { value: "South" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    // Both A (6) and B (4) are splittable, so a section picker is shown.
+    fireEvent.change(screen.getByLabelText("Section to split"), {
+      target: { value: "B" },
+    });
+    // B has 4 tables, so the only valid split is 2/2 (min 2 each side).
+    fireEvent.change(screen.getByLabelText("Section B name"), {
+      target: { value: "Blue" },
+    });
+    fireEvent.change(screen.getByLabelText("New section (C) name"), {
+      target: { value: "Green" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Split" }));
 
     expect(onConfirm).toHaveBeenCalledWith({
-      newLabel: "South",
-      existingLabel: "North",
+      mode: "split",
+      from: "B",
+      tablesToNewSection: 2,
+      newLabel: "Green",
+      fromLabel: "Blue",
     });
   });
 
-  it("disables Add section when a required label is blank", () => {
+  it("only lists sections with 4+ tables as splittable", () => {
     render(
       <SectionModal
         open
-        newSectionLetter="B"
+        sections={[
+          { letter: "A", label: "A", tables: 6 },
+          { letter: "B", label: "B", tables: 3 },
+        ]}
+        newSectionLetter="C"
         onConfirm={vi.fn()}
         onCancel={vi.fn()}
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("New section (B)"), {
+    fireEvent.click(screen.getByRole("radio", { name: "Split existing" }));
+
+    // Only A (6 tables) can be split; B (3) cannot — a 3-table section can only
+    // divide into 2+1, and a 1-table section cannot run. So A is fixed with no
+    // picker.
+    expect(screen.queryByLabelText("Section to split")).toBeNull();
+    expect(screen.getByText(/Splitting/)).toHaveTextContent("Section A");
+  });
+
+  it("offers only Add when no section has 4+ tables", () => {
+    render(
+      <SectionModal
+        open
+        sections={[
+          { letter: "A", label: "A", tables: 3 },
+          { letter: "B", label: "B", tables: 2 },
+        ]}
+        newSectionLetter="C"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    // No mode toggle, and the Add field is shown.
+    expect(screen.queryByRole("radio", { name: "Split existing" })).toBeNull();
+    expect(screen.getByLabelText("New section (C)")).toBeInTheDocument();
+  });
+
+  it("disables the confirm button when a required label is blank", () => {
+    render(
+      <SectionModal
+        open
+        sections={multi}
+        newSectionLetter="C"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("New section (C)"), {
       target: { value: "   " },
     });
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
@@ -75,7 +196,8 @@ describe("SectionModal", () => {
     render(
       <SectionModal
         open
-        newSectionLetter="B"
+        sections={multi}
+        newSectionLetter="C"
         onConfirm={vi.fn()}
         onCancel={onCancel}
       />,
@@ -89,7 +211,8 @@ describe("SectionModal", () => {
     render(
       <SectionModal
         open={false}
-        newSectionLetter="B"
+        sections={multi}
+        newSectionLetter="C"
         onConfirm={vi.fn()}
         onCancel={vi.fn()}
       />,

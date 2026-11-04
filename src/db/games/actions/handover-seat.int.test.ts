@@ -123,8 +123,6 @@ describe("handoverSeat", () => {
         player2: { firstName: "Real", lastName: "Two" },
       },
       secretKey: "real-secret",
-      treatment: "PENALISED",
-      finePercent: 25,
     });
 
     expect(result.ok).toBe(true);
@@ -132,22 +130,30 @@ describe("handoverSeat", () => {
     const occ = await occupanciesForSeat(db);
     expect(occ).toHaveLength(2);
 
-    const standIn = occ.find((o: any) => o.id === standInId)!;
-    const realPair = occ.find((o: any) => o.id !== standInId)!;
+    const earlier = occ.find((o: any) => o.id === standInId)!;
+    const arriving = occ.find((o: any) => o.id !== standInId)!;
 
-    // Stand-in: pinned to the played boards, dropped from the ranking.
-    expect(standIn.boards).toEqual([1, 2]);
-    expect(standIn.standing).toBe("WITHOUT_STANDING");
-    expect(standIn.withdrawalTreatment).toBeNull();
-    expect(standIn.secretKey).toBe("standin-secret");
+    // Earlier occupant: pinned to the boards it played, NOT the arrival anchor,
+    // still ACTIVE (no treatment forced), split off (one line by default), and
+    // its secret rotated away so the old device token is dead.
+    expect(earlier.boards).toEqual([1, 2]);
+    expect(earlier.standing).toBe("ACTIVE");
+    expect(earlier.isArrivalAnchor).toBe(0);
+    expect(earlier.split).toBe(0);
+    expect(earlier.withdrawalTreatment).toBeNull();
+    expect(earlier.secretKey).not.toBe("standin-secret");
+    expect(earlier.secretKey).not.toBe("real-secret");
+    expect(earlier.secretKey).toBeTruthy();
 
-    // Real pair: the remaining boards, LATE arrival carrying the fine.
-    expect(realPair.boards).toEqual([3, 4]);
-    expect(realPair.standing).toBe("LATE");
-    expect(realPair.withdrawalTreatment).toBe("PENALISED");
-    expect(realPair.withdrawalFinePercent).toBe(25);
-    expect(realPair.secretKey).toBe("real-secret");
-    expect(realPair.seat).toBe("A1NS");
+    // Arriving pair: the remaining boards, the arrival anchor, ACTIVE, one line
+    // by default, holding the new device secret.
+    expect(arriving.boards).toEqual([3, 4]);
+    expect(arriving.standing).toBe("ACTIVE");
+    expect(arriving.isArrivalAnchor).toBe(1);
+    expect(arriving.split).toBe(0);
+    expect(arriving.withdrawalTreatment).toBeNull();
+    expect(arriving.secretKey).toBe("real-secret");
+    expect(arriving.seat).toBe("A1NS");
   });
 
   it("treats a director override as a played board", async () => {
@@ -201,17 +207,18 @@ describe("handoverSeat", () => {
         player2: { firstName: "Real", lastName: "Two" },
       },
       secretKey: "real-secret",
-      treatment: "REMOVE",
     });
 
     expect(result.ok).toBe(true);
     const occ = await occupanciesForSeat(db);
-    const standIn = occ.find((o: any) => o.standing === "WITHOUT_STANDING")!;
-    const realPair = occ.find((o: any) => o.standing === "LATE")!;
-    expect(standIn.boards).toEqual([1, 2]); // override counts as played
-    expect(realPair.boards).toEqual([3]);
-    expect(realPair.withdrawalTreatment).toBe("REMOVE");
-    expect(realPair.withdrawalFinePercent).toBeNull();
+    const earlier = occ.find((o: any) => o.isArrivalAnchor === 0)!;
+    const arriving = occ.find((o: any) => o.isArrivalAnchor === 1)!;
+    expect(earlier.boards).toEqual([1, 2]); // override counts as played
+    expect(arriving.boards).toEqual([3]);
+    // No treatment is applied by the engine — a substitution has no artificial
+    // score; both occupants are ACTIVE and one line by default.
+    expect(arriving.standing).toBe("ACTIVE");
+    expect(arriving.withdrawalTreatment).toBeNull();
   });
 
   it("rejects when no pair is seated at the seat", async () => {
@@ -226,7 +233,6 @@ describe("handoverSeat", () => {
         player2: { firstName: "Real", lastName: "Two" },
       },
       secretKey: "real-secret",
-      treatment: "REMOVE",
     });
 
     expect(result.ok).toBe(false);
@@ -246,7 +252,6 @@ describe("handoverSeat", () => {
         player2: { firstName: "Real", lastName: "Two" },
       },
       secretKey: "real-secret",
-      treatment: "REMOVE",
     });
 
     const second = await handoverSeat(gameId, {
@@ -256,7 +261,6 @@ describe("handoverSeat", () => {
         player2: { firstName: "Third", lastName: "Two" },
       },
       secretKey: "third-secret",
-      treatment: "REMOVE",
     });
 
     expect(second.ok).toBe(false);
@@ -276,7 +280,6 @@ describe("handoverSeat", () => {
         player2: { firstName: "Real", lastName: "Two" },
       },
       secretKey: "real-secret",
-      treatment: "REMOVE",
     });
 
     expect(result.ok).toBe(false);

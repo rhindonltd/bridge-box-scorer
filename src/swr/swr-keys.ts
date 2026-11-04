@@ -22,6 +22,11 @@ export const swrKeys = {
 
   resultsSummary: (gameId: string) => `/api/games/${gameId}/results-summary`,
 
+  outstandingBoards: (gameId: string) =>
+    `/api/games/${gameId}/outstanding-boards`,
+
+  substitutions: (gameId: string) => `/api/games/${gameId}/substitutions`,
+
   club: () => "/api/system/club",
 
   bridgewebs: () => "/api/system/bridgewebs",

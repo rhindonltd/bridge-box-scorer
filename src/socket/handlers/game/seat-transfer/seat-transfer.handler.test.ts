@@ -9,11 +9,15 @@ vi.mock("@/db/system/actions/create-seat-transfer-code", () => ({
 }));
 vi.mock("@/db/system/queries/validate-seat-transfer-code", () => ({
   validateAndClaimSeatTransferCode: vi.fn(),
+  inspectSeatTransferCode: vi.fn(),
 }));
 
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { createSeatTransferCode } from "@/db/system/actions/create-seat-transfer-code";
-import { validateAndClaimSeatTransferCode } from "@/db/system/queries/validate-seat-transfer-code";
+import {
+  validateAndClaimSeatTransferCode,
+  inspectSeatTransferCode,
+} from "@/db/system/queries/validate-seat-transfer-code";
 import { registerSeatTransferHandlers } from "./seat-transfer.handler";
 
 function makeSocket() {
@@ -35,12 +39,13 @@ describe("registerSeatTransferHandlers", () => {
     vi.mocked(assertPlayer).mockResolvedValue(true);
   });
 
-  it("registers both transfer events", () => {
+  it("registers the transfer events", () => {
     const socket = makeSocket();
     registerSeatTransferHandlers(socket, makeIo());
     const events = socket.on.mock.calls.map((c: any) => c[0]);
     expect(events).toContain(SocketEvents.CREATE_SEAT_TRANSFER);
     expect(events).toContain(SocketEvents.CLAIM_SEAT_TRANSFER);
+    expect(events).toContain(SocketEvents.INSPECT_SEAT_TRANSFER);
   });
 
   describe("CREATE_SEAT_TRANSFER", () => {
@@ -61,13 +66,36 @@ describe("registerSeatTransferHandlers", () => {
         "tok",
         expect.any(Function),
       );
-      expect(createSeatTransferCode).toHaveBeenCalledWith("g1", "A1NS");
+      // Defaults to a plain change-device code when no kind is supplied.
+      expect(createSeatTransferCode).toHaveBeenCalledWith(
+        "g1",
+        "A1NS",
+        "CHANGE_DEVICE",
+      );
       // Joins the seat room so this (old) device is notified on takeover.
       expect(socket.join).toHaveBeenCalledWith("game:g1:seat:A1NS");
       expect(cb).toHaveBeenCalledWith({
         success: true,
         data: { code: "ABC234" },
       });
+    });
+
+    it("mints a HANDOVER code when the payload asks for one", async () => {
+      vi.mocked(createSeatTransferCode).mockResolvedValue("HAND01");
+      const socket = makeSocket();
+      registerSeatTransferHandlers(socket, makeIo());
+      const cb = vi.fn();
+
+      await handlerFor(socket, SocketEvents.CREATE_SEAT_TRANSFER)(
+        { gameId: "g1", seat: "A1NS", token: "tok", kind: "HANDOVER" },
+        cb,
+      );
+
+      expect(createSeatTransferCode).toHaveBeenCalledWith(
+        "g1",
+        "A1NS",
+        "HANDOVER",
+      );
     });
 
     it("does nothing when the seat token is not authorised", async () => {
@@ -111,6 +139,7 @@ describe("registerSeatTransferHandlers", () => {
         gameId: "g1",
         seat: "A1NS",
         token: "new-token",
+        isHandover: false,
       });
       const socket = makeSocket();
       const io = makeIo();
@@ -124,7 +153,10 @@ describe("registerSeatTransferHandlers", () => {
 
       // Claiming is not player-authed — the code is the credential.
       expect(assertPlayer).not.toHaveBeenCalled();
-      expect(validateAndClaimSeatTransferCode).toHaveBeenCalledWith("ABC234");
+      expect(validateAndClaimSeatTransferCode).toHaveBeenCalledWith(
+        "ABC234",
+        undefined,
+      );
       // Notifies the old device (in the seat room) that it has been signed out.
       expect(io.to).toHaveBeenCalledWith("game:g1:seat:A1NS");
       expect(io.__emit).toHaveBeenCalledWith(SocketEvents.SEAT_TAKEN_OVER, {
@@ -133,7 +165,54 @@ describe("registerSeatTransferHandlers", () => {
       });
       expect(cb).toHaveBeenCalledWith({
         success: true,
-        data: { gameId: "g1", seat: "A1NS", token: "new-token" },
+        data: {
+          gameId: "g1",
+          seat: "A1NS",
+          token: "new-token",
+          isHandover: false,
+        },
+      });
+    });
+
+    it("passes the arriving pair through for a handover claim", async () => {
+      vi.mocked(validateAndClaimSeatTransferCode).mockResolvedValue({
+        valid: true,
+        gameId: "g1",
+        seat: "A1NS",
+        token: "new-token",
+        isHandover: true,
+      });
+      const realPair = {
+        player1: { firstName: "Real", lastName: "One" },
+        player2: { firstName: "Real", lastName: "Two" },
+      };
+      const socket = makeSocket();
+      const io = makeIo();
+      registerSeatTransferHandlers(socket, io);
+      const cb = vi.fn();
+
+      await handlerFor(socket, SocketEvents.CLAIM_SEAT_TRANSFER)(
+        { code: "HAND01", realPair },
+        cb,
+      );
+
+      expect(validateAndClaimSeatTransferCode).toHaveBeenCalledWith(
+        "HAND01",
+        realPair,
+      );
+      // The stand-in's old device is signed out for a handover too.
+      expect(io.__emit).toHaveBeenCalledWith(SocketEvents.SEAT_TAKEN_OVER, {
+        gameId: "g1",
+        seat: "A1NS",
+      });
+      expect(cb).toHaveBeenCalledWith({
+        success: true,
+        data: {
+          gameId: "g1",
+          seat: "A1NS",
+          token: "new-token",
+          isHandover: true,
+        },
       });
     });
 
@@ -176,6 +255,52 @@ describe("registerSeatTransferHandlers", () => {
         error: "Internal error",
       });
       errSpy.mockRestore();
+    });
+  });
+
+  describe("INSPECT_SEAT_TRANSFER", () => {
+    it("reports isHandover without consuming the code (no auth)", async () => {
+      vi.mocked(inspectSeatTransferCode).mockResolvedValue({
+        valid: true,
+        gameId: "g1",
+        seat: "A1NS",
+        isHandover: true,
+      });
+      const socket = makeSocket();
+      registerSeatTransferHandlers(socket, makeIo());
+      const cb = vi.fn();
+
+      await handlerFor(socket, SocketEvents.INSPECT_SEAT_TRANSFER)(
+        { code: "HAND01" },
+        cb,
+      );
+
+      expect(assertPlayer).not.toHaveBeenCalled();
+      expect(inspectSeatTransferCode).toHaveBeenCalledWith("HAND01");
+      expect(cb).toHaveBeenCalledWith({
+        success: true,
+        data: { gameId: "g1", seat: "A1NS", isHandover: true },
+      });
+    });
+
+    it("relays the reason for an invalid code", async () => {
+      vi.mocked(inspectSeatTransferCode).mockResolvedValue({
+        valid: false,
+        error: "Invalid code",
+      });
+      const socket = makeSocket();
+      registerSeatTransferHandlers(socket, makeIo());
+      const cb = vi.fn();
+
+      await handlerFor(socket, SocketEvents.INSPECT_SEAT_TRANSFER)(
+        { code: "ZZZZZZ" },
+        cb,
+      );
+
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: "Invalid code",
+      });
     });
   });
 });

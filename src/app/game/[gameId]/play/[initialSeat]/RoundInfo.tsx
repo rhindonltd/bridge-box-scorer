@@ -55,11 +55,15 @@ export default function RoundInfo({
           className="mb-6 max-w-md rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-900"
         >
           Your opponents haven&rsquo;t arrived yet — they&rsquo;re running late.
-          Please wait for them before starting; the director will seat them when
-          they get here.
+          Wait for them and this round will open automatically when the director
+          seats them. If they&rsquo;re missing this round, move on to the next.
         </div>
       )}
-      <CardTable tableNumber={table} players={players} />
+      <CardTable
+        tableNumber={table}
+        players={players}
+        opponentExpectedLate={opponentExpectedLate}
+      />
     </div>
   );
 }

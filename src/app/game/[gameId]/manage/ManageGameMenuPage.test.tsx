@@ -28,12 +28,9 @@ const handlers = {
   onEnterDealsClick: vi.fn(),
   onMovementClick: vi.fn(),
   onShareDirectorAccessClick: vi.fn(),
-  onTournamentLevelClick: vi.fn(),
   onReviewMismatchesClick: vi.fn(),
-  onDownloadUsebioClick: vi.fn(),
-  onDownloadPbnClick: vi.fn(),
-  onUploadBridgewebsClick: vi.fn(),
-  onUploadEbuClick: vi.fn(),
+  onSubstitutionsClick: vi.fn(),
+  onExportClick: vi.fn(),
   onDeleteGameClick: vi.fn(),
 };
 
@@ -44,13 +41,8 @@ const flags = {
   showEnterDeals: false,
   showMovement: false,
   showReviewMismatches: false,
-  showDownloadUsebio: false,
-  downloadUsebioDisabled: false,
-  showDownloadPbn: false,
-  showUploadBridgewebs: false,
-  uploadBridgewebsDisabled: false,
-  showUploadEbu: false,
-  uploadEbuDisabled: false,
+  showSubstitutions: false,
+  showExport: false,
 };
 
 describe("ManageGameMenuPage", () => {
@@ -94,7 +86,7 @@ describe("ManageGameMenuPage", () => {
           showSetUpGame={true}
           showTravellers={false}
           showMovement={false}
-          showDownloadUsebio={false}
+          showExport={false}
         />,
       );
     });
@@ -104,7 +96,7 @@ describe("ManageGameMenuPage", () => {
       expect(handlers.onSetUpGameClick).toHaveBeenCalled();
     });
 
-    it("hides Travellers, Movement and Download USEBIO", () => {
+    it("hides Travellers, Movement and Export & Publish", () => {
       expect(
         screen.queryByRole("button", { name: "Travellers" }),
       ).not.toBeInTheDocument();
@@ -112,7 +104,7 @@ describe("ManageGameMenuPage", () => {
         screen.queryByRole("button", { name: "Movement" }),
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByRole("button", { name: "Download USEBIO" }),
+        screen.queryByRole("button", { name: "Export & Publish" }),
       ).not.toBeInTheDocument();
     });
   });
@@ -126,7 +118,7 @@ describe("ManageGameMenuPage", () => {
           showSetUpGame={false}
           showTravellers={true}
           showMovement={true}
-          showDownloadUsebio={false}
+          showExport={false}
         />,
       );
     });
@@ -165,120 +157,39 @@ describe("ManageGameMenuPage", () => {
     });
   });
 
-  describe("Download PBN", () => {
-    it("is shown and wired when showDownloadPbn is true", () => {
+  describe("Substitutions", () => {
+    it("is shown and wired when showSubstitutions is true", () => {
       render(
-        <ManageGameMenuPage {...handlers} {...flags} showDownloadPbn={true} />,
+        <ManageGameMenuPage {...handlers} {...flags} showSubstitutions={true} />,
       );
-      fireEvent.click(screen.getByRole("button", { name: "Download PBN" }));
-      expect(handlers.onDownloadPbnClick).toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "Substitutions" }));
+      expect(handlers.onSubstitutionsClick).toHaveBeenCalled();
     });
 
-    it("is hidden when showDownloadPbn is false", () => {
+    it("is hidden when showSubstitutions is false", () => {
       render(
-        <ManageGameMenuPage {...handlers} {...flags} showDownloadPbn={false} />,
+        <ManageGameMenuPage {...handlers} {...flags} showSubstitutions={false} />,
       );
       expect(
-        screen.queryByRole("button", { name: "Download PBN" }),
+        screen.queryByRole("button", { name: "Substitutions" }),
       ).not.toBeInTheDocument();
     });
   });
 
-  describe("Download USEBIO", () => {
-    it("is hidden when showDownloadUsebio is false", () => {
+  describe("Export & Publish", () => {
+    it("is shown and wired when showExport is true", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} showExport={true} />);
+      fireEvent.click(screen.getByRole("button", { name: "Export & Publish" }));
+      expect(handlers.onExportClick).toHaveBeenCalled();
+    });
+
+    it("is hidden when showExport is false", () => {
       render(
-        <ManageGameMenuPage
-          {...handlers}
-          {...flags}
-          showDownloadUsebio={false}
-        />,
+        <ManageGameMenuPage {...handlers} {...flags} showExport={false} />,
       );
       expect(
-        screen.queryByRole("button", { name: "Download USEBIO" }),
+        screen.queryByRole("button", { name: "Export & Publish" }),
       ).not.toBeInTheDocument();
-    });
-
-    it("is shown and enabled when results are in", () => {
-      render(
-        <ManageGameMenuPage
-          {...handlers}
-          {...flags}
-          showDownloadUsebio={true}
-          downloadUsebioDisabled={false}
-        />,
-      );
-      const button = screen.getByRole("button", { name: "Download USEBIO" });
-      expect(button).toBeEnabled();
-
-      fireEvent.click(button);
-      expect(handlers.onDownloadUsebioClick).toHaveBeenCalled();
-    });
-
-    it("is shown but disabled while the completion signal is loading", () => {
-      render(
-        <ManageGameMenuPage
-          {...handlers}
-          {...flags}
-          showDownloadUsebio={true}
-          downloadUsebioDisabled={true}
-        />,
-      );
-      const button = screen.getByRole("button", { name: "Download USEBIO" });
-      expect(button).toBeDisabled();
-
-      fireEvent.click(button);
-      expect(handlers.onDownloadUsebioClick).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("Upload to BridgeWebs", () => {
-    it("is hidden when showUploadBridgewebs is false", () => {
-      render(
-        <ManageGameMenuPage
-          {...handlers}
-          {...flags}
-          showUploadBridgewebs={false}
-        />,
-      );
-      expect(
-        screen.queryByRole("button", { name: "Upload to BridgeWebs" }),
-      ).not.toBeInTheDocument();
-    });
-
-    it("is shown and enabled when results are in", () => {
-      render(
-        <ManageGameMenuPage
-          {...handlers}
-          {...flags}
-          showUploadBridgewebs={true}
-          uploadBridgewebsDisabled={false}
-        />,
-      );
-      const button = screen.getByRole("button", {
-        name: "Upload to BridgeWebs",
-      });
-      expect(button).toBeEnabled();
-
-      fireEvent.click(button);
-      expect(handlers.onUploadBridgewebsClick).toHaveBeenCalled();
-    });
-
-    it("is shown but disabled until all results are in", () => {
-      render(
-        <ManageGameMenuPage
-          {...handlers}
-          {...flags}
-          showUploadBridgewebs={true}
-          uploadBridgewebsDisabled={true}
-        />,
-      );
-      const button = screen.getByRole("button", {
-        name: "Upload to BridgeWebs",
-      });
-      expect(button).toBeDisabled();
-
-      fireEvent.click(button);
-      expect(handlers.onUploadBridgewebsClick).not.toHaveBeenCalled();
     });
   });
 });

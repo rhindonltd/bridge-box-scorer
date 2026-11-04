@@ -34,29 +34,23 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     // above makes it read "Play"; clear the seat token to see "Join".
     headerRight: <ManageHeaderSwitch gameId={mockGame.gameId} />,
     onSetUpGameClick: fn(),
+    onManageTablesClick: fn(),
     onTravellersClick: fn(),
     onEnterDealsClick: fn(),
     onMovementClick: fn(),
     onShareDirectorAccessClick: fn(),
-    onTournamentLevelClick: fn(),
     onReviewMismatchesClick: fn(),
-    onDownloadUsebioClick: fn(),
-    onDownloadPbnClick: fn(),
-    onUploadBridgewebsClick: fn(),
-    onUploadEbuClick: fn(),
+    onSubstitutionsClick: fn(),
+    onExportClick: fn(),
     onDeleteGameClick: fn(),
     showSetUpGame: true,
+    showManageTables: false,
     showTravellers: false,
     showEnterDeals: false,
     showMovement: false,
     showReviewMismatches: false,
-    showDownloadUsebio: false,
-    downloadUsebioDisabled: false,
-    showDownloadPbn: false,
-    showUploadBridgewebs: false,
-    uploadBridgewebsDisabled: false,
-    showUploadEbu: false,
-    uploadEbuDisabled: false,
+    showSubstitutions: false,
+    showExport: false,
   },
 };
 
@@ -69,51 +63,33 @@ export const NotStarted: Story = {
     showSetUpGame: true,
     showTravellers: false,
     showMovement: false,
-    showDownloadUsebio: false,
+    showExport: false,
   },
 };
 
 /**
- * Game started but results still outstanding: Travellers and Movement are
- * available; Download USEBIO is shown but disabled until every result is in.
+ * Game started: Travellers, Movement and the "Export & Publish" submenu entry
+ * are available. The individual export gating (results complete, BridgeWebs /
+ * EBU configured) now lives inside that submenu.
  */
-export const StartedResultsIncomplete: Story = {
+export const Started: Story = {
   args: {
     showSetUpGame: false,
     showTravellers: true,
     showEnterDeals: true,
     showMovement: true,
-    showDownloadUsebio: true,
-    downloadUsebioDisabled: true,
+    showExport: true,
   },
 };
 
-/** All results in: Download USEBIO is available. */
-export const StartedResultsComplete: Story = {
+/** A started Swiss game also shows Review Mismatches above Export & Publish. */
+export const StartedSwiss: Story = {
   args: {
     showSetUpGame: false,
     showTravellers: true,
     showEnterDeals: true,
     showMovement: true,
-    showDownloadUsebio: true,
-    downloadUsebioDisabled: false,
-  },
-};
-
-/**
- * All results in and BridgeWebs configured: the Upload to BridgeWebs option is
- * shown alongside the USEBIO/PBN exports.
- */
-export const StartedWithBridgewebs: Story = {
-  args: {
-    showSetUpGame: false,
-    showTravellers: true,
-    showEnterDeals: true,
-    showMovement: true,
-    showDownloadUsebio: true,
-    downloadUsebioDisabled: false,
-    showDownloadPbn: true,
-    showUploadBridgewebs: true,
-    uploadBridgewebsDisabled: false,
+    showReviewMismatches: true,
+    showExport: true,
   },
 };

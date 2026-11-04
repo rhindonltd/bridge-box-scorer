@@ -5,6 +5,9 @@ import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { Spinner } from "@/components/common/Spinner";
+import { TournamentLevelSelect } from "@/components/common/TournamentLevelSelect";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { DEFAULT_TOURNAMENT_LEVEL } from "@/model/tournament-level";
 import { fetcher } from "@/lib/fetcher";
 import { getDirectorToken } from "@/lib/director-token";
 import { swrKeys } from "@/swr/swr-keys";
@@ -20,10 +23,16 @@ type UploadState =
   | { kind: "error"; message: string; advisories: string[] };
 
 export function UploadEbuPage({ onCancel }: UploadEbuPageProps) {
-  const { game } = useRequiredGame();
+  const { game, mutateGame } = useRequiredGame();
 
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadState>({ kind: "idle" });
+
+  // Pre-fill from the game's last-used level (default for an older row); the
+  // chosen level is persisted on the server as part of the submission.
+  const [tournamentLevel, setTournamentLevel] = useState<TournamentLevel>(
+    game.tournamentLevel ?? DEFAULT_TOURNAMENT_LEVEL,
+  );
 
   const { data: status, isLoading } = useSWR<EbuStatus>(
     swrKeys.ebu(),
@@ -40,11 +49,18 @@ export function UploadEbuPage({ onCancel }: UploadEbuPageProps) {
     try {
       const res = await fetch(`/api/games/${game.gameId}/ebu/upload`, {
         method: "POST",
-        headers: { "x-director-token": getDirectorToken(game.gameId) ?? "" },
+        headers: {
+          "x-director-token": getDirectorToken(game.gameId) ?? "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tournamentLevel }),
       });
       const body = await res.json().catch(() => null);
 
       if (res.ok) {
+        // The server saved this level; reflect it locally so a re-open
+        // pre-fills the same choice.
+        mutateGame({ ...game, tournamentLevel }, false);
         // The route returns the EBU's own outcome. `ok` reflects whether the
         // submission was accepted; the message is shown either way.
         const message =
@@ -100,11 +116,19 @@ export function UploadEbuPage({ onCancel }: UploadEbuPageProps) {
     >
       <form onSubmit={handleUpload} className="px-6" id="upload-ebu-form">
         {configured ? (
-          <p className="text-sm text-gray-600 mb-4">
-            This submits the game results (USEBIO) to the English Bridge Union
-            for masterpoints and NGS grading
-            {status?.ebuNumber ? ` for EBU number ${status.ebuNumber}` : ""}.
-          </p>
+          <>
+            <p className="text-sm text-gray-600 mb-4">
+              This submits the game results (USEBIO) to the English Bridge Union
+              for masterpoints and NGS grading
+              {status?.ebuNumber ? ` for EBU number ${status.ebuNumber}` : ""}.
+            </p>
+
+            <TournamentLevelSelect
+              value={tournamentLevel}
+              onChange={setTournamentLevel}
+              disabled={uploading}
+            />
+          </>
         ) : (
           <p role="alert" className="text-red-600 text-base">
             EBU is not configured. Add your EBU number and password in Settings

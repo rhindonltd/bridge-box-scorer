@@ -26,14 +26,23 @@ describe("createSeatTransferCode", () => {
       seat: string;
       expiresAt: string;
       used: number;
+      kind: string;
     };
     expect(row.code).toBe(code);
     expect(row.gameId).toBe("g1");
     expect(row.seat).toBe("A3NS");
     expect(row.used).toBe(0);
+    // Defaults to a plain change-device code.
+    expect(row.kind).toBe("CHANGE_DEVICE");
     // Expiry is ~5 minutes out.
     const expiry = new Date(row.expiresAt).getTime();
     expect(expiry).toBeGreaterThan(before + 4 * 60 * 1000);
     expect(expiry).toBeLessThan(before + 6 * 60 * 1000);
+  });
+
+  it("records the HANDOVER kind when minting a handover code", async () => {
+    await createSeatTransferCode("g1", "A3NS", "HANDOVER");
+    const row = insertValues.mock.calls[0][0] as { kind: string };
+    expect(row.kind).toBe("HANDOVER");
   });
 });

@@ -20,7 +20,8 @@ function getSystemDb() {
   if (dbInstance) return dbInstance;
 
   const dataDir = process.env.DATABASE_URL ?? "/home/bridgebox/data";
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(/*turbopackIgnore: true*/ dataDir))
+    fs.mkdirSync(/*turbopackIgnore: true*/ dataDir, { recursive: true });
 
   const dbFile = path.join(dataDir, "system.db");
   const sqlite = openDatabase(dbFile);

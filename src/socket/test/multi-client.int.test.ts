@@ -81,6 +81,7 @@ vi.mock("@/timer/scheduler", () => ({
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { findSections } from "@/db/games/queries/find-sections";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { getEngine } from "@/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
@@ -112,6 +113,12 @@ describe("Multi-client Socket.IO scenarios", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     extraClients = [];
+    // The create-participant handler validates the seat is within its
+    // section's table range; a layout with section A (8 tables) keeps the
+    // A1NS seat these scenarios use valid.
+    vi.mocked(findSections).mockResolvedValue([
+      { section: "A", label: "A", tables: 8, selectedMovement: null, ordinal: 0 },
+    ] as any);
   });
 
   afterEach(async () => {

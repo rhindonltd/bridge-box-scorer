@@ -197,4 +197,105 @@ describe("resolvePlayState", () => {
     const state = await resolvePlayState(db, "g1", "A1NS");
     expect(state).toMatchObject({ assignmentId: "A1", side: "NS" });
   });
+
+  describe("expected-late opponent", () => {
+    /** A played round whose opponent is an empty expected-late seat. */
+    function lateRound(
+      roundNumber: number,
+      statuses: { boardNumber: number; status: string }[],
+      tableNumber = 1,
+    ) {
+      return {
+        ...round(roundNumber, statuses, { tableNumber }),
+        opponentExpectedLate: true,
+      };
+    }
+
+    it("rests on an expectedLate phase when the current round's opponent is late", async () => {
+      withSchedule([lateRound(1, [{ boardNumber: 1, status: "NOT_PLAYED" }])]);
+
+      const state = await resolvePlayState(db, "g1", "A1NS");
+
+      // Not a stuck `round` phase: a dedicated resting phase the pair
+      // acknowledges (wait, or move on).
+      expect(state!.phase).toEqual({ kind: "expectedLate", roundIndex: 0 });
+    });
+
+    it("turns back into a normal round once the opponent is seated (mark cleared)", async () => {
+      // The director seated the latecomers: the schedule no longer flags the
+      // round expected-late, so it resolves as an ordinary enterable round.
+      withSchedule([round(1, [{ boardNumber: 1, status: "NOT_PLAYED" }])]);
+
+      const state = await resolvePlayState(db, "g1", "A1NS");
+
+      expect(state!.phase).toMatchObject({
+        kind: "round",
+        roundIndex: 0,
+        position: { at: "entering", boardNumber: 1 },
+      });
+    });
+  });
+
+  describe("strict round ordering (never pulled back)", () => {
+    /** A played round whose opponent is an empty expected-late seat. */
+    function lateRound(
+      roundNumber: number,
+      statuses: { boardNumber: number; status: string }[],
+      tableNumber = 1,
+    ) {
+      return {
+        ...round(roundNumber, statuses, { tableNumber }),
+        opponentExpectedLate: true,
+      };
+    }
+
+    it("stays on a partly-played round (some boards finalised, some not)", async () => {
+      // A finalised board in the CURRENT round must not float the pair past it.
+      withSchedule([
+        round(1, [
+          { boardNumber: 1, status: "CONFIRMED" },
+          { boardNumber: 2, status: "NOT_PLAYED" },
+        ]),
+      ]);
+
+      const state = await resolvePlayState(db, "g1", "A1NS");
+      expect(state!.phase).toMatchObject({
+        kind: "round",
+        roundIndex: 0,
+        position: { at: "entering", boardNumber: 2 },
+      });
+    });
+
+    it("does not pull a pair back to a skipped expected-late round after they played a later one", async () => {
+      // Round 1's opponent never arrived (boards left unconfirmed); the pair
+      // moved on and played round 2. Even though round 1 is 'incomplete', the
+      // pair must stay at/after round 2 — not be dragged back to round 1.
+      withSchedule([
+        lateRound(1, [{ boardNumber: 1, status: "NOT_PLAYED" }]),
+        round(2, [{ boardNumber: 2, status: "CONFIRMED" }], { tableNumber: 2 }),
+      ]);
+
+      const state = await resolvePlayState(db, "g1", "A1NS");
+      // Round 2 is the last finalised round and it is complete, so the pair is
+      // between rounds / done — never resolved back to round 1.
+      expect(state!.phase).toEqual({ kind: "complete" });
+    });
+
+    it("does not pull a pair back when a director corrects an earlier, already-passed round", async () => {
+      // Round 1 was corrected (CONFIRMED → OVERRIDDEN, which is 'not CONFIRMED'
+      // and so would look incomplete) after the pair finished round 2. Strict
+      // ordering keeps them at round 2, not back on round 1.
+      withSchedule([
+        round(1, [{ boardNumber: 1, status: "OVERRIDDEN" }]),
+        round(2, [{ boardNumber: 2, status: "NOT_PLAYED" }], { tableNumber: 2 }),
+      ]);
+
+      const state = await resolvePlayState(db, "g1", "A1NS");
+      expect(state!.phase).toMatchObject({
+        kind: "round",
+        roundIndex: 1,
+        position: { at: "entering", boardNumber: 2 },
+      });
+    });
+  });
 });

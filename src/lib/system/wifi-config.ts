@@ -68,9 +68,11 @@ export function writeWifiConfig(config: WifiConfig): void {
 
 /** Read the saved WiFi SSID from the on-disk config, if present. */
 export function readSavedSSID(): string | null {
-  if (!fs.existsSync(WIFI_CONFIG_PATH)) return null;
+  if (!fs.existsSync(/*turbopackIgnore: true*/ WIFI_CONFIG_PATH)) return null;
   try {
-    const savedConfig = JSON.parse(fs.readFileSync(WIFI_CONFIG_PATH, "utf-8"));
+    const savedConfig = JSON.parse(
+      fs.readFileSync(/*turbopackIgnore: true*/ WIFI_CONFIG_PATH, "utf-8"),
+    );
     return savedConfig?.ssid ?? null;
   } catch {
     return null;

@@ -58,8 +58,23 @@ export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
   const seconds = expiresIn % 60;
 
   return (
-    <GamePageLayout headerTitle="Share Director Access" backAction={onBack}>
-      <>
+    <GamePageLayout
+      headerTitle="Share Director Access"
+      backAction={onBack}
+      contentMode="center"
+      // The regenerate button is the one primary action, so it lives in the
+      // fixed bottom action bar as a full-width button (matching the rest of
+      // the app) rather than floating under the code.
+      actions={
+        <button
+          onClick={generateCode}
+          className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        >
+          Generate New Code
+        </button>
+      }
+    >
+      <div className="flex flex-col items-center text-center px-4">
         {error && <p className="text-red-600 text-base mb-4">{error}</p>}
 
         {code ? (
@@ -77,31 +92,16 @@ export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
             <p className="text-base text-gray-600 text-center mb-2">
               Give this code to the other director.
             </p>
-            <p className="text-base font-semibold text-gray-800 mb-6">
+            <p className="text-base font-semibold text-gray-800">
               Expires in {minutes}:{String(seconds).padStart(2, "0")}
             </p>
-
-            <button
-              onClick={generateCode}
-              className="px-6 py-3 text-base font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 mb-3"
-            >
-              Generate New Code
-            </button>
           </>
         ) : expiresIn === 0 ? (
-          <>
-            <p className="text-base text-gray-600 mb-4">Code expired.</p>
-            <button
-              onClick={generateCode}
-              className="px-6 py-3 text-base font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 mb-3"
-            >
-              Generate New Code
-            </button>
-          </>
+          <p className="text-base text-gray-600">Code expired.</p>
         ) : (
           <Spinner />
         )}
-      </>
+      </div>
     </GamePageLayout>
   );
 }

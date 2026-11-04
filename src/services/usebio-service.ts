@@ -35,6 +35,7 @@ import {
 import { classifyEvent } from "@/model/event-format";
 import { Card } from "@/model/common";
 import { BoardOutcome } from "@/model/score";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
 
 /**
  * Generate the USEBIO 1.2 XML for a game, choosing the event shape from the
@@ -47,8 +48,17 @@ import { BoardOutcome } from "@/model/score";
  *    a board-comparison teams file (team matches per round, per-board points,
  *    ranked by points won): BAM uses a 0/0.5/1 scale, PAB a 0/1/2 scale;
  *  - everything else -> the standard MP/Butler/XIMP pairs file.
+ *
+ * `tournamentLevel` is the EBU level chosen in the export flow (it is no longer
+ * read off the game row); it resolves to the USEBIO masterpoint/charge EVENT
+ * fields.
  */
-export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
+export async function generateUsebio(
+  db: Db,
+  game: BridgeGame,
+  club: Club,
+  tournamentLevel: TournamentLevel,
+) {
   // The movement is stored PER SECTION for Swiss/Swiss-Teams games (not on the
   // game-index row), so fall back to a section movement when the index copy is
   // absent — matching the leaderboard's classification (and needed to size the
@@ -96,6 +106,7 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
         assembleSwissTeams(
           game,
           club,
+          tournamentLevel,
           teams,
           boardRows,
           ruledMatches,
@@ -114,6 +125,7 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
         assembleImpAggregateTeams(
           game,
           club,
+          tournamentLevel,
           teams,
           boardRows,
           matchRows,
@@ -133,6 +145,7 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
         assembleBoardComparisonTeams(
           game,
           club,
+          tournamentLevel,
           teams,
           boardRows,
           matchRows,
@@ -155,6 +168,7 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
         assembleSwissPairs(
           game,
           club,
+          tournamentLevel,
           pairs,
           boardRows,
           matchRows,
@@ -164,7 +178,13 @@ export async function generateUsebio(db: Db, game: BridgeGame, club: Club) {
       );
     }
     case "PAIRS_BOARD":
-      return generateMpPairsUsebio(db, game, club, excludedFromRanking);
+      return generateMpPairsUsebio(
+        db,
+        game,
+        club,
+        tournamentLevel,
+        excludedFromRanking,
+      );
   }
 }
 
@@ -172,6 +192,7 @@ async function generateMpPairsUsebio(
   db: Db,
   game: BridgeGame,
   club: Club,
+  tournamentLevel: TournamentLevel,
   excludedFromRanking: ReadonlySet<string>,
 ) {
   // Get participants (pairs) — one per seat (the primary occupant).
@@ -180,18 +201,16 @@ async function generateMpPairsUsebio(
   // Get all board results
   const allBoards = await db.select().from(boards);
 
-  // §2.4.7 HANDOVER: resolve each board row's ns/ew to its OCCUPANT's
-  // scored-field id (the stand-in's boards get a `#<occId>` id), and surface the
-  // stand-ins so each gets its own `<PAIR>` (so no TRAVELLER_LINE references an
-  // undeclared pair) while being excluded from the placings. All no-ops for an
-  // ordinary game (one occupancy per seat).
+  // §2.4.7 HANDOVER / SUBSTITUTION: resolve each board row's ns/ew to its
+  // OCCUPANT's scored-field id. A ONE-LINE seat folds onto the one bare-id pair;
+  // a SPLIT seat's non-anchor occupant gets a `#<occId>` id and its own `<PAIR>`
+  // block (so its TRAVELLER_LINEs resolve). Each such pair is PLACED unless it
+  // is "without standing" — that exclusion already lives in `excludedFromRanking`
+  // (keyed by scored id), so we do NOT force-exclude the split pairs here. All
+  // no-ops for an ordinary game (one occupancy per seat).
   const occupancies = await readSeatOccupancies(db);
   const resolveScoredId = buildOccupantScoredIdResolver(occupancies);
-  const standIns = await findNonPrimaryOccupantPairs(db);
-  const excludedWithStandIns = new Set<string>([
-    ...excludedFromRanking,
-    ...standIns.map((s) => s.scoredId),
-  ]);
+  const splitPairs = await findNonPrimaryOccupantPairs(db);
 
   // The ordered section ids to emit (one <SECTION> each). Each section is its
   // own scoring field, so pair numbers are always emitted UNPREFIXED (e.g.
@@ -215,15 +234,16 @@ async function generateMpPairsUsebio(
     };
   });
 
-  // A `<PAIR>` for each handover stand-in, keyed by its scored-field id (so its
-  // TRAVELLER_LINEs resolve) but excluded from the placings (§2.4.9).
-  for (const standIn of standIns) {
+  // A `<PAIR>` for each SPLIT seat's non-anchor occupant, keyed by its
+  // scored-field id (so its TRAVELLER_LINEs resolve). It is placed unless it is
+  // "without standing" (already captured in `excludedFromRanking`).
+  for (const splitPair of splitPairs) {
     usebioPairs.push({
-      pairNumber: formatPairNumber(standIn.scoredId, false),
-      direction: standIn.seat.endsWith("NS") ? "N" : "E",
-      section: sectionOf(standIn.seat),
-      player1: standIn.player1,
-      player2: standIn.player2,
+      pairNumber: formatPairNumber(splitPair.scoredId, false),
+      direction: splitPair.seat.endsWith("NS") ? "N" : "E",
+      section: sectionOf(splitPair.seat),
+      player1: splitPair.player1,
+      player2: splitPair.player2,
     });
   }
 
@@ -270,7 +290,7 @@ async function generateMpPairsUsebio(
     },
     eventName: game.eventName,
     eventDate: game.eventDate,
-    tournamentLevel: game.tournamentLevel,
+    tournamentLevel,
     scoringType: game.scoringType,
     tables: game.tables,
     sectionName: game.sectionName || "A",
@@ -278,7 +298,7 @@ async function generateMpPairsUsebio(
     boards: boardNumbers.size,
     pairs: usebioPairs,
     boardResults,
-    excludedFromRanking: excludedWithStandIns,
+    excludedFromRanking,
   };
 
   return generateUsebioXml(usebioData);

@@ -19,6 +19,7 @@ function assembleSwissTeams(
   return assembleSwissTeamsImpl(
     g,
     c,
+    "NORMAL_CLUB",
     teams,
     boardRows,
     teamMatchStructureFromRows(boardRows),
@@ -394,6 +395,7 @@ describe("assembleSwissTeams — §3.3.9 void match (whole-team withdrawal)", ()
     const data = assembleSwissTeamsImpl(
       game,
       club,
+      "NORMAL_CLUB",
       teams,
       [],
       voidMatchRows("VOID:SHORT_OFFENDER_NS", 1, 2),
@@ -416,6 +418,7 @@ describe("assembleSwissTeams — §3.3.9 void match (whole-team withdrawal)", ()
     const data = assembleSwissTeamsImpl(
       game,
       club,
+      "NORMAL_CLUB",
       teams,
       [],
       voidMatchRows("VOID:SHORT_OFFENDER_NS", 1, 2),

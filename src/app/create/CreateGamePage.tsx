@@ -6,8 +6,6 @@ import { createGame } from "@/lib/game-service";
 import { useId, useState } from "react";
 import useSWR from "swr";
 import { ScoringType } from "@/db/games/types/scoring-type";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
-import { TOURNAMENT_LEVEL_OPTIONS } from "@/model/tournament-level";
 import {
   type EventTypeChoice,
   EVENT_TYPE_MAP,
@@ -65,10 +63,6 @@ export function CreateGamePage() {
   const [pairsScoring, setPairsScoring] = useState<
     Extract<ScoringType, "MP" | "XIMP">
   >("MP");
-  // The EBU tournament level, fixing the USEBIO masterpoint/charge fields on
-  // export. Defaults to a normal weekly club session.
-  const [tournamentLevel, setTournamentLevel] =
-    useState<TournamentLevel>("NORMAL_CLUB");
   const [leadCardRequired, setLeadCardRequired] = useState(true);
   const [handEntryEnabled, setHandEntryEnabled] = useState(false);
   const [bridgewebsEventId, setBridgewebsEventId] = useState("");
@@ -154,7 +148,6 @@ export function CreateGamePage() {
       eventDate,
       sectionName: "",
       tables: DEFAULT_TABLES,
-      tournamentLevel,
       leadCardRequired,
       handEntryEnabled,
       // Only attach a BridgeWebs event id when the picker is actually shown, so
@@ -285,10 +278,17 @@ export function CreateGamePage() {
               {eventType === "SWISS_TEAMS" ? (
                 // Swiss Teams is always scored by IMP (Victory Points) — the
                 // round-by-round draw depends on VP standings, so no other
-                // scoring method applies. No dropdown needed.
-                <p className="text-sm text-gray-500">
-                  Scoring: <span className="font-semibold text-gray-700">IMP (Victory Points)</span>
-                </p>
+                // scoring method applies. No dropdown needed, but the row still
+                // mirrors the inline SelectField layout (bold label left, value
+                // right) so it lines up with the other scoring choices.
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-gray-700">
+                    Scoring
+                  </span>
+                  <span className="text-lg text-gray-700">
+                    IMP (Victory Points)
+                  </span>
+                </div>
               ) : isPairsChoice(eventType) ? (
                 <SelectField
                   label="Scoring"
@@ -309,14 +309,6 @@ export function CreateGamePage() {
                   inline
                 />
               )}
-
-              <SelectField
-                label="Tournament Level"
-                value={tournamentLevel}
-                options={TOURNAMENT_LEVEL_OPTIONS}
-                onSelect={setTournamentLevel}
-                inline
-              />
 
               <div className="flex items-center justify-between">
                 <label

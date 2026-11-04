@@ -162,6 +162,37 @@ describe("SelectSeatPage", () => {
     await waitFor(() => expect(onSeatSelected).toHaveBeenCalledWith("A1NS"));
   });
 
+  it("closes the name sheet once a submit succeeds (no clash flash)", async () => {
+    // While submitting, the sheet is hidden so the live participants list —
+    // which now includes the just-seated pair — can't flag the player's own
+    // pair as 'already seated' before the play screen loads.
+    render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId("pick-seat"));
+    expect(screen.getByTestId("sheet-seat")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("submit-pair"));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("sheet-seat")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("reopens the sheet with the error when the submit fails", async () => {
+    mockCreateParticipant.mockRejectedValueOnce(new Error("nope"));
+    render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId("pick-seat"));
+    fireEvent.click(screen.getByTestId("submit-pair"));
+
+    // On failure the sheet comes back (so the entry can be corrected) and shows
+    // the server error.
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent("nope"),
+    );
+    expect(screen.getByTestId("sheet-seat")).toBeInTheDocument();
+  });
+
   describe("team name (Teams event)", () => {
     it("shows the team-name field for an NS seat in a Teams event", () => {
       mockGame.mockReturnValue({ gameId: "g1", gameType: "TEAMS" });
@@ -259,6 +290,54 @@ describe("SelectSeatPage", () => {
         "Could not seat this pair.",
       ),
     );
+  });
+
+  describe("live layout reconcile (section split)", () => {
+    const section = (tables: number) => ({
+      sections: [{ section: "A", label: "A", tables }],
+    });
+
+    it("keeps the sheet open while the chosen seat is still a real table", () => {
+      pickedSeat = "A5NS";
+      mockUseSections.mockReturnValue(section(6));
+      const { rerender } = render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      fireEvent.click(screen.getByTestId("pick-seat"));
+      expect(screen.getByTestId("sheet-seat")).toHaveTextContent("A5NS");
+
+      // Section A still has 6 tables -> A5 valid -> sheet stays open.
+      rerender(<SelectSeatPage onSeatSelected={vi.fn()} />);
+      expect(screen.getByTestId("sheet-seat")).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("closes the sheet and prompts again when a split invalidates the chosen seat", () => {
+      pickedSeat = "A5NS";
+      mockUseSections.mockReturnValue(section(6));
+      const { rerender } = render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      // Pick A5NS while A still has 6 tables.
+      fireEvent.click(screen.getByTestId("pick-seat"));
+      expect(screen.getByTestId("sheet-seat")).toBeInTheDocument();
+
+      // A split shrinks A to 4 tables: A5 no longer exists.
+      mockUseSections.mockReturnValue(section(4));
+      rerender(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      // Sheet is closed and a reorganised notice is shown.
+      expect(screen.queryByTestId("sheet-seat")).not.toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent(/reorganised/i);
+    });
+
+    it("does not close a valid selection during the brief pre-load (no sections yet)", () => {
+      pickedSeat = "A1NS";
+      mockUseSections.mockReturnValue({ sections: [] });
+      render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+
+      fireEvent.click(screen.getByTestId("pick-seat"));
+      // Sections unknown (empty) -> the guard must NOT close the sheet.
+      expect(screen.getByTestId("sheet-seat")).toBeInTheDocument();
+    });
   });
 
   it("wires up the participants socket->SWR sync", () => {

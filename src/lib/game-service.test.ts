@@ -7,6 +7,8 @@ import {
   leaveTable,
   generateSeatTransferCode,
   claimSeatTransfer,
+  inspectSeatTransfer,
+  handoverSameDevice,
   generateShareCode,
 } from "./game-service";
 import { SocketEvents } from "@/socket/socket-events";
@@ -288,16 +290,27 @@ describe("game-service", () => {
   });
 
   describe("generateSeatTransferCode", () => {
-    it("emits CREATE_SEAT_TRANSFER with the seat token and returns the code", async () => {
+    it("emits CREATE_SEAT_TRANSFER with the seat token and a default CHANGE_DEVICE kind", async () => {
       mockEmitWithAck.mockResolvedValue({ code: "ABC234" });
 
       const code = await generateSeatTransferCode("g1", "A1NS");
 
       expect(mockEmitWithAck).toHaveBeenCalledWith(
         SocketEvents.CREATE_SEAT_TRANSFER,
-        { gameId: "g1", seat: "A1NS", token: "seat-tok" },
+        { gameId: "g1", seat: "A1NS", token: "seat-tok", kind: "CHANGE_DEVICE" },
       );
       expect(code).toBe("ABC234");
+    });
+
+    it("emits a HANDOVER kind when requested", async () => {
+      mockEmitWithAck.mockResolvedValue({ code: "HAND01" });
+
+      await generateSeatTransferCode("g1", "A1NS", "HANDOVER");
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.CREATE_SEAT_TRANSFER,
+        { gameId: "g1", seat: "A1NS", token: "seat-tok", kind: "HANDOVER" },
+      );
     });
   });
 
@@ -322,10 +335,88 @@ describe("game-service", () => {
       expect(result).toEqual({ gameId: "g9", seat: "B2EW" });
     });
 
+    it("threads the arriving pair through for a handover claim", async () => {
+      mockEmitWithAck.mockResolvedValue({
+        gameId: "g9",
+        seat: "B2EW",
+        token: "handover-tok",
+        isHandover: true,
+      });
+      const realPair = {
+        player1: { firstName: "Real", lastName: "One" },
+        player2: { firstName: "Real", lastName: "Two" },
+      };
+
+      await claimSeatTransfer("HAND01", realPair);
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.CLAIM_SEAT_TRANSFER,
+        { code: "HAND01", realPair },
+      );
+      expect(setPlayerToken).toHaveBeenCalledWith("g9", {
+        startingPosition: "B2EW",
+        token: "handover-tok",
+      });
+    });
+
     it("throws the server error and stores nothing when the code is invalid", async () => {
       mockEmitWithAck.mockRejectedValue(new Error("Invalid code"));
 
       await expect(claimSeatTransfer("ZZZZZZ")).rejects.toThrow("Invalid code");
+      expect(setPlayerToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("inspectSeatTransfer", () => {
+    it("emits INSPECT_SEAT_TRANSFER and returns the handover flag", async () => {
+      mockEmitWithAck.mockResolvedValue({
+        gameId: "g1",
+        seat: "A1NS",
+        isHandover: true,
+      });
+
+      const result = await inspectSeatTransfer("ABC234");
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.INSPECT_SEAT_TRANSFER,
+        { code: "ABC234" },
+      );
+      expect(result).toEqual({ gameId: "g1", seat: "A1NS", isHandover: true });
+      // Inspect never stores a token.
+      expect(setPlayerToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("handoverSameDevice", () => {
+    const realPair = {
+      player1: { firstName: "Real", lastName: "One" },
+      player2: { firstName: "Real", lastName: "Two" },
+    };
+
+    it("emits HANDOVER_SAME_DEVICE with the seat token and stores the new key", async () => {
+      mockEmitWithAck.mockResolvedValue({ key: "new-secret" });
+
+      await handoverSameDevice("g1", "A1NS", realPair);
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.HANDOVER_SAME_DEVICE,
+        { gameId: "g1", seat: "A1NS", token: "seat-tok", realPair },
+      );
+      // THIS device keeps the seat under the real pair's new secret.
+      expect(setPlayerToken).toHaveBeenCalledWith("g1", {
+        startingPosition: "A1NS",
+        token: "new-secret",
+      });
+    });
+
+    it("throws the server error and stores nothing on failure", async () => {
+      mockEmitWithAck.mockRejectedValue(
+        new Error("This seat has already had a handover."),
+      );
+
+      await expect(handoverSameDevice("g1", "A1NS", realPair)).rejects.toThrow(
+        "already had a handover",
+      );
       expect(setPlayerToken).not.toHaveBeenCalled();
     });
   });
@@ -432,7 +523,7 @@ describe("game-service", () => {
 
       expect(mockEmitWithAck).toHaveBeenCalledWith(
         SocketEvents.CREATE_SEAT_TRANSFER,
-        { gameId: "g1", seat: "A1NS", token: "" },
+        { gameId: "g1", seat: "A1NS", token: "", kind: "CHANGE_DEVICE" },
       );
     });
   });

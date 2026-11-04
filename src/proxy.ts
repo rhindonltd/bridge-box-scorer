@@ -43,7 +43,7 @@ const REDIRECT_PATHS: ReadonlySet<string> = new Set(
     .filter(Boolean),
 );
 
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host");
 

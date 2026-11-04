@@ -50,6 +50,29 @@ export async function createSection(
   });
 }
 
+/**
+ * Split an existing section into two, moving its highest-numbered tables (and
+ * the pairs seated at them) into a new section. `tablesToNewSection` is how
+ * many tables move; the source keeps the rest. Pre-start only (the server
+ * rejects a started game). Both resulting sections' movements are cleared
+ * server-side since their table counts change.
+ */
+export async function splitSection(
+  gameId: string,
+  input: {
+    from: string;
+    newSection: string;
+    tablesToNewSection: number;
+    newLabel?: string;
+    fromLabel?: string;
+  },
+): Promise<void> {
+  await directorFetch(gameId, "/split", {
+    method: "POST",
+    body: input,
+  });
+}
+
 export async function renameSection(
   gameId: string,
   section: string,

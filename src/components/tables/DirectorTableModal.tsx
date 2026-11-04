@@ -285,7 +285,6 @@ function PairRow({
 }) {
   const occupied = seat != null;
   const stationaryLabelId = `stationary-${label.replace(/\W+/g, "-")}`;
-  const withoutStandingLabelId = `without-standing-${label.replace(/\W+/g, "-")}`;
   const expectedLateLabelId = `expected-late-${label.replace(/\W+/g, "-")}`;
 
   // Which post-start inline form (if any) is open for this pair: the standing
@@ -316,7 +315,10 @@ function PairRow({
 
       {occupied ? (
         <div className="mt-3 flex flex-col gap-3">
-          {isSwiss && (
+          {/* Marking a pair stationary rewrites the Swiss movement spec, so it
+              is a pre-start setup action only — once the game has started the
+              movement is fixed. */}
+          {isSwiss && !started && (
             <div className="flex items-center justify-between gap-3">
               <span
                 id={stationaryLabelId}
@@ -335,43 +337,18 @@ function PairRow({
           )}
 
           {!started ? (
-            <>
-              <div className="flex items-center justify-between gap-3">
-                <span
-                  id={withoutStandingLabelId}
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Without standing
-                </span>
-                <Toggle
-                  value={standing === "WITHOUT_STANDING"}
-                  offLabel="No"
-                  onLabel="Yes"
-                  labelledBy={withoutStandingLabelId}
-                  onChange={(next) =>
-                    onChangeStanding(
-                      seat,
-                      next
-                        ? { standing: "WITHOUT_STANDING" }
-                        : { standing: "ACTIVE" },
-                    )
-                  }
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onEvict(seat)}
-                className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-              >
-                {/* Visible text is the terse label; the full accessible name
-                    (which names the pair) is carried by the visually-hidden
-                    span, so the two do not disagree — a
-                    label-content-name-mismatch (WCAG 2.5.3). */}
-                <span aria-hidden="true">Evict pair</span>
-                <span className="sr-only">Evict {label} pair</span>
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => onEvict(seat)}
+              className="w-full rounded-lg border border-red-200 bg-red-50 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            >
+              {/* Visible text is the terse label; the full accessible name
+                  (which names the pair) is carried by the visually-hidden
+                  span, so the two do not disagree — a
+                  label-content-name-mismatch (WCAG 2.5.3). */}
+              <span aria-hidden="true">Evict pair</span>
+              <span className="sr-only">Evict {label} pair</span>
+            </button>
           ) : openForm === "standing" ? (
             <StandingForm
               label={label}
@@ -582,13 +559,14 @@ function StandingForm({
 }
 
 /**
- * The post-start inline handover editor (EBU §2.4.7 stand-in → real pair). The
- * stand-in currently sitting the seat keeps the boards it has already scored;
- * the director records the ARRIVING real pair's names and how their unplayed
- * (pre-arrival) boards are treated. The boards-played split itself is NOT
- * entered here — it is derived server-side from the results already in, so the
- * handover is always from the next board without a result. Local state only;
- * emits a {@link HandoverRequest} via `onSave`.
+ * The post-start inline handover editor (EBU §2.4.7 mid-game substitution). The
+ * pair currently sitting the seat keeps the boards it has already scored; the
+ * director records only the ARRIVING pair's names. The boards-played split is
+ * NOT entered here — it is derived server-side from the results already in, so
+ * the handover is always from the next board without a result — and neither is
+ * the scoring (split / eligibility), which the director sets afterwards on the
+ * Substitutions screen. Local state only; emits a {@link HandoverRequest} via
+ * `onSave`.
  */
 function HandoverForm({
   label,
@@ -603,12 +581,6 @@ function HandoverForm({
   const [lastName1, setLastName1] = useState("");
   const [firstName2, setFirstName2] = useState("");
   const [lastName2, setLastName2] = useState("");
-  const [treatment, setTreatment] = useState<"REMOVE" | "PENALISED">(
-    "PENALISED",
-  );
-  const [finePercent, setFinePercent] = useState(0);
-
-  const fineLabelId = `handover-fine-${label.replace(/\W+/g, "-")}`;
 
   // Both players need at least a surname before the handover can be recorded.
   const canSave = lastName1.trim().length > 0 && lastName2.trim().length > 0;
@@ -618,51 +590,23 @@ function HandoverForm({
     onSave({
       player1: { firstName: firstName1.trim(), lastName: lastName1.trim() },
       player2: { firstName: firstName2.trim(), lastName: lastName2.trim() },
-      treatment,
-      ...(treatment === "PENALISED" ? { finePercent } : {}),
     });
   }
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
       <p className="text-sm text-gray-600">
-        Seat the arriving pair for {label}. The stand-in keeps the boards they
-        have already scored; the real pair takes over from the next board
-        without a result.
+        Seat the arriving pair for {label}. The earlier pair keeps the boards
+        they have already scored; the arriving pair takes over from the next
+        board without a result. You can set how the seat is scored (one line or
+        two, and each pair&apos;s eligibility) afterwards on the Substitutions
+        screen.
       </p>
 
       <TextField label="Player 1 first name" value={firstName1} onChange={setFirstName1} />
       <TextField label="Player 1 surname" value={lastName1} onChange={setLastName1} />
       <TextField label="Player 2 first name" value={firstName2} onChange={setFirstName2} />
       <TextField label="Player 2 surname" value={lastName2} onChange={setLastName2} />
-
-      <PillToggle<"REMOVE" | "PENALISED">
-        name={`handover-treatment-${label.replace(/\W+/g, "-")}`}
-        legend={`Unplayed boards for the real pair at ${label}`}
-        options={[
-          { value: "REMOVE", label: "Remove" },
-          { value: "PENALISED", label: "Penalised" },
-        ]}
-        value={treatment}
-        onChange={setTreatment}
-      />
-
-      {treatment === "PENALISED" && (
-        <div className="flex items-center justify-between gap-3">
-          <span id={fineLabelId} className="text-sm font-medium text-gray-700">
-            Fine %
-          </span>
-          <div aria-labelledby={fineLabelId}>
-            <NumberStepper
-              min={0}
-              max={40}
-              value={finePercent}
-              zeroCharacter="0"
-              onChange={setFinePercent}
-            />
-          </div>
-        </div>
-      )}
 
       <div className="flex gap-2">
         <button

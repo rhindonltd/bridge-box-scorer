@@ -12,14 +12,23 @@ vi.mock("@/socket/middleware/director-auth", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
+vi.mock("@/db/game-index/actions/update-tournament-level", () => ({
+  updateTournamentLevel: vi.fn(),
+}));
 
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { uploadResultsToBridgewebs } from "@/services/bridgewebs-upload-service";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { getDb } from "@/db/games";
+import { updateTournamentLevel } from "@/db/game-index/actions/update-tournament-level";
 import * as appHandler from "./route";
 
-const DIRECTOR_HEADERS = { "x-director-token": "dir-tok" };
+const DIRECTOR_HEADERS = {
+  "x-director-token": "dir-tok",
+  "Content-Type": "application/json",
+};
+// Every authed upload carries the chosen tournament level in the body.
+const UPLOAD_BODY = JSON.stringify({ tournamentLevel: "NORMAL_CLUB" });
 const params = { gameId: "g1" };
 
 describe("/api/games/[gameId]/bridgewebs/upload", () => {
@@ -27,6 +36,7 @@ describe("/api/games/[gameId]/bridgewebs/upload", () => {
     vi.clearAllMocks();
     vi.mocked(validateDirectorToken).mockReturnValue(true);
     vi.mocked(getDb).mockResolvedValue({} as never);
+    vi.mocked(updateTournamentLevel).mockResolvedValue(undefined as never);
     vi.mocked(findGameById).mockResolvedValue({
       gameId: "g1",
       eventName: "Monday Pairs",
@@ -61,12 +71,22 @@ describe("/api/games/[gameId]/bridgewebs/upload", () => {
       appHandler,
       params,
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "POST", headers: DIRECTOR_HEADERS });
+        const res = await fetch({
+          method: "POST",
+          headers: DIRECTOR_HEADERS,
+          body: UPLOAD_BODY,
+        });
         expect(res.status).toBe(200);
         await expect(res.json()).resolves.toEqual({
           success: true,
           result: { ok: true, message: "Upload Successful" },
         });
+        expect(uploadResultsToBridgewebs).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.anything(),
+          "NORMAL_CLUB",
+        );
+        expect(updateTournamentLevel).toHaveBeenCalledWith("g1", "NORMAL_CLUB");
       },
     });
   });
@@ -86,7 +106,11 @@ describe("/api/games/[gameId]/bridgewebs/upload", () => {
       appHandler,
       params,
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "POST", headers: DIRECTOR_HEADERS });
+        const res = await fetch({
+          method: "POST",
+          headers: DIRECTOR_HEADERS,
+          body: UPLOAD_BODY,
+        });
         expect(res.status).toBe(200);
         await expect(res.json()).resolves.toEqual({
           success: true,
@@ -106,7 +130,11 @@ describe("/api/games/[gameId]/bridgewebs/upload", () => {
       appHandler,
       params,
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "POST", headers: DIRECTOR_HEADERS });
+        const res = await fetch({
+          method: "POST",
+          headers: DIRECTOR_HEADERS,
+          body: UPLOAD_BODY,
+        });
         expect(res.status).toBe(400);
         const body = await res.json();
         expect(body.error).toMatch(/Club info/);
@@ -124,7 +152,11 @@ describe("/api/games/[gameId]/bridgewebs/upload", () => {
       appHandler,
       params,
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "POST", headers: DIRECTOR_HEADERS });
+        const res = await fetch({
+          method: "POST",
+          headers: DIRECTOR_HEADERS,
+          body: UPLOAD_BODY,
+        });
         expect(res.status).toBe(400);
         const body = await res.json();
         expect(body.error).toMatch(/BridgeWebs is not configured/);
@@ -141,7 +173,11 @@ describe("/api/games/[gameId]/bridgewebs/upload", () => {
       appHandler,
       params,
       test: async ({ fetch }) => {
-        const res = await fetch({ method: "POST", headers: DIRECTOR_HEADERS });
+        const res = await fetch({
+          method: "POST",
+          headers: DIRECTOR_HEADERS,
+          body: UPLOAD_BODY,
+        });
         expect(res.status).toBe(502);
       },
     });

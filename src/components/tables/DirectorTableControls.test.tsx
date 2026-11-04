@@ -92,6 +92,45 @@ describe("DirectorTableControls", () => {
     expect(screen.queryByText("Stationary")).not.toBeInTheDocument();
   });
 
+  it("marks an empty expected-late seat with 'Late' in place of 'Empty'", () => {
+    const withLate: DirectorTable[] = [
+      {
+        tableNumber: 1,
+        players: { N: player("Ada"), S: player("Bob"), E: null, W: null },
+        seats: { N: "A1NS" as Seat, S: "A1NS" as Seat, E: null, W: null },
+        pairSeats: { ns: "A1NS" as Seat, ew: "A1EW" as Seat },
+        // The EW pair is expected late; its two empty positions read "Late".
+        expectedLate: { N: false, S: false, E: true, W: true },
+      },
+    ];
+
+    render(<DirectorTableControls tables={withLate} onOpenTable={vi.fn()} />);
+
+    // East + West empty positions -> two "Late" placeholders; the filled NS
+    // seats are unaffected, and there is no bare "Empty" left on this table.
+    expect(screen.getAllByText("Late")).toHaveLength(2);
+    expect(screen.queryByText("Empty")).not.toBeInTheDocument();
+  });
+
+  it("shows both a Stationary badge and a Late seat independently", () => {
+    const both: DirectorTable[] = [
+      {
+        tableNumber: 1,
+        players: { N: null, S: null, E: null, W: null },
+        seats: { N: null, S: null, E: null, W: null },
+        pairSeats: { ns: "A1NS" as Seat, ew: "A1EW" as Seat },
+        // A stationary NS pair that is also running late: both markers show.
+        stationary: { N: true, S: true, E: false, W: false },
+        expectedLate: { N: true, S: true, E: false, W: false },
+      },
+    ];
+
+    render(<DirectorTableControls tables={both} onOpenTable={vi.fn()} />);
+
+    expect(screen.getAllByText("Stationary")).toHaveLength(2);
+    expect(screen.getAllByText("Late")).toHaveLength(2);
+  });
+
   it("shows a board range for a table's placement", () => {
     const withPlacement: DirectorTable[] = [
       { ...tables()[0], placement: { boardStart: 1, boardEnd: 3 } },

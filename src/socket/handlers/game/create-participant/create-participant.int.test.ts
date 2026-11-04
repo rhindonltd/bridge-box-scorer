@@ -16,6 +16,10 @@ vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
+vi.mock("@/db/games/queries/find-sections", () => ({
+  findSections: vi.fn(),
+}));
+
 vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
@@ -26,6 +30,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 
 import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { findPairs } from "@/db/games/queries/find-pairs";
+import { findSections } from "@/db/games/queries/find-sections";
 import { getDb } from "@/db/games";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerCreateParticipantHandler } from "./create-participant";
@@ -39,6 +44,12 @@ describe("registerCreateParticipantHandler (integration)", () => {
     vi.clearAllMocks();
 
     vi.mocked(getDb).mockResolvedValue({} as any);
+
+    // A valid layout by default so seat A1NS passes the range guard; a test
+    // that needs an out-of-range seat overrides this.
+    vi.mocked(findSections).mockResolvedValue([
+      { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+    ] as any);
 
     // Mock findLoginSession to validate the test director token
     vi.mocked(findLoginSession).mockReturnValue({
@@ -122,6 +133,35 @@ describe("registerCreateParticipantHandler (integration)", () => {
     expect(event.participants).toEqual([
       expect.objectContaining({ type: "PAIR" }),
     ]);
+  });
+
+  it("rejects a seat outside the section's current table range", async () => {
+    // Section A now has 4 tables (e.g. after a split), so A5NS is a ghost seat.
+    vi.mocked(findSections).mockResolvedValue([
+      { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+    ] as any);
+
+    const response = await new Promise<any>((resolve) => {
+      client.emit(
+        SocketEvents.CREATE_PARTICIPANT,
+        {
+          gameId: "game-1",
+          directorToken: "test-token",
+          newParticipant: {
+            type: "PAIR",
+            initialSeat: "A5NS",
+            player1: { firstName: "Alice", lastName: "Smith" },
+            player2: { firstName: "Bob", lastName: "Jones" },
+          },
+        },
+        resolve,
+      );
+    });
+
+    expect(response).toMatchObject({ success: false });
+    expect(response.error).toMatch(/reorganised|no longer available/i);
+    // The ghost pair is never written.
+    expect(createPairWithPlayers).not.toHaveBeenCalled();
   });
 
   it("returns success: false when creating the pair throws", async () => {

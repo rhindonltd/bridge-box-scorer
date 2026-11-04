@@ -1,5 +1,4 @@
 import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
 import { GameType } from "@/db/games/types/game-type";
 import { EventFormat } from "@/db/games/types/event-format";
 import { ScoringType } from "@/db/games/types/scoring-type";
@@ -100,28 +99,50 @@ export async function updateCombinedRanking(
   }
 }
 
+/** One occupant's eligibility choice for {@link setSubstitutionOptions}. */
+export interface OccupantEligibilityInput {
+  /** The occupancy's surrogate id. */
+  id: number;
+  /** true ⇒ eligible (ranked); false ⇒ without standing (unranked). */
+  eligible: boolean;
+}
+
 /**
- * Change a game's EBU tournament level after creation (director-only), so a
- * level chosen wrongly at setup can be corrected before the results are
- * submitted. The fresh game row is broadcast to every device. Throws with the
+ * Set a §2.4.7 handover seat's Substitutions options — the director's two
+ * toggles: "Split by board?" (per seat) and "Eligible for local ranking?" (per
+ * occupant). Director-only; writes `split` on both occupancies + each
+ * occupant's standing, then re-broadcasts the standings. Throws with the
  * server's error message on failure.
  */
-export async function updateTournamentLevel(
+export async function setSubstitutionOptions(
   gameId: string,
-  tournamentLevel: TournamentLevel,
+  seat: string,
+  options: {
+    split: boolean;
+    eligibility: OccupantEligibilityInput[];
+    /** Main pair's occupancy id (merged-line identity; split=false only). */
+    mainOccupancyId?: number;
+  },
 ): Promise<void> {
-  const res = await fetch(`/api/games/${gameId}`, {
+  const res = await fetch(`/api/games/${gameId}/substitutions`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       "x-director-token": getDirectorToken(gameId) ?? "",
     },
-    body: JSON.stringify({ tournamentLevel }),
+    body: JSON.stringify({
+      seat,
+      split: options.split,
+      eligibility: options.eligibility,
+      ...(options.mainOccupancyId != null
+        ? { mainOccupancyId: options.mainOccupancyId }
+        : {}),
+    }),
   });
 
   if (!res.ok) {
     const data = await res.json().catch(() => null);
-    throw new Error(data?.error ?? "Failed to update tournament level");
+    throw new Error(data?.error ?? "Failed to set substitution options");
   }
 }
 
@@ -226,6 +247,36 @@ export async function createParticipant(
 }
 
 /**
+ * Ask the server whether THIS device still holds `seat` — i.e. the stored
+ * player token still matches the seat's current occupant. Used before a rejoin
+ * routes to the play screen, so a stale token (the pair was evicted, or the
+ * seat re-seated elsewhere) sends the player back to seat selection instead.
+ *
+ * Returns false (rather than throwing) on any failure — a missing token, a
+ * server/network error, or a genuine "not held" — so the caller treats every
+ * uncertain case as "pick a seat again". The secret travels in a header.
+ */
+export async function verifySeatHeld(
+  gameId: string,
+  seat: string,
+): Promise<boolean> {
+  const token = getPlayerToken(gameId)?.token;
+  if (!token) return false;
+
+  try {
+    const res = await fetch(
+      `/api/games/${gameId}/participants/${encodeURIComponent(seat)}/verify`,
+      { headers: { "x-player-token": token } },
+    );
+    if (!res.ok) return false;
+    const body = await res.json();
+    return body?.result?.held === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Leave (vacate) the seat this device holds, before the game starts. Authed by
  * the seat's own token. On success the local player token is cleared so this
  * device no longer claims the seat. Throws the server's message on failure
@@ -243,39 +294,117 @@ export async function leaveTable(gameId: string, seat: string): Promise<void> {
 
 /**
  * Mint a short, single-use code that another device can claim to take over this
- * seat (a "change device" handoff). Authed by the seat's own token. Returns the
- * code; throws the server's message on failure.
+ * seat. Authed by the seat's own token. Returns the code; throws the server's
+ * message on failure.
+ *
+ * `kind` records what the claim will do: CHANGE_DEVICE (default) — the SAME pair
+ * moves to a new device (plain secret rotation, no names); HANDOVER — a
+ * DIFFERENT arriving pair takes over, so the claim collects their names.
  */
 export async function generateSeatTransferCode(
   gameId: string,
   seat: string,
+  kind: "CHANGE_DEVICE" | "HANDOVER" = "CHANGE_DEVICE",
 ): Promise<string> {
   const response = await emitWithAck<{ code: string }>(
     SocketEvents.CREATE_SEAT_TRANSFER,
-    { gameId, seat, token: getPlayerToken(gameId)?.token ?? "" },
+    { gameId, seat, token: getPlayerToken(gameId)?.token ?? "", kind },
   );
 
   return response.code;
+}
+
+/** The arriving real pair for a handover seat-transfer claim. */
+export interface SeatTransferRealPair {
+  player1: HandoverSameDevicePlayer;
+  player2: HandoverSameDevicePlayer;
+}
+
+/**
+ * Validate a seat-transfer code WITHOUT claiming it, reporting whether its seat
+ * is a §2.4.7 handover (held by a stand-in). The claim UI calls this first so
+ * it knows whether to collect the arriving pair's names before the real claim.
+ * No auth — the code is the credential. Throws the server's message for an
+ * invalid / used / expired code.
+ */
+export async function inspectSeatTransfer(
+  code: string,
+): Promise<{ gameId: string; seat: string; isHandover: boolean }> {
+  return emitWithAck<{ gameId: string; seat: string; isHandover: boolean }>(
+    SocketEvents.INSPECT_SEAT_TRANSFER,
+    { code },
+  );
 }
 
 /**
  * Claim a seat-transfer code on a new device. No auth — the code is the
  * credential. On success the seat's secret has been rotated to a fresh token
  * (invalidating the old device); that token is stored locally and the resolved
- * game + seat are returned so the caller can route into play. Throws the
- * server's message on failure (invalid/expired/used code, or the seat is no
- * longer occupied).
+ * game + seat are returned so the caller can route into play.
+ *
+ * For a §2.4.7 HANDOVER seat (held by a stand-in), pass the arriving real
+ * pair's names as `realPair`: the server runs the handover engine, seating the
+ * real pair with this device's new secret (and signing out the stand-in's old
+ * device). A plain change-device transfer omits `realPair`.
+ *
+ * Throws the server's message on failure (invalid/expired/used code, the seat
+ * is no longer occupied, or a handover claim missing the arriving names).
  */
 export async function claimSeatTransfer(
   code: string,
+  realPair?: SeatTransferRealPair,
 ): Promise<{ gameId: string; seat: string }> {
   const { gameId, seat, token } = await emitWithAck<{
     gameId: string;
     seat: string;
     token: string;
-  }>(SocketEvents.CLAIM_SEAT_TRANSFER, { code });
+    isHandover: boolean;
+  }>(SocketEvents.CLAIM_SEAT_TRANSFER, {
+    code,
+    ...(realPair ? { realPair } : {}),
+  });
 
   setPlayerToken(gameId, { startingPosition: seat, token });
 
   return { gameId, seat };
+}
+
+/** A player on the arriving real pair for a same-device handover. */
+export interface HandoverSameDevicePlayer {
+  firstName: string;
+  lastName: string;
+  nationalId?: string | null;
+}
+
+/**
+ * EBU §2.4.7 stand-in → real-pair handover, SAME-DEVICE variant (Path 1). The
+ * arriving real pair takes over the stand-in's own device: this device proves
+ * it owns the seat with its player token, the server runs the handover engine
+ * and mints a fresh secret, and we store that secret locally so THIS device
+ * keeps playing as the now-primary real pair (the stand-in's old secret is
+ * rotated away server-side, so storing the new one is required). No options are
+ * entered here — the director sets them later on the "Substitutions" screen.
+ * Throws the server's message on failure (e.g. the seat already handed over).
+ */
+export async function handoverSameDevice(
+  gameId: string,
+  seat: string,
+  realPair: {
+    player1: HandoverSameDevicePlayer;
+    player2: HandoverSameDevicePlayer;
+  },
+): Promise<void> {
+  const { key } = await emitWithAck<{ key: string }>(
+    SocketEvents.HANDOVER_SAME_DEVICE,
+    {
+      gameId,
+      seat,
+      token: getPlayerToken(gameId)?.token ?? "",
+      realPair,
+    },
+  );
+
+  // The stand-in's old secret was rotated server-side; keep this device working
+  // by storing the real pair's new secret for the same seat.
+  setPlayerToken(gameId, { startingPosition: seat, token: key });
 }

@@ -181,8 +181,13 @@ export type ParticipantStanding = {
   standing: "ACTIVE" | "WITHDRAWN" | "WITHOUT_STANDING" | "LATE";
   /** The round the pair withdrew in / arrived in (coarse context). */
   withdrawnInRound: number | null;
-  /** §2.4.5 treatment for a WITHDRAWN / short-LATE pair. */
-  withdrawalTreatment: "REMOVE" | "PENALISED" | null;
+  /** §2.4.5/§2.4.7 treatment for a WITHDRAWN / short-LATE / handover pair. */
+  withdrawalTreatment:
+    | "REMOVE"
+    | "PENALISED"
+    | "INHERIT"
+    | "SUBSTITUTION"
+    | null;
   /** 0..40 fine percentage (PENALISED only). */
   withdrawalFinePercent: number | null;
 };
@@ -192,6 +197,19 @@ export type Pair = {
   initialSeat: PairSeat;
   player1: Player;
   player2: Player;
+  /**
+   * §2.4.7 one-line handover DUAL-NAMING. For a seat shared by two pairs that
+   * score as ONE merged line (`split = 0`), the LOCAL leaderboard shows BOTH
+   * pairs' names (e.g. ["Smith / Jones", "(Sub) Brown / Green"]) for club
+   * transparency. When present, this overrides the `player1`/`player2` name
+   * lines in the leaderboard render. Absent for an ordinary single-occupancy
+   * pair and for a split seat (each occupant is its own ordinary line).
+   *
+   * This is a DISPLAY-only field: it never changes the USEBIO export, which
+   * emits only the anchor pair's two players so the EBU registry parser gets a
+   * clean single-pair record.
+   */
+  displayNameLines?: string[];
 } & Partial<ParticipantStanding>;
 
 export type Team = {

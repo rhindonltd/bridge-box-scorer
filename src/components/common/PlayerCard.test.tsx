@@ -55,4 +55,29 @@ describe("PlayerCard", () => {
     expect(screen.getByText("A")).toBeInTheDocument();
     expect(screen.getByText("B")).toBeInTheDocument();
   });
+
+  it("renders 'Late' (not 'Empty') for an empty expected-late seat", () => {
+    render(<PlayerCard label="East" player={null} expectedLate />);
+
+    expect(screen.getByText("Late")).toBeInTheDocument();
+    expect(screen.queryByText("Empty")).not.toBeInTheDocument();
+    // Sky styling distinguishes a known-late seat from a plain empty one.
+    const container = screen.getByText("Late").parentElement;
+    expect(container).toHaveClass("bg-sky-50");
+    expect(container).toHaveClass("text-sky-800");
+  });
+
+  it("ignores expectedLate once the seat is filled (shows the player)", () => {
+    render(
+      <PlayerCard
+        label="North"
+        player={{ firstName: "John", lastName: "Doe", nationalId: "123" }}
+        expectedLate
+      />,
+    );
+
+    // The real pair has arrived, so the seat shows them, not a "Late" note.
+    expect(screen.getByText("John")).toBeInTheDocument();
+    expect(screen.queryByText("Late")).not.toBeInTheDocument();
+  });
 });

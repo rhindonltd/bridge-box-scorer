@@ -6,9 +6,9 @@ import CardTable from "./CardTable";
  * Mock PlayerCard
  */
 vi.mock("@/components/common/PlayerCard", () => ({
-  default: ({ label, player }: any) => (
+  default: ({ label, player, expectedLate }: any) => (
     <div data-testid={`player-${label.toLowerCase()}`}>
-      {label}: {player?.firstName ?? "Empty"}
+      {label}: {player?.firstName ?? (expectedLate ? "Late" : "Empty")}
     </div>
   ),
 }));
@@ -77,5 +77,22 @@ describe("CardTable", () => {
     const tableNumber = screen.getByText("7");
     expect(tableNumber).toHaveClass("text-xl");
     expect(tableNumber).toHaveClass("font-bold");
+  });
+
+  it("shows empty opponent seats as 'Late' when opponentExpectedLate is set", () => {
+    // The seated pair (N/S) is unaffected; the empty opponent seats (E/W) read
+    // "Late" instead of "Empty".
+    render(
+      <CardTable
+        players={{ N: players.N, S: players.S, E: null, W: null }}
+        tableNumber={1}
+        opponentExpectedLate
+      />,
+    );
+
+    expect(screen.getByTestId("player-north")).toHaveTextContent("Alice");
+    expect(screen.getByTestId("player-south")).toHaveTextContent("Bob");
+    expect(screen.getByTestId("player-east")).toHaveTextContent("Late");
+    expect(screen.getByTestId("player-west")).toHaveTextContent("Late");
   });
 });

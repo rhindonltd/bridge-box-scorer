@@ -52,8 +52,6 @@ const validPayload = {
     player1: { firstName: "Real", lastName: "One" },
     player2: { firstName: "Real", lastName: "Two" },
   },
-  treatment: "PENALISED",
-  finePercent: 10,
 };
 
 describe("registerHandoverSeatHandler (unit)", () => {
@@ -81,6 +79,24 @@ describe("registerHandoverSeatHandler (unit)", () => {
       "g1",
     );
     // The ack carries the minted device secret.
+    expect(cb).toHaveBeenCalledWith({
+      success: true,
+      data: { key: expect.any(String) },
+    });
+  });
+
+  it("calls the engine with no scoring treatment (a substitution has none)", async () => {
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(validPayload, cb);
+
+    const [, arg] = vi.mocked(handoverSeat).mock.calls[0];
+    expect(arg).toEqual(
+      expect.objectContaining({ seat: "A1NS", secretKey: expect.any(String) }),
+    );
+    // The engine's data has no treatment/finePercent fields at all.
+    expect("treatment" in arg).toBe(false);
+    expect("finePercent" in arg).toBe(false);
     expect(cb).toHaveBeenCalledWith({
       success: true,
       data: { key: expect.any(String) },

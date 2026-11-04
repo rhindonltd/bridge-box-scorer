@@ -7,8 +7,32 @@ vi.mock("next/navigation", () => ({
 }));
 
 const mockClaim = vi.fn();
+const mockInspect = vi.fn();
 vi.mock("@/lib/game-service", () => ({
   claimSeatTransfer: (...args: unknown[]) => mockClaim(...args),
+  inspectSeatTransfer: (...args: unknown[]) => mockInspect(...args),
+}));
+
+// Stub PlayerSearch (used in the handover names step) as a simple selector.
+import type { NewPlayer } from "@/db/games/tables/players";
+vi.mock("@/app/game/[gameId]/join/PlayerSearch", () => ({
+  default: ({
+    label,
+    onChange,
+  }: {
+    label: string;
+    value: NewPlayer | null;
+    onChange: (p: NewPlayer | null) => void;
+  }) => (
+    <button
+      type="button"
+      onClick={() =>
+        onChange({ firstName: label, lastName: "Player", nationalId: null })
+      }
+    >
+      select {label}
+    </button>
+  ),
 }));
 
 import { ClaimSeatTransfer } from "./ClaimSeatTransfer";
@@ -23,9 +47,16 @@ function open() {
 describe("ClaimSeatTransfer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: a plain (non-handover) transfer, so submitting the code claims
+    // immediately. Handover tests override.
+    mockInspect.mockResolvedValue({
+      gameId: "g9",
+      seat: "B2EW",
+      isHandover: false,
+    });
   });
 
-  it("claims the code (trimmed + uppercased) and routes to the seat's play page", async () => {
+  it("claims a plain code (trimmed + uppercased) and routes to the seat's play page", async () => {
     mockClaim.mockResolvedValue({ gameId: "g9", seat: "B2EW" });
     open();
 
@@ -34,14 +65,16 @@ describe("ClaimSeatTransfer", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Take over seat" }));
 
-    expect(mockClaim).toHaveBeenCalledWith("ABC234");
+    // Inspect first (to learn it is not a handover), then claim without names.
+    await waitFor(() => expect(mockInspect).toHaveBeenCalledWith("ABC234"));
+    await waitFor(() => expect(mockClaim).toHaveBeenCalledWith("ABC234"));
     await waitFor(() =>
       expect(mockReplace).toHaveBeenCalledWith("/game/g9/play/B2EW"),
     );
   });
 
   it("shows the server error and does not route when the code is invalid", async () => {
-    mockClaim.mockRejectedValue(new Error("Code has expired"));
+    mockInspect.mockRejectedValue(new Error("Code has expired"));
     open();
 
     fireEvent.change(screen.getByLabelText("Transfer code"), {
@@ -52,7 +85,45 @@ describe("ClaimSeatTransfer", () => {
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent("Code has expired"),
     );
+    expect(mockClaim).not.toHaveBeenCalled();
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("collects the arriving pair's names for a handover code, then claims", async () => {
+    mockInspect.mockResolvedValue({
+      gameId: "g9",
+      seat: "B2EW",
+      isHandover: true,
+    });
+    mockClaim.mockResolvedValue({ gameId: "g9", seat: "B2EW" });
+    open();
+
+    fireEvent.change(screen.getByLabelText("Transfer code"), {
+      target: { value: "HAND01" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Take over seat" }));
+
+    // Advances to the names step; no claim yet.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "select Player 1" }),
+      ).toBeInTheDocument(),
+    );
+    expect(mockClaim).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "select Player 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "select Player 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Take over seat" }));
+
+    await waitFor(() =>
+      expect(mockClaim).toHaveBeenCalledWith("HAND01", {
+        player1: { firstName: "Player 1", lastName: "Player", nationalId: null },
+        player2: { firstName: "Player 2", lastName: "Player", nationalId: null },
+      }),
+    );
+    await waitFor(() =>
+      expect(mockReplace).toHaveBeenCalledWith("/game/g9/play/B2EW"),
+    );
   });
 
   it("disables submit until six characters are entered", () => {

@@ -75,4 +75,10 @@ export type SocketEventMap = {
     gameId: string;
     seat: string;
   };
+
+  [SocketEvents.SEAT_RENUMBERED]: {
+    gameId: string;
+    /** Every seat the split moved, as old seat → new seat. */
+    moves: { from: string; to: string }[];
+  };
 };

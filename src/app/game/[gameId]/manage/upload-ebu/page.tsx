@@ -12,7 +12,7 @@ export default function UploadEbuRoute() {
   return (
     <ResultsCompleteGuard gameId={gameId}>
       <UploadEbuPage
-        onCancel={() => router.replace(`/game/${gameId}/manage`)}
+        onCancel={() => router.replace(`/game/${gameId}/manage/export/options`)}
       />
     </ResultsCompleteGuard>
   );

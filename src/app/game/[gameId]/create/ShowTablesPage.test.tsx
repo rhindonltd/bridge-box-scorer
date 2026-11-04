@@ -10,9 +10,19 @@ import type { Pair } from "@/model/participants";
 
 // ---- mocks ----
 
+// The game's combinedRanking drives the Tables screen's "Combined ranking
+// across sections" toggle (shown only for a multi-section game). mutateGame is
+// the optimistic updater useCombinedRanking calls.
+let currentCombinedRanking = true;
+const mockMutateGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
-    game: { gameId: "g1", tables: 2 },
+    game: {
+      gameId: "g1",
+      tables: 2,
+      combinedRanking: currentCombinedRanking,
+    },
+    mutateGame: mockMutateGame,
   }),
 }));
 
@@ -27,18 +37,21 @@ vi.mock("@/context/GameContext", () => ({
 // server round-trip lands.
 let currentPairs: Pair[] = [];
 let capturedFetcher: ((url: string) => Promise<Pair[]>) | null = null;
-let expectedLateStore = new Set<string>();
+// The expected-late cache holds a plain seat-string array (not a Set) — see
+// ShowTablesPage's expectedLateFetcher for why — and the page derives a Set
+// from it for membership checks.
+let expectedLateStore: string[] = [];
 // What a bare `mutate(key)` revalidation (a fresh server read) would return.
 // Defaults to mirroring the optimistic store so success reconciles cleanly;
 // a test can point this at a stale value to model the server read racing the
 // write (the real "toggle snaps back" bug).
-let expectedLateServerValue: (() => Set<string>) | null = null;
+let expectedLateServerValue: (() => string[]) | null = null;
 const mockMutate = vi.fn(
   (key?: string, updater?: unknown, _opts?: unknown) => {
     if (typeof key === "string" && key.includes("expected-late-seats")) {
       if (typeof updater === "function") {
         // Optimistic cache update.
-        expectedLateStore = (updater as (c?: Set<string>) => Set<string>)(
+        expectedLateStore = (updater as (c?: string[]) => string[])(
           expectedLateStore,
         );
       } else {
@@ -82,11 +95,11 @@ vi.mock("swr", async () => {
   ) {
     useSwrMockSubscription();
 
-    // The page mounts several useSWR calls: pairs, the expected-late seat set,
+    // The page mounts several useSWR calls: pairs, the expected-late seat list,
     // and the selected-movement-name lookup (null key when no SPEC movement).
-    // The expected-late subscription must yield a Set (the page calls `.has`);
-    // the pairs subscription carries the configured pairs data and its fetcher
-    // is captured for the fetcher-unwrap test.
+    // The expected-late subscription yields the seat-string array (the page
+    // derives a Set from it); the pairs subscription carries the configured
+    // pairs data and its fetcher is captured for the fetcher-unwrap test.
     if (key != null && key.includes("expected-late-seats")) {
       return { data: expectedLateStore };
     }
@@ -104,9 +117,11 @@ vi.mock("swr", async () => {
 });
 
 // Pre-start by default; the page swaps evict/expected-late for the standing
-// controls once the game has started.
+// controls once the game has started, and locks the structural controls
+// (table count, sections, movement). `mockStarted` lets a test flip it.
+let mockStarted = false;
 vi.mock("@/hooks/game-started", () => ({
-  useGameStarted: () => ({ started: false, isLoading: false }),
+  useGameStarted: () => ({ started: mockStarted, isLoading: false }),
 }));
 
 vi.mock("@/lib/standing-service", () => ({
@@ -165,10 +180,27 @@ vi.mock("@/lib/fetcher", () => ({
 // Table resize now goes through the HTTP section-service.
 const mockUpdateSectionTables = vi.fn().mockResolvedValue(undefined);
 const mockSetSectionSwissMovement = vi.fn().mockResolvedValue(undefined);
+const mockRenameSection = vi.fn().mockResolvedValue(undefined);
+const mockDeleteSection = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/section-service", () => ({
   updateSectionTables: (...args: unknown[]) => mockUpdateSectionTables(...args),
   setSectionSwissMovement: (...args: unknown[]) =>
     mockSetSectionSwissMovement(...args),
+  renameSection: (...args: unknown[]) => mockRenameSection(...args),
+  deleteSection: (...args: unknown[]) => mockDeleteSection(...args),
+}));
+
+// The combined-ranking toggle persists through game-service; report-error is
+// how the shared hooks surface failures.
+const mockUpdateCombinedRanking = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/game-service", () => ({
+  updateCombinedRanking: (...args: unknown[]) =>
+    mockUpdateCombinedRanking(...args),
+}));
+
+const mockReportError = vi.fn();
+vi.mock("@/lib/report-error", () => ({
+  reportError: (...args: unknown[]) => mockReportError(...args),
 }));
 
 // Eviction now goes through the HTTP participant-service.
@@ -232,10 +264,11 @@ function pairAt(seat: string): Pair {
 describe("ShowTablesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockStarted = false;
     currentPairs = [];
     syncSelector = null;
     capturedFetcher = null;
-    expectedLateStore = new Set<string>();
+    expectedLateStore = [];
     expectedLateServerValue = null;
     currentSections = [
       {
@@ -247,8 +280,12 @@ describe("ShowTablesPage", () => {
       },
     ];
     currentSelected = "A";
+    currentCombinedRanking = true;
     mockUpdateSectionTables.mockResolvedValue(undefined);
     mockSetSectionSwissMovement.mockResolvedValue(undefined);
+    mockRenameSection.mockResolvedValue(undefined);
+    mockDeleteSection.mockResolvedValue(undefined);
+    mockUpdateCombinedRanking.mockResolvedValue(undefined);
     mockEvictParticipant.mockResolvedValue(undefined);
     mockStationary = new Map();
     mockPlacement = new Map();
@@ -519,7 +556,7 @@ describe("ShowTablesPage", () => {
     // visible and returns the OLD (empty) set, snapping the toggle back.
     // Model that stale read: a bare revalidation returns empty.
     currentPairs = [pairAt("A1NS")];
-    expectedLateServerValue = () => new Set<string>();
+    expectedLateServerValue = () => [];
 
     render(<ShowTablesPage />);
     fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
@@ -548,6 +585,142 @@ describe("ShowTablesPage", () => {
 
     expect(screen.getByTestId("section-pills")).toBeInTheDocument();
     expect(screen.getByTestId("section-modal")).toBeInTheDocument();
+  });
+
+  describe("section management (multi-section)", () => {
+    const twoSections = [
+      { section: "A", label: "Red", tables: 2, ordinal: 0, selectedMovement: null },
+      { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
+    ];
+
+    it("hides the combined-ranking toggle, section label, and delete for a single section", () => {
+      render(<ShowTablesPage />);
+
+      expect(
+        screen.queryByText("Combined ranking across sections"),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Section label")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Delete section" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows the combined-ranking toggle for a multi-section game and persists a flip", async () => {
+      currentSections = twoSections;
+      currentCombinedRanking = true;
+
+      render(<ShowTablesPage />);
+
+      const group = screen.getByRole("group", {
+        name: "Combined ranking across sections",
+      });
+      // Flip to "Separate" (combined -> false).
+      fireEvent.click(within(group).getByRole("button", { name: "Separate" }));
+
+      // Optimistic update applied, then persisted through game-service.
+      expect(mockMutateGame).toHaveBeenCalledWith(
+        expect.objectContaining({ combinedRanking: false }),
+        false,
+      );
+      await waitFor(() =>
+        expect(mockUpdateCombinedRanking).toHaveBeenCalledWith("g1", false),
+      );
+    });
+
+    it("rolls back the combined-ranking toggle when the save fails", async () => {
+      currentSections = twoSections;
+      currentCombinedRanking = true;
+      mockUpdateCombinedRanking.mockRejectedValueOnce(new Error("nope"));
+
+      render(<ShowTablesPage />);
+      const group = screen.getByRole("group", {
+        name: "Combined ranking across sections",
+      });
+      fireEvent.click(within(group).getByRole("button", { name: "Separate" }));
+
+      // Rolls back to the original value and reports the error.
+      await waitFor(() =>
+        expect(mockMutateGame).toHaveBeenCalledWith(
+          expect.objectContaining({ combinedRanking: true }),
+          false,
+        ),
+      );
+      await waitFor(() => expect(mockReportError).toHaveBeenCalled());
+    });
+
+    it("renames the selected section on blur of its label field", async () => {
+      currentSections = twoSections;
+      currentSelected = "B";
+
+      render(<ShowTablesPage />);
+
+      const field = screen.getByLabelText("Section label");
+      expect(field).toHaveValue("Blue");
+      fireEvent.change(field, { target: { value: "Green" } });
+      fireEvent.blur(field);
+
+      await waitFor(() =>
+        expect(mockRenameSection).toHaveBeenCalledWith("g1", "B", "Green"),
+      );
+    });
+
+    it("does not rename when the label is unchanged", () => {
+      currentSections = twoSections;
+      currentSelected = "B";
+
+      render(<ShowTablesPage />);
+
+      const field = screen.getByLabelText("Section label");
+      fireEvent.blur(field);
+
+      expect(mockRenameSection).not.toHaveBeenCalled();
+    });
+
+    it("deletes the selected section after confirmation and selects a survivor", async () => {
+      currentSections = twoSections;
+      currentSelected = "B";
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+
+      render(<ShowTablesPage />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Delete section" }),
+      );
+
+      await waitFor(() =>
+        expect(mockDeleteSection).toHaveBeenCalledWith("g1", "B"),
+      );
+      // Selection moves to the surviving section (A).
+      expect(mockSetSelected).toHaveBeenCalledWith("A");
+    });
+
+    it("does not delete when the director cancels the confirm", () => {
+      currentSections = twoSections;
+      currentSelected = "B";
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+
+      render(<ShowTablesPage />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Delete section" }),
+      );
+
+      expect(mockDeleteSection).not.toHaveBeenCalled();
+    });
+
+    it("reports an error when the delete fails", async () => {
+      currentSections = twoSections;
+      currentSelected = "B";
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      mockDeleteSection.mockRejectedValueOnce(new Error("boom"));
+
+      render(<ShowTablesPage />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Delete section" }),
+      );
+
+      await waitFor(() => expect(mockReportError).toHaveBeenCalled());
+    });
   });
 
   it("highlights stationary pairs from the movement", () => {
@@ -936,5 +1109,102 @@ describe("ShowTablesPage", () => {
     await waitFor(() =>
       expect(screen.queryByText("Table 2")).not.toBeInTheDocument(),
     );
+  });
+
+  describe("started: structural controls are locked", () => {
+    const twoSections = [
+      { section: "A", label: "Red", tables: 2, ordinal: 0, selectedMovement: null },
+      { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
+    ];
+
+    it("hides the table-count stepper once the game has started", () => {
+      mockStarted = true;
+      render(<ShowTablesPage />);
+
+      // The table count is still shown, but the resize stepper is gone.
+      expect(screen.getByText("2 tables")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Tables")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Increase Tables" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows the section label as static text (no rename / delete) once started", () => {
+      mockStarted = true;
+      currentSections = twoSections;
+      currentSelected = "B";
+      render(<ShowTablesPage />);
+
+      // The label is read-only text, not an editable field, and Delete is gone.
+      expect(screen.getByText("Blue")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Section label")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Delete section" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows the movement as static text (no Change) once started", () => {
+      mockStarted = true;
+      currentSections = [
+        {
+          section: "A",
+          label: "A",
+          tables: 2,
+          ordinal: 0,
+          selectedMovement: {
+            source: "MITCHELL",
+            mitchell: { tables: 2, rounds: 2, boardsPerRound: 2 },
+          } as never,
+        },
+      ];
+      mockMovementTables = 2;
+
+      const onEditMovement = vi.fn();
+      render(<ShowTablesPage onEditMovement={onEditMovement} />);
+
+      // The movement is still shown (read-only), but it is not a button and
+      // carries no "Change" affordance.
+      const summary = screen.getByTestId("selected-movement-summary");
+      expect(summary).toHaveTextContent("Standard Mitchell");
+      expect(summary.tagName).not.toBe("BUTTON");
+      expect(within(summary).queryByText("Change")).not.toBeInTheDocument();
+    });
+
+    it("suppresses the movement warning banner once started", () => {
+      mockStarted = true;
+      // No movement selected would normally show the warning banner.
+      render(<ShowTablesPage onEditMovement={vi.fn()} />);
+
+      expect(
+        screen.queryByTestId("movement-warning-banner"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("hides the Swiss stationary toggle in the table dialog once started", async () => {
+      mockStarted = true;
+      currentSections = [
+        {
+          section: "A",
+          label: "A",
+          tables: 2,
+          ordinal: 0,
+          selectedMovement: {
+            source: "SWISS",
+            swiss: { tables: 2, stationaryPairs: [] },
+          } as never,
+        },
+      ];
+      currentPairs = [pairAt("A1NS")];
+      mockMovementTables = 2;
+
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+
+      // The lifecycle (standing) controls are available, but the stationary
+      // toggle — which rewrites the Swiss movement — is not.
+      expect(
+        screen.queryByRole("group", { name: "Stationary" }),
+      ).not.toBeInTheDocument();
+    });
   });
 });

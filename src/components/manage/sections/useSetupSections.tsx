@@ -4,7 +4,11 @@ import { useState, type ReactNode } from "react";
 
 import { useSectionSelection } from "@/hooks/section-selection";
 import { nextSectionLetter } from "@/model/section-letter";
-import { createSection, renameSection } from "@/lib/section-service";
+import {
+  createSection,
+  renameSection,
+  splitSection,
+} from "@/lib/section-service";
 import { ClientSection } from "@/hooks/sections";
 import { SectionPills } from "./SectionPills";
 import { SectionModal, SectionModalResult } from "./SectionModal";
@@ -19,14 +23,14 @@ const DEFAULT_SECTION_TABLES = 5;
  * per-page selection, renders the section pills (with a "+ Add section" pill),
  * and drives the add-section modal.
  *
- * Add behaviour:
- * - First add (1 → 2 sections): the modal collects a name for the existing
- *   section and the new one, then renames the existing section and creates the
- *   new one.
- * - Subsequent adds: the modal collects just the new section's name.
+ * The modal offers two ways to create a section:
+ * - Add: a brand-new empty section (default table count). On the first add
+ *   (1 → 2 sections) it also names the previously-unnamed existing section.
+ * - Split: divide an existing section's tables (and the pairs seated at them)
+ *   into two, choosing how many tables go to each side.
  *
- * The current selection is preserved across an add so the director stays where
- * they were; the new section simply appears as a pill.
+ * The current selection is preserved across the change so the director stays
+ * where they were; the new section simply appears as a pill.
  */
 export function useSetupSections(
   gameId: string,
@@ -54,18 +58,32 @@ export function useSetupSections(
   const existingLetters = sections.map((s) => s.section);
   const newLetter = nextSectionLetter(existingLetters);
 
-  // The first add (going from a single section to two) also names the existing
-  // section, which never had a meaningful label before.
-  const firstAdd = sections.length === 1;
-  const existingSection = firstAdd
-    ? { letter: sections[0].section, label: sections[0].label }
-    : undefined;
+  // The modal acts on the full section list: Split needs each section's table
+  // count, and the first-add case still names the previously-unnamed section.
+  const modalSections = sections.map((s) => ({
+    letter: s.section,
+    label: s.label,
+    tables: s.tables,
+  }));
 
   async function handleConfirm(result: SectionModalResult) {
     setModalOpen(false);
     try {
-      if (result.existingLabel != null && existingSection) {
-        await renameSection(gameId, existingSection.letter, result.existingLabel);
+      if (result.mode === "split") {
+        await splitSection(gameId, {
+          from: result.from,
+          newSection: newLetter,
+          tablesToNewSection: result.tablesToNewSection,
+          newLabel: result.newLabel,
+          fromLabel: result.fromLabel,
+        });
+        return;
+      }
+
+      // Add mode. On the first add (1 → 2 sections) the modal also collects a
+      // label for the previously-unnamed existing section.
+      if (result.existingLabel != null && sections.length === 1) {
+        await renameSection(gameId, sections[0].section, result.existingLabel);
       }
       await createSection(
         gameId,
@@ -91,7 +109,7 @@ export function useSetupSections(
   const modal = (
     <SectionModal
       open={modalOpen}
-      existingSection={existingSection}
+      sections={modalSections}
       newSectionLetter={newLetter}
       onConfirm={handleConfirm}
       onCancel={() => setModalOpen(false)}

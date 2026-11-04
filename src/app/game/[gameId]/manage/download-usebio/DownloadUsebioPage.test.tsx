@@ -16,8 +16,12 @@ vi.mock("@/swr/swr-keys", () => ({
   swrKeys: { club: () => "/api/system/club" },
 }));
 
+const mockMutateGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
-  useRequiredGame: () => ({ game: { gameId: "g1" } }),
+  useRequiredGame: () => ({
+    game: { gameId: "g1", tournamentLevel: "NORMAL_CLUB" },
+    mutateGame: mockMutateGame,
+  }),
 }));
 
 const mockGetDirectorToken = vi.fn(() => "director-tok" as string | null);
@@ -162,7 +166,7 @@ describe("DownloadUsebioPage", () => {
     // Only the USEBIO GET is made (no club POST); the director token is sent.
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/games/g1/usebio",
+      "/api/games/g1/usebio?tournamentLevel=NORMAL_CLUB",
       expect.objectContaining({
         headers: { "x-director-token": "director-tok" },
       }),
@@ -192,7 +196,7 @@ describe("DownloadUsebioPage", () => {
 
     await waitFor(() => expect(onUsebioDownloaded).toHaveBeenCalled());
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/games/g1/usebio",
+      "/api/games/g1/usebio?tournamentLevel=NORMAL_CLUB",
       expect.objectContaining({ headers: { "x-director-token": "" } }),
     );
     expect(clickSpy).toHaveBeenCalled();

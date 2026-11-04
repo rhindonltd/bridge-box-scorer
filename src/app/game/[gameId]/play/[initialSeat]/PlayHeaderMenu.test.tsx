@@ -62,6 +62,17 @@ describe("PlayHeaderMenu", () => {
     ).toBeInTheDocument();
   });
 
+  it("always offers Handover and routes to the handover screen", async () => {
+    // Handover is available for any seated seat (not gated on a pre-marked
+    // stand-in): an arriving pair can take over at any time.
+    const user = userEvent.setup();
+    render(<PlayHeaderMenu gameId="g1" seat="A1NS" />);
+
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(screen.getByRole("menuitem", { name: "Handover" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/play/A1NS/handover");
+  });
+
   it("opens the change-device dialog from its menu item", async () => {
     const user = userEvent.setup();
     render(<PlayHeaderMenu gameId="g1" seat="A1NS" />);

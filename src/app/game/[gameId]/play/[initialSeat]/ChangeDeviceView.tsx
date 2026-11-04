@@ -8,21 +8,33 @@ interface Props {
   gameId: string;
   /** The seat being moved (section-qualified, e.g. "A3NS"). */
   seat: string;
+  /**
+   * What the claim will do — passed to the mint so the code carries its intent:
+   *  - CHANGE_DEVICE (default): the SAME pair moves to a new device.
+   *  - HANDOVER: a DIFFERENT arriving pair takes over this seat (the claim then
+   *    collects their names).
+   * Only the copy differs; the code-display + countdown behaviour is shared.
+   */
+  kind?: "CHANGE_DEVICE" | "HANDOVER";
 }
 
 /** How long a transfer code stays valid, in seconds (mirrors CODE_TTL_MS). */
 const EXPIRY_SECONDS = 300;
 
 /**
- * "Change device" content: mints a single-use transfer code for this seat and
- * shows it with a countdown, so the code can be typed into another device to
- * take over the seat. Claiming rotates the seat's secret, so once the code is
- * used this device is signed out of the seat.
+ * Transfer-code content: mints a single-use code for this seat and shows it
+ * with a countdown, so the code can be typed into another device. Claiming
+ * rotates the seat's secret, so once the code is used this device is signed out
+ * of the seat.
+ *
+ * Shared by the "Change device" dialog (same pair, new device) and the
+ * different-device "Handover" flow (a new pair takes over) — `kind` selects the
+ * code's intent and the instructional copy; everything else is identical.
  *
  * Self-contained (like ShareDirectorAccessPage) so it can be dropped into a
- * dialog from either the waiting screen or the live play header.
+ * dialog or a page from either the waiting screen or the live play header.
  */
-export function ChangeDeviceView({ gameId, seat }: Props) {
+export function ChangeDeviceView({ gameId, seat, kind = "CHANGE_DEVICE" }: Props) {
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState(EXPIRY_SECONDS);
@@ -33,14 +45,14 @@ export function ChangeDeviceView({ gameId, seat }: Props) {
     setCode(null);
     setExpiresIn(EXPIRY_SECONDS);
 
-    generateSeatTransferCode(gameId, seat)
+    generateSeatTransferCode(gameId, seat, kind)
       .then((newCode) => setCode(newCode))
       .catch((err) =>
         setError(
           err instanceof Error ? err.message : "Failed to generate code",
         ),
       );
-  }, [gameId, seat]);
+  }, [gameId, seat, kind]);
 
   // Generate once on mount.
   useEffect(() => {
@@ -69,12 +81,24 @@ export function ChangeDeviceView({ gameId, seat }: Props) {
   const minutes = Math.floor(expiresIn / 60);
   const seconds = expiresIn % 60;
 
+  const isHandover = kind === "HANDOVER";
+
   return (
     <div className="flex flex-col items-center text-center">
       <p className="mb-4 text-sm text-gray-600">
-        On your other device, open this game, choose{" "}
-        <span className="font-semibold">Move a seat to this device</span>, and
-        enter the code below.
+        {isHandover ? (
+          <>
+            On the arriving pair&rsquo;s device, open this game, choose{" "}
+            <span className="font-semibold">Move a seat to this device</span>,
+            enter the code below, then enter their names.
+          </>
+        ) : (
+          <>
+            On your other device, open this game, choose{" "}
+            <span className="font-semibold">Move a seat to this device</span>,
+            and enter the code below.
+          </>
+        )}
       </p>
 
       {error && (
@@ -122,7 +146,9 @@ export function ChangeDeviceView({ gameId, seat }: Props) {
       )}
 
       <p className="mt-6 text-xs text-gray-500">
-        Once the code is used, this device will be signed out of the seat.
+        {isHandover
+          ? "Once the arriving pair claims the code, this device will be signed out of the seat."
+          : "Once the code is used, this device will be signed out of the seat."}
       </p>
     </div>
   );

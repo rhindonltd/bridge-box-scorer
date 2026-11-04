@@ -11,13 +11,16 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
     children,
+    actions,
   }: {
     headerTitle: string;
     children: React.ReactNode;
+    actions?: React.ReactNode;
   }) => (
     <div>
       <h1>{headerTitle}</h1>
       {children}
+      {actions}
     </div>
   ),
 }));

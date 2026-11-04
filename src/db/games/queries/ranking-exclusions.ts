@@ -2,6 +2,7 @@ import { Db } from "@/db/games";
 import {
   readSeatOccupancies,
   scoredIdByOccupancyId,
+  inheritStandInOccupancyIds,
 } from "@/db/games/queries/seat-occupancy";
 
 /**
@@ -12,7 +13,7 @@ import {
 export interface ParticipantStandingRow {
   seat: string;
   standing: "ACTIVE" | "WITHDRAWN" | "WITHOUT_STANDING" | "LATE";
-  treatment: "REMOVE" | "PENALISED" | null;
+  treatment: "REMOVE" | "PENALISED" | "INHERIT" | "SUBSTITUTION" | null;
   finePercent: number | null;
 }
 
@@ -38,8 +39,15 @@ export interface StandingBoardRow {
  */
 export interface WithdrawalRecord {
   seat: string;
-  /** §2.4.5 treatment chosen by the director. */
-  treatment: "REMOVE" | "PENALISED";
+  /**
+   * §2.4.5 treatment chosen by the director. INHERIT is a §2.4.7 handover-only
+   * treatment (the real pair takes the stand-in's actual board results); it
+   * produces NO withdrawal/gap credit record — those boards score as real
+   * results on the real pair's id — so a `WithdrawalRecord` is never emitted
+   * with INHERIT. The variant is kept in the union only so the treatment type
+   * flows uniformly from the standing rows.
+   */
+  treatment: "REMOVE" | "PENALISED" | "INHERIT";
   /** The 0..40% fine (0 for REMOVE / unset). */
   finePercent: number;
   /**
@@ -72,18 +80,26 @@ export async function readParticipantStandings(
 ): Promise<ParticipantStandingRow[]> {
   const occupancies = await readSeatOccupancies(db);
   // Key each occupancy's standing to its SCORED-FIELD id — the bare seat for an
-  // ordinary occupant, `<seat>#<occId>` for a handover stand-in. This matches
-  // the id its board rows carry after the scoring-path rewrite, so a stand-in's
-  // WITHOUT_STANDING no longer collides with the real pair's standing on the
-  // shared seat (which would wrongly exclude the whole seat from the ranking).
+  // ordinary occupant, `<seat>#<occId>` for a REMOVE/PENALISED handover stand-in.
+  // This matches the id its board rows carry after the scoring-path rewrite, so
+  // a stand-in's WITHOUT_STANDING no longer collides with the real pair's
+  // standing on the shared seat (which would wrongly exclude the whole seat).
   const scoredIdById = scoredIdByOccupancyId(occupancies);
 
-  return occupancies.map((o) => ({
-    seat: scoredIdById.get(o.id) ?? o.anchorId ?? o.seat,
-    standing: o.standing,
-    treatment: o.withdrawalTreatment,
-    finePercent: o.withdrawalFinePercent,
-  }));
+  // Under INHERIT the stand-in has NO scoring identity (its boards score as the
+  // real pair's results on the shared bare id), so it would otherwise emit a
+  // WITHOUT_STANDING standing row keyed to that shared id and wrongly exclude
+  // the real pair. Drop those stand-in occupancies from the standings entirely.
+  const inheritStandIns = inheritStandInOccupancyIds(occupancies);
+
+  return occupancies
+    .filter((o) => !inheritStandIns.has(o.id))
+    .map((o) => ({
+      seat: scoredIdById.get(o.id) ?? o.anchorId ?? o.seat,
+      standing: o.standing,
+      treatment: o.withdrawalTreatment,
+      finePercent: o.withdrawalFinePercent,
+    }));
 }
 
 /**
@@ -164,31 +180,45 @@ export function resolveStandings(
       r.standing === "LATE" &&
       !lateRetainsStanding(r.seat, playedBySeat, half);
 
-    // Whether this contestant's UNPLAYED boards are scored per §2.4.6: every
-    // WITHDRAWN pair, plus a short LATE arrival. A treatment with no recorded
-    // value defaults to REMOVE (dropped from the ranking; opponents still
-    // indemnified), the safe conservative choice — used by BOTH the exclusion
-    // and the credit so the two never disagree.
-    const scoredAsAbsent = r.standing === "WITHDRAWN" || lateShort;
-    const treatment = r.treatment ?? "REMOVE";
+    // §2.4.9 "without standing" is unconditional and treatment-independent: the
+    // pair's results count for its opponents but it is never ranked. (Handled
+    // before any treatment logic so it is unaffected by the INHERIT default.)
+    if (r.standing === "WITHOUT_STANDING") {
+      excludedFromRanking.add(r.seat);
+      continue;
+    }
 
-    // §2.4.9 ranking exclusion: without-standing always; an absent contestant
-    // (withdrawer or short latecomer) given REMOVE.
-    if (
-      r.standing === "WITHOUT_STANDING" ||
-      (scoredAsAbsent && treatment === "REMOVE")
-    ) {
+    // Whether this contestant's UNPLAYED boards are scored per §2.4.6: every
+    // WITHDRAWN pair, plus a short LATE arrival. Everyone else (ACTIVE, or a
+    // LATE pair that retained standing) scores normally — nothing to do.
+    const scoredAsAbsent = r.standing === "WITHDRAWN" || lateShort;
+    if (!scoredAsAbsent) continue;
+
+    // The treatment for the absent contestant's unplayed boards. An UNSET value
+    // defaults to SUBSTITUTION — the §2.4.7 handover default. SUBSTITUTION and
+    // INHERIT both mean those boards already carry real results on the pair's
+    // own id (the scored-id resolver folds them onto the one line), so there is
+    // nothing to score as absent: the pair is ranked on them like any other.
+    // Skip it — neither excluded nor credited.
+    const rawTreatment = r.treatment ?? "SUBSTITUTION";
+    if (rawTreatment === "SUBSTITUTION" || rawTreatment === "INHERIT") continue;
+
+    // A REMOVE / PENALISED absentee: REMOVE (drop from the ranking; opponents
+    // still indemnified) or PENALISED (AVE− + fine).
+    const treatment: "REMOVE" | "PENALISED" =
+      rawTreatment === "PENALISED" ? "PENALISED" : "REMOVE";
+
+    // §2.4.9 ranking exclusion for a REMOVE absentee.
+    if (treatment === "REMOVE") {
       excludedFromRanking.add(r.seat);
     }
 
     // §2.4.3–§2.4.7 unplayed-board credit.
-    if (scoredAsAbsent) {
-      withdrawals.push({
-        seat: r.seat,
-        treatment,
-        finePercent: treatment === "PENALISED" ? r.finePercent ?? 0 : 0,
-      });
-    }
+    withdrawals.push({
+      seat: r.seat,
+      treatment,
+      finePercent: treatment === "PENALISED" ? r.finePercent ?? 0 : 0,
+    });
   }
 
   return { excludedFromRanking, withdrawals };

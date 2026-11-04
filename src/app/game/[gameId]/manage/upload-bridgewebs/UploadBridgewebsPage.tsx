@@ -5,6 +5,9 @@ import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { Spinner } from "@/components/common/Spinner";
+import { TournamentLevelSelect } from "@/components/common/TournamentLevelSelect";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { DEFAULT_TOURNAMENT_LEVEL } from "@/model/tournament-level";
 import { fetcher } from "@/lib/fetcher";
 import { getDirectorToken } from "@/lib/director-token";
 import { swrKeys } from "@/swr/swr-keys";
@@ -20,10 +23,16 @@ type UploadState =
   | { kind: "error"; message: string };
 
 export function UploadBridgewebsPage({ onCancel }: UploadBridgewebsPageProps) {
-  const { game } = useRequiredGame();
+  const { game, mutateGame } = useRequiredGame();
 
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadState>({ kind: "idle" });
+
+  // Pre-fill from the game's last-used level (default for an older row); the
+  // chosen level is persisted on the server as part of the upload.
+  const [tournamentLevel, setTournamentLevel] = useState<TournamentLevel>(
+    game.tournamentLevel ?? DEFAULT_TOURNAMENT_LEVEL,
+  );
 
   const { data: status, isLoading } = useSWR<BridgewebsStatus>(
     swrKeys.bridgewebs(),
@@ -38,16 +47,20 @@ export function UploadBridgewebsPage({ onCancel }: UploadBridgewebsPageProps) {
     setResult({ kind: "idle" });
 
     try {
-      const res = await fetch(
-        `/api/games/${game.gameId}/bridgewebs/upload`,
-        {
-          method: "POST",
-          headers: { "x-director-token": getDirectorToken(game.gameId) ?? "" },
+      const res = await fetch(`/api/games/${game.gameId}/bridgewebs/upload`, {
+        method: "POST",
+        headers: {
+          "x-director-token": getDirectorToken(game.gameId) ?? "",
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({ tournamentLevel }),
+      });
       const body = await res.json().catch(() => null);
 
       if (res.ok) {
+        // The server saved this level; reflect it locally so a re-open
+        // pre-fills the same choice.
+        mutateGame({ ...game, tournamentLevel }, false);
         // The route returns the parsed BridgeWebs reply. `ok` reflects its
         // status message; show it either way.
         const message =
@@ -97,11 +110,19 @@ export function UploadBridgewebsPage({ onCancel }: UploadBridgewebsPageProps) {
     >
       <form onSubmit={handleUpload} className="px-6" id="upload-bridgewebs-form">
         {configured ? (
-          <p className="text-sm text-gray-600 mb-4">
-            This uploads the game results (USEBIO) and hand records (PBN) to your
-            BridgeWebs site
-            {status?.club ? ` for club "${status.club}"` : ""}.
-          </p>
+          <>
+            <p className="text-sm text-gray-600 mb-4">
+              This uploads the game results (USEBIO) and hand records (PBN) to
+              your BridgeWebs site
+              {status?.club ? ` for club "${status.club}"` : ""}.
+            </p>
+
+            <TournamentLevelSelect
+              value={tournamentLevel}
+              onChange={setTournamentLevel}
+              disabled={uploading}
+            />
+          </>
         ) : (
           <p role="alert" className="text-red-600 text-base">
             BridgeWebs is not configured. Add your club code and password in

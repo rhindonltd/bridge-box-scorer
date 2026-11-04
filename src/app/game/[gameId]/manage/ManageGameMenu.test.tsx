@@ -7,15 +7,17 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
 }));
 
-let bridgewebsData: unknown = { configured: true };
 let gameData: unknown = { eventFormat: "STANDARD" };
-// Key-aware SWR mock: the bridgewebs key returns the bridgewebs status, the
-// game key returns the game. Keys come from the swrKeys mock below.
+let substitutionsData: unknown = [];
+// Key-aware SWR mock: the game key returns the game (for the Swiss check); the
+// substitutions key returns the substituted seats (gates the Substitutions
+// item). A null key (not-started gate) yields no data.
 vi.mock("swr", () => ({
-  default: (key: string) =>
-    key === "/api/games/g1"
-      ? { data: gameData }
-      : { data: bridgewebsData },
+  default: (key: string | null) => {
+    if (key === null) return { data: undefined };
+    if (key.endsWith("/substitutions")) return { data: substitutionsData };
+    return { data: gameData };
+  },
 }));
 vi.mock("@/lib/fetcher", () => ({
   fetcher: vi.fn(),
@@ -23,19 +25,14 @@ vi.mock("@/lib/fetcher", () => ({
 }));
 vi.mock("@/swr/swr-keys", () => ({
   swrKeys: {
-    bridgewebs: () => "/api/system/bridgewebs",
-    ebu: () => "/api/system/ebu",
     game: (gameId: string) => `/api/games/${gameId}`,
+    substitutions: (gameId: string) => `/api/games/${gameId}/substitutions`,
   },
 }));
 
 const mockUseGameStarted = vi.fn();
-const mockUseResultsComplete = vi.fn();
 vi.mock("@/hooks/game-started", () => ({
   useGameStarted: () => mockUseGameStarted(),
-}));
-vi.mock("@/hooks/results-complete", () => ({
-  useResultsComplete: () => mockUseResultsComplete(),
 }));
 
 // The mock renders a button for each function prop (so we can click and assert
@@ -68,13 +65,9 @@ function flag(name: string) {
 describe("ManageGameMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    bridgewebsData = { configured: true };
     gameData = { eventFormat: "STANDARD" };
+    substitutionsData = [];
     mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
-    mockUseResultsComplete.mockReturnValue({
-      allResultsIn: false,
-      isLoading: false,
-    });
   });
 
   it("routes each menu action to the correct path", () => {
@@ -82,6 +75,14 @@ describe("ManageGameMenu", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "onSetUpGameClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/create");
+
+    // "Manage Tables" is a post-start action, so it must NOT route to the
+    // not-started-guarded setup flow (which would bounce straight back to the
+    // menu); it has its own started-guarded route.
+    fireEvent.click(
+      screen.getByRole("button", { name: "onManageTablesClick" }),
+    );
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/tables");
 
     fireEvent.click(screen.getByRole("button", { name: "onTravellersClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/travellers");
@@ -98,47 +99,52 @@ describe("ManageGameMenu", () => {
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
 
     fireEvent.click(
-      screen.getByRole("button", { name: "onTournamentLevelClick" }),
+      screen.getByRole("button", { name: "onSubstitutionsClick" }),
     );
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/tournament-level");
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/substitutions");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "onDownloadUsebioClick" }),
-    );
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/download-usebio");
-
-    fireEvent.click(screen.getByRole("button", { name: "onDownloadPbnClick" }));
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/download-pbn");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "onUploadBridgewebsClick" }),
-    );
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/upload-bridgewebs");
+    fireEvent.click(screen.getByRole("button", { name: "onExportClick" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/export");
 
     fireEvent.click(screen.getByRole("button", { name: "onDeleteGameClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/delete-game");
   });
 
-  it("hides Upload to BridgeWebs when the status hasn't loaded / isn't configured", () => {
-    bridgewebsData = undefined; // `?? false` -> not configured
-    render(<ManageGameMenu gameId="g1" />);
-    expect(flag("showUploadBridgewebs")).toBe("false");
+  it("shows Export & Publish once started and hides it before start", () => {
+    mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
+    const { rerender } = render(<ManageGameMenu gameId="g1" />);
+    expect(flag("showExport")).toBe("true");
+
+    mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
+    rerender(<ManageGameMenu gameId="g1" />);
+    expect(flag("showExport")).toBe("false");
   });
 
-  it("shows Upload to BridgeWebs when configured and started", () => {
-    bridgewebsData = { configured: true };
-    render(<ManageGameMenu gameId="g1" />);
-    expect(flag("showUploadBridgewebs")).toBe("true");
+  it("shows Substitutions only when started and a handover exists", () => {
+    // Started, no handover → hidden.
+    substitutionsData = [];
+    const { rerender } = render(<ManageGameMenu gameId="g1" />);
+    expect(flag("showSubstitutions")).toBe("false");
+
+    // Started, a substituted seat exists → shown.
+    substitutionsData = [{ seat: "A1NS" }];
+    rerender(<ManageGameMenu gameId="g1" />);
+    expect(flag("showSubstitutions")).toBe("true");
+
+    // Not started → hidden even if (stale) data exists.
+    mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
+    rerender(<ManageGameMenu gameId="g1" />);
+    expect(flag("showSubstitutions")).toBe("false");
   });
 
-  it("before start: shows Set Up Game, hides Travellers/Movement/USEBIO", () => {
+  it("before start: shows Set Up Game, hides Travellers/Movement/Export", () => {
     mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
     render(<ManageGameMenu gameId="g1" />);
 
     expect(flag("showSetUpGame")).toBe("true");
     expect(flag("showTravellers")).toBe("false");
     expect(flag("showMovement")).toBe("false");
-    expect(flag("showDownloadUsebio")).toBe("false");
+    expect(flag("showExport")).toBe("false");
   });
 
   it("while started state is loading: hides all state-gated buttons", () => {
@@ -148,46 +154,17 @@ describe("ManageGameMenu", () => {
     expect(flag("showSetUpGame")).toBe("false");
     expect(flag("showTravellers")).toBe("false");
     expect(flag("showMovement")).toBe("false");
-    expect(flag("showDownloadUsebio")).toBe("false");
+    expect(flag("showExport")).toBe("false");
   });
 
-  it("after start, results incomplete: shows Travellers/Movement and USEBIO disabled", () => {
+  it("after start: shows Travellers/Movement/Export", () => {
     mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
-    mockUseResultsComplete.mockReturnValue({
-      allResultsIn: false,
-      isLoading: false,
-    });
     render(<ManageGameMenu gameId="g1" />);
 
     expect(flag("showSetUpGame")).toBe("false");
     expect(flag("showTravellers")).toBe("true");
     expect(flag("showMovement")).toBe("true");
-    expect(flag("showDownloadUsebio")).toBe("true");
-    expect(flag("downloadUsebioDisabled")).toBe("true");
-  });
-
-  it("after start, completion loading: shows USEBIO disabled", () => {
-    mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
-    mockUseResultsComplete.mockReturnValue({
-      allResultsIn: false,
-      isLoading: true,
-    });
-    render(<ManageGameMenu gameId="g1" />);
-
-    expect(flag("showDownloadUsebio")).toBe("true");
-    expect(flag("downloadUsebioDisabled")).toBe("true");
-  });
-
-  it("after start, results complete: shows USEBIO enabled", () => {
-    mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
-    mockUseResultsComplete.mockReturnValue({
-      allResultsIn: true,
-      isLoading: false,
-    });
-    render(<ManageGameMenu gameId="g1" />);
-
-    expect(flag("showDownloadUsebio")).toBe("true");
-    expect(flag("downloadUsebioDisabled")).toBe("false");
+    expect(flag("showExport")).toBe("true");
   });
 
   it("shows Review Mismatches only for a started Swiss game and routes it", () => {

@@ -22,8 +22,8 @@ const payloadSchema = z.object({
   directorToken: z.string().min(1),
   seat: z.string().min(1),
   realPair: z.object({ player1: playerSchema, player2: playerSchema }),
-  treatment: z.enum(["REMOVE", "PENALISED"]),
-  finePercent: z.number().min(0).max(40).optional(),
+  // No scoring treatment: a §2.4.7 substitution has no artificial score. The
+  // director sets split/eligibility afterwards on the Substitutions screen.
 });
 
 /**
@@ -46,8 +46,7 @@ export function registerHandoverSeatHandler(socket: Socket, io: Server) {
     {
       schema: payloadSchema,
       handler: async ({ payload, ack }) => {
-        const { gameId, directorToken, seat, realPair, treatment, finePercent } =
-          payload;
+        const { gameId, directorToken, seat, realPair } = payload;
 
         if (!assertDirector(directorToken, gameId, ack)) return;
 
@@ -73,8 +72,6 @@ export function registerHandoverSeatHandler(socket: Socket, io: Server) {
             player2: realPair.player2,
           },
           secretKey: key,
-          treatment,
-          finePercent,
         });
 
         if (!result.ok) {

@@ -102,20 +102,29 @@ function CompassPlayerCard({
   label,
   player,
   stationary = false,
+  expectedLate = false,
 }: {
   label: string;
   player: Omit<Player, "id"> | null;
   /** Highlight this position as stationary for the selected movement. */
   stationary?: boolean;
+  /**
+   * An EMPTY position the director marked "expected late" (§2.4.7): the seat
+   * starts unfilled and the pair joins when they arrive. Drawn in place of the
+   * plain "Empty" placeholder (see {@link PlayerCard}) with a sky ring. It is
+   * independent of `stationary` — a stationary pair can also be running late —
+   * but only meaningful while the seat is still empty.
+   */
+  expectedLate?: boolean;
 }) {
+  const highlightRing = stationary
+    ? "ring-2 ring-amber-400 ring-offset-1"
+    : expectedLate
+      ? "ring-2 ring-sky-400 ring-offset-1"
+      : "";
+
   return (
-    <div
-      className={
-        stationary
-          ? "relative rounded-lg ring-2 ring-amber-400 ring-offset-1"
-          : "relative"
-      }
-    >
+    <div className={`relative rounded-lg ${highlightRing}`}>
       {/* On small screens an occupied position shows only that it is TAKEN;
           the names appear on larger screens, or on any screen by tapping the
           card to open the table dialog. An empty seat still shows the normal
@@ -130,7 +139,7 @@ function CompassPlayerCard({
           </div>
         </>
       ) : (
-        <PlayerCard label={label} player={player} />
+        <PlayerCard label={label} player={player} expectedLate={expectedLate} />
       )}
       {stationary && (
         <span
@@ -228,6 +237,7 @@ export default function DirectorTableControls({ tables, onOpenTable }: Props) {
                     label="North"
                     player={table.players.N}
                     stationary={table.stationary?.N}
+                    expectedLate={table.expectedLate?.N}
                   />
                 }
                 south={
@@ -235,6 +245,7 @@ export default function DirectorTableControls({ tables, onOpenTable }: Props) {
                     label="South"
                     player={table.players.S}
                     stationary={table.stationary?.S}
+                    expectedLate={table.expectedLate?.S}
                   />
                 }
                 east={
@@ -242,6 +253,7 @@ export default function DirectorTableControls({ tables, onOpenTable }: Props) {
                     label="East"
                     player={table.players.E}
                     stationary={table.stationary?.E}
+                    expectedLate={table.expectedLate?.E}
                   />
                 }
                 west={
@@ -249,6 +261,7 @@ export default function DirectorTableControls({ tables, onOpenTable }: Props) {
                     label="West"
                     player={table.players.W}
                     stationary={table.stationary?.W}
+                    expectedLate={table.expectedLate?.W}
                   />
                 }
                 center={

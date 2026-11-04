@@ -7,9 +7,6 @@ import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
 import { Toggle } from "@/components/common/Toggle";
 import { updateEventDetails } from "@/lib/game-service";
-import { TOURNAMENT_LEVEL_OPTIONS } from "@/model/tournament-level";
-import { updateTournamentLevel } from "@/lib/game-service";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
 import { useTranslations } from "@/i18n/useTranslations";
 import {
   type EventTypeChoice,
@@ -31,8 +28,8 @@ interface Props {
 /**
  * Director screen to review and adjust a game's event details after creation —
  * the same options as the create form (event name, director, event type,
- * scoring, tournament level, and the per-game toggles), prefilled from the
- * already-created game. Reached by the back arrow on the setup views.
+ * scoring, and the per-game toggles), prefilled from the already-created game.
+ * Reached by the back arrow on the setup views.
  *
  * Changing the event type or scoring is a structural change that can invalidate
  * a movement already chosen for the section, so if a movement is selected the
@@ -54,9 +51,6 @@ export function EditEventDetailsPage({ onDone }: Props) {
   );
   const [teamsScoring, setTeamsScoring] = useState<TeamsScoring>(
     initialScoring.teamsScoring,
-  );
-  const [tournamentLevel, setTournamentLevel] = useState<TournamentLevel>(
-    game.tournamentLevel,
   );
   const [leadCardRequired, setLeadCardRequired] = useState(
     game.leadCardRequired,
@@ -110,11 +104,6 @@ export function EditEventDetailsPage({ onDone }: Props) {
         leadCardRequired,
         handEntryEnabled,
       });
-      // The tournament level lives on the same game but has its own endpoint;
-      // only call it when it actually changed.
-      if (tournamentLevel !== game.tournamentLevel) {
-        await updateTournamentLevel(game.gameId, tournamentLevel);
-      }
       // Reflect the saved values locally; the server also broadcasts the fresh
       // game row to every device.
       mutateGame(
@@ -127,7 +116,6 @@ export function EditEventDetailsPage({ onDone }: Props) {
           scoringType,
           leadCardRequired,
           handEntryEnabled,
-          tournamentLevel,
           selectedMovement: structuralChange ? null : game.selectedMovement,
         },
         false,
@@ -207,14 +195,6 @@ export function EditEventDetailsPage({ onDone }: Props) {
             inline
           />
         )}
-
-        <SelectField
-          label="Tournament Level"
-          value={tournamentLevel}
-          options={TOURNAMENT_LEVEL_OPTIONS}
-          onSelect={setTournamentLevel}
-          inline
-        />
 
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-gray-700">

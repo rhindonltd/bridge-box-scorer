@@ -1,0 +1,1 @@
+ALTER TABLE `seat_transfer_codes` ADD `kind` text DEFAULT 'CHANGE_DEVICE' NOT NULL;

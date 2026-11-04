@@ -22,6 +22,13 @@
       "when": 1789203170252,
       "tag": "0002_curly_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793725009934,
+      "tag": "0003_faulty_sprite",
+      "breakpoints": true
     }
   ]
 }

@@ -228,3 +228,125 @@ export async function pickMovementForSection(
     page.getByRole("button", { name: /Select Movement|Selecting/ }),
   ).toHaveCount(0, { timeout: 15000 });
 }
+
+/**
+ * Map a section-qualified NS/EW seat (e.g. "A1NS", "B2EW") to the Director
+ * Table modal's pair label ("North / South" or "East / West") and its 1-based
+ * table number. The modal groups each table's two pairs under these labels, so
+ * the handover helpers below locate the right pair by them.
+ */
+function seatToPairLabel(seat: string): { tableNumber: number; pairLabel: string } {
+  const match = /^[A-Z](\d+)(NS|EW)$/.exec(seat);
+  if (!match) {
+    throw new Error(`Cannot parse seat "${seat}" (expected e.g. "A1NS")`);
+  }
+  const tableNumber = Number(match[1]);
+  const pairLabel = match[2] === "NS" ? "North / South" : "East / West";
+  return { tableNumber, pairLabel };
+}
+
+/**
+ * Mark a seated pair as a §2.4.7 stand-in ("Without standing") through the
+ * director's mid-game Tables screen, exactly as a director would: open
+ * `/manage/tables`, tap the seat's table card, open that pair's "Change
+ * standing" editor, choose "No standing", and save.
+ *
+ * This is the real-world precondition for a player-triggered handover — a seat
+ * only offers "Handover" (same device) or a handover-claim (different device)
+ * once its occupant is a stand-in. `directorPage` must be the game-creating
+ * (director-authorised) context.
+ */
+export async function markSeatWithoutStanding(
+  directorPage: Page,
+  gameId: string,
+  seat: string,
+): Promise<void> {
+  const { tableNumber, pairLabel } = seatToPairLabel(seat);
+
+  await gotoStable(directorPage, `/game/${gameId}/manage/tables`);
+
+  const tableCard = directorPage.getByRole("button", {
+    name: `Manage table ${tableNumber}`,
+  });
+  await expect(tableCard).toBeVisible({ timeout: 15000 });
+  await tableCard.click();
+
+  // Open the pair's standing editor (the button names the pair via a
+  // visually-hidden span: "Change standing for North / South pair").
+  const changeStanding = directorPage.getByRole("button", {
+    name: `Change standing for ${pairLabel} pair`,
+  });
+  await expect(changeStanding).toBeVisible({ timeout: 15000 });
+  await changeStanding.click();
+
+  // The standing PillToggle offers Active / Withdrawn / Late / No standing.
+  await directorPage
+    .getByRole("radio", { name: "No standing", exact: true })
+    .click();
+
+  // Save the change; the editor collapses back to the pair's action buttons.
+  await directorPage.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(changeStanding).toBeVisible({ timeout: 15000 });
+
+  // Close the table dialog.
+  await directorPage.getByRole("button", { name: "Done", exact: true }).click();
+}
+
+/** The arriving real pair's names for a director-driven handover. */
+export interface HandoverNames {
+  player1: { firstName: string; lastName: string };
+  player2: { firstName: string; lastName: string };
+}
+
+/**
+ * Hand a seat over from the pair sitting it to the arriving pair through the
+ * DIRECTOR's mid-game Tables modal (EBU §2.4.7). Opens `/manage/tables`, taps
+ * the seat's table card, opens that pair's "Hand over to real pair" form,
+ * enters the arriving pair's names, and confirms. The scoring choices (split /
+ * eligibility) are NOT entered here — the director sets them afterwards on the
+ * Substitutions screen.
+ *
+ * `directorPage` must be the game-creating (director-authorised) context.
+ */
+export async function directorHandover(
+  directorPage: Page,
+  gameId: string,
+  seat: string,
+  names: HandoverNames,
+): Promise<void> {
+  const { tableNumber, pairLabel } = seatToPairLabel(seat);
+
+  await gotoStable(directorPage, `/game/${gameId}/manage/tables`);
+
+  const tableCard = directorPage.getByRole("button", {
+    name: `Manage table ${tableNumber}`,
+  });
+  await expect(tableCard).toBeVisible({ timeout: 15000 });
+  await tableCard.click();
+
+  // Open the pair's handover form ("Hand North / South over to the real pair").
+  const handButton = directorPage.getByRole("button", {
+    name: `Hand ${pairLabel} over to the real pair`,
+  });
+  await expect(handButton).toBeVisible({ timeout: 15000 });
+  await handButton.click();
+
+  // Enter the arriving pair's names (TextFields labelled by their visible text).
+  await directorPage
+    .getByLabel("Player 1 first name")
+    .fill(names.player1.firstName);
+  await directorPage.getByLabel("Player 1 surname").fill(names.player1.lastName);
+  await directorPage
+    .getByLabel("Player 2 first name")
+    .fill(names.player2.firstName);
+  await directorPage.getByLabel("Player 2 surname").fill(names.player2.lastName);
+
+  // Confirm (no treatment choice — the handover form captures names only).
+  await directorPage
+    .getByRole("button", { name: "Hand over", exact: true })
+    .click();
+
+  // The form collapses back to the pair's action buttons; close the dialog.
+  await expect(handButton).toBeVisible({ timeout: 15000 });
+  await directorPage.getByRole("button", { name: "Done", exact: true }).click();
+}

@@ -1,6 +1,9 @@
 import { getDb } from "@/db/games";
 import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
-import { primaryOf } from "@/db/games/queries/seat-occupancy";
+import {
+  arrivalAnchorOf,
+  anchorPickColumns,
+} from "@/db/games/queries/seat-occupancy";
 import { PairSeat } from "@/model/participants";
 import { eq } from "drizzle-orm";
 
@@ -13,11 +16,13 @@ import { eq } from "drizzle-orm";
  * middleware to verify that a result submission came from the seat's owner.
  *
  * A seat usually has one occupancy, so this returns its secret. A §2.4.7
- * handover seat holds two rows — the arriving real pair and the stand-in it
- * replaced (marked `WITHOUT_STANDING`). The stand-in and the real pair never
- * occupy the seat at the same instant (the handover action rotates the secret
- * and demotes the sub in one step), so auth resolves to the seat's PRIMARY
- * occupant via {@link primaryOf} — the active pair, same pick scoring uses.
+ * handover seat holds two rows — the arriving pair (which took over the live
+ * device) and the earlier occupant it replaced. Auth resolves to the ARRIVAL
+ * ANCHOR via {@link arrivalAnchorOf} — the pair whose device is live at the
+ * seat. This is the DEVICE identity, deliberately NOT the ranked/scoring pick:
+ * the director may mark the arriving pair "without standing" (so the earlier
+ * pair is ranked), but the arriving pair still holds the device and enters
+ * results, so its secret is the one that authorises the seat.
  */
 export async function findParticipantSecret(
   gameId: string,
@@ -30,12 +35,7 @@ export async function findParticipantSecret(
   }
 
   const rows = await db
-    .select({
-      id: seatOccupancy.id,
-      boards: seatOccupancy.boards,
-      standing: seatOccupancy.standing,
-      secretKey: seatOccupancy.secretKey,
-    })
+    .select({ ...anchorPickColumns, secretKey: seatOccupancy.secretKey })
     .from(seatOccupancy)
     .where(eq(seatOccupancy.seat, seat as PairSeat))
     .all();
@@ -44,5 +44,5 @@ export async function findParticipantSecret(
     return null;
   }
 
-  return primaryOf(rows).secretKey;
+  return arrivalAnchorOf(rows).secretKey;
 }

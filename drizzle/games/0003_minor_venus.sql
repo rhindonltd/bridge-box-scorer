@@ -1,0 +1,1 @@
+ALTER TABLE `seat_occupancy` ADD `is_main_line` integer DEFAULT 0 NOT NULL;

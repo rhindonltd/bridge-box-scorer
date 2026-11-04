@@ -26,7 +26,7 @@ export function SelectGame({
 }: Props) {
   return (
     <PageLayout headerTitle={headerTitle} backHref={backHref}>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex min-h-full flex-col">
         {isLoading && (
           <div className="flex justify-center py-12">
             <Spinner />
@@ -34,7 +34,7 @@ export function SelectGame({
         )}
 
         {!isLoading && games.length === 0 && (
-          <div className="px-6 py-12 text-center text-gray-500 text-base">
+          <div className="flex flex-1 items-center justify-center px-6 text-center text-gray-500 text-base">
             No games have been created yet.
           </div>
         )}
