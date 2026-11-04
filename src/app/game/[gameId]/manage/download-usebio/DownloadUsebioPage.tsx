@@ -5,7 +5,10 @@ import { Spinner } from "@/components/common/Spinner";
 import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
+import { TournamentLevelSelect } from "@/components/common/TournamentLevelSelect";
 import { Club } from "@/db/system/schema";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { DEFAULT_TOURNAMENT_LEVEL } from "@/model/tournament-level";
 import { fetcher } from "@/lib/fetcher";
 import { getDirectorToken } from "@/lib/director-token";
 import { swrKeys } from "@/swr/swr-keys";
@@ -19,10 +22,16 @@ export function DownloadUsebioPage({
   onUsebioDownloaded,
   onCancel,
 }: DownloadUsebioPageProps) {
-  const { game } = useRequiredGame();
+  const { game, mutateGame } = useRequiredGame();
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pre-fill from the game's last-used level (default for an older row); the
+  // chosen level is persisted on the server as part of the download.
+  const [tournamentLevel, setTournamentLevel] = useState<TournamentLevel>(
+    game.tournamentLevel ?? DEFAULT_TOURNAMENT_LEVEL,
+  );
 
   // Club info is read-only here — it is configured (admin-gated) in Settings.
   const { data, isLoading: loading } = useSWR<{ club: Club | null }>(
@@ -51,10 +60,14 @@ export function DownloadUsebioPage({
     try {
       // Fetch the USEBIO file and trigger download via blob URL. The export is
       // director-authed; the token travels in the `x-director-token` header
-      // (this is a GET, so it can't carry a JSON body).
-      const usebioRes = await fetch(`/api/games/${game.gameId}/usebio`, {
-        headers: { "x-director-token": getDirectorToken(game.gameId) ?? "" },
-      });
+      // (this is a GET, so it can't carry a JSON body — the chosen tournament
+      // level rides on the query string). The server persists that level.
+      const usebioRes = await fetch(
+        `/api/games/${game.gameId}/usebio?tournamentLevel=${tournamentLevel}`,
+        {
+          headers: { "x-director-token": getDirectorToken(game.gameId) ?? "" },
+        },
+      );
       if (!usebioRes.ok) {
         const errData = await usebioRes.json().catch(() => null);
         setError(errData?.error ?? "Failed to generate USEBIO file");
@@ -76,6 +89,10 @@ export function DownloadUsebioPage({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      // The server saved this level; reflect it locally so a re-open pre-fills
+      // the same choice without waiting for a game refetch.
+      mutateGame({ ...game, tournamentLevel }, false);
 
       onUsebioDownloaded();
     } catch {
@@ -151,6 +168,14 @@ export function DownloadUsebioPage({
                 </dd>
               </div>
             </dl>
+
+            <div className="mt-6">
+              <TournamentLevelSelect
+                value={tournamentLevel}
+                onChange={setTournamentLevel}
+                disabled={saving}
+              />
+            </div>
           </>
         ) : (
           <p role="alert" className="text-red-600 text-base">

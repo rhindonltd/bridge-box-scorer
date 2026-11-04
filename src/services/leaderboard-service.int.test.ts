@@ -868,21 +868,37 @@ describe("section-aware leaderboard (real scoring)", () => {
     expect(a1ew.totalMP).toBeGreaterThan(flatSixtyPercentTotal);
   });
 
-  // ── §2.4.7 stand-by → real-pair handover (two occupancies on one seat) ──
+  // ── §2.4.7 substitution handover (two occupancies on one seat) ──
 
   /**
-   * Seat a handover at `${section}${table}NS`: a REAL pair (ranked, the
-   * primary occupant, plays `realBoards`) and a WITHOUT_STANDING STAND-IN (plays
-   * `subBoards`). Returns the stand-in occupancy's id so the test can assert on
-   * its scored-field id `${section}${table}NS#<id>`.
+   * Seat a handover at `${section}${table}NS` under the two-toggle model: an
+   * EARLIER occupancy (the arrival anchor, plays `earlierBoards`) and a LATER
+   * occupancy (plays `laterBoards`). Both default to ACTIVE (eligible for
+   * ranking); `split` controls whether they rank as one merged line (`false`,
+   * the arrival anchor's id `${section}${table}NS`) or two separate lines
+   * (`true`, the later occupancy getting its own scored-field id
+   * `${section}${table}NS#<id>`). `earlierStanding` lets a test mark the earlier
+   * occupant WITHOUT_STANDING (ineligible — counts for opponents but stripped
+   * from the ranking). Returns the later occupancy's id.
    */
   async function seatHandoverNs(
     db: any,
     section: string,
     table: number,
-    realBoards: number[],
-    subBoards: number[],
+    earlierBoards: number[],
+    laterBoards: number[],
+    opts: {
+      split?: boolean;
+      earlierStanding?: "ACTIVE" | "WITHOUT_STANDING";
+      /**
+       * Which occupant is the merged-line MAIN pair (split=no). Default
+       * "anchor" (= the early* occupancy here, which carries isArrivalAnchor=1).
+       * "later" marks the late* occupancy isMainLine=1 to exercise the override.
+       */
+      mainLine?: "anchor" | "later";
+    } = {},
   ): Promise<number> {
+    const { split = false, earlierStanding = "ACTIVE", mainLine = "anchor" } = opts;
     const { players } = await import("@/db/games/tables/players");
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const seat = `${section}${table}NS`;
@@ -893,38 +909,56 @@ describe("section-aware leaderboard (real scoring)", () => {
       return [p1.id, p2.id] as const;
     };
 
-    // The REAL pair (ranked). Inserted first, but the pick is by standing, not
-    // order — it is primary because it is NOT without-standing.
-    const [r1, r2] = mkPlayers(`real${seat}`);
+    // The EARLIER occupancy — the arrival anchor (holds the seat's device /
+    // identity). Eligible by default; a test may mark it WITHOUT_STANDING.
+    const [e1, e2] = mkPlayers(`early${seat}`);
     db.insert(seatOccupancy)
-      .values({ seat, boards: realBoards, player1: r1, player2: r2, secretKey: `${seat}-real`, standing: "LATE" })
+      .values({
+        seat,
+        boards: earlierBoards,
+        player1: e1,
+        player2: e2,
+        secretKey: `${seat}-early`,
+        standing: earlierStanding,
+        isArrivalAnchor: 1,
+        isMainLine: mainLine === "anchor" ? 1 : 0,
+        split: split ? 1 : 0,
+      })
       .run();
 
-    // The STAND-IN (without standing).
-    const [s1, s2] = mkPlayers(`sub${seat}`);
-    const subRow = db
+    // The LATER occupancy (the substitute/handover-in pair). Always ACTIVE here.
+    const [l1, l2] = mkPlayers(`late${seat}`);
+    const lateRow = db
       .insert(seatOccupancy)
-      .values({ seat, boards: subBoards, player1: s1, player2: s2, secretKey: `${seat}-sub`, standing: "WITHOUT_STANDING" })
+      .values({
+        seat,
+        boards: laterBoards,
+        player1: l1,
+        player2: l2,
+        secretKey: `${seat}-late`,
+        standing: "ACTIVE",
+        isArrivalAnchor: 0,
+        isMainLine: mainLine === "later" ? 1 : 0,
+        split: split ? 1 : 0,
+      })
       .returning()
       .get();
-    return subRow.id;
+    return lateRow.id;
   }
 
-  it("scores a stand-by → real-pair handover: sub counts for opponents but is unranked; real pair ranked with an AVE− gap", async () => {
+  it("merged handover (split=no, both eligible): one ranked line on the anchor id, opponents matchpointed", async () => {
     const db = await setup();
     const { boards } = await import("@/db/games/tables/boards");
     const { computeSectionLeaderboards } = await import("./leaderboard-service");
 
-    // 4-board MP event, three tables. Table 1's NS seat is a handover: a
-    // stand-in plays boards 1–2, the real pair plays boards 3–4. The EW
-    // opponent (A1EW) and tables 2–3 are ordinary seated pairs.
+    // 4-board MP event, three tables. Table 1's NS seat is a merged handover
+    // (split=no): the earlier pair plays boards 1–2, the later pair plays 3–4,
+    // and both are eligible. They rank as ONE line on the anchor id A1NS.
     await seatPair(db, "A", 1, ["ignored", "ignored"], ["E1", "E1b"]); // seats A1EW; A1NS replaced below
-    // Remove the whole-seat A1NS occupancy seatPair just made, replace with the
-    // two handover occupancies.
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { eq } = await import("drizzle-orm");
     db.delete(seatOccupancy).where(eq(seatOccupancy.seat, "A1NS")).run();
-    const subId = await seatHandoverNs(db, "A", 1, [3, 4], [1, 2]);
+    await seatHandoverNs(db, "A", 1, [1, 2], [3, 4], { split: false });
 
     await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
     await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
@@ -933,9 +967,6 @@ describe("section-aware leaderboard (real scoring)", () => {
       section: "A", roundNumber: bn, tableNumber: t, boardNumber: bn,
       ns, ew, confirmedResult: "3NTN=" as BoardOutcome, status: "CONFIRMED" as const,
     });
-    // Every table plays every board (full field top on each). Table 1's rows
-    // all carry the bare seat ids A1NS/A1EW; the occupant split is resolved at
-    // scoring time from the occupancies.
     db.insert(boards)
       .values(
         [1, 2, 3, 4].flatMap((bn) => [
@@ -950,84 +981,188 @@ describe("section-aware leaderboard (real scoring)", () => {
     const lines = a.overallScore.lines as { pairId: string; totalMP: number; maxMP: number }[];
     const ids = lines.map((l) => l.pairId);
 
-    // The stand-in is dropped from the ranking (§2.4.9 "without standing").
-    expect(ids).not.toContain(`A1NS#${subId}`);
-    // The real pair IS ranked (it retained standing — played 2 of 4 ≥ ⌈4/2⌉=2).
-    const realPair = lines.find((l) => l.pairId === "A1NS");
-    expect(realPair).toBeDefined();
-    // The real pair's gap boards (1–2, played by the sub) are scored AVE− for
-    // it, so its max covers all four boards — it is ranked on its 2 real boards
-    // plus 2 AVE− boards, never under-boarded.
-    expect(realPair!.maxMP).toBeGreaterThan(0);
-    // The EW opponent is matchpointed on all four boards (its boards 1–2 were a
-    // real result against the stand-in — opponents' results stand).
+    // Exactly one ranked line for the seat, on the anchor id — no split `#id`.
+    expect(ids).toContain("A1NS");
+    expect(ids.some((id) => id.startsWith("A1NS#"))).toBe(false);
+    const merged = lines.find((l) => l.pairId === "A1NS")!;
+    expect(merged).toBeDefined();
+    // Merged line covers all four boards (1–2 earlier + 3–4 later).
+    expect(merged.maxMP).toBeGreaterThan(0);
+    // The EW opponent is matchpointed on all four boards (opponents' results
+    // stand regardless of the handover).
     const a1ew = lines.find((l) => l.pairId === "A1EW");
     expect(a1ew).toBeDefined();
     expect(a1ew!.maxMP).toBeGreaterThan(0);
+
+    // DUAL-NAMING: the A1NS participant carries BOTH pairs' names for the local
+    // leaderboard — the ANCHOR pair's line plus a "(Sub)" line for the OTHER
+    // occupant that folded onto the merged line. (In this helper the anchor is
+    // the `early*` occupancy — isArrivalAnchor=1 — and the folded-in one is the
+    // `late*` occupancy.)
+    const a1nsParticipant = a.participants.find((p) => p.id === "A1NS")!;
+    expect(a1nsParticipant.type).toBe("PAIR");
+    const dualNames =
+      a1nsParticipant.type === "PAIR"
+        ? a1nsParticipant.displayNameLines
+        : undefined;
+    expect(dualNames).toBeDefined();
+    expect(dualNames).toHaveLength(2);
+    expect(dualNames![1]).toMatch(/^\(Sub\) /);
+    // The anchor line names the anchor pair; the sub line names the other pair.
+    expect(dualNames![0]).toContain("earlyA1NS1");
+    expect(dualNames![1]).toContain("lateA1NS1");
   });
 
-  it("gives the real pair a lower gap score the larger its director fine", async () => {
+  it("merged handover with the MAIN pair re-pointed (split=no): the other pair is the primary line, its partner the (Sub)", async () => {
     const db = await setup();
     const { boards } = await import("@/db/games/tables/boards");
-    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
-    const { eq, and } = await import("drizzle-orm");
     const { computeSectionLeaderboards } = await import("./leaderboard-service");
 
+    // Same merged setup, but the director has made the LATER occupant the main
+    // pair (mainLine: "later"). The merged line is still the bare id A1NS, but
+    // its displayed primary identity + the (Sub) partner swap over.
     await seatPair(db, "A", 1, ["ignored", "ignored"], ["E1", "E1b"]);
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { eq } = await import("drizzle-orm");
     db.delete(seatOccupancy).where(eq(seatOccupancy.seat, "A1NS")).run();
-    await seatHandoverNs(db, "A", 1, [3, 4], [1, 2]);
+    await seatHandoverNs(db, "A", 1, [1, 2], [3, 4], {
+      split: false,
+      mainLine: "later",
+    });
+
     await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
     await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
 
-    // The real pair TOPS its two played boards (3,4): table 1 scores better
-    // than tables 2–3. So without the gap it would be ~100%; the AVE− gap on
-    // boards 1–2 pulls it down, and a fine pulls it down further — making the
-    // fine's effect observable (unlike an all-ties field).
-    const row = (
-      bn: number,
-      t: number,
-      ns: string,
-      ew: string,
-      outcome: BoardOutcome,
-    ) => ({
+    const played = (bn: number, t: number, ns: string, ew: string) => ({
       section: "A", roundNumber: bn, tableNumber: t, boardNumber: bn,
-      ns, ew, confirmedResult: outcome, status: "CONFIRMED" as const,
+      ns, ew, confirmedResult: "3NTN=" as BoardOutcome, status: "CONFIRMED" as const,
     });
     db.insert(boards)
       .values(
-        [1, 2, 3, 4]
-          .flatMap((bn) => {
-            const t1Outcome: BoardOutcome =
-              bn >= 3 ? ("3NTN+1" as BoardOutcome) : ("3NTN=" as BoardOutcome);
-            return [
-              row(bn, 1, "A1NS", "A1EW", t1Outcome),
-              row(bn, 2, "A2NS", "A2EW", "3NTN=" as BoardOutcome),
-              row(bn, 3, "A3NS", "A3EW", "3NTN=" as BoardOutcome),
-            ];
-          })
-          .map(withFixtureMatchId),
+        [1, 2, 3, 4].flatMap((bn) => [
+          played(bn, 1, "A1NS", "A1EW"),
+          played(bn, 2, "A2NS", "A2EW"),
+          played(bn, 3, "A3NS", "A3EW"),
+        ]).map(withFixtureMatchId),
       )
       .run();
 
-    const scoreOf = async (): Promise<number> => {
-      const a = (await computeSectionLeaderboards(db, gameId)).find((s) => s.section === "A")!;
-      const real = (a.overallScore.lines as { pairId: string; totalMP: number; maxMP: number }[]).find(
-        (l) => l.pairId === "A1NS",
-      )!;
-      return real.maxMP > 0 ? real.totalMP / real.maxMP : 0;
-    };
+    const a = (await computeSectionLeaderboards(db, gameId)).find((s) => s.section === "A")!;
+    const lines = a.overallScore.lines as { pairId: string; totalMP: number; maxMP: number }[];
+    const ids = lines.map((l) => l.pairId);
 
-    // Default (PENALISED, fine 0) → the real pair's gap boards score a flat
-    // AVE− (40%). Then set a 40% fine on the REAL (LATE) occupancy only (the
-    // stand-in is WITHOUT_STANDING and left untouched) → gap boards score 0% →
-    // a strictly lower total.
-    const beforeFine = await scoreOf();
-    db.update(seatOccupancy)
-      .set({ withdrawalTreatment: "PENALISED", withdrawalFinePercent: 40 })
-      .where(and(eq(seatOccupancy.seat, "A1NS"), eq(seatOccupancy.standing, "LATE")))
+    // Still exactly ONE ranked line on the bare id — scoring is unchanged by
+    // the main-pair choice (a merged seat always scores to the bare id).
+    expect(ids).toContain("A1NS");
+    expect(ids.some((id) => id.startsWith("A1NS#"))).toBe(false);
+
+    // DUAL-NAMING flips: the LATER pair is now the primary line; the EARLIER
+    // pair is the "(Sub)".
+    const a1nsParticipant = a.participants.find((p) => p.id === "A1NS")!;
+    expect(a1nsParticipant.type).toBe("PAIR");
+    const dualNames =
+      a1nsParticipant.type === "PAIR"
+        ? a1nsParticipant.displayNameLines
+        : undefined;
+    expect(dualNames).toBeDefined();
+    expect(dualNames).toHaveLength(2);
+    expect(dualNames![0]).toContain("lateA1NS1");
+    expect(dualNames![1]).toMatch(/^\(Sub\) /);
+    expect(dualNames![1]).toContain("earlyA1NS1");
+  });
+
+  it("split handover (split=yes, both eligible): two separate ranked lines, each only on its own boards", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { eq } = await import("drizzle-orm");
+    const { computeSectionLeaderboards } = await import("./leaderboard-service");
+
+    // Table 1's NS seat is a split handover: the earlier pair plays 1–2, the
+    // later pair plays 3–4, both eligible. They rank as TWO lines — the anchor
+    // id A1NS (earlier) and A1NS#<lateId> (later) — each only on its 2 boards.
+    await seatPair(db, "A", 1, ["ignored", "ignored"], ["E1", "E1b"]);
+    db.delete(seatOccupancy).where(eq(seatOccupancy.seat, "A1NS")).run();
+    const lateId = await seatHandoverNs(db, "A", 1, [1, 2], [3, 4], { split: true });
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+    await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
+
+    const played = (bn: number, t: number, ns: string, ew: string) => ({
+      section: "A", roundNumber: bn, tableNumber: t, boardNumber: bn,
+      ns, ew, confirmedResult: "3NTN=" as BoardOutcome, status: "CONFIRMED" as const,
+    });
+    db.insert(boards)
+      .values(
+        [1, 2, 3, 4].flatMap((bn) => [
+          played(bn, 1, "A1NS", "A1EW"),
+          played(bn, 2, "A2NS", "A2EW"),
+          played(bn, 3, "A3NS", "A3EW"),
+        ]).map(withFixtureMatchId),
+      )
       .run();
-    const afterFine = await scoreOf();
 
-    expect(afterFine).toBeLessThan(beforeFine);
+    const a = (await computeSectionLeaderboards(db, gameId)).find((s) => s.section === "A")!;
+    const lines = a.overallScore.lines as { pairId: string; totalMP: number; maxMP: number }[];
+    const ids = lines.map((l) => l.pairId);
+
+    // Both occupants are ranked as their own lines.
+    expect(ids).toContain("A1NS");
+    expect(ids).toContain(`A1NS#${lateId}`);
+    // Each ranks only on its own 2 boards — never under-boarded nor over-boarded.
+    const earlier = lines.find((l) => l.pairId === "A1NS")!;
+    const later = lines.find((l) => l.pairId === `A1NS#${lateId}`)!;
+    expect(earlier.maxMP).toBeGreaterThan(0);
+    expect(later.maxMP).toBeGreaterThan(0);
+  });
+
+  it("ineligible earlier pair (WITHOUT_STANDING, split=yes): excluded from ranking but counts for opponents", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { eq } = await import("drizzle-orm");
+    const { computeSectionLeaderboards } = await import("./leaderboard-service");
+
+    // Split handover where the EARLIER pair is WITHOUT_STANDING (ineligible):
+    // it is stripped from the ranking, but its results still matchpoint the
+    // opponents it played. The later pair ranks on its own boards.
+    await seatPair(db, "A", 1, ["ignored", "ignored"], ["E1", "E1b"]);
+    db.delete(seatOccupancy).where(eq(seatOccupancy.seat, "A1NS")).run();
+    const lateId = await seatHandoverNs(db, "A", 1, [1, 2], [3, 4], {
+      split: true,
+      earlierStanding: "WITHOUT_STANDING",
+    });
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+    await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
+
+    const played = (bn: number, t: number, ns: string, ew: string) => ({
+      section: "A", roundNumber: bn, tableNumber: t, boardNumber: bn,
+      ns, ew, confirmedResult: "3NTN=" as BoardOutcome, status: "CONFIRMED" as const,
+    });
+    db.insert(boards)
+      .values(
+        [1, 2, 3, 4].flatMap((bn) => [
+          played(bn, 1, "A1NS", "A1EW"),
+          played(bn, 2, "A2NS", "A2EW"),
+          played(bn, 3, "A3NS", "A3EW"),
+        ]).map(withFixtureMatchId),
+      )
+      .run();
+
+    const a = (await computeSectionLeaderboards(db, gameId)).find((s) => s.section === "A")!;
+    const lines = a.overallScore.lines as { pairId: string; totalMP: number; maxMP: number }[];
+    const ids = lines.map((l) => l.pairId);
+
+    // The ineligible earlier pair (anchor id A1NS) is NOT ranked.
+    expect(ids).not.toContain("A1NS");
+    // The later (eligible) pair IS ranked on its own boards.
+    expect(ids).toContain(`A1NS#${lateId}`);
+    const later = lines.find((l) => l.pairId === `A1NS#${lateId}`)!;
+    expect(later.maxMP).toBeGreaterThan(0);
+    // The EW opponent is still matchpointed on all four boards — the earlier
+    // pair's boards 1–2 results count for the opponents even though the pair
+    // itself is unranked.
+    const a1ew = lines.find((l) => l.pairId === "A1EW")!;
+    expect(a1ew).toBeDefined();
+    expect(a1ew.maxMP).toBeGreaterThan(0);
   });
 });

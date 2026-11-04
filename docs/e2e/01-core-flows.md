@@ -14,11 +14,11 @@ this file uses a plain **Pairs · Matchpoints** game.
 
 | Check | Step | Expected | Actual | Comments |
 |---|---|---|---|---|
-| ☐ HOME-1 | On the home screen, confirm four buttons: **Join Game**, **Create New Game**, **Manage Games**, **Room Display**. | All four visible. | | |
-| ☐ HOME-2 | Confirm the **⚙ Settings cog** is top-right. | Present. | | |
-| ☐ HOME-3 | Tap **Join Game**, then the back arrow. | A "Select Game" list (or empty state), then home. | | |
-| ☐ HOME-4 | Tap **Manage Games**, then back. | List (likely empty), then home. | | |
-| ☐ HOME-5 | Tap **Room Display**, then back. | "Display Game" list, then home. | | |
+| ☐ HOME-1 | On the home screen, confirm four buttons: **Join Game**, **Create New Game**, **Manage Games**, **Room Display**. | All four visible. | Y | |
+| ☐ HOME-2 | Confirm the **⚙ Settings cog** is top-right. | Present. | Y | |
+| ☐ HOME-3 | Tap **Join Game**, then the back arrow. | A "Select Game" list (or empty state), then home. | Y | |
+| ☐ HOME-4 | Tap **Manage Games**, then back. | List (likely empty), then home. | Y | Not empty - shows games from other dates |
+| ☐ HOME-5 | Tap **Room Display**, then back. | "Display Game" list, then home. | Y | |
 
 ---
 
@@ -28,16 +28,16 @@ The create form is **two steps**: details, then options.
 
 | Check | Step | Expected | Actual | Comments |
 |---|---|---|---|---|
-| ☐ CREATE-1 | From home tap **Create New Game**. | **"Create Game"**, step 1: **Event Name** + **Director Name**, **Next** at the bottom. | | |
-| ☐ CREATE-2 | Type Event Name `Manual Test Pairs`, Director Name `Test Director`. | Both entered. | | |
-| ☐ CREATE-3 | **Validation:** clear Event Name (or Director). | **Next** is disabled; a hint to enter an event name and director shows. | | |
-| ☐ CREATE-4 | Refill both, tap **Next**. | Step 2: **Event Type**, **Scoring**, **Tournament Level**, **Record Opening Lead**, **Allow Hand Entry**. | | |
-| ☐ CREATE-5 | Confirm **Event Type** options: **Pairs**, **Teams**, **Swiss Pairs**, **Swiss Teams**. Leave on **Pairs**. | Four options; Pairs selected. | | |
-| ☐ CREATE-6 | With **Pairs** selected, confirm **Scoring** options are **Matchpoints** and **Cross-IMPs**. Leave **Matchpoints**. | Correct options. | | |
-| ☐ CREATE-7 | Switch **Event Type** to **Teams**. | **Scoring** now offers the teams methods: **IMP (Victory Points)**, **IMP (aggregate)**, and a board-comparison option (**Point-a-Board** UK / **Board-a-Match** US). | | |
-| ☐ CREATE-8 | Switch **Event Type** to **Swiss Teams**. | Scoring shows fixed text **"IMP (Victory Points)"** — no dropdown. | | |
-| ☐ CREATE-9 | Switch back to **Pairs**. Set **Record Opening Lead** = **No**, **Allow Hand Entry** = **Yes**. | Toggles update. | | |
-| ☐ CREATE-10 | **Back-nav:** tap the back arrow. | Returns to step 1 with Event Name + Director still filled. | | |
+| ☐ CREATE-1 | From home tap **Create New Game**. | **"Create Game"**, step 1: **Event Name** + **Director Name**, **Next** at the bottom. | Y | |
+| ☐ CREATE-2 | Type Event Name `Manual Test Pairs`, Director Name `Test Director`. | Both entered. | Y | |
+| ☐ CREATE-3 | **Validation:** clear Event Name (or Director). | **Next** is disabled; a hint to enter an event name and director shows. | Y | Field outlined in Red, field not disabled but does nothing when clicked |
+| ☐ CREATE-4 | Refill both, tap **Next**. | Step 2: **Event Type**, **Scoring**, **Tournament Level**, **Record Opening Lead**, **Allow Hand Entry**. | Y | |
+| ☐ CREATE-5 | Confirm **Event Type** options: **Pairs**, **Teams**, **Swiss Pairs**, **Swiss Teams**. Leave on **Pairs**. | Four options; Pairs selected. | Y | |
+| ☐ CREATE-6 | With **Pairs** selected, confirm **Scoring** options are **Matchpoints** and **Cross-IMPs**. Leave **Matchpoints**. | Correct options. | Y | |
+| ☐ CREATE-7 | Switch **Event Type** to **Teams**. | **Scoring** now offers the teams methods: **IMP (Victory Points)**, **IMP (aggregate)**, and a board-comparison option (**Point-a-Board** UK / **Board-a-Match** US). | Y | |
+| ☐ CREATE-8 | Switch **Event Type** to **Swiss Teams**. | Scoring shows fixed text **"IMP (Victory Points)"** — no dropdown. | Y | TODO: Scoring type should remain on the right (replaces dropdown).  Label text to stay bold. |
+| ☐ CREATE-9 | Switch back to **Pairs**. Set **Record Opening Lead** = **No**, **Allow Hand Entry** = **Yes**. | Toggles update. | Y | |
+| ☐ CREATE-10 | **Back-nav:** tap the back arrow. | Returns to step 1 with Event Name + Director still filled. | Y | |
 | ☐ CREATE-11 | Tap **Next**, then **Create Game**. | Lands on the **setup** screen (Tables view) for the new game. | | |
 
 > **BridgeWebs (optional):** if the club has BridgeWebs configured with events

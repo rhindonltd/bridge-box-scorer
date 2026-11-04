@@ -10,8 +10,10 @@ export default function DownloadPbnRoute() {
 
   return (
     <DownloadPbnPage
-      onPbnDownloaded={() => router.replace(`/game/${gameId}/manage`)}
-      onCancel={() => router.replace(`/game/${gameId}/manage`)}
+      onPbnDownloaded={() =>
+        router.replace(`/game/${gameId}/manage/export/options`)
+      }
+      onCancel={() => router.replace(`/game/${gameId}/manage/export/options`)}
     />
   );
 }

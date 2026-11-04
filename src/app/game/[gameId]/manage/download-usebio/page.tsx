@@ -12,8 +12,10 @@ export default function DownloadUsebioRoute() {
   return (
     <ResultsCompleteGuard gameId={gameId}>
       <DownloadUsebioPage
-        onUsebioDownloaded={() => router.replace(`/game/${gameId}/manage`)}
-        onCancel={() => router.replace(`/game/${gameId}/manage`)}
+        onUsebioDownloaded={() =>
+          router.replace(`/game/${gameId}/manage/export/options`)
+        }
+        onCancel={() => router.replace(`/game/${gameId}/manage/export/options`)}
       />
     </ResultsCompleteGuard>
   );

@@ -4,33 +4,14 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { ManageGameMenuPage } from "@/app/game/[gameId]/manage/ManageGameMenuPage";
 import { useGameStarted } from "@/hooks/game-started";
-import { useResultsComplete } from "@/hooks/results-complete";
-import { fetcher, unwrapFetcher } from "@/lib/fetcher";
+import { unwrapFetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
-import type { BridgewebsStatus } from "@/db/system/queries/bridgewebs-credentials";
-import type { EbuStatus } from "@/db/system/queries/ebu-credentials";
 import type { BridgeGame } from "@/db/game-index/schema";
 
 export function ManageGameMenu({ gameId }: { gameId: string }) {
   const router = useRouter();
 
   const { started, isLoading: startedLoading } = useGameStarted(gameId);
-  const { allResultsIn } = useResultsComplete(gameId);
-
-  // Whether BridgeWebs is configured (device setting). Controls whether the
-  // "Upload to BridgeWebs" button appears at all — no point offering it when
-  // there are no credentials to upload with.
-  const { data: bridgewebs } = useSWR<BridgewebsStatus>(
-    swrKeys.bridgewebs(),
-    fetcher,
-  );
-  const bridgewebsConfigured = bridgewebs?.configured ?? false;
-
-  // Whether EBU is configured (device setting). Controls whether the "Submit to
-  // EBU" button appears — no point offering it with no credentials to submit
-  // with.
-  const { data: ebu } = useSWR<EbuStatus>(swrKeys.ebu(), fetcher);
-  const ebuConfigured = ebu?.configured ?? false;
 
   // "Review Mismatches" (§3.5) only applies to a Swiss game, where a
   // retroactive score adjustment can retro-change a later round's correct draw.
@@ -40,42 +21,38 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
   );
   const isSwiss = game?.eventFormat === "SWISS";
 
+  // "Substitutions" only applies once a §2.4.7 handover has happened — the
+  // director then sets how each substituted seat is scored (split + each
+  // pair's eligibility). An empty list (the common case) hides the item. Only
+  // meaningful after start, so fetch it then.
+  const { data: substitutions } = useSWR<{ seat: string }[]>(
+    started ? swrKeys.substitutions(gameId) : null,
+    unwrapFetcher<{ seat: string }[]>("substitutions"),
+  );
+  const hasSubstitutions = (substitutions?.length ?? 0) > 0;
+
   // Until we know whether the game has started, hide the state-gated buttons to
   // avoid flicker (e.g. briefly showing "Set Up Game" on an already-started
   // game). Share Director Access and Delete Game are always shown.
   const startedKnown = !startedLoading;
 
-  // "Download USEBIO" is only meaningful once the game has started. Show it for
-  // the whole time after the game has started, disabled until every result is
-  // in (and while the completion signal is still loading).
-  const showDownloadUsebio = started;
-
   return (
     <ManageGameMenuPage
       onSetUpGameClick={() => router.push(`/game/${gameId}/create`)}
-      onManageTablesClick={() => router.push(`/game/${gameId}/create`)}
+      onManageTablesClick={() => router.push(`/game/${gameId}/manage/tables`)}
       onTravellersClick={() => router.push(`/game/${gameId}/manage/travellers`)}
       onEnterDealsClick={() => router.push(`/game/${gameId}/manage/deals`)}
       onMovementClick={() => router.push(`/game/${gameId}/manage/movement`)}
       onShareDirectorAccessClick={() =>
         router.push(`/game/${gameId}/manage/share-access`)
       }
-      onTournamentLevelClick={() =>
-        router.push(`/game/${gameId}/manage/tournament-level`)
-      }
       onReviewMismatchesClick={() =>
         router.push(`/game/${gameId}/manage/mismatches`)
       }
-      onDownloadUsebioClick={() =>
-        router.push(`/game/${gameId}/manage/download-usebio`)
+      onSubstitutionsClick={() =>
+        router.push(`/game/${gameId}/manage/substitutions`)
       }
-      onDownloadPbnClick={() =>
-        router.push(`/game/${gameId}/manage/download-pbn`)
-      }
-      onUploadBridgewebsClick={() =>
-        router.push(`/game/${gameId}/manage/upload-bridgewebs`)
-      }
-      onUploadEbuClick={() => router.push(`/game/${gameId}/manage/upload-ebu`)}
+      onExportClick={() => router.push(`/game/${gameId}/manage/export`)}
       onDeleteGameClick={() =>
         router.push(`/game/${gameId}/manage/delete-game`)
       }
@@ -85,13 +62,10 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       showEnterDeals={started}
       showMovement={started}
       showReviewMismatches={started && isSwiss}
-      showDownloadUsebio={showDownloadUsebio}
-      downloadUsebioDisabled={!allResultsIn}
-      showDownloadPbn={started}
-      showUploadBridgewebs={started && bridgewebsConfigured}
-      uploadBridgewebsDisabled={!allResultsIn}
-      showUploadEbu={started && ebuConfigured}
-      uploadEbuDisabled={!allResultsIn}
+      showSubstitutions={started && hasSubstitutions}
+      // "Export & Publish" groups the results-export / publishing actions; it is
+      // only meaningful once the game has started.
+      showExport={started}
     />
   );
 }

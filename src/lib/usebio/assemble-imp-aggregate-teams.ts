@@ -2,6 +2,7 @@ import { Board } from "@/db/games/tables/boards";
 import { AssignedTeam, sectionOf } from "@/model/participants";
 import { BridgeGame } from "@/db/game-index/schema";
 import { Club } from "@/db/system/schema";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import {
@@ -43,6 +44,7 @@ import {
 export function assembleImpAggregateTeams(
   game: BridgeGame,
   club: Club,
+  tournamentLevel: TournamentLevel,
   teams: AssignedTeam[],
   boardRows: Board[],
   matchRows: TeamMatchStructureRow[],
@@ -84,7 +86,7 @@ export function assembleImpAggregateTeams(
     kind: "SWISS_TEAMS",
     matchScoringMethod: "IMPS",
     club: usebioClub,
-    tournamentLevel: game.tournamentLevel,
+    tournamentLevel,
     eventName: game.eventName,
     eventDate: game.eventDate,
     sectionName: game.sectionName || "A",

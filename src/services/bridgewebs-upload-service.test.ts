@@ -63,20 +63,20 @@ describe("uploadResultsToBridgewebs", () => {
 
   it("blocks when club info is not configured", async () => {
     vi.mocked(findClub).mockResolvedValue(null);
-    const result = await uploadResultsToBridgewebs(db, makeGame());
+    const result = await uploadResultsToBridgewebs(db, makeGame(), "NORMAL_CLUB");
     expect(result).toEqual({ status: "blocked", reason: "club" });
     expect(postToBridgewebs).not.toHaveBeenCalled();
   });
 
   it("blocks when BridgeWebs credentials are not configured", async () => {
     vi.mocked(getBridgewebsCredentials).mockResolvedValue(null);
-    const result = await uploadResultsToBridgewebs(db, makeGame());
+    const result = await uploadResultsToBridgewebs(db, makeGame(), "NORMAL_CLUB");
     expect(result).toEqual({ status: "blocked", reason: "credentials" });
     expect(postToBridgewebs).not.toHaveBeenCalled();
   });
 
   it("uploads USEBIO as data and PBN as dealdata, and passes the reply through", async () => {
-    const result = await uploadResultsToBridgewebs(db, makeGame());
+    const result = await uploadResultsToBridgewebs(db, makeGame(), "NORMAL_CLUB");
 
     expect(result).toEqual({
       status: "sent",
@@ -100,7 +100,11 @@ describe("uploadResultsToBridgewebs", () => {
   });
 
   it("includes event_id when the game is mapped to a BridgeWebs event", async () => {
-    await uploadResultsToBridgewebs(db, makeGame({ bridgewebsEventId: "3" }));
+    await uploadResultsToBridgewebs(
+      db,
+      makeGame({ bridgewebsEventId: "3" }),
+      "NORMAL_CLUB",
+    );
     const [, fields] = vi.mocked(postToBridgewebs).mock.calls[0];
     expect(fields.event_id).toBe("3");
   });
@@ -112,7 +116,7 @@ describe("uploadResultsToBridgewebs", () => {
       json: null,
       raw: "message = Invalid password",
     });
-    const result = await uploadResultsToBridgewebs(db, makeGame());
+    const result = await uploadResultsToBridgewebs(db, makeGame(), "NORMAL_CLUB");
     expect(result).toEqual({
       status: "sent",
       reply: expect.objectContaining({ ok: false, message: "Invalid password" }),

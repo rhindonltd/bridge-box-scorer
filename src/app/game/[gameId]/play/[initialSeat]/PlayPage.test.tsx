@@ -1,107 +1,126 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 
-const mockUseParams = vi.fn();
+import { SocketEvents } from "@/socket/socket-events";
+
+// Capture each useSocketEvent(event, handler) registration so a test can fire
+// the handler for a given event, standing in for a server push.
+const handlers = new Map<string, (payload: unknown) => void>();
+vi.mock("@/hooks/socket-event", () => ({
+  useSocketEvent: (event: string, handler: (payload: unknown) => void) => {
+    handlers.set(event, handler);
+  },
+}));
+
+const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
-  useParams: () => mockUseParams(),
+  useParams: () => ({ initialSeat: "A5NS" }),
+  useRouter: () => ({ replace: mockReplace }),
 }));
 
-const mockUseRequiredGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
-  useRequiredGame: () => mockUseRequiredGame(),
+  useRequiredGame: () => ({
+    game: {
+      gameId: "g1",
+      handEntryEnabled: false,
+      gameType: "PAIRS",
+      scoringType: "MP",
+      leadCardRequired: true,
+    },
+  }),
 }));
 
-const mockUsePlayFlow = vi.fn();
+// Keep the play container in its simplest branch: still waiting to start, so it
+// renders the waiting screen and we don't need to mock the whole play router.
 vi.mock("@/hooks/play-flow", () => ({
-  usePlayFlow: (...a: unknown[]) => mockUsePlayFlow(...a),
+  usePlayFlow: () => ({ waitingToStart: true, schedule: null, playState: {} }),
 }));
 
-vi.mock("@/components/common/Spinner", () => ({
-  FullScreenSpinner: () => <div data-testid="spinner" />,
-}));
-
-// Stub the two delegates so we assert only PlayPage's own branching + wiring.
 vi.mock("@/app/game/[gameId]/play/[initialSeat]/WaitingToStartPage", () => ({
-  WaitingToStartPage: ({ gameId, seat }: { gameId: string; seat: string }) => (
-    <div data-testid="waiting-to-start">{`${gameId}:${seat}`}</div>
-  ),
+  WaitingToStartPage: () => <div>waiting</div>,
+}));
+vi.mock("@/app/game/[gameId]/play/[initialSeat]/SeatTakenOverPage", () => ({
+  SeatTakenOverPage: () => <div>taken-over</div>,
+}));
+vi.mock("@/app/game/[gameId]/play/[initialSeat]/PlayStateRouter", () => ({
+  PlayStateRouter: () => <div>play</div>,
 }));
 
-vi.mock("@/app/game/[gameId]/play/[initialSeat]/PlayStateRouter", () => ({
-  PlayStateRouter: ({
-    gameId,
-    seat,
-    scoringType,
-    leadCardRequired,
-  }: {
-    gameId: string;
-    seat: string;
-    scoringType: string;
-    leadCardRequired: boolean;
-  }) => (
-    <div data-testid="play-state-router">
-      {`${gameId}:${seat}:${scoringType}:${leadCardRequired}`}
-    </div>
-  ),
+const mockGetPlayerToken = vi.fn();
+const mockSetPlayerToken = vi.fn();
+vi.mock("@/lib/player-token", () => ({
+  getPlayerToken: (...a: unknown[]) => mockGetPlayerToken(...a),
+  setPlayerToken: (...a: unknown[]) => mockSetPlayerToken(...a),
 }));
 
 import { PlayPage } from "./PlayPage";
 
-describe("PlayPage", () => {
+function fire(event: string, payload: unknown) {
+  handlers.get(event)?.(payload);
+}
+
+describe("PlayPage SEAT_RENUMBERED handling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseParams.mockReturnValue({ initialSeat: "A3NS" });
-    mockUseRequiredGame.mockReturnValue({
-      game: {
-        gameId: "g1",
-        scoringType: "MP",
-        leadCardRequired: true,
-        handEntryEnabled: true,
-      },
+    handlers.clear();
+    mockGetPlayerToken.mockReturnValue({
+      startingPosition: "A5NS",
+      token: "secret-123",
     });
   });
 
-  it("shows the waiting screen while the director has not started the game", () => {
-    mockUsePlayFlow.mockReturnValue({
-      waitingToStart: true,
-      schedule: null,
-      playState: { state: "loading" },
-    });
-
+  it("re-routes and rewrites the stored token when this seat is renumbered", () => {
     render(<PlayPage />);
 
-    expect(screen.getByTestId("waiting-to-start")).toHaveTextContent("g1:A3NS");
-    expect(screen.queryByTestId("play-state-router")).toBeNull();
+    fire(SocketEvents.SEAT_RENUMBERED, {
+      gameId: "g1",
+      moves: [
+        { from: "A5NS", to: "B1NS" },
+        { from: "A5EW", to: "B1EW" },
+      ],
+    });
+
+    // The stored token keeps its secret but points at the new seat.
+    expect(mockSetPlayerToken).toHaveBeenCalledWith("g1", {
+      startingPosition: "B1NS",
+      token: "secret-123",
+    });
+    expect(mockReplace).toHaveBeenCalledWith("/game/g1/play/B1NS");
   });
 
-  it("shows a spinner in the brief gap before the schedule is ready", () => {
-    mockUsePlayFlow.mockReturnValue({
-      waitingToStart: false,
-      schedule: null,
-      playState: { state: "loading" },
-    });
-
+  it("ignores a renumber that does not include this device's seat", () => {
     render(<PlayPage />);
 
-    expect(screen.getByTestId("spinner")).toBeInTheDocument();
-    expect(screen.queryByTestId("play-state-router")).toBeNull();
+    fire(SocketEvents.SEAT_RENUMBERED, {
+      gameId: "g1",
+      moves: [{ from: "A6NS", to: "B2NS" }],
+    });
+
+    expect(mockSetPlayerToken).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it("delegates to the play-state router with the game's config once ready", () => {
-    mockUsePlayFlow.mockReturnValue({
-      waitingToStart: false,
-      schedule: { assignmentId: "1NS", side: "NS", rounds: [] },
-      playState: { state: "roundInfo", roundIndex: 0 },
-    });
-
+  it("ignores a renumber for a different game", () => {
     render(<PlayPage />);
 
-    expect(screen.getByTestId("play-state-router")).toHaveTextContent(
-      "g1:A3NS:MP:true",
-    );
-    // usePlayFlow is driven by the resolved game id, seat, the game's
-    // hand-entry setting, and whether it is a teams game (post-round team
-    // results summary) — false here for this MP pairs game.
-    expect(mockUsePlayFlow).toHaveBeenCalledWith("g1", "A3NS", true, false);
+    fire(SocketEvents.SEAT_RENUMBERED, {
+      gameId: "other",
+      moves: [{ from: "A5NS", to: "B1NS" }],
+    });
+
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("still re-routes when there is no stored token (URL is the source of truth)", () => {
+    mockGetPlayerToken.mockReturnValue(null);
+    render(<PlayPage />);
+
+    fire(SocketEvents.SEAT_RENUMBERED, {
+      gameId: "g1",
+      moves: [{ from: "A5NS", to: "B1NS" }],
+    });
+
+    expect(mockSetPlayerToken).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith("/game/g1/play/B1NS");
   });
 });

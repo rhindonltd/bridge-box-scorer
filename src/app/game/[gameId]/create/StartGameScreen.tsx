@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from "react";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import Button from "@/components/common/Button";
 import { useRequiredGame } from "@/context/GameContext";
 import { useStartCheck } from "@/hooks/start-check";
 import { startGame } from "@/lib/game-service";
@@ -70,49 +69,38 @@ export function StartGameScreen({ menu }: Props) {
       headerTitle="Start Game"
       headerRight={menu}
       hideBack
-      // In the ready state the Start Game button lives inside the centred
-      // card (below), so the pinned bottom action bar is only used while there
-      // are outstanding problems to resolve.
-      actions={
-        canStart ? undefined : (
-          <Button
-            value={starting ? "Starting…" : "Start Game"}
-            onClick={handleStartGame}
-            disabled={!canStart || starting}
-          />
-        )
-      }
+      // The Start Game button only appears in the ready state, inside the
+      // centred card (below). While there are outstanding problems the screen
+      // shows just the list of issues to resolve — no (disabled) button.
     >
       <div className="flex h-full min-h-0 flex-col">
         {canStart ? (
-          // Ready state: centre the card in the available space, with the
-          // Start Game button at the bottom of the card, horizontally centred.
+          // Ready state: the whole green card IS the Start Game control — one
+          // large tap target in the card's own colour, rather than a clashing
+          // blue button inside it. Centred in the available space.
           <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-            <div
-              role="status"
-              className="flex w-full max-w-md flex-col items-center gap-5 rounded-xl border-2 border-green-300 bg-green-50 p-6 text-center text-green-900"
+            <button
+              type="button"
+              onClick={handleStartGame}
+              disabled={starting}
+              aria-label={starting ? "Starting game" : "Start game"}
+              className="flex w-full max-w-md flex-col items-center gap-3 rounded-xl border-2 border-green-300 bg-green-50 p-6 text-center text-green-900 transition hover:bg-green-100 hover:border-green-400 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 disabled:opacity-70 disabled:active:scale-100"
             >
-              <div>
-                <div className="text-lg font-semibold">
-                  Everything&rsquo;s ready
-                </div>
-                <p className="mt-1 text-sm">
-                  Seating and movement are valid. Tap Start Game to begin.
+              <div className="text-lg font-semibold">
+                Everything&rsquo;s ready
+              </div>
+              <p className="text-sm">
+                Seating and movement are valid.
+              </p>
+              {sitOutSeat && (
+                <p className="text-sm text-gray-600">
+                  One pair short — {sitOutSeat} will sit out each round.
                 </p>
-                {sitOutSeat && (
-                  <p className="mt-2 text-sm text-gray-600">
-                    One pair short — {sitOutSeat} will sit out each round.
-                  </p>
-                )}
-              </div>
-              <div className="w-full max-w-xs">
-                <Button
-                  value={starting ? "Starting…" : "Start Game"}
-                  onClick={handleStartGame}
-                  disabled={!canStart || starting}
-                />
-              </div>
-            </div>
+              )}
+              <span className="mt-2 rounded-lg bg-green-600 px-5 py-2.5 text-base font-semibold text-white">
+                {starting ? "Starting…" : "Tap to Start Game"}
+              </span>
+            </button>
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto p-4">

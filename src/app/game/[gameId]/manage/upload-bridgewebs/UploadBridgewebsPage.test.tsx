@@ -16,8 +16,12 @@ vi.mock("@/swr/swr-keys", () => ({
   swrKeys: { bridgewebs: () => "/api/system/bridgewebs" },
 }));
 
+const mockMutateGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
-  useRequiredGame: () => ({ game: { gameId: "g1" } }),
+  useRequiredGame: () => ({
+    game: { gameId: "g1", tournamentLevel: "NORMAL_CLUB" },
+    mutateGame: mockMutateGame,
+  }),
 }));
 
 const mockGetDirectorToken = vi.fn(() => "director-tok" as string | null);
@@ -111,7 +115,8 @@ describe("UploadBridgewebsPage", () => {
       "/api/games/g1/bridgewebs/upload",
       expect.objectContaining({
         method: "POST",
-        headers: { "x-director-token": "director-tok" },
+        headers: expect.objectContaining({ "x-director-token": "director-tok" }),
+        body: JSON.stringify({ tournamentLevel: "NORMAL_CLUB" }),
       }),
     );
   });
@@ -169,7 +174,9 @@ describe("UploadBridgewebsPage", () => {
     await screen.findByRole("status");
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/games/g1/bridgewebs/upload",
-      expect.objectContaining({ headers: { "x-director-token": "" } }),
+      expect.objectContaining({
+        headers: expect.objectContaining({ "x-director-token": "" }),
+      }),
     );
   });
 

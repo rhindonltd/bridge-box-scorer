@@ -15,6 +15,10 @@ vi.mock("@/db/games/queries/find-seated-national-ids", () => ({
   findSeatedNationalIds: vi.fn(),
 }));
 
+vi.mock("@/db/games/queries/find-sections", () => ({
+  findSections: vi.fn(),
+}));
+
 vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
@@ -26,6 +30,7 @@ vi.mock("@/socket/handlers/results/broadcast-results", () => ({
 import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-players";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findSeatedNationalIds } from "@/db/games/queries/find-seated-national-ids";
+import { findSections } from "@/db/games/queries/find-sections";
 import { getDb } from "@/db/games";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { registerCreateParticipantHandler } from "./create-participant";
@@ -50,6 +55,10 @@ describe("registerCreateParticipantHandler (unit)", () => {
     vi.mocked(getDb).mockResolvedValue({} as any);
     // Default: no one seated yet, so no national-id clash.
     vi.mocked(findSeatedNationalIds).mockResolvedValue(new Set());
+    // Default layout makes the A1NS seat these tests use valid.
+    vi.mocked(findSections).mockResolvedValue([
+      { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+    ] as any);
   });
 
   it("registers handler on CREATE_PARTICIPANT event", () => {

@@ -1,0 +1,2 @@
+ALTER TABLE `seat_occupancy` ADD `is_arrival_anchor` integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX `seat_occupancy_player1_player2_unique` ON `seat_occupancy` (`player1`,`player2`);

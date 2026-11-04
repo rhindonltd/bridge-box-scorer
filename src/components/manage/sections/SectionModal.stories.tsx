@@ -18,17 +18,29 @@ const meta: Meta<typeof SectionModal> = {
 export default meta;
 type Story = StoryObj<typeof SectionModal>;
 
-/** First add: name the existing section and the new one. */
-export const FirstAdd: Story = {
+/** Single-section game: defaults to Split, naming both resulting sections. */
+export const FirstSplit: Story = {
   args: {
-    existingSection: { letter: "A", label: "A" },
+    sections: [{ letter: "A", label: "A", tables: 4 }],
     newSectionLetter: "B",
   },
 };
 
-/** Subsequent add: name just the new section. */
-export const AddAnother: Story = {
+/** Multi-section game: defaults to Add; the toggle also offers Split. */
+export const AddOrSplit: Story = {
   args: {
+    sections: [
+      { letter: "A", label: "A", tables: 6 },
+      { letter: "B", label: "B", tables: 4 },
+    ],
     newSectionLetter: "C",
+  },
+};
+
+/** No section is big enough to split: Add only, no mode toggle. */
+export const AddOnly: Story = {
+  args: {
+    sections: [{ letter: "A", label: "A", tables: 1 }],
+    newSectionLetter: "B",
   },
 };

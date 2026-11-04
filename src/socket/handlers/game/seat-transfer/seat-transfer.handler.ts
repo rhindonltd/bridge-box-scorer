@@ -5,17 +5,40 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { createSeatTransferCode } from "@/db/system/actions/create-seat-transfer-code";
-import { validateAndClaimSeatTransferCode } from "@/db/system/queries/validate-seat-transfer-code";
+import {
+  validateAndClaimSeatTransferCode,
+  inspectSeatTransferCode,
+} from "@/db/system/queries/validate-seat-transfer-code";
 import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 
 const createSchema = z.object({
   gameId: z.string().min(1),
   seat: z.string().min(1),
   token: z.string().optional(),
+  // The claim intent, decided at mint time. CHANGE_DEVICE (default): the same
+  // pair on a new device. HANDOVER: a different arriving pair takes over, so the
+  // claim will collect their names.
+  kind: z.enum(["CHANGE_DEVICE", "HANDOVER"]).optional(),
+});
+
+const inspectSchema = z.object({
+  code: z.string().min(1),
+});
+
+/** A newly-entered player on the arriving real pair (handover claims only). */
+const playerSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  nationalId: z.string().optional(),
 });
 
 const claimSchema = z.object({
   code: z.string().min(1),
+  // Present only when claiming a HANDOVER code: the arriving pair's names.
+  // Omitted for a plain change-device transfer (same pair, new device).
+  realPair: z
+    .object({ player1: playerSchema, player2: playerSchema })
+    .optional(),
 });
 
 /**
@@ -36,12 +59,16 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
     {
       schema: createSchema,
       handler: async ({ payload, ack }) => {
-        const { gameId, seat, token } = payload;
+        const { gameId, seat, token, kind } = payload;
         if (!(await assertPlayer(gameId, seat, token, ack))) {
           return;
         }
 
-        const code = await createSeatTransferCode(gameId, seat);
+        const code = await createSeatTransferCode(
+          gameId,
+          seat,
+          kind ?? "CHANGE_DEVICE",
+        );
 
         // Join this (old) device to the seat's room so it is notified when the
         // code is claimed on another device. The claiming device never joins
@@ -54,16 +81,45 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
     },
   );
 
+  // INSPECT_SEAT_TRANSFER: validate a code WITHOUT consuming it and report
+  // whether it is a HANDOVER code (its `kind`), so the claim UI knows whether to
+  // collect the arriving pair's names first. No auth — the code is the
+  // credential.
+  registerHandler<
+    z.infer<typeof inspectSchema>,
+    { gameId: string; seat: string; isHandover: boolean }
+  >(socket, io, SocketEvents.INSPECT_SEAT_TRANSFER, {
+    schema: inspectSchema,
+    handler: async ({ payload, ack }) => {
+      const result = await inspectSeatTransferCode(payload.code);
+      if (!result.valid) {
+        throw new HandlerError(result.error);
+      }
+      ack({
+        success: true,
+        data: {
+          gameId: result.gameId,
+          seat: result.seat,
+          isHandover: result.isHandover,
+        },
+      });
+    },
+  });
+
   registerHandler<
     z.infer<typeof claimSchema>,
-    { gameId: string; seat: string; token: string }
+    { gameId: string; seat: string; token: string; isHandover: boolean }
   >(socket, io, SocketEvents.CLAIM_SEAT_TRANSFER, {
     schema: claimSchema,
     handler: async ({ payload, ack }) => {
-      const result = await validateAndClaimSeatTransferCode(payload.code);
+      const result = await validateAndClaimSeatTransferCode(
+        payload.code,
+        payload.realPair,
+      );
 
       if (!result.valid) {
-        // A stale / wrong code is a user-facing failure, not an internal error.
+        // A stale / wrong code (or a handover claim missing names) is a
+        // user-facing failure, not an internal error.
         throw new HandlerError(result.error);
       }
 
@@ -71,6 +127,8 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
       // so it can leave the play screen and return home. Only the old device
       // is in the seat room (it joined when minting the code); the claiming
       // socket has not joined it, so it is not notified of its own takeover.
+      // This applies to both a plain transfer and a handover (the stand-in's
+      // old device is signed out either way).
       io.to(Rooms.seat(result.gameId, result.seat)).emit(
         SocketEvents.SEAT_TAKEN_OVER,
         { gameId: result.gameId, seat: result.seat },
@@ -82,6 +140,7 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
           gameId: result.gameId,
           seat: result.seat,
           token: result.token,
+          isHandover: result.isHandover,
         },
       });
     },

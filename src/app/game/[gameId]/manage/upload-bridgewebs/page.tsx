@@ -12,7 +12,7 @@ export default function UploadBridgewebsRoute() {
   return (
     <ResultsCompleteGuard gameId={gameId}>
       <UploadBridgewebsPage
-        onCancel={() => router.replace(`/game/${gameId}/manage`)}
+        onCancel={() => router.replace(`/game/${gameId}/manage/export/options`)}
       />
     </ResultsCompleteGuard>
   );

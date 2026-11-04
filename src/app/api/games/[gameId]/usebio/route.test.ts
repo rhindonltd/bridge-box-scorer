@@ -8,20 +8,29 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
 vi.mock("@/db/system/queries/find-club", () => ({ findClub: vi.fn() }));
+vi.mock("@/db/game-index/actions/update-tournament-level", () => ({
+  updateTournamentLevel: vi.fn(),
+}));
 vi.mock("@/services/usebio-service", () => ({ generateUsebio: vi.fn() }));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findClub } from "@/db/system/queries/find-club";
+import { updateTournamentLevel } from "@/db/game-index/actions/update-tournament-level";
 import { generateUsebio } from "@/services/usebio-service";
 import { GET } from "./route";
 
 // The director token travels in the `x-director-token` header, so this is a
-// plain GET with no body — exercising the route -> withDirectorRoute -> handler
-// wiring the way the client actually calls it.
-function invoke(gameId: string) {
-  const req = new Request("http://localhost/api/games/g1/usebio", {
+// plain GET with no body — the chosen tournament level rides on the query
+// string. Exercises the route -> withDirectorRoute -> handler wiring the way
+// the client actually calls it.
+function invoke(gameId: string, tournamentLevel = "NORMAL_CLUB") {
+  const url =
+    tournamentLevel === ""
+      ? "http://localhost/api/games/g1/usebio"
+      : `http://localhost/api/games/g1/usebio?tournamentLevel=${tournamentLevel}`;
+  const req = new Request(url, {
     method: "GET",
     headers: { "x-director-token": "tok" },
   });
@@ -33,6 +42,7 @@ describe("GET /api/games/[gameId]/usebio", () => {
     vi.clearAllMocks();
     vi.mocked(getDb).mockResolvedValue({ marker: "db" } as never);
     vi.mocked(validateDirectorToken).mockReturnValue(true);
+    vi.mocked(updateTournamentLevel).mockResolvedValue(undefined as never);
   });
 
   it("returns downloadable XML for an authorised director", async () => {
@@ -46,11 +56,30 @@ describe("GET /api/games/[gameId]/usebio", () => {
     } as never);
     vi.mocked(generateUsebio).mockResolvedValue("<USEBIO/>");
 
-    const res = await invoke("g1");
+    const res = await invoke("g1", "NATIONAL_HEAT");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("application/xml");
     expect(res.headers.get("content-disposition")).toContain("attachment");
     await expect(res.text()).resolves.toBe("<USEBIO/>");
+    // The chosen level is threaded into the generator and persisted.
+    expect(generateUsebio).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      "NATIONAL_HEAT",
+    );
+    expect(updateTournamentLevel).toHaveBeenCalledWith("g1", "NATIONAL_HEAT");
+  });
+
+  it("returns 400 when the tournament level is missing or invalid", async () => {
+    vi.mocked(findGameById).mockResolvedValue({
+      eventName: "x",
+      eventDate: "2024-11-18T00:00:00.000Z",
+    } as never);
+
+    expect((await invoke("g1", "")).status).toBe(400);
+    expect((await invoke("g1", "NONSENSE")).status).toBe(400);
+    expect(generateUsebio).not.toHaveBeenCalled();
   });
 
   it("returns 401 when the director token is invalid", async () => {

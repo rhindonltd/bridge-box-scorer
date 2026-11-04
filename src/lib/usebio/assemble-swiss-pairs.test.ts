@@ -19,7 +19,15 @@ function assembleSwissPairs(
   mode: SwissRoundMode = "XIMP",
 ) {
   const { matchRows } = swissVpStructureFromRows(boardRows as never);
-  return assembleSwissPairsImpl(g, c, pairs, boardRows, matchRows, mode);
+  return assembleSwissPairsImpl(
+    g,
+    c,
+    "NORMAL_CLUB",
+    pairs,
+    boardRows,
+    matchRows,
+    mode,
+  );
 }
 
 const club: Club = { id: 1, name: "Test Club", clubNumber: "999" };

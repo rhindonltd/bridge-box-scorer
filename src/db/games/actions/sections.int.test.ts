@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
+import type { PairSeat } from "@/model/participants";
 
 let tmpDir: string;
 let gameId: string;
@@ -222,5 +223,278 @@ describe("section queries and actions", () => {
     await deleteSection(gameId, "B");
     const rows = await findSections(db);
     expect(rows.map((r) => r.section)).toEqual(["A"]);
+  });
+
+  // A tiny helper: seat a pair at `seat` and return nothing. Each pair uses a
+  // distinct player name pair so the unique(player1, player2) constraint holds.
+  async function seatPair(
+    db: Awaited<ReturnType<typeof setup>>["db"],
+    seat: PairSeat,
+    tag: string,
+  ) {
+    const { players } = await import("@/db/games/tables/players");
+    const { seatOccupancy } = await import(
+      "@/db/games/tables/seat-occupancy"
+    );
+    const p1 = db
+      .insert(players)
+      .values({ firstName: `${tag}1`, lastName: tag })
+      .returning()
+      .get();
+    const p2 = db
+      .insert(players)
+      .values({ firstName: `${tag}2`, lastName: tag })
+      .returning()
+      .get();
+    db.insert(seatOccupancy)
+      .values({
+        seat,
+        boards: null,
+        player1: p1.id,
+        player2: p2.id,
+        secretKey: `k-${seat}`,
+      })
+      .run();
+  }
+
+  describe("splitSection", () => {
+    it("splits a section, renumbering the moved tables' seated pairs", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      const { findSections } = await import(
+        "@/db/games/queries/find-sections"
+      );
+      const { findPairs } = await import("@/db/games/queries/find-pairs");
+      const { db } = await setup();
+
+      await createSection(gameId, { section: "A", tables: 6 });
+
+      // Seat pairs across tables 1..6 of A (NS on each; a couple of EW too).
+      await seatPair(db, "A1NS", "t1ns");
+      await seatPair(db, "A5NS", "t5ns");
+      await seatPair(db, "A5EW", "t5ew");
+      await seatPair(db, "A6NS", "t6ns");
+
+      // Move 2 tables (5 and 6) into a new section B; A keeps 1..4.
+      const moves = await splitSection(gameId, {
+        from: "A",
+        newSection: "B",
+        tablesToNewSection: 2,
+        newLabel: "Spill",
+        fromLabel: "Main",
+      });
+
+      const rows = await findSections(db);
+      expect(rows.map((r) => [r.section, r.tables, r.label])).toEqual([
+        ["A", 4, "Main"],
+        ["B", 2, "Spill"],
+      ]);
+
+      // A5* -> B1*, A6NS -> B2NS; A1NS untouched.
+      const seats = (await findPairs(db)).map((p) => p.initialSeat).sort();
+      expect(seats).toEqual(["A1NS", "B1EW", "B1NS", "B2NS"].sort());
+
+      // The returned moves describe exactly the renumbered (seated) seats, so
+      // the caller can notify each affected device. A1NS did not move.
+      expect([...moves].sort((a, b) => a.from.localeCompare(b.from))).toEqual([
+        { from: "A5EW", to: "B1EW" },
+        { from: "A5NS", to: "B1NS" },
+        { from: "A6NS", to: "B2NS" },
+      ]);
+    });
+
+    it("returns no moves when the moved tables are empty", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      const { db } = await setup();
+
+      await createSection(gameId, { section: "A", tables: 6 });
+      // Seat only in the KEPT range (tables 1..4); tables 5-6 move but are empty.
+      await seatPair(db, "A1NS", "t1ns");
+
+      const moves = await splitSection(gameId, {
+        from: "A",
+        newSection: "B",
+        tablesToNewSection: 2,
+      });
+
+      expect(moves).toEqual([]);
+    });
+
+    it("re-keys team names for the moved tables", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      const { teams } = await import("@/db/games/tables/teams");
+      const { db } = await setup();
+
+      await createSection(gameId, { section: "A", tables: 4 });
+      // Team at table 3 (id "A3") has a name; splitting after table 2 moves it
+      // to the new section as "B1".
+      db.insert(teams).values({ teamId: "A3", teamName: "Aces" }).run();
+      db.insert(teams).values({ teamId: "A1", teamName: "Stays" }).run();
+
+      await splitSection(gameId, {
+        from: "A",
+        newSection: "B",
+        tablesToNewSection: 2,
+      });
+
+      const rows = db.select().from(teams).all();
+      const byId = Object.fromEntries(rows.map((r) => [r.teamId, r.teamName]));
+      expect(byId).toEqual({ A1: "Stays", B1: "Aces" });
+    });
+
+    it("renumbers expected-late marks on moved tables (and leaves kept ones)", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      const { expectedLateSeats } = await import(
+        "@/db/games/tables/expected-late-seats"
+      );
+      const { db } = await setup();
+
+      await createSection(gameId, { section: "A", tables: 6 });
+      // A2EW stays (table 2 kept); A5NS moves (table 5 -> B1).
+      db.insert(expectedLateSeats).values({ seat: "A2EW" }).run();
+      db.insert(expectedLateSeats).values({ seat: "A5NS" }).run();
+
+      await splitSection(gameId, {
+        from: "A",
+        newSection: "B",
+        tablesToNewSection: 2,
+      });
+
+      const seats = db
+        .select({ seat: expectedLateSeats.seat })
+        .from(expectedLateSeats)
+        .all()
+        .map((r) => r.seat)
+        .sort();
+      // A2EW untouched; A5NS followed its table to B1NS.
+      expect(seats).toEqual(["A2EW", "B1NS"].sort());
+    });
+
+    it("clears the stored movement on both affected sections", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { setSectionMovement } = await import(
+        "@/db/games/actions/set-section-movement"
+      );
+      const { getSectionMovement } = await import(
+        "@/db/games/queries/get-section-movement"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      const { db } = await setup();
+
+      await createSection(gameId, { section: "A", tables: 6 });
+      await setSectionMovement(gameId, "A", {
+        source: "MITCHELL",
+        mitchell: { tables: 6, rounds: 6, boardsPerRound: 2 },
+      });
+
+      await splitSection(gameId, {
+        from: "A",
+        newSection: "B",
+        tablesToNewSection: 2,
+      });
+
+      expect(await getSectionMovement(db, "A")).toBeNull();
+      expect(await getSectionMovement(db, "B")).toBeNull();
+    });
+
+    it("rejects a section too small to split (fewer than 4 tables)", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      await setup();
+
+      await createSection(gameId, { section: "A", tables: 3 });
+
+      await expect(
+        splitSection(gameId, {
+          from: "A",
+          newSection: "B",
+          tablesToNewSection: 2,
+        }),
+      ).rejects.toThrow(/at least 4/);
+    });
+
+    it("rejects an out-of-range split point (each side keeps 2+ tables)", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      await setup();
+
+      // A 6-table section can move 2..4 tables; 1 and 5 would leave a side with
+      // fewer than 2 tables.
+      await createSection(gameId, { section: "A", tables: 6 });
+
+      await expect(
+        splitSection(gameId, {
+          from: "A",
+          newSection: "B",
+          tablesToNewSection: 1,
+        }),
+      ).rejects.toThrow(/at least 2 tables/);
+      await expect(
+        splitSection(gameId, {
+          from: "A",
+          newSection: "B",
+          tablesToNewSection: 5,
+        }),
+      ).rejects.toThrow(/at least 2 tables/);
+    });
+
+    it("rejects an unknown source or a taken new letter", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      await setup();
+
+      await createSection(gameId, { section: "A", tables: 4 });
+      await createSection(gameId, { section: "B", tables: 2 });
+
+      await expect(
+        splitSection(gameId, {
+          from: "Z",
+          newSection: "C",
+          tablesToNewSection: 2,
+        }),
+      ).rejects.toThrow(/does not exist/);
+      await expect(
+        splitSection(gameId, {
+          from: "A",
+          newSection: "B",
+          tablesToNewSection: 2,
+        }),
+      ).rejects.toThrow(/already exists/);
+    });
   });
 });

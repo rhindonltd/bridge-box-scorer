@@ -101,18 +101,33 @@ describe("resolveStandings — §2.4.7 LATE half-boards gate", () => {
     });
   });
 
-  it("defaults a LATE/WITHDRAWN with no recorded treatment to REMOVE", () => {
+  it("defaults a short LATE with no recorded treatment to INHERIT (not scored as absent)", () => {
+    // An unset treatment is the §2.4.7 handover default INHERIT: the pair takes
+    // the stand-in's actual results (which already carry on its own id), so it
+    // is neither excluded nor credited — it ranks on those real results. In
+    // practice only a handover defers its treatment; an ordinary withdrawal
+    // always has REMOVE/PENALISED set by the director.
     const rows: ParticipantStandingRow[] = [
       { seat: "A1NS", standing: "LATE", treatment: null, finePercent: null },
     ];
-    const boards = fourBoardEvent("A1NS", 1); // short → treated as a withdrawer
+    const boards = fourBoardEvent("A1NS", 1); // short, but INHERIT ⇒ not absent
 
     const { excludedFromRanking, withdrawals } = resolveStandings(rows, boards);
 
-    expect(excludedFromRanking.has("A1NS")).toBe(true); // default REMOVE
-    expect(withdrawals).toEqual([
-      { seat: "A1NS", treatment: "REMOVE", finePercent: 0 },
-    ]);
+    expect(excludedFromRanking.has("A1NS")).toBe(false);
+    expect(withdrawals).toHaveLength(0);
+  });
+
+  it("an explicit INHERIT short LATE is neither excluded nor credited", () => {
+    const rows: ParticipantStandingRow[] = [
+      { seat: "A1NS", standing: "LATE", treatment: "INHERIT", finePercent: null },
+    ];
+    const boards = fourBoardEvent("A1NS", 1);
+
+    const { excludedFromRanking, withdrawals } = resolveStandings(rows, boards);
+
+    expect(excludedFromRanking.has("A1NS")).toBe(false);
+    expect(withdrawals).toHaveLength(0);
   });
 
   it("rounds the half threshold up (odd board count)", () => {

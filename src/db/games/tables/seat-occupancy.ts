@@ -107,6 +107,10 @@ export const seatOccupancy = sqliteTable(
      * Null unless `standing = WITHDRAWN`, or a short `LATE` arrival (§2.4.7).
      *   - REMOVE     drop from the ranking entirely
      *   - PENALISED  AVE− plus a 0..40% fine on the unplayed boards
+     * These remain the ordinary §2.4.5/§2.4.6 WITHDRAWAL treatments; a §2.4.7
+     * handover/substitution does NOT use them (it has no artificial score — see
+     * `split` + the `standing` eligibility below). The column is plain TEXT (the
+     * enum is a TS-level constraint only).
      */
     withdrawalTreatment: text("withdrawal_treatment", {
       enum: ["REMOVE", "PENALISED"],
@@ -114,6 +118,58 @@ export const seatOccupancy = sqliteTable(
 
     /** §2.4.5 — the 0..40 fine percentage when PENALISED (null otherwise). */
     withdrawalFinePercent: integer("withdrawal_fine_percent"),
+
+    /**
+     * The §2.4.7 handover ARRIVAL ANCHOR flag (1 = yes). On a handover seat the
+     * arriving occupant — the one that took over the live device and plays the
+     * seat forward from the handover point — is the anchor; the occupant that
+     * played the EARLIER boards is not. 0 for an ordinary single occupancy.
+     *
+     * This is the DEVICE / forward-play identity, kept SEPARATE from `standing`:
+     * auth (which secret the live seat uses) follows the anchor, while
+     * eligibility (ranked or not) follows `standing`. Plain integer, 0 default.
+     */
+    isArrivalAnchor: integer("is_arrival_anchor").notNull().default(0),
+
+    /**
+     * §2.4.7 MERGED-LINE identity flag (1 = this occupant is the "main pair").
+     * Only meaningful on a ONE-LINE (`split = 0`) handover seat: it names which
+     * of the two occupants REPRESENTS the single merged line — its names + EBU
+     * numbers are the one ranked line and the one USEBIO `<PAIR>`, while the
+     * OTHER occupant rides along as the local "(Sub)" name. The director picks
+     * this ("Main pair") on the Substitutions screen.
+     *
+     * This is the SCORING/EXPORT identity ONLY — kept SEPARATE from
+     * {@link isArrivalAnchor} (the device identity): changing the main pair must
+     * never move which device/secret authenticates the live seat. 0 on both
+     * occupants means "not chosen" → the merged line defaults to the arrival
+     * anchor (the arriving pair). 0 for an ordinary single occupancy.
+     *
+     * A split seat ignores this (each occupant is already its own line with its
+     * own names/`<PAIR>`), so it is only ever set while `split = 0`.
+     */
+    isMainLine: integer("is_main_line").notNull().default(0),
+
+    /**
+     * §2.4.7 handover SPLIT flag (1 = yes). Per SEAT (both of a handover seat's
+     * occupancies carry the same value), the director's "Split by board?"
+     * choice on the Substitutions screen:
+     *   - 0 (default): the seat is ONE continuous contestant — both occupants'
+     *     boards score to a single ranked line (bare seat id). The two surfaces
+     *     differ on purpose: the LOCAL leaderboard STITCHES both pairs' names
+     *     for club transparency (e.g. "Smith/Jones & (Sub) Brown/Green"), while
+     *     the USEBIO export emits one `<PAIR>` carrying ONLY the MAIN pair's two
+     *     players + EBU numbers (a stitched name string would fail the EBU
+     *     registry parser and reject the upload). Which occupant is the main
+     *     pair is {@link isMainLine} (default: the arrival anchor).
+     *   - 1: the two occupants are scored as SEPARATE contestants — each ranked
+     *     on only the boards it played (its own line; the non-anchor gets a
+     *     `#<occId>` id), two leaderboard rows, two USEBIO `<PAIR>` blocks.
+     * Eligibility is independent and lives on `standing`: a WITHOUT_STANDING
+     * occupant's results still count for its opponents but it is stripped from
+     * the ranking / prize export (Category B/C). 0 for an ordinary occupancy.
+     */
+    split: integer("split").notNull().default(0),
   },
   (table) => ({
     // Lookups resolve by seat (then by board set in app code), so index it.

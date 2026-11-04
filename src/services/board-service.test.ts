@@ -18,12 +18,13 @@ vi.mock("@/db/games/tables/boards", () => ({
 }));
 
 vi.mock("@/db/games/queries/assignment-players", () => ({
-  buildAssignmentPlayerLookup: vi.fn(),
+  buildPerBoardPlayerLookup: vi.fn(),
 }));
 
 import { Db, getDb as getPairsDb } from "@/db/games";
-import { buildAssignmentPlayerLookup } from "@/db/games/queries/assignment-players";
+import { buildPerBoardPlayerLookup } from "@/db/games/queries/assignment-players";
 import type { Player } from "@/db/games/tables/players";
+import type { PairPlayers } from "@/db/games/queries/assignment-players";
 import { getBoardInstances } from "./board-service";
 
 /** A player row for the name-lookup map. */
@@ -33,6 +34,18 @@ const player = (id: number, firstName: string, lastName: string): Player => ({
   lastName,
   nationalId: null,
 });
+
+/**
+ * Mock the per-board player lookup from a plain board-id -> pair map (ignoring
+ * the board-number dimension, which only differs for a handover seat — covered
+ * by the integration tests). An unknown board id resolves to null, mirroring
+ * the real lookup.
+ */
+function mockLookupFromMap(byBoardId: Map<string, PairPlayers>): void {
+  vi.mocked(buildPerBoardPlayerLookup).mockResolvedValue(
+    (boardId: string) => byBoardId.get(boardId) ?? null,
+  );
+}
 
 // NOTE: buildTeamTravellerMatches now reads the first-class `matches` table, so
 // its coverage lives in board-service-teams.int.test.ts (a real materialised
@@ -75,7 +88,7 @@ describe("board-service", () => {
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
       // Keyed by the board id (anchor) carried on ns/ew.
-      vi.mocked(buildAssignmentPlayerLookup).mockResolvedValue(
+      mockLookupFromMap(
         new Map([
           ["1NS", { player1: player(1, "Alice", "Smith"), player2: player(2, "Bob", "Jones") }],
           ["2EW", { player1: player(3, "Carol", "Brown"), player2: player(4, "Dave", "Wilson") }],
@@ -121,7 +134,7 @@ describe("board-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(buildAssignmentPlayerLookup).mockResolvedValue(new Map());
+      mockLookupFromMap(new Map());
 
       const result = await getBoardInstances(mockDb, 5);
 
@@ -149,7 +162,7 @@ describe("board-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(buildAssignmentPlayerLookup).mockResolvedValue(new Map());
+      mockLookupFromMap(new Map());
 
       const result = await getBoardInstances(mockDb, 1);
 
@@ -181,7 +194,7 @@ describe("board-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(buildAssignmentPlayerLookup).mockResolvedValue(
+      mockLookupFromMap(
         new Map([
           ["1NS", { player1: player(1, "Alice", "Smith"), player2: player(2, "Bob", "Jones") }],
           ["2EW", { player1: player(3, "Carol", "Brown"), player2: player(4, "Dave", "Wilson") }],
@@ -237,7 +250,7 @@ describe("board-service", () => {
         }),
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
-      vi.mocked(buildAssignmentPlayerLookup).mockResolvedValue(new Map());
+      mockLookupFromMap(new Map());
 
       const result = await getBoardInstances(mockDb, 3);
 

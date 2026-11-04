@@ -72,22 +72,26 @@ export interface HandoverPlayer {
   nationalId?: string;
 }
 
-/** The arriving real pair and how to score its pre-arrival (unplayed) boards. */
+/**
+ * The arriving pair for a §2.4.7 handover — just their names/EBU numbers. A
+ * substitution has no artificial score, so no treatment/fine is entered here:
+ * the director sets split + eligibility afterwards on the "Substitutions"
+ * screen.
+ */
 export interface HandoverRequest {
   player1: HandoverPlayer;
   player2: HandoverPlayer;
-  treatment: "REMOVE" | "PENALISED";
-  /** 0..40 fine percentage; applies to PENALISED, ignored for REMOVE. */
-  finePercent?: number;
 }
 
 /**
- * EBU §2.3.3/§2.4.7 stand-in → real-pair handover. The stand-in sitting `seat`
- * is demoted to "without standing" over the boards it already played, and the
- * arriving real pair is seated over the remaining (unplayed) boards. The split
- * point is derived server-side from the entered results. Resolves to the fresh
- * device secret minted for the arriving pair (so the director can hand it to
- * their device); rejects with the server's message on failure.
+ * EBU §2.3.3/§2.4.7 mid-game substitution (handover). The pair sitting `seat`
+ * is pinned to the boards it already played, and the arriving pair is seated as
+ * the arrival anchor over the remaining (unplayed) boards; both stay ACTIVE and
+ * the seat is one line until the director chooses otherwise on the
+ * Substitutions screen. The split point is derived server-side from the entered
+ * results. Resolves to the fresh device secret minted for the arriving pair (so
+ * the director can hand it to their device); rejects with the server's message
+ * on failure.
  */
 export async function handoverSeat(
   gameId: string,
@@ -99,9 +103,5 @@ export async function handoverSeat(
     directorToken: getDirectorToken(gameId),
     seat,
     realPair: { player1: request.player1, player2: request.player2 },
-    treatment: request.treatment,
-    ...(request.treatment === "PENALISED" && request.finePercent != null
-      ? { finePercent: request.finePercent }
-      : {}),
   });
 }

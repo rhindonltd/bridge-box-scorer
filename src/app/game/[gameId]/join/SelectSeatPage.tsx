@@ -2,6 +2,7 @@
 
 import { useRequiredGame } from "@/context/GameContext";
 import { Pair, PairSeat, parseSeat, Seat } from "@/model/participants";
+import { isSeatInSections } from "@/model/section";
 import { useState } from "react";
 import EnterPlayerNames from "@/app/game/[gameId]/join/EnterPlayerNames";
 import { swrKeys } from "@/swr/swr-keys";
@@ -27,6 +28,12 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
 
   const [selectedSeat, setSelectedSeat] = useState<PairSeat | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // True from the moment a pair is submitted until the device navigates away.
+  // While submitting we hide the name sheet, so the live participants list —
+  // which the server updates to INCLUDE the just-seated pair — can't make the
+  // sheet briefly flag the player's own pair as "already seated" before the
+  // play screen loads. Reset on failure so the sheet returns with the error.
+  const [submitting, setSubmitting] = useState(false);
 
   const key = swrKeys.pairs(gameId);
 
@@ -58,6 +65,24 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
     [gameId],
   );
 
+  // The section layout is live (a director can split/resize sections while a
+  // player is mid-pick). If the seat chosen in the open name sheet is no longer
+  // a real table in the current layout — e.g. a split renumbered it away — we
+  // must not let the player submit a seat the server will now reject. Derive
+  // that invalidity during render (rather than mutating state in an effect):
+  // when the selected seat is no longer valid we hide the sheet and show a
+  // "pick again" notice, and the next pick replaces the stale selection. Only
+  // applies once sections are known, so the brief pre-load (empty list) never
+  // hides a valid selection.
+  const selectionInvalidated =
+    selectedSeat !== null &&
+    sections.length > 0 &&
+    !isSeatInSections(selectedSeat, sections);
+
+  // The sheet is only "really" open for a seat that still exists AND while we
+  // are not mid-submit (see `submitting`).
+  const activeSeat = selectionInvalidated || submitting ? null : selectedSeat;
+
   const handleSeatSelected = (seat: PairSeat) => {
     setSubmitError(null);
     setSelectedSeat(seat);
@@ -70,30 +95,40 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   const isTeamsEvent = game.gameType === "TEAMS";
   const isTeamsNsSeat =
     isTeamsEvent &&
-    selectedSeat !== null &&
-    parseSeat(selectedSeat).direction === "NS";
+    activeSeat !== null &&
+    parseSeat(activeSeat).direction === "NS";
 
   async function handlePairSubmitted(
     player1: NewPlayer,
     player2: NewPlayer,
     teamName?: string,
   ) {
+    // The sheet only renders for a still-valid `activeSeat`, so this is always
+    // a real seat; guard defensively regardless. Capture the seat and the
+    // teams flag up front, since flipping `submitting` below clears
+    // `activeSeat` (the sheet closes) for the rest of this async call.
+    if (!activeSeat) return;
+    const seat = activeSeat;
+    const forwardTeamName = isTeamsNsSeat ? teamName : undefined;
+
     setSubmitError(null);
+    setSubmitting(true);
     try {
       await createParticipant(
         gameId,
         {
           type: "PAIR",
-          initialSeat: selectedSeat!,
+          initialSeat: seat,
           player1,
           player2,
         },
-        isTeamsNsSeat ? teamName : undefined,
+        forwardTeamName,
       );
-      onSeatSelected(selectedSeat!);
+      onSeatSelected(seat);
     } catch (err) {
-      // e.g. an EBU number already seated elsewhere in the event. Keep the
-      // sheet open so the entry can be corrected.
+      // e.g. an EBU number already seated elsewhere in the event. Reopen the
+      // sheet (with the error) so the entry can be corrected.
+      setSubmitting(false);
       setSubmitError(
         err instanceof Error ? err.message : "Could not seat this pair.",
       );
@@ -110,6 +145,19 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
           <ClaimSeatTransfer />
         </div>
 
+        {/* A live layout change (e.g. a section split) invalidated the seat the
+            player was mid-way through claiming. The sheet is hidden (its seat
+            no longer exists); prompt them to pick again. */}
+        {selectionInvalidated && (
+          <div
+            role="alert"
+            className="shrink-0 border-b border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900"
+          >
+            That table was just reorganised by the director. Please pick a seat
+            again.
+          </div>
+        )}
+
         {/* Main table selection */}
         <SelectTable
           onSeatSelected={handleSeatSelected}
@@ -118,7 +166,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
         />
 
         {/* Backdrop */}
-        {selectedSeat && (
+        {activeSeat && (
           <div
             className="fixed inset-0 bg-black/30"
             onClick={() => setSelectedSeat(null)}
@@ -134,10 +182,10 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
                     rounded-t-2xl
                     transform
                     transition-transform duration-300 ease-out
-                    ${selectedSeat ? "translate-y-0" : "translate-y-full"}
+                    ${activeSeat ? "translate-y-0" : "translate-y-full"}
                   `}
         >
-          {selectedSeat && (
+          {activeSeat && (
             <>
               {submitError && (
                 <div role="alert" className="mx-auto mt-4 w-full max-w-xl px-4">
@@ -147,7 +195,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
                 </div>
               )}
               <EnterPlayerNames
-                seat={selectedSeat}
+                seat={activeSeat}
                 showTeamName={isTeamsNsSeat}
                 seatedNationalIds={seatedNationalIds}
                 onSubmitPair={handlePairSubmitted}

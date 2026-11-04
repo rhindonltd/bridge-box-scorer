@@ -13,6 +13,12 @@ export function pairNameLines(
   const pair = participants.find((p) => p.id === pairId);
   if (!pair) return [pairId];
 
+  // §2.4.7 one-line handover DUAL-NAMING: when the seat is a merged line the
+  // participant carries both pairs' names stitched for the local leaderboard.
+  if (pair.displayNameLines && pair.displayNameLines.length > 0) {
+    return pair.displayNameLines;
+  }
+
   return [
     `${pair.player1.firstName} ${pair.player1.lastName}`.trim(),
     `${pair.player2.firstName} ${pair.player2.lastName}`.trim(),

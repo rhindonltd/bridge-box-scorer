@@ -41,6 +41,7 @@ describe("RoundInfoPage", () => {
       W: { id: "w" },
     } as any,
     onEnterRound: vi.fn(),
+    onContinuePastLateOpponent: vi.fn(),
   };
 
   it("renders table and round in the header", () => {
@@ -65,6 +66,27 @@ describe("RoundInfoPage", () => {
     render(<RoundInfoPage {...baseProps} onEnterRound={fn} />);
     fireEvent.click(screen.getByRole("button", { name: "Enter Round" }));
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("replaces Enter Round with a Move on button when the opponent is expected late", () => {
+    // With no opponent there is nothing to enter, so instead of Enter Round the
+    // pair gets a way to move past the round (they may be missing this round).
+    const onContinue = vi.fn();
+    render(
+      <RoundInfoPage
+        {...baseProps}
+        opponentExpectedLate
+        onContinuePastLateOpponent={onContinue}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Enter Round" }),
+    ).not.toBeInTheDocument();
+
+    const moveOn = screen.getByRole("button", { name: "Move on to next round" });
+    fireEvent.click(moveOn);
+    expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
   it("applies layout classes", () => {

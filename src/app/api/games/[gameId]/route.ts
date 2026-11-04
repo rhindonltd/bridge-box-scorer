@@ -6,9 +6,7 @@ import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { updateCombinedRanking } from "@/db/game-index/actions/update-combined-ranking";
-import { updateTournamentLevel } from "@/db/game-index/actions/update-tournament-level";
 import { updateEventDetails } from "@/db/game-index/actions/update-event-details";
-import { TournamentLevels } from "@/db/games/types/tournament-level";
 import { GameTypes } from "@/db/games/types/game-type";
 import { EventFormats } from "@/db/games/types/event-format";
 import { ScoringTypes } from "@/db/games/types/scoring-type";
@@ -37,7 +35,6 @@ const EVENT_DETAIL_KEYS = [
 const bodySchema = z
   .object({
     combinedRanking: z.boolean().optional(),
-    tournamentLevel: z.enum(TournamentLevels).optional(),
     // Event details — editable from the "Edit Event Details" setup screen.
     eventName: z.string().min(1).optional(),
     director: z.string().nullish(),
@@ -56,9 +53,6 @@ const bodySchema = z
  *  - `combinedRanking`: whether a multi-section event also shows a combined
  *    overall ranking. Changing it pushes a fresh leaderboard snapshot so any
  *    open display gains/drops the combined view live.
- *  - `tournamentLevel`: the EBU tournament level, letting a director correct a
- *    level set wrongly at creation (it only affects the USEBIO export, so it
- *    needs no leaderboard refresh).
  *  - Event details (`eventName`, `director`, `gameType`, `eventFormat`,
  *    `scoringType`, `leadCardRequired`, `handEntryEnabled`): the create-form
  *    options, editable from the setup screen's back arrow. A structural change
@@ -73,9 +67,6 @@ export const PATCH = withDirectorRoute(
     try {
       if (body.combinedRanking !== undefined) {
         await updateCombinedRanking(gameId, body.combinedRanking);
-      }
-      if (body.tournamentLevel !== undefined) {
-        await updateTournamentLevel(gameId, body.tournamentLevel);
       }
 
       const hasEventDetails = EVENT_DETAIL_KEYS.some(
@@ -96,8 +87,7 @@ export const PATCH = withDirectorRoute(
       await broadcastGameUpdated(gameId);
 
       // The combined-ranking change and any event-details change (scoring /
-      // type can change how the field ranks) affect live standings; a
-      // tournament-level-only change is export-only, so skip the recompute.
+      // type can change how the field ranks) affect live standings.
       if (body.combinedRanking !== undefined || hasEventDetails) {
         const io = getIO();
         if (io) await broadcastLeaderboardChanged(io, gameId);

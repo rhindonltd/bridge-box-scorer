@@ -2,6 +2,7 @@ import { Board } from "@/db/games/tables/boards";
 import { Pair } from "@/model/participants";
 import { BridgeGame } from "@/db/game-index/schema";
 import { Club } from "@/db/system/schema";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import { rank } from "@/scoring/overall/rank";
@@ -44,6 +45,7 @@ import {
 export function assembleSwissPairs(
   game: BridgeGame,
   club: Club,
+  tournamentLevel: TournamentLevel,
   pairs: Pair[],
   boardRows: Board[],
   matchRows: SwissVpMatchRow[],
@@ -70,7 +72,7 @@ export function assembleSwissPairs(
   return {
     kind: "SWISS_PAIRS",
     club: usebioClub,
-    tournamentLevel: game.tournamentLevel,
+    tournamentLevel,
     eventName: game.eventName,
     eventDate: game.eventDate,
     sectionName: game.sectionName || "A",

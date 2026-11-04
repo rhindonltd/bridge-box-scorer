@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { Db } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
-import { buildAssignmentPlayerLookup } from "@/db/games/queries/assignment-players";
+import { buildPerBoardPlayerLookup } from "@/db/games/queries/assignment-players";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { boardResult, type TeamMatchRow } from "@/scoring/swiss/team-match";
 import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
@@ -30,14 +30,17 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
       .where(eq(pairsBoards.boardNumber, boardNumber))
   ).filter((b) => !NON_TRAVELLER_STATUSES.has(b.status ?? ""));
 
-  // Keyed by the BOARD id (anchor), matching `b.ns`/`b.ew` — which is the seat
-  // for direction-qualified movements and a bare id otherwise.
-  const playersByBoardId = await buildAssignmentPlayerLookup(db);
-  const pairNameMap = new Map<string, string>();
-  for (const [boardId, pair] of playersByBoardId) {
-    const names = `${pair.player1.firstName} ${pair.player1.lastName} & ${pair.player2.firstName} ${pair.player2.lastName}`;
-    pairNameMap.set(boardId, names);
-  }
+  // Resolve names PER BOARD (keyed by the board id on `b.ns`/`b.ew`, matching
+  // the seat/anchor id), so a §2.4.7 handover seat shows the stand-in's names on
+  // the boards it played and the real pair's names on theirs — not one pair for
+  // the whole seat. For every ordinary (single-occupancy) seat this is the same
+  // pair on every board.
+  const resolvePair = await buildPerBoardPlayerLookup(db);
+  const nameOf = (boardId: string, boardNumber: number): string | null => {
+    const pair = resolvePair(boardId, boardNumber);
+    if (!pair) return null;
+    return `${pair.player1.firstName} ${pair.player1.lastName} & ${pair.player2.firstName} ${pair.player2.lastName}`;
+  };
 
   return records.map((b) => ({
     roundNumber: b.roundNumber,
@@ -47,8 +50,8 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
       type: "PAIRS" as const,
       ns: b.ns,
       ew: b.ew,
-      nsNames: pairNameMap.get(b.ns) ?? null,
-      ewNames: pairNameMap.get(b.ew) ?? null,
+      nsNames: nameOf(b.ns, b.boardNumber),
+      ewNames: nameOf(b.ew, b.boardNumber),
     },
     currentResult: b.directorOverrideResult ?? b.confirmedResult ?? null,
     status: b.status ?? null,

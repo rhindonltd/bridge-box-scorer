@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { HeaderMenu, type HeaderMenuItem } from "@/components/layout/HeaderMenu";
 import { useAssignment } from "@/context/AssignmentContext";
@@ -37,6 +38,7 @@ interface Props {
 export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   const { assignment, pair } = useAssignment();
   const isDirector = useIsDirector(gameId);
+  const router = useRouter();
 
   const [changeDeviceOpen, setChangeDeviceOpen] = useState(false);
   const [pairDetailsOpen, setPairDetailsOpen] = useState(false);
@@ -50,6 +52,15 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   const items: HeaderMenuItem[] = [
     // Screen-specific view options (e.g. Results / Deal) come first.
     ...extraItems,
+    // "Handover" is always available mid-game: an arriving pair can take over
+    // this seat at any time (a latecomer replacing a stand-in, a substitute
+    // replacing a withdrawing pair, …). Whether either pair is "without
+    // standing" is a director decision made afterwards on the Substitutions
+    // screen — not a precondition for the handover itself.
+    {
+      label: "Handover",
+      onSelect: () => router.push(`/game/${gameId}/play/${seat}/handover`),
+    },
     { label: "Change device", onSelect: () => setChangeDeviceOpen(true) },
     { label: "Pair details", onSelect: () => setPairDetailsOpen(true) },
     // A director's play→manage switch (folded / small-screen form). The visible

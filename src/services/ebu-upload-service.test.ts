@@ -82,20 +82,20 @@ describe("uploadResultsToEbu", () => {
 
   it("blocks when club info is not configured", async () => {
     vi.mocked(findClub).mockResolvedValue(null);
-    const result = await uploadResultsToEbu(db, makeGame());
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
     expect(result).toEqual({ status: "blocked", reason: "club" });
     expect(parseUsebio).not.toHaveBeenCalled();
   });
 
   it("blocks when EBU credentials are not configured", async () => {
     vi.mocked(getEbuCredentials).mockResolvedValue(null);
-    const result = await uploadResultsToEbu(db, makeGame());
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
     expect(result).toEqual({ status: "blocked", reason: "credentials" });
     expect(parseUsebio).not.toHaveBeenCalled();
   });
 
   it("runs parse -> check-players -> submit and returns the EBU outcome", async () => {
-    const result = await uploadResultsToEbu(db, makeGame());
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
 
     expect(parseUsebio).toHaveBeenCalledOnce();
     // The date check uses the YYYYMMDD form of the event date.
@@ -113,7 +113,7 @@ describe("uploadResultsToEbu", () => {
   });
 
   it("writes the check key back onto the session JSON before submitting", async () => {
-    await uploadResultsToEbu(db, makeGame());
+    await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
     const submitted = vi.mocked(submitSession).mock.calls[0][1] as {
       player: { check?: string };
     };
@@ -125,7 +125,7 @@ describe("uploadResultsToEbu", () => {
       sims: [],
       duplicates: 2,
     });
-    const result = await uploadResultsToEbu(db, makeGame());
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
     expect(result.status).toBe("sent");
     if (result.status === "sent") {
       expect(result.advisories.join(" ")).toMatch(/already has 2/);
@@ -135,7 +135,7 @@ describe("uploadResultsToEbu", () => {
 
   it("does not fail the upload when the advisory date check throws", async () => {
     vi.mocked(checkSessionDate).mockRejectedValue(new Error("offline"));
-    const result = await uploadResultsToEbu(db, makeGame());
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
     expect(result.status).toBe("sent");
     expect(submitSession).toHaveBeenCalledOnce();
   });
@@ -146,7 +146,7 @@ describe("uploadResultsToEbu", () => {
       failure: "Rejected",
       warnings: [],
     });
-    const result = await uploadResultsToEbu(db, makeGame());
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
     expect(result).toMatchObject({
       status: "sent",
       submission: { ok: false, failure: "Rejected" },

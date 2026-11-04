@@ -139,7 +139,7 @@ describe("generateUsebio", () => {
       },
     ]);
 
-    await generateUsebio(db, makeGame(), club);
+    await generateUsebio(db, makeGame(), club, "NORMAL_CLUB");
 
     const data = vi.mocked(generateUsebioXml).mock
       .calls[0][0] as UsebioPairsData;
@@ -174,7 +174,7 @@ describe("generateUsebio", () => {
     vi.mocked(findPairs).mockResolvedValue([]);
     const db = mockDb([]);
 
-    await generateUsebio(db, makeGame({ sectionName: "" }), club);
+    await generateUsebio(db, makeGame({ sectionName: "" }), club, "NORMAL_CLUB");
 
     const data = vi.mocked(generateUsebioXml).mock
       .calls[0][0] as UsebioPairsData;
@@ -231,7 +231,7 @@ describe("generateUsebio", () => {
       },
     ]);
 
-    await generateUsebio(db, makeGame(), club);
+    await generateUsebio(db, makeGame(), club, "NORMAL_CLUB");
 
     const data = vi.mocked(generateUsebioXml).mock
       .calls[0][0] as UsebioPairsData;

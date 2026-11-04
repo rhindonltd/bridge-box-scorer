@@ -2,10 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockUpdateEventDetails = vi.fn().mockResolvedValue(undefined);
-const mockUpdateTournamentLevel = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/game-service", () => ({
   updateEventDetails: (...a: unknown[]) => mockUpdateEventDetails(...a),
-  updateTournamentLevel: (...a: unknown[]) => mockUpdateTournamentLevel(...a),
 }));
 
 const mockMutateGame = vi.fn();

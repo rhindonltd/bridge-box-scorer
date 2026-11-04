@@ -12,12 +12,11 @@ export interface DirectorMenuPageProps {
   onEnterDealsClick: () => void;
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
-  onTournamentLevelClick: () => void;
   onReviewMismatchesClick: () => void;
-  onDownloadUsebioClick: () => void;
-  onDownloadPbnClick: () => void;
-  onUploadBridgewebsClick: () => void;
-  onUploadEbuClick: () => void;
+  /** Open the "Substitutions" screen (per-seat split + each pair's eligibility). */
+  onSubstitutionsClick: () => void;
+  /** Open the "Export & Publish" submenu (USEBIO / PBN / BridgeWebs / EBU). */
+  onExportClick: () => void;
   onDeleteGameClick: () => void;
   /** Show "Set Up Game" — only before the game has started. */
   showSetUpGame: boolean;
@@ -38,39 +37,17 @@ export interface DirectorMenuPageProps {
    * retroactive score adjustment can create an EBU §3.5 mismatch to review.
    */
   showReviewMismatches: boolean;
-  /** Show "Download USEBIO" — only once the game has started. */
-  showDownloadUsebio: boolean;
   /**
-   * Render "Download USEBIO" as disabled. Used while the completion signal is
-   * still loading, so the button reserves its space but cannot be clicked until
-   * all results are in.
+   * Show "Substitutions" — only once at least one §2.4.7 handover has occurred,
+   * so the director can set each substituted seat's split + eligibility.
    */
-  downloadUsebioDisabled: boolean;
+  showSubstitutions: boolean;
   /**
-   * Show "Download PBN" — only once the game has started. PBN exports the
-   * entered deals (not results), so it is not gated on results being complete.
+   * Show "Export & Publish" — only once the game has started. Opens the submenu
+   * holding the results-export / publishing actions; the per-action gating
+   * (results complete, BridgeWebs / EBU configured) lives in that submenu.
    */
-  showDownloadPbn: boolean;
-  /**
-   * Show "Upload to BridgeWebs" — only once the game has started AND BridgeWebs
-   * is configured in Settings. Hidden entirely when unconfigured.
-   */
-  showUploadBridgewebs: boolean;
-  /**
-   * Render "Upload to BridgeWebs" as disabled — used until every result is in
-   * (results are what get uploaded) and while the completion signal loads.
-   */
-  uploadBridgewebsDisabled: boolean;
-  /**
-   * Show "Submit to EBU" — only once the game has started AND EBU is configured
-   * in Settings. Hidden entirely when unconfigured.
-   */
-  showUploadEbu: boolean;
-  /**
-   * Render "Submit to EBU" as disabled — used until every result is in (results
-   * are what get submitted) and while the completion signal loads.
-   */
-  uploadEbuDisabled: boolean;
+  showExport: boolean;
 }
 
 export function ManageGameMenuPage({
@@ -81,12 +58,9 @@ export function ManageGameMenuPage({
   onEnterDealsClick,
   onMovementClick,
   onShareDirectorAccessClick,
-  onTournamentLevelClick,
   onReviewMismatchesClick,
-  onDownloadUsebioClick,
-  onDownloadPbnClick,
-  onUploadBridgewebsClick,
-  onUploadEbuClick,
+  onSubstitutionsClick,
+  onExportClick,
   onDeleteGameClick,
   showSetUpGame,
   showManageTables,
@@ -94,13 +68,8 @@ export function ManageGameMenuPage({
   showEnterDeals,
   showMovement,
   showReviewMismatches,
-  showDownloadUsebio,
-  downloadUsebioDisabled,
-  showDownloadPbn,
-  showUploadBridgewebs,
-  uploadBridgewebsDisabled,
-  showUploadEbu,
-  uploadEbuDisabled,
+  showSubstitutions,
+  showExport,
 }: DirectorMenuPageProps) {
   const standardButtonClass =
     "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed pl-4";
@@ -155,13 +124,6 @@ export function ManageGameMenuPage({
           <span className="flex items-center gap-3">Share Director Access</span>
         </button>
 
-        <button
-          onClick={onTournamentLevelClick}
-          className={standardButtonClass}
-        >
-          <span className="flex items-center gap-3">Tournament Level</span>
-        </button>
-
         {showReviewMismatches && (
           <button
             onClick={onReviewMismatchesClick}
@@ -171,39 +133,18 @@ export function ManageGameMenuPage({
           </button>
         )}
 
-        {showDownloadUsebio && (
+        {showSubstitutions && (
           <button
-            onClick={onDownloadUsebioClick}
-            disabled={downloadUsebioDisabled}
+            onClick={onSubstitutionsClick}
             className={standardButtonClass}
           >
-            <span className="flex items-center gap-3">Download USEBIO</span>
+            <span className="flex items-center gap-3">Substitutions</span>
           </button>
         )}
 
-        {showDownloadPbn && (
-          <button onClick={onDownloadPbnClick} className={standardButtonClass}>
-            <span className="flex items-center gap-3">Download PBN</span>
-          </button>
-        )}
-
-        {showUploadBridgewebs && (
-          <button
-            onClick={onUploadBridgewebsClick}
-            disabled={uploadBridgewebsDisabled}
-            className={standardButtonClass}
-          >
-            <span className="flex items-center gap-3">Upload to BridgeWebs</span>
-          </button>
-        )}
-
-        {showUploadEbu && (
-          <button
-            onClick={onUploadEbuClick}
-            disabled={uploadEbuDisabled}
-            className={standardButtonClass}
-          >
-            <span className="flex items-center gap-3">Submit to EBU</span>
+        {showExport && (
+          <button onClick={onExportClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Export &amp; Publish</span>
           </button>
         )}
 

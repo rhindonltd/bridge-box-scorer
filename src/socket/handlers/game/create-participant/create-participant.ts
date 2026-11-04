@@ -7,8 +7,10 @@ import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-playe
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { findSeatedNationalIds } from "@/db/games/queries/find-seated-national-ids";
+import { findSections } from "@/db/games/queries/find-sections";
 
 import { NewParticipant } from "@/model/participants";
+import { isSeatInSections } from "@/model/section";
 import { getDb } from "@/db/games";
 import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
 
@@ -37,6 +39,20 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
 
         if (!db) {
           throw new Error("Game db does not exist");
+        }
+
+        // The seat must name a real table in the CURRENT layout. A device can
+        // hold a seat that was valid when it was picked but has since been
+        // invalidated — most notably a section split that renumbered/shrank the
+        // section out from under the chosen table. Seating there would create a
+        // ghost pair outside the layout, so reject it and let the client prompt
+        // for a fresh pick. This is the authoritative guard; the client also
+        // reconciles the open sheet for a smoother UX.
+        const sections = await findSections(db);
+        if (!isSeatInSections(newParticipant.initialSeat, sections)) {
+          throw new HandlerError(
+            "That table is no longer available — the sections were just reorganised. Please pick a seat again.",
+          );
         }
 
         // A person (identified by EBU/national id) can only occupy one seat.

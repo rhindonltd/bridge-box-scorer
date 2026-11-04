@@ -18,11 +18,22 @@ export const SocketEvents = {
   // the seat. Backed by the seatTransferCodes table (system db).
   CREATE_SEAT_TRANSFER: "game:createSeatTransfer",
   CLAIM_SEAT_TRANSFER: "game:claimSeatTransfer",
+  // Unauthenticated (the code is the credential): validate a transfer code
+  // WITHOUT consuming it, returning whether its seat is a §2.4.7 handover (held
+  // by a stand-in). The claim UI calls this first so it knows whether to
+  // collect the arriving pair's names before the real (consuming) claim.
+  INSPECT_SEAT_TRANSFER: "game:inspectSeatTransfer",
   // Server-initiated: emitted to a seat's room when another device claims its
   // transfer code, so the device that previously held the seat learns it has
   // been signed out and can leave the play screen. The claiming (new) device
   // has not joined the seat room, so it does not receive this.
   SEAT_TAKEN_OVER: "game:seatTakenOver",
+  // Server-initiated: a section split renumbered one or more seats (e.g. the
+  // pair at A5NS is now B1NS). Broadcast to the whole game room carrying every
+  // old→new seat move, because the affected player devices have NOT joined any
+  // seat room; each device checks whether its own seat moved and, if so, adopts
+  // the new seat (its auth secret is unchanged). Pre-start only.
+  SEAT_RENUMBERED: "game:seatRenumbered",
   // NOTE: participant eviction is an HTTP route
   // (DELETE /api/games/[gameId]/participants/[seat]), not a socket event; it
   // broadcasts PARTICIPANTS from that route.
@@ -34,12 +45,22 @@ export const SocketEvents = {
   // (§2.4.7), so the game can start short with that seat unfilled. Broadcasts
   // PARTICIPANTS + a leaderboard snapshot (opponents' indemnity changes).
   SET_SEAT_EXPECTED_LATE: "game:setSeatExpectedLate",
-  // Client-initiated (director): EBU §2.3.3/§2.4.7 stand-in → real-pair
-  // handover. The stand-in sitting the seat is demoted to "without standing"
-  // over the boards it already played, and the arriving real pair is seated as
-  // a LATE arrival over the remaining (unplayed) boards. A scored event, so it
-  // broadcasts PARTICIPANTS + a fresh leaderboard snapshot.
+  // Client-initiated (director): EBU §2.3.3/§2.4.7 mid-game substitution
+  // (handover). The pair sitting the seat is pinned to the boards it already
+  // played, and the arriving pair is seated as the arrival anchor over the
+  // remaining (unplayed) boards. Both stay ACTIVE and the seat is one line by
+  // default; the director sets split/eligibility later on the Substitutions
+  // screen. A scored event, so it broadcasts PARTICIPANTS + a fresh leaderboard
+  // snapshot.
   HANDOVER_SEAT: "game:handoverSeat",
+  // Client-initiated (PLAYER-authed): the SAME-DEVICE variant of the §2.4.7
+  // handover. The arriving pair takes over the earlier pair's own device: the
+  // device proves it owns the seat with its player token, enters the arriving
+  // pair's names, and the server runs the same handover engine but returns the
+  // newly-minted secret so THIS device keeps playing as the arriving pair. No
+  // options are entered here (deferred to the director's "Substitutions"
+  // screen). Broadcasts PARTICIPANTS + a fresh leaderboard snapshot.
+  HANDOVER_SAME_DEVICE: "game:handoverSameDevice",
   SELECT_MOVEMENT: "game:selectMovement",
   // NOTE: starting a game is an HTTP route (POST /api/games/[gameId]/start),
   // not a socket event; it promotes the timer and broadcasts GAME_UPDATED from

@@ -1,0 +1,1 @@
+ALTER TABLE `seat_occupancy` ADD `split` integer DEFAULT 0 NOT NULL;

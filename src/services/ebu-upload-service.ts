@@ -2,6 +2,7 @@ import "server-only";
 
 import { BridgeGame } from "@/db/game-index/schema";
 import { Db } from "@/db/games";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
 import { findClub } from "@/db/system/queries/find-club";
 import { getEbuCredentials } from "@/db/system/queries/ebu-credentials";
 import { generateUsebio } from "@/services/usebio-service";
@@ -72,6 +73,7 @@ function toEbuDate(eventDate: string): string | null {
 export async function uploadResultsToEbu(
   db: Db,
   game: BridgeGame,
+  tournamentLevel: TournamentLevel,
 ): Promise<EbuUploadResult> {
   const club = await findClub();
   if (!club) {
@@ -88,7 +90,7 @@ export async function uploadResultsToEbu(
     password: credentials.password,
   };
 
-  const usebioXml = await generateUsebio(db, game, club);
+  const usebioXml = await generateUsebio(db, game, club, tournamentLevel);
   const filename = usebioFilename(game);
 
   // Step 2: parse. The parser returns the session JSON the rest of the flow

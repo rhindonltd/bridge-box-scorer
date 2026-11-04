@@ -68,6 +68,12 @@ describe("swrKeys", () => {
     expect(swrKeys.resultsSummary("g1")).toBe("/api/games/g1/results-summary");
   });
 
+  it("outstandingBoards returns correct API path", () => {
+    expect(swrKeys.outstandingBoards("g1")).toBe(
+      "/api/games/g1/outstanding-boards",
+    );
+  });
+
   it("bridgewebs returns static path", () => {
     expect(swrKeys.bridgewebs()).toBe("/api/system/bridgewebs");
   });

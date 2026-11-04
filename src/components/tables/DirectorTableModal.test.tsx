@@ -119,6 +119,25 @@ describe("DirectorTableModal", () => {
     expect(screen.queryByText("Stationary")).not.toBeInTheDocument();
   });
 
+  it("hides the stationary toggle on a Swiss table once the game has started", () => {
+    // Marking a pair stationary rewrites the movement spec, so it is a pre-start
+    // action only — even for a Swiss table it must not appear after start.
+    render(
+      <DirectorTableModal
+        table={fullTable()}
+        isSwiss
+        onEvict={vi.fn()}
+        onToggleStationary={vi.fn()}
+        started
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("Stationary")).not.toBeInTheDocument();
+  });
+
   it("toggles stationary for the NS and EW pairs on a Swiss table", () => {
     const onToggleStationary = vi.fn();
     render(
@@ -135,10 +154,9 @@ describe("DirectorTableModal", () => {
       />,
     );
 
-    // One "Stationary" toggle group per occupied pair (each row also has a
-    // separate "Without standing" toggle, so scope to the Stationary groups).
-    // Clicking the first group's "Yes" fires the NS toggle (ns=true), the
-    // second the EW toggle (ns=false).
+    // One "Stationary" toggle group per occupied pair. Clicking the first
+    // group's "Yes" fires the NS toggle (ns=true), the second the EW toggle
+    // (ns=false).
     const stationaryGroups = screen.getAllByRole("group", {
       name: "Stationary",
     });
@@ -194,43 +212,40 @@ describe("DirectorTableModal", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps the two pair rows' toggles independent when one seat is empty", () => {
+  it("keeps the two pair rows' controls independent when one seat is empty", () => {
     // Regression for the keyless-PairRow bug: with N/S seated and E/W empty,
-    // the N/S "Without standing" toggle and the E/W "Expected late" toggle must
-    // act only on their own pair — toggling one must not disturb the other.
-    const onChangeStanding = vi.fn();
+    // the N/S row's "Evict pair" and the E/W row's "Expected late" toggle must
+    // act only on their own pair — using one must not disturb the other.
+    const onEvict = vi.fn();
     const onToggleExpectedLate = vi.fn();
 
     render(
       <DirectorTableModal
         table={halfEmptyTable()}
         isSwiss={false}
-        onEvict={vi.fn()}
+        onEvict={onEvict}
         onToggleStationary={vi.fn()}
         started={false}
-        onChangeStanding={onChangeStanding}
+        onChangeStanding={vi.fn()}
         onToggleExpectedLate={onToggleExpectedLate}
         onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
 
-    // N/S row: "Without standing" -> acts on A2NS only.
-    const withoutStanding = screen.getByRole("group", {
-      name: "Without standing",
-    });
-    fireEvent.click(within(withoutStanding).getByRole("button", { name: "Yes" }));
-    expect(onChangeStanding).toHaveBeenCalledWith("A2NS", {
-      standing: "WITHOUT_STANDING",
-    });
+    // N/S row (seated): "Evict pair" -> acts on A2NS only.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Evict North / South pair" }),
+    );
+    expect(onEvict).toHaveBeenCalledWith("A2NS");
     expect(onToggleExpectedLate).not.toHaveBeenCalled();
 
-    // E/W row: "Expected late" -> acts on A2EW only.
+    // E/W row (empty): "Expected late" -> acts on A2EW only.
     const expectedLate = screen.getByRole("group", { name: "Expected late" });
     fireEvent.click(within(expectedLate).getByRole("button", { name: "Yes" }));
     expect(onToggleExpectedLate).toHaveBeenCalledWith("A2EW", true);
-    // The standing handler was not called a second time by the other row.
-    expect(onChangeStanding).toHaveBeenCalledTimes(1);
+    // The evict handler was not called a second time by the other row.
+    expect(onEvict).toHaveBeenCalledTimes(1);
   });
 
   it("renders a placeholder dash for a missing player name", () => {
@@ -312,7 +327,7 @@ describe("DirectorTableModal", () => {
     ).toBeInTheDocument();
   });
 
-  it("emits a handover request with the arriving pair's names and treatment", () => {
+  it("emits a handover request with the arriving pair's names", () => {
     const onHandover = vi.fn();
     render(
       <DirectorTableModal
@@ -350,12 +365,41 @@ describe("DirectorTableModal", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
 
+    // The handover captures only the arriving pair's names — no scoring
+    // treatment (split / eligibility are set later on the Substitutions screen).
     expect(onHandover).toHaveBeenCalledWith("A1NS", {
       player1: { firstName: "Ann", lastName: "Arrival" },
       player2: { firstName: "Ben", lastName: "Berry" },
-      treatment: "PENALISED",
-      finePercent: 0,
     });
+  });
+
+  it("does not offer a scoring-treatment choice on the handover form", () => {
+    render(
+      <DirectorTableModal
+        table={fullTable()}
+        isSwiss={false}
+        onEvict={vi.fn()}
+        onToggleStationary={vi.fn()}
+        started
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Hand North / South over to the real pair",
+      }),
+    );
+
+    // No Inherit/Remove/Penalised treatment control (that model is gone — the
+    // director sets split/eligibility on the Substitutions screen instead).
+    expect(
+      screen.queryByRole("radio", { name: "Penalised" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Fine %")).not.toBeInTheDocument();
   });
 
   it("disables the handover until both arriving players have a surname", () => {

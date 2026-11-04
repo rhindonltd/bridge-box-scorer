@@ -37,8 +37,6 @@ import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 import {
   readSeatOccupancies,
   buildOccupantScoredIdResolver,
-  nonPrimaryOccupantScoredIds,
-  handoverRealPairGaps,
 } from "@/db/games/queries/seat-occupancy";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
@@ -639,16 +637,10 @@ function withdrawalCreditBoards(
   if (withdrawers.length === 0) return [];
   const pluginId = getCombination(scoringType).perBoard;
 
-  // §2.4.7 HANDOVER gap records carry an explicit `unplayedBoards` set and are
-  // handled separately (their gap boards carry the STAND-IN's result, so the
-  // ordinary "no result on the row" scan below cannot find them, and they take
-  // no opponent indemnity). The rest are ordinary withdrawals / empty-late
-  // seats located from the no-result rows.
-  const handoverRecords = withdrawers.filter((w) => w.unplayedBoards != null);
-  const ordinaryWithdrawers = withdrawers.filter(
-    (w) => w.unplayedBoards == null,
-  );
-  const bySeat = new Map(ordinaryWithdrawers.map((w) => [w.seat, w]));
+  // Ordinary withdrawals / empty-late seats, located from the no-result rows.
+  // (§2.4.7 substitutions no longer emit gap records — a substituted pair is
+  // ranked only on the boards it played, with no artificial gap score.)
+  const bySeat = new Map(withdrawers.map((w) => [w.seat, w]));
 
   // The event's scheduled board count = the distinct board numbers present (the
   // whole movement is materialised up front for static pairs), for the §2.4.5
@@ -764,70 +756,6 @@ function withdrawalCreditBoards(
             {
               nsId: row.ns,
               ewId: row.ew,
-              score: null,
-              nsCrossImps: 0,
-              ewCrossImps: 0,
-            },
-          ],
-        });
-      }
-    }
-  }
-
-  // §2.4.7 HANDOVER gaps: the real pair's AVE− on each board the stand-in
-  // played. Keyed to the real pair's own id (the record's seat), on a solo line
-  // with a phantom opponent so NO opponent is indemnified (the opponent already
-  // has a real result against the stand-in). AVE− is uplifted by §4.1.1.1 like
-  // any other, via the artificial outcome token; a PENALISED real pair's fine
-  // reduces it below AVE−. IMP/XIMP: a 0-net line (no per-board max), matching
-  // the ordinary gap treatment.
-  const HANDOVER_PHANTOM = "HANDOVER_GAP_PHANTOM";
-  for (const w of handoverRecords) {
-    // A REMOVE real pair is dropped from the ranking entirely (excluded), so a
-    // self-credit would be pointless — emit nothing for it.
-    if (w.treatment === "REMOVE") continue;
-
-    // §2.4.5/§2.4.6: AVE− minus any fine. A full 40% fine takes it to 0%, but
-    // the board STILL counts — the gap boards are the pair's own boards, so they
-    // belong in its denominator (`max`); a 0% line is emitted, NOT skipped,
-    // otherwise a fined pair would be ranked only on its stronger real boards.
-    const fraction = Math.max(0, AVE_MINUS_FRACTION - w.finePercent / 100);
-
-    for (const boardNumber of w.unplayedBoards!) {
-      if (pluginId === "MP") {
-        const top = topByBoard.get(boardNumber);
-        if (top == null) continue; // no scored sibling board yet
-        synthetic.push({
-          pluginId,
-          board: boardNumber,
-          lines: [
-            {
-              nsId: w.seat,
-              ewId: HANDOVER_PHANTOM,
-              score: null,
-              outcome: syntheticAveOutcome(fraction, 0),
-              maxMatchPoints: top,
-              nsMatchPoints: fraction * top,
-              ewMatchPoints: 0,
-            },
-          ],
-        });
-      } else if (pluginId === "IMP") {
-        synthetic.push({
-          pluginId,
-          board: boardNumber,
-          lines: [
-            { nsId: w.seat, ewId: HANDOVER_PHANTOM, score: null, nsImps: 0, ewImps: 0 },
-          ],
-        });
-      } else {
-        synthetic.push({
-          pluginId,
-          board: boardNumber,
-          lines: [
-            {
-              nsId: w.seat,
-              ewId: HANDOVER_PHANTOM,
               score: null,
               nsCrossImps: 0,
               ewCrossImps: 0,
@@ -1206,19 +1134,13 @@ async function readLeaderboardInputs(
     boardRows,
   );
 
-  // §2.4.7 HANDOVER (stand-in → real pair). The stand-in plays "without
-  // standing" (§2.4.9): its results count for opponents (via the rewritten
-  // board rows above) but it is dropped from the ranking.
-  for (const id of nonPrimaryOccupantScoredIds(occupancies)) {
-    excludedFromRanking.add(id);
-  }
-  // The real pair's PRE-ARRIVAL boards (played by the stand-in) are its unplayed
-  // boards → AVE− (§6.5), independent of whether it retained standing. The gap
-  // is credited to the real pair's own id; no opponent indemnity (the opponent
-  // already has a real result against the stand-in). Computed from the RAW board
-  // rows (bare seat id on every one of the seat's boards) — the rewritten rows
-  // carry the stand-in's id on the gap boards, which would hide them.
-  withdrawals.push(...handoverRealPairGaps(occupancies, rawBoardRows));
+  // §2.4.7 HANDOVER / SUBSTITUTION. Exclusion from the ranking is driven purely
+  // by each occupancy's `standing` (a WITHOUT_STANDING occupant — Category B/C —
+  // is excluded by `resolveStandings` via its scored id), and the per-board
+  // scored-id rewrite above already folds a one-line seat onto the ranked id or
+  // splits a split seat into two lines. There is NO artificial gap credit: a
+  // substituted pair is ranked only on the boards it actually played. So
+  // nothing extra is injected here for a handover.
 
   // §2.4.7 "half-table at the start": a director-marked EMPTY expected-late seat
   // (no participant row yet) credits its opponents AVE+ on the boards they

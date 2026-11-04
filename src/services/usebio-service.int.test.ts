@@ -91,7 +91,7 @@ describe("generateUsebio", () => {
     const { generateUsebio } = await import("@/services/usebio-service");
     const db = (await harness.getDb()) as Db;
 
-    const xml = await generateUsebio(db, game, club);
+    const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
 
     expect(xml).toContain('<USEBIO Version="1.2">');
     expect(xml).toContain("<CLUB_NAME>Test Bridge Club</CLUB_NAME>");
@@ -104,7 +104,7 @@ describe("generateUsebio", () => {
     const { generateUsebio } = await import("@/services/usebio-service");
     const db = (await harness.getDb()) as Db;
 
-    const xml = await generateUsebio(db, game, club);
+    const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
     expect(xml).toContain("<USEBIO");
     expect(xml).toMatch(/PARTICIPANTS/);
   });
@@ -124,7 +124,7 @@ describe("generateUsebio", () => {
     });
 
     const { generateUsebio } = await import("@/services/usebio-service");
-    const xml = await generateUsebio(db, game, club);
+    const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
 
     // Even though a deal is stored for board 1, the USEBIO export carries only
     // players and results. The dealt cards / vulnerability are exported
@@ -167,7 +167,7 @@ describe("generateUsebio", () => {
 
     const { generateUsebio } = await import("@/services/usebio-service");
     const db = (await harness.getDb()) as Db;
-    const xml = await generateUsebio(db, game, club);
+    const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
 
     // Two SECTION elements under one SESSION, and the right count.
     expect(xml).toContain("<SECTION_COUNT>2</SECTION_COUNT>");
@@ -336,7 +336,7 @@ describe("generateUsebio", () => {
     const { generateUsebio } = await import("@/services/usebio-service");
     const db = (await harness.getDb()) as Db;
 
-    const xml = await generateUsebio(db, swissGame, club);
+    const xml = await generateUsebio(db, swissGame, club, "NORMAL_CLUB");
 
     expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_PAIRS">');
     expect(xml).toContain("<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>");
@@ -425,7 +425,7 @@ describe("generateUsebio", () => {
 
     const { generateUsebio } = await import("@/services/usebio-service");
     const db = (await harness.getDb()) as Db;
-    const xml = await generateUsebio(db, swissGame, club);
+    const xml = await generateUsebio(db, swissGame, club, "NORMAL_CLUB");
 
     expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_PAIRS">');
     // The anchor appears as NS in both of its halves (vs A2EW and vs A3NS).
@@ -467,7 +467,7 @@ describe("generateUsebio", () => {
 
     const { generateUsebio } = await import("@/services/usebio-service");
 
-    const xml = await generateUsebio(db, teamsGame, club);
+    const xml = await generateUsebio(db, teamsGame, club, "NORMAL_CLUB");
 
     expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_TEAMS">');
     expect(xml).toContain("<MATCH_SCORING_METHOD>VPS</MATCH_SCORING_METHOD>");
@@ -528,7 +528,7 @@ describe("generateUsebio", () => {
 
     const { generateUsebio } = await import("@/services/usebio-service");
 
-    const xml = await generateUsebio(db, teamsGame, club);
+    const xml = await generateUsebio(db, teamsGame, club, "NORMAL_CLUB");
 
     expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_TEAMS">');
     // Three head-to-head MATCH nodes, one per pairing (1v2, 1v3, 2v3). The
@@ -548,20 +548,24 @@ describe("generateUsebio", () => {
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { players } = await import("@/db/games/tables/players");
 
-    // Table 1 NS is a handover: a real pair (LATE, plays boards 3–4) and a
-    // stand-in (WITHOUT_STANDING, plays boards 1–2). A1EW + table 2 are
-    // ordinary.
+    // Table 1 NS is a SPLIT handover (split = 1): the arriving pair is the
+    // arrival anchor (plays boards 3–4, keeps the bare seat id, ranked) and the
+    // earlier stand-in is a separate line (plays boards 1–2, marked
+    // WITHOUT_STANDING so it is unranked — counts for opponents only). A1EW +
+    // table 2 are ordinary.
     const mk = (first: string) => {
       const p1 = db.insert(players).values({ firstName: first, lastName: "N" }).returning().get();
       const p2 = db.insert(players).values({ firstName: first, lastName: "S" }).returning().get();
       return [p1.id, p2.id] as const;
     };
     const [r1, r2] = mk("RealNorth");
-    db.insert(seatOccupancy).values({ seat: "A1NS", boards: [3, 4], player1: r1, player2: r2, secretKey: "A1NS-real", standing: "LATE" }).run();
+    db.insert(seatOccupancy)
+      .values({ seat: "A1NS", boards: [3, 4], player1: r1, player2: r2, secretKey: "A1NS-real", standing: "ACTIVE", isArrivalAnchor: 1, split: 1 })
+      .run();
     const [s1, s2] = mk("StandIn");
     const subRow = db
       .insert(seatOccupancy)
-      .values({ seat: "A1NS", boards: [1, 2], player1: s1, player2: s2, secretKey: "A1NS-sub", standing: "WITHOUT_STANDING" })
+      .values({ seat: "A1NS", boards: [1, 2], player1: s1, player2: s2, secretKey: "A1NS-sub", standing: "WITHOUT_STANDING", isArrivalAnchor: 0, split: 1 })
       .returning()
       .get();
     await seatPair("A1EW", "East");
@@ -574,7 +578,7 @@ describe("generateUsebio", () => {
     }
 
     const { generateUsebio } = await import("@/services/usebio-service");
-    const xml = await generateUsebio(db, game, club);
+    const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
 
     // The stand-in is a declared PAIR (so its TRAVELLER_LINEs resolve), with a
     // `#<occId>` pair number, both players, and NO placing (§2.4.9: it is not
@@ -594,5 +598,91 @@ describe("generateUsebio", () => {
     );
     const subPairEnd = subBlock.indexOf("</PAIR>");
     expect(subBlock.slice(0, subPairEnd)).not.toContain("<PLACE>");
+  });
+
+  it("exports a merged (split=no) handover as ONE <PAIR> carrying the MAIN pair's players", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { players } = await import("@/db/games/tables/players");
+
+    // A MERGED handover (split = 0): both pairs fold onto the one bare-id line.
+    // Default main = the arrival anchor (the arriving pair, "MainArr").
+    const mk = (first: string) => {
+      const p1 = db.insert(players).values({ firstName: first, lastName: "N" }).returning().get();
+      const p2 = db.insert(players).values({ firstName: first, lastName: "S" }).returning().get();
+      return [p1.id, p2.id] as const;
+    };
+    const [a1, a2] = mk("MainArr");
+    db.insert(seatOccupancy)
+      .values({ seat: "A1NS", boards: [3, 4], player1: a1, player2: a2, secretKey: "A1NS-arr", standing: "ACTIVE", isArrivalAnchor: 1, isMainLine: 1, split: 0 })
+      .run();
+    const [e1, e2] = mk("EarlySub");
+    db.insert(seatOccupancy)
+      .values({ seat: "A1NS", boards: [1, 2], player1: e1, player2: e2, secretKey: "A1NS-early", standing: "ACTIVE", isArrivalAnchor: 0, isMainLine: 0, split: 0 })
+      .run();
+    await seatPair("A1EW", "East");
+    await seatPair("A2NS", "North2");
+    await seatPair("A2EW", "East2");
+
+    for (const bn of [1, 2, 3, 4]) {
+      await makeBoard(bn, 1, bn, "A1NS", "A1EW", "3NTN=");
+      await makeBoard(bn, 2, bn, "A2NS", "A2EW", "3NTN=");
+    }
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
+
+    // Exactly ONE <PAIR> for the seat (bare id 1NS), and NO split `#` pair.
+    expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+    expect(xml).not.toContain("1NS#");
+    // The one <PAIR> carries the MAIN (arriving) pair's players, NOT the sub's.
+    const pairBlock = xml.slice(
+      xml.indexOf("<PAIR_NUMBER>1NS</PAIR_NUMBER>"),
+    );
+    const pairEnd = pairBlock.indexOf("</PAIR>");
+    expect(pairBlock.slice(0, pairEnd)).toContain("MainArr");
+    expect(pairBlock.slice(0, pairEnd)).not.toContain("EarlySub");
+  });
+
+  it("re-pointing the MAIN pair swaps whose players the one merged <PAIR> carries", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { players } = await import("@/db/games/tables/players");
+
+    // Same merged handover, but the director has made the EARLIER pair the main
+    // pair (isMainLine on the non-anchor occupant). The one <PAIR> on 1NS must
+    // now carry the EARLIER pair's players instead of the arriving pair's.
+    const mk = (first: string) => {
+      const p1 = db.insert(players).values({ firstName: first, lastName: "N" }).returning().get();
+      const p2 = db.insert(players).values({ firstName: first, lastName: "S" }).returning().get();
+      return [p1.id, p2.id] as const;
+    };
+    const [a1, a2] = mk("ArrPair");
+    db.insert(seatOccupancy)
+      .values({ seat: "A1NS", boards: [3, 4], player1: a1, player2: a2, secretKey: "A1NS-arr", standing: "ACTIVE", isArrivalAnchor: 1, isMainLine: 0, split: 0 })
+      .run();
+    const [e1, e2] = mk("MainEarly");
+    db.insert(seatOccupancy)
+      .values({ seat: "A1NS", boards: [1, 2], player1: e1, player2: e2, secretKey: "A1NS-early", standing: "ACTIVE", isArrivalAnchor: 0, isMainLine: 1, split: 0 })
+      .run();
+    await seatPair("A1EW", "East");
+    await seatPair("A2NS", "North2");
+    await seatPair("A2EW", "East2");
+
+    for (const bn of [1, 2, 3, 4]) {
+      await makeBoard(bn, 1, bn, "A1NS", "A1EW", "3NTN=");
+      await makeBoard(bn, 2, bn, "A2NS", "A2EW", "3NTN=");
+    }
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
+
+    expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+    expect(xml).not.toContain("1NS#");
+    const pairBlock = xml.slice(xml.indexOf("<PAIR_NUMBER>1NS</PAIR_NUMBER>"));
+    const pairEnd = pairBlock.indexOf("</PAIR>");
+    // The merged <PAIR> now carries the MAIN (earlier) pair, not the arriving.
+    expect(pairBlock.slice(0, pairEnd)).toContain("MainEarly");
+    expect(pairBlock.slice(0, pairEnd)).not.toContain("ArrPair");
   });
 });

@@ -2,7 +2,6 @@ import { Db } from "@/db/games";
 import { seatOccupancy, SeatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { eq } from "drizzle-orm";
 import { PairSeat, scoredIdFor } from "@/model/participants";
-import type { WithdrawalRecord } from "@/db/games/queries/ranking-exclusions";
 
 /**
  * Whether an occupancy covers a given board number. A `boards = null` occupancy
@@ -61,46 +60,165 @@ export function resolveOccupant(
 }
 
 /**
- * The minimal shape the primary-occupancy pick needs: the surrogate `id`, the
- * `boards` set (null = whole seat), and the `standing` (so a stand-in is
- * recognised semantically, not by insert order).
+ * The minimal shape the DEVICE pick ({@link arrivalAnchorOf}) needs.
+ * `isArrivalAnchor` is REQUIRED (not optional): the device identity is driven
+ * by that flag, and a caller that selects occupancy rows without it would
+ * silently fall back to the lowest id. Making it mandatory turns that mistake
+ * into a compile error — spread {@link anchorPickColumns} into the `.select()`
+ * to satisfy it. `split` stays optional (only the one-line/split resolvers read
+ * it).
  */
-type PrimaryCandidate = {
+type OccupantCandidate = {
   id: number;
   boards: number[] | null;
-  standing: SeatOccupancy["standing"];
+  isArrivalAnchor: number | null;
+  /** §2.4.7 split flag (1 = score the two occupants as separate lines). */
+  split?: number | null;
 };
 
 /**
- * The PRIMARY occupancy among a seat's occupants — the one whose board-id (and
- * scored-field id) stays the bare seat, and the one `findPairs` returns as the
- * seat's ranked pair.
- *
- * The pick is SEMANTIC, not positional: a §2.4.7 handover stand-in is always
- * `WITHOUT_STANDING` (it plays for its opponents only), so the primary is the
- * occupant that is NOT without-standing — the real pair, which owns the
- * open-ended tail and is ranked. Ties (an ordinary single occupancy, or the
- * defensive case of two same-standing rows) fall back to the whole-seat
- * (`boards = null`) occupancy, then the lowest `id`. Choosing by standing rather
- * than insert order means the real pair is primary however the two occupancies
- * came to exist.
+ * The shape the RANKED / merged-line picks ({@link rankedOf}, {@link
+ * mergedLineOf}, {@link primaryOf}, {@link primaryOccupancyIds}) need. Adds
+ * `standing` (eligibility) and `isMainLine` (the director's main-pair choice)
+ * on top of the device shape — BOTH required for the same reason: omitting
+ * `isMainLine` from a select silently ignored the director's main-pair choice
+ * (a bug found three times). Spread {@link rankedPickColumns} into the
+ * `.select()` to satisfy it.
  */
-export function primaryOf<T extends PrimaryCandidate>(forSeat: readonly T[]): T {
-  const ranked = forSeat.filter((o) => o.standing !== "WITHOUT_STANDING");
-  const pool = ranked.length > 0 ? ranked : forSeat;
-  const whole = pool.find((o) => o.boards == null);
+type RankedCandidate = OccupantCandidate & {
+  standing: SeatOccupancy["standing"];
+  /** §2.4.7 merged-line "main pair" flag (1 = represents the one-line seat). */
+  isMainLine: number | null;
+};
+
+/**
+ * Column projection for a `.select()` that feeds the DEVICE pick
+ * ({@link arrivalAnchorOf}) — e.g. the auth / secret-rotation readers. Spread
+ * it so the required flag column is never forgotten:
+ * `db.select({ ...anchorPickColumns, secretKey: seatOccupancy.secretKey })`.
+ */
+export const anchorPickColumns = {
+  id: seatOccupancy.id,
+  boards: seatOccupancy.boards,
+  isArrivalAnchor: seatOccupancy.isArrivalAnchor,
+} as const;
+
+/**
+ * Column projection for a `.select()` that feeds a RANKED / merged-line pick
+ * ({@link rankedOf} / {@link mergedLineOf} / {@link primaryOf}). Includes the
+ * device flag PLUS `standing` and `isMainLine`, so the director's eligibility
+ * and main-pair choices are always honoured. Spread it into the select.
+ */
+export const rankedPickColumns = {
+  ...anchorPickColumns,
+  standing: seatOccupancy.standing,
+  isMainLine: seatOccupancy.isMainLine,
+} as const;
+
+/**
+ * The ARRIVAL ANCHOR among a seat's occupants — the one that took over the live
+ * device and plays the seat forward (the later boards). This is the DEVICE /
+ * forward-play identity: auth (which secret the live seat uses) and the "played
+ * vs missed" split follow it, independent of standing.
+ *
+ * Picked by the explicit `isArrivalAnchor` flag the handover engine sets. For
+ * an ordinary single occupancy (no flag) it falls back to the whole-seat
+ * (`boards = null`) occupant, then the lowest id — so a non-handover seat is
+ * unaffected.
+ */
+export function arrivalAnchorOf<T extends OccupantCandidate>(
+  forSeat: readonly T[],
+): T {
+  const flagged = forSeat.find((o) => o.isArrivalAnchor === 1);
+  if (flagged) return flagged;
+  const whole = forSeat.find((o) => o.boards == null);
   if (whole) return whole;
-  return pool.reduce((lo, o) => (o.id < lo.id ? o : lo), pool[0]);
+  return forSeat.reduce((lo, o) => (o.id < lo.id ? o : lo), forSeat[0]);
 }
 
 /**
- * The set of PRIMARY occupancy ids across the game, grouped by seat. For an
- * ordinary game (one occupancy per seat) every id is primary; a handover seat
- * contributes only its primary (the real pair), so the stand-in is excluded.
- * Used by `findPairs` to keep "the seated pairs" one-per-seat.
+ * The MERGED-LINE occupant of a seat — the "main pair" that represents the one
+ * ranked line and the one USEBIO `<PAIR>` when the seat scores as a single
+ * contestant (`split = 0`). Its names + EBU numbers are the line; the other
+ * occupant rides along as the local "(Sub)" name.
+ *
+ * Picked by the director-settable `isMainLine` flag (set on exactly one
+ * occupant on the Substitutions screen). When nothing is chosen it falls back
+ * to {@link arrivalAnchorOf} — the arriving pair — so a freshly handed-over
+ * seat and every pre-existing game behave as before.
+ *
+ * This is the SCORING/EXPORT identity, kept SEPARATE from {@link arrivalAnchorOf}
+ * (the DEVICE identity): the main pair drives names/ranking/USEBIO, while auth
+ * (which secret the live seat uses) always follows the arrival anchor. Changing
+ * the main pair must never move the device identity.
+ */
+export function mergedLineOf<T extends RankedCandidate>(
+  forSeat: readonly T[],
+): T {
+  return forSeat.find((o) => o.isMainLine === 1) ?? arrivalAnchorOf(forSeat);
+}
+
+/**
+ * The RANKED occupant of a seat — the one whose board-id (and scored-field id)
+ * stays the bare seat, which `findPairs` returns as the seat's ranked pair, and
+ * which the leaderboard places.
+ *
+ * Ranked = the occupant that is NOT `WITHOUT_STANDING`. On a §2.4.7 handover
+ * seat the director marks AT MOST ONE occupant without standing (on the
+ * Substitutions screen); the other is ranked. When NEITHER is without standing
+ * (a clean substitution, or the ordinary single occupancy) the ranked one is
+ * the ARRIVAL ANCHOR — it owns the open-ended tail and the seat's continuous
+ * line. The defensive both-without-standing case also falls back to the anchor.
+ *
+ * NOTE: this is the SCORING/ranking identity, kept separate from
+ * {@link arrivalAnchorOf} (the device identity). They coincide for the common
+ * stand-in→real handover, but diverge when the director marks the ARRIVING pair
+ * without standing — then the earlier occupant is ranked while the arriving
+ * pair still holds the device.
+ */
+export function rankedOf<T extends RankedCandidate>(forSeat: readonly T[]): T {
+  const withStanding = forSeat.filter((o) => o.standing !== "WITHOUT_STANDING");
+  if (withStanding.length === 1) return withStanding[0];
+  // Neither (substitution / single occupancy) or both (defensive) without
+  // standing → the director's chosen MAIN pair owns the ranked line (default:
+  // the arrival anchor). Using mergedLineOf here is what lets the director
+  // re-point which pair's name + EBU record is the one merged line.
+  const pool = withStanding.length > 0 ? withStanding : forSeat;
+  return mergedLineOf(pool);
+}
+
+/**
+ * Back-compat alias. Historically "primary" meant "the ranked occupant"; most
+ * call sites want exactly that, so they keep working via {@link rankedOf}. The
+ * two auth call sites that actually need the DEVICE identity use
+ * {@link arrivalAnchorOf} instead.
+ */
+export const primaryOf = rankedOf;
+
+/**
+ * Whether a handover seat scores as ONE continuous line (`split = 0`, the
+ * default) rather than two separate lines. One line = both occupants' boards
+ * fold onto the ranked occupant's bare id (the seat is a single contestant;
+ * leaderboard stitches both names; USEBIO emits one `<PAIR>`). When split, each
+ * occupant is its own scored line over only its own boards (the non-ranked one
+ * getting a `#<occId>` id), and eligibility (`standing`) decides whether each is
+ * ranked.
+ *
+ * Reads the seat's `split` flag (carried on both occupancies). A freshly
+ * handed-over seat is one line until the director chooses "split by board".
+ */
+function seatIsOneLine(forSeat: readonly OccupantCandidate[]): boolean {
+  return !forSeat.some((o) => o.split === 1);
+}
+
+/**
+ * The set of RANKED occupancy ids across the game, grouped by seat. For an
+ * ordinary game (one occupancy per seat) every id is ranked; a handover seat
+ * contributes only its ranked occupant, so the other is excluded. Used by
+ * `findPairs` to keep "the seated pairs" one-per-seat.
  */
 export function primaryOccupancyIds<
-  T extends PrimaryCandidate & { initialSeat: string },
+  T extends RankedCandidate & { initialSeat: string },
 >(occupancies: readonly T[]): Set<number> {
   const bySeat = new Map<string, T[]>();
   for (const o of occupancies) {
@@ -109,7 +227,7 @@ export function primaryOccupancyIds<
     bySeat.set(o.initialSeat, arr);
   }
   const ids = new Set<number>();
-  for (const forSeat of bySeat.values()) ids.add(primaryOf(forSeat).id);
+  for (const forSeat of bySeat.values()) ids.add(rankedOf(forSeat).id);
   return ids;
 }
 
@@ -148,11 +266,20 @@ export function buildOccupantScoredIdResolver(
     // one → the bare id, i.e. behaviour identical to pre-handover.
     if (forSeat == null || forSeat.length <= 1) return boardAnchorId;
 
-    const primaryId = primaryOf(forSeat).id;
+    // SUBSTITUTION / INHERIT: the gap boards stay on the seat's bare id so the
+    // ranked pair is scored on the other occupant's actual results — one line,
+    // no `#<occId>` split.
+    if (seatIsOneLine(forSeat)) return boardAnchorId;
+
+    // SPLIT: the ARRIVAL ANCHOR keeps the bare id; the other occupant's boards
+    // split to `<boardId>#<occId>` as its own separate line. (Whether each line
+    // is ranked is decided by `standing` downstream — split is about identity,
+    // not eligibility.)
+    const anchorId = arrivalAnchorOf(forSeat).id;
     const occupant =
       forSeat.find((o) => occupancyCoversBoard(o, boardNumber)) ??
       forSeat.find((o) => o.boards == null);
-    if (occupant == null || occupant.id === primaryId) return boardAnchorId;
+    if (occupant == null || occupant.id === anchorId) return boardAnchorId;
     return scoredIdFor(boardAnchorId, occupant.id);
   };
 }
@@ -179,15 +306,20 @@ export function scoredIdByOccupancyId(
 
   const out = new Map<number, string>();
   for (const [boardAnchorId, forSeat] of bySeatBoardId) {
-    if (forSeat.length <= 1) {
+    // A single occupancy, OR a ONE-LINE handover (both occupants collapse into
+    // the one bare-id line — no separate scored line): every occupancy maps to
+    // the bare board id.
+    if (forSeat.length <= 1 || seatIsOneLine(forSeat)) {
       for (const o of forSeat) out.set(o.id, boardAnchorId);
       continue;
     }
-    const primaryId = primaryOf(forSeat).id;
+    // SPLIT: the arrival anchor keeps the bare id; the other occupant gets its
+    // own `#<occId>` id (its own line).
+    const anchorId = arrivalAnchorOf(forSeat).id;
     for (const o of forSeat) {
       out.set(
         o.id,
-        o.id === primaryId ? boardAnchorId : scoredIdFor(boardAnchorId, o.id),
+        o.id === anchorId ? boardAnchorId : scoredIdFor(boardAnchorId, o.id),
       );
     }
   }
@@ -195,14 +327,18 @@ export function scoredIdByOccupancyId(
 }
 
 /**
- * The scored-field ids of every NON-PRIMARY occupant (the stand-ins) of any
- * handover seat — the ids to drop from the ranking (§2.4.9 "without standing":
- * their results count for opponents but they are not ranked). Empty for every
- * game with no handover.
+ * The surrogate ids of the NON-ANCHOR occupants of every ONE-LINE (split = 0)
+ * handover seat. When the seat folds to one line the non-anchor occupant has no
+ * scoring identity of its own — its boards score as the one ranked line's
+ * results on the shared bare id — so it must be dropped from any per-occupancy
+ * standings read (otherwise its standing would collide with, and could wrongly
+ * exclude, the one line on the shared bare id). A SPLIT seat keeps both
+ * occupants as distinct ids, so nothing is dropped there. Empty for a game with
+ * no one-line handover.
  */
-export function nonPrimaryOccupantScoredIds(
+export function inheritStandInOccupancyIds(
   occupancies: readonly SeatOccupancy[],
-): Set<string> {
+): Set<number> {
   const bySeatBoardId = new Map<string, SeatOccupancy[]>();
   for (const o of occupancies) {
     const key = o.anchorId ?? o.seat;
@@ -211,38 +347,32 @@ export function nonPrimaryOccupantScoredIds(
     bySeatBoardId.set(key, arr);
   }
 
-  const ids = new Set<string>();
-  for (const [boardAnchorId, forSeat] of bySeatBoardId) {
+  const ids = new Set<number>();
+  for (const forSeat of bySeatBoardId.values()) {
     if (forSeat.length <= 1) continue;
-    const primaryId = primaryOf(forSeat).id;
-    for (const o of forSeat) {
-      if (o.id !== primaryId) ids.add(scoredIdFor(boardAnchorId, o.id));
-    }
+    if (!seatIsOneLine(forSeat)) continue;
+    // The MAIN pair owns the one merged line; the OTHER occupant has no scoring
+    // identity of its own and must be dropped from the standings read.
+    const mainId = mergedLineOf(forSeat).id;
+    for (const o of forSeat) if (o.id !== mainId) ids.add(o.id);
   }
   return ids;
 }
 
 /**
- * The §2.4.7 handover gap credits — one {@link WithdrawalRecord} per handover
- * seat's PRIMARY occupant (the real pair), carrying the exact set of boards it
- * did NOT play (the stand-in's boards) to be scored AVE− for it.
- *
- * A seat is a handover when it has more than one occupancy. Its gap is the
- * board numbers that seat plays (read from the board rows carrying its board
- * id) minus the boards the primary occupancy covers. The record's standing
- * mirrors the primary occupancy — a PENALISED real pair carries its fine; a
- * REMOVE one gets no self-credit (handled downstream) — so the arriving pair's
- * early boards score exactly like a §2.4.6 late-arrival gap. Empty for every
- * game with no handover.
- *
- * `boardRows` carry the board id on `ns`/`ew` (equal to each seat's
- * `anchorId ?? seat`), so the seat's played board numbers are the distinct
- * board numbers on rows whose `ns` or `ew` is that id.
+ * For every ONE-LINE (split = 0) handover seat, map the MAIN (ranked)
+ * occupancy's id → the OTHER occupant on that seat (the pair whose boards fold
+ * onto the merged line). This is the data the leaderboard needs to STITCH both
+ * pairs' names onto the one ranked line (the main pair is already surfaced by
+ * `findPairs`; this adds the hidden partner, shown as "(Sub)"). A SPLIT seat is
+ * excluded (both occupants are already their own lines), as is an ordinary
+ * single occupancy. Keyed by the MAIN occupancy's id because `findPairs`
+ * returns the main pair as the seat's ranked pair under that id — so when the
+ * director re-points the main pair, the "(Sub)" partner flips accordingly.
  */
-export function handoverRealPairGaps(
+export function oneLineSecondaryByAnchorId(
   occupancies: readonly SeatOccupancy[],
-  boardRows: readonly { ns: string; ew: string; boardNumber: number }[],
-): WithdrawalRecord[] {
+): Map<number, SeatOccupancy> {
   const bySeatBoardId = new Map<string, SeatOccupancy[]>();
   for (const o of occupancies) {
     const key = o.anchorId ?? o.seat;
@@ -251,50 +381,27 @@ export function handoverRealPairGaps(
     bySeatBoardId.set(key, arr);
   }
 
-  const records: WithdrawalRecord[] = [];
-  for (const [boardAnchorId, forSeat] of bySeatBoardId) {
-    if (forSeat.length <= 1) continue; // not a handover seat
-
-    const primary = primaryOf(forSeat);
-    // Boards the primary occupant actually covers (its own range).
-    const covered =
-      primary.boards == null ? null : new Set(primary.boards);
-
-    // All board numbers this seat plays, from the board rows carrying its id.
-    const seatBoards = new Set<number>();
-    for (const row of boardRows) {
-      if (row.ns === boardAnchorId || row.ew === boardAnchorId) {
-        seatBoards.add(row.boardNumber);
-      }
-    }
-
-    // The gap: boards the seat plays that the primary occupant did NOT cover
-    // (i.e. the stand-in played them). A `boards = null` primary covers
-    // everything → no gap (not a real handover; defensive).
-    const gap = new Set<number>();
-    if (covered != null) {
-      for (const b of seatBoards) if (!covered.has(b)) gap.add(b);
-    }
-    if (gap.size === 0) continue;
-
-    records.push({
-      seat: boardAnchorId,
-      treatment: primary.withdrawalTreatment ?? "PENALISED",
-      finePercent:
-        primary.withdrawalTreatment === "PENALISED"
-          ? (primary.withdrawalFinePercent ?? 0)
-          : 0,
-      unplayedBoards: gap,
-    });
+  const out = new Map<number, SeatOccupancy>();
+  for (const forSeat of bySeatBoardId.values()) {
+    if (forSeat.length <= 1) continue;
+    if (!seatIsOneLine(forSeat)) continue;
+    const main = mergedLineOf(forSeat);
+    // v1 supports a single handover per seat → exactly one "other" occupant.
+    const other = forSeat.find((o) => o.id !== main.id);
+    if (other) out.set(main.id, other);
   }
-  return records;
+  return out;
 }
 
 /**
- * A non-primary occupant (a handover stand-in), with its scored-field id and
- * full player rows — the shape USEBIO needs to emit a `<PAIR>` for the stand-in
- * (so its `TRAVELLER_LINE` references a declared pair) while leaving it out of
- * the placings. Empty for every game with no handover.
+ * A separate (non-anchor) occupant of a SPLIT handover seat, with its
+ * scored-field id and full player rows — the shape USEBIO needs to emit a
+ * `<PAIR>` for it. Under `split = 1` the two occupants are distinct contestants,
+ * each on its own boards; this surfaces the non-anchor one (the anchor keeps the
+ * bare seat id and is emitted as the ordinary pair). Its eligibility (whether it
+ * is placed) is decided by `standing` downstream, NOT here. A ONE-LINE seat
+ * (`split = 0`) folds both occupants into the anchor's line, so it contributes
+ * nothing. Empty for a game with no split handover.
  */
 export interface NonPrimaryOccupantPair {
   /** The scored-field id: `<seat>#<occupancyId>` (section-qualified). */
@@ -321,16 +428,21 @@ export async function findNonPrimaryOccupantPairs(
   const nonPrimary: { occ: SeatOccupancy; scoredId: string }[] = [];
   for (const [boardAnchorId, forSeat] of bySeatBoardId) {
     if (forSeat.length <= 1) continue;
-    const primaryId = primaryOf(forSeat).id;
+    // ONE-LINE (split = 0): the non-anchor occupant has no separate scored line
+    // (its boards fold onto the anchor's), so USEBIO emits no distinct `<PAIR>`
+    // for it — only the single stitched pair.
+    if (seatIsOneLine(forSeat)) continue;
+    // SPLIT: the non-anchor occupant is its own `<PAIR>`.
+    const anchorId = arrivalAnchorOf(forSeat).id;
     for (const o of forSeat) {
-      if (o.id !== primaryId) {
+      if (o.id !== anchorId) {
         nonPrimary.push({ occ: o, scoredId: scoredIdFor(boardAnchorId, o.id) });
       }
     }
   }
   if (nonPrimary.length === 0) return [];
 
-  // Resolve player rows for the stand-ins.
+  // Resolve player rows for the non-anchor occupants.
   const { players } = await import("@/db/games/tables/players");
   const playerRows = await db.select().from(players);
   const byId = new Map(playerRows.map((p) => [p.id, p]));

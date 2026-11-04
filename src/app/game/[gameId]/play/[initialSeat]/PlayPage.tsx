@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useRequiredGame } from "@/context/GameContext";
 import { usePlayFlow } from "@/hooks/play-flow";
 import { Seat } from "@/model/participants";
@@ -12,6 +12,7 @@ import { PlayStateRouter } from "@/app/game/[gameId]/play/[initialSeat]/PlayStat
 import { useSocketEvent } from "@/hooks/socket-event";
 import { SocketEvents } from "@/socket/socket-events";
 import type { SocketEventMap } from "@/socket/socket-event-map";
+import { getPlayerToken, setPlayerToken } from "@/lib/player-token";
 
 /**
  * Live play container for a seated player. Resolves the seat and game, drives
@@ -22,6 +23,7 @@ import type { SocketEventMap } from "@/socket/socket-event-map";
 export function PlayPage() {
   const params = useParams<{ initialSeat: string }>();
   const seat = params.initialSeat;
+  const router = useRouter();
 
   const { game } = useRequiredGame();
   const flow = usePlayFlow(
@@ -46,6 +48,34 @@ export function PlayPage() {
   );
   useSocketEvent(SocketEvents.SEAT_TAKEN_OVER, onSeatTakenOver, [
     onSeatTakenOver,
+  ]);
+
+  // A director splitting a section renumbers seats (e.g. this device's A5NS
+  // becomes B1NS). The server pushes every old→new move to the game room; if
+  // THIS device's seat moved, adopt the new seat: rewrite the stored player
+  // token's position (the auth secret is unchanged) and re-route to the new
+  // play URL so every seat-keyed read (play state, pair, submissions) lines up
+  // with the DB again. Without this the device would be stranded on a seat that
+  // no longer exists.
+  const onSeatRenumbered = useCallback(
+    (payload: SocketEventMap[typeof SocketEvents.SEAT_RENUMBERED]) => {
+      if (payload.gameId !== game.gameId) return;
+      const move = payload.moves.find((m) => m.from === seat);
+      if (!move) return;
+
+      const stored = getPlayerToken(game.gameId);
+      if (stored) {
+        setPlayerToken(game.gameId, {
+          ...stored,
+          startingPosition: move.to,
+        });
+      }
+      router.replace(`/game/${game.gameId}/play/${move.to}`);
+    },
+    [game.gameId, seat, router],
+  );
+  useSocketEvent(SocketEvents.SEAT_RENUMBERED, onSeatRenumbered, [
+    onSeatRenumbered,
   ]);
 
   if (takenOver) {

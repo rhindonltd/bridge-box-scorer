@@ -95,6 +95,12 @@ export interface ResolvedPlayStateResponse {
   phase:
     | { kind: "round"; roundIndex: number; position: ResolvedWithinRound }
     | { kind: "sitOut"; roundIndex: number }
+    /**
+     * §2.4.7: the current round's opponent is an empty "expected late" seat and
+     * has not arrived. A resting phase (there is nobody to play), shown via the
+     * round-info screen's "running late" state with a Continue to move on.
+     */
+    | { kind: "expectedLate"; roundIndex: number }
     | { kind: "awaitingNextRound"; completedRound: number }
     | { kind: "complete" };
   rounds: RoundSchedule[];
@@ -215,8 +221,13 @@ export function playStateFromResolved(
       };
 
     case "sitOut":
-      // The router renders the sit-out page when the round at this index is a
-      // sit-out; roundInfo is the shared entry for both playable and bye rounds.
+    // The router renders the sit-out page when the round at this index is a
+    // sit-out; roundInfo is the shared entry for both playable and bye rounds.
+    case "expectedLate":
+      // An expected-late round is also entered via roundInfo. The round-info
+      // screen reads `round.opponentExpectedLate` to show the "running late"
+      // note (no Enter Round) plus a Continue, which dispatches the same
+      // `sitOutContinue` advance a bye uses.
       return { state: "roundInfo", roundIndex: phase.roundIndex };
 
     case "round": {

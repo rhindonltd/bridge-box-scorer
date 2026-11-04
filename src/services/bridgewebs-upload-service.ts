@@ -2,6 +2,7 @@ import "server-only";
 
 import { BridgeGame } from "@/db/game-index/schema";
 import { Db } from "@/db/games";
+import { TournamentLevel } from "@/db/games/types/tournament-level";
 import { findClub } from "@/db/system/queries/find-club";
 import { getBridgewebsCredentials } from "@/db/system/queries/bridgewebs-credentials";
 import { generateUsebio } from "@/services/usebio-service";
@@ -40,6 +41,7 @@ function baseFilename(game: BridgeGame): string {
 export async function uploadResultsToBridgewebs(
   db: Db,
   game: BridgeGame,
+  tournamentLevel: TournamentLevel,
 ): Promise<BridgewebsUploadResult> {
   const club = await findClub();
   if (!club) {
@@ -52,7 +54,7 @@ export async function uploadResultsToBridgewebs(
   }
 
   const [usebioXml, pbn] = await Promise.all([
-    generateUsebio(db, game, club),
+    generateUsebio(db, game, club, tournamentLevel),
     generatePbnExport(db, game, club),
   ]);
 

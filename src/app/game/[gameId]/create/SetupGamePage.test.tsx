@@ -70,21 +70,6 @@ vi.mock("@/components/manage/sections/MovementStep", () => ({
   MovementStep: () => <div>sections-view</div>,
 }));
 
-vi.mock("@/components/manage/sections/ManageSectionsScreen", () => ({
-  ManageSectionsScreen: () => <div>manage-sections-view</div>,
-}));
-
-// Section count drives whether the "Manage sections" menu item appears.
-let mockSectionCount = 2;
-vi.mock("@/hooks/sections", () => ({
-  useSections: () => ({
-    sections: Array.from({ length: mockSectionCount }, (_, i) => ({
-      section: String.fromCharCode(65 + i),
-    })),
-    isLoading: false,
-  }),
-}));
-
 vi.mock("@/app/game/[gameId]/manage/timer/TimerSetup", () => ({
   TimerSetup: ({ embedded }: { embedded?: boolean }) => (
     <div>timer-view {embedded ? "embedded" : "standalone"}</div>
@@ -125,7 +110,6 @@ describe("SetupGamePage setup menu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentStep = "tables";
-    mockSectionCount = 2;
   });
 
   it("renders the setup menu and Tables view on the tables step", async () => {
@@ -214,48 +198,17 @@ describe("SetupGamePage setup menu", () => {
     );
   });
 
-  it("navigates to manage-sections when the Manage sections item is chosen", async () => {
-    render(<SetupGamePage />);
-
-    await openSetupMenu();
-    await userEvent.click(
-      screen.getByRole("menuitem", { name: "Manage sections" }),
-    );
-    expect(mockGoTo).toHaveBeenCalledWith("manage-sections");
-  });
-
-  it("renders the manage-sections view on the manage-sections step", async () => {
-    currentStep = "manage-sections";
-    render(<SetupGamePage />);
-
-    expect(screen.getByText("manage-sections-view")).toBeInTheDocument();
-    await openSetupMenu();
-    expect(
-      screen.getByRole("menuitem", { name: "Manage sections" }),
-    ).toHaveAttribute("aria-current", "true");
-  });
-
-  it("hides the Manage sections item for a single-section game", async () => {
-    mockSectionCount = 1;
+  it("does not offer a Manage sections menu item (folded into Tables)", async () => {
     render(<SetupGamePage />);
 
     await openSetupMenu();
     expect(
       screen.queryByRole("menuitem", { name: "Manage sections" }),
     ).toBeNull();
-    // The other items remain.
+    // The remaining items are present.
     expect(
       screen.getByRole("menuitem", { name: "Tables" }),
     ).toBeInTheDocument();
-  });
-
-  it("redirects away from manage-sections when the game is single-section", () => {
-    mockSectionCount = 1;
-    currentStep = "manage-sections";
-    render(<SetupGamePage />);
-
-    expect(screen.queryByText("manage-sections-view")).toBeNull();
-    expect(mockGoTo).toHaveBeenCalledWith("movements");
   });
 
   it("navigates to the start step when the Start Game item is chosen", async () => {
@@ -277,16 +230,6 @@ describe("SetupGamePage setup menu", () => {
     ).toHaveAttribute("aria-current", "true");
   });
 
-  it("shows Start Game in the menu even for a single-section game", async () => {
-    mockSectionCount = 1;
-    render(<SetupGamePage />);
-
-    await openSetupMenu();
-    expect(
-      screen.getByRole("menuitem", { name: "Start Game" }),
-    ).toBeInTheDocument();
-  });
-
   it("returns to the main menu when the Return to main menu item is chosen", async () => {
     render(<SetupGamePage />);
 
@@ -304,7 +247,6 @@ describe("SetupGamePage setup back arrow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentStep = "tables";
-    mockSectionCount = 2;
   });
 
   // The "previous step" lives in a ref on a single mounted component, so these
@@ -409,14 +351,13 @@ describe("SetupGamePage setup back arrow", () => {
     expect(mockGoTo).not.toHaveBeenCalled();
   });
 
-  it("falls back to the event-details editor when the previous screen was Manage sections", async () => {
-    currentStep = "manage-sections";
+  it("falls back to the event-details editor when the previous screen was Start", async () => {
+    currentStep = "start";
     const { rerender } = render(<SetupGamePage />);
 
-    // Manage sections → Movement, recording Manage sections as the previous
-    // screen. It is not one of the three interchangeable setup screens, so
-    // Movement's back arrow has no sibling to return to and opens the
-    // event-details editor.
+    // Start → Movement, recording Start as the previous screen. Start is not
+    // one of the three interchangeable setup screens, so Movement's back arrow
+    // has no sibling to return to and opens the event-details editor.
     await openSetupMenu();
     await userEvent.click(screen.getByRole("menuitem", { name: "Movement" }));
     rerender(<SetupGamePage />);
