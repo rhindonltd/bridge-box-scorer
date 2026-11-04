@@ -23,9 +23,7 @@ const meta: Meta<typeof SubstitutionsPage> = {
 export default meta;
 type Story = StoryObj<typeof SubstitutionsPage>;
 
-const seat = (
-  overrides: Partial<SubstitutionSeat> = {},
-): SubstitutionSeat => ({
+const seat = (overrides: Partial<SubstitutionSeat> = {}): SubstitutionSeat => ({
   seat: "A1NS",
   pair: "Carol May & Dan Fox",
   playedCount: 14,
@@ -99,6 +97,15 @@ export const SeveralSeats: Story = {
  */
 export const TeamsNoWarning: Story = {
   args: {
+    isPairs: false,
+    substitutions: [seat()],
+  },
+};
+
+/** A teams event: read-only list, no toggles and no Save button. */
+export const TeamsReadOnly: Story = {
+  args: {
+    isTeams: true,
     isPairs: false,
     substitutions: [seat()],
   },

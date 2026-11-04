@@ -268,22 +268,34 @@ function swissTeams(): UsebioSwissTeamsData {
         teamNumber: "1",
         teamName: "Sharks",
         sectionId: "A",
-        players: [
-          player("Alice", "Smith", "111111"),
-          player("Bob", "Jones", "222222"),
-          player("Carol", "Brown", "333333"),
-          player("Dave", "White", "444444"),
+        pairs: [
+          {
+            pairNumber: "1NS",
+            player1: player("Alice", "Smith", "111111"),
+            player2: player("Bob", "Jones", "222222"),
+          },
+          {
+            pairNumber: "1EW",
+            player1: player("Carol", "Brown", "333333"),
+            player2: player("Dave", "White", "444444"),
+          },
         ],
       },
       {
         teamNumber: "2",
         teamName: "Dragons",
         sectionId: "A",
-        players: [
-          player("Eve", "Green", "555555"),
-          player("Frank", "Black", "666666"),
-          player("Grace", "Red", "777777"),
-          player("Henry", "Blue", "888888"),
+        pairs: [
+          {
+            pairNumber: "2NS",
+            player1: player("Eve", "Green", "555555"),
+            player2: player("Frank", "Black", "666666"),
+          },
+          {
+            pairNumber: "2EW",
+            player1: player("Grace", "Red", "777777"),
+            player2: player("Henry", "Blue", "888888"),
+          },
         ],
       },
     ],
@@ -303,6 +315,8 @@ function swissTeams(): UsebioSwissTeamsData {
             travellerLines: [
               {
                 direction: "NS",
+                nsPairNumber: "1NS",
+                ewPairNumber: "2EW",
                 contract: "4S",
                 playedBy: "S",
                 lead: "DK",
@@ -311,6 +325,8 @@ function swissTeams(): UsebioSwissTeamsData {
               },
               {
                 direction: "EW",
+                nsPairNumber: "2NS",
+                ewPairNumber: "1EW",
                 contract: "4S",
                 playedBy: "N",
                 lead: "DA",
@@ -325,6 +341,8 @@ function swissTeams(): UsebioSwissTeamsData {
             travellerLines: [
               {
                 direction: "NS",
+                nsPairNumber: "1NS",
+                ewPairNumber: "2EW",
                 contract: "3NT",
                 playedBy: "N",
                 lead: "H6",
@@ -333,6 +351,8 @@ function swissTeams(): UsebioSwissTeamsData {
               },
               {
                 direction: "EW",
+                nsPairNumber: "2NS",
+                ewPairNumber: "1EW",
                 contract: "3NT",
                 playedBy: "S",
                 lead: "HQ",

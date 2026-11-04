@@ -31,6 +31,12 @@ export interface SubstitutionsPageProps {
    * team, so the warning does not apply. Defaults to true (pairs).
    */
   isPairs?: boolean;
+  /**
+   * Whether this is a TEAMS game. A team's score is never affected by which
+   * pair sat a seat, so there are no split / eligibility choices: the screen
+   * is a read-only list of who played which boards. Defaults to false.
+   */
+  isTeams?: boolean;
   /** Persist a seat's split + eligibility choices. Rejects to surface an error. */
   onSave: (seat: string, options: SubstitutionSaveOptions) => Promise<void>;
 }
@@ -53,6 +59,7 @@ export function SubstitutionsPage({
   onBack,
   substitutions,
   isPairs = true,
+  isTeams = false,
   onSave,
 }: SubstitutionsPageProps) {
   return (
@@ -64,23 +71,29 @@ export function SubstitutionsPage({
     >
       <div className="flex flex-col gap-4 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
         <p className="text-sm text-gray-600">
-          A pair took over a seat part-way through. Choose whether the seat
-          scores as one shared line or two, and whether each pair counts in the
-          local ranking.
+          {isTeams
+            ? "A pair took over a seat part-way through. The team's score is unaffected; this lists who played which boards."
+            : "A pair took over a seat part-way through. Choose whether the seat scores as one shared line or two, and whether each pair counts in the local ranking."}
         </p>
 
         {substitutions.length === 0 ? (
-          <p className="text-sm text-gray-500">No substitutions to configure.</p>
+          <p className="text-sm text-gray-500">
+            No substitutions to configure.
+          </p>
         ) : (
           <ul className="flex flex-col gap-3">
-            {substitutions.map((row) => (
-              <SubstitutionCard
-                key={row.seat}
-                row={row}
-                isPairs={isPairs}
-                onSave={onSave}
-              />
-            ))}
+            {substitutions.map((row) =>
+              isTeams ? (
+                <TeamsSubstitutionCard key={row.seat} row={row} />
+              ) : (
+                <SubstitutionCard
+                  key={row.seat}
+                  row={row}
+                  isPairs={isPairs}
+                  onSave={onSave}
+                />
+              ),
+            )}
           </ul>
         )}
       </div>
@@ -92,6 +105,22 @@ export function SubstitutionsPage({
 function occupantSummary(o: SubstitutionOccupant): string {
   const boards = `${o.boardCount} ${o.boardCount === 1 ? "board" : "boards"}`;
   return `${o.pair} — ${boards}`;
+}
+
+/** Read-only card for a teams event: the seat and each pair's board count. */
+function TeamsSubstitutionCard({ row }: { row: SubstitutionSeat }) {
+  return (
+    <li className="flex flex-col gap-1 rounded-xl border border-gray-200 p-3">
+      <p className="text-sm font-semibold text-gray-800">{row.seat}</p>
+      <ul className="flex flex-col gap-0.5">
+        {row.occupants.map((o) => (
+          <li key={o.id} className="text-sm text-gray-600">
+            {occupantSummary(o)}
+          </li>
+        ))}
+      </ul>
+    </li>
+  );
 }
 
 function SubstitutionCard({
@@ -129,8 +158,7 @@ function SubstitutionCard({
   const [mainId, setMainId] = useState<number>(
     () => (row.occupants.find((o) => o.isMainPair) ?? anchor).id,
   );
-  const mainOccupant =
-    row.occupants.find((o) => o.id === mainId) ?? anchor;
+  const mainOccupant = row.occupants.find((o) => o.id === mainId) ?? anchor;
   // The folded-in "(Sub)" pair on a merged line — the occupant that is NOT the
   // main pair. It reacts live to the Main pair toggle.
   const subOccupant = row.occupants.find((o) => o.id !== mainOccupant.id);
@@ -156,7 +184,9 @@ function SubstitutionCard({
       setSaved(true);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Could not save. Please try again.",
+        err instanceof Error
+          ? err.message
+          : "Could not save. Please try again.",
       );
     } finally {
       setSaving(false);
@@ -195,10 +225,7 @@ function SubstitutionCard({
         // Two lines: one eligibility toggle per occupant.
         <div className="flex flex-col gap-2">
           {row.occupants.map((o) => (
-            <div
-              key={o.id}
-              className="flex items-center justify-between gap-3"
-            >
+            <div key={o.id} className="flex items-center justify-between gap-3">
               <span
                 id={`elig-label-${seatSlug}-${o.id}`}
                 className="text-sm font-medium text-gray-700"

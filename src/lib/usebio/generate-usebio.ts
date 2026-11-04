@@ -175,12 +175,33 @@ export type UsebioSwissPairsData = {
 
 /* ---- Swiss Teams ---- */
 
-/** A team in the Swiss Teams roster: a number, a name, and its four players. */
+/**
+ * One partnership within a team. A team normally fields two (its home NS pair
+ * and its travelling EW pair); a mid-game substitution (EBU §2.4.7) adds a
+ * further pair. The format itself does not cap the count; the limit of three
+ * pairs (six distinct players) is the EBU rule for a teams-of-four event,
+ * enforced when the handover is recorded (`MAX_PAIRS_PER_TEAM` in
+ * `handover-seat.ts`), not here. The `pairNumber` is an opaque identifier: USEBIO
+ * only requires that each traveller line's NS_PAIR_NUMBER / EW_PAIR_NUMBER
+ * matches a declared PAIR_NUMBER. We use the app's own pair id — the seat
+ * ("1NS"), or the seat plus occupancy id for a substitute ("1NS#7") — the same
+ * as the pairs export.
+ */
+export type UsebioTeamPair = {
+  pairNumber: string;
+  player1: UsebioPlayer;
+  player2: UsebioPlayer;
+};
+
+/**
+ * A team in the teams roster: a number, a name, and its partnerships (two, or
+ * three once a substitute pair has come in).
+ */
 export type UsebioTeam = {
   teamNumber: string;
   teamName: string;
   sectionId: string;
-  players: UsebioPlayer[];
+  pairs: UsebioTeamPair[];
 };
 
 /** One board within a Swiss Teams match (both rooms), with the net IMPs. */
@@ -195,6 +216,14 @@ export type UsebioTeamBoard = {
 export type UsebioTeamTravellerLine = {
   /** Which direction the primary team sat at this table ("NS"/"EW"). */
   direction: string;
+  /**
+   * The partnership that sat NS / EW at this table for this board, as a
+   * {@link UsebioTeamPair.pairNumber}. Lets the file say WHICH of a team's
+   * partnerships played the board (it matters once a substitute pair has come
+   * in). Optional: omitted when a seat could not be resolved.
+   */
+  nsPairNumber?: string;
+  ewPairNumber?: string;
   contract: string;
   playedBy: string;
   lead: string;
@@ -719,11 +748,14 @@ function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
   event.ele("SECTION_COUNT").txt("1");
   event.ele("BOARDS_PLAYED").txt(String(data.boards));
   event.ele("WINNER_TYPE").txt("1");
+  // Each team declares its partnerships as <PAIR> blocks (not just a flat
+  // player list), and board results are tagged with pair numbers.
+  event.ele("TEAM_PAIRING_AVAILABLE").txt("Y");
 
   const section = startSection(event, data.sectionName || "A");
 
   // Global team roster: each TEAM carries its id and name (both DTD
-  // attributes), its placing, and its four players.
+  // attributes), its placing, and its partnerships (<PAIR> blocks).
   const rankByTeam = new Map(data.ranking.map((r) => [r.number, r]));
   const participants = section.ele("PARTICIPANTS");
   for (const team of data.teams) {
@@ -738,9 +770,7 @@ function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
       teamEl.ele("PLACE").txt(String(rank.place));
     }
 
-    for (const player of team.players) {
-      addPlayer(teamEl, player);
-    }
+    addTeamPairs(teamEl, team.pairs);
   }
 
   // One MATCH per round: the primary TEAM vs its OPPOSING_TEAM over a board
@@ -761,7 +791,7 @@ function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
       boardEl.ele("IMPS").txt(String(board.imps));
       for (const line of board.travellerLines) {
         const lineEl = boardEl.ele("TRAVELLER_LINE");
-        lineEl.ele("DIRECTION").txt(line.direction);
+        appendTeamLineIdentity(lineEl, line);
         appendTravellerDetail(lineEl, line);
       }
     }
@@ -795,6 +825,9 @@ function generateBoardComparisonTeamsXml(
   event.ele("SECTION_COUNT").txt("1");
   event.ele("BOARDS_PLAYED").txt(String(data.boards));
   event.ele("WINNER_TYPE").txt("1");
+  // Partnerships are declared as <PAIR> blocks and board results are tagged
+  // with pair numbers (see the Swiss Teams generator).
+  event.ele("TEAM_PAIRING_AVAILABLE").txt("Y");
 
   const section = startSection(event, data.sectionName || "A");
 
@@ -812,9 +845,7 @@ function generateBoardComparisonTeamsXml(
       teamEl.ele("PLACE").txt(String(rank.place));
     }
 
-    for (const player of team.players) {
-      addPlayer(teamEl, player);
-    }
+    addTeamPairs(teamEl, team.pairs);
   }
 
   for (const match of data.matches) {
@@ -834,7 +865,7 @@ function generateBoardComparisonTeamsXml(
       boardEl.ele("OPPOSING_TEAM_POINTS").txt(String(board.opposingTeamPoints));
       for (const line of board.travellerLines) {
         const lineEl = boardEl.ele("TRAVELLER_LINE");
-        lineEl.ele("DIRECTION").txt(line.direction);
+        appendTeamLineIdentity(lineEl, line);
         appendTravellerDetail(lineEl, line);
       }
     }
@@ -867,6 +898,37 @@ function appendTravellerDetail(
   lineEl.ele("LEAD").txt(detail.lead);
   lineEl.ele("TRICKS").txt(detail.tricks);
   lineEl.ele("SCORE").txt(detail.score);
+}
+
+/**
+ * Write a team's partnerships under its `<TEAM>`: one `<PAIR>` per partnership,
+ * each with its `<PAIR_NUMBER>` and two `<PLAYER>`s. The traveller lines'
+ * NS_PAIR_NUMBER / EW_PAIR_NUMBER refer back to these numbers.
+ */
+function addTeamPairs(
+  teamEl: ReturnType<ReturnType<typeof create>["ele"]>,
+  pairs: UsebioTeamPair[],
+): void {
+  for (const pair of pairs) {
+    const pairEl = teamEl.ele("PAIR");
+    pairEl.ele("PAIR_NUMBER").txt(pair.pairNumber);
+    addPlayer(pairEl, pair.player1);
+    addPlayer(pairEl, pair.player2);
+  }
+}
+
+/**
+ * Write a team traveller line's leading identity: the room DIRECTION, then —
+ * when resolved — which partnership sat NS and EW (the pairs that played this
+ * particular board).
+ */
+function appendTeamLineIdentity(
+  lineEl: ReturnType<ReturnType<typeof create>["ele"]>,
+  line: UsebioTeamTravellerLine,
+): void {
+  lineEl.ele("DIRECTION").txt(line.direction);
+  if (line.nsPairNumber) lineEl.ele("NS_PAIR_NUMBER").txt(line.nsPairNumber);
+  if (line.ewPairNumber) lineEl.ele("EW_PAIR_NUMBER").txt(line.ewPairNumber);
 }
 
 function addPlayer(parentEl: ReturnType<typeof create>, player: UsebioPlayer) {

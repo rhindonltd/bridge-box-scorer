@@ -834,22 +834,34 @@ describe("generateUsebioXml", () => {
             teamNumber: "11",
             teamName: "Sharks",
             sectionId: "A",
-            players: [
-              { firstName: "Al", lastName: "A", nationalId: null },
-              { firstName: "Bo", lastName: "B", nationalId: null },
-              { firstName: "Cy", lastName: "C", nationalId: null },
-              { firstName: "Di", lastName: "D", nationalId: null },
+            pairs: [
+              {
+                pairNumber: "11-1-2",
+                player1: { firstName: "Al", lastName: "A", nationalId: null },
+                player2: { firstName: "Bo", lastName: "B", nationalId: null },
+              },
+              {
+                pairNumber: "11-3-4",
+                player1: { firstName: "Cy", lastName: "C", nationalId: null },
+                player2: { firstName: "Di", lastName: "D", nationalId: null },
+              },
             ],
           },
           {
             teamNumber: "2",
             teamName: "Dragons",
             sectionId: "A",
-            players: [
-              { firstName: "Ed", lastName: "E", nationalId: null },
-              { firstName: "Fi", lastName: "F", nationalId: null },
-              { firstName: "Gu", lastName: "G", nationalId: null },
-              { firstName: "Ha", lastName: "H", nationalId: null },
+            pairs: [
+              {
+                pairNumber: "2-1-2",
+                player1: { firstName: "Ed", lastName: "E", nationalId: null },
+                player2: { firstName: "Fi", lastName: "F", nationalId: null },
+              },
+              {
+                pairNumber: "2-3-4",
+                player1: { firstName: "Gu", lastName: "G", nationalId: null },
+                player2: { firstName: "Ha", lastName: "H", nationalId: null },
+              },
             ],
           },
         ],
@@ -869,6 +881,8 @@ describe("generateUsebioXml", () => {
                 travellerLines: [
                   {
                     direction: "NS",
+                    nsPairNumber: "11-1-2",
+                    ewPairNumber: "2-3-4",
                     contract: "4 H",
                     playedBy: "S",
                     lead: "DK",
@@ -899,7 +913,7 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain('<SECTION SECTION_ID="A">');
     });
 
-    it("lists teams (number, name, placing, four players) in PARTICIPANTS", () => {
+    it("lists teams (number, name, placing, their <PAIR>s) in PARTICIPANTS", () => {
       const xml = generateUsebioXml(makeSwissTeamsData());
       expect(xml).toContain('TEAM_ID="11"');
       expect(xml).toContain('TEAM_NAME="Sharks"');
@@ -908,6 +922,63 @@ describe("generateUsebioXml", () => {
       // Inline placing on the team.
       expect(xml).toContain("<TOTAL_SCORE>19</TOTAL_SCORE>");
       expect(xml).toContain("<PLACE>1</PLACE>");
+    });
+
+    it("declares each partnership as a <PAIR> with a PAIR_NUMBER and two players", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      const sharks = xml.split('TEAM_ID="11"')[1].split("</TEAM>")[0];
+      expect(sharks.match(/<PAIR>/g)).toHaveLength(2);
+      const firstPair = sharks.split("<PAIR>")[1].split("</PAIR>")[0];
+      expect(firstPair).toContain("<PAIR_NUMBER>11-1-2</PAIR_NUMBER>");
+      expect(firstPair).toContain("<PLAYER_NAME>Al A</PLAYER_NAME>");
+      expect(firstPair).toContain("<PLAYER_NAME>Bo B</PLAYER_NAME>");
+      expect(firstPair.match(/<PLAYER>/g)).toHaveLength(2);
+      const secondPair = sharks.split("<PAIR>")[2].split("</PAIR>")[0];
+      expect(secondPair).toContain("<PAIR_NUMBER>11-3-4</PAIR_NUMBER>");
+    });
+
+    it("declares a substitute partnership as a third <PAIR> (six players)", () => {
+      const data = makeSwissTeamsData();
+      data.teams[0].pairs.push({
+        pairNumber: "11-5-6",
+        player1: { firstName: "Sub", lastName: "One", nationalId: "999" },
+        player2: { firstName: "Sub", lastName: "Two", nationalId: null },
+      });
+      const xml = generateUsebioXml(data);
+      const sharks = xml.split('TEAM_ID="11"')[1].split("</TEAM>")[0];
+      expect(sharks.match(/<PAIR>/g)).toHaveLength(3);
+      expect(sharks.match(/<PLAYER>/g)).toHaveLength(6);
+      expect(sharks).toContain("<PAIR_NUMBER>11-5-6</PAIR_NUMBER>");
+      expect(sharks).toContain("<NATIONAL_ID_NUMBER>999</NATIONAL_ID_NUMBER>");
+    });
+
+    it("tells EBU tooling that team pairing is available", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      expect(xml).toContain("<TEAM_PAIRING_AVAILABLE>Y</TEAM_PAIRING_AVAILABLE>");
+    });
+
+    it("tags each traveller line with the pairs that sat NS and EW", () => {
+      const xml = generateUsebioXml(makeSwissTeamsData());
+      const line = xml.split("<TRAVELLER_LINE>")[1].split("</TRAVELLER_LINE>")[0];
+      expect(line).toContain("<NS_PAIR_NUMBER>11-1-2</NS_PAIR_NUMBER>");
+      expect(line).toContain("<EW_PAIR_NUMBER>2-3-4</EW_PAIR_NUMBER>");
+      // Identity comes straight after DIRECTION, before the contract detail.
+      expect(line.indexOf("<DIRECTION>")).toBeLessThan(
+        line.indexOf("<NS_PAIR_NUMBER>"),
+      );
+      expect(line.indexOf("<EW_PAIR_NUMBER>")).toBeLessThan(
+        line.indexOf("<CONTRACT>"),
+      );
+    });
+
+    it("omits the pair numbers on a traveller line that has none", () => {
+      const data = makeSwissTeamsData();
+      delete data.matches[0].boards[0].travellerLines[0].nsPairNumber;
+      delete data.matches[0].boards[0].travellerLines[0].ewPairNumber;
+      const xml = generateUsebioXml(data);
+      const line = xml.split("<TRAVELLER_LINE>")[1].split("</TRAVELLER_LINE>")[0];
+      expect(line).not.toContain("NS_PAIR_NUMBER");
+      expect(line).not.toContain("EW_PAIR_NUMBER");
     });
 
     it("emits a MATCH with the competing teams, board range and VP scores", () => {
@@ -1027,22 +1098,34 @@ describe("generateUsebioXml", () => {
             teamNumber: "1",
             teamName: "Sharks",
             sectionId: "A",
-            players: [
-              { firstName: "Ann", lastName: "One", nationalId: "1" },
-              { firstName: "Bob", lastName: "Two", nationalId: null },
-              { firstName: "Cy", lastName: "Three", nationalId: null },
-              { firstName: "Di", lastName: "Four", nationalId: null },
+            pairs: [
+              {
+                pairNumber: "1-1-2",
+                player1: { firstName: "Ann", lastName: "One", nationalId: "1" },
+                player2: { firstName: "Bob", lastName: "Two", nationalId: null },
+              },
+              {
+                pairNumber: "1-3-4",
+                player1: { firstName: "Cy", lastName: "Three", nationalId: null },
+                player2: { firstName: "Di", lastName: "Four", nationalId: null },
+              },
             ],
           },
           {
             teamNumber: "2",
             teamName: "Dragons",
             sectionId: "A",
-            players: [
-              { firstName: "Ed", lastName: "Five", nationalId: null },
-              { firstName: "Fi", lastName: "Six", nationalId: null },
-              { firstName: "Gu", lastName: "Seven", nationalId: null },
-              { firstName: "Ha", lastName: "Eight", nationalId: null },
+            pairs: [
+              {
+                pairNumber: "2-1-2",
+                player1: { firstName: "Ed", lastName: "Five", nationalId: null },
+                player2: { firstName: "Fi", lastName: "Six", nationalId: null },
+              },
+              {
+                pairNumber: "2-3-4",
+                player1: { firstName: "Gu", lastName: "Seven", nationalId: null },
+                player2: { firstName: "Ha", lastName: "Eight", nationalId: null },
+              },
             ],
           },
         ],

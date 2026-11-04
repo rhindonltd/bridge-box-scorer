@@ -50,9 +50,8 @@ describe("generateUsebio", () => {
 
   async function seedPairAndBoard() {
     const { createPlayer } = await import("@/db/games/actions/create-player");
-    const { createParticipant } = await import(
-      "@/db/games/actions/create-participant"
-    );
+    const { createParticipant } =
+      await import("@/db/games/actions/create-participant");
     const { createBoard } = await import("@/db/games/actions/create-board");
 
     const p1 = await createPlayer(harness.gameId, {
@@ -95,7 +94,9 @@ describe("generateUsebio", () => {
 
     expect(xml).toContain('<USEBIO Version="1.2">');
     expect(xml).toContain("<CLUB_NAME>Test Bridge Club</CLUB_NAME>");
-    expect(xml).toContain("<EVENT_DESCRIPTION>Monday Pairs</EVENT_DESCRIPTION>");
+    expect(xml).toContain(
+      "<EVENT_DESCRIPTION>Monday Pairs</EVENT_DESCRIPTION>",
+    );
     expect(xml).toContain("<PLAYER_NAME>Alice Smith</PLAYER_NAME>");
     expect(xml).toContain("<BOARD_NUMBER>1</BOARD_NUMBER>");
   });
@@ -115,7 +116,21 @@ describe("generateUsebio", () => {
     const { upsertDeal } = await import("@/db/games/actions/set-deal");
     const db = (await harness.getDb()) as Db;
 
-    const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const ranks: Rank[] = [
+      "A",
+      "K",
+      "Q",
+      "J",
+      "T",
+      "9",
+      "8",
+      "7",
+      "6",
+      "5",
+      "4",
+      "3",
+      "2",
+    ];
     await upsertDeal(db, 1, {
       N: ranks.map((r): Card => `S${r}`),
       E: ranks.map((r): Card => `H${r}`),
@@ -136,9 +151,7 @@ describe("generateUsebio", () => {
   });
 
   it("emits one SECTION per section with unprefixed pair numbers", async () => {
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
     const { createBoard } = await import("@/db/games/actions/create-board");
 
     // Two sections, each with a seated NS/EW pair playing board 1.
@@ -191,9 +204,8 @@ describe("generateUsebio", () => {
 
   async function seatPair(seat: string, first: string) {
     const { createPlayer } = await import("@/db/games/actions/create-player");
-    const { createParticipant } = await import(
-      "@/db/games/actions/create-participant"
-    );
+    const { createParticipant } =
+      await import("@/db/games/actions/create-participant");
     const p1 = await createPlayer(harness.gameId, {
       firstName: first,
       lastName: "N",
@@ -429,8 +441,8 @@ describe("generateUsebio", () => {
 
     expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_PAIRS">');
     // The anchor appears as NS in both of its halves (vs A2EW and vs A3NS).
-    const anchorMatches = xml.split("<NS_PAIR_NUMBER>A1NS</NS_PAIR_NUMBER>")
-      .length - 1;
+    const anchorMatches =
+      xml.split("<NS_PAIR_NUMBER>A1NS</NS_PAIR_NUMBER>").length - 1;
     expect(anchorMatches).toBe(2);
     // The phantom opponent is never emitted as a pair in any match.
     expect(xml).not.toContain("APHANTOM");
@@ -452,7 +464,15 @@ describe("generateUsebio", () => {
     // beforeEach is id 1, which every seeded board already points at — repoint
     // it to a TEAMS match.
     await setTeamsStructure(db, [
-      { id: 10, kind: "TEAMS", home: "A1NS", opponent: "A2NS", vpPool: 20, boardStart: 1, boardEnd: 1 },
+      {
+        id: 10,
+        kind: "TEAMS",
+        home: "A1NS",
+        opponent: "A2NS",
+        vpPool: 20,
+        boardStart: 1,
+        boardEnd: 1,
+      },
     ]);
 
     const teamsGame: BridgeGame = {
@@ -481,14 +501,7 @@ describe("generateUsebio", () => {
     // triple: three head-to-head comparisons on disjoint one-board sets
     //   set A (board 1): 1 v 2, set B (board 2): 2 v 3, set C (board 3): 1 v 3
     // Each comparison is a two-room same-boards match.
-    for (const seat of [
-      "A1NS",
-      "A1EW",
-      "A2NS",
-      "A2EW",
-      "A3NS",
-      "A3EW",
-    ]) {
+    for (const seat of ["A1NS", "A1EW", "A2NS", "A2EW", "A3NS", "A3EW"]) {
       await seatPair(seat, seat);
     }
     // set A board 1 — comparison 1-2
@@ -505,9 +518,36 @@ describe("generateUsebio", () => {
     // The three TRIPLE comparison match rows (SHORT ⇒ 10-VP half pool), one per
     // board set; repoint the boards onto them by their team tables + span.
     await setTeamsStructure(db, [
-      { id: 10, kind: "TRIPLE", home: "A1NS", opponent: "A2NS", vpPool: 10, boardStart: 1, boardEnd: 1, groupId: "triple|A|1-2-3" },
-      { id: 11, kind: "TRIPLE", home: "A2NS", opponent: "A3NS", vpPool: 10, boardStart: 2, boardEnd: 2, groupId: "triple|A|1-2-3" },
-      { id: 12, kind: "TRIPLE", home: "A1NS", opponent: "A3NS", vpPool: 10, boardStart: 3, boardEnd: 3, groupId: "triple|A|1-2-3" },
+      {
+        id: 10,
+        kind: "TRIPLE",
+        home: "A1NS",
+        opponent: "A2NS",
+        vpPool: 10,
+        boardStart: 1,
+        boardEnd: 1,
+        groupId: "triple|A|1-2-3",
+      },
+      {
+        id: 11,
+        kind: "TRIPLE",
+        home: "A2NS",
+        opponent: "A3NS",
+        vpPool: 10,
+        boardStart: 2,
+        boardEnd: 2,
+        groupId: "triple|A|1-2-3",
+      },
+      {
+        id: 12,
+        kind: "TRIPLE",
+        home: "A1NS",
+        opponent: "A3NS",
+        vpPool: 10,
+        boardStart: 3,
+        boardEnd: 3,
+        groupId: "triple|A|1-2-3",
+      },
     ]);
 
     const teamsGame: BridgeGame = {
@@ -554,18 +594,44 @@ describe("generateUsebio", () => {
     // WITHOUT_STANDING so it is unranked — counts for opponents only). A1EW +
     // table 2 are ordinary.
     const mk = (first: string) => {
-      const p1 = db.insert(players).values({ firstName: first, lastName: "N" }).returning().get();
-      const p2 = db.insert(players).values({ firstName: first, lastName: "S" }).returning().get();
+      const p1 = db
+        .insert(players)
+        .values({ firstName: first, lastName: "N" })
+        .returning()
+        .get();
+      const p2 = db
+        .insert(players)
+        .values({ firstName: first, lastName: "S" })
+        .returning()
+        .get();
       return [p1.id, p2.id] as const;
     };
     const [r1, r2] = mk("RealNorth");
     db.insert(seatOccupancy)
-      .values({ seat: "A1NS", boards: [3, 4], player1: r1, player2: r2, secretKey: "A1NS-real", standing: "ACTIVE", isArrivalAnchor: 1, split: 1 })
+      .values({
+        seat: "A1NS",
+        boards: [3, 4],
+        player1: r1,
+        player2: r2,
+        secretKey: "A1NS-real",
+        standing: "ACTIVE",
+        isArrivalAnchor: 1,
+        split: 1,
+      })
       .run();
     const [s1, s2] = mk("StandIn");
     const subRow = db
       .insert(seatOccupancy)
-      .values({ seat: "A1NS", boards: [1, 2], player1: s1, player2: s2, secretKey: "A1NS-sub", standing: "WITHOUT_STANDING", isArrivalAnchor: 0, split: 1 })
+      .values({
+        seat: "A1NS",
+        boards: [1, 2],
+        player1: s1,
+        player2: s2,
+        secretKey: "A1NS-sub",
+        standing: "WITHOUT_STANDING",
+        isArrivalAnchor: 0,
+        split: 1,
+      })
       .returning()
       .get();
     await seatPair("A1EW", "East");
@@ -608,17 +674,45 @@ describe("generateUsebio", () => {
     // A MERGED handover (split = 0): both pairs fold onto the one bare-id line.
     // Default main = the arrival anchor (the arriving pair, "MainArr").
     const mk = (first: string) => {
-      const p1 = db.insert(players).values({ firstName: first, lastName: "N" }).returning().get();
-      const p2 = db.insert(players).values({ firstName: first, lastName: "S" }).returning().get();
+      const p1 = db
+        .insert(players)
+        .values({ firstName: first, lastName: "N" })
+        .returning()
+        .get();
+      const p2 = db
+        .insert(players)
+        .values({ firstName: first, lastName: "S" })
+        .returning()
+        .get();
       return [p1.id, p2.id] as const;
     };
     const [a1, a2] = mk("MainArr");
     db.insert(seatOccupancy)
-      .values({ seat: "A1NS", boards: [3, 4], player1: a1, player2: a2, secretKey: "A1NS-arr", standing: "ACTIVE", isArrivalAnchor: 1, isMainLine: 1, split: 0 })
+      .values({
+        seat: "A1NS",
+        boards: [3, 4],
+        player1: a1,
+        player2: a2,
+        secretKey: "A1NS-arr",
+        standing: "ACTIVE",
+        isArrivalAnchor: 1,
+        isMainLine: 1,
+        split: 0,
+      })
       .run();
     const [e1, e2] = mk("EarlySub");
     db.insert(seatOccupancy)
-      .values({ seat: "A1NS", boards: [1, 2], player1: e1, player2: e2, secretKey: "A1NS-early", standing: "ACTIVE", isArrivalAnchor: 0, isMainLine: 0, split: 0 })
+      .values({
+        seat: "A1NS",
+        boards: [1, 2],
+        player1: e1,
+        player2: e2,
+        secretKey: "A1NS-early",
+        standing: "ACTIVE",
+        isArrivalAnchor: 0,
+        isMainLine: 0,
+        split: 0,
+      })
       .run();
     await seatPair("A1EW", "East");
     await seatPair("A2NS", "North2");
@@ -636,9 +730,7 @@ describe("generateUsebio", () => {
     expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
     expect(xml).not.toContain("1NS#");
     // The one <PAIR> carries the MAIN (arriving) pair's players, NOT the sub's.
-    const pairBlock = xml.slice(
-      xml.indexOf("<PAIR_NUMBER>1NS</PAIR_NUMBER>"),
-    );
+    const pairBlock = xml.slice(xml.indexOf("<PAIR_NUMBER>1NS</PAIR_NUMBER>"));
     const pairEnd = pairBlock.indexOf("</PAIR>");
     expect(pairBlock.slice(0, pairEnd)).toContain("MainArr");
     expect(pairBlock.slice(0, pairEnd)).not.toContain("EarlySub");
@@ -653,17 +745,45 @@ describe("generateUsebio", () => {
     // pair (isMainLine on the non-anchor occupant). The one <PAIR> on 1NS must
     // now carry the EARLIER pair's players instead of the arriving pair's.
     const mk = (first: string) => {
-      const p1 = db.insert(players).values({ firstName: first, lastName: "N" }).returning().get();
-      const p2 = db.insert(players).values({ firstName: first, lastName: "S" }).returning().get();
+      const p1 = db
+        .insert(players)
+        .values({ firstName: first, lastName: "N" })
+        .returning()
+        .get();
+      const p2 = db
+        .insert(players)
+        .values({ firstName: first, lastName: "S" })
+        .returning()
+        .get();
       return [p1.id, p2.id] as const;
     };
     const [a1, a2] = mk("ArrPair");
     db.insert(seatOccupancy)
-      .values({ seat: "A1NS", boards: [3, 4], player1: a1, player2: a2, secretKey: "A1NS-arr", standing: "ACTIVE", isArrivalAnchor: 1, isMainLine: 0, split: 0 })
+      .values({
+        seat: "A1NS",
+        boards: [3, 4],
+        player1: a1,
+        player2: a2,
+        secretKey: "A1NS-arr",
+        standing: "ACTIVE",
+        isArrivalAnchor: 1,
+        isMainLine: 0,
+        split: 0,
+      })
       .run();
     const [e1, e2] = mk("MainEarly");
     db.insert(seatOccupancy)
-      .values({ seat: "A1NS", boards: [1, 2], player1: e1, player2: e2, secretKey: "A1NS-early", standing: "ACTIVE", isArrivalAnchor: 0, isMainLine: 1, split: 0 })
+      .values({
+        seat: "A1NS",
+        boards: [1, 2],
+        player1: e1,
+        player2: e2,
+        secretKey: "A1NS-early",
+        standing: "ACTIVE",
+        isArrivalAnchor: 0,
+        isMainLine: 1,
+        split: 0,
+      })
       .run();
     await seatPair("A1EW", "East");
     await seatPair("A2NS", "North2");
@@ -684,5 +804,128 @@ describe("generateUsebio", () => {
     // The merged <PAIR> now carries the MAIN (earlier) pair, not the arriving.
     expect(pairBlock.slice(0, pairEnd)).toContain("MainEarly");
     expect(pairBlock.slice(0, pairEnd)).not.toContain("ArrPair");
+  });
+  it("exports a TEAMS handover then the original pair's return as three PAIRs, the original keeping boards 1-2 and 5-6", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { boards } = await import("@/db/games/tables/boards");
+    const { createBoard } = await import("@/db/games/actions/create-board");
+    const { handoverSeat } = await import("@/db/games/actions/handover-seat");
+    const { inArray } = await import("drizzle-orm");
+
+    // Team 1 = table 1 pairs (A1NS + A1EW); team 2 = table 2 pairs.
+    await seatPair("A1NS", "Orig");
+    await seatPair("A1EW", "Mate");
+    await seatPair("A2NS", "Opp");
+    await seatPair("A2EW", "Opp2");
+
+    // Boards 1-6 in both rooms; only boards 1-2 have results to begin with.
+    for (const bn of [1, 2, 3, 4, 5, 6]) {
+      const played = bn <= 2;
+      const extra = played
+        ? { status: "CONFIRMED" as const, confirmedResult: "4SN=" as never }
+        : {};
+      await createBoard(harness.gameId, {
+        section: "A",
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: bn,
+        copy: "A",
+        ns: "A1NS",
+        ew: "A2EW",
+        matchId: FIXTURE_MATCH_ID,
+        ...extra,
+      });
+      await createBoard(harness.gameId, {
+        section: "A",
+        roundNumber: 1,
+        tableNumber: 2,
+        boardNumber: bn,
+        copy: "A",
+        ns: "A2NS",
+        ew: "A1EW",
+        matchId: FIXTURE_MATCH_ID,
+        ...extra,
+      });
+    }
+    const score = async (nums: number[]) => {
+      await db
+        .update(boards)
+        .set({ status: "CONFIRMED", confirmedResult: "3NTN=" as never })
+        .where(inArray(boards.boardNumber, nums));
+    };
+
+    // Team 1's NS pair is replaced after board 2, then returns after board 4.
+    const handed = await handoverSeat(harness.gameId, {
+      seat: "A1NS",
+      realPair: {
+        player1: { firstName: "Sub", lastName: "One" },
+        player2: { firstName: "Sub", lastName: "Two" },
+      },
+      secretKey: "sub-key",
+      teamsGame: true,
+    });
+    expect(handed.ok).toBe(true);
+    await score([3, 4]);
+    // The original pair returns: just a handover with their names (seatPair
+    // seated them as "Orig N" / "Orig S").
+    const back = await handoverSeat(harness.gameId, {
+      seat: "A1NS",
+      realPair: {
+        player1: { firstName: "Orig", lastName: "N" },
+        player2: { firstName: "Orig", lastName: "S" },
+      },
+      secretKey: "orig-key",
+      teamsGame: true,
+    });
+    expect(back.ok).toBe(true);
+    await score([5, 6]);
+
+    await setTeamsStructure(db, [
+      {
+        id: 10,
+        kind: "TEAMS",
+        home: "A1NS",
+        opponent: "A2NS",
+        vpPool: 20,
+        boardStart: 1,
+        boardEnd: 6,
+      },
+    ]);
+
+    const teamsGame: BridgeGame = {
+      ...game,
+      gameType: "TEAMS",
+      scoringType: "IMP_VP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 2, rounds: 1, boardsPerRound: 6 },
+      }),
+    };
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const xml = await generateUsebio(db, teamsGame, club, "NORMAL_CLUB");
+
+    // The substitute's app id is its seat plus its occupancy id.
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { eq } = await import("drizzle-orm");
+    const a1ns = db
+      .select()
+      .from(seatOccupancy)
+      .where(eq(seatOccupancy.seat, "A1NS"))
+      .all()
+      .sort((x, y) => x.id - y.id);
+    expect(a1ns).toHaveLength(2);
+    const subNumber = `1NS#${a1ns[1].id}`;
+
+    // Team 1 declares three pairs, each under its app id: the original NS pair
+    // (bare seat), the EW pair, and the substitute.
+    const count = (needle: string) => xml.split(needle).length - 1;
+    expect(count("<PAIR_NUMBER>1NS</PAIR_NUMBER>")).toBe(1);
+    expect(count("<PAIR_NUMBER>1EW</PAIR_NUMBER>")).toBe(1);
+    expect(count(`<PAIR_NUMBER>${subNumber}</PAIR_NUMBER>`)).toBe(1);
+    expect(xml).toContain("Sub");
+    // The sub played boards 3-4 (two lines); the original played 1-2 and 5-6
+    // (four lines) — the returning pair keeps its ORIGINAL id.
+    expect(count(`<NS_PAIR_NUMBER>${subNumber}</NS_PAIR_NUMBER>`)).toBe(2);
+    expect(count("<NS_PAIR_NUMBER>1NS</NS_PAIR_NUMBER>")).toBe(4);
   });
 });

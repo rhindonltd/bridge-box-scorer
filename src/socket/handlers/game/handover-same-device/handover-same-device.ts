@@ -4,6 +4,7 @@ import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { getDb } from "@/db/games";
 import { handoverSeat } from "@/db/games/actions/handover-seat";
+import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 import type { PairSeat } from "@/model/participants";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
@@ -72,6 +73,7 @@ export function registerHandoverSameDeviceHandler(socket: Socket, io: Server) {
           },
           secretKey: key,
           // Options deferred to the director's "Substitutions" screen.
+          teamsGame: await isTeamsGame(gameId),
         });
 
         if (!result.ok) {

@@ -18,11 +18,15 @@ vi.mock("@/socket/handlers/results/broadcast-results", () => ({
   broadcastLeaderboardChanged: vi.fn(),
 }));
 vi.mock("@/socket/websocket", () => ({ getIO: vi.fn(() => null) }));
+vi.mock("@/db/game-index/queries/is-teams-game", () => ({
+  isTeamsGame: vi.fn(),
+}));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { findSubstitutionSeats } from "@/db/games/queries/find-substitution-seats";
 import { setSubstitutionOptions } from "@/db/games/actions/set-substitution-options";
+import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 import * as appHandler from "./route";
 
 const DIRECTOR_HEADERS = {
@@ -62,6 +66,7 @@ describe("/api/games/[gameId]/substitutions", () => {
     vi.clearAllMocks();
     vi.mocked(getDb).mockResolvedValue({} as never);
     vi.mocked(validateDirectorToken).mockReturnValue(true);
+    vi.mocked(isTeamsGame).mockResolvedValue(false);
   });
 
   describe("GET", () => {
@@ -125,6 +130,27 @@ describe("/api/games/[gameId]/substitutions", () => {
               { id: 1, eligible: false },
             ],
           });
+        },
+      });
+    });
+
+    it("rejects a teams event with 400 and writes nothing", async () => {
+      vi.mocked(isTeamsGame).mockResolvedValue(true);
+      await testApiHandler({
+        appHandler,
+        params,
+        test: async ({ fetch }) => {
+          const res = await fetch({
+            method: "PATCH",
+            headers: DIRECTOR_HEADERS,
+            body: JSON.stringify({
+              seat: "A1NS",
+              split: true,
+              eligibility: [{ id: 2, eligible: true }],
+            }),
+          });
+          expect(res.status).toBe(400);
+          expect(setSubstitutionOptions).not.toHaveBeenCalled();
         },
       });
     });

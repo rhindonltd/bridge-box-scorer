@@ -15,6 +15,7 @@ import {
   buildOccupantScoredIdResolver,
   findNonPrimaryOccupantPairs,
 } from "@/db/games/queries/seat-occupancy";
+import { players } from "@/db/games/tables/players";
 import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
 import { formatPairNumber, sectionOf } from "@/model/participants";
 import { Club } from "@/db/system/schema";
@@ -28,6 +29,7 @@ import { assembleSwissPairs } from "@/lib/usebio/assemble-swiss-pairs";
 import { assembleSwissTeams } from "@/lib/usebio/assemble-swiss-teams";
 import { assembleImpAggregateTeams } from "@/lib/usebio/assemble-imp-aggregate-teams";
 import { assembleBoardComparisonTeams } from "@/lib/usebio/assemble-board-comparison-teams";
+import type { TeamOccupancy } from "@/lib/usebio/team-pairing";
 import {
   parseSelectedMovement,
   boardsPerRoundOf,
@@ -112,6 +114,7 @@ export async function generateUsebio(
           ruledMatches,
           excludedFromRanking,
           expectedBoards,
+          await readTeamOccupancies(db),
         ),
       );
     }
@@ -130,6 +133,7 @@ export async function generateUsebio(
           boardRows,
           matchRows,
           excludedFromRanking,
+          await readTeamOccupancies(db),
         ),
       );
     }
@@ -151,6 +155,7 @@ export async function generateUsebio(
           matchRows,
           scoring,
           excludedFromRanking,
+          await readTeamOccupancies(db),
         ),
       );
     }
@@ -186,6 +191,36 @@ export async function generateUsebio(
         excludedFromRanking,
       );
   }
+}
+
+/**
+ * Every seat occupancy as the plain {@link TeamOccupancy} the teams export
+ * needs: the occupancy's seat/board-set/arrival flag joined to its two players.
+ * The teams assemblers use it to declare a team's substitute pair (EBU §2.4.7)
+ * and to tag each traveller line with which partnership played it.
+ */
+async function readTeamOccupancies(db: Db): Promise<TeamOccupancy[]> {
+  const [occupancies, playerRows] = await Promise.all([
+    readSeatOccupancies(db),
+    db.select().from(players),
+  ]);
+  const playerById = new Map(playerRows.map((p) => [p.id, p]));
+
+  const result: TeamOccupancy[] = [];
+  for (const occ of occupancies) {
+    const player1 = playerById.get(occ.player1);
+    const player2 = playerById.get(occ.player2);
+    if (!player1 || !player2) continue;
+    result.push({
+      id: occ.id,
+      seat: occ.seat,
+      anchorId: occ.anchorId,
+      boards: occ.boards,
+      player1,
+      player2,
+    });
+  }
+  return result;
 }
 
 async function generateMpPairsUsebio(

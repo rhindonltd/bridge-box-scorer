@@ -5,6 +5,7 @@ import { seatTransferCodes } from "@/db/system/schema";
 import { eq } from "drizzle-orm";
 import { rotateParticipantSecret } from "@/db/games/actions/rotate-participant-secret";
 import { handoverSeat } from "@/db/games/actions/handover-seat";
+import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 import type { NewPlayer } from "@/db/games/tables/players";
 import type { PairSeat } from "@/model/participants";
 import { checkCodeValidity } from "./code-validation";
@@ -127,6 +128,7 @@ export async function validateAndClaimSeatTransferCode(
       realPair,
       secretKey: token,
       // Options deferred to the director's "Substitutions" screen.
+      teamsGame: await isTeamsGame(valid.gameId),
     });
 
     if (!result.ok) {

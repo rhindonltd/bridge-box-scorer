@@ -90,7 +90,7 @@ function board(
 describe("assembleSwissTeams", () => {
   const teams = [team(1, "Sharks"), team(2, "Dragons")];
 
-  it("lists teams with number, name and four players in the roster", () => {
+  it("lists teams with number, name and two partnerships (four players) in the roster", () => {
     const data = assembleSwissTeams(game, club, teams, []);
 
     expect(data.kind).toBe("SWISS_TEAMS");
@@ -100,7 +100,9 @@ describe("assembleSwissTeams", () => {
       teamName: "Sharks",
       sectionId: "A",
     });
-    expect(data.teams[0].players).toHaveLength(4);
+    expect(data.teams[0].pairs).toHaveLength(2);
+    expect(data.teams[0].pairs[0].pairNumber).toBe("1NS");
+    expect(data.teams[0].pairs[1].pairNumber).toBe("1EW");
     expect(data.teams[1].teamNumber).toBe("2");
   });
 
