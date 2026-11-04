@@ -10,6 +10,7 @@ import { setSubstitutionOptions } from "@/db/games/actions/set-substitution-opti
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { getIO } from "@/socket/websocket";
+import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 
 /**
  * GET /api/games/[gameId]/substitutions — the substituted seats (§2.4.7 mid-game
@@ -43,10 +44,23 @@ const patchSchema = z.object({
  * occupant). Director-only. Writes `split` on both occupancies + each
  * occupant's `standing`, then re-broadcasts the participant list + a fresh
  * leaderboard snapshot (the choices change the ranking and the stitched names).
+ * Rejected (400) for a teams event.
  */
 export const PATCH = withDirectorRoute(
   async ({ db: _db, gameId, body }) => {
     try {
+      // Split / eligibility are pairs-only concepts: a team's score is never
+      // affected by which pair sat a seat, so there is nothing to configure.
+      if (await isTeamsGame(gameId)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Substitution options do not apply to a teams event.",
+          },
+          { status: 400 },
+        );
+      }
+
       const updated = await setSubstitutionOptions(gameId, body.seat, {
         split: body.split,
         eligibility: body.eligibility,

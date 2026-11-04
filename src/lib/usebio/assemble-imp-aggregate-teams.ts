@@ -14,6 +14,7 @@ import {
 } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
+import { buildTeamPairing, type TeamOccupancy, type TeamPairing } from "./team-pairing";
 import {
   UsebioClub,
   UsebioSwissTeamsData,
@@ -49,6 +50,9 @@ export function assembleImpAggregateTeams(
   boardRows: Board[],
   matchRows: TeamMatchStructureRow[],
   excludedFromRanking: ReadonlySet<string> = new Set(),
+  // §2.4.7 mid-match substitutions (see assembleSwissTeams). Empty ⇒ the
+  // two-pairs-per-team shape.
+  occupancies: readonly TeamOccupancy[] = [],
 ): UsebioSwissTeamsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -57,26 +61,21 @@ export function assembleImpAggregateTeams(
 
   // Stable team numbers: 1..N in findTeams order (section then table).
   const numberByTeamId = new Map<string, string>();
-  const usebioTeams: UsebioTeam[] = teams.map((team, i) => {
-    const teamNumber = String(i + 1);
-    numberByTeamId.set(team.id, teamNumber);
-    return {
-      teamNumber,
-      teamName: team.name,
-      sectionId: sectionOf(team.id),
-      players: [
-        team.pair1.player1,
-        team.pair1.player2,
-        team.pair2.player1,
-        team.pair2.player2,
-      ],
-    };
-  });
+  teams.forEach((team, i) => numberByTeamId.set(team.id, String(i + 1)));
+
+  const pairing = buildTeamPairing(teams, occupancies);
+  const usebioTeams: UsebioTeam[] = teams.map((team) => ({
+    teamNumber: numberByTeamId.get(team.id)!,
+    teamName: team.name,
+    sectionId: sectionOf(team.id),
+    pairs: pairing.pairsByTeamId.get(team.id) ?? [],
+  }));
 
   const { matches, totals } = buildImpMatches(
     boardRows,
     matchRows,
     numberByTeamId,
+    pairing,
   );
   const ranking = buildRanking(totals, numberByTeamId, excludedFromRanking);
 
@@ -104,10 +103,17 @@ function leadOf(row: Board): Card | null {
 function teamTravellerLine(
   row: Board,
   direction: string,
+  pairing: TeamPairing,
 ): UsebioTeamTravellerLine {
   const outcome = boardResult(row) ?? ("NP" as BoardOutcome);
   const line = buildTravellerLine(row.boardNumber, outcome, leadOf(row));
-  return { direction, ...line };
+  return {
+    direction,
+    // Which partnership sat NS / EW at this table for this board.
+    nsPairNumber: pairing.pairNumberFor(row.ns, row.boardNumber),
+    ewPairNumber: pairing.pairNumberFor(row.ew, row.boardNumber),
+    ...line,
+  };
 }
 
 /**
@@ -119,6 +125,7 @@ function buildImpMatches(
   boardRows: Board[],
   matchRows: TeamMatchStructureRow[],
   numberByTeamId: Map<string, string>,
+  pairing: TeamPairing,
 ): { matches: UsebioSwissTeamsMatch[]; totals: Map<string, number> } {
   const totals = new Map<string, number>();
   const addImps = (teamId: string, imps: number): void => {
@@ -143,8 +150,10 @@ function buildImpMatches(
       const travellerLines: UsebioTeamTravellerLine[] = [];
       const homeRow = homeRows.get(boardNumber);
       const awayRow = awayRows.get(boardNumber);
-      if (homeRow) travellerLines.push(teamTravellerLine(homeRow, "NS"));
-      if (awayRow) travellerLines.push(teamTravellerLine(awayRow, "EW"));
+      if (homeRow)
+        travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+      if (awayRow)
+        travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
       return { boardNumber, imps: imps ?? 0, travellerLines };
     });
 

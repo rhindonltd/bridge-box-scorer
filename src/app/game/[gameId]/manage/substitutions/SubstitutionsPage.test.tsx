@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
@@ -64,14 +70,20 @@ describe("SubstitutionsPage", () => {
 
   it("wires the back action", () => {
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Go back" }));
     expect(onBack).toHaveBeenCalled();
   });
 
   it("shows an empty state when there are no substitutions", () => {
-    render(<SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[]} />);
+    render(
+      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[]} />,
+    );
     expect(
       screen.getByText("No substitutions to configure."),
     ).toBeInTheDocument();
@@ -79,7 +91,11 @@ describe("SubstitutionsPage", () => {
 
   it("lists the seat with both occupants and their board counts", () => {
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
     expect(screen.getByText("A1NS")).toBeInTheDocument();
     expect(
@@ -101,9 +117,7 @@ describe("SubstitutionsPage", () => {
 
     // One-line mode shows the single merged-line eligibility toggle, not the
     // per-occupant ones.
-    expect(
-      screen.getByText("Eligible for local ranking?"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Eligible for local ranking?")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
@@ -121,16 +135,18 @@ describe("SubstitutionsPage", () => {
 
   it("switching to Two lines reveals a per-occupant eligibility toggle and saves split=true", async () => {
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
 
     const splitGroup = screen.getByRole("group", { name: "Split by board?" });
     fireEvent.click(within(splitGroup).getByText("Two lines"));
 
     // Per-occupant eligibility toggles appear.
-    expect(
-      screen.getByText("Late One & Late Two ranked?"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Late One & Late Two ranked?")).toBeInTheDocument();
     expect(
       screen.getByText("Early One & Early Two ranked?"),
     ).toBeInTheDocument();
@@ -149,7 +165,11 @@ describe("SubstitutionsPage", () => {
 
   it("marks one occupant ineligible when split, saving that occupant WITHOUT standing", async () => {
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
 
     const splitGroup = screen.getByRole("group", { name: "Split by board?" });
@@ -175,7 +195,11 @@ describe("SubstitutionsPage", () => {
 
   it("applies the merged-line eligibility to BOTH occupants when not split", async () => {
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
 
     // In one-line mode, turning the single toggle off marks the whole line
@@ -200,7 +224,11 @@ describe("SubstitutionsPage", () => {
 
   it("lets the director pick the other pair as the main pair (merged seat)", async () => {
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
 
     // The Main pair control lists both pairs; default is the anchor (id 2).
@@ -225,7 +253,11 @@ describe("SubstitutionsPage", () => {
 
   it("hides the Main pair control when the seat is split", async () => {
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
 
     // Merged by default → Main pair control present.
@@ -405,7 +437,11 @@ describe("SubstitutionsPage", () => {
   it("surfaces a save error", async () => {
     onSave.mockRejectedValueOnce(new Error("network down"));
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("network down");
@@ -413,9 +449,36 @@ describe("SubstitutionsPage", () => {
 
   it("shows 'Saved' after a successful save", async () => {
     render(
-      <SubstitutionsPage onBack={onBack} onSave={onSave} substitutions={[row()]} />,
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        substitutions={[row()]}
+      />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByRole("button", { name: "Saved" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Saved" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders a read-only list for a teams event (no toggles, no Save)", () => {
+    render(
+      <SubstitutionsPage
+        onBack={onBack}
+        onSave={onSave}
+        isTeams
+        isPairs={false}
+        substitutions={[row()]}
+      />,
+    );
+    expect(screen.getByText("A1NS")).toBeInTheDocument();
+    expect(
+      screen.getByText("Late One & Late Two — 2 boards"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Save" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Split by board?")).not.toBeInTheDocument();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 });

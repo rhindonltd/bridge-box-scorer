@@ -20,6 +20,7 @@ import {
 import { voidMatchVp } from "@/model/teams-match-void";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
+import { buildTeamPairing, type TeamOccupancy, type TeamPairing } from "./team-pairing";
 import {
   UsebioClub,
   UsebioSwissTeamsData,
@@ -54,6 +55,11 @@ export function assembleSwissTeams(
   matchRows: TeamMatchStructureRow[],
   excludedFromRanking: ReadonlySet<string> = new Set(),
   expectedBoards?: number,
+  // §2.4.7 mid-match substitutions: the seat occupancies, so a team whose NS or
+  // EW seat was handed over declares the substitute as a third partnership and
+  // each traveller line is tagged with which partnership played it. Empty for
+  // every game with no substitution (the pre-existing two-pairs-per-team shape).
+  occupancies: readonly TeamOccupancy[] = [],
 ): UsebioSwissTeamsData {
   const usebioClub: UsebioClub = {
     name: club.name,
@@ -63,27 +69,21 @@ export function assembleSwissTeams(
   // Stable team numbers: 1..N in findTeams order (section then table). The
   // team id ("A1NS") maps to its USEBIO number and its display name/players.
   const numberByTeamId = new Map<string, string>();
-  const usebioTeams: UsebioTeam[] = teams.map((team, i) => {
-    const teamNumber = String(i + 1);
-    numberByTeamId.set(team.id, teamNumber);
-    const section = sectionOf(team.id);
-    return {
-      teamNumber,
-      teamName: team.name,
-      sectionId: section,
-      players: [
-        team.pair1.player1,
-        team.pair1.player2,
-        team.pair2.player1,
-        team.pair2.player2,
-      ],
-    };
-  });
+  teams.forEach((team, i) => numberByTeamId.set(team.id, String(i + 1)));
+
+  const pairing = buildTeamPairing(teams, occupancies);
+  const usebioTeams: UsebioTeam[] = teams.map((team) => ({
+    teamNumber: numberByTeamId.get(team.id)!,
+    teamName: team.name,
+    sectionId: sectionOf(team.id),
+    pairs: pairing.pairsByTeamId.get(team.id) ?? [],
+  }));
 
   const { matches, totals } = buildUsebioMatches(
     boardRows,
     matchRows,
     numberByTeamId,
+    pairing,
     expectedBoards,
   );
   const ranking = buildRanking(totals, numberByTeamId, excludedFromRanking);
@@ -119,6 +119,7 @@ function buildUsebioMatches(
   boardRows: Board[],
   matchRows: TeamMatchStructureRow[],
   numberByTeamId: Map<string, string>,
+  pairing: TeamPairing,
   expectedBoards?: number,
 ): { matches: UsebioSwissTeamsMatch[]; totals: Map<string, number> } {
   const totals = new Map<string, number>();
@@ -142,8 +143,10 @@ function buildUsebioMatches(
       const homeRow = match.homeRowsByBoard.get(boardNumber);
       const awayRow = match.opponentRowsByBoard.get(boardNumber);
       // Primary team sat NS at its own home table, EW at the opponent's.
-      if (homeRow) travellerLines.push(teamTravellerLine(homeRow, "NS"));
-      if (awayRow) travellerLines.push(teamTravellerLine(awayRow, "EW"));
+      if (homeRow)
+        travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+      if (awayRow)
+        travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
       return { boardNumber, imps: imps ?? 0, travellerLines };
     });
 
@@ -195,8 +198,10 @@ function buildUsebioMatches(
         const travellerLines: UsebioTeamTravellerLine[] = [];
         const homeRow = sub.homeRowsByBoard.get(boardNumber);
         const awayRow = sub.opponentRowsByBoard.get(boardNumber);
-        if (homeRow) travellerLines.push(teamTravellerLine(homeRow, "NS"));
-        if (awayRow) travellerLines.push(teamTravellerLine(awayRow, "EW"));
+        if (homeRow)
+          travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+        if (awayRow)
+          travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
         return { boardNumber, imps: imps ?? 0, travellerLines };
       });
 
@@ -225,10 +230,20 @@ function buildUsebioMatches(
   return { matches, totals };
 }
 
-function teamTravellerLine(row: Board, direction: string): UsebioTeamTravellerLine {
+function teamTravellerLine(
+  row: Board,
+  direction: string,
+  pairing: TeamPairing,
+): UsebioTeamTravellerLine {
   const outcome = boardResult(row) ?? ("NP" as BoardOutcome);
   const line = buildTravellerLine(row.boardNumber, outcome, leadOf(row));
-  return { direction, ...line };
+  return {
+    direction,
+    // Which partnership sat NS / EW at this table for this board.
+    nsPairNumber: pairing.pairNumberFor(row.ns, row.boardNumber),
+    ewPairNumber: pairing.pairNumberFor(row.ew, row.boardNumber),
+    ...line,
+  };
 }
 
 /**

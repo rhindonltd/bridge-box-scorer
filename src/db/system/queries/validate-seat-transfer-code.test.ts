@@ -34,12 +34,17 @@ vi.mock("@/db/games/actions/handover-seat", () => ({
   handoverSeat: vi.fn(),
 }));
 
+vi.mock("@/db/game-index/queries/is-teams-game", () => ({
+  isTeamsGame: vi.fn(),
+}));
+
 import {
   validateAndClaimSeatTransferCode,
   inspectSeatTransferCode,
 } from "./validate-seat-transfer-code";
 import { rotateParticipantSecret } from "@/db/games/actions/rotate-participant-secret";
 import { handoverSeat } from "@/db/games/actions/handover-seat";
+import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 
 const REAL_PAIR = {
   player1: { firstName: "Real", lastName: "One" },
@@ -59,6 +64,26 @@ describe("validateAndClaimSeatTransferCode", () => {
     record = null;
     vi.mocked(rotateParticipantSecret).mockResolvedValue(true);
     vi.mocked(handoverSeat).mockResolvedValue({ ok: true });
+    vi.mocked(isTeamsGame).mockResolvedValue(false);
+  });
+
+  it("tells the handover engine whether the claimed game is a teams game", async () => {
+    record = {
+      code: "HND234",
+      gameId: "g9",
+      seat: "A1NS",
+      expiresAt: futureIso(),
+      used: 0,
+      kind: "HANDOVER",
+    };
+    vi.mocked(isTeamsGame).mockResolvedValue(true);
+
+    await validateAndClaimSeatTransferCode("hnd234", REAL_PAIR);
+
+    expect(isTeamsGame).toHaveBeenCalledWith("g9");
+    expect(vi.mocked(handoverSeat).mock.calls[0][1]).toMatchObject({
+      teamsGame: true,
+    });
   });
 
   it("claims a valid code, rotates the seat secret, marks used, returns the new token", async () => {
@@ -163,7 +188,10 @@ describe("validateAndClaimSeatTransferCode", () => {
     });
 
     it("runs the handover engine with the new token and does NOT rotate", async () => {
-      const result = await validateAndClaimSeatTransferCode("HAND01", REAL_PAIR);
+      const result = await validateAndClaimSeatTransferCode(
+        "HAND01",
+        REAL_PAIR,
+      );
 
       expect(result.valid).toBe(true);
       if (!result.valid) throw new Error("expected valid");
@@ -173,6 +201,7 @@ describe("validateAndClaimSeatTransferCode", () => {
         seat: "A3NS",
         realPair: REAL_PAIR,
         secretKey: result.token,
+        teamsGame: false,
       });
       // The plain rotate path is NOT used for a handover.
       expect(rotateParticipantSecret).not.toHaveBeenCalled();
@@ -197,7 +226,10 @@ describe("validateAndClaimSeatTransferCode", () => {
         error: "This seat has already had a handover.",
       });
 
-      const result = await validateAndClaimSeatTransferCode("HAND01", REAL_PAIR);
+      const result = await validateAndClaimSeatTransferCode(
+        "HAND01",
+        REAL_PAIR,
+      );
 
       expect(result).toEqual({
         valid: false,

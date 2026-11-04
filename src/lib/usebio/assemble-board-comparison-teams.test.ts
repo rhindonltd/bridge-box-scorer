@@ -93,7 +93,7 @@ describe("assembleBoardComparisonTeams — Board-a-Match (scale 1)", () => {
     expect(data.scoring).toBe("BAM");
     expect(data.teams).toHaveLength(2);
     expect(data.teams[0]).toMatchObject({ teamNumber: "1", teamName: "Sharks" });
-    expect(data.teams[0].players).toHaveLength(4);
+    expect(data.teams[0].pairs).toHaveLength(2);
   });
 
   it("emits per-board win/tie/loss points (0/0.5/1) from the home team's view", () => {

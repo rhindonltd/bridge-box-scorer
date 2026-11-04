@@ -23,7 +23,12 @@ vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
+vi.mock("@/db/game-index/queries/is-teams-game", () => ({
+  isTeamsGame: vi.fn(),
+}));
+
 import { handoverSeat } from "@/db/games/actions/handover-seat";
+import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
@@ -60,6 +65,18 @@ describe("registerHandoverSameDeviceHandler (unit)", () => {
     vi.mocked(getDb).mockResolvedValue({} as any);
     vi.mocked(assertPlayer).mockResolvedValue(true);
     vi.mocked(handoverSeat).mockResolvedValue({ ok: true });
+    vi.mocked(isTeamsGame).mockResolvedValue(false);
+  });
+
+  it("tells the engine whether this is a teams game (for the team pair cap)", async () => {
+    const { fn } = handlerFor();
+
+    vi.mocked(isTeamsGame).mockResolvedValue(true);
+    await fn(validPayload, vi.fn());
+    expect(isTeamsGame).toHaveBeenCalledWith("g1");
+    expect(vi.mocked(handoverSeat).mock.calls[0][1]).toMatchObject({
+      teamsGame: true,
+    });
   });
 
   it("registers on the HANDOVER_SAME_DEVICE event", () => {

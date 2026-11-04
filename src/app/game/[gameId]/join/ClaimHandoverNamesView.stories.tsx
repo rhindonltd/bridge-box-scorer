@@ -36,11 +36,12 @@ export const BothChosen: Story = {
   },
 };
 
-/** A server error (e.g. the seat already handed over). */
+/** A server error (e.g. a third pair on a seat that already has a substitute). */
 export const WithError: Story = {
   args: {
     player1: { firstName: "Alice", lastName: "Smith", nationalId: null },
     player2: { firstName: "Bob", lastName: "Jones", nationalId: null },
-    error: "This seat has already had a handover.",
+    error:
+      "This seat already has a substitute. Only the pair who played it earlier (Carol May & Dan Fox) can take it back.",
   },
 };

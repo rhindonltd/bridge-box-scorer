@@ -37,6 +37,8 @@ export function Substitutions({ gameId }: { gameId: string }) {
   // NGS/Masterpoint warning stays hidden rather than flashing on a seat it may
   // not apply to. (GameProvider primes this cache, so it's normally immediate.)
   const isPairs = game?.gameType === "PAIRS";
+  // Teams get a read-only view (no split/eligibility choices apply).
+  const isTeams = game?.gameType === "TEAMS";
 
   if (isLoading) {
     return <FullScreenSpinner />;
@@ -56,6 +58,7 @@ export function Substitutions({ gameId }: { gameId: string }) {
       onBack={() => router.push(`/game/${gameId}/manage`)}
       substitutions={data ?? []}
       isPairs={isPairs}
+      isTeams={isTeams}
       onSave={handleSave}
     />
   );
