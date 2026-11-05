@@ -7,6 +7,14 @@ import { SocketEvents } from "@/socket/socket-events";
 
 // ---- Mock all DB layers ----
 
+// create-participant checks whether the game has started (design §11 late
+// arrivals); these scenarios are all pre-start.
+vi.mock("@/db/games/queries/is-game-started", () => ({
+  isGameStarted: vi.fn(async () => false),
+}));
+vi.mock("@/db/games/actions/record-late-arrival", () => ({
+  recordLateArrival: vi.fn(),
+}));
 vi.mock("@/db/game-index/actions/create-game", () => ({
   createBridgeGame: vi.fn(),
 }));
@@ -117,7 +125,13 @@ describe("Multi-client Socket.IO scenarios", () => {
     // section's table range; a layout with section A (8 tables) keeps the
     // A1NS seat these scenarios use valid.
     vi.mocked(findSections).mockResolvedValue([
-      { section: "A", label: "A", tables: 8, selectedMovement: null, ordinal: 0 },
+      {
+        section: "A",
+        label: "A",
+        tables: 8,
+        selectedMovement: null,
+        ordinal: 0,
+      },
     ] as any);
   });
 

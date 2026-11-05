@@ -43,11 +43,14 @@ export function usePlayFlow(
    * retry on 404 — a `GAME_UPDATED` broadcast at start revalidates instead.
    */
   const playStateKey = swrKeys.playState(gameId, seat);
-  const { data: resolved, error: resolvedError } =
-    useSWR<ResolvedPlayStateResponse>(playStateKey, fetcher, {
-      shouldRetryOnError: (error: Error & { status?: number }) =>
-        error.status !== 404,
-    });
+  const {
+    data: resolved,
+    error: resolvedError,
+    mutate: refreshResolved,
+  } = useSWR<ResolvedPlayStateResponse>(playStateKey, fetcher, {
+    shouldRetryOnError: (error: Error & { status?: number }) =>
+      error.status !== 404,
+  });
 
   // The play-state route (per-game DB) doesn't know the game-level
   // `handEntryEnabled` flag, which lives on the game-index row and reaches us
@@ -102,7 +105,11 @@ export function usePlayFlow(
    * then (and on reconnect) so a waiting player advances into play without a
    * manual refresh.
    */
-  useSocketRevalidate(playStateKey, [SocketEvents.GAME_UPDATED], [playStateKey]);
+  useSocketRevalidate(
+    playStateKey,
+    [SocketEvents.GAME_UPDATED],
+    [playStateKey],
+  );
 
   /*
    * Initialise the play state once per (gameId, seat), and auto-advance a
@@ -128,6 +135,28 @@ export function usePlayFlow(
    */
   const initialisedKeyRef = useRef<string | null>(null);
 
+  /*
+   * Design §11: when boards this pair can no longer play are marked ABSENT (an
+   * opponent withdrew, or a late pair was seated), the server broadcasts
+   * SCHEDULE_CHANGED. Re-read the play state and — unlike an ordinary
+   * background revalidation — re-derive the position from it, so a pair waiting
+   * on (or about to enter) a board that will never be played is moved on. The
+   * server's resolve reconstructs any in-progress submission, so nothing
+   * entered is lost.
+   */
+  const resyncRef = useRef(false);
+  useEffect(() => {
+    const socket = getSocket();
+    const onScheduleChanged = () => {
+      resyncRef.current = true;
+      void refreshResolved();
+    };
+    socket.on(SocketEvents.SCHEDULE_CHANGED, onScheduleChanged);
+    return () => {
+      socket.off(SocketEvents.SCHEDULE_CHANGED, onScheduleChanged);
+    };
+  }, [refreshResolved]);
+
   useEffect(() => {
     const key = `${gameId}/${seat}`;
 
@@ -140,6 +169,13 @@ export function usePlayFlow(
 
     if (initialisedKeyRef.current !== key) {
       initialisedKeyRef.current = key;
+      setPlayState(playStateFromResolved(resolved));
+      return;
+    }
+
+    // A schedule change (design §11) re-derives the position from the server.
+    if (resyncRef.current) {
+      resyncRef.current = false;
       setPlayState(playStateFromResolved(resolved));
       return;
     }

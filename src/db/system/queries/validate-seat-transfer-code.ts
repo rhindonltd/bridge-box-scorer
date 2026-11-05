@@ -5,6 +5,7 @@ import { seatTransferCodes } from "@/db/system/schema";
 import { eq } from "drizzle-orm";
 import { rotateParticipantSecret } from "@/db/games/actions/rotate-participant-secret";
 import { handoverSeat } from "@/db/games/actions/handover-seat";
+import { reinstatePair } from "@/db/games/actions/reinstate-pair";
 import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 import type { NewPlayer } from "@/db/games/tables/players";
 import type { PairSeat } from "@/model/participants";
@@ -69,13 +70,16 @@ export async function inspectSeatTransferCode(
  * device, consuming the code. Returns the resolved game, seat, new token, and
  * whether this was a handover.
  *
- * Two cases, decided by the code's OWN `kind` (set when minted — not inferred
+ * Three cases, decided by the code's OWN `kind` (set when minted — not inferred
  * from the seat's standing):
  *  - CHANGE_DEVICE: rotate that seat's secret to the fresh token (invalidating
  *    the old device). The same pair, new phone. Unchanged from before.
  *  - HANDOVER: run the handover engine, seating the arriving pair (whose names
  *    the claim must carry) over the unplayed boards WITH the fresh token as
  *    their secret. The claim therefore requires `realPair`.
+ *  - REINSTATE: run the reinstate engine for a WITHDRAWN pair (standing back to
+ *    ACTIVE, its missed boards playable again) WITH the fresh token as its
+ *    secret. No names (the pair is already on record).
  *
  * Rejects a missing / already-used / expired code, a seat no longer occupied,
  * a handover claim missing the arriving pair's names, and any handover-engine
@@ -146,6 +150,30 @@ export async function validateAndClaimSeatTransferCode(
       seat: valid.seat,
       token,
       isHandover: true,
+    };
+  }
+
+  if (valid.kind === "REINSTATE") {
+    // A withdrawn pair returns: reinstate it (standing → ACTIVE, its missed
+    // boards playable again) with the claiming device's fresh token.
+    const result = await reinstatePair(
+      valid.gameId,
+      valid.seat as PairSeat,
+      token,
+    );
+    await consume();
+    if (!result.ok) {
+      return {
+        valid: false,
+        error: result.error ?? "Could not reinstate the pair.",
+      };
+    }
+    return {
+      valid: true,
+      gameId: valid.gameId,
+      seat: valid.seat,
+      token,
+      isHandover: false,
     };
   }
 

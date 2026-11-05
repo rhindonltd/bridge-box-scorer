@@ -21,14 +21,6 @@ export interface MitchellMovementSpec {
   modified?: boolean;
 }
 
-export interface SkipMitchellMovementSpec extends MitchellMovementSpec {
-  skip: true;
-}
-
-export interface ShareAndRelayMovementSpec extends MitchellMovementSpec {
-  shareAndRelay: true;
-}
-
 export function wrapValue(value: number, modulus: number): number {
   return ((((value - 1) % modulus) + modulus) % modulus) + 1;
 }

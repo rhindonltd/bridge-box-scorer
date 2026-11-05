@@ -47,6 +47,14 @@ interface Props {
    * entered results.
    */
   onHandover: (seat: Seat, request: HandoverRequest) => void;
+  /**
+   * Whether the post-start "Change standing" control (withdrawn / late /
+   * without standing) is offered. False for board-pooled PAIRS events, where a
+   * pair withdraws itself from its own device and the director chooses how the
+   * missed boards score on the Late Arrivals / Withdrawals screen (design §11).
+   * Defaults to true (teams, Swiss).
+   */
+  showStandingControls?: boolean;
   /** Close the dialog. */
   onClose: () => void;
 }
@@ -80,6 +88,7 @@ export function DirectorTableModal({
   onChangeStanding,
   onToggleExpectedLate,
   onHandover,
+  showStandingControls = true,
   onClose,
 }: Props) {
   const open = table != null;
@@ -120,6 +129,7 @@ export function DirectorTableModal({
                   onChangeStanding={onChangeStanding}
                   onToggleExpectedLate={onToggleExpectedLate}
                   onHandover={onHandover}
+                  showStandingControls={showStandingControls}
                   onClose={onClose}
                 />
               )}
@@ -140,6 +150,7 @@ function TableModalBody({
   onChangeStanding,
   onToggleExpectedLate,
   onHandover,
+  showStandingControls,
   onClose,
 }: {
   table: DirectorTable;
@@ -150,6 +161,7 @@ function TableModalBody({
   onChangeStanding: (seat: Seat, change: StandingChange) => void;
   onToggleExpectedLate: (seat: Seat, next: boolean) => void;
   onHandover: (seat: Seat, request: HandoverRequest) => void;
+  showStandingControls: boolean;
   onClose: () => void;
 }) {
   return (
@@ -169,50 +181,54 @@ function TableModalBody({
         </Dialog.Description>
 
         <div className="mt-4 flex flex-col gap-3">
-        {/* Keyed by each pair's own seat so React keeps a stable identity for
+          {/* Keyed by each pair's own seat so React keeps a stable identity for
             the two rows. Without keys the siblings reconcile by position, and
             because PairRow holds local state (openForm) and switches subtree
             shape between its occupied and empty branches, a seated row and an
             empty row would share instance state — making one row's toggle
             appear to drive the other's. */}
-        <PairRow
-          key={table.pairSeats.ns}
-          label="North / South"
-          player1={table.players.N}
-          player2={table.players.S}
-          seat={table.seats.N}
-          pairSeat={table.pairSeats.ns}
-          stationary={table.stationary?.N ?? false}
-          standing={table.standing?.N ?? null}
-          expectedLate={table.expectedLate?.N ?? false}
-          isSwiss={isSwiss}
-          started={started}
-          onEvict={onEvict}
-          onToggleStationary={() => onToggleStationary(table.tableNumber, true)}
-          onChangeStanding={onChangeStanding}
-          onToggleExpectedLate={onToggleExpectedLate}
-          onHandover={onHandover}
-        />
-        <PairRow
-          key={table.pairSeats.ew}
-          label="East / West"
-          player1={table.players.E}
-          player2={table.players.W}
-          seat={table.seats.E}
-          pairSeat={table.pairSeats.ew}
-          stationary={table.stationary?.E ?? false}
-          standing={table.standing?.E ?? null}
-          expectedLate={table.expectedLate?.E ?? false}
-          isSwiss={isSwiss}
-          started={started}
-          onEvict={onEvict}
-          onToggleStationary={() =>
-            onToggleStationary(table.tableNumber, false)
-          }
-          onChangeStanding={onChangeStanding}
-          onToggleExpectedLate={onToggleExpectedLate}
-          onHandover={onHandover}
-        />
+          <PairRow
+            key={table.pairSeats.ns}
+            label="North / South"
+            player1={table.players.N}
+            player2={table.players.S}
+            seat={table.seats.N}
+            pairSeat={table.pairSeats.ns}
+            stationary={table.stationary?.N ?? false}
+            standing={table.standing?.N ?? null}
+            expectedLate={table.expectedLate?.N ?? false}
+            isSwiss={isSwiss}
+            started={started}
+            onEvict={onEvict}
+            onToggleStationary={() =>
+              onToggleStationary(table.tableNumber, true)
+            }
+            onChangeStanding={onChangeStanding}
+            onToggleExpectedLate={onToggleExpectedLate}
+            onHandover={onHandover}
+            showStandingControls={showStandingControls}
+          />
+          <PairRow
+            key={table.pairSeats.ew}
+            label="East / West"
+            player1={table.players.E}
+            player2={table.players.W}
+            seat={table.seats.E}
+            pairSeat={table.pairSeats.ew}
+            stationary={table.stationary?.E ?? false}
+            standing={table.standing?.E ?? null}
+            expectedLate={table.expectedLate?.E ?? false}
+            isSwiss={isSwiss}
+            started={started}
+            onEvict={onEvict}
+            onToggleStationary={() =>
+              onToggleStationary(table.tableNumber, false)
+            }
+            onChangeStanding={onChangeStanding}
+            onToggleExpectedLate={onToggleExpectedLate}
+            onHandover={onHandover}
+            showStandingControls={showStandingControls}
+          />
         </div>
       </div>
 
@@ -265,6 +281,7 @@ function PairRow({
   onChangeStanding,
   onToggleExpectedLate,
   onHandover,
+  showStandingControls,
 }: {
   label: string;
   player1: Omit<Player, "id"> | null;
@@ -282,6 +299,7 @@ function PairRow({
   onChangeStanding: (seat: Seat, change: StandingChange) => void;
   onToggleExpectedLate: (seat: Seat, next: boolean) => void;
   onHandover: (seat: Seat, request: HandoverRequest) => void;
+  showStandingControls: boolean;
 }) {
   const occupied = seat != null;
   const stationaryLabelId = `stationary-${label.replace(/\W+/g, "-")}`;
@@ -370,21 +388,27 @@ function PairRow({
             />
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => setOpenForm("standing")}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <span aria-hidden="true">Change standing</span>
-                <span className="sr-only">Change standing for {label} pair</span>
-              </button>
+              {showStandingControls && (
+                <button
+                  type="button"
+                  onClick={() => setOpenForm("standing")}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <span aria-hidden="true">Change standing</span>
+                  <span className="sr-only">
+                    Change standing for {label} pair
+                  </span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setOpenForm("handover")}
                 className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <span aria-hidden="true">Hand over to real pair</span>
-                <span className="sr-only">Hand {label} over to the real pair</span>
+                <span className="sr-only">
+                  Hand {label} over to the real pair
+                </span>
               </button>
             </>
           )}
@@ -498,7 +522,9 @@ function StandingForm({
               id={roundLabelId}
               className="text-sm font-medium text-gray-700"
             >
-              {standing === "WITHDRAWN" ? "Withdrew in round" : "Arrived in round"}
+              {standing === "WITHDRAWN"
+                ? "Withdrew in round"
+                : "Arrived in round"}
             </span>
             <div aria-labelledby={roundLabelId}>
               <NumberStepper min={1} value={round} onChange={setRound} />
@@ -603,10 +629,26 @@ function HandoverForm({
         screen.
       </p>
 
-      <TextField label="Player 1 first name" value={firstName1} onChange={setFirstName1} />
-      <TextField label="Player 1 surname" value={lastName1} onChange={setLastName1} />
-      <TextField label="Player 2 first name" value={firstName2} onChange={setFirstName2} />
-      <TextField label="Player 2 surname" value={lastName2} onChange={setLastName2} />
+      <TextField
+        label="Player 1 first name"
+        value={firstName1}
+        onChange={setFirstName1}
+      />
+      <TextField
+        label="Player 1 surname"
+        value={lastName1}
+        onChange={setLastName1}
+      />
+      <TextField
+        label="Player 2 first name"
+        value={firstName2}
+        onChange={setFirstName2}
+      />
+      <TextField
+        label="Player 2 surname"
+        value={lastName2}
+        onChange={setLastName2}
+      />
 
       <div className="flex gap-2">
         <button

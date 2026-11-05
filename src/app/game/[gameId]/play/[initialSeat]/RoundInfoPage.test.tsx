@@ -84,8 +84,28 @@ describe("RoundInfoPage", () => {
       screen.queryByRole("button", { name: "Enter Round" }),
     ).not.toBeInTheDocument();
 
-    const moveOn = screen.getByRole("button", { name: "Move on to next round" });
+    const moveOn = screen.getByRole("button", {
+      name: "Move on to next round",
+    });
     fireEvent.click(moveOn);
+    expect(onContinue).toHaveBeenCalledTimes(1);
+  });
+
+  it("replaces Enter Round with a Move on button when the opponents have withdrawn", () => {
+    const onContinue = vi.fn();
+    render(
+      <RoundInfoPage
+        {...baseProps}
+        opponentWithdrawn
+        onContinuePastLateOpponent={onContinue}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Enter Round" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Move on to next round" }),
+    );
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 

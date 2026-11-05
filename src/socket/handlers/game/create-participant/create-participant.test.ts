@@ -3,6 +3,15 @@ import { SocketEvents } from "@/socket/socket-events";
 
 // ---- mocks ----
 
+vi.mock("@/db/games/queries/is-game-started", () => ({
+  isGameStarted: vi.fn(async () => false),
+}));
+vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
+  findGameById: vi.fn(),
+}));
+vi.mock("@/db/games/actions/record-late-arrival", () => ({
+  recordLateArrival: vi.fn(),
+}));
 vi.mock("@/db/games/actions/create-pair-with-players", () => ({
   createPairWithPlayers: vi.fn(),
 }));
@@ -33,6 +42,9 @@ import { findSeatedNationalIds } from "@/db/games/queries/find-seated-national-i
 import { findSections } from "@/db/games/queries/find-sections";
 import { getDb } from "@/db/games";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
+import { isGameStarted } from "@/db/games/queries/is-game-started";
+import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import { recordLateArrival } from "@/db/games/actions/record-late-arrival";
 import { registerCreateParticipantHandler } from "./create-participant";
 
 function makeDirectorSocket() {
@@ -53,11 +65,18 @@ describe("registerCreateParticipantHandler (unit)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getDb).mockResolvedValue({} as any);
+    vi.mocked(isGameStarted).mockResolvedValue(false);
     // Default: no one seated yet, so no national-id clash.
     vi.mocked(findSeatedNationalIds).mockResolvedValue(new Set());
     // Default layout makes the A1NS seat these tests use valid.
     vi.mocked(findSections).mockResolvedValue([
-      { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+      {
+        section: "A",
+        label: "A",
+        tables: 4,
+        selectedMovement: null,
+        ordinal: 0,
+      },
     ] as any);
   });
 
@@ -68,6 +87,73 @@ describe("registerCreateParticipantHandler (unit)", () => {
       SocketEvents.CREATE_PARTICIPANT,
       expect.any(Function),
     );
+  });
+
+  describe("late arrival (design §11)", () => {
+    const payload = {
+      gameId: "game-1",
+      newParticipant: {
+        type: "PAIR",
+        initialSeat: "A1NS",
+        player1: { firstName: "P1", lastName: "L1" },
+        player2: { firstName: "P2", lastName: "L2" },
+      },
+    };
+
+    async function seatAfterStart(game: object, late: boolean) {
+      vi.mocked(isGameStarted).mockResolvedValue(true);
+      vi.mocked(findGameById).mockResolvedValue(game as any);
+      vi.mocked(recordLateArrival).mockResolvedValue(
+        late ? { late: true, arrivalRound: 3 } : { late: false },
+      );
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
+      vi.mocked(findPairs).mockResolvedValue([]);
+      const socket = makeDirectorSocket();
+      const emitFn = vi.fn();
+      registerCreateParticipantHandler(socket as any, makeIo(emitFn) as any);
+      await socket.on.mock.calls[0][1](payload, vi.fn());
+      return emitFn;
+    }
+
+    it("records a pairs pair seated after the start as a late arrival and announces the schedule change", async () => {
+      const emitFn = await seatAfterStart(
+        { gameType: "PAIRS", eventFormat: "STANDARD" },
+        true,
+      );
+      expect(recordLateArrival).toHaveBeenCalledWith("game-1", "A1NS");
+      expect(emitFn).toHaveBeenCalledWith(SocketEvents.SCHEDULE_CHANGED, {
+        gameId: "game-1",
+      });
+    });
+
+    it("does not announce a schedule change when the pair missed nothing", async () => {
+      const emitFn = await seatAfterStart(
+        { gameType: "PAIRS", eventFormat: "STANDARD" },
+        false,
+      );
+      expect(emitFn).not.toHaveBeenCalledWith(
+        SocketEvents.SCHEDULE_CHANGED,
+        expect.anything(),
+      );
+    });
+
+    it("leaves teams and Swiss events alone", async () => {
+      await seatAfterStart(
+        { gameType: "TEAMS", eventFormat: "STANDARD" },
+        true,
+      );
+      await seatAfterStart({ gameType: "PAIRS", eventFormat: "SWISS" }, true);
+      expect(recordLateArrival).not.toHaveBeenCalled();
+    });
+
+    it("does nothing before the start", async () => {
+      vi.mocked(createPairWithPlayers).mockResolvedValue(undefined);
+      vi.mocked(findPairs).mockResolvedValue([]);
+      const socket = makeDirectorSocket();
+      registerCreateParticipantHandler(socket as any, makeIo() as any);
+      await socket.on.mock.calls[0][1](payload, vi.fn());
+      expect(recordLateArrival).not.toHaveBeenCalled();
+    });
   });
 
   describe("PAIR participant", () => {

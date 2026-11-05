@@ -35,6 +35,14 @@ export const BoardStatuses = [
   // played or submittable, and the half-match scorer recomputes the AVE+/AVE
   // split across them (board rows stay dumb — no fraction is stored).
   "HALF_AVERAGE",
+  // PAIRS (design §11): a board that cannot be played at this table because
+  // one of its pairs is absent — it withdrew before the board, or arrived late
+  // (after the board's round). Written once when the absence happens. Never
+  // played or submittable; finalised for the play flow and the results
+  // summary. Scored per the absent pair's treatment (AVERAGE → an artificial
+  // AVE−/AVE+ outcome resolved at scoring time, REMOVED → no line) — see
+  // `resolveAbsentRow` in `src/model/absence.ts`.
+  "ABSENT",
   // NOTE: the §3.3.6/§3.3.9 teams void (VOID_MATCH), §3.3.8/§3.3.9 pairs void
   // (VOID_PAIR) and §3.5 mismatch (MISMATCH) are NO LONGER board statuses —
   // they are match-level director rulings on `matches.ruling` (home-relative

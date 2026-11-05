@@ -13,9 +13,10 @@ interface Props {
    *  - CHANGE_DEVICE (default): the SAME pair moves to a new device.
    *  - HANDOVER: a DIFFERENT arriving pair takes over this seat (the claim then
    *    collects their names).
+   *  - REINSTATE: a WITHDRAWN pair returns on a device.
    * Only the copy differs; the code-display + countdown behaviour is shared.
    */
-  kind?: "CHANGE_DEVICE" | "HANDOVER";
+  kind?: "CHANGE_DEVICE" | "HANDOVER" | "REINSTATE";
 }
 
 /** How long a transfer code stays valid, in seconds (mirrors CODE_TTL_MS). */
@@ -82,6 +83,7 @@ export function ChangeDeviceView({ gameId, seat, kind = "CHANGE_DEVICE" }: Props
   const seconds = expiresIn % 60;
 
   const isHandover = kind === "HANDOVER";
+  const isReinstate = kind === "REINSTATE";
 
   return (
     <div className="flex flex-col items-center text-center">
@@ -91,6 +93,12 @@ export function ChangeDeviceView({ gameId, seat, kind = "CHANGE_DEVICE" }: Props
             On the arriving pair&rsquo;s device, open this game, choose{" "}
             <span className="font-semibold">Move a seat to this device</span>,
             enter the code below, then enter their names.
+          </>
+        ) : isReinstate ? (
+          <>
+            On the returning pair&rsquo;s device, open this game, choose{" "}
+            <span className="font-semibold">Move a seat to this device</span>,
+            and enter the code below.
           </>
         ) : (
           <>
@@ -148,7 +156,9 @@ export function ChangeDeviceView({ gameId, seat, kind = "CHANGE_DEVICE" }: Props
       <p className="mt-6 text-xs text-gray-500">
         {isHandover
           ? "Once the arriving pair claims the code, this device will be signed out of the seat."
-          : "Once the code is used, this device will be signed out of the seat."}
+          : isReinstate
+            ? "The returning pair claims the code on their device to pick up the seat again."
+            : "Once the code is used, this device will be signed out of the seat."}
       </p>
     </div>
   );

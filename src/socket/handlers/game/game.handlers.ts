@@ -10,6 +10,7 @@ import { registerSetParticipantStandingHandler } from "./set-participant-standin
 import { registerSetSeatExpectedLateHandler } from "./set-seat-expected-late/set-seat-expected-late";
 import { registerHandoverSeatHandler } from "./handover-seat/handover-seat";
 import { registerHandoverSameDeviceHandler } from "./handover-same-device/handover-same-device";
+import { registerWithdrawPairHandler } from "./withdraw-pair/withdraw-pair";
 
 // Director-only / one-shot mutations that are HTTP routes rather than socket
 // events:
@@ -33,6 +34,7 @@ export function registerGameHandlers(socket: Socket, io: Server) {
   registerSetSeatExpectedLateHandler(socket, io);
   registerHandoverSeatHandler(socket, io);
   registerHandoverSameDeviceHandler(socket, io);
+  registerWithdrawPairHandler(socket, io);
   registerJoinGameHandler(socket, io);
   registerLeaveGameHandler(socket, io);
   registerSelectMovementHandler(socket, io);

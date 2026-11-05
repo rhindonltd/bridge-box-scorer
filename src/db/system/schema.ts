@@ -52,7 +52,7 @@ export const seatTransferCodes = sqliteTable("seat_transfer_codes", {
   seat: text("seat").notNull(),
   expiresAt: text("expires_at").notNull(),
   used: integer("used").notNull().default(0),
-  kind: text("kind", { enum: ["CHANGE_DEVICE", "HANDOVER"] })
+  kind: text("kind", { enum: ["CHANGE_DEVICE", "HANDOVER", "REINSTATE"] })
     .notNull()
     .default("CHANGE_DEVICE"),
 });

@@ -17,6 +17,12 @@ import {
 } from "@/db/games/queries/seat-occupancy";
 import { players } from "@/db/games/tables/players";
 import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
+import { readAbsences } from "@/db/games/queries/absences";
+import type { Absences } from "@/model/absence";
+import {
+  applyAbsences,
+  pairsStandingsForRanking,
+} from "@/services/absent-board-rows";
 import { formatPairNumber, sectionOf } from "@/model/participants";
 import { Club } from "@/db/system/schema";
 import {
@@ -182,14 +188,28 @@ export async function generateUsebio(
         ),
       );
     }
-    case "PAIRS_BOARD":
+    case "PAIRS_BOARD": {
+      // Design §11: an absent pair stays ranked (its missed boards are scored
+      // or removed per the director's choice), so only §2.4.9 "without
+      // standing" excludes from the placings; an empty expected-late seat is
+      // not a contestant.
+      const absences = await readAbsences(db);
+      const pairsExcluded = resolveStandings(
+        pairsStandingsForRanking(standings),
+        allBoards,
+      ).excludedFromRanking;
+      for (const [boardId, absence] of absences) {
+        if (absence.kind === "EMPTY") pairsExcluded.add(boardId);
+      }
       return generateMpPairsUsebio(
         db,
         game,
         club,
         tournamentLevel,
-        excludedFromRanking,
+        pairsExcluded,
+        absences,
       );
+    }
   }
 }
 
@@ -229,12 +249,15 @@ async function generateMpPairsUsebio(
   club: Club,
   tournamentLevel: TournamentLevel,
   excludedFromRanking: ReadonlySet<string>,
+  absences: Absences = new Map(),
 ) {
   // Get participants (pairs) — one per seat (the primary occupant).
   const pairs = await findPairs(db);
 
-  // Get all board results
-  const allBoards = await db.select().from(boards);
+  // Get all board results. Rows a pair missed through absence (design §11)
+  // are rewritten exactly as the leaderboard does: an AVERAGE row carries an
+  // AVE± artificial outcome, a REMOVED row is dropped.
+  const allBoards = applyAbsences(await db.select().from(boards), absences);
 
   // §2.4.7 HANDOVER / SUBSTITUTION: resolve each board row's ns/ew to its
   // OCCUPANT's scored-field id. A ONE-LINE seat folds onto the one bare-id pair;

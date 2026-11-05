@@ -62,7 +62,9 @@ describe("RoundInfo", () => {
       />,
     );
 
-    expect(screen.getByText(/first half.*then you're done/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/first half.*then you're done/i),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("half-first")).toBeInTheDocument();
     expect(screen.queryByTestId("half-second")).not.toBeInTheDocument();
   });
@@ -80,7 +82,23 @@ describe("RoundInfo", () => {
       />,
     );
 
-    expect(screen.getByText(/come in for the second half/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/come in for the second half/i),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("half-second")).toBeInTheDocument();
+  });
+
+  it("explains that the opponents have withdrawn", () => {
+    render(
+      <RoundInfo
+        table={1}
+        boards={[1, 2]}
+        players={{ N: null, S: null, E: null, W: null } as never}
+        opponentWithdrawn
+      />,
+    );
+    expect(screen.getByTestId("opponent-withdrawn")).toHaveTextContent(
+      "Your opponents have withdrawn",
+    );
   });
 });

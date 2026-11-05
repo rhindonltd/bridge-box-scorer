@@ -10,6 +10,8 @@ import { boardResult, type TeamMatchRow } from "@/scoring/swiss/team-match";
 import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
 import { parseSeat } from "@/model/participants";
 import type { TeamTravellerMatch } from "@/model/participants";
+import { readAbsences } from "@/db/games/queries/absences";
+import { resolveAbsentRow } from "@/model/absence";
 
 /**
  * Board statuses that are NOT a real played line and so never belong on a
@@ -30,6 +32,30 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
       .where(eq(pairsBoards.boardNumber, boardNumber))
   ).filter((b) => !NON_TRAVELLER_STATUSES.has(b.status ?? ""));
 
+  // Design §11: a row missed because a pair is absent shows as it is scored —
+  // the AVE± artificial result under AVERAGE, or not at all under REMOVED (it
+  // is out of the movement). Only ABSENT rows are rewritten; the absences are
+  // read only when there is one.
+  const absences = records.some((b) => b.status === "ABSENT")
+    ? await readAbsences(db)
+    : new Map();
+  const shown: {
+    row: (typeof records)[number];
+    absentResult: string | null;
+  }[] = [];
+  for (const row of records) {
+    if (row.status !== "ABSENT") {
+      shown.push({ row, absentResult: null });
+      continue;
+    }
+    const resolution = resolveAbsentRow(row, absences);
+    if (resolution?.kind === "removed") continue;
+    shown.push({
+      row,
+      absentResult: resolution?.kind === "outcome" ? resolution.outcome : null,
+    });
+  }
+
   // Resolve names PER BOARD (keyed by the board id on `b.ns`/`b.ew`, matching
   // the seat/anchor id), so a §2.4.7 handover seat shows the stand-in's names on
   // the boards it played and the real pair's names on theirs — not one pair for
@@ -42,7 +68,7 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
     return `${pair.player1.firstName} ${pair.player1.lastName} & ${pair.player2.firstName} ${pair.player2.lastName}`;
   };
 
-  return records.map((b) => ({
+  return shown.map(({ row: b, absentResult }) => ({
     roundNumber: b.roundNumber,
     tableNumber: b.tableNumber,
     boardNumber: b.boardNumber,
@@ -53,7 +79,8 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
       nsNames: nameOf(b.ns, b.boardNumber),
       ewNames: nameOf(b.ew, b.boardNumber),
     },
-    currentResult: b.directorOverrideResult ?? b.confirmedResult ?? null,
+    currentResult:
+      b.directorOverrideResult ?? b.confirmedResult ?? absentResult ?? null,
     status: b.status ?? null,
   }));
 }

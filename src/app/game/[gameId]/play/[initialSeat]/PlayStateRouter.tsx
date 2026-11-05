@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { TravellerProvider, useTravellerContext } from "@/context/TravellerContext";
+import {
+  TravellerProvider,
+  useTravellerContext,
+} from "@/context/TravellerContext";
 import { ContractWizard } from "@/app/game/[gameId]/play/[initialSeat]/ContractWizard";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
 import { parseContract } from "@/model/contract";
@@ -96,6 +99,7 @@ export function PlayStateRouter({
           }
           halfMatch={round.halfMatch}
           opponentExpectedLate={round.opponentExpectedLate}
+          opponentWithdrawn={round.opponentWithdrawn}
           onEnterRound={handlers.handleEnterRound}
           // Moving past an expected-late opponent reuses the sit-out advance
           // (next round, no server write) — both are "nothing to play here".
@@ -107,8 +111,10 @@ export function PlayStateRouter({
 
     case "enterContract": {
       const round = schedule.rounds[playState.roundIndex];
+      // Skip boards already confirmed and boards missed because a pair is
+      // absent (design §11) — neither is entered.
       const playedBoards = round.boardStatuses
-        .filter((b) => b.status === "CONFIRMED")
+        .filter((b) => b.status === "CONFIRMED" || b.status === "ABSENT")
         .map((b) => b.boardNumber);
       return (
         <ContractWizard
@@ -163,8 +169,7 @@ export function PlayStateRouter({
     case "boardResults": {
       const round = schedule.rounds[playState.roundIndex];
       const boardNumber = round.boards[playState.boardIndex];
-      const lastBoardOfRound =
-        playState.boardIndex === round.boards.length - 1;
+      const lastBoardOfRound = playState.boardIndex === round.boards.length - 1;
 
       return (
         <BoardResultsLoader

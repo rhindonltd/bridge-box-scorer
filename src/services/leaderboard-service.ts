@@ -34,6 +34,11 @@ import {
   type WithdrawalRecord,
 } from "@/db/games/queries/ranking-exclusions";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
+import { readAbsences } from "@/db/games/queries/absences";
+import {
+  applyAbsences,
+  pairsStandingsForRanking,
+} from "@/services/absent-board-rows";
 import {
   readSeatOccupancies,
   buildOccupantScoredIdResolver,
@@ -147,7 +152,9 @@ function scoreSwissVp(
   expectedBoards: number | undefined,
 ) {
   if (mode === "XIMP")
-    return calculateSwissXimpVpOverall(boardRows, matchRows, { expectedBoards });
+    return calculateSwissXimpVpOverall(boardRows, matchRows, {
+      expectedBoards,
+    });
   if (mode === "MP")
     return calculateSwissMpVpOverall(boardRows, matchRows, { expectedBoards });
   return null;
@@ -274,14 +281,20 @@ function scoreBoardsToOverall(
   const perBoardId = getCombination(scoringType).perBoard;
   if (perBoardId === "IMP") {
     const adjusted = applyBetterThanAverageImpBoards(
-      scoredBoards.map((b) => ({ board: b.board, lines: b.lines as ImpLine[] })),
+      scoredBoards.map((b) => ({
+        board: b.board,
+        lines: b.lines as ImpLine[],
+      })),
     );
     adjusted.forEach((b, i) => {
       scoredBoards[i].lines = b.lines;
     });
   } else if (perBoardId === "XIMP") {
     const adjusted = applyBetterThanAverageXimpBoards(
-      scoredBoards.map((b) => ({ board: b.board, lines: b.lines as XimpLine[] })),
+      scoredBoards.map((b) => ({
+        board: b.board,
+        lines: b.lines as XimpLine[],
+      })),
     );
     adjusted.forEach((b, i) => {
       scoredBoards[i].lines = b.lines;
@@ -389,11 +402,14 @@ function baselineLine(
   type: OverallScore["type"],
   id: string,
 ): OverallScore["lines"][number] {
-  const idField =
-    type.startsWith("TEAM") ? { teamId: id } : { pairId: id };
+  const idField = type.startsWith("TEAM") ? { teamId: id } : { pairId: id };
   switch (type) {
     case "PAIR_MP":
-      return { ...idField, totalMP: 0, maxMP: 0 } as OverallScore["lines"][number];
+      return {
+        ...idField,
+        totalMP: 0,
+        maxMP: 0,
+      } as OverallScore["lines"][number];
     case "PAIR_XIMP":
       return { ...idField, crossImps: 0 } as OverallScore["lines"][number];
     case "PAIR_IMP":
@@ -700,7 +716,10 @@ function withdrawalCreditBoards(
         const used = selfCredited.get(w.seat) ?? 0;
         if (used < halfThreshold) {
           selfCredited.set(w.seat, used + 1);
-          withdrawerFraction = Math.max(0, AVE_MINUS_FRACTION - w.finePercent / 100);
+          withdrawerFraction = Math.max(
+            0,
+            AVE_MINUS_FRACTION - w.finePercent / 100,
+          );
         }
       }
 
@@ -1096,20 +1115,27 @@ async function readLeaderboardInputs(
   // teams game OR a Swiss Pairs VP (XIMP/MP) game.
   const needsMatches = needsTeams || swissVpMode !== null;
 
-  const [rawBoardRows, matchRows, pairs, teams, standings, lateSeats, occupancies] =
-    await Promise.all([
-      db.select().from(boards) as Promise<Board[]>,
-      needsMatches
-        ? (db.select().from(matches) as Promise<Match[]>)
-        : Promise.resolve([] as Match[]),
-      findPairs(db),
-      // Teams are derived from the seating; needed for any teams game (VP,
-      // aggregate IMP, BAM, or PAB).
-      needsTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
-      readParticipantStandings(db),
-      readExpectedLateSeats(db),
-      readSeatOccupancies(db),
-    ]);
+  const [
+    rawBoardRows,
+    matchRows,
+    pairs,
+    teams,
+    standings,
+    lateSeats,
+    occupancies,
+  ] = await Promise.all([
+    db.select().from(boards) as Promise<Board[]>,
+    needsMatches
+      ? (db.select().from(matches) as Promise<Match[]>)
+      : Promise.resolve([] as Match[]),
+    findPairs(db),
+    // Teams are derived from the seating; needed for any teams game (VP,
+    // aggregate IMP, BAM, or PAB).
+    needsTeams ? findTeams(db) : Promise.resolve([] as AssignedTeam[]),
+    readParticipantStandings(db),
+    readExpectedLateSeats(db),
+    readSeatOccupancies(db),
+  ]);
 
   // §2.4.7 HANDOVER: rewrite each board row's ns/ew to its OCCUPANT's
   // scored-field id. For every ordinary game (0/1 occupancy per seat) this is
@@ -1120,19 +1146,37 @@ async function readLeaderboardInputs(
   // consumer (scoreBoardsToOverall, resolveStandings, splitByDirection) sees the
   // occupant ids with no further plumbing.
   const resolveScoredId = buildOccupantScoredIdResolver(occupancies);
-  const boardRows: Board[] = rawBoardRows.map((b) => ({
+  const scoredRows: Board[] = rawBoardRows.map((b) => ({
     ...b,
     ns: resolveScoredId(b.ns, b.boardNumber),
     ew: resolveScoredId(b.ew, b.boardNumber),
   }));
 
+  // PAIRS board-pooled events (design §11): a withdrawn / late-arrived pair's
+  // missed boards — and those against a still-empty expected-late seat — are
+  // scored per the director's AVERAGE / REMOVED choice by rewriting the rows
+  // (an AVE± artificial outcome, or no row at all). The absent pair stays in
+  // the ranking; the old half-way rule, REMOVE/PENALISED and fine do not apply.
+  // Teams and Swiss-VP events keep the §2.4 handling below.
+  const pairsAbsences = !needsTeams && swissVpMode === null;
+  const absences = pairsAbsences ? await readAbsences(db) : new Map();
+  const boardRows: Board[] = pairsAbsences
+    ? applyAbsences(scoredRows, absences)
+    : scoredRows;
+
   // §2.4.9 exclusions and §2.4.3–§2.4.7 withdrawal credits are derived from the
   // standings AND the board rows together — the §2.4.7 LATE retain-standing
   // test counts boards actually played.
   const { excludedFromRanking, withdrawals } = resolveStandings(
-    standings,
+    pairsAbsences ? pairsStandingsForRanking(standings) : standings,
     boardRows,
   );
+
+  // An empty expected-late seat is not a contestant: its AVE− side (if any)
+  // must not surface as a ranked line.
+  for (const [boardId, absence] of absences) {
+    if (absence.kind === "EMPTY") excludedFromRanking.add(boardId);
+  }
 
   // §2.4.7 HANDOVER / SUBSTITUTION. Exclusion from the ranking is driven purely
   // by each occupancy's `standing` (a WITHOUT_STANDING occupant — Category B/C —
@@ -1151,7 +1195,7 @@ async function readLeaderboardInputs(
   // split. A seat drops out of this set the moment its pair is seated (the mark
   // is cleared), at which point its boards start carrying real results.
   const seatedSeats = new Set<string>(pairs.map((p) => p.initialSeat));
-  for (const seat of lateSeats) {
+  for (const seat of pairsAbsences ? [] : lateSeats) {
     if (seatedSeats.has(seat)) continue; // the latecomer has already arrived
     withdrawals.push({
       seat,

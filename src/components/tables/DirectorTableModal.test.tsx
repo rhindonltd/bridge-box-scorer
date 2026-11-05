@@ -160,9 +160,13 @@ describe("DirectorTableModal", () => {
     const stationaryGroups = screen.getAllByRole("group", {
       name: "Stationary",
     });
-    fireEvent.click(within(stationaryGroups[0]).getByRole("button", { name: "Yes" }));
+    fireEvent.click(
+      within(stationaryGroups[0]).getByRole("button", { name: "Yes" }),
+    );
     expect(onToggleStationary).toHaveBeenCalledWith(1, true);
-    fireEvent.click(within(stationaryGroups[1]).getByRole("button", { name: "Yes" }));
+    fireEvent.click(
+      within(stationaryGroups[1]).getByRole("button", { name: "Yes" }),
+    );
     expect(onToggleStationary).toHaveBeenCalledWith(1, false);
   });
 
@@ -323,8 +327,34 @@ describe("DirectorTableModal", () => {
       />,
     );
     expect(
-      screen.getByRole("button", { name: "Hand North / South over to the real pair" }),
+      screen.getByRole("button", {
+        name: "Hand North / South over to the real pair",
+      }),
     ).toBeInTheDocument();
+  });
+
+  it("hides Change standing when standing controls are off (pairs, design §11)", () => {
+    render(
+      <DirectorTableModal
+        table={fullTable()}
+        isSwiss={false}
+        onEvict={vi.fn()}
+        onToggleStationary={vi.fn()}
+        started
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
+        onHandover={vi.fn()}
+        showStandingControls={false}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /Change standing/ }),
+    ).not.toBeInTheDocument();
+    // The handover control is unaffected.
+    expect(
+      screen.getAllByRole("button", { name: /over to the real pair/ }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("emits a handover request with the arriving pair's names", () => {

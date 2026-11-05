@@ -20,6 +20,8 @@ interface Props {
   halfMatch?: RoundHalfMatch;
   /** §2.4.7: the opponent is an empty "expected late" seat (not yet arrived). */
   opponentExpectedLate?: boolean;
+  /** Design §11: the opponents withdrew — nothing to play this round. */
+  opponentWithdrawn?: boolean;
   onEnterRound: () => void;
   /**
    * Move past a round whose opponent is expected-late and has not arrived. The
@@ -39,6 +41,7 @@ export function RoundInfoPage({
   players,
   halfMatch,
   opponentExpectedLate,
+  opponentWithdrawn,
   onEnterRound,
   onContinuePastLateOpponent,
   headerRight,
@@ -56,7 +59,7 @@ export function RoundInfoPage({
       // the late pair is missing this round. An ordinary round keeps Enter
       // Round.
       actions={
-        opponentExpectedLate ? (
+        opponentExpectedLate || opponentWithdrawn ? (
           <button
             onClick={onContinuePastLateOpponent}
             data-testid="play-continue-late-opponent"
@@ -81,6 +84,7 @@ export function RoundInfoPage({
         players={players}
         halfMatch={halfMatch}
         opponentExpectedLate={opponentExpectedLate}
+        opponentWithdrawn={opponentWithdrawn}
       />
     </GamePageLayout>
   );

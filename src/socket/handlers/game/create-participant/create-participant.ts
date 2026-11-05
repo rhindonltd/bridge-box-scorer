@@ -12,7 +12,14 @@ import { findSections } from "@/db/games/queries/find-sections";
 import { NewParticipant } from "@/model/participants";
 import { isSeatInSections } from "@/model/section";
 import { getDb } from "@/db/games";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
+import { isGameStarted } from "@/db/games/queries/is-game-started";
+import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import { recordLateArrival } from "@/db/games/actions/record-late-arrival";
+import { Rooms } from "@/socket/rooms";
 
 // `newParticipant` carries a nested player/seat structure validated by the
 // domain model; keep it as a passthrough here and rely on the typed shape.
@@ -92,6 +99,28 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
           secretKey: key,
           teamName,
         });
+
+        // Design §11: a pairs pair seated AFTER the start in an expected-late
+        // seat is a late arrival — it joins at the round the room is on, and
+        // the boards it missed are marked ABSENT. Tell every device its
+        // schedule changed so the late pair's opponents are moved on.
+        if (await isGameStarted(gameId)) {
+          const game = await findGameById(gameId);
+          if (game?.gameType === "PAIRS" && game.eventFormat !== "SWISS") {
+            const arrival = await recordLateArrival(
+              gameId,
+              newParticipant.initialSeat,
+            );
+            if (arrival.late) {
+              io.to(Rooms.game(gameId)).emit(SocketEvents.SCHEDULE_CHANGED, {
+                gameId,
+              });
+              io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, {
+                game,
+              });
+            }
+          }
+        }
 
         await broadcastParticipants(gameId, io);
         // The leaderboard lists the whole seated field from the start (everyone

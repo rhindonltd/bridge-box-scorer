@@ -29,7 +29,7 @@ const handlers = {
   onMovementClick: vi.fn(),
   onShareDirectorAccessClick: vi.fn(),
   onReviewMismatchesClick: vi.fn(),
-  onSubstitutionsClick: vi.fn(),
+  onPairsClick: vi.fn(),
   onExportClick: vi.fn(),
   onDeleteGameClick: vi.fn(),
 };
@@ -41,7 +41,7 @@ const flags = {
   showEnterDeals: false,
   showMovement: false,
   showReviewMismatches: false,
-  showSubstitutions: false,
+  showPairs: false,
   showExport: false,
 };
 
@@ -157,21 +157,17 @@ describe("ManageGameMenuPage", () => {
     });
   });
 
-  describe("Substitutions", () => {
-    it("is shown and wired when showSubstitutions is true", () => {
-      render(
-        <ManageGameMenuPage {...handlers} {...flags} showSubstitutions={true} />,
-      );
-      fireEvent.click(screen.getByRole("button", { name: "Substitutions" }));
-      expect(handlers.onSubstitutionsClick).toHaveBeenCalled();
+  describe("Pairs", () => {
+    it("is shown and wired when showPairs is true", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} showPairs={true} />);
+      fireEvent.click(screen.getByRole("button", { name: "Pairs" }));
+      expect(handlers.onPairsClick).toHaveBeenCalled();
     });
 
-    it("is hidden when showSubstitutions is false", () => {
-      render(
-        <ManageGameMenuPage {...handlers} {...flags} showSubstitutions={false} />,
-      );
+    it("is hidden when showPairs is false", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} showPairs={false} />);
       expect(
-        screen.queryByRole("button", { name: "Substitutions" }),
+        screen.queryByRole("button", { name: "Pairs" }),
       ).not.toBeInTheDocument();
     });
   });

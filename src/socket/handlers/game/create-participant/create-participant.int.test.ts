@@ -8,6 +8,15 @@ import { Rooms } from "@/socket/rooms";
 
 // ---- mock DB layer ----
 
+vi.mock("@/db/games/queries/is-game-started", () => ({
+  isGameStarted: vi.fn(async () => false),
+}));
+vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
+  findGameById: vi.fn(),
+}));
+vi.mock("@/db/games/actions/record-late-arrival", () => ({
+  recordLateArrival: vi.fn(),
+}));
 vi.mock("@/db/games/actions/create-pair-with-players", () => ({
   createPairWithPlayers: vi.fn(),
 }));
@@ -48,7 +57,13 @@ describe("registerCreateParticipantHandler (integration)", () => {
     // A valid layout by default so seat A1NS passes the range guard; a test
     // that needs an out-of-range seat overrides this.
     vi.mocked(findSections).mockResolvedValue([
-      { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+      {
+        section: "A",
+        label: "A",
+        tables: 4,
+        selectedMovement: null,
+        ordinal: 0,
+      },
     ] as any);
 
     // Mock findLoginSession to validate the test director token
@@ -138,7 +153,13 @@ describe("registerCreateParticipantHandler (integration)", () => {
   it("rejects a seat outside the section's current table range", async () => {
     // Section A now has 4 tables (e.g. after a split), so A5NS is a ghost seat.
     vi.mocked(findSections).mockResolvedValue([
-      { section: "A", label: "A", tables: 4, selectedMovement: null, ordinal: 0 },
+      {
+        section: "A",
+        label: "A",
+        tables: 4,
+        selectedMovement: null,
+        ordinal: 0,
+      },
     ] as any);
 
     const response = await new Promise<any>((resolve) => {

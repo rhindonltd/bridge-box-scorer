@@ -1,5 +1,8 @@
 # Withdrawals & late arrivals — design
 
+> **Pairs events:** §11 (2026-10 rework) supersedes the pairs scoring rules in
+> §3.3, §5 steps 4–6 and §6.4. Teams events still follow the sections below.
+
 Status: **proposed.** Covers EBU White Book §2.3–§2.4, i.e. audit items **F24**
 (withdrawals), **F25** (late arrivals), **F26** ("without standing" ranking
 exclusion) and **F27** (director-eviction post-start guard). Source of truth for
@@ -744,3 +747,178 @@ The mid-session **stand-by handover** (a substitute plays the early boards
 is not (§9; `seat-occupancy-handover.md` slices 3–5). The expected-late case here
 is strictly the **empty-seat** form (nobody plays the early boards), which is why
 it is buildable now.
+
+---
+
+## 11. Pairs rework (2026-10) — director-chosen AVE±/Removed, self-service + director withdrawal, reinstate
+
+Supersedes §3.3, §5 steps 4–6 and §6.4 **for board-pooled pairs events** (MP,
+IMP, Cross-IMP; not Swiss). Teams events keep the behaviour above unchanged
+until a follow-up.
+
+### 11.1 What changes for the user
+
+- **Withdrawal is player self-service _or_ director-driven.** A "Withdraw" item
+  in the play header menu (next to Handover) withdraws the pair from the next
+  board without a result, after a confirmation step. It is no longer on the
+  director's tables page. A director can **also** withdraw a pair from the
+  manage screen (§11.8) — the walkout case where the pair's device has already
+  left and cannot self-withdraw.
+- **A withdrawn pair can be reinstated.** Earlier this was final; it no longer
+  is. Reinstate is a device-claim flow, not a one-tap director action — see the
+  token hygiene in §11.8.
+- **Late arrival stays as "expected late" before the start**, so a game can
+  start with a seat empty. A pair seated in such a seat after the start is a
+  **late arrival**. The post-start standing controls (Withdrawn / Late /
+  Change standing) leave the tables page for pairs events.
+- **One director screen** ("Pairs") replaces "Substitutions" in the manage menu.
+  It lists every pair with its status (Active / Withdrawn / Substituted / …);
+  tapping a row reveals that pair's actions. Each late or withdrawn pair (and
+  each still-empty late seat) has one choice for its unplayed boards:
+  - **AVE−/AVE+** (default): the absent pair gets AVE−, the opponent AVE+.
+  - **Removed**: the boards come out of the movement; the opponent is treated
+    as having sat out.
+- The automatic before/after-half rule (§3.3 a/b), the §2.4.7 "fewer than half
+  the boards loses standing" rule, the REMOVE/PENALISED choice and the 0–40%
+  fine all go for pairs. The director's choice decides. An absent pair stays in
+  the ranking on the boards it played (plus AVE− where chosen).
+
+### 11.2 Values (§4.1.1.1)
+
+AVE+/AVE− are 60%/40% at matchpoints and ±3 IMPs at IMPs and Cross-IMPs, then
+the existing "better than average" pass applies: AVE+ = max(60%, the pair's
+average), AVE− = min(40%, average); at IMPs max(+3, average) / min(−3, average).
+The average is over the pair's real played boards in the session. The ±3 lives
+in one constant (`ARTIFICIAL_IMP_AWARD`, `src/scoring/artificial-score.ts`)
+used by the per-board scorer and the uplift alike, so a ±2 variant is a
+one-line change (or a future setting).
+
+### 11.3 Model
+
+**A new board status `ABSENT`** marks a board row that cannot be played
+because one of its pairs is absent. It is written once, when the absence
+happens, so every consumer can filter on status (as it already does for
+SIT_OUT):
+
+| Event | Rows marked ABSENT |
+|---|---|
+| Pair withdraws (player) | the seat's rows with no result in rounds ≥ the round it withdrew in |
+| Pair seated after start in an expected-late seat | the seat's rows with no result in rounds < its arrival round |
+
+The arrival round is the highest round in the section with any finalised
+board (1 if none) — the round the room is on. The occupancy records the
+standing (`WITHDRAWN` / `LATE`), that round (`withdrawnInRound`), and the
+treatment. Seating a late pair moves the treatment chosen for the empty seat
+onto the new occupancy and clears the expected-late mark.
+
+**A still-empty expected-late seat** is not marked row by row (the pair may
+yet arrive): its rows with no result are treated as absent on the fly. Its
+treatment is stored on `expected_late_seats.treatment` (new nullable column;
+null = AVERAGE).
+
+**Treatment** for pairs is `AVERAGE | REMOVED` on
+`seat_occupancy.withdrawal_treatment` (a text column; no migration). Legacy
+values read as: null or PENALISED → AVERAGE, REMOVE → REMOVED. The fine column
+is ignored for pairs.
+
+### 11.4 Scoring (one pass, shared by leaderboard and USEBIO)
+
+`resolveAbsentRow(row, absences)` (pure, `src/model/absence.ts`) turns an
+absent row into either nothing (REMOVED, or both sides REMOVED) or an
+artificial outcome token, exactly as if the director had ruled it:
+
+- absent side AVE− when its own treatment is AVERAGE;
+- present side AVE+ when the absent side's treatment is AVERAGE;
+- e.g. absent NS + AVERAGE → `A40/60`; absent EW → `A60/40`.
+
+Both the leaderboard (`scoreBoardsToOverall`) and the USEBIO pairs export feed
+that token through the same per-board scorers as a director ruling
+(convention (b): it occupies a seat in the field), then the existing
+equalisation, §4.1.1.1 uplift and rounding passes run unchanged. A REMOVED row
+is simply not a line, so the opponent is ranked over fewer boards (MP via
+Neuberg, IMP/XIMP by average per board). `withdrawalCreditBoards` and the
+expected-late injection no longer run for pairs. USEBIO gains the same lines
+(today it has no withdrawal credits) and drops REMOVED / plain `NP` absent
+rows.
+
+### 11.5 Play flow, outstanding, travellers
+
+- `ABSENT` is a finalised status for the play flow: a round whose boards are all
+  ABSENT is complete, so neither pair is held on it. The opponent's round-info
+  page shows "Your opponents have withdrawn" with Move on (the same page the
+  expected-late case uses); a partly-absent round skips the absent boards.
+- Results summary / outstanding boards count ABSENT rows (and rows against a
+  still-empty late seat) as resolved, so export, the Swiss draw gate and game
+  completion are not blocked.
+- Travellers hide REMOVED rows and show AVERAGE rows with the AVE± token.
+
+### 11.6 Build order
+
+1. Shared artificial-score constants.
+2. Data: `ABSENT` status, treatment values, `expected_late_seats.treatment`
+   migration, `resolveAbsentRow`, an absences reader.
+3. Scoring: leaderboard + USEBIO through `resolveAbsentRow`; retire the pairs
+   half-rule path; tests.
+4. Play flow + results summary + travellers honour ABSENT.
+5. Self-service Withdraw (socket handler marks rows, UI + confirm).
+6. Late seating after start marks rows and moves the treatment.
+7. Director screen: the "Pairs" manage page (route `/manage/pairs`) listing
+   every pair with status + per-row actions, treatment API.
+8. Tables page: remove the post-start standing controls for pairs.
+9. Director withdrawal (`PATCH /api/games/[gameId]/pairs` withdraw verb) for the
+   walkout case, and token hygiene: secret rotation on withdrawal + the
+   `REINSTATE` seat-transfer claim flow (§11.8).
+
+### 11.8 Token hygiene — withdrawal rotates the seat secret, reinstate re-issues it (2026-10)
+
+A seat's device credential is the `seat_occupancy.secretKey` (held in the
+device's localStorage; see `seat-occupancy-handover.md`). Withdrawal and
+reinstate are built so a withdrawn device cannot keep acting on the seat, and a
+returning pair re-authorises itself on a device by claiming a code — reusing the
+existing change-device / seat-transfer machinery rather than inventing a parallel
+auth path.
+
+**Withdrawal kills the old token.**
+
+- `recordWithdrawal` (`src/db/games/actions/record-withdrawal.ts`) rotates the
+  withdrawn occupancy's `secretKey` to a fresh `crypto.randomUUID()` **inside the
+  same transaction** that flips the standing. The device that held the old secret
+  no longer matches, so its submissions are rejected — no stale token lingers.
+- The player self-withdraw path additionally clears its own localStorage token:
+  `withdrawPair` (`src/lib/game-service.ts`) calls `clearPlayerToken(gameId)`
+  after the ack. (A director-driven withdrawal cannot touch the walked-out
+  device's storage; secret rotation is what protects that case.)
+
+**Reinstate is a device-claim flow, not a one-tap director action.** A one-tap
+reinstate would have to re-inject a token onto a device, which is the same
+handover re-auth friction we avoid elsewhere. Instead:
+
+- A new seat-transfer `kind`, **`REINSTATE`**, joins `CHANGE_DEVICE` and
+  `HANDOVER` (`seatTransferCodes.kind`, `src/db/system/schema.ts` — a plain text
+  column, so no migration; and `SeatTransferKind`). It only applies to a
+  `WITHDRAWN` occupancy (the row still exists); a never-arrived expected-late
+  seat uses the normal join + `recordLateArrival`.
+- On the manage Pairs screen, the director's **"Reinstate"** control reveals a
+  code panel (`ChangeDeviceView kind="REINSTATE"`) — it does **not** act
+  server-side. The returning pair opens the game on their device, chooses "Move a
+  seat to this device", and enters the code.
+- Claiming runs `reinstatePair(gameId, seat, secretKey)`
+  (`src/db/games/actions/reinstate-pair.ts`): standing back to `ACTIVE`,
+  `withdrawnInRound` / `withdrawalTreatment` cleared, the seat's `ABSENT` rows
+  returned to `NOT_PLAYED`, and the freshly-minted secret installed on the
+  claiming device. `inspectSeatTransferCode` reports `isHandover: false` for a
+  REINSTATE code, so the claim UI picks it up immediately with no name entry.
+- The withdraw verb on `PATCH /api/games/[gameId]/pairs` no longer has a
+  reinstate branch (reinstate is a seat-transfer claim, not an HTTP mutation);
+  the route handles withdraw only.
+
+### 11.9 Known limits
+
+- Reinstate requires the returning pair's **device to claim a code** — there is
+  deliberately no one-tap director reinstate (that would mean re-injecting a
+  token onto a device). This is the intended trade-off for keeping a single
+  seat-auth path (§11.8).
+- The arrival round is the room's current round, not per-table progress; an
+  opponent who already moved on from the late pair's round may need the
+  director.
+- Swiss pairs and teams keep their existing handling.

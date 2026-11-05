@@ -928,4 +928,78 @@ describe("generateUsebio", () => {
     expect(count(`<NS_PAIR_NUMBER>${subNumber}</NS_PAIR_NUMBER>`)).toBe(2);
     expect(count("<NS_PAIR_NUMBER>1NS</NS_PAIR_NUMBER>")).toBe(4);
   });
+
+  describe("pairs withdrawals (design §11)", () => {
+    async function withdrawnField(treatment: "AVERAGE" | "REMOVED") {
+      const db = (await harness.getDb()) as Db;
+      const { createBoard } = await import("@/db/games/actions/create-board");
+      const { seatOccupancy } =
+        await import("@/db/games/tables/seat-occupancy");
+      const { eq } = await import("drizzle-orm");
+      for (const t of [1, 2, 3]) {
+        await seatPair(`A${t}NS`, `N${t}`);
+        await seatPair(`A${t}EW`, `E${t}`);
+      }
+      for (const t of [1, 2, 3]) {
+        await makeBoard(1, t, 1, `A${t}NS`, `A${t}EW`, "3NTN=");
+      }
+      await makeBoard(2, 2, 2, "A2NS", "A2EW", "3NTN=");
+      await makeBoard(2, 3, 2, "A3NS", "A3EW", "3NTN=");
+      await createBoard(harness.gameId, {
+        section: "A",
+        roundNumber: 2,
+        tableNumber: 1,
+        boardNumber: 2,
+        copy: "A",
+        ns: "A1NS",
+        ew: "A1EW",
+        status: "ABSENT",
+        matchId: FIXTURE_MATCH_ID,
+      });
+      db.update(seatOccupancy)
+        .set({
+          standing: "WITHDRAWN",
+          withdrawnInRound: 2,
+          withdrawalTreatment: treatment,
+        })
+        .where(eq(seatOccupancy.seat, "A1NS"))
+        .run();
+      const { generateUsebio } = await import("@/services/usebio-service");
+      return generateUsebio(db, game, club, "NORMAL_CLUB");
+    }
+
+    /** The TRAVELLER_LINE blocks for one board. */
+    function boardLines(xml: string, board: number): string[] {
+      const start = xml.indexOf(`<BOARD_NUMBER>${board}</BOARD_NUMBER>`);
+      const end = xml.indexOf("</BOARD>", start);
+      return xml.slice(start, end).split("<TRAVELLER_LINE>").slice(1);
+    }
+
+    it("exports an AVERAGE missed board as an artificial line, and keeps the withdrawn pair placed", async () => {
+      const xml = await withdrawnField("AVERAGE");
+      const lines = boardLines(xml, 2);
+      expect(lines).toHaveLength(3);
+      const absent = lines.find((l) =>
+        l.includes("<NS_PAIR_NUMBER>1NS</NS_PAIR_NUMBER>"),
+      )!;
+      expect(absent).toContain("<CONTRACT/>");
+      // AVE− (40%) to the withdrawn NS pair, AVE+ (60%) to its opponent, of a
+      // board top of 4 (three lines).
+      expect(absent).toContain("<NS_MATCH_POINTS>1.6</NS_MATCH_POINTS>");
+      expect(absent).toContain("<EW_MATCH_POINTS>2.4</EW_MATCH_POINTS>");
+      const pair1 = xml.slice(xml.indexOf("<PAIR_NUMBER>1NS</PAIR_NUMBER>"));
+      expect(pair1.slice(0, pair1.indexOf("</PAIR>"))).toContain("<PLACE>");
+    });
+
+    it("omits a REMOVED missed board, and keeps the withdrawn pair placed", async () => {
+      const xml = await withdrawnField("REMOVED");
+      const lines = boardLines(xml, 2);
+      expect(lines).toHaveLength(2);
+      expect(
+        lines.some((l) => l.includes("<NS_PAIR_NUMBER>1NS</NS_PAIR_NUMBER>")),
+      ).toBe(false);
+      const pair1 = xml.slice(xml.indexOf("<PAIR_NUMBER>1NS</PAIR_NUMBER>"));
+      expect(pair1.slice(0, pair1.indexOf("</PAIR>"))).toContain("<PLACE>");
+    });
+  });
 });

@@ -30,7 +30,10 @@ function makeIo() {
 }
 function handlerFor(socket: any, event: string) {
   const call = socket.on.mock.calls.find((c: any) => c[0] === event);
-  return call![1] as (payload: unknown, cb: (r: unknown) => void) => Promise<void>;
+  return call![1] as (
+    payload: unknown,
+    cb: (r: unknown) => void,
+  ) => Promise<void>;
 }
 
 describe("registerSeatTransferHandlers", () => {
@@ -95,6 +98,24 @@ describe("registerSeatTransferHandlers", () => {
         "g1",
         "A1NS",
         "HANDOVER",
+      );
+    });
+
+    it("mints a REINSTATE code when the payload asks for one", async () => {
+      vi.mocked(createSeatTransferCode).mockResolvedValue("BACK01");
+      const socket = makeSocket();
+      registerSeatTransferHandlers(socket, makeIo());
+      const cb = vi.fn();
+
+      await handlerFor(socket, SocketEvents.CREATE_SEAT_TRANSFER)(
+        { gameId: "g1", seat: "A1NS", token: "tok", kind: "REINSTATE" },
+        cb,
+      );
+
+      expect(createSeatTransferCode).toHaveBeenCalledWith(
+        "g1",
+        "A1NS",
+        "REINSTATE",
       );
     });
 

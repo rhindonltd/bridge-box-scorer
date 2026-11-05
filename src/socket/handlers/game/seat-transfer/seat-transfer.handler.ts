@@ -18,7 +18,7 @@ const createSchema = z.object({
   // The claim intent, decided at mint time. CHANGE_DEVICE (default): the same
   // pair on a new device. HANDOVER: a different arriving pair takes over, so the
   // claim will collect their names.
-  kind: z.enum(["CHANGE_DEVICE", "HANDOVER"]).optional(),
+  kind: z.enum(["CHANGE_DEVICE", "HANDOVER", "REINSTATE"]).optional(),
 });
 
 const inspectSchema = z.object({

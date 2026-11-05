@@ -56,7 +56,7 @@ test.describe("Substitutions (split + eligibility)", () => {
       // Open the Substitutions screen. The menu item only appears once a
       // handover has happened; navigate to the route directly (the StartedGuard
       // allows it on a started game).
-      await gotoStable(directorPage, `/game/${gameId}/manage/substitutions`);
+      await gotoStable(directorPage, `/game/${gameId}/manage/pairs`);
       await expect(
         directorPage.getByText(
           "A pair took over a seat part-way through.",
@@ -113,7 +113,7 @@ test.describe("Substitutions (split + eligibility)", () => {
       // Persistence 2 — re-opening the screen pre-fills from the server: it is
       // already split (two lines), so the per-occupant eligibility toggles are
       // present, showing the save round-tripped.
-      await gotoStable(directorPage, `/game/${gameId}/manage/substitutions`);
+      await gotoStable(directorPage, `/game/${gameId}/manage/pairs`);
       await expect(
         directorPage.getByText("A pair took over a seat part-way through."),
       ).toBeVisible({ timeout: 15000 });

@@ -146,6 +146,72 @@ export async function setSubstitutionOptions(
   }
 }
 
+/**
+ * Design §11: withdraw the pair holding `seat` from the event, from the round
+ * it is on. Its unplayed boards will not be played; the director decides how
+ * they score. Throws the server's message on failure.
+ */
+export async function withdrawPair(
+  gameId: string,
+  seat: string,
+): Promise<void> {
+  await emitWithAck<null>(SocketEvents.WITHDRAW_PAIR, {
+    gameId,
+    seat,
+    token: getPlayerToken(gameId)?.token ?? "",
+  });
+  // The server rotated the seat's secret away, so this device's token is now
+  // dead — clear it so no stale credential lingers. Reinstating mints a fresh
+  // code the returning device claims.
+  clearPlayerToken(gameId);
+}
+
+/**
+ * Design §11 (director-only): how a late / withdrawn pair's missed boards
+ * score — AVERAGE (AVE−/AVE+) or REMOVED. Throws the server's message.
+ */
+export async function setAbsenceTreatment(
+  gameId: string,
+  seat: string,
+  treatment: "AVERAGE" | "REMOVED",
+): Promise<void> {
+  const res = await fetch(`/api/games/${gameId}/absences`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "x-director-token": getDirectorToken(gameId) ?? "",
+    },
+    body: JSON.stringify({ seat, treatment }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to save");
+  }
+}
+
+/**
+ * Design §11 (director-only): withdraw a pair from the round it is on. Throws
+ * the server's message on failure. (Reinstating is not here — it goes through
+ * a REINSTATE seat-transfer code the returning device claims.)
+ */
+export async function withdrawPairAsDirector(
+  gameId: string,
+  seat: string,
+): Promise<void> {
+  const res = await fetch(`/api/games/${gameId}/pairs`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "x-director-token": getDirectorToken(gameId) ?? "",
+    },
+    body: JSON.stringify({ seat, action: "withdraw" }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to withdraw the pair");
+  }
+}
+
 /** The event-detail fields a director may edit after creation. */
 export interface EventDetailsUpdate {
   eventName?: string;
@@ -304,7 +370,7 @@ export async function leaveTable(gameId: string, seat: string): Promise<void> {
 export async function generateSeatTransferCode(
   gameId: string,
   seat: string,
-  kind: "CHANGE_DEVICE" | "HANDOVER" = "CHANGE_DEVICE",
+  kind: "CHANGE_DEVICE" | "HANDOVER" | "REINSTATE" = "CHANGE_DEVICE",
 ): Promise<string> {
   const response = await emitWithAck<{ code: string }>(
     SocketEvents.CREATE_SEAT_TRANSFER,
