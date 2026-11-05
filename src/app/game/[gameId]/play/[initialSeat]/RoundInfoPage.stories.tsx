@@ -107,10 +107,7 @@ export const LongNames: Story = {
  * midpoint-switch instruction.
  */
 export const HalfMatchAnchor: Story = {
-  decorators: [
-    withGame(mockGame),
-    withAssignment({ type: "PAIR", id: "1" }),
-  ],
+  decorators: [withGame(mockGame), withAssignment({ type: "PAIR", id: "1" })],
   args: {
     round: 2,
     table: 1,
@@ -122,8 +119,18 @@ export const HalfMatchAnchor: Story = {
           half: "first",
           boards: [1, 2],
           players: {
-            N: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: null },
-            S: { id: 2, firstName: "Bob", lastName: "Johnson", nationalId: null },
+            N: {
+              id: 1,
+              firstName: "Alice",
+              lastName: "Smith",
+              nationalId: null,
+            },
+            S: {
+              id: 2,
+              firstName: "Bob",
+              lastName: "Johnson",
+              nationalId: null,
+            },
             E: { id: 5, firstName: "Opp", lastName: "One", nationalId: null },
             W: { id: 6, firstName: "Opp", lastName: "OneB", nationalId: null },
           },
@@ -132,8 +139,18 @@ export const HalfMatchAnchor: Story = {
           half: "second",
           boards: [3, 4],
           players: {
-            N: { id: 1, firstName: "Alice", lastName: "Smith", nationalId: null },
-            S: { id: 2, firstName: "Bob", lastName: "Johnson", nationalId: null },
+            N: {
+              id: 1,
+              firstName: "Alice",
+              lastName: "Smith",
+              nationalId: null,
+            },
+            S: {
+              id: 2,
+              firstName: "Bob",
+              lastName: "Johnson",
+              nationalId: null,
+            },
             E: { id: 7, firstName: "Opp", lastName: "Two", nationalId: null },
             W: { id: 8, firstName: "Opp", lastName: "TwoB", nationalId: null },
           },
@@ -141,4 +158,16 @@ export const HalfMatchAnchor: Story = {
       ],
     },
   },
+};
+
+/** Design §11: the opponents withdrew — nothing to play, Move on. */
+export const OpponentWithdrawn: Story = {
+  args: { opponentWithdrawn: true, onContinuePastLateOpponent: () => {} },
+  decorators: [
+    withGame(mockGame),
+    withAssignment({
+      type: "PAIR",
+      id: "1",
+    }),
+  ],
 };

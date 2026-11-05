@@ -7,7 +7,7 @@ let record: {
   seat: string;
   expiresAt: string;
   used: number;
-  kind: "CHANGE_DEVICE" | "HANDOVER";
+  kind: "CHANGE_DEVICE" | "HANDOVER" | "REINSTATE";
 } | null = null;
 
 const updateSet = vi.fn();
@@ -33,6 +33,9 @@ vi.mock("@/db/games/actions/rotate-participant-secret", () => ({
 vi.mock("@/db/games/actions/handover-seat", () => ({
   handoverSeat: vi.fn(),
 }));
+vi.mock("@/db/games/actions/reinstate-pair", () => ({
+  reinstatePair: vi.fn(),
+}));
 
 vi.mock("@/db/game-index/queries/is-teams-game", () => ({
   isTeamsGame: vi.fn(),
@@ -44,6 +47,7 @@ import {
 } from "./validate-seat-transfer-code";
 import { rotateParticipantSecret } from "@/db/games/actions/rotate-participant-secret";
 import { handoverSeat } from "@/db/games/actions/handover-seat";
+import { reinstatePair } from "@/db/games/actions/reinstate-pair";
 import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 
 const REAL_PAIR = {
@@ -64,6 +68,7 @@ describe("validateAndClaimSeatTransferCode", () => {
     record = null;
     vi.mocked(rotateParticipantSecret).mockResolvedValue(true);
     vi.mocked(handoverSeat).mockResolvedValue({ ok: true });
+    vi.mocked(reinstatePair).mockResolvedValue({ ok: true });
     vi.mocked(isTeamsGame).mockResolvedValue(false);
   });
 
@@ -285,6 +290,41 @@ describe("validateAndClaimSeatTransferCode", () => {
       record = null;
       const result = await inspectSeatTransferCode("ZZZZZZ");
       expect(result).toEqual({ valid: false, error: "Invalid code" });
+    });
+  });
+  describe("reinstate claim", () => {
+    beforeEach(() => {
+      record = {
+        code: "BACK12",
+        gameId: "g1",
+        seat: "A3NS",
+        expiresAt: futureIso(),
+        used: 0,
+        kind: "REINSTATE",
+      };
+    });
+
+    it("runs the reinstate engine with the fresh token and consumes the code", async () => {
+      const result = await validateAndClaimSeatTransferCode("BACK12");
+      expect(result.valid).toBe(true);
+      if (!result.valid) throw new Error("expected valid");
+      expect(reinstatePair).toHaveBeenCalledWith("g1", "A3NS", result.token);
+      expect(handoverSeat).not.toHaveBeenCalled();
+      expect(rotateParticipantSecret).not.toHaveBeenCalled();
+      expect(updateSet).toHaveBeenCalledWith({ used: 1 });
+    });
+
+    it("surfaces (and consumes) a reinstate-engine rejection", async () => {
+      vi.mocked(reinstatePair).mockResolvedValue({
+        ok: false,
+        error: "This pair has not withdrawn.",
+      });
+      const result = await validateAndClaimSeatTransferCode("BACK12");
+      expect(result).toEqual({
+        valid: false,
+        error: "This pair has not withdrawn.",
+      });
+      expect(updateSet).toHaveBeenCalledWith({ used: 1 });
     });
   });
 });

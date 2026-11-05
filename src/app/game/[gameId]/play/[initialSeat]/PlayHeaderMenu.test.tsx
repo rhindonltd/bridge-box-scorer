@@ -26,6 +26,7 @@ vi.mock("./PairDetailsDialog", () => ({
 }));
 
 import { PlayHeaderMenu } from "./PlayHeaderMenu";
+import { GameContext } from "@/context/GameContext";
 
 describe("PlayHeaderMenu", () => {
   beforeEach(() => {
@@ -71,6 +72,41 @@ describe("PlayHeaderMenu", () => {
     await user.click(screen.getByRole("button", { name: "Menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Handover" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/play/A1NS/handover");
+  });
+
+  it("offers Withdraw in a pairs event and routes to the withdraw screen", async () => {
+    const user = userEvent.setup();
+    render(
+      <GameContext.Provider
+        value={
+          { game: { gameType: "PAIRS", eventFormat: "STANDARD" } } as never
+        }
+      >
+        <PlayHeaderMenu gameId="g1" seat="A1NS" />
+      </GameContext.Provider>,
+    );
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(screen.getByRole("menuitem", { name: "Withdraw" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/play/A1NS/withdraw");
+  });
+
+  it("does not offer Withdraw for a teams or Swiss event", async () => {
+    const user = userEvent.setup();
+    for (const game of [
+      { gameType: "TEAMS", eventFormat: "STANDARD" },
+      { gameType: "PAIRS", eventFormat: "SWISS" },
+    ]) {
+      const { unmount } = render(
+        <GameContext.Provider value={{ game } as never}>
+          <PlayHeaderMenu gameId="g1" seat="A1NS" />
+        </GameContext.Provider>,
+      );
+      await user.click(screen.getByRole("button", { name: "Menu" }));
+      expect(
+        screen.queryByRole("menuitem", { name: "Withdraw" }),
+      ).not.toBeInTheDocument();
+      unmount();
+    }
   });
 
   it("opens the change-device dialog from its menu item", async () => {

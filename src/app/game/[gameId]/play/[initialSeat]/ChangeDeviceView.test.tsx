@@ -44,9 +44,22 @@ describe("ChangeDeviceView", () => {
     // Copy is tailored to the arriving pair taking over (both the instructions
     // and the footer mention them).
     expect(screen.getAllByText(/arriving pair/i).length).toBeGreaterThan(0);
-    expect(
-      screen.getByText(/enter their names/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/enter their names/i)).toBeInTheDocument();
+  });
+
+  it("mints a REINSTATE code and shows returning-pair copy when kind=REINSTATE", async () => {
+    mockGenerate.mockResolvedValue("BACK01");
+
+    render(<ChangeDeviceView gameId="g1" seat="A3NS" kind="REINSTATE" />);
+
+    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS", "REINSTATE");
+    expect(await screen.findByTestId("seat-transfer-code")).toHaveTextContent(
+      "BACK01",
+    );
+    // Copy is tailored to the withdrawn pair returning on a device (both the
+    // instructions and the footer mention them).
+    expect(screen.getAllByText(/returning pair/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/pick up the seat again/i)).toBeInTheDocument();
   });
 
   it("shows the server error when generation fails", async () => {

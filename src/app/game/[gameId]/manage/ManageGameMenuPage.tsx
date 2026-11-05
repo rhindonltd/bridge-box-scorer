@@ -13,8 +13,8 @@ export interface DirectorMenuPageProps {
   onMovementClick: () => void;
   onShareDirectorAccessClick: () => void;
   onReviewMismatchesClick: () => void;
-  /** Open the "Substitutions" screen (per-seat split + each pair's eligibility). */
-  onSubstitutionsClick: () => void;
+  /** Open the "Pairs" roster (status of every pair + per-pair actions). */
+  onPairsClick: () => void;
   /** Open the "Export & Publish" submenu (USEBIO / PBN / BridgeWebs / EBU). */
   onExportClick: () => void;
   onDeleteGameClick: () => void;
@@ -37,11 +37,8 @@ export interface DirectorMenuPageProps {
    * retroactive score adjustment can create an EBU §3.5 mismatch to review.
    */
   showReviewMismatches: boolean;
-  /**
-   * Show "Substitutions" — only once at least one §2.4.7 handover has occurred,
-   * so the director can set each substituted seat's split + eligibility.
-   */
-  showSubstitutions: boolean;
+  /** Show "Pairs" — the roster of every pair's status; only after start. */
+  showPairs: boolean;
   /**
    * Show "Export & Publish" — only once the game has started. Opens the submenu
    * holding the results-export / publishing actions; the per-action gating
@@ -59,7 +56,7 @@ export function ManageGameMenuPage({
   onMovementClick,
   onShareDirectorAccessClick,
   onReviewMismatchesClick,
-  onSubstitutionsClick,
+  onPairsClick,
   onExportClick,
   onDeleteGameClick,
   showSetUpGame,
@@ -68,7 +65,7 @@ export function ManageGameMenuPage({
   showEnterDeals,
   showMovement,
   showReviewMismatches,
-  showSubstitutions,
+  showPairs,
   showExport,
 }: DirectorMenuPageProps) {
   const standardButtonClass =
@@ -91,10 +88,7 @@ export function ManageGameMenuPage({
         )}
 
         {showManageTables && (
-          <button
-            onClick={onManageTablesClick}
-            className={standardButtonClass}
-          >
+          <button onClick={onManageTablesClick} className={standardButtonClass}>
             <span className="flex items-center gap-3">Manage Tables</span>
           </button>
         )}
@@ -133,18 +127,17 @@ export function ManageGameMenuPage({
           </button>
         )}
 
-        {showSubstitutions && (
-          <button
-            onClick={onSubstitutionsClick}
-            className={standardButtonClass}
-          >
-            <span className="flex items-center gap-3">Substitutions</span>
+        {showPairs && (
+          <button onClick={onPairsClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Pairs</span>
           </button>
         )}
 
         {showExport && (
           <button onClick={onExportClick} className={standardButtonClass}>
-            <span className="flex items-center gap-3">Export &amp; Publish</span>
+            <span className="flex items-center gap-3">
+              Export &amp; Publish
+            </span>
           </button>
         )}
 

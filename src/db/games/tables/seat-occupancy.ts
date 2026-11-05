@@ -111,9 +111,16 @@ export const seatOccupancy = sqliteTable(
      * handover/substitution does NOT use them (it has no artificial score — see
      * `split` + the `standing` eligibility below). The column is plain TEXT (the
      * enum is a TS-level constraint only).
+     *
+     * PAIRS events (design §11) use the director's per-absence choice instead:
+     *   - AVERAGE    the absent pair gets AVE− and its opponent AVE+ on each
+     *                missed board (the default; null reads as AVERAGE)
+     *   - REMOVED    the missed boards are dropped from the movement
+     * Legacy pairs values read as PENALISED → AVERAGE, REMOVE → REMOVED (see
+     * `normaliseAbsenceTreatment`). Teams still use REMOVE / PENALISED.
      */
     withdrawalTreatment: text("withdrawal_treatment", {
-      enum: ["REMOVE", "PENALISED"],
+      enum: ["REMOVE", "PENALISED", "AVERAGE", "REMOVED"],
     }),
 
     /** §2.4.5 — the 0..40 fine percentage when PENALISED (null otherwise). */

@@ -2,6 +2,11 @@ import { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { eq } from "drizzle-orm";
+import { readAbsences } from "@/db/games/queries/absences";
+import {
+  isPlayableRow,
+  isResolvedRow,
+} from "@/db/games/queries/board-resolution";
 
 export interface ResultsSummary {
   /**
@@ -40,23 +45,26 @@ export interface ResultsSummary {
 export async function getResultsSummary(db: Db): Promise<ResultsSummary> {
   // Join each board to its match so a voided / mismatched match (ruling now on
   // `matches.ruling`) counts as finalized even if its boards were never played.
-  const rows = await db
-    .select({ status: boards.status, ruling: matches.ruling })
-    .from(boards)
-    .innerJoin(matches, eq(boards.matchId, matches.id));
+  const [rows, absences] = await Promise.all([
+    db
+      .select({
+        status: boards.status,
+        ruling: matches.ruling,
+        ns: boards.ns,
+        ew: boards.ew,
+        roundNumber: boards.roundNumber,
+        confirmedResult: boards.confirmedResult,
+        directorOverrideResult: boards.directorOverrideResult,
+      })
+      .from(boards)
+      .innerJoin(matches, eq(boards.matchId, matches.id)),
+    readAbsences(db),
+  ]);
 
-  const playable = rows.filter(
-    (r) => r.status !== "SIT_OUT" && r.status !== "HALF_AVERAGE",
-  );
-  const finalized = playable.filter(
-    (r) =>
-      r.status === "CONFIRMED" ||
-      r.status === "OVERRIDDEN" ||
-      r.status === "CANCELLED" ||
-      r.status === "REMOVED_TEAMS" ||
-      // A match-level void / mismatch ruling resolves the board.
-      r.ruling != null,
-  );
+  const playable = rows.filter(isPlayableRow);
+  // Finalised by status or a match-level void / mismatch ruling, or missed
+  // because a pair is absent (design §11).
+  const finalized = playable.filter((r) => isResolvedRow(r, absences));
 
   const totalPlayable = playable.length;
   const finalizedCount = finalized.length;

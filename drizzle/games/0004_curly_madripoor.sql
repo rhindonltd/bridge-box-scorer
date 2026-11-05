@@ -1,0 +1,1 @@
+ALTER TABLE `expected_late_seats` ADD `treatment` text;

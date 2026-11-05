@@ -40,7 +40,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onMovementClick: fn(),
     onShareDirectorAccessClick: fn(),
     onReviewMismatchesClick: fn(),
-    onSubstitutionsClick: fn(),
+    onPairsClick: fn(),
     onExportClick: fn(),
     onDeleteGameClick: fn(),
     showSetUpGame: true,
@@ -49,7 +49,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     showEnterDeals: false,
     showMovement: false,
     showReviewMismatches: false,
-    showSubstitutions: false,
+    showPairs: false,
     showExport: false,
   },
 };

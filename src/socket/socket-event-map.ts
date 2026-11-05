@@ -32,6 +32,9 @@ export type SocketEventMap = {
   [SocketEvents.GAME_DELETED]: {
     gameId: string;
   };
+  [SocketEvents.SCHEDULE_CHANGED]: {
+    gameId: string;
+  };
 
   [SocketEvents.BOARD_RESULT_UPDATED]: {
     gameId: string;

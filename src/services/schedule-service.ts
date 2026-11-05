@@ -153,6 +153,13 @@ type ActiveRound = {
    * blank table. False/absent for an ordinary round.
    */
   opponentExpectedLate?: boolean;
+  /**
+   * Design §11: true when every board this round is ABSENT — the opponents
+   * withdrew, so there is nothing to play. The round-info screen says so and
+   * offers Move on. (Such a round is already complete for the play-state
+   * resolver; this only labels it when the client walks onto it.)
+   */
+  opponentWithdrawn?: boolean;
 };
 
 export type ScheduleRound = Omit<
@@ -241,13 +248,21 @@ function assembleRound(
   // §2.4.7: this round's opponent is "running late" when its seat is marked
   // expected-late AND nobody is sitting there yet (no players resolve). The
   // opponent is the other side of this pair's played row.
-  const opponentId = playedRows.length > 0
-    ? (playedRows[0].ns === assignmentId ? playedRows[0].ew : playedRows[0].ns)
-    : null;
+  const opponentId =
+    playedRows.length > 0
+      ? playedRows[0].ns === assignmentId
+        ? playedRows[0].ew
+        : playedRows[0].ns
+      : null;
   const opponentExpectedLate =
     opponentId != null &&
     expectedLateSeats.has(opponentId) &&
     !lookup.has(opponentId);
+
+  // Design §11: every board this round was missed because the opponents
+  // withdrew (the rows are ABSENT).
+  const opponentWithdrawn =
+    playedRows.length > 0 && playedRows.every((r) => r.status === "ABSENT");
 
   // The played boards (never SIT_OUT / HALF_AVERAGE), ascending.
   const boardStatuses = playedRows
@@ -264,6 +279,7 @@ function assembleRound(
     sitOut: isSitOut,
     players: tablePlayersFor(rows[0].ns, rows[0].ew, lookup),
     ...(opponentExpectedLate ? { opponentExpectedLate: true } : {}),
+    ...(opponentWithdrawn ? { opponentWithdrawn: true } : {}),
   };
 
   if (isSitOut) return base;
@@ -313,10 +329,11 @@ function detectHalfMatch(
   // Non-anchor: one real half plus a compensated half. It played the FIRST half
   // when all its played boards precede its compensated boards, else the SECOND.
   if (compensatedBoards.length > 0) {
-    const sorted = [...playedRows].sort((a, b) => a.boardNumber - b.boardNumber);
+    const sorted = [...playedRows].sort(
+      (a, b) => a.boardNumber - b.boardNumber,
+    );
     const boards = sorted.map((r) => r.boardNumber);
-    const playedFirst =
-      Math.max(...boards) < Math.min(...compensatedBoards);
+    const playedFirst = Math.max(...boards) < Math.min(...compensatedBoards);
     const half: "first" | "second" = playedFirst ? "first" : "second";
     const players = tablePlayersFor(sorted[0].ns, sorted[0].ew, lookup);
     return {

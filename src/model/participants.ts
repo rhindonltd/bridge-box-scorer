@@ -187,6 +187,9 @@ export type ParticipantStanding = {
     | "PENALISED"
     | "INHERIT"
     | "SUBSTITUTION"
+    // PAIRS (design §11): the director's AVE±/Removed choice.
+    | "AVERAGE"
+    | "REMOVED"
     | null;
   /** 0..40 fine percentage (PENALISED only). */
   withdrawalFinePercent: number | null;

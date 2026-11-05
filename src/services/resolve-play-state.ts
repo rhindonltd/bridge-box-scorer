@@ -191,6 +191,8 @@ const FINALISED_STATUSES = new Set([
   "OVERRIDDEN",
   "CANCELLED",
   "REMOVED_TEAMS",
+  // Design §11: missed because a pair is absent (withdrew / arrived late).
+  "ABSENT",
 ]);
 
 /**
@@ -267,8 +269,9 @@ async function resolveWithinRound(
   round: ScheduleRound,
 ): Promise<WithinRoundPosition> {
   // The first board of this round that isn't confirmed yet.
+  // ABSENT boards (design §11) are not played, so they are skipped too.
   const firstUnconfirmed = round.boardStatuses.find(
-    (b) => b.status !== "CONFIRMED",
+    (b) => b.status !== "CONFIRMED" && b.status !== "ABSENT",
   );
 
   // No unconfirmed board → the round is complete (defensive: the caller only

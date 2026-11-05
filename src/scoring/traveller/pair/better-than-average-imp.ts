@@ -2,6 +2,7 @@ import { ImpLine } from "./imp";
 import { XimpLine } from "./x-imp";
 import { classifyOutcome } from "./assigned";
 import { parseAdjustedScore } from "@/model/adjusted-score";
+import { ARTIFICIAL_IMP_AWARD } from "@/scoring/artificial-score";
 
 /**
  * EBU White Book §4.1.1.1 "better than average" override for IMP and Cross-IMP
@@ -39,9 +40,9 @@ import { parseAdjustedScore } from "@/model/adjusted-score";
  * works on both.
  */
 
-/** The flat ±3 IMP award an artificial AVE+/AVE− produces (mirrors `assigned.ts`). */
-const AVE_PLUS_IMPS = 3;
-const AVE_MINUS_IMPS = -3;
+/** The flat IMP award an artificial AVE+/AVE− produces (shared with `assigned.ts`). */
+const AVE_PLUS_IMPS = ARTIFICIAL_IMP_AWARD;
+const AVE_MINUS_IMPS = -ARTIFICIAL_IMP_AWARD;
 
 /** One scored board of IMP or Cross-IMP lines, tagged with its board number. */
 export interface ScoredImpBoard<L> {

@@ -34,9 +34,8 @@ describe("getResultsSummary", () => {
   }
 
   it("reports not complete when there are no boards", async () => {
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -52,9 +51,8 @@ describe("getResultsSummary", () => {
       makeBoard({ boardNumber: 2, status: "CONFIRMED" }),
     ]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -70,9 +68,8 @@ describe("getResultsSummary", () => {
       makeBoard({ boardNumber: 2, status: "OVERRIDDEN" }),
     ]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -92,9 +89,8 @@ describe("getResultsSummary", () => {
       }),
     ]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -115,9 +111,8 @@ describe("getResultsSummary", () => {
       }),
     ]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -133,9 +128,8 @@ describe("getResultsSummary", () => {
       makeBoard({ boardNumber: 2, status: "NOT_PLAYED" }),
     ]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -151,9 +145,8 @@ describe("getResultsSummary", () => {
       makeBoard({ boardNumber: 2, status: "PENDING_CONFIRMATION" }),
     ]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -169,9 +162,8 @@ describe("getResultsSummary", () => {
       makeBoard({ boardNumber: 2, tableNumber: 2, status: "SIT_OUT" }),
     ]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -184,9 +176,8 @@ describe("getResultsSummary", () => {
   it("reports not complete when only SIT_OUT boards exist", async () => {
     await seed([makeBoard({ boardNumber: 1, status: "SIT_OUT" })]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -208,9 +199,8 @@ describe("getResultsSummary", () => {
       makeBoard({ boardNumber: 1, tableNumber: 3, status: "HALF_AVERAGE" }),
     ]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
@@ -223,15 +213,47 @@ describe("getResultsSummary", () => {
   it("reports not complete when only HALF_AVERAGE boards exist", async () => {
     await seed([makeBoard({ boardNumber: 1, status: "HALF_AVERAGE" })]);
 
-    const { getResultsSummary } = await import(
-      "@/db/games/queries/get-results-summary"
-    );
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
     const db = (await harness.getDb()) as Db;
 
     expect(await getResultsSummary(db)).toEqual({
       totalPlayable: 0,
       finalized: 0,
       allResultsIn: false,
+    });
+  });
+
+  it("counts an ABSENT board (a pair withdrew / arrived late) as finalized", async () => {
+    await seed([
+      makeBoard({ boardNumber: 1, status: "CONFIRMED" }),
+      makeBoard({ boardNumber: 2, status: "ABSENT" }),
+    ]);
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
+    const db = (await harness.getDb()) as Db;
+    expect(await getResultsSummary(db)).toEqual({
+      totalPlayable: 2,
+      finalized: 2,
+      allResultsIn: true,
+    });
+  });
+
+  it("counts a board against a still-empty expected-late seat as finalized", async () => {
+    await seed([
+      makeBoard({ boardNumber: 1, status: "CONFIRMED" }),
+      makeBoard({ boardNumber: 2, ns: "A2NS", ew: "A2EW", tableNumber: 2 }),
+    ]);
+    const db = (await harness.getDb()) as Db;
+    const { expectedLateSeats } =
+      await import("@/db/games/tables/expected-late-seats");
+    db.insert(expectedLateSeats).values({ seat: "A2EW" }).run();
+    const { getResultsSummary } =
+      await import("@/db/games/queries/get-results-summary");
+    expect(await getResultsSummary(db)).toEqual({
+      totalPlayable: 2,
+      finalized: 2,
+      allResultsIn: true,
     });
   });
 });

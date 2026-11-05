@@ -26,6 +26,10 @@ export const swrKeys = {
     `/api/games/${gameId}/outstanding-boards`,
 
   substitutions: (gameId: string) => `/api/games/${gameId}/substitutions`,
+  /** Design §11: late arrivals / withdrawals and the director's choice. */
+  absences: (gameId: string) => `/api/games/${gameId}/absences`,
+  /** Design §11: the director's Pairs roster. */
+  roster: (gameId: string) => `/api/games/${gameId}/pairs`,
 
   club: () => "/api/system/club",
 

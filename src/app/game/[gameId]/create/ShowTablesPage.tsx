@@ -469,9 +469,7 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
                 tables={currentSection.tables}
                 multiSection={multiSection}
                 readOnly={started}
-                onResize={(t) =>
-                  handleResizeSection(currentSection.section, t)
-                }
+                onResize={(t) => handleResizeSection(currentSection.section, t)}
                 onRename={(label) =>
                   handleRenameSection(currentSection.section, label)
                 }
@@ -505,6 +503,12 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
         onChangeStanding={handleChangeStanding}
         onToggleExpectedLate={handleToggleExpectedLate}
         onHandover={handleHandover}
+        // Design §11: in a board-pooled pairs event a pair withdraws itself and
+        // the director chooses how its missed boards score on the Late
+        // Arrivals / Withdrawals screen, so no standing control here.
+        showStandingControls={
+          game.gameType !== "PAIRS" || game.eventFormat === "SWISS"
+        }
         onClose={() => setOpenTable(null)}
       />
     </GamePageLayout>

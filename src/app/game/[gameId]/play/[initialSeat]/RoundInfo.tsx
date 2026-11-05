@@ -27,6 +27,8 @@ interface Props {
    * wait for them, rather than reading the empty seats as a sit-out.
    */
   opponentExpectedLate?: boolean;
+  /** Design §11: the opponents withdrew — these boards won't be played. */
+  opponentWithdrawn?: boolean;
 }
 
 export default function RoundInfo({
@@ -35,11 +37,10 @@ export default function RoundInfo({
   players,
   halfMatch,
   opponentExpectedLate,
+  opponentWithdrawn,
 }: Props) {
   if (halfMatch) {
-    return (
-      <HalfMatchRoundInfo table={table} halfMatch={halfMatch} />
-    );
+    return <HalfMatchRoundInfo table={table} halfMatch={halfMatch} />;
   }
 
   return (
@@ -49,6 +50,16 @@ export default function RoundInfo({
           {boards.length === 1 ? "Board" : "Boards"} {formatBoardRange(boards)}
         </div>
       </header>
+      {opponentWithdrawn && (
+        <div
+          role="note"
+          data-testid="opponent-withdrawn"
+          className="mb-6 max-w-md rounded-lg border border-gray-300 bg-gray-50 px-4 py-3 text-center text-sm font-medium text-gray-800"
+        >
+          Your opponents have withdrawn, so these boards won&rsquo;t be played.
+          Move on to the next round.
+        </div>
+      )}
       {opponentExpectedLate && (
         <div
           data-testid="opponent-running-late"

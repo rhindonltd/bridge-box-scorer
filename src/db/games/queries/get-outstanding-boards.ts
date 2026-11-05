@@ -1,4 +1,9 @@
 import { Db } from "@/db/games";
+import { readAbsences } from "@/db/games/queries/absences";
+import {
+  isPlayableRow,
+  isResolvedRow,
+} from "@/db/games/queries/board-resolution";
 import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { players } from "@/db/games/tables/players";
@@ -66,22 +71,18 @@ export async function getOutstandingBoards(
       ew: boards.ew,
       status: boards.status,
       ruling: matches.ruling,
+      confirmedResult: boards.confirmedResult,
+      directorOverrideResult: boards.directorOverrideResult,
     })
     .from(boards)
     .innerJoin(matches, eq(boards.matchId, matches.id));
 
+  // Same rule as `getResultsSummary` (design §11: a board missed because a
+  // pair is absent is resolved).
+  const absences = await readAbsences(db);
   const outstanding = rows
-    .filter((r) => r.status !== "SIT_OUT" && r.status !== "HALF_AVERAGE")
-    .filter(
-      (r) =>
-        !(
-          r.status === "CONFIRMED" ||
-          r.status === "OVERRIDDEN" ||
-          r.status === "CANCELLED" ||
-          r.status === "REMOVED_TEAMS" ||
-          r.ruling != null
-        ),
-    )
+    .filter(isPlayableRow)
+    .filter((r) => !isResolvedRow(r, absences))
     .sort(
       (a, b) =>
         a.section.localeCompare(b.section) ||

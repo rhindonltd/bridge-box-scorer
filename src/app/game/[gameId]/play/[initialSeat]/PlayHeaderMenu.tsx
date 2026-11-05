@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { HeaderMenu, type HeaderMenuItem } from "@/components/layout/HeaderMenu";
+import {
+  HeaderMenu,
+  type HeaderMenuItem,
+} from "@/components/layout/HeaderMenu";
 import { useAssignment } from "@/context/AssignmentContext";
+import { GameContext } from "@/context/GameContext";
 import { useIsDirector } from "@/hooks/use-is-director";
 import {
   PlayManageSwitch,
@@ -39,6 +43,12 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   const { assignment, pair } = useAssignment();
   const isDirector = useIsDirector(gameId);
   const router = useRouter();
+  // Self-service withdrawal (design §11) is for pairs events only (not Swiss,
+  // not teams). Read the game without requiring a provider so the menu still
+  // renders where none is mounted.
+  const game = useContext(GameContext)?.game;
+  const canWithdraw =
+    game?.gameType === "PAIRS" && game.eventFormat !== "SWISS";
 
   const [changeDeviceOpen, setChangeDeviceOpen] = useState(false);
   const [pairDetailsOpen, setPairDetailsOpen] = useState(false);
@@ -61,6 +71,15 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
       label: "Handover",
       onSelect: () => router.push(`/game/${gameId}/play/${seat}/handover`),
     },
+    ...(canWithdraw
+      ? [
+          {
+            label: "Withdraw",
+            onSelect: () =>
+              router.push(`/game/${gameId}/play/${seat}/withdraw`),
+          },
+        ]
+      : []),
     { label: "Change device", onSelect: () => setChangeDeviceOpen(true) },
     { label: "Pair details", onSelect: () => setPairDetailsOpen(true) },
     // A director's play→manage switch (folded / small-screen form). The visible

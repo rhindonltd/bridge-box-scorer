@@ -81,7 +81,9 @@ describe("resolvePlayState", () => {
   });
 
   it("reports waitingConfirmation when this table has one pending submission", async () => {
-    withSchedule([round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }])]);
+    withSchedule([
+      round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }]),
+    ]);
     vi.mocked(findBoardSubmissions).mockResolvedValue([
       { side: "NS", boardNumber: 1, result: "3NTN=" },
     ] as never);
@@ -98,7 +100,9 @@ describe("resolvePlayState", () => {
     // The EW pair submitted board 1; this seat (NS) has not. The board is
     // PENDING_CONFIRMATION, but from NS's point of view they still need to
     // enter their own result — they are entering, not waiting.
-    withSchedule([round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }])]);
+    withSchedule([
+      round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }]),
+    ]);
     vi.mocked(findBoardSubmissions).mockResolvedValue([
       { side: "EW", boardNumber: 1, result: "3NTN=" },
     ] as never);
@@ -112,7 +116,9 @@ describe("resolvePlayState", () => {
   });
 
   it("reports a mismatch, oriented NS/EW, when both sides disagree", async () => {
-    withSchedule([round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }])]);
+    withSchedule([
+      round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }]),
+    ]);
     vi.mocked(findBoardSubmissions).mockResolvedValue([
       { side: "NS", boardNumber: 1, result: "3NTN=" },
       { side: "EW", boardNumber: 1, result: "3NTN+1" },
@@ -287,7 +293,9 @@ describe("resolvePlayState", () => {
       // ordering keeps them at round 2, not back on round 1.
       withSchedule([
         round(1, [{ boardNumber: 1, status: "OVERRIDDEN" }]),
-        round(2, [{ boardNumber: 2, status: "NOT_PLAYED" }], { tableNumber: 2 }),
+        round(2, [{ boardNumber: 2, status: "NOT_PLAYED" }], {
+          tableNumber: 2,
+        }),
       ]);
 
       const state = await resolvePlayState(db, "g1", "A1NS");
@@ -296,6 +304,46 @@ describe("resolvePlayState", () => {
         roundIndex: 1,
         position: { at: "entering", boardNumber: 2 },
       });
+    });
+  });
+
+  describe("absent boards (design §11)", () => {
+    it("skips a round whose boards are all ABSENT (the opponents withdrew)", async () => {
+      withSchedule([
+        round(1, [{ boardNumber: 1, status: "CONFIRMED" }]),
+        round(2, [{ boardNumber: 2, status: "ABSENT" }]),
+        round(3, [{ boardNumber: 3, status: "NOT_PLAYED" }]),
+      ]);
+      const state = await resolvePlayState(db, "g1", "A1NS");
+      expect(state!.phase).toEqual({
+        kind: "round",
+        roundIndex: 2,
+        position: { at: "entering", boardNumber: 3 },
+      });
+    });
+
+    it("skips an ABSENT board within a partly-absent round", async () => {
+      withSchedule([
+        round(1, [
+          { boardNumber: 1, status: "ABSENT" },
+          { boardNumber: 2, status: "NOT_PLAYED" },
+        ]),
+      ]);
+      const state = await resolvePlayState(db, "g1", "A1NS");
+      expect(state!.phase).toEqual({
+        kind: "round",
+        roundIndex: 0,
+        position: { at: "entering", boardNumber: 2 },
+      });
+    });
+
+    it("is complete when every remaining board is ABSENT (this pair withdrew)", async () => {
+      withSchedule([
+        round(1, [{ boardNumber: 1, status: "CONFIRMED" }]),
+        round(2, [{ boardNumber: 2, status: "ABSENT" }]),
+      ]);
+      const state = await resolvePlayState(db, "g1", "A1NS");
+      expect(state!.phase).toEqual({ kind: "complete" });
     });
   });
 });

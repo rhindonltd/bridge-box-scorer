@@ -61,6 +61,11 @@ export const SocketEvents = {
   // options are entered here (deferred to the director's "Substitutions"
   // screen). Broadcasts PARTICIPANTS + a fresh leaderboard snapshot.
   HANDOVER_SAME_DEVICE: "game:handoverSameDevice",
+  // Client-initiated (PLAYER-authed, design §11): the pair holding a seat
+  // withdraws from the event from the round it is on. Its unplayed boards are
+  // marked ABSENT; the director chooses AVE−/AVE+ or removal afterwards.
+  // Broadcasts SCHEDULE_CHANGED, GAME_UPDATED, PARTICIPANTS and a leaderboard.
+  WITHDRAW_PAIR: "game:withdrawPair",
   SELECT_MOVEMENT: "game:selectMovement",
   // NOTE: starting a game is an HTTP route (POST /api/games/[gameId]/start),
   // not a socket event; it promotes the timer and broadcasts GAME_UPDATED from
@@ -80,6 +85,11 @@ export const SocketEvents = {
   // Server initiated - Game specific
   PARTICIPANTS: "game:participants",
   GAME_UPDATED: "game:updated",
+  // Server-initiated (design §11): board rows a pair can no longer play were
+  // marked ABSENT (a pair withdrew, or a late pair was seated). Every device in
+  // the game room re-reads its play state and re-derives its position from the
+  // server, so an opponent is moved past boards it would otherwise wait on.
+  SCHEDULE_CHANGED: "game:scheduleChanged",
   // Server-initiated: the game was deleted (director-authed HTTP DELETE
   // /api/games/[gameId]/delete). Broadcast to the game room BEFORE the row/db
   // are removed, so every connected device — players, the director, and public

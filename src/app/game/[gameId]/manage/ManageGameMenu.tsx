@@ -21,16 +21,6 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
   );
   const isSwiss = game?.eventFormat === "SWISS";
 
-  // "Substitutions" only applies once a §2.4.7 handover has happened — the
-  // director then sets how each substituted seat is scored (split + each
-  // pair's eligibility). An empty list (the common case) hides the item. Only
-  // meaningful after start, so fetch it then.
-  const { data: substitutions } = useSWR<{ seat: string }[]>(
-    started ? swrKeys.substitutions(gameId) : null,
-    unwrapFetcher<{ seat: string }[]>("substitutions"),
-  );
-  const hasSubstitutions = (substitutions?.length ?? 0) > 0;
-
   // Until we know whether the game has started, hide the state-gated buttons to
   // avoid flicker (e.g. briefly showing "Set Up Game" on an already-started
   // game). Share Director Access and Delete Game are always shown.
@@ -49,9 +39,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       onReviewMismatchesClick={() =>
         router.push(`/game/${gameId}/manage/mismatches`)
       }
-      onSubstitutionsClick={() =>
-        router.push(`/game/${gameId}/manage/substitutions`)
-      }
+      onPairsClick={() => router.push(`/game/${gameId}/manage/pairs`)}
       onExportClick={() => router.push(`/game/${gameId}/manage/export`)}
       onDeleteGameClick={() =>
         router.push(`/game/${gameId}/manage/delete-game`)
@@ -62,7 +50,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       showEnterDeals={started}
       showMovement={started}
       showReviewMismatches={started && isSwiss}
-      showSubstitutions={started && hasSubstitutions}
+      showPairs={started}
       // "Export & Publish" groups the results-export / publishing actions; it is
       // only meaningful once the game has started.
       showExport={started}

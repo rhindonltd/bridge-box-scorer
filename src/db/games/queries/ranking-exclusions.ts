@@ -13,7 +13,14 @@ import {
 export interface ParticipantStandingRow {
   seat: string;
   standing: "ACTIVE" | "WITHDRAWN" | "WITHOUT_STANDING" | "LATE";
-  treatment: "REMOVE" | "PENALISED" | "INHERIT" | "SUBSTITUTION" | null;
+  treatment:
+    | "REMOVE"
+    | "PENALISED"
+    | "INHERIT"
+    | "SUBSTITUTION"
+    | "AVERAGE"
+    | "REMOVED"
+    | null;
   finePercent: number | null;
 }
 
@@ -177,8 +184,7 @@ export function resolveStandings(
     // A LATE arrival that was present for at least half the boards keeps its
     // standing — treated as ACTIVE for scoring, so it is skipped entirely.
     const lateShort =
-      r.standing === "LATE" &&
-      !lateRetainsStanding(r.seat, playedBySeat, half);
+      r.standing === "LATE" && !lateRetainsStanding(r.seat, playedBySeat, half);
 
     // §2.4.9 "without standing" is unconditional and treatment-independent: the
     // pair's results count for its opponents but it is never ranked. (Handled
@@ -217,36 +223,9 @@ export function resolveStandings(
     withdrawals.push({
       seat: r.seat,
       treatment,
-      finePercent: treatment === "PENALISED" ? r.finePercent ?? 0 : 0,
+      finePercent: treatment === "PENALISED" ? (r.finePercent ?? 0) : 0,
     });
   }
 
   return { excludedFromRanking, withdrawals };
-}
-
-/**
- * EBU White Book §2.4.9 "without standing" — the set of participant ids whose
- * results count for their opponents but who are themselves dropped from the
- * ranking. See {@link resolveStandings} for the full rule (incl. the §2.4.7
- * LATE half-boards gate); this is the convenience reader that loads the rows
- * and board context and returns just the exclusion set.
- */
-export async function readRankingExclusions(
-  db: Db,
-  boardRows: readonly StandingBoardRow[],
-): Promise<Set<string>> {
-  const rows = await readParticipantStandings(db);
-  return resolveStandings(rows, boardRows).excludedFromRanking;
-}
-
-/**
- * Read the §2.4.3–§2.4.7 withdrawal records (incl. short LATE arrivals) for a
- * game — the convenience reader over {@link resolveStandings}.
- */
-export async function readWithdrawals(
-  db: Db,
-  boardRows: readonly StandingBoardRow[],
-): Promise<WithdrawalRecord[]> {
-  const rows = await readParticipantStandings(db);
-  return resolveStandings(rows, boardRows).withdrawals;
 }

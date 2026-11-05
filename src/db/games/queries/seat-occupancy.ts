@@ -1,7 +1,6 @@
 import { Db } from "@/db/games";
 import { seatOccupancy, SeatOccupancy } from "@/db/games/tables/seat-occupancy";
-import { eq } from "drizzle-orm";
-import { PairSeat, scoredIdFor } from "@/model/participants";
+import { scoredIdFor } from "@/model/participants";
 
 /**
  * Whether an occupancy covers a given board number. A `boards = null` occupancy
@@ -19,44 +18,6 @@ export function occupancyCoversBoard(
 /** Read every occupancy row in the game. */
 export async function readSeatOccupancies(db: Db): Promise<SeatOccupancy[]> {
   return db.select().from(seatOccupancy);
-}
-
-/**
- * The occupancies at a seat, in insertion order. In the common case this is a
- * single whole-seat (`boards = null`) occupancy; a handover seat has two.
- */
-export async function readOccupanciesForSeat(
-  db: Db,
-  seat: string,
-): Promise<SeatOccupancy[]> {
-  return db
-    .select()
-    .from(seatOccupancy)
-    .where(eq(seatOccupancy.seat, seat as PairSeat));
-}
-
-/**
- * Resolve the single occupant of a seat for a given board number — the
- * occupancy whose board set contains it. With the disjoint-set invariant there
- * is at most one. Pass `boardNumber = null` to get the seat's SOLE occupancy
- * (the ordinary single-occupancy case); when a seat has more than one occupancy
- * and no board is given, the first is returned (callers that care about
- * handover always pass a board).
- */
-export function resolveOccupant(
-  occupancies: readonly SeatOccupancy[],
-  seat: string,
-  boardNumber: number | null,
-): SeatOccupancy | undefined {
-  const forSeat = occupancies.filter((o) => o.seat === seat);
-  if (forSeat.length === 0) return undefined;
-  if (boardNumber == null) return forSeat[0];
-  return (
-    forSeat.find((o) => occupancyCoversBoard(o, boardNumber)) ??
-    // Fall back to a whole-seat occupancy if present (defensive; a seat with a
-    // single boards=null row is handled by the find above already).
-    forSeat.find((o) => o.boards == null)
-  );
 }
 
 /**

@@ -1,3 +1,4 @@
+import { ARTIFICIAL_IMP_AWARD } from "@/scoring/artificial-score";
 import {
   isAdjustedScore,
   isWeightedScore,
@@ -19,7 +20,7 @@ import { ImpTable } from "../imp-table";
  */
 
 /** For IMP/XIMP, an assigned score maps to a fixed IMP swing per side. */
-const ASSIGNED_IMP_AWARD = 3;
+const ASSIGNED_IMP_AWARD = ARTIFICIAL_IMP_AWARD;
 
 /** Classify a line's outcome. Real played lines score normally. */
 export type AssignedKind = "artificial" | "weighted" | "real";

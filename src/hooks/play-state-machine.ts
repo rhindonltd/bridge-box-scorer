@@ -66,6 +66,8 @@ export interface RoundSchedule {
    * note instead of treating the empty opponent as a sit-out or blank table.
    */
   opponentExpectedLate?: boolean;
+  /** Design §11: the opponents withdrew; nothing to play this round. */
+  opponentWithdrawn?: boolean;
 }
 
 export interface Schedule {

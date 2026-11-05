@@ -5,7 +5,7 @@ import { seatTransferCodes } from "@/db/system/schema";
 import { generateShortCode, CODE_TTL_MS } from "@/db/system/short-code";
 
 /** What a claimed seat-transfer code does — see the schema's `kind` column. */
-export type SeatTransferKind = "CHANGE_DEVICE" | "HANDOVER";
+export type SeatTransferKind = "CHANGE_DEVICE" | "HANDOVER" | "REINSTATE";
 
 /**
  * Generate a short, single-use code that another device can claim to take over
@@ -16,6 +16,9 @@ export type SeatTransferKind = "CHANGE_DEVICE" | "HANDOVER";
  *     just rotates the seat's secret so only the claiming device retains access.
  *   - HANDOVER: a DIFFERENT (arriving) pair takes over — claiming runs the
  *     handover engine and requires the arriving pair's names.
+ *   - REINSTATE: a WITHDRAWN pair returns on a device — claiming reinstates it
+ *     (standing back to ACTIVE, its missed boards playable again) with the
+ *     fresh token; no names (the pair is already on record).
  */
 export async function createSeatTransferCode(
   gameId: string,

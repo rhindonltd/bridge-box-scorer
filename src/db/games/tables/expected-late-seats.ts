@@ -18,6 +18,13 @@ import { PairSeat } from "@/model/participants";
  */
 export const expectedLateSeats = sqliteTable("expected_late_seats", {
   seat: text("seat").$type<PairSeat>().primaryKey(),
+  /**
+   * PAIRS (design §11): the director's choice for the boards this seat misses
+   * while it is empty — AVERAGE (opponents AVE+) or REMOVED (opponents sit
+   * out). Null reads as AVERAGE. Moved onto the pair's occupancy when it is
+   * seated after the start.
+   */
+  treatment: text("treatment", { enum: ["AVERAGE", "REMOVED"] }),
 });
 
 export type ExpectedLateSeat = typeof expectedLateSeats.$inferSelect;

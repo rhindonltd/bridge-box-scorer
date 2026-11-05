@@ -8,14 +8,12 @@ vi.mock("next/navigation", () => ({
 }));
 
 let gameData: unknown = { eventFormat: "STANDARD" };
-let substitutionsData: unknown = [];
+
 // Key-aware SWR mock: the game key returns the game (for the Swiss check); the
-// substitutions key returns the substituted seats (gates the Substitutions
-// item). A null key (not-started gate) yields no data.
+// A null key (the not-started gate) yields no data.
 vi.mock("swr", () => ({
   default: (key: string | null) => {
     if (key === null) return { data: undefined };
-    if (key.endsWith("/substitutions")) return { data: substitutionsData };
     return { data: gameData };
   },
 }));
@@ -26,7 +24,6 @@ vi.mock("@/lib/fetcher", () => ({
 vi.mock("@/swr/swr-keys", () => ({
   swrKeys: {
     game: (gameId: string) => `/api/games/${gameId}`,
-    substitutions: (gameId: string) => `/api/games/${gameId}/substitutions`,
   },
 }));
 
@@ -66,7 +63,6 @@ describe("ManageGameMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gameData = { eventFormat: "STANDARD" };
-    substitutionsData = [];
     mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
   });
 
@@ -98,10 +94,8 @@ describe("ManageGameMenu", () => {
     );
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "onSubstitutionsClick" }),
-    );
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/substitutions");
+    fireEvent.click(screen.getByRole("button", { name: "onPairsClick" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/pairs");
 
     fireEvent.click(screen.getByRole("button", { name: "onExportClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/export");
@@ -120,21 +114,14 @@ describe("ManageGameMenu", () => {
     expect(flag("showExport")).toBe("false");
   });
 
-  it("shows Substitutions only when started and a handover exists", () => {
-    // Started, no handover → hidden.
-    substitutionsData = [];
+  it("shows Pairs once the game has started", () => {
+    mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
     const { rerender } = render(<ManageGameMenu gameId="g1" />);
-    expect(flag("showSubstitutions")).toBe("false");
+    expect(flag("showPairs")).toBe("true");
 
-    // Started, a substituted seat exists → shown.
-    substitutionsData = [{ seat: "A1NS" }];
-    rerender(<ManageGameMenu gameId="g1" />);
-    expect(flag("showSubstitutions")).toBe("true");
-
-    // Not started → hidden even if (stale) data exists.
     mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
     rerender(<ManageGameMenu gameId="g1" />);
-    expect(flag("showSubstitutions")).toBe("false");
+    expect(flag("showPairs")).toBe("false");
   });
 
   it("before start: shows Set Up Game, hides Travellers/Movement/Export", () => {
