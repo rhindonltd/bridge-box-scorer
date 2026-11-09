@@ -7,10 +7,9 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {
   gameId: string;
-  onBack: () => void;
 }
 
-export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
+export function ShareDirectorAccessPage({ gameId }: Props) {
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState(300); // 5 minutes in seconds
@@ -24,7 +23,9 @@ export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
     generateShareCode(gameId)
       .then((newCode) => setCode(newCode))
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to generate code"),
+        setError(
+          err instanceof Error ? err.message : "Failed to generate code",
+        ),
       );
   }, [gameId]);
 
@@ -60,7 +61,11 @@ export function ShareDirectorAccessPage({ gameId, onBack }: Props) {
   return (
     <GamePageLayout
       headerTitle="Share Director Access"
-      backAction={onBack}
+      // Reached from a header hamburger on any director page (play, manage or
+      // setup), so "back" returns to whichever page the director came from —
+      // the header's default pops the history stack. If the screen was opened
+      // directly (no in-app history), fall back to the manage menu.
+      backFallbackHref={`/game/${gameId}/manage`}
       contentMode="center"
       // The regenerate button is the one primary action, so it lives in the
       // fixed bottom action bar as a full-width button (matching the rest of

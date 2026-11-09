@@ -21,9 +21,7 @@ const makePair = (
   player2: makePlayer(2),
 });
 
-const sectionA = (tables: number) => [
-  { section: "A", label: "A", tables },
-];
+const sectionA = (tables: number) => [{ section: "A", label: "A", tables }];
 
 describe("SelectTable", () => {
   const baseProps = {
@@ -99,6 +97,13 @@ describe("SelectTable", () => {
     );
     expect(screen.getByText("Section A")).toBeInTheDocument();
     expect(screen.getByText("Section B")).toBeInTheDocument();
+  });
+
+  it("shows no section heading for a single-section game", () => {
+    render(<SelectTable {...baseProps} />);
+    expect(
+      screen.queryByRole("heading", { name: /Section/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("appends the section label when it differs from the section letter", () => {

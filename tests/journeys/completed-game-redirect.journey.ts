@@ -53,7 +53,7 @@ test.describe("Completed game redirects", () => {
           { timeout: 15000 },
         );
         await expect(
-          player.getByText("Leaderboard", { exact: true }),
+          player.getByRole("heading", { name: eventName }),
         ).toBeVisible({ timeout: 15000 });
 
         // 3. Opening a play/{seat} URL directly also redirects to the

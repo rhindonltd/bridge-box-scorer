@@ -38,7 +38,6 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onTravellersClick: fn(),
     onEnterDealsClick: fn(),
     onMovementClick: fn(),
-    onShareDirectorAccessClick: fn(),
     onReviewMismatchesClick: fn(),
     onPairsClick: fn(),
     onExportClick: fn(),

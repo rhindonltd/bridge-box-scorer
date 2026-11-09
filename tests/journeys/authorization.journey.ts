@@ -1,4 +1,5 @@
 import { test, expect, APIRequestContext } from "@playwright/test";
+import { E2E_BASE_URL } from "../e2e-env";
 import { io as ioClient, Socket } from "socket.io-client";
 
 import { createGame } from "../fixtures/game-create";
@@ -25,7 +26,7 @@ import { newParticipant } from "./support";
 
 /** Open a raw socket.io connection from the test process. */
 async function openSocket(): Promise<Socket> {
-  const socket = ioClient("http://localhost:3000");
+  const socket = ioClient(E2E_BASE_URL);
   await new Promise<void>((resolve, reject) => {
     const t = setTimeout(() => reject(new Error("socket connect timeout")), 10_000);
     socket.on("connect", () => {

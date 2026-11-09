@@ -66,21 +66,20 @@ export function scoreMP(board: number, lines: PairLine[]): MatchpointLine[] {
   const result: MatchpointLine[] = [];
 
   // --- Real played lines: matchpoint vs other reals, Neuberg to full field ---
-  // Comparisons available among the reals, and the full field we scale up to.
-  const realComparisons = realLines.length - 1;
-  const fullComparisons = totalLines - 1;
-
+  // Neuberg scales from the number of RESULTS the line was actually compared
+  // in (the real lines) up to the number on the board (every line). Passing
+  // comparison counts (results − 1) instead over-scales the line — with 2 real
+  // lines and 1 AVE line the top would score 6 on a top of 4, and the bottom's
+  // opponents −2.
   for (const entry of realLines) {
     const score = entry.score!;
-    // NS matchpoints over the OTHER real lines (exclude self).
-    const others = realScores.filter((_, idx) => realScores[idx] !== undefined);
-    // Build the "others" list excluding this entry once.
+    // NS matchpoints over the OTHER real lines (exclude this entry once).
     const otherScores = withoutOne(realScores, score);
     const rawNs = matchpointsAgainst(score, otherScores);
 
     const nsMatchPoints =
-      realComparisons > 0
-        ? neuberg(rawNs, realComparisons, fullComparisons)
+      realLines.length > 1
+        ? neuberg(rawNs, realLines.length, totalLines)
         : // No other real line to compare against: this line is measured only
           // against assigned lines, which carry no comparable raw score. Give
           // it the field average (half of max) so it is neither rewarded nor
@@ -96,7 +95,6 @@ export function scoreMP(board: number, lines: PairLine[]): MatchpointLine[] {
       nsMatchPoints,
       ewMatchPoints,
     });
-    void others;
   }
 
   // --- Assigned lines ---
@@ -128,12 +126,12 @@ export function scoreMP(board: number, lines: PairLine[]): MatchpointLine[] {
       // No real field to compare against — award the field average.
       nsMatchPoints = max / 2;
     } else {
-      // Each component is matchpointed against ALL real lines (it is a
-      // hypothetical extra line), giving `realLines.length` comparisons, then
-      // Neuberg-scaled to the full field.
+      // Each component is matchpointed against ALL real lines as if it were
+      // one more result on the board (so the field it was compared in has
+      // `realLines.length + 1` results), then Neuberg-scaled to the full field.
       nsMatchPoints = comps.reduce((acc, c) => {
         const raw = matchpointsAgainst(c.score, realScores);
-        const scaled = neuberg(raw, realLines.length, fullComparisons);
+        const scaled = neuberg(raw, realLines.length + 1, totalLines);
         return acc + c.weight * scaled;
       }, 0);
     }

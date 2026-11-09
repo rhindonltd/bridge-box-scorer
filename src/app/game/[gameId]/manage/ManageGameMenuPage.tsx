@@ -11,7 +11,6 @@ export interface DirectorMenuPageProps {
   onTravellersClick: () => void;
   onEnterDealsClick: () => void;
   onMovementClick: () => void;
-  onShareDirectorAccessClick: () => void;
   onReviewMismatchesClick: () => void;
   /** Open the "Pairs" roster (status of every pair + per-pair actions). */
   onPairsClick: () => void;
@@ -54,7 +53,6 @@ export function ManageGameMenuPage({
   onTravellersClick,
   onEnterDealsClick,
   onMovementClick,
-  onShareDirectorAccessClick,
   onReviewMismatchesClick,
   onPairsClick,
   onExportClick,
@@ -110,13 +108,6 @@ export function ManageGameMenuPage({
             <span className="flex items-center gap-3">Movement</span>
           </button>
         )}
-
-        <button
-          onClick={onShareDirectorAccessClick}
-          className={standardButtonClass}
-        >
-          <span className="flex items-center gap-3">Share Director Access</span>
-        </button>
 
         {showReviewMismatches && (
           <button

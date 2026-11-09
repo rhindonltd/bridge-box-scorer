@@ -150,6 +150,24 @@ describe("PlayHeaderMenu", () => {
     expect(screen.queryByRole("menuitem", { name: "Manage" })).toBeNull();
   });
 
+  it("offers 'Share Director Access' to a director and opens the share screen", async () => {
+    localStorage.setItem("director:g1", "tok");
+    const user = userEvent.setup();
+    render(<PlayHeaderMenu gameId="g1" seat="A1NS" />);
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(
+      screen.getByRole("menuitem", { name: "Share Director Access" }),
+    );
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
+  });
+  it("does not offer 'Share Director Access' when the device is not a director", async () => {
+    const user = userEvent.setup();
+    render(<PlayHeaderMenu gameId="g1" seat="A1NS" />);
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    expect(
+      screen.queryByRole("menuitem", { name: "Share Director Access" }),
+    ).toBeNull();
+  });
   it("navigates to the manage menu from the director 'Manage' item", async () => {
     localStorage.setItem("director:g1", "tok");
     const user = userEvent.setup();

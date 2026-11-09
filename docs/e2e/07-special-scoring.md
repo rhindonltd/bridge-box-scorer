@@ -9,9 +9,10 @@ A recurring theme: the **per-board traveller** often shows a flat figure (60/40,
 ±3) while the **leaderboard total** reflects an adjustment — the two are
 *meant* to differ. Several checks below ask you to compare the two.
 
-Most of these are set up fastest by creating the specific situation **live**
-(odd fields, withdrawals), but a seeded fixture gives you director access and a
-populated field to apply rulings against.
+Most of these are set up fastest with a seeded fixture (see the
+[README](README.md)); withdrawals, late arrivals and substitutions have their
+own recipes in files [11](11-withdrawals-late-arrivals.md) and
+[12](12-handover-substitution.md).
 
 ---
 
@@ -73,35 +74,45 @@ an odd field. For teams: `--scoring SWISS_TEAMS` odd field.
 
 ---
 
-## WITHDRAW — withdrawals (§2.4.3–§2.4.9)
+## ABSENT — withdrawals, late arrivals & empty late seats (Pairs events)
 
-When a pair/team withdraws partway through, the White Book prescribes how the
-withdrawer and its opponents are scored on the unplayed boards. (This requires a
-withdrawal to be marked; create the situation live and use the director tools.)
+The step-by-step flows (who presses what) are in
+[file 11](11-withdrawals-late-arrivals.md); the fixtures there put a game into
+each state in one command. These are the **scoring** points to confirm, on a
+**Matchpoints** and a **Cross-IMPs** game.
+
+| Check | Fixture | Step | Expected |
+|---|---|---|---|
+| ☐ ABSENT-1 | F11-D (withdrawn, AVE) | **Travellers → Board 7**. | The withdrawn line shows **A40/60**: the absent pair 40%, its opponents 60%. On XIMP: **−3 / +3**. |
+| ☐ ABSENT-2 | F11-D | Every line on Board 7. | Each pair's matchpoints lie between **0 and the board top**. An AVE line on the board must not push a real result above the top or below zero. |
+| ☐ ABSENT-3 | F11-D | **Leaderboard**. | The absent pair stays **ranked**. It and its opponent are scored over the AVE boards as well as their real ones. |
+| ☐ ABSENT-4 | F11-D | Compare the opponent's standing with a flat 60% on those boards. | **§4.1.1.1 uplift:** a pair averaging above 60% keeps its own higher average on its AVE+ boards (AVE− is lowered to the pair's average if that is below 40%). The traveller still shows the flat **A40/60**. |
+| ☐ ABSENT-5 | F11-D, then **Pairs → Missed boards → Remove** | Traveller + Leaderboard. | The absent line is **gone** from the traveller, and both pairs are scored only on boards that were really played, as if the opponent sat out. |
+| ☐ ABSENT-6 | F11-B (empty late seat) | **Travellers → Board 7**; **Leaderboard**. | The line against the empty seat shows **A60/40** (AVE+ to the pair that was there). The **empty seat is never ranked**. With **Remove**, the line disappears from the traveller too. |
+| ☐ ABSENT-7 | F11-C (late arrival) | **Travellers → Board 7**; **Leaderboard**. | The latecomer's missed round-1 boards show **A60/40** (latecomer AVE−). It is still **ranked**, on real boards plus AVE− boards. |
+| ☐ ABSENT-8 | Any of the above | Change the treatment with the leaderboard open on a DISPLAY. | The display re-ranks live. |
+
+> **Gone:** the old automatic rules — before/after-half cancel vs indemnity, the
+> "fewer than half the boards loses standing" test for latecomers, REMOVE vs
+> PENALISED and the 0–40% fine — **no longer apply to Pairs events**. The
+> director's per-pair **AVE− / AVE+** or **Remove** choice decides. Teams and
+> Swiss events keep their own handling (`ABSENT-TEAMS-1`).
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ WITHDRAW-1 | Mark a pair **PENALISED** (withdrawn with a fine). On its unplayed boards, open the leaderboard. | The withdrawer gets **AVE− minus the fine** (`(40 − fine)%`), capped at **half** the event's boards. |
-| ☐ WITHDRAW-2 | Check its **opponents** on boards played **after** the halfway point. | They get **AVE+** (indemnified; the result against the withdrawer stands). |
-| ☐ WITHDRAW-3 | Check opponents on boards **before** halfway. | The score is **cancelled** (they simply have one fewer board — handled by short-board equalisation, `NEUBERG-*`), **not** an AVE+. |
-| ☐ WITHDRAW-4 | Mark a pair **REMOVE** (removed from the ranking). Open the leaderboard. | The removed pair **disappears from the ranking** entirely… |
-| ☐ WITHDRAW-5 | …but its **already-played results still count** for its opponents (they keep their real scores against it). | Opponents unaffected; only the ranking drops the removed pair. |
-| ☐ WITHDRAW-TEAMS-1 | On a **teams VP** game, mark a team withdrawn. | Its unplayed matches score as a §3.3.9 void (withdrawer AVE−, opponent AVE+). |
+| ☐ ABSENT-TEAMS-1 | **Teams VP** game: **Manage Tables** → a table → **Change standing → Withdrawn** (choose a round, Remove/Penalised). | The team's unplayed matches score as a §3.3.9 void (withdrawer AVE−, opponent AVE+). |
 
 ---
 
-## LATE — late arrival / handover (§2.4.7)
+## SUBST — substitutions (§2.4.7)
 
-A pair that arrives late (a stand-in plays its early boards, then the real pair
-takes over), or an empty seat still **expected** to fill.
+Flows are in [file 12](12-handover-substitution.md). The scoring points:
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ LATE-1 | Set up a **handover** (a stand-in covers a seat's early boards, the real pair arrives). Open the leaderboard. | The **stand-in** does **not** appear in the ranking (it plays "without standing")… |
-| ☐ LATE-2 | …its results **still count** for its opponents… | Opponents keep real results against the stand-in. |
-| ☐ LATE-3 | …and the **real** pair gets **AVE−** on its pre-arrival (unplayed) boards. | Latecomer credited AVE− for boards it didn't play. |
-| ☐ LATE-4 | Mark a seat **expected late** (empty, pair still expected). Check its opponents. | Opponents are indemnified **AVE+** on the boards they can't play while the pair is still expected. |
-| ☐ LATE-5 | Confirm the empty expected-late seat does **not** appear as a 0% ranked line. | No phantom pair on the leaderboard. |
+| Check | Fixture | Step | Expected |
+|---|---|---|---|
+| ☐ SUBST-1 | F12-B | **Leaderboard**, seat left on **One line**. | One ranked line over **all** the seat's boards, named after the **Main** pair with "(Sub) …" beneath. There is **no** artificial score for the change of pair. |
+| ☐ SUBST-2 | F12-B | **Two lines**, after the arriving pair has played. | Two lines, each pair ranked only on **its own** boards. |
+| ☐ SUBST-3 | F12-B | A pair marked **Eligible = No**. | It drops out of the ranking, but its results **still count** for its opponents. |
 
 ---
 

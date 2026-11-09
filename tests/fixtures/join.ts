@@ -1,4 +1,5 @@
 import { Page, expect } from "@playwright/test";
+import { E2E_PLAYERS } from "../../src/scripts/e2e-seed/e2e-players";
 
 /**
  * Pure-UI seating helper. Drives the player-facing join flow at
@@ -29,20 +30,15 @@ export const SEEDED_EBU = {
 } as const;
 
 /**
- * An ordered pool of distinct, reliably-seeded EBU numbers (all resolvable via
- * `/api/players/search?q=<ebu>`). A player may only be seated once per game, so
- * multi-seat fields must draw a UNIQUE pair per seat from this pool. Twenty
- * players (ten pairs) covers the largest field the journeys build: a 3-table
- * single section (6 pairs) and a two-section, two-tables-each field (8 pairs).
- * Add more from `data/players.db` if a larger field is ever needed.
+ * An ordered pool of distinct EBU numbers, all resolvable via
+ * `/api/players/search?q=<ebu>`: exactly the directory the E2E prepare step
+ * loads (`src/scripts/e2e-seed/e2e-players.ts`), so the two can never drift. A
+ * player may only be seated once per game, so multi-seat fields draw a UNIQUE
+ * pair per seat from this pool (24 players = 12 pairs).
  */
-export const SEEDED_EBU_POOL: readonly string[] = [
-  "477484", "404476", "12269", "16671",
-  "10008", "10009", "10021", "10056",
-  "10077", "10079", "10096", "10105",
-  "10117", "10118", "10128", "10159",
-  "10169", "10183", "10188", "10204",
-] as const;
+export const SEEDED_EBU_POOL: readonly string[] = E2E_PLAYERS.map((p) =>
+  String(p.ebuNumber),
+);
 
 /**
  * Assign each seat a distinct pair (two EBU numbers) drawn in order from
@@ -63,8 +59,8 @@ export function assignDistinctPairs(
     throw new Error(
       `Need ${lastPlayerIndex + 1} distinct players (offset ${pairOffset} + ` +
         `${seats.length} seats), but the seeded pool only has ` +
-        `${SEEDED_EBU_POOL.length}. Add more EBU numbers to SEEDED_EBU_POOL ` +
-        `(from data/players.db).`,
+        `${SEEDED_EBU_POOL.length}. Add more players to E2E_PLAYERS ` +
+        `(src/scripts/e2e-seed/e2e-players.ts).`,
     );
   }
   const assignment: Record<string, [string, string]> = {};
@@ -73,6 +69,24 @@ export function assignDistinctPairs(
     assignment[seat] = [SEEDED_EBU_POOL[p], SEEDED_EBU_POOL[p + 1]];
   });
   return assignment;
+}
+
+/**
+ * Open `/game/{id}/join` as a device that holds no seat. A device that already
+ * holds a seat is redirected from /join to that seat, so a page reused to seat
+ * several pairs first drops its stored player token (`player:<gameId>`), then
+ * reloads the join form.
+ */
+async function openJoinPage(page: Page, gameId: string): Promise<void> {
+  await page.goto(`/game/${gameId}/join`);
+  const hadSeat = await page.evaluate((key) => {
+    const held = window.localStorage.getItem(key) !== null;
+    window.localStorage.removeItem(key);
+    return held;
+  }, `player:${gameId}`);
+  if (hadSeat) {
+    await page.goto(`/game/${gameId}/join`);
+  }
 }
 
 async function fillSeat(
@@ -102,7 +116,7 @@ export async function seatPair(
   ebu1: string,
   ebu2: string,
 ): Promise<string> {
-  await page.goto(`/game/${gameId}/join`);
+  await openJoinPage(page, gameId);
   await expect(
     page.getByRole("button", { name: direction, exact: true }).nth(tableIndex),
   ).toBeVisible({ timeout: 15000 });
@@ -172,7 +186,7 @@ export async function seatPairBySeat(
   ebu1: string,
   ebu2: string,
 ): Promise<string> {
-  await page.goto(`/game/${gameId}/join`);
+  await openJoinPage(page, gameId);
 
   const seatButton = page.getByTestId(`seat-${seat}`);
   await expect(seatButton).toBeVisible({ timeout: 15000 });
@@ -261,7 +275,7 @@ export async function seatTeamPairBySeat(
   ebu2: string,
   teamName?: string,
 ): Promise<string> {
-  await page.goto(`/game/${gameId}/join`);
+  await openJoinPage(page, gameId);
 
   const seatButton = page.getByTestId(`seat-${seat}`);
   await expect(seatButton).toBeVisible({ timeout: 15000 });

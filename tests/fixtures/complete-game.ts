@@ -1,4 +1,5 @@
 import { APIRequestContext, expect } from "@playwright/test";
+import { E2E_BASE_URL, E2E_GAMES_DIR } from "../e2e-env";
 import { io as ioClient, Socket } from "socket.io-client";
 import Database from "better-sqlite3";
 import path from "node:path";
@@ -54,7 +55,7 @@ export async function confirmEntireGame(
     }
   }
 
-  const socket: Socket = ioClient("http://localhost:3000");
+  const socket: Socket = ioClient(E2E_BASE_URL);
   try {
     await new Promise<void>((resolve, reject) => {
       const t = setTimeout(
@@ -107,13 +108,13 @@ export async function confirmEntireGame(
  * participant-auth middleware looks up the seat secret server-side.
  */
 function readSeatSecrets(gameId: string): Map<string, string> {
-  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dataDir = E2E_GAMES_DIR;
   const dbFile = path.join(dataDir, `${gameId}.db`);
 
   const db = new Database(dbFile, { readonly: true });
   try {
     const rows = db
-      .prepare("SELECT initial_seat AS seat, secret_key AS secret FROM participant")
+      .prepare("SELECT seat, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC")
       .all() as Array<{ seat: string; secret: string }>;
 
     const map = new Map<string, string>();

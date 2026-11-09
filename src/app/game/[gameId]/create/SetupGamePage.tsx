@@ -8,7 +8,11 @@ import { useRouter } from "next/navigation";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { HeaderMenu, type HeaderMenuItem } from "@/components/layout/HeaderMenu";
+import {
+  HeaderMenu,
+  type HeaderMenuItem,
+} from "@/components/layout/HeaderMenu";
+import { useShareDirectorAccessItem } from "@/components/game/useShareDirectorAccessItem";
 import { MovementStep } from "@/components/manage/sections/MovementStep";
 import { TimerSetup } from "@/app/game/[gameId]/manage/timer/TimerSetup";
 
@@ -67,19 +71,31 @@ export function SetupGamePage() {
   // Section rename/delete and the combined/separate ranking toggle now live on
   // the Tables screen (surfaced there once the game has more than one section),
   // so the setup menu no longer needs a dedicated "Manage sections" entry.
+  const shareItem = useShareDirectorAccessItem(game.gameId);
   const menuItems: HeaderMenuItem[] = [
-    { label: "Tables", onSelect: () => goTo("tables"), active: activeStep === "tables" },
+    {
+      label: "Tables",
+      onSelect: () => goTo("tables"),
+      active: activeStep === "tables",
+    },
     {
       label: "Movement",
       onSelect: () => goTo("movements"),
       active: activeStep === "movements",
     },
-    { label: "Timer", onSelect: () => goTo("timer"), active: activeStep === "timer" },
+    {
+      label: "Timer",
+      onSelect: () => goTo("timer"),
+      active: activeStep === "timer",
+    },
     {
       label: "Start Game",
       onSelect: () => goTo("start"),
       active: activeStep === "start",
     },
+    // Not a setup step either: opens the share-code screen, whose back arrow
+    // returns here.
+    shareItem,
     // Leaves the setup flow entirely. Not a setup step, so it never shows as
     // the active selection.
     { label: "Return to main menu", onSelect: () => router.push("/") },

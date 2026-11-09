@@ -57,10 +57,10 @@ export function ClaimHandoverNamesView({
             (axe heading-order). The host seat-select screen avoids headings for
             the same reason. */}
         <p className="text-xl font-bold text-gray-900 mb-2 text-center">
-          Take over from the stand-in
+          Take over this seat
         </p>
         <p className="text-base text-gray-600 mb-8 text-center">
-          A stand-in has been playing this seat. Enter your names to take over
+          Another pair has been playing this seat. Enter your names to take over
           from the next board.
         </p>
 

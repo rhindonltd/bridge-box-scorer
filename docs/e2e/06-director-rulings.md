@@ -45,6 +45,7 @@ which `--scoring` to use so the relevant ruling is offered.
 | ☐ RULE-5 | Open the wizard on a board row → **Adjusted Score**. | Presets (e.g. **AVE (50/50)**, **AVE+ / AVE− (60/40)**) and a **Custom** option. |
 | ☐ RULE-6 | Pick **AVE+ / AVE− (60/40)** (or Custom NS 60 / EW 40) → **Submit**. | Saved as an adjusted result; the traveller shows an **AVE-type** score (e.g. `A60/40`). |
 | ☐ RULE-7 | Open the **Leaderboard**. | The two pairs' standings reflect the adjusted split. (On MP, an **exact** AVE+/AVE− is further uplifted in the standings — see `AVEUP-1` in [file 07](07-special-scoring.md).) |
+| ☐ RULE-7a | **MP:** on the same board's traveller, read the **real** results' matchpoints. | Each real line's matchpoints lie between **0 and the board top**: the top real score gets exactly the top. An adjusted line on the board must never push a real result above the top, or its opponent below zero. |
 
 ---
 

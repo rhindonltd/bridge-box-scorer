@@ -39,6 +39,32 @@ surface. Test files present at audit time:
   `bridgewebs-upload`, `bridgewebs-create`, `seat-transfer`, `leave-table`,
   `completed-game-redirect`, `admin-key`, `wifi-settings`, `authorization`.
 
+## How the suite runs (read this first)
+
+- **Isolated environment.** `playwright.config.ts` starts its own server on
+  port 3100 against `<repo>/.e2e-data` (see `tests/e2e-env.ts`). Before the
+  server boots, `src/scripts/e2e-prepare.ts` wipes that directory (it refuses
+  to wipe anything that is not a throwaway dir), runs every migration, seeds the
+  admin key and movements, and loads a fixed 24-player EBU directory
+  (`src/scripts/e2e-seed/e2e-players.ts`). Real data and the dev server are never
+  touched. The server runs the production build, so run `npm run build` first
+  (`E2E_REUSE_SERVER=1` reuses an already-running E2E server).
+- **Seeded games.** Games are no longer all built through the setup screens.
+  `tests/fixtures/seeded-game.ts` (`seedGame`, `seedStartedTwoTableGame`,
+  `openDirector`, `openSeat`) creates a game straight into the E2E data dir via
+  a child process (`src/scripts/e2e-seed/seed-json.ts`, the same library as
+  `npm run seed:e2e`) and plants the director/seat tokens on fresh browser
+  contexts. It supports the Pairs-screen scenarios (withdrawals, late arrivals,
+  handover, treatments). Journeys whose subject IS the setup screens (create
+  form, tables, sections, movement pickers, Swiss setup) still drive the UI.
+  `setUpStartedTwoTableGame` in `journeys/support.ts` now delegates to the
+  seeder.
+- **Known product gap surfaced by the suite.** On renumbered-id movements (e.g.
+  SPEC 154, the first recommendation for two tables) the leaderboard lists
+  pairs by their movement id ("A4") rather than their names, because the
+  leaderboard participants are keyed by seat and the scored lines by movement
+  anchor id. The journeys therefore do not assert names on the leaderboard.
+
 ## Status (last updated after Phases 1–4)
 
 Every **true (unblocked) test gap** the original audit found has been closed —
@@ -58,23 +84,32 @@ below:
 
 - **Navigation & selection**: main menu links, join/display/manage selectors,
   not-found, joinable-games live update + reconnect (`navigation.journey.ts`).
-- **Game creation**: fields, Pairs/Teams selector, date default, opening-lead
-  toggle, create success/failure (`create-form.journey.ts`).
+- **Game creation**: the two-step wizard (details, then event type and
+  opening-lead toggle), blank-details refusal, create success/failure
+  (`create-form.journey.ts`); BridgeWebs event picker (`bridgewebs-create`).
 - **Director setup**: table resize + evict + shrink guard
-  (`table-management.journey.ts`); section add/rename/delete + pills
+  (`table-management.journey.ts`); section add/rename/delete (on the Tables screen) + pills
   (`sections-setup.journey.ts`, `multi-section.journey.ts`); Mitchell + Howell
   select→seat→start→play (`movement-types.journey.ts`); Start Game
   (`fixtures/game-setup.ts`, unit-covered `StartGameScreen`).
 - **Player join & seating**: EBU search, seat labels, live seat-occupancy sync
   (`seating-detail.journey.ts`).
 - **Player play**: full ContractWizard (level→suit→declarer→lead→made/down→
-  confirm), lead ON/OFF, doubled/redoubled, Pass Out, Not Played, board paging,
+  confirm), lead ON/OFF, doubled/redoubled, Pass Out, Not Played,
   first-incomplete-round resume, sit-out, game-complete
   (`played-contract`, `contract-variants`, `play-flow`, `sit-out`).
 - **Dual-side confirmation**: match→confirm, both mismatch variants + re-enter
   (`mismatch.journey.ts`), sit-out submission rejection.
 - **Board deal capture**: player post-round deal entry + director Enter Deals +
   show-hand on traveller (`deal-entry.journey.ts`).
+- **Handover and substitutions**: player-driven Menu → Handover on the same
+  device and on a different device (code claimed from the join screen, old
+  device signed out), and the director's split / main pair / eligibility
+  choices on the Pairs screen (`handover-same-device`,
+  `handover-different-device`, `substitutions`, using a seeded handover).
+- **Seeded-game fixture**: planted director/seat tokens open the manage and
+  play screens, and a seeded withdrawal shows on the Pairs screen
+  (`seeded-game.journey.ts`).
 - **Swiss Pairs**: single-section setup, play round 1, draw round 2 from the
   Movement screen (`swiss-pairs.journey.ts`).
 - **Swiss Pairs "2 half matches"** (odd field): set up a Swiss game with a

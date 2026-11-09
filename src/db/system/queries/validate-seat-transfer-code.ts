@@ -19,6 +19,12 @@ export type ClaimSeatTransferResult =
       token: string;
       /** Whether this claim handed a stand-in seat over to the real pair. */
       isHandover: boolean;
+      /**
+       * Whether the claim changed WHO is playing / how boards score (a handover
+       * or a reinstate), so other devices, the schedule and the leaderboard
+       * need refreshing. A plain change-device claim changes none of that.
+       */
+      rosterChanged: boolean;
     }
   | { valid: false; error: string };
 
@@ -131,7 +137,7 @@ export async function validateAndClaimSeatTransferCode(
       seat: valid.seat as PairSeat,
       realPair,
       secretKey: token,
-      // Options deferred to the director's "Substitutions" screen.
+      // Options deferred to the director's Pairs screen.
       teamsGame: await isTeamsGame(valid.gameId),
     });
 
@@ -150,6 +156,7 @@ export async function validateAndClaimSeatTransferCode(
       seat: valid.seat,
       token,
       isHandover: true,
+      rosterChanged: true,
     };
   }
 
@@ -174,6 +181,7 @@ export async function validateAndClaimSeatTransferCode(
       seat: valid.seat,
       token,
       isHandover: false,
+      rosterChanged: true,
     };
   }
 
@@ -199,5 +207,6 @@ export async function validateAndClaimSeatTransferCode(
     seat: valid.seat,
     token,
     isHandover: false,
+    rosterChanged: false,
   };
 }

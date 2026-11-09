@@ -166,29 +166,41 @@ export async function pickMovementByName(
 }
 
 /**
- * Open the Movement tab and set up a Swiss Pairs movement. Swiss is offered
- * only for a single-section game and is not a recommendation card, so it has
- * its own option (`swiss-movement-option`) that opens a setup dialog. This taps
- * it, accepts the dialog's defaults for rounds/boards-per-round, and confirms.
+ * Press "Select Movement" on the inline Swiss setup form and wait for the save.
+ * Unlike the recommendation cards, the form stays on screen after saving (its
+ * button just flips to "Saving…" and back), so completion is the save request
+ * returning rather than the button disappearing.
  */
-export async function pickSwissMovement(page: Page): Promise<void> {
-  await openSetupStep(page, "Movement");
-  const swiss = page.getByTestId("swiss-movement-option");
-  await expect(swiss).toBeVisible({ timeout: 15000 });
-  await swiss.click();
-
+async function confirmSwissForm(page: Page): Promise<void> {
   const confirm = page.getByRole("button", { name: "Select Movement" });
   await expect(confirm).toBeEnabled({ timeout: 15000 });
+  const saved = page.waitForResponse(
+    (r) =>
+      /\/sections\/[^/]+\/movement/.test(r.url()) &&
+      r.request().method() !== "GET",
+    { timeout: 15000 },
+  );
   await confirm.click();
+  expect((await saved).ok()).toBe(true);
   await expect(
-    page.getByRole("button", { name: /Select Movement|Saving/ }),
+    page.getByRole("button", { name: "Saving…" }),
   ).toHaveCount(0, { timeout: 15000 });
 }
 
 /**
+ * Open the Movement tab and set up a Swiss Pairs movement. Swiss is a game
+ * format chosen at creation ("Swiss Pairs"), so the Movement tab shows the
+ * Swiss setup form inline instead of recommendation cards. This accepts the
+ * form's defaults for rounds/boards-per-round and confirms.
+ */
+export async function pickSwissMovement(page: Page): Promise<void> {
+  await openSetupStep(page, "Movement");
+  await confirmSwissForm(page);
+}
+
+/**
  * Open the Movement tab and set up a Swiss Pairs movement that uses "2 half
- * matches" for an odd field. Taps the Swiss card to open its dialog, trims the
- * round count down to `rounds` (default 2 — enough for the half-match journey),
+ * matches" for an odd field. Trims the inline Swiss form's round count down to `rounds` (default 2 — enough for the half-match journey),
  * selects the "2 half matches" odd-handling radio (which reveals the per-round
  * plan, defaulting every round to a half match), and confirms. Used by the
  * odd-field half-match journey.
@@ -203,12 +215,8 @@ export async function pickSwissHalfMatchMovement(
   rounds = 2,
 ): Promise<void> {
   await openSetupStep(page, "Movement");
-  const swiss = page.getByTestId("swiss-movement-option");
-  await expect(swiss).toBeVisible({ timeout: 15000 });
-  await swiss.click();
-
-  // Wait for the Swiss setup dialog to open (its confirm button is present)
-  // before interacting with it.
+  // The Swiss setup form is shown inline; wait for it (its confirm button is
+  // present) before interacting with it.
   const confirm = page.getByRole("button", { name: "Select Movement" });
   await expect(confirm).toBeVisible({ timeout: 15000 });
 
@@ -233,39 +241,23 @@ export async function pickSwissHalfMatchMovement(
   await halfMatches.click();
   await expect(halfMatches).toBeChecked({ timeout: 5000 });
 
-  await expect(confirm).toBeEnabled({ timeout: 15000 });
-  await confirm.click();
-  await expect(
-    page.getByRole("button", { name: /Select Movement|Saving/ }),
-  ).toHaveCount(0, { timeout: 15000 });
+  await confirmSwissForm(page);
 }
 
 /**
- * Open the Movement tab and set up a Swiss Teams movement. Like Swiss Pairs it
- * is offered only for a single-section game, in place of the Swiss Pairs card
- * when the game's event type is Teams. Its option (`swiss-teams-movement-option`)
- * opens the Swiss Teams setup dialog; this taps it, accepts the dialog's
- * defaults (rounds / boards-per-round / odd-handling; the team count is fixed
- * by the table count), and confirms.
+ * Open the Movement tab and set up a Swiss Teams movement. The game was created
+ * as "Swiss Teams", so the Movement tab shows the Swiss Teams setup form inline.
+ * This accepts its defaults (rounds / boards-per-round / odd-handling; the team
+ * count is fixed by the table count) and confirms.
  */
 export async function pickSwissTeamsMovement(page: Page): Promise<void> {
   await openSetupStep(page, "Movement");
-  const swissTeams = page.getByTestId("swiss-teams-movement-option");
-  await expect(swissTeams).toBeVisible({ timeout: 15000 });
-  await swissTeams.click();
-
-  const confirm = page.getByRole("button", { name: "Select Movement" });
-  await expect(confirm).toBeEnabled({ timeout: 15000 });
-  await confirm.click();
-  await expect(
-    page.getByRole("button", { name: /Select Movement|Saving/ }),
-  ).toHaveCount(0, { timeout: 15000 });
+  await confirmSwissForm(page);
 }
 
 /**
  * Open the Movement tab and set up a Swiss Teams movement that resolves an ODD
- * field with triples, following a per-round plan. Taps the Swiss Teams card to
- * open its dialog, trims the round count down to `plan.length` (so the revealed
+ * field with triples, following a per-round plan. Trims the round count down to `plan.length` (so the revealed
  * per-round plan is short and fits the phone viewport), selects the "Triple"
  * odd-handling radio (which reveals the per-round builder), sets each round to
  * its planned kind ("BYE" | "SHORT" | "LONG"), and confirms.
@@ -278,10 +270,6 @@ export async function pickSwissTeamsTripleMovement(
   plan: Array<"BYE" | "SHORT" | "LONG">,
 ): Promise<void> {
   await openSetupStep(page, "Movement");
-  const swissTeams = page.getByTestId("swiss-teams-movement-option");
-  await expect(swissTeams).toBeVisible({ timeout: 15000 });
-  await swissTeams.click();
-
   const confirm = page.getByRole("button", { name: "Select Movement" });
   await expect(confirm).toBeVisible({ timeout: 15000 });
 
@@ -319,11 +307,7 @@ export async function pickSwissTeamsTripleMovement(
     await planBuilder.getByRole("radio", { name: label }).click();
   }
 
-  await expect(confirm).toBeEnabled({ timeout: 15000 });
-  await confirm.click();
-  await expect(
-    page.getByRole("button", { name: /Select Movement|Saving/ }),
-  ).toHaveCount(0, { timeout: 15000 });
+  await confirmSwissForm(page);
 }
 
 /**

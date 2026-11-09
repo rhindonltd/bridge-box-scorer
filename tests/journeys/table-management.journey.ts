@@ -94,19 +94,23 @@ test.describe("Director table management", () => {
 
       await openTablesTab(directorPage, gameId);
 
-      // The seated North player has an evict control ("Evict North player").
-      const evictNorth = directorPage.getByRole("button", {
-        name: "Evict North player",
+      // Open table 1's management dialog; the seated North / South pair has an
+      // evict control ("Evict North / South pair").
+      await directorPage
+        .getByRole("button", { name: "Manage table 1" })
+        .click();
+      const evictPair = directorPage.getByRole("button", {
+        name: "Evict North / South pair",
       });
-      await expect(evictNorth).toBeVisible({ timeout: 15000 });
+      await expect(evictPair).toBeVisible({ timeout: 15000 });
 
       // Eviction is guarded by a confirm() dialog; accept it.
       directorPage.once("dialog", (d) => d.accept());
-      await evictNorth.click();
+      await evictPair.click();
 
-      // Once evicted, the seat is empty again: the North evict control is gone
-      // (an empty PlayerCard has no evict button).
-      await expect(evictNorth).toBeHidden({ timeout: 15000 });
+      // Once evicted, the seat is empty again: the evict control is gone (an
+      // empty pair has nothing to evict).
+      await expect(evictPair).toBeHidden({ timeout: 15000 });
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

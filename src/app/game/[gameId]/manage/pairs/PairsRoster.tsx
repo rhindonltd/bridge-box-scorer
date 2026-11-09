@@ -14,6 +14,8 @@ import {
 } from "@/lib/game-service";
 import { ChangeDeviceView } from "@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceView";
 import { swrKeys } from "@/swr/swr-keys";
+import { useSocketRevalidate } from "@/hooks/use-socket-revalidate";
+import { SocketEvents } from "@/socket/socket-events";
 import { FullScreenSpinner } from "@/components/common/Spinner";
 import type { RosterEntry } from "@/db/games/queries/find-game-roster";
 import type { BridgeGame } from "@/db/game-index/schema";
@@ -35,6 +37,12 @@ export function PairsRoster({ gameId }: { gameId: string }) {
     isLoading,
     mutate,
   } = useSWR<RosterEntry[]>(rosterKey, unwrapFetcher<RosterEntry[]>("roster"));
+
+  // The roster is an HTTP resource, but other devices change it: a withdrawal
+  // from a player's phone, a late pair seating, or a handover / reinstate
+  // claimed on another device all push PARTICIPANTS. Re-read on those (and on
+  // reconnect) so the director's screen never shows a stale status.
+  useSocketRevalidate(rosterKey, [SocketEvents.PARTICIPANTS], [rosterKey]);
 
   // The game row primes the pairs/teams gate on the substitution NGS warning.
   const { data: game } = useSWR<BridgeGame>(

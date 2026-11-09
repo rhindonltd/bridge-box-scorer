@@ -5,26 +5,32 @@ import {
   PlayManageSwitch,
   usePlayManageSwitchItem,
 } from "@/components/game/PlayManageSwitch";
+import { useShareDirectorAccessItem } from "@/components/game/useShareDirectorAccessItem";
 
 /**
- * The manage-side play⇄manage switch for a game header's right-hand slot: a
- * visible "Play" / "Join" button at `sm`+ and, below `sm`, a hamburger whose
- * single item is the same switch (so exactly one appears per breakpoint). The
- * label/target is resolved by {@link PlayManageSwitch} — "Play" to this
- * device's seat when it holds one, otherwise "Join" to take a seat.
+ * The manage-side header controls for a game header's right-hand slot: a
+ * visible "Play" / "Join" button at `sm`+, and a hamburger at every width.
+ *
+ * The hamburger always carries "Share Director Access"; below `sm` it also
+ * carries the same play⇄manage switch (folded in, so exactly one switch
+ * appears per breakpoint). The switch's label/target is resolved by
+ * {@link PlayManageSwitch} — "Play" to this device's seat when it holds one,
+ * otherwise "Join" to take a seat.
  *
  * No director check here: the manage routes are already director-gated by their
  * route guard, so anyone seeing this header is a director.
  */
 export function ManageHeaderSwitch({ gameId }: { gameId: string }) {
-  const item = usePlayManageSwitchItem(gameId, "toPlay");
+  const switchItem = usePlayManageSwitchItem(gameId, "toPlay");
+  const shareItem = useShareDirectorAccessItem(gameId);
 
   return (
     <span className="flex items-center gap-2">
       <PlayManageSwitch gameId={gameId} direction="toPlay" />
-      <span className="sm:hidden">
-        <HeaderMenu items={[item]} label="Menu" />
-      </span>
+      <HeaderMenu
+        items={[{ ...switchItem, className: "sm:hidden" }, shareItem]}
+        label="Menu"
+      />
     </span>
   );
 }

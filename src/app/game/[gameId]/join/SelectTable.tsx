@@ -36,15 +36,31 @@ export default function SelectTable({
             { length: s.tables },
             (_, i) => i + 1,
           );
+          const multiSection = sections.length > 1;
           return (
-            <div key={s.section}>
-              {sections.length > 1 && (
-                <h2 className="text-base font-bold text-gray-800 mb-2">
+            // With several sections each one sits in a grey card with a header
+            // strip (matching the section cards on the Tables and Pairs
+            // screens). A single section has nothing to disambiguate, so it
+            // renders bare.
+            <section
+              key={s.section}
+              className={
+                multiSection
+                  ? "overflow-hidden rounded-xl border border-gray-200 bg-gray-50"
+                  : undefined
+              }
+            >
+              {multiSection && (
+                <h2 className="border-b border-gray-200 bg-gray-100 px-4 py-2.5 text-base font-semibold text-gray-800">
                   Section {s.section}
                   {s.label !== s.section ? ` — ${s.label}` : ""}
                 </h2>
               )}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
+              <div
+                className={`grid grid-cols-2 md:grid-cols-3 gap-4 w-full ${
+                  multiSection ? "p-4" : ""
+                }`}
+              >
                 {tableNumbers.map((table) => (
                   <div
                     key={`${s.section}-${table}`}
@@ -66,7 +82,9 @@ export default function SelectTable({
                             key={direction}
                             data-testid={`seat-${seatFor(s.section, table, direction)}`}
                             onClick={() =>
-                              onSeatSelected(seatFor(s.section, table, direction))
+                              onSeatSelected(
+                                seatFor(s.section, table, direction),
+                              )
                             }
                             disabled={taken}
                             className={`py-5 text-lg font-medium transition border-r last:border-r-0 border-gray-200 ${
@@ -83,7 +101,7 @@ export default function SelectTable({
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>

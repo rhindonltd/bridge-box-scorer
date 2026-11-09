@@ -61,12 +61,15 @@ test.describe("Share director access round-trip", () => {
       await deviceB.getByRole("button", { name: "Claim Access" }).click();
 
       // Device B lands on the manage menu and sees director-only actions.
+      // Share Director Access now lives in the header hamburger, so open it.
       await deviceB.waitForURL(new RegExp(`/game/${gameId}/manage$`), {
         timeout: 15000,
       });
+      await deviceB.getByRole("button", { name: "Menu" }).click();
       await expect(
-        deviceB.getByRole("button", { name: "Share Director Access" }),
+        deviceB.getByRole("menuitem", { name: "Share Director Access" }),
       ).toBeVisible({ timeout: 15000 });
+      await deviceB.keyboard.press("Escape");
       await expect(
         deviceB.getByRole("button", { name: "Delete Game" }),
       ).toBeVisible();
@@ -137,12 +140,12 @@ test.describe("Share director access round-trip", () => {
       // The countdown starts at 5:00 and ticks down in mm:ss form (seconds
       // zero-padded). It begins at "Expires in 5:00" and moves to 4:5x within
       // a couple of seconds.
-      await expect(
-        directorPage.getByText(/Expires in 5:00/),
-      ).toBeVisible({ timeout: 5000 });
-      await expect(
-        directorPage.getByText(/Expires in 4:5\d/),
-      ).toBeVisible({ timeout: 5000 });
+      await expect(directorPage.getByText(/Expires in 5:00/)).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(directorPage.getByText(/Expires in 4:5\d/)).toBeVisible({
+        timeout: 5000,
+      });
 
       // "Generate New Code" issues a fresh, different code and resets the
       // countdown.
@@ -157,9 +160,9 @@ test.describe("Share director access round-trip", () => {
         .not.toBe(firstCode);
       const secondCode = (await codeEl.textContent())?.trim() ?? "";
       expect(secondCode).toMatch(/^[A-Z0-9]{6}$/);
-      await expect(
-        directorPage.getByText(/Expires in [45]:\d{2}/),
-      ).toBeVisible({ timeout: 5000 });
+      await expect(directorPage.getByText(/Expires in [45]:\d{2}/)).toBeVisible(
+        { timeout: 5000 },
+      );
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
@@ -211,9 +214,9 @@ test.describe("Share director access round-trip", () => {
       await inputC.fill(code);
       await deviceC.getByRole("button", { name: "Claim Access" }).click();
 
-      await expect(
-        deviceC.getByText("Code has already been used"),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(deviceC.getByText("Code has already been used")).toBeVisible(
+        { timeout: 15000 },
+      );
       await expect(deviceC).toHaveURL(/\/manage$/);
     } finally {
       await deleteGame(directorPage, gameId);

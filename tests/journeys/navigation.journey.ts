@@ -29,12 +29,12 @@ test.describe("Navigation & selection", () => {
         timeout: 15000,
       });
       await expect(
-        page.getByRole("link", { name: "Create New Game" }),
+        page.getByRole("link", { name: "Create Game" }),
       ).toBeVisible();
       await expect(
-        page.getByRole("link", { name: "Manage Games" }),
+        page.getByRole("link", { name: "Manage Game" }),
       ).toBeVisible();
-      await expect(page.getByRole("link", { name: "Room Display" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Display Game" })).toBeVisible();
 
       // Settings cog navigates to /settings.
       await page.getByRole("link", { name: "Settings" }).click();

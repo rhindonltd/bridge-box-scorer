@@ -20,6 +20,12 @@ vi.mock("@/db/games/tables/boards", () => ({
 vi.mock("@/db/games/queries/assignment-players", () => ({
   buildPerBoardPlayerLookup: vi.fn(),
 }));
+// The traveller reads the game's absences (withdrawn / late / empty late
+// seats). These unit tests use a hand-rolled db, so report none; the absence
+// behaviour is covered by board-service-absence.int.test.ts.
+vi.mock("@/db/games/queries/absences", () => ({
+  readAbsences: vi.fn(async () => new Map()),
+}));
 
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { buildPerBoardPlayerLookup } from "@/db/games/queries/assignment-players";
@@ -90,9 +96,27 @@ describe("board-service", () => {
       // Keyed by the board id (anchor) carried on ns/ew.
       mockLookupFromMap(
         new Map([
-          ["1NS", { player1: player(1, "Alice", "Smith"), player2: player(2, "Bob", "Jones") }],
-          ["2EW", { player1: player(3, "Carol", "Brown"), player2: player(4, "Dave", "Wilson") }],
-          ["3NS", { player1: player(5, "Eve", "Green"), player2: player(6, "Frank", "White") }],
+          [
+            "1NS",
+            {
+              player1: player(1, "Alice", "Smith"),
+              player2: player(2, "Bob", "Jones"),
+            },
+          ],
+          [
+            "2EW",
+            {
+              player1: player(3, "Carol", "Brown"),
+              player2: player(4, "Dave", "Wilson"),
+            },
+          ],
+          [
+            "3NS",
+            {
+              player1: player(5, "Eve", "Green"),
+              player2: player(6, "Frank", "White"),
+            },
+          ],
         ]),
       );
 
@@ -196,8 +220,20 @@ describe("board-service", () => {
 
       mockLookupFromMap(
         new Map([
-          ["1NS", { player1: player(1, "Alice", "Smith"), player2: player(2, "Bob", "Jones") }],
-          ["2EW", { player1: player(3, "Carol", "Brown"), player2: player(4, "Dave", "Wilson") }],
+          [
+            "1NS",
+            {
+              player1: player(1, "Alice", "Smith"),
+              player2: player(2, "Bob", "Jones"),
+            },
+          ],
+          [
+            "2EW",
+            {
+              player1: player(3, "Carol", "Brown"),
+              player2: player(4, "Dave", "Wilson"),
+            },
+          ],
         ]),
       );
 

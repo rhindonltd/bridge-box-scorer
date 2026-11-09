@@ -625,8 +625,7 @@ function HandoverForm({
         Seat the arriving pair for {label}. The earlier pair keeps the boards
         they have already scored; the arriving pair takes over from the next
         board without a result. You can set how the seat is scored (one line or
-        two, and each pair&apos;s eligibility) afterwards on the Substitutions
-        screen.
+        two, and each pair&apos;s eligibility) afterwards on the Pairs screen.
       </p>
 
       <TextField

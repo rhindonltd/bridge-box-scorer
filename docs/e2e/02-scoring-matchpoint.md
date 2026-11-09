@@ -30,7 +30,7 @@ inspect the same screens.
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ MP-1 | Open **Room Display → Leaderboard** for the game (or **Manage Game Menu → Leaderboard**). For an MP pairs game you're first asked **"Show standings as"**. | A **Percentage** / **Matchpoints** choice appears. |
+| ☐ MP-1 | Open **Room Display → the game → Leaderboard**. For an MP pairs game you're first asked **"Show standings as"**. | A **Percentage** / **Matchpoints** choice appears. |
 | ☐ MP-2 | Choose **Percentage**. | A standings table where each pair's score is a **percentage** (e.g. "62.5%"). |
 | ☐ MP-3 | Confirm the field is split into **two rankings**: a **North/South** list and an **East/West** list (tabs or two panels). | Two separate rankings, each with its own 1st place. |
 | ☐ MP-4 | Confirm each ranking is ordered **best percentage first** and positions are sensible (1, 2, 3…). | Correct descending order; ties share a rank. |

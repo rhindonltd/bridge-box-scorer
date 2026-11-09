@@ -365,7 +365,9 @@ export async function leaveTable(gameId: string, seat: string): Promise<void> {
  *
  * `kind` records what the claim will do: CHANGE_DEVICE (default) — the SAME pair
  * moves to a new device (plain secret rotation, no names); HANDOVER — a
- * DIFFERENT arriving pair takes over, so the claim collects their names.
+ * DIFFERENT arriving pair takes over, so the claim collects their names;
+ * REINSTATE — a withdrawn pair returns on a device, minted by the DIRECTOR
+ * (authed with the director token, not a seat token).
  */
 export async function generateSeatTransferCode(
   gameId: string,
@@ -374,7 +376,17 @@ export async function generateSeatTransferCode(
 ): Promise<string> {
   const response = await emitWithAck<{ code: string }>(
     SocketEvents.CREATE_SEAT_TRANSFER,
-    { gameId, seat, token: getPlayerToken(gameId)?.token ?? "", kind },
+    {
+      gameId,
+      seat,
+      token: getPlayerToken(gameId)?.token ?? "",
+      // A REINSTATE code is minted by the director (the withdrawn pair's device
+      // no longer holds a valid token), so it carries the director credential.
+      ...(kind === "REINSTATE"
+        ? { directorToken: getDirectorToken(gameId) ?? "" }
+        : {}),
+      kind,
+    },
   );
 
   return response.code;

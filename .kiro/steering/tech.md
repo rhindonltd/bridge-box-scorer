@@ -39,7 +39,8 @@ npm test
 npx vitest --project unit          # watch mode
 npm run coverage                   # with coverage report
 
-# E2E / journeys (require a running server)
+# E2E / journeys (run `npm run build` first; Playwright starts its own server
+# on port 3100 against a throwaway .e2e-data dir, wiped each run)
 npm run journey:phone
 npm run journey:tablet
 npm run journey:all

@@ -23,7 +23,8 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
 
   // Until we know whether the game has started, hide the state-gated buttons to
   // avoid flicker (e.g. briefly showing "Set Up Game" on an already-started
-  // game). Share Director Access and Delete Game are always shown.
+  // game). Delete Game is always shown. (Share Director Access lives in the
+  // header hamburger, not this menu.)
   const startedKnown = !startedLoading;
 
   return (
@@ -33,9 +34,6 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       onTravellersClick={() => router.push(`/game/${gameId}/manage/travellers`)}
       onEnterDealsClick={() => router.push(`/game/${gameId}/manage/deals`)}
       onMovementClick={() => router.push(`/game/${gameId}/manage/movement`)}
-      onShareDirectorAccessClick={() =>
-        router.push(`/game/${gameId}/manage/share-access`)
-      }
       onReviewMismatchesClick={() =>
         router.push(`/game/${gameId}/manage/mismatches`)
       }

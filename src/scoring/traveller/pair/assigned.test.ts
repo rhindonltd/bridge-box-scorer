@@ -34,18 +34,23 @@ describe("matchpointsAgainst", () => {
 });
 
 describe("neuberg", () => {
-  it("scales matchpoints from a small group to a larger field", () => {
-    // Earned 2 MPs over 1 comparison, scaling to 2 comparisons:
-    // single = 1, adjusted = (1+1)*2/1 - 1 = 3, doubled = 6
-    expect(neuberg(2, 1, 2)).toBe(6);
+  it("scales a top from a smaller field to exactly the full-field top", () => {
+    // A top on a 2-result board (doubled MP 2 of 2), scaled to a 3-result
+    // board: single 1 → (1+1)·3/2 − 1 = 2 → doubled 4 = 2·(3−1), the full top.
+    expect(neuberg(2, 2, 3)).toBe(4);
   });
 
-  it("returns 0 when there are no actual comparisons", () => {
+  it("scales a bottom to E/A − 1 (never below zero)", () => {
+    // Bottom on a 2-result board → (0+1)·3/2 − 1 = 0.5 → doubled 1.
+    expect(neuberg(0, 2, 3)).toBe(1);
+  });
+
+  it("returns 0 when there are no actual results", () => {
     expect(neuberg(4, 0, 3)).toBe(0);
   });
 
   it("identity when actual = expected", () => {
-    expect(neuberg(4, 2, 2)).toBe(4);
+    expect(neuberg(4, 3, 3)).toBe(4);
   });
 });
 
@@ -158,30 +163,63 @@ describe("scoreMP — convention (b)", () => {
     expect(result[0].nsMatchPoints).toBeCloseTo(1.2);
   });
 
-  it("real lines get Neuberg-adjusted matchpoints when adjusted lines are present", () => {
-    // 2 real + 1 adjusted = 3 total, max = 4, real comparisons = 1.
-    // Real: 400 vs 120. Among reals: pair 1 (400) beats pair 2 (120).
-    //   pair 1: raw MP among reals = 2 (top of 2), Neuberg to full field of 2 comparisons:
-    //     single = 1, adjusted = (1+1)*(2/1) - 1 = 3; doubled = 6
-    //   But max is 4 — so Neuberg should not exceed max. Let me recalculate:
-    //     realComparisons=1 (just one other real line), fullComparisons=2.
-    //     rawNs = matchpointsAgainst(400, [120]) = 2 (beats it).
-    //     Neuberg: single = 2/2 = 1, adjusted = (1+1)*2/1 - 1 = 3, doubled = 6.
-    //   6 > max(4)? In Neuberg, the adjusted value CAN exceed the raw max, because
-    //   the formula projects a score from a smaller group to a larger one. The mp.ts
-    //   code doesn't clamp. This is mathematically correct for Neuberg (a line that
-    //   was unbeatable in a subset is expected to still be top in the larger field).
+  it("real lines are Neuberg-scaled over RESULTS, staying within the board top", () => {
+    // 2 real + 1 adjusted = 3 results, top 4. Among the reals, 400 beats 120.
+    // Neuberg from 2 results to 3: top → 4 (the full top), bottom → 1.
     const lines: PairLine[] = [
-      line("3NTN=", "1", "4"),
-      line("2NTN=", "2", "5"),
+      line("3NTN=", "1", "4"), // 400
+      line("2NTN=", "2", "5"), // 120
       line("A50/50", "3", "6"),
     ];
     const result = scoreMP(1, lines);
-    // The top real line should have higher MPs than it would without the
-    // adjusted line (it was 2 before; now it's Neuberg-adjusted upward).
     const top = result.find((r) => r.nsId === "1")!;
-    expect(top.nsMatchPoints).toBeGreaterThan(2);
+    const bottom = result.find((r) => r.nsId === "2")!;
     expect(top.maxMatchPoints).toBe(4);
+    expect(top.nsMatchPoints).toBeCloseTo(4);
+    expect(top.ewMatchPoints).toBeCloseTo(0);
+    expect(bottom.nsMatchPoints).toBeCloseTo(1);
+    expect(bottom.ewMatchPoints).toBeCloseTo(3);
+  });
+
+  it("never scores a real line outside 0..top, whatever the mix of AVE lines", () => {
+    // A withdrawal or late arrival puts an AVE line on a board beside real
+    // results. However many reals / AVE lines share the board, no pair may
+    // score above the top or below zero on it.
+    const reals = ["3NTN+1", "3NTN=", "2NTN=", "1NTN=", "3NTN-1", "3NTN-2"];
+    for (let r = 2; r <= reals.length; r++) {
+      for (let a = 1; a <= 3; a++) {
+        const lines: PairLine[] = [
+          ...reals.slice(0, r).map((o, i) => line(o, `n${i}`, `e${i}`)),
+          ...Array.from({ length: a }, (_, i) =>
+            line("A60/40", `an${i}`, `ae${i}`),
+          ),
+        ];
+        const result = scoreMP(1, lines);
+        for (const l of result) {
+          expect(l.nsMatchPoints).toBeGreaterThanOrEqual(-1e-9);
+          expect(l.ewMatchPoints).toBeGreaterThanOrEqual(-1e-9);
+          expect(l.nsMatchPoints).toBeLessThanOrEqual(l.maxMatchPoints + 1e-9);
+          expect(l.ewMatchPoints).toBeLessThanOrEqual(l.maxMatchPoints + 1e-9);
+        }
+      }
+    }
+  });
+
+  it("a weighted line plus an AVE line: components are scaled from reals+1 results", () => {
+    // 2 reals (430, 120) + W100*3NTN= (400) + A60/40 = 4 results, top 6.
+    // Component 400 vs [430, 120]: raw 2 on a 3-result field (as one more
+    // result) → Neuberg 3 → 4 results: single 1 → (2)·4/3 − 1 = 5/3 → doubled
+    // 10/3.
+    const lines: PairLine[] = [
+      line("3NTN+1", "1", "4"),
+      line("2NTN=", "2", "5"),
+      line("W100*3NTN=", "3", "6"),
+      line("A60/40", "7", "8"),
+    ];
+    const result = scoreMP(1, lines);
+    const weighted = result.find((r) => r.nsId === "3")!;
+    expect(weighted.maxMatchPoints).toBe(6);
+    expect(weighted.nsMatchPoints).toBeCloseTo(10 / 3);
   });
 });
 
@@ -213,9 +251,7 @@ describe("scoreIMP — assigned scores", () => {
     // Board 1, None vul:
     // W80*3NTN=;20*3NTN+1 → components: 400 (9 IMPs), 430 (10 IMPs)
     // nsImps = 0.80*9 + 0.20*10 = 7.2 + 2.0 = 9.2
-    const lines: PairLine[] = [
-      line("W80*3NTN=;20*3NTN+1", "1", "2"),
-    ];
+    const lines: PairLine[] = [line("W80*3NTN=;20*3NTN+1", "1", "2")];
     const result = scoreIMP(1, lines);
     expect(result[0].nsImps).toBeCloseTo(9.2);
     expect(result[0].ewImps).toBe(0);

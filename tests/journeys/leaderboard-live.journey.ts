@@ -11,13 +11,13 @@ import {
 /**
  * Live leaderboard journey (pure UI, no socket seam).
  *
- * A leaderboard display opened before any board is played shows the empty
- * state. When a pair result is confirmed at the table, the display updates
- * live to standings — proving the socket-only, occupancy-gated broadcast
+ * A leaderboard display opened before any board is played lists the whole
+ * field, unscored. When a pair result is confirmed at the table, the display
+ * rescores live — proving the socket-only, occupancy-gated broadcast
  * reaches an already-mounted display.
  */
 test.describe("Leaderboard live updates", () => {
-  test("empty display fills with standings when a board is confirmed", async ({
+  test("an open display rescores live when a board is confirmed", async ({
     browser,
   }) => {
     const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
@@ -30,21 +30,25 @@ test.describe("Leaderboard live updates", () => {
     const ewPage = seats["A1EW"];
 
     try {
-      // Open the display BEFORE any result exists: the standings table renders
-      // but has no pair rows yet.
+      // Open the display BEFORE any result exists: the standings table already
+      // lists the whole field (two tables = four pairs), all unscored.
       await displayPage.goto(`/game/${gameId}/display/leaderboard`);
       await expect(
         displayPage.getByTestId("leaderboard-standings"),
       ).toBeVisible({ timeout: 15000 });
-      await expect(displayPage.getByTestId("leaderboard-row")).toHaveCount(0);
+      await expect(displayPage.getByTestId("leaderboard-row")).toHaveCount(4);
+      const standings = displayPage.getByTestId("leaderboard-standings");
+      const before = await standings.innerText();
 
       // Two pairs at table 1 confirm board 1 through the real play UI.
       await confirmBoardPassOut(nsPage, ewPage, gameId, 1, 1);
 
-      // The already-open display gains standing rows live, without reloading.
-      await expect(
-        displayPage.getByTestId("leaderboard-row").first(),
-      ).toBeVisible({ timeout: 15000 });
+      // The already-open display rescored live, without reloading.
+      // Only the two pairs who played board 1 are scored, so only they are
+      // ranked now (the unscored baseline field is shown only until the first
+      // result lands).
+      await expect(standings).not.toHaveText(before, { timeout: 15000 });
+      await expect(displayPage.getByTestId("leaderboard-row")).toHaveCount(2);
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

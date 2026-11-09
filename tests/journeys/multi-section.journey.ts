@@ -1,7 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 import { createGame } from "../fixtures/game-create";
-import { setTableCount, openSetupStep, addSection } from "../fixtures/game-setup";
+import {
+  setTableCount,
+  openSetupStep,
+  addSection,
+  selectSection,
+} from "../fixtures/game-setup";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { deleteGame } from "../fixtures/delete-game";
 import {
@@ -48,24 +53,28 @@ test.describe("Multi-section setup CRUD", () => {
         directorPage.getByRole("tab", { name: /Section B/ }),
       ).toBeVisible();
 
-      // Rename / delete live on the "Manage sections" screen.
-      await openSetupStep(directorPage, "Manage sections");
-
-      // Rename section B via its Label field (commits on blur).
-      const labelFields = directorPage.getByLabel("Label");
-      await labelFields.nth(1).fill("Afternoon");
-      await labelFields.nth(1).blur();
-      await expect(labelFields.nth(1)).toHaveValue("Afternoon", {
-        timeout: 15000,
-      });
-
-      // Delete section B (accept the confirm dialog); the list returns to a
-      // single-section view (no "Section B" heading).
-      directorPage.once("dialog", (d) => d.accept());
-      await directorPage.getByRole("button", { name: "Delete" }).nth(1).click();
+      // Rename / delete live in the selected section's header on the Tables
+      // screen. Select section B, rename it via its "Section label" field
+      // (commits on blur) and watch the pill pick up the new name.
+      await openSetupStep(directorPage, "Tables");
+      await selectSection(directorPage, "B");
+      const labelField = directorPage.getByLabel("Section label");
+      await labelField.fill("Afternoon");
+      await labelField.blur();
       await expect(
-        directorPage.getByText("Section B", { exact: true }),
-      ).toBeHidden({ timeout: 15000 });
+        directorPage.getByRole("tab", { name: /Section B — Afternoon/ }),
+      ).toBeVisible({ timeout: 15000 });
+
+      // Delete section B (accept the confirm dialog); the section pills go
+      // away because the game is back to a single section.
+      directorPage.once("dialog", (d) => d.accept());
+      await directorPage
+        .getByRole("button", { name: "Delete section" })
+        .click();
+      await expect(directorPage.getByRole("tab", { name: /Section B/ })).toHaveCount(
+        0,
+        { timeout: 15000 },
+      );
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

@@ -89,11 +89,6 @@ describe("ManageGameMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "onMovementClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/movement");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "onShareDirectorAccessClick" }),
-    );
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
-
     fireEvent.click(screen.getByRole("button", { name: "onPairsClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/pairs");
 

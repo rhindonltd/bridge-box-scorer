@@ -230,6 +230,20 @@ describe("SetupGamePage setup menu", () => {
     ).toHaveAttribute("aria-current", "true");
   });
 
+  it("opens the share-code screen from the Share Director Access item", async () => {
+    render(<SetupGamePage />);
+
+    await openSetupMenu();
+    const item = screen.getByRole("menuitem", {
+      name: "Share Director Access",
+    });
+    // Not a setup step, so it never shows as the current selection.
+    expect(item).not.toHaveAttribute("aria-current");
+    await userEvent.click(item);
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
+    expect(mockGoTo).not.toHaveBeenCalled();
+  });
+
   it("returns to the main menu when the Return to main menu item is chosen", async () => {
     render(<SetupGamePage />);
 
@@ -269,7 +283,9 @@ describe("SetupGamePage setup back arrow", () => {
 
     // Back from Movement goes to Tables (the screen it came from), not the
     // event-details editor.
-    await userEvent.click(screen.getByRole("button", { name: "Movement-back" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Movement-back" }),
+    );
     expect(mockGoTo).toHaveBeenLastCalledWith("tables");
     expect(screen.queryByText("edit-event-details-view")).toBeNull();
   });
@@ -284,7 +300,9 @@ describe("SetupGamePage setup back arrow", () => {
     rerender(<SetupGamePage />);
     expect(screen.getByText("sections-view")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Movement-back" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Movement-back" }),
+    );
     expect(mockGoTo).toHaveBeenLastCalledWith("timer");
     expect(screen.queryByText("edit-event-details-view")).toBeNull();
   });
@@ -326,7 +344,9 @@ describe("SetupGamePage setup back arrow", () => {
     rerender(<SetupGamePage />);
 
     // First back: Movement → Tables.
-    await userEvent.click(screen.getByRole("button", { name: "Movement-back" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Movement-back" }),
+    );
     expect(mockGoTo).toHaveBeenLastCalledWith("tables");
     rerender(<SetupGamePage />);
     expect(screen.getByText("tables-view")).toBeInTheDocument();
@@ -363,7 +383,9 @@ describe("SetupGamePage setup back arrow", () => {
     rerender(<SetupGamePage />);
     expect(screen.getByText("sections-view")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Movement-back" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Movement-back" }),
+    );
     expect(screen.getByText("edit-event-details-view")).toBeInTheDocument();
   });
 });

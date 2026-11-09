@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 import fs from "fs";
 import path from "path";
+import { E2E_BASE_URL, E2E_SERVER_ENV } from "./tests/e2e-env";
 
 /**
  * Load `.env` into `process.env` for the test runner process (without adding a
@@ -25,6 +26,16 @@ function loadDotEnv(): void {
 }
 
 loadDotEnv();
+
+/**
+ * Every automated run uses an ISOLATED server + data directory (see
+ * tests/e2e-env.ts): a dedicated port and a throwaway `.e2e-data` dir that the
+ * web-server command wipes and re-provisions before the app boots. Force the
+ * data-dir env for the runner too (overriding any `.env` value), so test-side
+ * helpers that read a game's SQLite file, and the game seeder they spawn, all
+ * see the same directories as the server.
+ */
+Object.assign(process.env, E2E_SERVER_ENV);
 
 /**
  * Point the app's BridgeWebs client at a LOCAL mock instead of the real
@@ -59,7 +70,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
-    baseURL: "http://localhost:3000",
+    baseURL: E2E_BASE_URL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
@@ -109,7 +120,7 @@ export default defineConfig({
       testMatch: "*.journey.ts",
       use: {
         ...devices["iPhone 12"],
-        baseURL: "http://localhost:3000",
+        baseURL: E2E_BASE_URL,
         trace: "on-first-retry",
         screenshot: "only-on-failure",
       },
@@ -128,7 +139,7 @@ export default defineConfig({
         isMobile: true,
         userAgent:
           "Mozilla/5.0 (Linux; Android 11; KFTRWI) AppleWebKit/537.36 (KHTML, like Gecko) Silk/98.4.1 like Chrome/98.0.4758.136 Mobile Safari/537.36",
-        baseURL: "http://localhost:3000",
+        baseURL: E2E_BASE_URL,
         trace: "on-first-retry",
         screenshot: "only-on-failure",
       },
@@ -138,15 +149,27 @@ export default defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /*
+   * Provision a fresh E2E data dir, then start the BUILT app against it
+   * (run `npm run build` first). The prepare step must run before the server
+   * boots — the server opens its databases at start-up — so both live in the
+   * one command. A fresh server per run keeps runs independent; set
+   * E2E_REUSE_SERVER=1 to keep a running E2E server between iterations.
+   */
   webServer: {
-    command: "npm run start",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    // Point the app server's BridgeWebs client at the local mock. NOTE: when a
-    // server is already running and reused (reuseExistingServer), this env is
-    // NOT applied to it — start that server with the same BRIDGEWEBS_API_BASE,
-    // or let Playwright launch it here.
-    env: { BRIDGEWEBS_API_BASE: process.env.BRIDGEWEBS_API_BASE! },
+    command:
+      "npx tsx --require ./scripts/allow-server-only.cjs src/scripts/e2e-prepare.ts && " +
+      "node -r ./scripts/allow-server-only.cjs dist/server.js",
+    url: `${E2E_BASE_URL}/healthz`,
+    reuseExistingServer: !!process.env.E2E_REUSE_SERVER,
+    timeout: 120_000,
+    stdout: "ignore",
+    stderr: "pipe",
+    env: {
+      ...E2E_SERVER_ENV,
+      NODE_ENV: "production",
+      // Point the app server's BridgeWebs client at the local mock.
+      BRIDGEWEBS_API_BASE: process.env.BRIDGEWEBS_API_BASE!,
+    },
   },
 });

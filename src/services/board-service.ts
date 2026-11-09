@@ -34,21 +34,27 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
 
   // Design §11: a row missed because a pair is absent shows as it is scored —
   // the AVE± artificial result under AVERAGE, or not at all under REMOVED (it
-  // is out of the movement). Only ABSENT rows are rewritten; the absences are
-  // read only when there is one.
-  const absences = records.some((b) => b.status === "ABSENT")
-    ? await readAbsences(db)
-    : new Map();
+  // is out of the movement).
+  //
+  // Two kinds of missed row: an ABSENT row (a pair withdrew or arrived late;
+  // marked when it happened), and a row against a still-EMPTY expected-late
+  // seat (nobody sits there yet, so it stays NOT_PLAYED and the leaderboard
+  // scores it as absent on the fly). Both must read the same on the traveller
+  // as on the leaderboard. Only EMPTY absences are applied to non-ABSENT rows,
+  // so every other (teams / Swiss) traveller is untouched.
+  const absences = await readAbsences(db);
+  const emptyOnly = new Map(
+    [...absences].filter(([, absence]) => absence.kind === "EMPTY"),
+  );
   const shown: {
     row: (typeof records)[number];
     absentResult: string | null;
   }[] = [];
   for (const row of records) {
-    if (row.status !== "ABSENT") {
-      shown.push({ row, absentResult: null });
-      continue;
-    }
-    const resolution = resolveAbsentRow(row, absences);
+    const resolution = resolveAbsentRow(
+      row,
+      row.status === "ABSENT" ? absences : emptyOnly,
+    );
     if (resolution?.kind === "removed") continue;
     shown.push({
       row,
