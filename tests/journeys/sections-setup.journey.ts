@@ -14,8 +14,8 @@ import { newParticipant } from "./support";
  * Sections setup UI journey.
  *
  * The Movement step shows the shared section pills (with a "+ Add section"
- * pill) above the per-section movement picker. Section rename/delete lives on
- * the separate "Manage sections" screen, reached from the Setup menu.
+ * pill) above the per-section movement picker. Section rename/delete lives in
+ * the section header on the Tables screen.
  */
 
 async function openMovementTab(page: Page, gameId: string): Promise<void> {
@@ -51,7 +51,7 @@ test.describe("Sections setup", () => {
     }
   });
 
-  test("adding a section reveals a pill; rename and delete work on Manage sections", async ({
+  test("adding a section reveals a pill; rename and delete work on the Tables screen", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
@@ -74,22 +74,25 @@ test.describe("Sections setup", () => {
         page.getByRole("tab", { name: /Section B/ }),
       ).toBeVisible();
 
-      // Rename / delete happen on the Manage sections screen.
-      await openSetupStep(page, "Manage sections");
+      // Rename / delete happen in the section header on the Tables screen.
+      await openSetupStep(page, "Tables");
+      await selectSection(page, "B");
 
-      const labels = page.getByLabel("Label");
-      await labels.nth(1).fill("Evening");
-      await labels.nth(1).blur();
-      await expect(labels.nth(1)).toHaveValue("Evening", { timeout: 15000 });
+      const label = page.getByLabel("Section label");
+      await label.fill("Evening");
+      await label.blur();
+      await expect(
+        page.getByRole("tab", { name: /Section B — Evening/ }),
+      ).toBeVisible({ timeout: 15000 });
 
       // Delete controls are present while there is more than one section.
-      const deleteButtons = page.getByRole("button", { name: "Delete" });
-      await expect(deleteButtons).toHaveCount(2);
+      const deleteButton = page.getByRole("button", { name: "Delete section" });
+      await expect(deleteButton).toHaveCount(1);
 
       // Delete section B (accept the confirm dialog) -> back to single section.
       page.once("dialog", (d) => d.accept());
-      await deleteButtons.nth(1).click();
-      await expect(page.getByText("Section B", { exact: true })).toBeHidden({
+      await deleteButton.click();
+      await expect(page.getByRole("tab", { name: /Section B/ })).toHaveCount(0, {
         timeout: 15000,
       });
     } finally {

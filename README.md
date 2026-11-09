@@ -54,7 +54,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 | `npm start`         | Start production server                            |
 | `npm test`          | Run unit tests (Vitest)                            |
 | `npm run coverage`  | Run tests with coverage report                     |
-| `npm run e2e`       | Run Playwright E2E tests                           |
+| `npm run journey:all` | Run the Playwright journeys (build first; see Testing) |
 | `npm run lint`      | ESLint check                                       |
 | `npm run format`    | Prettier format                                    |
 | `npm run storybook` | Launch Storybook on port 6006                      |
@@ -129,8 +129,13 @@ npx vitest --project unit
 # Integration tests (socket handlers)
 npx vitest --project unit --run "*.int.test.ts"
 
-# E2E tests (requires running server)
-npm run e2e
+# E2E journeys (Playwright). They start their OWN server on port 3100 against a
+# throwaway data dir (.e2e-data, wiped each run), so they never touch your real
+# data or the dev server. The server runs the production build, so build first:
+npm run build
+npm run journey:phone          # or journey:tablet / journey:all
+# Keep one E2E server running between iterations (it is not rebuilt or wiped):
+E2E_REUSE_SERVER=1 npm run journey:phone
 
 # Storybook visual tests
 npm run storybook

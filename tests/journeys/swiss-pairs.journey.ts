@@ -1,4 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
+import { E2E_BASE_URL, E2E_GAMES_DIR } from "../e2e-env";
 import { io as ioClient, Socket } from "socket.io-client";
 import Database from "better-sqlite3";
 import path from "node:path";
@@ -31,14 +32,14 @@ import { closeSeatDevices, newParticipant, gotoStable } from "./support";
 
 /** Read each seat's secret token from the game's SQLite file (seat -> token). */
 function readSeatSecrets(gameId: string): Map<string, string> {
-  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dataDir = E2E_GAMES_DIR;
   const db = new Database(path.join(dataDir, `${gameId}.db`), {
     readonly: true,
   });
   try {
     const rows = db
       .prepare(
-        "SELECT initial_seat AS seat, secret_key AS secret FROM participant",
+        "SELECT seat, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC",
       )
       .all() as Array<{ seat: string; secret: string }>;
     return new Map(rows.map((r) => [r.seat, r.secret]));
@@ -61,7 +62,7 @@ async function confirmRound(
 
   // Read the round's board rows straight from the DB to know which
   // (table, board) instances are playable this round.
-  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dataDir = E2E_GAMES_DIR;
   const db = new Database(path.join(dataDir, `${gameId}.db`), {
     readonly: true,
   });
@@ -80,7 +81,7 @@ async function confirmRound(
     db.close();
   }
 
-  const socket: Socket = ioClient("http://localhost:3000");
+  const socket: Socket = ioClient(E2E_BASE_URL);
   try {
     await new Promise<void>((resolve, reject) => {
       const t = setTimeout(() => reject(new Error("socket timeout")), 10_000);
@@ -131,7 +132,7 @@ async function confirmRound(
 
 /** Count how many rounds have been materialized for a section. */
 function materializedRounds(gameId: string, section = "A"): number {
-  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dataDir = E2E_GAMES_DIR;
   const db = new Database(path.join(dataDir, `${gameId}.db`), {
     readonly: true,
   });
@@ -179,6 +180,7 @@ test.describe("Swiss Pairs draws round by round", () => {
     const { gameId } = await createGame(directorPage, {
       eventName: `Swiss ${Date.now()}`,
       recordOpeningLead: false,
+      gameType: "SWISS_PAIRS",
     });
 
     let seats: Record<string, Page> = {};
@@ -228,6 +230,7 @@ test.describe("Swiss Pairs draws round by round", () => {
     const { gameId } = await createGame(directorPage, {
       eventName: `Swiss Preview ${Date.now()}`,
       recordOpeningLead: false,
+      gameType: "SWISS_PAIRS",
     });
 
     let seats: Record<string, Page> = {};

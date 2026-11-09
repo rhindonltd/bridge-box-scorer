@@ -1,4 +1,5 @@
 import { io as ioClient, Socket } from "socket.io-client";
+import { E2E_BASE_URL, E2E_GAMES_DIR } from "../e2e-env";
 import Database from "better-sqlite3";
 import path from "node:path";
 
@@ -29,7 +30,7 @@ import path from "node:path";
  * reflects.
  */
 export function readSeatSecret(gameId: string, seat: string): string | null {
-  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dataDir = E2E_GAMES_DIR;
   const dbFile = path.join(dataDir, `${gameId}.db`);
 
   const db = new Database(dbFile, { readonly: true });
@@ -69,7 +70,7 @@ export interface SubmitResultArgs {
 export async function submitResultViaSocket(
   args: SubmitResultArgs,
 ): Promise<{ success: boolean; error?: string }> {
-  const socket: Socket = ioClient("http://localhost:3000");
+  const socket: Socket = ioClient(E2E_BASE_URL);
   try {
     await new Promise<void>((resolve, reject) => {
       const t = setTimeout(

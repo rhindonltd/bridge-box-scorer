@@ -28,14 +28,17 @@ export async function createGame(
      */
     recordOpeningLead?: boolean;
     /**
-     * The event type. Defaults to "PAIRS" (the form's default). "TEAMS"
-     * switches the "Event Type" dropdown to Teams, which in turn swaps the
-     * Scoring options over to the teams set (see {@link teamsScoring}).
+     * The event type (the "Event Type" dropdown's value). Defaults to "PAIRS"
+     * (the form's default). "TEAMS" swaps the Scoring options over to the teams
+     * set (see {@link teamsScoring}). "SWISS_PAIRS" / "SWISS_TEAMS" create a
+     * Swiss game, whose movement is set up inline and drawn round by round;
+     * Swiss Teams is always scored by IMP Victory Points, so it has no Scoring
+     * choice.
      */
-    gameType?: "PAIRS" | "TEAMS";
+    gameType?: "PAIRS" | "TEAMS" | "SWISS_PAIRS" | "SWISS_TEAMS";
     /**
-     * For a Teams game, which teams scoring to select. Defaults to "IMP"
-     * (the form's default). Ignored for a Pairs game.
+     * For a (non-Swiss) Teams game, which teams scoring to select. Defaults to
+     * "IMP" (the form's default). Ignored for every other event type.
      */
     teamsScoring?: "IMP" | "IMP_VP" | "BAM" | "PAB";
     /**
@@ -63,16 +66,16 @@ export async function createGame(
   // touching any options-step control.
   await page.getByRole("button", { name: "Next", exact: true }).click();
 
-  // Event Type is a native <select> ("Pairs" / "Teams"), defaulting to Pairs.
-  // Switching to Teams re-renders the Scoring dropdown with the teams options.
-  if (opts.gameType === "TEAMS") {
-    await page.getByLabel("Event Type").selectOption("TEAMS");
-    if (opts.teamsScoring) {
-      // The Scoring dropdown now carries the teams options; select by value.
-      await page.getByLabel("Scoring").selectOption(opts.teamsScoring);
-    }
+  // Event Type is a native <select> (Pairs / Teams / Swiss Pairs / Swiss Teams),
+  // defaulting to Pairs. Switching to Teams re-renders the Scoring dropdown
+  // with the teams options.
+  if (opts.gameType && opts.gameType !== "PAIRS") {
+    await page.getByLabel("Event Type").selectOption(opts.gameType);
   }
-
+  if (opts.gameType === "TEAMS" && opts.teamsScoring) {
+    // The Scoring dropdown now carries the teams options; select by value.
+    await page.getByLabel("Scoring").selectOption(opts.teamsScoring);
+  }
   // "Record Opening Lead" is a two-button toggle (No / Yes), defaulting to Yes.
   // Only click when the caller wants it off, to keep the default path untouched.
   // Scope to the toggle by its label — the form has other No/Yes toggles

@@ -58,7 +58,7 @@ Setup has three views reachable from the header **Setup menu**: **Tables**,
 |---|---|---|---|---|
 | ☐ SETUP-1 | On **Tables**, use the stepper to set **3** tables. | Card reads "3 tables". | | |
 | ☐ SETUP-2 | Confirm a banner prompts to choose a movement. | "Select a movement for this section." visible. | | |
-| ☐ SETUP-3 | Tap a table card to open the **"Table {n}"** dialog, then **Done**. | Dialog shows North/South and East/West rows (empty), then closes. | | |
+| ☐ SETUP-3 | Tap a table card to open the **"Table {n}"** dialog, then **Done**. | Dialog shows **North / South** and **East / West** rows. Each empty row has an **"Expected late"** toggle (No / Yes) with "Start without this pair; seat them when they arrive." (full coverage in [file 11](11-withdrawals-late-arrivals.md) `EL-*`). **Done** closes it. | | |
 
 ### 3b. Movement
 
@@ -94,9 +94,13 @@ Keep the DIRECTOR on **Tables** to watch seats fill live.
 | ☐ JOIN-7 | Seat the remaining tables (Tables 2 & 3, both directions) using the player devices or spares. | All seats filled. | | |
 | ☐ JOIN-8 | **DIRECTOR:** confirm every seat on every table is filled live. | Full seating shown. | | |
 | ☐ JOIN-9 | **Duplicate guard:** try to seat a player using an **EBU number already seated** elsewhere. | Rejected with "A player with EBU number … is already seated". | | |
+| ☐ JOIN-10 | **DIRECTOR:** open a table with a seated pair. | The pair's row shows its names and an **Evict pair** button (before the start only). | | |
+| ☐ JOIN-11 | **Leave before start:** on a seated player device (the "You're seated" screen), tap **Leave table** and confirm. | The seat is freed and the DIRECTOR's table updates live. Re-seat the pair before continuing. | | |
 
-> **Sit-out:** leaving one seat empty in an odd field is a sanctioned sit-out;
-> see file 07 (`SPEC-SITOUT-1`). For this core run, seat a full field.
+> **Empty seats:** leaving **one** seat empty is a sanctioned sit-out. More
+> empty seats must be marked **Expected late** before the game can start; see
+> [file 11](11-withdrawals-late-arrivals.md) (`EL-*`). For this core run, seat a
+> full field.
 
 ---
 
@@ -108,7 +112,8 @@ Keep the DIRECTOR on **Tables** to watch seats fill live.
 | ☐ START-2 | Confirm it reads ready (e.g. **"Everything's ready"**). | No blocking issues listed. | | |
 | ☐ START-3 | Tap **Start Game**. | Game starts; you land on the **Manage Game Menu**. Timer (if set) begins. | | |
 | ☐ START-4 | **NS & EW:** confirm they move into round play. | Players see "Table 1, Round 1". | | |
-| ☐ START-5 | **Start guard:** (fresh game) try **Start Game** with a seat empty in a movement that requires it filled. | Blocked, listing the problem per section; cannot start. | | |
+| ☐ START-5 | **Start guard:** (fresh game) leave **two** seats empty and unmarked, then try **Start Game**. | Blocked, listing the problem per section ("More than one pair is missing…"); cannot start. Marking the empty seats **Expected late** clears it (`EL-5`). | | |
+| ☐ START-6 | After the start, look at the **Manage Game Menu**. | **Manage Tables**, **Travellers**, **Enter Deals**, **Movement**, **Pairs**, **Export & Publish**, and red **Delete Game**. There is **no** "Share Director Access" button: it is in the header **Menu** ([file 10](10-sharing-export-lifecycle.md) `SHARE-*`). | | |
 
 ---
 
@@ -159,7 +164,7 @@ The heart of the app: both sides enter the **same** board and it confirms.
 
 | Check | Step | Expected | Actual | Comments |
 |---|---|---|---|---|
-| ☐ XFER-1 | On the NS play screen, open the **Menu** (top-right) → **Change device**. | A short code + "Once the code is used, this device will be signed out of the seat." | | |
+| ☐ XFER-1 | On the NS play screen, open the **Menu** (top-right). Confirm it lists **Handover**, **Withdraw**, **Change device** and **Pair details** (handover and withdrawal are covered in files [12](12-handover-substitution.md) and [11](11-withdrawals-late-arrivals.md)). Tap **Change device**. | A short code + "Once the code is used, this device will be signed out of the seat." | | |
 | ☐ XFER-2 | On a spare device: **Join Game → "Manual Test Pairs"** → the seat-transfer entry ("Move a seat to this device") → enter the code → **Take over seat**. | The spare takes the NS seat and lands on the play screen. | | |
 | ☐ XFER-3 | Check the original NS device. | Signed out of the seat: shows a "This seat has moved to another device" screen with a **Back to main menu** button, and no longer controls the seat. Tapping **Back to main menu** returns home. | | |
 | ☐ XFER-4 | On the active device, **Menu → Pair details**. | Shows pair number, direction, both names. Tap **Done**. | | |

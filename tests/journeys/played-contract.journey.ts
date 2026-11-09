@@ -51,12 +51,15 @@ test.describe("Played contract entry, confirmation and completion", () => {
     const ewPage = seats["A1EW"];
 
     try {
-      // A leaderboard display mounted before any result: empty standings.
+      // A leaderboard display mounted before any result: the whole field is
+      // listed (four pairs on two tables), unscored.
       await displayPage.goto(`/game/${gameId}/display/leaderboard`);
       await expect(
         displayPage.getByTestId("leaderboard-standings"),
       ).toBeVisible({ timeout: 15000 });
-      await expect(displayPage.getByTestId("leaderboard-row")).toHaveCount(0);
+      await expect(displayPage.getByTestId("leaderboard-row")).toHaveCount(4);
+      const standings = displayPage.getByTestId("leaderboard-standings");
+      const before = await standings.innerText();
 
       // Both pairs at table 1 enter 4♥ by North making, walking the full
       // wizard including the opening-lead step.
@@ -80,10 +83,8 @@ test.describe("Played contract entry, confirmation and completion", () => {
         timeout: 15000,
       });
 
-      // The mounted leaderboard display gains a standing row live.
-      await expect(
-        displayPage.getByTestId("leaderboard-row").first(),
-      ).toBeVisible({ timeout: 15000 });
+      // The mounted leaderboard display rescored live.
+      await expect(standings).not.toHaveText(before, { timeout: 15000 });
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

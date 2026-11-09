@@ -18,19 +18,27 @@ export function createKeyedTokenStore<T>(
   deserialize: (raw: string) => T,
 ) {
   const storageKey = (id: string) => `${prefix}${id}`;
+  // Client components also render on the server, where there is no
+  // localStorage. Reads there report "no token" instead of throwing, so a
+  // component that peeks at a token while rendering doesn't crash the server
+  // render; writes only ever happen in client-side handlers.
+  const hasStorage = () => typeof localStorage !== "undefined";
 
   return {
     set(id: string, value: T): void {
       localStorage.setItem(storageKey(id), serialize(value));
     },
     get(id: string): T | null {
+      if (!hasStorage()) return null;
       const raw = localStorage.getItem(storageKey(id));
       return raw == null ? null : deserialize(raw);
     },
     clear(id: string): void {
+      if (!hasStorage()) return;
       localStorage.removeItem(storageKey(id));
     },
     has(id: string): boolean {
+      if (!hasStorage()) return false;
       return localStorage.getItem(storageKey(id)) !== null;
     },
   };

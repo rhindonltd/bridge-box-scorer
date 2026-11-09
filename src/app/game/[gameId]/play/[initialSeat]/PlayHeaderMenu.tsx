@@ -14,6 +14,7 @@ import {
   PlayManageSwitch,
   usePlayManageSwitchItem,
 } from "@/components/game/PlayManageSwitch";
+import { useShareDirectorAccessItem } from "@/components/game/useShareDirectorAccessItem";
 import { ChangeDeviceButton } from "./ChangeDeviceButton";
 import { PairDetailsDialog } from "./PairDetailsDialog";
 
@@ -58,6 +59,7 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   // appears per breakpoint. The hook is called unconditionally (rules of
   // hooks); the resulting item is only added to the menu for a director.
   const manageItem = usePlayManageSwitchItem(gameId, "toManage");
+  const shareItem = useShareDirectorAccessItem(gameId);
 
   const items: HeaderMenuItem[] = [
     // Screen-specific view options (e.g. Results / Deal) come first.
@@ -85,6 +87,8 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
     // A director's play→manage switch (folded / small-screen form). The visible
     // form is the `sm`+ button rendered below.
     ...(isDirector ? [{ ...manageItem, className: "sm:hidden" }] : []),
+    // Director-only: hand a co-director a share code from wherever you are.
+    ...(isDirector ? [shareItem] : []),
     // Future items (e.g. "Call director") go here.
   ];
 

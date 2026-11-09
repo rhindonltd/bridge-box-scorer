@@ -1,22 +1,17 @@
 import { test, expect } from "@playwright/test";
 
-import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { readSeatSecret, submitResultViaSocket } from "../fixtures/seat-secret";
-import {
-  closeSeatDevices,
-  markSeatWithoutStanding,
-  newParticipant,
-  setUpStartedTwoTableGame,
-} from "./support";
+import { closeDevices, seedStartedTwoTableGame } from "../fixtures/seeded-game";
+import { newParticipant } from "./support";
 
 /**
  * Different-device handover journey (EBU §2.4.7, Path 2).
  *
  * A stand-in has been sitting a seat and the REAL pair arrives with THEIR OWN
- * device. The director marks the seat "without standing". The stand-in's device
- * mints a "Change device" code (self-serve — no director needed for the
- * handover itself); the real pair claims it on their device from the join
+ * device. The stand-in's device chooses Menu -> Handover -> "Different device",
+ * which mints a code (self-serve — no director step); the real pair claims it
+ * on their device from the join
  * screen. Because the seat is a handover, the claim first INSPECTS the code,
  * then collects the arriving pair's names before claiming — the server runs the
  * handover engine, seats the real pair with a fresh secret, and signs the
@@ -40,7 +35,7 @@ test.describe("Handover (different device)", () => {
   }) => {
     test.setTimeout(120_000);
 
-    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await seedStartedTwoTableGame(
       browser,
       `Handover Different Device ${Date.now()}`,
       { recordOpeningLead: false },
@@ -55,14 +50,11 @@ test.describe("Handover (different device)", () => {
       const oldSecret = readSeatSecret(gameId, "A1NS");
       expect(oldSecret, "seat A1NS should have a secret").toBeTruthy();
 
-      // Director marks A1NS as a stand-in.
-      await markSeatWithoutStanding(directorPage, gameId, "A1NS");
-
-      // Stand-in device: mint a change-device code from the play header menu.
-      await standInDevice.goto(`/game/${gameId}/play/A1NS`);
+      // Stand-in device: Menu -> Handover -> "Different device" mints the code.
       await standInDevice.getByRole("button", { name: "Menu" }).click();
+      await standInDevice.getByRole("menuitem", { name: "Handover" }).click();
       await standInDevice
-        .getByRole("menuitem", { name: "Change device" })
+        .getByRole("button", { name: /Different device/ })
         .click();
       const codeEl = standInDevice.getByTestId("seat-transfer-code");
       await expect(codeEl).toBeVisible({ timeout: 15000 });
@@ -81,7 +73,7 @@ test.describe("Handover (different device)", () => {
 
       // The handover names step: the arriving pair enters their names.
       await expect(
-        newDevice.getByText("Take over from the stand-in"),
+        newDevice.getByText("Take over this seat", { exact: true }),
       ).toBeVisible({ timeout: 15000 });
       await fillHandoverName(newDevice, "Player 1", "10077");
       await fillHandoverName(newDevice, "Player 2", "10079");
@@ -138,10 +130,7 @@ test.describe("Handover (different device)", () => {
         true,
       );
     } finally {
-      await deleteGame(directorPage, gameId);
-      await directorPage.context().close();
-      await newDevice.context().close();
-      await closeSeatDevices(seats);
+      await closeDevices(directorPage, newDevice, seats);
     }
   });
 });

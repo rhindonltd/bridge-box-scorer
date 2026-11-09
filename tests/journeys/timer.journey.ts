@@ -28,7 +28,7 @@ import {
  *   - On game start: the autosaved config is PROMOTED to a live (paused) timer
  *     (promoteTimerAtGameStart).
  *   - Post-start: /manage/timer shows the live controls (Start/Pause,
- *     Prev/Next phase, adjust ±, Apply Changes / updateConfig).
+ *     Prev/Next phase, adjust ± with an optional "apply to later phases").
  *
  * The timer counts down in real time, so we use short durations and assert
  * observable display states (Round label, PAUSED, MM:SS, Move) with generous
@@ -137,7 +137,9 @@ async function setUpStartedGameWithSavedTimer(
   if (config.breakAfterRound != null) {
     await directorPage.getByRole("button", { name: "+ Add break" }).click();
     await spin("Break 1 after round").fill(String(config.breakAfterRound));
-    await spin("Break 1 duration minutes").fill(String(config.breakMinutes ?? 5));
+    await spin("Break 1 duration minutes").fill(
+      String(config.breakMinutes ?? 5),
+    );
   }
 
   // The config autosaves ~400ms after the last edit (a debounced PUT to the
@@ -188,13 +190,17 @@ test.describe("Session timer: autosave, promote-on-start, and live control", () 
       await gotoManageTimer(directorPage, gameId);
 
       // Pause -> the display shows PAUSED. (Pause is available while running.)
-      await directorPage.getByRole("button", { name: "Pause", exact: true }).click();
+      await directorPage
+        .getByRole("button", { name: "Pause", exact: true })
+        .click();
       await expect(displayPage.getByText("PAUSED")).toBeVisible({
         timeout: 15000,
       });
 
       // Start -> the display leaves PAUSED and counts down (MM:SS).
-      await directorPage.getByRole("button", { name: "Start", exact: true }).click();
+      await directorPage
+        .getByRole("button", { name: "Start", exact: true })
+        .click();
       await expect(displayPage.getByText("PAUSED")).toBeHidden({
         timeout: 15000,
       });
@@ -209,7 +215,9 @@ test.describe("Session timer: autosave, promote-on-start, and live control", () 
       });
 
       // Previous phase -> steps back into a round's play.
-      await directorPage.getByRole("button", { name: "Previous phase" }).click();
+      await directorPage
+        .getByRole("button", { name: "Previous phase" })
+        .click();
       await expect(displayPage.getByText(/Round \d of 3/)).toBeVisible({
         timeout: 15000,
       });
@@ -220,54 +228,54 @@ test.describe("Session timer: autosave, promote-on-start, and live control", () 
     }
   });
 
-  test("adjusting the current phase and applying config changes update the live timer", async ({
+  test("adjusting the current phase, and later phases of its type, updates the live timer", async ({
     browser,
   }) => {
-    test.setTimeout(90_000);
-
+    test.setTimeout(120_000);
+    // A long play phase (and relative assertions below) keep this independent
+    // of how long the setup took before the director pauses the clock.
     const { directorPage, gameId } = await setUpStartedGameWithSavedTimer(
       browser,
       `Timer Adjust ${Date.now()}`,
-      { playSeconds: 40, moveSeconds: 10 },
+      { playSeconds: 120, moveSeconds: 10 },
     );
     const displayPage = await newParticipant(browser);
-
+    const clock = displayPage.getByText(/^\d{2}:\d{2}$/);
+    const toSeconds = (mmss: string) => {
+      const [m, s] = mmss.split(":").map(Number);
+      return m * 60 + s;
+    };
+    const toMmss = (total: number) =>
+      `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
     try {
       await openTimerDisplay(displayPage, gameId);
       await expect(displayPage.getByText("Round 1 of 3")).toBeVisible({
         timeout: 15000,
       });
-
       await gotoManageTimer(directorPage, gameId);
-
       // Pause first so the remaining value is frozen and exact assertions hold.
       // (Promotion starts the timer running.)
-      await directorPage.getByRole("button", { name: "Pause", exact: true }).click();
+      await directorPage
+        .getByRole("button", { name: "Pause", exact: true })
+        .click();
       await expect(displayPage.getByText("PAUSED")).toBeVisible({
         timeout: 15000,
       });
-
-      // Paused mid-play the remaining is at most the 40s full duration. Adjust
-      // +1m and assert the remaining increases past the original 40s (i.e. it
-      // now shows 01:MM), proving the adjustment reached the display.
+      const frozen = toSeconds(await clock.innerText());
+      // Adjust +1m: the display shows exactly one minute more.
       await directorPage.getByRole("button", { name: "+1m" }).click();
-      await expect(displayPage.getByText(/^01:\d{2}$/)).toBeVisible({
-        timeout: 15000,
-      });
-
-      // Change the play duration to 20s and Apply Changes (updateConfig). The
-      // change applies to SUBSEQUENT play phases (the current phase keeps its
-      // adjusted remaining). Step forward to round 2's play and assert it now
-      // starts from the new, shorter 20s duration (it is running and counting
-      // down, so allow anything under 30s — the point is it is NOT the 40s
-      // default, proving the config change reached the live timer).
+      await expect(clock).toHaveText(toMmss(frozen + 60), { timeout: 15000 });
+      // Tick "Apply to all subsequent phases of this type" and take 15s off:
+      // the current phase drops by 15s and every LATER play phase is shortened
+      // by the same 15s (120s -> 105s). The point is round 2's play starts from
+      // the shortened length, NOT the original 02:00.
       await directorPage
-        .getByRole("spinbutton", { name: "Play seconds", exact: true })
-        .fill("20");
-      await directorPage
-        .getByRole("button", { name: "Apply Changes" })
-        .click();
-
+        .getByRole("checkbox", {
+          name: "Apply to all subsequent phases of this type",
+        })
+        .check();
+      await directorPage.getByRole("button", { name: "\u221215s" }).click();
+      await expect(clock).toHaveText(toMmss(frozen + 45), { timeout: 15000 });
       // Next: play -> move (Move for Round 2); Next: move -> round 2 play.
       await directorPage.getByRole("button", { name: "Next phase" }).click();
       await expect(displayPage.getByText("Move for Round 2")).toBeVisible({
@@ -277,7 +285,9 @@ test.describe("Session timer: autosave, promote-on-start, and live control", () 
       await expect(displayPage.getByText("Round 2 of 3")).toBeVisible({
         timeout: 15000,
       });
-      await expect(displayPage.getByText(/^00:[012]\d$/)).toBeVisible({
+      // Round 2's play is running down from 01:45, so it can't read 02:00 (or
+      // anything over 01:45) unless the change failed to carry forward.
+      await expect(clock).toHaveText(/^(00:[0-5]\d|01:[0-4]\d)$/, {
         timeout: 15000,
       });
     } finally {
@@ -286,7 +296,6 @@ test.describe("Session timer: autosave, promote-on-start, and live control", () 
       await displayPage.context().close();
     }
   });
-
   test("a scheduled break shows the break screen on the display", async ({
     browser,
   }) => {
@@ -313,9 +322,9 @@ test.describe("Session timer: autosave, promote-on-start, and live control", () 
       await expect(displayPage.getByText("Break")).toBeVisible({
         timeout: 15000,
       });
-      await expect(
-        displayPage.getByText(/Next round starts at/),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(displayPage.getByText(/Next round starts at/)).toBeVisible({
+        timeout: 15000,
+      });
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
@@ -409,14 +418,16 @@ test.describe("Timer live status panel and apply-to-future adjust", () => {
         timeout: 15000,
       });
       // Round row shows the current round (1).
-      await expect(directorPage.getByText("Round", { exact: true })).toBeVisible();
+      await expect(
+        directorPage.getByText("Round", { exact: true }),
+      ).toBeVisible();
       // Remaining shows a MM:SS value.
       await expect(
         directorPage.getByText("Remaining", { exact: true }),
       ).toBeVisible();
-      await expect(
-        directorPage.getByText(/^\d{2}:\d{2}$/).first(),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(directorPage.getByText(/^\d{2}:\d{2}$/).first()).toBeVisible(
+        { timeout: 15000 },
+      );
 
       // Tick "Apply to all subsequent phases of this type" then add +1m. With
       // apply-to-future ON the adjustment carries to LATER play phases too.
@@ -441,9 +452,9 @@ test.describe("Timer live status panel and apply-to-future adjust", () => {
         await expect(displayPage.getByText("Round 2 of 3")).toBeVisible({
           timeout: 15000,
         });
-        await expect(
-          displayPage.getByText(/^(?!00:)\d{2}:\d{2}$/),
-        ).toBeVisible({ timeout: 15000 });
+        await expect(displayPage.getByText(/^(?!00:)\d{2}:\d{2}$/)).toBeVisible(
+          { timeout: 15000 },
+        );
       } finally {
         await displayPage.context().close();
       }

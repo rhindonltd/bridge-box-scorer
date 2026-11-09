@@ -1,4 +1,5 @@
 import { test, expect, Browser, Page } from "@playwright/test";
+import { E2E_BASE_URL, E2E_GAMES_DIR } from "../e2e-env";
 import { io as ioClient, Socket } from "socket.io-client";
 import Database from "better-sqlite3";
 import path from "node:path";
@@ -319,7 +320,7 @@ async function submitAgainstSitOutBoard(
     throw new Error("no SIT_OUT board row found for the short field");
   }
 
-  const socket: Socket = ioClient("http://localhost:3000");
+  const socket: Socket = ioClient(E2E_BASE_URL);
   try {
     await new Promise<void>((resolve, reject) => {
       const t = setTimeout(() => reject(new Error("socket connect timeout")), 10_000);
@@ -369,7 +370,7 @@ function readSitOutBoard(gameId: string): {
   tableNumber: number;
   boardNumber: number;
 } | null {
-  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dataDir = E2E_GAMES_DIR;
   const dbFile = path.join(dataDir, `${gameId}.db`);
   const db = new Database(dbFile, { readonly: true });
   try {
@@ -393,12 +394,12 @@ function readSitOutBoard(gameId: string): {
  * server-side. Used to authorise a direct-socket submission from the test.
  */
 function readSeatSecret(gameId: string, seat: string): string {
-  const dataDir = process.env.DATABASE_GAMES_URL ?? "./data/games";
+  const dataDir = E2E_GAMES_DIR;
   const dbFile = path.join(dataDir, `${gameId}.db`);
   const db = new Database(dbFile, { readonly: true });
   try {
     const row = db
-      .prepare("SELECT secret_key AS secret FROM participant WHERE initial_seat = ?")
+      .prepare("SELECT secret_key AS secret FROM seat_occupancy WHERE seat = ? AND standing != 'WITHOUT_STANDING' ORDER BY id DESC LIMIT 1")
       .get(seat) as { secret: string } | undefined;
     if (!row) {
       throw new Error(`No participant secret found for seat ${seat}`);

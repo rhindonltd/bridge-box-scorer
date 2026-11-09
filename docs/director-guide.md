@@ -321,7 +321,6 @@ example, to correct a board and then return to enter your own table's result.
 | **Travellers**            | View results by board and correct any that were entered wrong.            |
 | **Enter Deals**           | Enter or correct the dealt cards (the four hands) for any board.          |
 | **Movement**              | View or change the movement.                                              |
-| **Share Director Access** | Generate a code so a co-director can manage from another device.          |
 | **Download USEBIO**       | Export the results as a USEBIO XML file for the EBU or a scoring program. |
 | **Delete Game** _(red)_   | Permanently delete the game. This cannot be undone.                       |
 
@@ -530,7 +529,9 @@ deal entered once.
 If a co-director needs to help manage the game from their own phone or tablet,
 share access with a short code:
 
-1. From the Manage Game Menu, tap **Share Director Access**.
+1. Tap the menu (hamburger) icon in the header of any director screen and
+   choose **Share Director Access**. Use the back arrow afterwards to return
+   to the page you were on.
 2. A short share code appears on screen.
 3. The other person opens **Manage Game**, taps the same game, and enters the
    code on the **Claim Director Code** screen.

@@ -27,7 +27,6 @@ const handlers = {
   onTravellersClick: vi.fn(),
   onEnterDealsClick: vi.fn(),
   onMovementClick: vi.fn(),
-  onShareDirectorAccessClick: vi.fn(),
   onReviewMismatchesClick: vi.fn(),
   onPairsClick: vi.fn(),
   onExportClick: vi.fn(),
@@ -50,17 +49,18 @@ describe("ManageGameMenuPage", () => {
     vi.clearAllMocks();
   });
 
-  it("always shows Share Director Access and Delete Game and wires them", () => {
+  it("always shows Delete Game and wires it", () => {
     render(<ManageGameMenuPage {...handlers} {...flags} />);
 
     expect(
       screen.getByRole("heading", { name: "Manage Game Menu" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Share Director Access" }),
-    );
-    expect(handlers.onShareDirectorAccessClick).toHaveBeenCalled();
+    // Share Director Access moved to the header hamburger, so the menu body no
+    // longer offers it.
+    expect(
+      screen.queryByRole("button", { name: "Share Director Access" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Delete Game" }));
     expect(handlers.onDeleteGameClick).toHaveBeenCalled();

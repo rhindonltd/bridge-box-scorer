@@ -6,18 +6,11 @@ import { newParticipant } from "./support";
 /**
  * Create-game form journey.
  *
- * Exercises the `/create` form directly (fields, event type, date, lead
- * toggle), the no-validation edge (blank names are accepted), successful
- * navigation to the setup route, and the failure path (the create is an HTTP
- * POST to /api/games; failing that request surfaces the inline error).
+ * Exercises the two-step `/create` wizard directly: details (event + director
+ * name, blank values refused), then options (event type, lead toggle),
+ * successful navigation to the setup route, and the failure path (the create is
+ * an HTTP POST to /api/games; failing that request surfaces the inline error).
  */
-
-function todayIso(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
-}
 
 async function extractGameId(page: Page): Promise<string> {
   const match = /\/game\/([^/]+)\/create/.exec(page.url());
@@ -26,7 +19,7 @@ async function extractGameId(page: Page): Promise<string> {
 }
 
 test.describe("Create game form", () => {
-  test("fields, event type, date default and lead toggle behave", async ({
+  test("fields, event type and lead toggle behave", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
@@ -45,23 +38,31 @@ test.describe("Create game form", () => {
       await page.getByLabel("Director Name").fill("Jane Director");
       await expect(page.getByLabel("Director Name")).toHaveValue("Jane Director");
 
-      // Event Type offers Pairs and Teams; default Pairs.
+      // The form is a two-step wizard: details first, then options.
+      await page.getByRole("button", { name: "Next", exact: true }).click();
+
+      // Event Type offers the four choices; default Pairs.
       const eventType = page.getByLabel("Event Type");
       await expect(eventType).toBeVisible();
+      await expect(eventType.locator("option")).toHaveText([
+        "Pairs",
+        "Teams",
+        "Swiss Pairs",
+        "Swiss Teams",
+      ]);
+      await expect(eventType).toHaveValue("PAIRS");
       await eventType.selectOption({ label: "Teams" });
       await eventType.selectOption({ label: "Pairs" });
 
-      // Date defaults to today and is editable.
-      await expect(page.getByLabel("Date Played")).toHaveValue(todayIso());
-
       // "Record Opening Lead" toggle: switch to No then back to Yes.
-      await page.getByRole("button", { name: "No", exact: true }).click();
+      const lead = page.getByLabel("Record Opening Lead");
+      await lead.getByRole("button", { name: "No", exact: true }).click();
       await expect(
-        page.getByRole("button", { name: "No", exact: true }),
+        lead.getByRole("button", { name: "No", exact: true }),
       ).toHaveAttribute("aria-pressed", "true");
-      await page.getByRole("button", { name: "Yes", exact: true }).click();
+      await lead.getByRole("button", { name: "Yes", exact: true }).click();
       await expect(
-        page.getByRole("button", { name: "Yes", exact: true }),
+        lead.getByRole("button", { name: "Yes", exact: true }),
       ).toHaveAttribute("aria-pressed", "true");
 
       // Submit -> navigates to the setup route. The setup page opens a live
@@ -82,7 +83,7 @@ test.describe("Create game form", () => {
     }
   });
 
-  test("a blank event name is rejected and stays on the create form", async ({
+  test("blank details are rejected and the form stays on the details step", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
@@ -93,18 +94,22 @@ test.describe("Create game form", () => {
       // The page fires a BridgeWebs-events fetch on mount that re-renders the
       // form; let it settle before submitting so the click isn't lost (WebKit).
       await page.waitForLoadState("networkidle");
-      // Submit with an empty event name. The server requires a non-empty event
-      // name, so the create is rejected: the inline error shows and the form
-      // stays put (no navigation to a setup route).
-      await page.getByRole("button", { name: "Create Game", exact: true }).click();
-
-      await expect(
-        page.getByText("Failed to create game. Please try again."),
-      ).toBeVisible({ timeout: 15000 });
-      await expect(page).toHaveURL(/\/create$/);
+      // Advance with both names blank. The details step refuses to move on:
+      // the empty fields are flagged invalid and the options step (with its
+      // "Create Game" action) never appears.
+      await page.getByRole("button", { name: "Next", exact: true }).click();
+      await expect(page.getByLabel("Event Name")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+      await expect(page.getByLabel("Director Name")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
       await expect(
         page.getByRole("button", { name: "Create Game", exact: true }),
-      ).toBeEnabled();
+      ).toHaveCount(0);
+      await expect(page).toHaveURL(/\/create$/);
     } finally {
       await page.context().close();
     }
@@ -121,6 +126,8 @@ test.describe("Create game form", () => {
       // Let the on-mount fetch settle so the field fill isn't lost (WebKit).
       await page.waitForLoadState("networkidle");
       await page.getByLabel("Event Name").fill("Doomed Game");
+      await page.getByLabel("Director Name").fill("E2E Director");
+      await page.getByRole("button", { name: "Next", exact: true }).click();
 
       // The create is an HTTP POST to /api/games. Fail that request so the
       // client's create call rejects and surfaces the inline error. Installed

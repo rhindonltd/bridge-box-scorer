@@ -55,25 +55,27 @@ export function matchpointsAgainst(score: number, others: number[]): number {
 }
 
 /**
- * Neuberg adjustment: scale matchpoints earned over `actual` comparisons up to
- * an expected field of `expected` comparisons. Operates on the doubled scale
- * (top = 2 * comparisons). Returns the adjusted NS matchpoints over `expected`.
+ * Neuberg adjustment (EBU White Book §4.2.3.2): scale a line's matchpoints from
+ * the field it was actually compared in up to the expected full field.
  *
- * The standard Neuberg formula on the "per comparison" scale (top = count-1)
- * is `(mp + 1) * E / A - 1`. Here mp is doubled (top = 2*(count-1)), so we
- * halve in, apply, and double out — equivalently `(mp + 1) * E/A - 1` applied
- * to the doubled value with the +1/-1 doubled to +... Keeping it explicit:
+ * Both sizes are numbers of RESULTS (lines on the board), not comparisons: a
+ * board with `A` results has a top of `A - 1` on the single scale. The formula
+ * is `M' = (M + 1) × E / A − 1`. `M` here is on the doubled scale this codebase
+ * uses (top = `2 × (A − 1)`), so it is halved in and doubled back out.
+ *
+ * Property worth knowing: a top in the smaller field (`M = A − 1`) maps to
+ * exactly the full-field top (`E − 1`), and a bottom (`M = 0`) to `E/A − 1` —
+ * so a scaled line never leaves the board's `0..2(E−1)` range.
  */
 export function neuberg(
   doubledMp: number,
-  actualComparisons: number,
-  expectedComparisons: number,
+  actualResults: number,
+  expectedResults: number,
 ): number {
-  if (actualComparisons <= 0) return 0;
-  // Convert to the single scale (top = comparisons), apply Neuberg, double back.
+  if (actualResults <= 0) return 0;
+  // Convert to the single scale (top = results − 1), apply Neuberg, double back.
   const single = doubledMp / 2;
-  const adjustedSingle =
-    (single + 1) * (expectedComparisons / actualComparisons) - 1;
+  const adjustedSingle = (single + 1) * (expectedResults / actualResults) - 1;
   return adjustedSingle * 2;
 }
 

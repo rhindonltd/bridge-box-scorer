@@ -80,19 +80,22 @@ test.describe("Create-page BridgeWebs event picker", () => {
       // Wait for the on-mount events fetch to settle so the picker renders.
       await page.waitForLoadState("networkidle");
 
-      // The picker is present and lists the mock's events.
-      const picker = page.getByLabel("BridgeWebs Event");
-      await expect(picker).toBeVisible({ timeout: 15000 });
+      // With BridgeWebs configured and events available, the details step
+      // offers a "Use BridgeWebs Event" Yes/No toggle (default No). Switching
+      // it on swaps the Event Name text field for a dropdown of the events.
+      const useBridgewebs = page.getByLabel("Use BridgeWebs Event");
+      await expect(useBridgewebs).toBeVisible({ timeout: 15000 });
+      await useBridgewebs.getByRole("button", { name: "Yes", exact: true }).click();
 
       await page.getByLabel("Director Name").fill("E2E Director");
 
-      // Choose an event by its visible label; the name prefills from it.
+      // Choose an event by its visible label; its id becomes the field value
+      // and its title is mirrored into the event name.
+      const picker = page.getByLabel("Event Name");
       await picker.selectOption({ label: "Afternoon Teams" });
-      await expect(page.getByLabel("Event Name")).toHaveValue(
-        "Afternoon Teams",
-        { timeout: 10000 },
-      );
+      await expect(picker).toHaveValue("8", { timeout: 10000 });
 
+      await page.getByRole("button", { name: "Next", exact: true }).click();
       await page.getByRole("button", { name: "Create Game", exact: true }).click();
       await page.waitForURL(/\/game\/.+\/create/, { timeout: 15000 });
       gameId = /\/game\/([^/]+)\/create/.exec(page.url())?.[1] ?? null;

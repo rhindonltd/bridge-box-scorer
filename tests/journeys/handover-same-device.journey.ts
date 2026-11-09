@@ -1,23 +1,17 @@
 import { test, expect } from "@playwright/test";
 
-import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { readSeatSecret, submitResultViaSocket } from "../fixtures/seat-secret";
-import {
-  closeSeatDevices,
-  markSeatWithoutStanding,
-  setUpStartedTwoTableGame,
-} from "./support";
+import { closeDevices, seedStartedTwoTableGame } from "../fixtures/seeded-game";
 
 /**
  * Same-device handover journey (EBU §2.4.7, Path 1).
  *
  * A stand-in has been sitting a seat and the REAL pair arrives at the SAME
- * device. The director first marks the seat "without standing" (making it a
- * stand-in). The player device then gains a "Handover" item in its play-header
- * menu; the arriving pair enters their names and taps "Take over this device",
- * which reseats THIS device as the real pair and carries on from the next
- * board.
+ * device. Handover is player-driven (no director step): the seat's play-header
+ * menu offers "Handover", the chooser's "Same device" card opens the name
+ * entry, and the arriving pair taps "Take over this device", which reseats THIS
+ * device as the real pair and carries on from the next board.
  *
  * The security-critical part is the secret rotation: the handover mints a fresh
  * seat secret (so the stand-in's old credential is invalidated) and stores it
@@ -37,7 +31,7 @@ test.describe("Handover (same device)", () => {
   }) => {
     test.setTimeout(120_000);
 
-    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
+    const { directorPage, gameId, seats } = await seedStartedTwoTableGame(
       browser,
       `Handover Same Device ${Date.now()}`,
       { recordOpeningLead: false },
@@ -53,15 +47,10 @@ test.describe("Handover (same device)", () => {
       const oldSecret = readSeatSecret(gameId, "A1NS");
       expect(oldSecret, "seat A1NS should have a secret").toBeTruthy();
 
-      // Director marks A1NS as a stand-in ("Without standing").
-      await markSeatWithoutStanding(directorPage, gameId, "A1NS");
-
-      // Back on the stand-in's device: reload the seat so the fresh
-      // PARTICIPANTS (now WITHOUT_STANDING) drives the "Handover" menu item.
-      await standInDevice.goto(`/game/${gameId}/play/A1NS`);
+      // Player-driven: Menu -> Handover -> "Same device".
       await standInDevice.getByRole("button", { name: "Menu" }).click();
       await standInDevice.getByRole("menuitem", { name: "Handover" }).click();
-
+      await standInDevice.getByRole("button", { name: /Same device/ }).click();
       // The handover name-entry screen (reuses the join PlayerSearch).
       await standInDevice.waitForURL(
         new RegExp(`/game/${gameId}/play/A1NS/handover`),
@@ -129,9 +118,7 @@ test.describe("Handover (same device)", () => {
         true,
       );
     } finally {
-      await deleteGame(directorPage, gameId);
-      await directorPage.context().close();
-      await closeSeatDevices(seats);
+      await closeDevices(directorPage, seats);
     }
   });
 });

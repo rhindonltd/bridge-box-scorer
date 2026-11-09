@@ -658,7 +658,7 @@ function absenceSummary(row: AbsentPair): string {
     case "WITHDRAWN":
       return `Withdrew in round ${row.round} — ${boards} not played`;
     case "EMPTY":
-      return `Not arrived yet — ${boards} missed so far`;
+      return `Not arrived yet — ${boards} unplayed`;
   }
 }
 

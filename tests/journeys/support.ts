@@ -1,4 +1,5 @@
 import { Browser, Page, expect, test } from "@playwright/test";
+import { E2E_BASE_URL } from "../e2e-env";
 
 /**
  * Assert an inline error/status message is visible by its TEXT.
@@ -66,25 +67,24 @@ export async function closeSeatDevices(
 import { createGame } from "../fixtures/game-create";
 import {
   setTableCount,
-  pickFirstMovement,
   startGame,
   openSetupStep,
   addSection,
   selectSection,
 } from "../fixtures/game-setup";
-import {
-  seatTwoTableFieldOnDevices,
-  seatTwoTableSectionOnDevices,
-} from "../fixtures/join";
+import { seatTwoTableSectionOnDevices } from "../fixtures/join";
+import { seedStartedTwoTableGame } from "../fixtures/seeded-game";
 
 /**
- * Set up a started two-table Howell pairs game end to end through the UI.
+ * A started two-table pairs game (the movement the setup screen recommends
+ * first), created straight into the E2E data dir by the seeder rather than
+ * built through the setup screens — those are covered by their own journeys.
  *
- * Each pair joins from its OWN device context (mirroring reality: every pair
- * has their own phone), so each seat's player token lives on the page that will
- * later submit results. `seats` maps each section-qualified seat (e.g. "A1NS")
- * to that pair's page — use these to drive play so submissions are authorised.
- * `directorPage` is a separate context authorised for start/override/delete.
+ * Each pair has its OWN device context (mirroring reality: every pair has their
+ * own phone) holding that seat's player token. `seats` maps each
+ * section-qualified seat (e.g. "A1NS") to that pair's page — use these to drive
+ * play so submissions are authorised. `directorPage` is a separate context
+ * holding the game's director token.
  */
 export async function setUpStartedTwoTableGame(
   browser: Browser,
@@ -95,21 +95,11 @@ export async function setUpStartedTwoTableGame(
   gameId: string;
   seats: Record<string, Page>;
 }> {
-  const directorPage = await newParticipant(browser);
-
-  const { gameId } = await createGame(directorPage, {
+  const { directorPage, gameId, seats } = await seedStartedTwoTableGame(
+    browser,
     eventName,
-    recordOpeningLead: opts.recordOpeningLead,
-    handEntry: opts.handEntry,
-  });
-  await setTableCount(directorPage, 2);
-  await pickFirstMovement(directorPage);
-  const seats = await seatTwoTableFieldOnDevices(
-    () => newParticipant(browser),
-    gameId,
+    opts,
   );
-  await startGame(directorPage, gameId);
-
   return { directorPage, gameId, seats };
 }
 
@@ -185,7 +175,7 @@ async function sizeSectionTables(
   const deadline = Date.now() + 10_000;
   for (;;) {
     const res = await fetch(
-      `http://localhost:3000/api/games/${gameId}/sections/${section}/tables`,
+      `${E2E_BASE_URL}/api/games/${gameId}/sections/${section}/tables`,
       {
         method: "PUT",
         headers: {
@@ -243,53 +233,6 @@ function seatToPairLabel(seat: string): { tableNumber: number; pairLabel: string
   const tableNumber = Number(match[1]);
   const pairLabel = match[2] === "NS" ? "North / South" : "East / West";
   return { tableNumber, pairLabel };
-}
-
-/**
- * Mark a seated pair as a §2.4.7 stand-in ("Without standing") through the
- * director's mid-game Tables screen, exactly as a director would: open
- * `/manage/tables`, tap the seat's table card, open that pair's "Change
- * standing" editor, choose "No standing", and save.
- *
- * This is the real-world precondition for a player-triggered handover — a seat
- * only offers "Handover" (same device) or a handover-claim (different device)
- * once its occupant is a stand-in. `directorPage` must be the game-creating
- * (director-authorised) context.
- */
-export async function markSeatWithoutStanding(
-  directorPage: Page,
-  gameId: string,
-  seat: string,
-): Promise<void> {
-  const { tableNumber, pairLabel } = seatToPairLabel(seat);
-
-  await gotoStable(directorPage, `/game/${gameId}/manage/tables`);
-
-  const tableCard = directorPage.getByRole("button", {
-    name: `Manage table ${tableNumber}`,
-  });
-  await expect(tableCard).toBeVisible({ timeout: 15000 });
-  await tableCard.click();
-
-  // Open the pair's standing editor (the button names the pair via a
-  // visually-hidden span: "Change standing for North / South pair").
-  const changeStanding = directorPage.getByRole("button", {
-    name: `Change standing for ${pairLabel} pair`,
-  });
-  await expect(changeStanding).toBeVisible({ timeout: 15000 });
-  await changeStanding.click();
-
-  // The standing PillToggle offers Active / Withdrawn / Late / No standing.
-  await directorPage
-    .getByRole("radio", { name: "No standing", exact: true })
-    .click();
-
-  // Save the change; the editor collapses back to the pair's action buttons.
-  await directorPage.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(changeStanding).toBeVisible({ timeout: 15000 });
-
-  // Close the table dialog.
-  await directorPage.getByRole("button", { name: "Done", exact: true }).click();
 }
 
 /** The arriving real pair's names for a director-driven handover. */

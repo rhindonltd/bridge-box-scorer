@@ -1,4 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
+import { E2E_BASE_URL, E2E_GAMES_DIR } from "../e2e-env";
 import { io as ioClient, Socket } from "socket.io-client";
 import Database from "better-sqlite3";
 import path from "node:path";
@@ -31,7 +32,7 @@ import { closeSeatDevices, newParticipant, gotoStable } from "./support";
  * are not played.
  */
 
-const DATA_DIR = () => process.env.DATABASE_GAMES_URL ?? "./data/games";
+const DATA_DIR = () => E2E_GAMES_DIR;
 
 /** Open the game's SQLite file read-only. */
 function openDb(gameId: string): Database.Database {
@@ -44,7 +45,7 @@ function readSeatSecrets(gameId: string): Map<string, string> {
   try {
     const rows = db
       .prepare(
-        "SELECT initial_seat AS seat, secret_key AS secret FROM participant",
+        "SELECT seat, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC",
       )
       .all() as Array<{ seat: string; secret: string }>;
     return new Map(rows.map((r) => [r.seat, r.secret]));
@@ -147,7 +148,7 @@ async function confirmRound(
   const rows = playableRows(gameId, round, section);
   expect(rows.length, "round has playable rows").toBeGreaterThan(0);
 
-  const socket: Socket = ioClient("http://localhost:3000");
+  const socket: Socket = ioClient(E2E_BASE_URL);
   try {
     await new Promise<void>((resolve, reject) => {
       const t = setTimeout(() => reject(new Error("socket timeout")), 10_000);
@@ -212,6 +213,7 @@ test.describe("Swiss Pairs 2 half matches (odd field)", () => {
     const { gameId } = await createGame(directorPage, {
       eventName: `Swiss Half ${Date.now()}`,
       recordOpeningLead: false,
+      gameType: "SWISS_PAIRS",
     });
 
     let seats: Record<string, Page> = {};

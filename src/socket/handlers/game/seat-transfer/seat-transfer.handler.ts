@@ -4,20 +4,32 @@ import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
+import { assertDirector } from "@/socket/middleware/director-auth";
+import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
+import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
+import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { createSeatTransferCode } from "@/db/system/actions/create-seat-transfer-code";
 import {
   validateAndClaimSeatTransferCode,
   inspectSeatTransferCode,
 } from "@/db/system/queries/validate-seat-transfer-code";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 
 const createSchema = z.object({
   gameId: z.string().min(1),
   seat: z.string().min(1),
   token: z.string().optional(),
+  // Director credential, used (instead of the seat's player token) when minting
+  // a REINSTATE code: the director's device holds no token for a withdrawn
+  // seat, and withdrawal rotated that seat's secret anyway.
+  directorToken: z.string().optional(),
   // The claim intent, decided at mint time. CHANGE_DEVICE (default): the same
   // pair on a new device. HANDOVER: a different arriving pair takes over, so the
-  // claim will collect their names.
+  // claim will collect their names. REINSTATE: a withdrawn pair returns on a
+  // device (minted by the director).
   kind: z.enum(["CHANGE_DEVICE", "HANDOVER", "REINSTATE"]).optional(),
 });
 
@@ -59,8 +71,14 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
     {
       schema: createSchema,
       handler: async ({ payload, ack }) => {
-        const { gameId, seat, token, kind } = payload;
-        if (!(await assertPlayer(gameId, seat, token, ack))) {
+        const { gameId, seat, token, directorToken, kind } = payload;
+
+        // A REINSTATE code is minted by the DIRECTOR for a pair whose device is
+        // gone (its token was rotated away on withdrawal), so it is
+        // director-authed. Every other kind is minted by the seat's own device.
+        if (kind === "REINSTATE") {
+          if (!assertDirector(directorToken, gameId, ack)) return;
+        } else if (!(await assertPlayer(gameId, seat, token, ack))) {
           return;
         }
 
@@ -73,8 +91,12 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
         // Join this (old) device to the seat's room so it is notified when the
         // code is claimed on another device. The claiming device never joins
         // this room, so the takeover notice reaches only the device being
-        // signed out.
-        socket.join(Rooms.seat(gameId, seat));
+        // signed out. A REINSTATE mint is the director's device, which is not
+        // the seat's old device and must NOT be signed out on claim, so it does
+        // not join.
+        if (kind !== "REINSTATE") {
+          socket.join(Rooms.seat(gameId, seat));
+        }
 
         ack({ success: true, data: { code } });
       },
@@ -143,6 +165,25 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
           isHandover: result.isHandover,
         },
       });
+
+      // A handover or reinstate changes who plays the seat and how boards
+      // score (a reinstated pair's boards are playable again, so an opponent
+      // who was told to move on needs the schedule re-read). Push the same
+      // refresh the director-driven routes send so every device, the Pairs
+      // screen and the live leaderboard catch up without a reload.
+      if (result.rosterChanged) {
+        io.to(Rooms.game(result.gameId)).emit(SocketEvents.SCHEDULE_CHANGED, {
+          gameId: result.gameId,
+        });
+        const game = await findGameById(result.gameId);
+        if (game) {
+          io.to(Rooms.game(result.gameId)).emit(SocketEvents.GAME_UPDATED, {
+            game,
+          });
+        }
+        await broadcastParticipants(result.gameId, io);
+        await broadcastLeaderboardChanged(io, result.gameId);
+      }
     },
   });
 }

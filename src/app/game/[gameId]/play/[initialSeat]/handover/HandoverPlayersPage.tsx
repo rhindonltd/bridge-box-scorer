@@ -62,8 +62,8 @@ export function HandoverPlayersPage({
     >
       <div className="flex flex-col gap-5 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
         <p className="text-sm text-gray-600">
-          Enter your names to take over this seat from the stand-in. You keep
-          this device and carry on from the next board.
+          Enter your names to take over this seat. You keep this device and
+          carry on from the next board.
         </p>
 
         <PlayerSearch label="Player 1" value={player1} onChange={setPlayer1} />

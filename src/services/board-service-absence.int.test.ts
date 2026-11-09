@@ -83,4 +83,67 @@ describe("getBoardInstances — absent rows", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].participants.ns).toBe("A2NS");
   });
+
+  /**
+   * A still-EMPTY expected-late seat: nobody is seated at A1EW, so the row
+   * against it stays NOT_PLAYED (it is not marked ABSENT) yet is scored as
+   * absent on the leaderboard — the traveller must agree.
+   */
+  async function seedEmptyLateSeat(treatment: "AVERAGE" | "REMOVED") {
+    const db = (await harness.getDb()) as Db;
+    const { createBoard } = await import("@/db/games/actions/create-board");
+    const { expectedLateSeats } =
+      await import("@/db/games/tables/expected-late-seats");
+    db.insert(expectedLateSeats).values({ seat: "A1EW", treatment }).run();
+    await createBoard(
+      harness.gameId,
+      makeBoard({
+        boardNumber: 5,
+        roundNumber: 1,
+        tableNumber: 1,
+        ns: "A1NS",
+        ew: "A1EW",
+        status: "NOT_PLAYED",
+      }),
+    );
+    await createBoard(
+      harness.gameId,
+      makeBoard({
+        boardNumber: 5,
+        roundNumber: 1,
+        tableNumber: 2,
+        ns: "A2NS",
+        ew: "A2EW",
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=" as BoardOutcome,
+      }),
+    );
+    return db;
+  }
+
+  it("shows a row against an empty expected-late seat as AVE+ for its opponent", async () => {
+    const db = await seedEmptyLateSeat("AVERAGE");
+    const { getBoardInstances } = await import("@/services/board-service");
+    const rows = await getBoardInstances(db, 5);
+    const empty = rows.find((r) => r.participants.ew === "A1EW")!;
+    // The seat that is not there (EW) is AVE−, its opponent (NS) AVE+.
+    expect(empty.currentResult).toBe("A60/40");
+    expect(rows).toHaveLength(2);
+  });
+
+  it("hides a row against an empty expected-late seat set to Remove", async () => {
+    const db = await seedEmptyLateSeat("REMOVED");
+    const { getBoardInstances } = await import("@/services/board-service");
+    const rows = await getBoardInstances(db, 5);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].participants.ns).toBe("A2NS");
+  });
+
+  it("leaves a played row alone even when its seat is marked expected-late", async () => {
+    const db = await seedEmptyLateSeat("AVERAGE");
+    const { getBoardInstances } = await import("@/services/board-service");
+    const rows = await getBoardInstances(db, 5);
+    const played = rows.find((r) => r.participants.ns === "A2NS")!;
+    expect(played.currentResult).toBe("3NTN=");
+  });
 });

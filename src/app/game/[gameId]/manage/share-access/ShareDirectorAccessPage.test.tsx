@@ -12,12 +12,20 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
     headerTitle,
     children,
     actions,
+    backAction,
+    backFallbackHref,
   }: {
     headerTitle: string;
     children: React.ReactNode;
     actions?: React.ReactNode;
+    backAction?: () => void;
+    backFallbackHref?: string;
   }) => (
-    <div>
+    <div
+      data-testid="layout"
+      data-has-back-action={String(backAction != null)}
+      data-back-fallback={backFallbackHref ?? ""}
+    >
       <h1>{headerTitle}</h1>
       {children}
       {actions}
@@ -37,10 +45,24 @@ describe("ShareDirectorAccessPage", () => {
     vi.clearAllMocks();
   });
 
+  it("uses the header's default back, falling back to the manage menu", async () => {
+    mockGenerateShareCode.mockResolvedValue("ABCD");
+
+    render(<ShareDirectorAccessPage gameId="g1" />);
+
+    // No custom back handler: the header pops the history stack so the user
+    // returns to whichever page they opened this from. The fallback only
+    // applies when the page was opened directly (no in-app history).
+    const layout = screen.getByTestId("layout");
+    expect(layout).toHaveAttribute("data-has-back-action", "false");
+    expect(layout).toHaveAttribute("data-back-fallback", "/game/g1/manage");
+    await screen.findByText("ABCD");
+  });
+
   it("requests a code on mount and displays it", async () => {
     mockGenerateShareCode.mockResolvedValue("ABCD");
 
-    render(<ShareDirectorAccessPage gameId="g1" onBack={vi.fn()} />);
+    render(<ShareDirectorAccessPage gameId="g1" />);
 
     expect(mockGenerateShareCode).toHaveBeenCalledWith("g1");
     expect(await screen.findByText("ABCD")).toBeInTheDocument();
@@ -50,7 +72,7 @@ describe("ShareDirectorAccessPage", () => {
   it("shows the server error message when generation fails", async () => {
     mockGenerateShareCode.mockRejectedValue(new Error("Not allowed"));
 
-    render(<ShareDirectorAccessPage gameId="g1" onBack={vi.fn()} />);
+    render(<ShareDirectorAccessPage gameId="g1" />);
     expect(await screen.findByText("Not allowed")).toBeInTheDocument();
     // No code -> spinner branch is shown (expiresIn still 300, not 0).
   });
@@ -58,7 +80,7 @@ describe("ShareDirectorAccessPage", () => {
   it("falls back to a default error message", async () => {
     mockGenerateShareCode.mockRejectedValue("boom");
 
-    render(<ShareDirectorAccessPage gameId="g1" onBack={vi.fn()} />);
+    render(<ShareDirectorAccessPage gameId="g1" />);
     expect(
       await screen.findByText("Failed to generate code"),
     ).toBeInTheDocument();
@@ -68,7 +90,7 @@ describe("ShareDirectorAccessPage", () => {
     vi.useFakeTimers();
     mockGenerateShareCode.mockResolvedValue("WXYZ");
 
-    render(<ShareDirectorAccessPage gameId="g1" onBack={vi.fn()} />);
+    render(<ShareDirectorAccessPage gameId="g1" />);
 
     // Flush the resolved generateShareCode promise (microtasks) under fake timers.
     await act(async () => {
@@ -101,7 +123,7 @@ describe("ShareDirectorAccessPage", () => {
   it("regenerates when the 'Generate New Code' button is clicked while a code is shown", async () => {
     mockGenerateShareCode.mockResolvedValue("AAAA");
 
-    render(<ShareDirectorAccessPage gameId="g1" onBack={vi.fn()} />);
+    render(<ShareDirectorAccessPage gameId="g1" />);
     expect(await screen.findByText("AAAA")).toBeInTheDocument();
 
     mockGenerateShareCode.mockResolvedValue("BBBB");
@@ -112,9 +134,7 @@ describe("ShareDirectorAccessPage", () => {
   it("does not re-generate on the mount effect after it has already mounted", async () => {
     mockGenerateShareCode.mockResolvedValue("AAAA");
 
-    const { rerender } = render(
-      <ShareDirectorAccessPage gameId="g1" onBack={vi.fn()} />,
-    );
+    const { rerender } = render(<ShareDirectorAccessPage gameId="g1" />);
     expect(await screen.findByText("AAAA")).toBeInTheDocument();
     expect(mockGenerateShareCode).toHaveBeenCalledTimes(1);
 
@@ -122,7 +142,7 @@ describe("ShareDirectorAccessPage", () => {
     // effect re-runs while hasMounted.current is already true -> the guard's
     // false branch is taken and generateCode is NOT invoked by the effect.
     mockGenerateShareCode.mockClear();
-    rerender(<ShareDirectorAccessPage gameId="g2" onBack={vi.fn()} />);
+    rerender(<ShareDirectorAccessPage gameId="g2" />);
     expect(mockGenerateShareCode).not.toHaveBeenCalled();
   });
 });

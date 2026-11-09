@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useRequiredGame } from "@/context/GameContext";
 import { SelectSeatPage } from "@/app/game/[gameId]/join/SelectSeatPage";
@@ -8,7 +8,9 @@ import { getPlayerToken, clearPlayerToken } from "@/lib/player-token";
 import { verifySeatHeld } from "@/lib/game-service";
 import { FullScreenSpinner } from "@/components/common/Spinner";
 
-type JoinState = "checking" | "pick";
+// The stored token never changes while this screen is mounted (only this
+// component clears it), so there is nothing to subscribe to.
+const subscribeNever = () => () => {};
 
 export default function JoinGameAsPlayer() {
   const { game } = useRequiredGame();
@@ -24,41 +26,44 @@ export default function JoinGameAsPlayer() {
   // pair, or the seat may have been re-seated on another device. So we first
   // verify with the server that this device still holds the seat. If it does,
   // redirect; if not, clear the dead token and fall through to seat selection.
-  // Until that check resolves we show a spinner (starting from "checking" only
-  // when a token exists, so a fresh device skips straight to the picker).
-  const [state, setState] = useState<JoinState>(() =>
-    getPlayerToken(game.gameId) ? "checking" : "pick",
+  // Until that check resolves we show a spinner.
+  // localStorage only exists in the browser, so whether a token is held is read
+  // through useSyncExternalStore: the server snapshot is `null` ("unknown"), so
+  // the server and the client's first render agree (no hydration mismatch), and
+  // the client then switches to the real answer straight away.
+  const holdsToken = useSyncExternalStore(
+    subscribeNever,
+    () => getPlayerToken(game.gameId) !== null,
+    () => null,
   );
+  // Set once the server says the stored seat is no longer ours.
+  const [seatLost, setSeatLost] = useState(false);
 
   useEffect(() => {
-    if (state !== "checking") return;
-
-    // The "checking" state is only entered when a token exists (see the lazy
-    // initialiser above), so a token is present here.
+    if (!holdsToken || seatLost) return;
     const stored = getPlayerToken(game.gameId);
     if (!stored) return;
-
     let cancelled = false;
     void verifySeatHeld(game.gameId, stored.startingPosition).then((held) => {
       if (cancelled) return;
       if (held) {
-        router.replace(
-          `/game/${game.gameId}/play/${stored.startingPosition}`,
-        );
+        router.replace(`/game/${game.gameId}/play/${stored.startingPosition}`);
       } else {
         // The seat is no longer ours — drop the dead token and let the player
         // pick a seat again.
         clearPlayerToken(game.gameId);
-        setState("pick");
+        setSeatLost(true);
       }
     });
-
     return () => {
       cancelled = true;
     };
-  }, [state, game.gameId, router]);
+  }, [holdsToken, seatLost, game.gameId, router]);
 
-  if (state === "checking") {
+  // Spinner while we don't yet know (server render) or are verifying a held
+  // seat; a fresh device (or one whose seat was lost) goes straight to the
+  // picker.
+  if (holdsToken === null || (holdsToken && !seatLost)) {
     return <FullScreenSpinner />;
   }
 

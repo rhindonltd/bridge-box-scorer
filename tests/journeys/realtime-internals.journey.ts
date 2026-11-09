@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { E2E_BASE_URL } from "../e2e-env";
 import { io as ioClient, Socket } from "socket.io-client";
 
 import { deleteGame } from "../fixtures/delete-game";
@@ -26,7 +27,7 @@ import { closeSeatDevices, setUpStartedTwoTableGame } from "./support";
  * traveller journeys, so it is not re-driven here.
  */
 
-const SERVER = "http://localhost:3000";
+const SERVER = E2E_BASE_URL;
 
 interface LeaderboardSnapshot {
   leaderboard: unknown;

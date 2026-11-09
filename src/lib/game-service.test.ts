@@ -297,7 +297,12 @@ describe("game-service", () => {
 
       expect(mockEmitWithAck).toHaveBeenCalledWith(
         SocketEvents.CREATE_SEAT_TRANSFER,
-        { gameId: "g1", seat: "A1NS", token: "seat-tok", kind: "CHANGE_DEVICE" },
+        {
+          gameId: "g1",
+          seat: "A1NS",
+          token: "seat-tok",
+          kind: "CHANGE_DEVICE",
+        },
       );
       expect(code).toBe("ABC234");
     });
@@ -311,6 +316,36 @@ describe("game-service", () => {
         SocketEvents.CREATE_SEAT_TRANSFER,
         { gameId: "g1", seat: "A1NS", token: "seat-tok", kind: "HANDOVER" },
       );
+    });
+
+    it("sends the director token for a REINSTATE code (minted by the director)", async () => {
+      mockEmitWithAck.mockResolvedValue({ code: "BACK01" });
+
+      await generateSeatTransferCode("g1", "A1NS", "REINSTATE");
+
+      // The withdrawn pair's seat token is dead, so the director vouches for the
+      // mint with the director credential instead.
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.CREATE_SEAT_TRANSFER,
+        expect.objectContaining({
+          gameId: "g1",
+          seat: "A1NS",
+          kind: "REINSTATE",
+          directorToken: "stored-token",
+        }),
+      );
+    });
+
+    it("does not send the director token for player-minted kinds", async () => {
+      mockEmitWithAck.mockResolvedValue({ code: "ABC234" });
+
+      await generateSeatTransferCode("g1", "A1NS", "HANDOVER");
+
+      const payload = mockEmitWithAck.mock.calls[0][1] as Record<
+        string,
+        unknown
+      >;
+      expect(payload).not.toHaveProperty("directorToken");
     });
   });
 
