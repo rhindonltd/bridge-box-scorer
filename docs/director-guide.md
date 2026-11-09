@@ -136,6 +136,13 @@ From this tab you can:
     for themselves.
   - **Active** — put a pair back to normal if you marked them by mistake.
   A small badge on the pair shows its current standing at a glance.
+- **A pair's phone has died** — you don't need to withdraw them. Open **Pairs**
+  from the Manage Game Menu, tap the pair, and choose **Move to a new device**.
+  Give the code that appears to the pair; on their new device they open the
+  game, choose **Move a seat to this device**, and enter it. They carry on from
+  where they were, still **Active**, with nothing marked as missed. The old
+  device is signed out of the seat. (If the pair still has the old phone, they
+  can do the same themselves from **Menu → Change device**.)
 
 Once you've chosen a movement for the section, each table also shows the
 **boards to put out there** at the start — for example "Boards 1–3". This is a

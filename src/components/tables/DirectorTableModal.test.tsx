@@ -46,7 +46,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -63,7 +62,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -86,7 +84,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -112,7 +109,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -131,7 +127,6 @@ describe("DirectorTableModal", () => {
         started
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -149,7 +144,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -180,7 +174,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -198,7 +191,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -232,7 +224,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={onToggleExpectedLate}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -264,7 +255,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -282,7 +272,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={onClose}
       />,
     );
@@ -302,7 +291,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -312,7 +300,7 @@ describe("DirectorTableModal", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("offers a handover action for a seated pair once the game has started", () => {
+  it("offers no handover action (handover is player-driven)", () => {
     render(
       <DirectorTableModal
         table={fullTable()}
@@ -322,15 +310,14 @@ describe("DirectorTableModal", () => {
         started
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
+    // Handover is player-driven (Menu -> Handover on the seat's own device),
+    // so the director's table dialog offers no handover control.
     expect(
-      screen.getByRole("button", {
-        name: "Hand North / South over to the real pair",
-      }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: /over to the real pair/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides Change standing when standing controls are off (pairs, design §11)", () => {
@@ -343,7 +330,6 @@ describe("DirectorTableModal", () => {
         started
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         showStandingControls={false}
         onClose={vi.fn()}
       />,
@@ -351,119 +337,5 @@ describe("DirectorTableModal", () => {
     expect(
       screen.queryByRole("button", { name: /Change standing/ }),
     ).not.toBeInTheDocument();
-    // The handover control is unaffected.
-    expect(
-      screen.getAllByRole("button", { name: /over to the real pair/ }).length,
-    ).toBeGreaterThan(0);
-  });
-
-  it("emits a handover request with the arriving pair's names", () => {
-    const onHandover = vi.fn();
-    render(
-      <DirectorTableModal
-        table={fullTable()}
-        isSwiss={false}
-        onEvict={vi.fn()}
-        onToggleStationary={vi.fn()}
-        started
-        onChangeStanding={vi.fn()}
-        onToggleExpectedLate={vi.fn()}
-        onHandover={onHandover}
-        onClose={vi.fn()}
-      />,
-    );
-
-    // Open the North/South handover form.
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Hand North / South over to the real pair",
-      }),
-    );
-
-    fireEvent.change(screen.getByLabelText("Player 1 first name"), {
-      target: { value: "Ann" },
-    });
-    fireEvent.change(screen.getByLabelText("Player 1 surname"), {
-      target: { value: "Arrival" },
-    });
-    fireEvent.change(screen.getByLabelText("Player 2 first name"), {
-      target: { value: "Ben" },
-    });
-    fireEvent.change(screen.getByLabelText("Player 2 surname"), {
-      target: { value: "Berry" },
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
-
-    // The handover captures only the arriving pair's names — no scoring
-    // treatment (split / eligibility are set later on the Substitutions screen).
-    expect(onHandover).toHaveBeenCalledWith("A1NS", {
-      player1: { firstName: "Ann", lastName: "Arrival" },
-      player2: { firstName: "Ben", lastName: "Berry" },
-    });
-  });
-
-  it("does not offer a scoring-treatment choice on the handover form", () => {
-    render(
-      <DirectorTableModal
-        table={fullTable()}
-        isSwiss={false}
-        onEvict={vi.fn()}
-        onToggleStationary={vi.fn()}
-        started
-        onChangeStanding={vi.fn()}
-        onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Hand North / South over to the real pair",
-      }),
-    );
-
-    // No Inherit/Remove/Penalised treatment control (that model is gone — the
-    // director sets split/eligibility on the Substitutions screen instead).
-    expect(
-      screen.queryByRole("radio", { name: "Penalised" }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText("Fine %")).not.toBeInTheDocument();
-  });
-
-  it("disables the handover until both arriving players have a surname", () => {
-    render(
-      <DirectorTableModal
-        table={fullTable()}
-        isSwiss={false}
-        onEvict={vi.fn()}
-        onToggleStationary={vi.fn()}
-        started
-        onChangeStanding={vi.fn()}
-        onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Hand North / South over to the real pair",
-      }),
-    );
-
-    const submit = screen.getByRole("button", { name: "Hand over" });
-    expect(submit).toBeDisabled();
-
-    fireEvent.change(screen.getByLabelText("Player 1 surname"), {
-      target: { value: "Only" },
-    });
-    expect(submit).toBeDisabled();
-
-    fireEvent.change(screen.getByLabelText("Player 2 surname"), {
-      target: { value: "Both" },
-    });
-    expect(submit).toBeEnabled();
   });
 });

@@ -41,6 +41,10 @@ surface. Test files present at audit time:
 
 ## How the suite runs (read this first)
 
+- **No test can reach a real third party.** The app server is started with
+  `BRIDGEWEBS_API_BASE`, `EBU_API_BASE` and `EBU_PARSE_USEBIO_URL` pointing at
+  local stand-ins (ports 3999 and 3998, set in `playwright.config.ts`); the
+  upload journeys skip unless those point at a loopback host.
 - **Isolated environment.** `playwright.config.ts` starts its own server on
   port 3100 against `<repo>/.e2e-data` (see `tests/e2e-env.ts`). Before the
   server boots, `src/scripts/e2e-prepare.ts` wipes that directory (it refuses
@@ -102,6 +106,22 @@ below:
   (`mismatch.journey.ts`), sit-out submission rejection.
 - **Board deal capture**: player post-round deal entry + director Enter Deals +
   show-hand on traveller (`deal-entry.journey.ts`).
+- **Withdrawals, reinstating and late arrivals** (`withdrawals-late.journey.ts`,
+  seeded 3-table games): a player withdrawing from their phone (Cancel, then
+  withdraw; device signed out; the opponent moved on; Pairs shows "Withdrew in
+  round 2"); the director's Withdraw (with Confirm), then Reinstate on a new
+  device by single-use code; the AVE−/AVE+ vs Remove choice saving; an empty
+  expected-late seat showing "Not arrived", and a latecomer joining it turning
+  Late.
+- **EBU results submission** (`ebu-upload.journey.ts`): the unconfigured state;
+  the whole parse → date check → player check → submit workflow against a local
+  stand-in for the EBU (`fixtures/ebu-mock.ts`), asserting the calls, the Basic
+  auth, the USEBIO file and the returned check keys; an EBU rejection; the
+  duplicate-date and surname-mismatch notes; and bad credentials.
+- **Setup around the movement** (`setup-details.journey.ts`): Edit Event
+  Details (rename; scoring change asks first and clears the movement); the
+  expected-late rules on the Start Game screen; splitting a section with pairs
+  seated, where a waiting device follows its renumbered seat.
 - **Handover and substitutions**: player-driven Menu → Handover on the same
   device and on a different device (code claimed from the join screen, old
   device signed out), and the director's split / main pair / eligibility

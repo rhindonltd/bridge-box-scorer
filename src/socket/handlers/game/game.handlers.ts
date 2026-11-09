@@ -8,7 +8,7 @@ import { registerSeatTransferHandlers } from "./seat-transfer/seat-transfer.hand
 import { registerSubmitResultHandler } from "./submit-result/submit-result.handler";
 import { registerSetParticipantStandingHandler } from "./set-participant-standing/set-participant-standing";
 import { registerSetSeatExpectedLateHandler } from "./set-seat-expected-late/set-seat-expected-late";
-import { registerHandoverSeatHandler } from "./handover-seat/handover-seat";
+import { registerWatchSeatHandler } from "./watch-seat/watch-seat.handler";
 import { registerHandoverSameDeviceHandler } from "./handover-same-device/handover-same-device";
 import { registerWithdrawPairHandler } from "./withdraw-pair/withdraw-pair";
 
@@ -32,10 +32,10 @@ export function registerGameHandlers(socket: Socket, io: Server) {
   registerSeatTransferHandlers(socket, io);
   registerSetParticipantStandingHandler(socket, io);
   registerSetSeatExpectedLateHandler(socket, io);
-  registerHandoverSeatHandler(socket, io);
   registerHandoverSameDeviceHandler(socket, io);
   registerWithdrawPairHandler(socket, io);
   registerJoinGameHandler(socket, io);
+  registerWatchSeatHandler(socket, io);
   registerLeaveGameHandler(socket, io);
   registerSelectMovementHandler(socket, io);
   registerSubmitResultHandler(socket, io);

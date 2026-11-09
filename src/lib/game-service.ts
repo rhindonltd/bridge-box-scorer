@@ -368,21 +368,29 @@ export async function leaveTable(gameId: string, seat: string): Promise<void> {
  * DIFFERENT arriving pair takes over, so the claim collects their names;
  * REINSTATE — a withdrawn pair returns on a device, minted by the DIRECTOR
  * (authed with the director token, not a seat token).
+ *
+ * `byDirector` (CHANGE_DEVICE only) mints the code with the director credential
+ * instead of the seat's token: the pair's device has died, so they cannot mint
+ * it themselves.
  */
 export async function generateSeatTransferCode(
   gameId: string,
   seat: string,
   kind: "CHANGE_DEVICE" | "HANDOVER" | "REINSTATE" = "CHANGE_DEVICE",
+  byDirector = false,
 ): Promise<string> {
   const response = await emitWithAck<{ code: string }>(
     SocketEvents.CREATE_SEAT_TRANSFER,
     {
       gameId,
       seat,
-      token: getPlayerToken(gameId)?.token ?? "",
+      // A director mint presents no seat token (the director's device holds
+      // none for this seat; any token it has is for a different seat).
+      token: byDirector ? "" : (getPlayerToken(gameId)?.token ?? ""),
       // A REINSTATE code is minted by the director (the withdrawn pair's device
-      // no longer holds a valid token), so it carries the director credential.
-      ...(kind === "REINSTATE"
+      // no longer holds a valid token), as is a dead-device move, so they carry
+      // the director credential.
+      ...(kind === "REINSTATE" || byDirector
         ? { directorToken: getDirectorToken(gameId) ?? "" }
         : {}),
       kind,
@@ -485,4 +493,27 @@ export async function handoverSameDevice(
   // The stand-in's old secret was rotated server-side; keep this device working
   // by storing the real pair's new secret for the same seat.
   setPlayerToken(gameId, { startingPosition: seat, token: key });
+}
+
+/**
+ * Ask the server whether THIS device still holds `seat`, over the socket, and
+ * (if it does) subscribe it to the seat's takeover notice. Returns "held",
+ * "moved" (the seat now belongs to another device) or "unknown". Never throws:
+ * a network/server problem is "unknown", so a flaky connection can never sign a
+ * player out of their seat.
+ */
+export async function watchSeat(
+  gameId: string,
+  seat: string,
+): Promise<"held" | "moved" | "unknown"> {
+  const token = getPlayerToken(gameId)?.token;
+  if (!token) return "unknown";
+  try {
+    const { status } = await emitWithAck<{
+      status: "held" | "moved" | "unknown";
+    }>(SocketEvents.WATCH_SEAT, { gameId, seat, token });
+    return status;
+  } catch {
+    return "unknown";
+  }
 }

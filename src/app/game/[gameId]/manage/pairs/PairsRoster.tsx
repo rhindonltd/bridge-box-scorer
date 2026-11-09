@@ -90,6 +90,11 @@ export function PairsRoster({ gameId }: { gameId: string }) {
       renderReinstatePanel={(seat) => (
         <ChangeDeviceView gameId={gameId} seat={seat} kind="REINSTATE" />
       )}
+      // A pair whose device has died can't start "Change device" themselves, so
+      // the director mints the same code for them.
+      renderMoveDevicePanel={(seat) => (
+        <ChangeDeviceView gameId={gameId} seat={seat} byDirector />
+      )}
     />
   );
 }

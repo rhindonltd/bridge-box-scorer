@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useRequiredGame } from "@/context/GameContext";
 import { usePlayFlow } from "@/hooks/play-flow";
@@ -10,6 +10,7 @@ import { WaitingToStartPage } from "@/app/game/[gameId]/play/[initialSeat]/Waiti
 import { SeatTakenOverPage } from "@/app/game/[gameId]/play/[initialSeat]/SeatTakenOverPage";
 import { PlayStateRouter } from "@/app/game/[gameId]/play/[initialSeat]/PlayStateRouter";
 import { useSocketEvent } from "@/hooks/socket-event";
+import { useSeatTakenOver } from "@/hooks/seat-taken-over";
 import { SocketEvents } from "@/socket/socket-events";
 import type { SocketEventMap } from "@/socket/socket-event-map";
 import { getPlayerToken, setPlayerToken } from "@/lib/player-token";
@@ -34,21 +35,11 @@ export function PlayPage() {
     game.gameType === "TEAMS",
   );
 
-  // When another device claims this seat's "change device" code, the server
-  // signs this device out and notifies it. Switch to the "seat moved" screen so
-  // the user isn't left on a play screen they no longer control.
-  const [takenOver, setTakenOver] = useState(false);
-  const onSeatTakenOver = useCallback(
-    (payload: SocketEventMap[typeof SocketEvents.SEAT_TAKEN_OVER]) => {
-      if (payload.gameId === game.gameId && payload.seat === seat) {
-        setTakenOver(true);
-      }
-    },
-    [game.gameId, seat],
-  );
-  useSocketEvent(SocketEvents.SEAT_TAKEN_OVER, onSeatTakenOver, [
-    onSeatTakenOver,
-  ]);
+  // When another device takes this seat (a "change device" claim, a handover,
+  // or the director moving the pair), the server signs this device out. Switch
+  // to the "seat moved" screen so the user isn't left on a play screen they no
+  // longer control. Also detected on reconnect, for a device that was offline.
+  const takenOver = useSeatTakenOver(game.gameId, seat);
 
   // A director splitting a section renumbers seats (e.g. this device's A5NS
   // becomes B1NS). The server pushes every old→new move to the game room; if

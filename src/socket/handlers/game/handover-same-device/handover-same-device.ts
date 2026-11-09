@@ -30,8 +30,7 @@ const payloadSchema = z.object({
  * PLAYER-authed EBU §2.3.3/§2.4.7 stand-in → real-pair handover, SAME-DEVICE
  * variant (the real pair takes over the stand-in's own device).
  *
- * Unlike the director-authed {@link import("../handover-seat/handover-seat").registerHandoverSeatHandler},
- * this is initiated from the stand-in's device: it proves it owns the seat with
+ * This is initiated from the stand-in's device: it proves it owns the seat with
  * its player token (`assertPlayer`), enters only the arriving pair's names (no
  * options — those are deferred to the director's "Substitutions" screen), and
  * the minted secret is returned so the SAME device can keep authenticating as

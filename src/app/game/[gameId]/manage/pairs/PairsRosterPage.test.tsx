@@ -39,6 +39,9 @@ const actions = () => ({
   renderReinstatePanel: vi.fn((seat: string) => (
     <div data-testid={`reinstate-panel-${seat}`} />
   )),
+  renderMoveDevicePanel: vi.fn((seat: string) => (
+    <div data-testid={`move-panel-${seat}`} />
+  )),
 });
 
 const active: RosterEntry = {
@@ -105,6 +108,28 @@ describe("PairsRosterPage", () => {
     expect(screen.getByTestId("reinstate-panel-A2EW")).toBeInTheDocument();
   });
 
+  it("offers 'Move to a new device' on an active pair, revealing the director's code panel", () => {
+    const h = renderPage([active]);
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    // Nothing is minted until the director asks.
+    expect(h.renderMoveDevicePanel).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Move to a new device" }),
+    );
+    expect(h.renderMoveDevicePanel).toHaveBeenCalledWith("A1NS");
+    expect(screen.getByTestId("move-panel-A1NS")).toBeInTheDocument();
+    // Withdrawing stays available alongside it.
+    expect(
+      screen.getByRole("button", { name: "Withdraw this pair" }),
+    ).toBeInTheDocument();
+  });
+  it("does not offer a device move on a withdrawn pair (reinstate covers it)", () => {
+    renderPage([withdrawn]);
+    fireEvent.click(screen.getByRole("button", { name: /Wyn Gone/ }));
+    expect(
+      screen.queryByRole("button", { name: "Move to a new device" }),
+    ).not.toBeInTheDocument();
+  });
   it("surfaces the server's reason when an action fails", async () => {
     renderPage([active], {
       onWithdraw: vi.fn().mockRejectedValue(new Error("nothing left to play")),

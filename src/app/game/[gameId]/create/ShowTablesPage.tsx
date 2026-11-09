@@ -26,10 +26,8 @@ import { Toggle } from "@/components/common/Toggle";
 import { SectionTablesHeader } from "@/components/tables/SectionTablesHeader";
 import { evictParticipant } from "@/lib/participant-service";
 import {
-  handoverSeat,
   setParticipantStanding,
   setSeatExpectedLate,
-  type HandoverRequest,
   type StandingChange,
 } from "@/lib/standing-service";
 import { useGameStarted } from "@/hooks/game-started";
@@ -270,18 +268,6 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
     }
   }
 
-  // Hand a seat over from its stand-in to the arriving real pair (§2.4.7). The
-  // server derives the boards-played split from the entered results and
-  // re-broadcasts PARTICIPANTS + a leaderboard snapshot, so no manual mutate is
-  // needed here.
-  async function handleHandover(seat: Seat, request: HandoverRequest) {
-    try {
-      await handoverSeat(gameId, seat, request);
-    } catch (err) {
-      alert(errorMessage(err, "Failed to hand over the seat"));
-    }
-  }
-
   // Mark/unmark an empty seat "expected late". The toggle is a controlled
   // reflection of the expected-late SWR set, which is read over HTTP (not
   // pushed). Update that cache optimistically so the switch flips the instant
@@ -318,6 +304,11 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
       // known-good set with revalidate:false leaves the flip in place; the set
       // naturally reconciles on the next organic revalidation.
       void mutate(key, applyToggle, { revalidate: false });
+      // Whether the game can start depends on which empty seats are expected
+      // late (one sit-out is allowed, any number of expected-late seats), and
+      // nothing else tells the Start Game screen this changed — so refresh its
+      // readiness check, or it keeps saying "blocked" until a page reload.
+      void mutate(swrKeys.startCheck(gameId));
     } catch (err) {
       // Roll back the optimistic flip to the server's truth.
       void mutate(key);
@@ -502,7 +493,6 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
         onToggleStationary={handleToggleStationary}
         onChangeStanding={handleChangeStanding}
         onToggleExpectedLate={handleToggleExpectedLate}
-        onHandover={handleHandover}
         // Design §11: in a board-pooled pairs event a pair withdraws itself and
         // the director chooses how its missed boards score on the Late
         // Arrivals / Withdrawals screen, so no standing control here.

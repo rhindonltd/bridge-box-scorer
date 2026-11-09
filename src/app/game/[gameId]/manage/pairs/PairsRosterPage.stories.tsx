@@ -23,6 +23,11 @@ const meta: Meta<typeof PairsRosterPage> = {
         ABCD
       </div>
     ),
+    renderMoveDevicePanel: () => (
+      <div className="rounded-lg border border-gray-300 bg-gray-100 p-4 text-center font-mono text-2xl tracking-widest">
+        WXYZ
+      </div>
+    ),
   },
 };
 

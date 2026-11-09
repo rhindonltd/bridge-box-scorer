@@ -28,6 +28,12 @@ export const SocketEvents = {
   // been signed out and can leave the play screen. The claiming (new) device
   // has not joined the seat room, so it does not receive this.
   SEAT_TAKEN_OVER: "game:seatTakenOver",
+  // Client-initiated (PLAYER-authed, acknowledged): a play device asks whether it
+  // still holds its seat. A live token joins the seat room (so it receives
+  // SEAT_TAKEN_OVER); a stale one is told the seat has moved. Sent on mount and
+  // on every reconnect, so a device that was offline during a move still finds
+  // out.
+  WATCH_SEAT: "game:watchSeat",
   // Server-initiated: a section split renumbered one or more seats (e.g. the
   // pair at A5NS is now B1NS). Broadcast to the whole game room carrying every
   // old→new seat move, because the affected player devices have NOT joined any
@@ -45,14 +51,6 @@ export const SocketEvents = {
   // (§2.4.7), so the game can start short with that seat unfilled. Broadcasts
   // PARTICIPANTS + a leaderboard snapshot (opponents' indemnity changes).
   SET_SEAT_EXPECTED_LATE: "game:setSeatExpectedLate",
-  // Client-initiated (director): EBU §2.3.3/§2.4.7 mid-game substitution
-  // (handover). The pair sitting the seat is pinned to the boards it already
-  // played, and the arriving pair is seated as the arrival anchor over the
-  // remaining (unplayed) boards. Both stay ACTIVE and the seat is one line by
-  // default; the director sets split/eligibility later on the Substitutions
-  // screen. A scored event, so it broadcasts PARTICIPANTS + a fresh leaderboard
-  // snapshot.
-  HANDOVER_SEAT: "game:handoverSeat",
   // Client-initiated (PLAYER-authed): the SAME-DEVICE variant of the §2.4.7
   // handover. The arriving pair takes over the earlier pair's own device: the
   // device proves it owns the seat with its player token, enters the arriving

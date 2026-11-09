@@ -155,6 +155,57 @@ describe("registerSeatTransferHandlers", () => {
       expect(socket.join).not.toHaveBeenCalled();
     });
 
+    it("lets the DIRECTOR mint a CHANGE_DEVICE code for a pair whose device died", async () => {
+      vi.mocked(assertDirector).mockReturnValue(true);
+      vi.mocked(createSeatTransferCode).mockResolvedValue("MOVE01");
+      const socket = makeSocket();
+      registerSeatTransferHandlers(socket, makeIo());
+      const cb = vi.fn();
+
+      await handlerFor(socket, SocketEvents.CREATE_SEAT_TRANSFER)(
+        {
+          gameId: "g1",
+          seat: "A1NS",
+          token: "",
+          directorToken: "dir-tok",
+          kind: "CHANGE_DEVICE",
+        },
+        cb,
+      );
+
+      expect(assertPlayer).not.toHaveBeenCalled();
+      expect(createSeatTransferCode).toHaveBeenCalledWith(
+        "g1",
+        "A1NS",
+        "CHANGE_DEVICE",
+      );
+      expect(cb).toHaveBeenCalledWith({
+        success: true,
+        data: { code: "MOVE01" },
+      });
+      // The director's device must not be signed out when the code is claimed.
+      expect(socket.join).not.toHaveBeenCalled();
+    });
+
+    it("refuses a director CHANGE_DEVICE mint without a valid director token", async () => {
+      vi.mocked(assertDirector).mockReturnValue(false);
+      const socket = makeSocket();
+      registerSeatTransferHandlers(socket, makeIo());
+
+      await handlerFor(socket, SocketEvents.CREATE_SEAT_TRANSFER)(
+        {
+          gameId: "g1",
+          seat: "A1NS",
+          token: "",
+          directorToken: "bad",
+          kind: "CHANGE_DEVICE",
+        },
+        vi.fn(),
+      );
+
+      expect(createSeatTransferCode).not.toHaveBeenCalled();
+    });
+
     it("refuses a REINSTATE mint without a valid director token", async () => {
       vi.mocked(assertDirector).mockReturnValue(false);
       const socket = makeSocket();
