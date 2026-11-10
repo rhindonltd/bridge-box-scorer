@@ -101,4 +101,49 @@ describe("RoundInfo", () => {
       "Your opponents have withdrawn",
     );
   });
+
+  it("explains that the opponents are running late", () => {
+    render(
+      <RoundInfo
+        table={1}
+        boards={[1, 2]}
+        players={players}
+        opponentExpectedLate
+      />,
+    );
+    expect(screen.getByTestId("opponent-running-late")).toHaveTextContent(
+      "running late",
+    );
+  });
+  it("uses the singular 'Board' label for single-board half-match segments", () => {
+    const { unmount } = render(
+      <RoundInfo
+        table={1}
+        boards={[1, 2]}
+        players={players}
+        halfMatch={{
+          role: "anchor",
+          segments: [
+            { half: "first", boards: [1], players },
+            { half: "second", boards: [2], players },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByTestId("half-first")).toHaveTextContent(/Board\s*1/);
+    expect(screen.getByTestId("half-first")).not.toHaveTextContent(/Boards/);
+    unmount();
+    render(
+      <RoundInfo
+        table={1}
+        boards={[1]}
+        players={players}
+        halfMatch={{
+          role: "firstHalf",
+          segments: [{ half: "first", boards: [1], players }],
+        }}
+      />,
+    );
+    expect(screen.getByTestId("half-first")).not.toHaveTextContent(/Boards/);
+  });
 });

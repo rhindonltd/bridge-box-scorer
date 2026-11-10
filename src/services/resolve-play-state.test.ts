@@ -137,6 +137,26 @@ describe("resolvePlayState", () => {
     });
   });
 
+  it("reports an empty result for a mismatched side that submitted none", async () => {
+    withSchedule([
+      round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }]),
+    ]);
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      { side: "NS", boardNumber: 1, result: null },
+      { side: "EW", boardNumber: 2, result: null },
+    ] as never);
+    const state = await resolvePlayState(db, "g1", "A1NS");
+    expect(state!.phase).toMatchObject({
+      kind: "round",
+      position: {
+        at: "mismatch",
+        nsBoardNumber: 1,
+        nsResult: "",
+        ewBoardNumber: 2,
+        ewResult: "",
+      },
+    });
+  });
   it("rests on a sit-out round the player has reached (a bye is a page they confirm)", async () => {
     withSchedule([
       round(1, [{ boardNumber: 1, status: "CONFIRMED" }]),

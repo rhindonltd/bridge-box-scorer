@@ -81,9 +81,7 @@ describe("EditEventDetailsPage", () => {
 
   it("confirms before a structural change that would clear a selected movement", async () => {
     mockGame = baseGame({ selectedMovement: '{"source":"MITCHELL"}' });
-    const confirmSpy = vi
-      .spyOn(window, "confirm")
-      .mockReturnValue(true);
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<EditEventDetailsPage onDone={vi.fn()} />);
 
     // Switch Pairs -> Teams: a structural change with a movement selected.
@@ -131,5 +129,60 @@ describe("EditEventDetailsPage", () => {
 
     expect(confirmSpy).not.toHaveBeenCalled();
     await waitFor(() => expect(mockUpdateEventDetails).toHaveBeenCalled());
+  });
+
+  it("saves a blank director as null and defaults a missing director to empty", async () => {
+    mockGame = baseGame({ director: null });
+    render(<EditEventDetailsPage onDone={vi.fn()} />);
+    expect(screen.getByLabelText("Director Name")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(mockUpdateEventDetails).toHaveBeenCalledWith(
+        "g1",
+        expect.objectContaining({ director: null }),
+      ),
+    );
+    expect(mockMutateGame).toHaveBeenCalledWith(
+      expect.objectContaining({ director: null }),
+      false,
+    );
+  });
+
+  it("shows fixed IMP scoring for Swiss Teams", () => {
+    mockGame = baseGame({
+      gameType: "TEAMS",
+      eventFormat: "SWISS",
+      scoringType: "IMP_VP",
+    });
+    render(<EditEventDetailsPage onDone={vi.fn()} />);
+    expect(screen.getByText("IMP (Victory Points)")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Scoring")).not.toBeInTheDocument();
+  });
+
+  it("ignores a second submit while a save is in flight", async () => {
+    let resolve!: () => void;
+    mockUpdateEventDetails.mockReturnValueOnce(
+      new Promise<void>((r) => (resolve = r)),
+    );
+    render(<EditEventDetailsPage onDone={vi.fn()} />);
+    const form = document.getElementById("edit-event-details-form")!;
+    fireEvent.submit(form);
+    await screen.findByRole("button", { name: "Saving..." });
+    fireEvent.submit(form);
+    expect(mockUpdateEventDetails).toHaveBeenCalledTimes(1);
+    resolve();
+    await waitFor(() => expect(mockMutateGame).toHaveBeenCalled());
+  });
+
+  it("shows an error and re-enables Save when saving fails", async () => {
+    mockUpdateEventDetails.mockRejectedValueOnce(new Error("nope"));
+    const onDone = vi.fn();
+    render(<EditEventDetailsPage onDone={onDone} />);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not save the event details",
+    );
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+    expect(onDone).not.toHaveBeenCalled();
   });
 });

@@ -1226,5 +1226,19 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("<OPPOSING_TEAM_SCORE>1</OPPOSING_TEAM_SCORE>");
       expect(xml).not.toContain("CROSS_IMP_POINTS");
     });
+    it("defaults an empty section name to A", () => {
+      const data = makeData("BAM");
+      data.sectionName = "";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
+    });
+    it("omits TOTAL_SCORE / PLACE for a team with no ranking entry", () => {
+      const data = makeData("BAM");
+      data.ranking = data.ranking.filter((r) => r.number === "1");
+      const xml = generateUsebioXml(data);
+      // Only team 1 (Sharks) carries a total; Dragons' total (0.5) is absent.
+      expect(xml.match(/<TOTAL_SCORE>/g)).toHaveLength(1);
+      expect(xml).not.toContain("<TOTAL_SCORE>0.5</TOTAL_SCORE>");
+    });
   });
 });

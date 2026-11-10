@@ -379,6 +379,64 @@ describe("resolveSectionStart", () => {
     expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
   });
 
+  it("blocks a Swiss Pairs start that is two pairs short", async () => {
+    const seated = seatsForTables(3).filter((s) => s !== "A2NS" && s !== "A3NS");
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS",
+        swiss: { tables: 3, rounds: 3, boardsPerRound: 4 },
+      },
+      seated,
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(false);
+    expect(result.movement).toBeNull();
+  });
+  it("treats a HALF_MATCHES event with no plan entry for round 1 as a bye", async () => {
+    // Bypasses the schema (which requires a full plan) to exercise the
+    // defensive default: a missing round-1 entry reads as BYE.
+    const seated = seatsForTables(2).filter((s) => s !== "A2NS");
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS",
+        swiss: {
+          tables: 2,
+          rounds: 3,
+          boardsPerRound: 4,
+          oddHandling: "HALF_MATCHES",
+        },
+      },
+      seated,
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement!.some((t) => t.rounds.some(isSitOut))).toBe(true);
+  });
+  it("seats a stationary pair at its home seat in a round-1 half-match", async () => {
+    const seated = seatsForTables(2).filter((s) => s !== "A2NS");
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "SWISS",
+        swiss: {
+          tables: 2,
+          rounds: 3,
+          boardsPerRound: 4,
+          stationaryPairs: [1],
+          oddHandling: "HALF_MATCHES",
+          oddRoundPlan: ["HALF_MATCHES", "BYE", "HALF_MATCHES"],
+        },
+      },
+      seated,
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    // The stationary pair (1, home table 1 NS) anchors the group at table 1.
+    const anchorTable = result.movement!.find((t) => t.rounds.length === 2)!;
+    expect(anchorTable.tableNumber).toBe(1);
+  });
   it("ignores the half-match plan for an even Swiss Pairs field (no sit-out)", async () => {
     // An even field never engages odd handling; it starts fully seated.
     const result = await resolveSectionStart(

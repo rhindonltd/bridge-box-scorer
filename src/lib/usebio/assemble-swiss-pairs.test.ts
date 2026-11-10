@@ -219,6 +219,60 @@ describe("assembleSwissPairs", () => {
     expect(oddEntry?.sectionId).toBe("A");
   });
 
+  it("sums VP across multiple rounds, ordering the rounds ascending", () => {
+    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
+    const boards = [
+      board(2, 1, 2, "A1NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 1, "A1NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+    const data = assembleSwissPairs(game, club, pairs, boards);
+    expect(data.matches.map((m) => m.round)).toEqual([1, 2]);
+  });
+
+  it("looks up a board row played with the pairs' directions swapped", () => {
+    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
+    const boards = [
+      board(1, 1, 1, "A1NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 2, "A1EW", "A1NS", "4SN=" as BoardOutcome),
+    ];
+    const data = assembleSwissPairs(game, club, pairs, boards);
+    expect(data.matches).toHaveLength(1);
+    expect(data.matches[0].boards.map((b) => b.contract)).toEqual(["3NT", "4S"]);
+  });
+
+  it("drops a without-standing pair from the ranking", () => {
+    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
+    const boards = threeTableRound();
+    const { matchRows } = swissVpStructureFromRows(boards as never);
+    const data = assembleSwissPairsImpl(
+      game,
+      club,
+      "NORMAL_CLUB",
+      pairs,
+      boards,
+      matchRows,
+      "XIMP",
+      new Set(["A1NS"]),
+    );
+    expect(data.ranking.find((r) => r.number === "A1NS")).toBeUndefined();
+    expect(data.ranking.length).toBeGreaterThan(0);
+  });
+
+  it("still scores a round that has no match rows", () => {
+    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
+    const boards = threeTableRound();
+    const data = assembleSwissPairsImpl(
+      game,
+      club,
+      "NORMAL_CLUB",
+      pairs,
+      boards,
+      [],
+      "XIMP",
+    );
+    expect(data.matches.length).toBeGreaterThan(0);
+  });
+
   describe("matchpoint mode", () => {
     it("scores each table's match on the matchpoint field", () => {
       const pairs = [

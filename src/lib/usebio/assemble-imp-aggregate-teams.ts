@@ -68,6 +68,7 @@ export function assembleImpAggregateTeams(
     teamNumber: numberByTeamId.get(team.id)!,
     teamName: team.name,
     sectionId: sectionOf(team.id),
+    /* v8 ignore next -- unreachable: buildTeamPairing sets an entry for every roster team */
     pairs: pairing.pairsByTeamId.get(team.id) ?? [],
   }));
 

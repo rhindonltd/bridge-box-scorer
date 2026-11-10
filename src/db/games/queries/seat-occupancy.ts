@@ -239,6 +239,7 @@ export function buildOccupantScoredIdResolver(
     const anchorId = arrivalAnchorOf(forSeat).id;
     const occupant =
       forSeat.find((o) => occupancyCoversBoard(o, boardNumber)) ??
+      /* v8 ignore next -- unreachable: a whole-seat (null boards) occupant already "covers" every board above */
       forSeat.find((o) => o.boards == null);
     if (occupant == null || occupant.id === anchorId) return boardAnchorId;
     return scoredIdFor(boardAnchorId, occupant.id);
@@ -349,6 +350,7 @@ export function oneLineSecondaryByAnchorId(
     const main = mergedLineOf(forSeat);
     // v1 supports a single handover per seat → exactly one "other" occupant.
     const other = forSeat.find((o) => o.id !== main.id);
+    /* v8 ignore next -- unreachable: the seat has 2+ occupancies, so one differs from the main */
     if (other) out.set(main.id, other);
   }
   return out;

@@ -176,6 +176,7 @@ export function groupTeamMatches<R extends TeamMatchRow>(
     try {
       table = parseSeat(seat).tableNumber;
     } catch {
+      /* v8 ignore next -- unreachable: callers only pass seats that already parsed in the loop below */
       return new Map<number, R>();
     }
     return byRoom.get(`${section}|${round}|${table}`) ?? new Map<number, R>();
@@ -609,6 +610,7 @@ export function groupTeamTriples<R extends TeamMatchRow>(
     try {
       table = parseSeat(seat).tableNumber;
     } catch {
+      /* v8 ignore next -- unreachable: every seat passed here was already parsed (and would have thrown) when the comparison's table numbers were read */
       return new Map<number, R>();
     }
     const out = new Map<number, R>();

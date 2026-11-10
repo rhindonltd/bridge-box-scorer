@@ -246,4 +246,31 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
     // Retained standing → still ranked.
     expect(ids).toContain("A1NS");
   });
+  it("applies the same void when scored per section", async () => {
+    await setup();
+    const { withdrawParticipant } = await import(
+      "@/db/games/actions/withdraw-participant"
+    );
+    await withdrawParticipant(gameId, "A1NS", {
+      standing: "WITHDRAWN",
+      withdrawnInRound: 2,
+      treatment: "PENALISED",
+      finePercent: 0,
+    });
+    const { computeSectionLeaderboards } = await import("./leaderboard-service");
+    const games = await import("@/db/games");
+    const db = (await games.getDb(gameId))!;
+    const sections = await computeSectionLeaderboards(db, gameId);
+    const lines = sections[0].overallScore.lines as {
+      teamId: string;
+      vpByRound: Record<number, number>;
+    }[];
+    const r2 = (id: string) => lines.find((l) => l.teamId === id)!.vpByRound[2];
+    const { voidMatchVp } = await import("@/model/teams-match-void");
+    const expected = voidMatchVp("SHORT_OFFENDER_NS", 20, 2);
+    expect(r2("A1NS")).toBe(expected.home);
+    expect(r2("A2NS")).toBe(expected.opponent);
+    // The unaffected 3 v 4 match stays neutral.
+    expect(r2("A3NS")).toBe(10);
+  });
 });

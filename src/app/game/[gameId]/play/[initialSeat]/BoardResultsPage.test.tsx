@@ -30,6 +30,11 @@ vi.mock("@/components/traveller/Traveller", () => ({
   ),
 }));
 
+vi.mock("@/components/scoring/ScoreTableView", () => ({
+  ScoreTableView: ({ highlightAssignmentId }: any) => (
+    <div data-testid="team-result-table">{highlightAssignmentId}</div>
+  ),
+}));
 describe("BoardResultsPage", () => {
   const baseProps = {
     board: 5,
@@ -86,7 +91,21 @@ describe("BoardResultsPage", () => {
   });
 
   const sampleDeal = () => {
-    const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const ranks: Rank[] = [
+      "A",
+      "K",
+      "Q",
+      "J",
+      "T",
+      "9",
+      "8",
+      "7",
+      "6",
+      "5",
+      "4",
+      "3",
+      "2",
+    ];
     return {
       N: ranks.map((r): Card => `S${r}`),
       E: ranks.map((r): Card => `H${r}`),
@@ -111,5 +130,15 @@ describe("BoardResultsPage", () => {
     render(<BoardResultsPage {...baseProps} deal={null} showDeal />);
     expect(screen.getByTestId("traveller")).toBeInTheDocument();
     expect(screen.queryByTestId("deal-display")).not.toBeInTheDocument();
+  });
+
+  it("offers an X-IMP / Team Result toggle for a teams game", () => {
+    render(<BoardResultsPage {...baseProps} teamResultTable={{} as any} />);
+    // X-IMP (the traveller) is the default view.
+    expect(screen.getByTestId("traveller")).toBeInTheDocument();
+    expect(screen.queryByTestId("team-result-table")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Team Result" }));
+    expect(screen.getByTestId("team-result-table")).toHaveTextContent("3");
+    expect(screen.queryByTestId("traveller")).not.toBeInTheDocument();
   });
 });

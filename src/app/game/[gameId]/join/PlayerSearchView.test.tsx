@@ -28,11 +28,7 @@ describe("PlayerSearchView", () => {
   it("renders a selected player card and clears it", () => {
     const onClear = vi.fn();
     render(
-      <PlayerSearchView
-        {...baseProps}
-        value={player()}
-        onClear={onClear}
-      />,
+      <PlayerSearchView {...baseProps} value={player()} onClear={onClear} />,
     );
 
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
@@ -42,12 +38,15 @@ describe("PlayerSearchView", () => {
     expect(onClear).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the selected player card in error colours when invalid", () => {
+    const { container } = render(
+      <PlayerSearchView {...baseProps} value={player()} invalid />,
+    );
+    expect(container.firstChild).toHaveClass("border-red-300");
+  });
   it("renders a selected player without a national id", () => {
     render(
-      <PlayerSearchView
-        {...baseProps}
-        value={player({ nationalId: null })}
-      />,
+      <PlayerSearchView {...baseProps} value={player({ nationalId: null })} />,
     );
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
     expect(screen.queryByText(/^EBU/)).not.toBeInTheDocument();
@@ -56,10 +55,9 @@ describe("PlayerSearchView", () => {
   it("fires onQueryChange when typing in the search input", () => {
     const onQueryChange = vi.fn();
     render(<PlayerSearchView {...baseProps} onQueryChange={onQueryChange} />);
-    fireEvent.change(
-      screen.getByTestId("player-search-input-North"),
-      { target: { value: "lov" } },
-    );
+    fireEvent.change(screen.getByTestId("player-search-input-North"), {
+      target: { value: "lov" },
+    });
     expect(onQueryChange).toHaveBeenCalledWith("lov");
   });
 
@@ -92,7 +90,11 @@ describe("PlayerSearchView", () => {
 
   it("offers a guest option and selects it", () => {
     const onGuestSelected = vi.fn();
-    const guest = player({ firstName: "Bob", lastName: "Jones", nationalId: null });
+    const guest = player({
+      firstName: "Bob",
+      lastName: "Jones",
+      nationalId: null,
+    });
     render(
       <PlayerSearchView
         {...baseProps}

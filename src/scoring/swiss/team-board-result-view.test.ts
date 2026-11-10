@@ -72,3 +72,42 @@ describe("buildTeamBoardResultTable", () => {
     expect(text(teamRow.cells[2])).toBe("—"); // no team swing yet
   });
 });
+
+describe("buildTeamBoardResultTable — edge cases", () => {
+  it("ignores sit-out and half-average lines and lines with an unparseable opposing seat", () => {
+    const lines: TeamBoardResultLine[] = [
+      ...match("3NTN+1", "3NTN="),
+      { tableNumber: 3, ns: "A3NS", ew: "A4EW", result: null, status: "SIT_OUT" } as never,
+      { tableNumber: 4, ns: "A5NS", ew: "A6EW", result: null, status: "HALF_AVERAGE" } as never,
+      { tableNumber: 5, ns: "A7NS", ew: "BAD", result: null } as never,
+    ];
+    const table = buildTeamBoardResultTable(lines, 1, "A1NS");
+    expect(table).not.toBeNull();
+    expect(table!.rows).toHaveLength(3);
+  });
+
+  it("returns null when the viewing table has no row of its own for the board", () => {
+    // Only table 2's row exists; viewing from table 1 there is nothing to show.
+    const onlyAway: TeamBoardResultLine[] = [
+      { tableNumber: 2, ns: "A2NS", ew: "A1EW", result: "3NTN=" as never },
+    ];
+    expect(buildTeamBoardResultTable(onlyAway, 1, "A1NS")).toBeNull();
+  });
+
+  it("shows dashes for my own missing result and omits the team result", () => {
+    const table = buildTeamBoardResultTable(match(null, "3NTN="), 1, "A1NS");
+    const [yourRow, otherRow] = table!.rows;
+    expect(text(yourRow.cells[1])).toBe("—");
+    expect(text(yourRow.cells[2])).toBe("—");
+    expect(text(otherRow.cells[2])).toBe("400");
+  });
+
+  it("highlights nothing for the away row when the other room has no line", () => {
+    const onlyHome: TeamBoardResultLine[] = [
+      { tableNumber: 1, ns: "A1NS", ew: "A2EW", result: "3NTN+1" as never },
+    ];
+    const table = buildTeamBoardResultTable(onlyHome, 1, "A1NS");
+    expect(table!.rows[1].highlightIds).toEqual([]);
+    expect(text(table!.rows[1].cells[2])).toBe("—");
+  });
+});

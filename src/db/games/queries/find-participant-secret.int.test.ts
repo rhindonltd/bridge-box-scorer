@@ -121,4 +121,58 @@ describe("findParticipantSecret", () => {
       "secret-real",
     );
   });
+  describe("findSeatDeviceInfo", () => {
+    it("returns the live secret and standing for a seated pair", async () => {
+      await seatPair("A1NS", "secret-1");
+      const { findSeatDeviceInfo } = await import(
+        "@/db/games/queries/find-participant-secret"
+      );
+      expect(await findSeatDeviceInfo(harness.gameId, "A1NS")).toEqual({
+        secretKey: "secret-1",
+        standing: "ACTIVE",
+      });
+    });
+    it("returns null for an unknown seat or a missing game database", async () => {
+      await seatPair("A1NS", "secret-1");
+      const { findSeatDeviceInfo } = await import(
+        "@/db/games/queries/find-participant-secret"
+      );
+      expect(await findSeatDeviceInfo(harness.gameId, "A9NS")).toBeNull();
+      expect(await findSeatDeviceInfo("no-such-game", "A1NS")).toBeNull();
+    });
+    it("resolves a handover seat to the arrival anchor", async () => {
+      const db = (await harness.getDb()) as import("@/db/games").Db;
+      const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+      const { createPlayer } = await import("@/db/games/actions/create-player");
+      const mk = async (n: string) =>
+        (await createPlayer(harness.gameId, { firstName: n, lastName: "X" })).id;
+      db.insert(seatOccupancy)
+        .values([
+          {
+            seat: "A1NS" as PairSeat,
+            boards: [1],
+            player1: await mk("a"),
+            player2: await mk("b"),
+            secretKey: "old",
+            standing: "WITHDRAWN",
+          },
+          {
+            seat: "A1NS" as PairSeat,
+            boards: [2],
+            player1: await mk("c"),
+            player2: await mk("d"),
+            secretKey: "live",
+            isArrivalAnchor: 1,
+          },
+        ])
+        .run();
+      const { findSeatDeviceInfo } = await import(
+        "@/db/games/queries/find-participant-secret"
+      );
+      expect(await findSeatDeviceInfo(harness.gameId, "A1NS")).toEqual({
+        secretKey: "live",
+        standing: "ACTIVE",
+      });
+    });
+  });
 });

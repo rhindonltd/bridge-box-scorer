@@ -110,6 +110,7 @@ function rescaleBoard(lines: MatchpointLine[], e: number): MatchpointLine[] {
     let ns: number;
     if (!isReal) {
       // Preserve the line's percentage of the (now larger) full-field top.
+      /* v8 ignore next -- unreachable: a > 1 here (a <= 1 returns above), so oldTop = 2*(a-1) > 0 */
       ns = oldTop > 0 ? (line.nsMatchPoints / oldTop) * fullTop : fullTop / 2;
     } else if (useSmallSubField) {
       ns = smallSubFieldFraction(line.nsMatchPoints / 2, a) * fullTop;

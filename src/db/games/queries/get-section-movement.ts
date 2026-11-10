@@ -42,9 +42,11 @@ export async function getAnySectionMovement(
     .from(sections)
     .all();
 
+  /* v8 ignore start -- the final 0 is unreachable: `section` is the primary key, so two rows never compare equal */
   const ordered = [...rows].sort((a, b) =>
     a.section < b.section ? -1 : a.section > b.section ? 1 : 0,
   );
+  /* v8 ignore stop */
   for (const row of ordered) {
     const parsed = parseSelectedMovement(row.selectedMovement);
     if (parsed) return parsed;

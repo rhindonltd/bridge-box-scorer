@@ -291,4 +291,113 @@ describe("detectSectionMismatches (§3.5 detection)", () => {
       expect(await detectSectionMismatches(gameId, "A")).toEqual([]);
     });
   });
+  describe("routing edges", () => {
+    it("throws when the game db does not exist", async () => {
+      const { detectSectionMismatches } =
+        await import("@/services/detect-swiss-mismatch-service");
+      await expect(detectSectionMismatches("no-such-game", "A")).rejects.toThrow(
+        "Game db does not exist",
+      );
+    });
+    it("returns nothing for a section with no movement", async () => {
+      const { createGameDb } = await import("@/db/games/actions/create-game");
+      await createGameDb(gameId, 3);
+      const { detectSectionMismatches } =
+        await import("@/services/detect-swiss-mismatch-service");
+      expect(await detectSectionMismatches(gameId, "A")).toEqual([]);
+    });
+    it("returns nothing for a non-Swiss movement", async () => {
+      const { createGameDb } = await import("@/db/games/actions/create-game");
+      const { setSectionMovement } =
+        await import("@/db/games/actions/set-section-movement");
+      await createGameDb(gameId, 3);
+      await setSectionMovement(gameId, "A", {
+        source: "SPEC",
+        specId: 1,
+        boardsPerRound: 2,
+      });
+      const { detectSectionMismatches } =
+        await import("@/services/detect-swiss-mismatch-service");
+      expect(await detectSectionMismatches(gameId, "A")).toEqual([]);
+    });
+  });
+  describe("odd-round plan", () => {
+    async function runWith(swiss: Record<string, unknown>) {
+      await setup();
+      const { setSectionMovement } =
+        await import("@/db/games/actions/set-section-movement");
+      await setSectionMovement(gameId, "A", {
+        source: "SWISS",
+        swiss: { tables: 3, rounds: 4, boardsPerRound: 2, ...swiss },
+      } as never);
+      await setResult(1, 1, "6NTN=");
+      await setResult(1, 2, "3NTN=");
+      await setResult(1, 3, "1NTN=");
+      await materializeRound2([
+        { tableNumber: 1, ns: 1, ew: 3 },
+        { tableNumber: 2, ns: 2, ew: 4 },
+        { tableNumber: 3, ns: 5, ew: 6 },
+      ]);
+      const { detectSectionMismatches } =
+        await import("@/services/detect-swiss-mismatch-service");
+      return detectSectionMismatches(gameId, "A");
+    }
+    it("replays a planned HALF_MATCHES round", async () => {
+      const planned = await runWith({
+        oddHandling: "HALF_MATCHES",
+        oddRoundPlan: ["BYE", "HALF_MATCHES", "BYE", "BYE"],
+      });
+      expect(Array.isArray(planned)).toBe(true);
+    });
+    it("replays a round under a stationary list recorded for it", async () => {
+      const found = await runWith({ stationaryPairs: [6] });
+      expect(Array.isArray(found)).toBe(true);
+    });
+  });
+  it("ignores rulings whose participants cannot be decoded", async () => {
+    await setup();
+    await setResult(1, 1, "6NTN=");
+    await setResult(1, 2, "3NTN=");
+    await setResult(1, 3, "1NTN=");
+    await materializeRound2([
+      { tableNumber: 1, ns: 1, ew: 3 },
+      { tableNumber: 2, ns: 2, ew: 4 },
+      { tableNumber: 3, ns: 5, ew: 6 },
+    ]);
+    const { detectSectionMismatches } =
+      await import("@/services/detect-swiss-mismatch-service");
+    const before = await detectSectionMismatches(gameId, "A");
+    const games = await import("@/db/games");
+    const { matches } = await import("@/db/games/tables/matches");
+    const db = (await games.getDb(gameId))!;
+    db.insert(matches)
+      .values([
+        // EW ruling on a match with no opponent → no participant.
+        {
+          section: "A",
+          roundNumber: 2,
+          kind: "BYE",
+          scoredAsUnit: false,
+          home: "A9",
+          opponent: null,
+          boardStart: 3,
+          boardEnd: 4,
+          ruling: "MM:EW:HIGHER:OWN",
+        },
+        // NS ruling on an undecodable participant id.
+        {
+          section: "A",
+          roundNumber: 2,
+          kind: "PAIRS",
+          scoredAsUnit: false,
+          home: "garbage",
+          opponent: "A9",
+          boardStart: 3,
+          boardEnd: 4,
+          ruling: "MM:NS:HIGHER:OWN",
+        },
+      ])
+      .run();
+    expect(await detectSectionMismatches(gameId, "A")).toEqual(before);
+  });
 });

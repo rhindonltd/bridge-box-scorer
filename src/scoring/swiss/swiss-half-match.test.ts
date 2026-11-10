@@ -7,6 +7,8 @@ import {
   compensationXimpPerComparison,
   isHalfMatchRound,
   segmentsForPair,
+  voidMpFractions,
+  voidXimpPerComparison,
 } from "./swiss-half-match";
 
 function row(overrides: Partial<SwissVpBoardRow>): SwissVpBoardRow {
@@ -96,5 +98,30 @@ describe("segmentsForPair", () => {
     expect(segments).toHaveLength(1);
     expect(segments[0].opponent).toBe("A2EW");
     expect(isHalfMatchRound(segments)).toBe(false);
+  });
+});
+
+describe("voidMpFractions", () => {
+  it("gives AVE+ 60% then 50%, AVE- 40% then 50%, AVE 50% throughout", () => {
+    expect(voidMpFractions(4, "AVE_PLUS")).toEqual([0.6, 0.6, 0.5, 0.5]);
+    expect(voidMpFractions(4, "AVE_MINUS")).toEqual([0.4, 0.4, 0.5, 0.5]);
+    expect(voidMpFractions(4, "AVE")).toEqual([0.5, 0.5, 0.5, 0.5]);
+  });
+  it("returns nothing for a non-positive board count", () => {
+    expect(voidMpFractions(0, "AVE")).toEqual([]);
+  });
+});
+
+describe("voidXimpPerComparison", () => {
+  it("gives AVE+ +2 then 0, AVE- -2 then 0, AVE 0 throughout", () => {
+    expect(voidXimpPerComparison(4, "AVE_PLUS")).toEqual([2, 2, 0, 0]);
+    expect(voidXimpPerComparison(4, "AVE_MINUS")).toEqual([-2, -2, 0, 0]);
+    expect(voidXimpPerComparison(4, "AVE")).toEqual([0, 0, 0, 0]);
+  });
+  it("rounds the AVE+/AVE- split up for an odd board count", () => {
+    expect(voidXimpPerComparison(3, "AVE_PLUS")).toEqual([2, 2, 0]);
+  });
+  it("returns nothing for a non-positive board count", () => {
+    expect(voidXimpPerComparison(0, "AVE_PLUS")).toEqual([]);
   });
 });

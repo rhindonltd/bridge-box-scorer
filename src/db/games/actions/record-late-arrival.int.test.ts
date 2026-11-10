@@ -94,6 +94,13 @@ describe("recordLateArrival (design §11)", () => {
     expect(await db.select().from(expectedLateSeats)).toEqual([]);
   });
 
+  it("leaves the pair's treatment unset when the director chose none", async () => {
+    const db = await setup(null);
+    const { recordLateArrival } = await import("./record-late-arrival");
+    expect((await recordLateArrival(harness.gameId, "A1EW")).late).toBe(true);
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    expect(db.select().from(seatOccupancy).get()!.withdrawalTreatment).toBeNull();
+  });
   it("is not late when nothing has been scored yet, but still clears the mark", async () => {
     const db = (await harness.getDb()) as Db;
     const { expectedLateSeats } =

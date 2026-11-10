@@ -145,4 +145,20 @@ describe("TimerLiveView", () => {
     expect(screen.getByText("02:05")).toBeInTheDocument();
   });
 
+  it("says the next round is awaiting its draw", () => {
+    render(
+      <TimerLiveView
+        {...makeProps({
+          timer: {
+            isRunning: false,
+            phase: "awaitingDraw",
+            remaining: 0,
+            round: 3,
+            projectedEndDate: null,
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText("Awaiting next round draw")).toBeInTheDocument();
+  });
 });

@@ -311,6 +311,7 @@ function spanAcrossRounds(
   const boards = new Set<number>();
   for (const round of rounds) {
     const byHome = perRound.get(`${section}|${round}`);
+    /* v8 ignore next -- unreachable: `rounds` is built only from rounds present in perRound */
     if (!byHome) continue;
     for (const side of [lo, hi]) {
       const rel = byHome.get(side)?.get(side === lo ? hi : lo);
@@ -318,6 +319,7 @@ function spanAcrossRounds(
     }
   }
   const sorted = [...boards].sort((a, b) => a - b);
+  /* v8 ignore next -- unreachable: every comparison of a 3-cycle has an edge in at least one direction, so boards is never empty */
   return { start: sorted[0] ?? 0, end: sorted[sorted.length - 1] ?? 0 };
 }
 

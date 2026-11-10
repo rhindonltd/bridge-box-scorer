@@ -251,6 +251,7 @@ async function detectPairsSectionMismatches(
     // History the round-R draw consumed (rounds < round).
     const priorHistory = await getSwissBoardHistory(db, section, tables, round);
 
+    /* v8 ignore next 4 -- the `?.`/`?? "BYE"` fallbacks are unreachable: the movement schema requires an oddRoundPlan with one entry per round whenever oddHandling is HALF_MATCHES */
     const roundOddHandling =
       oddHandling === "HALF_MATCHES" &&
       (oddRoundPlan?.[round - 1] ?? "BYE") === "HALF_MATCHES"

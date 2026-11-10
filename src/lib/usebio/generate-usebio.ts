@@ -642,6 +642,7 @@ function appendSectionContent(
         lineEl.ele("SCORE").txt("0");
 
         const lineScore = scoredLines.get(key);
+        /* v8 ignore else -- unreachable: the scorer returns a line for every assigned outcome, so the key is always present */
         if (lineScore) {
           appendLineScore(lineEl, scoringType, lineScore);
         }
@@ -1145,6 +1146,7 @@ function computeOverallRanking(
       // scored-lines map. Accumulate every one into the pair totals.
       for (const [key, lineScore] of scoredLines) {
         const [, nsId, ewId] = key.split("-");
+        /* v8 ignore next 3 -- unreachable: MP/IMP/XIMP are handled above, so this branch only sees the MP fallback descriptor (contributesToMax is always true) */
         const maxForBoard = descriptor.contributesToMax
           ? lineScore.ns + lineScore.ew
           : 0;

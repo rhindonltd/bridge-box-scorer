@@ -136,6 +136,24 @@ describe("EnterPlayerNames", () => {
     expect(onSubmitPair).not.toHaveBeenCalled();
   });
 
+  it("flags the second player when only they are already seated elsewhere", () => {
+    render(
+      <EnterPlayerNames
+        seat="A1NS"
+        seatedNationalIds={new Set(["999999"])}
+        onSubmitPair={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("North EBU"), {
+      target: { value: "111111" },
+    });
+    fireEvent.change(screen.getByLabelText("South EBU"), {
+      target: { value: "999999" },
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "A player with EBU number 999999 is already seated",
+    );
+  });
   it("does not flag an EBU number that is not already seated", () => {
     render(
       <EnterPlayerNames
@@ -200,9 +218,7 @@ describe("EnterPlayerNames", () => {
       render(
         <EnterPlayerNames seat="A1NS" showTeamName onSubmitPair={vi.fn()} />,
       );
-      expect(
-        screen.getByLabelText("Team name (optional)"),
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText("Team name (optional)")).toBeInTheDocument();
     });
 
     it("forwards the entered team name on submit", () => {

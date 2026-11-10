@@ -223,5 +223,6 @@ describe("formatContractCompact", () => {
     expect(formatContractCompact("NP" as BoardOutcome)).toBe("");
     expect(formatContractCompact("A60/40" as BoardOutcome)).toBe("");
     expect(formatContractCompact("AVE" as BoardOutcome)).toBe("");
+    expect(formatContractCompact("garbage" as BoardOutcome)).toBe("");
   });
 });

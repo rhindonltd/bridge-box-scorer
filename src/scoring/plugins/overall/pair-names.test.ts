@@ -31,4 +31,22 @@ describe("pairNameLines", () => {
     const participants = [pair("A1", ["Alice", "", "Bob", ""])];
     expect(pairNameLines(participants, "A1")).toEqual(["Alice", "Bob"]);
   });
+  it("uses the stitched displayNameLines for a merged one-line seat", () => {
+    const merged = {
+      ...pair("A1", ["Alice", "Adams", "Bob", "Brown"]),
+      displayNameLines: ["Alice A & Bob B", "Carol C & Dan D"],
+    } as AssignedPair;
+    expect(pairNameLines([merged], "A1")).toEqual([
+      "Alice A & Bob B",
+      "Carol C & Dan D",
+    ]);
+  });
+
+  it("ignores an empty displayNameLines array", () => {
+    const p = {
+      ...pair("A1", ["Alice", "Adams", "Bob", "Brown"]),
+      displayNameLines: [],
+    } as AssignedPair;
+    expect(pairNameLines([p], "A1")).toEqual(["Alice Adams", "Bob Brown"]);
+  });
 });

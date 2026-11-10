@@ -681,7 +681,9 @@ function ConfirmAction({
 
   const primary = danger
     ? "border-red-600 bg-red-600 hover:bg-red-700 focus-visible:ring-red-500"
-    : "border-blue-600 bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-500";
+    : /* v8 ignore start -- unreachable: the only caller (WithdrawButton) always passes danger */
+      "border-blue-600 bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-500";
+  /* v8 ignore stop */
 
   if (!confirming) {
     return (
@@ -836,6 +838,7 @@ function SubstitutionCard({
 
   const seatSlug = row.seat.replace(/\W+/g, "-");
   const { split, mainId, eligibility } = settings;
+  /* v8 ignore next -- unreachable: mainId is always seeded from, or picked from, row.occupants */
   const mainOccupant = row.occupants.find((o) => o.id === mainId) ?? anchor;
   // The folded-in "(Sub)" pair on a merged line — the occupant that is NOT the
   // main pair. It reacts live to the Main pair pick.
@@ -849,6 +852,7 @@ function SubstitutionCard({
     setSettings(next);
     setError(null);
     try {
+      /* v8 ignore next -- unreachable: next.mainId is always one of row.occupants' ids */
       const main = row.occupants.find((o) => o.id === next.mainId) ?? anchor;
       // Each pair carries its own eligibility (its own toggle), whether the
       // seat is split or merged — so a stand-in can be marked without-standing

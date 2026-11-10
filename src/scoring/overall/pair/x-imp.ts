@@ -25,6 +25,7 @@ export function calculateOverallXIMPResults(
       // unchanged.
       toResult: (pairId, data) => ({
         pairId,
+        /* v8 ignore next -- unreachable: a pair only gets an entry once a board is added, so boards >= 1 */
         crossImps: data.boards > 0 ? data.value / data.boards : 0,
       }),
       sort: (x) => x.crossImps,

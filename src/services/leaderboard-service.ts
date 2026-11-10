@@ -352,7 +352,9 @@ function pairRankValue(line: OverallScore["lines"][number]): number {
   if ("totalMP" in line) {
     return line.maxMP > 0 ? line.totalMP / line.maxMP : 0;
   }
+  /* v8 ignore next -- unreachable: IMP has no pairs overall plugin, so a pairs overall never carries `imps` lines (see the guard in scoreBoardsToOverall) */
   if ("imps" in line) return line.imps;
+  /* v8 ignore else -- see the fallback below */
   if ("crossImps" in line) return line.crossImps;
   /* v8 ignore next -- pairRankValue is only called for MP/IMP/XIMP pair lines */
   return 0;
@@ -420,6 +422,7 @@ function baselineLine(
       } as OverallScore["lines"][number];
     case "PAIR_XIMP":
       return { ...idField, crossImps: 0 } as OverallScore["lines"][number];
+    /* v8 ignore next 2 -- unreachable: IMP has no pairs overall plugin, so no overall is ever typed PAIR_IMP */
     case "PAIR_IMP":
       return { ...idField, imps: 0 } as OverallScore["lines"][number];
     case "PAIR_SWISS_VP":
@@ -487,11 +490,14 @@ function padBaselineLines(
 
 /** Rank value for any overall line variant (pairs or teams). */
 function pairOrTeamRankValue(line: OverallScore["lines"][number]): number {
+  /* v8 ignore next -- unreachable: only called on baseline lines, whose maxMP is always 0 */
   if ("totalMP" in line) return line.maxMP > 0 ? line.totalMP / line.maxMP : 0;
+  /* v8 ignore next -- unreachable: no pairs scoring produces `imps` lines (IMP is teams-only and has no pairs overall plugin) */
   if ("imps" in line) return line.imps;
   if ("crossImps" in line) return line.crossImps;
   if ("totalVP" in line) return line.totalVP;
   if ("totalImps" in line) return line.totalImps;
+  /* v8 ignore else -- see the fallback below */
   if ("totalWon" in line) return line.totalWon;
   /* v8 ignore next -- all OverallScore line variants are covered above */
   return 0;
@@ -658,7 +664,9 @@ function withdrawalCreditBoards(
   playedScoredBoards: ScoredBoard[],
   withdrawers: WithdrawalRecord[],
 ): ScoredBoard[] {
+  /* v8 ignore else -- see the unreachable block below */
   if (withdrawers.length === 0) return [];
+  /* v8 ignore start -- unreachable: `withdrawers` is always empty on the board-pooled path. PAIRS games read withdrawals through `pairsStandingsForRanking` (which maps WITHDRAWN/LATE to ACTIVE, so `resolveStandings` returns none) and skip the expected-late injection; teams and Swiss-VP games never reach `scoreBoardsToOverall`; the as-of replay passes []. Absences are applied by `applyAbsences` instead. */
   const pluginId = getCombination(scoringType).perBoard;
 
   // Ordinary withdrawals / empty-late seats, located from the no-result rows.
@@ -794,6 +802,7 @@ function withdrawalCreditBoards(
   }
 
   return synthetic;
+  /* v8 ignore stop */
 }
 
 type Pairs = Awaited<ReturnType<typeof findPairs>>;

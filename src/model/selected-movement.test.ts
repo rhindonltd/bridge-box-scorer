@@ -606,6 +606,29 @@ describe("stationary pairs over the event", () => {
   });
 
   describe("withStationaryHistory", () => {
+    it("starts a fresh history when there is no previous movement", () => {
+      const next = withStationaryHistory(null, swissOf({ stationaryPairs: [2] }), 3);
+      expect(spec(next).stationaryPairs).toEqual([2]);
+      expect(spec(next).stationaryEarlier).toBeUndefined();
+    });
+    it("records the old list when the new movement clears the stationary pairs", () => {
+      const next = withStationaryHistory(
+        swissOf({ stationaryPairs: [2] }),
+        swissOf(),
+        3,
+      );
+      expect(spec(next).stationaryEarlier).toEqual([
+        { throughRound: 3, pairs: [2] },
+      ]);
+    });
+    it("returns a non-Swiss movement untouched", () => {
+      const other: SelectedMovement = {
+        source: "SPEC",
+        specId: 1,
+        boardsPerRound: 3,
+      };
+      expect(withStationaryHistory(swissOf(), other, 3)).toBe(other);
+    });
     it("records nothing for a change made before any round is drawn", () => {
       const next = withStationaryHistory(
         swissOf(),

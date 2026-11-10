@@ -30,6 +30,7 @@ import { getDb } from "@/db/games";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import { materializeSwissTeamsRound } from "@/services/materialize-swiss-teams-round";
+import { findTeams } from "@/db/games/queries/find-teams";
 
 /** A `matches`-row shape for the history read, with sensible teams defaults. */
 interface StubMatch {
@@ -390,6 +391,173 @@ describe("previewNextSwissTeamsRound", () => {
       slot: 2,
     });
   });
+  it("ignores history rows whose seats cannot be parsed", async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [
+          teamsMatch(1, 1, 2),
+          { roundNumber: 1, kind: "TEAMS", home: "garbage", opponent: "A3NS" },
+          { roundNumber: 1, kind: "BYE", home: "garbage", opponent: null },
+        ],
+        [{ status: "CONFIRMED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
+    } as any);
+    rankTeams(4);
+    const result = await previewNextSwissTeamsRound("g1", "A");
+    expect(result.ok).toBe(true);
+  });
+  it("defaults the total VP when a leaderboard line omits it", async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb([teamsMatch(1, 1, 2)], [{ status: "CONFIRMED" }]) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
+    } as any);
+    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
+      {
+        section: "A",
+        overallScore: {
+          lines: [{ teamId: "A1NS", rank: 1, tied: false }],
+        },
+      },
+    ] as any);
+    const result = await previewNextSwissTeamsRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.standings[0]).toMatchObject({ id: 1, total: 0, rank: 1 });
+  });
+  it("labels standings with the derived team names", async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb([teamsMatch(1, 1, 2)], [{ status: "CONFIRMED" }]) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 4, rounds: 4, boardsPerRound: 3 },
+    } as any);
+    rankTeams(4);
+    vi.mocked(findTeams).mockResolvedValueOnce([
+      { id: "A1NS", name: "Alpha" },
+    ] as any);
+    const result = await previewNextSwissTeamsRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.standings.find((e) => e.id === 1)!.name).toBe("Alpha");
+    expect(result.standings.find((e) => e.id === 2)!.name).toBe("Team 2");
+  });
+  it("skips duplicate leaderboard lines and unparseable triple seats", async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [
+          teamsMatch(1, 1, 2),
+          ...tripleMatches(1, 3, 4, 5),
+          {
+            roundNumber: 1,
+            kind: "TRIPLE",
+            home: "garbage",
+            opponent: "garbage",
+            groupId: "triple|A|3-4-5",
+            vpPool: 10,
+          },
+        ],
+        [{ status: "CONFIRMED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: { teams: 5, rounds: 4, boardsPerRound: 6 },
+    } as any);
+    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
+      {
+        section: "A",
+        overallScore: {
+          lines: [
+            { teamId: "A1NS", totalVP: 10, rank: 1, tied: false },
+            { teamId: "A1NS", totalVP: 10, rank: 1, tied: false },
+          ],
+        },
+      },
+    ] as any);
+    const result = await previewNextSwissTeamsRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.standings.filter((e) => e.id === 1)).toHaveLength(1);
+  });
+  it("sorts the rounds of a LONG triple spanning two rounds", async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [
+          teamsMatch(1, 1, 2),
+          // Out of order: round 2's rooms listed before round 1's.
+          ...tripleMatches(2, 3, 4, 5, "LONG"),
+          ...tripleMatches(1, 3, 4, 5, "LONG"),
+        ],
+        [{ status: "CONFIRMED" }],
+      ) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [
+          { kind: "LONG", group: 1 },
+          { kind: "LONG", group: 1 },
+          "SHORT",
+          "SHORT",
+        ],
+      },
+    } as any);
+    rankTeams(5);
+    const result = await previewNextSwissTeamsRound("g1", "A");
+    expect(result.ok).toBe(true);
+  });
+  describe("a LONG triple's first slot", () => {
+    const longPlan = {
+      source: "SWISS_TEAMS",
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: [
+          { kind: "LONG", group: 1 },
+          { kind: "LONG", group: 1 },
+          "SHORT",
+          "SHORT",
+        ],
+      },
+    };
+    it("draws a fresh triple when there is no previous round", async () => {
+      vi.mocked(getDb).mockResolvedValue(stubDb([]) as any);
+      vi.mocked(getSectionMovement).mockResolvedValue(longPlan as any);
+      rankTeams(5);
+      const result = await previewNextSwissTeamsRound("g1", "A");
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.triple).toMatchObject({ kind: "LONG", slot: 1 });
+    });
+    it("draws a fresh triple when the first slot cannot be recovered", async () => {
+      vi.mocked(getDb).mockResolvedValue(
+        stubDb(
+          [teamsMatch(1, 1, 2), teamsMatch(1, 3, 4)],
+          [{ status: "CONFIRMED" }],
+        ) as any,
+      );
+      vi.mocked(getSectionMovement).mockResolvedValue(longPlan as any);
+      rankTeams(5);
+      const result = await previewNextSwissTeamsRound("g1", "A");
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.triple).toMatchObject({ kind: "LONG", slot: 1 });
+    });
+  });
 });
 
 describe("commitNextSwissTeamsRound", () => {
@@ -497,5 +665,43 @@ describe("commitNextSwissTeamsRound", () => {
       5,
       null,
     );
+  });
+  it("accepts a valid triple round (odd field)", async () => {
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb([teamsMatch(1, 1, 2)], [{ status: "CONFIRMED" }]) as any,
+    );
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS_TEAMS",
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: ["SHORT", "SHORT", "SHORT", "SHORT"],
+      },
+    } as any);
+    rankTeams(5);
+    vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });
+    const triple = { a: 3, b: 4, c: 5, kind: "SHORT" as const };
+    const result = await commitNextSwissTeamsRound(
+      "g1",
+      "A",
+      [{ a: 1, b: 2 }],
+      null,
+      triple,
+    );
+    expect(result).toEqual({ ok: true, roundNumber: 2 });
+  });
+  it("rejects a round that leaves a team out", async () => {
+    seedDrawable();
+    const result = await commitNextSwissTeamsRound(
+      "g1",
+      "A",
+      [{ a: 1, b: 3 }],
+      null,
+      null,
+    );
+    expect(result).toEqual({ ok: false, reason: "INVALID_MATCHES" });
+    expect(materializeSwissTeamsRound).not.toHaveBeenCalled();
   });
 });

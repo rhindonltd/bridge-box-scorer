@@ -440,6 +440,44 @@ describe("section queries and actions", () => {
       ).rejects.toThrow(/at least 4/);
     });
 
+    it("uses the singular 'table' when rejecting a one-table section", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      await setup();
+      await createSection(gameId, { section: "A", tables: 1 });
+      await expect(
+        splitSection(gameId, {
+          from: "A",
+          newSection: "B",
+          tablesToNewSection: 2,
+        }),
+      ).rejects.toThrow(/it has 1 table,/);
+    });
+    it("leaves a seat that cannot be parsed where it is", async () => {
+      const { createSection } = await import(
+        "@/db/games/actions/create-section"
+      );
+      const { splitSection } = await import(
+        "@/db/games/actions/split-section"
+      );
+      const { seatOccupancy } = await import(
+        "@/db/games/tables/seat-occupancy"
+      );
+      const { db } = await setup();
+      await createSection(gameId, { section: "A", tables: 6 });
+      await seatPair(db, "not-a-seat" as PairSeat, "odd");
+      const moves = await splitSection(gameId, {
+        from: "A",
+        newSection: "B",
+        tablesToNewSection: 2,
+      });
+      expect(moves).toEqual([]);
+      expect(db.select().from(seatOccupancy).all()[0].seat).toBe("not-a-seat");
+    });
     it("rejects an out-of-range split point (each side keeps 2+ tables)", async () => {
       const { createSection } = await import(
         "@/db/games/actions/create-section"

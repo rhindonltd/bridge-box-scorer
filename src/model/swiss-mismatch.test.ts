@@ -172,3 +172,11 @@ describe("adjustMismatchVp — §3.5.2", () => {
     });
   });
 });
+
+describe("adjustMismatchVp — clamping", () => {
+  const none: MismatchRuling = { side: "NS", direction: "HIGHER", fault: "OWN" };
+  it("clamps an out-of-range actual score into [0, pool]", () => {
+    expect(adjustMismatchVp(-3, none, 20)).toBe(0);
+    expect(adjustMismatchVp(25, none, 20)).toBe(20);
+  });
+});

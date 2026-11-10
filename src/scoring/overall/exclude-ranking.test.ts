@@ -81,4 +81,64 @@ describe("applyRankingExclusion", () => {
     expect(result.lines.map((l) => l.teamId)).toEqual(["A2NS"]);
     expect(result.lines[0].rank).toBe(1);
   });
+  it("returns the score unchanged when the excluded ids match no line", () => {
+    const score = mpScore([{ pairId: "A1NS", totalMP: 18, maxMP: 24 }]);
+    expect(applyRankingExclusion(score, new Set(["ZZ"]))).toBe(score);
+  });
+
+  it("ranks an MP line with a zero maxMP as 0", () => {
+    const score = mpScore([
+      { pairId: "A1NS", totalMP: 0, maxMP: 0 },
+      { pairId: "A2NS", totalMP: 10, maxMP: 24 },
+      { pairId: "A3NS", totalMP: 5, maxMP: 24 },
+    ]);
+    const result = applyRankingExclusion(
+      score,
+      new Set(["A3NS"]),
+    ) as PairMatchpointOverallScore;
+    expect(result.lines.map((l) => l.pairId)).toEqual(["A2NS", "A1NS"]);
+  });
+
+  // Each variant is re-ranked on its own value, highest first.
+  const variants: [string, Record<string, unknown>, Record<string, unknown>][] =
+    [
+      ["crossImps", { crossImps: 1 }, { crossImps: 5 }],
+      ["imps", { imps: 1 }, { imps: 5 }],
+      ["totalVP", { totalVP: 1 }, { totalVP: 5 }],
+      ["totalImps", { totalImps: 1 }, { totalImps: 5 }],
+      ["totalWon", { totalWon: 1 }, { totalWon: 5 }],
+    ];
+  it.each(variants)("re-ranks on %s", (_name, low, high) => {
+    const score = {
+      lines: [
+        { pairId: "X", ...low, rank: 1, tied: false },
+        { pairId: "Y", ...high, rank: 2, tied: false },
+        { pairId: "Z", ...high, rank: 3, tied: false },
+      ],
+    } as any;
+    const result = applyRankingExclusion(score, new Set(["Z"])) as any;
+    expect(result.lines.map((l: any) => l.pairId)).toEqual(["Y", "X"]);
+  });
+
+  it("falls back to 0 for a line with no recognised value", () => {
+    const score = {
+      lines: [
+        { pairId: "X", rank: 1, tied: false },
+        { pairId: "Y", rank: 2, tied: false },
+      ],
+    } as any;
+    const result = applyRankingExclusion(score, new Set(["Y"])) as any;
+    expect(result.lines.map((l: any) => l.pairId)).toEqual(["X"]);
+  });
+
+  it("treats a line with neither pairId nor teamId as never excluded", () => {
+    const score = {
+      lines: [
+        { totalVP: 1, rank: 1, tied: false },
+        { teamId: "T", totalVP: 0, rank: 2, tied: false },
+      ],
+    } as any;
+    const result = applyRankingExclusion(score, new Set(["T"])) as any;
+    expect(result.lines).toHaveLength(1);
+  });
 });

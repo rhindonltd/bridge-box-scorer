@@ -177,7 +177,10 @@ function travellerBoards(
         r.boardNumber === boardNumber &&
         ((r.ns === nsId && r.ew === ewId) || (r.ns === ewId && r.ew === nsId)),
     );
-    const outcome = (row ? boardResultOf(row) : null) ?? ("NP" as BoardOutcome);
+    // The half's board numbers come from these same rows, so the row is always found.
+    /* v8 ignore next 2 -- unreachable: boardNumbers are derived from the rows being searched */
+    const outcome =
+      (row ? boardResultOf(row) : null) ?? ("NP" as BoardOutcome);
     const lead = (row?.directorOverrideLead ??
       row?.confirmedLead ??
       null) as Card | null;

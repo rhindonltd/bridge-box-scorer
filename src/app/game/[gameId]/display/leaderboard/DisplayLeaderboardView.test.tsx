@@ -308,4 +308,23 @@ describe("DisplayLeaderboardView auto-scroll", () => {
     const seen = leaderboardSpy.mock.calls.map((c) => c[0].type as string);
     expect(seen).toContain("PAIR_MP_A");
   });
+
+  it("shows North/South and East/West rankings side by side for a two-winner event", () => {
+    stubOverflow(300, 500);
+    const ns = { ...combined(2), type: "NS_RANKING" };
+    const ew = { ...combined(2), type: "EW_RANKING" };
+    render(
+      <DisplayLeaderboardView
+        eventName="Ev"
+        leaderboard={{ ...combined(4), directional: { ns, ew } }}
+        sections={[sectionLb("A", 4)]}
+        isLoading={false}
+        scoringMode="percentage"
+      />,
+    );
+    expect(screen.getByText("North / South")).toBeInTheDocument();
+    expect(screen.getByText("East / West")).toBeInTheDocument();
+    const seen = screen.getAllByTestId("leaderboard").map((e) => e.textContent);
+    expect(seen).toEqual(["NS_RANKING", "EW_RANKING"]);
+  });
 });

@@ -92,20 +92,28 @@ describe("commitNextSwissRound", () => {
       commitNextSwissRound("g1", "A", seating, null),
     ).resolves.toEqual({ roundNumber: 3 });
 
-    expect(emitWithAck).toHaveBeenCalledWith(SocketEvents.DRAW_NEXT_SWISS_ROUND, {
-      gameId: "g1",
-      section: "A",
-      directorToken: "dir-tok",
-      seating,
-      sitOutPairId: null,
-      halfMatch: null,
-    });
+    expect(emitWithAck).toHaveBeenCalledWith(
+      SocketEvents.DRAW_NEXT_SWISS_ROUND,
+      {
+        gameId: "g1",
+        section: "A",
+        directorToken: "dir-tok",
+        seating,
+        sitOutPairId: null,
+        halfMatch: null,
+      },
+    );
   });
 
   it("forwards a chosen sit-out pair id", async () => {
     vi.mocked(emitWithAck).mockResolvedValue({ roundNumber: 4 });
 
-    await commitNextSwissRound("g1", "A", [{ tableNumber: 1, ns: 1, ew: 3 }], 2);
+    await commitNextSwissRound(
+      "g1",
+      "A",
+      [{ tableNumber: 1, ns: 1, ew: 3 }],
+      2,
+    );
 
     expect(emitWithAck).toHaveBeenCalledWith(
       SocketEvents.DRAW_NEXT_SWISS_ROUND,
@@ -114,10 +122,12 @@ describe("commitNextSwissRound", () => {
   });
 
   it("rejects with the server's message when the commit fails", async () => {
-    vi.mocked(emitWithAck).mockRejectedValue(new Error("That seating isn't valid"));
+    vi.mocked(emitWithAck).mockRejectedValue(
+      new Error("That seating isn't valid"),
+    );
 
-    await expect(
-      commitNextSwissRound("g1", "A", [], null),
-    ).rejects.toThrow("That seating isn't valid");
+    await expect(commitNextSwissRound("g1", "A", [], null)).rejects.toThrow(
+      "That seating isn't valid",
+    );
   });
 });

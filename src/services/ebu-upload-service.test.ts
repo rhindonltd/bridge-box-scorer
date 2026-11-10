@@ -152,4 +152,46 @@ describe("uploadResultsToEbu", () => {
       submission: { ok: false, failure: "Rejected" },
     });
   });
+  it("adds advisories for unrecognised EBU numbers and surname mismatches", async () => {
+    vi.mocked(checkPlayers).mockResolvedValue({
+      players: [{ ebu: "1", surname: "Shears", check: "KEY1" }],
+      badEbus: 2,
+      mismatches: 3,
+    });
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
+    expect(result.status).toBe("sent");
+    if (result.status !== "sent") return;
+    expect(result.advisories).toEqual([
+      "2 player(s) have an EBU number the EBU does not recognise.",
+      "3 player(s) have a surname that does not match their EBU number.",
+    ]);
+  });
+  it("skips the date check for a non-ISO event date", async () => {
+    const result = await uploadResultsToEbu(
+      db,
+      makeGame({ eventDate: "17/09/2026" }),
+      "NORMAL_CLUB",
+    );
+    expect(checkSessionDate).not.toHaveBeenCalled();
+    expect(result.status).toBe("sent");
+  });
+  it("skips player checking when the session has no players", async () => {
+    vi.mocked(parseUsebio).mockResolvedValue({});
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
+    expect(checkPlayers).not.toHaveBeenCalled();
+    expect(submitSession).toHaveBeenCalledOnce();
+    expect(result.status).toBe("sent");
+  });
+  it("surfaces a Sim Pairs advisory for the date", async () => {
+    vi.mocked(checkSessionDate).mockResolvedValue({
+      sims: [{ description: "Club Sim" }],
+      duplicates: 0,
+    } as never);
+    const result = await uploadResultsToEbu(db, makeGame(), "NORMAL_CLUB");
+    expect(result.status).toBe("sent");
+    if (result.status !== "sent") return;
+    expect(result.advisories).toEqual([
+      'A Sim Pairs event ("Club Sim") is registered for this date.',
+    ]);
+  });
 });

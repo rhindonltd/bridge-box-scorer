@@ -129,6 +129,19 @@ describe("swissTeamsRoundToMaterializable", () => {
     expect(out.every((t) => t.rounds[0].sitOut === undefined)).toBe(true);
   });
 
+  it("lays out no triple rooms when a SHORT round is too short to split", () => {
+    const triple: TeamsTriple = {
+      a: 3,
+      b: 4,
+      c: 5,
+      kind: "SHORT",
+      group: null,
+      slot: null,
+    };
+    // One board per round cannot be split into two halves.
+    const out = swissTeamsRoundToMaterializable(1, 1, 4, [{ a: 1, b: 2 }], null, triple);
+    expect(out.map((t) => t.tableNumber).sort()).toEqual([1, 2]);
+  });
   it("lays a SHORT triple out as three head-to-head comparisons on sets A/B/C", () => {
     // Teams 1..5: a normal 1v2, plus a SHORT triple {3,4,5}. Round 1 of a
     // 4-round, 6-boards-per-round event. halfSize = 3; A = boards 1..3,

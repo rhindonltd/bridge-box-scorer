@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 
 import { SocketEvents } from "@/socket/socket-events";
 
@@ -32,8 +32,20 @@ vi.mock("@/context/GameContext", () => ({
 
 // Keep the play container in its simplest branch: still waiting to start, so it
 // renders the waiting screen and we don't need to mock the whole play router.
+let mockFlow: Record<string, unknown> = {
+  waitingToStart: true,
+  schedule: null,
+  playState: {},
+};
 vi.mock("@/hooks/play-flow", () => ({
-  usePlayFlow: () => ({ waitingToStart: true, schedule: null, playState: {} }),
+  usePlayFlow: () => mockFlow,
+}));
+let mockTakenOver = false;
+vi.mock("@/hooks/seat-taken-over", () => ({
+  useSeatTakenOver: () => mockTakenOver,
+}));
+vi.mock("@/components/common/Spinner", () => ({
+  FullScreenSpinner: () => <div>spinner</div>,
 }));
 
 vi.mock("@/app/game/[gameId]/play/[initialSeat]/WaitingToStartPage", () => ({
@@ -63,6 +75,8 @@ describe("PlayPage SEAT_RENUMBERED handling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     handlers.clear();
+    mockFlow = { waitingToStart: true, schedule: null, playState: {} };
+    mockTakenOver = false;
     mockGetPlayerToken.mockReturnValue({
       startingPosition: "A5NS",
       token: "secret-123",
@@ -122,5 +136,28 @@ describe("PlayPage SEAT_RENUMBERED handling", () => {
 
     expect(mockSetPlayerToken).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith("/game/g1/play/B1NS");
+  });
+});
+describe("PlayPage screen selection", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    handlers.clear();
+    mockTakenOver = false;
+    mockFlow = { waitingToStart: true, schedule: null, playState: {} };
+  });
+  it("shows the seat-moved screen once another device takes the seat", () => {
+    mockTakenOver = true;
+    render(<PlayPage />);
+    expect(screen.getByText("taken-over")).toBeInTheDocument();
+  });
+  it("shows a spinner while the schedule is still loading", () => {
+    mockFlow = { waitingToStart: false, schedule: null, playState: {} };
+    render(<PlayPage />);
+    expect(screen.getByText("spinner")).toBeInTheDocument();
+  });
+  it("delegates to the state router once the schedule is loaded", () => {
+    mockFlow = { waitingToStart: false, schedule: {}, playState: {} };
+    render(<PlayPage />);
+    expect(screen.getByText("play")).toBeInTheDocument();
   });
 });

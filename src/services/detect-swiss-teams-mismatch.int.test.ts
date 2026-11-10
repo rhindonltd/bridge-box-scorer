@@ -198,4 +198,134 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     const starts = triple.comparisons.map((c) => c.boardStart).sort();
     expect(new Set(starts).size).toBe(3);
   });
+  it("returns nothing while only round 1 has been played", async () => {
+    await setup();
+    const { detectSectionMismatches } = await import(
+      "@/services/detect-swiss-mismatch-service"
+    );
+    expect(await detectSectionMismatches(gameId, "A")).toEqual([]);
+  });
+  it("skips a round that has no tables and no triple", async () => {
+    await setup();
+    await scoreRound1Spread();
+    // Round 2 is empty; round 3 is committed, so the highest round is 3.
+    await materializeRound2([]);
+    const { materializeSwissTeamsRound } = await import(
+      "@/services/materialize-swiss-teams-round"
+    );
+    await materializeSwissTeamsRound(gameId, "A", 3, 1, 5, [
+      { a: 1, b: 2 },
+      { a: 3, b: 4 },
+      { a: 5, b: 6 },
+    ]);
+    const { detectSectionMismatches } = await import(
+      "@/services/detect-swiss-mismatch-service"
+    );
+    expect(Array.isArray(await detectSectionMismatches(gameId, "A"))).toBe(true);
+  });
+  it("ignores rulings it cannot decode but honours valid ones", async () => {
+    await setup();
+    await scoreRound1Spread();
+    await materializeRound2([
+      { a: 1, b: 2 },
+      { a: 3, b: 6 },
+      { a: 4, b: 5 },
+    ]);
+    for (let t = 1; t <= 6; t++) await setRoundTable(2, t, "3NTN=");
+    const { detectSectionMismatches } = await import(
+      "@/services/detect-swiss-mismatch-service"
+    );
+    const before = await detectSectionMismatches(gameId, "A");
+    const t1 = before.find((c) => c.mismatchedId === 1)!;
+    expect(t1).toBeDefined();
+    const games = await import("@/db/games");
+    const { matches } = await import("@/db/games/tables/matches");
+    const db = (await games.getDb(gameId))!;
+    db.insert(matches)
+      .values({
+        section: "A",
+        roundNumber: 2,
+        kind: "TEAMS",
+        scoredAsUnit: true,
+        home: "garbage",
+        opponent: "A9NS",
+        boardStart: 2,
+        boardEnd: 2,
+        ruling: "MM:NS:HIGHER:OWN",
+      })
+      .run();
+    // Rule team 1 on its real match (home "A1NS", board 2).
+    const { eq, and } = await import("drizzle-orm");
+    db.update(matches)
+      .set({ ruling: "MM:NS:HIGHER:OWN" })
+      .where(and(eq(matches.roundNumber, 2), eq(matches.home, "A1NS")))
+      .run();
+    const after = await detectSectionMismatches(gameId, "A");
+    expect(after.find((c) => c.mismatchedId === 1)).toBeUndefined();
+    expect(after.length).toBe(before.length - 1);
+  });
+  describe("triples", () => {
+    async function commitTriple(round: number, members: [number, number, number]) {
+      const { materializeSwissTeamsRound } = await import(
+        "@/services/materialize-swiss-teams-round"
+      );
+      await materializeSwissTeamsRound(
+        gameId,
+        "A",
+        round,
+        4,
+        5,
+        [{ a: 4, b: 5 }],
+        null,
+        { a: members[0], b: members[1], c: members[2], kind: "SHORT" },
+      );
+    }
+    it("flags a team that faced the wrong third team in a committed triple", async () => {
+      await setup();
+      await scoreRound1Spread();
+      // The correct trio is the bottom of the standings; commit one that
+      // includes the leaders instead.
+      await commitTriple(2, [1, 2, 6]);
+      const { detectSectionMismatches } = await import(
+        "@/services/detect-swiss-mismatch-service"
+      );
+      const found = await detectSectionMismatches(gameId, "A");
+      const inTriple = found.filter((c) => c.roundNumber === 2);
+      expect(inTriple.length).toBeGreaterThan(0);
+      for (const c of inTriple) {
+        expect(c.participantKind).toBe("TEAM");
+        expect(c.side).toBe("NS");
+        expect(c.tableNumber).toBe(c.mismatchedId);
+      }
+    });
+    it("assesses a round that is all triple, with no ordinary tables", async () => {
+      await setup();
+      await scoreRound1Spread();
+      const { materializeSwissTeamsRound } = await import(
+        "@/services/materialize-swiss-teams-round"
+      );
+      await materializeSwissTeamsRound(gameId, "A", 2, 4, 5, [], null, {
+        a: 1,
+        b: 2,
+        c: 6,
+        kind: "SHORT",
+      });
+      const { detectSectionMismatches } = await import(
+        "@/services/detect-swiss-mismatch-service"
+      );
+      const found = await detectSectionMismatches(gameId, "A");
+      expect(found.every((c) => c.roundNumber === 2)).toBe(true);
+    });
+    it("does not replay a trio whose members were already in a triple", async () => {
+      await setup();
+      await scoreRound1Spread();
+      await commitTriple(2, [1, 2, 6]);
+      await commitTriple(3, [1, 2, 6]);
+      const { detectSectionMismatches } = await import(
+        "@/services/detect-swiss-mismatch-service"
+      );
+      const found = await detectSectionMismatches(gameId, "A");
+      expect(found.filter((c) => c.roundNumber === 3)).toEqual([]);
+    });
+  });
 });

@@ -171,3 +171,48 @@ describe("applyBetterThanAverageXimpBoards (Cross-IMP)", () => {
     expect(nsXimp(out, 2, "1")).toBe(3); // flat +3
   });
 });
+
+describe("applyBetterThanAverageImpBoards — edge cases", () => {
+  const field = [line("3NTN=", "2", "5"), line("2NTN=", "3", "6")];
+
+  it("overrides only the AVE+ side when the other side is neither +3 nor -3", () => {
+    const boards = [impBoard(1, [line("A60/50", "1", "4"), ...field])];
+    const out = applyBetterThanAverageImpBoards(boards);
+    const before = boards[0].lines.find((l) => l.nsId === "1")!;
+    const after = out[0].lines.find((l) => l.nsId === "1")!;
+    expect(after.nsImps).toBe(3);
+    expect(after.ewImps).toBe(before.ewImps);
+  });
+
+  it("overrides only the AVE- side when the other side is neither +3 nor -3", () => {
+    const boards = [impBoard(1, [line("A50/40", "1", "4"), ...field])];
+    const out = applyBetterThanAverageImpBoards(boards);
+    const before = boards[0].lines.find((l) => l.nsId === "1")!;
+    const after = out[0].lines.find((l) => l.nsId === "1")!;
+    expect(after.nsImps).toBe(before.nsImps);
+    expect(after.ewImps).toBe(-3);
+  });
+
+  it("passes a line whose outcome is not a string through untouched", () => {
+    const odd = { nsId: "1", ewId: "4", score: 400, nsImps: 2, ewImps: -2 } as any;
+    const out = applyBetterThanAverageImpBoards([{ board: 1, lines: [odd] }]);
+    expect(out[0].lines[0]).toBe(odd);
+  });
+
+  it("ignores a non-real line that (defensively) carries a raw score when averaging", () => {
+    const artificialWithScore = {
+      outcome: "A60/40",
+      nsId: "1",
+      ewId: "4",
+      score: 400,
+      nsImps: 3,
+      ewImps: -3,
+    } as any;
+    const out = applyBetterThanAverageImpBoards([
+      { board: 1, lines: [artificialWithScore] },
+    ]);
+    // No real boards in the window, so the flat +3 / -3 stands.
+    expect(out[0].lines[0].nsImps).toBe(3);
+    expect(out[0].lines[0].ewImps).toBe(-3);
+  });
+});

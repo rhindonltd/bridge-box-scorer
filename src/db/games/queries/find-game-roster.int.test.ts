@@ -99,4 +99,53 @@ describe("findGameRoster (design §11)", () => {
       "WITHDRAWN",
     );
   });
+  it("covers late, substituted and without-standing seats, ordered by status then seat", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { players } = await import("@/db/games/tables/players");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const occupy = (
+      seat: string,
+      tag: string,
+      extra: Record<string, unknown> = {},
+    ) => {
+      const p1 = db
+        .insert(players)
+        .values({ firstName: tag, lastName: "One" })
+        .returning()
+        .get();
+      const p2 = db
+        .insert(players)
+        .values({ firstName: tag, lastName: "Two" })
+        .returning()
+        .get();
+      db.insert(seatOccupancy)
+        .values({
+          seat: seat as never,
+          player1: p1.id,
+          player2: p2.id,
+          secretKey: `k-${tag}`,
+          ...extra,
+        })
+        .run();
+    };
+    occupy("A6NS", "act2");
+    occupy("A1NS", "act1");
+    occupy("A2NS", "late", { standing: "LATE", withdrawnInRound: 2 });
+    occupy("A3NS", "nostand", { standing: "WITHOUT_STANDING" });
+    occupy("A4NS", "early", { boards: [1] });
+    occupy("A4NS", "later", { boards: [2] });
+    const { findGameRoster } = await import("./find-game-roster");
+    const roster = await findGameRoster(db);
+    expect(roster.map((r) => [r.seat, r.status])).toEqual([
+      ["A2NS", "LATE"],
+      ["A4NS", "SUBSTITUTED"],
+      ["A3NS", "WITHOUT_STANDING"],
+      ["A1NS", "ACTIVE"],
+      ["A6NS", "ACTIVE"],
+    ]);
+    const sub = roster.find((r) => r.seat === "A4NS")!;
+    expect(sub.substitution).toBeDefined();
+    expect(sub.pair).toBe(sub.substitution!.pair);
+    expect(roster.find((r) => r.seat === "A1NS")!.absence).toBeUndefined();
+  });
 });

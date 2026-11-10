@@ -32,6 +32,17 @@ describe("relativeTime", () => {
     expect(relativeTime("2026-09-28T13:00:00Z", now)).toBe("2 hours ago");
   });
 
+  it("reports 'just now' for a very recent timestamp", () => {
+    expect(relativeTime("2026-09-28T14:59:58Z", now)).toBe("just now");
+  });
+  it("formats hours singular and days", () => {
+    expect(relativeTime("2026-09-28T14:00:00Z", now)).toBe("1 hour ago");
+    expect(relativeTime("2026-09-27T15:00:00Z", now)).toBe("1 day ago");
+    expect(relativeTime("2026-09-25T15:00:00Z", now)).toBe("3 days ago");
+  });
+  it("defaults 'now' to the current time", () => {
+    expect(relativeTime(new Date().toISOString())).toBe("just now");
+  });
   it("singularises a one-unit interval", () => {
     expect(relativeTime("2026-09-28T14:59:00Z", now)).toBe("1 minute ago");
   });
@@ -122,5 +133,60 @@ describe("CloudSyncSettingsView", () => {
     expect(
       screen.getByRole("button", { name: /backing up/i }),
     ).toBeDisabled();
+  });
+  const renderWith = (st: CloudSyncStatus, message: string | null = null) =>
+    render(
+      <CloudSyncSettingsView
+        status={st}
+        syncing={false}
+        message={message}
+        onBackUpNow={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+  const withResult = (last_result: any) =>
+    status({
+      backup: {
+        last_success: "2026-09-28T14:00:00Z",
+        last_attempt: "2026-09-28T14:30:00Z",
+        last_result,
+      },
+    });
+  it("warns when the box was offline", () => {
+    renderWith(withResult("offline"));
+    expect(screen.getByText(/box was offline/i)).toBeInTheDocument();
+  });
+  it("warns when the subscription does not include backup", () => {
+    renderWith(withResult("not_entitled"));
+    expect(screen.getByText(/isn't included/i)).toBeInTheDocument();
+  });
+  it("shows no warning for a successful backup", () => {
+    renderWith(withResult("ok"));
+    expect(screen.queryByText(/didn't complete/i)).not.toBeInTheDocument();
+  });
+  it("does not warn when the feature is disabled even if the last run failed", () => {
+    renderWith({ ...withResult("error"), enabled: false });
+    expect(screen.queryByText(/didn't complete/i)).not.toBeInTheDocument();
+  });
+  it("renders a success message and an error message", () => {
+    const { unmount } = renderWith(status(), "✅ Backup started");
+    expect(screen.getByText("✅ Backup started")).toHaveClass("text-green-700");
+    unmount();
+    renderWith(status(), "Network error");
+    expect(screen.getByText("Network error")).toHaveClass("text-red-600");
+  });
+  it("calls onBack from the header back arrow", () => {
+    const onBack = vi.fn();
+    render(
+      <CloudSyncSettingsView
+        status={status()}
+        syncing={false}
+        message={null}
+        onBackUpNow={vi.fn()}
+        onBack={onBack}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Go back" }));
+    expect(onBack).toHaveBeenCalled();
   });
 });

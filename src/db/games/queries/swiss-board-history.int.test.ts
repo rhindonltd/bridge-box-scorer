@@ -187,4 +187,44 @@ describe("getSwissBoardHistory", () => {
     const history = await getSwissBoardHistory(db, "A", TABLES);
     expect(history.hadHalfMatch.size).toBe(0);
   });
+  it("ignores match and board ids that are not Swiss pair ids (phantoms)", async () => {
+    const { matches } = await import("@/db/games/tables/matches");
+    const { boards } = await import("@/db/games/tables/boards");
+    const { makeBoard } = await import("@/mocks/fixtures/db-rows");
+    const db = (await harness.getDb()) as Db;
+    const base = {
+      section: "A",
+      roundNumber: 1,
+      scoredAsUnit: false,
+      boardStart: 1,
+      boardEnd: 1,
+    } as const;
+    db.insert(matches)
+      .values([
+        // A bye / half-match / pairs match whose ids are not real pairs.
+        { ...base, id: 1, kind: "BYE", home: "APHANTOM", opponent: null },
+        { ...base, id: 2, kind: "HALF_MATCH", home: "APHANTOM", opponent: "A2" },
+        { ...base, id: 3, kind: "HALF_MATCH", home: "A3", opponent: "APHANTOM" },
+        { ...base, id: 4, kind: "HALF_MATCH", home: "A1", opponent: null },
+        { ...base, id: 5, kind: "PAIRS", home: "APHANTOM", opponent: "A4" },
+        { ...base, id: 6, kind: "PAIRS", home: "A4", opponent: null },
+      ])
+      .run();
+    db.insert(boards)
+      .values([
+        makeBoard({ matchId: 1, ns: "APHANTOM", ew: "A2" }),
+        makeBoard({ matchId: 1, boardNumber: 2, ns: "A1", ew: "APHANTOM" }),
+      ])
+      .run();
+    const { getSwissBoardHistory } = await import(
+      "@/db/games/queries/swiss-board-history"
+    );
+    const history = await getSwissBoardHistory(db, "A", TABLES);
+    expect(history.hadBye.size).toBe(0);
+    expect([...history.hadHalfMatch].sort()).toEqual([1, 2, 3]);
+    expect(history.playedOpponents.size).toBe(0);
+    expect(history.directionCounts.get(2)).toEqual({ ns: 0, ew: 1 });
+    expect(history.directionCounts.get(1)).toEqual({ ns: 1, ew: 0 });
+    expect(history.directionCounts.size).toBe(2);
+  });
 });

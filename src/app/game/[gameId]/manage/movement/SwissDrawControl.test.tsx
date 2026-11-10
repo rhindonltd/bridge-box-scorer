@@ -244,4 +244,31 @@ describe("SwissDrawControl", () => {
     const stationaryChip = screen.getByText("Alice N").closest("button")!;
     expect(stationaryChip).toBeDisabled();
   });
+  it("shows a generic message when the preview rejects with a non-Error", async () => {
+    vi.mocked(previewNextSwissRound).mockRejectedValue("boom");
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
+    fireEvent.click(screen.getByTestId("draw-next-round"));
+    await waitFor(() =>
+      expect(screen.getByTestId("draw-error")).toHaveTextContent(
+        "Could not draw the next round.",
+      ),
+    );
+  });
+  it("keeps the review open and shows the error when the commit fails", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue(previewAck() as never);
+    vi.mocked(commitNextSwissRound).mockRejectedValue(new Error("round changed"));
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
+    fireEvent.click(screen.getByTestId("draw-next-round"));
+    fireEvent.click(await screen.findByTestId("draw-confirm"));
+    expect(await screen.findByText("round changed")).toBeInTheDocument();
+    expect(screen.getByTestId("draw-confirm")).toBeInTheDocument();
+  });
+  it("shows a generic message when the commit rejects with a non-Error", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue(previewAck() as never);
+    vi.mocked(commitNextSwissRound).mockRejectedValue("boom");
+    render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
+    fireEvent.click(screen.getByTestId("draw-next-round"));
+    fireEvent.click(await screen.findByTestId("draw-confirm"));
+    expect(await screen.findByText("Could not save the draw.")).toBeInTheDocument();
+  });
 });

@@ -175,6 +175,7 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
   // section, its size, the seated pairs, or the resolved movement facts change.
   const tables = useMemo<DirectorTable[]>(() => {
     if (!currentSection) return [];
+    /* v8 ignore next -- unreachable: expectedLateSeats is a useMemo'd Set and is never nullish. */
     const lateSeats = expectedLateSeats ?? new Set<string>();
     return Array.from({ length: currentSection.tables }, (_, i) =>
       buildDirectorTable(
@@ -239,6 +240,8 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
     try {
       await deleteSection(gameId, section);
       const survivor = sections.find((s) => s.section !== section);
+      /* v8 ignore else -- unreachable: Delete is only offered when multiSection,
+         so another section always survives. */
       if (survivor) setSelected(survivor.section);
     } catch (err) {
       reportError(err);

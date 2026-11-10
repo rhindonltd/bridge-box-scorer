@@ -10,6 +10,8 @@ import {
   reassignBye,
   seatedPairIds,
   evaluateSwissSeating,
+  serializeAdvisoryInputs,
+  rehydrateAdvisoryInputs,
   chooseHalfMatchGroup,
   halfMatchGroupIds,
   reanchorHalfMatchGroup,
@@ -678,5 +680,136 @@ describe("reanchorHalfMatchGroup", () => {
 
   it("throws when the new anchor is not in the group", () => {
     expect(() => reanchorHalfMatchGroup(group, 1)).toThrow(/one of the group/);
+  });
+});
+
+describe("chooseHalfMatchGroup — top-up skips already chosen pairs", () => {
+  it("does not choose the same pair twice when the bottom pair is the only fresh one", () => {
+    const group = chooseHalfMatchGroup(
+      [1, 2, 3, 4, 5],
+      new Set(),
+      new Set([1, 2, 3, 4]),
+    );
+    expect(halfMatchGroupIds(group)).toEqual(new Set([5, 4, 3]));
+  });
+});
+
+describe("drawSwissRound — half-match anchor direction balancing", () => {
+  it("seats a non-stationary anchor EW when it has sat NS more often", () => {
+    const result = drawSwissRound(
+      input({
+        tables: 3,
+        standings: [1, 2, 3, 4, 5],
+        oddHandling: "HALF_MATCHES",
+        directionCounts: new Map([[3, { ns: 2, ew: 0 }]]),
+      }),
+    );
+    expect(result.halfMatch!.group.anchor).toBe(3);
+    expect(result.halfMatch!.anchorDirection).toBe("EW");
+  });
+});
+
+describe("evaluateSwissSeating — further advisories", () => {
+  it("reports an unknown pair, and two matches sharing a table", () => {
+    const a = evaluateSwissSeating(
+      [
+        { tableNumber: 1, ns: 1, ew: 4 },
+        { tableNumber: 1, ns: 2, ew: 99 },
+        { tableNumber: 3, ns: 3, ew: 6 },
+      ],
+      null,
+      input({ tables: 3 }),
+    );
+    expect(a.structuralError).toBe(true);
+    expect(a.structuralReasons).toContain("Unknown pair 99 is seated");
+    expect(a.structuralReasons).toContain("Two matches share a table");
+  });
+
+  it("flags two stationary pairs seated together", () => {
+    const stationary = new Map<SwissPairId, SwissHomeSeat>([
+      [1, swissPairHomeSeat(3, 1)],
+      [4, swissPairHomeSeat(3, 4)],
+    ]);
+    const a = evaluateSwissSeating(
+      [
+        { tableNumber: 1, ns: 1, ew: 4 },
+        { tableNumber: 2, ns: 2, ew: 5 },
+        { tableNumber: 3, ns: 3, ew: 6 },
+      ],
+      null,
+      input({ tables: 3, stationary }),
+    );
+    expect(a.hadStationaryConflict).toBe(true);
+    expect(a.problemTables).toContain(1);
+  });
+
+  it("flags a stationary pair at its home table but in the wrong direction", () => {
+    const stationary = new Map<SwissPairId, SwissHomeSeat>([
+      [1, swissPairHomeSeat(3, 1)], // table 1 NS
+      [4, swissPairHomeSeat(3, 4)], // table 1 EW
+    ]);
+    // Pair 4 (home table 1 EW) sits NS at table 1; pair 1 (home table 1 NS)
+    // sits EW at table 1. Each is checked on its own so only one conflict fires.
+    const nsWrong = evaluateSwissSeating(
+      [
+        { tableNumber: 1, ns: 4, ew: 2 },
+        { tableNumber: 2, ns: 3, ew: 5 },
+        { tableNumber: 3, ns: 1, ew: 6 },
+      ],
+      null,
+      input({ tables: 3, stationary: new Map([[4, swissPairHomeSeat(3, 4)]]) }),
+    );
+    expect(nsWrong.hadStationaryConflict).toBe(true);
+    const ewWrong = evaluateSwissSeating(
+      [
+        { tableNumber: 1, ns: 2, ew: 1 },
+        { tableNumber: 2, ns: 3, ew: 5 },
+        { tableNumber: 3, ns: 4, ew: 6 },
+      ],
+      null,
+      input({ tables: 3, stationary: new Map([[1, stationary.get(1)!]]) }),
+    );
+    expect(ewWrong.hadStationaryConflict).toBe(true);
+  });
+
+  it("flags a stationary EW pair off its home seat, with tables sorted", () => {
+    // Pair 4's home is table 1 EW; seat it at table 3 EW and also move pair 5
+    // (home table 2 EW) to table 1, so two tables are flagged out of order.
+    const stationary = new Map<SwissPairId, SwissHomeSeat>([
+      [4, swissPairHomeSeat(3, 4)],
+      [5, swissPairHomeSeat(3, 5)],
+    ]);
+    const a = evaluateSwissSeating(
+      [
+        { tableNumber: 1, ns: 1, ew: 5 },
+        { tableNumber: 2, ns: 2, ew: 6 },
+        { tableNumber: 3, ns: 3, ew: 4 },
+      ],
+      null,
+      input({ tables: 3, stationary }),
+    );
+    expect(a.hadStationaryConflict).toBe(true);
+    expect(a.problemTables).toEqual([1, 3]);
+  });
+});
+
+describe("advisory inputs transport", () => {
+  it("round-trips the advisory-relevant parts through serialize/rehydrate", () => {
+    const original = input({
+      tables: 3,
+      standings: [1, 2, 3],
+      playedOpponents: played([[1, 4]]),
+      hadBye: new Set([2]),
+      directionCounts: new Map([[1, { ns: 1, ew: 0 }]]),
+      stationary: new Map([[1, swissPairHomeSeat(3, 1)]]),
+    });
+    const wire = JSON.parse(JSON.stringify(serializeAdvisoryInputs(original)));
+    const back = rehydrateAdvisoryInputs(wire);
+    expect(back.tables).toBe(3);
+    expect(back.standings).toEqual([]);
+    expect([...back.playedOpponents]).toEqual([opponentKey(1, 4)]);
+    expect([...back.hadBye]).toEqual([2]);
+    expect([...back.directionCounts]).toEqual([[1, { ns: 1, ew: 0 }]]);
+    expect([...back.stationary]).toEqual([[1, swissPairHomeSeat(3, 1)]]);
   });
 });

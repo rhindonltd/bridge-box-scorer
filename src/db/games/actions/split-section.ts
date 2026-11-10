@@ -98,10 +98,12 @@ export async function splitSection(
   // Tables 1..keep stay in the source; keep+1..N move to the new section and
   // are renumbered to 1..moved there.
   const keep = source.tables - moved;
+  /* v8 ignore start -- unreachable: `source` was found in `existing`, so it is never empty */
   const newOrdinal =
     existing.length === 0
       ? 0
       : Math.max(...existing.map((s) => s.ordinal)) + 1;
+  /* v8 ignore stop */
 
   // Map a seat in the moved range of the source to its new, renumbered seat;
   // null when the seat is not in this split's moved tables. Shared by every

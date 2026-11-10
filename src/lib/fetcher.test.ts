@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetcher, postFetcher } from "./fetcher";
+import { fetcher, postFetcher, unwrapFetcher } from "./fetcher";
 
 describe("fetcher", () => {
   beforeEach(() => {
@@ -110,5 +110,24 @@ describe("postFetcher", () => {
     } catch (err: unknown) {
       expect((err as { status: number }).status).toBe(503);
     }
+  });
+});
+
+describe("unwrapFetcher", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns the named field from the result envelope", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, result: { game: { id: "g1" } } }),
+      }),
+    );
+    await expect(
+      unwrapFetcher<{ id: string }>("game")("/api/g"),
+    ).resolves.toEqual({ id: "g1" });
   });
 });

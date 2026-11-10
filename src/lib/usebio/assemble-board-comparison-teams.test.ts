@@ -66,6 +66,7 @@ function board(
   ns: string,
   ew: string,
   outcome: BoardOutcome | null,
+  extra: Partial<Board> = {},
 ): Board {
   return {
     section: "A",
@@ -81,6 +82,7 @@ function board(
     directorOverrideLead: null,
     status: "CONFIRMED",
     matchId: 1,
+    ...extra,
   } as Board;
 }
 
@@ -272,5 +274,92 @@ describe("assembleBoardComparisonTeams — triples", () => {
     expect(byNumber.get("1")).toBe(4);
     expect(byNumber.get("2")).toBe(2);
     expect(byNumber.get("3")).toBe(0);
+  });
+});
+
+describe("assembleBoardComparisonTeams — edge cases", () => {
+  const teams = [team(1, "Sharks"), team(2, "Dragons")];
+  const o = (v: string) => v as BoardOutcome;
+
+  it("defaults an empty section name to A", () => {
+    const data = assembleBoardComparisonTeams(
+      { ...game, sectionName: "" } as BridgeGame,
+      club,
+      teams,
+      [],
+      "BAM",
+    );
+    expect(data.sectionName).toBe("A");
+  });
+
+  it("drops a without-standing team from the ranking", () => {
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", o("4SN=")),
+      board(1, 2, 1, "A2NS", "A1EW", o("3NTN=")),
+    ];
+    const data = assembleBoardComparisonTeamsImpl(
+      game,
+      club,
+      "NORMAL_CLUB",
+      teams,
+      boards,
+      teamMatchStructureFromRows(boards),
+      "BAM",
+      new Set(["A2NS"]),
+    );
+    expect(data.matches).toHaveLength(1);
+    expect(data.ranking.map((r) => r.number)).toEqual(["1"]);
+  });
+
+  it("handles leads, missing rooms and teams off the roster in a match", () => {
+    const boards = [
+      // board 1: both rooms, both with a lead (override beats confirmed).
+      board(1, 1, 1, "A1NS", "A2EW", o("4SN="), { confirmedLead: "SA" as never }),
+      board(1, 2, 1, "A2NS", "A1EW", o("3NTN="), {
+        confirmedLead: "SA" as never,
+        directorOverrideLead: "HK" as never,
+      }),
+      // board 2: only the away room has a row.
+      board(1, 2, 2, "A2NS", "A1EW", o("3NTN=")),
+      // board 3: only the home room has a row, with no result entered.
+      board(1, 1, 3, "A1NS", "A2EW", null),
+    ];
+    // Roster holds neither team's number for team 1 -> raw ids are used.
+    const data = assembleBoardComparisonTeams(game, club, [], boards, "BAM");
+    const m = data.matches[0];
+    expect(m.team).toBe("A1NS");
+    expect(m.opposingTeam).toBe("A2NS");
+    const byBoard = new Map(m.boards.map((b) => [b.boardNumber, b]));
+    expect(byBoard.get(2)!.travellerLines.map((l) => l.direction)).toEqual([
+      "EW",
+    ]);
+    expect(byBoard.get(3)!.travellerLines.map((l) => l.direction)).toEqual([
+      "NS",
+    ]);
+    expect(data.ranking.map((r) => r.number)).toEqual(["A1NS", "A2NS"]);
+  });
+
+  it("handles leads, missing rooms and off-roster teams inside a triple", () => {
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", o("4SN="), { confirmedLead: "SA" as never }),
+      board(1, 2, 1, "A2NS", "A1EW", o("3NTN="), {
+        directorOverrideLead: "HK" as never,
+      }),
+      // set B: board 2 only entered in the away room (A3NS), so the home room
+      // (A2NS) has no row.
+      board(1, 3, 2, "A3NS", "A2EW", o("3NTN=")),
+      // set B has a second board where only the home room has a row.
+      board(1, 2, 4, "A2NS", "A3EW", null),
+      board(1, 3, 3, "A3NS", "A1EW", o("3NTN=")),
+      board(1, 1, 3, "A1NS", "A3EW", o("4SN=")),
+    ];
+    const data = assembleBoardComparisonTeams(game, club, [], boards, "BAM");
+    expect(data.matches).toHaveLength(3);
+    const hasSingleRoom = data.matches.some((m) =>
+      m.boards.some((b) => b.travellerLines.length === 1),
+    );
+    expect(hasSingleRoom).toBe(true);
+    // Raw ids are used for teams missing from the roster.
+    expect(data.matches.every((m) => m.team.startsWith("A"))).toBe(true);
   });
 });

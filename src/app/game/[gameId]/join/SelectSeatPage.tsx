@@ -107,6 +107,7 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
     // a real seat; guard defensively regardless. Capture the seat and the
     // teams flag up front, since flipping `submitting` below clears
     // `activeSeat` (the sheet closes) for the rest of this async call.
+    /* v8 ignore next -- unreachable: the sheet (the only caller) renders only while activeSeat is set. */
     if (!activeSeat) return;
     const seat = activeSeat;
     const forwardTeamName = isTeamsNsSeat ? teamName : undefined;

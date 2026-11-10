@@ -365,6 +365,36 @@ describe("assembleSwissTeams", () => {
 import { voidMatchVp } from "@/model/teams-match-void";
 import type { TeamMatchStructureRow } from "@/scoring/swiss/team-match";
 
+describe("assembleSwissTeams — triple edge cases", () => {
+  it("handles single-room boards and off-roster teams inside a triple", () => {
+    const o = (v: string) => v as BoardOutcome;
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", o("4SN=")),
+      board(1, 2, 1, "A2NS", "A1EW", o("3NTN=")),
+      board(1, 2, 2, "A2NS", "A3EW", o("4SN=")),
+      board(1, 3, 2, "A3NS", "A2EW", o("3NTN=")),
+      board(1, 3, 3, "A3NS", "A1EW", o("3NTN=")),
+      board(1, 1, 3, "A1NS", "A3EW", o("4SN=")),
+      // Extra boards entered in one room only, one per direction of room.
+      board(1, 1, 4, "A1NS", "A2EW", o("3NTN=")),
+      board(1, 2, 5, "A2NS", "A1EW", o("3NTN=")),
+    ];
+    // An empty roster: every team falls back to its raw id.
+    const data = assembleSwissTeams(game, club, [], boards);
+    expect(data.matches).toHaveLength(3);
+    expect(data.matches.every((m) => m.team.startsWith("A"))).toBe(true);
+    const lineCounts = data.matches.flatMap((m) =>
+      m.boards.map((b) => b.travellerLines.length),
+    );
+    expect(lineCounts).toContain(1);
+    expect(lineCounts).toContain(2);
+    // The one-room boards carry no comparable result, so they score 0 IMPs.
+    const oneRoom = data.matches
+      .flatMap((m) => m.boards)
+      .filter((b) => b.travellerLines.length === 1);
+    expect(oneRoom.every((b) => b.imps === 0)).toBe(true);
+  });
+});
 describe("assembleSwissTeams — §3.3.9 void match (whole-team withdrawal)", () => {
   const teams = [team(1, "Sharks"), team(2, "Dragons")];
 

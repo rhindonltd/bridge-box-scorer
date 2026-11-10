@@ -152,3 +152,31 @@ describe("resolveStandings — §2.4.7 LATE half-boards gate", () => {
     ).toHaveLength(1); // 1 < 2 → short
   });
 });
+describe("resolveStandings — defaults", () => {
+  it("treats a LATE arrival who never played a board as short of half", () => {
+    // A1NS has no result on any board, so it is absent from the played tally.
+    const rows = fourBoardEvent("A1NS", 0);
+    const { withdrawals } = resolveStandings(
+      [{ seat: "A1NS", standing: "LATE", treatment: "REMOVE", finePercent: null }],
+      rows,
+    );
+    expect(withdrawals).toHaveLength(1);
+  });
+  it("defaults a PENALISED absentee's missing fine to 0", () => {
+    const { withdrawals, excludedFromRanking } = resolveStandings(
+      [
+        {
+          seat: "A1NS",
+          standing: "WITHDRAWN",
+          treatment: "PENALISED",
+          finePercent: null,
+        },
+      ],
+      fourBoardEvent("A1NS", 2),
+    );
+    expect(withdrawals).toEqual([
+      { seat: "A1NS", treatment: "PENALISED", finePercent: 0 },
+    ]);
+    expect(excludedFromRanking.size).toBe(0);
+  });
+});

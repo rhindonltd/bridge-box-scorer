@@ -212,4 +212,13 @@ describe("buildTeamPairing", () => {
       "B1EW",
     ]);
   });
+  it("falls back to the first occupant when no one is recorded for the board", () => {
+    // Only a board-limited occupant exists for the seat; board 9 matches no
+    // one, so the first occupant's number is used rather than none.
+    const p = buildTeamPairing(teams, [
+      occ(1, "A1NS", "orig", { boards: [1, 2] }),
+      occ(2, "A1EW", "ew"),
+    ]);
+    expect(p.pairNumberFor("A1NS", 9)).toBe("1NS");
+  });
 });

@@ -87,4 +87,16 @@ describe("swrKeys", () => {
   it("network returns static path", () => {
     expect(swrKeys.network()).toBe("/api/system/network");
   });
+
+  it("builds the remaining game-scoped and system paths", () => {
+    expect(swrKeys.expectedLateSeats("g1")).toBe(
+      "/api/games/g1/expected-late-seats",
+    );
+    expect(swrKeys.substitutions("g1")).toBe("/api/games/g1/substitutions");
+    expect(swrKeys.absences("g1")).toBe("/api/games/g1/absences");
+    expect(swrKeys.roster("g1")).toBe("/api/games/g1/pairs");
+    expect(swrKeys.ebu()).toBe("/api/system/ebu");
+    expect(swrKeys.cloudSync()).toBe("/api/system/cloud-sync");
+    expect(swrKeys.cloudSyncStatus()).toBe("/api/system/cloud-sync/status");
+  });
 });

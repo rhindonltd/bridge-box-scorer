@@ -144,4 +144,67 @@ describe("applyBetterThanAverage", () => {
     // Unchanged: 70% of top (4) = 2.8, NOT uplifted to the pair's 100% average.
     expect(nsMp(out, 2, "1")).toBeCloseTo(0.7 * 4);
   });
+  it("overrides only the AVE+ side when the other side is an ordinary percentage", () => {
+    const boards = [
+      board(1, [
+        line("2NTN=", "1", "4"),
+        line("3NTN=", "2", "5"),
+        line("3NTN+1", "3", "6"),
+      ]),
+      board(2, [
+        line("A60/50", "1", "4"),
+        line("3NTN=", "2", "5"),
+        line("3NTN+1", "3", "6"),
+      ]),
+    ];
+    const out = applyBetterThanAverage(boards);
+    const adj = out[1].lines.find((l) => l.nsId === "1")!;
+    // EW's 50% is not an AVE+/AVE- value so it is kept as scored.
+    expect(adj.ewMatchPoints).toBe(boards[1].lines.find((l) => l.nsId === "1")!.ewMatchPoints);
+    expect(adj.nsMatchPoints).toBeCloseTo(0.6 * adj.maxMatchPoints);
+  });
+
+  it("overrides only the AVE- side when the other side is an ordinary percentage", () => {
+    const boards = [
+      board(1, [
+        line("A50/40", "1", "4"),
+        line("3NTN=", "2", "5"),
+        line("3NTN+1", "3", "6"),
+      ]),
+    ];
+    const out = applyBetterThanAverage(boards);
+    const adj = out[0].lines.find((l) => l.nsId === "1")!;
+    expect(adj.nsMatchPoints).toBe(boards[0].lines.find((l) => l.nsId === "1")!.nsMatchPoints);
+    expect(adj.ewMatchPoints).toBeCloseTo(0.4 * adj.maxMatchPoints);
+  });
+
+  it("passes a line with no outcome through untouched", () => {
+    const noOutcome = {
+      nsId: "1",
+      ewId: "4",
+      score: 400,
+      maxMatchPoints: 4,
+      nsMatchPoints: 3,
+      ewMatchPoints: 1,
+    } as any;
+    const boards = [{ board: 1, lines: [noOutcome] }] as ScoredMpBoard[];
+    expect(applyBetterThanAverage(boards)[0].lines[0]).toBe(noOutcome);
+  });
+
+  it("ignores a non-real line that (defensively) still carries a score when averaging", () => {
+    const assignedWithScore = {
+      outcome: "A60/40",
+      nsId: "1",
+      ewId: "4",
+      score: 400,
+      maxMatchPoints: 4,
+      nsMatchPoints: 2.4,
+      ewMatchPoints: 1.6,
+    } as any;
+    const boards = [{ board: 1, lines: [assignedWithScore] }] as ScoredMpBoard[];
+    const out = applyBetterThanAverage(boards);
+    // No real boards in the window -> flat 60% / 40% of the top.
+    expect(out[0].lines[0].nsMatchPoints).toBeCloseTo(2.4);
+    expect(out[0].lines[0].ewMatchPoints).toBeCloseTo(1.6);
+  });
 });

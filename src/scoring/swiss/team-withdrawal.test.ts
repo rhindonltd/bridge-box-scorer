@@ -124,4 +124,11 @@ describe("applyTeamWithdrawalRulings", () => {
     applyTeamWithdrawalRulings(matches, [{ seat: "A1NS" }], []);
     expect(matches[0].ruling).toBeNull();
   });
+  it("treats a match whose seats cannot be reconstructed as unplayed", () => {
+    // An unparseable home seat never forms a TeamMatch, so it has no played
+    // boards and a withdrawal of that seat voids it.
+    const matches = [teamsMatch(2, "BAD", "A2NS")];
+    const out = applyTeamWithdrawalRulings(matches, [{ seat: "BAD" }], []);
+    expect(out[0].ruling).toBe("VOID:SHORT_OFFENDER_NS");
+  });
 });

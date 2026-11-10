@@ -138,3 +138,42 @@ describe("calculateTeamsImpAggregateOverall — §3.3.7 removed boards", () => {
     expect(t2.totalImps).toBe(-3);
   });
 });
+describe("calculateTeamsImpAggregateOverall — triples and byes", () => {
+  it("credits each SHORT triple team the net IMPs from its two comparisons", () => {
+    // Same SHORT triple as the VP test: three one-board head-to-head sets,
+    // each decided by +1 IMP (420 vs 400).
+    const rows: SwissVpBoardRow[] = [
+      row({ boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 1, tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+      row({ boardNumber: 2, tableNumber: 2, ns: "A2NS", ew: "A3EW", confirmedResult: "4SN=" }),
+      row({ boardNumber: 2, tableNumber: 3, ns: "A3NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+      row({ boardNumber: 3, tableNumber: 3, ns: "A3NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+      row({ boardNumber: 3, tableNumber: 1, ns: "A1NS", ew: "A3EW", confirmedResult: "4SN=" }),
+    ];
+    const result = calculateTeamsImpAggregateOverall(rows, { barometer: false });
+    const imps = (id: string) =>
+      result.lines.find((l) => l.teamId === id)!.impsByRound[1];
+    // team 1 beats 2 and 3 (+1 each); team 2 loses to 1, beats 3; team 3 loses both.
+    expect(imps("A1NS")).toBe(2);
+    expect(imps("A2NS")).toBe(0);
+    expect(imps("A3NS")).toBe(-2);
+  });
+
+  it("records a bye team on the table with 0 IMPs", () => {
+    const rows: SwissVpBoardRow[] = [
+      row({ tableNumber: 1, ns: "A1NS", ew: "A2EW", confirmedResult: "3NTN=" }),
+      row({ tableNumber: 2, ns: "A2NS", ew: "A1EW", confirmedResult: "3NTN=" }),
+      row({
+        tableNumber: 3,
+        ns: "A3NS",
+        ew: "PHANTOM",
+        confirmedResult: null,
+        status: "SIT_OUT",
+      }),
+    ];
+    const result = calculateTeamsImpAggregateOverall(rows, { barometer: false });
+    const bye = result.lines.find((l) => l.teamId === "A3NS")!;
+    expect(bye.totalImps).toBe(0);
+    expect(bye.impsByRound[1]).toBe(0);
+  });
+});

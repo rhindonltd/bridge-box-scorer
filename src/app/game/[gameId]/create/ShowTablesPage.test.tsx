@@ -14,6 +14,7 @@ import type { Pair } from "@/model/participants";
 // across sections" toggle (shown only for a multi-section game). mutateGame is
 // the optimistic updater useCombinedRanking calls.
 let currentCombinedRanking = true;
+let currentGameExtra: Record<string, unknown> = {};
 const mockMutateGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
@@ -21,6 +22,7 @@ vi.mock("@/context/GameContext", () => ({
       gameId: "g1",
       tables: 2,
       combinedRanking: currentCombinedRanking,
+      ...currentGameExtra,
     },
     mutateGame: mockMutateGame,
   }),
@@ -37,6 +39,8 @@ vi.mock("@/context/GameContext", () => ({
 // server round-trip lands.
 let currentPairs: Pair[] = [];
 let capturedFetcher: ((url: string) => Promise<Pair[]>) | null = null;
+let capturedLateFetcher: ((url: string) => Promise<string[]>) | null = null;
+let expectedLateUndefined = false;
 // The expected-late cache holds a plain seat-string array (not a Set) — see
 // ShowTablesPage's expectedLateFetcher for why — and the page derives a Set
 // from it for membership checks.
@@ -99,7 +103,8 @@ vi.mock("swr", async () => {
     // derives a Set from it); the pairs subscription carries the configured
     // pairs data and its fetcher is captured for the fetcher-unwrap test.
     if (key != null && key.includes("expected-late-seats")) {
-      return { data: expectedLateStore };
+      capturedLateFetcher = fetcher as never;
+      return { data: expectedLateUndefined ? undefined : expectedLateStore };
     }
     if (key != null) {
       capturedFetcher = fetcher;
@@ -232,7 +237,10 @@ vi.mock("@/hooks/stationary-pairs", () => ({
 }));
 
 import { fetcher } from "@/lib/fetcher";
-import { setSeatExpectedLate } from "@/lib/standing-service";
+import {
+  setSeatExpectedLate,
+  setParticipantStanding,
+} from "@/lib/standing-service";
 import { ShowTablesPage } from "./ShowTablesPage";
 
 function makePlayer(name: string) {
@@ -266,6 +274,9 @@ describe("ShowTablesPage", () => {
     currentPairs = [];
     syncSelector = null;
     capturedFetcher = null;
+    capturedLateFetcher = null;
+    expectedLateUndefined = false;
+    currentGameExtra = {};
     expectedLateStore = [];
     expectedLateServerValue = null;
     currentSections = [
@@ -1240,6 +1251,133 @@ describe("ShowTablesPage", () => {
           stationaryPairs: [1],
         }),
       );
+    });
+  });
+
+  it("unwraps the expected-late seats payload through its SWR fetcher", async () => {
+    render(<ShowTablesPage />);
+    vi.mocked(fetcher).mockResolvedValueOnce({ seats: ["A1EW"] });
+    await expect(capturedLateFetcher!("/api/late")).resolves.toEqual(["A1EW"]);
+  });
+
+  it("renders with no expected-late data loaded yet", () => {
+    expectedLateUndefined = true;
+    render(<ShowTablesPage />);
+    expect(
+      screen.getByRole("button", { name: "Manage table 1" }),
+    ).toBeVisible();
+  });
+
+  it("unmarks an expected-late seat", async () => {
+    currentPairs = [pairAt("A1NS")];
+    expectedLateStore = ["A1EW"];
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    const group = await screen.findByRole("group", { name: "Expected late" });
+    fireEvent.click(within(group).getByRole("button", { name: "No" }));
+    await waitFor(() =>
+      expect(setSeatExpectedLate).toHaveBeenCalledWith("g1", "A1EW", false),
+    );
+    await waitFor(() => expect(expectedLateStore).toEqual([]));
+  });
+
+  it("marks a seat expected-late when the cache has no data yet", async () => {
+    currentPairs = [pairAt("A1NS")];
+    expectedLateStore = undefined as never;
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    const group = await screen.findByRole("group", { name: "Expected late" });
+    fireEvent.click(within(group).getByRole("button", { name: "Yes" }));
+    await waitFor(() => expect(expectedLateStore).toEqual(["A1EW"]));
+  });
+
+  it("alerts and rolls back when marking expected-late fails", async () => {
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    vi.mocked(setSeatExpectedLate).mockRejectedValueOnce(new Error("nope"));
+    currentPairs = [pairAt("A1NS")];
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    const group = await screen.findByRole("group", { name: "Expected late" });
+    fireEvent.click(within(group).getByRole("button", { name: "Yes" }));
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("nope"));
+  });
+
+  it("reports an error when renaming a section fails", async () => {
+    mockRenameSection.mockRejectedValueOnce(new Error("boom"));
+    currentSections = [
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "Blue",
+        tables: 4,
+        ordinal: 1,
+        selectedMovement: null,
+      },
+    ];
+    render(<ShowTablesPage />);
+    const input = screen.getByLabelText("Section label");
+    fireEvent.change(input, { target: { value: "Renamed" } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(mockReportError).toHaveBeenCalled());
+  });
+
+  describe("post-start standing changes", () => {
+    async function openStandingForm() {
+      mockStarted = true;
+      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      fireEvent.click(
+        (await screen.findAllByRole("button", { name: /Change standing/ }))[0],
+      );
+      fireEvent.click(await screen.findByLabelText("No standing"));
+      fireEvent.click(screen.getByRole("button", { name: /^Save/ }));
+    }
+
+    it("saves a standing change through the service", async () => {
+      await openStandingForm();
+      await waitFor(() =>
+        expect(setParticipantStanding).toHaveBeenCalledWith("g1", "A1NS", {
+          standing: "WITHOUT_STANDING",
+        }),
+      );
+    });
+
+    it("alerts when the standing change fails", async () => {
+      const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+      vi.mocked(setParticipantStanding).mockRejectedValueOnce(new Error("bad"));
+      await openStandingForm();
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("bad"));
+    });
+
+    it("hides standing controls for a standard PAIRS game", async () => {
+      currentGameExtra = { gameType: "PAIRS", eventFormat: "STANDARD" };
+      mockStarted = true;
+      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      await screen.findAllByText(/A1NS-1/);
+      expect(
+        screen.queryByRole("button", { name: /Change standing/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("offers standing controls for Swiss PAIRS", async () => {
+      currentGameExtra = { gameType: "PAIRS", eventFormat: "SWISS" };
+      mockStarted = true;
+      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      expect(
+        (await screen.findAllByRole("button", { name: /Change standing/ }))
+          .length,
+      ).toBeGreaterThan(0);
     });
   });
 });

@@ -242,6 +242,17 @@ describe("validateAndClaimSeatTransferCode", () => {
       });
       expect(updateSet).toHaveBeenCalledWith({ used: 1 });
     });
+    it("falls back to a default message when the handover engine gives no error", async () => {
+      vi.mocked(handoverSeat).mockResolvedValue({ ok: false } as never);
+      const result = await validateAndClaimSeatTransferCode(
+        "HAND01",
+        REAL_PAIR,
+      );
+      expect(result).toEqual({
+        valid: false,
+        error: "Could not hand over the seat.",
+      });
+    });
   });
 
   describe("inspectSeatTransferCode", () => {
@@ -325,6 +336,14 @@ describe("validateAndClaimSeatTransferCode", () => {
         error: "This pair has not withdrawn.",
       });
       expect(updateSet).toHaveBeenCalledWith({ used: 1 });
+    });
+    it("falls back to a default message when the reinstate engine gives no error", async () => {
+      vi.mocked(reinstatePair).mockResolvedValue({ ok: false } as never);
+      const result = await validateAndClaimSeatTransferCode("BACK12");
+      expect(result).toEqual({
+        valid: false,
+        error: "Could not reinstate the pair.",
+      });
     });
   });
 });

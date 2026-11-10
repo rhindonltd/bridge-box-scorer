@@ -207,3 +207,97 @@ describe("detectRoundMismatches", () => {
     ).toHaveLength(0);
   });
 });
+
+describe("detectRoundMismatches — corrected draw extras", () => {
+  const oddInput = (oddHandling: "BYE" | "HALF_MATCHES"): SwissDrawInput => ({
+    tables: 3,
+    standings: [1, 2, 3, 4, 5],
+    playedOpponents: new Set(),
+    hadBye: new Set(),
+    hadHalfMatch: new Set(),
+    oddHandling,
+    directionCounts: new Map(),
+    stationary: new Map(),
+  });
+
+  it("leaves the corrected draw's bye pair out, and skips a committed opponent that is excluded", () => {
+    // Corrected draw: 1v2, 3v4 with pair 5 on the bye. Committed: 1 played 5.
+    const candidates = detectRoundMismatches({
+      roundNumber: 2,
+      correctedInput: oddInput("BYE"),
+      committedOpponentByPair: new Map([
+        [1, 5],
+        [2, 3],
+        [3, 2],
+        [4, 4],
+      ]),
+      currentVpByPair: new Map([
+        [2, 0],
+        [3, 20],
+      ]),
+      committedExcludedPairs: new Set(),
+    });
+    // 1's actual opponent (5) is excluded -> not assessed. 2 v 3 is swapped and
+    // 20 VP apart, so it IS flagged; 4 has no counterpart difference.
+    expect(candidates.some((c) => c.mismatchedPair === 1)).toBe(false);
+    expect(candidates.some((c) => c.mismatchedPair === 2)).toBe(true);
+  });
+
+  it("excludes the corrected draw's half-match group from assessment", () => {
+    const candidates = detectRoundMismatches({
+      roundNumber: 2,
+      correctedInput: oddInput("HALF_MATCHES"),
+      committedOpponentByPair: new Map([
+        [1, 2],
+        [2, 1],
+      ]),
+      currentVpByPair: new Map(),
+      committedExcludedPairs: new Set(),
+    });
+    // Group {3,4,5} is excluded; 1v2 matches the corrected draw.
+    expect(candidates).toEqual([]);
+  });
+
+  it("skips a pair with no committed opponent", () => {
+    const candidates = detectRoundMismatches({
+      roundNumber: 2,
+      correctedInput: input([1, 2, 3, 4, 5, 6]),
+      committedOpponentByPair: new Map(),
+      currentVpByPair: new Map(),
+      committedExcludedPairs: new Set(),
+    });
+    expect(candidates).toEqual([]);
+  });
+
+  it("treats a pair missing from the VP table as 0 VP", () => {
+    // 1 played 4 (not 2); only the correct opponent (2) has a VP total.
+    const lowerSide = detectRoundMismatches({
+      roundNumber: 2,
+      correctedInput: input([1, 2, 3, 4, 5, 6]),
+      committedOpponentByPair: new Map([
+        [1, 4],
+        [4, 1],
+      ]),
+      currentVpByPair: new Map([[2, 10]]),
+      committedExcludedPairs: new Set(),
+    });
+    const p1 = lowerSide.find((c) => c.mismatchedPair === 1)!;
+    expect(p1.actualOpponentVp).toBe(0);
+    expect(p1.direction).toBe("LOWER");
+
+    // ... and the other way round: only the actual opponent (4) has a total.
+    const higherSide = detectRoundMismatches({
+      roundNumber: 2,
+      correctedInput: input([1, 2, 3, 4, 5, 6]),
+      committedOpponentByPair: new Map([
+        [1, 4],
+        [4, 1],
+      ]),
+      currentVpByPair: new Map([[4, 10]]),
+      committedExcludedPairs: new Set(),
+    });
+    const q1 = higherSide.find((c) => c.mismatchedPair === 1)!;
+    expect(q1.correctOpponentVp).toBe(0);
+    expect(q1.direction).toBe("HIGHER");
+  });
+});

@@ -48,8 +48,10 @@ export interface SwissVpMatchRow {
  * genuinely wild inputs elsewhere.
  */
 function clampPercent(pct: number): number {
+  /* v8 ignore start -- defensive: no board mix we could construct (20k random mixed real/artificial/weighted rounds) pushes mp/max outside [0, 100] after the §4.2.6.1 rounding, so the clamp never fires */
   if (pct < 0) return 0;
   if (pct > 100) return 100;
+  /* v8 ignore stop */
   return pct;
 }
 
@@ -497,6 +499,7 @@ function buildMatches(
 
     for (const segment of segments) {
       if (segment.compensation) continue;
+      /* v8 ignore next -- redundant with the line above: a segment's opponent is the sentinel only for compensation segments */
       if (segment.opponent === COMPENSATION_SEGMENT) continue;
 
       // Orient the match to the actual NS/EW seats on the segment's rows (the
@@ -732,6 +735,7 @@ function voidMpVp(
   const boards = expectedBoards && expectedBoards > 0
     ? expectedBoards
     : v.boardNumbers.length;
+  /* v8 ignore next -- unreachable: a void pair always has >= 1 voided board, so boards >= 1 */
   if (boards <= 0) return NEUTRAL_VP;
 
   const fractions = voidMpFractions(boards, v.fault);
@@ -770,6 +774,7 @@ function voidXimpVp(
   const boards = expectedBoards && expectedBoards > 0
     ? expectedBoards
     : v.boardNumbers.length;
+  /* v8 ignore next -- unreachable: a void pair always has >= 1 voided board, so boards >= 1 */
   if (boards <= 0) return NEUTRAL_VP;
 
   const perComparison = voidXimpPerComparison(boards, v.fault);
