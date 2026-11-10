@@ -40,7 +40,7 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Withdrawals (teams) | §2.4.3–§2.4.9, §3.3.9 | 07 | `ABSENT-TEAMS-1` |
 | Substitution scoring — one line / two lines / eligibility | §2.4.7, §2.4.9 | 07, [12](12-handover-substitution.md) | `SUBST-1..3`, `SUB-1..13` |
 | Swiss half-matches | — | 05 + 07 | `SWISS-17..19`, `HALFMATCH-1..3` |
-| §3.5 mismatch detection | §3.5 | [06](06-director-rulings.md) | `RULE-24..27` |
+| §3.5 mismatch detection + Review Mismatches | §3.5 | [06](06-director-rulings.md) | `RULE-24`–`RULE-27f` |
 
 ## Director rulings
 

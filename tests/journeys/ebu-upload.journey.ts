@@ -13,8 +13,9 @@ import { closeDevices, openDirector, seedGame } from "../fixtures/seeded-game";
  * tests never reach the real EBU. As a safety net they only run when both
  * point at a LOOPBACK host.
  *
- * Tests run in order: the first checks the unconfigured state, before any EBU
- * credentials have been saved to the (per-run) device settings.
+ * Tests run in order. EBU details live in the (per-run) device settings and are
+ * shared with other journeys, so the "unconfigured" view is produced by
+ * intercepting the status read rather than relying on a fresh device.
  */
 function loopback(value: string | undefined): boolean {
   if (!value) return false;
@@ -90,6 +91,21 @@ test.describe.serial("EBU results submission", () => {
   }) => {
     test.setTimeout(90_000);
     const { director } = await finishedGameOnEbuPage(browser);
+    // Present the device as unconfigured whatever it currently holds (other
+    // journeys save EBU details, and phone and tablet share one server).
+    await director.route("**/api/system/ebu", (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({
+              success: true,
+              result: { configured: false, ebuNumber: null },
+            }),
+          })
+        : route.continue(),
+    );
+    await director.reload();
     try {
       await expect(director.getByText(/EBU is not configured/)).toBeVisible({
         timeout: 15000,

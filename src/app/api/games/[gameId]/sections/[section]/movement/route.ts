@@ -7,7 +7,11 @@ import { respondToActionError } from "@/lib/api/client-error";
 import { setSectionMovement } from "@/db/games/actions/set-section-movement";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { broadcastSectionMovementChanged } from "@/socket/broadcast/section-broadcast";
-import { SelectedMovement } from "@/model/selected-movement";
+import {
+  SelectedMovement,
+  withStationaryHistory,
+} from "@/model/selected-movement";
+import { getSwissBoardHistory } from "@/db/games/queries/swiss-board-history";
 import {
   mitchellSpecSchema,
   swissSpecSchema,
@@ -68,7 +72,18 @@ export const PUT = withDirectorRoute(
       // Read the previous selection first so the broadcaster only clears the
       // timer when the movement actually changed.
       const previous = await getSectionMovement(db, section);
-
+      // A change to a Swiss section's stationary pairs applies to rounds drawn
+      // from now on; record the list the rounds already drawn were played under
+      // so they keep it (see withStationaryHistory). Any history a client sends
+      // is ignored.
+      if (selected?.source === "SWISS") {
+        const highestRound =
+          previous?.source === "SWISS"
+            ? (await getSwissBoardHistory(db, section, previous.swiss.tables))
+                .highestRound
+            : 0;
+        selected = withStationaryHistory(previous, selected, highestRound);
+      }
       await setSectionMovement(gameId, section, selected);
 
       await broadcastSectionMovementChanged(

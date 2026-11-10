@@ -282,11 +282,23 @@ describe("startGame (Swiss)", () => {
       expect(table.rounds[0].boardEnd).toBe(3);
     }
 
-    // Positional pairing: table T seats its own NS/EW pairs, whose stable ids
-    // are their round-1 home seats ("1NS" / "1EW", section-qualified later).
+    // Positional pairing: table T seats its own NS/EW pairs under their stable
+    // Swiss numbers — NS pairs 1..tables, EW pairs tables+1..2·tables — the
+    // same ids every later round uses (section-qualified later).
     const t1 = movement.find((m) => m.tableNumber === 1)!.rounds[0];
-    expect(t1.ns).toBe("1NS");
-    expect(t1.ew).toBe("1EW");
+    expect(t1.ns).toBe("1");
+    expect(t1.ew).toBe("3");
+    // Each table is a /20 Swiss match, like the drawn rounds.
+    expect(t1.match).toMatchObject({ kind: "PAIRS", home: "1", opponent: "3" });
+
+    // Every seat is stamped with its pair's stable id, so a pair's boards are
+    // found under one id all event.
+    expect(sections[0].anchors).toEqual([
+      { seat: "A1NS", anchorId: "A1" },
+      { seat: "A1EW", anchorId: "A3" },
+      { seat: "A2NS", anchorId: "A2" },
+      { seat: "A2EW", anchorId: "A4" },
+    ]);
   });
 
   it("applies a round-1 bye when the field is odd", async () => {
@@ -306,10 +318,17 @@ describe("startGame (Swiss)", () => {
     const movement = sections[0].movement;
 
     // The table with the empty EW seat becomes a sit-out; its occupied pair
-    // (the NS pair at that table, home seat "2NS") byes with a phantom opponent.
+    // (the NS pair at that table, pair 2) byes with a phantom opponent, at its
+    // own table, recorded as a BYE match.
     const sitOutTable = movement.find((m) => m.rounds[0].sitOut)!;
-    expect(sitOutTable.rounds[0].ns).toBe("2NS");
+    expect(sitOutTable.tableNumber).toBe(2);
+    expect(sitOutTable.rounds[0].ns).toBe("2");
     expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
+    expect(sitOutTable.rounds[0].match).toMatchObject({
+      kind: "BYE",
+      home: "2",
+      opponent: null,
+    });
   });
 });
 

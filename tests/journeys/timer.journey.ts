@@ -83,6 +83,32 @@ async function gotoManageTimer(page: Page, gameId: string): Promise<void> {
 }
 
 /**
+ * Open the live timer controls the way a director does once play is under way:
+ * Manage Game Menu → Timer.
+ */
+async function openTimerFromMenu(page: Page, gameId: string): Promise<void> {
+  const timer = page.getByRole("button", { name: "Timer", exact: true });
+  // `startGame` lands on the menu, but its own redirects can still be landing;
+  // retry until the started menu (with its Timer option) is on screen.
+  await expect(async () => {
+    if (!new RegExp(`/game/${gameId}/manage$`).test(page.url())) {
+      await page
+        .goto(`/game/${gameId}/manage`, { waitUntil: "commit" })
+        .catch(() => {});
+    }
+    await expect(timer).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 30000 });
+  await expect(
+    page.getByRole("button", { name: "Set Up Game" }),
+  ).toHaveCount(0);
+  await timer.click();
+  await page.waitForURL(new RegExp(`/game/${gameId}/manage/timer$`));
+  await expect(page.getByText("Timer Controls")).toBeVisible({
+    timeout: 15000,
+  });
+}
+
+/**
  * Set up a started two-table game whose timer was configured BEFORE the game
  * started, so starting promotes it to a live paused timer. Returns the director
  * page and gameId.
@@ -186,8 +212,10 @@ test.describe("Session timer: autosave, promote-on-start, and live control", () 
         timeout: 15000,
       });
 
-      // Director live controls at /manage/timer (game is started).
-      await gotoManageTimer(directorPage, gameId);
+      // Once the game is running, the live controls are reached from the
+      // Manage Game Menu's Timer option (Set Up Game, with its Timer tab, is
+      // gone).
+      await openTimerFromMenu(directorPage, gameId);
 
       // Pause -> the display shows PAUSED. (Pause is available while running.)
       await directorPage

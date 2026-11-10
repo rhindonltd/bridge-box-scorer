@@ -98,7 +98,8 @@ director guide):
 - **Confirmation** — a board is only recorded once **both** pairs at the table
   submit the same board and result. This mutual check catches entry errors.
 - **Mismatch** — the two pairs entered different details; they resolve it and
-  one side re-enters.
+  one side re-enters. (For the Swiss drawing problem of the same name, see
+  **Swiss mismatch** below.)
 - **Override / correction** — a director can change a recorded result from the
   **Travellers** screen.
 - **Adjusted score** — a director-assigned result given as a direct percentage
@@ -107,6 +108,19 @@ director guide):
   contract results, each with a percentage weight that together total 100% (e.g.
   80% of 3NT making, 20% of 3NT+1). Each part is scored against the field and
   the parts are averaged by their weights.
+- **Cancelled board** — a board that can't stand (fouled, mis-dealt) and is
+  scored as an adjusted score instead.
+- **Voided match** — a whole Teams or Swiss match that can't stand (for example
+  the wrong teams were seated, or less than half the boards could be played).
+  Each side is given a set share of the Victory Points, or averages, depending
+  on who was at fault.
+- **Swiss mismatch** — not to be confused with two sides entering different
+  results. In a Swiss event, a pair or team that was drawn against the wrong
+  opponents because an earlier result was corrected after the draw (their
+  opponents' score is more than 5 VP away from the opponents they should have
+  met). The director reviews these and can adjust that pair's Victory Points for
+  the round; their opponents' score is left alone. See the
+  [Director Guide](director-guide.md#reviewing-swiss-mismatches).
 
 ## Travellers and leaderboards
 

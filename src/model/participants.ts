@@ -198,6 +198,13 @@ export type ParticipantStanding = {
 export type Pair = {
   type: "PAIR";
   initialSeat: PairSeat;
+  /**
+   * The id this pair's boards are recorded under, when it differs from its
+   * seat: a movement that numbers pairs rather than seats (a Howell, a Swiss
+   * event) records "A4" for the pair seated at "A2EW". Absent/null when the
+   * boards carry the seat itself.
+   */
+  anchorId?: string | null;
   player1: Player;
   player2: Player;
   /**

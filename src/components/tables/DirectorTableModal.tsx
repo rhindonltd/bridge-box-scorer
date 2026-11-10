@@ -321,24 +321,33 @@ function PairRow({
 
       {occupied ? (
         <div className="mt-3 flex flex-col gap-3">
-          {/* Marking a pair stationary rewrites the Swiss movement spec, so it
-              is a pre-start setup action only — once the game has started the
-              movement is fixed. */}
-          {isSwiss && !started && (
-            <div className="flex items-center justify-between gap-3">
-              <span
-                id={stationaryLabelId}
-                className="text-sm font-medium text-gray-700"
-              >
-                Stationary
-              </span>
-              <Toggle
-                value={stationary}
-                offLabel="No"
-                onLabel="Yes"
-                labelledBy={stationaryLabelId}
-                onChange={onToggleStationary}
-              />
+          {/* A pair can be marked (or unmarked) stationary at any time. Before
+              the start it shapes the draw from round 2; once play is under way
+              it applies to the rounds drawn from then on — rounds already drawn
+              are a record and are never changed. */}
+          {isSwiss && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-3">
+                <span
+                  id={stationaryLabelId}
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Stationary
+                </span>
+                <Toggle
+                  value={stationary}
+                  offLabel="No"
+                  onLabel="Yes"
+                  labelledBy={stationaryLabelId}
+                  onChange={onToggleStationary}
+                />
+              </div>
+              {started && (
+                <p className="text-xs text-gray-500">
+                  Applies to rounds drawn from now on; rounds already drawn stay
+                  as they were.
+                </p>
+              )}
             </div>
           )}
 

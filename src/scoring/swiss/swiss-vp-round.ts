@@ -19,7 +19,7 @@ import { parsePairVoid, pairVoidFaults } from "@/model/pairs-match-void";
 import { ScoredMpBoard } from "@/scoring/traveller/pair/neuberg-across-boards";
 import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
 import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
-import { parseMismatch, adjustMismatchVp } from "@/model/swiss-mismatch";
+import { parseMismatches, adjustMismatchVp } from "@/model/swiss-mismatch";
 
 /**
  * The minimal `matches`-row shape the Swiss Pairs VP scorer needs for the
@@ -604,8 +604,8 @@ export function scoreSwissVpRound(
 /**
  * Apply the §3.5.2 mismatch adjustment to the mismatched pair's round VP.
  *
- * A MISMATCH table's two rows carry an `MM:<side>:<direction>:<fault>` token
- * naming which seat (NS/EW) is the mismatched side. The match itself was scored
+ * A MISMATCH match carries one `MM:<side>:<direction>:<fault>` ruling per
+ * mismatched side (NS and/or EW). The match itself was scored
  * normally (its boards stay in the field), so `pairVp` already holds each
  * pair's actual round VP; we recompute only the mismatched side's value and
  * leave the opponent untouched. The round pool is 20 (a Swiss Pairs round is a
@@ -618,18 +618,18 @@ function creditMismatch(
 ): void {
   for (const m of matchRows) {
     if (m.kind !== "PAIRS" || m.ruling == null) continue;
-    const ruling = parseMismatch(m.ruling);
-    if (ruling == null) continue;
+    // One ruling per mismatched side — both pairs of a match can be ruled.
+    for (const ruling of parseMismatches(m.ruling)) {
+      // The ruling's side is home-relative: NS = the match's `home` pair, EW =
+      // its `opponent`. Recompute only the mismatched side's round VP.
+      const mismatchedPairId = ruling.side === "NS" ? m.home : m.opponent;
+      if (mismatchedPairId == null) continue;
 
-    // The ruling's side is home-relative: NS = the match's `home` pair, EW =
-    // its `opponent`. Recompute only the mismatched side's round VP.
-    const mismatchedPairId = ruling.side === "NS" ? m.home : m.opponent;
-    if (mismatchedPairId == null) continue;
+      const actual = pairVp.get(mismatchedPairId);
+      if (actual == null) continue;
 
-    const actual = pairVp.get(mismatchedPairId);
-    if (actual == null) continue;
-
-    pairVp.set(mismatchedPairId, adjustMismatchVp(actual, ruling, 20));
+      pairVp.set(mismatchedPairId, adjustMismatchVp(actual, ruling, 20));
+    }
   }
 }
 

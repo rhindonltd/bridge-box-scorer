@@ -63,11 +63,12 @@ surface. Test files present at audit time:
   form, tables, sections, movement pickers, Swiss setup) still drive the UI.
   `setUpStartedTwoTableGame` in `journeys/support.ts` now delegates to the
   seeder.
-- **Known product gap surfaced by the suite.** On renumbered-id movements (e.g.
-  SPEC 154, the first recommendation for two tables) the leaderboard lists
-  pairs by their movement id ("A4") rather than their names, because the
-  leaderboard participants are keyed by seat and the scored lines by movement
-  anchor id. The journeys therefore do not assert names on the leaderboard.
+- **Fixed product gap surfaced by the suite.** On renumbered-id movements (e.g.
+  SPEC 154, the first recommendation for two tables) the leaderboard used to
+  list pairs by their movement id ("A4") rather than their names, because the
+  leaderboard participants were keyed by seat and the scored lines by movement
+  id. Participants now carry the same id as their boards;
+  `seeded-game.journey.ts` checks a finished Howell lists every pair by name.
 
 ## Status (last updated after Phases 1–4)
 
@@ -118,6 +119,49 @@ below:
   stand-in for the EBU (`fixtures/ebu-mock.ts`), asserting the calls, the Basic
   auth, the USEBIO file and the returned check keys; an EBU rejection; the
   duplicate-date and surname-mismatch notes; and bad credentials.
+- **EBU settings** (`ebu-settings.journey.ts`): reachable from the menu;
+  first-time setup needs a number and a password; saving stores them and never
+  shows the password back; changing the number alone keeps the password; behind
+  the admin key; and, against the EBU stand-in, that the saved number and
+  password are the credentials an upload sends (together, number alone, then
+  password alone).
+- **Cloud Backup settings** (`cloud-sync-settings.journey.ts`): not-enabled and
+  corrupt-status states, "Not yet" / last-backed-up time, the offline /
+  not-entitled / error warnings, and "Back up now" (admin token sent, confirmed,
+  debounced; expired session returns to the admin prompt). The box's status file
+  is a file in the E2E data dir (`CLOUD_SYNC_STATUS_PATH`), and the privileged
+  "back up now" request is intercepted in the browser, so nothing is ever
+  triggered on the host.
+- **Scoring through the real screens** (`scoring-ximp`, `scoring-teams`,
+  `scoring-neuberg`, `scoring-invariants`). Games are seeded with hand-picked
+  results (the seeder's `outcomes`, `holdBack` and `finish` options) so every
+  expected figure is worked out by hand and recorded beside the assertion
+  (`fixtures/scoring-scenarios.ts`); a few boards are then played by real pairs
+  through the app and their scored traveller read back.
+  - *Cross-IMPs (pairs):* the NS/EW standings to two decimals, a board's
+    traveller (each line's cross-IMPs, cancelling to zero), a director's
+    correction re-scoring a mounted display live, a withdrawn pair under the
+    default AVE-/AVE+ (-3 / +3 per missed board) and under Remove, and choosing
+    Cross-IMPs on the create form.
+  - *Teams:* IMP (Aggregate) per-round and total net IMPs; Board-a-Match and
+    Point-a-Board shares with a shared first place; IMP (Victory Points) with a
+    10-10 tie, a 20-0 blitz and two published-table values over 5 boards (a 10
+    IMP margin is 15-5, a 9 IMP margin 14-6); the director traveller's per-match
+    IMP swing; the create form's Teams scoring list (IMP, IMP Victory Points and
+    the region's board-comparison method) and saving each choice.
+  - *Matchpoints and Neuberg (§4.2.3.2):* exact standings with and without
+    short boards, and a short board played live (the traveller shows the board's
+    own field; the scaling to the full top is applied in the standings).
+  - *Invariants:* on the default spread of results, matchpoint shares average
+    50%, cross-IMPs cancel, aggregate IMPs are zero-sum, board-comparison shares
+    average 50%, every VP match totals 20, and every ranking is consistent with
+    its own figures.
+- **Stationary pairs in Swiss Pairs** (`swiss-stationary.journey.ts`): marking
+  a pair stationary mid-event applies to the next draw (the pair is back at its
+  home seat in round 3) and leaves the rounds already drawn untouched; the
+  choice persists across reloads; the amber marker shows and the pair can be
+  unmarked again. (The pairing/seating rules are unit-tested in
+  `swiss-pairing.test.ts`; the per-round history in `selected-movement.test.ts`.)
 - **Setup around the movement** (`setup-details.journey.ts`): Edit Event
   Details (rename; scoring change asks first and clears the movement); the
   expected-late rules on the Start Game screen; splitting a section with pairs
@@ -149,6 +193,21 @@ below:
 - **Director overrides**: played-contract override, adjusted-score (custom +
   preset), propagation to player + second director
   (`director-override.journey.ts`, `traveller-live.journey.ts`).
+- **Director rulings** (`director-rulings.journey.ts`, seeded complete games):
+  the adjustment hub offers exactly the rulings for each game type (plain
+  pairs, Teams, Swiss Pairs, Swiss Teams); Cancel / Foul Board assigns the
+  chosen average to that row only; Board Not Played (Teams) moves 3 IMPs to the
+  side not at fault (one VP each way in the seeded match, other matches
+  untouched); Void Match (Teams) credits a flat 8 VP each (12 when the TD was at
+  fault) and leaves every other match alone; Void Match (Pairs) compensates the
+  non-offending pair and keeps the round's VP total at 20 a match.
+- **Export & Publish hub** (`export-hub.journey.ts`): the manage-menu button →
+  readiness checklist (results / club / BridgeWebs / EBU, each Ready, Warning,
+  Not ready or Optional and the summary line); an outstanding board listed
+  behind a tap with the pairs seated for it (the `outstanding-boards` API);
+  Continue → options, with USEBIO and the uploads waiting for the last result,
+  PBN always available, and unconfigured uploads hidden. Device settings are
+  answered in the browser so the shared server's settings don't matter.
 - **Real-time**: request-on-mount, occupancy-gated pushes, `game:join` does not
   replay, reconnect re-fetch (`request-on-mount`, `realtime-internals`,
   `reconnect`, `leaderboard-live`, `traveller-live`).
@@ -333,6 +392,41 @@ where the coverage lives.
   play time. The selector is exercised by the Swiss Teams journey
   (`createGame` picks a teams scoring), and the scoring math is unit-tested under
   `src/scoring/`. No longer a gap.
+
+### 18. Swiss §3.5 mismatch review — CLOSED
+
+- **Covered by** `swiss-mismatch-review.journey.ts`: draw and score round 2,
+  correct round 1 the other way round through the director traveller, then
+  Manage > Review Mismatches lists the candidates (round, table, pair, the
+  opponent met and the corrected one, their VP and the gap); applying a
+  "stronger opponent, not their fault" candidate compensates only that pair's
+  round VP (10 → 12.5, §3.5.2), the round's other candidates stay listed, and
+  ruling the same pair's opponent as well ("weaker opponent, own fault",
+  10 → 9) keeps both rulings; dismissing one changes no score.
+- **Was blocked by** a Swiss Pairs identity defect, now fixed: round 1 was
+  recorded under each pair's seat ("A1NS") and later rounds under its stable
+  number ("A1"), so standings listed every pair twice, the next draw ranked on
+  split standings, and detection never fired. Round 1 now uses the stable
+  numbers (unit-tested in `swiss-pairs-identity.int.test.ts`), and leaderboard
+  participants are keyed on the same id as their boards (which also fixes the
+  bare "A4" names on Howell movements).
+- **Fixed with it:** applying one candidate used to hide the whole round's
+  other candidates, and a match could hold only one mismatch ruling, so
+  ruling a pair's opponent overwrote the first ruling. Now a match holds a
+  ruling for each side, both Swiss scorers apply each, and only the ruled
+  pair/team drops out of the review (unit-tested in `swiss-mismatch.test.ts`,
+  `detect-swiss-mismatch-service.int.test.ts` and `ruling-scoring.int.test.ts`).
+
+### 19. Still uncovered (no blocker)
+
+- The player's Team Results tab / Teams round-results page.
+- Mitchell variants (skip, share-and-relay, hesitation, web, arrow-switch).
+- The standard (non-Swiss) Movement page and changing a movement mid-game.
+- Scoring edge cases: small-field fixed percentages (§4.2.3.3, unit-tested),
+  sit-out credit, a half-match round with stationary pairs.
+- Appliance actions (restart / reboot / reset WiFi — contract only, never run),
+  captive portal, updates.
+- Accessibility checks (axe) and locale handling.
 
 ### 14. American Whist movement
 

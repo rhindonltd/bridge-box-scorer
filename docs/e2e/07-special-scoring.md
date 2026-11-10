@@ -23,7 +23,7 @@ a sit-out board, or a fouled/cancelled copy leaving fewer good copies), its
 matchpoints are **scaled up** to the full-field top so pairs aren't advantaged or
 disadvantaged by how many times their board was in play (§4.2.3).
 
-**Setup:** `--scoring MP --play all` with an **even** field forced to a half
+**Setup:** `--scoring MP --tables 3 --rounds 3 --play partial --withdraw A1NS@3 --treatment A1NS=REMOVED` makes boards 5 and 6 two-result boards on a three-result field (the automated check is `scoring-neuberg.journey.ts`). Or `--scoring MP --play all` with an **even** field forced to a half
 table — easiest live: seat an **odd** number of pairs so one table is short, or
 **Cancel** one copy of a board (file 06, `RULE-D`) so that board has fewer good
 copies than its siblings.
@@ -31,8 +31,8 @@ copies than its siblings.
 | Check | Step | Expected |
 |---|---|---|
 | ☐ NEUBERG-1 | Find a board played **fewer** times than the others (short board). Open its traveller. | The pairs on that board are matchpointed among **themselves**… |
-| ☐ NEUBERG-2 | …but their matchpoints are **scaled up** toward the full-field top (not left on the smaller board's natural top). | Short-board scores are Neuberg-scaled, comparable to full boards. |
-| ☐ NEUBERG-3 | Confirm a pair's **leaderboard total** equals the **sum of the shown per-board matchpoints** (rounding is the last step, so published total == sum of board scores). | Totals reconcile. |
+| ☐ NEUBERG-2 | …the **traveller itself shows only that board's own field** (e.g. 2 and 0 out of a top of 2 on a two-result board, or 100% / 0%). The **scaling to the full-field top is applied when the standings are built**: the same board counts as 4 and 1 out of a top of 4 (3 results on a full board). | Traveller = own field; standings use the Neuberg-scaled values, so short and full boards carry equal weight. |
+| ☐ NEUBERG-3 | Confirm a pair's **leaderboard percentage** equals its **Neuberg-scaled** matchpoints over the **full-field top** for every board it played (e.g. with 3 results on a full board each board is out of 4: 14 of 24 = 58.33%). The traveller's own-field figures are *not* what the standings add up. | Standings reconcile with the scaled matchpoints. |
 | ☐ NEUBERG-4 | **Small sub-field:** with only **2 or 3** copies of a board, confirm the fixed-percentage rule (§4.2.3.3) is used rather than a naive top (e.g. 2 copies → 55/65%). | Fixed percentages for tiny sub-fields. |
 
 ---
@@ -132,6 +132,6 @@ is the scoring side.)
 ## MISMATCH — §3.5 detection
 
 Covered as a director ruling in [file 06](06-director-rulings.md)
-(`RULE-MM-*` / `RULE-24..27`): the **detection threshold** (opponents differ by
+(`RULE-24`–`RULE-27f`): the **detection threshold** (opponents differ by
 > 5 current VP) and the **one-sided** VP adjustment are the scoring-specific
 points to verify there.

@@ -266,8 +266,7 @@ describe("resolveSectionStart", () => {
   it("applies a Swiss round-1 bye when the empty seat is an NS seat (bye pair is the EW pair)", async () => {
     // 2-table Swiss with A2NS empty => 3 pairs => a bye. The empty seat is NS,
     // so the bye pair is the one sitting the OTHER direction (EW) at that table:
-    // home seat "2EW". This drives the `direction === "NS" ? round.ew : ...`
-    // branch of applySwissRoundOneSitOut.
+    // home seat A2EW, which is Swiss pair 4 (EW pairs are tables+1..2·tables).
     const seated = seatsForTables(2).filter((s) => s !== "A2NS");
 
     const result = await resolveSectionStart(
@@ -281,8 +280,11 @@ describe("resolveSectionStart", () => {
     expect(result.validation.sitOutSeat).toBe("A2NS");
 
     const sitOutTable = result.movement!.find((t) => isSitOut(t.rounds[0]))!;
-    expect(sitOutTable.rounds[0].ns).toBe("2EW");
+    expect(sitOutTable.tableNumber).toBe(2);
+    expect(sitOutTable.rounds[0].ns).toBe("4");
     expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
+    // The bye pair's seat still carries its own stable id.
+    expect(result.anchors).toContainEqual({ seat: "A2EW", anchorId: "A4" });
   });
 
   it("materializes a round-1 half-match group for an odd HALF_MATCHES field", async () => {
@@ -373,7 +375,7 @@ describe("resolveSectionStart", () => {
 
     expect(result.validation.canStart).toBe(true);
     const sitOutTable = result.movement!.find((t) => isSitOut(t.rounds[0]))!;
-    expect(sitOutTable.rounds[0].ns).toBe("2EW");
+    expect(sitOutTable.rounds[0].ns).toBe("4");
     expect(sitOutTable.rounds[0].ew).toBe("PHANTOM");
   });
 

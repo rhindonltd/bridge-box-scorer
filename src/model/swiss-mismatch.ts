@@ -68,17 +68,62 @@ const SIDES: readonly MismatchSide[] = ["NS", "EW"];
 const DIRECTIONS: readonly MismatchDirection[] = ["HIGHER", "LOWER"];
 const FAULTS: readonly MismatchFault[] = ["OWN", "NOT"];
 
+/**
+ * Separates the two sides' rulings when BOTH sides of one match are ruled
+ * mismatched (each was drawn against the wrong opponents), e.g.
+ * `MM:NS:HIGHER:NOT;MM:EW:LOWER:OWN`. A match holds at most one ruling per side.
+ */
+const SIDE_SEPARATOR = ";";
+
 /** Build the stored token for a mismatch ruling, e.g. `MM:NS:HIGHER:NOT`. */
 export function buildMismatch(ruling: MismatchRuling): string {
   return `${PREFIX}${ruling.side}:${ruling.direction}:${ruling.fault}`;
 }
 
-/** True if the outcome string is a mismatch token. */
+/** True if the outcome string carries at least one mismatch ruling. */
 export function isMismatch(outcome: string): boolean {
-  return parseMismatch(outcome) !== null;
+  return parseMismatches(outcome).length > 0;
 }
 
-/** Parse a mismatch token into its ruling, or null if not a well-formed one. */
+/**
+ * Every mismatch ruling a stored match ruling carries — one per ruled side,
+ * NS first — or an empty list when it isn't a mismatch ruling (e.g. a void).
+ * A malformed part makes the whole value unrecognised (empty list).
+ */
+export function parseMismatches(ruling: string): MismatchRuling[] {
+  const parts = ruling.split(SIDE_SEPARATOR);
+  const parsed: MismatchRuling[] = [];
+  for (const part of parts) {
+    const one = parseMismatch(part);
+    if (one == null) return [];
+    parsed.push(one);
+  }
+  // At most one ruling per side.
+  if (new Set(parsed.map((r) => r.side)).size !== parsed.length) return [];
+  return parsed.sort((a, b) => SIDES.indexOf(a.side) - SIDES.indexOf(b.side));
+}
+
+/**
+ * The stored match ruling after ruling one more side mismatched. A ruling the
+ * match already holds for the OTHER side is kept (both pairs/teams of a match
+ * can be mismatched); one for the SAME side is replaced. Anything else the
+ * match held (no ruling, or a non-mismatch ruling) gives way to this one.
+ */
+export function withMismatch(
+  existing: string | null,
+  ruling: MismatchRuling,
+): string {
+  const kept =
+    existing == null
+      ? []
+      : parseMismatches(existing).filter((r) => r.side !== ruling.side);
+  return [...kept, ruling]
+    .sort((a, b) => SIDES.indexOf(a.side) - SIDES.indexOf(b.side))
+    .map(buildMismatch)
+    .join(SIDE_SEPARATOR);
+}
+
+/** Parse ONE side's mismatch token into its ruling, or null if malformed. */
 export function parseMismatch(outcome: string): MismatchRuling | null {
   if (!outcome.startsWith(PREFIX)) return null;
   const parts = outcome.slice(PREFIX.length).split(":");

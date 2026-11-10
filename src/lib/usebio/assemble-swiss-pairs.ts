@@ -57,8 +57,11 @@ export function assembleSwissPairs(
     clubNumber: club.clubNumber,
   };
 
+  // Each pair is numbered by the id its boards carry (its stable Swiss number,
+  // e.g. "A4"), so its PAIR row joins its MATCHes and its ranking entry. The
+  // direction is where it sat at the start (a Swiss pair changes direction).
   const usebioPairs: UsebioPair[] = pairs.map((pair) => ({
-    pairNumber: pair.initialSeat,
+    pairNumber: pair.anchorId ?? pair.initialSeat,
     direction: pair.initialSeat.endsWith("NS") ? "N" : "E",
     player1: pair.player1,
     player2: pair.player2,
@@ -211,8 +214,11 @@ function buildRanking(
   }));
 }
 
-/** Section letter from a section-qualified seat (e.g. "A1NS" -> "A"). */
+/**
+ * Section letter from a section-qualified pair id — a Swiss number ("B4") or a
+ * seat ("B1NS") — e.g. "B".
+ */
 function sectionOf(pairId: string): string {
-  const match = /^([A-Z]+)\d+(?:NS|EW)$/.exec(pairId);
+  const match = /^([A-Z]+)\d+(?:NS|EW)?$/.exec(pairId);
   return match ? match[1] : "A";
 }

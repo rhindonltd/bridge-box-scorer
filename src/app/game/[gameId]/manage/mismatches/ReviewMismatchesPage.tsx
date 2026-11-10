@@ -105,7 +105,10 @@ export function ReviewMismatchesPage({ gameId }: { gameId: string }) {
   );
 
   return (
-    <GamePageLayout headerTitle="Review Mismatches" centerContent>
+    // A scrolling list: a corrected round can flag a candidate for most of the
+    // field, more than fit on a phone screen (centring would push the first
+    // cards out of reach above the header).
+    <GamePageLayout headerTitle="Review Mismatches" contentMode="scroll">
       <div className="flex flex-col gap-4 px-6 pb-8 pt-6 max-w-xl w-full mx-auto">
         {error && (
           <div className="bg-red-100 text-red-700 px-4 py-2 rounded text-sm text-center">

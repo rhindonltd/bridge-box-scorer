@@ -41,6 +41,7 @@ export async function findPairs(db: Db): Promise<Pair[]> {
       // the flags and silently fell back to the lowest id.
       ...rankedPickColumns,
       initialSeat: seatOccupancy.seat,
+      anchorId: seatOccupancy.anchorId,
       type: sql<"PAIR">`'PAIR'`,
       player1: {
         id: player1.id,

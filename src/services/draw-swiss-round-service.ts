@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getDb, type Db } from "@/db/games";
+import { stationaryPairsForRound } from "@/model/selected-movement";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import { isSwissRoundComplete } from "@/services/swiss-round-completion";
@@ -39,9 +40,7 @@ import { parseSeat, type SectionLetter } from "@/model/participants";
  * next round" control can explain the block.
  */
 export type DrawSwissRejection =
-  | "NOT_SWISS"
-  | "ROUND_INCOMPLETE"
-  | "EVENT_COMPLETE";
+  "NOT_SWISS" | "ROUND_INCOMPLETE" | "EVENT_COMPLETE";
 
 /**
  * A previewed (but NOT committed) Swiss draw: the proposed seating with stable
@@ -112,12 +111,7 @@ function isRoundComplete(
   // scorer-resolved and never submitted, so they are dropped from the playable
   // set rather than counted — a round of only those has nothing to draw from.
   return isSwissRoundComplete(db, section, roundNumber, {
-    completeStatuses: [
-      "CONFIRMED",
-      "OVERRIDDEN",
-      "CANCELLED",
-      "REMOVED_TEAMS",
-    ],
+    completeStatuses: ["CONFIRMED", "OVERRIDDEN", "CANCELLED", "REMOVED_TEAMS"],
     ignoreStatuses: ["SIT_OUT", "HALF_AVERAGE"],
   });
 }
@@ -153,10 +147,10 @@ async function seatedPairIdsForSection(
   section: SectionLetter,
   tables: number,
 ): Promise<Set<SwissPairId>> {
-  const { seatOccupancy } = await import(
-    "@/db/games/tables/seat-occupancy"
-  );
-  const rows = await db.select({ seat: seatOccupancy.seat }).from(seatOccupancy);
+  const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+  const rows = await db
+    .select({ seat: seatOccupancy.seat })
+    .from(seatOccupancy);
 
   const ids = new Set<SwissPairId>();
   for (const row of rows) {
@@ -276,7 +270,6 @@ async function resolveDrawContext(
     tables,
     rounds: totalRounds,
     boardsPerRound,
-    stationaryPairs,
     oddHandling = "BYE",
     oddRoundPlan,
   } = selected.swiss;
@@ -290,18 +283,23 @@ async function resolveDrawContext(
   }
 
   // The current round must be fully scored before drawing the next.
-  if (currentRound >= 1 && !(await isRoundComplete(db, section, currentRound))) {
+  if (
+    currentRound >= 1 &&
+    !(await isRoundComplete(db, section, currentRound))
+  ) {
     return { reason: "ROUND_INCOMPLETE" };
   }
 
   const { order, ranked } = await rankedStandings(db, gameId, section, tables);
 
+  const nextRound = currentRound + 1;
+
+  // The stationary list in force for THIS draw: a change the director made
+  // mid-event applies from here on, never to rounds already drawn.
   const stationary = new Map<SwissPairId, SwissHomeSeat>();
-  for (const pairId of stationaryPairs ?? []) {
+  for (const pairId of stationaryPairsForRound(selected.swiss, nextRound)) {
     stationary.set(pairId, swissPairHomeSeat(tables, pairId));
   }
-
-  const nextRound = currentRound + 1;
 
   // How THIS round resolves an odd field: the per-round plan entry when the
   // event uses half-matches (1-indexed round → 0-indexed plan), else a bye.
@@ -396,15 +394,15 @@ async function buildPairStandings(
   const lookup = await buildAssignmentPlayerLookup(db);
 
   return ranked.map((r) => {
-    const players = lookup.get(`${section}${swissPairMovementId(tables, r.id)}`);
+    const players = lookup.get(
+      `${section}${swissPairMovementId(tables, r.id)}`,
+    );
     const name = players
       ? `${players.player1.firstName} ${players.player1.lastName} / ${players.player2.firstName} ${players.player2.lastName}`
       : `Pair ${r.id}`;
     return { id: r.id, name, total: r.total, rank: r.rank, tied: r.tied };
   });
 }
-
-
 
 /**
  * Commit a (possibly director-edited) Swiss seating as the next round.

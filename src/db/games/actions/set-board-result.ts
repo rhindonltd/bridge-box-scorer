@@ -6,6 +6,7 @@ import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { BoardOutcome } from "@/model/score";
 import { parseSeat } from "@/model/participants";
+import { parseMismatch, withMismatch } from "@/model/swiss-mismatch";
 
 /**
  * Minimal shape of the game db handle this action needs. Kept structural so
@@ -253,10 +254,26 @@ export async function markMismatch(
 ): Promise<void> {
   const resolved = await resolveActedMatch(db, key);
   if (!resolved) return;
-  const ruling = resolved.actedIsHome
-    ? rulingToken
-    : invertMismatchSideToken(rulingToken);
-  await writeMatchRuling(db, resolved.matchId, ruling);
+  const homeRelative = parseMismatch(
+    resolved.actedIsHome ? rulingToken : invertMismatchSideToken(rulingToken),
+  );
+  if (homeRelative == null) {
+    throw new Error(`Not a mismatch ruling: ${rulingToken}`);
+  }
+  // Both sides of one match can be mismatched (each was drawn against the
+  // wrong opponents): keep a ruling already made for the other side.
+  const existing = (
+    await db
+      .select({ ruling: matches.ruling })
+      .from(matches)
+      .where(eq(matches.id, resolved.matchId))
+      .limit(1)
+  )[0]?.ruling;
+  await writeMatchRuling(
+    db,
+    resolved.matchId,
+    withMismatch(existing ?? null, homeRelative),
+  );
 }
 
 /** Flip the offender side of a `VOID:SHORT_OFFENDER_NS/EW` token; others as-is. */

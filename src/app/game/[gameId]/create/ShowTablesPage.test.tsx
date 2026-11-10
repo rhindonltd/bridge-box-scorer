@@ -46,25 +46,23 @@ let expectedLateStore: string[] = [];
 // a test can point this at a stale value to model the server read racing the
 // write (the real "toggle snaps back" bug).
 let expectedLateServerValue: (() => string[]) | null = null;
-const mockMutate = vi.fn(
-  (key?: string, updater?: unknown, _opts?: unknown) => {
-    if (typeof key === "string" && key.includes("expected-late-seats")) {
-      if (typeof updater === "function") {
-        // Optimistic cache update.
-        expectedLateStore = (updater as (c?: string[]) => string[])(
-          expectedLateStore,
-        );
-      } else {
-        // Bare revalidation: re-read from the "server".
-        expectedLateStore = expectedLateServerValue
-          ? expectedLateServerValue()
-          : expectedLateStore;
-      }
-      notifySwrSubscribers();
+const mockMutate = vi.fn((key?: string, updater?: unknown, _opts?: unknown) => {
+  if (typeof key === "string" && key.includes("expected-late-seats")) {
+    if (typeof updater === "function") {
+      // Optimistic cache update.
+      expectedLateStore = (updater as (c?: string[]) => string[])(
+        expectedLateStore,
+      );
+    } else {
+      // Bare revalidation: re-read from the "server".
+      expectedLateStore = expectedLateServerValue
+        ? expectedLateServerValue()
+        : expectedLateStore;
     }
-    return Promise.resolve();
-  },
-);
+    notifySwrSubscribers();
+  }
+  return Promise.resolve();
+});
 // Subscribers that should re-render when the mocked SWR cache changes (as real
 // SWR does when `mutate` updates a key). `mockMutate` bumps a version counter
 // and notifies them, so an optimistic update is observable in the rendered UI.
@@ -589,8 +587,20 @@ describe("ShowTablesPage", () => {
 
   describe("section management (multi-section)", () => {
     const twoSections = [
-      { section: "A", label: "Red", tables: 2, ordinal: 0, selectedMovement: null },
-      { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
+      {
+        section: "A",
+        label: "Red",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "Blue",
+        tables: 4,
+        ordinal: 1,
+        selectedMovement: null,
+      },
     ];
 
     it("hides the combined-ranking toggle, section label, and delete for a single section", () => {
@@ -683,9 +693,7 @@ describe("ShowTablesPage", () => {
 
       render(<ShowTablesPage />);
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Delete section" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Delete section" }));
 
       await waitFor(() =>
         expect(mockDeleteSection).toHaveBeenCalledWith("g1", "B"),
@@ -701,9 +709,7 @@ describe("ShowTablesPage", () => {
 
       render(<ShowTablesPage />);
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Delete section" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Delete section" }));
 
       expect(mockDeleteSection).not.toHaveBeenCalled();
     });
@@ -715,9 +721,7 @@ describe("ShowTablesPage", () => {
       mockDeleteSection.mockRejectedValueOnce(new Error("boom"));
 
       render(<ShowTablesPage />);
-      fireEvent.click(
-        screen.getByRole("button", { name: "Delete section" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Delete section" }));
 
       await waitFor(() => expect(mockReportError).toHaveBeenCalled());
     });
@@ -795,8 +799,20 @@ describe("ShowTablesPage", () => {
   it("qualifies the 'select a movement' banner with the section when multi-section", () => {
     // Two sections → the prompt disambiguates which section needs a movement.
     currentSections = [
-      { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
-      { section: "B", label: "B", tables: 2, ordinal: 1, selectedMovement: null },
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "B",
+        tables: 2,
+        ordinal: 1,
+        selectedMovement: null,
+      },
     ];
 
     render(<ShowTablesPage />);
@@ -1113,8 +1129,20 @@ describe("ShowTablesPage", () => {
 
   describe("started: structural controls are locked", () => {
     const twoSections = [
-      { section: "A", label: "Red", tables: 2, ordinal: 0, selectedMovement: null },
-      { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
+      {
+        section: "A",
+        label: "Red",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "Blue",
+        tables: 4,
+        ordinal: 1,
+        selectedMovement: null,
+      },
     ];
 
     it("hides the table-count stepper once the game has started", () => {
@@ -1180,7 +1208,9 @@ describe("ShowTablesPage", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("hides the Swiss stationary toggle in the table dialog once started", async () => {
+    it("keeps the Swiss stationary toggle once started, and saves a change", async () => {
+      // Marking a pair stationary doesn't change the round structure, so the
+      // director can do it mid-event; it applies to rounds drawn from then on.
       mockStarted = true;
       currentSections = [
         {
@@ -1200,11 +1230,16 @@ describe("ShowTablesPage", () => {
       render(<ShowTablesPage />);
       fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
 
-      // The lifecycle (standing) controls are available, but the stationary
-      // toggle — which rewrites the Swiss movement — is not.
       expect(
-        screen.queryByRole("group", { name: "Stationary" }),
-      ).not.toBeInTheDocument();
+        screen.getAllByText(/Applies to rounds drawn from now on/).length,
+      ).toBeGreaterThan(0);
+      await clickStationary("Yes");
+      await waitFor(() =>
+        expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
+          tables: 2,
+          stationaryPairs: [1],
+        }),
+      );
     });
   });
 });

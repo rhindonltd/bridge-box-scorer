@@ -27,6 +27,7 @@ const handlers = {
   onTravellersClick: vi.fn(),
   onEnterDealsClick: vi.fn(),
   onMovementClick: vi.fn(),
+  onTimerClick: vi.fn(),
   onReviewMismatchesClick: vi.fn(),
   onPairsClick: vi.fn(),
   onExportClick: vi.fn(),
@@ -39,6 +40,7 @@ const flags = {
   showTravellers: false,
   showEnterDeals: false,
   showMovement: false,
+  showTimer: false,
   showReviewMismatches: false,
   showPairs: false,
   showExport: false,
@@ -153,6 +155,21 @@ describe("ManageGameMenuPage", () => {
       );
       expect(
         screen.queryByRole("button", { name: "Enter Deals" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Timer", () => {
+    it("is shown and wired when showTimer is true", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} showTimer={true} />);
+      fireEvent.click(screen.getByRole("button", { name: "Timer" }));
+      expect(handlers.onTimerClick).toHaveBeenCalled();
+    });
+
+    it("is hidden when showTimer is false", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} showTimer={false} />);
+      expect(
+        screen.queryByRole("button", { name: "Timer" }),
       ).not.toBeInTheDocument();
     });
   });

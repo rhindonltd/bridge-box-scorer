@@ -98,8 +98,15 @@ export interface SectionLeaderboard extends LeaderboardResult {
   section: string;
 }
 
+/**
+ * A seated pair as a leaderboard participant. Its id is the id its boards are
+ * recorded under (`anchorId ?? seat`) — the same id every scored line, standing
+ * and exclusion is keyed on — so a line finds its pair's names. For a
+ * direction-qualified movement (Mitchell) that is the seat itself; a movement
+ * that numbers pairs (a Howell, a Swiss event) records a bare number instead.
+ */
 function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
-  return { ...p, type: "PAIR" as const, id: p.initialSeat };
+  return { ...p, type: "PAIR" as const, id: p.anchorId ?? p.initialSeat };
 }
 
 /**
@@ -359,8 +366,9 @@ function pairRankValue(line: OverallScore["lines"][number]): number {
  * pair's rank/percentage reflects the NS field only, and likewise for EW.
  *
  * The pooled score's line values are reused verbatim; only rank/tied are
- * recomputed per direction. `pairId` is a section-qualified seat ending in
- * NS/EW (see {@link toParticipant}), so the direction is read straight from it.
+ * recomputed per direction. Only two-winner (direction-qualified) movements are
+ * split, where `pairId` is a section-qualified seat ending in NS/EW, so the
+ * direction is read straight from it.
  */
 function splitByDirection(
   overallScore: OverallScore,

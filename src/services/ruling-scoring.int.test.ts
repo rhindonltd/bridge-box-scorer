@@ -138,4 +138,32 @@ describe("match-level rulings flow from matches.ruling to the leaderboard", () =
     // Team 2 (the mismatched side) is docked below its actual VP.
     expect(ruled.team2!).toBeLessThan(base.team2!);
   });
+
+  it("both teams of one match can be ruled mismatched; ruling one keeps the other", async () => {
+    await setupTeamsRound();
+    const { markMismatch } = await import("@/db/games/actions/set-board-result");
+    const { adjustMismatchVp } = await import("@/model/swiss-mismatch");
+    const games = await import("@/db/games");
+    const db = (await games.getDb(gameId))!;
+    const base = await teamVp();
+
+    // Team 1 met a stronger opponent than it should have, not its own fault;
+    // team 2 (acted from its own table) a weaker one, its own fault.
+    await markMismatch(db, { roundNumber: 1, tableNumber: 1 }, "MM:NS:HIGHER:NOT");
+    await markMismatch(db, { roundNumber: 1, tableNumber: 2 }, "MM:NS:LOWER:OWN");
+
+    // Each team is adjusted from its OWN actual VP, independently.
+    const team1Ruling = { side: "NS", direction: "HIGHER", fault: "NOT" } as const;
+    const team2Ruling = { side: "EW", direction: "LOWER", fault: "OWN" } as const;
+    const both = await teamVp();
+    expect(both.team1).toBe(adjustMismatchVp(base.team1!, team1Ruling, 20));
+    expect(both.team2).toBe(adjustMismatchVp(base.team2!, team2Ruling, 20));
+
+    // Re-ruling team 2 (now not its fault: no change for a weaker opponent)
+    // replaces only team 2's ruling; team 1's stands.
+    await markMismatch(db, { roundNumber: 1, tableNumber: 2 }, "MM:NS:LOWER:NOT");
+    const again = await teamVp();
+    expect(again.team1).toBe(both.team1);
+    expect(again.team2).toBe(base.team2);
+  });
 });

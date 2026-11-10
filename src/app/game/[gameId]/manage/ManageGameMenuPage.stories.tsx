@@ -38,6 +38,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onTravellersClick: fn(),
     onEnterDealsClick: fn(),
     onMovementClick: fn(),
+    onTimerClick: fn(),
     onReviewMismatchesClick: fn(),
     onPairsClick: fn(),
     onExportClick: fn(),
@@ -47,6 +48,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     showTravellers: false,
     showEnterDeals: false,
     showMovement: false,
+    showTimer: false,
     showReviewMismatches: false,
     showPairs: false,
     showExport: false,
@@ -67,8 +69,8 @@ export const NotStarted: Story = {
 };
 
 /**
- * Game started: Travellers, Movement and the "Export & Publish" submenu entry
- * are available. The individual export gating (results complete, BridgeWebs /
+ * Game started: Travellers, Movement, Timer and the "Export & Publish" submenu
+ * entry are available. The individual export gating (results complete, BridgeWebs /
  * EBU configured) now lives inside that submenu.
  */
 export const Started: Story = {
@@ -77,6 +79,7 @@ export const Started: Story = {
     showTravellers: true,
     showEnterDeals: true,
     showMovement: true,
+    showTimer: true,
     showExport: true,
   },
 };
@@ -88,6 +91,7 @@ export const StartedSwiss: Story = {
     showTravellers: true,
     showEnterDeals: true,
     showMovement: true,
+    showTimer: true,
     showReviewMismatches: true,
     showExport: true,
   },

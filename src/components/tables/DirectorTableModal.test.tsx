@@ -115,13 +115,33 @@ describe("DirectorTableModal", () => {
     expect(screen.queryByText("Stationary")).not.toBeInTheDocument();
   });
 
-  it("hides the stationary toggle on a Swiss table once the game has started", () => {
-    // Marking a pair stationary rewrites the movement spec, so it is a pre-start
-    // action only — even for a Swiss table it must not appear after start.
+  it("keeps the stationary toggle on a Swiss table once the game has started, noting it applies from the next draw", () => {
+    // The director can mark or unmark a pair at any time; after the start it
+    // affects only rounds drawn from then on.
+    const onToggleStationary = vi.fn();
     render(
       <DirectorTableModal
         table={fullTable()}
         isSwiss
+        onEvict={vi.fn()}
+        onToggleStationary={onToggleStationary}
+        started
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByText("Stationary").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/Applies to rounds drawn from now on/).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("does not offer a stationary toggle on a non-Swiss table, started or not", () => {
+    render(
+      <DirectorTableModal
+        table={fullTable()}
+        isSwiss={false}
         onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
         started

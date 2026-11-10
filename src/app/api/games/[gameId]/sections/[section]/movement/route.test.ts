@@ -10,18 +10,27 @@ vi.mock("@/db/games/actions/set-section-movement", () => ({
 vi.mock("@/db/games/queries/get-section-movement", () => ({
   getSectionMovement: vi.fn(),
 }));
+vi.mock("@/db/games/queries/swiss-board-history", () => ({
+  getSwissBoardHistory: vi.fn(),
+}));
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSectionMovementChanged: vi.fn(),
 }));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
-  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
 }));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { setSectionMovement } from "@/db/games/actions/set-section-movement";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
+import { getSwissBoardHistory } from "@/db/games/queries/swiss-board-history";
 import { broadcastSectionMovementChanged } from "@/socket/broadcast/section-broadcast";
 import { logger } from "@/lib/log";
 import { PUT } from "./route";
@@ -113,7 +122,12 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
 
   it("returns 401 without a valid token", async () => {
     vi.mocked(validateDirectorToken).mockReturnValue(false);
-    const res = await invoke("g1", "A", { mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 } }, null);
+    const res = await invoke(
+      "g1",
+      "A",
+      { mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 } },
+      null,
+    );
     expect(res.status).toBe(401);
     expect(setSectionMovement).not.toHaveBeenCalled();
   });
@@ -130,5 +144,76 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
     });
     expect(errSpy).toHaveBeenCalled();
     errSpy.mockClear();
+  });
+
+  describe("stationary pairs on a Swiss section", () => {
+    const swiss = (over: Record<string, unknown> = {}) => ({
+      tables: 5,
+      rounds: 7,
+      boardsPerRound: 3,
+      ...over,
+    });
+
+    beforeEach(() => {
+      // An earlier test makes the save reject; start these from a clean save.
+      vi.mocked(setSectionMovement).mockReset();
+      vi.mocked(setSectionMovement).mockResolvedValue(undefined);
+    });
+
+    it("records the old list for rounds already drawn when it changes mid-event", async () => {
+      vi.mocked(getSectionMovement).mockResolvedValue({
+        source: "SWISS",
+        swiss: swiss({ stationaryPairs: [2] }),
+      });
+      vi.mocked(getSwissBoardHistory).mockResolvedValue({
+        highestRound: 3,
+      } as never);
+      const res = await invoke("g1", "A", {
+        swiss: swiss({ stationaryPairs: [2, 4] }),
+      });
+      expect(res.status).toBe(200);
+      expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+        source: "SWISS",
+        swiss: swiss({
+          stationaryPairs: [2, 4],
+          stationaryEarlier: [{ throughRound: 3, pairs: [2] }],
+        }),
+      });
+    });
+
+    it("ignores any history the client sends", async () => {
+      vi.mocked(getSectionMovement).mockResolvedValue({
+        source: "SWISS",
+        swiss: swiss({ stationaryPairs: [2] }),
+      });
+      vi.mocked(getSwissBoardHistory).mockResolvedValue({
+        highestRound: 3,
+      } as never);
+      await invoke("g1", "A", {
+        swiss: swiss({
+          stationaryPairs: [2],
+          stationaryEarlier: [{ throughRound: 1, pairs: [1, 2, 3] }],
+        }),
+      });
+      const saved = vi.mocked(setSectionMovement).mock.calls[0][2] as {
+        swiss: { stationaryEarlier?: unknown };
+      };
+      expect(saved.swiss.stationaryEarlier).toBeUndefined();
+    });
+
+    it("records nothing for a change made before any round is drawn", async () => {
+      vi.mocked(getSectionMovement).mockResolvedValue({
+        source: "SWISS",
+        swiss: swiss(),
+      });
+      vi.mocked(getSwissBoardHistory).mockResolvedValue({
+        highestRound: 0,
+      } as never);
+      await invoke("g1", "A", { swiss: swiss({ stationaryPairs: [1] }) });
+      expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+        source: "SWISS",
+        swiss: swiss({ stationaryPairs: [1] }),
+      });
+    });
   });
 });

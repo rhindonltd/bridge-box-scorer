@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scenarioToArgv } from "./seed-game";
+import { isHeldBack, pickOutcome, scenarioToArgv } from "./seed-game";
 import { parseCliArgs } from "@/scripts/seed-e2e-fixture";
 
 describe("scenarioToArgv", () => {
@@ -48,7 +48,8 @@ describe("scenarioToArgv", () => {
 });
 
 describe("parseCliArgs", () => {
-  const parse = (flags: string) => parseCliArgs(flags.split(" ").filter(Boolean));
+  const parse = (flags: string) =>
+    parseCliArgs(flags.split(" ").filter(Boolean));
 
   it("keeps the manual-testing defaults", () => {
     const o = parse("");
@@ -97,5 +98,46 @@ describe("parseCliArgs", () => {
     expect(() => parse("--scoring NOPE")).toThrow(/Unknown --scoring/);
     expect(() => parse("--play some")).toThrow(/--play must be/);
     expect(() => parse("--movement best")).toThrow(/--movement must be/);
+  });
+});
+
+describe("pickOutcome", () => {
+  const play = { board: 7, table: 2, round: 3 };
+
+  it("is undefined when no outcomes are given or none match", () => {
+    expect(pickOutcome(undefined, play)).toBeUndefined();
+    expect(pickOutcome({}, play)).toBeUndefined();
+    expect(pickOutcome({ "8": "3NTN=", "7@1": "4SN+1" }, play)).toBeUndefined();
+  });
+
+  it("matches a board at every table, or at one table, or one exact play", () => {
+    expect(pickOutcome({ "7": "3NTN=" }, play)).toBe("3NTN=");
+    expect(pickOutcome({ "7@2": "4SN+1" }, play)).toBe("4SN+1");
+    expect(pickOutcome({ "7@2/3": "4HS=" }, play)).toBe("4HS=");
+    // The round must match for the most specific form.
+    expect(pickOutcome({ "7@2/1": "4HS=" }, play)).toBeUndefined();
+  });
+
+  it("prefers the most specific key", () => {
+    const outcomes = { "7": "3NTN=", "7@2": "4SN+1", "7@2/3": "4HS=" };
+    expect(pickOutcome(outcomes, play)).toBe("4HS=");
+    expect(pickOutcome(outcomes, { ...play, round: 1 })).toBe("4SN+1");
+    expect(pickOutcome(outcomes, { ...play, table: 3 })).toBe("3NTN=");
+  });
+});
+
+describe("isHeldBack", () => {
+  const play = { board: 1, table: 2, round: 3 };
+
+  it("holds nothing back by default", () => {
+    expect(isHeldBack(undefined, play)).toBe(false);
+    expect(isHeldBack([], play)).toBe(false);
+  });
+
+  it("matches a board at a table, or one exact play", () => {
+    expect(isHeldBack(["1@2"], play)).toBe(true);
+    expect(isHeldBack(["1@2/3"], play)).toBe(true);
+    expect(isHeldBack(["1@2/1"], play)).toBe(false);
+    expect(isHeldBack(["1@3", "2@2"], play)).toBe(false);
   });
 });

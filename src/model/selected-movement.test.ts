@@ -4,6 +4,8 @@ import {
   parseSelectedMovement,
   serializeSelectedMovement,
   selectedMovementsEqual,
+  stationaryPairsForRound,
+  withStationaryHistory,
 } from "./selected-movement";
 import type { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 
@@ -122,7 +124,12 @@ describe("SelectedMovement round-trip", () => {
   it("round-trips a SWISS_TEAMS selection with oddHandling", () => {
     const selected: SelectedMovement = {
       source: "SWISS_TEAMS",
-      swissTeams: { teams: 5, rounds: 7, boardsPerRound: 4, oddHandling: "BYE" },
+      swissTeams: {
+        teams: 5,
+        rounds: 7,
+        boardsPerRound: 4,
+        oddHandling: "BYE",
+      },
     };
 
     const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
@@ -251,7 +258,9 @@ describe("parseSelectedMovement", () => {
   // --- Swiss Teams TRIPLE oddRoundPlan ---------------------------------------
 
   const parseTeams = (swissTeams: unknown) =>
-    parseSelectedMovement(JSON.stringify({ source: "SWISS_TEAMS", swissTeams }));
+    parseSelectedMovement(
+      JSON.stringify({ source: "SWISS_TEAMS", swissTeams }),
+    );
 
   it("accepts a SWISS_TEAMS TRIPLE plan with byes, shorts and a long group", () => {
     const parsed = parseTeams({
@@ -429,6 +438,7 @@ describe("selectedMovementsEqual", () => {
       oddHandling: "BYE" | "HALF_MATCHES";
       oddRoundPlan: ("BYE" | "HALF_MATCHES")[];
       stationaryPairs: number[];
+      stationaryEarlier: { throughRound: number; pairs: number[] }[];
     }> = {},
   ): SelectedMovement => ({
     source: "SWISS",
@@ -444,7 +454,7 @@ describe("selectedMovementsEqual", () => {
     );
   });
 
-  it("compares SWISS odd handling, the per-round plan and stationary pairs", () => {
+  it("compares SWISS odd handling and the per-round plan, but not stationary pairs", () => {
     // Absent oddHandling equals an explicit "BYE".
     expect(selectedMovementsEqual(swiss(), swiss({ oddHandling: "BYE" }))).toBe(
       true,
@@ -465,21 +475,25 @@ describe("selectedMovementsEqual", () => {
       ),
     ).toBe(false);
     expect(selectedMovementsEqual(swiss(), plan())).toBe(false);
-    // Stationary pairs participate in equality, order-independently.
-    expect(
-      selectedMovementsEqual(
-        swiss({ stationaryPairs: [1, 2] }),
-        swiss({ stationaryPairs: [2, 1] }),
-      ),
-    ).toBe(true);
+    // Stationary pairs are NOT part of equality: marking a pair stationary
+    // (even mid-event) leaves the round structure alone, so it must not count
+    // as a new movement (which would clear a running timer).
     expect(
       selectedMovementsEqual(
         swiss({ stationaryPairs: [1] }),
         swiss({ stationaryPairs: [2] }),
       ),
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      selectedMovementsEqual(
+        swiss(),
+        swiss({
+          stationaryPairs: [1],
+          stationaryEarlier: [{ throughRound: 2, pairs: [] }],
+        }),
+      ),
+    ).toBe(true);
   });
-
   it("treats SWISS as different from other sources", () => {
     expect(selectedMovementsEqual(swiss(), mitchell())).toBe(false);
     expect(selectedMovementsEqual(swiss(), spec(1))).toBe(false);
@@ -557,5 +571,136 @@ describe("selectedMovementsEqual", () => {
   it("treats ROUND_ROBIN_TEAMS as different from other sources", () => {
     expect(selectedMovementsEqual(roundRobinTeams(), swissTeams())).toBe(false);
     expect(selectedMovementsEqual(roundRobinTeams(), mitchell())).toBe(false);
+  });
+});
+
+describe("stationary pairs over the event", () => {
+  const swissOf = (swiss: Record<string, unknown> = {}): SelectedMovement => ({
+    source: "SWISS",
+    swiss: { tables: 5, rounds: 7, boardsPerRound: 3, ...swiss },
+  });
+  const spec = (m: SelectedMovement) =>
+    (m as Extract<SelectedMovement, { source: "SWISS" }>).swiss;
+
+  describe("stationaryPairsForRound", () => {
+    it("uses the current list when nothing was recorded", () => {
+      expect(stationaryPairsForRound({ stationaryPairs: [3] }, 4)).toEqual([3]);
+      expect(stationaryPairsForRound({}, 2)).toEqual([]);
+    });
+
+    it("gives a drawn round the list it was drawn under", () => {
+      const s = {
+        stationaryPairs: [3, 7],
+        stationaryEarlier: [
+          { throughRound: 2, pairs: [3] },
+          { throughRound: 4, pairs: [3, 6] },
+        ],
+      };
+      expect(stationaryPairsForRound(s, 1)).toEqual([3]);
+      expect(stationaryPairsForRound(s, 2)).toEqual([3]);
+      expect(stationaryPairsForRound(s, 3)).toEqual([3, 6]);
+      expect(stationaryPairsForRound(s, 4)).toEqual([3, 6]);
+      // Rounds not yet drawn use the current list.
+      expect(stationaryPairsForRound(s, 5)).toEqual([3, 7]);
+    });
+  });
+
+  describe("withStationaryHistory", () => {
+    it("records nothing for a change made before any round is drawn", () => {
+      const next = withStationaryHistory(
+        swissOf(),
+        swissOf({ stationaryPairs: [2] }),
+        0,
+      );
+      expect(spec(next).stationaryPairs).toEqual([2]);
+      expect(spec(next).stationaryEarlier).toBeUndefined();
+    });
+
+    it("records the old list through the last drawn round when it changes", () => {
+      const next = withStationaryHistory(
+        swissOf({ stationaryPairs: [2] }),
+        swissOf({ stationaryPairs: [2, 4] }),
+        3,
+      );
+      expect(spec(next).stationaryEarlier).toEqual([
+        { throughRound: 3, pairs: [2] },
+      ]);
+      expect(stationaryPairsForRound(spec(next), 3)).toEqual([2]);
+      expect(stationaryPairsForRound(spec(next), 4)).toEqual([2, 4]);
+    });
+
+    it("records marking a first pair, and unmarking the last one", () => {
+      const marked = withStationaryHistory(
+        swissOf(),
+        swissOf({ stationaryPairs: [1] }),
+        2,
+      );
+      expect(stationaryPairsForRound(spec(marked), 2)).toEqual([]);
+      const unmarked = withStationaryHistory(
+        marked,
+        swissOf({
+          stationaryPairs: [],
+          stationaryEarlier: spec(marked).stationaryEarlier,
+        }),
+        4,
+      );
+      expect(stationaryPairsForRound(spec(unmarked), 2)).toEqual([]);
+      expect(stationaryPairsForRound(spec(unmarked), 4)).toEqual([1]);
+      expect(stationaryPairsForRound(spec(unmarked), 5)).toEqual([]);
+    });
+
+    it("keeps the FIRST recorded list when changed twice before the next draw", () => {
+      const once = withStationaryHistory(
+        swissOf({ stationaryPairs: [2] }),
+        swissOf({ stationaryPairs: [2, 4] }),
+        3,
+      );
+      const twice = withStationaryHistory(
+        once,
+        swissOf({ stationaryPairs: [4] }),
+        3,
+      );
+      expect(spec(twice).stationaryEarlier).toEqual([
+        { throughRound: 3, pairs: [2] },
+      ]);
+      expect(spec(twice).stationaryPairs).toEqual([4]);
+    });
+
+    it("does not add an entry when the list is unchanged", () => {
+      const next = withStationaryHistory(
+        swissOf({ stationaryPairs: [2] }),
+        swissOf({ stationaryPairs: [2], rounds: 7 }),
+        3,
+      );
+      expect(spec(next).stationaryEarlier).toBeUndefined();
+    });
+
+    it("carries the history forward and ignores whatever the client sends", () => {
+      const previous = withStationaryHistory(
+        swissOf({ stationaryPairs: [2] }),
+        swissOf({ stationaryPairs: [5] }),
+        2,
+      );
+      const next = withStationaryHistory(
+        previous,
+        swissOf({
+          stationaryPairs: [5],
+          stationaryEarlier: [{ throughRound: 9, pairs: [1, 2, 3] }],
+        }),
+        2,
+      );
+      expect(spec(next).stationaryEarlier).toEqual([
+        { throughRound: 2, pairs: [2] },
+      ]);
+    });
+
+    it("leaves other movement sources untouched", () => {
+      const other: SelectedMovement = {
+        source: "SPEC",
+        specId: 1,
+        boardsPerRound: 3,
+      };
+      expect(withStationaryHistory(null, other, 0)).toBe(other);
+    });
   });
 });

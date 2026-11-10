@@ -34,6 +34,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       onTravellersClick={() => router.push(`/game/${gameId}/manage/travellers`)}
       onEnterDealsClick={() => router.push(`/game/${gameId}/manage/deals`)}
       onMovementClick={() => router.push(`/game/${gameId}/manage/movement`)}
+      onTimerClick={() => router.push(`/game/${gameId}/manage/timer`)}
       onReviewMismatchesClick={() =>
         router.push(`/game/${gameId}/manage/mismatches`)
       }
@@ -47,6 +48,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       showTravellers={started}
       showEnterDeals={started}
       showMovement={started}
+      showTimer={started}
       showReviewMismatches={started && isSwiss}
       showPairs={started}
       // "Export & Publish" groups the results-export / publishing actions; it is
