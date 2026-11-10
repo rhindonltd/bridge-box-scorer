@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   createGame,
   selectMovement,
@@ -10,6 +10,14 @@ import {
   inspectSeatTransfer,
   handoverSameDevice,
   generateShareCode,
+  updateCombinedRanking,
+  setSubstitutionOptions,
+  withdrawPair,
+  setAbsenceTreatment,
+  withdrawPairAsDirector,
+  updateEventDetails,
+  verifySeatHeld,
+  watchSeat,
 } from "./game-service";
 import { SocketEvents } from "@/socket/socket-events";
 
@@ -561,5 +569,260 @@ describe("game-service", () => {
         { gameId: "g1", seat: "A1NS", token: "", kind: "CHANGE_DEVICE" },
       );
     });
+  });
+});
+
+describe("game-service director HTTP calls", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const cases: {
+    name: string;
+    call: () => Promise<unknown>;
+    url: string;
+    method: string;
+    body: unknown;
+    defaultMessage: string;
+  }[] = [
+    {
+      name: "updateCombinedRanking",
+      call: () => updateCombinedRanking("g1", true),
+      url: "/api/games/g1",
+      method: "PATCH",
+      body: { combinedRanking: true },
+      defaultMessage: "Failed to update setting",
+    },
+    {
+      name: "setSubstitutionOptions",
+      call: () =>
+        setSubstitutionOptions("g1", "A1NS", {
+          split: true,
+          eligibility: [{ id: 1, eligible: false }],
+        }),
+      url: "/api/games/g1/substitutions",
+      method: "PATCH",
+      body: {
+        seat: "A1NS",
+        split: true,
+        eligibility: [{ id: 1, eligible: false }],
+      },
+      defaultMessage: "Failed to set substitution options",
+    },
+    {
+      name: "setAbsenceTreatment",
+      call: () => setAbsenceTreatment("g1", "A1NS", "AVERAGE"),
+      url: "/api/games/g1/absences",
+      method: "PATCH",
+      body: { seat: "A1NS", treatment: "AVERAGE" },
+      defaultMessage: "Failed to save",
+    },
+    {
+      name: "withdrawPairAsDirector",
+      call: () => withdrawPairAsDirector("g1", "A1NS"),
+      url: "/api/games/g1/pairs",
+      method: "PATCH",
+      body: { seat: "A1NS", action: "withdraw" },
+      defaultMessage: "Failed to withdraw the pair",
+    },
+    {
+      name: "updateEventDetails",
+      call: () => updateEventDetails("g1", { eventName: "New" }),
+      url: "/api/games/g1",
+      method: "PATCH",
+      body: { eventName: "New" },
+      defaultMessage: "Failed to update event details",
+    },
+  ];
+
+  for (const c of cases) {
+    describe(c.name, () => {
+      it("sends the request with the director token", async () => {
+        await c.call();
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toBe(c.url);
+        expect(init.method).toBe(c.method);
+        expect(init.headers["x-director-token"]).toBe("stored-token");
+        expect(JSON.parse(init.body)).toEqual(c.body);
+      });
+
+      it("sends an empty token when none is stored", async () => {
+        vi.mocked(getDirectorToken).mockReturnValueOnce(null as any);
+        await c.call();
+        expect(fetchMock.mock.calls[0][1].headers["x-director-token"]).toBe("");
+      });
+
+      it("throws the server's error message", async () => {
+        fetchMock.mockResolvedValue({
+          ok: false,
+          json: async () => ({ error: "server says no" }),
+        });
+        await expect(c.call()).rejects.toThrow("server says no");
+      });
+
+      it("falls back to a default message", async () => {
+        fetchMock.mockResolvedValue({
+          ok: false,
+          json: async () => {
+            throw new Error("not json");
+          },
+        });
+        await expect(c.call()).rejects.toThrow(c.defaultMessage);
+      });
+    });
+  }
+
+  it("setSubstitutionOptions includes mainOccupancyId when given", async () => {
+    await setSubstitutionOptions("g1", "A1NS", {
+      split: false,
+      eligibility: [],
+      mainOccupancyId: 7,
+    });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+      mainOccupancyId: 7,
+    });
+  });
+});
+
+describe("game-service socket / token helpers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("withdrawPair emits WITHDRAW_PAIR and clears the local token", async () => {
+    mockEmitWithAck.mockResolvedValue(null);
+    await withdrawPair("g1", "A1NS");
+    expect(mockEmitWithAck).toHaveBeenCalledWith(SocketEvents.WITHDRAW_PAIR, {
+      gameId: "g1",
+      seat: "A1NS",
+      token: "seat-tok",
+    });
+    expect(clearPlayerToken).toHaveBeenCalledWith("g1");
+  });
+
+  it("withdrawPair sends an empty token when none is stored", async () => {
+    vi.mocked(getPlayerToken).mockReturnValueOnce(null as any);
+    mockEmitWithAck.mockResolvedValue(null);
+    await withdrawPair("g1", "A1NS");
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      SocketEvents.WITHDRAW_PAIR,
+      expect.objectContaining({ token: "" }),
+    );
+  });
+
+  it("selectMovement / selectMitchellMovement still emit", async () => {
+    await selectMovement("g1", 3, "PAIRS");
+    expect(mockEmitEvent).toHaveBeenCalled();
+  });
+
+  describe("verifySeatHeld", () => {
+    it("is false without a stored token", async () => {
+      vi.mocked(getPlayerToken).mockReturnValueOnce(null as any);
+      await expect(verifySeatHeld("g1", "A1NS")).resolves.toBe(false);
+    });
+
+    it("is true when the server confirms the seat is held", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ result: { held: true } }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+      await expect(verifySeatHeld("g1", "A 1")).resolves.toBe(true);
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/games/g1/participants/A%201/verify",
+        { headers: { "x-player-token": "seat-tok" } },
+      );
+    });
+
+    it("is false when the server says not held", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({ result: { held: false } }),
+        }),
+      );
+      await expect(verifySeatHeld("g1", "A1NS")).resolves.toBe(false);
+    });
+
+    it("is false when the body has no result", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({ ok: true, json: async () => null }),
+      );
+      await expect(verifySeatHeld("g1", "A1NS")).resolves.toBe(false);
+    });
+
+    it("is false on a non-ok response", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+      await expect(verifySeatHeld("g1", "A1NS")).resolves.toBe(false);
+    });
+
+    it("is false when the request throws", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+      await expect(verifySeatHeld("g1", "A1NS")).resolves.toBe(false);
+    });
+  });
+
+  describe("watchSeat", () => {
+    it("is unknown without a stored token", async () => {
+      vi.mocked(getPlayerToken).mockReturnValueOnce(null as any);
+      await expect(watchSeat("g1", "A1NS")).resolves.toBe("unknown");
+      expect(mockEmitWithAck).not.toHaveBeenCalled();
+    });
+
+    it("returns the status from the server", async () => {
+      mockEmitWithAck.mockResolvedValue({ status: "moved" });
+      await expect(watchSeat("g1", "A1NS")).resolves.toBe("moved");
+      expect(mockEmitWithAck).toHaveBeenCalledWith(SocketEvents.WATCH_SEAT, {
+        gameId: "g1",
+        seat: "A1NS",
+        token: "seat-tok",
+      });
+    });
+
+    it("is unknown when the request fails", async () => {
+      mockEmitWithAck.mockRejectedValue(new Error("down"));
+      await expect(watchSeat("g1", "A1NS")).resolves.toBe("unknown");
+    });
+  });
+
+  it("generateSeatTransferCode by director sends no seat token but the director token", async () => {
+    mockEmitWithAck.mockResolvedValue({ code: "C" });
+    await generateSeatTransferCode("g1", "A1NS", "CHANGE_DEVICE", true);
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      SocketEvents.CREATE_SEAT_TRANSFER,
+      expect.objectContaining({ token: "", directorToken: "stored-token" }),
+    );
+  });
+
+  it("generateSeatTransferCode sends an empty director token when none is stored", async () => {
+    vi.mocked(getDirectorToken).mockReturnValueOnce(null as any);
+    mockEmitWithAck.mockResolvedValue({ code: "C" });
+    await generateSeatTransferCode("g1", "A1NS", "REINSTATE");
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      SocketEvents.CREATE_SEAT_TRANSFER,
+      expect.objectContaining({ directorToken: "" }),
+    );
+  });
+
+  it("handoverSameDevice sends an empty token when none is stored", async () => {
+    vi.mocked(getPlayerToken).mockReturnValueOnce(null as any);
+    mockEmitWithAck.mockResolvedValue({ key: "k" });
+    const p = { firstName: "A", lastName: "B" };
+    await handoverSameDevice("g1", "A1NS", { player1: p, player2: p });
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      SocketEvents.HANDOVER_SAME_DEVICE,
+      expect.objectContaining({ token: "" }),
+    );
   });
 });

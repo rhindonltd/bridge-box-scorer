@@ -203,3 +203,15 @@ describe("commitNextSwissRound halfMatch", () => {
     );
   });
 });
+
+describe("commitNextSwissRound without a stored token", () => {
+  it("passes an empty token", async () => {
+    vi.mocked(getDirectorToken).mockReturnValueOnce(null);
+    vi.mocked(emitWithAck).mockResolvedValue({ roundNumber: 1 });
+    await commitNextSwissRound("g1", "A", [], null);
+    expect(emitWithAck).toHaveBeenCalledWith(
+      SocketEvents.DRAW_NEXT_SWISS_ROUND,
+      expect.objectContaining({ directorToken: "" }),
+    );
+  });
+});

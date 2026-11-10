@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   basicAuthHeader,
   unwrapResponse,
@@ -184,5 +184,76 @@ describe("submitSession", () => {
     const fetchImpl = stubFetch(200, JSON.stringify({ response: {} }));
     const result = await submitSession(auth, {}, fetchImpl);
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("request failure handling and coercion", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("throws EbuApiError carrying status and body on a non-2xx reply", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        new Response("nope", { status: 500, statusText: "Server Error" }),
+      ) as unknown as typeof fetch;
+    const err = await checkSessionDate(auth, "20170101", fetchImpl).catch(
+      (e) => e,
+    );
+    expect(err).toBeInstanceOf(EbuApiError);
+    expect(err.status).toBe(500);
+    expect(err.body).toBe("nope");
+    expect(err.message).toContain("HTTP 500 Server Error");
+  });
+
+  it("throws EbuApiError on a non-JSON 2xx body", async () => {
+    await expect(
+      checkSessionDate(auth, "20170101", stubFetch(200, "<html>")),
+    ).rejects.toThrow("returned non-JSON body");
+  });
+
+  it("coerces Duplicates from numeric strings, junk strings and other types", async () => {
+    const dup = async (value: unknown) =>
+      (
+        await checkSessionDate(
+          auth,
+          "20170101",
+          stubFetch(200, JSON.stringify({ response: { Duplicates: value } })),
+        )
+      ).duplicates;
+    expect(await dup("3")).toBe(3);
+    expect(await dup("abc")).toBe(0);
+    expect(await dup(true)).toBe(0);
+  });
+
+  it("uses the global fetch when no fetch implementation is passed", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ response: { Duplicates: 2 } })),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await checkSessionDate(auth, "20170101");
+    expect(result.duplicates).toBe(2);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("format=json");
+  });
+});
+
+describe("missing-field defaults", () => {
+  it("defaults absent Sim and player fields to empty strings", async () => {
+    const sims = await checkSessionDate(
+      auth,
+      "20170101",
+      stubFetch(200, JSON.stringify({ response: { Sims: {} } })),
+    );
+    expect(sims.sims).toEqual([{ id: "", description: "" }]);
+
+    const players = await checkPlayers(
+      auth,
+      [],
+      stubFetch(200, JSON.stringify({ response: { Players: [{}] } })),
+    );
+    expect(players.players).toEqual([{ ebu: "", surname: "" }]);
   });
 });
