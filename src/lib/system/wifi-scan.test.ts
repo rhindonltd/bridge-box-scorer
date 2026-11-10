@@ -36,11 +36,9 @@ describe("parseWifiScan", () => {
   });
 
   it("excludes the appliance's own AP SSID when provided", () => {
-    const stdout = [
-      "BridgeBox:WPA2:99",
-      "HomeNet:WPA2:80",
-      "Cafe:--:55",
-    ].join("\n");
+    const stdout = ["BridgeBox:WPA2:99", "HomeNet:WPA2:80", "Cafe:--:55"].join(
+      "\n",
+    );
 
     const ssids = parseWifiScan(stdout, { excludeSSID: "BridgeBox" }).map(
       (n) => n.ssid,

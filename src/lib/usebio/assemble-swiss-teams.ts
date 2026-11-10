@@ -20,7 +20,11 @@ import {
 import { voidMatchVp } from "@/model/teams-match-void";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
-import { buildTeamPairing, type TeamOccupancy, type TeamPairing } from "./team-pairing";
+import {
+  buildTeamPairing,
+  type TeamOccupancy,
+  type TeamPairing,
+} from "./team-pairing";
 import {
   UsebioClub,
   UsebioSwissTeamsData,
@@ -195,23 +199,29 @@ function buildUsebioMatches(
         numberByTeamId.get(sub.opponentTeamId) ?? sub.opponentTeamId;
       const { perBoard, margin, boardsPlayed } = teamMatchBoardImps(sub);
 
-      const boards: UsebioTeamBoard[] = perBoard.map(({ boardNumber, imps }) => {
-        const travellerLines: UsebioTeamTravellerLine[] = [];
-        const homeRow = sub.homeRowsByBoard.get(boardNumber);
-        const awayRow = sub.opponentRowsByBoard.get(boardNumber);
-        if (homeRow)
-          travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
-        if (awayRow)
-          travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
-        return { boardNumber, imps: imps ?? 0, travellerLines };
-      });
+      const boards: UsebioTeamBoard[] = perBoard.map(
+        ({ boardNumber, imps }) => {
+          const travellerLines: UsebioTeamTravellerLine[] = [];
+          const homeRow = sub.homeRowsByBoard.get(boardNumber);
+          const awayRow = sub.opponentRowsByBoard.get(boardNumber);
+          if (homeRow)
+            travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+          if (awayRow)
+            travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
+          return { boardNumber, imps: imps ?? 0, travellerLines };
+        },
+      );
 
       /* v8 ignore start -- a reconstructed comparison always has >=1 board */
       const startBoard = boards[0]?.boardNumber ?? 0;
       const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
       /* v8 ignore stop */
 
-      const { teamScore, opposingTeamScore } = matchVp(margin, boardsPlayed, pool);
+      const { teamScore, opposingTeamScore } = matchVp(
+        margin,
+        boardsPlayed,
+        pool,
+      );
       addVp(sub.homeTeamId, teamScore);
       addVp(sub.opponentTeamId, opposingTeamScore);
 

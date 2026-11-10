@@ -11,6 +11,8 @@ import { SocketEvents } from "@/socket/socket-events";
 import {
   previewNextSwissRound,
   commitNextSwissRound,
+  previewNextSwissTeamsRound,
+  commitNextSwissTeamsRound,
   type SwissPreviewAck,
 } from "./swiss-service";
 
@@ -128,6 +130,76 @@ describe("commitNextSwissRound", () => {
 
     await expect(commitNextSwissRound("g1", "A", [], null)).rejects.toThrow(
       "That seating isn't valid",
+    );
+  });
+});
+
+describe("previewNextSwissTeamsRound", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("emits the teams preview event with the director token", async () => {
+    vi.mocked(emitWithAck).mockResolvedValue({ roundNumber: 2 });
+    await expect(previewNextSwissTeamsRound("g1", "A")).resolves.toEqual({
+      roundNumber: 2,
+    });
+    expect(emitWithAck).toHaveBeenCalledWith(
+      SocketEvents.PREVIEW_NEXT_SWISS_TEAMS_ROUND,
+      { gameId: "g1", section: "A", directorToken: "dir-tok" },
+    );
+  });
+
+  it("passes an empty token when none is stored", async () => {
+    vi.mocked(getDirectorToken).mockReturnValueOnce(null);
+    vi.mocked(emitWithAck).mockResolvedValue({});
+    await previewNextSwissTeamsRound("g1", "A");
+    expect(emitWithAck).toHaveBeenCalledWith(
+      SocketEvents.PREVIEW_NEXT_SWISS_TEAMS_ROUND,
+      { gameId: "g1", section: "A", directorToken: "" },
+    );
+  });
+});
+
+describe("commitNextSwissTeamsRound", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("emits the teams draw event with matches, bye and triple", async () => {
+    vi.mocked(emitWithAck).mockResolvedValue({ roundNumber: 2 });
+    const matches = [{ a: 1, b: 2 }] as any;
+    await expect(
+      commitNextSwissTeamsRound("g1", "A", matches, 3, null),
+    ).resolves.toEqual({ roundNumber: 2 });
+    expect(emitWithAck).toHaveBeenCalledWith(
+      SocketEvents.DRAW_NEXT_SWISS_TEAMS_ROUND,
+      {
+        gameId: "g1",
+        section: "A",
+        directorToken: "dir-tok",
+        matches,
+        byeTeamId: 3,
+        triple: null,
+      },
+    );
+  });
+
+  it("passes an empty token when none is stored", async () => {
+    vi.mocked(getDirectorToken).mockReturnValueOnce(null);
+    vi.mocked(emitWithAck).mockResolvedValue({ roundNumber: 1 });
+    await commitNextSwissTeamsRound("g1", "A", [], null, null);
+    expect(emitWithAck).toHaveBeenCalledWith(
+      SocketEvents.DRAW_NEXT_SWISS_TEAMS_ROUND,
+      expect.objectContaining({ directorToken: "" }),
+    );
+  });
+});
+
+describe("commitNextSwissRound halfMatch", () => {
+  it("forwards an explicit half-match seating", async () => {
+    vi.mocked(emitWithAck).mockResolvedValue({ roundNumber: 5 });
+    const halfMatch = { tableNumber: 3 } as any;
+    await commitNextSwissRound("g1", "A", [], null, halfMatch);
+    expect(emitWithAck).toHaveBeenCalledWith(
+      SocketEvents.DRAW_NEXT_SWISS_ROUND,
+      expect.objectContaining({ halfMatch }),
     );
   });
 });

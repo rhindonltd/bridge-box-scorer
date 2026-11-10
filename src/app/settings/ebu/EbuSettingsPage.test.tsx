@@ -1,0 +1,211 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+let swrState: { data: unknown; isLoading: boolean };
+const mockMutate = vi.fn();
+
+vi.mock("swr", () => ({
+  default: () => ({
+    data: swrState.data,
+    isLoading: swrState.isLoading,
+    mutate: mockMutate,
+  }),
+}));
+
+vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
+
+vi.mock("@/swr/swr-keys", () => ({
+  swrKeys: { ebu: () => "/api/system/ebu" },
+}));
+
+const mockBack = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ back: mockBack }),
+}));
+
+const mockGetAdminToken = vi.fn();
+const mockClearAdminToken = vi.fn();
+vi.mock("@/lib/admin-token", () => ({
+  getAdminToken: () => mockGetAdminToken(),
+  clearAdminToken: () => mockClearAdminToken(),
+}));
+
+import { EbuSettingsPage } from "./EbuSettingsPage";
+
+function typeNumber(value: string) {
+  fireEvent.change(screen.getByLabelText("EBU Club Number"), {
+    target: { value },
+  });
+}
+function typePassword(value: string) {
+  fireEvent.change(screen.getByLabelText("EBU Password"), {
+    target: { value },
+  });
+}
+
+describe("EbuSettingsPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    swrState = {
+      data: { configured: true, ebuNumber: "1234567" },
+      isLoading: false,
+    };
+    mockGetAdminToken.mockReturnValue("admin-tok");
+    mockMutate.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("shows a spinner while the status loads", () => {
+    swrState = { data: undefined, isLoading: true };
+    const { container } = render(<EbuSettingsPage />);
+    expect(container.querySelector(".animate-spin")).toBeTruthy();
+  });
+
+  it("prefills the EBU number and shows the password-saved hint when configured", () => {
+    render(<EbuSettingsPage />);
+    expect(screen.getByLabelText("EBU Club Number")).toHaveValue(
+      "1234567",
+    );
+    expect(screen.getByText(/A password is saved/i)).toBeInTheDocument();
+  });
+
+  it("requires an EBU number", () => {
+    swrState = { data: { configured: false, ebuNumber: null }, isLoading: false };
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(screen.getByText("EBU number is required")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("requires a password on first configuration", () => {
+    swrState = { data: { configured: false, ebuNumber: null }, isLoading: false };
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    typeNumber("7654321");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(screen.getByText("Password is required")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("allows a blank password when already configured (keeps the stored one)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    // configured=true, number prefilled, password left blank.
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("✅ EBU settings saved"),
+      ).toBeInTheDocument(),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/system/ebu",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({ "x-admin-token": "admin-tok" }),
+        body: JSON.stringify({ ebuNumber: "1234567", password: "" }),
+      }),
+    );
+    expect(mockMutate).toHaveBeenCalled();
+  });
+
+  it("clears the admin token and prompts to re-enter it on a 401", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    typePassword("secret");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("Session expired. Please re-enter the admin key."),
+      ).toBeInTheDocument(),
+    );
+    expect(mockClearAdminToken).toHaveBeenCalled();
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it("shows the server error message on a non-401 failure", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: "Invalid number" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    typePassword("secret");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Invalid number")).toBeInTheDocument();
+  });
+
+  it("shows a network error if the request throws", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("offline"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    typePassword("secret");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Network error")).toBeInTheDocument();
+  });
+
+  it("sends an empty token header when no admin token is stored", async () => {
+    // No stored token exercises the `getAdminToken() ?? ""` fallback arm.
+    mockGetAdminToken.mockReturnValue(null);
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/system/ebu",
+      expect.objectContaining({
+        headers: expect.objectContaining({ "x-admin-token": "" }),
+      }),
+    );
+  });
+
+  it("falls back to a generic message when the error body cannot be parsed", async () => {
+    // A non-401 failure whose body is not JSON: `res.json()` rejects, the
+    // `.catch(() => null)` yields null, and `body?.error ?? "Failed to save"`
+    // resolves to the generic message.
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => {
+        throw new Error("not json");
+      },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    typePassword("secret");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Failed to save")).toBeInTheDocument();
+  });
+
+  it("navigates back when the header back arrow is clicked", () => {
+    render(<EbuSettingsPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Go back" }));
+    expect(mockBack).toHaveBeenCalled();
+  });
+});

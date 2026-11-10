@@ -51,12 +51,7 @@ describe("unwrapResponse", () => {
 describe("parseUsebio", () => {
   it("posts the file as multipart under 'myfile' with Basic auth", async () => {
     const fetchImpl = stubFetch(200, JSON.stringify({ response: { ok: 1 } }));
-    const result = await parseUsebio(
-      auth,
-      "<USEBIO/>",
-      "event.xml",
-      fetchImpl,
-    );
+    const result = await parseUsebio(auth, "<USEBIO/>", "event.xml", fetchImpl);
 
     expect(result).toEqual({ ok: 1 });
     const [, init] = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock

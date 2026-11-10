@@ -14,7 +14,11 @@ import {
 } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
-import { buildTeamPairing, type TeamOccupancy, type TeamPairing } from "./team-pairing";
+import {
+  buildTeamPairing,
+  type TeamOccupancy,
+  type TeamPairing,
+} from "./team-pairing";
 import {
   UsebioClub,
   UsebioSwissTeamsData,

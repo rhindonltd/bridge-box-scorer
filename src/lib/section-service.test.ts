@@ -8,6 +8,7 @@ import { getDirectorToken } from "@/lib/director-token";
 
 import {
   createSection,
+  splitSection,
   renameSection,
   deleteSection,
   updateSectionTables,
@@ -109,6 +110,15 @@ describe("section-service (HTTP)", () => {
     expect(url).toBe("/api/games/g1/sections/A/movement");
     expect(init.method).toBe("PUT");
     expect(body).toEqual({ swissTeams });
+  });
+
+  it("splitSection POSTs to /sections/split with the input", async () => {
+    const input = { from: "A", newSection: "B", tablesToNewSection: 3 };
+    await splitSection("g1", input);
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/split");
+    expect(init.method).toBe("POST");
+    expect(body).toEqual(input);
   });
 
   it("throws the server error message on a non-ok response", async () => {

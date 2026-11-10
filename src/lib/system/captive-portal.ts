@@ -111,7 +111,12 @@ export const PROBE_PATHS: readonly ProbePath[] = [
     status: 200,
     contentType: "text/html",
   },
-  { path: "/success.txt", body: "success", status: 200, contentType: "text/plain" },
+  {
+    path: "/success.txt",
+    body: "success",
+    status: 200,
+    contentType: "text/plain",
+  },
 ];
 
 /** Normalise a Host header to a bare lowercased hostname (strip any port). */

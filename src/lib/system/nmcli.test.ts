@@ -9,7 +9,10 @@ vi.mock("child_process", async (importActual) => {
 import { execFile as mockExecFile } from "child_process";
 import { runNmcli, NmcliError } from "@/lib/system/nmcli";
 
-type ExecCallback = (e: unknown, r?: { stdout: string; stderr: string }) => void;
+type ExecCallback = (
+  e: unknown,
+  r?: { stdout: string; stderr: string },
+) => void;
 
 describe("runNmcli", () => {
   beforeEach(() => vi.clearAllMocks());

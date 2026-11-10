@@ -48,7 +48,7 @@ export async function runNmcli(args: string[]): Promise<string> {
     const stderr =
       typeof e.stderr === "string"
         ? e.stderr
-        : e.stderr?.toString() ?? e.message ?? "";
+        : (e.stderr?.toString() ?? e.message ?? "");
     throw new NmcliError(args, stderr, e.code ?? null);
   }
 }

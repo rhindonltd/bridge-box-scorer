@@ -237,7 +237,10 @@ describe("assembleSwissPairs", () => {
     ];
     const data = assembleSwissPairs(game, club, pairs, boards);
     expect(data.matches).toHaveLength(1);
-    expect(data.matches[0].boards.map((b) => b.contract)).toEqual(["3NT", "4S"]);
+    expect(data.matches[0].boards.map((b) => b.contract)).toEqual([
+      "3NT",
+      "4S",
+    ]);
   });
 
   it("drops a without-standing pair from the ranking", () => {
@@ -356,7 +359,9 @@ describe("assembleSwissPairs", () => {
       );
       expect(anchorMatches).toHaveLength(2);
       const opponents = anchorMatches
-        .map((m) => (m.nsPairNumber === "A1NS" ? m.ewPairNumber : m.nsPairNumber))
+        .map((m) =>
+          m.nsPairNumber === "A1NS" ? m.ewPairNumber : m.nsPairNumber,
+        )
         .sort();
       expect(opponents).toEqual(["A2EW", "A3EW"]);
       // Each half covers four boards.
@@ -394,7 +399,9 @@ describe("assembleSwissPairs", () => {
 
     it("sums the anchor's two real halves into its /20 round total", () => {
       const data = assembleSwissPairs(game, club, pairs, halfMatchRound());
-      const anchorTotal = data.ranking.find((r) => r.number === "A1NS")!.totalVP;
+      const anchorTotal = data.ranking.find(
+        (r) => r.number === "A1NS",
+      )!.totalVP;
       // The anchor blitzes the field on every board (6NT= vs 3NT=/3NT-1), so
       // both halves max out: 10 + 10 = 20.
       expect(anchorTotal).toBe(20);
