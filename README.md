@@ -171,7 +171,7 @@ npm run check:page-stories
 
 `npm run coverage` reports coverage for the unit + integration suite only. A few
 areas are deliberately excluded because they are not unit-testable (see the
-`coverage.exclude` list in `vitest.config.ts`):
+`coverage.exclude` list in `vitest.config.mts`):
 
 - **Type-only modules** — no runtime code to execute.
 - **CLI entry scripts** (`src/scripts/**`) and the **custom-server bootstrap**

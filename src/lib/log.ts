@@ -25,6 +25,16 @@ import pino, { type Logger, type LoggerOptions } from "pino";
 const isProduction = process.env.NODE_ENV === "production";
 
 /**
+ * Under Vitest (which sets `VITEST`) the pretty transport is skipped: each test
+ * file re-imports this module, and every transport starts a worker thread and
+ * adds a process `exit` listener, so a long run would pile them up (Node warns
+ * past 10). Tests also exercise failure paths on purpose, so their logging is
+ * silent by default — set `LOG_LEVEL` (e.g. `LOG_LEVEL=debug npm test`) to see
+ * it, as plain JSON lines.
+ */
+const isTest = !!process.env.VITEST;
+
+/**
  * Field paths redacted from all log output. Covers the raw field names and the
  * usual places they nest: request/response headers (incl. the lowercased HTTP
  * header form), and generic `payload`/`body`/`data` wrappers used by the socket
@@ -59,7 +69,7 @@ function redactPaths(): string[] {
 }
 
 const baseOptions: LoggerOptions = {
-  level: process.env.LOG_LEVEL ?? "info",
+  level: process.env.LOG_LEVEL ?? (isTest ? "silent" : "info"),
   // pino's standard error serializer expands `err` into { type, message, stack }.
   serializers: { err: pino.stdSerializers.err },
   redact: {
@@ -73,19 +83,20 @@ const baseOptions: LoggerOptions = {
  * structured data in the first argument, a short human message second. For
  * errors, pass the caught value under `err`: `logger.error({ err }, "…")`.
  */
-export const logger: Logger = isProduction
-  ? pino(baseOptions)
-  : pino({
-      ...baseOptions,
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "SYS:HH:MM:ss.l",
-          ignore: "pid,hostname",
+export const logger: Logger =
+  isProduction || isTest
+    ? pino(baseOptions)
+    : pino({
+        ...baseOptions,
+        transport: {
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+            translateTime: "SYS:HH:MM:ss.l",
+            ignore: "pid,hostname",
+          },
         },
-      },
-    });
+      });
 
 /**
  * Derive a child logger that stamps every line with the given bindings — used

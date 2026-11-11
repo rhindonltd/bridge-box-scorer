@@ -17,7 +17,7 @@ const config: StorybookConfig = {
   viteFinal: async (viteConfig) => {
     // Storybook renders components in a browser context, so the real
     // `server-only` package (imported transitively by server modules) would
-    // throw. Alias it to a no-op stub, matching vite.config.ts.
+    // throw. Alias it to a no-op stub, matching vite.config.mts.
     viteConfig.resolve ??= {};
     viteConfig.resolve.alias = {
       ...viteConfig.resolve.alias,

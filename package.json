@@ -18,7 +18,7 @@
     "test": "vitest --project unit --project unit-node",
     "test:storybook": "vitest --project storybook run",
     "check:page-stories": "node scripts/check-page-stories.mjs",
-    "coverage": "vitest --project unit --project unit-node run --coverage --reporter=html",
+    "coverage": "vitest --project unit --project unit-node run --coverage --reporter=default --reporter=html",
     "e2e_ui": "npx playwright test --ui",
     "journey:phone": "playwright test --project=journeys-phone --workers=1",
     "journey:tablet": "playwright test --project=journeys-tablet --workers=1",
