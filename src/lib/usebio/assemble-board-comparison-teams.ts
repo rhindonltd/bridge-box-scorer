@@ -14,7 +14,11 @@ import {
 } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
-import { buildTeamPairing, type TeamOccupancy, type TeamPairing } from "./team-pairing";
+import {
+  buildTeamPairing,
+  type TeamOccupancy,
+  type TeamPairing,
+} from "./team-pairing";
 import {
   UsebioBoardComparisonBoard,
   UsebioBoardComparisonMatch,
@@ -71,6 +75,7 @@ export function assembleBoardComparisonTeams(
     teamNumber: numberByTeamId.get(team.id)!,
     teamName: team.name,
     sectionId: sectionOf(team.id),
+    /* v8 ignore next -- unreachable: buildTeamPairing sets an entry for every roster team */
     pairs: pairing.pairsByTeamId.get(team.id) ?? [],
   }));
 
@@ -199,7 +204,12 @@ function buildMatches(
           const teamPoints = (result ?? 0) * winPoints;
           const opposingTeamPoints =
             result == null ? 0 : (1 - result) * winPoints;
-          return { boardNumber, teamPoints, opposingTeamPoints, travellerLines };
+          return {
+            boardNumber,
+            teamPoints,
+            opposingTeamPoints,
+            travellerLines,
+          };
         },
       );
 

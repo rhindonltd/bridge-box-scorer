@@ -86,6 +86,10 @@ describe("TimerConfigView", () => {
       target: { value: "4" },
     });
     expect(onConfigChange).toHaveBeenCalledWith("boardsPerRound", 4);
+    fireEvent.change(screen.getByLabelText("Total Rounds"), {
+      target: { value: "9" },
+    });
+    expect(onConfigChange).toHaveBeenCalledWith("totalRounds", 9);
 
     fireEvent.click(screen.getByLabelText("Per Board"));
     expect(onConfigChange).toHaveBeenCalledWith("timingMode", "perBoard");

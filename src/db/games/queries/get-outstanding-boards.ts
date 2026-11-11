@@ -27,15 +27,12 @@ export interface OutstandingBoard {
   ewPair: string | null;
 }
 
+/** "First Last & First Last" for a seated pair. */
 function pairName(
-  p1: { firstName: string; lastName: string } | null,
-  p2: { firstName: string; lastName: string } | null,
-): string | null {
-  if (!p1 && !p2) return null;
-  const parts = [p1, p2]
-    .filter((p): p is { firstName: string; lastName: string } => p != null)
-    .map((p) => `${p.firstName} ${p.lastName}`.trim());
-  return parts.length > 0 ? parts.join(" & ") : null;
+  p1: { firstName: string; lastName: string },
+  p2: { firstName: string; lastName: string },
+): string {
+  return [p1, p2].map((p) => `${p.firstName} ${p.lastName}`.trim()).join(" & ");
 }
 
 /**
@@ -127,7 +124,7 @@ export async function getOutstandingBoards(
     byBoardId.set(key, arr);
   }
 
-  const nameByBoardId = new Map<string, string | null>();
+  const nameByBoardId = new Map<string, string>();
   for (const [boardId, forSeat] of byBoardId) {
     const primary = primaryOf(
       forSeat.map((o) => ({
@@ -138,7 +135,8 @@ export async function getOutstandingBoards(
         isMainLine: o.isMainLine,
       })),
     );
-    const occ = forSeat.find((o) => o.id === primary.id) ?? forSeat[0];
+    // `primaryOf` picks one of `forSeat`'s own occupancies.
+    const occ = forSeat.find((o) => o.id === primary.id)!;
     nameByBoardId.set(
       boardId,
       pairName(

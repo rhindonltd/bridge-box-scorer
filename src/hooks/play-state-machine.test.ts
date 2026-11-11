@@ -101,6 +101,16 @@ describe("play reducer — team results summary (teams)", () => {
     const prev: PlayState = { state: "roundInfo", roundIndex: 0 };
     expect(playReducer(prev, { type: "roundResultsContinue" }, sch)).toBe(prev);
   });
+  it("roundResultsContinue is a no-op without a schedule", () => {
+    const prev: PlayState = {
+      state: "roundResults",
+      roundIndex: 0,
+      nextRoundIndex: 1,
+    };
+    expect(playReducer(prev, { type: "roundResultsContinue" }, null)).toBe(
+      prev,
+    );
+  });
 });
 
 describe("play reducer — optional deal-entry step", () => {

@@ -39,6 +39,9 @@ const actions = () => ({
   renderReinstatePanel: vi.fn((seat: string) => (
     <div data-testid={`reinstate-panel-${seat}`} />
   )),
+  renderMoveDevicePanel: vi.fn((seat: string) => (
+    <div data-testid={`move-panel-${seat}`} />
+  )),
 });
 
 const active: RosterEntry = {
@@ -105,6 +108,28 @@ describe("PairsRosterPage", () => {
     expect(screen.getByTestId("reinstate-panel-A2EW")).toBeInTheDocument();
   });
 
+  it("offers 'Move to a new device' on an active pair, revealing the director's code panel", () => {
+    const h = renderPage([active]);
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    // Nothing is minted until the director asks.
+    expect(h.renderMoveDevicePanel).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Move to a new device" }),
+    );
+    expect(h.renderMoveDevicePanel).toHaveBeenCalledWith("A1NS");
+    expect(screen.getByTestId("move-panel-A1NS")).toBeInTheDocument();
+    // Withdrawing stays available alongside it.
+    expect(
+      screen.getByRole("button", { name: "Withdraw this pair" }),
+    ).toBeInTheDocument();
+  });
+  it("does not offer a device move on a withdrawn pair (reinstate covers it)", () => {
+    renderPage([withdrawn]);
+    fireEvent.click(screen.getByRole("button", { name: /Wyn Gone/ }));
+    expect(
+      screen.queryByRole("button", { name: "Move to a new device" }),
+    ).not.toBeInTheDocument();
+  });
   it("surfaces the server's reason when an action fails", async () => {
     renderPage([active], {
       onWithdraw: vi.fn().mockRejectedValue(new Error("nothing left to play")),
@@ -383,5 +408,295 @@ describe("PairsRosterPage", () => {
         screen.getByRole("group", { name: /Missed boards for/ }),
       ).getByText("Remove"),
     ).toBeInTheDocument();
+  });
+
+  describe("coverage of edge cases", () => {
+    const occ = (id: number, over = {}) => ({
+      id,
+      pair: `Pair ${id}`,
+      boardCount: 1,
+      eligible: true,
+      isArrivalAnchor: false,
+      isMainPair: false,
+      ...over,
+    });
+    const subWith = (occupants: any[]): RosterEntry => ({
+      seat: "A5NS",
+      pair: "x",
+      status: "SUBSTITUTED",
+      substitution: {
+        seat: "A5NS",
+        pair: "x",
+        playedCount: 1,
+        missedCount: 1,
+        split: false,
+        occupants,
+      } as any,
+    });
+
+    it("says so when no pairs are seated", () => {
+      renderPage([]);
+      expect(screen.getByText("No pairs seated yet.")).toBeInTheDocument();
+    });
+
+    it("tolerates malformed seat names when grouping and sorting", () => {
+      const seat = (s: string): RosterEntry => ({
+        seat: s,
+        pair: `Pair ${s}`,
+        status: "ACTIVE",
+      });
+      renderPage([seat("12NS"), seat("A1XX"), seat("A1EW"), seat("ABC")]);
+      expect(screen.getByText("Pair 12NS")).toBeInTheDocument();
+      expect(screen.getByText("Pair ABC")).toBeInTheDocument();
+      // A seat with no digits falls back to the whole seat as its label.
+      expect(screen.getByRole("heading", { name: "ABC" })).toBeInTheDocument();
+    });
+
+    it("sorts seats that carry no table number", () => {
+      const seat: RosterEntry = { seat: "ABC", pair: "Pat", status: "ACTIVE" };
+      renderPage([seat, { ...seat, pair: "Quin" }]);
+      expect(screen.getByText("Pat")).toBeInTheDocument();
+      expect(screen.getByText("Quin")).toBeInTheDocument();
+    });
+
+    it("describes a without-standing pair", () => {
+      renderPage([
+        { seat: "A1NS", pair: "P", status: "WITHOUT_STANDING" } as RosterEntry,
+      ]);
+      expect(screen.getByText("Plays but is not ranked")).toBeInTheDocument();
+    });
+
+    it("cancels out of a withdraw confirmation", () => {
+      const h = renderPage([active]);
+      fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Withdraw this pair" }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      expect(h.onWithdraw).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole("button", { name: "Withdraw this pair" }),
+      ).toBeInTheDocument();
+    });
+
+    it("falls back to a generic message when withdraw rejects without a reason", async () => {
+      renderPage([active], { onWithdraw: vi.fn().mockRejectedValue("nope") });
+      fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Withdraw this pair" }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Could not do that. Please try again.",
+      );
+    });
+
+    it("omits the move-device control on an active pair when the host cannot mint codes", () => {
+      renderPage([active], { renderMoveDevicePanel: undefined });
+      fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+      expect(
+        screen.queryByRole("button", { name: "Move to a new device" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Withdraw this pair" }),
+      ).toBeInTheDocument();
+    });
+
+    const lateAbsence = {
+      seat: "A6NS",
+      kind: "LATE",
+      pair: "Lara Late & Len Late",
+      round: 2,
+      treatment: "AVERAGE",
+      missedBoards: 1,
+    } as const;
+
+    it("summarises a late pair and offers the missed-boards choice and a device move", () => {
+      renderPage([
+        {
+          seat: "A6NS",
+          pair: "Lara Late & Len Late",
+          status: "LATE",
+          absence: lateAbsence,
+        } as RosterEntry,
+      ]);
+      expect(
+        screen.getByText("Arrived in round 2 — 1 board missed"),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /Lara Late/ }));
+      expect(screen.getByText("Missed boards")).toBeInTheDocument();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Move to a new device" }),
+      );
+      expect(screen.getByTestId("move-panel-A6NS")).toBeInTheDocument();
+    });
+
+    it("offers only a device move to a late pair with no absence record", () => {
+      renderPage([
+        { seat: "A6NS", pair: "Lara", status: "LATE" } as RosterEntry,
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: /Lara/ }));
+      expect(screen.queryByText("Missed boards")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Move to a new device" }),
+      ).toBeInTheDocument();
+    });
+
+    it("offers no actions to a late pair without an absence when moves are unavailable", () => {
+      renderPage(
+        [{ seat: "A6NS", pair: "Lara", status: "LATE" } as RosterEntry],
+        { renderMoveDevicePanel: undefined },
+      );
+      fireEvent.click(screen.getByRole("button", { name: /Lara/ }));
+      expect(screen.queryByRole("button", { name: /device/ })).toBeNull();
+      expect(screen.queryByText("Missed boards")).toBeNull();
+    });
+
+    it("offers no actions to a not-arrived seat without an absence record", () => {
+      renderPage([
+        { seat: "A6NS", pair: "Nina", status: "NOT_ARRIVED" } as RosterEntry,
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: /Nina/ }));
+      expect(screen.queryByText("Missed boards")).toBeNull();
+      expect(screen.queryByRole("button", { name: /device/ })).toBeNull();
+    });
+
+    it("does not offer a device move on a not-arrived seat with an absence", () => {
+      renderPage([
+        {
+          seat: "A6NS",
+          pair: "Nina",
+          status: "NOT_ARRIVED",
+          absence: { ...lateAbsence, kind: "EMPTY", round: null },
+        } as RosterEntry,
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: /Nina/ }));
+      expect(screen.getByText("Missed boards")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Move to a new device" }),
+      ).toBeNull();
+    });
+
+    it("uses 'board' in the singular summary for withdrawn pairs", () => {
+      renderPage([
+        {
+          ...withdrawn,
+          absence: { ...withdrawn.absence!, missedBoards: 1 },
+        } as RosterEntry,
+      ]);
+      expect(
+        screen.getByText("Withdrew in round 4 — 1 board not played"),
+      ).toBeInTheDocument();
+    });
+
+    it("describes an empty seat with the unplayed board count", () => {
+      renderPage([
+        {
+          seat: "A4EW",
+          pair: null,
+          status: "NOT_ARRIVED",
+          absence: {
+            seat: "A4EW",
+            kind: "EMPTY",
+            pair: null,
+            round: null,
+            treatment: "AVERAGE",
+            missedBoards: 2,
+          },
+        } as RosterEntry,
+      ]);
+      expect(
+        screen.getByText("Not arrived yet — 2 boards unplayed"),
+      ).toBeInTheDocument();
+    });
+
+    it("explains the AVE treatment differently for an unfilled seat", () => {
+      renderPage([
+        {
+          seat: "A4EW",
+          pair: null,
+          status: "NOT_ARRIVED",
+          absence: {
+            seat: "A4EW",
+            kind: "EMPTY",
+            pair: null,
+            round: null,
+            treatment: "AVERAGE",
+            missedBoards: 2,
+          },
+        } as RosterEntry,
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: /Seat not filled/ }));
+      expect(
+        screen.getByText("Its opponents get AVE+ on each board they can't play."),
+      ).toBeInTheDocument();
+    });
+
+    it("reverts the treatment and shows the error when saving it fails", async () => {
+      const h = renderPage([withdrawn], {
+        onSetAbsenceTreatment: vi
+          .fn()
+          .mockRejectedValue(new Error("too late to change")),
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Wyn Gone/ }));
+      fireEvent.click(screen.getByLabelText("Remove"));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "too late to change",
+      );
+      expect(h.onSetAbsenceTreatment).toHaveBeenCalled();
+      expect(screen.getByLabelText("AVE− / AVE+")).toBeChecked();
+    });
+
+    it("shows a generic message when saving the treatment rejects without a reason", async () => {
+      renderPage([withdrawn], {
+        onSetAbsenceTreatment: vi.fn().mockRejectedValue("nope"),
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Wyn Gone/ }));
+      fireEvent.click(screen.getByLabelText("Remove"));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Could not save. Please try again.",
+      );
+    });
+
+    it("shows a generic message when saving a substitution rejects without a reason", async () => {
+      renderPage([subSeat], {
+        onSaveSubstitution: vi.fn().mockRejectedValue("nope"),
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Carol May/ }));
+      fireEvent.click(screen.getByRole("button", { name: "Two lines" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Could not save. Please try again.",
+      );
+    });
+
+    it("uses the first occupant as anchor/main when none is flagged", () => {
+      renderPage([subWith([occ(1), occ(2)])]);
+      fireEvent.click(screen.getByRole("button", { name: /Pair 1/ }));
+      expect(screen.getByText("Main")).toBeInTheDocument();
+      expect(
+        screen.getByRole("radio", { name: "Make Pair 1 the main pair" }),
+      ).toBeChecked();
+    });
+
+    it("uses the anchor as main when no occupant is flagged main", () => {
+      renderPage([subWith([occ(1), occ(2, { isArrivalAnchor: true })])]);
+      fireEvent.click(screen.getByRole("button", { name: /Pair 1/ }));
+      expect(
+        screen.getByRole("radio", { name: "Make Pair 2 the main pair" }),
+      ).toBeChecked();
+    });
+
+    it("hides the NGS note for a teams event", () => {
+      renderPage([subSeat], { isPairs: false });
+      fireEvent.click(screen.getByRole("button", { name: /Carol May/ }));
+      expect(screen.queryByRole("note")).not.toBeInTheDocument();
+    });
+
+    it("hides the NGS note and shows a single occupant's board count in the singular", () => {
+      renderPage([subWith([occ(1, { isArrivalAnchor: true })])]);
+      fireEvent.click(screen.getByRole("button", { name: /Pair 1/ }));
+      expect(screen.queryByRole("note")).not.toBeInTheDocument();
+      expect(screen.getByText(/— 1 board$/)).toBeInTheDocument();
+    });
   });
 });

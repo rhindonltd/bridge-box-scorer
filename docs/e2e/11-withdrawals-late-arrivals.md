@@ -234,6 +234,17 @@ fresh browser). Plant **A2EW** on a second device.
 | ☐ RE-10 | **Expiry:** withdraw the pair again (DIRECTOR **Pairs** → **Withdraw this pair**), tap **Reinstate on a device**, and wait past 5:00. | "Code expired." with **Generate new code**; claiming the expired code is rejected. |
 | ☐ RE-11 | **Stale code:** with 1NS withdrawn, mint code X, then mint code Y and claim **Y**. Now claim **X** on another device. | **X** is rejected with "This pair has not withdrawn." (it is already back). |
 
+**Device lost or broken (pair not withdrawn):**
+
+| Check | Step | Expected |
+|---|---|---|
+| ☐ DEV-1 | DIRECTOR **Pairs** → an **Active** pair (e.g. **1NS**). | Two buttons: **Move to a new device** and a red **Withdraw this pair**. (The same **Move to a new device** button is on a **Late** pair; not on a Withdrawn, Not arrived or Substituted one.) |
+| ☐ DEV-2 | Tap **Move to a new device**. | "Device lost or broken? Give this code to the pair to enter on their new device.", then "On the pair's new device, open this game, choose Move a seat to this device, and enter the code below. Their old device will be signed out." A code and a countdown. |
+| ☐ DEV-3 | New device: **Join Game →** the event → **Move a seat to this device** → enter the code → **Take over seat**. | Lands on the **A1NS play screen** where the pair left off; **no names are asked for**. |
+| ☐ DEV-4 | DIRECTOR **Pairs** (no refresh). | **1NS** is still green **Active**, with no "Withdrew" text and no missed boards. |
+| ☐ DEV-5 | The old phone, which was switched off (or in airplane mode) during the move, is switched back on and the game reopened. | Within a few seconds it shows **"This seat has moved to another device"** instead of its play screen; it cannot submit results. (A phone that was still connected shows the same screen at the moment of the move.) The new device can submit. |
+
+
 ---
 
 ## 9. Which events have these controls

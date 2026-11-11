@@ -22,12 +22,17 @@ vi.mock("@/components/leaderboard/Leaderboard", () => ({
   Leaderboard: (props: {
     overallScoreAndParticipant: { type: string };
     splitColumns?: number;
+    selectedViewId?: string;
   }) => {
     // Record only the leaderboard object so single-arg assertions stay simple;
     // the two-column tests read the split count off the rendered attribute.
     leaderboardSpy(props.overallScoreAndParticipant);
     return (
-      <div data-testid="leaderboard" data-split-columns={props.splitColumns}>
+      <div
+        data-testid="leaderboard"
+        data-split-columns={props.splitColumns}
+        data-view-id={props.selectedViewId}
+      >
         {props.overallScoreAndParticipant.type}
       </div>
     );
@@ -316,5 +321,27 @@ describe("DisplayLeaderboardPage", () => {
         expect.objectContaining({ type: "PAIR_MP" }),
       );
     });
+  });
+
+  it("fixes the view to matchpoints when ?mode=matchpoints, else percentage", () => {
+    mockContext.mockReturnValue({
+      leaderboard: combined(),
+      sections: [sectionLb("A")],
+      isLoading: false,
+    });
+    mockSearchParams.mockReturnValueOnce(
+      new URLSearchParams("mode=matchpoints"),
+    );
+    const { unmount } = render(<DisplayLeaderboardPage />);
+    expect(screen.getByTestId("leaderboard")).toHaveAttribute(
+      "data-view-id",
+      "matchpoints",
+    );
+    unmount();
+    render(<DisplayLeaderboardPage />);
+    expect(screen.getByTestId("leaderboard")).toHaveAttribute(
+      "data-view-id",
+      "percentage",
+    );
   });
 });

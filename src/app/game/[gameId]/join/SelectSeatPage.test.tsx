@@ -73,13 +73,18 @@ vi.mock("@/app/game/[gameId]/join/EnterPlayerNames", () => ({
     seat,
     showTeamName,
     onSubmitPair,
+    seatedNationalIds,
   }: {
     seat: string;
     showTeamName?: boolean;
+    seatedNationalIds?: Set<string>;
     onSubmitPair: (p1: unknown, p2: unknown, teamName?: string) => void;
   }) => (
     <div>
       <div data-testid="sheet-seat">{seat}</div>
+      <div data-testid="seated-ids">
+        {[...(seatedNationalIds ?? [])].sort().join(",")}
+      </div>
       <div data-testid="show-team-name">{String(!!showTeamName)}</div>
       <button
         data-testid="submit-pair"
@@ -363,5 +368,20 @@ describe("SelectSeatPage", () => {
       pairs: [{ initialSeat: "A1NS" }],
     });
     await expect(fetcherArg("/x")).resolves.toEqual([{ initialSeat: "A1NS" }]);
+  });
+
+  it("collects the EBU numbers already seated from the live pairs list", () => {
+    mockUseSWR.mockReturnValue({
+      data: [
+        {
+          player1: { nationalId: "111" },
+          player2: { nationalId: "222" },
+        },
+        { player1: { nationalId: null }, player2: null },
+      ],
+    });
+    render(<SelectSeatPage onSeatSelected={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("pick-seat"));
+    expect(screen.getByTestId("seated-ids")).toHaveTextContent("111,222");
   });
 });

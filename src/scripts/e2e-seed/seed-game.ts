@@ -211,8 +211,62 @@ export interface SeedGameOptions {
   /** The game's "Allow Hand Entry" option (app default: false). */
   handEntry?: boolean;
   scenario?: ScenarioInput;
+  /**
+   * Explicit results for chosen boards, so a test can assert exact scores.
+   * Keys are `"<board>"` (that board at every table), `"<board>@<table>"` (at
+   * one table) or `"<board>@<table>/<round>"` (one specific play); the most
+   * specific match wins. Values are board outcomes such as `"3NTN="`, `"4SN+1"`
+   * or `"PASS"`. Boards with no matching key keep the default spread of
+   * results, so a game can pin only the boards it cares about.
+   */
+  outcomes?: Record<string, string>;
+  /**
+   * Plays to leave UNPLAYED even though the rest of the game is played, so a
+   * test can have real pairs play that board through the UI and then read the
+   * scored traveller. Keys are `"<board>@<table>"` or `"<board>@<table>/<round>"`.
+   */
+  holdBack?: string[];
+  /**
+   * After the scenario steps (withdrawals, late arrivals, …), play every board
+   * still waiting to be played. `play: "all"` can't be combined with those
+   * steps (nothing would be left for them to act on), so a test that wants a
+   * COMPLETE game that also has an absent pair seeds `play: "partial"` plus
+   * `finish: true`. Boards the scenario made absent are not played, and
+   * `holdBack` plays are still left alone.
+   */
+  finish?: boolean;
   /** Print every seat's token in the CLI report. */
   tokens?: boolean;
+}
+
+/** Whether `holdBack` names this play (by `"board@table"` or `"board@table/round"`). */
+export function isHeldBack(
+  holdBack: string[] | undefined,
+  play: { board: number; table: number; round: number },
+): boolean {
+  if (!holdBack) return false;
+  const { board, table, round } = play;
+  return (
+    holdBack.includes(`${board}@${table}/${round}`) ||
+    holdBack.includes(`${board}@${table}`)
+  );
+}
+
+/**
+ * The explicit outcome for one play of a board, if `outcomes` names one: the
+ * `"board@table/round"` key first, then `"board@table"`, then `"board"`.
+ */
+export function pickOutcome(
+  outcomes: Record<string, string> | undefined,
+  play: { board: number; table: number; round: number },
+): string | undefined {
+  if (!outcomes) return undefined;
+  const { board, table, round } = play;
+  return (
+    outcomes[`${board}@${table}/${round}`] ??
+    outcomes[`${board}@${table}`] ??
+    outcomes[`${board}`]
+  );
 }
 
 /** One seat a device can hold, with the token to plant to play it. */
@@ -447,11 +501,17 @@ export async function seedGame(
           ? `Team ${seat}`
           : null,
     });
-    live.set(seat, { seat, token: secretKey, names: namesOf(pair), role: "original" });
+    live.set(seat, {
+      seat,
+      token: secretKey,
+      names: namesOf(pair),
+      role: "original",
+    });
   }
   if (lateSeats.size > 0) {
     const db = await requireGameDb(gameId);
-    for (const seat of lateSeats) await addExpectedLateSeat(db, seat as PairSeat);
+    for (const seat of lateSeats)
+      await addExpectedLateSeat(db, seat as PairSeat);
   }
 
   // 5–6. Start and play (skipped for a pre-start fixture).
@@ -466,7 +526,13 @@ export async function seedGame(
             .join("\n"),
       );
     }
-    boardsPlayed = await confirmBoards(gameId, play, lateSeats);
+    boardsPlayed = await confirmBoards(
+      gameId,
+      play,
+      lateSeats,
+      opts.outcomes,
+      opts.holdBack,
+    );
   }
 
   // 7. Scenario steps, in the order a real session would hit them.
@@ -488,14 +554,20 @@ export async function seedGame(
         ? `${seat}: late pair seated — arrived in round ${result.arrivalRound} (status "Late"). Its earlier boards are absent; its round ${result.arrivalRound}+ boards are left for you to play.`
         : `${seat}: pair seated, but not recorded as late (no results beyond round 1).`,
     );
-    live.set(seat, { seat, token: secretKey, names: namesOf(pair), role: "late" });
+    live.set(seat, {
+      seat,
+      token: secretKey,
+      names: namesOf(pair),
+      role: "late",
+    });
   }
 
   const withdrawnSeats: string[] = [];
   for (const { seat, fromRound } of scenario.withdraw) {
     const round = fromRound ?? (await nextRoundToPlay(gameId, seat));
     const result = await recordWithdrawal(gameId, seat, round);
-    if (!result.ok) throw new Error(`--withdraw ${seat}@${round}: ${result.error}`);
+    if (!result.ok)
+      throw new Error(`--withdraw ${seat}@${round}: ${result.error}`);
     notes.push(
       `${seat}: withdrawn from round ${round} (${result.absentBoards} board${result.absentBoards === 1 ? "" : "s"} absent). Its old device token is now dead.`,
     );
@@ -520,7 +592,12 @@ export async function seedGame(
     );
     const original = live.get(seat);
     if (original) retiredTokens[seat] = original.token;
-    live.set(seat, { seat, token: secretKey, names: namesOf(pair), role: "arriving" });
+    live.set(seat, {
+      seat,
+      token: secretKey,
+      names: namesOf(pair),
+      role: "arriving",
+    });
   }
 
   for (const { seat, treatment } of scenario.treatment) {
@@ -531,6 +608,15 @@ export async function seedGame(
     );
   }
 
+  if (opts.finish && !scenario.prestart) {
+    boardsPlayed += await confirmBoards(
+      gameId,
+      "all",
+      lateSeats,
+      opts.outcomes,
+      opts.holdBack,
+    );
+  }
   // Cross-check every live token against the server's own resolution, so a
   // test never plants a token the server would reject.
   for (const s of live.values()) {
@@ -596,6 +682,8 @@ async function confirmBoards(
   gameId: string,
   play: Play,
   emptySeats: Set<string>,
+  outcomes?: Record<string, string>,
+  holdBack?: string[],
 ): Promise<number> {
   if (play === "none") return 0;
 
@@ -630,6 +718,15 @@ async function confirmBoards(
     if (play === "partial" && r.roundNumber > half) continue;
     // Nobody sits an expected-late seat yet, so these boards can't be played.
     if (emptySeats.has(r.ns) || emptySeats.has(r.ew)) continue;
+    if (
+      isHeldBack(holdBack, {
+        board: r.boardNumber,
+        table: r.tableNumber,
+        round: r.roundNumber,
+      })
+    ) {
+      continue;
+    }
 
     await confirmBoardResult(
       db,
@@ -639,7 +736,12 @@ async function confirmBoards(
         tableNumber: r.tableNumber,
         boardNumber: r.boardNumber,
       },
-      RESULTS[(r.tableNumber + r.boardNumber) % RESULTS.length],
+      (pickOutcome(outcomes, {
+        board: r.boardNumber,
+        table: r.tableNumber,
+        round: r.roundNumber,
+      }) as BoardOutcome | undefined) ??
+        RESULTS[(r.tableNumber + r.boardNumber) % RESULTS.length],
     );
     n++;
   }

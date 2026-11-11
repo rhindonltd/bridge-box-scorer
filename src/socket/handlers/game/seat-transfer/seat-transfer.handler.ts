@@ -23,8 +23,9 @@ const createSchema = z.object({
   seat: z.string().min(1),
   token: z.string().optional(),
   // Director credential, used (instead of the seat's player token) when minting
-  // a REINSTATE code: the director's device holds no token for a withdrawn
-  // seat, and withdrawal rotated that seat's secret anyway.
+  // a REINSTATE code (the director's device holds no token for a withdrawn
+  // seat, and withdrawal rotated that seat's secret anyway), or a CHANGE_DEVICE
+  // code for a pair whose device has died (no seat token to present).
   directorToken: z.string().optional(),
   // The claim intent, decided at mint time. CHANGE_DEVICE (default): the same
   // pair on a new device. HANDOVER: a different arriving pair takes over, so the
@@ -75,13 +76,18 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
 
         // A REINSTATE code is minted by the DIRECTOR for a pair whose device is
         // gone (its token was rotated away on withdrawal), so it is
-        // director-authed. Every other kind is minted by the seat's own device.
-        if (kind === "REINSTATE") {
+        // director-authed. A CHANGE_DEVICE code is normally minted by the seat's
+        // own device, but the director can mint one for a pair whose device has
+        // died (no seat token sent, director credential instead). Every other
+        // kind is minted by the seat's own device.
+        const byDirector =
+          kind === "REINSTATE" ||
+          (kind === "CHANGE_DEVICE" && !token && !!directorToken);
+        if (byDirector) {
           if (!assertDirector(directorToken, gameId, ack)) return;
         } else if (!(await assertPlayer(gameId, seat, token, ack))) {
           return;
         }
-
         const code = await createSeatTransferCode(
           gameId,
           seat,
@@ -91,10 +97,10 @@ export function registerSeatTransferHandlers(socket: Socket, io: Server) {
         // Join this (old) device to the seat's room so it is notified when the
         // code is claimed on another device. The claiming device never joins
         // this room, so the takeover notice reaches only the device being
-        // signed out. A REINSTATE mint is the director's device, which is not
-        // the seat's old device and must NOT be signed out on claim, so it does
-        // not join.
-        if (kind !== "REINSTATE") {
+        // signed out. A director mint (REINSTATE, or a dead-device move) is the
+        // director's device, which is not the seat's old device and must NOT be
+        // signed out on claim, so it does not join.
+        if (!byDirector) {
           socket.join(Rooms.seat(gameId, seat));
         }
 

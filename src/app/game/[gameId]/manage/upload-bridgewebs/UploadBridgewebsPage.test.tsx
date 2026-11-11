@@ -17,9 +17,10 @@ vi.mock("@/swr/swr-keys", () => ({
 }));
 
 const mockMutateGame = vi.fn();
+let gameLevel: string | null = "NORMAL_CLUB";
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
-    game: { gameId: "g1", tournamentLevel: "NORMAL_CLUB" },
+    game: { gameId: "g1", tournamentLevel: gameLevel },
     mutateGame: mockMutateGame,
   }),
 }));
@@ -59,6 +60,7 @@ import { UploadBridgewebsPage } from "./UploadBridgewebsPage";
 describe("UploadBridgewebsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    gameLevel = "NORMAL_CLUB";
     mockGetDirectorToken.mockReturnValue("director-tok");
     swrState = {
       data: { configured: true, club: "myclub" },
@@ -267,5 +269,20 @@ describe("UploadBridgewebsPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Network error. Please try again.",
     );
+  });
+  it("defaults the tournament level when the game has none saved", async () => {
+    gameLevel = null;
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ result: { ok: true, message: "done" } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<UploadBridgewebsPage onCancel={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Upload to BridgeWebs" }),
+    );
+    await screen.findByRole("status");
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent.tournamentLevel).toBeTruthy();
   });
 });

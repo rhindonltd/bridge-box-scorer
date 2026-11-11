@@ -6,8 +6,23 @@ import type { PlayState, Schedule } from "@/hooks/play-state-machine";
 // we care about, so the test asserts the state→screen mapping and wiring
 // without pulling in the real (context/socket-heavy) screens.
 vi.mock("@/app/game/[gameId]/play/[initialSeat]/PlayHeaderMenu", () => ({
-  PlayHeaderMenu: ({ gameId, seat }: { gameId: string; seat: string }) => (
-    <div data-testid="header-menu">{`${gameId}:${seat}`}</div>
+  PlayHeaderMenu: ({
+    gameId,
+    seat,
+    extraItems,
+  }: {
+    gameId: string;
+    seat: string;
+    extraItems?: { label: string; active: boolean; onSelect: () => void }[];
+  }) => (
+    <div data-testid="header-menu">
+      {`${gameId}:${seat}`}
+      {(extraItems ?? []).map((i) => (
+        <button key={i.label} onClick={i.onSelect}>
+          {`${i.label}${i.active ? "*" : ""}`}
+        </button>
+      ))}
+    </div>
   ),
 }));
 
@@ -161,7 +176,24 @@ vi.mock("@/context/TravellerContext", () => ({
   TravellerProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="traveller-provider">{children}</div>
   ),
-  useTravellerContext: () => ({ deal: null }),
+  useTravellerContext: () => mockTraveller(),
+}));
+const mockTraveller = vi.fn(() => ({
+  deal: null as unknown,
+  instances: [] as any[],
+}));
+const mockBuildTeamTable = vi.fn();
+vi.mock("@/scoring/swiss/team-board-result-view", () => ({
+  buildTeamBoardResultTable: (...a: unknown[]) => mockBuildTeamTable(...a),
+}));
+vi.mock("@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage", () => ({
+  RoundResultsLoader: ({ boards, onContinue, headerRight }: any) => (
+    <div data-testid="round-results">
+      {boards.join(",")}
+      {headerRight}
+      <button onClick={onContinue}>results-continue</button>
+    </div>
+  ),
 }));
 
 const mockUseScoredBoard = vi.fn();
@@ -173,11 +205,16 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage", () => ({
   BoardResultsPage: ({
     board,
     lastBoardOfRound,
-  }: {
-    board: number;
-    lastBoardOfRound: boolean;
-  }) => (
-    <div data-testid="board-results">{`b${board}${lastBoardOfRound ? "-last" : ""}`}</div>
+    teamResultTable,
+    showDeal,
+    headerRight,
+  }: any) => (
+    <div data-testid="board-results">
+      {`b${board}${lastBoardOfRound ? "-last" : ""}`}
+      <span data-testid="team-table">{String(teamResultTable)}</span>
+      <span data-testid="show-deal">{String(showDeal)}</span>
+      {headerRight}
+    </div>
   ),
 }));
 
@@ -233,14 +270,18 @@ function makeHandlers(): PlayHandlers {
   };
 }
 
-function renderRouter(playState: PlayState, handlers = makeHandlers()) {
+function renderRouter(
+  playState: PlayState,
+  handlers = makeHandlers(),
+  gameType: "PAIRS" | "TEAMS" = "PAIRS",
+) {
   render(
     <PlayStateRouter
       schedule={schedule}
       playState={playState}
       gameId="g1"
       seat="1NS"
-      gameType="PAIRS"
+      gameType={gameType}
       scoringType="MP"
       leadCardRequired={false}
       handlers={handlers}
@@ -253,6 +294,8 @@ describe("PlayStateRouter", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseScoredBoard.mockReturnValue({ board: 1, lines: [] });
+    mockTraveller.mockReturnValue({ deal: null, instances: [] });
+    mockBuildTeamTable.mockReturnValue("TEAM-TABLE");
   });
 
   it("renders a spinner in the loading state", () => {
@@ -370,5 +413,60 @@ describe("PlayStateRouter", () => {
   it("renders GameComplete in the terminal state", () => {
     renderRouter({ state: "gameComplete" });
     expect(screen.getByTestId("game-complete")).toBeInTheDocument();
+  });
+
+  it("renders the end-of-round team results with the round's boards and wires continue", () => {
+    const handlers = renderRouter({
+      state: "roundResults",
+      roundIndex: 0,
+    } as PlayState);
+    expect(screen.getByTestId("round-results")).toHaveTextContent("1,2");
+    expect(screen.getByTestId("header-menu")).toHaveTextContent("g1:1NS");
+    fireEvent.click(screen.getByText("results-continue"));
+    expect(handlers.handleRoundResultsContinue).toHaveBeenCalled();
+  });
+  it("scores a teams board cross-IMP and builds the Team Result table from the pooled rows", () => {
+    mockTraveller.mockReturnValue({
+      deal: null,
+      instances: [
+        {
+          tableNumber: 3,
+          participants: { ns: "n", ew: "e" },
+          currentResult: "r",
+          status: "CONFIRMED",
+        },
+      ],
+    });
+    renderRouter(
+      { state: "boardResults", roundIndex: 0, boardIndex: 0 },
+      makeHandlers(),
+      "TEAMS",
+    );
+    expect(mockUseScoredBoard).toHaveBeenCalledWith("g1", 1, "XIMP");
+    expect(mockBuildTeamTable).toHaveBeenCalledWith(
+      [
+        {
+          tableNumber: 3,
+          ns: "n",
+          ew: "e",
+          result: "r",
+          status: "CONFIRMED",
+        },
+      ],
+      1,
+      "1NS",
+    );
+    expect(screen.getByTestId("team-table")).toHaveTextContent("TEAM-TABLE");
+  });
+  it("offers a Results / Deal choice in the header menu once a deal exists", () => {
+    mockTraveller.mockReturnValue({ deal: { board: 1 }, instances: [] });
+    renderRouter({ state: "boardResults", roundIndex: 0, boardIndex: 0 });
+    expect(screen.getByTestId("show-deal")).toHaveTextContent("false");
+    expect(screen.getByText("Results*")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Deal"));
+    expect(screen.getByTestId("show-deal")).toHaveTextContent("true");
+    expect(screen.getByText("Deal*")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Results"));
+    expect(screen.getByTestId("show-deal")).toHaveTextContent("false");
   });
 });

@@ -6,7 +6,7 @@ import { VpAccumulator, creditVp } from "./vp-accumulator";
 import {
   groupTeamMatches,
   groupTeamTriples,
-  matchMismatch,
+  matchMismatches,
   matchVoidCause,
   teamByeRounds,
   teamMatchBoardImps,
@@ -85,10 +85,10 @@ export function calculateTeamsVpOverall(
     let opponentVp = margin >= 0 ? loserVP : winnerVP;
 
     // §3.5 mismatch: the match was played and scored normally, but the director
-    // has ruled one side mismatched; recompute ONLY that side's round VP via
-    // the §3.5.2 one-sided adjustment (home-relative: NS = home, EW = opponent).
-    const mismatch = matchMismatch(match);
-    if (mismatch != null) {
+    // has ruled a side mismatched (possibly both); recompute ONLY each ruled
+    // side's round VP via the §3.5.2 one-sided adjustment, from its actual VP
+    // (home-relative: NS = home, EW = opponent).
+    for (const mismatch of matchMismatches(match)) {
       if (mismatch.side === "NS") {
         homeVp = adjustMismatchVp(homeVp, mismatch, 20);
       } else {
@@ -135,14 +135,16 @@ export function calculateTeamsVpOverall(
         const homeWon = margin >= 0;
         vp = stake.isHome === homeWon ? winnerVP : loserVP;
 
-        // §3.5 mismatch (F21 Part B): the director may rule ONE side of a
-        // comparison mismatched. The ruling is home-relative to the comparison
+        // §3.5 mismatch (F21 Part B): the director may rule either side (or
+        // both) of a comparison mismatched. The ruling is home-relative to the comparison
         // (NS = its home side, EW = its opponent side); apply the one-sided
         // §3.5.2 adjustment to THIS stake only when it is that side. The pool
         // is this comparison's pool (10 SHORT / 20 LONG), so `base = pool/4`
         // gives the 2.5 constant on the triangular 10-VP half pool.
-        const mismatch = matchMismatch(stake.comparison);
-        if (mismatch != null && (mismatch.side === "NS") === stake.isHome) {
+        const mismatch = matchMismatches(stake.comparison).find(
+          (m) => (m.side === "NS") === stake.isHome,
+        );
+        if (mismatch != null) {
           vp = adjustMismatchVp(vp, mismatch, pool);
         }
       }

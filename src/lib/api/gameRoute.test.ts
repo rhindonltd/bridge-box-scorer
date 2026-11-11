@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
@@ -47,7 +48,10 @@ describe("withGameRoute", () => {
       return NextResponse.json({ ok: true });
     });
 
-    const res = await route(req(), ctx({ gameId: "g1", boardNumber: "3", seat: "A1NS" }));
+    const res = await route(
+      req(),
+      ctx({ gameId: "g1", boardNumber: "3", seat: "A1NS" }),
+    );
 
     expect(getDb).toHaveBeenCalledWith("g1");
     expect(received!).toMatchObject({
@@ -102,11 +106,55 @@ describe("withGameRoute", () => {
   it("returns 500 when resolving params/db throws", async () => {
     vi.mocked(getDb).mockRejectedValue(new Error("db error"));
 
-    const res = await withGameRoute(async () => NextResponse.json({ ok: true }))(
-      req(),
-      ctx({ gameId: "g1" }),
-    );
+    const res = await withGameRoute(async () =>
+      NextResponse.json({ ok: true }),
+    )(req(), ctx({ gameId: "g1" }));
 
     expect(res.status).toBe(500);
+  });
+
+  describe("bodySchema", () => {
+    const schema = z.object({ n: z.number() });
+    const bodyReq = (json: () => Promise<unknown>): never =>
+      ({ method: "POST", headers: { get: () => null }, json }) as never;
+
+    it("passes the parsed body to the handler", async () => {
+      let received: GameRouteContext<{ n: number }> | null = null;
+      await withGameRoute<{ n: number }>(
+        async (c) => {
+          received = c;
+          return NextResponse.json({ ok: true });
+        },
+        { bodySchema: schema },
+      )(
+        bodyReq(async () => ({ n: 2 })),
+        ctx({ gameId: "g1" }),
+      );
+      expect(received!.body).toEqual({ n: 2 });
+    });
+
+    it("returns 400 on an invalid body", async () => {
+      const handler = vi.fn();
+      const res = await withGameRoute<{ n: number }>(handler, {
+        bodySchema: schema,
+      })(
+        bodyReq(async () => ({ n: "x" })),
+        ctx({ gameId: "g1" }),
+      );
+      expect(res.status).toBe(400);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("treats unparseable JSON as an empty object", async () => {
+      const res = await withGameRoute<{ n: number }>(vi.fn(), {
+        bodySchema: schema,
+      })(
+        bodyReq(async () => {
+          throw new Error("bad");
+        }),
+        ctx({ gameId: "g1" }),
+      );
+      expect(res.status).toBe(400);
+    });
   });
 });

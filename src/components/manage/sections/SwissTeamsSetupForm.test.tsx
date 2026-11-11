@@ -204,4 +204,72 @@ describe("SwissTeamsSetupForm", () => {
       screen.getByRole("radio", { name: "Bye for round 4" }),
     ).toBeChecked();
   });
+  it("returns to Bye after choosing Triple", () => {
+    const { onConfirm } = renderForm();
+    fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /^Bye — one team/ }));
+    expect(
+      screen.queryByTestId("teams-odd-round-plan"),
+    ).not.toBeInTheDocument();
+    fireEvent.click(confirmButton());
+    expect(onConfirm.mock.calls[0][0].oddHandling).toBe("BYE");
+    expect(onConfirm.mock.calls[0][0].oddRoundPlan).toBeUndefined();
+  });
+  it("sets individual rounds to Bye and back to Short", () => {
+    const { onConfirm } = renderForm();
+    fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
+    fireEvent.click(screen.getByRole("radio", { name: "Bye for round 3" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Bye for round 4" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Short for round 4" }));
+    fireEvent.click(confirmButton());
+    const plan = onConfirm.mock.calls[0][0].oddRoundPlan;
+    expect(plan[2]).toBe("BYE");
+    expect(plan[3]).toBe("SHORT");
+  });
+  it("resizes the plan when the round count changes, padding with Short", () => {
+    const { onConfirm } = renderForm();
+    fireEvent.click(screen.getByRole("radio", { name: /triple/i }));
+    fireEvent.click(screen.getByRole("radio", { name: "Bye for round 1" }));
+    const rounds = screen.getByRole("spinbutton", { name: "Rounds" });
+    fireEvent.change(rounds, { target: { value: "3" } });
+    fireEvent.change(rounds, { target: { value: "5" } });
+    fireEvent.click(confirmButton());
+    expect(onConfirm.mock.calls[0][0].oddRoundPlan).toEqual([
+      "BYE",
+      "SHORT",
+      "SHORT",
+      "SHORT",
+      "SHORT",
+    ]);
+  });
+  it("defaults rounds missing from a short persisted plan to Short", () => {
+    renderForm({
+      initial: {
+        teams: 5,
+        rounds: 3,
+        boardsPerRound: 6,
+        oddHandling: "TRIPLE",
+        oddRoundPlan: ["BYE"],
+      },
+    });
+    expect(
+      screen.getByRole("radio", { name: "Bye for round 1" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "Short for round 3" }),
+    ).toBeChecked();
+  });
+  it("confirms an even field without any odd handling", () => {
+    const { onConfirm } = renderForm({ teams: 6 });
+    fireEvent.click(confirmButton());
+    expect(onConfirm).toHaveBeenCalledWith({
+      teams: 6,
+      rounds: 7,
+      boardsPerRound: 6,
+    });
+  });
+  it("shows a disabled Saving button while a save is in flight", () => {
+    renderForm({ saving: true });
+    expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
+  });
 });

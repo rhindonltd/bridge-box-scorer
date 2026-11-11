@@ -7,11 +7,10 @@ import Button from "@/components/common/Button";
 import { Toggle } from "@/components/common/Toggle";
 import { PillToggle } from "@/components/common/PillToggle";
 import { NumberStepper } from "@/components/common/NumberStepper";
-import TextField from "@/components/common/TextField";
 import type { Player } from "@/db/games/tables/players";
 import type { ParticipantStanding, Seat } from "@/model/participants";
 import type { DirectorTable } from "@/components/tables/DirectorTableControls";
-import type { HandoverRequest, StandingChange } from "@/lib/standing-service";
+import type { StandingChange } from "@/lib/standing-service";
 
 type StandingValue = ParticipantStanding["standing"];
 
@@ -46,7 +45,6 @@ interface Props {
    * (EBU §2.4.7). The boards-played split is derived server-side from the
    * entered results.
    */
-  onHandover: (seat: Seat, request: HandoverRequest) => void;
   /**
    * Whether the post-start "Change standing" control (withdrawn / late /
    * without standing) is offered. False for board-pooled PAIRS events, where a
@@ -87,7 +85,6 @@ export function DirectorTableModal({
   onToggleStationary,
   onChangeStanding,
   onToggleExpectedLate,
-  onHandover,
   showStandingControls = true,
   onClose,
 }: Props) {
@@ -128,7 +125,6 @@ export function DirectorTableModal({
                   onToggleStationary={onToggleStationary}
                   onChangeStanding={onChangeStanding}
                   onToggleExpectedLate={onToggleExpectedLate}
-                  onHandover={onHandover}
                   showStandingControls={showStandingControls}
                   onClose={onClose}
                 />
@@ -149,7 +145,6 @@ function TableModalBody({
   onToggleStationary,
   onChangeStanding,
   onToggleExpectedLate,
-  onHandover,
   showStandingControls,
   onClose,
 }: {
@@ -160,7 +155,6 @@ function TableModalBody({
   onToggleStationary: (tableNumber: number, ns: boolean) => void;
   onChangeStanding: (seat: Seat, change: StandingChange) => void;
   onToggleExpectedLate: (seat: Seat, next: boolean) => void;
-  onHandover: (seat: Seat, request: HandoverRequest) => void;
   showStandingControls: boolean;
   onClose: () => void;
 }) {
@@ -205,7 +199,6 @@ function TableModalBody({
             }
             onChangeStanding={onChangeStanding}
             onToggleExpectedLate={onToggleExpectedLate}
-            onHandover={onHandover}
             showStandingControls={showStandingControls}
           />
           <PairRow
@@ -226,7 +219,6 @@ function TableModalBody({
             }
             onChangeStanding={onChangeStanding}
             onToggleExpectedLate={onToggleExpectedLate}
-            onHandover={onHandover}
             showStandingControls={showStandingControls}
           />
         </div>
@@ -280,7 +272,6 @@ function PairRow({
   onToggleStationary,
   onChangeStanding,
   onToggleExpectedLate,
-  onHandover,
   showStandingControls,
 }: {
   label: string;
@@ -298,7 +289,6 @@ function PairRow({
   onToggleStationary: () => void;
   onChangeStanding: (seat: Seat, change: StandingChange) => void;
   onToggleExpectedLate: (seat: Seat, next: boolean) => void;
-  onHandover: (seat: Seat, request: HandoverRequest) => void;
   showStandingControls: boolean;
 }) {
   const occupied = seat != null;
@@ -306,10 +296,8 @@ function PairRow({
   const expectedLateLabelId = `expected-late-${label.replace(/\W+/g, "-")}`;
 
   // Which post-start inline form (if any) is open for this pair: the standing
-  // editor, the stand-in → real-pair handover form, or none.
-  const [openForm, setOpenForm] = useState<"none" | "standing" | "handover">(
-    "none",
-  );
+  // editor, or none.
+  const [openForm, setOpenForm] = useState<"none" | "standing">("none");
 
   const badge =
     standing && standing !== "ACTIVE" ? STANDING_BADGE[standing] : null;
@@ -333,24 +321,33 @@ function PairRow({
 
       {occupied ? (
         <div className="mt-3 flex flex-col gap-3">
-          {/* Marking a pair stationary rewrites the Swiss movement spec, so it
-              is a pre-start setup action only — once the game has started the
-              movement is fixed. */}
-          {isSwiss && !started && (
-            <div className="flex items-center justify-between gap-3">
-              <span
-                id={stationaryLabelId}
-                className="text-sm font-medium text-gray-700"
-              >
-                Stationary
-              </span>
-              <Toggle
-                value={stationary}
-                offLabel="No"
-                onLabel="Yes"
-                labelledBy={stationaryLabelId}
-                onChange={onToggleStationary}
-              />
+          {/* A pair can be marked (or unmarked) stationary at any time. Before
+              the start it shapes the draw from round 2; once play is under way
+              it applies to the rounds drawn from then on — rounds already drawn
+              are a record and are never changed. */}
+          {isSwiss && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-3">
+                <span
+                  id={stationaryLabelId}
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Stationary
+                </span>
+                <Toggle
+                  value={stationary}
+                  offLabel="No"
+                  onLabel="Yes"
+                  labelledBy={stationaryLabelId}
+                  onChange={onToggleStationary}
+                />
+              </div>
+              {started && (
+                <p className="text-xs text-gray-500">
+                  Applies to rounds drawn from now on; rounds already drawn stay
+                  as they were.
+                </p>
+              )}
             </div>
           )}
 
@@ -377,15 +374,6 @@ function PairRow({
                 setOpenForm("none");
               }}
             />
-          ) : openForm === "handover" ? (
-            <HandoverForm
-              label={label}
-              onCancel={() => setOpenForm("none")}
-              onSave={(request) => {
-                onHandover(seat, request);
-                setOpenForm("none");
-              }}
-            />
           ) : (
             <>
               {showStandingControls && (
@@ -400,16 +388,6 @@ function PairRow({
                   </span>
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setOpenForm("handover")}
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <span aria-hidden="true">Hand over to real pair</span>
-                <span className="sr-only">
-                  Hand {label} over to the real pair
-                </span>
-              </button>
             </>
           )}
         </div>
@@ -578,92 +556,6 @@ function StandingForm({
           className="flex-1 rounded-lg border border-blue-600 bg-blue-600 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Save
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * The post-start inline handover editor (EBU §2.4.7 mid-game substitution). The
- * pair currently sitting the seat keeps the boards it has already scored; the
- * director records only the ARRIVING pair's names. The boards-played split is
- * NOT entered here — it is derived server-side from the results already in, so
- * the handover is always from the next board without a result — and neither is
- * the scoring (split / eligibility), which the director sets afterwards on the
- * Substitutions screen. Local state only; emits a {@link HandoverRequest} via
- * `onSave`.
- */
-function HandoverForm({
-  label,
-  onSave,
-  onCancel,
-}: {
-  label: string;
-  onSave: (request: HandoverRequest) => void;
-  onCancel: () => void;
-}) {
-  const [firstName1, setFirstName1] = useState("");
-  const [lastName1, setLastName1] = useState("");
-  const [firstName2, setFirstName2] = useState("");
-  const [lastName2, setLastName2] = useState("");
-
-  // Both players need at least a surname before the handover can be recorded.
-  const canSave = lastName1.trim().length > 0 && lastName2.trim().length > 0;
-
-  function handleSave() {
-    if (!canSave) return;
-    onSave({
-      player1: { firstName: firstName1.trim(), lastName: lastName1.trim() },
-      player2: { firstName: firstName2.trim(), lastName: lastName2.trim() },
-    });
-  }
-
-  return (
-    <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-      <p className="text-sm text-gray-600">
-        Seat the arriving pair for {label}. The earlier pair keeps the boards
-        they have already scored; the arriving pair takes over from the next
-        board without a result. You can set how the seat is scored (one line or
-        two, and each pair&apos;s eligibility) afterwards on the Pairs screen.
-      </p>
-
-      <TextField
-        label="Player 1 first name"
-        value={firstName1}
-        onChange={setFirstName1}
-      />
-      <TextField
-        label="Player 1 surname"
-        value={lastName1}
-        onChange={setLastName1}
-      />
-      <TextField
-        label="Player 2 first name"
-        value={firstName2}
-        onChange={setFirstName2}
-      />
-      <TextField
-        label="Player 2 surname"
-        value={lastName2}
-        onChange={setLastName2}
-      />
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!canSave}
-          className="flex-1 rounded-lg border border-blue-600 bg-blue-600 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-300"
-        >
-          Hand over
         </button>
       </div>
     </div>

@@ -132,6 +132,46 @@ describe("SectionModal", () => {
     });
   });
 
+  it("labels the section picker with names and carries the picked label into the split", () => {
+    const onConfirm = vi.fn();
+    render(
+      <SectionModal
+        open
+        sections={[
+          { letter: "A", label: "North", tables: 6 },
+          { letter: "B", label: "B", tables: 8 },
+        ]}
+        newSectionLetter="C"
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Split existing" }));
+    const picker = screen.getByLabelText("Section to split");
+    expect(
+      screen.getByRole("option", { name: "Section A — North" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Section B" })).toBeInTheDocument();
+    fireEvent.change(picker, { target: { value: "B" } });
+    expect(screen.getByLabelText("Section B name")).toHaveValue("B");
+    fireEvent.change(picker, { target: { value: "A" } });
+    expect(screen.getByLabelText("Section A name")).toHaveValue("North");
+  });
+  it("re-seeds its fields when closed and reopened", () => {
+    const props = {
+      sections: single,
+      newSectionLetter: "B",
+      onConfirm: vi.fn(),
+      onCancel: vi.fn(),
+    };
+    const { rerender } = render(<SectionModal open {...props} />);
+    fireEvent.change(screen.getByLabelText("New section (B) name"), {
+      target: { value: "Edited" },
+    });
+    rerender(<SectionModal open={false} {...props} />);
+    rerender(<SectionModal open {...props} />);
+    expect(screen.getByLabelText("New section (B) name")).toHaveValue("B");
+  });
   it("only lists sections with 4+ tables as splittable", () => {
     render(
       <SectionModal

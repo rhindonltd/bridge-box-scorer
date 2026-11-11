@@ -31,6 +31,7 @@ export function HandoverPlayersPage({
   const canSubmit = player1 != null && player2 != null && !submitting;
 
   async function handleSubmit() {
+    /* v8 ignore next -- unreachable: the only trigger (the submit button) is disabled until both players are chosen. */
     if (player1 == null || player2 == null) return;
     setSubmitting(true);
     setError(null);

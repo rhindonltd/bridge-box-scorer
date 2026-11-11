@@ -635,6 +635,39 @@ describe("SectionMovementPicker", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("seeds the Swiss Pairs form from the persisted SWISS selection", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        eventFormat="SWISS"
+        selectedMovement={{
+          source: "SWISS",
+          swiss: { tables: 6, rounds: 5, boardsPerRound: 4 },
+        }}
+      />,
+    );
+    expect(screen.getByRole("spinbutton", { name: "Rounds" })).toHaveValue(5);
+  });
+  it("seeds the Swiss Teams form from the persisted SWISS_TEAMS selection", () => {
+    mockRecommendations.mockReturnValue([]);
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        eventFormat="SWISS"
+        gameType="TEAMS"
+        selectedMovement={{
+          source: "SWISS_TEAMS",
+          swissTeams: { teams: 6, rounds: 5, boardsPerRound: 4 },
+        }}
+      />,
+    );
+    expect(screen.getByRole("spinbutton", { name: "Rounds" })).toHaveValue(5);
+  });
   it("persists a Swiss Teams movement on confirm (even team count)", async () => {
     mockRecommendations.mockReturnValue([]);
     const onDone = vi.fn();

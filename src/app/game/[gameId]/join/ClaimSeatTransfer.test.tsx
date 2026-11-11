@@ -117,8 +117,16 @@ describe("ClaimSeatTransfer", () => {
 
     await waitFor(() =>
       expect(mockClaim).toHaveBeenCalledWith("HAND01", {
-        player1: { firstName: "Player 1", lastName: "Player", nationalId: null },
-        player2: { firstName: "Player 2", lastName: "Player", nationalId: null },
+        player1: {
+          firstName: "Player 1",
+          lastName: "Player",
+          nationalId: null,
+        },
+        player2: {
+          firstName: "Player 2",
+          lastName: "Player",
+          nationalId: null,
+        },
       }),
     );
     await waitFor(() =>
@@ -202,5 +210,68 @@ describe("ClaimSeatTransfer", () => {
     // Now loading; the back/cancel action should be ignored.
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
     expect(screen.getByLabelText("Transfer code")).toBeInTheDocument();
+  });
+
+  describe("handover names step", () => {
+    async function openNamesStep() {
+      mockInspect.mockResolvedValue({
+        gameId: "g9",
+        seat: "B2EW",
+        isHandover: true,
+      });
+      open();
+      fireEvent.change(screen.getByLabelText("Transfer code"), {
+        target: { value: "HAND01" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Take over seat" }));
+      await screen.findByRole("button", { name: "select Player 1" });
+    }
+    function pickBoth() {
+      fireEvent.click(screen.getByRole("button", { name: "select Player 1" }));
+      fireEvent.click(screen.getByRole("button", { name: "select Player 2" }));
+    }
+
+    it("ignores a submit until both players are chosen", async () => {
+      await openNamesStep();
+      fireEvent.submit(document.getElementById("claim-handover-names")!);
+      expect(mockClaim).not.toHaveBeenCalled();
+    });
+
+    it("shows the server error when the handover claim fails", async () => {
+      mockClaim.mockRejectedValue(new Error("Seat already claimed"));
+      await openNamesStep();
+      pickBoth();
+      fireEvent.click(screen.getByRole("button", { name: "Take over seat" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Seat already claimed",
+      );
+      expect(mockReplace).not.toHaveBeenCalled();
+    });
+
+    it("uses a default message when the handover failure is not an Error", async () => {
+      mockClaim.mockRejectedValue("boom");
+      await openNamesStep();
+      pickBoth();
+      fireEvent.click(screen.getByRole("button", { name: "Take over seat" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Failed to take over seat",
+      );
+    });
+
+    it("shows a progress label while claiming", async () => {
+      mockClaim.mockReturnValue(new Promise(() => {}));
+      await openNamesStep();
+      pickBoth();
+      fireEvent.click(screen.getByRole("button", { name: "Take over seat" }));
+      expect(
+        await screen.findByRole("button", { name: "Taking over…" }),
+      ).toBeDisabled();
+    });
+
+    it("returns to the code step via back", async () => {
+      await openNamesStep();
+      fireEvent.click(screen.getByRole("button", { name: /back/i }));
+      expect(screen.getByLabelText("Transfer code")).toBeInTheDocument();
+    });
   });
 });

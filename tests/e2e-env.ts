@@ -32,6 +32,17 @@ export const E2E_DATA_DIR =
 export const E2E_GAMES_DIR = path.join(E2E_DATA_DIR, "games");
 
 /**
+ * Where the (stand-in) box's cloud-backup status file lives. In production the
+ * box's own sync job writes it under /home/bridgebox; E2E points the app at a
+ * file inside the throwaway data dir instead, which tests write to put the
+ * Cloud Backup screen into a known state (absent file = "not enabled").
+ */
+export const E2E_CLOUD_SYNC_STATUS_FILE = path.join(
+  E2E_DATA_DIR,
+  "cloud-sync-status.json",
+);
+
+/**
  * The environment the server, the seeder and test-side DB readers all share.
  * Spread into child-process envs; also applied to `process.env` by the
  * Playwright config so in-process helpers resolve the same directories.
@@ -40,6 +51,7 @@ export const E2E_SERVER_ENV = {
   DATABASE_URL: E2E_DATA_DIR,
   DATABASE_GAMES_URL: E2E_GAMES_DIR,
   PORT: String(E2E_PORT),
+  CLOUD_SYNC_STATUS_PATH: E2E_CLOUD_SYNC_STATUS_FILE,
 } as const;
 
 /** Path to a game's SQLite file in the E2E data directory. */

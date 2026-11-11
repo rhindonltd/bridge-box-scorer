@@ -93,4 +93,18 @@ describe("StepAdjustmentType", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mismatch (Swiss)" }));
     expect(onMismatch).toHaveBeenCalledTimes(1);
   });
+  it("shows and routes the pairs void-match branch when its handler is provided", () => {
+    const onVoidPairsMatch = vi.fn();
+    render(
+      <StepAdjustmentType
+        onEnterContract={vi.fn()}
+        onAdjustedScore={vi.fn()}
+        onWeightedScore={vi.fn()}
+        onCancelBoard={vi.fn()}
+        onVoidPairsMatch={onVoidPairsMatch}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Void Match (Pairs)" }));
+    expect(onVoidPairsMatch).toHaveBeenCalledTimes(1);
+  });
 });

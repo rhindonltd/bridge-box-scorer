@@ -11,6 +11,7 @@ import {
   roundRobinTeamsToMaterializable,
   materializePairLikeMovement,
   materializeSections,
+  resolveMatchIds,
   type MaterializableMovement,
 } from "./materialize-movement";
 import type { Tables } from "@/model/movement";
@@ -126,6 +127,29 @@ describe("buildSectionRows", () => {
   });
 });
 
+describe("resolveMatchIds", () => {
+  const matchDraft = { tempKey: "m1", section: "A", roundNumber: 1 };
+  const boardDraft = { matchTempKey: "m1", boardNumber: 1 };
+  it("swaps each board's temp match key for the inserted match id", () => {
+    const insertMatch = vi.fn(() => 42);
+    const rows = resolveMatchIds(
+      [matchDraft] as never,
+      [boardDraft] as never,
+      insertMatch,
+    );
+    expect(rows).toEqual([{ boardNumber: 1, matchId: 42 }]);
+    expect(insertMatch).toHaveBeenCalledWith({ section: "A", roundNumber: 1 });
+  });
+  it("throws for a board whose match was never inserted", () => {
+    expect(() =>
+      resolveMatchIds(
+        [matchDraft] as never,
+        [{ ...boardDraft, matchTempKey: "other" }] as never,
+        () => 1,
+      ),
+    ).toThrow("No match row for board key other");
+  });
+});
 describe("mitchellToPairMovement", () => {
   it("maps table/round shape and derives boardStart/boardEnd from the boards array", () => {
     const tables: Tables = {

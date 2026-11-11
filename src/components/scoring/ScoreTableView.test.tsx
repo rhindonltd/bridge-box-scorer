@@ -144,4 +144,21 @@ describe("ScoreTableView", () => {
     expect(screen.getByText("Alice Adams")).toBeInTheDocument();
     expect(screen.getByText("Dan Day")).toBeInTheDocument();
   });
+  it("renders an expandable cell as static text when not interactive", () => {
+    const expandable: ScoreTable = {
+      columns: [{ label: "Team" }],
+      rows: [
+        {
+          highlightIds: ["A1"],
+          cells: [expandableCell("Sharks", ["Alice Adams", "Bob Brown"])],
+        },
+      ],
+    };
+    render(<ScoreTableView table={expandable} interactive={false} />);
+    expect(screen.getByText("Sharks")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Sharks" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Alice Adams")).not.toBeInTheDocument();
+  });
 });

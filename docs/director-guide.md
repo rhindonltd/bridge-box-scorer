@@ -2,7 +2,8 @@
 
 This guide explains how to run a session as a director: creating a game,
 arranging tables and sections, choosing movements, running the timer,
-correcting results, and exporting to USEBIO.
+correcting results and making rulings, and exporting and publishing the
+results.
 
 You direct from your own phone or tablet, connected to the Bridge Box's
 network — the same way players connect. Whoever creates a game becomes its
@@ -136,6 +137,13 @@ From this tab you can:
     for themselves.
   - **Active** — put a pair back to normal if you marked them by mistake.
   A small badge on the pair shows its current standing at a glance.
+- **A pair's phone has died** — you don't need to withdraw them. Open **Pairs**
+  from the Manage Game Menu, tap the pair, and choose **Move to a new device**.
+  Give the code that appears to the pair; on their new device they open the
+  game, choose **Move a seat to this device**, and enter it. They carry on from
+  where they were, still **Active**, with nothing marked as missed. The old
+  device is signed out of the seat. (If the pair still has the old phone, they
+  can do the same themselves from **Menu → Change device**.)
 
 Once you've chosen a movement for the section, each table also shows the
 **boards to put out there** at the start — for example "Boards 1–3". This is a
@@ -158,7 +166,10 @@ For a **Swiss Pairs** section, a table's dialog also lets you mark **stationary
 pairs**: turn on **Stationary** for a pair to keep them at their table and
 direction for the whole event (their opponents come to them), and turn it off to
 let them move. Stationary pairs are shown with an amber "Stationary" marker on
-the table.
+the table. You can change this at any time, **including once the game is
+running**: a change applies to the rounds you draw from then on, and rounds
+already drawn stay exactly as they were played. (A pair that has since moved
+away is brought back to its home seat when you draw the next round.)
 
 When you're ready, tap **Start Game**.
 
@@ -269,13 +280,13 @@ handle the odd team each round:
 ### Timer tab (optional)
 
 Here you set up the round timer **before** the game starts: phase lengths,
-breaks, and the warning time. Tap **Save** to keep your settings. Setting up a
-timer is never required to start a game.
+breaks, and the warning time. Your changes are kept as you make them. Setting up
+a timer is never required to start a game.
 
 Before the game starts you can only configure the timer here — you cannot run
-it. If you have saved a timer, it begins automatically when you tap **Start
-Game**, and from then on you control it (start, pause, adjust) from the Manage
-Game Menu. See [The timer](#the-timer).
+it. If you have set up a timer, it begins automatically when you tap **Start
+Game**, and from then on you control it (start, pause, adjust) from **Timer** on
+the Manage Game Menu. See [The timer](#the-timer).
 
 Each **section** has its own timer, so sections running at different speeds can
 be timed independently. When your game has more than one section, a section
@@ -316,17 +327,23 @@ example, to correct a board and then return to enter your own table's result.
 
 | Option                    | What it does                                                              |
 | ------------------------- | ------------------------------------------------------------------------- |
-| **Set Up Game**           | Returns to the Tables / Movements / Timer setup tabs.                     |
+| **Set Up Game**           | Returns to the Tables / Movements / Timer setup tabs. Shown only before the game starts. |
 | **Manage Tables**         | Opens the Tables view while the game is in progress — to withdraw, mark late, or re-seat pairs. |
-| **Travellers**            | View results by board and correct any that were entered wrong.            |
+| **Travellers**            | View results by board, correct any that were entered wrong, and make director rulings (see [Correcting results](#correcting-results)). |
 | **Enter Deals**           | Enter or correct the dealt cards (the four hands) for any board.          |
-| **Movement**              | View or change the movement.                                              |
-| **Download USEBIO**       | Export the results as a USEBIO XML file for the EBU or a scoring program. |
+| **Movement**              | View or change the movement; in a Swiss event, draw the next round.       |
+| **Timer**                 | The live timer controls: start, pause, step between phases, add or take off time (see [Controlling a running timer](#controlling-a-running-timer)). |
+| **Review Mismatches**     | _Swiss events only._ Check for pairs or teams that were drawn against the wrong opponents after a result was corrected (see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches)). |
+| **Pairs**                 | Every pair's status, plus per-pair actions such as **Move to a new device**. |
+| **Export & Publish**      | Download or publish the results (see [Exporting and publishing results](#exporting-and-publishing-results)). |
 | **Delete Game** _(red)_   | Permanently delete the game. This cannot be undone.                       |
 
-The **timer** is reached through **Set Up Game → Timer tab**. Before the game
-starts this shows the timer setup (configure and **Save**); once the game is in
-progress the same place shows the live timer controls (start, pause, adjust).
+**Delete Game** is always there. The other options (apart from **Set Up Game**)
+appear once the game has started.
+
+Before the game starts, the **timer** is set up on **Set Up Game → Timer
+tab**. Once the game is in progress, tap **Timer** on the Manage Game Menu for
+the live timer controls (start, pause, adjust).
 
 ### Drawing the next Swiss round
 
@@ -390,6 +407,44 @@ Tap **OK** to commit the round exactly as shown — edited or not — and it the
 appears on every device, with each team's away pair told which table to move to;
 or **Cancel** to discard it and draw again.
 
+### Reviewing Swiss mismatches
+
+Each Swiss round is drawn from the standings at the time. If you later correct a
+result from an earlier round, the standings change — and a round already drawn
+may have paired some pairs (or teams) against the wrong opponents. The EBU calls
+this a **mismatch**: a pair met opponents whose score is **more than 5 VP** away
+from the opponents the corrected standings would have given them.
+
+To check, open **Review Mismatches** from the Manage Game Menu (Swiss events
+only). If nothing is affected it says **No mismatches to review**. Otherwise
+there is a card for each pair or team that may have been mismatched, showing the
+round and table, the opponents they actually met and the ones they should have
+met (with each one's current Victory Points), and whether the actual opponents
+were **stronger** or **weaker**.
+
+For each card, decide whether it was a genuine mismatch:
+
+- **Apply — not their fault** or **Apply — their own fault** — rule it a
+  mismatch. Only that pair's Victory Points for that round change; their
+  opponents' score and the boards played stay as they were:
+  - Against **stronger** opponents, **not their fault**: they are compensated —
+    5 VP plus three-quarters of what they scored (10 VP becomes 12.5).
+  - Against **weaker** opponents, **their own fault**: they lose a quarter of
+    what they scored above 5 VP (10 VP becomes 9, rounded in their favour).
+  - The other two combinations leave their score unchanged, but the ruling is
+    still recorded.
+- **Not a mismatch** — dismiss the card, for example when the pair could
+  equally well have been drawn against several different opponents. No score
+  changes. The card is only cleared from the list you are looking at; it is
+  shown again the next time you open **Review Mismatches**.
+
+Each card is ruled on its own. Ruling one pair leaves the round's other cards in
+the list, including the card for that pair's own opponents if they were
+mismatched too. A pair you have ruled is not listed again.
+
+You can also rule a mismatch directly from **Travellers**: tap a row of the
+match and choose **Mismatch (Swiss)**.
+
 ---
 
 ## The timer
@@ -428,11 +483,10 @@ any of these to suit your event.
 
 The panel previews the **session length** and an estimated **finish time**.
 
-Tap **Save** to keep the settings for this section. In a multi-section game,
-**Apply to all sections** saves the current settings to every section at once
-(you can still adjust any section afterwards). The timer does not start yet: it
-begins running automatically when you tap **Start Game**. You can come back and
-change the settings any time before you start.
+Your settings are kept as you change them, for the section you have chosen —
+in a multi-section game, choose each section in turn and set it up. The timer
+does not start yet: it begins running automatically when you tap **Start
+Game**. You can come back and change the settings any time before you start.
 
 ### Breaks
 
@@ -448,21 +502,20 @@ flags it as an invalid break so you can fix it.
 
 ### Controlling a running timer
 
-Once the game has started, open **Set Up Game → Timer** from the Manage Game
-Menu to control the live timer. In a multi-section game, pick the section from
-the selector at the top; the controls below act on that section's timer. You
-get:
+Once the game has started, tap **Timer** on the Manage Game Menu to open **Timer
+Controls**. In a multi-section game, pick the section from the selector at the
+top; the controls act on that section's timer. The timer's settings (phase
+lengths, breaks) are fixed once play begins; what you can do is run it:
 
-- **Apply Changes** — update the running timer with your edited settings
-  without resetting it.
 - **Start / Pause** — one button that toggles depending on the current state.
 - **‹ Prev** and **Next ›** — move to the previous or next phase.
 - **Adjust current phase** — **−1m / −15s / +15s / +1m** buttons, with a
   checkbox **"Apply to all subsequent phases of this type"** to apply the
   same adjustment to every future phase of that kind.
 
-The status panel shows the current phase, time remaining, current round, and
-the projected end time.
+The status panel shows the **Status** (the current phase, or paused),
+**Remaining** time, the **Round**, and **Live End** — the time the session is
+now expected to finish.
 
 ---
 
@@ -497,6 +550,20 @@ If a board was entered incorrectly, you can override it:
 
    Both types of assigned score count towards the live leaderboard and the
    exported results.
+
+   Depending on the event, the same screen offers rulings that go beyond one
+   board's score:
+
+   | Option | Offered in | What it does |
+   | --- | --- | --- |
+   | **Cancel / Foul Board** | Every event | The board can't stand (fouled, mis-dealt and so on). Choose the averages to award, as for an adjusted score (for example AVE+ / AVE−). |
+   | **Board Not Played (Teams)** | Teams and Swiss Teams | The board couldn't be played in this match. Choose who was at fault: the side not at fault gains 3 IMPs on it and the side at fault loses 3 (neither or both at fault: no swing). In Point-a-Board or Board-a-Match, the board is won, lost or tied instead. |
+   | **Void Match (Teams)** | Teams and Swiss Teams | The whole match can't stand. **Incorrect seating / cannot replay** gives each team 40% of the Victory Points (8 of 20), or 60% (12) when the director was at fault. **Less than half played** gives averages by who was at fault. |
+   | **Void Match (Pairs)** | Swiss Pairs | The whole match can't stand. It no longer counts against the rest of the field, and each pair gets averages by who was at fault: the side not at fault AVE+ and the side at fault AVE−, or AVE+ to both if neither was at fault and AVE− to both if both were. |
+   | **Mismatch (Swiss)** | Swiss Pairs and Swiss Teams | The match was drawn against the wrong opponents. Choose which side was mismatched and how — see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches). |
+
+   The rulings that affect a whole match (Void Match, Mismatch) apply to every
+   board of that match, whichever board you opened.
 5. The correction is saved, and anyone viewing that board sees the updated
    result.
 
@@ -543,16 +610,48 @@ own device.
 
 ---
 
-## Downloading results (USEBIO)
+## Exporting and publishing results
 
-At the end of the session:
+At the end of the session, open the Manage Game Menu and tap **Export &
+Publish**.
 
-1. Open the Manage Game Menu and tap **Download USEBIO**.
-2. The results are exported as a standard **USEBIO XML** file.
-3. Upload that file to the EBU or import it into your scoring program.
+### Checking you're ready
 
-The file matches the kind of event you ran: an ordinary pairs game exports as a
-pairs event, while **Swiss Pairs** and **Swiss Teams** export in their own
+The first screen is a checklist of what the exports need, each marked
+**Ready**, **Warning**, **Not ready** or **Optional**, with a summary at the
+top:
+
+- **Results entered** — whether every board has a result. While some are still
+  outstanding it shows how many. When only a few are left, tap it to see which
+  boards they are (round, table and board, with the pairs who should play it),
+  so you know who to chase.
+- **Club information** — the club name and EBU number. Without them no results
+  file can be made; set them in **Settings → Club Information**.
+- **BridgeWebs** and **EBU** — whether this Bridge Box is set up to publish to
+  each (in **Settings → BridgeWebs** and **Settings → EBU**). These are
+  optional: if one isn't set up, only that upload is unavailable.
+
+The checklist never stops you. Tap **Continue to Export Options**.
+
+### The export options
+
+- **Download USEBIO** — the results as a standard **USEBIO XML** file, to send
+  to the EBU or import into a scoring program. Available once every result is
+  in.
+- **Download PBN** — the deals entered for the boards (see
+  [Entering the deals](#entering-the-deals)), as a PBN file. Available at any
+  time, since it doesn't depend on the results.
+- **Upload to BridgeWebs** — publish the results to the club's BridgeWebs
+  website. Shown only when BridgeWebs is set up, and available once every
+  result is in.
+- **Submit to EBU** — submit the results to the EBU. Shown only when the EBU is
+  set up, and available once every result is in. The app checks the file and
+  the players with the EBU first, and shows any notes (such as another event
+  already submitted for that date, or a surname that doesn't match the EBU's
+  records) before you submit.
+
+The USEBIO file (which is also what goes to BridgeWebs and the EBU) matches the
+kind of event you ran: an ordinary pairs game exports as a pairs event, while **Swiss Pairs** and **Swiss Teams** export in their own
 format — round by round, with each match and its Victory Points — so a Swiss
 event imports correctly rather than looking like a plain pairs game.
 
@@ -574,8 +673,8 @@ hands are included in the exported file alongside that board's results.
   movement, and the leaderboard shows both per-section and combined standings.
 - **Share access** so a co-director can help — they manage from their own phone
   after claiming your share code.
-- **Export at the end** — remember to download the USEBIO file before deleting
-  or reusing the game.
+- **Export at the end** — remember to download or publish the results (**Export
+  & Publish**) before deleting the game.
 
 For the shared-screen timer and leaderboard, see the
 [Room Display Guide](room-display-guide.md). For the Bridge Box's WiFi, club

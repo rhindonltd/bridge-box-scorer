@@ -260,6 +260,16 @@ describe("setSubstitutionOptions", () => {
     expect(occ.every((o: any) => o.isMainLine === 0)).toBe(true);
   });
 
+  it("returns false when the game has no database", async () => {
+    await setup();
+    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    expect(
+      await setSubstitutionOptions("no-such-game", "A1NS", {
+        split: false,
+        eligibility: [],
+      }),
+    ).toBe(false);
+  });
   it("returns false when no pair is seated there", async () => {
     await setup();
     const { setSubstitutionOptions } = await import("./set-substitution-options");

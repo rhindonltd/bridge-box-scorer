@@ -212,6 +212,7 @@ export async function getSwissTeamsCommittedRound(
 
   const triples: CommittedTriple[] = [];
   for (const [groupId, comps] of tripleComparisonsByGroup) {
+    /* v8 ignore next -- unreachable: every group with comparisons also has a members entry (set together above) */
     const members = [...(tripleMembersByGroup.get(groupId) ?? new Set())].sort(
       (a, b) => a - b,
     );

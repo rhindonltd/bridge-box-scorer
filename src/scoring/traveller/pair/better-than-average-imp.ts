@@ -100,6 +100,7 @@ function windowedAverageImps<L extends { outcome?: unknown; score?: number | nul
 
   const avg = new Map<string, number>();
   for (const [id, n] of count) {
+    /* v8 ignore next -- unreachable: a count entry is only created alongside an increment, so n >= 1 */
     if (n > 0) avg.set(id, (sum.get(id) ?? 0) / n);
   }
   return avg;
@@ -155,6 +156,7 @@ function applyBetterThanAverageImp<L extends { outcome?: unknown }>(
       // parseAdjustedScore confirms the A<ns>/<ew> shape; the per-board scorer
       // already turned those percentages into the flat ±3/0 we read off the
       // line, so we only gate on it being a well-formed artificial award.
+      /* v8 ignore next -- unreachable: classifyOutcome === "artificial" guarantees the outcome parses */
       if (parseAdjustedScore(outcome) == null) return line;
 
       const { ns, ew } = idOf(line);

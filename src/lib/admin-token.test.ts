@@ -111,7 +111,10 @@ describe("verifyAdminTokenWithServer", () => {
 
   it("returns true and keeps the token when the server confirms it", async () => {
     setAdminToken("good");
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200 }),
+    );
 
     await expect(verifyAdminTokenWithServer()).resolves.toBe(true);
     expect(getAdminToken()).toBe("good");
@@ -193,7 +196,10 @@ describe("logoutAdmin", () => {
 
   it("notifies subscribers so the settings gate re-locks", async () => {
     setAdminToken("live");
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200 }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, status: 200 }),
+    );
 
     const onChange = vi.fn();
     const unsubscribe = subscribeAdminToken(onChange);

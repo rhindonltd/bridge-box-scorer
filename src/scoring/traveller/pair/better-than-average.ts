@@ -66,6 +66,7 @@ function windowedAverages(boards: ScoredMpBoard[]): Map<string, number> {
 
   const avg = new Map<string, number>();
   for (const [id, top] of max) {
+    /* v8 ignore next -- unreachable: `add` only runs for lines with maxMatchPoints > 0, so every top is positive */
     if (top > 0) avg.set(id, (mp.get(id) ?? 0) / top);
   }
   return avg;
@@ -125,6 +126,7 @@ export function applyBetterThanAverage(
       if (line.outcome == null) return line;
       if (classifyOutcome(line.outcome) !== "artificial") return line;
       const pct = parseAdjustedScore(line.outcome);
+      /* v8 ignore next -- unreachable: classifyOutcome === "artificial" guarantees the outcome parses */
       if (!pct) return line;
 
       const nsOverride = overriddenSideMp(

@@ -8,7 +8,6 @@ import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 
 import { PairSeat, SectionLetter, parseSeat } from "@/model/participants";
-import { PHANTOM_SEAT } from "@/model/phantom-seat";
 import { SelectedMovement } from "@/model/selected-movement";
 import { deriveExpectedSeats } from "@/model/expected-seats";
 import {
@@ -27,7 +26,8 @@ import {
   materializeSections,
   roundRobinTeamsToMaterializable,
   MaterializableMovement,
-  MaterializableTable,
+  sectionParticipantId,
+  type SeatAnchor,
 } from "@/services/materialize-movement";
 import { generateStandardMitchellWithSitOut } from "@/movement/mitchell/sit-out";
 import {
@@ -46,9 +46,11 @@ import { swissRoundToMaterializable } from "@/services/materialize-swiss-round";
 import {
   drawSwissRound,
   swissPairHomeSeat,
+  swissPairIdFromHomeSeat,
   swissPairIds,
   type SwissHomeSeat,
   type SwissPairId,
+  type SwissSeating,
 } from "@/movement/swiss/swiss-pairing";
 import { swissPairIdFromSeat } from "@/db/games/queries/swiss-board-history";
 import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
@@ -61,6 +63,12 @@ export interface ResolvedStart {
   validation: StartValidationResult;
   /** The movement to materialize, present only when validation.canStart. */
   movement: MaterializableMovement | null;
+  /**
+   * Explicit seat → anchor ids for the materializer (Swiss Pairs only, where a
+   * pair's board id is its stable number rather than its round-1 position).
+   * Absent → the materializer derives them from the round-1 layout.
+   */
+  anchors?: SeatAnchor[];
 }
 
 /**
@@ -154,7 +162,7 @@ export async function resolveSectionStart(
   // round 1 itself is a half-match round it materializes the group rather than a
   // bye. A BYE round (or an even field) falls through to the generic path.
   if (selected.source === "SWISS") {
-    return resolveSwissPairsStart(selected, rehydrated, validation);
+    return resolveSwissPairsStart(section, selected, validation);
   }
 
   if (!validation.canStart) {
@@ -184,8 +192,8 @@ export async function resolveSectionStart(
  * fall through to the ordinary single-sit-out path unchanged.
  */
 function resolveSwissPairsStart(
+  section: SectionLetter,
   selected: Extract<SelectedMovement, { source: "SWISS" }>,
-  rehydrated: RehydratedMovement,
   baseValidation: StartValidationResult,
 ): ResolvedStart {
   const { tables, oddHandling = "BYE", oddRoundPlan } = selected.swiss;
@@ -227,16 +235,92 @@ function resolveSwissPairsStart(
         selected,
         baseValidation.sitOutSeat,
       ),
+      anchors: swissPairAnchors(section, tables),
     };
   }
 
   // Otherwise round 1 is an ordinary bye (odd field) or a full even round.
-  const movement =
-    baseValidation.sitOutSeat !== null
-      ? applySwissRoundOneSitOut(rehydrated.movement, baseValidation.sitOutSeat)
-      : toMaterializable(rehydrated.movement);
+  return {
+    validation: baseValidation,
+    movement: swissRoundOnePositional(
+      tables,
+      selected.swiss.boardsPerRound,
+      baseValidation.sitOutSeat,
+    ),
+    anchors: swissPairAnchors(section, tables),
+  };
+}
 
-  return { validation: baseValidation, movement };
+/**
+ * Every seat's anchor id in a Swiss Pairs section: the pair's stable Swiss
+ * number, section-qualified ("A1".."A8" with 4 tables — NS seats 1..tables, EW
+ * seats tables+1..2·tables). Every round writes a pair's boards under this one
+ * id whatever chair it sits in, so the schedule, travellers and standings all
+ * see one pair. An empty seat has no occupancy, so its entry updates nothing.
+ */
+function swissPairAnchors(section: SectionLetter, tables: number): SeatAnchor[] {
+  const anchors: SeatAnchor[] = [];
+  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
+    for (const direction of ["NS", "EW"] as const) {
+      const pairId = swissPairIdFromHomeSeat(tables, { tableNumber, direction });
+      anchors.push({
+        seat: `${section}${tableNumber}${direction}` as PairSeat,
+        anchorId: sectionParticipantId(section, `${pairId}`),
+      });
+    }
+  }
+  return anchors;
+}
+
+/**
+ * Round 1 of a Swiss Pairs event (even field, or an odd field with a bye): each
+ * pair plays at the seat it sat down in. Built by the same materializer every
+ * later round uses, so round 1 carries the same stable pair ids and the same
+ * match rows (a /20 match per table, a BYE for the sitting-out pair) as the
+ * rounds that follow.
+ *
+ * In an odd field the pair opposite the empty seat has the bye. It keeps its
+ * own table number (it is physically seated there), rather than being parked
+ * after the played tables as a drawn round's bye is.
+ */
+function swissRoundOnePositional(
+  tables: number,
+  boardsPerRound: number,
+  sitOutSeat: PairSeat | null,
+): MaterializableMovement {
+  const byeTable = sitOutSeat !== null ? parseSeat(sitOutSeat).tableNumber : null;
+  const byePairId =
+    sitOutSeat !== null
+      ? swissPairIdFromHomeSeat(tables, {
+          tableNumber: byeTable!,
+          // The bye pair is the one sitting opposite the empty seat.
+          direction: parseSeat(sitOutSeat).direction === "NS" ? "EW" : "NS",
+        })
+      : null;
+
+  const seating: SwissSeating[] = [];
+  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
+    if (tableNumber === byeTable) continue;
+    seating.push({
+      tableNumber,
+      ns: swissPairIdFromHomeSeat(tables, { tableNumber, direction: "NS" }),
+      ew: swissPairIdFromHomeSeat(tables, { tableNumber, direction: "EW" }),
+    });
+  }
+
+  const movement = swissRoundToMaterializable(
+    tables,
+    1,
+    boardsPerRound,
+    seating,
+    byePairId,
+  );
+  if (byeTable === null) return movement;
+  return movement.map((table) =>
+    table.rounds.some((r) => r.sitOut)
+      ? { ...table, tableNumber: byeTable }
+      : table,
+  );
 }
 
 /**
@@ -587,57 +671,6 @@ function rangeInclusive(start: number, end: number): number[] {
 }
 
 /**
- * Apply a round-1 bye to a Swiss positional layout.
- *
- * With an odd field one seat is empty; `sitOutSeat` is that empty seat, and the
- * pair sitting the OTHER direction at the same table is the bye pair (round 1 is
- * positional, so each table holds exactly its two pairs). That table is emitted
- * as a sit-out: the bye pair keeps the table with a phantom opponent and its
- * boards are flagged SIT_OUT (played by no one). Every other table materializes
- * normally.
- */
-function applySwissRoundOneSitOut(
-  movement: RehydratedTable[],
-  sitOutSeat: PairSeat,
-): MaterializableMovement {
-  const { tableNumber, direction } = parseSeat(sitOutSeat);
-
-  return movement.map((table): MaterializableTable => {
-    const round = table.rounds[0];
-    const base = {
-      roundNumber: round.roundNumber,
-      boardStart: round.boardStart,
-      boardEnd: round.boardEnd,
-      boardCopy: round.boardCopy,
-    };
-
-    if (table.tableNumber !== tableNumber) {
-      return {
-        tableNumber: table.tableNumber,
-        rounds: [{ ...base, ns: round.ns, ew: round.ew }],
-      };
-    }
-
-    // The bye pair is the one sitting the opposite direction to the empty seat.
-    const byePair = direction === "NS" ? round.ew : round.ns;
-    return {
-      tableNumber: table.tableNumber,
-      rounds: [
-        {
-          ...base,
-          // Keep the bye pair on NS with a phantom opponent, flagged sit-out —
-          // matching the representation the board-history reader expects (the
-          // phantom is not a valid seat, so it is never read as a pair).
-          ns: byePair,
-          ew: PHANTOM_SEAT,
-          sitOut: true,
-        },
-      ],
-    };
-  });
-}
-
-/**
  * Convert a rehydrated DB movement to a MaterializableMovement with no sit-out
  * flags (used when the movement is exactly filled).
  */
@@ -715,6 +748,7 @@ export async function startGame(
     .map((r) => ({
       section: r.section,
       movement: r.resolved.movement as MaterializableMovement,
+      anchors: r.resolved.anchors,
     }));
 
   await materializeSections(gameId, sectionMovements);

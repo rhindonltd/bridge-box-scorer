@@ -287,3 +287,90 @@ describe("calculateSwissXimpVpOverall — 2 half matches round", () => {
     );
   });
 });
+
+describe("calculateSwissXimpVpOverall — rounds without match rows", () => {
+  it("still scores a round when no PAIRS match rows exist", () => {
+    const rows = [
+      {
+        section: "A",
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: 1,
+        ns: "A1NS",
+        ew: "A2EW",
+        confirmedResult: "3NTN+1",
+        directorOverrideResult: null,
+        status: "COMPLETE",
+      },
+      {
+        section: "A",
+        roundNumber: 1,
+        tableNumber: 2,
+        boardNumber: 1,
+        ns: "A2NS",
+        ew: "A1EW",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+        status: "COMPLETE",
+      },
+    ] as SwissVpBoardRow[];
+    const result = calculateSwissXimpVpOverallImpl(rows, []);
+    expect(result.lines.length).toBeGreaterThan(0);
+  });
+});
+
+describe("calculateSwissXimpVpOverall — §3.3.8/§3.3.9 voided pairs", () => {
+  function voided(cause: string, overrides: Partial<SwissVpBoardRow>) {
+    return row({
+      status: "VOID_PAIR",
+      directorOverrideResult: `VOIDP:${cause}` as never,
+      confirmedResult: null,
+      ...overrides,
+    });
+  }
+  const field = (): SwissVpBoardRow[] => [
+    row({ boardNumber: 1, tableNumber: 2, ns: "A3NS", ew: "A4EW", confirmedResult: "3NTN=" }),
+    row({ boardNumber: 1, tableNumber: 3, ns: "A5NS", ew: "A6EW", confirmedResult: "2NTN=" }),
+  ];
+
+  it("credits the non-offender AVE+ and the offender AVE- for a voided match", () => {
+    const rows = [
+      voided("OFFENDER_EW", { boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW" }),
+      ...field(),
+    ];
+    const result = calculateSwissXimpVpOverall(rows, { expectedBoards: 8 });
+    const a1 = result.lines.find((l) => l.pairId === "A1NS")!;
+    const a2 = result.lines.find((l) => l.pairId === "A2EW")!;
+    expect(a1.vpByRound[1]).toBeGreaterThan(10);
+    expect(a2.vpByRound[1]).toBeLessThan(10);
+  });
+
+  it("gives both pairs an above-average VP when neither is at fault", () => {
+    const rows = [
+      voided("NEITHER", { boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW" }),
+      ...field(),
+    ];
+    const result = calculateSwissXimpVpOverall(rows, { expectedBoards: 8 });
+    expect(result.lines.find((l) => l.pairId === "A1NS")!.vpByRound[1]).toBeGreaterThan(10);
+    expect(result.lines.find((l) => l.pairId === "A2EW")!.vpByRound[1]).toBeGreaterThan(10);
+  });
+
+  it("sizes the compensation from the voided rows when the board count is unknown", () => {
+    const rows = [
+      voided("OFFENDER_EW", { boardNumber: 1, tableNumber: 1, ns: "A1NS", ew: "A2EW" }),
+      ...field(),
+    ];
+    const result = calculateSwissXimpVpOverall(rows);
+    expect(result.lines.find((l) => l.pairId === "A1NS")!.vpByRound[1]).toBeGreaterThan(10);
+  });
+
+  it("scores a voided pair neutral when no board of the match has a field to compare against", () => {
+    // The voided board (7) is played at no other table, so no field exists.
+    const rows = [
+      voided("OFFENDER_EW", { boardNumber: 7, tableNumber: 1, ns: "A1NS", ew: "A2EW" }),
+      ...field(),
+    ];
+    const result = calculateSwissXimpVpOverall(rows, { expectedBoards: 1 });
+    expect(result.lines.find((l) => l.pairId === "A1NS")!.vpByRound[1]).toBe(10);
+  });
+});

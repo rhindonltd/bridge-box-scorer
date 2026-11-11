@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  chooseTeamTriple,
   continueLongTriple,
   drawSwissTeamsRound,
   evaluateSwissTeamsRound,
@@ -607,5 +608,47 @@ describe("evaluateSwissTeamsRound", () => {
     );
     expect(advisories.structuralError).toBe(true);
     expect(advisories.structuralReasons).toContain("Unknown team 9 is placed");
+  });
+});
+
+describe("chooseTeamTriple — top-up", () => {
+  it("does not choose the same team twice when only the bottom team is fresh", () => {
+    const triple = chooseTeamTriple([1, 2, 3, 4, 5], new Set([1, 2, 3, 4]));
+    expect(triple).toEqual([3, 4, 5]);
+  });
+});
+
+describe("drawSwissTeamsRound — fixed long-triple continuation", () => {
+  it("uses the supplied triple verbatim instead of choosing a fresh one", () => {
+    const fixed = {
+      a: 1,
+      b: 2,
+      c: 3,
+      kind: "LONG" as const,
+      group: 1,
+      slot: 2 as const,
+    };
+    const result = drawSwissTeamsRound({
+      standings: [1, 2, 3, 4, 5],
+      playedOpponents: new Set(),
+      oddRound: { kind: "LONG", group: 1, slot: 2 },
+      fixedTriple: fixed,
+    } as never);
+    expect(result.triple).toBe(fixed);
+    // The remaining even field (4, 5) is paired.
+    expect(result.matches).toEqual([{ a: 4, b: 5 }]);
+  });
+});
+
+describe("swapTeams — triple round copy", () => {
+  it("returns a deep copy including the triple when swapping a team with itself", () => {
+    const round: SwissTeamsRound = {
+      matches: [{ a: 1, b: 2 }],
+      byeTeamId: null,
+      triple: { a: 3, b: 4, c: 5, kind: "SHORT", group: null, slot: null },
+    };
+    const result = swapTeams(round, 3, 3);
+    expect(result).toEqual(round);
+    expect(result.triple).not.toBe(round.triple);
   });
 });

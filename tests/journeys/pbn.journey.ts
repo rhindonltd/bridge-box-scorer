@@ -83,7 +83,7 @@ test.describe("PBN export", () => {
 
       // Open the Download PBN screen; the configured club name is shown
       // read-only.
-      await directorPage.goto(`/game/${gameId}/manage/download-pbn`);
+      await gotoStable(directorPage, `/game/${gameId}/manage/download-pbn`);
       await expect(directorPage.getByTestId("pbn-club-name")).toHaveText(
         "E2E Bridge Club",
         { timeout: 15000 },
@@ -135,7 +135,7 @@ test.describe("PBN export", () => {
       });
       expect(clubRes.ok()).toBe(true);
 
-      await directorPage.goto(`/game/${gameId}/manage/download-pbn`);
+      await gotoStable(directorPage, `/game/${gameId}/manage/download-pbn`);
 
       // With club not configured, the screen points to Settings and the
       // Download button is disabled (club is not editable here).

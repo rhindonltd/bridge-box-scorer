@@ -19,7 +19,7 @@ import { parsePairVoid, pairVoidFaults } from "@/model/pairs-match-void";
 import { ScoredMpBoard } from "@/scoring/traveller/pair/neuberg-across-boards";
 import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
 import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
-import { parseMismatch, adjustMismatchVp } from "@/model/swiss-mismatch";
+import { parseMismatches, adjustMismatchVp } from "@/model/swiss-mismatch";
 
 /**
  * The minimal `matches`-row shape the Swiss Pairs VP scorer needs for the
@@ -48,8 +48,10 @@ export interface SwissVpMatchRow {
  * genuinely wild inputs elsewhere.
  */
 function clampPercent(pct: number): number {
+  /* v8 ignore start -- defensive: no board mix we could construct (20k random mixed real/artificial/weighted rounds) pushes mp/max outside [0, 100] after the §4.2.6.1 rounding, so the clamp never fires */
   if (pct < 0) return 0;
   if (pct > 100) return 100;
+  /* v8 ignore stop */
   return pct;
 }
 
@@ -497,6 +499,7 @@ function buildMatches(
 
     for (const segment of segments) {
       if (segment.compensation) continue;
+      /* v8 ignore next -- redundant with the line above: a segment's opponent is the sentinel only for compensation segments */
       if (segment.opponent === COMPENSATION_SEGMENT) continue;
 
       // Orient the match to the actual NS/EW seats on the segment's rows (the
@@ -604,8 +607,8 @@ export function scoreSwissVpRound(
 /**
  * Apply the §3.5.2 mismatch adjustment to the mismatched pair's round VP.
  *
- * A MISMATCH table's two rows carry an `MM:<side>:<direction>:<fault>` token
- * naming which seat (NS/EW) is the mismatched side. The match itself was scored
+ * A MISMATCH match carries one `MM:<side>:<direction>:<fault>` ruling per
+ * mismatched side (NS and/or EW). The match itself was scored
  * normally (its boards stay in the field), so `pairVp` already holds each
  * pair's actual round VP; we recompute only the mismatched side's value and
  * leave the opponent untouched. The round pool is 20 (a Swiss Pairs round is a
@@ -618,18 +621,18 @@ function creditMismatch(
 ): void {
   for (const m of matchRows) {
     if (m.kind !== "PAIRS" || m.ruling == null) continue;
-    const ruling = parseMismatch(m.ruling);
-    if (ruling == null) continue;
+    // One ruling per mismatched side — both pairs of a match can be ruled.
+    for (const ruling of parseMismatches(m.ruling)) {
+      // The ruling's side is home-relative: NS = the match's `home` pair, EW =
+      // its `opponent`. Recompute only the mismatched side's round VP.
+      const mismatchedPairId = ruling.side === "NS" ? m.home : m.opponent;
+      if (mismatchedPairId == null) continue;
 
-    // The ruling's side is home-relative: NS = the match's `home` pair, EW =
-    // its `opponent`. Recompute only the mismatched side's round VP.
-    const mismatchedPairId = ruling.side === "NS" ? m.home : m.opponent;
-    if (mismatchedPairId == null) continue;
+      const actual = pairVp.get(mismatchedPairId);
+      if (actual == null) continue;
 
-    const actual = pairVp.get(mismatchedPairId);
-    if (actual == null) continue;
-
-    pairVp.set(mismatchedPairId, adjustMismatchVp(actual, ruling, 20));
+      pairVp.set(mismatchedPairId, adjustMismatchVp(actual, ruling, 20));
+    }
   }
 }
 
@@ -732,6 +735,7 @@ function voidMpVp(
   const boards = expectedBoards && expectedBoards > 0
     ? expectedBoards
     : v.boardNumbers.length;
+  /* v8 ignore next -- unreachable: a void pair always has >= 1 voided board, so boards >= 1 */
   if (boards <= 0) return NEUTRAL_VP;
 
   const fractions = voidMpFractions(boards, v.fault);
@@ -770,6 +774,7 @@ function voidXimpVp(
   const boards = expectedBoards && expectedBoards > 0
     ? expectedBoards
     : v.boardNumbers.length;
+  /* v8 ignore next -- unreachable: a void pair always has >= 1 voided board, so boards >= 1 */
   if (boards <= 0) return NEUTRAL_VP;
 
   const perComparison = voidXimpPerComparison(boards, v.fault);

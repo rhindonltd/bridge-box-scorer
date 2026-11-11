@@ -281,6 +281,7 @@ export function chooseHalfMatchGroup(
 
   // Order the three by standing (best first) using their position in standings.
   const rankOf = new Map(standings.map((id, idx) => [id, idx]));
+  /* v8 ignore next 3 -- unreachable: every chosen id is drawn from `standings`, so rankOf always has it */
   const byStanding = chosen.sort(
     (x, y) => (rankOf.get(x) ?? 0) - (rankOf.get(y) ?? 0),
   );

@@ -167,6 +167,30 @@ describe("registerPreviewNextRoundHandler", () => {
   });
 });
 
+describe("registerPreviewNextRoundHandler (unmapped rejection)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(validateDirectorToken).mockReturnValue(true);
+  });
+  it("uses a default message for an unmapped preview rejection reason", async () => {
+    vi.mocked(previewNextSwissRound).mockResolvedValue({
+      ok: false,
+      reason: "SOMETHING_ELSE" as any,
+    } as any);
+    const socket = createMockSocket();
+    registerPreviewNextRoundHandler(socket, makeIo());
+    const ack = vi.fn();
+    await handlerFor(socket, SocketEvents.PREVIEW_NEXT_SWISS_ROUND)(
+      previewPayload,
+      ack,
+    );
+    expect(ack).toHaveBeenCalledWith({
+      success: false,
+      error: "Could not draw the next round.",
+    });
+  });
+});
+
 describe("registerDrawNextRoundHandler (commit)", () => {
   beforeEach(() => {
     vi.clearAllMocks();

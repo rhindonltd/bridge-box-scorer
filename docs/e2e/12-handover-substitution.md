@@ -85,18 +85,7 @@ Use **F12-B** unless stated. Plant the **A2NS** (arriving pair) token.
 
 ---
 
-## 4. Director handover from the Tables screen
-
-| Check | Step | Expected |
-|---|---|---|
-| ☐ HAND-DIR-1 | **F12-A**: Manage Game Menu → **Manage Tables** → **Table 2** → North / South → **Hand over to real pair**. | A form: "Seat the arriving pair for North / South. The earlier pair keeps the boards they have already scored; the arriving pair takes over from the next board without a result. You can set how the seat is scored (one line or two, and each pair's eligibility) afterwards on the Pairs screen." Fields **Player 1 first name / surname**, **Player 2 first name / surname**. |
-| ☐ HAND-DIR-2 | Leave a surname empty. | **Hand over** is disabled until both surnames are filled; first names are optional. |
-| ☐ HAND-DIR-3 | Fill both and tap **Hand over**. | **Pairs** shows 2NS **Substituted**, with both pairs. |
-| ☐ HAND-DIR-4 | ⚠ **Known gap — record the result:** try to get the arriving pair onto a device. | The A2NS device has been **signed out**, but **no code or token is shown** to the director for the arriving pair, so no device can play the seat. Their boards can only be entered by the director (Travellers). Note what you see; this is raised for a product decision. |
-
----
-
-## 5. Scoring a substituted seat (DIRECTOR, Pairs screen)
+## 4. Scoring a substituted seat (DIRECTOR, Pairs screen)
 
 Use **F12-B**. Tap **2NS** on **Pairs**. The arriving pair (**SubA2NS**) is
 listed first and is the **Main** pair to start with. Every change **saves as

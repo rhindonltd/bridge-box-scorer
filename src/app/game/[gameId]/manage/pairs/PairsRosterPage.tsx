@@ -41,6 +41,12 @@ export interface PairsRosterActions {
    * container (it owns the game id); the page just mounts it under the row.
    */
   renderReinstatePanel: (seat: string) => ReactNode;
+  /**
+   * Render the "move to a new device" code panel for `seat` — a CHANGE_DEVICE
+   * code minted by the director for a pair whose device has died. Optional so a
+   * host that cannot mint one simply omits the control.
+   */
+  renderMoveDevicePanel?: (seat: string) => ReactNode;
 }
 
 export interface PairsRosterPageProps extends PairsRosterActions {
@@ -95,6 +101,7 @@ export function PairsRosterPage({
   onSetAbsenceTreatment,
   onWithdraw,
   renderReinstatePanel,
+  renderMoveDevicePanel,
 }: PairsRosterPageProps) {
   const [openSeat, setOpenSeat] = useState<string | null>(null);
   // Which section's pairs are shown; "ALL" shows every section. Defaults to
@@ -118,6 +125,7 @@ export function PairsRosterPage({
     onSetAbsenceTreatment,
     onWithdraw,
     renderReinstatePanel,
+    renderMoveDevicePanel,
   };
 
   return (
@@ -243,6 +251,7 @@ function SectionContainer({
   onSetAbsenceTreatment,
   onWithdraw,
   renderReinstatePanel,
+  renderMoveDevicePanel,
 }: {
   section: string;
   entries: RosterEntry[];
@@ -264,6 +273,7 @@ function SectionContainer({
           onSetAbsenceTreatment={onSetAbsenceTreatment}
           onWithdraw={onWithdraw}
           renderReinstatePanel={renderReinstatePanel}
+          renderMoveDevicePanel={renderMoveDevicePanel}
         />
       ))}
     </ul>
@@ -308,6 +318,7 @@ function SeatContainer({
   onSetAbsenceTreatment,
   onWithdraw,
   renderReinstatePanel,
+  renderMoveDevicePanel,
 }: {
   entry: RosterEntry;
   isPairs: boolean;
@@ -338,6 +349,7 @@ function SeatContainer({
         onSetAbsenceTreatment={onSetAbsenceTreatment}
         onWithdraw={onWithdraw}
         renderReinstatePanel={renderReinstatePanel}
+        renderMoveDevicePanel={renderMoveDevicePanel}
       />
     </li>
   );
@@ -407,6 +419,7 @@ function RosterRow({
   onSetAbsenceTreatment,
   onWithdraw,
   renderReinstatePanel,
+  renderMoveDevicePanel,
 }: {
   entry: RosterEntry;
   isPairs: boolean;
@@ -463,6 +476,7 @@ function RosterRow({
             onSetAbsenceTreatment={onSetAbsenceTreatment}
             onWithdraw={onWithdraw}
             renderReinstatePanel={renderReinstatePanel}
+            renderMoveDevicePanel={renderMoveDevicePanel}
           />
         </div>
       )}
@@ -478,6 +492,7 @@ function RosterRowActions({
   onSetAbsenceTreatment,
   onWithdraw,
   renderReinstatePanel,
+  renderMoveDevicePanel,
 }: { entry: RosterEntry; isPairs: boolean } & PairsRosterActions) {
   if (entry.substitution) {
     return (
@@ -505,15 +520,40 @@ function RosterRowActions({
     );
   }
   if (entry.status === "LATE" || entry.status === "NOT_ARRIVED") {
-    return entry.absence ? (
-      <AbsenceChoice
-        row={entry.absence}
-        onSetTreatment={onSetAbsenceTreatment}
-      />
-    ) : null;
+    // A late pair that has arrived is seated on a device, so it can be moved;
+    // one that has not arrived has no device to lose.
+    const canMove = entry.status === "LATE" && renderMoveDevicePanel;
+    if (!entry.absence && !canMove) return null;
+    return (
+      <div className="flex flex-col gap-3">
+        {entry.absence && (
+          <AbsenceChoice
+            row={entry.absence}
+            onSetTreatment={onSetAbsenceTreatment}
+          />
+        )}
+        {canMove && (
+          <MoveDevicePanel
+            seat={entry.seat}
+            renderMoveDevicePanel={renderMoveDevicePanel}
+          />
+        )}
+      </div>
+    );
   }
-  // ACTIVE / WITHOUT_STANDING: offer a director withdrawal.
-  return <WithdrawButton seat={entry.seat} onWithdraw={onWithdraw} />;
+  // ACTIVE / WITHOUT_STANDING: offer a director withdrawal, and a move to a new
+  // device for a pair whose device has died.
+  return (
+    <div className="flex flex-col gap-3">
+      {renderMoveDevicePanel && (
+        <MoveDevicePanel
+          seat={entry.seat}
+          renderMoveDevicePanel={renderMoveDevicePanel}
+        />
+      )}
+      <WithdrawButton seat={entry.seat} onWithdraw={onWithdraw} />
+    </div>
+  );
 }
 
 /** A director "Withdraw this pair" button with a confirm + error surface. */
@@ -570,6 +610,42 @@ function ReinstatePanel({
   );
 }
 
+/**
+ * "Move to a new device": for a pair whose device has died (they cannot start
+ * "Change device" themselves). Tapping reveals a code, minted by the director,
+ * that the pair enters on their new device. Claiming it moves the seat to that
+ * device and signs the old one out; the pair's standing and boards are untouched
+ * (unlike withdraw + reinstate, nothing is marked as missed).
+ */
+function MoveDevicePanel({
+  seat,
+  renderMoveDevicePanel,
+}: {
+  seat: string;
+  renderMoveDevicePanel: (seat: string) => ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full rounded-lg border border-gray-300 bg-white py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+      >
+        Move to a new device
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-gray-700">
+        Device lost or broken? Give this code to the pair to enter on their new
+        device.
+      </p>
+      {renderMoveDevicePanel(seat)}
+    </div>
+  );
+}
 /** A button that asks for confirmation, runs an async action, and shows errors. */
 function ConfirmAction({
   label,
@@ -605,7 +681,9 @@ function ConfirmAction({
 
   const primary = danger
     ? "border-red-600 bg-red-600 hover:bg-red-700 focus-visible:ring-red-500"
-    : "border-blue-600 bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-500";
+    : /* v8 ignore start -- unreachable: the only caller (WithdrawButton) always passes danger */
+      "border-blue-600 bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-500";
+  /* v8 ignore stop */
 
   if (!confirming) {
     return (
@@ -760,6 +838,7 @@ function SubstitutionCard({
 
   const seatSlug = row.seat.replace(/\W+/g, "-");
   const { split, mainId, eligibility } = settings;
+  /* v8 ignore next -- unreachable: mainId is always seeded from, or picked from, row.occupants */
   const mainOccupant = row.occupants.find((o) => o.id === mainId) ?? anchor;
   // The folded-in "(Sub)" pair on a merged line — the occupant that is NOT the
   // main pair. It reacts live to the Main pair pick.
@@ -773,6 +852,7 @@ function SubstitutionCard({
     setSettings(next);
     setError(null);
     try {
+      /* v8 ignore next -- unreachable: next.mainId is always one of row.occupants' ids */
       const main = row.occupants.find((o) => o.id === next.mainId) ?? anchor;
       // Each pair carries its own eligibility (its own toggle), whether the
       // seat is split or merged — so a stand-in can be marked without-standing

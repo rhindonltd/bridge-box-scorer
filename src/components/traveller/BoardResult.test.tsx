@@ -37,4 +37,21 @@ describe("BoardResult", () => {
     );
     expect(container.textContent).toBe("NP");
   });
+  it("renders a weighted score as comma-separated weighted contracts", () => {
+    const { container } = render(
+      <BoardResult boardOutcome={"W80*3NTN=;20*4HE-1" as BoardOutcome} />,
+    );
+    expect(container.textContent).toContain("Wtd");
+    expect(container.textContent).toContain("80%");
+    expect(container.textContent).toContain("3NTN=");
+    expect(container.textContent).toContain(", 20%");
+    expect(container.textContent).toContain("4♥E-1");
+  });
+  it("renders a single-component weighted score without a separator", () => {
+    const { container } = render(
+      <BoardResult boardOutcome={"W100*2SS+1" as BoardOutcome} />,
+    );
+    expect(container.textContent).toContain("100%");
+    expect(container.textContent).not.toContain(",");
+  });
 });

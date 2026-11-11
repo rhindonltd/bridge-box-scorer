@@ -42,6 +42,11 @@ export async function createGame(
      */
     teamsScoring?: "IMP" | "IMP_VP" | "BAM" | "PAB";
     /**
+     * For a (non-Swiss) Pairs game, which scoring to select. Defaults to "MP"
+     * (the form's default). Ignored for every other event type.
+     */
+    pairsScoring?: "MP" | "XIMP";
+    /**
      * Whether the game allows players to enter the dealt cards. Defaults to
      * false (the app's default). When true, the "Allow Hand Entry" toggle is
      * switched on so the post-round "Enter cards" step is offered.
@@ -58,7 +63,9 @@ export async function createGame(
   await page.waitForLoadState("networkidle");
 
   await page.getByLabel("Event Name").fill(opts.eventName);
-  await page.getByLabel("Director Name").fill(opts.directorName ?? "E2E Director");
+  await page
+    .getByLabel("Director Name")
+    .fill(opts.directorName ?? "E2E Director");
 
   // The create form is a two-step wizard: step 1 collects the event + director
   // name (gated behind "Next"), step 2 the event type / scoring / toggles with
@@ -71,6 +78,12 @@ export async function createGame(
   // with the teams options.
   if (opts.gameType && opts.gameType !== "PAIRS") {
     await page.getByLabel("Event Type").selectOption(opts.gameType);
+  }
+  if (
+    (opts.gameType === undefined || opts.gameType === "PAIRS") &&
+    opts.pairsScoring
+  ) {
+    await page.getByLabel("Scoring").selectOption(opts.pairsScoring);
   }
   if (opts.gameType === "TEAMS" && opts.teamsScoring) {
     // The Scoring dropdown now carries the teams options; select by value.

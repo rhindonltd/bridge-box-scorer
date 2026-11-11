@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { readCloudSyncStatus } from "./cloud-sync";
+import { readCloudSyncStatus, cloudSyncStatusPath } from "./cloud-sync";
 
 /**
  * Real-filesystem tests for reading the box-written status file. The path is
@@ -68,5 +68,17 @@ describe("readCloudSyncStatus", () => {
       backup: { last_success: null, last_attempt: null, last_result: null },
       logs: { last_success: null, last_attempt: null, last_result: null },
     });
+  });
+
+  it("defaults `enabled` to false when the file omits it", () => {
+    fs.writeFileSync(statusPath, JSON.stringify({}));
+    expect(readCloudSyncStatus().enabled).toBe(false);
+  });
+
+  it("falls back to the box's default status path when the env var is unset", () => {
+    delete process.env.CLOUD_SYNC_STATUS_PATH;
+    expect(cloudSyncStatusPath()).toBe(
+      "/home/bridgebox/cloud-sync-status.json",
+    );
   });
 });

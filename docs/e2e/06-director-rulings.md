@@ -127,6 +127,12 @@ round-1 result enough to reshuffle round-1 standings.
 | ☐ RULE-25 | Confirm the detection only flags a round where the **correct** opponent differs AND the two candidate opponents' current VPs differ by **more than 5**. | Below-threshold differences are not flagged. |
 | ☐ RULE-26 | Enter a mismatch ruling (side / direction / fault) → **Submit**. | Only the **mismatched side's** round VP is adjusted (§3.5.2 one-sided); the boards themselves stay real/in the field. |
 | ☐ RULE-27 | Confirm a **teams** Swiss game offers the same branch with sides labelled as **teams**. | Teams wording. |
+| ☐ RULE-27a | Before any correction, Manage Game Menu → **Review Mismatches**. | Shown for Swiss only; **No mismatches to review**. |
+| ☐ RULE-27b | After the retroactive change, open **Review Mismatches**. | A card per affected pair/team: round, table, the opponent met and the corrected one with their current VP, **stronger/weaker**, and the gap (> 5). Both pairs of one table can each have a card. |
+| ☐ RULE-27c | On a **stronger opponent** card tap **Apply — not their fault**. | That pair's round VP becomes 5 + ¾ × actual, rounded up to 0.5 (10 → 12.5); no other pair's VP moves. The card goes. |
+| ☐ RULE-27d | Reopen **Review Mismatches**. | Every **other** card is still listed — including that pair's own opponent's. The ruled pair is not. |
+| ☐ RULE-27e | On the opponent's (**weaker opponent**) card tap **Apply — their own fault**. | Its round VP is docked a quarter above 5, rounded up (10 → 9); the first pair's 12.5 still stands. |
+| ☐ RULE-27f | Tap **Not a mismatch** on another card, then reopen the review. | No score changes; the dismissed card is listed again (dismissing is not recorded). |
 
 ---
 

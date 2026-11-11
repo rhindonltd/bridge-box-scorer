@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   boardResult,
+  compareByRoundSectionTable,
   teamIdFor,
   groupTeamMatches as groupTeamMatchesImpl,
   groupTeamTriples as groupTeamTriplesImpl,
@@ -10,6 +11,7 @@ import {
   teamMatchBoardImps,
   teamMatchBoardWins,
   type TeamMatchRow,
+  type TeamMatchStructureRow,
 } from "./team-match";
 import { teamMatchStructureFromRows } from "./team-match-test-structure";
 import type { BoardOutcome } from "@/model/score";
@@ -546,5 +548,130 @@ describe("tripleTeamStakes", () => {
         .sort();
       expect(rounds).toEqual([1, 2]);
     }
+  });
+});
+
+describe("compareByRoundSectionTable", () => {
+  it("orders by round, then section letter, then table", () => {
+    const k = (round: number, section: string, table: number) => ({ round, section, table });
+    expect(compareByRoundSectionTable(k(1, "A", 1), k(2, "A", 1))).toBeLessThan(0);
+    expect(compareByRoundSectionTable(k(1, "A", 5), k(1, "B", 1))).toBe(-1);
+    expect(compareByRoundSectionTable(k(1, "B", 1), k(1, "A", 5))).toBe(1);
+    expect(compareByRoundSectionTable(k(1, "A", 1), k(1, "A", 3))).toBeLessThan(0);
+    expect(compareByRoundSectionTable(k(1, "A", 2), k(1, "A", 2))).toBe(0);
+  });
+});
+
+describe("groupTeamMatches — unparseable structure", () => {
+  it("skips unparseable board rows and match rows", () => {
+    const rows = [
+      row(1, 1, "BAD", "A2EW", null),
+      row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+    const structure: TeamMatchStructureRow[] = [
+      ...teamMatchStructureFromRows(rows),
+      { section: "A", roundNumber: 1, kind: "TEAMS", home: "BAD", opponent: "A2NS", groupId: null, vpPool: 20, boardStart: 1, boardEnd: 1 },
+    ];
+    expect(groupTeamMatchesImpl(rows, structure)).toHaveLength(1);
+  });
+});
+
+describe("§3.3.7 removed boards — degenerate tokens", () => {
+  const removed = (ns: string, ew: string, token: string | null) =>
+    row(1, 1, ns, ew, null, {
+      status: "REMOVED_TEAMS",
+      directorOverrideResult: token as BoardOutcome | null,
+    });
+
+  it("counts a removed home row with no token as a 0 IMP swing", () => {
+    const [match] = groupTeamMatches([removed("A1NS", "A2EW", null), row(1, 1, "A2NS", "A1EW", null)]);
+    expect(teamMatchBoardImps(match).perBoard).toEqual([{ boardNumber: 1, imps: 0 }]);
+  });
+
+  // Mirrors the IMP case above: the board still counts, as a tie, rather than
+  // dropping out of the match as "not comparable".
+  it("counts a removed home row with no token as a tie in board-a-match", () => {
+    const [match] = groupTeamMatches([removed("A1NS", "A2EW", null), row(1, 1, "A2NS", "A1EW", null)]);
+    expect(teamMatchBoardWins(match).perBoard).toEqual([{ boardNumber: 1, result: 0.5 }]);
+  });
+
+  it("counts a removed opponent row with no token as a 0 swing / a tie", () => {
+    const [match] = groupTeamMatches([row(1, 1, "A1NS", "A2EW", null), removed("A2NS", "A1EW", null)]);
+    expect(teamMatchBoardImps(match).perBoard).toEqual([{ boardNumber: 1, imps: 0 }]);
+    expect(teamMatchBoardWins(match).perBoard).toEqual([{ boardNumber: 1, result: 0.5 }]);
+  });
+
+  it.each([
+    ["TRM:EW_FAULT", 0, -3],
+    ["TRM:NS_FAULT", 1, 3],
+    ["TRM:BOTH_FAULT", 0.5, 0],
+    ["TRM:NEITHER_FAULT", 0.5, 0],
+  ])("inverts a removal token (%s) carried only by the opponent room", (token, win, imps) => {
+    // The opponent room's NS seat is the OPPONENT team, so fault flips.
+    const [match] = groupTeamMatches([
+      row(1, 1, "A1NS", "A2EW", null),
+      removed("A2NS", "A1EW", token),
+    ]);
+    expect(teamMatchBoardWins(match).perBoard[0].result).toBe(win);
+    // `+ 0` normalises a negated zero (-0) so Object.is comparison holds.
+    expect(teamMatchBoardImps(match).perBoard[0].imps! + 0).toBe(imps);
+  });
+});
+
+describe("groupTeamTriples — structure-only triples", () => {
+  const tri = (
+    groupId: string,
+    lo: number,
+    hi: number,
+    over: Partial<TeamMatchStructureRow> = {},
+  ): TeamMatchStructureRow => ({
+    section: "A",
+    roundNumber: 1,
+    kind: "TRIPLE",
+    home: `A${lo}NS`,
+    opponent: `A${hi}NS`,
+    groupId,
+    vpPool: 10,
+    boardStart: 1,
+    boardEnd: 2,
+    ruling: null,
+    ...over,
+  });
+  const trio = (g: string, a: number, b: number, c: number, over: Partial<TeamMatchStructureRow> = {}) => [
+    tri(g, a, b, over),
+    tri(g, a, c, over),
+    tri(g, b, c, over),
+  ];
+
+  it("falls back to the structure round when a comparison has no board rows yet", () => {
+    const triples = groupTeamTriplesImpl([], trio("g1", 1, 2, 3, { roundNumber: 4 }));
+    expect(triples).toHaveLength(1);
+    expect(triples[0].rounds).toEqual([4]);
+    expect(triples[0].comparisons.every((c) => c.round === 4)).toBe(true);
+    // ... and the stakes credit the triple's round.
+    expect(tripleTeamStakes(triples[0]).every((s) => s.round === 4)).toBe(true);
+  });
+
+  it("orders several triples by round, then section, then lowest table", () => {
+    const rows = [
+      ...trio("late", 1, 2, 3, { roundNumber: 2 }),
+      ...trio("early", 4, 5, 6, { roundNumber: 1 }),
+    ];
+    const triples = groupTeamTriplesImpl([], rows);
+    expect(triples.map((t) => t.round)).toEqual([1, 2]);
+  });
+
+  it("credits a comparison to the earliest round of its rows when several boards exist", () => {
+    // Two boards in the home room (rounds 1 then 2), one in the opponent's.
+    const rows = [
+      row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(2, 2, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+    const triples = groupTeamTriplesImpl(rows, trio("g1", 1, 2, 3, { vpPool: 20 }));
+    const stakes = tripleTeamStakes(triples[0]);
+    const home = stakes.find((s) => s.teamId === "A1NS" && s.comparison.opponentTeamId === "A2NS");
+    expect(home!.round).toBe(1);
   });
 });

@@ -14,12 +14,7 @@ function baseProps() {
     title: "Round 1 of 8",
     boardLabel: "Board 1 of 3" as string | null,
     remaining: 125,
-    phase: "play" as
-      | "play"
-      | "move"
-      | "break"
-      | "finished"
-      | null,
+    phase: "play" as "play" | "move" | "break" | "finished" | null,
     isRunning: true,
     projectedEndDate: endDate,
     warningSeconds: 60,
@@ -47,11 +42,7 @@ describe("DisplayTimerPage", () => {
 
   it("renders the move phase in cyan", () => {
     const { container } = render(
-      <DisplayTimerPage
-        {...baseProps()}
-        phase="move"
-        boardLabel={null}
-      />,
+      <DisplayTimerPage {...baseProps()} phase="move" boardLabel={null} />,
     );
     expect(container.querySelector(".text-cyan-400")).toBeTruthy();
   });
@@ -64,11 +55,7 @@ describe("DisplayTimerPage", () => {
 
   it("renders the finished phase with 00:00 and no projected end", () => {
     render(
-      <DisplayTimerPage
-        {...baseProps()}
-        phase="finished"
-        isRunning={false}
-      />,
+      <DisplayTimerPage {...baseProps()} phase="finished" isRunning={false} />,
     );
     expect(screen.getByText("00:00")).toBeInTheDocument();
     // Finished -> projected end hidden and no PAUSED banner.
@@ -88,10 +75,24 @@ describe("DisplayTimerPage", () => {
 
   it("uses the default warning window when warningSeconds is omitted", () => {
     const { warningSeconds: _omit, ...rest } = baseProps();
-    const { container } = render(
-      <DisplayTimerPage {...rest} remaining={30} />,
-    );
+    const { container } = render(<DisplayTimerPage {...rest} remaining={30} />);
     // remaining 30 < default 60 during play -> last-minute pulse.
     expect(container.querySelector(".animate-pulse")).toBeTruthy();
+  });
+
+  it("shows a drawing message instead of a countdown while awaiting a Swiss draw", () => {
+    render(
+      <DisplayTimerPage
+        {...baseProps()}
+        phase={"awaitingDraw" as never}
+        isRunning={false}
+      />,
+    );
+    expect(
+      screen.getByText("The director is drawing the next round"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("02:05")).not.toBeInTheDocument();
+    expect(screen.queryByText("PAUSED")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Projected end/)).not.toBeInTheDocument();
   });
 });

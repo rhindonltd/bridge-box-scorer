@@ -50,4 +50,20 @@ describe("Table", () => {
 
     expect(screen.getByText("Jane")).toBeInTheDocument();
   });
+  it("lets an ancestor scroll when scroll is false", () => {
+    const { container } = render(
+      <Table
+        columns={["Name"]}
+        scroll={false}
+        body={
+          <tr>
+            <td>Jane</td>
+          </tr>
+        }
+      />,
+    );
+    expect(container.querySelector(".overflow-visible")).not.toBeNull();
+    expect(container.querySelector(".overflow-auto")).toBeNull();
+    expect(container.firstElementChild?.className).not.toContain("mt-2");
+  });
 });

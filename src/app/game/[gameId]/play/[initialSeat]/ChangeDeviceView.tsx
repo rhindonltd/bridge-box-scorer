@@ -17,6 +17,12 @@ interface Props {
    * Only the copy differs; the code-display + countdown behaviour is shared.
    */
   kind?: "CHANGE_DEVICE" | "HANDOVER" | "REINSTATE";
+  /**
+   * CHANGE_DEVICE only: the DIRECTOR is moving the seat because the pair's
+   * device has died, so the code is minted with the director credential and the
+   * copy speaks about the pair's new device rather than "your other device".
+   */
+  byDirector?: boolean;
 }
 
 /** How long a transfer code stays valid, in seconds (mirrors CODE_TTL_MS). */
@@ -35,7 +41,12 @@ const EXPIRY_SECONDS = 300;
  * Self-contained (like ShareDirectorAccessPage) so it can be dropped into a
  * dialog or a page from either the waiting screen or the live play header.
  */
-export function ChangeDeviceView({ gameId, seat, kind = "CHANGE_DEVICE" }: Props) {
+export function ChangeDeviceView({
+  gameId,
+  seat,
+  kind = "CHANGE_DEVICE",
+  byDirector = false,
+}: Props) {
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState(EXPIRY_SECONDS);
@@ -46,14 +57,14 @@ export function ChangeDeviceView({ gameId, seat, kind = "CHANGE_DEVICE" }: Props
     setCode(null);
     setExpiresIn(EXPIRY_SECONDS);
 
-    generateSeatTransferCode(gameId, seat, kind)
+    generateSeatTransferCode(gameId, seat, kind, byDirector)
       .then((newCode) => setCode(newCode))
       .catch((err) =>
         setError(
           err instanceof Error ? err.message : "Failed to generate code",
         ),
       );
-  }, [gameId, seat, kind]);
+  }, [gameId, seat, kind, byDirector]);
 
   // Generate once on mount.
   useEffect(() => {
@@ -93,6 +104,12 @@ export function ChangeDeviceView({ gameId, seat, kind = "CHANGE_DEVICE" }: Props
             On the arriving pair&rsquo;s device, open this game, choose{" "}
             <span className="font-semibold">Move a seat to this device</span>,
             enter the code below, then enter their names.
+          </>
+        ) : byDirector ? (
+          <>
+            On the pair&rsquo;s new device, open this game, choose{" "}
+            <span className="font-semibold">Move a seat to this device</span>,
+            and enter the code below. Their old device will be signed out.
           </>
         ) : isReinstate ? (
           <>

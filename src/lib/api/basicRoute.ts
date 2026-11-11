@@ -38,10 +38,7 @@ export type BasicRouteContext<TParams = unknown> = {
 export function withBasicRoute<TParams = unknown>(
   handler: (context: BasicRouteContext<TParams>) => Promise<NextResponse>,
 ) {
-  return async (
-    req: NextRequest,
-    routeArg?: { params: Promise<TParams> },
-  ) => {
+  return async (req: NextRequest, routeArg?: { params: Promise<TParams> }) => {
     const correlationId = resolveCorrelationId(req);
     const log = requestLogger(correlationId);
     try {

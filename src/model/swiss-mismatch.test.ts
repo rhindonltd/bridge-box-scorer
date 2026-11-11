@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildMismatch,
   parseMismatch,
+  parseMismatches,
+  withMismatch,
   isMismatch,
   adjustMismatchVp,
   MismatchRuling,
@@ -38,6 +40,43 @@ describe("mismatch token codec", () => {
     expect(parseMismatch("MM:NS:SIDEWAYS:NOT")).toBeNull(); // bad direction
     expect(parseMismatch("MM:NS:HIGHER:MAYBE")).toBeNull(); // bad fault
     expect(isMismatch("MM:bad")).toBe(false);
+  });
+});
+
+describe("rulings for both sides of one match", () => {
+  const nsHigher: MismatchRuling = { side: "NS", direction: "HIGHER", fault: "NOT" };
+  const ewLower: MismatchRuling = { side: "EW", direction: "LOWER", fault: "OWN" };
+
+  it("adds a ruling to an unruled match", () => {
+    expect(withMismatch(null, nsHigher)).toBe("MM:NS:HIGHER:NOT");
+  });
+
+  it("keeps the other side's ruling, NS first whichever is ruled first", () => {
+    const both = withMismatch(withMismatch(null, ewLower), nsHigher);
+    expect(both).toBe("MM:NS:HIGHER:NOT;MM:EW:LOWER:OWN");
+    expect(parseMismatches(both)).toEqual([nsHigher, ewLower]);
+    expect(isMismatch(both)).toBe(true);
+  });
+
+  it("replaces a ruling for the same side", () => {
+    const both = withMismatch(withMismatch(null, nsHigher), ewLower);
+    const changed: MismatchRuling = { side: "EW", direction: "LOWER", fault: "NOT" };
+    expect(parseMismatches(withMismatch(both, changed))).toEqual([
+      nsHigher,
+      changed,
+    ]);
+  });
+
+  it("replaces a non-mismatch ruling (e.g. a void)", () => {
+    expect(withMismatch("VOIDP:BOTH", ewLower)).toBe("MM:EW:LOWER:OWN");
+  });
+
+  it("reads a single ruling as one, and anything else as none", () => {
+    expect(parseMismatches("MM:EW:LOWER:OWN")).toEqual([ewLower]);
+    expect(parseMismatches("VOID:SEATING_TD")).toEqual([]);
+    expect(parseMismatches("MM:NS:HIGHER:NOT;VOID:SEATING_TD")).toEqual([]);
+    // Two rulings for the same side are not a valid value.
+    expect(parseMismatches("MM:NS:HIGHER:NOT;MM:NS:LOWER:OWN")).toEqual([]);
   });
 });
 
@@ -131,5 +170,13 @@ describe("adjustMismatchVp — §3.5.2", () => {
       // 5 + ¾ × 12 = 14 (whole) stays 14.
       expect(adjustMismatchVp(12, r, 20)).toBe(14);
     });
+  });
+});
+
+describe("adjustMismatchVp — clamping", () => {
+  const none: MismatchRuling = { side: "NS", direction: "HIGHER", fault: "OWN" };
+  it("clamps an out-of-range actual score into [0, pool]", () => {
+    expect(adjustMismatchVp(-3, none, 20)).toBe(0);
+    expect(adjustMismatchVp(25, none, 20)).toBe(20);
   });
 });

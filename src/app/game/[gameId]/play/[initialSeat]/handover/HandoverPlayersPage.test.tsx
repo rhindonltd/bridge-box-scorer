@@ -114,4 +114,17 @@ describe("HandoverPlayersPage", () => {
       "already had a handover",
     );
   });
+
+  it("shows a default message when the submit rejects with a non-Error", async () => {
+    onSubmit.mockRejectedValueOnce("nope");
+    render(<HandoverPlayersPage onCancel={onCancel} onSubmit={onSubmit} />);
+    fireEvent.click(screen.getByRole("button", { name: "select Player 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "select Player 2" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Take over this device" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not hand over. Try again.",
+    );
+  });
 });

@@ -60,6 +60,7 @@ export function SwissTeamsDrawControl({
     byeTeamId: number | null,
     triple: TeamsTripleEntry | null,
   ) {
+    /* v8 ignore next -- unreachable: the review page that calls this is only rendered while `preview` is set */
     if (!preview) return;
     setCommitting(true);
     setError(null);

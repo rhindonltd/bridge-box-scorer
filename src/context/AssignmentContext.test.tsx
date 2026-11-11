@@ -270,5 +270,19 @@ describe("AssignmentContext", () => {
       act(() => handlerFor(SocketEvents.PARTICIPANTS)());
       expect(mockGlobalMutate).toHaveBeenCalledTimes(1);
     });
+    it("unwraps the { pairs } envelope returned by the participants endpoint", async () => {
+      const { fetcher } = await import("@/lib/fetcher");
+      const pairs = [{ initialSeat: "A1NS" }];
+      vi.mocked(fetcher).mockResolvedValueOnce({ pairs });
+      renderHook(() => useAssignment(), {
+        wrapper: ({ children }) => wrapper(children),
+      });
+      const call = mockUseSWR.mock.calls.find(
+        (c) => typeof c[0] === "string" && c[0].includes("/participants"),
+      );
+      const pairsFetcher = call![1] as (url: string) => Promise<unknown>;
+      await expect(pairsFetcher("/api/x/participants")).resolves.toBe(pairs);
+      expect(fetcher).toHaveBeenCalledWith("/api/x/participants");
+    });
   });
 });

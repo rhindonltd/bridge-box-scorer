@@ -161,4 +161,48 @@ describe("registerWithdrawPairHandler", () => {
     );
     expect(broadcastParticipants).not.toHaveBeenCalled();
   });
+  it("fails when the game does not exist", async () => {
+    vi.mocked(findGameById).mockResolvedValue(undefined as never);
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(payload, cb);
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false, error: "Game not found" }),
+    );
+    expect(recordWithdrawal).not.toHaveBeenCalled();
+  });
+  it("fails when the game database cannot be opened", async () => {
+    vi.mocked(getDb).mockResolvedValue(undefined as never);
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(payload, cb);
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false, error: "Game not found" }),
+    );
+    expect(recordWithdrawal).not.toHaveBeenCalled();
+  });
+  it("rejects when no play state can be resolved for the seat", async () => {
+    vi.mocked(resolvePlayState).mockResolvedValue(null as never);
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(payload, cb);
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        error: "There are no boards left for this pair to play.",
+      }),
+    );
+  });
+  it("falls back to a generic message when the action rejects without a reason", async () => {
+    vi.mocked(recordWithdrawal).mockResolvedValue({ ok: false } as never);
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(payload, cb);
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        error: "Could not withdraw.",
+      }),
+    );
+  });
 });

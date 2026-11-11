@@ -46,7 +46,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -63,7 +62,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -86,7 +84,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -112,26 +109,44 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
     expect(screen.queryByText("Stationary")).not.toBeInTheDocument();
   });
 
-  it("hides the stationary toggle on a Swiss table once the game has started", () => {
-    // Marking a pair stationary rewrites the movement spec, so it is a pre-start
-    // action only — even for a Swiss table it must not appear after start.
+  it("keeps the stationary toggle on a Swiss table once the game has started, noting it applies from the next draw", () => {
+    // The director can mark or unmark a pair at any time; after the start it
+    // affects only rounds drawn from then on.
+    const onToggleStationary = vi.fn();
     render(
       <DirectorTableModal
         table={fullTable()}
         isSwiss
         onEvict={vi.fn()}
+        onToggleStationary={onToggleStationary}
+        started
+        onChangeStanding={vi.fn()}
+        onToggleExpectedLate={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByText("Stationary").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/Applies to rounds drawn from now on/).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("does not offer a stationary toggle on a non-Swiss table, started or not", () => {
+    render(
+      <DirectorTableModal
+        table={fullTable()}
+        isSwiss={false}
+        onEvict={vi.fn()}
         onToggleStationary={vi.fn()}
         started
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -149,7 +164,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -180,7 +194,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -198,7 +211,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -232,7 +244,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={onToggleExpectedLate}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -264,7 +275,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -282,7 +292,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={onClose}
       />,
     );
@@ -302,7 +311,6 @@ describe("DirectorTableModal", () => {
         started={false}
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -312,7 +320,7 @@ describe("DirectorTableModal", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("offers a handover action for a seated pair once the game has started", () => {
+  it("offers no handover action (handover is player-driven)", () => {
     render(
       <DirectorTableModal
         table={fullTable()}
@@ -322,15 +330,14 @@ describe("DirectorTableModal", () => {
         started
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         onClose={vi.fn()}
       />,
     );
+    // Handover is player-driven (Menu -> Handover on the seat's own device),
+    // so the director's table dialog offers no handover control.
     expect(
-      screen.getByRole("button", {
-        name: "Hand North / South over to the real pair",
-      }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: /over to the real pair/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("hides Change standing when standing controls are off (pairs, design §11)", () => {
@@ -343,7 +350,6 @@ describe("DirectorTableModal", () => {
         started
         onChangeStanding={vi.fn()}
         onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
         showStandingControls={false}
         onClose={vi.fn()}
       />,
@@ -351,119 +357,190 @@ describe("DirectorTableModal", () => {
     expect(
       screen.queryByRole("button", { name: /Change standing/ }),
     ).not.toBeInTheDocument();
-    // The handover control is unaffected.
-    expect(
-      screen.getAllByRole("button", { name: /over to the real pair/ }).length,
-    ).toBeGreaterThan(0);
   });
 
-  it("emits a handover request with the arriving pair's names", () => {
-    const onHandover = vi.fn();
-    render(
-      <DirectorTableModal
-        table={fullTable()}
-        isSwiss={false}
-        onEvict={vi.fn()}
-        onToggleStationary={vi.fn()}
-        started
-        onChangeStanding={vi.fn()}
-        onToggleExpectedLate={vi.fn()}
-        onHandover={onHandover}
-        onClose={vi.fn()}
-      />,
-    );
+  describe("post-start standing controls", () => {
+    function renderStarted(table: DirectorTable = fullTable()) {
+      const onChangeStanding = vi.fn();
+      render(
+        <DirectorTableModal
+          table={table}
+          isSwiss={false}
+          onEvict={vi.fn()}
+          onToggleStationary={vi.fn()}
+          started
+          onChangeStanding={onChangeStanding}
+          onToggleExpectedLate={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+      const nsRow = screen
+        .getByText("North / South")
+        .closest("div.rounded-xl") as HTMLElement;
+      const openForm = () =>
+        fireEvent.click(
+          within(nsRow).getByRole("button", {
+            name: "Change standing for North / South pair",
+          }),
+        );
+      return { onChangeStanding, nsRow, openForm };
+    }
 
-    // Open the North/South handover form.
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Hand North / South over to the real pair",
-      }),
-    );
-
-    fireEvent.change(screen.getByLabelText("Player 1 first name"), {
-      target: { value: "Ann" },
+    it("saves a Withdrawn standing with a round number and the REMOVE treatment", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("Withdrawn"));
+      expect(within(nsRow).getByText("Withdrew in round")).toBeInTheDocument();
+      // Bump the round from 1 to 2.
+      fireEvent.mouseDown(within(nsRow).getByRole("button", { name: "+" }));
+      fireEvent.mouseUp(within(nsRow).getByRole("button", { name: "+" }));
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "WITHDRAWN",
+        withdrawnInRound: 2,
+        treatment: "REMOVE",
+      });
+      // The form closes after saving.
+      expect(
+        within(nsRow).getByRole("button", {
+          name: "Change standing for North / South pair",
+        }),
+      ).toBeInTheDocument();
     });
-    fireEvent.change(screen.getByLabelText("Player 1 surname"), {
-      target: { value: "Arrival" },
+
+    it("saves a Late standing with a penalised fine", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("Late"));
+      expect(within(nsRow).getByText("Arrived in round")).toBeInTheDocument();
+      fireEvent.click(within(nsRow).getByLabelText("Penalised"));
+      expect(within(nsRow).getByText("Fine %")).toBeInTheDocument();
+      // Two steppers now: round (first) and fine (second). Raise the fine by 1.
+      const plusButtons = within(nsRow).getAllByRole("button", { name: "+" });
+      fireEvent.mouseDown(plusButtons[1]);
+      fireEvent.mouseUp(plusButtons[1]);
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "LATE",
+        arrivedInRound: 1,
+        treatment: "PENALISED",
+        finePercent: 1,
+      });
     });
-    fireEvent.change(screen.getByLabelText("Player 2 first name"), {
-      target: { value: "Ben" },
+
+    it("saves a Late standing with the REMOVE treatment", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("Late"));
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "LATE",
+        arrivedInRound: 1,
+        treatment: "REMOVE",
+      });
     });
-    fireEvent.change(screen.getByLabelText("Player 2 surname"), {
-      target: { value: "Berry" },
+
+    it("saves a Withdrawn standing with a penalised fine", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("Withdrawn"));
+      fireEvent.click(within(nsRow).getByLabelText("Penalised"));
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "WITHDRAWN",
+        withdrawnInRound: 1,
+        treatment: "PENALISED",
+        finePercent: 0,
+      });
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
-
-    // The handover captures only the arriving pair's names — no scoring
-    // treatment (split / eligibility are set later on the Substitutions screen).
-    expect(onHandover).toHaveBeenCalledWith("A1NS", {
-      player1: { firstName: "Ann", lastName: "Arrival" },
-      player2: { firstName: "Ben", lastName: "Berry" },
+    it("saves Without standing and Active", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("No standing"));
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenLastCalledWith("A1NS", {
+        standing: "WITHOUT_STANDING",
+      });
+      openForm();
+      // The form opens on the pair's current standing (Active by default).
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenLastCalledWith("A1NS", {
+        standing: "ACTIVE",
+      });
     });
-  });
 
-  it("does not offer a scoring-treatment choice on the handover form", () => {
-    render(
-      <DirectorTableModal
-        table={fullTable()}
-        isSwiss={false}
-        onEvict={vi.fn()}
-        onToggleStationary={vi.fn()}
-        started
-        onChangeStanding={vi.fn()}
-        onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Hand North / South over to the real pair",
-      }),
-    );
-
-    // No Inherit/Remove/Penalised treatment control (that model is gone — the
-    // director sets split/eligibility on the Substitutions screen instead).
-    expect(
-      screen.queryByRole("radio", { name: "Penalised" }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText("Fine %")).not.toBeInTheDocument();
-  });
-
-  it("disables the handover until both arriving players have a surname", () => {
-    render(
-      <DirectorTableModal
-        table={fullTable()}
-        isSwiss={false}
-        onEvict={vi.fn()}
-        onToggleStationary={vi.fn()}
-        started
-        onChangeStanding={vi.fn()}
-        onToggleExpectedLate={vi.fn()}
-        onHandover={vi.fn()}
-        onClose={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Hand North / South over to the real pair",
-      }),
-    );
-
-    const submit = screen.getByRole("button", { name: "Hand over" });
-    expect(submit).toBeDisabled();
-
-    fireEvent.change(screen.getByLabelText("Player 1 surname"), {
-      target: { value: "Only" },
+    it("cancels the standing editor without saving", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Cancel" }));
+      expect(onChangeStanding).not.toHaveBeenCalled();
+      expect(
+        within(nsRow).getByRole("button", {
+          name: "Change standing for North / South pair",
+        }),
+      ).toBeInTheDocument();
     });
-    expect(submit).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText("Player 2 surname"), {
-      target: { value: "Both" },
+    it("opens the editor on the pair's current standing and shows a badge", () => {
+      const { nsRow, openForm } = renderStarted(
+        fullTable({
+          standing: { N: "WITHDRAWN", E: "LATE" },
+        } as never),
+      );
+      expect(within(nsRow).getByText("Withdrawn")).toBeInTheDocument();
+      expect(screen.getByText("Late")).toBeInTheDocument();
+      openForm();
+      expect(within(nsRow).getByLabelText("Withdrawn")).toBeChecked();
     });
-    expect(submit).toBeEnabled();
+
+    it("shows a badge for a pair without standing but none for an active pair", () => {
+      renderStarted(
+        fullTable({
+          standing: { N: "WITHOUT_STANDING", E: "ACTIVE" },
+        } as never),
+      );
+      expect(screen.getByText("Without standing")).toBeInTheDocument();
+      expect(screen.queryByText("Active")).not.toBeInTheDocument();
+    });
+
+    it("notes an expected-late empty seat after the start", () => {
+      render(
+        <DirectorTableModal
+          table={
+            {
+              ...halfEmptyTable(),
+              expectedLate: { N: false, E: true },
+            } as never
+          }
+          isSwiss={false}
+          started
+          onEvict={vi.fn()}
+          onToggleStationary={vi.fn()}
+          onChangeStanding={vi.fn()}
+          onToggleExpectedLate={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+      expect(
+        screen.getByText("Expected late — not yet seated"),
+      ).toBeInTheDocument();
+    });
+
+    it("shows nothing extra for an empty seat that is not expected late after the start", () => {
+      render(
+        <DirectorTableModal
+          table={halfEmptyTable()}
+          isSwiss={false}
+          started
+          onEvict={vi.fn()}
+          onToggleStationary={vi.fn()}
+          onChangeStanding={vi.fn()}
+          onToggleExpectedLate={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+      expect(screen.queryByText(/Expected late/)).not.toBeInTheDocument();
+    });
   });
 });

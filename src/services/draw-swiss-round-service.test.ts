@@ -327,6 +327,85 @@ describe("previewNextSwissRound", () => {
     // Nothing is materialized by a preview.
     expect(materializeSwissRound).not.toHaveBeenCalled();
   });
+  it("ignores unseated, malformed and other-section occupancy rows", async () => {
+    seedDrawable();
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb(
+        [{ status: "CONFIRMED" }],
+        [
+          { seat: null },
+          { seat: "not-a-seat" },
+          { seat: "B1NS" },
+          // Parses as a seat but the (stubbed) decoder yields no pair id.
+          { seat: "A1NS#7" },
+          ...assignmentsFor(["A1NS", "A2NS", "A1EW", "A2EW"]),
+        ] as never,
+      ) as never,
+    );
+    const result = await previewNextSwissRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.standings.map((e) => e.id).sort()).toEqual([1, 2, 3, 4]);
+  });
+  it("defaults the total, rank and tie flag when a leaderboard line omits them", async () => {
+    seedDrawable();
+    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
+      {
+        section: "A",
+        overallScore: { lines: [{ pairId: "1" }, { pairId: "3" }] },
+      },
+    ] as never);
+    const result = await previewNextSwissRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const [first, second] = result.standings;
+    expect(first).toMatchObject({ id: 1, total: 0, rank: 1, tied: false });
+    expect(second).toMatchObject({ id: 3, total: 0, rank: 2, tied: false });
+  });
+  it("skips leaderboard lines that are undecodable, unseated or repeated", async () => {
+    seedDrawable();
+    vi.mocked(computeSectionLeaderboards).mockResolvedValue([
+      {
+        section: "A",
+        overallScore: {
+          lines: [
+            { pairId: "A1", totalVP: 30, rank: 1, tied: false },
+            { pairId: "A1", totalVP: 30, rank: 1, tied: false },
+            { pairId: "zzz", totalVP: 20, rank: 2, tied: false },
+            { pairId: "9", totalVP: 10, rank: 3, tied: false },
+          ],
+        },
+      },
+    ] as never);
+    const result = await previewNextSwissRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.standings.filter((e) => e.id === 1)).toHaveLength(1);
+    expect(result.standings.map((e) => e.id).sort()).toEqual([1, 2, 3, 4]);
+  });
+  it("draws with the stationary pairs in force for the round", async () => {
+    seedDrawable({ stationaryPairs: [1] });
+    const result = await previewNextSwissRound("g1", "A");
+    expect(result.ok).toBe(true);
+  });
+  it("falls back to a bye when the odd-round plan has no entry for the round", async () => {
+    seedHalfMatch();
+    vi.mocked(getSectionMovement).mockResolvedValue({
+      source: "SWISS",
+      swiss: {
+        tables: 2,
+        rounds: 4,
+        boardsPerRound: 4,
+        oddHandling: "HALF_MATCHES",
+        oddRoundPlan: [],
+      },
+    } as never);
+    const result = await previewNextSwissRound("g1", "A");
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.halfMatch).toBeNull();
+    expect(result.sitOutPairId).not.toBeNull();
+  });
 });
 
 describe("commitNextSwissRound", () => {
@@ -462,5 +541,102 @@ describe("commitNextSwissRound", () => {
 
     expect(result).toEqual({ ok: false, reason: "INVALID_SEATING" });
     expect(materializeSwissRound).not.toHaveBeenCalled();
+  });
+  it("rejects a half-match commit that seats a pair twice", async () => {
+    seedHalfMatch();
+    const halfMatch = {
+      group: { anchor: 1, halfOneOpponent: 2, halfTwoOpponent: 3 },
+      anchorTable: 2,
+      anchorDirection: "NS" as const,
+    };
+    const result = await commitNextSwissRound(
+      "g1",
+      "A",
+      [{ tableNumber: 1, ns: 1, ew: 1 }],
+      null,
+      halfMatch,
+    );
+    expect(result).toEqual({ ok: false, reason: "INVALID_SEATING" });
+    expect(materializeSwissRound).not.toHaveBeenCalled();
+  });
+  describe("a seven-pair field (four tables)", () => {
+    function seedSeven() {
+      seedHalfMatch();
+      const decode = (id: string): number | null => {
+        const m = /(\d+)(NS|EW)$/.exec(id);
+        if (!m) return null;
+        return m[2] === "NS" ? Number(m[1]) : 4 + Number(m[1]);
+      };
+      vi.mocked(swissPairIdFromSeat).mockImplementation(decode);
+      vi.mocked(getDb).mockResolvedValue(
+        stubDb(
+          [{ status: "CONFIRMED" }],
+          assignmentsFor([
+            "A1NS",
+            "A2NS",
+            "A3NS",
+            "A4NS",
+            "A1EW",
+            "A2EW",
+            "A3EW",
+          ]),
+        ) as never,
+      );
+      vi.mocked(getSectionMovement).mockResolvedValue({
+        source: "SWISS",
+        swiss: {
+          tables: 4,
+          rounds: 4,
+          boardsPerRound: 4,
+          oddHandling: "HALF_MATCHES",
+          oddRoundPlan: ["BYE", "HALF_MATCHES", "BYE", "HALF_MATCHES"],
+        },
+      } as never);
+      vi.mocked(computeSectionLeaderboards).mockResolvedValue([] as never);
+    }
+    const group = { anchor: 1, halfOneOpponent: 2, halfTwoOpponent: 3 };
+    it("rejects two ordinary tables with the same number", async () => {
+      seedSeven();
+      const result = await commitNextSwissRound(
+        "g1",
+        "A",
+        [
+          { tableNumber: 2, ns: 4, ew: 5 },
+          { tableNumber: 2, ns: 6, ew: 7 },
+        ],
+        null,
+        { group, anchorTable: 1, anchorDirection: "NS" },
+      );
+      expect(result).toEqual({ ok: false, reason: "INVALID_SEATING" });
+    });
+    it("rejects an anchor table that clashes with an ordinary table", async () => {
+      seedSeven();
+      const result = await commitNextSwissRound(
+        "g1",
+        "A",
+        [
+          { tableNumber: 2, ns: 4, ew: 5 },
+          { tableNumber: 3, ns: 6, ew: 7 },
+        ],
+        null,
+        { group, anchorTable: 2, anchorDirection: "NS" },
+      );
+      expect(result).toEqual({ ok: false, reason: "INVALID_SEATING" });
+    });
+    it("accepts a sound half-match commit with ordinary tables", async () => {
+      seedSeven();
+      vi.mocked(materializeSwissRound).mockResolvedValue({ written: true });
+      const result = await commitNextSwissRound(
+        "g1",
+        "A",
+        [
+          { tableNumber: 2, ns: 4, ew: 5 },
+          { tableNumber: 3, ns: 6, ew: 7 },
+        ],
+        null,
+        { group, anchorTable: 1, anchorDirection: "NS" },
+      );
+      expect(result).toEqual({ ok: true, roundNumber: 2 });
+    });
   });
 });

@@ -495,3 +495,34 @@ describe("calculateSwissMpVpOverall — §3.5 mismatch adjustment", () => {
     expect(ruledFloor).toBe(baseFloor);
   });
 });
+
+describe("calculateSwissMpVpOverall — rounds without match rows", () => {
+  it("still scores a round when no PAIRS match rows exist", () => {
+    const rows = [
+      {
+        section: "A",
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: 1,
+        ns: "A1NS",
+        ew: "A2EW",
+        confirmedResult: "3NTN+1",
+        directorOverrideResult: null,
+        status: "COMPLETE",
+      },
+      {
+        section: "A",
+        roundNumber: 1,
+        tableNumber: 2,
+        boardNumber: 1,
+        ns: "A2NS",
+        ew: "A1EW",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+        status: "COMPLETE",
+      },
+    ] as SwissVpBoardRow[];
+    const result = calculateSwissMpVpOverallImpl(rows, []);
+    expect(result.lines.length).toBeGreaterThan(0);
+  });
+});

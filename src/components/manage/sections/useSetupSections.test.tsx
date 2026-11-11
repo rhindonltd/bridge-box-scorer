@@ -33,6 +33,10 @@ function Harness() {
   );
 }
 
+function NoAddHarness() {
+  const { pills } = useSetupSections("g1", { allowAddSection: false });
+  return <div>{pills}</div>;
+}
 function openModal() {
   fireEvent.click(
     screen.getByRole("button", { name: /Split into sections|Add section/ }),
@@ -212,5 +216,11 @@ describe("useSetupSections", () => {
 
     expect(mockCreateSection).not.toHaveBeenCalled();
     expect(mockSplitSection).not.toHaveBeenCalled();
+  });
+  it("withholds the add affordance when allowAddSection is false", () => {
+    render(<NoAddHarness />);
+    expect(
+      screen.queryByRole("button", { name: /Split into sections|Add section/ }),
+    ).not.toBeInTheDocument();
   });
 });

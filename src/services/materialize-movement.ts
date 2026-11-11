@@ -354,17 +354,29 @@ export async function materializePairLikeMovement(
  */
 export async function materializeSections(
   gameId: string,
-  sections: { section: SectionLetter; movement: MaterializableMovement }[],
+  sections: {
+    section: SectionLetter;
+    movement: MaterializableMovement;
+    /**
+     * The seat → anchor id each occupancy should carry, when the round-1
+     * layout can't say. By default each seat is stamped with the id on its
+     * round-1 table position, which is right for a fixed movement. A Swiss
+     * Pairs pair keeps one stable id all event, whatever chair it sits in (a
+     * bye pair is moved onto the NS side of its table, a half-match group is
+     * re-seated), so its anchors are supplied explicitly.
+     */
+    anchors?: SeatAnchor[];
+  }[],
 ) {
   const boardRows: BoardDraft[] = [];
   const matchRows: MatchDraft[] = [];
   const anchors: SeatAnchor[] = [];
 
-  for (const { section, movement } of sections) {
+  for (const { section, movement, anchors: explicit } of sections) {
     const rows = buildSectionRows(section, movement);
     boardRows.push(...rows.boardRows);
     matchRows.push(...rows.matchRows);
-    anchors.push(...rows.anchors);
+    anchors.push(...(explicit ?? rows.anchors));
   }
 
   await insertSectionRows(gameId, matchRows, boardRows, anchors);

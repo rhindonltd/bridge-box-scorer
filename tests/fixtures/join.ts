@@ -84,8 +84,23 @@ async function openJoinPage(page: Page, gameId: string): Promise<void> {
     window.localStorage.removeItem(key);
     return held;
   }, `player:${gameId}`);
-  if (hadSeat) {
-    await page.goto(`/game/${gameId}/join`);
+  if (!hadSeat) return;
+  // The first load may already be redirecting this device to its held seat; a
+  // navigation interrupted by that redirect is retried once it has settled.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await page.goto(`/game/${gameId}/join`);
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (
+        attempt === 2 ||
+        !message.includes("interrupted by another navigation")
+      ) {
+        throw err;
+      }
+      await page.waitForTimeout(400);
+    }
   }
 }
 
@@ -354,7 +369,12 @@ export async function seatTwoTableSectionOnDevices(
   // Four seats per section; advance the pool offset one section-block per
   // section letter so sections never share players.
   const sectionIndex = section.toUpperCase().charCodeAt(0) - "A".charCodeAt(0);
-  return seatSeatsOnDevices(makePage, gameId, seats, sectionIndex * seats.length);
+  return seatSeatsOnDevices(
+    makePage,
+    gameId,
+    seats,
+    sectionIndex * seats.length,
+  );
 }
 
 /**
@@ -424,7 +444,9 @@ export async function seatTeamsFieldOnDevices(
     const page = await makePage();
     const [ebu1, ebu2] = pairs[seat];
     // Name each team from its home (NS) seat; the EW pair carries no name.
-    const teamName = seat.endsWith("NS") ? `Team ${seat.slice(0, -2)}` : undefined;
+    const teamName = seat.endsWith("NS")
+      ? `Team ${seat.slice(0, -2)}`
+      : undefined;
     await seatTeamPairBySeat(page, gameId, seat, ebu1, ebu2, teamName);
     pages[seat] = page;
   }

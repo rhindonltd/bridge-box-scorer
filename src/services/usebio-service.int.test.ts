@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
+import { sql } from "drizzle-orm";
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import type { Db } from "@/db/games";
 import type { BridgeGame } from "@/db/game-index/schema";
@@ -496,6 +497,109 @@ describe("generateUsebio", () => {
     expect(xml).toContain("<OPPOSING_TEAM>2</OPPOSING_TEAM>");
   });
 
+  it("exports a Swiss Pairs game scored on matchpoints", async () => {
+    await seatPair("A1NS", "Al");
+    await seatPair("A1EW", "Cy");
+    await makeBoard(1, 1, 1, "A1NS", "A1EW", "3NTN=");
+    const swissMpGame: BridgeGame = {
+      ...game,
+      gameType: "PAIRS",
+      scoringType: "MP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS",
+        swiss: { tables: 1, rounds: 1, boardsPerRound: 1 },
+      }),
+    };
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+    const xml = await generateUsebio(db, swissMpGame, club, "NORMAL_CLUB");
+    expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_PAIRS">');
+    expect(xml).toContain("<NS_PAIR_NUMBER>A1NS</NS_PAIR_NUMBER>");
+  });
+  describe.each(["IMP", "BAM", "PAB"] as const)(
+    "a %s teams game",
+    (scoringType) => {
+      it("exports both teams and their head-to-head match", async () => {
+        await seatPair("A1NS", "H1");
+        await seatPair("A1EW", "A1");
+        await seatPair("A2NS", "H2");
+        await seatPair("A2EW", "A2");
+        await makeBoard(1, 1, 1, "A1NS", "A2EW", "4SN=");
+        await makeBoard(1, 2, 1, "A2NS", "A1EW", "3NTN=");
+        const db = (await harness.getDb()) as Db;
+        await setTeamsStructure(db, [
+          {
+            id: 10,
+            kind: "TEAMS",
+            home: "A1NS",
+            opponent: "A2NS",
+            vpPool: 20,
+            boardStart: 1,
+            boardEnd: 1,
+          },
+        ]);
+        const teamsGame: BridgeGame = {
+          ...game,
+          gameType: "TEAMS",
+          scoringType,
+          selectedMovement: JSON.stringify({
+            source: "SWISS_TEAMS",
+            swissTeams: { teams: 2, rounds: 1, boardsPerRound: 1 },
+          }),
+        };
+        const { generateUsebio } = await import("@/services/usebio-service");
+        const xml = await generateUsebio(db, teamsGame, club, "NORMAL_CLUB");
+        expect(xml).toContain("<USEBIO");
+        expect(xml).toContain('TEAM_NAME="N"');
+        expect(xml).toContain("<TEAM>1</TEAM>");
+      });
+    },
+  );
+  it("skips a seat occupancy whose players are missing when exporting teams", async () => {
+    await seatPair("A1NS", "H1");
+    await seatPair("A1EW", "A1");
+    await seatPair("A2NS", "H2");
+    await seatPair("A2EW", "A2");
+    await makeBoard(1, 1, 1, "A1NS", "A2EW", "4SN=");
+    await makeBoard(1, 2, 1, "A2NS", "A1EW", "3NTN=");
+    const db = (await harness.getDb()) as Db;
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    // An orphaned occupancy: its player rows do not exist (foreign keys off so
+    // the row can be inserted).
+    db.run(sql`PRAGMA foreign_keys = OFF`);
+    db.insert(seatOccupancy)
+      .values({
+        seat: "A3NS",
+        boards: null,
+        player1: 9998,
+        player2: 9999,
+        secretKey: "orphan",
+      })
+      .run();
+    await setTeamsStructure(db, [
+      {
+        id: 10,
+        kind: "TEAMS",
+        home: "A1NS",
+        opponent: "A2NS",
+        vpPool: 20,
+        boardStart: 1,
+        boardEnd: 1,
+      },
+    ]);
+    const teamsGame: BridgeGame = {
+      ...game,
+      gameType: "TEAMS",
+      scoringType: "IMP_VP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 2, rounds: 1, boardsPerRound: 1 },
+      }),
+    };
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const xml = await generateUsebio(db, teamsGame, club, "NORMAL_CLUB");
+    expect(xml).toContain('<EVENT EVENT_TYPE="SWISS_TEAMS">');
+  });
   it("emits a SHORT triple as three head-to-head MATCH nodes", async () => {
     // Three teams (home tables 1,2,3), each a full NS+EW pair, playing a SHORT
     // triple: three head-to-head comparisons on disjoint one-board sets
@@ -666,6 +770,60 @@ describe("generateUsebio", () => {
     expect(subBlock.slice(0, subPairEnd)).not.toContain("<PLACE>");
   });
 
+  it("exports a split handover on an EW seat with the stand-in as an East PAIR", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { players } = await import("@/db/games/tables/players");
+    const mk = (first: string) => {
+      const p1 = db
+        .insert(players)
+        .values({ firstName: first, lastName: "E" })
+        .returning()
+        .get();
+      const p2 = db
+        .insert(players)
+        .values({ firstName: first, lastName: "W" })
+        .returning()
+        .get();
+      return [p1.id, p2.id] as const;
+    };
+    const [r1, r2] = mk("RealEast");
+    db.insert(seatOccupancy)
+      .values({
+        seat: "A1EW",
+        boards: [3, 4],
+        player1: r1,
+        player2: r2,
+        secretKey: "A1EW-real",
+        standing: "ACTIVE",
+        isArrivalAnchor: 1,
+        split: 1,
+      })
+      .run();
+    const [s1, s2] = mk("StandInEast");
+    const subRow = db
+      .insert(seatOccupancy)
+      .values({
+        seat: "A1EW",
+        boards: [1, 2],
+        player1: s1,
+        player2: s2,
+        secretKey: "A1EW-sub",
+        standing: "WITHOUT_STANDING",
+        isArrivalAnchor: 0,
+        split: 1,
+      })
+      .returning()
+      .get();
+    await seatPair("A1NS", "North");
+    for (const bn of [1, 2, 3, 4]) {
+      await makeBoard(bn, 1, bn, "A1NS", "A1EW", "3NTN=");
+    }
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
+    expect(xml).toContain(`<PAIR_NUMBER>1EW#${subRow.id}</PAIR_NUMBER>`);
+    expect(xml).toContain("StandInEast");
+  });
   it("exports a merged (split=no) handover as ONE <PAIR> carrying the MAIN pair's players", async () => {
     const db = (await harness.getDb()) as Db;
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
@@ -991,6 +1149,39 @@ describe("generateUsebio", () => {
       expect(pair1.slice(0, pair1.indexOf("</PAIR>"))).toContain("<PLACE>");
     });
 
+    it("does not place an empty expected-late seat", async () => {
+      const db = (await harness.getDb()) as Db;
+      const { createBoard } = await import("@/db/games/actions/create-board");
+      const { expectedLateSeats } = await import(
+        "@/db/games/tables/expected-late-seats"
+      );
+      for (const t of [1, 2, 3]) {
+        await seatPair(`A${t}NS`, `N${t}`);
+        await seatPair(`A${t}EW`, `E${t}`);
+      }
+      // Table 4: the North pair is seated, East is expected late (empty).
+      await seatPair("A4NS", "N4");
+      db.insert(expectedLateSeats).values({ seat: "A4EW" }).run();
+      for (const t of [1, 2, 3]) {
+        await makeBoard(1, t, 1, `A${t}NS`, `A${t}EW`, "3NTN=");
+      }
+      await createBoard(harness.gameId, {
+        section: "A",
+        roundNumber: 1,
+        tableNumber: 4,
+        boardNumber: 1,
+        copy: "A",
+        ns: "A4NS",
+        ew: "A4EW",
+        status: "NOT_PLAYED",
+        matchId: FIXTURE_MATCH_ID,
+      });
+      const { generateUsebio } = await import("@/services/usebio-service");
+      const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
+      // The empty seat never becomes a declared PAIR.
+      expect(xml).not.toContain("<PAIR_NUMBER>4EW</PAIR_NUMBER>");
+      expect(xml).toContain("<PAIR_NUMBER>4NS</PAIR_NUMBER>");
+    });
     it("omits a REMOVED missed board, and keeps the withdrawn pair placed", async () => {
       const xml = await withdrawnField("REMOVED");
       const lines = boardLines(xml, 2);

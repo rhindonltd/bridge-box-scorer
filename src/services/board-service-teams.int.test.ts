@@ -194,4 +194,85 @@ describe("buildTeamTravellerMatches (reads the matches table)", () => {
     // team framing is empty (the traveller renders plain pair rows).
     expect(await buildTeamTravellerMatches(db, 1)).toEqual([]);
   });
+  it("orders several matches for one board and tolerates absent rooms/names", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { matches } = await import("@/db/games/tables/matches");
+    const { boards } = await import("@/db/games/tables/boards");
+    const { players } = await import("@/db/games/tables/players");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const { buildTeamTravellerMatches } = await import(
+      "@/services/board-service"
+    );
+    // Team 1 (A1NS + A1EW) is complete, so findTeams resolves its name.
+    for (const seat of ["A1NS", "A1EW"]) {
+      const p1 = db
+        .insert(players)
+        .values({ firstName: "F", lastName: `Last${seat}` })
+        .returning()
+        .get();
+      const p2 = db
+        .insert(players)
+        .values({ firstName: "G", lastName: "Other" })
+        .returning()
+        .get();
+      db.insert(seatOccupancy)
+        .values({
+          seat: seat as never,
+          boards: null,
+          player1: p1.id,
+          player2: p2.id,
+          secretKey: seat,
+        })
+        .run();
+    }
+    const base = {
+      section: "A",
+      roundNumber: 1,
+      kind: "TEAMS" as const,
+      scoredAsUnit: true,
+      vpPool: 20,
+      boardStart: 1,
+      boardEnd: 1,
+    };
+    // Inserted out of order: 3v4, 1v3, 1v2 → sorted by home table then opp table.
+    const ids = db
+      .insert(matches)
+      .values([
+        { ...base, home: "A3NS", opponent: "A4NS" },
+        { ...base, home: "A1NS", opponent: "A3NS" },
+        { ...base, home: "A1NS", opponent: "A2NS" },
+      ])
+      .returning()
+      .all()
+      .map((m) => m.id);
+    db.insert(boards)
+      .values(
+        ids.map((matchId, i) => ({
+          section: "A",
+          roundNumber: 1,
+          tableNumber: i + 1,
+          boardNumber: 1,
+          ns: ["A3NS", "A1NS", "A1NS"][i],
+          ew: "A9EW",
+          confirmedResult: "3NTN=" as never,
+          status: "CONFIRMED" as const,
+          matchId,
+        })),
+      )
+      .run();
+    const out = await buildTeamTravellerMatches(db, 1);
+    expect(out.map((m) => m.tables)).toEqual([
+      [1, 2],
+      [1, 3],
+      [3, 4],
+    ]);
+    // Named team resolves via findTeams; unknown teams fall back to the id.
+    expect(out[0].teams[0].name).toBe("LastA1NS");
+    expect(out[0].teams[1].name).toBe("A2NS");
+    // 1v2: team 2 has no NS room → no margin. 1v3: both rooms equal → 0.
+    expect(out[0].margin).toBeNull();
+    expect(out[1].margin).toBe(0);
+    // 3v4: team 4 has no NS room → no margin.
+    expect(out[2].margin).toBeNull();
+  });
 });

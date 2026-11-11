@@ -11,6 +11,8 @@ export interface DirectorMenuPageProps {
   onTravellersClick: () => void;
   onEnterDealsClick: () => void;
   onMovementClick: () => void;
+  /** Open the session timer's live controls. */
+  onTimerClick: () => void;
   onReviewMismatchesClick: () => void;
   /** Open the "Pairs" roster (status of every pair + per-pair actions). */
   onPairsClick: () => void;
@@ -31,6 +33,12 @@ export interface DirectorMenuPageProps {
   showEnterDeals: boolean;
   /** Show "Movement" — only after the game has started. */
   showMovement: boolean;
+  /**
+   * Show "Timer" — only after the game has started. Before the start the timer
+   * is configured on Set Up Game's Timer tab; once play is under way that tab
+   * (and Set Up Game) is gone, so this is the way to the live controls.
+   */
+  showTimer: boolean;
   /**
    * Show "Review Mismatches" — only for a started Swiss game, where a
    * retroactive score adjustment can create an EBU §3.5 mismatch to review.
@@ -53,6 +61,7 @@ export function ManageGameMenuPage({
   onTravellersClick,
   onEnterDealsClick,
   onMovementClick,
+  onTimerClick,
   onReviewMismatchesClick,
   onPairsClick,
   onExportClick,
@@ -62,6 +71,7 @@ export function ManageGameMenuPage({
   showTravellers,
   showEnterDeals,
   showMovement,
+  showTimer,
   showReviewMismatches,
   showPairs,
   showExport,
@@ -106,6 +116,12 @@ export function ManageGameMenuPage({
         {showMovement && (
           <button onClick={onMovementClick} className={standardButtonClass}>
             <span className="flex items-center gap-3">Movement</span>
+          </button>
+        )}
+
+        {showTimer && (
+          <button onClick={onTimerClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Timer</span>
           </button>
         )}
 

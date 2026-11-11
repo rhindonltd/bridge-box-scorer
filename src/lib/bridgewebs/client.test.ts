@@ -119,8 +119,8 @@ describe("parseEventsResponse", () => {
 
 describe("postToBridgewebs", () => {
   it("posts a form-encoded body to the club url and parses the reply", async () => {
-    const fetchImpl = vi.fn(async () =>
-      new Response("message = Upload Successful", { status: 200 }),
+    const fetchImpl = vi.fn(
+      async () => new Response("message = Upload Successful", { status: 200 }),
     ) as unknown as typeof fetch;
 
     const reply = await postToBridgewebs(
@@ -145,11 +145,16 @@ describe("postToBridgewebs", () => {
   });
 
   it("reports a non-2xx status as a failed reply", async () => {
-    const fetchImpl = vi.fn(async () =>
-      new Response("nope", { status: 500, statusText: "Server Error" }),
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response("nope", { status: 500, statusText: "Server Error" }),
     ) as unknown as typeof fetch;
 
-    const reply = await postToBridgewebs("myclub", { club: "myclub" }, fetchImpl);
+    const reply = await postToBridgewebs(
+      "myclub",
+      { club: "myclub" },
+      fetchImpl,
+    );
     expect(reply.ok).toBe(false);
     expect(reply.message).toContain("500");
   });
@@ -159,8 +164,8 @@ describe("fetchEventsForDay", () => {
   it("requests events for the day and parses the json line", async () => {
     const body =
       'message = Download Successful\njson = {"events":{"1":{"title":"Duplicate Pairs"},"2":{"title":"Create New Event"}}}';
-    const fetchImpl = vi.fn(async () =>
-      new Response(body, { status: 200 }),
+    const fetchImpl = vi.fn(
+      async () => new Response(body, { status: 200 }),
     ) as unknown as typeof fetch;
 
     const events = await fetchEventsForDay(
@@ -183,8 +188,8 @@ describe("fetchEventsForDay", () => {
 
   it("falls back to a pure-json body when no json line is present", async () => {
     const body = '{"events":{"5":{"title":"Swiss Teams"}}}';
-    const fetchImpl = vi.fn(async () =>
-      new Response(body, { status: 200 }),
+    const fetchImpl = vi.fn(
+      async () => new Response(body, { status: 200 }),
     ) as unknown as typeof fetch;
 
     const events = await fetchEventsForDay("c", "p", "20240101", fetchImpl);

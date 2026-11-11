@@ -329,6 +329,14 @@ step was needed since there is no production data to carry over.
 ---
 
 ## 6. Director UX (as built — slices 4 & 5)
+> **Superseded:** the director-driven "Hand over to real pair" action described
+> below (and the director-authed `game:handoverSeat` event) has been **removed**.
+> Handover is player self-serve: Menu → Handover on the seat's device, either on
+> the same device (`game:handoverSameDevice`) or via a code claimed on the
+> arriving pair's device. The director only chooses split / eligibility
+> afterwards on the Pairs screen. The `handoverSeat` DB action is unchanged and
+> is what both player paths call. The text below is kept for the engine rules.
+
 
 On the Tables screen (post-start), a seated pair's per-table dialog
 (`DirectorTableModal`) gains a **"Hand over to real pair"** action beside
@@ -456,7 +464,7 @@ Each slice is independently testable; the suite must stay green after each.
    and seats the real pair in one step), so "current occupant" is a single
    unambiguous answer. The submit-result/auth signatures are unchanged
    (`boardNumber` stays out of the auth path).
-5. **Director handover UX. ✅ DONE.** The Tables-screen "Hand over to real pair"
+5. **Director handover UX. ✅ DONE, since REMOVED (see §6 note).** The Tables-screen "Hand over to real pair"
    action (post-start, in `DirectorTableModal`) → `game:handoverSeat` →
    `handoverSeat` DB action, which writes the second occupancy. The real pair is
    PRIMARY because `primaryOf` is semantic (the non-`WITHOUT_STANDING`

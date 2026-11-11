@@ -134,10 +134,13 @@ export function DisplayLeaderboardView({
   const selectView = useCallback((next: View) => setSelected(next), []);
 
   // Resolve the leaderboard for the active view.
+  /* v8 ignore start -- the `?? null` fallback is unreachable: a non-combined
+     view always comes from viewOrder, built from `sections`, so find() matches. */
   const active: LeaderboardView | null =
     view === "combined"
       ? combined
       : (sections.find((s) => s.section === view) ?? null);
+  /* v8 ignore stop */
 
   // A two-winner Mitchell shows two independent rankings (NS and EW) side by
   // side rather than one; each already fills its half of the screen, so the

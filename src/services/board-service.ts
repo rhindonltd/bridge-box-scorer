@@ -164,6 +164,7 @@ export async function buildTeamTravellerMatches(
   const result: TeamTravellerMatch[] = [];
   for (const m of matchRows) {
     // A teams/triple match always has both participants (opponent non-null).
+    /* v8 ignore next -- unreachable: the query filters to TEAMS/TRIPLE kinds, which always carry an opponent (only BYE has none) */
     if (m.opponent == null) continue;
     const homeTable = parseSeat(m.home).tableNumber;
     const oppTable = parseSeat(m.opponent).tableNumber;

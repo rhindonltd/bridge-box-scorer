@@ -17,9 +17,10 @@ vi.mock("@/swr/swr-keys", () => ({
 }));
 
 const mockMutateGame = vi.fn();
+let gameLevel: string | null = "NORMAL_CLUB";
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
-    game: { gameId: "g1", tournamentLevel: "NORMAL_CLUB" },
+    game: { gameId: "g1", tournamentLevel: gameLevel },
     mutateGame: mockMutateGame,
   }),
 }));
@@ -56,6 +57,7 @@ describe("DownloadUsebioPage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    gameLevel = "NORMAL_CLUB";
     mockGetDirectorToken.mockReturnValue("director-tok");
     swrState = { data: { club: CONFIGURED_CLUB }, isLoading: false };
 
@@ -81,6 +83,15 @@ describe("DownloadUsebioPage", () => {
     expect(container.querySelector(".animate-spin")).toBeTruthy();
   });
 
+  it("falls back to the default tournament level when the game has none", () => {
+    gameLevel = null;
+    render(
+      <DownloadUsebioPage onUsebioDownloaded={vi.fn()} onCancel={vi.fn()} />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Download USEBIO" }),
+    ).toBeEnabled();
+  });
   it("shows the configured club details read-only", () => {
     render(
       <DownloadUsebioPage onUsebioDownloaded={vi.fn()} onCancel={vi.fn()} />,

@@ -136,6 +136,17 @@ describe("buildExportReadiness", () => {
       );
     });
 
+    it("renders an empty NS seat as a dash", () => {
+      const items = itemsById({
+        ...allReady,
+        finalized: 23,
+        outstandingBoards: [{ ...outstandingBoards[0], nsPair: null }],
+      });
+      expect(items.get("results")?.boards?.[0].players).toBe(
+        "— vs Carol May & Dan Fox",
+      );
+    });
+
     it("never attaches a breakdown to the all-results-in (ready) item", () => {
       const items = itemsById({ ...allReady, outstandingBoards });
       const results = items.get("results")!;

@@ -321,6 +321,30 @@ describe("swissRoundToMaterializable — half-match round", () => {
     }
   });
 
+  it("parks the compensation blocks above the sit-out table when one is also used", () => {
+    const movement = swissRoundToMaterializable(
+      4,
+      1,
+      8,
+      [{ tableNumber: 2, ns: 3, ew: 4 }],
+      6,
+      { group, seat: { tableNumber: 1, anchorDirection: "NS" } },
+    );
+    const numbers = movement.map((t) => t.tableNumber);
+    // Played table 2, anchor table 1, sit-out table 3, compensation tables
+    // beyond them: no table number is used twice.
+    expect(new Set(numbers).size).toBe(numbers.length);
+    expect(movement.find((t) => t.rounds.some((r) => r.sitOut))!.tableNumber).toBe(3);
+    expect(Math.max(...numbers)).toBeGreaterThan(3);
+  });
+  it("rejects a half-match round with too few boards to split", () => {
+    expect(() =>
+      swissRoundToMaterializable(4, 1, 1, emptySeating, null, {
+        group,
+        seat: { tableNumber: 1, anchorDirection: "NS" },
+      }),
+    ).toThrow("too few boards (1)");
+  });
   it("writes the compensation boards with status HALF_AVERAGE", () => {
     const movement = swissRoundToMaterializable(4, 1, 8, emptySeating, null, {
       group,

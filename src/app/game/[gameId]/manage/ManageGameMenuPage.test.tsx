@@ -27,6 +27,7 @@ const handlers = {
   onTravellersClick: vi.fn(),
   onEnterDealsClick: vi.fn(),
   onMovementClick: vi.fn(),
+  onTimerClick: vi.fn(),
   onReviewMismatchesClick: vi.fn(),
   onPairsClick: vi.fn(),
   onExportClick: vi.fn(),
@@ -39,6 +40,7 @@ const flags = {
   showTravellers: false,
   showEnterDeals: false,
   showMovement: false,
+  showTimer: false,
   showReviewMismatches: false,
   showPairs: false,
   showExport: false,
@@ -157,6 +159,57 @@ describe("ManageGameMenuPage", () => {
     });
   });
 
+  describe("Timer", () => {
+    it("is shown and wired when showTimer is true", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} showTimer={true} />);
+      fireEvent.click(screen.getByRole("button", { name: "Timer" }));
+      expect(handlers.onTimerClick).toHaveBeenCalled();
+    });
+
+    it("is hidden when showTimer is false", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} showTimer={false} />);
+      expect(
+        screen.queryByRole("button", { name: "Timer" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Manage Tables", () => {
+    it("is shown and wired when showManageTables is true", () => {
+      render(
+        <ManageGameMenuPage {...handlers} {...flags} showManageTables={true} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Manage Tables" }));
+      expect(handlers.onManageTablesClick).toHaveBeenCalled();
+    });
+    it("is hidden when showManageTables is false", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} />);
+      expect(
+        screen.queryByRole("button", { name: "Manage Tables" }),
+      ).not.toBeInTheDocument();
+    });
+  });
+  describe("Review Mismatches", () => {
+    it("is shown and wired when showReviewMismatches is true", () => {
+      render(
+        <ManageGameMenuPage
+          {...handlers}
+          {...flags}
+          showReviewMismatches={true}
+        />,
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Review Mismatches" }),
+      );
+      expect(handlers.onReviewMismatchesClick).toHaveBeenCalled();
+    });
+    it("is hidden when showReviewMismatches is false", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} />);
+      expect(
+        screen.queryByRole("button", { name: "Review Mismatches" }),
+      ).not.toBeInTheDocument();
+    });
+  });
   describe("Pairs", () => {
     it("is shown and wired when showPairs is true", () => {
       render(<ManageGameMenuPage {...handlers} {...flags} showPairs={true} />);

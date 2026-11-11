@@ -64,6 +64,38 @@ test.describe("Seeded games", () => {
     }
   });
 
+  test("a finished Howell lists every pair on the leaderboard by name", async ({
+    browser,
+  }) => {
+    // The recommended two-table movement numbers its pairs (the pair seated at
+    // A1EW plays as "A4"); the standings must still show the players' names.
+    const game = await seedGame({
+      scoring: "MP",
+      tables: 2,
+      movement: "recommended",
+      play: "all",
+      eventName: `Seeded names ${Date.now()}`,
+    });
+    const display = await openDirector(
+      browser,
+      game,
+      `/game/${game.gameId}/display/leaderboard`,
+    );
+    try {
+      const rows = display.getByTestId("leaderboard-row");
+      await expect(rows).toHaveCount(4, { timeout: 20000 });
+      for (const seat of ["A1NS", "A1EW", "A2NS", "A2EW"]) {
+        await expect(rows.filter({ hasText: `P${seat} North` })).toHaveCount(1);
+      }
+      // No row is labelled by a bare movement number instead of a name.
+      for (const text of await rows.allInnerTexts()) {
+        expect(text).toMatch(/North/);
+      }
+    } finally {
+      await closeDevices(display);
+    }
+  });
+
   test("an impossible scenario fails with the seeder's own message", async () => {
     await expect(
       seedGame({ scoring: "MP", play: "all", scenario: { withdraw: ["A1NS"] } }),

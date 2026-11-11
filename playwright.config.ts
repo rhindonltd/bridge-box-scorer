@@ -53,6 +53,20 @@ if (process.env.BRIDGEWEBS_API_BASE === undefined) {
 }
 
 /**
+ * Likewise for the EBU results-submission API: the app server is launched with
+ * `EBU_API_BASE` / `EBU_PARSE_USEBIO_URL` pointing at a local stand-in (see
+ * tests/fixtures/ebu-mock.ts), so no test can ever submit to the real EBU. An
+ * operator can still export their own values to point at a sandbox.
+ */
+const EBU_MOCK_ORIGIN = "http://127.0.0.1:3998";
+if (process.env.EBU_API_BASE === undefined) {
+  process.env.EBU_API_BASE = `${EBU_MOCK_ORIGIN}/members/api-3.1`;
+}
+if (process.env.EBU_PARSE_USEBIO_URL === undefined) {
+  process.env.EBU_PARSE_USEBIO_URL = `${EBU_MOCK_ORIGIN}/members/api/p2p/parse-usebio-1.1.php`;
+}
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -170,6 +184,9 @@ export default defineConfig({
       NODE_ENV: "production",
       // Point the app server's BridgeWebs client at the local mock.
       BRIDGEWEBS_API_BASE: process.env.BRIDGEWEBS_API_BASE!,
+      // ...and the EBU client at its local stand-in.
+      EBU_API_BASE: process.env.EBU_API_BASE!,
+      EBU_PARSE_USEBIO_URL: process.env.EBU_PARSE_USEBIO_URL!,
     },
   },
 });

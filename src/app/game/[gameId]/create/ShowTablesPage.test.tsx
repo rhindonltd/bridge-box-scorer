@@ -14,6 +14,7 @@ import type { Pair } from "@/model/participants";
 // across sections" toggle (shown only for a multi-section game). mutateGame is
 // the optimistic updater useCombinedRanking calls.
 let currentCombinedRanking = true;
+let currentGameExtra: Record<string, unknown> = {};
 const mockMutateGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
@@ -21,6 +22,7 @@ vi.mock("@/context/GameContext", () => ({
       gameId: "g1",
       tables: 2,
       combinedRanking: currentCombinedRanking,
+      ...currentGameExtra,
     },
     mutateGame: mockMutateGame,
   }),
@@ -37,6 +39,8 @@ vi.mock("@/context/GameContext", () => ({
 // server round-trip lands.
 let currentPairs: Pair[] = [];
 let capturedFetcher: ((url: string) => Promise<Pair[]>) | null = null;
+let capturedLateFetcher: ((url: string) => Promise<string[]>) | null = null;
+let expectedLateUndefined = false;
 // The expected-late cache holds a plain seat-string array (not a Set) — see
 // ShowTablesPage's expectedLateFetcher for why — and the page derives a Set
 // from it for membership checks.
@@ -46,25 +50,23 @@ let expectedLateStore: string[] = [];
 // a test can point this at a stale value to model the server read racing the
 // write (the real "toggle snaps back" bug).
 let expectedLateServerValue: (() => string[]) | null = null;
-const mockMutate = vi.fn(
-  (key?: string, updater?: unknown, _opts?: unknown) => {
-    if (typeof key === "string" && key.includes("expected-late-seats")) {
-      if (typeof updater === "function") {
-        // Optimistic cache update.
-        expectedLateStore = (updater as (c?: string[]) => string[])(
-          expectedLateStore,
-        );
-      } else {
-        // Bare revalidation: re-read from the "server".
-        expectedLateStore = expectedLateServerValue
-          ? expectedLateServerValue()
-          : expectedLateStore;
-      }
-      notifySwrSubscribers();
+const mockMutate = vi.fn((key?: string, updater?: unknown, _opts?: unknown) => {
+  if (typeof key === "string" && key.includes("expected-late-seats")) {
+    if (typeof updater === "function") {
+      // Optimistic cache update.
+      expectedLateStore = (updater as (c?: string[]) => string[])(
+        expectedLateStore,
+      );
+    } else {
+      // Bare revalidation: re-read from the "server".
+      expectedLateStore = expectedLateServerValue
+        ? expectedLateServerValue()
+        : expectedLateStore;
     }
-    return Promise.resolve();
-  },
-);
+    notifySwrSubscribers();
+  }
+  return Promise.resolve();
+});
 // Subscribers that should re-render when the mocked SWR cache changes (as real
 // SWR does when `mutate` updates a key). `mockMutate` bumps a version counter
 // and notifies them, so an optimistic update is observable in the rendered UI.
@@ -101,7 +103,8 @@ vi.mock("swr", async () => {
     // derives a Set from it); the pairs subscription carries the configured
     // pairs data and its fetcher is captured for the fetcher-unwrap test.
     if (key != null && key.includes("expected-late-seats")) {
-      return { data: expectedLateStore };
+      capturedLateFetcher = fetcher as never;
+      return { data: expectedLateUndefined ? undefined : expectedLateStore };
     }
     if (key != null) {
       capturedFetcher = fetcher;
@@ -234,7 +237,10 @@ vi.mock("@/hooks/stationary-pairs", () => ({
 }));
 
 import { fetcher } from "@/lib/fetcher";
-import { setSeatExpectedLate } from "@/lib/standing-service";
+import {
+  setSeatExpectedLate,
+  setParticipantStanding,
+} from "@/lib/standing-service";
 import { ShowTablesPage } from "./ShowTablesPage";
 
 function makePlayer(name: string) {
@@ -268,6 +274,9 @@ describe("ShowTablesPage", () => {
     currentPairs = [];
     syncSelector = null;
     capturedFetcher = null;
+    capturedLateFetcher = null;
+    expectedLateUndefined = false;
+    currentGameExtra = {};
     expectedLateStore = [];
     expectedLateServerValue = null;
     currentSections = [
@@ -589,8 +598,20 @@ describe("ShowTablesPage", () => {
 
   describe("section management (multi-section)", () => {
     const twoSections = [
-      { section: "A", label: "Red", tables: 2, ordinal: 0, selectedMovement: null },
-      { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
+      {
+        section: "A",
+        label: "Red",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "Blue",
+        tables: 4,
+        ordinal: 1,
+        selectedMovement: null,
+      },
     ];
 
     it("hides the combined-ranking toggle, section label, and delete for a single section", () => {
@@ -683,9 +704,7 @@ describe("ShowTablesPage", () => {
 
       render(<ShowTablesPage />);
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Delete section" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Delete section" }));
 
       await waitFor(() =>
         expect(mockDeleteSection).toHaveBeenCalledWith("g1", "B"),
@@ -701,9 +720,7 @@ describe("ShowTablesPage", () => {
 
       render(<ShowTablesPage />);
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Delete section" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Delete section" }));
 
       expect(mockDeleteSection).not.toHaveBeenCalled();
     });
@@ -715,9 +732,7 @@ describe("ShowTablesPage", () => {
       mockDeleteSection.mockRejectedValueOnce(new Error("boom"));
 
       render(<ShowTablesPage />);
-      fireEvent.click(
-        screen.getByRole("button", { name: "Delete section" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Delete section" }));
 
       await waitFor(() => expect(mockReportError).toHaveBeenCalled());
     });
@@ -795,8 +810,20 @@ describe("ShowTablesPage", () => {
   it("qualifies the 'select a movement' banner with the section when multi-section", () => {
     // Two sections → the prompt disambiguates which section needs a movement.
     currentSections = [
-      { section: "A", label: "A", tables: 2, ordinal: 0, selectedMovement: null },
-      { section: "B", label: "B", tables: 2, ordinal: 1, selectedMovement: null },
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "B",
+        tables: 2,
+        ordinal: 1,
+        selectedMovement: null,
+      },
     ];
 
     render(<ShowTablesPage />);
@@ -1113,8 +1140,20 @@ describe("ShowTablesPage", () => {
 
   describe("started: structural controls are locked", () => {
     const twoSections = [
-      { section: "A", label: "Red", tables: 2, ordinal: 0, selectedMovement: null },
-      { section: "B", label: "Blue", tables: 4, ordinal: 1, selectedMovement: null },
+      {
+        section: "A",
+        label: "Red",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "Blue",
+        tables: 4,
+        ordinal: 1,
+        selectedMovement: null,
+      },
     ];
 
     it("hides the table-count stepper once the game has started", () => {
@@ -1180,7 +1219,9 @@ describe("ShowTablesPage", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("hides the Swiss stationary toggle in the table dialog once started", async () => {
+    it("keeps the Swiss stationary toggle once started, and saves a change", async () => {
+      // Marking a pair stationary doesn't change the round structure, so the
+      // director can do it mid-event; it applies to rounds drawn from then on.
       mockStarted = true;
       currentSections = [
         {
@@ -1200,11 +1241,143 @@ describe("ShowTablesPage", () => {
       render(<ShowTablesPage />);
       fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
 
-      // The lifecycle (standing) controls are available, but the stationary
-      // toggle — which rewrites the Swiss movement — is not.
       expect(
-        screen.queryByRole("group", { name: "Stationary" }),
+        screen.getAllByText(/Applies to rounds drawn from now on/).length,
+      ).toBeGreaterThan(0);
+      await clickStationary("Yes");
+      await waitFor(() =>
+        expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
+          tables: 2,
+          stationaryPairs: [1],
+        }),
+      );
+    });
+  });
+
+  it("unwraps the expected-late seats payload through its SWR fetcher", async () => {
+    render(<ShowTablesPage />);
+    vi.mocked(fetcher).mockResolvedValueOnce({ seats: ["A1EW"] });
+    await expect(capturedLateFetcher!("/api/late")).resolves.toEqual(["A1EW"]);
+  });
+
+  it("renders with no expected-late data loaded yet", () => {
+    expectedLateUndefined = true;
+    render(<ShowTablesPage />);
+    expect(
+      screen.getByRole("button", { name: "Manage table 1" }),
+    ).toBeVisible();
+  });
+
+  it("unmarks an expected-late seat", async () => {
+    currentPairs = [pairAt("A1NS")];
+    expectedLateStore = ["A1EW"];
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    const group = await screen.findByRole("group", { name: "Expected late" });
+    fireEvent.click(within(group).getByRole("button", { name: "No" }));
+    await waitFor(() =>
+      expect(setSeatExpectedLate).toHaveBeenCalledWith("g1", "A1EW", false),
+    );
+    await waitFor(() => expect(expectedLateStore).toEqual([]));
+  });
+
+  it("marks a seat expected-late when the cache has no data yet", async () => {
+    currentPairs = [pairAt("A1NS")];
+    expectedLateStore = undefined as never;
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    const group = await screen.findByRole("group", { name: "Expected late" });
+    fireEvent.click(within(group).getByRole("button", { name: "Yes" }));
+    await waitFor(() => expect(expectedLateStore).toEqual(["A1EW"]));
+  });
+
+  it("alerts and rolls back when marking expected-late fails", async () => {
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    vi.mocked(setSeatExpectedLate).mockRejectedValueOnce(new Error("nope"));
+    currentPairs = [pairAt("A1NS")];
+    render(<ShowTablesPage />);
+    fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+    const group = await screen.findByRole("group", { name: "Expected late" });
+    fireEvent.click(within(group).getByRole("button", { name: "Yes" }));
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("nope"));
+  });
+
+  it("reports an error when renaming a section fails", async () => {
+    mockRenameSection.mockRejectedValueOnce(new Error("boom"));
+    currentSections = [
+      {
+        section: "A",
+        label: "A",
+        tables: 2,
+        ordinal: 0,
+        selectedMovement: null,
+      },
+      {
+        section: "B",
+        label: "Blue",
+        tables: 4,
+        ordinal: 1,
+        selectedMovement: null,
+      },
+    ];
+    render(<ShowTablesPage />);
+    const input = screen.getByLabelText("Section label");
+    fireEvent.change(input, { target: { value: "Renamed" } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(mockReportError).toHaveBeenCalled());
+  });
+
+  describe("post-start standing changes", () => {
+    async function openStandingForm() {
+      mockStarted = true;
+      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      fireEvent.click(
+        (await screen.findAllByRole("button", { name: /Change standing/ }))[0],
+      );
+      fireEvent.click(await screen.findByLabelText("No standing"));
+      fireEvent.click(screen.getByRole("button", { name: /^Save/ }));
+    }
+
+    it("saves a standing change through the service", async () => {
+      await openStandingForm();
+      await waitFor(() =>
+        expect(setParticipantStanding).toHaveBeenCalledWith("g1", "A1NS", {
+          standing: "WITHOUT_STANDING",
+        }),
+      );
+    });
+
+    it("alerts when the standing change fails", async () => {
+      const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+      vi.mocked(setParticipantStanding).mockRejectedValueOnce(new Error("bad"));
+      await openStandingForm();
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("bad"));
+    });
+
+    it("hides standing controls for a standard PAIRS game", async () => {
+      currentGameExtra = { gameType: "PAIRS", eventFormat: "STANDARD" };
+      mockStarted = true;
+      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      await screen.findAllByText(/A1NS-1/);
+      expect(
+        screen.queryByRole("button", { name: /Change standing/ }),
       ).not.toBeInTheDocument();
+    });
+
+    it("offers standing controls for Swiss PAIRS", async () => {
+      currentGameExtra = { gameType: "PAIRS", eventFormat: "SWISS" };
+      mockStarted = true;
+      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
+      render(<ShowTablesPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
+      expect(
+        (await screen.findAllByRole("button", { name: /Change standing/ }))
+          .length,
+      ).toBeGreaterThan(0);
     });
   });
 });

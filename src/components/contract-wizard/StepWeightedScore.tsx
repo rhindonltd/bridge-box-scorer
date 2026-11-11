@@ -61,11 +61,13 @@ export function StepWeightedScore({ onSubmit }: Props) {
   }
 
   function handleSuitSelected(suit: ContractSuit) {
+    /* v8 ignore next -- unreachable type-narrowing guard: this handler is only wired to the suit phase's UI */
     if (phase.step !== "suit") return;
     setPhase({ step: "declarer", level: phase.level, suit });
   }
 
   function handleDeclarerSelected(declarer: Direction, dbl: Doubling) {
+    /* v8 ignore next -- unreachable type-narrowing guard: this handler is only wired to the declarer phase's UI */
     if (phase.step !== "declarer") return;
     setPhase({
       step: "result",
@@ -77,6 +79,7 @@ export function StepWeightedScore({ onSubmit }: Props) {
   }
 
   function handleResultComplete(mode: "made" | "down", value: number) {
+    /* v8 ignore next -- unreachable type-narrowing guard: this handler is only wired to the result phase's UI */
     if (phase.step !== "result") return;
     const trickResult = mode === "down" ? -value : value;
     const contract = buildPlayedContractCode(
@@ -90,6 +93,7 @@ export function StepWeightedScore({ onSubmit }: Props) {
   }
 
   function handleWeightConfirmed() {
+    /* v8 ignore next -- unreachable type-narrowing guard: this handler is only wired to the weight phase's UI */
     if (phase.step !== "weight") return;
     // Allow up to 2 decimal places; clamp into (0, remaining].
     const rounded = Math.round(weight * 100) / 100;
@@ -103,6 +107,7 @@ export function StepWeightedScore({ onSubmit }: Props) {
 
   function handleBack() {
     switch (phase.step) {
+      /* v8 ignore next 2 -- unreachable: the list phase renders no Back button, so handleBack is never invoked there */
       case "list":
         return; // caller handles outer back via the wizard shell
       case "level":

@@ -15,9 +15,10 @@ vi.mock("@/swr/swr-keys", () => ({
   swrKeys: { boards: (id: string) => `/api/games/${id}/boards` },
 }));
 
+let gameOverrides: Record<string, unknown> = {};
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
-    game: { gameId: "g1", leadCardRequired: true },
+    game: { gameId: "g1", leadCardRequired: true, ...gameOverrides },
   }),
 }));
 
@@ -92,21 +93,18 @@ vi.mock("./Traveller", () => ({
 }));
 
 let wizardOnComplete: (data: unknown) => void;
+let wizardProps: Record<string, unknown>;
 let wizardOnBack: () => void;
 vi.mock("./DirectorContractWizard", () => ({
-  DirectorContractWizard: ({
-    boardNumber,
-    round,
-    table,
-    onComplete,
-    onBack,
-  }: {
+  DirectorContractWizard: (props: {
     boardNumber: number;
     round: number;
     table: number;
     onComplete: (d: unknown) => void;
     onBack: () => void;
   }) => {
+    const { boardNumber, round, table, onComplete, onBack } = props;
+    wizardProps = props;
     wizardOnComplete = onComplete;
     wizardOnBack = onBack;
     return (
@@ -128,6 +126,7 @@ async function goToWizard() {
 describe("CorrectResultPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    gameOverrides = {};
     swrState = { data: { boards: [1, 2, 3] }, isLoading: false };
     mockEmitWithAck.mockResolvedValue(undefined);
   });
@@ -340,5 +339,85 @@ describe("CorrectResultPage", () => {
     await waitFor(() =>
       expect(screen.getByText("Failed to save override")).toBeInTheDocument(),
     );
+  });
+
+  it("saves a weighted-score override", async () => {
+    const onResultCorrected = vi.fn();
+    render(<CorrectResultPage onResultCorrected={onResultCorrected} />);
+    await goToWizard();
+    wizardOnComplete({
+      type: "weighted",
+      components: [
+        { contract: "3NTE+1", weight: 60 },
+        { contract: "4SN=", weight: 40 },
+      ],
+    });
+    await waitFor(() => expect(onResultCorrected).toHaveBeenCalled());
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      "traveller:overrideResult",
+      expect.objectContaining({ result: "W60*3NTE+1;40*4SN=" }),
+    );
+  });
+  it("saves a §3.5 mismatch ruling", async () => {
+    const onResultCorrected = vi.fn();
+    render(<CorrectResultPage onResultCorrected={onResultCorrected} />);
+    await goToWizard();
+    wizardOnComplete({
+      type: "mismatch",
+      side: "NS",
+      direction: "HIGHER",
+      fault: "OWN",
+    });
+    await waitFor(() => expect(onResultCorrected).toHaveBeenCalled());
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      "traveller:markMismatch",
+      expect.objectContaining({
+        side: "NS",
+        direction: "HIGHER",
+        fault: "OWN",
+      }),
+    );
+  });
+  it("shows a mismatch-specific error message when the ruling fails", async () => {
+    mockEmitWithAck.mockRejectedValue("nope");
+    render(<CorrectResultPage onResultCorrected={vi.fn()} />);
+    await goToWizard();
+    wizardOnComplete({
+      type: "mismatch",
+      side: "NS",
+      direction: "HIGHER",
+      fault: "NOT",
+    });
+    expect(await screen.findByText("Failed to mark mismatch")).toBeInTheDocument();
+  });
+  it("derives the wizard's ruling options from the game", async () => {
+    gameOverrides = {
+      gameType: "TEAMS",
+      scoringType: "BAM",
+      eventFormat: "SWISS",
+    };
+    const { unmount } = render(<CorrectResultPage onResultCorrected={vi.fn()} />);
+    await goToWizard();
+    expect(wizardProps).toMatchObject({
+      allowTeamsRulings: true,
+      boardComparison: true,
+      allowPairsVoid: false,
+      allowMismatch: true,
+      teamsMismatch: true,
+    });
+    unmount();
+    gameOverrides = {
+      gameType: "PAIRS",
+      scoringType: "PAB",
+      eventFormat: "SWISS",
+    };
+    render(<CorrectResultPage onResultCorrected={vi.fn()} />);
+    await goToWizard();
+    expect(wizardProps).toMatchObject({
+      allowTeamsRulings: false,
+      boardComparison: true,
+      allowPairsVoid: true,
+      teamsMismatch: false,
+    });
   });
 });

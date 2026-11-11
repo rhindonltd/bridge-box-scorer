@@ -7,9 +7,16 @@ vi.mock("child_process", async (importActual) => {
 });
 
 import { execFile as mockExecFile } from "child_process";
-import { runWifiCtl, WifiCtlBusyError, WifiCtlError } from "@/lib/system/wifi-ctl";
+import {
+  runWifiCtl,
+  WifiCtlBusyError,
+  WifiCtlError,
+} from "@/lib/system/wifi-ctl";
 
-type ExecCallback = (e: unknown, r?: { stdout: string; stderr: string }) => void;
+type ExecCallback = (
+  e: unknown,
+  r?: { stdout: string; stderr: string },
+) => void;
 
 function resolveWith(stdout: string) {
   vi.mocked(mockExecFile).mockImplementation(((
@@ -57,10 +64,9 @@ describe("runWifiCtl", () => {
 
     await runWifiCtl("test-connect", ["HomeNet", "secret"]);
 
-    const args = (vi.mocked(mockExecFile).mock.calls[0] as unknown as [
-      string,
-      string[],
-    ])[1];
+    const args = (
+      vi.mocked(mockExecFile).mock.calls[0] as unknown as [string, string[]]
+    )[1];
     expect(args).toEqual([
       "-n",
       "/usr/local/bridgebox/bin/wifi-ctl.sh",

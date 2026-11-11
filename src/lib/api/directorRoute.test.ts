@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
@@ -20,8 +21,7 @@ const fakeDb = { marker: "db" } as never;
 function makeReq(headerToken: string | null = null): any {
   return {
     headers: {
-      get: (name: string) =>
-        name === "x-director-token" ? headerToken : null,
+      get: (name: string) => (name === "x-director-token" ? headerToken : null),
     },
     // A body must never be read now; fail loudly if a handler tries.
     json: vi.fn(async () => {
@@ -98,5 +98,54 @@ describe("withDirectorRoute", () => {
     );
 
     expect(res.status).toBe(404);
+  });
+
+  describe("bodySchema", () => {
+    const schema = z.object({ n: z.number() });
+    const bodyReq = (json: () => Promise<unknown>) => ({
+      ...makeReq("tok"),
+      json: vi.fn(json),
+    });
+
+    it("parses the body after auth and passes it to the handler", async () => {
+      const handler = vi.fn(async (_c: GameRouteContext<{ n: number }>) =>
+        NextResponse.json({ ok: true }),
+      );
+      await withDirectorRoute(handler, { bodySchema: schema })(
+        bodyReq(async () => ({ n: 4 })),
+        ctx({ gameId: "g1" }),
+      );
+      expect(handler.mock.calls[0][0].body).toEqual({ n: 4 });
+    });
+
+    it("returns 400 when the body fails validation", async () => {
+      const handler = vi.fn();
+      const res = await withDirectorRoute(handler, { bodySchema: schema })(
+        bodyReq(async () => ({ n: "x" })),
+        ctx({ gameId: "g1" }),
+      );
+      expect(res.status).toBe(400);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it("treats a non-JSON body as an empty object (then fails validation)", async () => {
+      const res = await withDirectorRoute(vi.fn(), { bodySchema: schema })(
+        bodyReq(async () => {
+          throw new Error("not json");
+        }),
+        ctx({ gameId: "g1" }),
+      );
+      expect(res.status).toBe(400);
+    });
+
+    it("still returns 401 before parsing a bad body", async () => {
+      vi.mocked(validateDirectorToken).mockReturnValue(false);
+      const r = bodyReq(async () => ({}));
+      const res = await withDirectorRoute(vi.fn(), { bodySchema: schema })(
+        r,
+        ctx({ gameId: "g1" }),
+      );
+      expect(res.status).toBe(401);
+    });
   });
 });

@@ -163,3 +163,9 @@ describe("voidMatchWon — BAM/PAB board-won units", () => {
     });
   });
 });
+
+describe("voidSplitVp — zero boards", () => {
+  it("gives each side the pool midpoint when the indemnity is zero IMPs", () => {
+    expect(voidSplitVp("SHORT_BOTH", 0, 20)).toEqual({ home: 10, opponent: 10 });
+  });
+});

@@ -26,6 +26,7 @@ vi.mock("@/components/contract-wizard/StepAdjustmentType", () => ({
     onRemoveTeamsBoard,
     onVoidTeamsMatch,
     onVoidPairsMatch,
+    onMismatch,
   }: {
     onEnterContract: () => void;
     onAdjustedScore: () => void;
@@ -34,6 +35,7 @@ vi.mock("@/components/contract-wizard/StepAdjustmentType", () => ({
     onRemoveTeamsBoard?: () => void;
     onVoidTeamsMatch?: () => void;
     onVoidPairsMatch?: () => void;
+    onMismatch?: () => void;
   }) => (
     <div data-testid="step-hub">
       <button onClick={onEnterContract}>hub-contract</button>
@@ -49,10 +51,30 @@ vi.mock("@/components/contract-wizard/StepAdjustmentType", () => ({
       {onVoidPairsMatch && (
         <button onClick={onVoidPairsMatch}>hub-void-pairs</button>
       )}
+      {onMismatch && <button onClick={onMismatch}>hub-mismatch</button>}
     </div>
   ),
 }));
 
+vi.mock("@/components/contract-wizard/StepMismatch", () => ({
+  StepMismatch: ({
+    teams,
+    onSubmit,
+  }: {
+    teams?: boolean;
+    onSubmit: (r: { side: string; direction: string; fault: string }) => void;
+  }) => (
+    <div data-testid="step-mismatch" data-teams={String(!!teams)}>
+      <button
+        onClick={() =>
+          onSubmit({ side: "NS", direction: "HIGHER", fault: "OWN" })
+        }
+      >
+        mismatch-submit
+      </button>
+    </div>
+  ),
+}));
 vi.mock("@/components/contract-wizard/StepPairsVoid", () => ({
   StepPairsVoid: ({ onSubmit }: { onSubmit: (cause: string) => void }) => (
     <div data-testid="step-pairs-void">
@@ -391,6 +413,35 @@ describe("DirectorContractWizard", () => {
     expect(screen.getByTestId("step-hub")).toBeInTheDocument();
   });
 
+  it("hides the mismatch branch by default", () => {
+    renderWizard();
+    expect(screen.queryByText("hub-mismatch")).not.toBeInTheDocument();
+  });
+  it("routes and submits a Swiss mismatch ruling when allowed", () => {
+    const { onComplete } = renderWizard({
+      allowMismatch: true,
+      teamsMismatch: true,
+    });
+    fireEvent.click(screen.getByText("hub-mismatch"));
+    expect(screen.getByText("Mismatch (Swiss)")).toBeInTheDocument();
+    expect(screen.getByTestId("step-mismatch")).toHaveAttribute(
+      "data-teams",
+      "true",
+    );
+    fireEvent.click(screen.getByText("mismatch-submit"));
+    expect(onComplete).toHaveBeenCalledWith({
+      type: "mismatch",
+      side: "NS",
+      direction: "HIGHER",
+      fault: "OWN",
+    });
+  });
+  it("returns from the mismatch step to the hub", () => {
+    renderWizard({ allowMismatch: true });
+    fireEvent.click(screen.getByText("hub-mismatch"));
+    fireEvent.click(screen.getByLabelText("Go back"));
+    expect(screen.getByTestId("step-hub")).toBeInTheDocument();
+  });
   it("navigates back through every step", () => {
     const { onBack } = renderWizard({ leadCardRequired: true });
 

@@ -23,7 +23,12 @@ describe("ChangeDeviceView", () => {
     render(<ChangeDeviceView gameId="g1" seat="A3NS" />);
 
     // Defaults to a plain change-device code (same pair, new device).
-    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS", "CHANGE_DEVICE");
+    expect(mockGenerate).toHaveBeenCalledWith(
+      "g1",
+      "A3NS",
+      "CHANGE_DEVICE",
+      false,
+    );
     expect(await screen.findByTestId("seat-transfer-code")).toHaveTextContent(
       "ABC234",
     );
@@ -37,7 +42,7 @@ describe("ChangeDeviceView", () => {
 
     render(<ChangeDeviceView gameId="g1" seat="A3NS" kind="HANDOVER" />);
 
-    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS", "HANDOVER");
+    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS", "HANDOVER", false);
     expect(await screen.findByTestId("seat-transfer-code")).toHaveTextContent(
       "HAND01",
     );
@@ -52,7 +57,7 @@ describe("ChangeDeviceView", () => {
 
     render(<ChangeDeviceView gameId="g1" seat="A3NS" kind="REINSTATE" />);
 
-    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS", "REINSTATE");
+    expect(mockGenerate).toHaveBeenCalledWith("g1", "A3NS", "REINSTATE", false);
     expect(await screen.findByTestId("seat-transfer-code")).toHaveTextContent(
       "BACK01",
     );
@@ -62,6 +67,23 @@ describe("ChangeDeviceView", () => {
     expect(screen.getByText(/pick up the seat again/i)).toBeInTheDocument();
   });
 
+  it("mints a CHANGE_DEVICE code as the director and speaks about the pair's new device", async () => {
+    mockGenerate.mockResolvedValue("MOVE01");
+    render(<ChangeDeviceView gameId="g1" seat="A3NS" byDirector />);
+    expect(mockGenerate).toHaveBeenCalledWith(
+      "g1",
+      "A3NS",
+      "CHANGE_DEVICE",
+      true,
+    );
+    expect(await screen.findByTestId("seat-transfer-code")).toHaveTextContent(
+      "MOVE01",
+    );
+    expect(screen.getByText(/pair.s new device/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/old device will be signed out/i),
+    ).toBeInTheDocument();
+  });
   it("shows the server error when generation fails", async () => {
     mockGenerate.mockRejectedValue(new Error("Unauthorized"));
 

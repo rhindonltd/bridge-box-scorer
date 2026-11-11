@@ -139,12 +139,16 @@ export function SwissDrawPreview({
     const first = (s: string) => s.split(" ")[0] || s;
     return a && a !== "—" ? `${first(a)} & ${first(b)}` : `Pair ${id}`;
   };
+  // These are only called while rendering the half-match card, which itself
+  // requires `preview.halfMatch`, so the "" fallbacks are never reached.
+  /* v8 ignore start -- unreachable: only called inside the `preview.halfMatch != null` card */
   const anchorLabel = () =>
     preview.halfMatch ? shortLabel(preview.halfMatch.group.anchor) : "";
   const halfOneLabel = () =>
     preview.halfMatch ? shortLabel(preview.halfMatch.group.halfOneOpponent) : "";
   const halfTwoLabel = () =>
     preview.halfMatch ? shortLabel(preview.halfMatch.group.halfTwoOpponent) : "";
+  /* v8 ignore stop */
 
   // Running VP total per pair, from the standings the draw ranked on. Shown on
   // each card so the director sees the field's totals inline (no separate list).
@@ -157,6 +161,7 @@ export function SwissDrawPreview({
 
   function pickPair(pairId: SwissPairId) {
     // A stationary pair is locked at its seat; it can't take part in a swap.
+    /* v8 ignore next -- unreachable: a stationary pair's chip button is disabled, so it never calls pickPair */
     if (isStationary(pairId)) return;
     if (selected == null) {
       setSelected(pairId);
@@ -174,9 +179,11 @@ export function SwissDrawPreview({
   function pickBye() {
     // Only meaningful when there's a sit-out and a pair is selected to swap in.
     // A stationary pair can't be given the bye (it stays at its home seat).
+    /* v8 ignore start -- unreachable: the bye button only renders when a pair sits out, is disabled until a pair is selected, and a stationary pair can never be selected */
     if (sitOutPairId == null || selected == null || isStationary(selected)) {
       return;
     }
+    /* v8 ignore stop */
     const result = reassignBye(seating, sitOutPairId, selected);
     setSeating(result.seating);
     setSitOutPairId(result.sitOutPairId);

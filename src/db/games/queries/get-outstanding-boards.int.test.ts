@@ -140,6 +140,17 @@ describe("getOutstandingBoards", () => {
     expect(board.ewPair).toBeNull();
   });
 
+  it("leaves an unseated NS side null", async () => {
+    await seatPair("A1EW", "Carol", "Dan");
+    await seedBoards([makeBoard({ boardNumber: 1, status: "NOT_PLAYED" })]);
+    const { getOutstandingBoards } = await import(
+      "@/db/games/queries/get-outstanding-boards"
+    );
+    const db = (await harness.getDb()) as Db;
+    const [board] = await getOutstandingBoards(db);
+    expect(board.nsPair).toBeNull();
+    expect(board.ewPair).toBe("Carol North & Dan South");
+  });
   // Seat a merged (split=0) handover at A1NS with two ACTIVE occupancies, then
   // mark one the main pair. Returns the two occupancy ids.
   async function seatMergedHandoverA1NS(

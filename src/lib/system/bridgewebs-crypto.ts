@@ -109,9 +109,6 @@ export function decryptSecret(payload: string): string {
 
   const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);
-  const plain = Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]);
+  const plain = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
   return plain.toString("utf-8");
 }

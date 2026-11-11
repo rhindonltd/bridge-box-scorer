@@ -24,6 +24,9 @@ describe("swissPairIdFromParticipant", () => {
     // A directional seat is NOT a board id — it must not decode here.
     expect(swissPairIdFromParticipant("A1NS", TABLES)).toBeNull();
   });
+  it("rejects pair number zero", () => {
+    expect(swissPairIdFromParticipant("A0", TABLES)).toBeNull();
+  });
 });
 
 describe("swissPairIdFromSeat", () => {

@@ -9,6 +9,7 @@ import {
   neuberg,
   artificialImps,
   componentCrossImps,
+  weightedComponentScores,
 } from "./assigned";
 
 function line(outcome: string, nsId: string, ewId: string): PairLine {
@@ -309,5 +310,20 @@ describe("scoreXIMP — assigned scores", () => {
     const weighted = result.find((r) => r.nsId === "3")!;
     expect(weighted.nsCrossImps).toBe(3);
     expect(weighted.ewCrossImps).toBe(-3);
+  });
+});
+
+describe("weightedComponentScores", () => {
+  it("returns null for an outcome that is not a well-formed weighted score", () => {
+    expect(weightedComponentScores(1, "3NTN=" as BoardOutcome)).toBeNull();
+    expect(weightedComponentScores(1, "W50*3NTN=" as BoardOutcome)).toBeNull();
+  });
+  it("resolves each component to a weight fraction and a score", () => {
+    expect(
+      weightedComponentScores(1, "W60*3NTN=;40*3NTN+1" as BoardOutcome),
+    ).toEqual([
+      { weight: 0.6, score: 400 },
+      { weight: 0.4, score: 430 },
+    ]);
   });
 });

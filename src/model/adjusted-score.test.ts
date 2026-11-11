@@ -244,4 +244,11 @@ describe("isAssignedOutcome", () => {
   });
 });
 
-
+describe("parseWeightedScore — malformed components", () => {
+  it("rejects a component with no '*' separator", () => {
+    expect(parseWeightedScore("W100")).toBeNull();
+  });
+  it("rejects a component with an empty weight", () => {
+    expect(parseWeightedScore("W*3NTN=")).toBeNull();
+  });
+});

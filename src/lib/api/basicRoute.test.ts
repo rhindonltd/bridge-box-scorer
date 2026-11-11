@@ -4,7 +4,12 @@ import { NextResponse } from "next/server";
 // Silence structured error logging on the 500 path.
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
-  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
 }));
 
 import { withBasicRoute, type BasicRouteContext } from "./basicRoute";
@@ -64,9 +69,8 @@ describe("withBasicRoute", () => {
   });
 
   it("awaits and forwards dynamic route params to the handler", async () => {
-    const handler = vi.fn(
-      async (_context: BasicRouteContext<{ id: string }>) =>
-        NextResponse.json({ ok: true }),
+    const handler = vi.fn(async (_context: BasicRouteContext<{ id: string }>) =>
+      NextResponse.json({ ok: true }),
     );
     const route = withBasicRoute(handler);
 

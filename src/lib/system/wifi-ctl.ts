@@ -81,13 +81,10 @@ export async function runWifiCtl(
     const stderr =
       typeof e.stderr === "string"
         ? e.stderr
-        : e.stderr?.toString() ?? e.message ?? "";
+        : (e.stderr?.toString() ?? e.message ?? "");
 
     // The helper may report "busy" on either stream depending on how it exits.
-    if (
-      stdout.includes(BUSY_MARKER) ||
-      stderr.includes(BUSY_MARKER)
-    ) {
+    if (stdout.includes(BUSY_MARKER) || stderr.includes(BUSY_MARKER)) {
       throw new WifiCtlBusyError();
     }
 

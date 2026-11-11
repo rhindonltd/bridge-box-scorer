@@ -40,7 +40,7 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Withdrawals (teams) | §2.4.3–§2.4.9, §3.3.9 | 07 | `ABSENT-TEAMS-1` |
 | Substitution scoring — one line / two lines / eligibility | §2.4.7, §2.4.9 | 07, [12](12-handover-substitution.md) | `SUBST-1..3`, `SUB-1..13` |
 | Swiss half-matches | — | 05 + 07 | `SWISS-17..19`, `HALFMATCH-1..3` |
-| §3.5 mismatch detection | §3.5 | [06](06-director-rulings.md) | `RULE-24..27` |
+| §3.5 mismatch detection + Review Mismatches | §3.5 | [06](06-director-rulings.md) | `RULE-24`–`RULE-27f` |
 
 ## Director rulings
 
@@ -94,21 +94,15 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Player self-withdrawal, opponent moved on / "opponents have withdrawn" | 11 | `WD-1..12` |
 | Director withdrawal, token retired | 11 | `WDD-1..6` |
 | Reinstating a withdrawn pair by code | 11 | `RE-1..11` |
+| Director moves a pair whose device died to a new device | 11 | `DEV-1..5` |
 | Which events offer these controls | 11 | `GATE-1..3` |
 | Handover on the same device | [12](12-handover-substitution.md) | `HAND-1..8` |
 | Handover to a different device by code | 12 | `HAND-9..14` |
 | Returning pair, third-pair / nothing-left / teams limits, retired tokens | 12 | `RET-1..7` |
-| Director handover from Tables (incl. known gap) | 12 | `HAND-DIR-1..4` |
 | Absent boards and export completeness | [10](10-sharing-export-lifecycle.md) | `EXP-7..8` |
 | Share Director Access in the header menu; back returns to the previous page | 10 | `SHARE-1..10` |
 
 ## Known gaps / out of scope
-- **Director handover gives the arriving pair no device:** after **Manage
-  Tables → Hand over to real pair**, the old device is signed out and no code is
-  shown for the arriving pair, so the seat can only be scored through director
-  overrides. `HAND-DIR-4` records this; it needs a product decision (offer a
-  claim code, or drop the director path in favour of the player Handover).
-
 - **Accessibility (WCAG):** needs assistive-tech + expert review; not covered.
 - **Arrow-switched Mitchell as its own fixture:** the seeder emits a standard
   (two-winner) Mitchell; the one-winner path is covered via Howell. Add an

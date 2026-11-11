@@ -6,7 +6,7 @@ import {
   removedBoardNsSwing,
 } from "@/model/teams-removed-board";
 import { VoidCause, parseVoidMatch } from "@/model/teams-match-void";
-import { MismatchRuling, parseMismatch } from "@/model/swiss-mismatch";
+import { MismatchRuling, parseMismatches } from "@/model/swiss-mismatch";
 
 /**
  * The ascending union of the board numbers keyed in the given rows-by-board
@@ -62,7 +62,7 @@ export interface TeamMatchStructureRow {
   /**
    * The match-level director ruling, home-relative (`VOID:<cause>` /
    * `MM:<side>:<direction>:<fault>`), or null. Read by {@link matchVoidCause} /
-   * {@link matchMismatch} — no side inversion, the writer stored it relative to
+   * {@link matchMismatches} — no side inversion, the writer stored it relative to
    * this match's `home` team.
    */
   ruling?: string | null;
@@ -176,6 +176,7 @@ export function groupTeamMatches<R extends TeamMatchRow>(
     try {
       table = parseSeat(seat).tableNumber;
     } catch {
+      /* v8 ignore next -- unreachable: callers only pass seats that already parsed in the loop below */
       return new Map<number, R>();
     }
     return byRoom.get(`${section}|${round}|${table}`) ?? new Map<number, R>();
@@ -287,15 +288,15 @@ export function matchVoidCause<R extends TeamMatchRow>(
 }
 
 /**
- * The §3.5 mismatch ruling for a match, home-relative (NS = home team, EW =
- * opponent), or null if the match is not a mismatch. Read directly off the
- * match row's `ruling` (an `MM:<side>:<direction>:<fault>` token stored
- * home-relative), so no side flip is needed.
+ * The §3.5 mismatch rulings for a match, home-relative (NS = home team, EW =
+ * opponent) — one per ruled side (both teams can have been mismatched), empty
+ * if the match is not a mismatch. Read directly off the match row's `ruling`
+ * (stored home-relative), so no side flip is needed.
  */
-export function matchMismatch<R extends TeamMatchRow>(
+export function matchMismatches<R extends TeamMatchRow>(
   match: TeamMatch<R>,
-): MismatchRuling | null {
-  return match.ruling != null ? parseMismatch(match.ruling) : null;
+): MismatchRuling[] {
+  return match.ruling != null ? parseMismatches(match.ruling) : [];
 }
 
 /** One board's Board-a-Match result from the primary/home team's perspective. */
@@ -454,6 +455,10 @@ function removedBoardHomeWin<R extends TeamMatchRow>(
   awayRow: R | undefined,
 ): number | null {
   const homeFault = removalFaultOfRow(homeRow);
+  // A removed HOME row with no parseable token counts as a tie — the same
+  // fallback the opponent room gets below, and the board-win twin of
+  // `removedBoardHomeSwing`'s 0 swing — rather than dropping out of the match.
+  if (homeFault == null && homeRow?.status === "REMOVED_TEAMS") return 0.5;
   const fault = homeFault ?? invertRemovalFaultForOpponent(awayRow);
   if (fault === "UNRESOLVED") {
     // A REMOVED_TEAMS row with no parseable token → a tie, so it still counts.
@@ -609,6 +614,7 @@ export function groupTeamTriples<R extends TeamMatchRow>(
     try {
       table = parseSeat(seat).tableNumber;
     } catch {
+      /* v8 ignore next -- unreachable: every seat passed here was already parsed (and would have thrown) when the comparison's table numbers were read */
       return new Map<number, R>();
     }
     const out = new Map<number, R>();

@@ -410,7 +410,9 @@ describe("generateUsebioXml", () => {
       const data = makeBasicGameData();
       data.scoringType = "IMP";
       const xml = generateUsebioXml(data);
-      expect(xml).toContain("<BOARD_SCORING_METHOD>IMPS</BOARD_SCORING_METHOD>");
+      expect(xml).toContain(
+        "<BOARD_SCORING_METHOD>IMPS</BOARD_SCORING_METHOD>",
+      );
     });
 
     it("maps XIMP to CROSS_IMPS", () => {
@@ -954,12 +956,16 @@ describe("generateUsebioXml", () => {
 
     it("tells EBU tooling that team pairing is available", () => {
       const xml = generateUsebioXml(makeSwissTeamsData());
-      expect(xml).toContain("<TEAM_PAIRING_AVAILABLE>Y</TEAM_PAIRING_AVAILABLE>");
+      expect(xml).toContain(
+        "<TEAM_PAIRING_AVAILABLE>Y</TEAM_PAIRING_AVAILABLE>",
+      );
     });
 
     it("tags each traveller line with the pairs that sat NS and EW", () => {
       const xml = generateUsebioXml(makeSwissTeamsData());
-      const line = xml.split("<TRAVELLER_LINE>")[1].split("</TRAVELLER_LINE>")[0];
+      const line = xml
+        .split("<TRAVELLER_LINE>")[1]
+        .split("</TRAVELLER_LINE>")[0];
       expect(line).toContain("<NS_PAIR_NUMBER>11-1-2</NS_PAIR_NUMBER>");
       expect(line).toContain("<EW_PAIR_NUMBER>2-3-4</EW_PAIR_NUMBER>");
       // Identity comes straight after DIRECTION, before the contract detail.
@@ -976,7 +982,9 @@ describe("generateUsebioXml", () => {
       delete data.matches[0].boards[0].travellerLines[0].nsPairNumber;
       delete data.matches[0].boards[0].travellerLines[0].ewPairNumber;
       const xml = generateUsebioXml(data);
-      const line = xml.split("<TRAVELLER_LINE>")[1].split("</TRAVELLER_LINE>")[0];
+      const line = xml
+        .split("<TRAVELLER_LINE>")[1]
+        .split("</TRAVELLER_LINE>")[0];
       expect(line).not.toContain("NS_PAIR_NUMBER");
       expect(line).not.toContain("EW_PAIR_NUMBER");
     });
@@ -1004,9 +1012,36 @@ describe("generateUsebioXml", () => {
         travellerLines: [],
       };
       data.matches = [
-        { round: 1, team: "11", opposingTeam: "2", startBoard: 1, endBoard: 4, teamScore: 13, opposingTeamScore: 7, boards: [triBoard] },
-        { round: 1, team: "11", opposingTeam: "3", startBoard: 1, endBoard: 4, teamScore: 12, opposingTeamScore: 8, boards: [triBoard] },
-        { round: 1, team: "2", opposingTeam: "3", startBoard: 1, endBoard: 4, teamScore: 11, opposingTeamScore: 9, boards: [triBoard] },
+        {
+          round: 1,
+          team: "11",
+          opposingTeam: "2",
+          startBoard: 1,
+          endBoard: 4,
+          teamScore: 13,
+          opposingTeamScore: 7,
+          boards: [triBoard],
+        },
+        {
+          round: 1,
+          team: "11",
+          opposingTeam: "3",
+          startBoard: 1,
+          endBoard: 4,
+          teamScore: 12,
+          opposingTeamScore: 8,
+          boards: [triBoard],
+        },
+        {
+          round: 1,
+          team: "2",
+          opposingTeam: "3",
+          startBoard: 1,
+          endBoard: 4,
+          teamScore: 11,
+          opposingTeamScore: 9,
+          boards: [triBoard],
+        },
       ];
 
       const xml = generateUsebioXml(data);
@@ -1080,9 +1115,7 @@ describe("generateUsebioXml", () => {
   describe("Board-comparison teams", () => {
     // Build board-comparison teams data on the given scale: BAM win = 1 / tie =
     // 0.5, PAB win = 2 / tie = 1.
-    function makeData(
-      scoring: "BAM" | "PAB",
-    ): UsebioBoardComparisonTeamsData {
+    function makeData(scoring: "BAM" | "PAB"): UsebioBoardComparisonTeamsData {
       const win = scoring === "PAB" ? 2 : 1;
       const tie = win / 2;
       return {
@@ -1102,12 +1135,24 @@ describe("generateUsebioXml", () => {
               {
                 pairNumber: "1-1-2",
                 player1: { firstName: "Ann", lastName: "One", nationalId: "1" },
-                player2: { firstName: "Bob", lastName: "Two", nationalId: null },
+                player2: {
+                  firstName: "Bob",
+                  lastName: "Two",
+                  nationalId: null,
+                },
               },
               {
                 pairNumber: "1-3-4",
-                player1: { firstName: "Cy", lastName: "Three", nationalId: null },
-                player2: { firstName: "Di", lastName: "Four", nationalId: null },
+                player1: {
+                  firstName: "Cy",
+                  lastName: "Three",
+                  nationalId: null,
+                },
+                player2: {
+                  firstName: "Di",
+                  lastName: "Four",
+                  nationalId: null,
+                },
               },
             ],
           },
@@ -1118,13 +1163,25 @@ describe("generateUsebioXml", () => {
             pairs: [
               {
                 pairNumber: "2-1-2",
-                player1: { firstName: "Ed", lastName: "Five", nationalId: null },
+                player1: {
+                  firstName: "Ed",
+                  lastName: "Five",
+                  nationalId: null,
+                },
                 player2: { firstName: "Fi", lastName: "Six", nationalId: null },
               },
               {
                 pairNumber: "2-3-4",
-                player1: { firstName: "Gu", lastName: "Seven", nationalId: null },
-                player2: { firstName: "Ha", lastName: "Eight", nationalId: null },
+                player1: {
+                  firstName: "Gu",
+                  lastName: "Seven",
+                  nationalId: null,
+                },
+                player2: {
+                  firstName: "Ha",
+                  lastName: "Eight",
+                  nationalId: null,
+                },
               },
             ],
           },
@@ -1225,6 +1282,20 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("<TEAM_SCORE>3</TEAM_SCORE>");
       expect(xml).toContain("<OPPOSING_TEAM_SCORE>1</OPPOSING_TEAM_SCORE>");
       expect(xml).not.toContain("CROSS_IMP_POINTS");
+    });
+    it("defaults an empty section name to A", () => {
+      const data = makeData("BAM");
+      data.sectionName = "";
+      const xml = generateUsebioXml(data);
+      expect(xml).toContain('<SECTION SECTION_ID="A">');
+    });
+    it("omits TOTAL_SCORE / PLACE for a team with no ranking entry", () => {
+      const data = makeData("BAM");
+      data.ranking = data.ranking.filter((r) => r.number === "1");
+      const xml = generateUsebioXml(data);
+      // Only team 1 (Sharks) carries a total; Dragons' total (0.5) is absent.
+      expect(xml.match(/<TOTAL_SCORE>/g)).toHaveLength(1);
+      expect(xml).not.toContain("<TOTAL_SCORE>0.5</TOTAL_SCORE>");
     });
   });
 });

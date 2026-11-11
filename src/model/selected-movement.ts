@@ -81,8 +81,29 @@ export const swissSpecSchema = z
      * opponent comes to them. Pair ids are the Swiss stable numbering — 1..tables
      * are the pairs that start North/South, tables+1..2*tables the pairs that
      * start East/West. Optional and defaults to none.
+     *
+     * This is the list in force NOW: the director may change it at any time,
+     * including during the event, and the change applies to rounds drawn from
+     * then on. Rounds already drawn keep the list they were drawn under — see
+     * {@link stationaryEarlier} and {@link stationaryPairsForRound}.
      */
     stationaryPairs: z.array(z.number().int().positive()).optional(),
+    /**
+     * The stationary lists that applied to rounds already drawn when the
+     * director later changed {@link stationaryPairs}. Each entry says "through
+     * round N the list was `pairs`" (ascending, one per change). A round with
+     * no entry covering it uses `stationaryPairs`. Written by the server when a
+     * change is saved after play has begun (see {@link withStationaryHistory});
+     * clients never need to send it.
+     */
+    stationaryEarlier: z
+      .array(
+        z.object({
+          throughRound: z.number().int().positive(),
+          pairs: z.array(z.number().int().positive()),
+        }),
+      )
+      .optional(),
     /**
      * How an odd pair count is resolved. Defaults to "BYE". Only meaningful when
      * there is an odd number of pairs (i.e. one empty seat in the field).
@@ -119,6 +140,67 @@ export const swissSpecSchema = z
   });
 
 export type SwissMovementSpec = z.infer<typeof swissSpecSchema>;
+
+/**
+ * The stationary pairs that applied to `round` of a Swiss Pairs movement: the
+ * list recorded for the earliest change that still covers that round, else the
+ * current list. A round, once drawn, is a record of what happened — so a
+ * mid-event change to the stationary list must not alter how an earlier round
+ * is judged (e.g. when replaying it to look for mismatches).
+ */
+export function stationaryPairsForRound(
+  swiss: Pick<SwissMovementSpec, "stationaryPairs" | "stationaryEarlier">,
+  round: number,
+): number[] {
+  const covering = (swiss.stationaryEarlier ?? [])
+    .filter((e) => round <= e.throughRound)
+    .sort((a, b) => a.throughRound - b.throughRound)[0];
+  return covering ? covering.pairs : (swiss.stationaryPairs ?? []);
+}
+
+const sameIds = (a: readonly number[], b: readonly number[]) =>
+  JSON.stringify([...a].sort((m, n) => m - n)) ===
+  JSON.stringify([...b].sort((m, n) => m - n));
+
+/**
+ * Carry the stationary history forward when a Swiss Pairs movement is saved.
+ *
+ * `highestDrawnRound` is the highest round already committed (0 before play).
+ * If the stationary list is being changed once rounds exist, the list that
+ * applied up to and including that round is recorded, so those rounds keep the
+ * list they were drawn under and only later draws use the new one. Changing it
+ * again before the next draw keeps the FIRST recorded list (that is the one the
+ * drawn rounds really used). Before any round is drawn nothing is recorded.
+ *
+ * The history is always taken from `previous` — whatever `next` carries is
+ * ignored — so a client re-sending an old spec cannot rewrite or drop it.
+ */
+export function withStationaryHistory(
+  previous: SelectedMovement | null,
+  next: SelectedMovement,
+  highestDrawnRound: number,
+): SelectedMovement {
+  if (next.source !== "SWISS") return next;
+  const earlier =
+    previous?.source === "SWISS"
+      ? [...(previous.swiss.stationaryEarlier ?? [])]
+      : [];
+  if (previous?.source === "SWISS" && highestDrawnRound >= 1) {
+    const before = previous.swiss.stationaryPairs ?? [];
+    const after = next.swiss.stationaryPairs ?? [];
+    if (
+      !sameIds(before, after) &&
+      !earlier.some((e) => e.throughRound === highestDrawnRound)
+    ) {
+      earlier.push({ throughRound: highestDrawnRound, pairs: [...before] });
+    }
+  }
+  const { stationaryEarlier: _dropped, ...rest } = next.swiss;
+  return {
+    source: "SWISS",
+    swiss: earlier.length > 0 ? { ...rest, stationaryEarlier: earlier } : rest,
+  };
+}
 
 /** How an odd Swiss Pairs field is resolved (`oddHandling`); default "BYE". */
 export type SwissPairsOddHandling = z.infer<typeof swissPairsOddHandlingSchema>;
@@ -397,17 +479,17 @@ export function selectedMovementsEqual(
       const samePlan =
         JSON.stringify(x.oddRoundPlan ?? null) ===
         JSON.stringify(y.oddRoundPlan ?? null);
-      const sameStationary =
-        JSON.stringify([...(x.stationaryPairs ?? [])].sort((m, n) => m - n)) ===
-        JSON.stringify([...(y.stationaryPairs ?? [])].sort((m, n) => m - n));
       return (
         x.tables === y.tables &&
         x.rounds === y.rounds &&
         x.boardsPerRound === y.boardsPerRound &&
         // Absent oddHandling means the default "BYE".
         (x.oddHandling ?? "BYE") === (y.oddHandling ?? "BYE") &&
-        samePlan &&
-        sameStationary
+        // The stationary list is deliberately NOT compared: it doesn't change
+        // the round structure the timer is derived from, so marking a pair
+        // stationary (even mid-event) must not count as a new movement and wipe
+        // a running timer.
+        samePlan
       );
     }
     case "SWISS_TEAMS": {

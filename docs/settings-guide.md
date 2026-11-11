@@ -7,13 +7,17 @@ Settings has these options:
 
 - **WiFi Settings**
 - **Club Information**
+- **BridgeWebs**
+- **EBU**
+- **Cloud Backup**
 - **Update Admin Key**
 - **Log Out**
 
-Some settings are protected by the Bridge Box's **admin key** — a secret the
-Bridge Box's owner sets. When a protected screen needs it, you are asked to
-enter the admin key once; you won't be asked again on that device until you
-**Log Out**.
+Settings is protected by the Bridge Box's **admin key** — a secret the Bridge
+Box's owner sets. The first time you open Settings on a device you are asked
+to enter it; you won't be asked again on that device until you **Log Out**. If
+you are asked again partway through ("Session expired. Please re-enter the
+admin key."), enter the key and carry on.
 
 > The admin key protects the Bridge Box's settings; it is not a per-game
 > director code. Directors do not need it to run a game.
@@ -53,8 +57,76 @@ credentials.
 
 ## Club Information
 
-Records your club's details, which are used when exporting results (for example
-the club name and number that appear in the USEBIO file).
+Records your club's details, which identify the club on published results and
+on the files you export.
+
+1. Open **Settings → Club Information**.
+2. Enter the **Club Name** and the **EBU Club Number**. Both are needed.
+3. Tap **Save**. You'll see **Club info saved**.
+
+Until these are set, no results file can be made — the **Export & Publish**
+screen shows **Club information** as **Not ready** (see the
+[Director Guide](director-guide.md#exporting-and-publishing-results)).
+
+---
+
+## BridgeWebs
+
+Connects the Bridge Box to your club's **BridgeWebs** website, so that:
+
+- when creating a game you can pick from the day's events listed on BridgeWebs
+  (which fills in the event name), and
+- at the end of a session a director can **Upload to BridgeWebs** from **Export
+  & Publish**.
+
+1. Open **Settings → BridgeWebs**.
+2. Enter the **BridgeWebs Club Code** (your club's BridgeWebs name, e.g.
+   *anytownbc*) and the **BridgeWebs Password**.
+3. Tap **Save**. You'll see **BridgeWebs settings saved**.
+
+The first time, both the club code and the password are needed. Once a password
+is saved the screen says **A password is saved. Leave blank to keep it.** — so
+to change only the club code, leave the password empty. The saved password is
+never shown again; to change it, type the new one.
+
+Publishing needs the Bridge Box to be connected to the internet (see
+[WiFi Settings](#wifi-settings)).
+
+---
+
+## EBU
+
+Connects the Bridge Box to your club's **EBU** account, so a director can
+**Submit to EBU** from **Export & Publish** at the end of a session — for
+masterpoints and NGS grading.
+
+1. Open **Settings → EBU**.
+2. Enter the **EBU Club Number** and the **EBU Password**.
+3. Tap **Save**. You'll see **EBU settings saved**.
+
+As with BridgeWebs, both are needed the first time; afterwards you can leave
+the password blank to keep the saved one, and the saved password is never shown
+again. Submitting needs the Bridge Box to be connected to the internet.
+
+---
+
+## Cloud Backup
+
+Shows whether the games on this Bridge Box are being backed up off the box.
+Cloud backup is part of the subscription.
+
+- If it isn't part of your subscription, the screen says **Cloud backup is not
+  enabled on this box**. Your games are still kept safely on the Bridge Box
+  itself.
+- If it is, the Bridge Box backs up your games automatically. **Games backed
+  up** shows when that last happened (for example "3 minutes ago"), or **Not
+  yet**.
+- **Back up now** starts a backup straight away — useful right after a session,
+  before switching the Bridge Box off. You'll see **Backup started**.
+
+If the last backup didn't finish, the screen says so in a short note (for
+example because the Bridge Box was offline). It tries again by itself, so there
+is nothing you need to do — just check it is connected to the internet.
 
 ---
 

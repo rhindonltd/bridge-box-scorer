@@ -22,6 +22,7 @@ export function calculateOverallIMPResults(
       // order unchanged (every pair divided by the same count).
       toResult: (pairId, data) => ({
         pairId,
+        /* v8 ignore next -- unreachable: a pair only gets an entry once a board is added, so boards >= 1 */
         imps: data.boards > 0 ? data.value / data.boards : 0,
       }),
       sort: (x) => x.imps,

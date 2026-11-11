@@ -93,4 +93,4 @@ a live Swiss game. Needs a player device to prove the commit propagates.
 
 > Swiss also has **§3.5 mismatch detection** (a retroactive score change can make
 > an earlier draw's opponents wrong). That is a director ruling — see
-> [file 06](06-director-rulings.md) (`RULE-MM-*`).
+> [file 06](06-director-rulings.md) (`RULE-24`–`RULE-27f`).

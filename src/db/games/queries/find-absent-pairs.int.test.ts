@@ -116,6 +116,33 @@ describe("findAbsentPairs + setAbsenceTreatment (design §11)", () => {
     ]);
   });
 
+  it("returns an empty list when nobody is absent", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { findAbsentPairs } = await import("./find-absent-pairs");
+    expect(await findAbsentPairs(db)).toEqual([]);
+  });
+  it("orders absences of the same kind by seat and tolerates a missing player row", async () => {
+    const db = await setup();
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    // A second withdrawal on a seat that sorts before A1NS... and after it.
+    db.$client.pragma("foreign_keys = OFF");
+    db.insert(seatOccupancy)
+      .values({
+        seat: "A0NS",
+        player1: 9998,
+        player2: 9999,
+        secretKey: "k0",
+        standing: "WITHDRAWN",
+        withdrawnInRound: 1,
+      })
+      .run();
+    const { findAbsentPairs } = await import("./find-absent-pairs");
+    const result = await findAbsentPairs(db);
+    expect(result.filter((a) => a.kind === "WITHDRAWN").map((a) => a.seat)).toEqual(
+      ["A0NS", "A1NS"],
+    );
+    expect(result.find((a) => a.seat === "A0NS")?.pair).toBe(" & ");
+  });
   it("sets the treatment on the absent occupancy or the empty seat", async () => {
     const db = await setup();
     const { setAbsenceTreatment } =

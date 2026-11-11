@@ -239,3 +239,114 @@ describe("detectTripleMismatches", () => {
     expect(candidates).toHaveLength(0);
   });
 });
+
+describe("detectTeamsRoundMismatches — edge cases", () => {
+  const order: TeamId[] = [1, 2, 3, 4, 5, 6];
+  const base = {
+    roundNumber: 3,
+    teams: 6,
+    orderedOrdinary: order,
+    playedOpponents: new Set<string>(),
+    excludedTeams: new Set<TeamId>(),
+  };
+
+  it("skips a team with no committed opponent", () => {
+    const candidates = detectTeamsRoundMismatches({
+      ...base,
+      committedOpponentByTeam: new Map(),
+      currentVpByTeam: new Map(),
+    });
+    expect(candidates).toEqual([]);
+  });
+
+  it("skips a team whose committed opponent is excluded", () => {
+    // 1 actually played 4 (excluded), though the correct opponent is 2.
+    const candidates = detectTeamsRoundMismatches({
+      ...base,
+      excludedTeams: new Set([4]),
+      committedOpponentByTeam: new Map([[1, 4]]),
+      currentVpByTeam: new Map([[2, 0]]),
+    });
+    expect(candidates).toEqual([]);
+  });
+
+  it("treats a team missing from the VP table as 0 VP", () => {
+    const lower = detectTeamsRoundMismatches({
+      ...base,
+      committedOpponentByTeam: new Map([[1, 4]]),
+      currentVpByTeam: new Map([[2, 10]]),
+    });
+    expect(lower).toHaveLength(1);
+    expect(lower[0]).toMatchObject({ actualOpponentVp: 0, direction: "LOWER" });
+    const higher = detectTeamsRoundMismatches({
+      ...base,
+      committedOpponentByTeam: new Map([[1, 4]]),
+      currentVpByTeam: new Map([[4, 10]]),
+    });
+    expect(higher[0]).toMatchObject({ correctOpponentVp: 0, direction: "HIGHER" });
+  });
+});
+
+describe("detectTripleMismatches — edge cases", () => {
+  const comparisons = [
+    { low: 3, high: 4, boardStart: 20, boardEnd: 22 },
+    { low: 3, high: 5, boardStart: 25, boardEnd: 27 },
+    { low: 4, high: 5, boardStart: 30, boardEnd: 32 },
+  ];
+
+  it("reports HIGHER when the wrong opponent out-scores the correct one, defaulting a missing team to 0 VP", () => {
+    const candidates = detectTripleMismatches({
+      roundNumber: 4,
+      committedMembers: [3, 4, 5],
+      correctMembers: [4, 5, 6],
+      comparisons,
+      currentVpByTeam: new Map([[3, 20]]),
+    });
+    expect(candidates.map((c) => c.direction)).toEqual(["HIGHER", "HIGHER"]);
+    expect(candidates[0].correctOpponentVp).toBe(0);
+  });
+
+  it("defaults a missing wrong opponent to 0 VP", () => {
+    const candidates = detectTripleMismatches({
+      roundNumber: 4,
+      committedMembers: [3, 4, 5],
+      correctMembers: [4, 5, 6],
+      comparisons,
+      currentVpByTeam: new Map([[6, 18]]),
+    });
+    expect(candidates).toHaveLength(2);
+    expect(candidates[0]).toMatchObject({ actualOpponentVp: 0, direction: "LOWER" });
+  });
+
+  it("skips a swap when no committed comparison covers the two teams", () => {
+    const candidates = detectTripleMismatches({
+      roundNumber: 4,
+      committedMembers: [3, 4, 5],
+      correctMembers: [4, 5, 6],
+      comparisons: [{ low: 4, high: 5, boardStart: 30, boardEnd: 32 }],
+      currentVpByTeam: new Map([[3, 2], [6, 18]]),
+    });
+    expect(candidates).toEqual([]);
+  });
+
+  it("pairs several wrong opponents with their replacements in sorted order", () => {
+    // Team 5 stays; it faced 3 and 4 but should have faced 6 and 7.
+    const candidates = detectTripleMismatches({
+      roundNumber: 4,
+      committedMembers: [3, 4, 5],
+      correctMembers: [5, 6, 7],
+      comparisons,
+      currentVpByTeam: new Map([
+        [3, 0],
+        [4, 0],
+        [6, 20],
+        [7, 20],
+      ]),
+    });
+    expect(candidates).toHaveLength(2);
+    expect(candidates.map((c) => [c.actualOpponent, c.correctOpponent])).toEqual([
+      [3, 6],
+      [4, 7],
+    ]);
+  });
+});

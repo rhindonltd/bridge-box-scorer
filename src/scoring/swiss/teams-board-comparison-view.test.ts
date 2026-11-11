@@ -97,6 +97,30 @@ describe("buildTeamsBoardComparisonTable", () => {
     });
   });
 
+  it("percentage view renders 0 for a team with no boards played yet", () => {
+    const table = buildTeamsBoardComparisonTable(
+      score(
+        [
+          {
+            rank: 1,
+            tied: false,
+            teamId: "A1",
+            totalWon: 0,
+            totalPlayed: 0,
+            byRound: { 1: { won: 0, played: 0 } },
+          },
+        ],
+        true,
+      ),
+      teams,
+      "percentage",
+    );
+    expect(table.rows[0].cells[2]).toEqual({
+      kind: "number",
+      value: 0,
+      decimals: 2,
+    });
+  });
   it("whole-number wins render without a decimal in the fraction view", () => {
     const table = buildTeamsBoardComparisonTable(
       score(

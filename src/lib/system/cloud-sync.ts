@@ -20,17 +20,14 @@ const CLOUD_SYNC_NOW = "/usr/local/bridgebox/bin/cloud-sync-now.sh";
  */
 export function cloudSyncStatusPath(): string {
   return (
-    process.env.CLOUD_SYNC_STATUS_PATH ?? "/home/bridgebox/cloud-sync-status.json"
+    process.env.CLOUD_SYNC_STATUS_PATH ??
+    "/home/bridgebox/cloud-sync-status.json"
   );
 }
 
 /** Outcome of the last run of a cloud-sync job (backup or logs). */
 export type CloudSyncResult =
-  | "ok"
-  | "skipped_not_configured"
-  | "not_entitled"
-  | "offline"
-  | "error";
+  "ok" | "skipped_not_configured" | "not_entitled" | "offline" | "error";
 
 /** Independent status for one cloud-sync job (backup or logs). */
 export type CloudSyncJobStatus = {

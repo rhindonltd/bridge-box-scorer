@@ -14,8 +14,8 @@ This guide is organised by what you are trying to do.
 - **[Player Guide](player-guide.md)** — Join a game, take your seat, enter
   contracts and results, and see how a board scored.
 - **[Director Guide](director-guide.md)** — Create and set up a game, arrange
-  tables and sections, choose movements, run the timer, correct results, and
-  export to USEBIO.
+  tables and sections, choose movements, run the timer, correct results and
+  make rulings, and export or publish the results.
 - **[Room Display Guide](room-display-guide.md)** — Put the session timer or
   the live leaderboard on a big screen for the room.
 - **[Settings Guide](settings-guide.md)** — Device settings: WiFi, club

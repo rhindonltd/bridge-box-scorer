@@ -131,6 +131,7 @@ export function SwissTeamsSetupForm({
     setPlan((current) => {
       const next = Array.from(
         { length: rounds },
+        /* v8 ignore next -- unreachable fallback: `plan` is always kept length-synced to `rounds`, so current[i] is defined */
         (_, i) => current[i] ?? "SHORT",
       );
       next[index] = value;
@@ -145,6 +146,7 @@ export function SwissTeamsSetupForm({
 
   // Validate the plan only when it will actually be sent (odd field + triple).
   const resolved = resolveTeamsOddRoundPlan(
+    /* v8 ignore next -- unreachable fallback: `plan` is always length-synced to `rounds` */
     Array.from({ length: rounds }, (_, i) => plan[i] ?? "SHORT"),
   );
   const planInvalid = oddTeams && oddHandling === "TRIPLE" && !resolved.valid;
@@ -287,6 +289,7 @@ export function SwissTeamsSetupForm({
                   </thead>
                   <tbody>
                     {Array.from({ length: rounds }, (_, i) => {
+                      /* v8 ignore next -- unreachable fallback: `plan` is always length-synced to `rounds` */
                       const value = plan[i] ?? "SHORT";
                       return (
                         <tr key={i} className="border-t border-gray-100">

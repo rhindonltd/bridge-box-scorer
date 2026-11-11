@@ -6,6 +6,7 @@ import {
   parseSeat,
   sectionOf,
   seatFor,
+  scoredIdFor,
 } from "./participants";
 
 describe("isPairSeat", () => {
@@ -154,5 +155,25 @@ describe("parseSeat accepts a plain string", () => {
 
   it("throws for an invalid string", () => {
     expect(() => parseSeat("not-a-seat")).toThrow();
+  });
+});
+
+describe("scoredIdFor", () => {
+  it("uses the bare seat for the primary occupant", () => {
+    expect(scoredIdFor("A1NS")).toBe("A1NS");
+    expect(scoredIdFor("A1NS", null)).toBe("A1NS");
+  });
+  it("suffixes a stand-in occupant with its occupancy id", () => {
+    expect(scoredIdFor("A1NS", 7)).toBe("A1NS#7");
+  });
+  it("parseSeat reads the occupancy id back, or null when absent", () => {
+    expect(parseSeat("A1NS#7")).toMatchObject({ occupancyId: 7 });
+    expect(parseSeat("A1NS")).toMatchObject({ occupancyId: null });
+  });
+});
+
+describe("formatPairNumber — handover suffix", () => {
+  it("preserves a #occupancy suffix when the section is dropped", () => {
+    expect(formatPairNumber("A1NS#5", false)).toBe("1NS#5");
   });
 });

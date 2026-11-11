@@ -96,3 +96,17 @@ describe("scoreMP", () => {
     expect(top.nsMatchPoints).toBe(maxMP);
   });
 });
+
+describe("scoreMP — weighted lines with no real field", () => {
+  it("awards a weighted line the field average when every line is assigned", () => {
+    const result = scoreMP(1, [
+      line("W60*3NTN=;40*3NTN+1", "1", "4"),
+      line("A60/40", "2", "5"),
+    ]);
+    // Two assigned lines, no real field: max = 2*(2-1) = 2, weighted gets half.
+    const weighted = result.find((l) => l.nsId === "1")!;
+    expect(weighted.maxMatchPoints).toBe(2);
+    expect(weighted.nsMatchPoints).toBe(1);
+    expect(weighted.ewMatchPoints).toBe(1);
+  });
+});

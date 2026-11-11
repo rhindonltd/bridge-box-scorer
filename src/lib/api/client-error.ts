@@ -18,7 +18,10 @@ export class ClientError extends Error {
  * - {@link ClientError} → 400 with the (safe, user-facing) message.
  * - anything else → 500 "Internal server error", logged with `context`.
  */
-export function respondToActionError(err: unknown, context: string): NextResponse {
+export function respondToActionError(
+  err: unknown,
+  context: string,
+): NextResponse {
   if (err instanceof ClientError) {
     return NextResponse.json(
       { success: false, error: err.message },

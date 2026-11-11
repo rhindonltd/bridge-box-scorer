@@ -32,15 +32,20 @@ export function BoardResult({ boardOutcome }: Props) {
 
   if (isAdjustedScore(boardOutcome)) {
     const adj = parseAdjustedScore(boardOutcome);
+    /* v8 ignore start -- unreachable fallbacks: isAdjustedScore() passing guarantees parseAdjustedScore() returns a value */
+    const ns = adj?.ns ?? 0;
+    const ew = adj?.ew ?? 0;
+    /* v8 ignore stop */
     return (
       <span className="text-amber-700 font-medium">
-        Adj {adj?.ns ?? 0}%/{adj?.ew ?? 0}%
+        Adj {ns}%/{ew}%
       </span>
     );
   }
 
   if (isWeightedScore(boardOutcome)) {
     const components = parseWeightedScore(boardOutcome);
+    /* v8 ignore next -- unreachable: isWeightedScore() passing guarantees parseWeightedScore() returns a non-empty array */
     if (components && components.length > 0) {
       return (
         <span className="text-purple-700 font-medium">

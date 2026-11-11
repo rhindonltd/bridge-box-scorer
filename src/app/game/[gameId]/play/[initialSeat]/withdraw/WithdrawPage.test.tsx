@@ -65,6 +65,20 @@ describe("WithdrawPage", () => {
     );
   });
 
+  it("falls back to a generic message when the failure has no reason", async () => {
+    const onConfirm = vi.fn().mockRejectedValue("nope");
+    render(
+      <WithdrawPage
+        onCancel={vi.fn()}
+        onConfirm={onConfirm}
+        onDone={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw our pair" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not withdraw. Please try again.",
+    );
+  });
   it("cancels without withdrawing", () => {
     const onCancel = vi.fn();
     const onConfirm = vi.fn();

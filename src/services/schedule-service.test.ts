@@ -36,6 +36,7 @@ vi.mock("drizzle-orm", () => ({
 }));
 
 import { Db, getDb as getPairsDb } from "@/db/games";
+import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 
 /**
  * The schedule service reads, in order:
@@ -181,6 +182,100 @@ describe("schedule-service", () => {
       expect(sitOutRound.boards).toEqual([]);
     });
 
+    it("falls back to the seat id when the occupancy has no anchor stamped", async () => {
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "1NS", anchorId: null } },
+        {
+          kind: "where",
+          value: [
+            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
+          ],
+        },
+        { kind: "from", value: [] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [{ roundNumber: 1 }] },
+      ]);
+      const result = await getSchedule(db, "1NS");
+      expect(result!.assignmentId).toBe("1NS");
+    });
+    it("flags an opponent seat that is expected late and still empty", async () => {
+      vi.mocked(readExpectedLateSeats).mockResolvedValueOnce(new Set(["1EW"]));
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "1NS", anchorId: "1NS" } },
+        {
+          kind: "where",
+          value: [
+            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
+          ],
+        },
+        { kind: "from", value: [] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [{ roundNumber: 1 }] },
+      ]);
+      const result = await getSchedule(db, "1NS");
+      expect(result!.rounds[0].opponentExpectedLate).toBe(true);
+      expect(result!.rounds[0].opponentWithdrawn).toBeUndefined();
+    });
+    it("does not flag an expected-late opponent that has since been seated", async () => {
+      vi.mocked(readExpectedLateSeats).mockResolvedValueOnce(new Set(["1EW"]));
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "1NS", anchorId: "1NS" } },
+        {
+          kind: "where",
+          value: [
+            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
+          ],
+        },
+        {
+          kind: "from",
+          value: [{ seat: "1EW", anchorId: "1EW", player1: 3, player2: 4 }],
+        },
+        {
+          kind: "from",
+          value: [
+            { id: 3, firstName: "Carol", lastName: "Brown" },
+            { id: 4, firstName: "Dave", lastName: "Wilson" },
+          ],
+        },
+        { kind: "from", value: [{ roundNumber: 1 }] },
+      ]);
+      const result = await getSchedule(db, "1NS");
+      expect(result!.rounds[0].opponentExpectedLate).toBeUndefined();
+    });
+    it("flags a round whose every board was missed because the opponents withdrew", async () => {
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "1NS", anchorId: "1NS" } },
+        {
+          kind: "where",
+          value: [
+            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "ABSENT" },
+            { roundNumber: 1, tableNumber: 1, boardNumber: 2, ns: "1NS", ew: "1EW", status: "ABSENT" },
+          ],
+        },
+        { kind: "from", value: [] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [{ roundNumber: 1 }] },
+      ]);
+      const result = await getSchedule(db, "1NS");
+      expect(result!.rounds[0].opponentWithdrawn).toBe(true);
+    });
+    it("treats a round with only compensated boards as an ordinary round", async () => {
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "1NS", anchorId: "1NS" } },
+        {
+          kind: "where",
+          value: [
+            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "APHANTOM", status: "HALF_AVERAGE" },
+          ],
+        },
+        { kind: "from", value: [] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [{ roundNumber: 1 }] },
+      ]);
+      const result = await getSchedule(db, "1NS");
+      expect(result!.rounds[0].boards).toEqual([]);
+      expect(result!.rounds[0].halfMatch).toBeUndefined();
+    });
     it("returns schedule with side EW for seat ending in EW", async () => {
       const db = mockDbFromSteps([
         { kind: "get", value: { seat: "1EW", anchorId: "1EW" } },

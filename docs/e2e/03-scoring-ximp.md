@@ -2,9 +2,10 @@
 
 Cross-IMP (Butler) scoring compares each pair's result on a board against the
 **average** of the field (in IMPs), rather than ranking by matchpoints. A pair's
-standing is its **average cross-IMPs per board**. Unlike matchpoints there is a
-single pooled ranking (no NS/EW percentage split), and scores can be **negative**
-(below the field average).
+standing is its **average cross-IMPs per board**, shown to two decimals. Scores
+can be **negative** (below the field average). The ranking follows the movement:
+a **Mitchell** (two-winner) has a separate North/South list and East/West list;
+a **Howell** (one-winner) has a single pooled list.
 
 **What you're verifying:** the leaderboard ranks on **cross-IMPs** (not a
 percentage), negatives are shown correctly, and the per-board traveller shows an
@@ -31,7 +32,7 @@ live via [file 01](01-core-flows.md) choosing **Cross-IMPs** at create time.
 | ☐ XIMP-2 | Confirm each pair's score is a **cross-IMP figure** (e.g. "+3.2", "−1.8"), not a percentage. | Cross-IMP values shown. |
 | ☐ XIMP-3 | Confirm at least one pair shows a **negative** total (below field average). | Negatives render with a minus sign and rank below 0. |
 | ☐ XIMP-4 | Confirm the ranking is ordered **highest cross-IMP first**. | Correct descending order. |
-| ☐ XIMP-5 | Confirm the field is a **single pooled ranking** (no separate NS/EW winners). | One list; each pair once. |
+| ☐ XIMP-5 | Confirm how the field is ranked. | On the default Mitchell fixture: **two lists** (North/South and East/West), each ranked 1, 2, 3…. On a Howell: one pooled list, each pair once. |
 | ☐ XIMP-6 | Open a **traveller** for a board. | Each line shows the result/score and that pair's **IMPs vs the field average** on the board. |
 | ☐ XIMP-7 | On a board, confirm a result **better than the field** shows **positive** IMPs and a worse one **negative**, roughly symmetric around 0. | Signs correct; field roughly averages to zero. |
 

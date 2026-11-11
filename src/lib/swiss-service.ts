@@ -88,7 +88,6 @@ export async function commitNextSwissRound(
   });
 }
 
-
 // --- Swiss Teams --------------------------------------------------------
 
 /** A single drawn team match, by stable team id. */

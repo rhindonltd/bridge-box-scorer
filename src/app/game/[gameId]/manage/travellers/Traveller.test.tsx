@@ -313,4 +313,35 @@ describe("Traveller", () => {
     expect(screen.getByTestId("traveller-row-2-3")).toBeInTheDocument();
     expect(screen.getByText("—")).toBeInTheDocument();
   });
+
+  it("skips a room with no instance yet and falls back to the table name for an unnamed host", () => {
+    const room1 = pairInstance({
+      roundNumber: 1,
+      tableNumber: 1,
+      boardNumber: 5,
+    });
+    // Only table 1 has a result so far (table 2's room is missing), and the
+    // match names no team for table 1.
+    const teamMatches = [
+      {
+        tables: [1, 2],
+        teams: [{ table: 2, id: "A2NS", name: "Owls" }],
+        margin: null,
+      },
+    ];
+    render(
+      <Traveller
+        boardNumber={5}
+        instances={[room1]}
+        teamMatches={teamMatches}
+        isLoading={false}
+        onLineSelected={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("traveller-row-1-1")).toHaveTextContent(
+      "Table 1",
+    );
+    expect(screen.queryByTestId("traveller-row-1-2")).not.toBeInTheDocument();
+  });
 });

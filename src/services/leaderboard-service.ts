@@ -98,8 +98,15 @@ export interface SectionLeaderboard extends LeaderboardResult {
   section: string;
 }
 
+/**
+ * A seated pair as a leaderboard participant. Its id is the id its boards are
+ * recorded under (`anchorId ?? seat`) — the same id every scored line, standing
+ * and exclusion is keyed on — so a line finds its pair's names. For a
+ * direction-qualified movement (Mitchell) that is the seat itself; a movement
+ * that numbers pairs (a Howell, a Swiss event) records a bare number instead.
+ */
 function toParticipant(p: Awaited<ReturnType<typeof findPairs>>[number]) {
-  return { ...p, type: "PAIR" as const, id: p.initialSeat };
+  return { ...p, type: "PAIR" as const, id: p.anchorId ?? p.initialSeat };
 }
 
 /**
@@ -174,7 +181,6 @@ function scoreBoardsToOverall(
   boardRows: Board[],
   scoringType: ScoringType,
   sectionLabel: string,
-  withdrawers: WithdrawalRecord[] = [],
 ): OverallScore {
   const boardMap = new Map<number, Board[]>();
   for (const row of boardRows) {
@@ -217,9 +223,8 @@ function scoreBoardsToOverall(
   // number of times (half-table, fouled/short boards) by scaling each short
   // board up to the full field via Neuberg (or the §4.2.3.3 small-sub-field
   // rule). A no-op when every board was played the same number of times. Done
-  // before the sit-out / withdrawal synthesis below so the per-board top those
-  // credits are awarded against (`maxMatchPoints`) is the equalised full-field
-  // top.
+  // before the sit-out synthesis below so the per-board top that credit is
+  // awarded against (`maxMatchPoints`) is the equalised full-field top.
   if (getCombination(scoringType).perBoard === "MP") {
     const equalised = equaliseMpBoards(
       scoredBoards.map((b) => ({
@@ -241,21 +246,14 @@ function scoreBoardsToOverall(
     ...swissSitOutScoredBoards(boardMap, scoringType, scoredBoards),
   );
 
-  // EBU §2.4.3–§2.4.6: the withdrawal credits — the withdrawer's own AVE−
-  // (PENALISED) and its opponents' AVE+ (after-half) / cancel (before-half) on
-  // the boards it did not play. Added as synthetic lines like the sit-out
-  // credit; a no-op when nobody withdrew.
-  scoredBoards.push(
-    ...withdrawalCreditBoards(boardMap, scoringType, scoredBoards, withdrawers),
-  );
-
   // EBU White Book §4.1.1.1: in the STANDINGS, an AVE+/AVE− award gives the
   // pair the greater-of-60% / lesser-of-40% vs its windowed average on the
   // boards it actually played. This runs over the REAL boards AND the synthetic
-  // sit-out / withdrawal / handover credits together, so EVERY AVE+/AVE− award
-  // — a director's artificial ruling and every synthesised credit alike — gets
-  // the uplift uniformly (the synthetic credits carry an `A<ns>/<ew>` outcome
-  // so this pass recognises them). A pair's windowed average is computed from
+  // sit-out credits together, so EVERY AVE+/AVE− award — a director's
+  // artificial ruling and a synthesised credit alike — gets the uplift
+  // uniformly (the synthetic credits carry an `A<ns>/<ew>` outcome so this pass
+  // recognises them). (A withdrawn or late pair's missed boards are already
+  // rewritten as AVE± outcomes by `applyAbsences` before scoring.) A pair's windowed average is computed from
   // its real played boards only, so adding synthetic lines does not perturb it.
   // The per-board traveller display keeps the flat 60/40 (this touches only the
   // copy fed to the aggregator).
@@ -275,8 +273,8 @@ function scoreBoardsToOverall(
   // uplift, but on the IMP scale — an AVE+ board gives the pair the greater of
   // +3 and its average IMP on its other boards, AVE− the lesser of −3 and its
   // average. Standings only, like the MP pass; the per-board display keeps the
-  // flat ±3. The synthetic sit-out / withdrawal / handover credits are 0-net
-  // IMP lines with no outcome, so they are neither uplifted nor counted in the
+  // flat ±3. The synthetic sit-out credits are 0-net IMP lines with no
+  // outcome, so they are neither uplifted nor counted in the
   // windowed average (which uses real played lines only).
   const perBoardId = getCombination(scoringType).perBoard;
   if (perBoardId === "IMP") {
@@ -345,7 +343,9 @@ function pairRankValue(line: OverallScore["lines"][number]): number {
   if ("totalMP" in line) {
     return line.maxMP > 0 ? line.totalMP / line.maxMP : 0;
   }
+  /* v8 ignore next -- unreachable: IMP has no pairs overall plugin, so a pairs overall never carries `imps` lines (see the guard in scoreBoardsToOverall) */
   if ("imps" in line) return line.imps;
+  /* v8 ignore else -- see the fallback below */
   if ("crossImps" in line) return line.crossImps;
   /* v8 ignore next -- pairRankValue is only called for MP/IMP/XIMP pair lines */
   return 0;
@@ -359,8 +359,9 @@ function pairRankValue(line: OverallScore["lines"][number]): number {
  * pair's rank/percentage reflects the NS field only, and likewise for EW.
  *
  * The pooled score's line values are reused verbatim; only rank/tied are
- * recomputed per direction. `pairId` is a section-qualified seat ending in
- * NS/EW (see {@link toParticipant}), so the direction is read straight from it.
+ * recomputed per direction. Only two-winner (direction-qualified) movements are
+ * split, where `pairId` is a section-qualified seat ending in NS/EW, so the
+ * direction is read straight from it.
  */
 function splitByDirection(
   overallScore: OverallScore,
@@ -412,6 +413,7 @@ function baselineLine(
       } as OverallScore["lines"][number];
     case "PAIR_XIMP":
       return { ...idField, crossImps: 0 } as OverallScore["lines"][number];
+    /* v8 ignore next 2 -- unreachable: IMP has no pairs overall plugin, so no overall is ever typed PAIR_IMP */
     case "PAIR_IMP":
       return { ...idField, imps: 0 } as OverallScore["lines"][number];
     case "PAIR_SWISS_VP":
@@ -479,11 +481,14 @@ function padBaselineLines(
 
 /** Rank value for any overall line variant (pairs or teams). */
 function pairOrTeamRankValue(line: OverallScore["lines"][number]): number {
+  /* v8 ignore next -- unreachable: only called on baseline lines, whose maxMP is always 0 */
   if ("totalMP" in line) return line.maxMP > 0 ? line.totalMP / line.maxMP : 0;
+  /* v8 ignore next -- unreachable: no pairs scoring produces `imps` lines (IMP is teams-only and has no pairs overall plugin) */
   if ("imps" in line) return line.imps;
   if ("crossImps" in line) return line.crossImps;
   if ("totalVP" in line) return line.totalVP;
   if ("totalImps" in line) return line.totalImps;
+  /* v8 ignore else -- see the fallback below */
   if ("totalWon" in line) return line.totalWon;
   /* v8 ignore next -- all OverallScore line variants are covered above */
   return 0;
@@ -592,10 +597,6 @@ function swissSitOutScoredBoards(
   return synthetic;
 }
 
-/** AVE−/AVE+ as a fraction of the board top. */
-const AVE_MINUS_FRACTION = 0.4;
-const AVE_PLUS_FRACTION = 0.6;
-
 /**
  * The artificial-outcome token (`A<ns>/<ew>`) for a synthetic MP credit line,
  * from the two sides' fractions of the board top. This labels the line so the
@@ -608,184 +609,6 @@ const AVE_PLUS_FRACTION = 0.6;
  */
 function syntheticAveOutcome(nsFraction: number, ewFraction: number): string {
   return `A${Math.round(nsFraction * 100)}/${Math.round(ewFraction * 100)}`;
-}
-
-/**
- * Build synthetic scored boards for the §2.4.3–§2.4.7 withdrawal/late-arrival
- * credits on a board-pooled pairs event — BOTH the contestant's own score
- * (§2.4.5/§2.4.6) and its opponents' indemnity (§2.4.4). Both act on the SAME
- * rows: the contestant's unplayed (no-result) board rows, each a real
- * head-to-head cell with the withdrawer/latecomer on one seat and an opponent
- * on the other. The `withdrawers` list already folds in short §2.4.7 LATE
- * arrivals (resolved by `resolveStandings`): a latecomer's unplayed boards are
- * its EARLY (pre-arrival) cells, and because it played fewer than half the
- * boards the "before half" branch below applies to it uniformly — exactly the
- * §2.4.6 treatment the White Book prescribes for a latecomer short of half.
- *
- * Per unplayed row, keyed off whether the contestant played BEFORE or AFTER
- * half the event (counted in boards it actually played — §3.2). A short LATE
- * arrival is by definition below half, so it always takes the "before" branch:
- *
- * - **Withdrawer seat** (§2.4.5): a PENALISED withdrawer gets AVE−-minus-fine
- *   `(40 − fine)/100` of the board top, capped at half the event's boards. A
- *   REMOVE withdrawer gets nothing here (it is dropped from the ranking by the
- *   §2.4.9 exclusion — crediting it would be pointless).
- * - **Opponent seat** (§2.4.4): AFTER half → AVE+ (60% of the board top); the
- *   result against the withdrawer stands and the opponent is indemnified for
- *   the board it can no longer play. BEFORE half → nothing (the score against
- *   the withdrawer is CANCELLED, so the opponent simply has one fewer board,
- *   which the §4.2.3 short-board equalisation already handles — the design §7
- *   worked example).
- *
- * MP uses the board top (read from a real scored board, like the sit-out
- * credit). IMP/XIMP have no per-board maximum, so both sides get the
- * field-average (0 net) — the board still counts so neither pair is
- * under-boarded, matching the sit-out treatment. (Swiss unplayed boards don't
- * exist as rows; teams / Swiss-VP withdrawals are match-level — see
- * `teamWithdrawalRulings`.)
- */
-function withdrawalCreditBoards(
-  boardMap: Map<number, Board[]>,
-  scoringType: ScoringType,
-  playedScoredBoards: ScoredBoard[],
-  withdrawers: WithdrawalRecord[],
-): ScoredBoard[] {
-  if (withdrawers.length === 0) return [];
-  const pluginId = getCombination(scoringType).perBoard;
-
-  // Ordinary withdrawals / empty-late seats, located from the no-result rows.
-  // (§2.4.7 substitutions no longer emit gap records — a substituted pair is
-  // ranked only on the boards it played, with no artificial gap score.)
-  const bySeat = new Map(withdrawers.map((w) => [w.seat, w]));
-
-  // The event's scheduled board count = the distinct board numbers present (the
-  // whole movement is materialised up front for static pairs), for the §2.4.5
-  // half-event AVE− cap and the §2.4.4 before/after-half split.
-  const totalScheduledBoards = boardMap.size;
-  const halfThreshold = Math.ceil(totalScheduledBoards / 2);
-
-  // Boards each withdrawer actually PLAYED (rows with a result), to decide the
-  // before/after-half split per §3.2.
-  const playedBySeat = new Map<string, number>();
-  for (const rows of boardMap.values()) {
-    for (const row of rows) {
-      const result = row.directorOverrideResult ?? row.confirmedResult;
-      if (result == null) continue;
-      for (const seat of [row.ns, row.ew]) {
-        if (bySeat.has(seat)) {
-          playedBySeat.set(seat, (playedBySeat.get(seat) ?? 0) + 1);
-        }
-      }
-    }
-  }
-
-  // Per-round matchpoint top, keyed by board number, from a real scored line.
-  const topByBoard = new Map<number, number>();
-  if (pluginId === "MP") {
-    for (const sb of playedScoredBoards) {
-      const lines = sb.lines as { maxMatchPoints?: number }[];
-      const withTop = lines.find(
-        (l) => typeof l.maxMatchPoints === "number" && l.maxMatchPoints > 0,
-      );
-      if (withTop) topByBoard.set(sb.board, withTop.maxMatchPoints!);
-    }
-  }
-
-  // §2.4.5 cap: the withdrawer's own AVE− applies to at most half the event's
-  // boards, counted per withdrawer.
-  const selfCredited = new Map<string, number>();
-
-  const synthetic: ScoredBoard[] = [];
-
-  for (const [boardNumber, rows] of boardMap) {
-    for (const row of rows) {
-      const result = row.directorOverrideResult ?? row.confirmedResult;
-      if (result != null) continue; // a played board, not an unplayed one
-
-      const nsW = bySeat.get(row.ns);
-      const ewW = bySeat.get(row.ew);
-      const w = nsW ?? ewW;
-      if (!w) continue; // no withdrawer on this unplayed row
-      const withdrawerOnNs = nsW != null;
-
-      const afterHalf = (playedBySeat.get(w.seat) ?? 0) >= halfThreshold;
-
-      // Withdrawer's own §2.4.5 AVE−-minus-fine (PENALISED only, capped).
-      let withdrawerFraction = 0;
-      if (w.treatment === "PENALISED") {
-        const used = selfCredited.get(w.seat) ?? 0;
-        if (used < halfThreshold) {
-          selfCredited.set(w.seat, used + 1);
-          withdrawerFraction = Math.max(
-            0,
-            AVE_MINUS_FRACTION - w.finePercent / 100,
-          );
-        }
-      }
-
-      // Opponent's indemnity. For an ordinary withdrawal this is the §2.4.4
-      // split: AVE+ after half, nothing (cancel) before. For a §2.4.7
-      // expected-late empty seat (`alwaysIndemnifyOpponent`) the opponents get
-      // AVE+ unconditionally while the pair is still expected (reference §6.6),
-      // regardless of how many boards have been played.
-      const opponentFraction =
-        afterHalf || w.alwaysIndemnifyOpponent ? AVE_PLUS_FRACTION : 0;
-
-      // Nothing to credit either side on this row (e.g. before-half REMOVE).
-      if (withdrawerFraction === 0 && opponentFraction === 0) continue;
-
-      const nsFraction = withdrawerOnNs ? withdrawerFraction : opponentFraction;
-      const ewFraction = withdrawerOnNs ? opponentFraction : withdrawerFraction;
-
-      if (pluginId === "MP") {
-        const top = topByBoard.get(boardNumber);
-        if (top == null) continue; // no scored sibling board yet
-        synthetic.push({
-          pluginId,
-          board: boardNumber,
-          lines: [
-            {
-              nsId: row.ns,
-              ewId: row.ew,
-              score: null,
-              // The outcome token lets §4.1.1.1 uplift an EXACT AVE+ (opponent
-              // indemnity) or AVE− (an unfined withdrawer) from the pair's own
-              // average, while leaving a PENALISED-fined fraction (a non-exact
-              // percentage) and a 0 side untouched.
-              outcome: syntheticAveOutcome(nsFraction, ewFraction),
-              maxMatchPoints: top,
-              nsMatchPoints: nsFraction * top,
-              ewMatchPoints: ewFraction * top,
-            },
-          ],
-        });
-      } else if (pluginId === "IMP") {
-        synthetic.push({
-          pluginId,
-          board: boardNumber,
-          lines: [
-            { nsId: row.ns, ewId: row.ew, score: null, nsImps: 0, ewImps: 0 },
-          ],
-        });
-      } else {
-        synthetic.push({
-          pluginId,
-          board: boardNumber,
-          lines: [
-            {
-              nsId: row.ns,
-              ewId: row.ew,
-              score: null,
-              nsCrossImps: 0,
-              ewCrossImps: 0,
-            },
-          ],
-        });
-      }
-    }
-  }
-
-  return synthetic;
 }
 
 type Pairs = Awaited<ReturnType<typeof findPairs>>;
@@ -860,7 +683,7 @@ function computeCombined(
   const participants = pairs.map(toParticipant);
   const overallScore = padBaselineLines(
     scoreSwissVp(boardRows, matchRows, swissVpMode, expectedBoards) ??
-      scoreBoardsToOverall(boardRows, scoringType, gameId, withdrawals),
+      scoreBoardsToOverall(boardRows, scoringType, gameId),
     participants.map((p) => p.id),
     excludedFromRanking,
   );
@@ -1016,12 +839,7 @@ function computeSections(
     );
     const overallScore = pad(
       scoreSwissVp(sectionRows, sectionMatches, swissVpMode, expectedBoards) ??
-        scoreBoardsToOverall(
-          sectionRows,
-          scoringType,
-          section,
-          withdrawersBySection.get(section) ?? [],
-        ),
+        scoreBoardsToOverall(sectionRows, scoringType, section),
       sectionParticipants.map((p) => p.id),
     );
     return {

@@ -1,5 +1,8 @@
 import { getDb } from "@/db/games";
-import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
+import {
+  seatOccupancy,
+  type SeatOccupancy,
+} from "@/db/games/tables/seat-occupancy";
 import {
   arrivalAnchorOf,
   anchorPickColumns,
@@ -45,4 +48,34 @@ export async function findParticipantSecret(
   }
 
   return arrivalAnchorOf(rows).secretKey;
+}
+
+/**
+ * The live device secret AND standing of the occupant at `seat` (the arrival
+ * anchor, as in {@link findParticipantSecret}), or `null` when no game database
+ * or occupancy exists. The standing lets a stale device tell "my seat moved to
+ * another device" apart from "my pair was withdrawn" (withdrawal also rotates
+ * the secret).
+ */
+export async function findSeatDeviceInfo(
+  gameId: string,
+  seat: string,
+): Promise<{
+  secretKey: string;
+  standing: SeatOccupancy["standing"];
+} | null> {
+  const db = await getDb(gameId);
+  if (!db) return null;
+  const rows = await db
+    .select({
+      ...anchorPickColumns,
+      secretKey: seatOccupancy.secretKey,
+      standing: seatOccupancy.standing,
+    })
+    .from(seatOccupancy)
+    .where(eq(seatOccupancy.seat, seat as PairSeat))
+    .all();
+  if (rows.length === 0) return null;
+  const live = arrivalAnchorOf(rows);
+  return { secretKey: live.secretKey, standing: live.standing };
 }

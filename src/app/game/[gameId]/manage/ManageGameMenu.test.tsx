@@ -89,6 +89,9 @@ describe("ManageGameMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "onMovementClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/movement");
 
+    fireEvent.click(screen.getByRole("button", { name: "onTimerClick" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/timer");
+
     fireEvent.click(screen.getByRole("button", { name: "onPairsClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/pairs");
 
@@ -107,6 +110,16 @@ describe("ManageGameMenu", () => {
     mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
     rerender(<ManageGameMenu gameId="g1" />);
     expect(flag("showExport")).toBe("false");
+  });
+
+  it("shows Timer once the game has started (setup has its own Timer tab)", () => {
+    mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
+    const { rerender } = render(<ManageGameMenu gameId="g1" />);
+    expect(flag("showTimer")).toBe("true");
+
+    mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
+    rerender(<ManageGameMenu gameId="g1" />);
+    expect(flag("showTimer")).toBe("false");
   });
 
   it("shows Pairs once the game has started", () => {

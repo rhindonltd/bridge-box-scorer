@@ -169,9 +169,11 @@ async function requestJson(
   };
 
   if (method === "GET") {
+    /* v8 ignore start -- unreachable: the only GET caller (checkSessionDate) passes no params */
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);
     }
+    /* v8 ignore stop */
   } else {
     const search = new URLSearchParams(params);
     init.body = search.toString();
