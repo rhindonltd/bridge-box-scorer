@@ -164,6 +164,11 @@ export const SocketEvents = {
   // (fouled / mis-dealt / arrow-switched). Assigns the §3.3.2 artificial
   // adjusted score (AVE+/AVE+ or AVE) and flips the row to CANCELLED.
   CANCEL_BOARD_TRAVELLER: "traveller:cancelBoard",
+  // Client-initiated (director): mark (or clear) a single board instance as
+  // played the wrong way round (arrows not switched). The result is kept; it
+  // is credited to the opposite pairs. Sets `boards.seatsSwapped` explicitly
+  // (not a toggle), so it is idempotent. Status and result are untouched.
+  SET_SEATS_SWAPPED_TRAVELLER: "traveller:setSeatsSwapped",
   // Client-initiated (director): remove a board from a TEAMS match that could
   // not be played (§3.3.7). Awards a ±3 IMP indemnity by the director's fault
   // ruling and flips the row to REMOVED_TEAMS.

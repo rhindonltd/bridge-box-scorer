@@ -73,6 +73,47 @@ describe("buildTeamBoardResultTable", () => {
   });
 });
 
+describe("buildTeamBoardResultTable — played-reversed room", () => {
+  /**
+   * Traveller instances arrive with a flagged table's ns/ew already exchanged
+   * (the teams credited with the result), plus `seatsSwapped`.
+   */
+  function withTable1Reversed(): TeamBoardResultLine[] {
+    return [
+      {
+        tableNumber: 1,
+        ns: "A2EW",
+        ew: "A1NS",
+        result: "3NTN+1" as never,
+        seatsSwapped: true,
+      },
+      { tableNumber: 2, ns: "A2NS", ew: "A1EW", result: "3NTN=" as never },
+    ];
+  }
+
+  it("scores the reversed room from the opposite perspective and swings the team result", () => {
+    // Unflagged, team A1 nets 430 − 400 = +30 (+1 IMP). With table 1 played
+    // reversed, A1 held the EW hands there: −430 − 400 = −830 → a big loss.
+    const flagged = buildTeamBoardResultTable(withTable1Reversed(), 1, "A1NS");
+    const plain = buildTeamBoardResultTable(match("3NTN+1", "3NTN="), 1, "A1NS");
+
+    expect(flagged).not.toBeNull();
+    expect(text(flagged!.rows[0].cells[2])).toBe("-430");
+    expect(text(flagged!.rows[1].cells[2])).toBe("400");
+    expect(text(plain!.rows[2].cells[2])).toBe("+1 IMP");
+    expect(text(flagged!.rows[2].cells[2])).toMatch(/^-\d+ IMP$/);
+    // The contract shown is the one actually played, unchanged.
+    expect(text(flagged!.rows[0].cells[1])).toBe(text(plain!.rows[0].cells[1]));
+  });
+
+  it("keeps both rooms filed correctly when viewed from the other table", () => {
+    const table = buildTeamBoardResultTable(withTable1Reversed(), 1, "A2NS");
+    expect(table).not.toBeNull();
+    expect(text(table!.rows[0].cells[2])).toBe("400");
+    expect(text(table!.rows[1].cells[2])).toBe("-430");
+  });
+});
+
 describe("buildTeamBoardResultTable — edge cases", () => {
   it("ignores sit-out and half-average lines and lines with an unparseable opposing seat", () => {
     const lines: TeamBoardResultLine[] = [

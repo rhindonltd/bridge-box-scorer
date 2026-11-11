@@ -322,6 +322,7 @@ function BoardResultsContent({
           ew: i.participants.ew,
           result: i.currentResult as never,
           status: i.status,
+          seatsSwapped: i.seatsSwapped,
         })),
         board,
         seat,

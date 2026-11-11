@@ -14,6 +14,7 @@ import {
 } from "@/scoring/swiss/team-match";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
+import { applySeatSwap } from "@/model/seat-swap";
 import {
   buildTeamPairing,
   type TeamOccupancy,
@@ -111,12 +112,14 @@ function teamTravellerLine(
   pairing: TeamPairing,
 ): UsebioTeamTravellerLine {
   const outcome = boardResult(row) ?? ("NP" as BoardOutcome);
+  const seated = applySeatSwap(row);
   const line = buildTravellerLine(row.boardNumber, outcome, leadOf(row));
   return {
     direction,
-    // Which partnership sat NS / EW at this table for this board.
-    nsPairNumber: pairing.pairNumberFor(row.ns, row.boardNumber),
-    ewPairNumber: pairing.pairNumberFor(row.ew, row.boardNumber),
+    // Which partnership sat NS / EW at this table for this board (a room the
+    // director marked played-reversed has its two seats exchanged).
+    nsPairNumber: pairing.pairNumberFor(seated.ns, row.boardNumber),
+    ewPairNumber: pairing.pairNumberFor(seated.ew, row.boardNumber),
     ...line,
   };
 }

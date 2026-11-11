@@ -27,6 +27,8 @@ vi.mock("@/components/contract-wizard/StepAdjustmentType", () => ({
     onVoidTeamsMatch,
     onVoidPairsMatch,
     onMismatch,
+    onToggleSeatsSwapped,
+    seatsSwapped,
   }: {
     onEnterContract: () => void;
     onAdjustedScore: () => void;
@@ -36,8 +38,10 @@ vi.mock("@/components/contract-wizard/StepAdjustmentType", () => ({
     onVoidTeamsMatch?: () => void;
     onVoidPairsMatch?: () => void;
     onMismatch?: () => void;
+    onToggleSeatsSwapped?: () => void;
+    seatsSwapped?: boolean;
   }) => (
-    <div data-testid="step-hub">
+    <div data-testid="step-hub" data-swapped={String(!!seatsSwapped)}>
       <button onClick={onEnterContract}>hub-contract</button>
       <button onClick={onAdjustedScore}>hub-adjusted</button>
       <button onClick={onWeightedScore}>hub-weighted</button>
@@ -52,6 +56,9 @@ vi.mock("@/components/contract-wizard/StepAdjustmentType", () => ({
         <button onClick={onVoidPairsMatch}>hub-void-pairs</button>
       )}
       {onMismatch && <button onClick={onMismatch}>hub-mismatch</button>}
+      {onToggleSeatsSwapped && (
+        <button onClick={onToggleSeatsSwapped}>hub-reversed</button>
+      )}
     </div>
   ),
 }));
@@ -237,6 +244,25 @@ describe("DirectorContractWizard", () => {
     expect(screen.getByText("Table 4, Round 3")).toBeInTheDocument();
     expect(screen.getByText("Board 2")).toBeInTheDocument();
     expect(screen.getByTestId("step-hub")).toBeInTheDocument();
+  });
+
+  it("marks the board played reversed straight from the hub", () => {
+    const { onComplete } = renderWizard();
+    fireEvent.click(screen.getByText("hub-reversed"));
+    expect(onComplete).toHaveBeenCalledWith({
+      type: "seatsSwapped",
+      swapped: true,
+    });
+  });
+
+  it("clears the played-reversed flag when the board is already marked", () => {
+    const { onComplete } = renderWizard({ seatsSwapped: true });
+    expect(screen.getByTestId("step-hub").dataset.swapped).toBe("true");
+    fireEvent.click(screen.getByText("hub-reversed"));
+    expect(onComplete).toHaveBeenCalledWith({
+      type: "seatsSwapped",
+      swapped: false,
+    });
   });
 
   it("enters the contract flow (Level) from the hub", () => {

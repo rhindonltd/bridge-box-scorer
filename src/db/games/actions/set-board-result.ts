@@ -90,6 +90,23 @@ export async function cancelBoardResult(
 }
 
 /**
+ * Mark (or clear) a single board instance as played the wrong way round. Writes
+ * ONLY `seatsSwapped`: the result, lead and status are left exactly as they are,
+ * so the flag combines with CONFIRMED / OVERRIDDEN / CANCELLED and clearing it
+ * restores the original attribution. Readers apply `applySeatSwaps`.
+ */
+export async function setBoardSeatsSwapped(
+  db: BoardsWriter,
+  key: BoardKey,
+  swapped: boolean,
+): Promise<void> {
+  await db
+    .update(boards)
+    .set({ seatsSwapped: swapped })
+    .where(boardWhere(key));
+}
+
+/**
  * Remove a board from a TEAMS match that could not be played (EBU White Book
  * §3.3.7). Writes the removal fault token (`TRM:<fault>`) to
  * `directorOverrideResult` and flips the row to REMOVED_TEAMS, so the teams IMP

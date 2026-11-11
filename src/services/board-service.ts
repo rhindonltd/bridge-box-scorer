@@ -12,6 +12,7 @@ import { parseSeat } from "@/model/participants";
 import type { TeamTravellerMatch } from "@/model/participants";
 import { readAbsences } from "@/db/games/queries/absences";
 import { resolveAbsentRow } from "@/model/absence";
+import { applySeatSwaps } from "@/model/seat-swap";
 
 /**
  * Board statuses that are NOT a real played line and so never belong on a
@@ -25,12 +26,18 @@ import { resolveAbsentRow } from "@/model/absence";
 const NON_TRAVELLER_STATUSES = new Set(["SIT_OUT", "HALF_AVERAGE"]);
 
 export async function getBoardInstances(db: Db, boardNumber: number) {
-  const records = (
-    await db
-      .select()
-      .from(pairsBoards)
-      .where(eq(pairsBoards.boardNumber, boardNumber))
-  ).filter((b) => !NON_TRAVELLER_STATUSES.has(b.status ?? ""));
+  // A board the director marked "played the wrong way round" is shown with its
+  // ns/ew pair ids exchanged (the result is unchanged; it is credited to the
+  // opposite pairs). Applied first so absence resolution and name lookup below
+  // both work from the credited pairs.
+  const records = applySeatSwaps(
+    (
+      await db
+        .select()
+        .from(pairsBoards)
+        .where(eq(pairsBoards.boardNumber, boardNumber))
+    ).filter((b) => !NON_TRAVELLER_STATUSES.has(b.status ?? "")),
+  );
 
   // Design §11: a row missed because a pair is absent shows as it is scored —
   // the AVE± artificial result under AVERAGE, or not at all under REMOVED (it
@@ -88,6 +95,8 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
     currentResult:
       b.directorOverrideResult ?? b.confirmedResult ?? absentResult ?? null,
     status: b.status ?? null,
+    // Lets the director's traveller offer "Mark played reversed" / "Clear".
+    seatsSwapped: b.seatsSwapped,
   }));
 }
 
@@ -127,10 +136,12 @@ export async function buildTeamTravellerMatches(
       directorOverrideResult: pairsBoards.directorOverrideResult,
       status: pairsBoards.status,
       matchId: pairsBoards.matchId,
+      seatsSwapped: pairsBoards.seatsSwapped,
     })
     .from(pairsBoards)
     .where(eq(pairsBoards.boardNumber, boardNumber))) as (TeamMatchRow & {
     matchId: number;
+    seatsSwapped: boolean;
   })[];
 
   if (rows.length === 0) return [];
@@ -153,12 +164,24 @@ export async function buildTeamTravellerMatches(
   const nameById = new Map(teams.map((t) => [t.id, t.name]));
   const nameFor = (teamId: string) => nameById.get(teamId) ?? teamId;
 
-  /** This board's final score at the table whose NS seat is `teamId`, else null. */
+  /**
+   * This board's score for `teamId`, taken from the table whose recorded NS
+   * seat is `teamId`, else null.
+   *
+   * If the director marked that table "played the wrong way round", the team
+   * actually held the EW hands there, so the NS-hand score is credited to its
+   * opponents: the team's score is the negation. (This is the same transform as
+   * `applySeatSwaps`, expressed from the team's perspective so the lookup by
+   * recorded seat still finds the room.)
+   */
   const scoreForTeam = (teamId: string): number | null => {
     const row = rows.find((r) => r.ns === teamId);
     if (!row) return null;
     const outcome = boardResult(row);
-    return outcome != null ? outcomeToScore(boardNumber, outcome) : null;
+    if (outcome == null) return null;
+    const score = outcomeToScore(boardNumber, outcome);
+    if (score == null) return null;
+    return row.seatsSwapped ? -score : score;
   };
 
   const result: TeamTravellerMatch[] = [];

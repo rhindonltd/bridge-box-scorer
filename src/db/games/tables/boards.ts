@@ -37,6 +37,13 @@ export const boards = sqliteTable(
     status: text("status", {
       enum: BoardStatuses,
     }),
+    // Director ruling: this board instance was played the wrong way round (the
+    // arrows were not switched). The result is kept as entered (it belongs to
+    // the hands) but is credited to the opposite pairs: readers apply
+    // `applySeatSwaps` to exchange `ns` and `ew`. Independent of `status`.
+    seatsSwapped: integer("seats_swapped", { mode: "boolean" })
+      .notNull()
+      .default(false),
   },
   (table) => ({
     pk: primaryKey({

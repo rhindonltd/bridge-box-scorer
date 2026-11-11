@@ -107,4 +107,50 @@ describe("StepAdjustmentType", () => {
     fireEvent.click(screen.getByRole("button", { name: "Void Match (Pairs)" }));
     expect(onVoidPairsMatch).toHaveBeenCalledTimes(1);
   });
+
+  it("hides the played-reversed action when no handler is provided", () => {
+    renderHub();
+    expect(
+      screen.queryByRole("button", { name: /Reversed/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers to mark a board played reversed, and routes the click", () => {
+    const onToggleSeatsSwapped = vi.fn();
+    render(
+      <StepAdjustmentType
+        onEnterContract={vi.fn()}
+        onAdjustedScore={vi.fn()}
+        onWeightedScore={vi.fn()}
+        onCancelBoard={vi.fn()}
+        onToggleSeatsSwapped={onToggleSeatsSwapped}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Mark Played Reversed" }),
+    );
+    expect(onToggleSeatsSwapped).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: "Clear Reversed" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers to clear the flag when the board is already played reversed", () => {
+    const onToggleSeatsSwapped = vi.fn();
+    render(
+      <StepAdjustmentType
+        onEnterContract={vi.fn()}
+        onAdjustedScore={vi.fn()}
+        onWeightedScore={vi.fn()}
+        onCancelBoard={vi.fn()}
+        seatsSwapped
+        onToggleSeatsSwapped={onToggleSeatsSwapped}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Clear Reversed" }));
+    expect(onToggleSeatsSwapped).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: "Mark Played Reversed" }),
+    ).not.toBeInTheDocument();
+  });
 });

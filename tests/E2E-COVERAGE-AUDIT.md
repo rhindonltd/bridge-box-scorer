@@ -37,7 +37,8 @@ surface. Test files present at audit time:
   `request-on-mount`, `realtime-internals`, `reconnect`, `timer`,
   `multi-section`, `share-code`, `delete-game`, `usebio`, `pbn`,
   `bridgewebs-upload`, `bridgewebs-create`, `seat-transfer`, `leave-table`,
-  `completed-game-redirect`, `admin-key`, `wifi-settings`, `authorization`.
+  `completed-game-redirect`, `admin-key`, `wifi-settings`, `authorization`,
+  `director-rulings`, `played-reversed`.
 
 ## How the suite runs (read this first)
 
@@ -201,6 +202,15 @@ below:
   untouched); Void Match (Teams) credits a flat 8 VP each (12 when the TD was at
   fault) and leaves every other match alone; Void Match (Pairs) compensates the
   non-offending pair and keeps the round's VP total at 20 a match.
+- **Board played the wrong way round** (`played-reversed.journey.ts`, seeded
+  complete pairs game; `authorization.journey.ts` for the socket event): the
+  hub offers Mark Played Reversed, the director traveller then shows that
+  row's NS and EW pairs exchanged with the result unchanged, the hub offers
+  Clear Reversed instead, and clearing restores the original row. The score
+  credit itself (Mitchell two-winner, Swiss Pairs, teams VP, USEBIO) is covered
+  by the `*-seat-swap` service integration tests, not the journey. Not covered
+  end to end: the leaderboard and player-side board result screens after a
+  swap, and a teams game.
 - **Export & Publish hub** (`export-hub.journey.ts`): the manage-menu button →
   readiness checklist (results / club / BridgeWebs / EBU, each Ready, Warning,
   Not ready or Optional and the summary line); an outstanding board listed

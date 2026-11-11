@@ -126,6 +126,23 @@ describe("getOutstandingBoards", () => {
     expect(result.map((b) => b.boardNumber)).toEqual([1, 2]);
   });
 
+  it("lists the pairs exchanged for a board marked played the wrong way round", async () => {
+    await seatPair("A1NS", "Alice", "Bob");
+    await seatPair("A1EW", "Carol", "Dan");
+    await seedBoards([
+      makeBoard({ boardNumber: 1, status: "NOT_PLAYED", seatsSwapped: true }),
+    ]);
+
+    const { getOutstandingBoards } = await import(
+      "@/db/games/queries/get-outstanding-boards"
+    );
+    const db = (await harness.getDb()) as Db;
+    const [board] = await getOutstandingBoards(db);
+
+    expect(board.nsPair).toBe("Carol North & Dan South");
+    expect(board.ewPair).toBe("Alice North & Bob South");
+  });
+
   it("leaves an unseated side null", async () => {
     await seatPair("A1NS", "Alice", "Bob");
     await seedBoards([makeBoard({ boardNumber: 1, status: "NOT_PLAYED" })]);

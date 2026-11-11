@@ -10,4 +10,13 @@ describe("boards table", () => {
     expect(ref.foreignTable).toBe(matches);
     expect(ref.foreignColumns.map((c) => c.name)).toEqual(["id"]);
   });
+
+  it("has a non-null seats_swapped flag defaulting to false", () => {
+    const col = getTableConfig(boards).columns.find(
+      (c) => c.name === "seats_swapped",
+    );
+    expect(col).toBeDefined();
+    expect(col?.notNull).toBe(true);
+    expect(col?.default).toBe(false);
+  });
 });

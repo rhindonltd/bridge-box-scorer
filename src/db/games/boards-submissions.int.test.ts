@@ -47,6 +47,21 @@ describe("games db: boards and submissions", () => {
     });
   });
 
+  it("defaults seatsSwapped to false and round-trips true", async () => {
+    const { createBoard } = await import("@/db/games/actions/create-board");
+    await createBoard(harness.gameId, makeBoard({ boardNumber: 3 }));
+    await createBoard(
+      harness.gameId,
+      makeBoard({ boardNumber: 4, seatsSwapped: true }),
+    );
+
+    const db = (await harness.getDb()) as Db;
+    const { boards } = await import("@/db/games/tables/boards");
+    const rows = db.select().from(boards).orderBy(boards.boardNumber).all();
+
+    expect(rows.map((r) => r.seatsSwapped)).toEqual([false, true]);
+  });
+
   it("inserts a submission then finds it by section/table/round", async () => {
     const { createBoardSubmission } = await import(
       "@/db/games/actions/create-submission"

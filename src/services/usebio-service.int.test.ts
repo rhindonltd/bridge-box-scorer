@@ -497,6 +497,119 @@ describe("generateUsebio", () => {
     expect(xml).toContain("<OPPOSING_TEAM>2</OPPOSING_TEAM>");
   });
 
+  /** The (NS, EW) pair numbers of every TRAVELLER_LINE, in document order. */
+  function travellerPairNumbers(xml: string): [string, string][] {
+    return xml
+      .split("<TRAVELLER_LINE>")
+      .slice(1)
+      .map((line) => [
+        /<NS_PAIR_NUMBER>([^<]*)<\/NS_PAIR_NUMBER>/.exec(line)![1],
+        /<EW_PAIR_NUMBER>([^<]*)<\/EW_PAIR_NUMBER>/.exec(line)![1],
+      ]);
+  }
+
+  async function setSeatsSwapped(
+    db: Db,
+    tableNumber: number,
+    swapped: boolean,
+  ) {
+    const { setBoardSeatsSwapped } = await import(
+      "@/db/games/actions/set-board-result"
+    );
+    await setBoardSeatsSwapped(
+      db,
+      { roundNumber: 1, tableNumber, boardNumber: 1 },
+      swapped,
+    );
+  }
+
+  it("exports a played-reversed pairs board with its NS/EW pairs exchanged", async () => {
+    for (const t of [1, 2, 3]) {
+      await seatPair(`A${t}NS`, `N${t}`);
+      await seatPair(`A${t}EW`, `E${t}`);
+    }
+    await makeBoard(1, 1, 1, "A1NS", "A1EW", "3NTN+1");
+    await makeBoard(1, 2, 1, "A2NS", "A2EW", "3NTN=");
+    await makeBoard(1, 3, 1, "A3NS", "A3EW", "3NTN-1");
+
+    const db = (await harness.getDb()) as Db;
+    const { generateUsebio } = await import("@/services/usebio-service");
+
+    const before = travellerPairNumbers(
+      await generateUsebio(db, game, club, "NORMAL_CLUB"),
+    );
+    expect(before).toContainEqual(["3NS", "3EW"]);
+
+    await setSeatsSwapped(db, 3, true);
+    const after = travellerPairNumbers(
+      await generateUsebio(db, game, club, "NORMAL_CLUB"),
+    );
+
+    // Same three lines; only table 3's pairs are exchanged.
+    expect(after).toHaveLength(before.length);
+    expect(after).toContainEqual(["3EW", "3NS"]);
+    expect(after).not.toContainEqual(["3NS", "3EW"]);
+    expect(after).toContainEqual(["1NS", "1EW"]);
+    expect(after).toContainEqual(["2NS", "2EW"]);
+
+    // Clearing the flag restores the original export.
+    await setSeatsSwapped(db, 3, false);
+    expect(
+      travellerPairNumbers(
+        await generateUsebio(db, game, club, "NORMAL_CLUB"),
+      ),
+    ).toEqual(before);
+  });
+
+  it("exports a played-reversed Swiss Teams room with its NS/EW pairs exchanged", async () => {
+    await seatPair("A1NS", "H1");
+    await seatPair("A1EW", "A1");
+    await seatPair("A2NS", "H2");
+    await seatPair("A2EW", "A2");
+    await makeBoard(1, 1, 1, "A1NS", "A2EW", "4SN=");
+    await makeBoard(1, 2, 1, "A2NS", "A1EW", "3NTN=");
+
+    const db = (await harness.getDb()) as Db;
+    await setTeamsStructure(db, [
+      {
+        id: 10,
+        kind: "TEAMS",
+        home: "A1NS",
+        opponent: "A2NS",
+        vpPool: 20,
+        boardStart: 1,
+        boardEnd: 1,
+      },
+    ]);
+    const teamsGame: BridgeGame = {
+      ...game,
+      gameType: "TEAMS",
+      scoringType: "IMP_VP",
+      selectedMovement: JSON.stringify({
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 2, rounds: 1, boardsPerRound: 1 },
+      }),
+    };
+    const { generateUsebio } = await import("@/services/usebio-service");
+
+    const before = travellerPairNumbers(
+      await generateUsebio(db, teamsGame, club, "NORMAL_CLUB"),
+    );
+    expect(before).toHaveLength(2);
+
+    await setSeatsSwapped(db, 1, true);
+    const after = travellerPairNumbers(
+      await generateUsebio(db, teamsGame, club, "NORMAL_CLUB"),
+    );
+
+    // The flagged (open) room's seats are exchanged; the other room is not.
+    const sorted = (lines: [string, string][]) =>
+      lines.map((l) => l.join("/")).sort();
+    expect(sorted(after)).not.toEqual(sorted(before));
+    expect(after).toContainEqual([before[0][1], before[0][0]]);
+    expect(after).toContainEqual(before[1]);
+  });
+
   it("exports a Swiss Pairs game scored on matchpoints", async () => {
     await seatPair("A1NS", "Al");
     await seatPair("A1EW", "Cy");

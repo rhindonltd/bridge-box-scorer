@@ -64,6 +64,8 @@ vi.mock("@/context/TravellerContext", () => ({
   useTravellerContext: () => ({ instances: [], isLoading: false }),
 }));
 
+// Extra fields the stubbed traveller adds to the instance it selects.
+let selectedInstanceExtras: Record<string, unknown> = {};
 vi.mock("./Traveller", () => ({
   Traveller: ({
     boardNumber,
@@ -82,6 +84,7 @@ vi.mock("./Traveller", () => ({
             boardNumber,
             roundNumber: 4,
             tableNumber: 5,
+            ...selectedInstanceExtras,
           })
         }
       >
@@ -127,6 +130,7 @@ describe("CorrectResultPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gameOverrides = {};
+    selectedInstanceExtras = {};
     swrState = { data: { boards: [1, 2, 3] }, isLoading: false };
     mockEmitWithAck.mockResolvedValue(undefined);
   });
@@ -184,6 +188,50 @@ describe("CorrectResultPage", () => {
         tableNumber: 5,
         result: "A60/40",
       }),
+    );
+  });
+
+  it("marks a board played reversed via the set-seats-swapped event", async () => {
+    const onResultCorrected = vi.fn();
+    render(<CorrectResultPage onResultCorrected={onResultCorrected} />);
+    await goToWizard();
+
+    wizardOnComplete({ type: "seatsSwapped", swapped: true });
+
+    await waitFor(() => expect(onResultCorrected).toHaveBeenCalled());
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      "traveller:setSeatsSwapped",
+      expect.objectContaining({
+        gameId: "g1",
+        directorToken: "tok",
+        boardNumber: 2,
+        roundNumber: 4,
+        tableNumber: 5,
+        swapped: true,
+      }),
+    );
+  });
+
+  it("passes the selected instance's played-reversed state to the wizard", async () => {
+    render(<CorrectResultPage onResultCorrected={vi.fn()} />);
+    await goToWizard();
+    // An instance with no flag is not reversed.
+    expect(wizardProps.seatsSwapped).toBe(false);
+  });
+
+  it("clears the flag when the selected instance is already played reversed", async () => {
+    selectedInstanceExtras = { seatsSwapped: true };
+    const onResultCorrected = vi.fn();
+    render(<CorrectResultPage onResultCorrected={onResultCorrected} />);
+    await goToWizard();
+    expect(wizardProps.seatsSwapped).toBe(true);
+
+    wizardOnComplete({ type: "seatsSwapped", swapped: false });
+
+    await waitFor(() => expect(onResultCorrected).toHaveBeenCalled());
+    expect(mockEmitWithAck).toHaveBeenCalledWith(
+      "traveller:setSeatsSwapped",
+      expect.objectContaining({ swapped: false }),
     );
   });
 

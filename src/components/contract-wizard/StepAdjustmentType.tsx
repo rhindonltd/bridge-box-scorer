@@ -30,13 +30,22 @@ type Props = {
    * (pairs or teams); omitted (and the button hidden) otherwise.
    */
   onMismatch?: () => void;
+  /**
+   * Mark (or clear) this board instance as played the wrong way round (arrows
+   * not switched). Offered for every format; omitted (and the button hidden)
+   * only where the caller cannot act on it.
+   */
+  onToggleSeatsSwapped?: () => void;
+  /** Whether the board is currently marked played-reversed (sets the label). */
+  seatsSwapped?: boolean;
 };
 
 /**
  * The director's adjustment hub: the first screen after tapping a traveller
  * row. It routes to one of the ways a director can set a board's result —
  * entering a played contract, awarding an artificial adjusted score, awarding a
- * weighted assigned score, cancelling/fouling the board (§3.3.2), or (teams IMP
+ * weighted assigned score, cancelling/fouling the board (§3.3.2), marking (or
+ * clearing) the board as played the wrong way round, or (teams IMP
  * games only) removing the board from the match (§3.3.7). Players never see
  * this; it is reached only from the director traveller.
  */
@@ -49,6 +58,8 @@ export function StepAdjustmentType({
   onVoidTeamsMatch,
   onVoidPairsMatch,
   onMismatch,
+  onToggleSeatsSwapped,
+  seatsSwapped = false,
 }: Props) {
   return (
     <div className="flex-1 flex flex-col gap-3 p-4 min-h-0">
@@ -83,6 +94,16 @@ export function StepAdjustmentType({
       >
         Cancel / Foul Board
       </button>
+
+      {onToggleSeatsSwapped && (
+        <button
+          type="button"
+          onClick={onToggleSeatsSwapped}
+          className="py-4 rounded-xl text-center border-2 border-teal-300 bg-teal-50 hover:bg-teal-100 active:scale-[0.98] transition text-lg font-semibold text-teal-800"
+        >
+          {seatsSwapped ? "Clear Reversed" : "Mark Played Reversed"}
+        </button>
+      )}
 
       {onRemoveTeamsBoard && (
         <button

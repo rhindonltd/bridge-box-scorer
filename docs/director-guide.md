@@ -557,6 +557,7 @@ If a board was entered incorrectly, you can override it:
    | Option | Offered in | What it does |
    | --- | --- | --- |
    | **Cancel / Foul Board** | Every event | The board can't stand (fouled, mis-dealt and so on). Choose the averages to award, as for an adjusted score (for example AVE+ / AVE−). |
+   | **Mark Played Reversed** / **Clear Reversed** | Every event | The board was played the wrong way round, usually because the arrows weren't switched. See [A board played the wrong way round](#a-board-played-the-wrong-way-round). |
    | **Board Not Played (Teams)** | Teams and Swiss Teams | The board couldn't be played in this match. Choose who was at fault: the side not at fault gains 3 IMPs on it and the side at fault loses 3 (neither or both at fault: no swing). In Point-a-Board or Board-a-Match, the board is won, lost or tied instead. |
    | **Void Match (Teams)** | Teams and Swiss Teams | The whole match can't stand. **Incorrect seating / cannot replay** gives each team 40% of the Victory Points (8 of 20), or 60% (12) when the director was at fault. **Less than half played** gives averages by who was at fault. |
    | **Void Match (Pairs)** | Swiss Pairs | The whole match can't stand. It no longer counts against the rest of the field, and each pair gets averages by who was at fault: the side not at fault AVE+ and the side at fault AVE−, or AVE+ to both if neither was at fault and AVE− to both if both were. |
@@ -566,6 +567,37 @@ If a board was entered incorrectly, you can override it:
    board of that match, whichever board you opened.
 5. The correction is saved, and anyone viewing that board sees the updated
    result.
+
+### A board played the wrong way round
+
+Sometimes a board is played with the pairs in the opposite directions to the
+movement, most often because the arrows weren't switched. The result is
+recorded against the wrong pairs: the pair the movement put North-South really
+played East-West, and the other way round.
+
+You don't need to change the result. Mark that one board instead:
+
+1. From the Manage Game Menu, tap **Travellers** and choose the board.
+2. Tap the row for the table where it happened.
+3. Tap **Mark Played Reversed**.
+
+The result stays exactly as entered, but the board is now credited the other
+way round. The traveller and the board result screens show the NS and EW pair
+numbers swapped, and the score goes to the pair that actually sat in that
+direction. The leaderboard, the results and the exported USEBIO file all follow.
+The board is still compared with every other table's result in the same way, so
+only that table's two pairs (or, in a teams match, the two teams) change.
+
+- It applies to **one table's copy of one board**. If the pairs were reversed
+  for several boards, mark each of them.
+- It works in every kind of event, and you can do it at any time, even before a
+  result has been entered.
+- It's separate from the other rulings. You can mark a board reversed and also
+  correct its score or cancel it.
+- To undo it, tap the same row and choose **Clear Reversed**. The original
+  pairs and scores come straight back.
+
+It doesn't change a **Board Not Played** or **Void Match** ruling.
 
 ---
 

@@ -83,6 +83,13 @@ export interface TeamMatchRow {
   boardNumber: number;
   ns: string;
   ew: string;
+  /**
+   * Director ruling: this room was played the wrong way round, so the team
+   * recorded at NS actually held the EW hands. The ids stay as recorded (rooms
+   * are filed by the table encoded in `ns`); the room's score is credited from
+   * the opposite perspective instead — see {@link scoreOfRow}.
+   */
+  seatsSwapped?: boolean | null;
   confirmedResult: BoardOutcome | null;
   directorOverrideResult: BoardOutcome | null;
   status: string | null;
@@ -396,11 +403,19 @@ export function teamByeRounds(
   return byes;
 }
 
-/** A table row's final score (override ?? confirmed), or null when unscored. */
-function scoreOfRow<R extends TeamMatchRow>(row: R | undefined): number | null {
+/**
+ * A table row's final score (override ?? confirmed) from the perspective of the
+ * team recorded at NS, or null when unscored. A room the director marked
+ * "played the wrong way round" credits the NS-hand score to the opposing team,
+ * so the recorded-NS team's score is the negation.
+ */
+export function scoreOfRow<R extends TeamMatchRow>(row: R | undefined): number | null {
   if (!row) return null;
   const outcome = boardResult(row);
-  return outcome != null ? outcomeToScore(row.boardNumber, outcome) : null;
+  if (outcome == null) return null;
+  const score = outcomeToScore(row.boardNumber, outcome);
+  if (score == null) return null;
+  return row.seatsSwapped ? -score : score;
 }
 
 /**

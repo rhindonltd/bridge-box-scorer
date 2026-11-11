@@ -85,6 +85,42 @@ describe("set-board-result", () => {
         status: "CANCELLED",
       });
     });
+    it("setBoardSeatsSwapped sets and clears the flag, leaving result and status alone", async () => {
+      await actions.confirmBoardResult(db, key, "3NTN=" as BoardOutcome);
+
+      await actions.setBoardSeatsSwapped(db, key, true);
+      expect(board()).toMatchObject({
+        seatsSwapped: true,
+        confirmedResult: "3NTN=",
+        status: "CONFIRMED",
+      });
+
+      await actions.setBoardSeatsSwapped(db, key, false);
+      expect(board()).toMatchObject({
+        seatsSwapped: false,
+        confirmedResult: "3NTN=",
+        status: "CONFIRMED",
+      });
+    });
+    it("setBoardSeatsSwapped combines with a cancelled board and works before any result", async () => {
+      await actions.setBoardSeatsSwapped(db, key, true);
+      expect(board()).toMatchObject({
+        seatsSwapped: true,
+        status: "NOT_PLAYED",
+        confirmedResult: null,
+      });
+
+      await actions.cancelBoardResult(db, key, "A60/40" as BoardOutcome);
+      expect(board()).toMatchObject({
+        seatsSwapped: true,
+        status: "CANCELLED",
+      });
+    });
+    it("setBoardSeatsSwapped only touches the addressed board", async () => {
+      seedBoard({ boardNumber: 2 });
+      await actions.setBoardSeatsSwapped(db, key, true);
+      expect(board(1, 2).seatsSwapped).toBe(false);
+    });
     it("removeTeamsBoardResult marks the board removed", async () => {
       await actions.removeTeamsBoardResult(db, key, "TRM:NS");
       expect(board()).toMatchObject({
