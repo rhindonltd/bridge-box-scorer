@@ -4,6 +4,7 @@ import { registerTravellerRequestHandler } from "./traveller-request.handler";
 import { registerRoundResultsRequestHandler } from "./round-results-request.handler";
 import { registerTravellerOverrideHandler } from "./traveller-override.handler";
 import { registerCancelBoardHandler } from "./cancel-board.handler";
+import { registerSetSeatsSwappedHandler } from "./set-seats-swapped.handler";
 import { registerRemoveTeamsBoardHandler } from "./remove-teams-board.handler";
 import { registerVoidTeamsMatchHandler } from "./void-teams-match.handler";
 import { registerVoidPairsMatchHandler } from "./void-pairs-match.handler";
@@ -23,6 +24,7 @@ export function registerResultsHandlers(socket: Socket, io: Server) {
   registerRoundResultsRequestHandler(socket, io);
   registerTravellerOverrideHandler(socket, io);
   registerCancelBoardHandler(socket, io);
+  registerSetSeatsSwappedHandler(socket, io);
   registerRemoveTeamsBoardHandler(socket, io);
   registerVoidTeamsMatchHandler(socket, io);
   registerVoidPairsMatchHandler(socket, io);

@@ -19,6 +19,7 @@ import { players } from "@/db/games/tables/players";
 import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
 import { readAbsences } from "@/db/games/queries/absences";
 import type { Absences } from "@/model/absence";
+import { applySeatSwaps } from "@/model/seat-swap";
 import {
   applyAbsences,
   pairsStandingsForRanking,
@@ -170,7 +171,10 @@ export async function generateUsebio(
         findPairs(db),
         db.select().from(matches),
       ]);
-      const boardRows = allBoards;
+      // Swiss Pairs ids are plain pair identities, so a played-reversed board
+      // is exported with its ns/ew pairs exchanged (as the leaderboard scores
+      // it). Teams formats keep their ids and credit the flag via the scorers.
+      const boardRows = applySeatSwaps(allBoards);
       // A matchpoint-scored Swiss exports in MP mode; cross-IMP and (null-mode)
       // IMP-scored Swiss both export as cross-IMP vs the field, so the file
       // agrees with how the leaderboard scores an XIMP/MP Swiss event.
@@ -257,7 +261,13 @@ async function generateMpPairsUsebio(
   // Get all board results. Rows a pair missed through absence (design §11)
   // are rewritten exactly as the leaderboard does: an AVERAGE row carries an
   // AVE± artificial outcome, a REMOVED row is dropped.
-  const allBoards = applyAbsences(await db.select().from(boards), absences);
+  // A board the director marked "played the wrong way round" is exported with
+  // its ns/ew pairs exchanged (same result, credited to the opposite pairs), as
+  // the leaderboard scores it.
+  const allBoards = applyAbsences(
+    applySeatSwaps(await db.select().from(boards)),
+    absences,
+  );
 
   // §2.4.7 HANDOVER / SUBSTITUTION: resolve each board row's ns/ew to its
   // OCCUPANT's scored-field id. A ONE-LINE seat folds onto the one bare-id pair;

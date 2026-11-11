@@ -11,6 +11,7 @@ import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { primaryOf } from "@/db/games/queries/seat-occupancy";
+import { applySeatSwaps } from "@/model/seat-swap";
 
 /** The default cap on how many outstanding boards the detail list returns. */
 export const OUTSTANDING_DETAIL_LIMIT = 5;
@@ -70,6 +71,7 @@ export async function getOutstandingBoards(
       ruling: matches.ruling,
       confirmedResult: boards.confirmedResult,
       directorOverrideResult: boards.directorOverrideResult,
+      seatsSwapped: boards.seatsSwapped,
     })
     .from(boards)
     .innerJoin(matches, eq(boards.matchId, matches.id));
@@ -146,7 +148,9 @@ export async function getOutstandingBoards(
     );
   }
 
-  return outstanding.map((r) => ({
+  // A board marked "played the wrong way round" lists its pairs exchanged, as
+  // the traveller shows them.
+  return applySeatSwaps(outstanding).map((r) => ({
     section: r.section,
     tableNumber: r.tableNumber,
     boardNumber: r.boardNumber,

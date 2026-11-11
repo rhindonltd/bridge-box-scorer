@@ -21,6 +21,8 @@ export async function hubChoices(page: Page): Promise<string[]> {
     "Adjusted Score",
     "Weighted Score",
     "Cancel / Foul Board",
+    "Mark Played Reversed",
+    "Clear Reversed",
     "Board Not Played (Teams)",
     "Void Match (Teams)",
     "Void Match (Pairs)",

@@ -68,6 +68,12 @@ export type DirectorWizardResult =
       side: MismatchSide;
       direction: MismatchDirection;
       fault: MismatchFault;
+    }
+  | {
+      // Mark (swapped: true) or clear (false) the board as played the wrong way
+      // round. The result itself is untouched.
+      type: "seatsSwapped";
+      swapped: boolean;
     };
 
 interface DirectorContractWizardProps {
@@ -100,6 +106,12 @@ interface DirectorContractWizardProps {
    * teams rather than pairs.
    */
   teamsMismatch?: boolean;
+  /**
+   * Whether this board instance is currently marked "played the wrong way
+   * round". Sets the hub button's label ("Mark Played Reversed" / "Clear
+   * Reversed") and the value the toggle emits.
+   */
+  seatsSwapped?: boolean;
   onComplete: (data: DirectorWizardResult) => void;
   onBack: () => void;
 }
@@ -130,6 +142,7 @@ export function DirectorContractWizard({
   allowPairsVoid = false,
   allowMismatch = false,
   teamsMismatch = false,
+  seatsSwapped = false,
   onComplete,
   onBack,
 }: DirectorContractWizardProps) {
@@ -314,6 +327,10 @@ export function DirectorContractWizard({
               allowPairsVoid ? () => setStep(12) : undefined
             }
             onMismatch={allowMismatch ? () => setStep(13) : undefined}
+            seatsSwapped={seatsSwapped}
+            onToggleSeatsSwapped={() =>
+              onComplete({ type: "seatsSwapped", swapped: !seatsSwapped })
+            }
           />
         );
       case 1:

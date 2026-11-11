@@ -103,6 +103,37 @@ test.describe("Authorization: director socket events", () => {
         { ...overridePayload, directorToken },
       );
       expect(authed.error).not.toBe("Unauthorized");
+
+      // `traveller:setSeatsSwapped` (played-the-wrong-way-round ruling) is
+      // director-only too: garbage and missing tokens are rejected, the real
+      // director token gets past auth.
+      const swapPayload = {
+        gameId,
+        boardNumber: 1,
+        roundNumber: 1,
+        tableNumber: 1,
+        swapped: true,
+      };
+      const swapGarbage = await emit(socket, "traveller:setSeatsSwapped", {
+        ...swapPayload,
+        directorToken: "garbage-token",
+      });
+      expect(swapGarbage.success).toBe(false);
+      expect(swapGarbage.error).toBe("Unauthorized");
+
+      const swapMissing = await emit(
+        socket,
+        "traveller:setSeatsSwapped",
+        swapPayload,
+      );
+      expect(swapMissing.success).toBe(false);
+
+      const swapAuthed = await emit<{ success: boolean; error?: string }>(
+        socket,
+        "traveller:setSeatsSwapped",
+        { ...swapPayload, directorToken },
+      );
+      expect(swapAuthed.error).not.toBe("Unauthorized");
     } finally {
       socket.disconnect();
       await deleteGame(directorPage, gameId);

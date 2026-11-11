@@ -22,3 +22,13 @@ export default meta;
 type Story = StoryObj<typeof StepAdjustmentType>;
 
 export const Default: Story = {};
+
+/** The board can be marked as played the wrong way round (arrows not switched). */
+export const MarkPlayedReversed: Story = {
+  args: { onToggleSeatsSwapped: fn(), seatsSwapped: false },
+};
+
+/** Already marked: the same action now clears the flag. */
+export const ClearReversed: Story = {
+  args: { onToggleSeatsSwapped: fn(), seatsSwapped: true },
+};

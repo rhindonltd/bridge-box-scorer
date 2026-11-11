@@ -94,6 +94,7 @@ test.describe("Director rulings", () => {
         "Adjusted Score",
         "Weighted Score",
         "Cancel / Foul Board",
+        "Mark Played Reversed",
       ]);
 
       await applyRuling(
@@ -135,6 +136,7 @@ test.describe("Director rulings", () => {
         "Adjusted Score",
         "Weighted Score",
         "Cancel / Foul Board",
+        "Mark Played Reversed",
         "Board Not Played (Teams)",
         "Void Match (Teams)",
       ]);
@@ -246,6 +248,7 @@ test.describe("Director rulings", () => {
         "Adjusted Score",
         "Weighted Score",
         "Cancel / Foul Board",
+        "Mark Played Reversed",
         "Void Match (Pairs)",
         "Mismatch (Swiss)",
       ]);
@@ -297,6 +300,7 @@ test.describe("Director rulings", () => {
         "Adjusted Score",
         "Weighted Score",
         "Cancel / Foul Board",
+        "Mark Played Reversed",
         "Board Not Played (Teams)",
         "Void Match (Teams)",
         "Mismatch (Swiss)",

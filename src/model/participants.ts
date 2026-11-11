@@ -277,6 +277,12 @@ export interface BoardInstance {
   participants: PairsParticipants;
   currentResult: string | null;
   status: string | null;
+  /**
+   * The director marked this instance "played the wrong way round". When set,
+   * `participants.ns` / `.ew` are already exchanged (the pairs credited with
+   * the result); the result itself is unchanged.
+   */
+  seatsSwapped?: boolean;
 }
 
 /**

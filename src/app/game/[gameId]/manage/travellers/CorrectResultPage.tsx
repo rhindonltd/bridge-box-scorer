@@ -73,6 +73,8 @@ export function CorrectResultPage({
         boardNumber: number;
         roundNumber: number;
         tableNumber: number;
+        /** Whether the selected instance is currently marked played-reversed. */
+        seatsSwapped: boolean;
       }
     | { step: "saving" };
 
@@ -122,6 +124,7 @@ export function CorrectResultPage({
       boardNumber: instance.boardNumber,
       roundNumber: instance.roundNumber,
       tableNumber: instance.tableNumber,
+      seatsSwapped: instance.seatsSwapped ?? false,
     });
   }
 
@@ -218,6 +221,12 @@ export function CorrectResultPage({
             fault: data.fault,
           },
           errorMessage: "Failed to mark mismatch",
+        };
+      case "seatsSwapped":
+        return {
+          event: SocketEvents.SET_SEATS_SWAPPED_TRAVELLER,
+          extra: { swapped: data.swapped },
+          errorMessage: "Failed to update played-reversed flag",
         };
       // A `contract` result (and any non-ruling result) overrides with a
       // computed `result` string instead — handled by the caller's default.
@@ -317,6 +326,7 @@ export function CorrectResultPage({
           allowPairsVoid={allowPairsVoid}
           allowMismatch={allowMismatch}
           teamsMismatch={teamsMismatch}
+          seatsSwapped={wizardStep.seatsSwapped}
           onComplete={handleWizardComplete}
           onBack={() =>
             setWizardStep({

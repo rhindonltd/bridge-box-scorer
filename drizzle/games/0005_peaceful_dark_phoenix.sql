@@ -1,0 +1,1 @@
+ALTER TABLE `boards` ADD `seats_swapped` integer DEFAULT false NOT NULL;

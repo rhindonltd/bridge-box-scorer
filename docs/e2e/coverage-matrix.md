@@ -55,6 +55,7 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Board not played (teams) | §3.3.7 | 06 | `RULE-21..23` |
 | Mismatch | §3.5 | 06 | `RULE-24..27` |
 | Enter deals (director) | — | 06 | `RULE-28..30` |
+| Board played the wrong way round (mark / clear) | — | Automated only: journey `played-reversed`; credit in the `*-seat-swap` service integration tests | traveller swaps NS/EW, clear restores |
 
 ## Core & platform
 

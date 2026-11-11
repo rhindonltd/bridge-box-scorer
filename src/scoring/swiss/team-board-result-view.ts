@@ -6,9 +6,10 @@ import {
 } from "@/scoring/table/score-table";
 import { BoardOutcome } from "@/model/score";
 import { parseSeat } from "@/model/participants";
-import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
+import { computeImps } from "@/scoring/traveller/common";
 import {
   groupTeamMatches,
+  scoreOfRow,
   teamIdFor,
   TeamMatchRow,
   type TeamMatchStructureRow,
@@ -27,19 +28,33 @@ export interface TeamBoardResultLine {
   /** The final result on the board at this table, or null when not entered. */
   result: BoardOutcome | null;
   status?: string | null;
+  /**
+   * The director marked this table "played the wrong way round". A traveller
+   * instance then arrives with `ns` / `ew` already exchanged (the teams
+   * credited with the result).
+   */
+  seatsSwapped?: boolean | null;
 }
 
-/** Adapt a per-board line to the structural `TeamMatchRow` the grouper needs. */
+/**
+ * Adapt a per-board line to the structural `TeamMatchRow` the grouper needs.
+ *
+ * Teams rows are filed by the table encoded in `ns`, so a swapped line has its
+ * ids put back in the recorded orientation here and carries `seatsSwapped`;
+ * `scoreOfRow` then credits the room's score from the opposite perspective.
+ */
 function toMatchRow(
   boardNumber: number,
   line: TeamBoardResultLine,
 ): TeamMatchRow {
+  const [ns, ew] = line.seatsSwapped ? [line.ew, line.ns] : [line.ns, line.ew];
   return {
-    section: parseSeat(line.ns).section,
+    section: parseSeat(ns).section,
     roundNumber: 0,
     boardNumber,
-    ns: line.ns,
-    ew: line.ew,
+    ns,
+    ew,
+    seatsSwapped: line.seatsSwapped ?? false,
     confirmedResult: line.result,
     directorOverrideResult: null,
     status: line.status ?? null,
@@ -136,9 +151,10 @@ export function buildTeamBoardResultTable(
   const myResult = myRow.confirmedResult;
   const otherResult = otherRow?.confirmedResult ?? null;
 
-  const myScore = myResult != null ? outcomeToScore(boardNumber, myResult) : null;
-  const otherScore =
-    otherResult != null ? outcomeToScore(boardNumber, otherResult) : null;
+  // Each room's score from the perspective of the team recorded at NS there
+  // (negated for a room the director marked played-reversed).
+  const myScore = scoreOfRow(myRow);
+  const otherScore = scoreOfRow(otherRow);
 
   // Net IMPs to the team on this board (the "Team result" row): both rows are
   // stored from each table's NS perspective, and a team match pairs the two

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { Db } from "@/db/games";
+import { applySeatSwaps } from "@/model/seat-swap";
 import { boards, Board } from "@/db/games/tables/boards";
 import { matches, type Match } from "@/db/games/tables/matches";
 import { findPairs } from "@/db/games/queries/find-pairs";
@@ -964,11 +965,20 @@ async function readLeaderboardInputs(
   // consumer (scoreBoardsToOverall, resolveStandings, splitByDirection) sees the
   // occupant ids with no further plumbing.
   const resolveScoredId = buildOccupantScoredIdResolver(occupancies);
-  const scoredRows: Board[] = rawBoardRows.map((b) => ({
+  const occupantRows: Board[] = rawBoardRows.map((b) => ({
     ...b,
     ns: resolveScoredId(b.ns, b.boardNumber),
     ew: resolveScoredId(b.ew, b.boardNumber),
   }));
+  // Director "played the wrong way round" ruling: the result stays as entered
+  // but is credited to the opposite pairs, so exchange ns/ew on flagged rows.
+  // PAIRS only (incl. Swiss Pairs): there the ids are plain pair identities.
+  // TEAMS rows keep their ids — the teams scorers file each room by the table
+  // encoded in `row.ns`, so they apply the flag to the room's score instead
+  // (see `scoreOfRow` in scoring/swiss/team-match.ts).
+  const scoredRows: Board[] = needsTeams
+    ? occupantRows
+    : applySeatSwaps(occupantRows);
 
   // PAIRS board-pooled events (design §11): a withdrawn / late-arrived pair's
   // missed boards — and those against a still-empty expected-late seat — are
