@@ -589,11 +589,9 @@ describe("§3.3.7 removed boards — degenerate tokens", () => {
     expect(teamMatchBoardImps(match).perBoard).toEqual([{ boardNumber: 1, imps: 0 }]);
   });
 
-  // TODO(bug): removedBoardHomeWin documents that a REMOVED_TEAMS row with no
-  // parseable token counts as a tie, but only handles that for the OPPONENT
-  // room's row. An untokened removed HOME row falls through to "not comparable"
-  // (result null) in Board-a-Match, while the IMP path counts it as a 0 swing.
-  it.fails("counts a removed home row with no token as a tie in board-a-match", () => {
+  // Mirrors the IMP case above: the board still counts, as a tie, rather than
+  // dropping out of the match as "not comparable".
+  it("counts a removed home row with no token as a tie in board-a-match", () => {
     const [match] = groupTeamMatches([removed("A1NS", "A2EW", null), row(1, 1, "A2NS", "A1EW", null)]);
     expect(teamMatchBoardWins(match).perBoard).toEqual([{ boardNumber: 1, result: 0.5 }]);
   });

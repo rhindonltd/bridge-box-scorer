@@ -455,6 +455,10 @@ function removedBoardHomeWin<R extends TeamMatchRow>(
   awayRow: R | undefined,
 ): number | null {
   const homeFault = removalFaultOfRow(homeRow);
+  // A removed HOME row with no parseable token counts as a tie — the same
+  // fallback the opponent room gets below, and the board-win twin of
+  // `removedBoardHomeSwing`'s 0 swing — rather than dropping out of the match.
+  if (homeFault == null && homeRow?.status === "REMOVED_TEAMS") return 0.5;
   const fault = homeFault ?? invertRemovalFaultForOpponent(awayRow);
   if (fault === "UNRESOLVED") {
     // A REMOVED_TEAMS row with no parseable token → a tie, so it still counts.
