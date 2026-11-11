@@ -10,11 +10,7 @@ import { SitOutPage } from "./SitOutPage";
 describe("SitOutPage", () => {
   it("shows the table where the sit-out is happening", () => {
     render(
-      <SitOutPage
-        round={5}
-        tableNumber={3}
-        onHandleSitOutContinue={vi.fn()}
-      />,
+      <SitOutPage round={5} tableNumber={3} onHandleSitOutContinue={vi.fn()} />,
     );
     expect(screen.getByText("Sit Out at Table 3")).toBeInTheDocument();
   });

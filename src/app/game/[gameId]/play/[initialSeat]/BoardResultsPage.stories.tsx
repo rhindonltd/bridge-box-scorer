@@ -92,11 +92,19 @@ export const PairMPWithDeal: Story = {
     // the page (showDeal) and the header menu (extraItems).
     const [showDeal, setShowDeal] = useState(false);
     const headerRight = storyPlayHeader("A1NS", [
-      { label: "Results", active: !showDeal, onSelect: () => setShowDeal(false) },
+      {
+        label: "Results",
+        active: !showDeal,
+        onSelect: () => setShowDeal(false),
+      },
       { label: "Deal", active: showDeal, onSelect: () => setShowDeal(true) },
     ]);
     return (
-      <BoardResultsPage {...args} showDeal={showDeal} headerRight={headerRight} />
+      <BoardResultsPage
+        {...args}
+        showDeal={showDeal}
+        headerRight={headerRight}
+      />
     );
   },
 };

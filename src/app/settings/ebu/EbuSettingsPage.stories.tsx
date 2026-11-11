@@ -7,9 +7,9 @@ import { swrKeys } from "@/swr/swr-keys";
 
 /**
  * Container story for the EBU settings screen: renders the real SWR container
- * with its status response mocked by MSW, complementing the prop-driven
- * `EbuSettingsForm` stories. The `fetcher` unwraps a `{ result }` envelope, so
- * handlers respond in that shape.
+ * with its EBU-status and club-record responses mocked by MSW, complementing
+ * the prop-driven `EbuSettingsForm` stories. The `fetcher` unwraps a
+ * `{ result }` envelope, so handlers respond in that shape.
  */
 const meta: Meta<typeof EbuSettingsPage> = {
   title: "App/Settings/Ebu/EbuSettingsPage",
@@ -27,7 +27,12 @@ const meta: Meta<typeof EbuSettingsPage> = {
 export default meta;
 type Story = StoryObj<typeof EbuSettingsPage>;
 
-/** Already configured: the EBU number is prefilled and a password is stored. */
+const clubHandler = (club: { name: string; clubNumber: string } | null) =>
+  http.get(swrKeys.club(), () =>
+    HttpResponse.json({ result: { club: club && { id: 1, ...club } } }),
+  );
+
+/** Configured: club details prefilled and a password is stored. */
 export const Configured: Story = {
   parameters: {
     msw: {
@@ -37,6 +42,7 @@ export const Configured: Story = {
             result: { configured: true, ebuNumber: "1234567" },
           }),
         ),
+        clubHandler({ name: "Anytown Bridge Club", clubNumber: "1234567" }),
       ],
     },
   },
@@ -45,11 +51,14 @@ export const Configured: Story = {
     await waitFor(() =>
       expect(canvas.getByLabelText("EBU Club Number")).toHaveValue("1234567"),
     );
+    expect(canvas.getByLabelText("Club Name")).toHaveValue(
+      "Anytown Bridge Club",
+    );
     expect(canvas.getByText(/A password is saved/i)).toBeInTheDocument();
   },
 };
 
-/** Not configured yet: blank form, password required on first save. */
+/** Nothing set up yet: blank form; the password is optional. */
 export const Unconfigured: Story = {
   parameters: {
     msw: {
@@ -57,12 +66,13 @@ export const Unconfigured: Story = {
         http.get(swrKeys.ebu(), () =>
           HttpResponse.json({ result: { configured: false, ebuNumber: null } }),
         ),
+        clubHandler(null),
       ],
     },
   },
 };
 
-/** Status still loading: the container shows its spinner. */
+/** Still loading: the container shows its spinner. */
 export const Loading: Story = {
   parameters: {
     msw: {
@@ -73,6 +83,7 @@ export const Loading: Story = {
             result: { configured: false, ebuNumber: null },
           });
         }),
+        clubHandler(null),
       ],
     },
   },

@@ -8,20 +8,25 @@ import { fetcher } from "@/lib/fetcher";
 import { getAdminToken, clearAdminToken } from "@/lib/admin-token";
 import { swrKeys } from "@/swr/swr-keys";
 import type { EbuStatus } from "@/db/system/queries/ebu-credentials";
+import type { Club } from "@/db/system/schema";
 import { EbuSettingsForm } from "@/app/settings/ebu/EbuSettingsForm";
 
 /**
- * Data container for the EBU settings screen: loads the configured status over
- * SWR, owns the edit/save state machine (including the admin-token 401 handling
- * and the first-configuration password rule), and delegates rendering to
- * {@link EbuSettingsForm}.
+ * Data container for the EBU settings screen: the club's name and EBU club
+ * number (which identify the club on every results file) plus the optional EBU
+ * login password (only needed to submit results to the EBU). Loads the club
+ * record and the EBU status over SWR, owns the edit/save state machine
+ * (including the admin-token 401 handling), and delegates rendering to
+ * {@link EbuSettingsForm}. One save updates both the club record and the EBU
+ * login, so the number is only ever entered once.
  */
 export function EbuSettingsPage() {
   const router = useRouter();
-  // Edited values are null until the user types; the displayed number falls
-  // back to the fetched status. The password field is always edit-only: we
+  // Edited values are null until the user types; the displayed values fall
+  // back to the fetched records. The password field is always edit-only: we
   // never receive the stored password from the server, and leaving it blank
-  // keeps the existing one.
+  // keeps the existing one (or, when none is stored, means "no EBU login").
+  const [clubNameEdit, setClubNameEdit] = useState<string | null>(null);
   const [ebuNumberEdit, setEbuNumberEdit] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -29,23 +34,31 @@ export function EbuSettingsPage() {
 
   const {
     data: status,
-    isLoading: loading,
-    mutate,
+    isLoading: statusLoading,
+    mutate: mutateStatus,
   } = useSWR<EbuStatus>(swrKeys.ebu(), fetcher);
+  const {
+    data: clubData,
+    isLoading: clubLoading,
+    mutate: mutateClub,
+  } = useSWR<{ club: Club | null }>(swrKeys.club(), fetcher);
 
-  const ebuNumber = ebuNumberEdit ?? status?.ebuNumber ?? "";
+  const clubName = clubNameEdit ?? clubData?.club?.name ?? "";
+  // The EBU login number and the club record's number are the same EBU club
+  // number. Prefer the login's copy, falling back to the club record for a
+  // device that only had its club details set up.
+  const ebuNumber =
+    ebuNumberEdit ?? status?.ebuNumber ?? clubData?.club?.clubNumber ?? "";
   const configured = status?.configured ?? false;
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!ebuNumber.trim()) {
-      setMessage("EBU number is required");
+    if (!clubName.trim()) {
+      setMessage("Club name is required");
       return;
     }
-    // Require a password on first configuration; afterwards a blank password
-    // keeps the stored one.
-    if (!configured && !password) {
-      setMessage("Password is required");
+    if (!ebuNumber.trim()) {
+      setMessage("EBU number is required");
       return;
     }
 
@@ -59,12 +72,18 @@ export function EbuSettingsPage() {
           "Content-Type": "application/json",
           "x-admin-token": getAdminToken() ?? "",
         },
-        body: JSON.stringify({ ebuNumber: ebuNumber.trim(), password }),
+        body: JSON.stringify({
+          clubName: clubName.trim(),
+          ebuNumber: ebuNumber.trim(),
+          password,
+        }),
       });
 
       if (res.ok) {
         setPassword("");
-        await mutate();
+        // Revalidate both shared caches so other views (e.g. the export
+        // screens, which read the club record) reflect the save.
+        await Promise.all([mutateStatus(), mutateClub()]);
         setMessage("✅ EBU settings saved");
       } else if (res.status === 401) {
         clearAdminToken();
@@ -80,7 +99,7 @@ export function EbuSettingsPage() {
     }
   }
 
-  if (loading) {
+  if (statusLoading || clubLoading) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-white">
         <Spinner />
@@ -90,11 +109,13 @@ export function EbuSettingsPage() {
 
   return (
     <EbuSettingsForm
+      clubName={clubName}
       ebuNumber={ebuNumber}
       password={password}
       configured={configured}
       saving={saving}
       message={message}
+      onClubNameChange={setClubNameEdit}
       onEbuNumberChange={setEbuNumberEdit}
       onPasswordChange={setPassword}
       onSave={handleSave}

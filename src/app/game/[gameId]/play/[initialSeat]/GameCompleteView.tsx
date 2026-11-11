@@ -41,7 +41,11 @@ export function GameCompleteView({
   }
 
   return (
-    <GamePageLayout headerTitle="Game Complete" headerRight={headerRight} hideBack>
+    <GamePageLayout
+      headerTitle="Game Complete"
+      headerRight={headerRight}
+      hideBack
+    >
       <div className="flex-1 min-h-0">
         {leaderboard ? (
           <Leaderboard

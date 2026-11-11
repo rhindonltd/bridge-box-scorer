@@ -18,7 +18,7 @@ describe("StepBoard", () => {
     expect(onBoardSelected).toHaveBeenCalledWith(2);
   });
 
-  it("disables played boards", () => {
+  it("disables played boards and marks them as played", () => {
     const onBoardSelected = vi.fn();
     render(
       <StepBoard
@@ -28,9 +28,13 @@ describe("StepBoard", () => {
       />,
     );
 
-    const board1 = screen.getByRole("button", { name: "1" });
+    // The tick is decorative; "played" is spelled out for screen readers in
+    // the button's name.
+    const board1 = screen.getByRole("button", { name: "1 (played)" });
     expect(board1).toBeDisabled();
     fireEvent.click(board1);
     expect(onBoardSelected).not.toHaveBeenCalled();
+    // An available board is just its number.
+    expect(screen.getByRole("button", { name: "2" })).toBeEnabled();
   });
 });

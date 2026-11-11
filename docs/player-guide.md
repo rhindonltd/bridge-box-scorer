@@ -112,10 +112,16 @@ You can use the back arrow at any step to change an earlier choice.
 
 ### Waiting for the other pair
 
-After you submit, you may see **Waiting for confirmation**. The board is only
-recorded once *both* pairs at the table submit — this is the built-in check
-that catches entry mistakes. As soon as the other pair enters the same board
-and result, it is confirmed.
+After you submit, you may see **Waiting for confirmation**, with the result you
+just entered shown underneath (**You entered**) so you can check it while you
+wait. The board is only recorded once *both* pairs at the table submit — this
+is the built-in check that catches entry mistakes. As soon as the other pair
+enters the same board and result, it is confirmed.
+
+Entered the wrong thing? Tap the **back arrow** while you're waiting. Your
+submitted entry is cleared and you return to the contract steps to enter it
+again. This only works until the board is confirmed; once the other pair has
+matched your entry, the result is recorded and you move on.
 
 ### If the results don't match
 
@@ -184,19 +190,30 @@ pair highlighted.
 
 Every play screen has a **menu** button in the top-right corner. Tap it for:
 
-- **Change device** — shows a short code you can enter on another device to
-  move your seat there (handy if your phone is running low on battery). Once the
-  code is used, this device is signed out of the seat: it shows a short "this
-  seat has moved to another device" message with a **Back to main menu** button,
-  and play carries on from the other device.
-- **Pair details** — shows your pair number, which direction you're playing,
-  and both players' names.
+- **Scorecard** (pairs events) — your pair's own results so far: each board
+  you've played, who you played it against, the contract and result, your
+  score, and how you did on the board, with a total at the bottom. In a
+  matchpoint event, switch between **%** and **MP**; IMP and Cross-IMP events
+  show your IMPs. In a Swiss Pairs event you also see the Victory Points you
+  won in each round. Each board is scored the same way as the board results
+  you see after it confirms, and the scorecard updates by itself as results
+  come in. Tap the back arrow to return to play.
+- **Pair details** — shows your pair number and both players' names. It sits
+  under **Scorecard**, apart from the options that change or leave the game.
+- **Change device** — opens a **Change device** screen with a short code you
+  can enter on another device to move your seat there (handy if your phone is
+  running low on battery). Tap the back arrow to return to play without
+  changing anything. Once the code is used, this device is signed out of the
+  seat: it shows a short "this seat has moved to another device" message with
+  a **Back to main menu** button, and play carries on from the other device.
 
 ---
 
 ## Viewing scores
 
 - **During play**, you see each board's traveller right after it confirms.
+- **Any time during play**, **Menu → Scorecard** shows all your pair's boards
+  so far in one table (pairs events).
 - **At the end**, your final screen shows the overall leaderboard with your
   pair highlighted.
 - **Throughout the session**, your director can also put the leaderboard on a

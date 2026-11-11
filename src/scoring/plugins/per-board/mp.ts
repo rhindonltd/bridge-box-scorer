@@ -8,6 +8,7 @@ import {
   textCell,
 } from "@/scoring/table/score-table";
 import { PerBoardScoringPlugin, PerBoardView } from "@/scoring/plugins/types";
+import { pairLabel } from "@/model/pair-label";
 import { registerPerBoardPlugin } from "@/scoring/plugins/registry";
 
 export type MpScoredLines = MatchpointLine[];
@@ -22,7 +23,8 @@ function displayRows(lines: MpScoredLines): MatchpointLine[] {
 const matchpointsView: PerBoardView<MpScoredLines> = {
   id: "matchpoints",
   label: "MP",
-  toTable(lines): ScoreTable {
+  toTable(lines, options): ScoreTable {
+    const hide = options?.hideSection ?? false;
     return {
       columns: [
         { label: "NS" },
@@ -35,8 +37,8 @@ const matchpointsView: PerBoardView<MpScoredLines> = {
       rows: displayRows(lines).map((row) => ({
         highlightIds: [row.nsId, row.ewId],
         cells: [
-          textCell(`${row.nsId}`),
-          textCell(`${row.ewId}`),
+          textCell(pairLabel(row.nsId, hide)),
+          textCell(pairLabel(row.ewId, hide)),
           contractCell(row.outcome),
           numberCell(row.score!),
           numberCell(row.nsMatchPoints),
@@ -50,7 +52,8 @@ const matchpointsView: PerBoardView<MpScoredLines> = {
 const percentageView: PerBoardView<MpScoredLines> = {
   id: "percentage",
   label: "%",
-  toTable(lines): ScoreTable {
+  toTable(lines, options): ScoreTable {
+    const hide = options?.hideSection ?? false;
     const maxMP = 2 * (lines.length - 1);
     const toPercent = (mp: number) => (maxMP === 0 ? 0 : (mp / maxMP) * 100);
 
@@ -66,8 +69,8 @@ const percentageView: PerBoardView<MpScoredLines> = {
       rows: displayRows(lines).map((row) => ({
         highlightIds: [row.nsId, row.ewId],
         cells: [
-          textCell(`${row.nsId}`),
-          textCell(`${row.ewId}`),
+          textCell(pairLabel(row.nsId, hide)),
+          textCell(pairLabel(row.ewId, hide)),
           contractCell(row.outcome),
           numberCell(row.score!),
           numberCell(toPercent(row.nsMatchPoints), 2),
@@ -88,7 +91,10 @@ export const mpPerBoardPlugin: PerBoardScoringPlugin<MpScoredLines> = {
   // NOT applied here — this is a single board in isolation.
   score: (traveller: Traveller) =>
     roundMpBoards([
-      { board: traveller.board, lines: scoreMP(traveller.board, traveller.lines) },
+      {
+        board: traveller.board,
+        lines: scoreMP(traveller.board, traveller.lines),
+      },
     ])[0].lines,
   // Percentage first matches the previous default (Toggle started "on" = "%").
   views: [percentageView, matchpointsView],

@@ -7,7 +7,10 @@ import {
   type StandingChange,
 } from "@/db/games/actions/withdraw-participant";
 import { assertDirector } from "@/socket/middleware/director-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 
@@ -24,10 +27,16 @@ const treatmentSchema = z.object({
  */
 const changeSchema = z.discriminatedUnion("standing", [
   z
-    .object({ standing: z.literal("WITHDRAWN"), withdrawnInRound: z.number().int().min(1) })
+    .object({
+      standing: z.literal("WITHDRAWN"),
+      withdrawnInRound: z.number().int().min(1),
+    })
     .merge(treatmentSchema),
   z
-    .object({ standing: z.literal("LATE"), arrivedInRound: z.number().int().min(1) })
+    .object({
+      standing: z.literal("LATE"),
+      arrivedInRound: z.number().int().min(1),
+    })
     .merge(treatmentSchema),
   z.object({ standing: z.literal("WITHOUT_STANDING") }),
   z.object({ standing: z.literal("ACTIVE") }),

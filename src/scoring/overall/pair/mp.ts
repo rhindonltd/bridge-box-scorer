@@ -20,7 +20,8 @@ export function calculateOverallMPResults(
         totalMP: data.value,
         maxMP: data.max,
       }),
-      sort: (x) => (x.maxMP > 0 ? x.totalMP / x.maxMP : 0),
+      // No matchpoints available yet (maxMP 0): rank at the 50% it is shown at.
+      sort: (x) => (x.maxMP > 0 ? x.totalMP / x.maxMP : 0.5),
     }),
   };
 }

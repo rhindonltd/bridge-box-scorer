@@ -96,8 +96,20 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/ContractWizard", () => ({
 vi.mock(
   "@/app/game/[gameId]/play/[initialSeat]/WaitingForConfirmation",
   () => ({
-    WaitingForConfirmation: ({ boardNumber }: { boardNumber: number }) => (
-      <div data-testid="waiting">{boardNumber}</div>
+    WaitingForConfirmation: ({
+      boardNumber,
+      result,
+      onBack,
+    }: {
+      boardNumber: number;
+      result?: string;
+      onBack?: () => void;
+    }) => (
+      <div data-testid="waiting">
+        <button onClick={onBack}>waiting-back</button>
+        {boardNumber}
+        {result && <span data-testid="waiting-result">{result}</span>}
+      </div>
     ),
   }),
 );
@@ -219,6 +231,7 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage", () => ({
 }));
 
 const mockSubmitResult = vi.fn();
+const mockWithdrawSubmission = vi.fn();
 const mockParseContract = vi.fn();
 const mockBuildCode = vi.fn();
 vi.mock("@/model/contract", () => ({
@@ -266,6 +279,7 @@ function makeHandlers(): PlayHandlers {
     handleReenter: vi.fn(),
     handleEnterRound: vi.fn(),
     submitResult: mockSubmitResult,
+    withdrawSubmission: mockWithdrawSubmission,
     submitDeal: vi.fn(),
   };
 }
@@ -352,6 +366,23 @@ describe("PlayStateRouter", () => {
   it("renders WaitingForConfirmation with the current board", () => {
     renderRouter({ state: "waiting", roundIndex: 0, boardIndex: 1 });
     expect(screen.getByTestId("waiting")).toHaveTextContent("2");
+    expect(screen.queryByTestId("waiting-result")).not.toBeInTheDocument();
+  });
+
+  it("wires WaitingForConfirmation's back action to withdrawSubmission", () => {
+    renderRouter({ state: "waiting", roundIndex: 0, boardIndex: 0 });
+    fireEvent.click(screen.getByText("waiting-back"));
+    expect(mockWithdrawSubmission).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes the entered result to WaitingForConfirmation", () => {
+    renderRouter({
+      state: "waiting",
+      roundIndex: 0,
+      boardIndex: 1,
+      result: "4SN=",
+    });
+    expect(screen.getByTestId("waiting-result")).toHaveTextContent("4SN=");
   });
 
   it("renders ResultMismatch with both boards and wires reenter", () => {

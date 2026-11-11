@@ -44,8 +44,7 @@ export default function EnterPlayerNames({
   // national id, are exempt). Caught here for instant feedback; the server also
   // enforces it — and additionally rejects a number already seated elsewhere.
   const sameNationalId =
-    player1?.nationalId != null &&
-    player1.nationalId === player2?.nationalId;
+    player1?.nationalId != null && player1.nationalId === player2?.nationalId;
 
   // An EBU number already seated elsewhere in the event, flagged the moment the
   // player is chosen from the search rather than only on submit. Tracked per
@@ -71,8 +70,8 @@ export default function EnterPlayerNames({
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="w-full bg-blue-900 text-white px-4 py-3 shadow-sm">
-        <div className="mx-auto max-w-xl font-semibold">
+      <div className="w-full border-b border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="mx-auto max-w-xl font-semibold text-gray-900">
           Table {parsedSeat.tableNumber}
         </div>
       </div>

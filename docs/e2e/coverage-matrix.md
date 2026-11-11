@@ -55,6 +55,7 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Board not played (teams) | §3.3.7 | 06 | `RULE-21..23` |
 | Mismatch | §3.5 | 06 | `RULE-24..27` |
 | Enter deals (director) | — | 06 | `RULE-28..30` |
+| Import deals from a PBN file (director) | — | 06 | `RULE-31..37` (journey `deal-entry`) |
 | Board played the wrong way round (mark / clear) | — | Automated only: journey `played-reversed`; credit in the `*-seat-swap` service integration tests | traveller swaps NS/EW, clear restores |
 
 ## Core & platform
@@ -75,12 +76,13 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Multi-section (+ combined-ranking off) | 08 | `SEC-*` |
 | Settings: admin unlock | [09](09-settings-admin-cloud.md) | `SET-1..4` |
 | WiFi | 09 | `SET-5..8` |
-| Club information | 09 | `SET-9..10` |
+| Club details & EBU | 09 | `SET-9..10` |
 | BridgeWebs config | 09 | `SET-11..12` |
 | Cloud Backup (enabled + disabled states) | 09 | `CLOUD-1..7` |
 | Admin key update & logout | 09 | `SET-13..15` |
 | Share director access | [10](10-sharing-export-lifecycle.md) | `SHARE-*` |
 | Change device / seat transfer | 01 + 10 | `XFER-*` |
+| Player Scorecard | 01 | `SCORE-*` |
 | USEBIO / PBN / BridgeWebs export (+ gating) | 10 | `EXP-*` |
 | Delete game & completed-game redirect | 10 | `DEL-*` |
 

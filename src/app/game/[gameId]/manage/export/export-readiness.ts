@@ -96,7 +96,7 @@ export function buildExportReadiness(
         id: "club",
         title: "Club information",
         detail:
-          "Set the club name and EBU number in Settings — the results file can't be generated without them.",
+          "Set the club name and EBU number in Settings → EBU — the results file can't be generated without them.",
         level: "blocker",
       };
 
@@ -147,10 +147,7 @@ function boardTitle(b: OutstandingBoard, multiSection: boolean): string {
 }
 
 /** "NS vs EW" for a board, tolerant of an empty (unseated) side. */
-function pairsLabel(
-  nsPair: string | null,
-  ewPair: string | null,
-): string {
+function pairsLabel(nsPair: string | null, ewPair: string | null): string {
   const ns = nsPair ?? "—";
   const ew = ewPair ?? "—";
   return `${ns} vs ${ew}`;

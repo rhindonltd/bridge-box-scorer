@@ -1,23 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { logoutAdmin } from "@/lib/admin-token";
 
 /**
- * Logs out of the admin session. Clearing the admin token fires a change event
- * that the settings layout listens to, which re-validates and falls back to the
- * admin-key prompt — so no explicit navigation is needed here.
+ * Logs out of the admin session and returns to the home screen (main menu).
+ *
+ * Clearing the admin token also fires a change event that the settings layout
+ * listens to, which would otherwise fall back to the admin-key prompt. Logging
+ * out is a deliberate "I'm done with settings", so we leave the settings area
+ * instead of showing that prompt.
  */
 export function LogoutButton() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
     setLoading(true);
     try {
+      // Always clears the local token, even if the server call fails.
       await logoutAdmin();
-    } finally {
-      // The layout swaps in the key prompt once the token is cleared; if it
-      // somehow doesn't, re-enable so the user can retry.
+      router.replace("/");
+    } catch {
+      // Not expected (logoutAdmin swallows server errors), but re-enable so the
+      // user can retry rather than being stuck on a disabled button.
       setLoading(false);
     }
   }

@@ -25,7 +25,20 @@ import { applySeatSwaps } from "@/model/seat-swap";
  */
 const NON_TRAVELLER_STATUSES = new Set(["SIT_OUT", "HALF_AVERAGE"]);
 
-export async function getBoardInstances(db: Db, boardNumber: number) {
+/**
+ * A board's traveller instances (every table's line for that board number).
+ *
+ * By default the rows of EVERY section are returned, so the traveller pools
+ * the whole field. Pass `section` to restrict to one section's rows — used by
+ * the player Scorecard when sections are ranked separately, so each board is
+ * scored against that section's field only.
+ */
+export async function getBoardInstances(
+  db: Db,
+  boardNumber: number,
+  options: { section?: string } = {},
+) {
+  const { section } = options;
   // A board the director marked "played the wrong way round" is shown with its
   // ns/ew pair ids exchanged (the result is unchanged; it is credited to the
   // opposite pairs). Applied first so absence resolution and name lookup below
@@ -35,7 +48,14 @@ export async function getBoardInstances(db: Db, boardNumber: number) {
       await db
         .select()
         .from(pairsBoards)
-        .where(eq(pairsBoards.boardNumber, boardNumber))
+        .where(
+          section === undefined
+            ? eq(pairsBoards.boardNumber, boardNumber)
+            : and(
+                eq(pairsBoards.boardNumber, boardNumber),
+                eq(pairsBoards.section, section),
+              ),
+        )
     ).filter((b) => !NON_TRAVELLER_STATUSES.has(b.status ?? "")),
   );
 

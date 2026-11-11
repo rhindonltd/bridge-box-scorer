@@ -29,11 +29,12 @@ export function HandoverChooser({
   return (
     <GamePageLayout
       headerTitle="Handover"
-      contentMode="scroll"
+      // A short question and two choices: centre them on the page.
+      contentMode="center"
       backAction={onCancel}
     >
-      <div className="flex flex-col gap-5 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
-        <p className="text-sm text-gray-600">
+      <div className="flex flex-col gap-5 px-6 py-6 max-w-sm w-full mx-auto">
+        <p className="text-sm text-gray-600 text-center">
           A new pair is taking over this seat. Where will they play?
         </p>
 

@@ -25,8 +25,7 @@ export const Rooms = {
    * timer (director controls or the Room Display) join this room so the
    * server broadcasts each section's timer only to the clients watching it.
    */
-  timer: (gameId: string, section: string) =>
-    `game:${gameId}:timer:${section}`,
+  timer: (gameId: string, section: string) => `game:${gameId}:timer:${section}`,
 
   /**
    * A room scoped to a game's leaderboard. Clients currently viewing the
@@ -53,4 +52,16 @@ export const Rooms = {
    * boards it is showing.
    */
   roundResults: (gameId: string) => `game:${gameId}:roundResults`,
+  /**
+   * A room scoped to one seat's personal Scorecard. A player viewing their
+   * scorecard joins it, so a results change recomputes and pushes only the
+   * scorecards someone is actually looking at (see {@link scorecardRoomPrefix}).
+   */
+  scorecard: (gameId: string, seat: string) =>
+    `game:${gameId}:scorecard:${seat}`,
 };
+
+/** The common prefix of every scorecard room in a game (for enumerating them). */
+export function scorecardRoomPrefix(gameId: string): string {
+  return `game:${gameId}:scorecard:`;
+}

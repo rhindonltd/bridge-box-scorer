@@ -1,5 +1,7 @@
 "use client";
 
+import { Check } from "lucide-react";
+
 type Props = {
   boards: number[];
   playedBoards: number[];
@@ -18,14 +20,27 @@ export function StepBoard({ boards, playedBoards, onBoardSelected }: Props) {
               type="button"
               disabled={isPlayed}
               data-testid={`wizard-board-${board}`}
-              className={`text-2xl font-bold py-6 rounded-xl transition ${
+              // The tick is decorative, so say "played" for screen readers.
+              aria-label={isPlayed ? `${board} (played)` : undefined}
+              // White tiles, like the wizard's other choice steps (suit,
+              // result). A played board is a grey tile with a tick, so it
+              // still stands out without colour.
+              className={`relative text-2xl font-bold py-6 rounded-xl border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                 isPlayed
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]"
+                  ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50 active:scale-[0.98]"
               }`}
               onClick={() => onBoardSelected(board)}
             >
               {board}
+              {isPlayed && (
+                <Check
+                  aria-hidden="true"
+                  size={18}
+                  strokeWidth={3}
+                  className="absolute top-2 right-2 text-gray-500"
+                />
+              )}
             </button>
           );
         })}

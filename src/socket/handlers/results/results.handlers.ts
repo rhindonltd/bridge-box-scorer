@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { registerLeaderboardRequestHandler } from "./leaderboard-request.handler";
 import { registerTravellerRequestHandler } from "./traveller-request.handler";
 import { registerRoundResultsRequestHandler } from "./round-results-request.handler";
+import { registerScorecardRequestHandler } from "./scorecard-request.handler";
 import { registerTravellerOverrideHandler } from "./traveller-override.handler";
 import { registerCancelBoardHandler } from "./cancel-board.handler";
 import { registerSetSeatsSwappedHandler } from "./set-seats-swapped.handler";
@@ -11,6 +12,7 @@ import { registerVoidPairsMatchHandler } from "./void-pairs-match.handler";
 import { registerMarkMismatchHandler } from "./mark-mismatch.handler";
 import { registerDealSubmitHandler } from "./deal-submit.handler";
 import { registerDealOverrideHandler } from "./deal-override.handler";
+import { registerDealImportBulkHandler } from "./deal-import-bulk.handler";
 
 /**
  * Handlers for live, DB-derived results features (leaderboard, traveller).
@@ -22,6 +24,7 @@ export function registerResultsHandlers(socket: Socket, io: Server) {
   registerLeaderboardRequestHandler(socket, io);
   registerTravellerRequestHandler(socket, io);
   registerRoundResultsRequestHandler(socket, io);
+  registerScorecardRequestHandler(socket, io);
   registerTravellerOverrideHandler(socket, io);
   registerCancelBoardHandler(socket, io);
   registerSetSeatsSwappedHandler(socket, io);
@@ -31,4 +34,5 @@ export function registerResultsHandlers(socket: Socket, io: Server) {
   registerMarkMismatchHandler(socket, io);
   registerDealSubmitHandler(socket, io);
   registerDealOverrideHandler(socket, io);
+  registerDealImportBulkHandler(socket, io);
 }

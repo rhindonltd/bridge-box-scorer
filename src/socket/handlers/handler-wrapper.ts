@@ -87,7 +87,10 @@ export function registerHandler<TPayload, TData = void>(
 
   socket.on(
     event,
-    async (rawPayload: unknown, cb?: (response: SocketResponse<TData>) => void) => {
+    async (
+      rawPayload: unknown,
+      cb?: (response: SocketResponse<TData>) => void,
+    ) => {
       // Per-event correlation id: threads this single event invocation's logs
       // (validation, handler, error) together. Socket events are fire-and-emit,
       // so the id lives on the child logger rather than a response header.
@@ -111,10 +114,7 @@ export function registerHandler<TPayload, TData = void>(
         if (!parsed.success) {
           // Log the validation issue (never the payload values, which may carry
           // tokens/secrets) for director diagnostics.
-          log.warn(
-            { issues: parsed.error.message },
-            "Invalid socket payload",
-          );
+          log.warn({ issues: parsed.error.message }, "Invalid socket payload");
           ack({ success: false, error: "Invalid request" });
           return;
         }

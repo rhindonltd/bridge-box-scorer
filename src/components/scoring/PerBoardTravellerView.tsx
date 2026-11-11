@@ -8,6 +8,7 @@ type Props = {
   plugin: PerBoardScoringPlugin<unknown>;
   scored: unknown;
   highlightAssignmentId?: string;
+  hideSection?: boolean;
 };
 
 /**
@@ -20,13 +21,14 @@ export function PerBoardTravellerView({
   plugin,
   scored,
   highlightAssignmentId,
+  hideSection,
 }: Props) {
   return (
     <PluginViewSwitcher
       views={plugin.views}
       renderView={(view) => (
         <ScoreTableView
-          table={view.toTable(scored, { highlightAssignmentId })}
+          table={view.toTable(scored, { highlightAssignmentId, hideSection })}
           highlightAssignmentId={highlightAssignmentId}
         />
       )}

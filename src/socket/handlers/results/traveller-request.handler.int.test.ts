@@ -92,9 +92,9 @@ describe("registerTravellerRequestHandler (integration)", () => {
       boardNumber: 7,
     });
     expect(
-      io.sockets.adapter.rooms.get(Rooms.traveller("g1", 7))?.has(
-        serverSocket!.id,
-      ),
+      io.sockets.adapter.rooms
+        .get(Rooms.traveller("g1", 7))
+        ?.has(serverSocket!.id),
     ).toBe(true);
 
     client.emit(SocketEvents.LEAVE_TRAVELLER, { gameId: "g1", boardNumber: 7 });
@@ -125,9 +125,9 @@ describe("registerTravellerRequestHandler (integration)", () => {
     await new Promise((r) => setTimeout(r, 100));
 
     expect(
-      io.sockets.adapter.rooms.get(Rooms.traveller("g1", 7))?.has(
-        serverSocket!.id,
-      ),
+      io.sockets.adapter.rooms
+        .get(Rooms.traveller("g1", 7))
+        ?.has(serverSocket!.id),
     ).toBe(true);
   });
 
@@ -164,7 +164,10 @@ describe("registerTravellerRequestHandler (integration)", () => {
       { gameId: "g1" },
     );
 
-    expect(response).toMatchObject({ success: false, error: "Invalid request" });
+    expect(response).toMatchObject({
+      success: false,
+      error: "Invalid request",
+    });
   });
 
   it("returns null and swallows a load error", async () => {

@@ -25,7 +25,18 @@ const meta: Meta<typeof WaitingForConfirmation> = {
 export default meta;
 type Story = StoryObj<typeof WaitingForConfirmation>;
 
+/** Waiting, showing the contract the player just entered. */
 export const Default: Story = {
+  args: { boardNumber: 5, result: "4SN+1" },
+};
+
+/** A passed-out board is shown in words. */
+export const PassedOut: Story = {
+  args: { boardNumber: 5, result: "PO" },
+};
+
+/** No entered result known (e.g. an older saved state): just the message. */
+export const WithoutResult: Story = {
   args: { boardNumber: 5 },
 };
 

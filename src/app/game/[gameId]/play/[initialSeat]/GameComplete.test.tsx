@@ -39,9 +39,7 @@ vi.mock("@/components/leaderboard/Leaderboard", () => ({
     highlightAssignmentId,
   }: {
     highlightAssignmentId?: string;
-  }) => (
-    <div data-testid="leaderboard">highlight:{highlightAssignmentId}</div>
-  ),
+  }) => <div data-testid="leaderboard">highlight:{highlightAssignmentId}</div>,
 }));
 
 describe("GameComplete", () => {
@@ -77,7 +75,9 @@ describe("GameComplete", () => {
 
   it("renders the headerRight slot content", () => {
     mockUseLeaderboard.mockReturnValue({ leaderboard: null, isLoading: false });
-    render(<GameComplete headerRight={<span data-testid="play-menu">menu</span>} />);
+    render(
+      <GameComplete headerRight={<span data-testid="play-menu">menu</span>} />,
+    );
     expect(screen.getByTestId("play-menu")).toBeInTheDocument();
   });
 });

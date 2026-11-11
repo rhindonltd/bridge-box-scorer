@@ -7,7 +7,10 @@ import {
   removeExpectedLateSeat,
 } from "@/db/games/queries/expected-late-seats";
 import { assertDirector } from "@/socket/middleware/director-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { isPairSeat, type PairSeat } from "@/model/participants";

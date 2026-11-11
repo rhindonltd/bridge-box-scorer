@@ -8,7 +8,10 @@ import { insertDealIfAbsent } from "@/db/games/actions/set-deal";
 import { isCompleteDeal } from "@/model/deal";
 import { Deal } from "@/model/common";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { broadcastResultsChanged } from "./broadcast-results";
 
 /**

@@ -45,6 +45,8 @@ export function BridgewebsSettingsForm({
     <PageLayout
       headerTitle="BridgeWebs"
       backAction={onBack}
+      // Centre the form in the space between the header and the Save bar.
+      centerContent={true}
       actions={
         <button
           type="submit"
@@ -59,7 +61,7 @@ export function BridgewebsSettingsForm({
       <form
         id="bridgewebs-settings-form"
         onSubmit={onSave}
-        className="px-6 pt-6 max-w-sm w-full mx-auto"
+        className="px-6 py-6 max-w-sm w-full mx-auto"
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600">

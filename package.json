@@ -10,7 +10,7 @@
     "build:server": "node scripts/build-server.mjs",
     "build:sync-players": "node scripts/build-sync-players.mjs",
     "build:sync-movements": "node scripts/build-sync-movements.mjs",
-    "start": "node -r ./scripts/allow-server-only.cjs dist/server.js",
+    "start": "NODE_ENV=production node -r ./scripts/allow-server-only.cjs dist/server.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",

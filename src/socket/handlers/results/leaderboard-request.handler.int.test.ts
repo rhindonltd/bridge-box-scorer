@@ -76,9 +76,9 @@ describe("registerLeaderboardRequestHandler (integration)", () => {
       gameId: "g1",
     });
     expect(
-      io.sockets.adapter.rooms.get(Rooms.leaderboard("g1"))?.has(
-        serverSocket!.id,
-      ),
+      io.sockets.adapter.rooms
+        .get(Rooms.leaderboard("g1"))
+        ?.has(serverSocket!.id),
     ).toBe(true);
 
     client.emit(SocketEvents.LEAVE_LEADERBOARD, { gameId: "g1" });
@@ -110,9 +110,9 @@ describe("registerLeaderboardRequestHandler (integration)", () => {
     await new Promise((r) => setTimeout(r, 100));
 
     expect(
-      io.sockets.adapter.rooms.get(Rooms.leaderboard("g1"))?.has(
-        serverSocket!.id,
-      ),
+      io.sockets.adapter.rooms
+        .get(Rooms.leaderboard("g1"))
+        ?.has(serverSocket!.id),
     ).toBe(true);
   });
 
@@ -149,7 +149,10 @@ describe("registerLeaderboardRequestHandler (integration)", () => {
       {},
     );
 
-    expect(response).toMatchObject({ success: false, error: "Invalid request" });
+    expect(response).toMatchObject({
+      success: false,
+      error: "Invalid request",
+    });
   });
 
   it("returns null and swallows a compute error", async () => {

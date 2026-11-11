@@ -207,6 +207,11 @@ export function usePlayFlow(
       boardNumber: number;
     }) => {
       dispatch({ type: "boardConfirmed", ...payload });
+      // The board is now CONFIRMED in the DB. Refresh the resolved schedule so
+      // its `boardStatuses` (which the board picker uses to hide played boards)
+      // is current; otherwise the just-played board stays selectable until a
+      // page refresh. A plain revalidation never resets the play state.
+      void refreshResolved();
     };
 
     const onMismatch = (payload: {
@@ -227,7 +232,7 @@ export function usePlayFlow(
       socket.off(SocketEvents.BOARD_CONFIRMED, onConfirmed);
       socket.off(SocketEvents.BOARD_MISMATCH, onMismatch);
     };
-  }, [dispatch]);
+  }, [dispatch, refreshResolved]);
 
   /*
    * Submit a result. The board the player entered in the wizard is
@@ -243,7 +248,8 @@ export function usePlayFlow(
 
       const next = playReducer(
         playState,
-        { type: "submit", boardNumber },
+        // The result rides along so the waiting screen can show it.
+        { type: "submit", boardNumber, result },
         currentSchedule,
       );
 
@@ -272,6 +278,33 @@ export function usePlayFlow(
     },
     [gameId, seat, playState],
   );
+
+  /*
+   * Back out of "waiting for confirmation" to correct the entry. The server
+   * must drop this side's pending submission FIRST (otherwise it would still
+   * reconcile against the other pair's entry); only when that succeeds do we
+   * return to contract entry. A rejection (e.g. the board was confirmed in the
+   * meantime) propagates to the caller; BOARD_CONFIRMED then moves the player
+   * on in the normal way.
+   */
+  const withdrawSubmission = useCallback(async () => {
+    const currentSchedule = scheduleRef.current;
+    if (!currentSchedule || playState.state !== "waiting") return;
+
+    const round = currentSchedule.rounds[playState.roundIndex];
+    if (!round) return;
+
+    await emitWithAck(SocketEvents.WITHDRAW_SUBMISSION, {
+      gameId,
+      seat,
+      token: getPlayerToken(gameId)?.token ?? "",
+      roundNumber: round.roundNumber,
+      tableNumber: round.tableNumber,
+      boardNumber: round.boards[playState.boardIndex],
+    });
+
+    dispatch({ type: "reenter" });
+  }, [gameId, seat, playState, dispatch]);
 
   /*
    * The no-payload "continue"/"advance" buttons each just dispatch their own
@@ -356,6 +389,7 @@ export function usePlayFlow(
     handleReenter,
     handleEnterRound,
     submitResult,
+    withdrawSubmission,
     submitDeal,
   };
 }

@@ -103,7 +103,7 @@ export function ContractWizard({
   const stepTitle = (() => {
     switch (step) {
       case 0:
-        return "Select Board";
+        return "Select a board";
       case 4:
         return "Opening Lead";
       case 5:

@@ -6,6 +6,7 @@ import { registerCreateParticipantHandler } from "./create-participant/create-pa
 import { registerLeaveTableHandler } from "./leave-table/leave-table.handler";
 import { registerSeatTransferHandlers } from "./seat-transfer/seat-transfer.handler";
 import { registerSubmitResultHandler } from "./submit-result/submit-result.handler";
+import { registerWithdrawSubmissionHandler } from "./withdraw-submission/withdraw-submission.handler";
 import { registerSetParticipantStandingHandler } from "./set-participant-standing/set-participant-standing";
 import { registerSetSeatExpectedLateHandler } from "./set-seat-expected-late/set-seat-expected-late";
 import { registerWatchSeatHandler } from "./watch-seat/watch-seat.handler";
@@ -39,4 +40,5 @@ export function registerGameHandlers(socket: Socket, io: Server) {
   registerLeaveGameHandler(socket, io);
   registerSelectMovementHandler(socket, io);
   registerSubmitResultHandler(socket, io);
+  registerWithdrawSubmissionHandler(socket, io);
 }

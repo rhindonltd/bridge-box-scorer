@@ -66,9 +66,7 @@ export function registerRoomBackedRequest<TRequest, TLeave, TData>(
       socket.join(room(payload));
 
       try {
-        const db = await getDb(
-          (payload as { gameId: string }).gameId,
-        );
+        const db = await getDb((payload as { gameId: string }).gameId);
         const snapshot = db ? await buildSnapshot(db, payload) : null;
         ack({ success: true, data: snapshot });
       } catch (err) {

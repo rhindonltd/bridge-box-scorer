@@ -104,6 +104,60 @@ test.describe("Dual-side mismatch and re-enter", () => {
     }
   });
 
+  test("back from waiting clears the entry, so a matching reply does not confirm it", async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
+      browser,
+      `Back From Waiting ${Date.now()}`,
+      { recordOpeningLead: false },
+    );
+
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
+
+    try {
+      // NS enters 4♥= by mistake, sees it echoed, then backs out.
+      await enterContractRaw(nsPage, gameId, "A1NS", 1, FOUR_HEARTS_MADE, {
+        leadCardRequired: false,
+      });
+      await expect(nsPage.getByText("Waiting for confirmation")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(nsPage.getByTestId("waiting-entered-result")).toBeVisible();
+
+      await nsPage.getByRole("button", { name: "Go back", exact: true }).click();
+      await expect(
+        nsPage.locator('[data-testid^="wizard-board-"]').first(),
+      ).toBeVisible({ timeout: 15000 });
+
+      // EW now enters the very same 4♥=. NS's earlier entry was cleared on
+      // the server, so this must NOT confirm: EW waits instead.
+      await enterContractRaw(ewPage, gameId, "A1EW", 1, FOUR_HEARTS_MADE, {
+        leadCardRequired: false,
+      });
+      await expect(ewPage.getByText("Waiting for confirmation")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(nsPage.getByText("Board Results")).toHaveCount(0);
+
+      // NS re-enters the (agreed) result and the board now confirms.
+      await reenterMatching(nsPage, FOUR_HEARTS_MADE);
+      await expect(nsPage.getByText("Board Results")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(ewPage.getByText("Board Results")).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await closeSeatDevices(seats);
+    }
+  });
+
   test("different boards -> board mismatch screen", async ({ browser }) => {
     test.setTimeout(90_000);
 

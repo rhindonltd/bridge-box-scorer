@@ -7,6 +7,8 @@ import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { ScoreTable } from "@/scoring/table/score-table";
 import { Deal } from "@/model/common";
+import { useRequiredGame } from "@/context/GameContext";
+import { useSections } from "@/hooks/sections";
 
 interface Props {
   board: number;
@@ -45,9 +47,19 @@ export function BoardResultsPage({
   headerRight,
 }: Props) {
   const { assignment } = useAssignment();
+  const { game } = useRequiredGame();
+  const { sections } = useSections(game.gameId);
+
+  // The section prefix on pair ids only carries information when results are
+  // combined across more than one section; otherwise drop it.
+  const hideSection = !(sections.length > 1 && game.combinedRanking);
 
   const traveller = (
-    <Traveller scoredBoard={scoredBoard} highlightAssignmentId={assignment?.id} />
+    <Traveller
+      scoredBoard={scoredBoard}
+      highlightAssignmentId={assignment?.id}
+      hideSection={hideSection}
+    />
   );
 
   // The results view: for a teams game, an X-IMP / Team Result toggle over the
@@ -92,11 +104,7 @@ export function BoardResultsPage({
         </button>
       }
     >
-      {showingDeal ? (
-        <DealDisplay boardNumber={board} deal={deal} />
-      ) : (
-        results
-      )}
+      {showingDeal ? <DealDisplay boardNumber={board} deal={deal} /> : results}
     </GamePageLayout>
   );
 }

@@ -11,14 +11,10 @@ const settingsButtonClasses =
  */
 export function SettingsMenuPage() {
   return (
-    <PageLayout headerTitle="Settings">
-      <div className="flex flex-col gap-3 px-6 pt-6 max-w-sm w-full mx-auto">
+    <PageLayout headerTitle="Settings" centerContent={true}>
+      <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
         <Link href="/settings/wifi" className={settingsButtonClasses}>
           WiFi Settings
-        </Link>
-
-        <Link href="/settings/club" className={settingsButtonClasses}>
-          Club Information
         </Link>
 
         <Link href="/settings/bridgewebs" className={settingsButtonClasses}>

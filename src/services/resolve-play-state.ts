@@ -28,7 +28,12 @@ import type { ScheduleRound } from "@/services/schedule-service";
  */
 export type WithinRoundPosition =
   | { at: "entering"; boardNumber: number }
-  | { at: "waitingConfirmation"; boardNumber: number }
+  | {
+      at: "waitingConfirmation";
+      boardNumber: number;
+      /** The result this seat submitted (shown while it waits). */
+      result?: string;
+    }
   | {
       at: "mismatch";
       boardNumber: number;
@@ -317,6 +322,12 @@ async function resolveWithinRound(
 
   // This seat has submitted and there's no mismatch: either the other side
   // hasn't submitted yet, or both agree but the board hasn't been flipped to
-  // CONFIRMED yet (a brief window). Either way this seat waits.
-  return { at: "waitingConfirmation", boardNumber };
+  // CONFIRMED yet (a brief window). Either way this seat waits — showing the
+  // result it entered, so a player returning to the screen still sees it.
+  const mine = submissions.find((s) => s.side === side);
+  return {
+    at: "waitingConfirmation",
+    boardNumber,
+    ...(mine?.result ? { result: mine.result } : {}),
+  };
 }

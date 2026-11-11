@@ -5,7 +5,7 @@ import { unlockSettings } from "./fixtures/settings";
  * Settings Menu E2E Tests
  *
  * Tests the settings menu page that provides navigation to WiFi Settings and
- * Club Information. The settings section is gated by the device admin key; the
+ * EBU (club name, number and login). The settings section is gated by the device admin key; the
  * `unlockSettings` helper seeds a valid admin session token before navigating.
  */
 
@@ -26,12 +26,19 @@ test.describe("Settings Menu", () => {
     );
   });
 
-  test("shows Club Information link", async ({ page, request }) => {
+  test("shows an EBU link and no separate Club Information link", async ({
+    page,
+    request,
+  }) => {
     await unlockSettings(page, request);
     await page.goto("/settings");
     await expect(
-      page.getByRole("link", { name: "Club Information" }),
+      page.getByRole("link", { name: "EBU", exact: true }),
     ).toBeVisible({ timeout: 10000 });
+    // The club's name and number are set on the EBU screen.
+    await expect(
+      page.getByRole("link", { name: "Club Information" }),
+    ).toHaveCount(0);
   });
 
   test("WiFi Settings navigates to /settings/wifi", async ({
@@ -44,13 +51,10 @@ test.describe("Settings Menu", () => {
     await expect(page).toHaveURL(/\/settings\/wifi/);
   });
 
-  test("Club Information navigates to /settings/club", async ({
-    page,
-    request,
-  }) => {
+  test("EBU navigates to /settings/ebu", async ({ page, request }) => {
     await unlockSettings(page, request);
     await page.goto("/settings");
-    await page.getByRole("link", { name: "Club Information" }).click();
-    await expect(page).toHaveURL(/\/settings\/club/);
+    await page.getByRole("link", { name: "EBU", exact: true }).click();
+    await expect(page).toHaveURL(/\/settings\/ebu$/);
   });
 });

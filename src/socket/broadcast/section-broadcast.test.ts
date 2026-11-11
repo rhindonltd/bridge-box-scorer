@@ -65,7 +65,10 @@ describe("broadcastSections", () => {
       {
         room: Rooms.game("g1"),
         event: SocketEvents.GAME_UPDATED,
-        payload: { gameId: "g1", sections: [{ section: "A" }, { section: "B" }] },
+        payload: {
+          gameId: "g1",
+          sections: [{ section: "A" }, { section: "B" }],
+        },
       },
     ]);
   });

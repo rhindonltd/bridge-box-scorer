@@ -101,7 +101,11 @@ describe("EnterDealsPage", () => {
   it("labels the skip button 'Skip' on the first board and 'Done' after advancing", async () => {
     const onSubmitDeal = vi.fn().mockResolvedValue(stored(true));
     render(
-      <EnterDealsPage boards={[1, 2]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
+      <EnterDealsPage
+        boards={[1, 2]}
+        onSubmitDeal={onSubmitDeal}
+        onDone={vi.fn()}
+      />,
     );
 
     expect(screen.getByTestId("skip-deals")).toHaveTextContent("Skip");
@@ -130,7 +134,11 @@ describe("EnterDealsPage", () => {
   it("advances to the next board when a deal is stored", async () => {
     const onSubmitDeal = vi.fn().mockResolvedValue(stored(true));
     render(
-      <EnterDealsPage boards={[1, 2]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
+      <EnterDealsPage
+        boards={[1, 2]}
+        onSubmitDeal={onSubmitDeal}
+        onDone={vi.fn()}
+      />,
     );
 
     completeAndSave();
@@ -145,7 +153,11 @@ describe("EnterDealsPage", () => {
     const onSubmitDeal = vi.fn().mockResolvedValue(stored(true));
     const onDone = vi.fn();
     render(
-      <EnterDealsPage boards={[7]} onSubmitDeal={onSubmitDeal} onDone={onDone} />,
+      <EnterDealsPage
+        boards={[7]}
+        onSubmitDeal={onSubmitDeal}
+        onDone={onDone}
+      />,
     );
 
     completeAndSave();
@@ -157,7 +169,11 @@ describe("EnterDealsPage", () => {
     // stored:false means another player entered this board first.
     const onSubmitDeal = vi.fn().mockResolvedValue(stored(false));
     render(
-      <EnterDealsPage boards={[1, 2]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
+      <EnterDealsPage
+        boards={[1, 2]}
+        onSubmitDeal={onSubmitDeal}
+        onDone={vi.fn()}
+      />,
     );
 
     completeAndSave();
@@ -180,7 +196,11 @@ describe("EnterDealsPage", () => {
     const onSubmitDeal = vi.fn().mockResolvedValue(stored(false));
     const onDone = vi.fn();
     render(
-      <EnterDealsPage boards={[9]} onSubmitDeal={onSubmitDeal} onDone={onDone} />,
+      <EnterDealsPage
+        boards={[9]}
+        onSubmitDeal={onSubmitDeal}
+        onDone={onDone}
+      />,
     );
 
     completeAndSave();
@@ -195,7 +215,11 @@ describe("EnterDealsPage", () => {
   it("shows an error banner when saving fails and stays on the board", async () => {
     const onSubmitDeal = vi.fn().mockRejectedValue(new Error("save boom"));
     render(
-      <EnterDealsPage boards={[1, 2]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
+      <EnterDealsPage
+        boards={[1, 2]}
+        onSubmitDeal={onSubmitDeal}
+        onDone={vi.fn()}
+      />,
     );
 
     completeAndSave();
@@ -208,7 +232,11 @@ describe("EnterDealsPage", () => {
   it("shows a default error message for a non-Error rejection", async () => {
     const onSubmitDeal = vi.fn().mockRejectedValue("nope");
     render(
-      <EnterDealsPage boards={[1]} onSubmitDeal={onSubmitDeal} onDone={vi.fn()} />,
+      <EnterDealsPage
+        boards={[1]}
+        onSubmitDeal={onSubmitDeal}
+        onDone={vi.fn()}
+      />,
     );
 
     completeAndSave();

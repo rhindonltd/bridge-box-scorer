@@ -83,7 +83,10 @@ describe("registerTravellerOverrideHandler (integration)", () => {
     expect(response).toEqual({ success: true, data: null });
     expect(mockUpdate).toHaveBeenCalled();
     expect(mockSet).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "OVERRIDDEN", directorOverrideResult: "3NTN=" }),
+      expect.objectContaining({
+        status: "OVERRIDDEN",
+        directorOverrideResult: "3NTN=",
+      }),
     );
     expect(broadcastResultsChanged).toHaveBeenCalledWith(
       expect.anything(),
@@ -106,7 +109,10 @@ describe("registerTravellerOverrideHandler (integration)", () => {
       {},
     );
 
-    expect(response).toMatchObject({ success: false, error: "Invalid request" });
+    expect(response).toMatchObject({
+      success: false,
+      error: "Invalid request",
+    });
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 

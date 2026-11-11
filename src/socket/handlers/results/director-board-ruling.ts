@@ -2,7 +2,10 @@ import { Server, Socket } from "socket.io";
 import { z } from "zod";
 import { getDb, type Db } from "@/db/games";
 import { assertDirector } from "@/socket/middleware/director-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { broadcastResultsChanged } from "./broadcast-results";
 
 /**
@@ -60,7 +63,12 @@ interface DirectorBoardRulingDefinition<TPayload extends BoardRulingBase> {
 export function registerDirectorBoardRuling<TPayload extends BoardRulingBase>(
   socket: Socket,
   io: Server,
-  { event, schema, apply, errorMessage }: DirectorBoardRulingDefinition<TPayload>,
+  {
+    event,
+    schema,
+    apply,
+    errorMessage,
+  }: DirectorBoardRulingDefinition<TPayload>,
 ) {
   registerHandler<TPayload, null>(socket, io, event, {
     schema,
@@ -78,7 +86,13 @@ export function registerDirectorBoardRuling<TPayload extends BoardRulingBase>(
         await apply(db, payload);
       } catch (err) {
         log.error(
-          { err, gameId, boardNumber, roundNumber: payload.roundNumber, tableNumber: payload.tableNumber },
+          {
+            err,
+            gameId,
+            boardNumber,
+            roundNumber: payload.roundNumber,
+            tableNumber: payload.tableNumber,
+          },
           errorMessage,
         );
         throw new HandlerError(errorMessage);

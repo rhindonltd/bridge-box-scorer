@@ -7,6 +7,7 @@ import {
   textCell,
 } from "@/scoring/table/score-table";
 import { PerBoardScoringPlugin, PerBoardView } from "@/scoring/plugins/types";
+import { pairLabel } from "@/model/pair-label";
 import { registerPerBoardPlugin } from "@/scoring/plugins/registry";
 
 export type XimpScoredLines = ReturnType<typeof scoreXIMP>;
@@ -14,7 +15,8 @@ export type XimpScoredLines = ReturnType<typeof scoreXIMP>;
 const crossImpsView: PerBoardView<XimpScoredLines> = {
   id: "cross-imps",
   label: "X-IMP",
-  toTable(lines): ScoreTable {
+  toTable(lines, options): ScoreTable {
+    const hide = options?.hideSection ?? false;
     const rows = lines
       .filter((x) => x.score !== null)
       .sort((a, b) => b.score! - a.score!);
@@ -31,8 +33,8 @@ const crossImpsView: PerBoardView<XimpScoredLines> = {
       rows: rows.map((row) => ({
         highlightIds: [row.nsId, row.ewId],
         cells: [
-          textCell(`${row.nsId}`),
-          textCell(`${row.ewId}`),
+          textCell(pairLabel(row.nsId, hide)),
+          textCell(pairLabel(row.ewId, hide)),
           contractCell(row.outcome),
           numberCell(row.score!),
           numberCell(row.nsCrossImps, 2),

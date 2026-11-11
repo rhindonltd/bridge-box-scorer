@@ -2,7 +2,10 @@ import { Server, Socket } from "socket.io";
 import { z } from "zod";
 
 import { SocketEvents } from "@/socket/socket-events";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import {
   previewNextSwissRound,
@@ -166,8 +169,14 @@ export function registerDrawNextRoundHandler(socket: Socket, io: Server) {
     {
       schema: commitPayloadSchema,
       handler: async ({ payload, ack }) => {
-        const { gameId, section, directorToken, seating, sitOutPairId, halfMatch } =
-          payload;
+        const {
+          gameId,
+          section,
+          directorToken,
+          seating,
+          sitOutPairId,
+          halfMatch,
+        } = payload;
 
         if (!validateDirectorToken(directorToken, gameId)) {
           throw new HandlerError("Unauthorized");

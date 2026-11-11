@@ -6,6 +6,8 @@ import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { getIO } from "@/socket/websocket";
+import { Rooms } from "@/socket/rooms";
+import { SocketEvents } from "@/socket/socket-events";
 import { isPairSeat, type Seat } from "@/model/participants";
 
 /**
@@ -47,10 +49,17 @@ export const DELETE = withDirectorRoute(async ({ gameId, req }) => {
 
     await deleteParticipant(gameId, seat as Seat);
     await broadcastParticipants(gameId);
+    const io = getIO();
+    // Tell the evicted device (on its waiting screen) it has lost its seat. It
+    // is not in any seat room, so this goes to the whole game room and each
+    // device checks whether the seat is its own.
+    io?.to(Rooms.game(gameId)).emit(SocketEvents.SEAT_EVICTED, {
+      gameId,
+      seat,
+    });
     // The leaderboard lists the seated field from the start, so an evicted pair
     // must drop off it live too — not only after a refresh. (Occupancy-gated
     // inside, and a no-op when no socket server is available.)
-    const io = getIO();
     if (io) await broadcastLeaderboardChanged(io, gameId);
   } catch (err) {
     return respondToActionError(

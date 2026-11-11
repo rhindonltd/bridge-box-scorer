@@ -8,7 +8,10 @@ import { upsertDeal } from "@/db/games/actions/set-deal";
 import { isCompleteDeal } from "@/model/deal";
 import { Deal } from "@/model/common";
 import { assertDirector } from "@/socket/middleware/director-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { broadcastResultsChanged } from "./broadcast-results";
 
 const dealSchema = z.object({
@@ -31,8 +34,7 @@ const payloadSchema = z.object({
  * then fans out recomputed traveller/leaderboard snapshots so open "Show hand"
  * views update live.
  *
- * This is also the entry point a future dealing-machine file import reuses:
- * parse the file into deals (via the pure deal model) and call this per board.
+ * Whole-file dealing-machine imports use the bulk `deal:importBulk` handler.
  */
 export function registerDealOverrideHandler(socket: Socket, io: Server) {
   registerHandler<z.infer<typeof payloadSchema>, null>(

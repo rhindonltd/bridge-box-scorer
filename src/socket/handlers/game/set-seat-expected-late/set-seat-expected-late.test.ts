@@ -94,7 +94,12 @@ describe("registerSetSeatExpectedLateHandler (unit)", () => {
     const cb = vi.fn();
 
     await fn(
-      { gameId: "g1", directorToken: "tok", seat: "nonsense", expectedLate: true },
+      {
+        gameId: "g1",
+        directorToken: "tok",
+        seat: "nonsense",
+        expectedLate: true,
+      },
       cb,
     );
 

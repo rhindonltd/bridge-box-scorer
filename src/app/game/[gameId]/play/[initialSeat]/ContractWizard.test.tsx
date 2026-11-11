@@ -23,10 +23,7 @@ vi.mock("@/components/contract-wizard/StepLevel", () => ({
       <button data-testid="step-level" onClick={() => onLevelSelected(3)}>
         level
       </button>
-      <button
-        data-testid="step-special"
-        onClick={() => onSpecialOutcome("PO")}
-      >
+      <button data-testid="step-special" onClick={() => onSpecialOutcome("PO")}>
         special
       </button>
     </div>
@@ -137,9 +134,13 @@ describe("ContractWizard", () => {
         headerRight={<span data-testid="play-menu">menu</span>}
       />,
     );
-    // Step 0 header: a descriptive title plus event/section subtitles.
-    expect(screen.getByText("Select Board")).toBeInTheDocument();
+    // Header: "Table x, Round y" (as on the round info screen) plus the
+    // event/section subtitles; the step ("Select a board") is named in the
+    // grey strip below it.
     expect(screen.getByText("Table 3, Round 2")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Select a board" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Monday Pairs")).toBeInTheDocument();
     expect(screen.getByText("Section A")).toBeInTheDocument();
     // The pair number is no longer inline in the header; the header-right slot

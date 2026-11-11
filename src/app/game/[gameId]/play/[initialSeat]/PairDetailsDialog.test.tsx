@@ -23,7 +23,7 @@ const nsPair: SeatedPair = {
 };
 
 describe("PairDetailsDialog", () => {
-  it("shows the pair number, side, and both players' names", () => {
+  it("shows the pair number and both players' names", () => {
     render(
       <PairDetailsDialog
         open
@@ -33,10 +33,26 @@ describe("PairDetailsDialog", () => {
       />,
     );
 
-    expect(screen.getByText("Pair 3")).toBeInTheDocument();
-    expect(screen.getByText("North–South")).toBeInTheDocument();
+    expect(screen.getByText("Pair: 3")).toBeInTheDocument();
     expect(screen.getByText("Ann Smith")).toBeInTheDocument();
     expect(screen.getByText("Ben Jones")).toBeInTheDocument();
+  });
+
+  it("does not repeat the side once the pair has a number", () => {
+    // "1NS" already says North–South; and for a plain number (a Howell) the
+    // starting side would be misleading, since pairs change direction.
+    for (const pairId of ["A1NS", "3"]) {
+      const { unmount } = render(
+        <PairDetailsDialog
+          open
+          onOpenChange={vi.fn()}
+          pair={nsPair}
+          pairId={pairId}
+        />,
+      );
+      expect(screen.queryByText("North–South")).not.toBeInTheDocument();
+      unmount();
+    }
   });
 
   it("shows a player's national number when present and hides it when absent", () => {
@@ -55,16 +71,27 @@ describe("PairDetailsDialog", () => {
     expect(screen.queryAllByText(/^No\. /)).toHaveLength(1);
   });
 
-  it("uses the East–West label for an EW pair", () => {
+  it("shows the side the pair sat at before a movement gives it a number", () => {
+    const { unmount } = render(
+      <PairDetailsDialog
+        open
+        onOpenChange={vi.fn()}
+        pair={nsPair}
+        pairId={null}
+      />,
+    );
+    expect(screen.getByText("Pair details")).toBeInTheDocument();
+    expect(screen.getByText("North–South")).toBeInTheDocument();
+    unmount();
+
     render(
       <PairDetailsDialog
         open
         onOpenChange={vi.fn()}
         pair={{ side: "EW", players: nsPair.players }}
-        pairId="3"
+        pairId={null}
       />,
     );
-
     expect(screen.getByText("East–West")).toBeInTheDocument();
   });
 

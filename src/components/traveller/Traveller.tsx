@@ -9,13 +9,19 @@ type Props = {
    * This is the pair's assignment id.
    */
   highlightAssignmentId?: string;
+  /** Drop the section prefix from the pair ids shown in the rows. */
+  hideSection?: boolean;
 };
 
 /**
  * Renders a scored board using the per-board scoring plugin that produced it.
  * Plugin resolution replaces the previous per-scoring-type switch.
  */
-export function Traveller({ scoredBoard, highlightAssignmentId }: Props) {
+export function Traveller({
+  scoredBoard,
+  highlightAssignmentId,
+  hideSection,
+}: Props) {
   const plugin = getPerBoardPlugin(scoredBoard.pluginId);
 
   return (
@@ -23,6 +29,7 @@ export function Traveller({ scoredBoard, highlightAssignmentId }: Props) {
       plugin={plugin}
       scored={scoredBoard.lines}
       highlightAssignmentId={highlightAssignmentId}
+      hideSection={hideSection}
     />
   );
 }

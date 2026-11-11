@@ -776,9 +776,9 @@ describe("Swiss sit-out synthetic scoring", () => {
     // is below the board average of 1, nearest integer).
     const passed = aggregate.mock.calls[0][0] as { lines: any[] }[];
     const allLines = passed.flatMap((b) => b.lines);
-    expect(
-      allLines.some((l) => l.nsId === "5" && l.nsMatchPoints === 1),
-    ).toBe(true);
+    expect(allLines.some((l) => l.nsId === "5" && l.nsMatchPoints === 1)).toBe(
+      true,
+    );
   });
 
   it("skips the bye credit when no sibling board has been scored yet", async () => {
@@ -1085,14 +1085,14 @@ describe("buildLeaderboards — two-winner (Mitchell) NS/EW split", () => {
     ]);
   });
 
-  it("ranks a zero-matchpoint-capacity line last within its direction", async () => {
+  it("ranks a zero-matchpoint-capacity line at 50% within its direction", async () => {
     mockOverallPlugin({
       type: "PAIR_MP",
       mode: "PAIR",
       scoring: "MP",
       lines: [
         { pairId: "A1NS", totalMP: 0, maxMP: 0, rank: 2, tied: false },
-        { pairId: "A2NS", totalMP: 10, maxMP: 20, rank: 1, tied: false },
+        { pairId: "A2NS", totalMP: 8, maxMP: 20, rank: 1, tied: false },
       ],
     });
     vi.mocked(scoreBoard).mockReturnValue({
@@ -1114,7 +1114,10 @@ describe("buildLeaderboards — two-winner (Mitchell) NS/EW split", () => {
     const { buildLeaderboards } = await import("./leaderboard-service");
     const { leaderboard } = await buildLeaderboards(db, "game-1");
     const nsLines = leaderboard!.directional!.ns.overallScore.lines as any[];
-    expect(nsLines.map((l) => l.pairId)).toEqual(["A2NS", "A1NS"]);
+    // A3NS is seated but has no scored line: it is padded in at the 0/0
+    // baseline. Both no-boards lines rank at 50%, above A2NS's 40%.
+    expect(nsLines.map((l) => l.pairId)).toEqual(["A1NS", "A3NS", "A2NS"]);
+    expect(nsLines.map((l) => l.rank)).toEqual([1, 1, 3]);
   });
   it("does not split a one-winner (arrow-switched Mitchell) game", async () => {
     vi.mocked(findGameById).mockResolvedValue({

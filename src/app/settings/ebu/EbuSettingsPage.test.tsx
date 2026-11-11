@@ -1,21 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-let swrState: { data: unknown; isLoading: boolean };
-const mockMutate = vi.fn();
+// The page reads two SWR keys: the EBU login status and the club record.
+type SwrState = { data: unknown; isLoading: boolean };
+let ebuState: SwrState;
+let clubState: SwrState;
+const mockMutateEbu = vi.fn();
+const mockMutateClub = vi.fn();
 
 vi.mock("swr", () => ({
-  default: () => ({
-    data: swrState.data,
-    isLoading: swrState.isLoading,
-    mutate: mockMutate,
-  }),
+  default: (key: string) =>
+    key === "/api/system/club"
+      ? { ...clubState, mutate: mockMutateClub }
+      : { ...ebuState, mutate: mockMutateEbu },
 }));
 
 vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
 
 vi.mock("@/swr/swr-keys", () => ({
-  swrKeys: { ebu: () => "/api/system/ebu" },
+  swrKeys: { ebu: () => "/api/system/ebu", club: () => "/api/system/club" },
 }));
 
 const mockBack = vi.fn();
@@ -32,26 +35,30 @@ vi.mock("@/lib/admin-token", () => ({
 
 import { EbuSettingsPage } from "./EbuSettingsPage";
 
-function typeNumber(value: string) {
-  fireEvent.change(screen.getByLabelText("EBU Club Number"), {
-    target: { value },
-  });
+function type(label: string, value: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
 function typePassword(value: string) {
-  fireEvent.change(screen.getByLabelText("EBU Password"), {
-    target: { value },
-  });
+  type("EBU Password", value);
+}
+function save() {
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
 }
 
 describe("EbuSettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    swrState = {
+    ebuState = {
       data: { configured: true, ebuNumber: "1234567" },
       isLoading: false,
     };
+    clubState = {
+      data: { club: { id: 1, name: "Anytown BC", clubNumber: "1234567" } },
+      isLoading: false,
+    };
     mockGetAdminToken.mockReturnValue("admin-tok");
-    mockMutate.mockResolvedValue(undefined);
+    mockMutateEbu.mockResolvedValue(undefined);
+    mockMutateClub.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -59,67 +66,124 @@ describe("EbuSettingsPage", () => {
     vi.unstubAllGlobals();
   });
 
-  it("shows a spinner while the status loads", () => {
-    swrState = { data: undefined, isLoading: true };
+  it("shows a spinner while the EBU status loads", () => {
+    ebuState = { data: undefined, isLoading: true };
     const { container } = render(<EbuSettingsPage />);
     expect(container.querySelector(".animate-spin")).toBeTruthy();
   });
 
-  it("prefills the EBU number and shows the password-saved hint when configured", () => {
+  it("shows a spinner while the club record loads", () => {
+    clubState = { data: undefined, isLoading: true };
+    const { container } = render(<EbuSettingsPage />);
+    expect(container.querySelector(".animate-spin")).toBeTruthy();
+  });
+
+  it("prefills the club name and EBU number and shows the password-saved hint", () => {
     render(<EbuSettingsPage />);
-    expect(screen.getByLabelText("EBU Club Number")).toHaveValue(
-      "1234567",
-    );
+    expect(screen.getByLabelText("Club Name")).toHaveValue("Anytown BC");
+    expect(screen.getByLabelText("EBU Club Number")).toHaveValue("1234567");
     expect(screen.getByText(/A password is saved/i)).toBeInTheDocument();
   });
 
-  it("requires an EBU number", () => {
-    swrState = { data: { configured: false, ebuNumber: null }, isLoading: false };
+  it("falls back to the club record's number when no EBU login is stored", () => {
+    // A device that only had its club details set up before the screens merged.
+    ebuState = {
+      data: { configured: false, ebuNumber: null },
+      isLoading: false,
+    };
+    clubState = {
+      data: { club: { id: 1, name: "Anytown BC", clubNumber: "555" } },
+      isLoading: false,
+    };
+    render(<EbuSettingsPage />);
+    expect(screen.getByLabelText("EBU Club Number")).toHaveValue("555");
+  });
+
+  it("requires a club name", () => {
+    clubState = { data: { club: null }, isLoading: false };
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
     render(<EbuSettingsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    save();
+
+    expect(screen.getByText("Club name is required")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("requires an EBU number", () => {
+    ebuState = {
+      data: { configured: false, ebuNumber: null },
+      isLoading: false,
+    };
+    clubState = { data: { club: null }, isLoading: false };
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    type("Club Name", "Anytown BC");
+    save();
 
     expect(screen.getByText("EBU number is required")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("requires a password on first configuration", () => {
-    swrState = { data: { configured: false, ebuNumber: null }, isLoading: false };
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-
-    render(<EbuSettingsPage />);
-    typeNumber("7654321");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-
-    expect(screen.getByText("Password is required")).toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it("allows a blank password when already configured (keeps the stored one)", async () => {
+  it("saves the club details without a password on first setup (password is optional)", async () => {
+    ebuState = {
+      data: { configured: false, ebuNumber: null },
+      isLoading: false,
+    };
+    clubState = { data: { club: null }, isLoading: false };
     const fetchMock = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetchMock);
 
     render(<EbuSettingsPage />);
-    // configured=true, number prefilled, password left blank.
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    type("Club Name", " Anytown BC ");
+    type("EBU Club Number", " 7654321 ");
+    save();
 
     await waitFor(() =>
-      expect(
-        screen.getByText("✅ EBU settings saved"),
-      ).toBeInTheDocument(),
+      expect(screen.getByText("✅ EBU settings saved")).toBeInTheDocument(),
     );
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/system/ebu",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({ "x-admin-token": "admin-tok" }),
-        body: JSON.stringify({ ebuNumber: "1234567", password: "" }),
+        body: JSON.stringify({
+          clubName: "Anytown BC",
+          ebuNumber: "7654321",
+          password: "",
+        }),
       }),
     );
-    expect(mockMutate).toHaveBeenCalled();
+    // Both shared caches refresh so the export screens see the new club.
+    expect(mockMutateEbu).toHaveBeenCalled();
+    expect(mockMutateClub).toHaveBeenCalled();
+  });
+
+  it("sends a typed password and clears it after saving", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<EbuSettingsPage />);
+    typePassword("secret");
+    save();
+
+    await waitFor(() =>
+      expect(screen.getByText("✅ EBU settings saved")).toBeInTheDocument(),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/system/ebu",
+      expect.objectContaining({
+        body: JSON.stringify({
+          clubName: "Anytown BC",
+          ebuNumber: "1234567",
+          password: "secret",
+        }),
+      }),
+    );
+    expect(screen.getByLabelText("EBU Password")).toHaveValue("");
   });
 
   it("clears the admin token and prompts to re-enter it on a 401", async () => {
@@ -128,7 +192,7 @@ describe("EbuSettingsPage", () => {
 
     render(<EbuSettingsPage />);
     typePassword("secret");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    save();
 
     await waitFor(() =>
       expect(
@@ -136,7 +200,8 @@ describe("EbuSettingsPage", () => {
       ).toBeInTheDocument(),
     );
     expect(mockClearAdminToken).toHaveBeenCalled();
-    expect(mockMutate).not.toHaveBeenCalled();
+    expect(mockMutateEbu).not.toHaveBeenCalled();
+    expect(mockMutateClub).not.toHaveBeenCalled();
   });
 
   it("shows the server error message on a non-401 failure", async () => {
@@ -148,8 +213,7 @@ describe("EbuSettingsPage", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<EbuSettingsPage />);
-    typePassword("secret");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    save();
 
     expect(await screen.findByText("Invalid number")).toBeInTheDocument();
   });
@@ -159,8 +223,7 @@ describe("EbuSettingsPage", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<EbuSettingsPage />);
-    typePassword("secret");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    save();
 
     expect(await screen.findByText("Network error")).toBeInTheDocument();
   });
@@ -172,7 +235,7 @@ describe("EbuSettingsPage", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<EbuSettingsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    save();
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     expect(fetchMock).toHaveBeenCalledWith(
@@ -184,9 +247,6 @@ describe("EbuSettingsPage", () => {
   });
 
   it("falls back to a generic message when the error body cannot be parsed", async () => {
-    // A non-401 failure whose body is not JSON: `res.json()` rejects, the
-    // `.catch(() => null)` yields null, and `body?.error ?? "Failed to save"`
-    // resolves to the generic message.
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
@@ -197,8 +257,7 @@ describe("EbuSettingsPage", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<EbuSettingsPage />);
-    typePassword("secret");
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    save();
 
     expect(await screen.findByText("Failed to save")).toBeInTheDocument();
   });

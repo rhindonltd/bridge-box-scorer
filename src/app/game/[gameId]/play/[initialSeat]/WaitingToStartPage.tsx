@@ -7,7 +7,6 @@ import { parseSeat, Seat } from "@/model/participants";
 import { PairDirection } from "@/model/common";
 import { useSections } from "@/hooks/sections";
 import { leaveTable } from "@/lib/game-service";
-import { ChangeDeviceButton } from "@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceButton";
 
 interface Props {
   gameId: string;
@@ -116,7 +115,16 @@ export function WaitingToStartPage({ gameId, seat }: Props) {
         )}
 
         <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
-          <ChangeDeviceButton gameId={gameId} seat={seat} />
+          {/* Opens the Change device page (the same one the play menu uses). */}
+          <button
+            type="button"
+            onClick={() =>
+              router.push(`/game/${gameId}/play/${seat}/change-device`)
+            }
+            className="w-full rounded-xl border border-gray-300 bg-white px-6 py-3 text-base font-semibold text-gray-700 transition hover:bg-gray-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            Change device
+          </button>
           <button
             type="button"
             onClick={handleLeave}

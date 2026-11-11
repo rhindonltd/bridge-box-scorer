@@ -51,6 +51,11 @@ test.describe("Seat transfer (Change device)", () => {
       // read the minted transfer code.
       await oldDevice.getByRole("button", { name: "Menu" }).click();
       await oldDevice.getByText("Change device").click();
+      // Its own page (like Handover / Withdraw), not a dialog over play.
+      await oldDevice.waitForURL(
+        new RegExp(`/game/${gameId}/play/A1NS/change-device$`),
+        { timeout: 15000 },
+      );
       const codeEl = oldDevice.getByTestId("seat-transfer-code");
       await expect(codeEl).toBeVisible({ timeout: 15000 });
       const code = (await codeEl.textContent())?.trim() ?? "";
@@ -65,10 +70,16 @@ test.describe("Seat transfer (Change device)", () => {
       await newDevice.getByRole("button", { name: "Take over seat" }).click();
 
       // Success routes the new device straight into the seat's play screen.
-      await newDevice.waitForURL(
-        new RegExp(`/game/${gameId}/play/A1NS`),
-        { timeout: 15000 },
-      );
+      await newDevice.waitForURL(new RegExp(`/game/${gameId}/play/A1NS`), {
+        timeout: 15000,
+      });
+
+      // The old device, still on the Change device page, is told it has been
+      // signed out live — no used code left on show.
+      await expect(
+        oldDevice.getByText("This seat has moved to another device"),
+      ).toBeVisible({ timeout: 15000 });
+      await expect(oldDevice.getByTestId("seat-transfer-code")).toHaveCount(0);
 
       // The stored secret rotated.
       const newSecret = readSeatSecret(gameId, "A1NS");

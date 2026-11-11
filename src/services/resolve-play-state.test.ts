@@ -90,9 +90,16 @@ describe("resolvePlayState", () => {
 
     const state = await resolvePlayState(db, "g1", "A1NS");
 
-    expect(state!.phase).toMatchObject({
+    // Carries this seat's own submitted result so the waiting screen can show
+    // it after the player returns.
+    expect(state!.phase).toEqual({
       kind: "round",
-      position: { at: "waitingConfirmation", boardNumber: 1 },
+      roundIndex: 0,
+      position: {
+        at: "waitingConfirmation",
+        boardNumber: 1,
+        result: "3NTN=",
+      },
     });
   });
 

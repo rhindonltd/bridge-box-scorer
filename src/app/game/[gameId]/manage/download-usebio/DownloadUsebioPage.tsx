@@ -49,7 +49,7 @@ export function DownloadUsebioPage({
     // not editable here. Without it the USEBIO export cannot be produced.
     if (!clubConfigured) {
       setError(
-        "Club name and EBU number must be set in Settings before exporting.",
+        "Club name and EBU number must be set in Settings → EBU before exporting.",
       );
       return;
     }
@@ -135,12 +135,16 @@ export function DownloadUsebioPage({
         </div>
       }
     >
-      <form onSubmit={handleDownload} className="px-6" id="download-usebio-form">
+      <form
+        onSubmit={handleDownload}
+        className="px-6"
+        id="download-usebio-form"
+      >
         {clubConfigured ? (
           <>
             <p className="text-sm text-gray-600 mb-4">
               These club details will be included in the USEBIO file. To change
-              them, edit Club Information in Settings.
+              them, go to Settings → EBU.
             </p>
 
             <dl className="space-y-4">
@@ -179,7 +183,8 @@ export function DownloadUsebioPage({
           </>
         ) : (
           <p role="alert" className="text-red-600 text-base">
-            Club name and EBU number must be set in Settings before exporting.
+            Club name and EBU number must be set in Settings → EBU before
+            exporting.
           </p>
         )}
 

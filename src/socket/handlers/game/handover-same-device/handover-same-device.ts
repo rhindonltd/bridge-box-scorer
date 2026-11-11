@@ -7,7 +7,10 @@ import { handoverSeat } from "@/db/games/actions/handover-seat";
 import { isTeamsGame } from "@/db/game-index/queries/is-teams-game";
 import type { PairSeat } from "@/model/participants";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 
@@ -76,7 +79,9 @@ export function registerHandoverSameDeviceHandler(socket: Socket, io: Server) {
         });
 
         if (!result.ok) {
-          throw new HandlerError(result.error ?? "Could not hand over the seat.");
+          throw new HandlerError(
+            result.error ?? "Could not hand over the seat.",
+          );
         }
 
         ack({ success: true, data: { key } });

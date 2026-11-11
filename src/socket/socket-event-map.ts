@@ -56,6 +56,15 @@ export type SocketEventMap = {
     result: string;
   };
 
+  [SocketEvents.WITHDRAW_SUBMISSION]: {
+    gameId: string;
+    seat: string;
+    token: string;
+    roundNumber: number;
+    tableNumber: number;
+    boardNumber: number;
+  };
+
   [SocketEvents.BOARD_CONFIRMED]: {
     gameId: string;
     roundNumber: number;
@@ -75,6 +84,11 @@ export type SocketEventMap = {
   };
 
   [SocketEvents.SEAT_TAKEN_OVER]: {
+    gameId: string;
+    seat: string;
+  };
+
+  [SocketEvents.SEAT_EVICTED]: {
     gameId: string;
     seat: string;
   };

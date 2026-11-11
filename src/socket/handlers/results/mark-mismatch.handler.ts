@@ -5,7 +5,10 @@ import { getDb } from "@/db/games";
 import { buildMismatch } from "@/model/swiss-mismatch";
 import { markMismatch } from "@/db/games/actions/set-board-result";
 import { assertDirector } from "@/socket/middleware/director-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { broadcastResultsChanged } from "./broadcast-results";
 
 const payloadSchema = z.object({

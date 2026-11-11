@@ -13,7 +13,10 @@ interface Props {
    * player had already entered that board (first-wins), so we show it as
    * already recorded. Rejects on an invalid/failed submission.
    */
-  onSubmitDeal: (boardNumber: number, deal: Deal) => Promise<{ stored: boolean }>;
+  onSubmitDeal: (
+    boardNumber: number,
+    deal: Deal,
+  ) => Promise<{ stored: boolean }>;
   /** Leave the deal step (all boards done, or the player chose to skip). */
   onDone: () => void;
   /** Right-hand header content (the play header menu). */

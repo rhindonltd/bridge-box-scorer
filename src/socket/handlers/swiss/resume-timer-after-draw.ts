@@ -45,7 +45,10 @@ export async function resumeTimerAfterDraw(
     // stale schedule first for safety — awaitingDraw never scheduled one, but a
     // belt-and-braces cancel keeps a single live timeout invariant.
     cancelGameSchedule(gameId, section);
-    scheduleGame(gameId, section, engine, { updateTimerState, broadcast: makeTimerBroadcaster(io) });
+    scheduleGame(gameId, section, engine, {
+      updateTimerState,
+      broadcast: makeTimerBroadcaster(io),
+    });
   } catch (err) {
     logger.error(
       { err, gameId, section },

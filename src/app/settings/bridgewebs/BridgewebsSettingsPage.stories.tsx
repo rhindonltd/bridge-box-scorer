@@ -33,7 +33,9 @@ export const Configured: Story = {
     msw: {
       handlers: [
         http.get(swrKeys.bridgewebs(), () =>
-          HttpResponse.json({ result: { configured: true, club: "anytownbc" } }),
+          HttpResponse.json({
+            result: { configured: true, club: "anytownbc" },
+          }),
         ),
       ],
     },
@@ -69,7 +71,9 @@ export const Loading: Story = {
       handlers: [
         http.get(swrKeys.bridgewebs(), async () => {
           await delay("infinite");
-          return HttpResponse.json({ result: { configured: false, club: null } });
+          return HttpResponse.json({
+            result: { configured: false, club: null },
+          });
         }),
       ],
     },

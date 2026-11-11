@@ -145,3 +145,21 @@ round-1 result enough to reshuffle round-1 standings.
 | ☐ RULE-28 | Manage Game Menu → **Enter Deals** → **Select Board** → a board. | Deal entry with direction tabs (North/East/South/West), each "{count}/13". |
 | ☐ RULE-29 | Lay out all four hands (52 cards). | **Save deal** becomes available. |
 | ☐ RULE-30 | Tap **Save deal**. | Saved; a **Show hand** button now appears on that board's traveller for everyone. |
+
+### Import deals from a PBN file (director)
+
+Hands from a dealing machine (Duplimate) arrive as a `.pbn` file on the director's own phone or tablet (email, AirDrop, cloud drive). Importing replaces any hands already entered for the same boards, including ones players entered. Only the hands are read.
+
+**Fixture:** a started game. Have a PBN file covering the event's boards (a machine file with or without `[Board]` tags), and ideally one board whose hand a player has already entered.
+
+| Check | Step | Expected |
+|---|---|---|
+| ☐ RULE-31 | Manage Game Menu → **Enter Deals** → tap **Import from PBN file**. | **Import PBN** page with a **PBN file** chooser and an **Or paste PBN text** box. **Import** is disabled. |
+| ☐ RULE-32 | Choose the `.pbn` file. | "Loaded {file name}" appears, then a preview: "{n} boards found, {m} missing", with the warning "Any hands already entered for these boards will be replaced." |
+| ☐ RULE-33 | Use a file that has extra boards, a board missing, and one damaged deal (for example a hand shown as `-`). | The preview lists "Event boards not in the file", "Not in this event, so skipped", and a red line for the damaged board ("Deal is incomplete…"). The valid boards are still counted. |
+| ☐ RULE-34 | Clear the file and paste the PBN text instead. | The same preview appears for the pasted text. |
+| ☐ RULE-35 | Tap **Import {n} boards**. | A "{n} boards imported" confirmation. Tap **Done** to return to the Manage Game Menu. |
+| ☐ RULE-36 | On a player device already showing a board that was imported (open its traveller, header **Menu**). | A **Deal** option is there without a refresh, and shows the imported hands. A board that had a player-entered hand now shows the imported one. |
+| ☐ RULE-37 | Load a file where every board is outside the event. Then, with a good file loaded, switch the director's device off the Bridge Box Wi-Fi and tap **Import**. | With nothing usable, **Import** stays disabled. When the connection is lost, an error appears, nothing is imported, and the loaded text is kept so the import can be retried once reconnected. |
+
+Automated: journey `deal-entry` ("the director imports a PBN file…") covers RULE-31, 32, 35 and 36.

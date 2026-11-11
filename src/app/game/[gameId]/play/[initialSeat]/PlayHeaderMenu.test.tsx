@@ -14,12 +14,8 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-// Stub the two dialogs so we assert only the menu wiring (which one opens),
-// not their internals (and so no socket call is made).
-vi.mock("./ChangeDeviceButton", () => ({
-  ChangeDeviceButton: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="change-device-dialog" /> : null,
-}));
+// Stub the Pair details dialog so we assert only the menu wiring, not its
+// internals.
 vi.mock("./PairDetailsDialog", () => ({
   PairDetailsDialog: ({ open }: { open: boolean }) =>
     open ? <div data-testid="pair-details-dialog" /> : null,
@@ -74,6 +70,41 @@ describe("PlayHeaderMenu", () => {
     expect(mockPush).toHaveBeenCalledWith("/game/g1/play/A1NS/handover");
   });
 
+  it("offers Scorecard in a pairs event (incl. Swiss Pairs) and routes to it", async () => {
+    const user = userEvent.setup();
+    for (const eventFormat of ["STANDARD", "SWISS"]) {
+      mockPush.mockClear();
+      const { unmount } = render(
+        <GameContext.Provider
+          value={{ game: { gameType: "PAIRS", eventFormat } } as never}
+        >
+          <PlayHeaderMenu gameId="g1" seat="A1NS" />
+        </GameContext.Provider>,
+      );
+      await user.click(screen.getByRole("button", { name: "Menu" }));
+      await user.click(screen.getByRole("menuitem", { name: "Scorecard" }));
+      expect(mockPush).toHaveBeenCalledWith("/game/g1/play/A1NS/scorecard");
+      unmount();
+    }
+  });
+
+  it("does not offer Scorecard for a teams event", async () => {
+    const user = userEvent.setup();
+    render(
+      <GameContext.Provider
+        value={
+          { game: { gameType: "TEAMS", eventFormat: "STANDARD" } } as never
+        }
+      >
+        <PlayHeaderMenu gameId="g1" seat="A1NS" />
+      </GameContext.Provider>,
+    );
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    expect(
+      screen.queryByRole("menuitem", { name: "Scorecard" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("offers Withdraw in a pairs event and routes to the withdraw screen", async () => {
     const user = userEvent.setup();
     render(
@@ -109,15 +140,15 @@ describe("PlayHeaderMenu", () => {
     }
   });
 
-  it("opens the change-device dialog from its menu item", async () => {
+  it("opens the Change device page from its menu item", async () => {
     const user = userEvent.setup();
     render(<PlayHeaderMenu gameId="g1" seat="A1NS" />);
 
-    expect(screen.queryByTestId("change-device-dialog")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Change device" }));
 
-    expect(screen.getByTestId("change-device-dialog")).toBeInTheDocument();
+    // Its own page (like Handover / Withdraw), not a dialog.
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/play/A1NS/change-device");
   });
 
   it("opens the pair-details dialog from its menu item", async () => {
