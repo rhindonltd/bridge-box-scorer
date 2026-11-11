@@ -143,4 +143,22 @@ describe("registerMarkMismatchHandler", () => {
     });
     expect(broadcastResultsChanged).not.toHaveBeenCalled();
   });
+  it("reports a failure and does not broadcast when writing the ruling throws", async () => {
+    const db = {
+      select: vi.fn(() => {
+        throw new Error("db write failed");
+      }),
+    };
+    vi.mocked(getDb).mockResolvedValue(db as any);
+    const socket = createMockSocket();
+    registerMarkMismatchHandler(socket, {} as any);
+    const handler = socket.on.mock.calls[0][1];
+    const cb = vi.fn();
+    await handler(validPayload, cb);
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Failed to mark mismatch",
+    });
+    expect(broadcastResultsChanged).not.toHaveBeenCalled();
+  });
 });

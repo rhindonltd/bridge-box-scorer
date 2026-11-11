@@ -128,4 +128,22 @@ describe("registerSetParticipantStandingHandler (unit)", () => {
     );
     expect(broadcastParticipants).not.toHaveBeenCalled();
   });
+  it("fails when the game database cannot be found", async () => {
+    vi.mocked(getDb).mockResolvedValue(undefined as any);
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(
+      {
+        gameId: "g1",
+        directorToken: "tok",
+        seat: "A1NS",
+        change: { standing: "ACTIVE" },
+      },
+      cb,
+    );
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false, error: "Game not found" }),
+    );
+    expect(withdrawParticipant).not.toHaveBeenCalled();
+  });
 });

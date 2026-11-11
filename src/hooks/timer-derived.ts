@@ -52,8 +52,7 @@ export function useTimerDerived(state: TimerState | null, now: number) {
 
     if (!state.isRunning) {
       remainingCurrentPhaseMs =
-        state.remainingMs ??
-        (phase === "move" ? moveMs : playMs);
+        state.remainingMs ?? (phase === "move" ? moveMs : playMs);
     } else {
       const elapsed = clock - state.phaseStartedAt!;
       const phaseDurationMs =
@@ -83,6 +82,7 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       return total;
     }
 
+    /* v8 ignore else -- unreachable: finished/awaitingDraw return early above and the only remaining phases are play, move and break */
     if (phase === "move" || phase === "break") {
       // The current gap belongs to the round after the previous play; the play
       // for `state.round` still needs to happen, then subsequent rounds.
@@ -98,6 +98,7 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       return total;
     }
 
+    /* v8 ignore next -- unreachable: finished/awaitingDraw return early above and the remaining phases (play, move, break) are all handled */
     return total;
   }
 
@@ -111,7 +112,8 @@ export function useTimerDerived(state: TimerState | null, now: number) {
       if (!state.isRunning) {
         return Math.ceil((state.remainingMs ?? 0) / 1000);
       }
-      if (!state.phaseStartedAt) return Math.ceil((state.remainingMs ?? 0) / 1000);
+      if (!state.phaseStartedAt)
+        return Math.ceil((state.remainingMs ?? 0) / 1000);
       const durationMs = state.remainingMs ?? 0;
       const elapsed = now - state.phaseStartedAt;
       return Math.max(0, Math.ceil((durationMs - elapsed) / 1000));

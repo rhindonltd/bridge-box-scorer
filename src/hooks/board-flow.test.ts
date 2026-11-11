@@ -41,6 +41,14 @@ describe("useBoardFlow", () => {
     expect(result.current.selectedBoard).toBeNull();
   });
 
+  it("does nothing when going back from the board-selection step", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: true, ...multiBoard }),
+    );
+    act(() => result.current.handleBack());
+    expect(result.current.step).toBe(0);
+    expect(result.current.selectedBoard).toBeNull();
+  });
   it("auto-selects the only board and starts on the level step", () => {
     const { result } = renderHook(() =>
       useBoardFlow({

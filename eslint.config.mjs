@@ -11,6 +11,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "storybook-static/**",
     "coverage/**",
+    // Vitest's HTML reporter output (`npm run coverage`).
+    ".vitest/**",
     "dist/**",
     "playwright-report/**",
     "test-results/**",

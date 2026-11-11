@@ -819,6 +819,49 @@ describe("usePlayFlow", () => {
     });
   });
 
+  describe("SCHEDULE_CHANGED resync (design §11)", () => {
+    it("re-reads the play state and re-derives the position from it", () => {
+      const refresh = vi.fn();
+      const resolved = {
+        assignmentId: "A1",
+        side: "NS",
+        rounds: [round(1, [1, 2])],
+        phase: enteringPhase(0, 1),
+      };
+      mockUseSWR.mockReturnValue({ data: resolved, mutate: refresh });
+      const { result, rerender, unmount } = renderHook(() =>
+        usePlayFlow("g1", "A1NS"),
+      );
+      act(() => result.current.handleEnterRound());
+      expect(result.current.playState.state).toBe("enterContract");
+      expect(socketOn).toHaveBeenCalledWith(
+        SocketEvents.SCHEDULE_CHANGED,
+        expect.any(Function),
+      );
+      act(() => {
+        socketOn.mock.calls
+          .find((c) => c[0] === SocketEvents.SCHEDULE_CHANGED)![1]();
+      });
+      expect(refresh).toHaveBeenCalledTimes(1);
+      // The refreshed resolved state says the event is now complete: unlike an
+      // ordinary revalidation, the position is re-derived rather than kept.
+      mockUseSWR.mockReturnValue({
+        data: {
+          ...resolved,
+          rounds: [round(1, [1, 2], { confirmed: true })],
+          phase: { kind: "complete" },
+        },
+        mutate: refresh,
+      });
+      rerender();
+      expect(result.current.playState.state).toBe("gameComplete");
+      unmount();
+      expect(socketOff).toHaveBeenCalledWith(
+        SocketEvents.SCHEDULE_CHANGED,
+        expect.any(Function),
+      );
+    });
+  });
   describe("auto-advance from the between-rounds wait (Stage 4)", () => {
     it("advances a waiting player when a fresh resolved draws the next round", () => {
       withResolved({

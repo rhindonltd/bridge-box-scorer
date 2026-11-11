@@ -27,17 +27,12 @@ export interface OutstandingBoard {
   ewPair: string | null;
 }
 
+/** "First Last & First Last" for a seated pair. */
 function pairName(
-  p1: { firstName: string; lastName: string } | null,
-  p2: { firstName: string; lastName: string } | null,
-): string | null {
-  /* v8 ignore next -- unreachable: the sole caller always passes both name objects (from inner-joined player rows) */
-  if (!p1 && !p2) return null;
-  const parts = [p1, p2]
-    .filter((p): p is { firstName: string; lastName: string } => p != null)
-    .map((p) => `${p.firstName} ${p.lastName}`.trim());
-  /* v8 ignore next -- unreachable: at least one name object is always present, so parts is non-empty */
-  return parts.length > 0 ? parts.join(" & ") : null;
+  p1: { firstName: string; lastName: string },
+  p2: { firstName: string; lastName: string },
+): string {
+  return [p1, p2].map((p) => `${p.firstName} ${p.lastName}`.trim()).join(" & ");
 }
 
 /**
@@ -129,7 +124,7 @@ export async function getOutstandingBoards(
     byBoardId.set(key, arr);
   }
 
-  const nameByBoardId = new Map<string, string | null>();
+  const nameByBoardId = new Map<string, string>();
   for (const [boardId, forSeat] of byBoardId) {
     const primary = primaryOf(
       forSeat.map((o) => ({
@@ -140,8 +135,8 @@ export async function getOutstandingBoards(
         isMainLine: o.isMainLine,
       })),
     );
-    /* v8 ignore next -- unreachable: primaryOf always returns one of forSeat's own ids */
-    const occ = forSeat.find((o) => o.id === primary.id) ?? forSeat[0];
+    // `primaryOf` picks one of `forSeat`'s own occupancies.
+    const occ = forSeat.find((o) => o.id === primary.id)!;
     nameByBoardId.set(
       boardId,
       pairName(

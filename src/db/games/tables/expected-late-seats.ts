@@ -9,7 +9,7 @@ import { PairSeat } from "@/model/participants";
  * yet (the real pair walks in later and is seated via the ordinary
  * create-participant flow, which removes the mark). While a seat is in this
  * table its opponents are indemnified AVE+ for the boards they cannot play
- * (see `withdrawalCreditBoards`), and the round-info screen tells them their
+ * (see `applyAbsences`), and the round-info screen tells them their
  * opponents are running late rather than showing a sit-out.
  *
  * Keyed by the section-qualified seat id (e.g. "A3EW") — the same id the board

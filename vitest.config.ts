@@ -18,6 +18,16 @@ export default mergeConfig(
         provider: "v8",
         reporter: ["text", "html", "lcov"],
         reportsDirectory: "./coverage",
+        // Every unit-testable line is covered; a coverage run fails if any
+        // file drops below. Code that genuinely can't run (a defensive guard
+        // the types rule out) is marked `/* v8 ignore … -- <reason> */` in
+        // place; files that can't be unit-tested are excluded below.
+        thresholds: {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
         include: ["src/**/*.{ts,tsx}"],
         exclude: [
           "node_modules/",
@@ -94,10 +104,7 @@ export default mergeConfig(
             // valid instance of EventTarget"), so these tests cannot run under
             // the jsdom environment. They exercise the HTTP boundary and need
             // no DOM, so they run in the `node` project below instead.
-            exclude: [
-              "**/node_modules/**",
-              "src/app/api/**/route.test.ts",
-            ],
+            exclude: ["**/node_modules/**", "src/app/api/**/route.test.ts"],
             // Node 25+ ships Web Storage on by default, so `localStorage` /
             // `sessionStorage` exist as global accessors. Vitest's
             // `getWindowKeys` then drops jsdom's own Storage (it isn't in

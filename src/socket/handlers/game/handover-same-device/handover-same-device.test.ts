@@ -164,4 +164,26 @@ describe("registerHandoverSameDeviceHandler (unit)", () => {
     );
     expect(handoverSeat).not.toHaveBeenCalled();
   });
+  it("falls back to a generic message when the engine rejects without one", async () => {
+    vi.mocked(handoverSeat).mockResolvedValue({ ok: false } as any);
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(validPayload, cb);
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        error: "Could not hand over the seat.",
+      }),
+    );
+  });
+  it("fails when the game database cannot be found", async () => {
+    vi.mocked(getDb).mockResolvedValue(undefined as any);
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(validPayload, cb);
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false, error: "Game not found" }),
+    );
+    expect(handoverSeat).not.toHaveBeenCalled();
+  });
 });

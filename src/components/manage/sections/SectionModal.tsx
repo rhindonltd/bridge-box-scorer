@@ -55,6 +55,9 @@ interface Props {
 
 type Mode = "add" | "split";
 
+/* v8 ignore next -- unreachable singular: both sides of a split always keep MIN_SECTION_TABLES (2) or more tables, so the count is never 1 */
+const tablesNoun = (n: number) => (n === 1 ? "table" : "tables");
+
 /**
  * Add/Split-section modal. A director adding a section chooses between:
  *
@@ -252,6 +255,7 @@ export function SectionModal({
                           const picked = splittable.find(
                             (s) => s.letter === letter,
                           );
+                          /* v8 ignore next -- unreachable: the picker only offers letters from `splittable`, so `picked` is always found */
                           setFromLabel(picked?.label ?? "");
                           setTablesToNew(MIN_SECTION_TABLES);
                         }}
@@ -294,13 +298,11 @@ export function SectionModal({
                           <span className="font-semibold">
                             {source.tables - tablesToNew}
                           </span>{" "}
-                          {source.tables - tablesToNew === 1
-                            ? "table"
-                            : "tables"}
+                          {tablesNoun(source.tables - tablesToNew)}
                           {" · "}
                           Section {newSectionLetter}:{" "}
                           <span className="font-semibold">{tablesToNew}</span>{" "}
-                          {tablesToNew === 1 ? "table" : "tables"}
+                          {tablesNoun(tablesToNew)}
                         </p>
 
                         <TextField

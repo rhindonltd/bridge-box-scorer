@@ -39,4 +39,9 @@ describe("StepVoidMatch", () => {
     fireEvent.click(screen.getByRole("button", { name: /Neither side at fault/ }));
     expect(onSubmit).toHaveBeenCalledWith("SHORT_NEITHER");
   });
+  it("describes the currency as boards won for board-comparison teams", () => {
+    render(<StepVoidMatch onSubmit={vi.fn()} boardComparison />);
+    expect(screen.getByText(/boards won/)).toBeInTheDocument();
+    expect(screen.queryByText(/Victory Points/)).not.toBeInTheDocument();
+  });
 });

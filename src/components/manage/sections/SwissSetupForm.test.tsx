@@ -111,4 +111,21 @@ describe("SwissSetupForm", () => {
     ).toBeChecked();
     expect(screen.getByTestId("odd-round-plan")).toBeInTheDocument();
   });
+  it("returns to the bye handling and lets a bye round go back to half matches", () => {
+    const { onConfirm } = renderForm();
+    fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
+    const plan = screen.getByTestId("odd-round-plan");
+    fireEvent.click(within(plan).getByRole("radio", { name: "Bye for round 1" }));
+    fireEvent.click(
+      within(plan).getByRole("radio", { name: "Half matches for round 1" }),
+    );
+    fireEvent.click(screen.getByRole("radio", { name: /^Bye — one pair/ }));
+    expect(screen.queryByTestId("odd-round-plan")).not.toBeInTheDocument();
+    fireEvent.click(confirmButton());
+    expect(onConfirm.mock.calls[0][0].oddHandling).toBeUndefined();
+  });
+  it("shows a disabled Saving button while a save is in flight", () => {
+    renderForm({ saving: true });
+    expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
+  });
 });

@@ -358,4 +358,189 @@ describe("DirectorTableModal", () => {
       screen.queryByRole("button", { name: /Change standing/ }),
     ).not.toBeInTheDocument();
   });
+
+  describe("post-start standing controls", () => {
+    function renderStarted(table: DirectorTable = fullTable()) {
+      const onChangeStanding = vi.fn();
+      render(
+        <DirectorTableModal
+          table={table}
+          isSwiss={false}
+          onEvict={vi.fn()}
+          onToggleStationary={vi.fn()}
+          started
+          onChangeStanding={onChangeStanding}
+          onToggleExpectedLate={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+      const nsRow = screen
+        .getByText("North / South")
+        .closest("div.rounded-xl") as HTMLElement;
+      const openForm = () =>
+        fireEvent.click(
+          within(nsRow).getByRole("button", {
+            name: "Change standing for North / South pair",
+          }),
+        );
+      return { onChangeStanding, nsRow, openForm };
+    }
+
+    it("saves a Withdrawn standing with a round number and the REMOVE treatment", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("Withdrawn"));
+      expect(within(nsRow).getByText("Withdrew in round")).toBeInTheDocument();
+      // Bump the round from 1 to 2.
+      fireEvent.mouseDown(within(nsRow).getByRole("button", { name: "+" }));
+      fireEvent.mouseUp(within(nsRow).getByRole("button", { name: "+" }));
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "WITHDRAWN",
+        withdrawnInRound: 2,
+        treatment: "REMOVE",
+      });
+      // The form closes after saving.
+      expect(
+        within(nsRow).getByRole("button", {
+          name: "Change standing for North / South pair",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("saves a Late standing with a penalised fine", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("Late"));
+      expect(within(nsRow).getByText("Arrived in round")).toBeInTheDocument();
+      fireEvent.click(within(nsRow).getByLabelText("Penalised"));
+      expect(within(nsRow).getByText("Fine %")).toBeInTheDocument();
+      // Two steppers now: round (first) and fine (second). Raise the fine by 1.
+      const plusButtons = within(nsRow).getAllByRole("button", { name: "+" });
+      fireEvent.mouseDown(plusButtons[1]);
+      fireEvent.mouseUp(plusButtons[1]);
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "LATE",
+        arrivedInRound: 1,
+        treatment: "PENALISED",
+        finePercent: 1,
+      });
+    });
+
+    it("saves a Late standing with the REMOVE treatment", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("Late"));
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "LATE",
+        arrivedInRound: 1,
+        treatment: "REMOVE",
+      });
+    });
+
+    it("saves a Withdrawn standing with a penalised fine", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("Withdrawn"));
+      fireEvent.click(within(nsRow).getByLabelText("Penalised"));
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "WITHDRAWN",
+        withdrawnInRound: 1,
+        treatment: "PENALISED",
+        finePercent: 0,
+      });
+    });
+
+    it("saves Without standing and Active", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByLabelText("No standing"));
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenLastCalledWith("A1NS", {
+        standing: "WITHOUT_STANDING",
+      });
+      openForm();
+      // The form opens on the pair's current standing (Active by default).
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Save" }));
+      expect(onChangeStanding).toHaveBeenLastCalledWith("A1NS", {
+        standing: "ACTIVE",
+      });
+    });
+
+    it("cancels the standing editor without saving", () => {
+      const { onChangeStanding, nsRow, openForm } = renderStarted();
+      openForm();
+      fireEvent.click(within(nsRow).getByRole("button", { name: "Cancel" }));
+      expect(onChangeStanding).not.toHaveBeenCalled();
+      expect(
+        within(nsRow).getByRole("button", {
+          name: "Change standing for North / South pair",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("opens the editor on the pair's current standing and shows a badge", () => {
+      const { nsRow, openForm } = renderStarted(
+        fullTable({
+          standing: { N: "WITHDRAWN", E: "LATE" },
+        } as never),
+      );
+      expect(within(nsRow).getByText("Withdrawn")).toBeInTheDocument();
+      expect(screen.getByText("Late")).toBeInTheDocument();
+      openForm();
+      expect(within(nsRow).getByLabelText("Withdrawn")).toBeChecked();
+    });
+
+    it("shows a badge for a pair without standing but none for an active pair", () => {
+      renderStarted(
+        fullTable({
+          standing: { N: "WITHOUT_STANDING", E: "ACTIVE" },
+        } as never),
+      );
+      expect(screen.getByText("Without standing")).toBeInTheDocument();
+      expect(screen.queryByText("Active")).not.toBeInTheDocument();
+    });
+
+    it("notes an expected-late empty seat after the start", () => {
+      render(
+        <DirectorTableModal
+          table={
+            {
+              ...halfEmptyTable(),
+              expectedLate: { N: false, E: true },
+            } as never
+          }
+          isSwiss={false}
+          started
+          onEvict={vi.fn()}
+          onToggleStationary={vi.fn()}
+          onChangeStanding={vi.fn()}
+          onToggleExpectedLate={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+      expect(
+        screen.getByText("Expected late — not yet seated"),
+      ).toBeInTheDocument();
+    });
+
+    it("shows nothing extra for an empty seat that is not expected late after the start", () => {
+      render(
+        <DirectorTableModal
+          table={halfEmptyTable()}
+          isSwiss={false}
+          started
+          onEvict={vi.fn()}
+          onToggleStationary={vi.fn()}
+          onChangeStanding={vi.fn()}
+          onToggleExpectedLate={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+      expect(screen.queryByText(/Expected late/)).not.toBeInTheDocument();
+    });
+  });
 });

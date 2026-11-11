@@ -220,6 +220,22 @@ describe("DealEntry", () => {
     expect(screen.queryByTestId("deal-entry-save")).not.toBeInTheDocument();
   });
 
+  it("does not auto-fill a fourth hand that already holds cards", () => {
+    const ranks = [...Ranks];
+    const initialDeal: Deal = {
+      N: ranks.map((r): Card => `S${r}`),
+      E: ranks.map((r): Card => `H${r}`),
+      S: ranks.map((r): Card => `D${r}`),
+      W: ["CA"],
+    };
+    render(
+      <DealEntry boardNumber={1} onSubmit={vi.fn()} initialDeal={initialDeal} />,
+    );
+    fireEvent.click(screen.getByTestId("entry-dir-W"));
+    fireEvent.click(screen.getByTestId("entry-suit-C"));
+    fireEvent.click(screen.getByTestId("card-CK"));
+    expect(screen.getByTestId("entry-dir-W")).toHaveTextContent("2/13");
+  });
   // Reference Suits import so lint keeps it and the suit set stays in sync.
   it("has four suits", () => {
     expect(Suits).toHaveLength(4);

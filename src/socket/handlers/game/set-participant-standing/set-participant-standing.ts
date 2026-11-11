@@ -47,7 +47,7 @@ const payloadSchema = z.object({
  * (ranking exclusion + opponent indemnity) — so after writing it we fan out
  * BOTH the participant list and a fresh leaderboard snapshot. The actual
  * scoring consequences are derived at scoring time from the stored standing
- * (see `resolveStandings` / `withdrawalCreditBoards` / `applyTeamWithdrawalRulings`),
+ * (see `resolveStandings` / `applyAbsences` / `applyTeamWithdrawalRulings`),
  * never persisted per-board.
  */
 export function registerSetParticipantStandingHandler(

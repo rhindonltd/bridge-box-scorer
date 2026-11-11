@@ -58,4 +58,22 @@ describe("StepLevel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Adjusted Score" }));
     expect(onAdjustedScore).toHaveBeenCalled();
   });
+  it("shows the Weighted Score button only when the handler is provided", () => {
+    const onWeightedScore = vi.fn();
+    const { rerender } = render(
+      <StepLevel onLevelSelected={vi.fn()} onSpecialOutcome={vi.fn()} />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Weighted Score" }),
+    ).not.toBeInTheDocument();
+    rerender(
+      <StepLevel
+        onLevelSelected={vi.fn()}
+        onSpecialOutcome={vi.fn()}
+        onWeightedScore={onWeightedScore}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Weighted Score" }));
+    expect(onWeightedScore).toHaveBeenCalled();
+  });
 });

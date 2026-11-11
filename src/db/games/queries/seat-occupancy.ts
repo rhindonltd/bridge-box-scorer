@@ -237,10 +237,8 @@ export function buildOccupantScoredIdResolver(
     // is ranked is decided by `standing` downstream — split is about identity,
     // not eligibility.)
     const anchorId = arrivalAnchorOf(forSeat).id;
-    const occupant =
-      forSeat.find((o) => occupancyCoversBoard(o, boardNumber)) ??
-      /* v8 ignore next -- unreachable: a whole-seat (null boards) occupant already "covers" every board above */
-      forSeat.find((o) => o.boards == null);
+    // (A whole-seat occupant — `boards` null — covers every board.)
+    const occupant = forSeat.find((o) => occupancyCoversBoard(o, boardNumber));
     if (occupant == null || occupant.id === anchorId) return boardAnchorId;
     return scoredIdFor(boardAnchorId, occupant.id);
   };
@@ -371,8 +369,18 @@ export interface NonPrimaryOccupantPair {
   scoredId: string;
   /** The physical seat (for direction / section). */
   seat: string;
-  player1: { id: number; firstName: string; lastName: string; nationalId: string | null };
-  player2: { id: number; firstName: string; lastName: string; nationalId: string | null };
+  player1: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    nationalId: string | null;
+  };
+  player2: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    nationalId: string | null;
+  };
 }
 
 export async function findNonPrimaryOccupantPairs(

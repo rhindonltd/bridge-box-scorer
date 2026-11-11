@@ -117,4 +117,18 @@ describe("registerSetSeatExpectedLateHandler (unit)", () => {
     expect(addExpectedLateSeat).not.toHaveBeenCalled();
     expect(broadcastParticipants).not.toHaveBeenCalled();
   });
+  it("fails when the game database cannot be found", async () => {
+    vi.mocked(getDb).mockResolvedValue(undefined as any);
+    const { fn } = handlerFor();
+    const cb = vi.fn();
+    await fn(
+      { gameId: "g1", directorToken: "tok", seat: "A3EW", expectedLate: true },
+      cb,
+    );
+    expect(cb).toHaveBeenCalledWith(
+      expect.objectContaining({ success: false, error: "Game not found" }),
+    );
+    expect(addExpectedLateSeat).not.toHaveBeenCalled();
+    expect(broadcastParticipants).not.toHaveBeenCalled();
+  });
 });
