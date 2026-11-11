@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-import viteConfig from "./vite.config";
+import viteConfig from "./vite.config.mts";
 
 export default mergeConfig(
   viteConfig,
@@ -88,7 +88,7 @@ export default mergeConfig(
       projects: [
         {
           extends: true,
-          // Note: the `server-only` -> stub alias lives in vite.config.ts so it
+          // Note: the `server-only` -> stub alias lives in vite.config.mts so it
           // is shared by both the unit and storybook projects (and Storybook).
           test: {
             name: "unit",
@@ -164,7 +164,6 @@ export default mergeConfig(
               headless: true,
               instances: [{ browser: "chromium" }],
             },
-            setupFiles: ["./.storybook/vitest.setup.ts"],
           },
         },
       ],

@@ -110,3 +110,53 @@ describe("logger", () => {
     expect(rec.msg).toBe("operation failed");
   });
 });
+
+describe("logger setup by environment", () => {
+  afterEach(() => {
+    vi.doUnmock("pino");
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  /** Import the logger with `pino` replaced by a spy, returning its options. */
+  async function optionsFor(env: Record<string, string | undefined>) {
+    vi.resetModules();
+    for (const [name, value] of Object.entries(env)) vi.stubEnv(name, value);
+    const pino = Object.assign(
+      vi.fn((_options: Record<string, any>) => ({ child: vi.fn() })),
+      { stdSerializers: { err: vi.fn() } },
+    );
+    vi.doMock("pino", () => ({ default: pino }));
+    await import("./log");
+    return pino.mock.calls[0][0];
+  }
+
+  it("pretty-prints through the pino-pretty transport in development", async () => {
+    const options = await optionsFor({
+      NODE_ENV: "development",
+      VITEST: "",
+      LOG_LEVEL: undefined,
+    });
+    expect(options.transport.target).toBe("pino-pretty");
+    expect(options.level).toBe("info");
+  });
+
+  it("starts no transport and is silent by default under Vitest", async () => {
+    const options = await optionsFor({
+      NODE_ENV: "development",
+      VITEST: "true",
+      LOG_LEVEL: undefined,
+    });
+    expect(options.transport).toBeUndefined();
+    expect(options.level).toBe("silent");
+  });
+
+  it("still honours LOG_LEVEL under Vitest", async () => {
+    const options = await optionsFor({
+      NODE_ENV: "development",
+      VITEST: "true",
+      LOG_LEVEL: "debug",
+    });
+    expect(options.level).toBe("debug");
+  });
+});
