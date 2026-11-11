@@ -75,9 +75,14 @@ test.describe("Admin-key settings gate", () => {
         page.getByRole("link", { name: "WiFi Settings" }),
       ).toBeVisible({ timeout: 15000 });
 
-      // Log out: the session is invalidated and the gate returns without a
-      // reload (the layout swaps in the admin-key prompt on token clear).
+      // Log out: the session is invalidated and the user is returned to the
+      // home screen (main menu), not left on the admin-key prompt.
       await page.getByRole("button", { name: "Log Out" }).click();
+      await expect(page).toHaveURL(/\/$/, { timeout: 15000 });
+      await expect(page.getByText("Admin Access")).toHaveCount(0);
+
+      // Settings are locked again: reopening them asks for the key.
+      await page.goto("/settings");
       await expect(page.getByText("Admin Access")).toBeVisible({
         timeout: 15000,
       });
@@ -168,7 +173,10 @@ test.describe("Admin-key APIs", () => {
     test.setTimeout(60_000);
 
     const originalKey = deriveAdminKey();
-    test.skip(!originalKey, "could not derive the device admin key on this host");
+    test.skip(
+      !originalKey,
+      "could not derive the device admin key on this host",
+    );
 
     const newKey = "e2e-temp-key-1234";
     const token = (await verifyKey(request, originalKey!)).token!;

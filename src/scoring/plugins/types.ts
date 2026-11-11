@@ -18,6 +18,12 @@ export type OverallPluginId = "MP" | "IMP" | "XIMP";
  */
 export interface ViewOptions {
   highlightAssignmentId?: string;
+  /**
+   * Drop the section prefix from pair ids in the rows (e.g. "A1EW" -> "1EW").
+   * Set when only one section is in play or results are not combined across
+   * sections, so the prefix carries no information.
+   */
+  hideSection?: boolean;
 }
 
 /* =========================================================

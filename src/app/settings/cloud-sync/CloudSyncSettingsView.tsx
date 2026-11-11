@@ -14,7 +14,10 @@ const primaryButtonClass =
  * Returns null for a null/absent/unparseable value so callers can fall back to
  * a "not yet" copy. Kept UI-local (no domain dep) since it only shapes display.
  */
-export function relativeTime(iso: string | null, now: number = Date.now()): string | null {
+export function relativeTime(
+  iso: string | null,
+  now: number = Date.now(),
+): string | null {
   if (!iso) return null;
   const then = Date.parse(iso);
   if (Number.isNaN(then)) return null;
@@ -78,12 +81,16 @@ export function CloudSyncSettingsView({
   onBack,
 }: CloudSyncSettingsViewProps) {
   const backedUp = relativeTime(status.backup.last_success);
-  const warning = status.enabled ? warningForResult(status.backup.last_result) : null;
+  const warning = status.enabled
+    ? warningForResult(status.backup.last_result)
+    : null;
 
   return (
     <PageLayout
       headerTitle="Cloud Backup"
       backAction={onBack}
+      // The "not enabled" notice is a short message, so centre it on the page.
+      centerContent={!status.enabled}
       actions={
         status.enabled ? (
           <button
@@ -97,19 +104,27 @@ export function CloudSyncSettingsView({
         ) : undefined
       }
     >
-      <div className="px-6 pt-6 max-w-sm w-full mx-auto space-y-4">
+      <div
+        className={`px-6 max-w-sm w-full mx-auto space-y-4 ${status.enabled ? "pt-6" : "py-6 text-center"}`}
+      >
         {!status.enabled ? (
-          <p className="text-base text-gray-600">
-            Cloud backup is not enabled on this box. Game data is kept locally;
-            enabling the cloud backup subscription lets the box back it up
-            off-box automatically.
-          </p>
+          // Matches the WiFi "can't be changed on this device" screen: a bold
+          // headline with a short explanation, centred on the page.
+          <>
+            <h1 className="text-xl font-bold text-gray-900">
+              Cloud backup is not enabled on this box
+            </h1>
+            <p className="text-base text-gray-600">
+              Game data is kept locally. Enabling the cloud backup subscription
+              lets the box back it up off-box automatically.
+            </p>
+          </>
         ) : (
           <>
             <p className="text-sm text-gray-600">
-              The box backs up your game data off-box automatically. You can also
-              back up now — for example right after a session, before switching
-              off.
+              The box backs up your game data off-box automatically. You can
+              also back up now — for example right after a session, before
+              switching off.
             </p>
 
             <div className="rounded-xl bg-gray-100 p-4">

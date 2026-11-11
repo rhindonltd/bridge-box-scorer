@@ -6,6 +6,11 @@ vi.mock("@/lib/admin-token", () => ({
   logoutAdmin: () => mockLogoutAdmin(),
 }));
 
+const mockReplace = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: mockReplace }),
+}));
+
 import { LogoutButton } from "./LogoutButton";
 
 describe("LogoutButton", () => {
@@ -16,16 +21,17 @@ describe("LogoutButton", () => {
     expect(screen.getByRole("button", { name: "Log Out" })).toBeInTheDocument();
   });
 
-  it("calls logoutAdmin when clicked", async () => {
+  it("logs out and returns to the home screen", async () => {
     mockLogoutAdmin.mockResolvedValue(undefined);
     render(<LogoutButton />);
 
     fireEvent.click(screen.getByRole("button", { name: "Log Out" }));
 
-    await waitFor(() => expect(mockLogoutAdmin).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    expect(mockLogoutAdmin).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a logging-out state while the logout is in flight, then re-enables", async () => {
+  it("shows a logging-out state while the logout is in flight", async () => {
     let resolveLogout: () => void = () => {};
     mockLogoutAdmin.mockReturnValue(
       new Promise<void>((resolve) => {
@@ -36,16 +42,27 @@ describe("LogoutButton", () => {
     render(<LogoutButton />);
     fireEvent.click(screen.getByRole("button", { name: "Log Out" }));
 
-    // Mid-flight: button shows the loading label and is disabled.
+    // Mid-flight: button shows the loading label and is disabled, and we have
+    // not navigated yet.
     const loading = await screen.findByRole("button", { name: "Logging out…" });
     expect(loading).toBeDisabled();
+    expect(mockReplace).not.toHaveBeenCalled();
 
-    // Resolve the logout: button returns to its default enabled state.
     resolveLogout();
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+  });
+
+  it("re-enables the button and stays put if the logout fails", async () => {
+    mockLogoutAdmin.mockRejectedValue(new Error("boom"));
+    render(<LogoutButton />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Log Out" }));
+
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: "Log Out" }),
       ).not.toBeDisabled(),
     );
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

@@ -27,10 +27,7 @@ export function registerSetSeatsSwappedHandler(socket: Socket, io: Server) {
   registerDirectorBoardRuling(socket, io, {
     event: SocketEvents.SET_SEATS_SWAPPED_TRAVELLER,
     schema: payloadSchema,
-    apply: (
-      db,
-      { section, roundNumber, tableNumber, boardNumber, swapped },
-    ) =>
+    apply: (db, { section, roundNumber, tableNumber, boardNumber, swapped }) =>
       setBoardSeatsSwapped(
         db,
         { section, roundNumber, tableNumber, boardNumber },

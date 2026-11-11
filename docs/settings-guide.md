@@ -6,7 +6,6 @@ game. Open it from the **⚙ cog** in the top-right of the home screen.
 Settings has these options:
 
 - **WiFi Settings**
-- **Club Information**
 - **BridgeWebs**
 - **EBU**
 - **Cloud Backup**
@@ -55,21 +54,6 @@ credentials.
 
 ---
 
-## Club Information
-
-Records your club's details, which identify the club on published results and
-on the files you export.
-
-1. Open **Settings → Club Information**.
-2. Enter the **Club Name** and the **EBU Club Number**. Both are needed.
-3. Tap **Save**. You'll see **Club info saved**.
-
-Until these are set, no results file can be made — the **Export & Publish**
-screen shows **Club information** as **Not ready** (see the
-[Director Guide](director-guide.md#exporting-and-publishing-results)).
-
----
-
 ## BridgeWebs
 
 Connects the Bridge Box to your club's **BridgeWebs** website, so that:
@@ -96,17 +80,29 @@ Publishing needs the Bridge Box to be connected to the internet (see
 
 ## EBU
 
-Connects the Bridge Box to your club's **EBU** account, so a director can
-**Submit to EBU** from **Export & Publish** at the end of a session — for
-masterpoints and NGS grading.
+Records your club's details and, optionally, connects the Bridge Box to your
+club's **EBU** account.
+
+- The **Club Name** and **EBU Club Number** identify the club on published
+  results and on the files you export. Both are needed.
+- The **EBU Password** is only needed if a director will **Submit to EBU** from
+  **Export & Publish** at the end of a session, for masterpoints and NGS
+  grading. You can leave it empty and add it later.
 
 1. Open **Settings → EBU**.
-2. Enter the **EBU Club Number** and the **EBU Password**.
-3. Tap **Save**. You'll see **EBU settings saved**.
+2. Enter the **Club Name** and the **EBU Club Number**.
+3. If you will submit results to the EBU, enter the **EBU Password**.
+4. Tap **Save**. You'll see **EBU settings saved**.
 
-As with BridgeWebs, both are needed the first time; afterwards you can leave
-the password blank to keep the saved one, and the saved password is never shown
-again. Submitting needs the Bridge Box to be connected to the internet.
+Until the club name and number are set, no results file can be made — the
+**Export & Publish** screen shows **Club information** as **Not ready** (see
+the [Director Guide](director-guide.md#exporting-and-publishing-results)).
+
+Once a password is saved the screen says **A password is saved. Leave blank to
+keep it.** — so to change only the club details, leave the password empty. The
+saved password is never shown again; to change it, type the new one.
+Submitting needs the Bridge Box to be connected to the internet (see
+[WiFi Settings](#wifi-settings)).
 
 ---
 
@@ -141,7 +137,7 @@ in future.
 ## Log Out
 
 Tap **Log Out** at the bottom of the Settings screen to lock the settings again
-on this device. The next time anyone opens a protected setting on this device,
+on this device. You are taken back to the home screen. The next time anyone opens a protected setting on this device,
 they will need to enter the admin key.
 
 Use this on a shared phone or tablet when you have finished changing settings,

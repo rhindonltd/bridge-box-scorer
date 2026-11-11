@@ -2,7 +2,10 @@ import { Server, Socket } from "socket.io";
 import { z } from "zod";
 
 import { SocketEvents } from "@/socket/socket-events";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import {
   previewNextSwissTeamsRound,

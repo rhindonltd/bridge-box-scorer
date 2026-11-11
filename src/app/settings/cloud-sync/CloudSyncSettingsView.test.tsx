@@ -1,9 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import {
-  CloudSyncSettingsView,
-  relativeTime,
-} from "./CloudSyncSettingsView";
+import { CloudSyncSettingsView, relativeTime } from "./CloudSyncSettingsView";
 import type { CloudSyncStatus } from "@/lib/system/cloud-sync";
 
 function status(overrides: Partial<CloudSyncStatus> = {}): CloudSyncStatus {
@@ -61,6 +58,13 @@ describe("CloudSyncSettingsView", () => {
     );
 
     expect(screen.getByText(/not enabled/i)).toBeInTheDocument();
+    // A bold headline, like the WiFi "can't be changed on this device" screen.
+    expect(
+      screen.getByRole("heading", {
+        name: "Cloud backup is not enabled on this box",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Game data is kept locally/)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /back up now/i }),
     ).not.toBeInTheDocument();
@@ -130,9 +134,7 @@ describe("CloudSyncSettingsView", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("button", { name: /backing up/i }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /backing up/i })).toBeDisabled();
   });
   const renderWith = (st: CloudSyncStatus, message: string | null = null) =>
     render(

@@ -111,7 +111,12 @@ export interface ResolvedPlayStateResponse {
 /** The within-round position carried by a resolved `round` phase. */
 export type ResolvedWithinRound =
   | { at: "entering"; boardNumber: number }
-  | { at: "waitingConfirmation"; boardNumber: number }
+  | {
+      at: "waitingConfirmation";
+      boardNumber: number;
+      /** The result this seat submitted (shown while it waits). */
+      result?: string;
+    }
   | {
       at: "mismatch";
       boardNumber: number;
@@ -126,7 +131,16 @@ export type PlayState =
   | { state: "loading" }
   | { state: "roundInfo"; roundIndex: number }
   | { state: "enterContract"; roundIndex: number; boardIndex: number }
-  | { state: "waiting"; roundIndex: number; boardIndex: number }
+  | {
+      state: "waiting";
+      roundIndex: number;
+      boardIndex: number;
+      /**
+       * The result this seat just entered, shown on the waiting screen.
+       * Optional: absent when it is not known (e.g. an older resolved state).
+       */
+      result?: string;
+    }
   | {
       state: "mismatch";
       roundIndex: number;
@@ -170,7 +184,7 @@ export type PlayState =
  */
 export type PlayAction =
   | { type: "enterRound" }
-  | { type: "submit"; boardNumber: number }
+  | { type: "submit"; boardNumber: number; result?: string }
   | { type: "reenter" }
   | { type: "boardResultsNext" }
   /** Leave the post-round team results summary (teams game only). */
@@ -243,7 +257,12 @@ export function playStateFromResolved(
           // round entry rather than a bad index.
           /* v8 ignore next */
           if (boardIndex === -1) return { state: "roundInfo", roundIndex };
-          return { state: "waiting", roundIndex, boardIndex };
+          return {
+            state: "waiting",
+            roundIndex,
+            boardIndex,
+            ...(position.result ? { result: position.result } : {}),
+          };
         }
 
         case "mismatch": {
@@ -359,11 +378,18 @@ export function playReducer(
       const boardIndex = round.boards.indexOf(action.boardNumber);
       if (boardIndex === -1) return prev;
 
-      return { state: "waiting", roundIndex: prev.roundIndex, boardIndex };
+      return {
+        state: "waiting",
+        roundIndex: prev.roundIndex,
+        boardIndex,
+        ...(action.result ? { result: action.result } : {}),
+      };
     }
 
     case "reenter": {
-      if (prev.state !== "mismatch") return prev;
+      // From a mismatch, or from "waiting" when the player backs out to fix
+      // their entry (the hook has already cleared it server-side).
+      if (prev.state !== "mismatch" && prev.state !== "waiting") return prev;
       return {
         state: "enterContract",
         roundIndex: prev.roundIndex,

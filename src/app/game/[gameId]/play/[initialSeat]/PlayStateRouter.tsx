@@ -40,6 +40,7 @@ export type PlayHandlers = Pick<
   | "handleReenter"
   | "handleEnterRound"
   | "submitResult"
+  | "withdrawSubmission"
   | "submitDeal"
 >;
 
@@ -149,6 +150,8 @@ export function PlayStateRouter({
       return (
         <WaitingForConfirmation
           boardNumber={boardNumber}
+          result={playState.result}
+          onBack={handlers.withdrawSubmission}
           headerRight={headerRight}
         />
       );

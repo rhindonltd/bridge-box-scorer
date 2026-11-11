@@ -32,16 +32,19 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
     backAction,
+    actions,
     children,
   }: {
     headerTitle: string;
     backAction?: () => void;
+    actions?: React.ReactNode;
     children: React.ReactNode;
   }) => (
     <div>
       <h1>{headerTitle}</h1>
       {backAction && <button onClick={backAction}>back-action</button>}
       {children}
+      <div>{actions}</div>
     </div>
   ),
 }));
@@ -50,13 +53,16 @@ vi.mock("@/app/game/[gameId]/manage/travellers/SelectBoardPage", () => ({
   SelectBoardPage: ({
     boards,
     onBoardSelected,
+    actions,
   }: {
     boards: number[];
     onBoardSelected: (n: number) => void;
+    actions?: React.ReactNode;
   }) => (
     <div>
       <span data-testid="boards">{boards.join(",")}</span>
       <button onClick={() => onBoardSelected(3)}>pick-board</button>
+      {actions}
     </div>
   ),
 }));
@@ -181,6 +187,98 @@ describe("EnterDealsWizard", () => {
     expect(
       await screen.findByText("Failed to save the deal"),
     ).toBeInTheDocument();
+  });
+
+  describe("PBN import", () => {
+    /** A legal deal; the parser does not care which board it is for. */
+    const DEAL =
+      "N:.63.AKQ987.A9732 A8654.KQ5.T.QJT6 J973.J98742.3.K4 KQT2.AT.J6542.85";
+    const pbn = (...boards: number[]) =>
+      boards.map((n) => `[Board "${n}"]\n[Deal "${DEAL}"]\n`).join("\n");
+
+    function openImport() {
+      fireEvent.click(screen.getByText("Import from PBN file"));
+    }
+    const paste = (text: string) =>
+      fireEvent.change(screen.getByLabelText("Or paste PBN text"), {
+        target: { value: text },
+      });
+
+    it("opens the import step from the board list and returns with back", () => {
+      render(<EnterDealsWizard onDealSaved={vi.fn()} />);
+      openImport();
+      expect(screen.getByLabelText("PBN file")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("back-action"));
+      expect(screen.getByTestId("boards")).toBeInTheDocument();
+    });
+
+    it("emits DEAL_IMPORT_BULK with the director token and the in-event boards", async () => {
+      mockEmitWithAck.mockResolvedValue({ saved: 2 });
+      render(<EnterDealsWizard onDealSaved={vi.fn()} />);
+      openImport();
+      paste(pbn(1, 2, 9)); // event boards are 1,2,3; board 9 is skipped
+      fireEvent.click(screen.getByRole("button", { name: "Import 2 boards" }));
+
+      await waitFor(() => expect(mockEmitWithAck).toHaveBeenCalled());
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.DEAL_IMPORT_BULK,
+        expect.objectContaining({
+          gameId: "g1",
+          directorToken: "dir-tok",
+          deals: [
+            expect.objectContaining({ boardNumber: 1 }),
+            expect.objectContaining({ boardNumber: 2 }),
+          ],
+        }),
+      );
+    });
+
+    it("shows the done screen, then calls onDealSaved when Done is pressed", async () => {
+      mockEmitWithAck.mockResolvedValue({ saved: 2 });
+      const onDealSaved = vi.fn();
+      render(<EnterDealsWizard onDealSaved={onDealSaved} />);
+      openImport();
+      paste(pbn(1, 2));
+      fireEvent.click(screen.getByRole("button", { name: "Import 2 boards" }));
+
+      expect(await screen.findByText("2 boards imported")).toBeVisible();
+      expect(onDealSaved).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole("button", { name: "Done" }));
+      expect(onDealSaved).toHaveBeenCalled();
+    });
+
+    it("keeps the pasted text and shows the error when the import fails", async () => {
+      mockEmitWithAck.mockRejectedValue(
+        new Error("Board 2 is not a complete deal"),
+      );
+      render(<EnterDealsWizard onDealSaved={vi.fn()} />);
+      openImport();
+      paste(pbn(1, 2));
+      fireEvent.click(screen.getByRole("button", { name: "Import 2 boards" }));
+
+      expect(
+        await screen.findByText("Board 2 is not a complete deal"),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText("Or paste PBN text")).toHaveValue(pbn(1, 2));
+      // Can try again.
+      expect(
+        screen.getByRole("button", { name: "Import 2 boards" }),
+      ).toBeEnabled();
+    });
+
+    it("uses a generic message when the import rejects with a non-Error", async () => {
+      mockEmitWithAck.mockRejectedValue("nope");
+      render(<EnterDealsWizard onDealSaved={vi.fn()} />);
+      openImport();
+      paste(pbn(1));
+      fireEvent.click(screen.getByRole("button", { name: "Import 1 board" }));
+
+      expect(
+        await screen.findByText("Failed to import the deals"),
+      ).toBeInTheDocument();
+    });
   });
 
   it("shows a spinner while the board's existing deal loads", () => {

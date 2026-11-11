@@ -2,9 +2,10 @@ import "server-only";
 
 import { Server } from "socket.io";
 import { getDb } from "@/db/games";
-import { Rooms } from "@/socket/rooms";
+import { Rooms, scorecardRoomPrefix } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
 import { buildLeaderboards } from "@/services/leaderboard-service";
+import { buildPairScorecard } from "@/services/scorecard-service";
 import {
   getBoardInstances,
   buildTeamTravellerMatches,
@@ -41,7 +42,13 @@ export async function broadcastLeaderboardChanged(
   gameId: string,
 ): Promise<void> {
   const leaderboardRoom = Rooms.leaderboard(gameId);
-  if (roomSize(io, leaderboardRoom) === 0) {
+  const wantLeaderboard = roomSize(io, leaderboardRoom) > 0;
+  // The same changes (a standing change, a Swiss round drawn) can move a
+  // pair's scorecard too — e.g. a withdrawn pair's missed boards now show as
+  // averages, or a new round's VP.
+  const scorecardSeats = occupiedScorecardSeats(io, gameId);
+
+  if (!wantLeaderboard && scorecardSeats.length === 0) {
     return;
   }
 
@@ -50,8 +57,49 @@ export async function broadcastLeaderboardChanged(
     return;
   }
 
-  const payload = await buildLeaderboardPayload(db, gameId);
-  io.to(leaderboardRoom).emit(SocketEvents.LEADERBOARD_SYNC, payload);
+  if (wantLeaderboard) {
+    const payload = await buildLeaderboardPayload(db, gameId);
+    io.to(leaderboardRoom).emit(SocketEvents.LEADERBOARD_SYNC, payload);
+  }
+
+  await pushScorecards(io, db, gameId, scorecardSeats);
+}
+
+/**
+ * The seats whose scorecard room is currently occupied in this game. Each
+ * seat has its own room (a pair sees only its own scorecard), so they are
+ * found by prefix rather than by a single room lookup.
+ */
+function occupiedScorecardSeats(io: Server, gameId: string): string[] {
+  const prefix = scorecardRoomPrefix(gameId);
+  const seats: string[] = [];
+  for (const [room, members] of io.sockets.adapter.rooms) {
+    if (room.startsWith(prefix) && members.size > 0) {
+      seats.push(room.slice(prefix.length));
+    }
+  }
+  return seats;
+}
+
+/**
+ * Recompute and push each occupied seat's scorecard. Any board result can
+ * move a pair's score on that board (its matchpoints depend on the whole
+ * field), so every open scorecard is refreshed — occupancy keeps it to only
+ * the scorecards someone is looking at.
+ */
+async function pushScorecards(
+  io: Server,
+  db: Db,
+  gameId: string,
+  seats: string[],
+): Promise<void> {
+  for (const seat of seats) {
+    const payload = await buildPairScorecard(db, gameId, seat);
+    io.to(Rooms.scorecard(gameId, seat)).emit(
+      SocketEvents.SCORECARD_SYNC,
+      payload,
+    );
+  }
 }
 
 /**
@@ -117,8 +165,14 @@ export async function broadcastResultsChanged(
   const wantLeaderboard = roomSize(io, leaderboardRoom) > 0;
   const wantTraveller = roomSize(io, travellerRoom) > 0;
   const wantRoundResults = roomSize(io, roundResultsRoom) > 0;
+  const scorecardSeats = occupiedScorecardSeats(io, gameId);
 
-  if (!wantLeaderboard && !wantTraveller && !wantRoundResults) {
+  if (
+    !wantLeaderboard &&
+    !wantTraveller &&
+    !wantRoundResults &&
+    scorecardSeats.length === 0
+  ) {
     return;
   }
 
@@ -144,4 +198,6 @@ export async function broadcastResultsChanged(
     const payload = await buildRoundResultsBoardPayload(db, boardNumber);
     io.to(roundResultsRoom).emit(SocketEvents.ROUND_RESULTS_SYNC, payload);
   }
+
+  await pushScorecards(io, db, gameId, scorecardSeats);
 }

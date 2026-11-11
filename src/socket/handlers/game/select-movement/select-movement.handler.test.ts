@@ -215,7 +215,10 @@ describe("registerSelectMovementHandler (unit)", () => {
       cb,
     );
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal error" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Internal error",
+    });
     errSpy.mockRestore();
   });
 

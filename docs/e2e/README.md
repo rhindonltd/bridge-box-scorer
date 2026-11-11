@@ -27,7 +27,7 @@ can be reported precisely.
 | [`06-director-rulings.md`](06-director-rulings.md) | Director corrections: override, adjusted score, weighted score, cancel/foul, void (pairs), void (teams), board removal (teams), Swiss mismatch |
 | [`07-special-scoring.md`](07-special-scoring.md) | EBU scoring subtleties: Neuberg / short-board equalisation, AVE+/AVE− better-than-average uplift, sit-out/bye credit, how absent pairs and substitutions **score** |
 | [`08-timer-sync-display.md`](08-timer-sync-display.md) | Session timer config & live controls, live multi-device sync, Room Display (leaderboard + timer), multi-section cycling |
-| [`09-settings-admin-cloud.md`](09-settings-admin-cloud.md) | Settings: admin unlock, WiFi, Club Information, **Cloud Backup**, update admin key, logout |
+| [`09-settings-admin-cloud.md`](09-settings-admin-cloud.md) | Settings: admin unlock, WiFi, club details & EBU, **Cloud Backup**, update admin key, logout |
 | [`10-sharing-export-lifecycle.md`](10-sharing-export-lifecycle.md) | Share director access (header menu), change device / seat transfer, USEBIO & PBN export, BridgeWebs upload, delete game & completed-game redirect |
 | [`11-withdrawals-late-arrivals.md`](11-withdrawals-late-arrivals.md) | The director's **Pairs** screen; **expected-late** seats; **late arrivals**; **withdrawal** (player and director); **AVE− / AVE+ vs Remove**; **reinstating** a withdrawn pair |
 | [`12-handover-substitution.md`](12-handover-substitution.md) | **Handovers** (same device, different device, director); the returning-pair rules; **substitution** scoring (Split / Main pair / Eligible) |

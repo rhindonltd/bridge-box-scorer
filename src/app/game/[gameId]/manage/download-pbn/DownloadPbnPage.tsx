@@ -39,7 +39,7 @@ export function DownloadPbnPage({
 
     if (!clubConfigured) {
       setError(
-        "Club name and EBU number must be set in Settings before exporting.",
+        "Club name and EBU number must be set in Settings → EBU before exporting.",
       );
       return;
     }
@@ -123,7 +123,7 @@ export function DownloadPbnPage({
             <p className="text-sm text-gray-600 mb-4">
               This exports the entered deals as a PBN (Portable Bridge Notation)
               file, one block per board. The club name is used as the PBN site.
-              To change it, edit Club Information in Settings.
+              To change it, go to Settings → EBU.
             </p>
 
             <dl className="space-y-4">
@@ -142,7 +142,8 @@ export function DownloadPbnPage({
           </>
         ) : (
           <p className="text-sm text-red-600">
-            Club name and EBU number must be set in Settings before exporting.
+            Club name and EBU number must be set in Settings → EBU before
+            exporting.
           </p>
         )}
 

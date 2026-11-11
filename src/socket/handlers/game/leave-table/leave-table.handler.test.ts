@@ -35,7 +35,10 @@ function getHandler(socket: any) {
   const call = socket.on.mock.calls.find(
     (c: any) => c[0] === SocketEvents.LEAVE_TABLE,
   );
-  return call![1] as (payload: unknown, cb: (r: unknown) => void) => Promise<void>;
+  return call![1] as (
+    payload: unknown,
+    cb: (r: unknown) => void,
+  ) => Promise<void>;
 }
 
 describe("registerLeaveTableHandler", () => {
@@ -61,10 +64,7 @@ describe("registerLeaveTableHandler", () => {
     registerLeaveTableHandler(socket, io);
     const cb = vi.fn();
 
-    await getHandler(socket)(
-      { gameId: "g1", seat: "A1NS", token: "tok" },
-      cb,
-    );
+    await getHandler(socket)({ gameId: "g1", seat: "A1NS", token: "tok" }, cb);
 
     expect(assertPlayer).toHaveBeenCalledWith(
       "g1",
@@ -85,10 +85,7 @@ describe("registerLeaveTableHandler", () => {
     registerLeaveTableHandler(socket, makeIo());
     const cb = vi.fn();
 
-    await getHandler(socket)(
-      { gameId: "g1", seat: "A1NS", token: "bad" },
-      cb,
-    );
+    await getHandler(socket)({ gameId: "g1", seat: "A1NS", token: "bad" }, cb);
 
     expect(deleteParticipant).not.toHaveBeenCalled();
     expect(broadcastParticipants).not.toHaveBeenCalled();
@@ -101,10 +98,7 @@ describe("registerLeaveTableHandler", () => {
     registerLeaveTableHandler(socket, makeIo());
     const cb = vi.fn();
 
-    await getHandler(socket)(
-      { gameId: "g1", seat: "A1NS", token: "tok" },
-      cb,
-    );
+    await getHandler(socket)({ gameId: "g1", seat: "A1NS", token: "tok" }, cb);
 
     expect(deleteParticipant).not.toHaveBeenCalled();
     expect(broadcastParticipants).not.toHaveBeenCalled();
@@ -121,10 +115,7 @@ describe("registerLeaveTableHandler", () => {
     registerLeaveTableHandler(socket, makeIo());
     const cb = vi.fn();
 
-    await getHandler(socket)(
-      { gameId: "g1", seat: "A1NS", token: "tok" },
-      cb,
-    );
+    await getHandler(socket)({ gameId: "g1", seat: "A1NS", token: "tok" }, cb);
 
     // Infra failures no longer leak the raw message; the wrapper acks a generic
     // error and logs the detail server-side.

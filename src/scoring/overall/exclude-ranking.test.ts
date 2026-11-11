@@ -86,17 +86,19 @@ describe("applyRankingExclusion", () => {
     expect(applyRankingExclusion(score, new Set(["ZZ"]))).toBe(score);
   });
 
-  it("ranks an MP line with a zero maxMP as 0", () => {
+  it("ranks an MP line with a zero maxMP at the 50% it is shown at", () => {
     const score = mpScore([
       { pairId: "A1NS", totalMP: 0, maxMP: 0 },
       { pairId: "A2NS", totalMP: 10, maxMP: 24 },
       { pairId: "A3NS", totalMP: 5, maxMP: 24 },
+      { pairId: "A4NS", totalMP: 18, maxMP: 24 },
     ]);
     const result = applyRankingExclusion(
       score,
       new Set(["A3NS"]),
     ) as PairMatchpointOverallScore;
-    expect(result.lines.map((l) => l.pairId)).toEqual(["A2NS", "A1NS"]);
+    // A4NS 75% > A1NS (no boards, 50%) > A2NS 41.7%.
+    expect(result.lines.map((l) => l.pairId)).toEqual(["A4NS", "A1NS", "A2NS"]);
   });
 
   // Each variant is re-ranked on its own value, highest first.

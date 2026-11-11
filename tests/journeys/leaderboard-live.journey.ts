@@ -43,12 +43,12 @@ test.describe("Leaderboard live updates", () => {
       // Two pairs at table 1 confirm board 1 through the real play UI.
       await confirmBoardPassOut(nsPage, ewPage, gameId, 1, 1);
 
-      // The already-open display rescored live, without reloading.
-      // Only the two pairs who played board 1 are scored, so only they are
-      // ranked now (the unscored baseline field is shown only until the first
-      // result lands).
+      // The already-open display rescored live, without reloading. The whole
+      // field stays listed: the two pairs who played board 1 are scored, and
+      // the two still waiting for a result keep their starting-point row
+      // rather than dropping off the standings.
       await expect(standings).not.toHaveText(before, { timeout: 15000 });
-      await expect(displayPage.getByTestId("leaderboard-row")).toHaveCount(2);
+      await expect(displayPage.getByTestId("leaderboard-row")).toHaveCount(4);
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

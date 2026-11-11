@@ -58,7 +58,8 @@ function lineId(line: OverallScore["lines"][number]): string {
 function rankValue(line: Record<string, unknown>): number {
   if ("totalMP" in line) {
     const maxMP = line.maxMP as number;
-    return maxMP > 0 ? (line.totalMP as number) / maxMP : 0;
+    // No matchpoints available yet (maxMP 0): rank at the 50% it is shown at.
+    return maxMP > 0 ? (line.totalMP as number) / maxMP : 0.5;
   }
   if ("crossImps" in line) return line.crossImps as number;
   if ("imps" in line) return line.imps as number;

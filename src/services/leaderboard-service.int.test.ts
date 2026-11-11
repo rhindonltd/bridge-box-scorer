@@ -103,8 +103,10 @@ describe("section-aware leaderboard (real scoring)", () => {
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
-        ns: "A1",
-        ew: "A2",
+        // Board rows carry the seat's board id (the seat itself for a
+        // direction-qualified movement), matching the seated roster.
+        ns: "A1NS",
+        ew: "A1EW",
         confirmedResult: "3NTN+1" as BoardOutcome,
         status: "CONFIRMED" as const,
       },
@@ -113,8 +115,8 @@ describe("section-aware leaderboard (real scoring)", () => {
         roundNumber: 1,
         tableNumber: 1,
         boardNumber: 1,
-        ns: "B1",
-        ew: "B2",
+        ns: "B1NS",
+        ew: "B1EW",
         confirmedResult: "3NTN=" as BoardOutcome,
         status: "CONFIRMED" as const,
       },
@@ -171,6 +173,48 @@ describe("section-aware leaderboard (real scoring)", () => {
     // The per-section leaderboard lists them too.
     const [a] = await computeSectionLeaderboards(db, gameId);
     expect(a.overallScore.lines).toHaveLength(2);
+  });
+
+  it("keeps listing seated pairs with no results once other pairs have results", async () => {
+    const db = await setup();
+    const { boards } = await import("@/db/games/tables/boards");
+    const { computeLeaderboard, computeSectionLeaderboards } =
+      await import("./leaderboard-service");
+
+    // Two tables seated, but only table 1 has a result so far.
+    await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
+    await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
+    db.insert(boards)
+      .values(
+        [
+          {
+            section: "A",
+            roundNumber: 1,
+            tableNumber: 1,
+            boardNumber: 1,
+            ns: "A1NS",
+            ew: "A1EW",
+            confirmedResult: "3NTN+1" as BoardOutcome,
+            status: "CONFIRMED" as const,
+          },
+        ].map(withFixtureMatchId),
+      )
+      .run();
+
+    const combined = await computeLeaderboard(db, gameId);
+    const ids = combined.overallScore.lines.map((l: any) => l.pairId).sort();
+    // Table 2's pairs have no results yet but are still listed (and named).
+    expect(ids).toEqual(["A1EW", "A1NS", "A2EW", "A2NS"]);
+    const a2 = combined.overallScore.lines.find(
+      (l: any) => l.pairId === "A2NS",
+    ) as any;
+    expect(a2).toMatchObject({ totalMP: 0, maxMP: 0 });
+    expect(combined.participants.map((p) => p.id)).toContain("A2NS");
+    // Places stay contiguous from 1.
+    expect(Math.min(...combined.overallScore.lines.map((l) => l.rank))).toBe(1);
+
+    const [a] = await computeSectionLeaderboards(db, gameId);
+    expect(a.overallScore.lines).toHaveLength(4);
   });
 
   it("credits a Swiss sit-out pair 60% of the board top under matchpoints", async () => {

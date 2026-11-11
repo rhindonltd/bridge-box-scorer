@@ -16,8 +16,14 @@ vi.mock("@/socket/broadcast/participant-broadcast", () => ({
 vi.mock("@/socket/handlers/results/broadcast-results", () => ({
   broadcastLeaderboardChanged: vi.fn().mockResolvedValue(undefined),
 }));
+// A minimal Socket.IO server: `to(room).emit(...)` records the emit.
+const { mockIo, mockTo, mockEmit } = vi.hoisted(() => {
+  const mockEmit = vi.fn();
+  const mockTo = vi.fn(() => ({ emit: mockEmit }));
+  return { mockIo: { marker: "io", to: mockTo }, mockTo, mockEmit };
+});
 vi.mock("@/socket/websocket", () => ({
-  getIO: vi.fn(() => ({ marker: "io" })),
+  getIO: vi.fn(() => mockIo),
 }));
 
 import { getDb } from "@/db/games";
@@ -50,10 +56,14 @@ describe("DELETE /api/games/[gameId]/participants/[seat]", () => {
     expect(deleteParticipant).toHaveBeenCalledWith("g1", "A1NS");
     expect(broadcastParticipants).toHaveBeenCalledWith("g1");
     // The evicted pair must drop off the leaderboard live too.
-    expect(broadcastLeaderboardChanged).toHaveBeenCalledWith(
-      { marker: "io" },
-      "g1",
-    );
+    expect(broadcastLeaderboardChanged).toHaveBeenCalledWith(mockIo, "g1");
+    // The evicted device (on its waiting screen) is told it lost its seat so
+    // it returns to seat selection.
+    expect(mockTo).toHaveBeenCalledWith("game:g1");
+    expect(mockEmit).toHaveBeenCalledWith("game:seatEvicted", {
+      gameId: "g1",
+      seat: "A1NS",
+    });
   });
 
   it("blocks eviction once the game has started (F27)", async () => {

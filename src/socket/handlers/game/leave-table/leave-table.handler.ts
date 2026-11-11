@@ -8,7 +8,10 @@ import { deleteParticipant } from "@/db/games/actions/delete-participant";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { PairSeat } from "@/model/participants";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),

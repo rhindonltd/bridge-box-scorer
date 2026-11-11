@@ -36,7 +36,10 @@ function listenerFor<TPayload, TData>(
 ) {
   const socket = makeSocket();
   registerHandler(socket, makeIo(), event, definition);
-  return socket.on.mock.calls[0][1] as (payload: unknown, cb?: any) => Promise<void>;
+  return socket.on.mock.calls[0][1] as (
+    payload: unknown,
+    cb?: any,
+  ) => Promise<void>;
 }
 
 describe("registerHandler", () => {
@@ -47,17 +50,17 @@ describe("registerHandler", () => {
     registerHandler(socket, makeIo(), "test:event", {
       handler: async () => {},
     });
-    expect(socket.on).toHaveBeenCalledWith(
-      "test:event",
-      expect.any(Function),
-    );
+    expect(socket.on).toHaveBeenCalledWith("test:event", expect.any(Function));
   });
 
   it("passes the validated payload to the handler and acks success", async () => {
     const schema = z.object({ name: z.string() });
     const handler = vi.fn(
       async (ctx: HandlerContext<{ name: string }, { greeting: string }>) => {
-        ctx.ack({ success: true, data: { greeting: `hi ${ctx.payload.name}` } });
+        ctx.ack({
+          success: true,
+          data: { greeting: `hi ${ctx.payload.name}` },
+        });
       },
     );
     const listener = listenerFor({ schema, handler });
@@ -115,7 +118,10 @@ describe("registerHandler", () => {
 
     await listener({}, cb);
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal error" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Internal error",
+    });
     expect(mockLog.error).toHaveBeenCalled();
   });
 

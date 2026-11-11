@@ -57,7 +57,7 @@ export const POST = withDirectorRoute(
     if (result.status === "blocked") {
       const error =
         result.reason === "club"
-          ? "Club info not configured. Set club name and number in Settings."
+          ? "Club info not configured. Set the club name and EBU number in Settings → EBU."
           : "EBU is not configured. Add your EBU number and password in Settings.";
       return NextResponse.json({ success: false, error }, { status: 400 });
     }

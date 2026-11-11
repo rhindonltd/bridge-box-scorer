@@ -128,7 +128,7 @@ The heart of the app: both sides enter the **same** board and it confirms.
 | ☐ PLAY-1 | Tap **Enter Round**. | Tap **Enter Round**. | Both enter the contract wizard. | | |
 | ☐ PLAY-2 | If asked, tap the first **board number**. | Same board. | "Enter Contract". | | |
 | ☐ PLAY-3 | **Level** 4 → **Suit** 4♠ → **Declarer** South, double **None** → **Result** Made, **=**. | Same choices. | Each step advances; lands on **Confirm**. | | |
-| ☐ PLAY-4 | **Confirm:** summary reads `4♠ by South, Made`. Tap **Submit**. | — | NS shows **"Waiting for confirmation"**. | | |
+| ☐ PLAY-4 | **Confirm:** summary reads `4♠ by South, Made`. Tap **Submit**. | — | NS shows **"Waiting for confirmation"**, with **You entered** `4♠S=` (the result just submitted) underneath. | | |
 | ☐ PLAY-5 | — | Submit the matching result. | The board **confirms**; both devices show the **Board Results** (traveller). | | |
 
 > With **Record Opening Lead = Yes**, an **Opening Lead** step appears between
@@ -164,10 +164,10 @@ The heart of the app: both sides enter the **same** board and it confirms.
 
 | Check | Step | Expected | Actual | Comments |
 |---|---|---|---|---|
-| ☐ XFER-1 | On the NS play screen, open the **Menu** (top-right). Confirm it lists **Handover**, **Withdraw**, **Change device** and **Pair details** (handover and withdrawal are covered in files [12](12-handover-substitution.md) and [11](11-withdrawals-late-arrivals.md)). Tap **Change device**. | A short code + "Once the code is used, this device will be signed out of the seat." | | |
+| ☐ XFER-1 | On the NS play screen, open the **Menu** (top-right). Confirm it lists **Scorecard**, **Handover**, **Withdraw**, **Change device** and **Pair details** (handover and withdrawal are covered in files [12](12-handover-substitution.md) and [11](11-withdrawals-late-arrivals.md)). Tap **Change device**. | A **Change device** screen (not a pop-up) with a short code + "Once the code is used, this device will be signed out of the seat." The header back arrow returns to play. | | |
 | ☐ XFER-2 | On a spare device: **Join Game → "Manual Test Pairs"** → the seat-transfer entry ("Move a seat to this device") → enter the code → **Take over seat**. | The spare takes the NS seat and lands on the play screen. | | |
 | ☐ XFER-3 | Check the original NS device. | Signed out of the seat: shows a "This seat has moved to another device" screen with a **Back to main menu** button, and no longer controls the seat. Tapping **Back to main menu** returns home. | | |
-| ☐ XFER-4 | On the active device, **Menu → Pair details**. | Shows pair number, direction, both names. Tap **Done**. | | |
+| ☐ XFER-4 | On the active device, **Menu → Pair details**. | Shows the pair number (e.g. **Pair: 1NS**) and both names — no separate North–South line. Tap **Done**. | | |
 
 ---
 

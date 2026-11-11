@@ -12,7 +12,10 @@ import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
 import { confirmBoardResult } from "@/db/games/actions/set-board-result";
 import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 import { reconcileSubmissions } from "./reconcile-submissions";
 
 const payloadSchema = z.object({

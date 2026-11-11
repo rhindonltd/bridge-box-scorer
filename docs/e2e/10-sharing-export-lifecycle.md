@@ -38,7 +38,7 @@ home for it.)
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ XFER-1 | On a player's play screen, **Menu → Change device**. | A short code + a warning the device will be signed out of the seat once used. |
+| ☐ XFER-1 | On a player's play screen, **Menu → Change device**. | A **Change device** screen (not a pop-up) with a short code + a warning the device will be signed out of the seat once used. The header back arrow returns to play. |
 | ☐ XFER-2 | On a spare device: **Join Game → the game → Move a seat to this device** → enter the code → **Take over seat**. | The spare takes the seat and lands on the play screen. **No names are asked for**: it is the same pair. |
 | ☐ XFER-3 | The original device. | "This seat has moved to another device", with **Back to main menu**; it no longer controls the seat. |
 | ☐ XFER-4 | DIRECTOR **Pairs**. | The seat is still **Active** with the **same** pair. A change of device is not a substitution. |

@@ -330,7 +330,7 @@ example, to correct a board and then return to enter your own table's result.
 | **Set Up Game**           | Returns to the Tables / Movements / Timer setup tabs. Shown only before the game starts. |
 | **Manage Tables**         | Opens the Tables view while the game is in progress — to withdraw, mark late, or re-seat pairs. |
 | **Travellers**            | View results by board, correct any that were entered wrong, and make director rulings (see [Correcting results](#correcting-results)). |
-| **Enter Deals**           | Enter or correct the dealt cards (the four hands) for any board.          |
+| **Enter Deals**           | Enter or correct the dealt cards (the four hands) for any board, or import them all from a dealing machine's PBN file (see [Importing the deals from a PBN file](#importing-the-deals-from-a-pbn-file)). |
 | **Movement**              | View or change the movement; in a Swiss event, draw the next round.       |
 | **Timer**                 | The live timer controls: start, pause, step between phases, add or take off time (see [Controlling a running timer](#controlling-a-running-timer)). |
 | **Review Mismatches**     | _Swiss events only._ Check for pairs or teams that were drawn against the wrong opponents after a result was corrected (see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches)). |
@@ -621,6 +621,63 @@ or correct any board at any time.
 Every board's cards are the same across sections, so a board only needs its
 deal entered once.
 
+### Importing the deals from a PBN file
+
+If your boards were dealt by a dealing machine (such as a Duplimate), the
+machine can give you a **PBN** file (ending in `.pbn`) holding every board's
+hands. Import it instead of entering the hands one board at a time, whether by
+you or by the players.
+
+**Get the file onto your phone or tablet first.** The Bridge Box only needs the
+file on the device you are directing from. Email it to yourself, send it with
+AirDrop, or save it to a cloud drive, then open it from that device. You don't
+need an internet connection for the import itself: it works over the Bridge Box
+network.
+
+1. From the Manage Game Menu, tap **Enter Deals**, then **Import from PBN
+   file** at the bottom of the screen.
+2. Tap the file chooser under **PBN file** (its button reads "Choose file" or
+   "Browse", depending on your device) and pick the `.pbn` file. If your
+   device won't let you pick it, open the file, copy its text and paste it into
+   **Or paste PBN text** instead.
+3. Check the preview before importing. It tells you how many boards were found
+   in the file and how many of the event's boards are missing, for example "32
+   boards found, 0 missing". It may also list:
+   - **Event boards not in the file** — boards your event plays that the file
+     doesn't cover. These keep whatever hands they already have.
+   - **Not in this event, so skipped** — boards in the file that your event
+     doesn't play. They are ignored.
+   - Boards in red that couldn't be read, with the reason (see below). The
+     other boards can still be imported.
+4. Tap **Import {n} boards**. When it finishes you see "{n} boards imported";
+   tap **Done** to go back to the Manage Game Menu.
+
+**Importing replaces existing hands.** For every board in the import, the hands
+from the file take the place of any hands already entered, including ones
+players typed in. Boards that aren't in the file are left alone. You can import
+at any time, before or during play, and anyone looking at those boards sees the
+hands appear straight away.
+
+Only the hands are read from the file. The dealer and vulnerability still follow
+the board number as usual, and anything else in the file (players, results,
+bidding and play) is ignored.
+
+If the file has no board numbers, the boards are numbered 1, 2, 3 and so on in
+the order they appear in the file.
+
+**If something goes wrong**
+
+| What you see | What it means |
+| --- | --- |
+| "That file is too large to be a PBN deal file." | The file isn't a normal deal file. Check you picked the right one. |
+| "Could not read that file. Try pasting its text instead." | Your device couldn't open the file. Copy its text and paste it instead. |
+| "Deal is incomplete (one or more hands are not given)" | The file has a board with a missing hand. Fix the hand with **Enter Deals** after importing the others. |
+| "Board {n} appears more than once; the first one was used" | The file lists the same board twice. Only the first is imported. |
+| "Game has no Board number" or "Invalid board number" | Some boards have no usable number while others do. Fix the file, or enter that board by hand. |
+| "Game has no Deal" | A board in the file has no hands. |
+| "Board {n} is not a complete deal" after tapping Import | The Bridge Box rejected the deal, and **nothing** was imported. Fix the file and try again. |
+| "Failed to import the deals", "Failed to save deals", or "Timeout waiting for deal:importBulk" | The import didn't complete, usually because the connection dropped. Nothing was imported, and the file or text you chose is still there; tap Import again. |
+
 ---
 
 ## Sharing director access
@@ -658,7 +715,7 @@ top:
   boards they are (round, table and board, with the pairs who should play it),
   so you know who to chase.
 - **Club information** — the club name and EBU number. Without them no results
-  file can be made; set them in **Settings → Club Information**.
+  file can be made; set them in **Settings → EBU**.
 - **BridgeWebs** and **EBU** — whether this Bridge Box is set up to publish to
   each (in **Settings → BridgeWebs** and **Settings → EBU**). These are
   optional: if one isn't set up, only that upload is unavailable.

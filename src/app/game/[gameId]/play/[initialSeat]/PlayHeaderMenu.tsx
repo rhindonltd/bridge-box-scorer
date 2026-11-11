@@ -10,12 +10,13 @@ import {
 import { useAssignment } from "@/context/AssignmentContext";
 import { GameContext } from "@/context/GameContext";
 import { useIsDirector } from "@/hooks/use-is-director";
+import { useSections } from "@/hooks/sections";
+import { parseSeat } from "@/model/participants";
 import {
   PlayManageSwitch,
   usePlayManageSwitchItem,
 } from "@/components/game/PlayManageSwitch";
 import { useShareDirectorAccessItem } from "@/components/game/useShareDirectorAccessItem";
-import { ChangeDeviceButton } from "./ChangeDeviceButton";
 import { PairDetailsDialog } from "./PairDetailsDialog";
 
 interface Props {
@@ -32,10 +33,11 @@ interface Props {
 
 /**
  * The shared play-header hamburger menu. Sits in each play screen's header
- * right-hand slot and offers the actions available during play. Today that is
- * "Change device" (hand this seat to another device) and "Pair details" (this
- * pair's number and players). Future actions such as "Call director" slot in as
- * additional {@link HeaderMenuItem}s below.
+ * right-hand slot and offers the actions available during play: Handover,
+ * Withdraw (pairs events), "Change device" (hand this seat to another device)
+ * — each its own page — and "Pair details" (this pair's number and players, a
+ * dialog). Future actions such as "Call director" slot in as additional
+ * {@link HeaderMenuItem}s below.
  *
  * The pair shown in "Pair details" comes from {@link useAssignment}, so it is
  * available in every play state without a per-screen lookup.
@@ -50,8 +52,19 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   const game = useContext(GameContext)?.game;
   const canWithdraw =
     game?.gameType === "PAIRS" && game.eventFormat !== "SWISS";
+  // The personal Scorecard is for pairs events (incl. Swiss Pairs) only.
+  const hasScorecard = game?.gameType === "PAIRS";
 
-  const [changeDeviceOpen, setChangeDeviceOpen] = useState(false);
+  // "Pair details" shows the section only when the game has more than one.
+  const { sections } = useSections(gameId);
+  const multiSection = sections.length > 1;
+  let seatSection: string | null = null;
+  try {
+    seatSection = parseSeat(seat).section;
+  } catch {
+    seatSection = null;
+  }
+
   const [pairDetailsOpen, setPairDetailsOpen] = useState(false);
 
   // The play→manage switch, for a director device. It shows as a visible
@@ -64,6 +77,19 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   const items: HeaderMenuItem[] = [
     // Screen-specific view options (e.g. Results / Deal) come first.
     ...extraItems,
+    // The pair's own results so far (pairs events only) — its own page.
+    ...(hasScorecard
+      ? [
+          {
+            label: "Scorecard",
+            onSelect: () =>
+              router.push(`/game/${gameId}/play/${seat}/scorecard`),
+          },
+        ]
+      : []),
+    // Read-only info about this pair sits with the Scorecard, apart from the
+    // actions below that change or leave the game. It stays a dialog.
+    { label: "Pair details", onSelect: () => setPairDetailsOpen(true) },
     // "Handover" is always available mid-game: an arriving pair can take over
     // this seat at any time (a latecomer replacing a stand-in, a substitute
     // replacing a withdrawing pair, …). Whether either pair is "without
@@ -82,8 +108,12 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
           },
         ]
       : []),
-    { label: "Change device", onSelect: () => setChangeDeviceOpen(true) },
-    { label: "Pair details", onSelect: () => setPairDetailsOpen(true) },
+    // Actions with steps or a consequence (this device loses the seat) open
+    // their own page.
+    {
+      label: "Change device",
+      onSelect: () => router.push(`/game/${gameId}/play/${seat}/change-device`),
+    },
     // A director's play→manage switch (folded / small-screen form). The visible
     // form is the `sm`+ button rendered below.
     ...(isDirector ? [{ ...manageItem, className: "sm:hidden" }] : []),
@@ -98,19 +128,12 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
 
       <HeaderMenu items={items} label="Menu" />
 
-      <ChangeDeviceButton
-        gameId={gameId}
-        seat={seat}
-        variant="none"
-        open={changeDeviceOpen}
-        onOpenChange={setChangeDeviceOpen}
-      />
-
       <PairDetailsDialog
         open={pairDetailsOpen}
         onOpenChange={setPairDetailsOpen}
         pair={pair}
         pairId={assignment?.id ?? null}
+        section={multiSection ? seatSection : null}
       />
     </span>
   );

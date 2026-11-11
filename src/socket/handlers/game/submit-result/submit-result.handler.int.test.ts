@@ -75,8 +75,9 @@ vi.mock("@/db/games/queries/find-submissions", () => ({
       tableNumber: number,
       roundNumber: number,
     ) =>
-      submissionStore.get(storeKey(gameId, section, tableNumber, roundNumber)) ??
-      [],
+      submissionStore.get(
+        storeKey(gameId, section, tableNumber, roundNumber),
+      ) ?? [],
   ),
 }));
 
@@ -125,14 +126,17 @@ describe("registerSubmitResultHandler (integration)", () => {
     // Restore the stateful default for findBoardSubmissions. The handler only
     // reads `side`/`boardNumber`/`result` off each row, so the minimal
     // FakeSubmission shape is sufficient; cast to the real signature for TS.
-    vi.mocked(findBoardSubmissions).mockImplementation((async (
-      gameId: string,
-      section: string,
-      tableNumber: number,
-      roundNumber: number,
-    ) =>
-      submissionStore.get(storeKey(gameId, section, tableNumber, roundNumber)) ??
-      []) as unknown as typeof findBoardSubmissions);
+    vi.mocked(findBoardSubmissions).mockImplementation(
+      (async (
+        gameId: string,
+        section: string,
+        tableNumber: number,
+        roundNumber: number,
+      ) =>
+        submissionStore.get(
+          storeKey(gameId, section, tableNumber, roundNumber),
+        ) ?? []) as unknown as typeof findBoardSubmissions,
+    );
   });
 
   afterEach(async () => {
@@ -642,9 +646,8 @@ describe("registerSubmitResultHandler (integration)", () => {
   });
 
   it("reports failure when persisting the submission throws (catch block)", async () => {
-    const { createBoardSubmission } = await import(
-      "@/db/games/actions/create-submission"
-    );
+    const { createBoardSubmission } =
+      await import("@/db/games/actions/create-submission");
     vi.mocked(createBoardSubmission).mockRejectedValueOnce(
       new Error("db write failed"),
     );
@@ -689,9 +692,8 @@ describe("registerSubmitResultHandler (integration)", () => {
       return false;
     }) as unknown as typeof assertPlayer);
 
-    const { createBoardSubmission } = await import(
-      "@/db/games/actions/create-submission"
-    );
+    const { createBoardSubmission } =
+      await import("@/db/games/actions/create-submission");
 
     const { client, close } = await createSocketTestServer((io) => {
       io.on("connection", (socket: Socket) => {

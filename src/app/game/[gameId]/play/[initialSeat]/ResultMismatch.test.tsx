@@ -45,9 +45,7 @@ describe("ResultMismatch", () => {
 
     // Header uses the board number when both boards match.
     expect(screen.getByTestId("header")).toHaveTextContent("Board 5");
-    expect(
-      screen.getByText(/entered different results/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/entered different results/)).toBeInTheDocument();
     // No per-board "Board N:" prefixes rendered.
     expect(screen.queryByText(/Board 5:/)).not.toBeInTheDocument();
 

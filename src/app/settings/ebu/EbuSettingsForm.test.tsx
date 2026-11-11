@@ -2,13 +2,17 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { EbuSettingsForm } from "./EbuSettingsForm";
 
-function setup(over: Partial<React.ComponentProps<typeof EbuSettingsForm>> = {}) {
+function setup(
+  over: Partial<React.ComponentProps<typeof EbuSettingsForm>> = {},
+) {
   const props = {
+    clubName: "",
     ebuNumber: "",
     password: "",
     configured: false,
     saving: false,
     message: null as string | null,
+    onClubNameChange: vi.fn(),
     onEbuNumberChange: vi.fn(),
     onPasswordChange: vi.fn(),
     onSave: vi.fn((e: React.FormEvent) => e.preventDefault()),
@@ -22,9 +26,13 @@ function setup(over: Partial<React.ComponentProps<typeof EbuSettingsForm>> = {})
 describe("EbuSettingsForm", () => {
   it("reports edits and saves", () => {
     const p = setup();
+    fireEvent.change(screen.getByLabelText("Club Name"), {
+      target: { value: "Anytown BC" },
+    });
     fireEvent.change(screen.getByLabelText("EBU Club Number"), {
       target: { value: "123" },
     });
+    expect(p.onClubNameChange).toHaveBeenCalledWith("Anytown BC");
     fireEvent.change(screen.getByLabelText("EBU Password"), {
       target: { value: "pw" },
     });
@@ -40,9 +48,18 @@ describe("EbuSettingsForm", () => {
     expect(p.onBack).toHaveBeenCalled();
   });
 
-  it("asks for a password when not configured", () => {
+  it("shows the club name and number fields first, prefilled", () => {
+    setup({ clubName: "Anytown BC", ebuNumber: "1234" });
+    expect(screen.getByLabelText("Club Name")).toHaveValue("Anytown BC");
+    expect(screen.getByLabelText("EBU Club Number")).toHaveValue("1234");
+  });
+
+  it("explains the password is only needed for EBU submission when not configured", () => {
     setup();
     expect(screen.getByPlaceholderText("Enter password")).toBeInTheDocument();
+    expect(screen.getByLabelText("EBU Password")).toHaveAccessibleDescription(
+      /Only needed to submit results to the EBU/,
+    );
     expect(screen.queryByText(/A password is saved/)).not.toBeInTheDocument();
   });
 
@@ -62,11 +79,13 @@ describe("EbuSettingsForm", () => {
   it("styles success and error messages", () => {
     const { unmount } = render(
       <EbuSettingsForm
+        clubName=""
         ebuNumber=""
         password=""
         configured={false}
         saving={false}
         message="✅ EBU settings saved"
+        onClubNameChange={vi.fn()}
         onEbuNumberChange={vi.fn()}
         onPasswordChange={vi.fn()}
         onSave={vi.fn()}

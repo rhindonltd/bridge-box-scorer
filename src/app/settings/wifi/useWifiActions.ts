@@ -112,9 +112,7 @@ export function useWifiActions() {
       } else {
         // Surface the real reason from the server (e.g. a helper/sudo failure)
         // so a misconfiguration is diagnosable, not masked as a bad password.
-        setMessage(
-          body?.error ? `❌ ${body.error}` : "❌ Failed to connect",
-        );
+        setMessage(body?.error ? `❌ ${body.error}` : "❌ Failed to connect");
       }
       return connected;
     } catch {

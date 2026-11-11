@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmBoardPassOut } from "../fixtures/play";
 import { fillAndSaveFullDeal } from "../fixtures/deal-entry";
+import { buildPbnFile } from "../fixtures/pbn-import";
 import {
   closeSeatDevices,
   setUpStartedTwoTableGame,
@@ -19,6 +20,8 @@ import {
  *      player's board-results traveller.
  *   3. The director enters/corrects a board's deal from the Manage Game Menu's
  *      "Enter Deals" option.
+ *   4. The director imports every board's hands from a dealing-machine PBN
+ *      file, and a player's open traveller shows the hand live.
  *
  * Games record no opening lead so the play wizard stays short.
  */
@@ -157,6 +160,91 @@ test.describe("Board deal capture", () => {
       const dealItem = nsPage.getByRole("menuitem", { name: "Deal", exact: true });
       // The "Deal" item only appears once the live deal has arrived, so this
       // also waits out the push.
+      await expect(dealItem).toBeVisible({ timeout: 15000 });
+      await dealItem.click();
+      await expect(nsPage.getByTestId("deal-display")).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await closeSeatDevices(seats);
+    }
+  });
+
+  test("the director imports a PBN file and the hands show live on a player's traveller", async ({
+    browser,
+    request,
+  }) => {
+    test.setTimeout(120_000);
+
+    const { directorPage, gameId, seats } = await setUpStartedTwoTableGame(
+      browser,
+      `Deal Import ${Date.now()}`,
+      { recordOpeningLead: false },
+    );
+    const nsPage = seats["A1NS"];
+    const ewPage = seats["A1EW"];
+
+    try {
+      // The event's boards, and round 1's first board so a player is parked on
+      // a board-results traveller (which will receive the hand live).
+      const boardsRes = await request.get(`/api/games/${gameId}/boards`);
+      expect(boardsRes.ok()).toBeTruthy();
+      const eventBoards: number[] = (await boardsRes.json()).result.boards;
+      expect(eventBoards.length).toBeGreaterThan(0);
+
+      const res = await request.get(`/api/games/${gameId}/play-state/A1NS`);
+      expect(res.ok()).toBeTruthy();
+      const schedule: Schedule = (await res.json()).result;
+      const board = schedule.rounds.find((r) => r.roundNumber === 1)!.boards[0];
+      await confirmBoardPassOut(nsPage, ewPage, gameId, 1, board);
+
+      // Director: Enter Deals -> Import from PBN file. (gotoStable rides out
+      // the StartedGuard's brief redirect.)
+      await gotoStable(directorPage, `/game/${gameId}/manage/deals`);
+      const importButton = directorPage.getByRole("button", {
+        name: "Import from PBN file",
+      });
+      await expect(importButton).toBeVisible({ timeout: 15000 });
+      await importButton.click();
+
+      // Choose a file the way a phone would, via the native file input.
+      await directorPage.getByLabel("PBN file", { exact: true }).setInputFiles({
+        name: "club-night.pbn",
+        mimeType: "text/plain",
+        buffer: Buffer.from(buildPbnFile(eventBoards)),
+      });
+
+      // The preview accounts for every board in the event.
+      const preview = directorPage.getByTestId("import-preview");
+      await expect(preview).toContainText(
+        `${eventBoards.length} ${eventBoards.length === 1 ? "board" : "boards"} found, 0 missing`,
+        { timeout: 15000 },
+      );
+      await expect(preview).toContainText("will be replaced");
+
+      await directorPage
+        .getByRole("button", { name: /^Import \d+ boards?$/ })
+        .click();
+      await expect(
+        directorPage.getByText(/\d+ boards? imported/),
+      ).toBeVisible({ timeout: 15000 });
+
+      // Done returns the director to the Manage Game Menu.
+      await directorPage.getByRole("button", { name: "Done" }).click();
+      await expect(directorPage).toHaveURL(
+        new RegExp(`/game/${gameId}/manage$`),
+        { timeout: 15000 },
+      );
+
+      // The player's still-mounted traveller received the hand live: the
+      // header menu gains a "Deal" option, which shows the hand diagram.
+      await nsPage.getByRole("button", { name: "Menu" }).click();
+      const dealItem = nsPage.getByRole("menuitem", {
+        name: "Deal",
+        exact: true,
+      });
       await expect(dealItem).toBeVisible({ timeout: 15000 });
       await dealItem.click();
       await expect(nsPage.getByTestId("deal-display")).toBeVisible({

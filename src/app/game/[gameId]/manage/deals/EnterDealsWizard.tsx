@@ -17,6 +17,8 @@ import {
   useTravellerContext,
 } from "@/context/TravellerContext";
 import { Deal } from "@/model/common";
+import type { ParsedPbnBoard } from "@/model/pbn-file";
+import { ImportDealsPage } from "@/app/game/[gameId]/manage/deals/ImportDealsPage";
 
 interface EnterDealsWizardProps {
   onDealSaved: () => void;
@@ -67,27 +69,55 @@ function EnterDealForBoard({
  * existing deal, so the grid is pre-filled with the current deal when there is
  * one.
  *
- * This is the manual-entry surface. A future dealing-machine file import would
- * add a sibling step here (parse a PBN/.dlm file into deals and save each board
- * through the same `deal:override` path) without changing storage.
+ * This is the manual-entry surface. Alongside it, "Import from PBN file" loads
+ * every board's hands from a dealing-machine PBN file in one step
+ * (`deal:importBulk`, always overwriting existing hands).
  */
 export function EnterDealsWizard({ onDealSaved }: EnterDealsWizardProps) {
   type Step =
     | { step: "selectBoard" }
     | { step: "enterDeal"; boardNumber: number }
+    | { step: "import" }
     | { step: "saving" };
 
   const { game } = useRequiredGame();
   const [step, setStep] = useState<Step>({ step: "selectBoard" });
   const [error, setError] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importedCount, setImportedCount] = useState<number | null>(null);
 
   const { data: boardsData, isLoading: boardsLoading } = useSWR<{
     boards: number[];
   }>(
-    step.step === "selectBoard" ? swrKeys.boards(game.gameId) : null,
+    step.step === "selectBoard" || step.step === "import"
+      ? swrKeys.boards(game.gameId)
+      : null,
     fetcher,
   );
   const boards = boardsData?.boards ?? [];
+
+  async function importDeals(deals: ParsedPbnBoard[]) {
+    setIsImporting(true);
+    setImportError(null);
+    try {
+      const result = await emitWithAck<{ saved: number }>(
+        SocketEvents.DEAL_IMPORT_BULK,
+        {
+          gameId: game.gameId,
+          directorToken: getDirectorToken(game.gameId),
+          deals,
+        },
+      );
+      setImportedCount(result.saved);
+    } catch (err) {
+      setImportError(
+        err instanceof Error ? err.message : "Failed to import the deals",
+      );
+    } finally {
+      setIsImporting(false);
+    }
+  }
 
   async function saveDeal(boardNumber: number, deal: Deal) {
     setStep({ step: "saving" });
@@ -121,8 +151,36 @@ export function EnterDealsWizard({ onDealSaved }: EnterDealsWizardProps) {
             onBoardSelected={(boardNumber) =>
               setStep({ step: "enterDeal", boardNumber })
             }
+            actions={
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setImportError(null);
+                  setImportedCount(null);
+                  setStep({ step: "import" });
+                }}
+                className="w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                Import from PBN file
+              </button>
+            }
           />
         </>
+      );
+
+    case "import":
+      return (
+        <ImportDealsPage
+          eventBoards={boards}
+          boardsLoading={boardsLoading}
+          isImporting={isImporting}
+          error={importError}
+          importedCount={importedCount}
+          onImport={importDeals}
+          onBack={() => setStep({ step: "selectBoard" })}
+          onDone={onDealSaved}
+        />
       );
 
     case "enterDeal":

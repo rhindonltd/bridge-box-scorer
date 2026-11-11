@@ -40,9 +40,14 @@ export const SocketEvents = {
   // seat room; each device checks whether its own seat moved and, if so, adopts
   // the new seat (its auth secret is unchanged). Pre-start only.
   SEAT_RENUMBERED: "game:seatRenumbered",
+  // Server-initiated: the director evicted the pair at a seat (pre-start only).
+  // Broadcast to the game room carrying the evicted seat, because the evicted
+  // device has not joined any seat room; the device holding that seat clears its
+  // token and returns to the main menu.
+  SEAT_EVICTED: "game:seatEvicted",
   // NOTE: participant eviction is an HTTP route
   // (DELETE /api/games/[gameId]/participants/[seat]), not a socket event; it
-  // broadcasts PARTICIPANTS from that route.
+  // broadcasts PARTICIPANTS and SEAT_EVICTED from that route.
   // Client-initiated (director): set a seated contestant's EBU §2.4 standing
   // (WITHDRAWN / LATE / WITHOUT_STANDING / back to ACTIVE). A scored event, so
   // it broadcasts PARTICIPANTS + a fresh leaderboard snapshot.
@@ -99,6 +104,9 @@ export const SocketEvents = {
 
   // Client initiated - Board result submission
   SUBMIT_RESULT: "game:submitResult",
+  // Client initiated - a pair withdraws its own pending (unconfirmed)
+  // submission to re-enter it. Deletes only that side's row.
+  WITHDRAW_SUBMISSION: "game:withdrawSubmission",
 
   // Server initiated - Board results
   BOARD_RESULT_UPDATED: "game:boardResultUpdated",
@@ -148,6 +156,15 @@ export const SocketEvents = {
   // ack) and join that board's traveller room; matching leave on switch/unmount.
   REQUEST_STATE_TRAVELLER: "traveller:requestState",
   LEAVE_TRAVELLER: "traveller:leave",
+
+  // Server initiated - a pair's personal Scorecard (per seat)
+  SCORECARD_SYNC: "scorecard:sync",
+  // Client-initiated: request this seat's scorecard snapshot (returned on the
+  // ack) and join that seat's scorecard room; matching leave on unmount. Any
+  // board result can move this pair's score on that board, so results changes
+  // push a fresh snapshot to every OCCUPIED scorecard room for the game.
+  REQUEST_STATE_SCORECARD: "scorecard:requestState",
+  LEAVE_SCORECARD: "scorecard:leave",
   // Server-initiated: a board's results changed while someone is viewing the
   // end-of-round team results summary. Carries the single changed board's
   // instances; the client merges it into the boards it is showing.
@@ -194,8 +211,11 @@ export const SocketEvents = {
   // later submissions are told it already exists.
   DEAL_SUBMIT: "deal:submit",
   // Client-initiated (director): enter or overwrite the dealt cards for a
-  // board. Also the entry point a future dealing-machine file import reuses.
+  // board.
   DEAL_OVERRIDE: "deal:override",
+  // Client-initiated (director): import many boards' deals at once from a
+  // dealing-machine PBN file. All-or-nothing; always overwrites existing deals.
+  DEAL_IMPORT_BULK: "deal:importBulk",
 
   // Client-initiated (director): draw the next Swiss Pairs round from the
   // current standings. Only valid once the current round is fully scored and

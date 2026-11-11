@@ -24,7 +24,7 @@ export const GET = withDirectorRoute(async ({ db, gameId }) => {
       {
         success: false,
         error:
-          "Club info not configured. Set club name and number in settings.",
+          "Club info not configured. Set the club name and EBU number in Settings → EBU.",
       },
       { status: 400 },
     );

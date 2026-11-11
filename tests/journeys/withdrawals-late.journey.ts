@@ -41,7 +41,7 @@ async function absences(
 }
 
 test.describe("A pair withdraws from its own phone", () => {
-  test("Cancel changes nothing; withdrawing signs the device out and moves the opponent on", async ({
+  test("Going back changes nothing; withdrawing signs the device out and moves the opponent on", async ({
     browser,
   }) => {
     test.setTimeout(120_000);
@@ -57,15 +57,25 @@ test.describe("A pair withdraws from its own phone", () => {
       // Menu -> Withdraw offers a page that explains what happens.
       await leaver.getByRole("button", { name: "Menu" }).click();
       await leaver.getByRole("menuitem", { name: "Withdraw" }).click();
+      // The bold headline (a heading, so Next.js's page announcer also reads
+      // it out to screen readers on arrival).
       await expect(
-        leaver.getByText(/Withdraw your pair from the event\?/),
+        leaver.getByRole("heading", {
+          name: "Withdraw your pair from the event?",
+        }),
       ).toBeVisible({ timeout: 15000 });
       await expect(
         leaver.getByText(/Results you.ve already entered stand/),
       ).toBeVisible();
 
-      // Cancel: still Active on the director's Pairs screen.
-      await leaver.getByRole("button", { name: "Cancel" }).click();
+      // One action only: there is no Cancel button; the header back arrow
+      // cancels. Afterwards the pair is still Active on the director's screen.
+      await expect(leaver.getByRole("button", { name: "Cancel" })).toHaveCount(
+        0,
+      );
+      await leaver
+        .getByRole("button", { name: "Go back", exact: true })
+        .click();
       await gotoStable(director, `/game/${game.gameId}/manage/pairs`);
       const row = director.getByRole("listitem").filter({ hasText: "1NS" });
       await expect(row.getByText("Active", { exact: true })).toBeVisible({
@@ -75,7 +85,9 @@ test.describe("A pair withdraws from its own phone", () => {
       // Withdraw for real.
       await leaver.getByRole("button", { name: "Menu" }).click();
       await leaver.getByRole("menuitem", { name: "Withdraw" }).click();
-      await leaver.getByRole("button", { name: "Withdraw our pair" }).click();
+      await leaver
+        .getByRole("button", { name: "Withdraw", exact: true })
+        .click();
       await expect(leaver.getByText(/Your pair has withdrawn/)).toBeVisible({
         timeout: 15000,
       });

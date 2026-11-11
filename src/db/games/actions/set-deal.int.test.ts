@@ -78,6 +78,54 @@ describe("deals query/action layer", () => {
     expect(row?.source).toBe("DIRECTOR");
   });
 
+  it("upsertDeals saves every board and overwrites an existing deal", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { insertDealIfAbsent, upsertDeals } = await import(
+      "@/db/games/actions/set-deal"
+    );
+    const { getDealHands, getDealRow } = await import(
+      "@/db/games/queries/get-deal"
+    );
+
+    // Board 2 was entered by a player; the import must replace it.
+    await insertDealIfAbsent(db, 2, buildValidDeal());
+
+    await upsertDeals(db, [
+      { boardNumber: 1, deal: buildValidDeal() },
+      { boardNumber: 2, deal: buildOtherDeal() },
+      { boardNumber: 3, deal: buildValidDeal() },
+    ]);
+
+    expect(await getDealHands(db, 1)).toEqual(buildValidDeal());
+    expect(await getDealHands(db, 2)).toEqual(buildOtherDeal());
+    expect(await getDealHands(db, 3)).toEqual(buildValidDeal());
+    expect((await getDealRow(db, 2))?.source).toBe("DIRECTOR");
+  });
+
+  it("upsertDeals writes nothing when any deal is incomplete", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { insertDealIfAbsent, upsertDeals } = await import(
+      "@/db/games/actions/set-deal"
+    );
+    const { getDealHands } = await import("@/db/games/queries/get-deal");
+
+    await insertDealIfAbsent(db, 2, buildValidDeal());
+    const broken = buildValidDeal();
+    broken.S = broken.S.slice(0, 12);
+
+    await expect(
+      upsertDeals(db, [
+        { boardNumber: 1, deal: buildOtherDeal() },
+        { boardNumber: 2, deal: buildOtherDeal() },
+        { boardNumber: 3, deal: broken },
+      ]),
+    ).rejects.toThrow(/board 3/);
+
+    expect(await getDealHands(db, 1)).toBeNull();
+    expect(await getDealHands(db, 2)).toEqual(buildValidDeal());
+    expect(await getDealHands(db, 3)).toBeNull();
+  });
+
   it("getDealHands returns null when no deal exists", async () => {
     const db = (await harness.getDb()) as Db;
     const { getDealHands } = await import("@/db/games/queries/get-deal");

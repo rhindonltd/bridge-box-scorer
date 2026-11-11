@@ -64,6 +64,9 @@ describe("registerLeaveGameHandler (unit)", () => {
 
     await handler({ gameId: "game-1" }, cb);
 
-    expect(cb).toHaveBeenCalledWith({ success: false, error: "Internal error" });
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Internal error",
+    });
   });
 });

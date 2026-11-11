@@ -342,7 +342,8 @@ function scoreBoardsToOverall(
  */
 function pairRankValue(line: OverallScore["lines"][number]): number {
   if ("totalMP" in line) {
-    return line.maxMP > 0 ? line.totalMP / line.maxMP : 0;
+    // No matchpoints available yet (maxMP 0): rank at the 50% it is shown at.
+    return line.maxMP > 0 ? line.totalMP / line.maxMP : 0.5;
   }
   /* v8 ignore next -- unreachable: IMP has no pairs overall plugin, so a pairs overall never carries `imps` lines (see the guard in scoreBoardsToOverall) */
   if ("imps" in line) return line.imps;
@@ -459,31 +460,44 @@ function padBaselineLines(
   rosterIds: string[],
   excludedIds: ReadonlySet<string>,
 ): OverallScore {
-  // Only seed the baseline field when NOTHING has been scored yet — i.e. before
-  // any board is played. Once results exist, the scored lines are keyed by each
-  // seat's materialised scoring id (which, for non-direction-qualified
-  // movements, differs from the seat id this roster uses), so matching roster
-  // ids against them is unreliable; and a seated pair with results already
-  // appears. A pair that is seated but has no results mid-event (late arrival,
-  // withdrawal) is handled by the dedicated §2.4 credit logic, not here.
-  if (overallScore.lines.length > 0) return overallScore;
-
-  const baselineIds = rosterIds.filter((id) => !excludedIds.has(id));
+  // Pad per competitor: every roster id that has no scored line yet gets a
+  // baseline line, whether nothing has been played or only part of the field
+  // has results. The roster ids are the participants' board ids (`anchorId ??
+  // initialSeat`, see `toParticipant`; a team's home NS seat) — the same ids
+  // the board rows, and therefore the scored lines, are keyed on, and the same
+  // ids the views resolve names against. So a competitor with results is
+  // matched and left untouched; only the gaps are filled.
+  const scoredIds = new Set(overallScore.lines.map(lineIdOf));
+  const baselineIds = rosterIds.filter(
+    (id) => !excludedIds.has(id) && !scoredIds.has(id),
+  );
   if (baselineIds.length === 0) return overallScore;
+
+  // Re-rank the merged field on the same value the scorers sort on so places
+  // stay contiguous. Strip the scored lines' old rank/tied first.
+  const merged = [
+    ...overallScore.lines.map(({ rank: _rank, tied: _tied, ...rest }) => rest),
+    ...baselineIds.map((id) => baselineLine(overallScore.type, id)),
+  ] as OverallScore["lines"];
 
   return {
     ...overallScore,
-    lines: rank(
-      baselineIds.map((id) => baselineLine(overallScore.type, id)),
-      pairOrTeamRankValue,
-    ),
+    lines: rank(merged, pairOrTeamRankValue),
   } as OverallScore;
+}
+
+/** The ranking id of an overall line: `pairId` (pairs) or `teamId` (teams). */
+function lineIdOf(line: OverallScore["lines"][number]): string {
+  if ("pairId" in line) return line.pairId;
+  /* v8 ignore next -- every overall line carries either pairId or teamId */
+  return "teamId" in line ? line.teamId : "";
 }
 
 /** Rank value for any overall line variant (pairs or teams). */
 function pairOrTeamRankValue(line: OverallScore["lines"][number]): number {
-  /* v8 ignore next -- unreachable: only called on baseline lines, whose maxMP is always 0 */
-  if ("totalMP" in line) return line.maxMP > 0 ? line.totalMP / line.maxMP : 0;
+  // A pair with no boards yet (maxMP 0) ranks at the 50% it is shown at.
+  if ("totalMP" in line)
+    return line.maxMP > 0 ? line.totalMP / line.maxMP : 0.5;
   /* v8 ignore next -- unreachable: no pairs scoring produces `imps` lines (IMP is teams-only and has no pairs overall plugin) */
   if ("imps" in line) return line.imps;
   if ("crossImps" in line) return line.crossImps;

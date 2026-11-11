@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 
 import type { SeatedPair } from "@/context/AssignmentContext";
+import { stripSectionPrefix } from "@/model/pair-label";
 
 /** Full side name shown in the dialog (matches the waiting-screen wording). */
 const DIRECTION_LABEL: Record<"NS" | "EW", string> = {
@@ -18,15 +19,26 @@ interface Props {
   pair: SeatedPair | null;
   /** The pair's number, shown when a movement has been selected. */
   pairId: string | null;
+  /**
+   * The pair's section letter. Only passed for a multi-section game; when null
+   * no "Section:" line is shown.
+   */
+  section?: string | null;
 }
 
 /**
  * Shows the seated pair's own details: their pair number (once a movement is
- * set), which side they play, and the two players' names with each player's
+ * set; until then, the side they sat down at), and the two players' names with each player's
  * national/EBU number when one is on record. Presentational only — the pair
  * comes from {@link useAssignment}; this component just renders it.
  */
-export function PairDetailsDialog({ open, onOpenChange, pair, pairId }: Props) {
+export function PairDetailsDialog({
+  open,
+  onOpenChange,
+  pair,
+  pairId,
+  section = null,
+}: Props) {
   return (
     <Transition show={open} as={Fragment}>
       <Dialog onClose={() => onOpenChange(false)} className="relative z-50">
@@ -53,15 +65,35 @@ export function PairDetailsDialog({ open, onOpenChange, pair, pairId }: Props) {
             leaveTo="opacity-0 scale-95"
           >
             <Dialog.Panel className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-              <Dialog.Title className="mb-1 text-lg font-semibold text-gray-900">
-                {pairId != null ? `Pair ${pairId}` : "Pair details"}
+              <Dialog.Title
+                className={`${pairId == null ? "mb-1" : "mb-4"} text-lg font-semibold text-gray-900`}
+              >
+                {pairId != null ? (
+                  <>
+                    {section && (
+                      <span className="block">Section: {section}</span>
+                    )}
+                    <span className="block">
+                      Pair: {stripSectionPrefix(pairId)}
+                    </span>
+                  </>
+                ) : (
+                  "Pair details"
+                )}
               </Dialog.Title>
 
               {pair ? (
                 <>
-                  <p className="mb-4 text-sm text-gray-600">
-                    {DIRECTION_LABEL[pair.side]}
-                  </p>
+                  {/* The side is only shown before a movement gives the pair a
+                      number. Once it has one, a direction-qualified number
+                      ("1NS") already says it, and in a movement where pairs
+                      change direction (a Howell, "3") the starting seat's side
+                      would be misleading. */}
+                  {pairId == null && (
+                    <p className="mb-4 text-sm text-gray-600">
+                      {DIRECTION_LABEL[pair.side]}
+                    </p>
+                  )}
 
                   <ul className="flex flex-col gap-3">
                     {pair.players.map((player) => (

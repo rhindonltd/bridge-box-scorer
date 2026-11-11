@@ -4,58 +4,21 @@ import { unlockSettings, fetchAdminToken } from "./fixtures/settings";
 /**
  * Club Settings E2E Tests
  *
- * Tests the club information page (gated by the device admin key; unlocked via
- * `unlockSettings`) and the club API endpoint (ungated).
+ * The club's name and EBU number are edited on the EBU settings screen (see
+ * journeys/ebu-settings.journey.ts); there is no separate Club Information
+ * screen. These tests cover the club API endpoint the exports read from: GET is
+ * public, POST is gated by the device admin key.
  */
 
 test.describe("Club Settings", () => {
-  test("club settings page loads with heading", async ({ page, request }) => {
-    await unlockSettings(page, request);
-    await page.goto("/settings/club");
-    await expect(page.getByText("Club Information")).toBeVisible({
-      timeout: 10000,
-    });
-  });
-
-  test("club settings page shows Club Name field", async ({
+  test("the EBU settings screen has the Club Name field", async ({
     page,
     request,
   }) => {
     await unlockSettings(page, request);
-    await page.goto("/settings/club");
+    await page.goto("/settings/ebu");
     await expect(page.getByLabel("Club Name")).toBeVisible({ timeout: 10000 });
-  });
-
-  test("club settings page shows EBU Club Number field", async ({
-    page,
-    request,
-  }) => {
-    await unlockSettings(page, request);
-    await page.goto("/settings/club");
-    await expect(page.getByLabel("EBU Club Number")).toBeVisible({
-      timeout: 10000,
-    });
-  });
-
-  test("club settings page shows Save button", async ({ page, request }) => {
-    await unlockSettings(page, request);
-    await page.goto("/settings/club");
-    await expect(page.getByRole("button", { name: "Save" })).toBeVisible({
-      timeout: 10000,
-    });
-  });
-
-  test("club settings page shows a header back arrow", async ({
-    page,
-    request,
-  }) => {
-    await unlockSettings(page, request);
-    await page.goto("/settings/club");
-    // Back navigation is the shared header arrow (aria-label "Go back"), not an
-    // in-form "Back" button.
-    await expect(
-      page.getByRole("button", { name: "Go back", exact: true }),
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByLabel("EBU Club Number")).toBeVisible();
   });
 
   test("GET /api/system/club returns club data", async ({ request }) => {

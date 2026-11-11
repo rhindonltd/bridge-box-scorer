@@ -43,8 +43,12 @@ async function settingsPage(
   return page;
 }
 
-/** Fill the form and press Save. A blank password is left untouched. */
+/**
+ * Fill the form and press Save. The club name is always required, so it is
+ * filled too. A blank password is left untouched.
+ */
 async function save(page: Page, number: string, password: string) {
+  await page.getByLabel("Club Name").fill("E2E Bridge Club");
   await page.getByLabel("EBU Club Number").fill(number);
   if (password) await page.getByLabel("EBU Password").fill(password);
   await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -57,36 +61,52 @@ test.describe.serial("EBU settings", () => {
       await page.goto("/settings");
       await page.getByRole("link", { name: "EBU", exact: true }).click();
       await expect(page).toHaveURL(/\/settings\/ebu$/);
-      await expect(page.getByLabel("EBU Club Number")).toBeVisible({
+      await expect(page.getByLabel("Club Name")).toBeVisible({
         timeout: 15000,
       });
+      await expect(page.getByLabel("EBU Club Number")).toBeVisible();
       await expect(page.getByLabel("EBU Password")).toBeVisible();
     } finally {
       await page.context().close();
     }
   });
 
-  test("a first-time setup needs both a number and a password", async ({
+  test("a first-time setup needs a club name and number; the password is optional", async ({
     browser,
     request,
   }) => {
     const page = await settingsPage(browser, request);
-    // Present the screen as not-yet-configured whatever the device holds.
-    await page.route("**/api/system/ebu", (route) =>
-      route.request().method() === "GET"
-        ? route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify({
-              success: true,
-              result: { configured: false, ebuNumber: null },
-            }),
-          })
-        : route.abort(),
+    // Present the screen as not-yet-configured whatever the device holds, and
+    // capture what a save would send (without changing the device's settings).
+    let posted: unknown = null;
+    await page.route("**/api/system/ebu", (route) => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            result: { configured: false, ebuNumber: null },
+          }),
+        });
+      }
+      posted = route.request().postDataJSON();
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, result: {} }),
+      });
+    });
+    await page.route("**/api/system/club", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true, result: { club: null } }),
+      }),
     );
     try {
       await page.goto("/settings/ebu");
-      await expect(page.getByLabel("EBU Club Number")).toBeVisible({
+      await expect(page.getByLabel("Club Name")).toBeVisible({
         timeout: 15000,
       });
       await expect(page.getByLabel("EBU Password")).toHaveAttribute(
@@ -97,12 +117,23 @@ test.describe.serial("EBU settings", () => {
 
       // Nothing entered.
       await page.getByRole("button", { name: "Save", exact: true }).click();
-      await expect(page.getByText("EBU number is required")).toBeVisible();
+      await expect(page.getByText("Club name is required")).toBeVisible();
 
-      // A number but no password: still refused (nothing is sent).
+      // A name but no number.
+      await page.getByLabel("Club Name").fill("E2E Bridge Club");
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await expect(page.getByText("EBU number is required")).toBeVisible();
+      expect(posted).toBeNull();
+
+      // A name and number with no password is enough to save.
       await page.getByLabel("EBU Club Number").fill("123456");
       await page.getByRole("button", { name: "Save", exact: true }).click();
-      await expect(page.getByText("Password is required")).toBeVisible();
+      await expect(page.getByText("✅ EBU settings saved")).toBeVisible();
+      expect(posted).toEqual({
+        clubName: "E2E Bridge Club",
+        ebuNumber: "123456",
+        password: "",
+      });
     } finally {
       await page.context().close();
     }
@@ -137,6 +168,13 @@ test.describe.serial("EBU settings", () => {
       const status = await (await request.get("/api/system/ebu")).json();
       expect(status.result).toEqual({ configured: true, ebuNumber: "123456" });
       expect(JSON.stringify(status)).not.toContain("first-password");
+
+      // The same save set the club details the results files use.
+      const club = await (await request.get("/api/system/club")).json();
+      expect(club.result.club).toMatchObject({
+        name: "E2E Bridge Club",
+        clubNumber: "123456",
+      });
     } finally {
       await page.context().close();
     }

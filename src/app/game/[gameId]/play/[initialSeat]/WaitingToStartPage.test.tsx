@@ -24,18 +24,14 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
 }));
 
 const mockReplace = vi.fn();
+const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: mockReplace }),
+  useRouter: () => ({ replace: mockReplace, push: mockPush }),
 }));
 
 const mockLeaveTable = vi.fn();
 vi.mock("@/lib/game-service", () => ({
   leaveTable: (...args: unknown[]) => mockLeaveTable(...args),
-}));
-
-// The change-device affordance is covered by its own test; stub it here.
-vi.mock("@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceButton", () => ({
-  ChangeDeviceButton: () => <div data-testid="change-device-button" />,
 }));
 
 import { WaitingToStartPage } from "./WaitingToStartPage";
@@ -145,9 +141,10 @@ describe("WaitingToStartPage", () => {
     );
   });
 
-  it("renders the change-device affordance", () => {
+  it("opens the Change device page", () => {
     render(<WaitingToStartPage gameId="g1" seat={"A3NS" as Seat} />);
-    expect(screen.getByTestId("change-device-button")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Change device" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/play/A3NS/change-device");
   });
 
   it("hides the header back arrow (play-flow screen, not a stack)", () => {

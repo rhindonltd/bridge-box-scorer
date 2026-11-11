@@ -156,10 +156,10 @@ Use **F11-E**. Plant **A1NS** on the "withdrawing" device and **A3EW** on the
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ WD-1 | Withdrawing device: play header **Menu**. | A **Withdraw** item alongside Handover, Change device and Pair details. |
-| ☐ WD-2 | Tap **Withdraw**. | A **"Withdraw"** page: "Withdraw your pair from the event? You won't play any more boards, starting with the next board you haven't scored." and "Results you've already entered stand. This can't be undone from your device — if it's a mistake, ask the director." |
-| ☐ WD-3 | **Cancel**. | Back to play; DIRECTOR **Pairs** still shows 1NS **Active**. |
-| ☐ WD-4 | **Menu → Withdraw → Withdraw our pair**. | Header **"Withdrawn"**: "Your pair has withdrawn. Your opponents will be moved on, and the director will decide how the boards you miss are scored." **Done** goes home. |
+| ☐ WD-1 | Withdrawing device: play header **Menu**. | A **Withdraw** item alongside Pair details, Handover and Change device. |
+| ☐ WD-2 | Tap **Withdraw**. | A **"Withdraw"** page headed, in bold, **"Withdraw your pair from the event?"**, then "You won't play any more boards, starting with the next board you haven't scored." and "Results you've already entered stand. This can't be undone from your device — if it's a mistake, ask the director." |
+| ☐ WD-3 | Tap the header **back arrow** (there is no separate Cancel button — just the red **Withdraw** button at the bottom). | Back to play; DIRECTOR **Pairs** still shows 1NS **Active**. |
+| ☐ WD-4 | **Menu → Withdraw →** the red **Withdraw** button. | Header **"Withdrawn"**: "Your pair has withdrawn. Your opponents will be moved on, and the director will decide how the boards you miss are scored." **Done** goes home. |
 | ☐ WD-5 | Withdrawing device: **Join Game →** the event. | The **seat picker** (with 1NS taken), not the play screen: the device has been signed out of A1NS. |
 | ☐ WD-6 | Opponent device (A3EW), without a reload. | **Moved on**: it now shows **round 3**, table 2 against **A2NS** (boards 1–3). |
 | ☐ WD-7 | DIRECTOR **Pairs**. | **1NS** shows **Withdrawn**: "Withdrew in round 2 — 6 boards not played". |

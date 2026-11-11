@@ -32,10 +32,7 @@ type RoundResultsSnapshot = {
  * A failure computing the snapshot is treated as "no snapshot yet"
  * (`{ success: true, data: null }`), matching the traveller request handler.
  */
-export function registerRoundResultsRequestHandler(
-  socket: Socket,
-  io: Server,
-) {
+export function registerRoundResultsRequestHandler(socket: Socket, io: Server) {
   registerRoomBackedRequest<
     z.infer<typeof payloadSchema>,
     z.infer<typeof leaveSchema>,

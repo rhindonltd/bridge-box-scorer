@@ -26,10 +26,11 @@ export function HandoverDifferentDevicePage({
   return (
     <GamePageLayout
       headerTitle="Handover"
-      contentMode="scroll"
+      // The code panel is a fixed-size block: centre it on the page.
+      contentMode="center"
       backAction={onBack}
     >
-      <div className="flex flex-col gap-5 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
+      <div className="flex flex-col gap-5 px-6 py-6 max-w-sm w-full mx-auto">
         <ChangeDeviceView gameId={gameId} seat={seat} kind="HANDOVER" />
       </div>
     </GamePageLayout>

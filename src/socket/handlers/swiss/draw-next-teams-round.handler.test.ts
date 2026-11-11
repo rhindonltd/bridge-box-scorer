@@ -50,7 +50,12 @@ const matches = [
   { a: 2, b: 4 },
 ];
 const previewPayload = { gameId: "g1", section: "A", directorToken: "tok" };
-const commitPayload = { ...previewPayload, matches, byeTeamId: null, triple: null };
+const commitPayload = {
+  ...previewPayload,
+  matches,
+  byeTeamId: null,
+  triple: null,
+};
 
 function handlerFor(socket: any, event: string) {
   const call = socket.on.mock.calls.find((c: any[]) => c[0] === event);

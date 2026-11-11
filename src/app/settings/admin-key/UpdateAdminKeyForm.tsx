@@ -36,6 +36,8 @@ export function UpdateAdminKeyForm({
     <PageLayout
       headerTitle="Update Admin Key"
       backAction={onBack}
+      // Centre the form in the space between the header and the action bar.
+      centerContent={true}
       actions={
         <button
           type="submit"
@@ -50,7 +52,7 @@ export function UpdateAdminKeyForm({
       <form
         id="admin-key-form"
         onSubmit={onSave}
-        className="px-6 pt-6 max-w-sm w-full mx-auto"
+        className="px-6 py-6 max-w-sm w-full mx-auto"
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600">

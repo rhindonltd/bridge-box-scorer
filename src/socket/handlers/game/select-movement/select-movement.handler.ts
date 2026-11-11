@@ -8,7 +8,10 @@ import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
 import { setSelectedMovement } from "@/db/game-index/actions/set-selected-movement";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { SelectedMovement } from "@/model/selected-movement";
-import { registerHandler, HandlerError } from "@/socket/handlers/handler-wrapper";
+import {
+  registerHandler,
+  HandlerError,
+} from "@/socket/handlers/handler-wrapper";
 
 // The movement is either a Mitchell spec (validated downstream) or a stored
 // spec id + boardsPerRound. `mitchell` is kept as a passthrough object; its

@@ -66,14 +66,14 @@ function enteringPhase(
  * phase and then dispatch.
  */
 function withResolved(resolved: unknown) {
-  mockUseSWR.mockReturnValue({ data: resolved });
+  mockUseSWR.mockReturnValue({ data: resolved, mutate: mockRefreshResolved });
 }
 
+/** The SWR `mutate` (revalidate) returned for the play-state key. */
+const mockRefreshResolved = vi.fn();
+
 /** Convenience: a resolved state on round 0, entering its first board. */
-function withEnteringRound(
-  rounds: ReturnType<typeof round>[],
-  roundIndex = 0,
-) {
+function withEnteringRound(rounds: ReturnType<typeof round>[], roundIndex = 0) {
   const first = rounds[roundIndex].boards[0];
   withResolved({
     assignmentId: "A1",
@@ -182,6 +182,7 @@ describe("usePlayFlow", () => {
     const position: ResolvedWithinRound = {
       at: "waitingConfirmation",
       boardNumber: 2,
+      result: "4SN=",
     };
     withResolved({
       assignmentId: "A1",
@@ -191,10 +192,13 @@ describe("usePlayFlow", () => {
     });
 
     const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+    // The entered result comes back too, so the waiting screen can show it
+    // after the player returns to the screen.
     expect(result.current.playState).toEqual({
       state: "waiting",
       roundIndex: 0,
       boardIndex: 1,
+      result: "4SN=",
     });
   });
 
@@ -281,11 +285,13 @@ describe("usePlayFlow", () => {
     // Player picks the second board of the round in the wizard.
     act(() => result.current.submitResult(2, "4SE="));
 
-    // waiting state tracks board 2 (index 1), and the emit carries board 2.
+    // waiting state tracks board 2 (index 1) and the entered result (shown on
+    // the waiting screen), and the emit carries board 2.
     expect(result.current.playState).toEqual({
       state: "waiting",
       roundIndex: 0,
       boardIndex: 1,
+      result: "4SE=",
     });
     expect(socketEmit).toHaveBeenCalledWith(
       SocketEvents.SUBMIT_RESULT,
@@ -347,6 +353,26 @@ describe("usePlayFlow", () => {
       });
     });
 
+    it("revalidates the schedule so the confirmed board drops off the board picker", () => {
+      withEnteringRound([round(1, [1, 2])]);
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+      mockRefreshResolved.mockClear();
+
+      act(() => result.current.handleEnterRound());
+      act(() => result.current.submitResult(1, "3NTN="));
+      act(() =>
+        onConfirmedHandler()({
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 1,
+        }),
+      );
+
+      expect(mockRefreshResolved).toHaveBeenCalledTimes(1);
+      // A plain revalidation must not reset the local position.
+      expect(result.current.playState.state).toBe("boardResults");
+    });
+
     it("ignores a confirmation while not waiting/mismatch", () => {
       withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
@@ -392,7 +418,11 @@ describe("usePlayFlow", () => {
 
     it("no-ops when the schedule ref is null", () => {
       // A resolved object without rounds => hook keeps scheduleRef null.
-      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        phase: { kind: "complete" },
+      });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       expect(result.current.schedule).toBeNull();
@@ -476,7 +506,11 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        phase: { kind: "complete" },
+      });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       const onMismatch = onMismatchHandler();
@@ -526,6 +560,66 @@ describe("usePlayFlow", () => {
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleReenter());
+      expect(result.current.playState.state).toBe("roundInfo");
+    });
+  });
+
+  describe("withdrawSubmission", () => {
+    it("clears the entry server-side then returns to enterContract", async () => {
+      mockEmitWithAck.mockResolvedValue({});
+      withEnteringRound([round(1, [1, 2])]);
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+      act(() => result.current.handleEnterRound());
+      act(() => result.current.submitResult(2, "3NTN="));
+      expect(result.current.playState.state).toBe("waiting");
+
+      await act(async () => {
+        await result.current.withdrawSubmission();
+      });
+
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.WITHDRAW_SUBMISSION,
+        {
+          gameId: "g1",
+          seat: "A1NS",
+          token: "tok-1",
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 2,
+        },
+      );
+      expect(result.current.playState).toEqual({
+        state: "enterContract",
+        roundIndex: 0,
+        boardIndex: 1,
+      });
+    });
+
+    it("stays on waiting and rejects when the server refuses", async () => {
+      mockEmitWithAck.mockRejectedValue(new Error("already confirmed"));
+      withEnteringRound([round(1, [1, 2])]);
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+      act(() => result.current.handleEnterRound());
+      act(() => result.current.submitResult(1, "3NTN="));
+
+      await act(async () => {
+        await expect(result.current.withdrawSubmission()).rejects.toThrow(
+          "already confirmed",
+        );
+      });
+      expect(result.current.playState.state).toBe("waiting");
+    });
+
+    it("is a no-op outside the waiting state", async () => {
+      withEnteringRound([round(1, [1, 2])]);
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+
+      await act(async () => {
+        await result.current.withdrawSubmission();
+      });
+      expect(mockEmitWithAck).not.toHaveBeenCalled();
       expect(result.current.playState.state).toBe("roundInfo");
     });
   });
@@ -625,7 +719,11 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        phase: { kind: "complete" },
+      });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleBoardResultsNext());
@@ -707,7 +805,11 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        phase: { kind: "complete" },
+      });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.handleSitOutContinue());
@@ -738,7 +840,11 @@ describe("usePlayFlow", () => {
     });
 
     it("no-ops when the schedule ref is null", () => {
-      withResolved({ assignmentId: "A1", side: "NS", phase: { kind: "complete" } });
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        phase: { kind: "complete" },
+      });
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
 
       act(() => result.current.submitResult(1, "3NTN="));
@@ -839,8 +945,9 @@ describe("usePlayFlow", () => {
         expect.any(Function),
       );
       act(() => {
-        socketOn.mock.calls
-          .find((c) => c[0] === SocketEvents.SCHEDULE_CHANGED)![1]();
+        socketOn.mock.calls.find(
+          (c) => c[0] === SocketEvents.SCHEDULE_CHANGED,
+        )![1]();
       });
       expect(refresh).toHaveBeenCalledTimes(1);
       // The refreshed resolved state says the event is now complete: unlike an
@@ -917,6 +1024,7 @@ describe("usePlayFlow", () => {
         state: "waiting",
         roundIndex: 0,
         boardIndex: 0,
+        result: "3NTN=",
       });
     });
   });

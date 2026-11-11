@@ -64,7 +64,9 @@ describe("registerPreviousHandler (integration)", () => {
     closeServer = close;
 
     await new Promise<void>((resolve) => {
-      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () => resolve());
+      client.emit(SocketEvents.JOIN_GAME, { gameId: "game-1" }, () =>
+        resolve(),
+      );
     });
     await emitWithAck(client, SocketEvents.REQUEST_STATE_TIMER, {
       gameId: "game-1",

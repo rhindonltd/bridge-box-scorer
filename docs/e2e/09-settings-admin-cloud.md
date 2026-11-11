@@ -15,7 +15,7 @@ on the device label, or output by the box's first-boot migration).
 |---|---|---|
 | ☐ SET-1 | Tap the **⚙ cog**. | The **Settings** menu, or an **"Admin Access"** prompt. |
 | ☐ SET-2 | If prompted, enter the **admin key** and tap **Unlock**. | Settings menu appears. |
-| ☐ SET-3 | Confirm the menu lists: **WiFi Settings**, **Club Information**, **BridgeWebs**, **Cloud Backup**, **Update Admin Key**, **Log Out**. | All present. |
+| ☐ SET-3 | Confirm the menu lists: **WiFi Settings**, **BridgeWebs**, **EBU**, **Cloud Backup**, **Update Admin Key**, **Log Out**. | All present, and **no** separate "Club Information" item. |
 | ☐ SET-4 | Enter a **wrong** admin key on a fresh unlock attempt. | Rejected; settings stay locked. |
 
 ---
@@ -31,12 +31,12 @@ on the device label, or output by the box's first-boot migration).
 
 ---
 
-## 3. Club Information
+## 3. Club details & EBU
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ SET-9 | **Club Information**. | "Club Name" and "EBU Club Number" fields. |
-| ☐ SET-10 | Enter club details → **Save**. | Saved; these appear in exported USEBIO files (verify in [file 10](10-sharing-export-lifecycle.md)). |
+| ☐ SET-9 | **EBU**. | "Club Name", "EBU Club Number" and "EBU Password" fields. With no password saved, the password hint reads that it is only needed to submit results to the EBU. |
+| ☐ SET-10 | Enter a club name and number, leave the password **empty** → **Save**. | **✅ EBU settings saved**; the club details appear in exported USEBIO files (verify in [file 10](10-sharing-export-lifecycle.md)). Leaving out the name or number shows **Club name is required** / **EBU number is required** instead. |
 
 ---
 
@@ -78,5 +78,5 @@ and entitled — **both** states below are valid test outcomes.
 | Check | Step | Expected |
 |---|---|---|
 | ☐ SET-13 | **Update Admin Key**: enter **New Admin Key** + matching **Confirm Admin Key** → **Update Key**. | Saved. *(Remember the new key!)* |
-| ☐ SET-14 | Return to the Settings menu → **Log Out**. | Settings re-lock. |
+| ☐ SET-14 | Return to the Settings menu → **Log Out**. | Settings re-lock and you are returned to the **home screen** (not the admin key prompt). |
 | ☐ SET-15 | Open a protected setting again. | The admin key prompt returns (proving logout). Enter the **new** key → accepted. |

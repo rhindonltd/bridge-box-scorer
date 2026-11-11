@@ -27,7 +27,9 @@ export async function insertDealIfAbsent(
   deal: Deal,
 ): Promise<InsertDealResult> {
   if (!isCompleteDeal(deal)) {
-    throw new Error(`Refusing to store an incomplete deal for board ${boardNumber}`);
+    throw new Error(
+      `Refusing to store an incomplete deal for board ${boardNumber}`,
+    );
   }
 
   const pbn = toPbn(deal, dealerFor(boardNumber));
@@ -43,9 +45,50 @@ export async function insertDealIfAbsent(
 }
 
 /**
+ * Insert or overwrite many boards' deals atomically (dealing-machine file
+ * import). Every deal is validated up front; if any is incomplete nothing is
+ * written. The writes then run in one transaction, so a failure part-way leaves
+ * the table unchanged. Existing deals are always overwritten.
+ */
+export async function upsertDeals(
+  db: Db,
+  entries: { boardNumber: number; deal: Deal }[],
+  source: DealSource = "DIRECTOR",
+): Promise<void> {
+  const rows = entries.map(({ boardNumber, deal }) => {
+    if (!isCompleteDeal(deal)) {
+      throw new Error(
+        `Refusing to store an incomplete deal for board ${boardNumber}`,
+      );
+    }
+    return {
+      boardNumber,
+      pbn: toPbn(deal, dealerFor(boardNumber)),
+      source,
+    };
+  });
+
+  db.transaction((tx) => {
+    for (const row of rows) {
+      tx.insert(deals)
+        .values(row)
+        .onConflictDoUpdate({
+          target: deals.boardNumber,
+          set: {
+            pbn: row.pbn,
+            source: row.source,
+            updatedAt: sql`CURRENT_TIMESTAMP`,
+          },
+        })
+        .run();
+    }
+  });
+}
+
+/**
  * Insert or overwrite a board's deal. Used by the director (who may correct any
- * board) and, in future, by a dealing-machine file import. Always writes the
- * validated deal, bumping `updatedAt` on overwrite.
+ * board). Always writes the validated deal, bumping `updatedAt` on overwrite.
+ * For a whole-file import use {@link upsertDeals}.
  */
 export async function upsertDeal(
   db: Db,
@@ -54,7 +97,9 @@ export async function upsertDeal(
   source: DealSource = "DIRECTOR",
 ): Promise<void> {
   if (!isCompleteDeal(deal)) {
-    throw new Error(`Refusing to store an incomplete deal for board ${boardNumber}`);
+    throw new Error(
+      `Refusing to store an incomplete deal for board ${boardNumber}`,
+    );
   }
 
   const pbn = toPbn(deal, dealerFor(boardNumber));

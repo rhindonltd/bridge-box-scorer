@@ -92,7 +92,9 @@ describe("CloudSyncSettingsPage", () => {
     );
     expect(mockMutate).toHaveBeenCalled();
     // Still disabled during the debounce window, re-enabled afterwards.
-    expect(screen.getByRole("button", { name: "Backing up..." })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Backing up..." }),
+    ).toBeDisabled();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5000);
     });
@@ -113,11 +115,16 @@ describe("CloudSyncSettingsPage", () => {
   });
 
   it("clears the admin token and prompts to re-enter it on a 401", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 401 }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 401 }),
+    );
     render(<CloudSyncSettingsPage />);
     pressBackUp();
     expect(
-      await screen.findByText("Session expired. Please re-enter the admin key."),
+      await screen.findByText(
+        "Session expired. Please re-enter the admin key.",
+      ),
     ).toBeInTheDocument();
     expect(mockClearAdminToken).toHaveBeenCalled();
     expect(mockMutate).not.toHaveBeenCalled();
@@ -150,7 +157,9 @@ describe("CloudSyncSettingsPage", () => {
     );
     render(<CloudSyncSettingsPage />);
     pressBackUp();
-    expect(await screen.findByText("Failed to start backup")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Failed to start backup"),
+    ).toBeInTheDocument();
   });
 
   it("shows a network error if the request throws", async () => {
