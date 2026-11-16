@@ -84,21 +84,6 @@ vi.mock("@/components/contract-wizard/StepResult", () => ({
   ),
 }));
 
-vi.mock("@/components/contract-wizard/StepConfirm", () => ({
-  StepConfirm: ({ onSubmit, level, suit, declarer, specialOutcome }: any) => (
-    <button
-      data-testid="step-confirm"
-      onClick={onSubmit}
-      data-level={String(level)}
-      data-suit={String(suit)}
-      data-declarer={String(declarer)}
-      data-special={String(specialOutcome)}
-    >
-      confirm
-    </button>
-  ),
-}));
-
 vi.mock("@/components/contract-wizard/BoardDropDown", () => ({
   BoardDropDown: ({ selectedBoard }: any) => (
     <div data-testid="board-dropdown">board:{String(selectedBoard)}</div>
@@ -177,7 +162,6 @@ describe("ContractWizard", () => {
     fireEvent.click(screen.getByTestId("step-declarer"));
     // lead not required -> goes straight to result.
     fireEvent.click(screen.getByTestId("step-result-made"));
-    fireEvent.click(screen.getByTestId("step-confirm"));
 
     expect(onComplete).toHaveBeenCalledWith({
       board: 7,
@@ -203,7 +187,6 @@ describe("ContractWizard", () => {
     fireEvent.click(screen.getByTestId("step-declarer-x"));
     fireEvent.click(screen.getByTestId("step-lead"));
     fireEvent.click(screen.getByTestId("step-result-down"));
-    fireEvent.click(screen.getByTestId("step-confirm"));
 
     expect(onComplete).toHaveBeenCalledWith({
       board: 7,
@@ -213,14 +196,12 @@ describe("ContractWizard", () => {
     });
   });
 
-  it("submits a special outcome directly", () => {
+  it("submits a special outcome directly, with no confirm page", () => {
     const onComplete = vi.fn();
     render(<ContractWizard {...baseProps} onComplete={onComplete} />);
 
     fireEvent.click(screen.getByTestId("step-board"));
     fireEvent.click(screen.getByTestId("step-special"));
-    // Special outcome jumps straight to confirm.
-    fireEvent.click(screen.getByTestId("step-confirm"));
 
     expect(onComplete).toHaveBeenCalledWith({
       board: 7,
@@ -243,12 +224,7 @@ describe("ContractWizard", () => {
     fireEvent.click(screen.getByTestId("step-declarer"));
     // 4 -> 5
     fireEvent.click(screen.getByTestId("step-lead"));
-    // 5 -> 6
-    fireEvent.click(screen.getByTestId("step-result-made"));
-    expect(screen.getByTestId("step-confirm")).toBeInTheDocument();
-
-    // 6 -> 5 (played contract)
-    back();
+    // now at result (step 5)
     expect(screen.getByTestId("step-result-made")).toBeInTheDocument();
     // 5 -> 4 (lead required)
     back();
@@ -277,15 +253,5 @@ describe("ContractWizard", () => {
     back();
     // 5 -> 3 when no lead required
     expect(screen.getByTestId("step-declarer")).toBeInTheDocument();
-  });
-
-  it("back from confirm returns to level for a special outcome", () => {
-    render(<ContractWizard {...baseProps} />);
-    fireEvent.click(screen.getByTestId("step-board"));
-    fireEvent.click(screen.getByTestId("step-special"));
-    // at confirm (step 6) with a special outcome
-    back();
-    // 6 -> 1
-    expect(screen.getByTestId("step-level")).toBeInTheDocument();
   });
 });

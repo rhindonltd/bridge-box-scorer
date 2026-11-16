@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import type { ContractEntryInitial } from "@/hooks/use-contract-entry";
+import type { Card, Rank, Suit } from "@/model/common";
 import {
   TravellerProvider,
   useTravellerContext,
@@ -71,6 +73,22 @@ export function PlayStateRouter({
 }) {
   const headerRight = <PlayHeaderMenu gameId={gameId} seat={seat} />;
 
+  // The entry last submitted from the wizard. Kept here (this component stays
+  // mounted while the wizard comes and goes) so that backing out of the waiting
+  // screen returns to the result/lead step instead of restarting the flow. It
+  // is dropped as soon as play moves on (mismatch, board results, ...).
+  const [draft, setDraft] = useState<{
+    board: number;
+    entry: ContractEntryInitial;
+  } | null>(null);
+  if (
+    draft &&
+    playState.state !== "enterContract" &&
+    playState.state !== "waiting"
+  ) {
+    setDraft(null);
+  }
+
   switch (playState.state) {
     case "loading":
       return <FullScreenSpinner />;
@@ -124,12 +142,31 @@ export function PlayStateRouter({
           roundBoards={round.boards}
           playedBoards={playedBoards}
           leadCardRequired={leadCardRequired}
+          draft={draft}
           headerRight={headerRight}
           onComplete={(data) => {
             if (data.contract === "PO" || data.contract === "NP") {
+              setDraft({
+                board: data.board,
+                entry: { specialOutcome: data.contract },
+              });
               handlers.submitResult(data.board, data.contract);
             } else {
               const parsed = parseContract(data.contract);
+              const lead: Card | null = data.lead;
+              setDraft({
+                board: data.board,
+                entry: {
+                  level: parsed.level,
+                  suit: parsed.suit,
+                  declarer: parsed.declarer,
+                  dbl: parsed.doubling,
+                  leadSuit: lead ? (lead[0] as Suit) : null,
+                  leadRank: lead ? (lead.slice(1) as Rank) : null,
+                  resultMode: data.result < 0 ? "down" : "made",
+                  resultValue: Math.abs(data.result),
+                },
+              });
               const fullResult = buildPlayedContractCode(
                 parsed.level,
                 parsed.suit,

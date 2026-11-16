@@ -24,7 +24,8 @@ import {
   applyAbsences,
   pairsStandingsForRanking,
 } from "@/services/absent-board-rows";
-import { formatPairNumber, sectionOf } from "@/model/participants";
+import { sectionOf } from "@/model/participants";
+import { stripSectionPrefix } from "@/model/pair-label";
 import { Club } from "@/db/system/schema";
 import {
   generateUsebioXml,
@@ -291,10 +292,14 @@ async function generateMpPairsUsebio(
   // SECTION; the pair number itself is unprefixed.
   const usebioPairs: UsebioPair[] = pairs.map((pair) => {
     // Parse direction from initialSeat (e.g., "A1NS" → direction NS → "N").
+    // The seat is only used for where the pair STARTED (direction + section);
+    // the pair is numbered by the id its boards carry (its anchor), so the
+    // <PAIR> block, its TRAVELLER_LINEs and the ranking exclusions all agree
+    // for movements that number pairs rather than seats (Howell, one-winner).
     const direction = pair.initialSeat.endsWith("NS") ? "N" : "E";
 
     return {
-      pairNumber: formatPairNumber(pair.initialSeat, false),
+      pairNumber: stripSectionPrefix(pair.anchorId ?? pair.initialSeat),
       direction: direction as "N" | "E",
       section: sectionOf(pair.initialSeat),
       player1: pair.player1,
@@ -307,7 +312,7 @@ async function generateMpPairsUsebio(
   // "without standing" (already captured in `excludedFromRanking`).
   for (const splitPair of splitPairs) {
     usebioPairs.push({
-      pairNumber: formatPairNumber(splitPair.scoredId, false),
+      pairNumber: stripSectionPrefix(splitPair.scoredId),
       direction: splitPair.seat.endsWith("NS") ? "N" : "E",
       section: sectionOf(splitPair.seat),
       player1: splitPair.player1,
@@ -333,14 +338,8 @@ async function generateMpPairsUsebio(
       round: b.roundNumber,
       // Resolve to the occupant's scored-field id so a stand-in's boards carry
       // its `#<occId>` pair number (unchanged bare id for an ordinary seat).
-      nsPairNumber: formatPairNumber(
-        resolveScoredId(b.ns, b.boardNumber),
-        false,
-      ),
-      ewPairNumber: formatPairNumber(
-        resolveScoredId(b.ew, b.boardNumber),
-        false,
-      ),
+      nsPairNumber: stripSectionPrefix(resolveScoredId(b.ns, b.boardNumber)),
+      ewPairNumber: stripSectionPrefix(resolveScoredId(b.ew, b.boardNumber)),
       outcome: (b.directorOverrideResult ??
         b.confirmedResult ??
         "NP") as BoardOutcome,

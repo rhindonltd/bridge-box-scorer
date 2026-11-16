@@ -17,7 +17,7 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
 }));
 
 let sectionsState: {
-  sections: { section: string }[];
+  sections: { section: string; label?: string }[];
   isLoading: boolean;
 };
 vi.mock("@/hooks/sections", () => ({
@@ -106,6 +106,16 @@ describe("ReviewMismatchesPage", () => {
     expect(mockFetch).toHaveBeenCalledWith("g1", "B");
   });
 
+  it("heads each card with the section's name", async () => {
+    sectionsState = {
+      sections: [{ section: "A", label: "Red" }],
+      isLoading: false,
+    };
+    mockFetch.mockImplementation(async () => [pairCandidate]);
+    render(<ReviewMismatchesPage gameId="g1" />);
+    expect(await screen.findByText(/^Red, round/)).toBeInTheDocument();
+    expect(screen.queryByText(/Section A/)).not.toBeInTheDocument();
+  });
   it("applies a ruling and removes the card", async () => {
     render(<ReviewMismatchesPage gameId="g1" />);
     fireEvent.click(

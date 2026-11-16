@@ -7,6 +7,7 @@ import { BoardInstance, TeamTravellerMatch } from "@/model/participants";
 import { BoardOutcome } from "@/model/score";
 import { Deal } from "@/model/common";
 import { ShowHandToggle } from "@/components/deal/ShowHandToggle";
+import { pairLabel } from "@/model/pair-label";
 
 interface TravellerViewProps {
   boardNumber: number;
@@ -21,6 +22,11 @@ interface TravellerViewProps {
    */
   teamMatches?: TeamTravellerMatch[];
   isLoading: boolean;
+  /**
+   * Drop the section prefix from the pair ids ("A4" → "4"). Set when the
+   * section adds nothing (one section, or sections ranked separately).
+   */
+  hideSection?: boolean;
   onLineSelected: (instance: BoardInstance) => void;
   onBack: () => void;
 }
@@ -42,6 +48,7 @@ export function Traveller({
   deal = null,
   teamMatches = [],
   isLoading,
+  hideSection = false,
   onLineSelected,
   onBack,
 }: TravellerViewProps) {
@@ -86,6 +93,7 @@ export function Traveller({
             ) : (
               <PairTravellerTable
                 instances={instances}
+                hideSection={hideSection}
                 onLineSelected={onLineSelected}
               />
             )}
@@ -99,9 +107,11 @@ export function Traveller({
 /** The plain pairs traveller: one selectable NS/EW row per table. */
 function PairTravellerTable({
   instances,
+  hideSection,
   onLineSelected,
 }: {
   instances: BoardInstance[];
+  hideSection: boolean;
   onLineSelected: (instance: BoardInstance) => void;
 }) {
   return (
@@ -126,7 +136,7 @@ function PairTravellerTable({
                 <>
                   <td className="border px-2 py-2">
                     <div className="font-medium">
-                      {instance.participants.ns}
+                      {pairLabel(instance.participants.ns, hideSection)}
                     </div>
                     {instance.participants.nsNames && (
                       <div className="text-xs text-gray-500">
@@ -136,7 +146,7 @@ function PairTravellerTable({
                   </td>
                   <td className="border px-2 py-2">
                     <div className="font-medium">
-                      {instance.participants.ew}
+                      {pairLabel(instance.participants.ew, hideSection)}
                     </div>
                     {instance.participants.ewNames && (
                       <div className="text-xs text-gray-500">

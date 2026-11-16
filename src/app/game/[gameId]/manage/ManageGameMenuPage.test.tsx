@@ -23,26 +23,26 @@ import { ManageGameMenuPage } from "./ManageGameMenuPage";
 
 const handlers = {
   onSetUpGameClick: vi.fn(),
-  onManageTablesClick: vi.fn(),
   onTravellersClick: vi.fn(),
   onEnterDealsClick: vi.fn(),
   onMovementClick: vi.fn(),
   onTimerClick: vi.fn(),
   onReviewMismatchesClick: vi.fn(),
   onPairsClick: vi.fn(),
+  onTeamsClick: vi.fn(),
   onExportClick: vi.fn(),
   onDeleteGameClick: vi.fn(),
 };
 
 const flags = {
   showSetUpGame: false,
-  showManageTables: false,
   showTravellers: false,
   showEnterDeals: false,
   showMovement: false,
   showTimer: false,
   showReviewMismatches: false,
   showPairs: false,
+  showTeams: false,
   showExport: false,
 };
 
@@ -140,12 +140,12 @@ describe("ManageGameMenuPage", () => {
     });
   });
 
-  describe("Enter Deals", () => {
+  describe("Deals", () => {
     it("is shown and wired when showEnterDeals is true", () => {
       render(
         <ManageGameMenuPage {...handlers} {...flags} showEnterDeals={true} />,
       );
-      fireEvent.click(screen.getByRole("button", { name: "Enter Deals" }));
+      fireEvent.click(screen.getByRole("button", { name: "Deals" }));
       expect(handlers.onEnterDealsClick).toHaveBeenCalled();
     });
 
@@ -154,7 +154,7 @@ describe("ManageGameMenuPage", () => {
         <ManageGameMenuPage {...handlers} {...flags} showEnterDeals={false} />,
       );
       expect(
-        screen.queryByRole("button", { name: "Enter Deals" }),
+        screen.queryByRole("button", { name: "Deals" }),
       ).not.toBeInTheDocument();
     });
   });
@@ -174,18 +174,16 @@ describe("ManageGameMenuPage", () => {
     });
   });
 
-  describe("Manage Tables", () => {
-    it("is shown and wired when showManageTables is true", () => {
-      render(
-        <ManageGameMenuPage {...handlers} {...flags} showManageTables={true} />,
-      );
-      fireEvent.click(screen.getByRole("button", { name: "Manage Tables" }));
-      expect(handlers.onManageTablesClick).toHaveBeenCalled();
+  describe("Teams", () => {
+    it("is shown and wired when showTeams is true", () => {
+      render(<ManageGameMenuPage {...handlers} {...flags} showTeams={true} />);
+      fireEvent.click(screen.getByRole("button", { name: "Teams" }));
+      expect(handlers.onTeamsClick).toHaveBeenCalled();
     });
-    it("is hidden when showManageTables is false", () => {
+    it("is hidden when showTeams is false", () => {
       render(<ManageGameMenuPage {...handlers} {...flags} />);
       expect(
-        screen.queryByRole("button", { name: "Manage Tables" }),
+        screen.queryByRole("button", { name: "Teams" }),
       ).not.toBeInTheDocument();
     });
   });

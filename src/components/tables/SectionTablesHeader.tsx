@@ -22,13 +22,6 @@ interface Props {
   onRename: (label: string) => void;
   /** Delete the section. Only offered when `multiSection`. */
   onDelete: () => void;
-  /**
-   * Hide the structure-changing controls (table-count stepper, rename field,
-   * delete action), showing the section name and table count as read-only text
-   * instead. Used once the game has started: seating can still be managed, but
-   * the structure (sections, table count) is fixed.
-   */
-  readOnly?: boolean;
 }
 
 /**
@@ -47,7 +40,6 @@ export function SectionTablesHeader({
   onResize,
   onRename,
   onDelete,
-  readOnly = false,
 }: Props) {
   const labelId = useId();
   const [draft, setDraft] = useState(label);
@@ -81,41 +73,32 @@ export function SectionTablesHeader({
           {/* "Section" label + an inline editable box holding the section's
               name (defaults to its letter, e.g. "A", but can be renamed to
               anything like "Red Room"), kept on one row with the Delete action
-              rather than stacked. Read-only once the game has started: the name
-              shows as static text and Delete is withheld. */}
+              rather than stacked. */}
           <div className="flex items-center gap-2">
             <label
-              htmlFor={readOnly ? undefined : labelId}
+              htmlFor={labelId}
               className="text-sm font-semibold text-gray-700"
             >
               Section
             </label>
-            {readOnly ? (
-              <span className="text-base font-semibold text-gray-900">
-                {label}
-              </span>
-            ) : (
-              <input
-                id={labelId}
-                type="text"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onBlur={commitLabel}
-                aria-label="Section label"
-                placeholder="Section label"
-                className="w-28 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            )}
+            <input
+              id={labelId}
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitLabel}
+              aria-label="Section label"
+              placeholder="Section label"
+              className="w-28 rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
-          {!readOnly && (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="text-sm font-medium text-red-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
-            >
-              Delete section
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onDelete}
+            className="text-sm font-medium text-red-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
+          >
+            Delete section
+          </button>
         </div>
       )}
 
@@ -123,16 +106,14 @@ export function SectionTablesHeader({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">
           {tables} {tables === 1 ? "table" : "tables"}
         </h2>
-        {!readOnly && (
-          <div className="w-32">
-            <StepperInput
-              label="Tables"
-              min={2}
-              value={tables}
-              onChange={onResize}
-            />
-          </div>
-        )}
+        <div className="w-32">
+          <StepperInput
+            label="Tables"
+            min={2}
+            value={tables}
+            onChange={onResize}
+          />
+        </div>
       </div>
     </div>
   );

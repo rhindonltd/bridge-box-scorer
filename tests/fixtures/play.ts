@@ -58,7 +58,7 @@ async function enterRoundAndSelectBoard(
 /**
  * Enter a Pass Out for a single seat on a specific board.
  *
- * Walks: open the seat, Enter Round, pick the board, Pass Out, Submit. Leaves
+ * Walks: open the seat, Enter Round, pick the board, Pass Out (submits). Leaves
  * the page in whatever state the flow lands in — "Waiting for confirmation"
  * (first side) or "Board Results" (second side, once the board confirms).
  */
@@ -75,10 +75,6 @@ export async function enterPassOut(
   const passOut = page.getByTestId("wizard-pass-out");
   await expect(passOut).toBeVisible();
   await passOut.click();
-
-  const submit = page.getByTestId("wizard-submit");
-  await expect(submit).toBeVisible();
-  await submit.click();
 }
 
 /**
@@ -186,7 +182,7 @@ async function clickButtonByText(page: Page, label: string): Promise<void> {
  *
  * Steps: open the seat, Enter Round, pick the board, Level, Suit, Declarer
  * (+ doubling), optional Opening Lead (when `leadCardRequired`), Made/Down
- * result, Submit. Leaves the page in whatever state the flow lands in —
+ * result (submits). Leaves the page in whatever state the flow lands in —
  * "Waiting for confirmation" (first side) or "Board Results" (second side).
  *
  * The played-contract steps have no test ids; they are addressed by role+name
@@ -237,11 +233,6 @@ export async function enterPlayedContract(
     await clickButtonByText(page, "Down");
   }
   await clickButtonByText(page, resultButtonName(spec.result));
-
-  // Step: Confirm.
-  const submit = page.getByTestId("wizard-submit");
-  await expect(submit).toBeVisible();
-  await submit.click();
 }
 
 /**
@@ -305,7 +296,7 @@ export async function enterContractRaw(
  * Enter a "Not Played" (NP) special outcome for a single seat on a board.
  *
  * Mirrors {@link enterPassOut} but selects the "Not Played" button on the level
- * step, which short-circuits the wizard straight to Confirm. NP is submitted as
+ * step, which short-circuits the wizard straight to submission. NP is submitted as
  * the result code "NP" (handled like "PO" server-side).
  */
 export async function enterNotPlayed(
@@ -323,10 +314,6 @@ export async function enterNotPlayed(
   const notPlayed = page.getByRole("button", { name: "Not Played", exact: true });
   await expect(notPlayed).toBeVisible();
   await notPlayed.click();
-
-  const submit = page.getByTestId("wizard-submit");
-  await expect(submit).toBeVisible();
-  await submit.click();
 }
 
 /**

@@ -95,8 +95,8 @@ describe("SelectTable", () => {
         startingPositions={[]}
       />,
     );
-    expect(screen.getByText("Section A")).toBeInTheDocument();
-    expect(screen.getByText("Section B")).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("B")).toBeInTheDocument();
   });
 
   it("shows no section heading for a single-section game", () => {
@@ -106,7 +106,7 @@ describe("SelectTable", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("appends the section label when it differs from the section letter", () => {
+  it("headed by the section name, not its letter", () => {
     render(
       <SelectTable
         sections={[
@@ -117,8 +117,8 @@ describe("SelectTable", () => {
         startingPositions={[]}
       />,
     );
-    // Section A has a distinct label -> "Section A — Red Room".
-    expect(screen.getByText(/Section A\s*—\s*Red Room/)).toBeInTheDocument();
+    expect(screen.getByText("Red Room")).toBeInTheDocument();
+    expect(screen.queryByText(/Section/)).not.toBeInTheDocument();
   });
 
   it("scopes taken seats to the correct section", () => {

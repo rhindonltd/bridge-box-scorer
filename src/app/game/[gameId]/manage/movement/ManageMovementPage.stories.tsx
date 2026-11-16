@@ -76,7 +76,7 @@ const meta: Meta<typeof ManageMovementPage> = {
     },
   },
   tags: ["autodocs"],
-  args: { backHref: "/games" },
+  args: { backFallbackHref: "/games" },
 };
 
 export default meta;

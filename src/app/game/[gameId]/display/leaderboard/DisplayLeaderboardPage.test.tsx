@@ -8,6 +8,11 @@ vi.mock("@/context/GameContext", () => ({
   }),
 }));
 
+// Section display names come from the game's sections; none are renamed here, so
+// each tab falls back to its section letter.
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: [] }),
+}));
 // The page reads the ?mode= query param via useSearchParams to fix the MP/%
 // view. These tests don't set a mode, so return an empty params object.
 const mockSearchParams = vi.fn(() => new URLSearchParams());
@@ -127,8 +132,8 @@ describe("DisplayLeaderboardPage", () => {
     render(<DisplayLeaderboardPage />);
 
     expect(screen.getByText("Combined")).toBeInTheDocument();
-    expect(screen.getByText("Section A")).toBeInTheDocument();
-    expect(screen.getByText("Section B")).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("B")).toBeInTheDocument();
     // Defaults to combined.
     expect(leaderboardSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: "PAIR_MP" }),
@@ -150,9 +155,9 @@ describe("DisplayLeaderboardPage", () => {
     ).toBeInTheDocument();
 
     // Selecting a section appends it to the heading.
-    fireEvent.click(screen.getByText("Section B"));
+    fireEvent.click(screen.getByText("B"));
     expect(
-      screen.getByRole("heading", { name: "Monday AM Pairs — Section B" }),
+      screen.getByRole("heading", { name: "Monday AM Pairs — B" }),
     ).toBeInTheDocument();
   });
 
@@ -165,7 +170,7 @@ describe("DisplayLeaderboardPage", () => {
 
     render(<DisplayLeaderboardPage />);
 
-    fireEvent.click(screen.getByText("Section B"));
+    fireEvent.click(screen.getByText("B"));
 
     expect(leaderboardSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: "PAIR_MP_B", section: "B" }),
@@ -215,7 +220,7 @@ describe("DisplayLeaderboardPage", () => {
     // Click Section B, then simulate that section disappearing from the
     // snapshot (e.g. a re-scored update) so `find` returns undefined and the
     // component falls back to the combined leaderboard.
-    fireEvent.click(screen.getByText("Section B"));
+    fireEvent.click(screen.getByText("B"));
     expect(leaderboardSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({ type: "PAIR_MP_B" }),
     );

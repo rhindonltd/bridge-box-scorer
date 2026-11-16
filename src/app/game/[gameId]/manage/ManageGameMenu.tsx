@@ -30,7 +30,6 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
   return (
     <ManageGameMenuPage
       onSetUpGameClick={() => router.push(`/game/${gameId}/create`)}
-      onManageTablesClick={() => router.push(`/game/${gameId}/manage/tables`)}
       onTravellersClick={() => router.push(`/game/${gameId}/manage/travellers`)}
       onEnterDealsClick={() => router.push(`/game/${gameId}/manage/deals`)}
       onMovementClick={() => router.push(`/game/${gameId}/manage/movement`)}
@@ -39,18 +38,21 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
         router.push(`/game/${gameId}/manage/mismatches`)
       }
       onPairsClick={() => router.push(`/game/${gameId}/manage/pairs`)}
+      onTeamsClick={() => router.push(`/game/${gameId}/manage/teams`)}
       onExportClick={() => router.push(`/game/${gameId}/manage/export`)}
       onDeleteGameClick={() =>
         router.push(`/game/${gameId}/manage/delete-game`)
       }
       showSetUpGame={startedKnown && !started}
-      showManageTables={started}
       showTravellers={started}
       showEnterDeals={started}
       showMovement={started}
       showTimer={started}
       showReviewMismatches={started && isSwiss}
-      showPairs={started}
+      // A Pairs / Swiss Pairs game has the Pairs roster; a Teams / Swiss Teams
+      // game has the Teams roster. Neither shows until the game type is known.
+      showPairs={started && game?.gameType === "PAIRS"}
+      showTeams={started && game?.gameType === "TEAMS"}
       // "Export & Publish" groups the results-export / publishing actions; it is
       // only meaningful once the game has started.
       showExport={started}

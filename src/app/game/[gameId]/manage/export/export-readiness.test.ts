@@ -116,7 +116,19 @@ describe("buildExportReadiness", () => {
         multiSection: true,
       });
       expect(items.get("results")?.boards?.[0].title).toBe(
-        "Round 3 · Section A · Table 2 · Board 7",
+        "Round 3 · A · Table 2 · Board 7",
+      );
+    });
+    it("uses the section's name when it has been renamed", () => {
+      const items = itemsById({
+        ...allReady,
+        finalized: 23,
+        outstandingBoards,
+        multiSection: true,
+        sectionLabels: { A: "Red" },
+      });
+      expect(items.get("results")?.boards?.[0].title).toBe(
+        "Round 3 · Red · Table 2 · Board 7",
       );
     });
 

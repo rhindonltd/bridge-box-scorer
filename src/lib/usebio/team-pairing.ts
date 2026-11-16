@@ -1,10 +1,10 @@
 import {
   AssignedTeam,
   baseSeatOf,
-  formatPairNumber,
   parseSeat,
   scoredIdFor,
 } from "@/model/participants";
+import { stripSectionPrefix } from "@/model/pair-label";
 import type { UsebioPlayer, UsebioTeamPair } from "./generate-usebio";
 
 /**
@@ -99,7 +99,7 @@ export function buildTeamPairing(
         : [team.pair1, team.pair2].map((pair, i) => ({
             id: -(i + 1),
             seat: pair.initialSeat,
-            anchorId: null,
+            anchorId: pair.anchorId ?? null,
             boards: null,
             player1: pair.player1,
             player2: pair.player2,
@@ -125,12 +125,16 @@ export function buildTeamPairing(
     const starterIds = new Set(starters.map((o) => o.id));
     const ordered = [...starters, ...substitutes];
     const pairs: UsebioTeamPair[] = ordered.map((occ) => {
-      // The starter is the bare seat; a substitute carries its occupancy id.
-      const scoredId = starterIds.has(occ.id)
-        ? occ.seat
-        : scoredIdFor(occ.seat, occ.id);
-      const pairNumber = formatPairNumber(scoredId, includeSection);
+      // The pair is numbered by its anchor id (the id its boards carry), not the
+      // seat it started at. The starter is the bare id; a substitute carries
+      // its occupancy id.
       const boardId = occ.anchorId ?? occ.seat;
+      const scoredId = starterIds.has(occ.id)
+        ? boardId
+        : scoredIdFor(boardId, occ.id);
+      const pairNumber = includeSection
+        ? scoredId
+        : stripSectionPrefix(scoredId);
       const list = occupantsByBoardId.get(boardId) ?? [];
       list.push({ occ, pairNumber });
       occupantsByBoardId.set(boardId, list);

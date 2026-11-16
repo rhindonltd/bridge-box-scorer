@@ -1,4 +1,11 @@
 import { MovementByTable } from "@/movement/movementData";
+import { stripSectionPrefix } from "@/model/pair-label";
+
+// The movement is shown one section at a time (selected via the section
+// pills), so the section prefix on a pair id is redundant.
+function pairText(pairId?: string): string {
+  return pairId ? stripSectionPrefix(pairId) : "";
+}
 
 export function MovementTable({ table }: { table: MovementByTable }) {
   const hasProgress = table.rounds.length > 0 && table.rounds[0].played != null;
@@ -38,8 +45,8 @@ export function MovementTable({ table }: { table: MovementByTable }) {
           {table.rounds.map((round) => (
             <tr key={round.roundNumber} className={getRowClass(round)}>
               <td className="border px-2 py-1">{round.roundNumber}</td>
-              <td className="border px-2 py-1">{round.ns}</td>
-              <td className="border px-2 py-1">{round.ew}</td>
+              <td className="border px-2 py-1">{pairText(round.ns)}</td>
+              <td className="border px-2 py-1">{pairText(round.ew)}</td>
               <td className="border px-2 py-1">
                 {boardRange(round.boardStart, round.boardEnd)}
               </td>

@@ -257,6 +257,5 @@ async function reenterMatching(
         : `+${spec.result.value}`
       : `-${spec.result.value}`;
   await clickText(resultName);
-
-  await page.getByTestId("wizard-submit").click();
+  // No Confirm page: choosing the result submits.
 }

@@ -23,16 +23,30 @@ import { gotoStable } from "./support";
  */
 const TABLES = 4;
 
-/** The Stationary toggle group for one pair in a table's dialog. */
-function stationaryToggle(page: Page, side: "NS" | "EW") {
-  return page
-    .getByRole("group", { name: "Stationary" })
-    .nth(side === "NS" ? 0 : 1);
+/** The pair number in a board id ("A5" → "5"), as the Pairs roster headings show it. */
+function pairNumber(pairId: string): string {
+  return pairId.match(/\d+$/)![0];
 }
 
-async function openTable(page: Page, gameId: string, table: number) {
-  await gotoStable(page, `/game/${gameId}/manage/tables`);
-  await page.getByRole("button", { name: `Manage table ${table}` }).click();
+/** One pair's card on the Pairs roster, found by its pair-number heading. */
+function pairCard(page: Page, number: string) {
+  return page.getByRole("listitem").filter({
+    has: page.getByRole("heading", {
+      level: 3,
+      name: new RegExp(`^${number}$`),
+    }),
+  });
+}
+
+/** Open the Pairs roster and expand one pair's card. */
+async function openPair(page: Page, gameId: string, number: string) {
+  await gotoStable(page, `/game/${gameId}/manage/pairs`);
+  await pairCard(page, number).getByRole("button").first().click();
+}
+
+/** The Stationary toggle group on a pair's expanded card. */
+function stationaryToggle(page: Page, number: string) {
+  return pairCard(page, number).getByRole("group", { name: "Stationary" });
 }
 
 /** Every (pair, table, side) in a round. */
@@ -71,13 +85,16 @@ test.describe("Stationary pairs in Swiss Pairs", () => {
       expect(moved, "round 2 should move at least one pair").toBeDefined();
       const home = homeSeatOf(moved!.pair, TABLES);
 
-      // Mark it stationary now that the game is running. Its table's dialog
-      // (the table it STARTED at) says the change applies from the next draw.
-      await openTable(director, gameId, home.table);
+      // Mark it stationary now that the game is running. Its card on the Pairs
+      // roster says the change applies from the next draw.
+      const number = pairNumber(moved!.pair);
+      await openPair(director, gameId, number);
       await expect(
-        director.getByText(/Applies to rounds drawn from now on/).first(),
+        pairCard(director, number).getByText(
+          /Applies to rounds drawn from now on/,
+        ),
       ).toBeVisible({ timeout: 15000 });
-      const toggle = stationaryToggle(director, home.side);
+      const toggle = stationaryToggle(director, number);
       await toggle.getByRole("button", { name: "Yes", exact: true }).click();
       await expect(
         toggle.getByRole("button", { name: "Yes", exact: true }),
@@ -87,9 +104,9 @@ test.describe("Stationary pairs in Swiss Pairs", () => {
       expect(roundSeating(gameId, 2)).toEqual(round2);
 
       // The choice survives a reload.
-      await openTable(director, gameId, home.table);
+      await openPair(director, gameId, number);
       await expect(
-        stationaryToggle(director, home.side).getByRole("button", {
+        stationaryToggle(director, number).getByRole("button", {
           name: "Yes",
           exact: true,
         }),
@@ -110,7 +127,7 @@ test.describe("Stationary pairs in Swiss Pairs", () => {
     }
   });
 
-  test("a stationary pair shows its marker and can be unmarked again", async ({
+  test("a stationary pair stays marked after a reload and can be unmarked again", async ({
     browser,
   }) => {
     test.setTimeout(120_000);
@@ -123,10 +140,11 @@ test.describe("Stationary pairs in Swiss Pairs", () => {
     });
     const director = await openDirector(browser, game);
     try {
-      // Mark the pair that started at table 2 North/South, then unmark it.
-      await openTable(director, game.gameId, 2);
+      // Mark the pair that started at table 2 North/South (pair 2), then
+      // unmark it.
+      await openPair(director, game.gameId, "2");
       const yes = () =>
-        stationaryToggle(director, "NS").getByRole("button", {
+        stationaryToggle(director, "2").getByRole("button", {
           name: "Yes",
           exact: true,
         });
@@ -134,17 +152,19 @@ test.describe("Stationary pairs in Swiss Pairs", () => {
       await expect(yes()).toHaveAttribute("aria-pressed", "true", {
         timeout: 15000,
       });
-      // The table card carries the amber marker while it is stationary.
-      await director.getByRole("button", { name: "Done", exact: true }).click();
-      await expect(director.getByText("Stationary").first()).toBeVisible();
 
-      await openTable(director, game.gameId, 2);
-      await stationaryToggle(director, "NS")
+      // It is still marked after a reload.
+      await openPair(director, game.gameId, "2");
+      await expect(yes()).toHaveAttribute("aria-pressed", "true", {
+        timeout: 15000,
+      });
+
+      await stationaryToggle(director, "2")
         .getByRole("button", { name: "No", exact: true })
         .click();
-      await openTable(director, game.gameId, 2);
+      await openPair(director, game.gameId, "2");
       await expect(
-        stationaryToggle(director, "NS").getByRole("button", {
+        stationaryToggle(director, "2").getByRole("button", {
           name: "No",
           exact: true,
         }),

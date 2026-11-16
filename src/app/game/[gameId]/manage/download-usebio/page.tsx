@@ -1,22 +1,19 @@
 "use client";
 
 import { DownloadUsebioPage } from "@/app/game/[gameId]/manage/download-usebio/DownloadUsebioPage";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { ResultsCompleteGuard } from "@/app/game/[gameId]/manage/StateGuards";
 
 export default function DownloadUsebioRoute() {
   const params = useParams<{ gameId: string }>();
-  const router = useRouter();
   const gameId = params.gameId;
+  // Pop back to the export options (see the PBN route for why not replace).
+  const { onBack } = useBackNavigation(`/game/${gameId}/manage/export/options`);
 
   return (
     <ResultsCompleteGuard gameId={gameId}>
-      <DownloadUsebioPage
-        onUsebioDownloaded={() =>
-          router.replace(`/game/${gameId}/manage/export/options`)
-        }
-        onCancel={() => router.replace(`/game/${gameId}/manage/export/options`)}
-      />
+      <DownloadUsebioPage onUsebioDownloaded={onBack} onCancel={onBack} />
     </ResultsCompleteGuard>
   );
 }

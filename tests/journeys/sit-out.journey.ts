@@ -285,7 +285,7 @@ async function enterRoundToBoardSelect(page: Page): Promise<void> {
 
 /**
  * Enter a Pass Out for a SPECIFIC board. Waits for the board-select step, picks
- * that board, then Pass Out -> Submit. The player flow reopens the board-select
+ * that board, then Pass Out (which submits). The player flow reopens the board-select
  * step for each board of the round, so we always target the intended board.
  */
 async function passOutSpecificBoard(page: Page, board: number): Promise<void> {
@@ -293,7 +293,6 @@ async function passOutSpecificBoard(page: Page, board: number): Promise<void> {
   await expect(boardButton).toBeVisible({ timeout: 15000 });
   await boardButton.click();
   await page.getByTestId("wizard-pass-out").click();
-  await page.getByTestId("wizard-submit").click();
 }
 
 /**

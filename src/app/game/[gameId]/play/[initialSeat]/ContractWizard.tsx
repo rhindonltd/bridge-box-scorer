@@ -10,8 +10,8 @@ import { StepSuit } from "@/components/contract-wizard/StepSuit";
 import { StepDeclarer } from "@/components/contract-wizard/StepDeclarer";
 import { StepOpeningLead } from "@/components/contract-wizard/StepOpeningLead";
 import { StepResult } from "@/components/contract-wizard/StepResult";
-import { StepConfirm } from "@/components/contract-wizard/StepConfirm";
 import { WizardShell } from "@/components/contract-wizard/WizardShell";
+import type { ContractEntryInitial } from "@/hooks/use-contract-entry";
 import { useBoardFlow } from "@/hooks/board-flow";
 import { BoardDropDown } from "@/components/contract-wizard/BoardDropDown";
 
@@ -21,6 +21,8 @@ interface Props {
   roundBoards: number[];
   playedBoards: number[];
   leadCardRequired: boolean;
+  /** An entry to resume (the player backed out of the waiting screen). */
+  draft?: { board: number; entry: ContractEntryInitial } | null;
   onComplete: (data: {
     board: number;
     contract: ContractCode | SpecialBoardOutcome;
@@ -37,6 +39,7 @@ export function ContractWizard({
   roundBoards,
   playedBoards,
   leadCardRequired,
+  draft,
   onComplete,
   headerRight,
 }: Props) {
@@ -45,11 +48,8 @@ export function ContractWizard({
     suit,
     declarer,
     dbl,
-    specialOutcome,
     leadSuit,
     leadRank,
-    resultMode,
-    resultValue,
     step,
     selectedBoard,
     boardAutoSelected,
@@ -58,41 +58,47 @@ export function ContractWizard({
     onLeadComplete,
     setLeadSuit,
     setLeadRank,
-    onResultComplete,
     onLevelSelected,
-    onSpecialOutcome,
     onSuitSelected,
     onDeclarerSelected,
-  } = useBoardFlow({ leadCardRequired, roundBoards, playedBoards });
+  } = useBoardFlow({
+    leadCardRequired,
+    roundBoards,
+    playedBoards,
+    draft,
+  });
 
-  const onSubmit = () => {
-    /* v8 ignore next -- defensive: the confirm step (6) is only reachable
-       after a board is chosen, so selectedBoard is never null here. */
+  // The player flow has no Confirm page: the result (or a special outcome)
+  // submits straight away, so the values are passed in rather than read from
+  // state that has not updated yet.
+  const submitSpecial = (outcome: SpecialBoardOutcome) => {
+    /* v8 ignore next -- defensive: the level step is only reachable after a
+       board is chosen, so selectedBoard is never null here. */
+    if (selectedBoard === null) return;
+    onComplete({
+      board: selectedBoard,
+      contract: outcome,
+      result: 0,
+      lead: null,
+    });
+  };
+
+  const submitResult = (mode: "made" | "down", value: number) => {
+    /* v8 ignore next -- defensive: the result step is only reachable after a
+       board is chosen, so selectedBoard is never null here. */
     if (selectedBoard === null) return;
 
-    if (specialOutcome) {
-      onComplete({
-        board: selectedBoard,
-        contract: specialOutcome,
-        result: 0,
-        lead: null,
-      });
-      return;
-    }
-
-    /* v8 ignore next -- defensive: at the confirm step a non-special contract
+    /* v8 ignore next -- defensive: at the result step a non-special contract
        always has level, suit and declarer set, so the false branch is dead. */
     if (level && suit && declarer !== null) {
       const contract = buildContractCode(level, suit, dbl, declarer);
       const lead: Card | null =
         leadSuit && leadRank ? (`${leadSuit}${leadRank}` as Card) : null;
 
-      const numericResult = resultMode === "down" ? -resultValue : resultValue;
-
       onComplete({
         board: selectedBoard,
         contract,
-        result: numericResult,
+        result: mode === "down" ? -value : value,
         lead,
       });
     }
@@ -108,8 +114,6 @@ export function ContractWizard({
         return "Opening Lead";
       case 5:
         return "Enter Result";
-      case 6:
-        return "Confirm";
       default:
         return "Enter Contract";
     }
@@ -133,7 +137,7 @@ export function ContractWizard({
         return (
           <StepLevel
             onLevelSelected={onLevelSelected}
-            onSpecialOutcome={onSpecialOutcome}
+            onSpecialOutcome={submitSpecial}
           />
         );
       case 2:
@@ -157,26 +161,9 @@ export function ContractWizard({
           />
         );
       case 5:
-        return (
-          <StepResult level={level!} onResultComplete={onResultComplete} />
-        );
-      case 6:
-        return (
-          <StepConfirm
-            level={level}
-            suit={suit}
-            declarer={declarer}
-            dbl={dbl}
-            specialOutcome={specialOutcome}
-            leadSuit={leadSuit}
-            leadRank={leadRank}
-            resultMode={resultMode}
-            resultValue={resultValue}
-            onSubmit={onSubmit}
-          />
-        );
+        return <StepResult level={level!} onResultComplete={submitResult} />;
       /* v8 ignore next 2 -- defensive: useBoardFlow only ever produces
-         steps 0-6, all handled above, so this default is unreachable. */
+         steps 0-5 here, all handled above, so this default is unreachable. */
       default:
         return null;
     }

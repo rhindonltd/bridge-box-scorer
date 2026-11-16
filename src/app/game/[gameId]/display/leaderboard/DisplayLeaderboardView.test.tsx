@@ -239,7 +239,7 @@ describe("DisplayLeaderboardView auto-scroll", () => {
     );
 
     act(() => {
-      screen.getByText("Section B").click();
+      screen.getByText("B").click();
     });
 
     // find(...) succeeded -> the left side of `?? combined` (section B).
@@ -265,7 +265,7 @@ describe("DisplayLeaderboardView auto-scroll", () => {
     );
 
     act(() => {
-      screen.getByText("Section B").click();
+      screen.getByText("B").click();
     });
 
     // Re-render with B removed (but still multi-section so the view stays "B").

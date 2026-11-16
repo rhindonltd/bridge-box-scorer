@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useRequiredGame } from "@/context/GameContext";
 import { useStartCheck } from "@/hooks/start-check";
+import { useSections } from "@/hooks/sections";
 import { startGame } from "@/lib/game-service";
 import { errorMessage } from "@/lib/error-message";
 import type { StartProblem } from "@/model/start-validator";
@@ -45,6 +46,10 @@ function groupBySection(
 export function StartGameScreen({ menu }: Props) {
   const { game, mutateGame } = useRequiredGame();
   const { canStart, problems, sitOutSeat } = useStartCheck(game.gameId);
+  // Headings use each section's name (which defaults to its letter).
+  const { sections } = useSections(game.gameId);
+  const sectionName = (letter: string) =>
+    sections.find((s) => s.section === letter)?.label ?? letter;
   const [starting, setStarting] = useState(false);
 
   const multiSection = new Set(problems.map((p) => p.section)).size > 1;
@@ -89,9 +94,7 @@ export function StartGameScreen({ menu }: Props) {
               <div className="text-lg font-semibold">
                 Everything&rsquo;s ready
               </div>
-              <p className="text-sm">
-                Seating and movement are valid.
-              </p>
+              <p className="text-sm">Seating and movement are valid.</p>
               {sitOutSeat && (
                 <p className="text-sm text-gray-600">
                   One pair short — {sitOutSeat} will sit out each round.
@@ -115,7 +118,7 @@ export function StartGameScreen({ menu }: Props) {
                 >
                   {multiSection && group.section && (
                     <h2 className="border-b border-gray-200 bg-gray-100 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-gray-600">
-                      Section {group.section}
+                      {sectionName(group.section)}
                     </h2>
                   )}
                   <ul className="flex list-disc flex-col gap-2 py-3 pl-8 pr-4 text-sm text-amber-800">

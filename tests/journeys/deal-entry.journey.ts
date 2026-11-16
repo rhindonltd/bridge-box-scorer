@@ -19,7 +19,7 @@ import {
  *   2. That board's deal then shows behind the "Show hand" toggle on the
  *      player's board-results traveller.
  *   3. The director enters/corrects a board's deal from the Manage Game Menu's
- *      "Enter Deals" option.
+ *      "Deals" option.
  *   4. The director imports every board's hands from a dealing-machine PBN
  *      file, and a player's open traveller shows the hand live.
  *
@@ -87,7 +87,7 @@ test.describe("Board deal capture", () => {
       });
 
       // The entered deal is now visible to the director on that board's
-      // traveller (the shared per-board deal path). Open Enter Deals for the
+      // traveller (the shared per-board deal path). Open Deals for the
       // first board: it pre-fills with the deal the player just recorded, so a
       // populated grid (13/13 on each direction) proves it round-tripped.
       // The deals page's StartedGuard briefly redirects to /manage while its
@@ -110,7 +110,7 @@ test.describe("Board deal capture", () => {
     }
   });
 
-  test("the director enters a board's deal from the Enter Deals menu and it shows on the traveller", async ({
+  test("the director enters a board's deal from the Deals menu and it shows on the traveller", async ({
     browser,
     request,
   }) => {
@@ -132,7 +132,7 @@ test.describe("Board deal capture", () => {
       const board = schedule.rounds.find((r) => r.roundNumber === 1)!.boards[0];
       await confirmBoardPassOut(nsPage, ewPage, gameId, 1, board);
 
-      // Director opens the Enter Deals page. Its StartedGuard can briefly
+      // Director opens the Deals page. Its StartedGuard can briefly
       // redirect to /manage while resolving, so gotoStable rides that out.
       const boardButton = directorPage.getByTestId(`select-board-${board}`);
       await gotoStable(directorPage, `/game/${gameId}/manage/deals`);
@@ -200,7 +200,7 @@ test.describe("Board deal capture", () => {
       const board = schedule.rounds.find((r) => r.roundNumber === 1)!.boards[0];
       await confirmBoardPassOut(nsPage, ewPage, gameId, 1, board);
 
-      // Director: Enter Deals -> Import from PBN file. (gotoStable rides out
+      // Director: Deals -> Import from PBN file. (gotoStable rides out
       // the StartedGuard's brief redirect.)
       await gotoStable(directorPage, `/game/${gameId}/manage/deals`);
       const importButton = directorPage.getByRole("button", {

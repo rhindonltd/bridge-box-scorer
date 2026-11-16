@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useContractEntry } from "./use-contract-entry";
+import {
+  useContractEntry,
+  type ContractEntryInitial,
+} from "./use-contract-entry";
 
 type Props = {
   leadCardRequired: boolean;
@@ -9,33 +12,54 @@ type Props = {
   roundBoards: number[];
   /** Boards already confirmed (not selectable). */
   playedBoards: number[];
+  /**
+   * A previously submitted entry to resume (the player backed out of the
+   * waiting screen). Opens on the result step (or Level for a special outcome)
+   * with everything pre-filled. Ignored if its board has since been played.
+   */
+  draft?: { board: number; entry: ContractEntryInitial } | null;
 };
 
 export function useBoardFlow({
   leadCardRequired,
   roundBoards,
   playedBoards,
+  draft,
 }: Props) {
   // The boards still available for selection.
-  const selectableBoards = roundBoards.filter(
-    (b) => !playedBoards.includes(b),
-  );
+  const selectableBoards = roundBoards.filter((b) => !playedBoards.includes(b));
 
   // When only one board is selectable, skip the board-selection screen and
   // go straight to result entry with that board pre-selected.
   const autoSelectedBoard =
     selectableBoards.length === 1 ? selectableBoards[0] : null;
 
-  // Step state — start on result entry (step 1) when a board is auto-selected.
-  const [step, setStep] = useState(autoSelectedBoard !== null ? 1 : 0);
+  // Only resume a draft whose board can still be entered.
+  const usableDraft =
+    draft && selectableBoards.includes(draft.board) ? draft : null;
+  // Step state: resume at the result step (Level for a special outcome) when
+  // there is a draft; else Level when a board is auto-selected; else the picker.
+  const [step, setStep] = useState(
+    usableDraft
+      ? usableDraft.entry.specialOutcome
+        ? 1
+        : 5
+      : autoSelectedBoard !== null
+        ? 1
+        : 0,
+  );
 
   // Board state — the board the player has chosen to enter on step 0.
   const [selectedBoard, setSelectedBoard] = useState<number | null>(
-    autoSelectedBoard,
+    usableDraft ? usableDraft.board : autoSelectedBoard,
   );
 
   // The shared Level → … → Confirm contract-entry sub-flow (steps 1–6).
-  const contract = useContractEntry(leadCardRequired, setStep);
+  const contract = useContractEntry(
+    leadCardRequired,
+    setStep,
+    usableDraft?.entry,
+  );
 
   // --- Step 0 (board selection) transition, player-only ---
 

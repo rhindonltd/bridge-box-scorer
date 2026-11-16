@@ -11,6 +11,9 @@ vi.mock("swr", () => ({
 }));
 
 vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: [{ section: "A" }] }),
+}));
 vi.mock("@/swr/swr-keys", () => ({
   swrKeys: { boards: (id: string) => `/api/games/${id}/boards` },
 }));

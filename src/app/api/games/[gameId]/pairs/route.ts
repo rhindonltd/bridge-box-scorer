@@ -24,10 +24,14 @@ async function isPairsGame(gameId: string): Promise<boolean> {
 /**
  * GET /api/games/[gameId]/pairs — the pairs roster: every seat with its status
  * (active / late / withdrawn / substituted / not arrived) and the detail each
- * row's actions need. Empty for a game the roster doesn't apply to.
+ * row's actions need. Covers board-pooled Pairs and Swiss Pairs; empty for a
+ * Teams game (which needs its own roster).
  */
 export const GET = withGameRoute(async ({ db, gameId }) => {
-  if (!(await isPairsGame(gameId))) return success({ roster: [] });
+  // The roster itself (status per seat) also applies to Swiss Pairs; only the
+  // board-pooled withdraw / absence actions are limited to non-Swiss events.
+  const game = await findGameById(gameId);
+  if (game?.gameType !== "PAIRS") return success({ roster: [] });
   return success({ roster: await findGameRoster(db) });
 });
 

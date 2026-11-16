@@ -100,7 +100,7 @@ each state in one command. These are the **scoring** points to confirm, on a
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ ABSENT-TEAMS-1 | **Teams VP** game: **Manage Tables** → a table → **Change standing → Withdrawn** (choose a round, Remove/Penalised). | The team's unplayed matches score as a §3.3.9 void (withdrawer AVE−, opponent AVE+). |
+| ☐ ABSENT-TEAMS-1 | **Teams VP** game: Manage Game Menu → **Teams** → the team → **Change standing → Withdrawn** (choose a round, Remove/Penalised). | The team's unplayed matches score as a §3.3.9 void (withdrawer AVE−, opponent AVE+). |
 
 ---
 

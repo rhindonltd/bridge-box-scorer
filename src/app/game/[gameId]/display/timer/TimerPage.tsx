@@ -85,7 +85,7 @@ function SectionChooser({
             onClick={() => onChoose(s.section)}
             className="rounded-2xl bg-white/10 px-8 py-6 text-3xl font-semibold hover:bg-white/20 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
-            Section {s.section === s.label ? s.section : `${s.section} — ${s.label}`}
+            {s.label}
           </button>
         ))}
       </div>

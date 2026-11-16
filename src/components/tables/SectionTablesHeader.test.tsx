@@ -85,17 +85,4 @@ describe("SectionTablesHeader", () => {
     );
     expect(screen.getByLabelText("Section label")).toHaveValue("Green");
   });
-
-  it("is read-only once the game has started", () => {
-    setup({ readOnly: true, label: "Red" });
-    expect(screen.getByText("Red")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Section label")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Delete section" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("spinbutton", { name: "Tables" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("5 tables")).toBeInTheDocument();
-  });
 });

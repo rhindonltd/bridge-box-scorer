@@ -167,8 +167,9 @@ pairs**: turn on **Stationary** for a pair to keep them at their table and
 direction for the whole event (their opponents come to them), and turn it off to
 let them move. Stationary pairs are shown with an amber "Stationary" marker on
 the table. You can change this at any time, **including once the game is
-running**: a change applies to the rounds you draw from then on, and rounds
-already drawn stay exactly as they were played. (A pair that has since moved
+running**: open **Manage Game Menu → Pairs**, tap the pair and use its
+**Stationary** switch. A change applies to the rounds you draw from then on, and
+rounds already drawn stay exactly as they were played. (A pair that has since moved
 away is brought back to its home seat when you draw the next round.)
 
 When you're ready, tap **Start Game**.
@@ -328,13 +329,13 @@ example, to correct a board and then return to enter your own table's result.
 | Option                    | What it does                                                              |
 | ------------------------- | ------------------------------------------------------------------------- |
 | **Set Up Game**           | Returns to the Tables / Movements / Timer setup tabs. Shown only before the game starts. |
-| **Manage Tables**         | Opens the Tables view while the game is in progress — to withdraw, mark late, or re-seat pairs. |
 | **Travellers**            | View results by board, correct any that were entered wrong, and make director rulings (see [Correcting results](#correcting-results)). |
-| **Enter Deals**           | Enter or correct the dealt cards (the four hands) for any board, or import them all from a dealing machine's PBN file (see [Importing the deals from a PBN file](#importing-the-deals-from-a-pbn-file)). |
+| **Deals**                 | Enter or correct the dealt cards (the four hands) for any board, or import them all from a dealing machine's PBN file (see [Importing the deals from a PBN file](#importing-the-deals-from-a-pbn-file)). |
 | **Movement**              | View or change the movement; in a Swiss event, draw the next round.       |
 | **Timer**                 | The live timer controls: start, pause, step between phases, add or take off time (see [Controlling a running timer](#controlling-a-running-timer)). |
 | **Review Mismatches**     | _Swiss events only._ Check for pairs or teams that were drawn against the wrong opponents after a result was corrected (see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches)). |
-| **Pairs**                 | Every pair's status, plus per-pair actions such as **Move to a new device**. |
+| **Pairs**                 | Pairs and Swiss Pairs events. Every pair's status, plus per-pair actions such as **Withdraw**, **Mark without standing** and **Move to a new device**. |
+| **Teams**                 | Teams and Swiss Teams events. Every team, grouped by section, with its standing (Active, Withdrawn, Late, No standing) and the pairs that have played for it. Tap a team to change its standing. Substitutes are arranged by the players, up to three pairs per team. |
 | **Export & Publish**      | Download or publish the results (see [Exporting and publishing results](#exporting-and-publishing-results)). |
 | **Delete Game** _(red)_   | Permanently delete the game. This cannot be undone.                       |
 
@@ -608,7 +609,7 @@ want the hands on the traveller and in the exported results. Players can also
 enter them from their own devices after a round, but as director you can enter
 or correct any board at any time.
 
-1. From the Manage Game Menu, tap **Enter Deals**.
+1. From the Manage Game Menu, tap **Deals**.
 2. Choose the **board number**.
 3. Lay out the four hands: pick a direction (North, East, South, West) and tap
    that hand's cards. A card already placed in another hand can't be reused, and
@@ -634,7 +635,7 @@ AirDrop, or save it to a cloud drive, then open it from that device. You don't
 need an internet connection for the import itself: it works over the Bridge Box
 network.
 
-1. From the Manage Game Menu, tap **Enter Deals**, then **Import from PBN
+1. From the Manage Game Menu, tap **Deals**, then **Import from PBN
    file** at the bottom of the screen.
 2. Tap the file chooser under **PBN file** (its button reads "Choose file" or
    "Browse", depending on your device) and pick the `.pbn` file. If your
@@ -671,7 +672,7 @@ the order they appear in the file.
 | --- | --- |
 | "That file is too large to be a PBN deal file." | The file isn't a normal deal file. Check you picked the right one. |
 | "Could not read that file. Try pasting its text instead." | Your device couldn't open the file. Copy its text and paste it instead. |
-| "Deal is incomplete (one or more hands are not given)" | The file has a board with a missing hand. Fix the hand with **Enter Deals** after importing the others. |
+| "Deal is incomplete (one or more hands are not given)" | The file has a board with a missing hand. Fix the hand with **Deals** after importing the others. |
 | "Board {n} appears more than once; the first one was used" | The file lists the same board twice. Only the first is imported. |
 | "Game has no Board number" or "Invalid board number" | Some boards have no usable number while others do. Fix the file, or enter that board by hand. |
 | "Game has no Deal" | A board in the file has no hands. |

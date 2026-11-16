@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import useSWR from "swr";
 import { ExportReadinessPage } from "@/app/game/[gameId]/manage/export/ExportReadinessPage";
 import { buildExportReadiness } from "@/app/game/[gameId]/manage/export/export-readiness";
@@ -25,6 +26,10 @@ import type { EbuStatus } from "@/db/system/queries/ebu-credentials";
  */
 export function ExportReadiness({ gameId }: { gameId: string }) {
   const router = useRouter();
+  // Pop back to the menu rather than pushing it again: a push would add a
+  // second menu entry, and the browser back button would then loop between the
+  // menu and this screen.
+  const { onBack } = useBackNavigation(`/game/${gameId}/manage`);
 
   const { data: summary } = useSWR<ResultsSummary>(
     swrKeys.resultsSummary(gameId),
@@ -56,9 +61,9 @@ export function ExportReadiness({ gameId }: { gameId: string }) {
 
   // The section count decides whether a board's section is worth showing in the
   // detail cards. Only needed alongside the detail list, so fetch it then.
-  const { data: sections } = useSWR<{ section: string }[]>(
+  const { data: sections } = useSWR<{ section: string; label: string }[]>(
     showOutstandingDetail ? swrKeys.sections(gameId) : null,
-    unwrapFetcher<{ section: string }[]>("sections"),
+    unwrapFetcher<{ section: string; label: string }[]>("sections"),
   );
 
   const club = clubData?.club ?? null;
@@ -72,11 +77,14 @@ export function ExportReadiness({ gameId }: { gameId: string }) {
     ebuConfigured: ebu?.configured ?? false,
     outstandingBoards: showOutstandingDetail ? outstandingBoards : undefined,
     multiSection: (sections?.length ?? 0) > 1,
+    sectionLabels: Object.fromEntries(
+      (sections ?? []).map((s) => [s.section, s.label]),
+    ),
   });
 
   return (
     <ExportReadinessPage
-      onBack={() => router.push(`/game/${gameId}/manage`)}
+      onBack={onBack}
       onContinue={() => router.push(`/game/${gameId}/manage/export/options`)}
       items={items}
     />

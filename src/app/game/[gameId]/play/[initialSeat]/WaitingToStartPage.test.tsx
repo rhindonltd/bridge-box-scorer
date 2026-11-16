@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
-let mockSections: { section: string }[] = [{ section: "A" }];
+let mockSections: { section: string; label?: string }[] = [{ section: "A" }];
 vi.mock("@/hooks/sections", () => ({
   useSections: () => ({ sections: mockSections, isLoading: false }),
 }));
@@ -70,11 +70,20 @@ describe("WaitingToStartPage", () => {
   it("shows the section when the game has more than one", () => {
     mockSections = [{ section: "A" }, { section: "B" }];
     render(<WaitingToStartPage gameId="g1" seat={"B2EW" as Seat} />);
-    expect(screen.getByText(/Section B/)).toBeInTheDocument();
+    expect(screen.getByText(/in B at/)).toBeInTheDocument();
     expect(screen.getByText("Table 2")).toBeInTheDocument();
     expect(screen.getByText("East–West")).toBeInTheDocument();
   });
 
+  it("names the section by its label when it has been renamed", () => {
+    mockSections = [
+      { section: "A", label: "Red" },
+      { section: "B", label: "Blue" },
+    ];
+    render(<WaitingToStartPage gameId="g1" seat={"B2EW" as Seat} />);
+    expect(screen.getByText(/in Blue at/)).toBeInTheDocument();
+    expect(screen.queryByText(/Section/)).not.toBeInTheDocument();
+  });
   it("falls back to a seat-less message when the seat cannot be parsed", () => {
     render(<WaitingToStartPage gameId="g1" seat={"bogus" as Seat} />);
     expect(screen.getByText(/seated and ready to play/i)).toBeInTheDocument();

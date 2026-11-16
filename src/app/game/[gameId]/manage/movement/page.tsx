@@ -10,7 +10,7 @@ export default function ManageMovementRoute() {
 
   return (
     <StartedGuard gameId={gameId}>
-      <ManageMovementPage backHref={`/game/${gameId}/manage`} />
+      <ManageMovementPage backFallbackHref={`/game/${gameId}/manage`} />
     </StartedGuard>
   );
 }

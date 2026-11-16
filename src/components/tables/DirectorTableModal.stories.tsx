@@ -48,10 +48,8 @@ const meta: Meta<typeof DirectorTableModal> = {
   },
   tags: ["autodocs"],
   args: {
-    started: false,
     onEvict: fn(),
     onToggleStationary: fn(),
-    onChangeStanding: fn(),
     onToggleExpectedLate: fn(),
     onClose: fn(),
   },

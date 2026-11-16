@@ -2,9 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 const mockPush = vi.fn();
+const mockBack = vi.fn();
+const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, back: mockBack, replace: mockReplace }),
 }));
+import { recordAppNavigation, resetAppNavigation } from "@/lib/nav-history";
+// The global setup stubs this hook; these tests check the real back behaviour.
+vi.unmock("@/hooks/useBackNavigation");
 
 // Key-aware SWR mock: each swrKeys entry maps to a slot in `swrData`; a null key
 // (the skipped detail requests) yields no data.
@@ -83,12 +88,28 @@ describe("ExportReadiness", () => {
     };
   });
 
-  it("routes back and continue", () => {
+  it("routes continue", () => {
     render(<ExportReadiness gameId="g1" />);
-    fireEvent.click(screen.getByText("back"));
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage");
     fireEvent.click(screen.getByText("continue"));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/export/options");
+  });
+
+  it("backs out by popping history, not by pushing the menu again", () => {
+    // Pushing the parent would add a second entry, so the browser back button
+    // would loop between the two screens.
+    recordAppNavigation();
+    render(<ExportReadiness gameId="g1" />);
+    fireEvent.click(screen.getByText("back"));
+    expect(mockBack).toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the parent (replacing, not pushing) when opened directly", () => {
+    resetAppNavigation();
+    render(<ExportReadiness gameId="g1" />);
+    fireEvent.click(screen.getByText("back"));
+    expect(mockReplace).toHaveBeenCalledWith("/game/g1/manage");
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it("reports everything ready and skips the detail requests", () => {
@@ -101,12 +122,15 @@ describe("ExportReadiness", () => {
   it("fetches the outstanding detail when a few boards remain", () => {
     swrData["summary:g1"] = { totalPlayable: 24, finalized: 22 };
     swrData["outstanding:g1"] = [board];
-    swrData["sections:g1"] = [{ section: "A" }, { section: "B" }];
+    swrData["sections:g1"] = [
+      { section: "A", label: "Red" },
+      { section: "B", label: "Blue" },
+    ];
     render(<ExportReadiness gameId="g1" />);
     expect(requestedKeys).toContain("outstanding:g1");
     expect(requestedKeys).toContain("sections:g1");
     expect(screen.getByTestId("item-results").textContent).toContain(
-      "Round 3 · Section B · Table 2 · Board 7",
+      "Round 3 · Blue · Table 2 · Board 7",
     );
   });
 
@@ -130,9 +154,7 @@ describe("ExportReadiness", () => {
     swrData = {};
     render(<ExportReadiness gameId="g1" />);
     expect(screen.getByTestId("item-club").textContent).toMatch(/^blocker/);
-    expect(screen.getByTestId("item-bridgewebs").textContent).toMatch(
-      /^info/,
-    );
+    expect(screen.getByTestId("item-bridgewebs").textContent).toMatch(/^info/);
     expect(screen.getByTestId("item-ebu").textContent).toMatch(/^info/);
   });
 

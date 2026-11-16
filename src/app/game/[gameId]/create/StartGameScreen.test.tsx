@@ -9,6 +9,10 @@ vi.mock("@/context/GameContext", () => ({
   }),
 }));
 
+let mockSections: { section: string; label: string }[] = [];
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: mockSections }),
+}));
 let mockStartCheck: {
   canStart: boolean;
   problems: {
@@ -51,6 +55,7 @@ describe("StartGameScreen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStartCheck = { canStart: false, problems: [], sitOutSeat: null };
+    mockSections = [];
   });
 
   it("lists issues and shows NO Start Game button when the game cannot start", () => {
@@ -91,14 +96,32 @@ describe("StartGameScreen", () => {
 
     render(<StartGameScreen />);
 
-    expect(screen.getByText("Section A")).toBeInTheDocument();
-    expect(screen.getByText("Section B")).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("B")).toBeInTheDocument();
     expect(screen.getByText("No pairs are seated yet.")).toBeInTheDocument();
     expect(
       screen.getByText("More than one pair is missing."),
     ).toBeInTheDocument();
   });
 
+  it("headed by each section's name when the sections have been renamed", () => {
+    mockSections = [
+      { section: "A", label: "Red" },
+      { section: "B", label: "Blue" },
+    ];
+    mockStartCheck = {
+      canStart: false,
+      problems: [
+        { code: "NO_PAIRS_SEATED", message: "No pairs.", section: "A" },
+        { code: "MULTIPLE_EMPTY_POSITIONS", message: "Missing.", section: "B" },
+      ],
+      sitOutSeat: null,
+    };
+    render(<StartGameScreen />);
+    expect(screen.getByText("Red")).toBeInTheDocument();
+    expect(screen.getByText("Blue")).toBeInTheDocument();
+    expect(screen.queryByText(/Section [AB]/)).toBeNull();
+  });
   it("does not show a section heading for a single-section game", () => {
     mockStartCheck = {
       canStart: false,
@@ -114,7 +137,7 @@ describe("StartGameScreen", () => {
 
     render(<StartGameScreen />);
 
-    expect(screen.queryByText("Section A")).toBeNull();
+    expect(screen.queryByRole("heading")).toBeNull();
     expect(screen.getByText("No pairs are seated yet.")).toBeInTheDocument();
   });
 
