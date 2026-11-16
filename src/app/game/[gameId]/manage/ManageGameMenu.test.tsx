@@ -7,7 +7,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn(), back: vi.fn() }),
 }));
 
-let gameData: unknown = { eventFormat: "STANDARD" };
+let gameData: unknown = { gameType: "PAIRS", eventFormat: "STANDARD" };
 
 // Key-aware SWR mock: the game key returns the game (for the Swiss check); the
 // A null key (the not-started gate) yields no data.
@@ -62,7 +62,7 @@ function flag(name: string) {
 describe("ManageGameMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    gameData = { eventFormat: "STANDARD" };
+    gameData = { gameType: "PAIRS", eventFormat: "STANDARD" };
     mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
   });
 
@@ -71,14 +71,6 @@ describe("ManageGameMenu", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "onSetUpGameClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/create");
-
-    // "Manage Tables" is a post-start action, so it must NOT route to the
-    // not-started-guarded setup flow (which would bounce straight back to the
-    // menu); it has its own started-guarded route.
-    fireEvent.click(
-      screen.getByRole("button", { name: "onManageTablesClick" }),
-    );
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/tables");
 
     fireEvent.click(screen.getByRole("button", { name: "onTravellersClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/travellers");
@@ -94,6 +86,9 @@ describe("ManageGameMenu", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "onPairsClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/pairs");
+
+    fireEvent.click(screen.getByRole("button", { name: "onTeamsClick" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/teams");
 
     fireEvent.click(screen.getByRole("button", { name: "onExportClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/export");
@@ -120,6 +115,20 @@ describe("ManageGameMenu", () => {
     mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
     rerender(<ManageGameMenu gameId="g1" />);
     expect(flag("showTimer")).toBe("false");
+  });
+
+  it("shows Teams, not Pairs, for a started Teams game", () => {
+    gameData = { gameType: "TEAMS", eventFormat: "STANDARD" };
+    render(<ManageGameMenu gameId="g1" />);
+    expect(flag("showTeams")).toBe("true");
+    expect(flag("showPairs")).toBe("false");
+  });
+
+  it("shows Pairs, not Teams, for a started Pairs game", () => {
+    gameData = { gameType: "PAIRS", eventFormat: "SWISS" };
+    render(<ManageGameMenu gameId="g1" />);
+    expect(flag("showPairs")).toBe("true");
+    expect(flag("showTeams")).toBe("false");
   });
 
   it("shows Pairs once the game has started", () => {

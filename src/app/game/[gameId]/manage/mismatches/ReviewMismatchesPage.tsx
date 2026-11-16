@@ -26,9 +26,9 @@ import type { MismatchFault } from "@/model/swiss-mismatch";
 export function ReviewMismatchesPage({ gameId }: { gameId: string }) {
   const { sections, isLoading: sectionsLoading } = useSections(gameId);
 
-  const [candidates, setCandidates] = useState<SectionMismatchCandidate[] | null>(
-    null,
-  );
+  const [candidates, setCandidates] = useState<
+    SectionMismatchCandidate[] | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Candidates the director has acted on (applied or dismissed), keyed so the
@@ -134,6 +134,9 @@ export function ReviewMismatchesPage({ gameId }: { gameId: string }) {
           <MismatchCard
             key={candidateKey(c)}
             candidate={c}
+            sectionLabel={
+              sections.find((s) => s.section === c.section)?.label ?? c.section
+            }
             applying={applying === candidateKey(c)}
             onApply={(fault) => apply(c, fault)}
             onDismiss={() => dismiss(c)}
@@ -146,11 +149,14 @@ export function ReviewMismatchesPage({ gameId }: { gameId: string }) {
 
 function MismatchCard({
   candidate: c,
+  sectionLabel,
   applying,
   onApply,
   onDismiss,
 }: {
   candidate: SectionMismatchCandidate;
+  /** The section's display name. */
+  sectionLabel: string;
   applying: boolean;
   onApply: (fault: MismatchFault) => void;
   onDismiss: () => void;
@@ -164,7 +170,7 @@ function MismatchCard({
     <div className="border-2 border-gray-200 rounded-xl p-4 flex flex-col gap-3">
       <div className="text-sm text-gray-900">
         <span className="font-semibold">
-          Section {c.section}, round {c.roundNumber}, table {c.tableNumber}
+          {sectionLabel}, round {c.roundNumber}, table {c.tableNumber}
         </span>
       </div>
       <div className="text-sm text-gray-700">

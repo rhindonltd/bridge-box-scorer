@@ -19,7 +19,7 @@ import {
  * but it DOES need the club name (used as the PBN `Site`) configured in Settings,
  * and it only emits boards that actually have a recorded deal.
  *
- * So the happy path records one deal (via the director Enter Deals screen) so
+ * So the happy path records one deal (via the director Deals screen) so
  * the file has a board block to serialise, then downloads and inspects it.
  * Games record no opening lead so any play stays short.
  */

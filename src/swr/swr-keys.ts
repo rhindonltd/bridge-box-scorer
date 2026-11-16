@@ -30,6 +30,8 @@ export const swrKeys = {
   absences: (gameId: string) => `/api/games/${gameId}/absences`,
   /** Design §11: the director's Pairs roster. */
   roster: (gameId: string) => `/api/games/${gameId}/pairs`,
+  /** The director's Teams roster (Teams and Swiss Teams). */
+  teamsRoster: (gameId: string) => `/api/games/${gameId}/teams`,
 
   club: () => "/api/system/club",
 

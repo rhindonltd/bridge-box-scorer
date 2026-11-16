@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Spinner } from "@/components/common/Spinner";
 import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
+import { useSections } from "@/hooks/sections";
 import { parseContract, ContractCode } from "@/model/contract";
 import { SpecialBoardOutcome } from "@/model/result";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
@@ -48,9 +49,15 @@ function CorrectResultTraveller({
   onBack: () => void;
 }) {
   const { instances, deal, teamMatches, isLoading } = useTravellerContext();
+  const { game } = useRequiredGame();
+  const { sections } = useSections(game.gameId);
+  // Same rule as the player Board Results screen: the section only means
+  // something when results are combined across more than one section.
+  const hideSection = !(sections.length > 1 && game.combinedRanking);
 
   return (
     <Traveller
+      hideSection={hideSection}
       boardNumber={boardNumber}
       instances={instances}
       deal={deal}

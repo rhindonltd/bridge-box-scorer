@@ -115,7 +115,7 @@ describe("TimerPage", () => {
     render(<TimerPage />);
 
     act(() => {
-      screen.getByRole("button", { name: /Section B/ }).click();
+      screen.getByRole("button", { name: "B" }).click();
     });
 
     expect(screen.getByTestId("display-timer")).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe("TimerPage", () => {
     render(<TimerPage />);
 
     act(() => {
-      screen.getByRole("button", { name: /Section B/ }).click();
+      screen.getByRole("button", { name: "B" }).click();
     });
     expect(screen.getByTestId("display-timer")).toBeInTheDocument();
 
@@ -144,7 +144,7 @@ describe("TimerPage", () => {
     expect(screen.queryByTestId("display-timer")).toBeNull();
   });
 
-  it("appends the section label when it differs from the section letter", () => {
+  it("names each section by its label", () => {
     mockSections = [
       { section: "A", label: "Open" },
       { section: "B", label: "B" },
@@ -153,12 +153,8 @@ describe("TimerPage", () => {
 
     render(<TimerPage />);
 
-    // A has a distinct label -> "Section A — Open"; B matches -> "Section B".
-    expect(
-      screen.getByRole("button", { name: /Section A — Open/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Section B" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "B" })).toBeInTheDocument();
+    expect(screen.queryByText(/Section A/)).not.toBeInTheDocument();
   });
 });

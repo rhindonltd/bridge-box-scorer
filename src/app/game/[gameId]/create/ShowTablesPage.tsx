@@ -25,12 +25,7 @@ import { reportError } from "@/lib/report-error";
 import { Toggle } from "@/components/common/Toggle";
 import { SectionTablesHeader } from "@/components/tables/SectionTablesHeader";
 import { evictParticipant } from "@/lib/participant-service";
-import {
-  setParticipantStanding,
-  setSeatExpectedLate,
-  type StandingChange,
-} from "@/lib/standing-service";
-import { useGameStarted } from "@/hooks/game-started";
+import { setSeatExpectedLate } from "@/lib/standing-service";
 import { useMovementResolution } from "@/hooks/stationary-pairs";
 import { useSelectedMovementName } from "@/hooks/selected-movement-name";
 import { DirectorTableModal } from "@/components/tables/DirectorTableModal";
@@ -75,10 +70,6 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
 
   const { data: pairs } = useSWR<Pair[], Error>(key, pairsFetcher);
 
-  // Whether the game is in progress. Pre-start the table dialog offers evict /
-  // expected-late; post-start it offers EBU §2.4 standing changes instead.
-  const { started } = useGameStarted(gameId);
-
   // The empty seats marked "expected late" (§2.4.7), as a seat-string array
   // (see expectedLateFetcher for why it is not a Set in the cache). Not pushed
   // over a socket, so it is read over HTTP and re-mutated after a late toggle.
@@ -98,9 +89,8 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
   const { sections, selected, setSelected, pills, modal } = useSetupSections(
     gameId,
     {
-      // Sections are fixed once the game has started: no adding or splitting
-      // mid-event. (Swiss is single-section at any time.)
-      allowAddSection: !started && game.eventFormat !== "SWISS",
+      // (Swiss is single-section at any time.)
+      allowAddSection: game.eventFormat !== "SWISS",
     },
   );
 
@@ -260,17 +250,6 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
     }
   }
 
-  // Change a seated pair's EBU §2.4 standing. The server re-broadcasts the
-  // participant list (and leaderboard), which revalidates the pairs SWR, so no
-  // explicit mutate is needed here.
-  async function handleChangeStanding(seat: Seat, change: StandingChange) {
-    try {
-      await setParticipantStanding(gameId, seat, change);
-    } catch (err) {
-      alert(errorMessage(err, "Failed to update standing"));
-    }
-  }
-
   // Mark/unmark an empty seat "expected late". The toggle is a controlled
   // reflection of the expected-late SWR set, which is read over HTTP (not
   // pushed). Update that cache optimistically so the switch flips the instant
@@ -363,10 +342,8 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
       <div className="flex h-full min-h-0 flex-col">
         {/* Yellow, clickable warning pinned under the header when the selected
             section has no movement, or a movement that no longer fits its table
-            count. Tapping it jumps to the movement-selection step. Suppressed
-            once the game has started: the movement is fixed, so there is
-            nothing to act on. */}
-        {!started && showMovementWarning && (
+            count. Tapping it jumps to the movement-selection step. */}
+        {showMovementWarning && (
           <button
             type="button"
             onClick={() => onEditMovement?.()}
@@ -414,42 +391,26 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
         )}
 
         {/* Selected-movement summary. Shown when the section has a movement that
-            still fits (no warning) and its name has resolved. Pre-start it is a
-            button that jumps to the movement step to change the choice; once the
-            game has started the movement is fixed, so it is shown as a static
-            (non-clickable) line with no "Change" affordance. */}
-        {!showMovementWarning &&
-          selectedMovementName &&
-          (started ? (
-            <div
-              data-testid="selected-movement-summary"
-              className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700"
-            >
-              <span>
-                <span className="text-gray-500">Movement: </span>
-                <span className="font-semibold text-gray-900">
-                  {selectedMovementName}
-                </span>
+            still fits (no warning) and its name has resolved. A button that
+            jumps to the movement step to change the choice. */}
+        {!showMovementWarning && selectedMovementName && (
+          <button
+            type="button"
+            onClick={() => onEditMovement?.()}
+            data-testid="selected-movement-summary"
+            className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          >
+            <span>
+              <span className="text-gray-500">Movement: </span>
+              <span className="font-semibold text-gray-900">
+                {selectedMovementName}
               </span>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onEditMovement?.()}
-              data-testid="selected-movement-summary"
-              className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              <span>
-                <span className="text-gray-500">Movement: </span>
-                <span className="font-semibold text-gray-900">
-                  {selectedMovementName}
-                </span>
-              </span>
-              <span className="shrink-0 text-xs font-medium text-blue-600">
-                Change
-              </span>
-            </button>
-          ))}
+            </span>
+            <span className="shrink-0 text-xs font-medium text-blue-600">
+              Change
+            </span>
+          </button>
+        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {currentSection && (
@@ -462,7 +423,6 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
                 label={currentSection.label}
                 tables={currentSection.tables}
                 multiSection={multiSection}
-                readOnly={started}
                 onResize={(t) => handleResizeSection(currentSection.section, t)}
                 onRename={(label) =>
                   handleRenameSection(currentSection.section, label)
@@ -491,17 +451,9 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
             : null
         }
         isSwiss={swissSpec != null}
-        started={started}
         onEvict={handleEvict}
         onToggleStationary={handleToggleStationary}
-        onChangeStanding={handleChangeStanding}
         onToggleExpectedLate={handleToggleExpectedLate}
-        // Design §11: in a board-pooled pairs event a pair withdraws itself and
-        // the director chooses how its missed boards score on the Late
-        // Arrivals / Withdrawals screen, so no standing control here.
-        showStandingControls={
-          game.gameType !== "PAIRS" || game.eventFormat === "SWISS"
-        }
         onClose={() => setOpenTable(null)}
       />
     </GamePageLayout>

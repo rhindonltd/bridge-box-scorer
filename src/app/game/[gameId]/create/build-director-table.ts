@@ -54,13 +54,6 @@ export function buildDirectorTable(
       E: dirs?.ew ?? false,
       W: dirs?.ew ?? false,
     },
-    // Lifecycle standing applies to both compass points of each pair.
-    standing: {
-      N: nsParticipant?.standing ?? null,
-      S: nsParticipant?.standing ?? null,
-      E: ewParticipant?.standing ?? null,
-      W: ewParticipant?.standing ?? null,
-    },
     // Expected-late is a property of the (empty) seat, shared by its two
     // compass points.
     expectedLate: {

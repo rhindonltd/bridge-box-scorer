@@ -36,6 +36,7 @@ const actions = () => ({
   onSaveSubstitution: vi.fn().mockResolvedValue(undefined),
   onSetAbsenceTreatment: vi.fn().mockResolvedValue(undefined),
   onWithdraw: vi.fn().mockResolvedValue(undefined),
+  onChangeStanding: vi.fn().mockResolvedValue(undefined),
   renderReinstatePanel: vi.fn((seat: string) => (
     <div data-testid={`reinstate-panel-${seat}`} />
   )),
@@ -68,6 +69,170 @@ function renderPage(roster: RosterEntry[], over = {}) {
   render(<PairsRosterPage onBack={vi.fn()} roster={roster} {...handlers} />);
   return handlers;
 }
+
+describe("PairsRosterPage stationary (Swiss)", () => {
+  function renderSwiss(isStationary: boolean | null, toggle = vi.fn()) {
+    const h = actions();
+    render(
+      <PairsRosterPage
+        onBack={vi.fn()}
+        roster={[{ ...active, anchorId: "A5" }]}
+        isSwiss
+        stationary={{
+          isStationary: () => isStationary,
+          toggle: toggle.mockResolvedValue(undefined),
+        }}
+        {...h}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    return toggle;
+  }
+
+  it("shows the toggle with the saved value and flips it on tap", async () => {
+    const toggle = renderSwiss(false);
+    expect(
+      screen.getByRole("group", { name: "Stationary" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Applies to rounds drawn from now on/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    await waitFor(() => expect(toggle).toHaveBeenCalledTimes(1));
+    expect(toggle.mock.calls[0][0]).toMatchObject({ seat: "A1NS" });
+  });
+
+  it("does nothing when the tapped value is already the saved one", () => {
+    const toggle = renderSwiss(true);
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(toggle).not.toHaveBeenCalled();
+  });
+
+  it("is hidden for a pair that can't be marked", () => {
+    renderSwiss(null);
+    expect(
+      screen.queryByRole("group", { name: "Stationary" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("surfaces a save failure", async () => {
+    const toggle = vi.fn().mockRejectedValue(new Error("Nope"));
+    const h = actions();
+    render(
+      <PairsRosterPage
+        onBack={vi.fn()}
+        roster={[{ ...active, anchorId: "A5" }]}
+        isSwiss
+        stationary={{ isStationary: () => false, toggle }}
+        {...h}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Nope");
+  });
+
+  it("is not offered on a board-pooled Pairs game", () => {
+    renderPage([active]);
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    expect(
+      screen.queryByRole("group", { name: "Stationary" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("PairsRosterPage section names", () => {
+  it("shows each section's name on its pill and card, not 'Section X'", () => {
+    const h = actions();
+    render(
+      <PairsRosterPage
+        onBack={vi.fn()}
+        roster={[
+          active,
+          { ...active, seat: "B1NS", pair: "Bea Blue & Ben Blue" },
+        ]}
+        sectionLabels={{ A: "Red", B: "Blue" }}
+        {...h}
+      />,
+    );
+    expect(screen.getByRole("tab", { name: "Red" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Blue" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Red" })).toBeInTheDocument();
+    expect(screen.queryByText(/Section [AB]/)).not.toBeInTheDocument();
+  });
+});
+
+describe("PairsRosterPage pair identity", () => {
+  it("heads a seat with its movement id, not the seat it started at", () => {
+    renderPage([{ ...active, seat: "A2EW", anchorId: "A4" }]);
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("4");
+  });
+
+  it("falls back to the seat when the movement id is the seat itself", () => {
+    renderPage([{ ...active, seat: "A2EW" }]);
+    expect(screen.getByRole("heading", { level: 3 })).toHaveTextContent("2EW");
+  });
+});
+
+describe("PairsRosterPage standing controls", () => {
+  it("marks an active pair without standing after a confirm", async () => {
+    const h = renderPage([active]);
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Mark without standing" }),
+    );
+    expect(h.onChangeStanding).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() =>
+      expect(h.onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "WITHOUT_STANDING",
+      }),
+    );
+  });
+
+  it("restores a without-standing pair", async () => {
+    const h = renderPage([{ ...active, status: "WITHOUT_STANDING" }]);
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore standing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() =>
+      expect(h.onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "ACTIVE",
+      }),
+    );
+  });
+
+  it("Swiss: offers the standing editor, not board-pooled withdraw/absence", async () => {
+    const h = actions();
+    render(
+      <PairsRosterPage
+        onBack={vi.fn()}
+        roster={[active, withdrawn]}
+        isSwiss
+        {...h}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    expect(
+      screen.queryByRole("button", { name: "Withdraw this pair" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Change standing" }));
+    fireEvent.click(screen.getByLabelText("No standing"));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(h.onChangeStanding).toHaveBeenCalledWith("A1NS", {
+        standing: "WITHOUT_STANDING",
+      }),
+    );
+
+    // A withdrawn Swiss pair gets no AVE−/AVE+ choice or reinstate code.
+    fireEvent.click(screen.getByRole("button", { name: /Wyn Gone/ }));
+    expect(screen.queryByText("Missed boards")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reinstate on a device" }),
+    ).not.toBeInTheDocument();
+  });
+});
 
 describe("PairsRosterPage", () => {
   it("is titled Pairs and lists every pair with its status", () => {
@@ -365,19 +530,15 @@ describe("PairsRosterPage", () => {
 
     // Both sections visible under "All" (the default), each in its own
     // container headed by the section letter.
-    expect(
-      screen.getByRole("heading", { name: "Section A" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Section B" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "A" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "B" })).toBeInTheDocument();
     expect(screen.getByText("Ann Active & Bob Active")).toBeInTheDocument();
     expect(screen.getByText("Grace Hill & Hugh Ives")).toBeInTheDocument();
 
-    // Picking Section B hides section A's pairs and container.
-    fireEvent.click(screen.getByRole("tab", { name: "Section B" }));
+    // Picking section B hides section A's pairs and container.
+    fireEvent.click(screen.getByRole("tab", { name: "B" }));
     expect(
-      screen.queryByRole("heading", { name: "Section A" }),
+      screen.queryByRole("heading", { name: "A" }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText("Ann Active & Bob Active"),
@@ -449,7 +610,9 @@ describe("PairsRosterPage", () => {
       expect(screen.getByText("Pair 12NS")).toBeInTheDocument();
       expect(screen.getByText("Pair ABC")).toBeInTheDocument();
       // A seat with no digits falls back to the whole seat as its label.
-      expect(screen.getByRole("heading", { name: "ABC" })).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("heading", { name: "ABC" }).length,
+      ).toBeGreaterThan(0);
     });
 
     it("sorts seats that carry no table number", () => {
@@ -628,7 +791,9 @@ describe("PairsRosterPage", () => {
       ]);
       fireEvent.click(screen.getByRole("button", { name: /Seat not filled/ }));
       expect(
-        screen.getByText("Its opponents get AVE+ on each board they can't play."),
+        screen.getByText(
+          "Its opponents get AVE+ on each board they can't play.",
+        ),
       ).toBeInTheDocument();
     });
 

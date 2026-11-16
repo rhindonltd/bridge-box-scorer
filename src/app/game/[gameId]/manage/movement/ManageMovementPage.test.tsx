@@ -77,9 +77,9 @@ describe("ManageMovementPage", () => {
   it("shows no section selector for a single-section game", () => {
     mockUseSections.mockReturnValue({ sections: [section("A")] });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
 
-    expect(screen.queryByText("Section A")).not.toBeInTheDocument();
+    expect(screen.queryByText("A")).not.toBeInTheDocument();
     // Fetches section A's movement even though no selector is shown.
     expect(mockUseSWR).toHaveBeenCalledWith(
       "/api/games/g1/movement?section=A",
@@ -93,10 +93,10 @@ describe("ManageMovementPage", () => {
       sections: [section("A"), section("B")],
     });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
 
-    expect(screen.getByText("Section A")).toBeInTheDocument();
-    expect(screen.getByText("Section B")).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("B")).toBeInTheDocument();
     // Defaults to the first section (A).
     expect(mockUseSWR).toHaveBeenCalledWith(
       "/api/games/g1/movement?section=A",
@@ -109,9 +109,9 @@ describe("ManageMovementPage", () => {
       sections: [section("A"), section("B")],
     });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
 
-    fireEvent.click(screen.getByText("Section B"));
+    fireEvent.click(screen.getByText("B"));
 
     // Latest render requests section B.
     const lastKey = mockUseSWR.mock.calls.at(-1)?.[0];
@@ -121,7 +121,7 @@ describe("ManageMovementPage", () => {
   it("does not fetch until a section is known", () => {
     mockUseSections.mockReturnValue({ sections: [] });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
 
     expect(mockUseSWR).toHaveBeenCalledWith(null, expect.any(Function));
   });
@@ -134,7 +134,7 @@ describe("ManageMovementPage", () => {
       mutate: vi.fn(),
     });
 
-    const { container } = render(<ManageMovementPage backHref="/back" />);
+    const { container } = render(<ManageMovementPage backFallbackHref="/back" />);
     expect(container.querySelector(".animate-spin")).toBeTruthy();
   });
 
@@ -146,13 +146,13 @@ describe("ManageMovementPage", () => {
       mutate: vi.fn(),
     });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
     expect(screen.getByText("No movement set up yet.")).toBeInTheDocument();
   });
 
   it("unwraps the movement payload in the SWR fetcher", async () => {
     mockUseSections.mockReturnValue({ sections: [section("A")] });
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
 
     // The second arg passed to useSWR is the movementFetcher; invoke it with a
     // stubbed low-level fetcher response to exercise its unwrap logic.
@@ -181,7 +181,7 @@ describe("ManageMovementPage", () => {
       ],
     });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
 
     // The Swiss "Draw Next Round" control is rendered above the detail view.
     expect(screen.getByTestId("draw-next-round")).toBeInTheDocument();
@@ -200,7 +200,7 @@ describe("ManageMovementPage", () => {
       ],
     });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
     expect(screen.queryByTestId("draw-next-round")).not.toBeInTheDocument();
   });
 
@@ -220,7 +220,7 @@ describe("ManageMovementPage", () => {
       ],
     });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
 
     // The Swiss Teams "Draw Next Round" control is rendered above the detail
     // view (shares the draw-next-round testid with the pairs control).
@@ -237,7 +237,7 @@ describe("ManageMovementPage", () => {
       mutate,
     });
 
-    render(<ManageMovementPage backHref="/back" />);
+    render(<ManageMovementPage backFallbackHref="/back" />);
 
     // The effect registered a BOARD_RESULT_UPDATED handler; invoke it.
     const call = mockOn.mock.calls.find(

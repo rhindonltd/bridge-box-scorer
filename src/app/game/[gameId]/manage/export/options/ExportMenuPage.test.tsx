@@ -102,7 +102,9 @@ describe("ExportMenuPage", () => {
 
   describe("Download PBN", () => {
     it("is shown and wired when showDownloadPbn is true", () => {
-      render(<ExportMenuPage {...handlers} {...flags} showDownloadPbn={true} />);
+      render(
+        <ExportMenuPage {...handlers} {...flags} showDownloadPbn={true} />,
+      );
       fireEvent.click(screen.getByRole("button", { name: "Download PBN" }));
       expect(handlers.onDownloadPbnClick).toHaveBeenCalled();
     });

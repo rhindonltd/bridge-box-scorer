@@ -14,7 +14,6 @@ import type { Pair } from "@/model/participants";
 // across sections" toggle (shown only for a multi-section game). mutateGame is
 // the optimistic updater useCombinedRanking calls.
 let currentCombinedRanking = true;
-let currentGameExtra: Record<string, unknown> = {};
 const mockMutateGame = vi.fn();
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
@@ -22,7 +21,6 @@ vi.mock("@/context/GameContext", () => ({
       gameId: "g1",
       tables: 2,
       combinedRanking: currentCombinedRanking,
-      ...currentGameExtra,
     },
     mutateGame: mockMutateGame,
   }),
@@ -119,16 +117,7 @@ vi.mock("swr", async () => {
   };
 });
 
-// Pre-start by default; the page swaps evict/expected-late for the standing
-// controls once the game has started, and locks the structural controls
-// (table count, sections, movement). `mockStarted` lets a test flip it.
-let mockStarted = false;
-vi.mock("@/hooks/game-started", () => ({
-  useGameStarted: () => ({ started: mockStarted, isLoading: false }),
-}));
-
 vi.mock("@/lib/standing-service", () => ({
-  setParticipantStanding: vi.fn().mockResolvedValue(undefined),
   setSeatExpectedLate: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -237,10 +226,7 @@ vi.mock("@/hooks/stationary-pairs", () => ({
 }));
 
 import { fetcher } from "@/lib/fetcher";
-import {
-  setSeatExpectedLate,
-  setParticipantStanding,
-} from "@/lib/standing-service";
+import { setSeatExpectedLate } from "@/lib/standing-service";
 import { ShowTablesPage } from "./ShowTablesPage";
 
 function makePlayer(name: string) {
@@ -250,7 +236,7 @@ function makePlayer(name: string) {
 /**
  * Click the on/off button of the "Stationary" toggle inside the open table
  * dialog. Scoped to the Stationary group's accessible name because the pair row
- * now also carries a "Without standing" toggle (another Yes/No pair), so an
+ * also carries an "Expected late" toggle (another Yes/No pair), so an
  * unscoped `getByRole("button", { name: "Yes" })` would be ambiguous.
  */
 async function clickStationary(choice: "Yes" | "No") {
@@ -270,13 +256,11 @@ function pairAt(seat: string): Pair {
 describe("ShowTablesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStarted = false;
     currentPairs = [];
     syncSelector = null;
     capturedFetcher = null;
     capturedLateFetcher = null;
     expectedLateUndefined = false;
-    currentGameExtra = {};
     expectedLateStore = [];
     expectedLateServerValue = null;
     currentSections = [
@@ -984,7 +968,7 @@ describe("ShowTablesPage", () => {
       // The stationary toggle for the NS pair (table 1, ns=true -> pairId 1).
       // The Toggle renders "No"/"Yes" buttons; clicking either fires the
       // handler, which flips membership regardless of the value passed. Scope
-      // to the "Stationary" group — the row now also has a "Without standing"
+      // to the "Stationary" group — the row also has an "Expected late"
       // toggle with its own Yes/No.
       await clickStationary("Yes");
 
@@ -1138,122 +1122,6 @@ describe("ShowTablesPage", () => {
     );
   });
 
-  describe("started: structural controls are locked", () => {
-    const twoSections = [
-      {
-        section: "A",
-        label: "Red",
-        tables: 2,
-        ordinal: 0,
-        selectedMovement: null,
-      },
-      {
-        section: "B",
-        label: "Blue",
-        tables: 4,
-        ordinal: 1,
-        selectedMovement: null,
-      },
-    ];
-
-    it("hides the table-count stepper once the game has started", () => {
-      mockStarted = true;
-      render(<ShowTablesPage />);
-
-      // The table count is still shown, but the resize stepper is gone.
-      expect(screen.getByText("2 tables")).toBeInTheDocument();
-      expect(screen.queryByLabelText("Tables")).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: "Increase Tables" }),
-      ).not.toBeInTheDocument();
-    });
-
-    it("shows the section label as static text (no rename / delete) once started", () => {
-      mockStarted = true;
-      currentSections = twoSections;
-      currentSelected = "B";
-      render(<ShowTablesPage />);
-
-      // The label is read-only text, not an editable field, and Delete is gone.
-      expect(screen.getByText("Blue")).toBeInTheDocument();
-      expect(screen.queryByLabelText("Section label")).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: "Delete section" }),
-      ).not.toBeInTheDocument();
-    });
-
-    it("shows the movement as static text (no Change) once started", () => {
-      mockStarted = true;
-      currentSections = [
-        {
-          section: "A",
-          label: "A",
-          tables: 2,
-          ordinal: 0,
-          selectedMovement: {
-            source: "MITCHELL",
-            mitchell: { tables: 2, rounds: 2, boardsPerRound: 2 },
-          } as never,
-        },
-      ];
-      mockMovementTables = 2;
-
-      const onEditMovement = vi.fn();
-      render(<ShowTablesPage onEditMovement={onEditMovement} />);
-
-      // The movement is still shown (read-only), but it is not a button and
-      // carries no "Change" affordance.
-      const summary = screen.getByTestId("selected-movement-summary");
-      expect(summary).toHaveTextContent("Standard Mitchell");
-      expect(summary.tagName).not.toBe("BUTTON");
-      expect(within(summary).queryByText("Change")).not.toBeInTheDocument();
-    });
-
-    it("suppresses the movement warning banner once started", () => {
-      mockStarted = true;
-      // No movement selected would normally show the warning banner.
-      render(<ShowTablesPage onEditMovement={vi.fn()} />);
-
-      expect(
-        screen.queryByTestId("movement-warning-banner"),
-      ).not.toBeInTheDocument();
-    });
-
-    it("keeps the Swiss stationary toggle once started, and saves a change", async () => {
-      // Marking a pair stationary doesn't change the round structure, so the
-      // director can do it mid-event; it applies to rounds drawn from then on.
-      mockStarted = true;
-      currentSections = [
-        {
-          section: "A",
-          label: "A",
-          tables: 2,
-          ordinal: 0,
-          selectedMovement: {
-            source: "SWISS",
-            swiss: { tables: 2, stationaryPairs: [] },
-          } as never,
-        },
-      ];
-      currentPairs = [pairAt("A1NS")];
-      mockMovementTables = 2;
-
-      render(<ShowTablesPage />);
-      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
-
-      expect(
-        screen.getAllByText(/Applies to rounds drawn from now on/).length,
-      ).toBeGreaterThan(0);
-      await clickStationary("Yes");
-      await waitFor(() =>
-        expect(mockSetSectionSwissMovement).toHaveBeenCalledWith("g1", "A", {
-          tables: 2,
-          stationaryPairs: [1],
-        }),
-      );
-    });
-  });
-
   it("unwraps the expected-late seats payload through its SWR fetcher", async () => {
     render(<ShowTablesPage />);
     vi.mocked(fetcher).mockResolvedValueOnce({ seats: ["A1EW"] });
@@ -1325,59 +1193,5 @@ describe("ShowTablesPage", () => {
     fireEvent.change(input, { target: { value: "Renamed" } });
     fireEvent.blur(input);
     await waitFor(() => expect(mockReportError).toHaveBeenCalled());
-  });
-
-  describe("post-start standing changes", () => {
-    async function openStandingForm() {
-      mockStarted = true;
-      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
-      render(<ShowTablesPage />);
-      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
-      fireEvent.click(
-        (await screen.findAllByRole("button", { name: /Change standing/ }))[0],
-      );
-      fireEvent.click(await screen.findByLabelText("No standing"));
-      fireEvent.click(screen.getByRole("button", { name: /^Save/ }));
-    }
-
-    it("saves a standing change through the service", async () => {
-      await openStandingForm();
-      await waitFor(() =>
-        expect(setParticipantStanding).toHaveBeenCalledWith("g1", "A1NS", {
-          standing: "WITHOUT_STANDING",
-        }),
-      );
-    });
-
-    it("alerts when the standing change fails", async () => {
-      const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
-      vi.mocked(setParticipantStanding).mockRejectedValueOnce(new Error("bad"));
-      await openStandingForm();
-      await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("bad"));
-    });
-
-    it("hides standing controls for a standard PAIRS game", async () => {
-      currentGameExtra = { gameType: "PAIRS", eventFormat: "STANDARD" };
-      mockStarted = true;
-      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
-      render(<ShowTablesPage />);
-      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
-      await screen.findAllByText(/A1NS-1/);
-      expect(
-        screen.queryByRole("button", { name: /Change standing/ }),
-      ).not.toBeInTheDocument();
-    });
-
-    it("offers standing controls for Swiss PAIRS", async () => {
-      currentGameExtra = { gameType: "PAIRS", eventFormat: "SWISS" };
-      mockStarted = true;
-      currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
-      render(<ShowTablesPage />);
-      fireEvent.click(screen.getByRole("button", { name: "Manage table 1" }));
-      expect(
-        (await screen.findAllByRole("button", { name: /Change standing/ }))
-          .length,
-      ).toBeGreaterThan(0);
-    });
   });
 });

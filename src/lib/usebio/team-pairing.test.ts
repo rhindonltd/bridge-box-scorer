@@ -174,14 +174,18 @@ describe("buildTeamPairing", () => {
     expect(p.pairNumberFor("A1EW", 2)).toBe("1EW#4");
   });
 
-  it("matches rows by anchorId when the seat carries a different board id", () => {
+  it("numbers pairs by anchorId, not the seat they started at", () => {
     const occupancies = [
       occ(1, "A1NS", "home", { anchorId: "A1" }),
       occ(2, "A1EW", "away", { anchorId: "A6" }),
     ];
     const p = buildTeamPairing([team(1)], occupancies);
-    expect(p.pairNumberFor("A1", 1)).toBe("1NS");
-    expect(p.pairNumberFor("A6", 1)).toBe("1EW");
+    expect(p.pairsByTeamId.get("A1NS")!.map((x) => x.pairNumber)).toEqual([
+      "1",
+      "6",
+    ]);
+    expect(p.pairNumberFor("A1", 1)).toBe("1");
+    expect(p.pairNumberFor("A6", 1)).toBe("6");
     expect(p.pairNumberFor("A1NS", 1)).toBeUndefined();
   });
 

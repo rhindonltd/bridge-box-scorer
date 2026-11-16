@@ -7,6 +7,7 @@ import {
   useLeaderboardContext,
 } from "@/context/LeaderboardContext";
 import { useRequiredGame } from "@/context/GameContext";
+import { useSections } from "@/hooks/sections";
 import {
   DisplayLeaderboardView,
   type LeaderboardScoringMode,
@@ -25,6 +26,10 @@ function parseScoringMode(value: string | null): LeaderboardScoringMode {
 function DisplayLeaderboardContent() {
   const { game } = useRequiredGame();
   const { leaderboard, sections, isLoading } = useLeaderboardContext();
+  const { sections: gameSections } = useSections(game.gameId);
+  const sectionLabels = Object.fromEntries(
+    gameSections.map((s) => [s.section, s.label]),
+  );
 
   // MP games carry the %/matchpoints choice made on the preceding chooser
   // screen as `?mode=`. Non-MP games have a single view and ignore it.
@@ -36,6 +41,7 @@ function DisplayLeaderboardContent() {
       eventName={game.eventName}
       leaderboard={leaderboard}
       sections={sections}
+      sectionLabels={sectionLabels}
       isLoading={isLoading}
       scoringMode={scoringMode}
     />

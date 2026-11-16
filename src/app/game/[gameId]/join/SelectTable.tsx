@@ -52,8 +52,7 @@ export default function SelectTable({
             >
               {multiSection && (
                 <h2 className="border-b border-gray-200 bg-gray-100 px-4 py-2.5 text-base font-semibold text-gray-800">
-                  Section {s.section}
-                  {s.label !== s.section ? ` — ${s.label}` : ""}
+                  {s.label}
                 </h2>
               )}
               <div

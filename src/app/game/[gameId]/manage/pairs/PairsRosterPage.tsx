@@ -1,11 +1,13 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { Toggle } from "@/components/common/Toggle";
 import { PillToggle } from "@/components/common/PillToggle";
 import type { SubstitutionSeat } from "@/db/games/queries/find-substitution-seats";
+import { StandingForm } from "@/components/tables/StandingForm";
+import type { StandingChange } from "@/lib/standing-service";
 import type { OccupantEligibilityInput } from "@/lib/game-service";
 import type { AbsentPair } from "@/db/games/queries/find-absent-pairs";
 import type { AbsenceTreatment } from "@/model/absence";
@@ -21,6 +23,21 @@ export interface SubstitutionSaveOptions {
   eligibility: OccupantEligibilityInput[];
 }
 
+/**
+ * Swiss Pairs only: whether a pair is marked stationary (it keeps its table and
+ * direction for the whole event) and how to flip that. A change applies to
+ * rounds drawn from then on; rounds already drawn stay as they were. Supplied
+ * by the container, which owns the section's Swiss movement spec.
+ */
+export interface StationaryControl {
+  /** True/false for a pair that can be marked; null when it can't (no id). */
+  isStationary: (entry: RosterEntry) => boolean | null;
+  /** Flip the pair's stationary flag. Rejects with a message on failure. */
+  toggle: (entry: RosterEntry) => Promise<void>;
+}
+
+const StationaryContext = createContext<StationaryControl | null>(null);
+
 /** The per-row action handlers the roster needs. */
 export interface PairsRosterActions {
   /** Persist a substitution seat's split + eligibility choices. */
@@ -35,6 +52,12 @@ export interface PairsRosterActions {
   ) => Promise<void>;
   /** Director withdraws the pair at `seat` from the round it is on. */
   onWithdraw: (seat: string) => Promise<void>;
+  /**
+   * Change the pair's EBU §2.4 standing (active / without standing for a Pairs
+   * game; also withdrawn / late for Swiss Pairs). Rejects with a message on
+   * failure.
+   */
+  onChangeStanding: (seat: string, change: StandingChange) => Promise<void>;
   /**
    * Render the "reinstate on the returning device" code panel for `seat` — a
    * REINSTATE seat-transfer code the returning device claims. Supplied by the
@@ -62,27 +85,43 @@ export interface PairsRosterPageProps extends PairsRosterActions {
    * to true.
    */
   isPairs?: boolean;
+  /**
+   * Whether this is a Swiss Pairs game. A Swiss pair isn't pre-scheduled for
+   * later rounds (it simply isn't drawn), so the board-pooled withdraw /
+   * reinstate / AVE− choices don't apply; the director uses the full standing
+   * editor instead (the same editor the Teams roster uses).
+   */
+  isSwiss?: boolean;
+  /**
+   * Each section's display name, keyed by section letter (e.g. A → "Red"). A
+   * section with no entry shows its letter.
+   */
+  sectionLabels?: Record<string, string>;
+  /** Swiss Pairs: the stationary toggle on each pair's row. Omit to hide it. */
+  stationary?: StationaryControl;
 }
 
 /** The badge label + colour for each roster status, including the green Active. */
-const STATUS_BADGE: Record<RosterStatus, { label: string; className: string }> =
-  {
-    ACTIVE: { label: "Active", className: "bg-green-100 text-green-700" },
-    WITHDRAWN: { label: "Withdrawn", className: "bg-red-100 text-red-700" },
-    LATE: { label: "Late", className: "bg-amber-100 text-amber-800" },
-    SUBSTITUTED: {
-      label: "Substituted",
-      className: "bg-blue-100 text-blue-700",
-    },
-    WITHOUT_STANDING: {
-      label: "Without standing",
-      className: "bg-gray-200 text-gray-700",
-    },
-    NOT_ARRIVED: {
-      label: "Not arrived",
-      className: "bg-amber-100 text-amber-800",
-    },
-  };
+export const STATUS_BADGE: Record<
+  RosterStatus,
+  { label: string; className: string }
+> = {
+  ACTIVE: { label: "Active", className: "bg-green-100 text-green-700" },
+  WITHDRAWN: { label: "Withdrawn", className: "bg-red-100 text-red-700" },
+  LATE: { label: "Late", className: "bg-amber-100 text-amber-800" },
+  SUBSTITUTED: {
+    label: "Substituted",
+    className: "bg-blue-100 text-blue-700",
+  },
+  WITHOUT_STANDING: {
+    label: "Without standing",
+    className: "bg-gray-200 text-gray-700",
+  },
+  NOT_ARRIVED: {
+    label: "Not arrived",
+    className: "bg-amber-100 text-amber-800",
+  },
+};
 
 /**
  * The director's "Pairs" roster (design §11): every pair in a board-pooled
@@ -97,9 +136,13 @@ export function PairsRosterPage({
   onBack,
   roster,
   isPairs = true,
+  isSwiss = false,
+  sectionLabels = {},
+  stationary,
   onSaveSubstitution,
   onSetAbsenceTreatment,
   onWithdraw,
+  onChangeStanding,
   renderReinstatePanel,
   renderMoveDevicePanel,
 }: PairsRosterPageProps) {
@@ -118,55 +161,61 @@ export function PairsRosterPage({
 
   const rowProps = {
     isPairs,
+    isSwiss,
     openSeat,
     onToggleSeat: (seat: string) =>
       setOpenSeat((s) => (s === seat ? null : seat)),
     onSaveSubstitution,
     onSetAbsenceTreatment,
     onWithdraw,
+    onChangeStanding,
     renderReinstatePanel,
     renderMoveDevicePanel,
   };
 
   return (
-    <GamePageLayout
-      headerTitle="Pairs"
-      contentMode="scroll"
-      backAction={onBack}
-      headerRight={headerRight}
-    >
-      <div className="flex flex-col gap-4 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
-        <p className="text-sm text-gray-600">
-          Every pair in the game. Tap a pair to withdraw or reinstate it, or to
-          choose how a late, withdrawn or substituted pair&rsquo;s boards score.
-        </p>
+    <StationaryContext.Provider value={stationary ?? null}>
+      <GamePageLayout
+        headerTitle="Pairs"
+        contentMode="scroll"
+        backAction={onBack}
+        headerRight={headerRight}
+      >
+        <div className="flex flex-col gap-4 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
+          <p className="text-sm text-gray-600">
+            Every pair in the game. Tap a pair to withdraw or reinstate it, or
+            to choose how a late, withdrawn or substituted pair&rsquo;s boards
+            score.
+          </p>
 
-        {/* Section pills (multi-section only): All + one per section, matching
+          {/* Section pills (multi-section only): All + one per section, matching
             the table-setup screen. The container cards below filter to the
             chosen section. */}
-        {multiSection && (
-          <RosterSectionPills
-            sections={groups.map((g) => g.section)}
-            selected={section}
-            onSelect={setSection}
-          />
-        )}
-
-        {roster.length === 0 ? (
-          <p className="text-sm text-gray-500">No pairs seated yet.</p>
-        ) : (
-          visible.map((group) => (
-            <SectionContainer
-              key={group.section}
-              section={group.section}
-              entries={group.entries}
-              showHeader={multiSection}
-              {...rowProps}
+          {multiSection && (
+            <RosterSectionPills
+              sections={groups.map((g) => g.section)}
+              labels={sectionLabels}
+              selected={section}
+              onSelect={setSection}
             />
-          ))
-        )}
-      </div>
-    </GamePageLayout>
+          )}
+
+          {roster.length === 0 ? (
+            <p className="text-sm text-gray-500">No pairs seated yet.</p>
+          ) : (
+            visible.map((group) => (
+              <SectionContainer
+                key={group.section}
+                label={sectionLabels[group.section] ?? group.section}
+                entries={group.entries}
+                showHeader={multiSection}
+                {...rowProps}
+              />
+            ))
+          )}
+        </div>
+      </GamePageLayout>
+    </StationaryContext.Provider>
   );
 }
 
@@ -227,8 +276,8 @@ function groupBySection(roster: RosterEntry[]): SectionGroup[] {
     .map(([section, entries]) => ({
       section,
       entries: [...entries].sort((a, b) => {
-        const [ta, da] = seatSortKey(a.seat);
-        const [tb, db] = seatSortKey(b.seat);
+        const [ta, da] = seatSortKey(a.anchorId ?? a.seat);
+        const [tb, db] = seatSortKey(b.anchorId ?? b.seat);
         return ta - tb || da - db;
       }),
     }))
@@ -241,22 +290,26 @@ function groupBySection(roster: RosterEntry[]): SectionGroup[] {
  * game (there is nothing to disambiguate).
  */
 function SectionContainer({
-  section,
+  label,
   entries,
   showHeader,
   isPairs,
+  isSwiss,
   openSeat,
   onToggleSeat,
   onSaveSubstitution,
   onSetAbsenceTreatment,
   onWithdraw,
+  onChangeStanding,
   renderReinstatePanel,
   renderMoveDevicePanel,
 }: {
-  section: string;
+  /** The section's display name. */
+  label: string;
   entries: RosterEntry[];
   showHeader: boolean;
   isPairs: boolean;
+  isSwiss: boolean;
   openSeat: string | null;
   onToggleSeat: (seat: string) => void;
 } & PairsRosterActions) {
@@ -267,11 +320,13 @@ function SectionContainer({
           key={entry.seat}
           entry={entry}
           isPairs={isPairs}
+          isSwiss={isSwiss}
           open={openSeat === entry.seat}
           onToggle={() => onToggleSeat(entry.seat)}
           onSaveSubstitution={onSaveSubstitution}
           onSetAbsenceTreatment={onSetAbsenceTreatment}
           onWithdraw={onWithdraw}
+          onChangeStanding={onChangeStanding}
           renderReinstatePanel={renderReinstatePanel}
           renderMoveDevicePanel={renderMoveDevicePanel}
         />
@@ -286,7 +341,7 @@ function SectionContainer({
   return (
     <section className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
       <h2 className="border-b border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700">
-        Section {section}
+        {label}
       </h2>
       <div className="p-3">{body}</div>
     </section>
@@ -298,8 +353,12 @@ function SectionContainer({
  * the seat with its leading section letter(s) stripped. Shown as the per-seat
  * container heading, since the section is already named by the enclosing card.
  */
-function seatLabel(seat: string): string {
-  return seat.replace(/^[^0-9]+/, "") || seat;
+function seatLabel(entry: RosterEntry): string {
+  // Once the game has started a pair is identified by its movement id (its
+  // anchor), not the seat it started at; the two differ for a Howell, a
+  // one-winner Mitchell or a Swiss event.
+  const id = entry.anchorId ?? entry.seat;
+  return id.replace(/^[^0-9]+/, "") || id;
 }
 
 /**
@@ -312,16 +371,19 @@ function seatLabel(seat: string): string {
 function SeatContainer({
   entry,
   isPairs,
+  isSwiss,
   open,
   onToggle,
   onSaveSubstitution,
   onSetAbsenceTreatment,
   onWithdraw,
+  onChangeStanding,
   renderReinstatePanel,
   renderMoveDevicePanel,
 }: {
   entry: RosterEntry;
   isPairs: boolean;
+  isSwiss: boolean;
   open: boolean;
   onToggle: () => void;
 } & PairsRosterActions) {
@@ -332,7 +394,7 @@ function SeatContainer({
           number and its state read at a glance before the row is opened. */}
       <div className="flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50 px-3 py-1.5">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          {seatLabel(entry.seat)}
+          {seatLabel(entry)}
         </h3>
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge.className}`}
@@ -343,11 +405,13 @@ function SeatContainer({
       <RosterRow
         entry={entry}
         isPairs={isPairs}
+        isSwiss={isSwiss}
         open={open}
         onToggle={onToggle}
         onSaveSubstitution={onSaveSubstitution}
         onSetAbsenceTreatment={onSetAbsenceTreatment}
         onWithdraw={onWithdraw}
+        onChangeStanding={onChangeStanding}
         renderReinstatePanel={renderReinstatePanel}
         renderMoveDevicePanel={renderMoveDevicePanel}
       />
@@ -360,12 +424,15 @@ function SeatContainer({
  * same tab-pill style as the table-setup screen's {@link SectionPills}. The
  * director picks which section's container to show (or All).
  */
-function RosterSectionPills({
+export function RosterSectionPills({
   sections,
+  labels = {},
   selected,
   onSelect,
 }: {
   sections: string[];
+  /** Display name per section letter; a missing entry shows the letter. */
+  labels?: Record<string, string>;
   selected: string;
   onSelect: (section: string) => void;
 }) {
@@ -392,7 +459,7 @@ function RosterSectionPills({
                 : "bg-gray-200 text-gray-800 hover:bg-gray-300"
             }`}
           >
-            {value === ALL_SECTIONS ? "All" : `Section ${value}`}
+            {value === ALL_SECTIONS ? "All" : (labels[value] ?? value)}
           </button>
         );
       })}
@@ -401,8 +468,10 @@ function RosterSectionPills({
 }
 
 /** A one-line summary of what a non-active status means, for the collapsed row. */
-function statusDetail(entry: RosterEntry): string | null {
-  if (entry.absence) return absenceSummary(entry.absence);
+function statusDetail(entry: RosterEntry, isSwiss: boolean): string | null {
+  // The "N boards missed" summary counts pre-scheduled boards, which a Swiss
+  // pair (drawn round by round) doesn't have.
+  if (entry.absence && !isSwiss) return absenceSummary(entry.absence);
   if (entry.status === "SUBSTITUTED")
     return "A pair took over part-way through";
   if (entry.status === "WITHOUT_STANDING") return "Plays but is not ranked";
@@ -413,20 +482,23 @@ function statusDetail(entry: RosterEntry): string | null {
 function RosterRow({
   entry,
   isPairs,
+  isSwiss,
   open,
   onToggle,
   onSaveSubstitution,
   onSetAbsenceTreatment,
   onWithdraw,
+  onChangeStanding,
   renderReinstatePanel,
   renderMoveDevicePanel,
 }: {
   entry: RosterEntry;
   isPairs: boolean;
+  isSwiss: boolean;
   open: boolean;
   onToggle: () => void;
 } & PairsRosterActions) {
-  const detail = statusDetail(entry);
+  const detail = statusDetail(entry, isSwiss);
   // A substituted seat had two pairs, so the header names BOTH (the card below
   // then only needs the Split + per-pair controls, not a repeated name line).
   const names = entry.substitution
@@ -472,9 +544,11 @@ function RosterRow({
           <RosterRowActions
             entry={entry}
             isPairs={isPairs}
+            isSwiss={isSwiss}
             onSaveSubstitution={onSaveSubstitution}
             onSetAbsenceTreatment={onSetAbsenceTreatment}
             onWithdraw={onWithdraw}
+            onChangeStanding={onChangeStanding}
             renderReinstatePanel={renderReinstatePanel}
             renderMoveDevicePanel={renderMoveDevicePanel}
           />
@@ -488,12 +562,18 @@ function RosterRow({
 function RosterRowActions({
   entry,
   isPairs,
+  isSwiss,
   onSaveSubstitution,
   onSetAbsenceTreatment,
   onWithdraw,
+  onChangeStanding,
   renderReinstatePanel,
   renderMoveDevicePanel,
-}: { entry: RosterEntry; isPairs: boolean } & PairsRosterActions) {
+}: {
+  entry: RosterEntry;
+  isPairs: boolean;
+  isSwiss: boolean;
+} & PairsRosterActions) {
   if (entry.substitution) {
     return (
       <SubstitutionCard
@@ -503,12 +583,35 @@ function RosterRowActions({
       />
     );
   }
+  if (isSwiss) {
+    // No pair is seated at an expected-late seat yet, so there is no standing
+    // to change.
+    if (entry.status === "NOT_ARRIVED") return null;
+    return (
+      <div className="flex flex-col gap-3">
+        <StandingControl
+          seat={entry.seat}
+          label={entry.pair ?? seatLabel(entry)}
+          status={entry.status}
+          onChangeStanding={onChangeStanding}
+        />
+        <StationaryToggle entry={entry} />
+        {renderMoveDevicePanel && entry.status !== "WITHDRAWN" && (
+          <MoveDevicePanel
+            seat={entry.seat}
+            renderMoveDevicePanel={renderMoveDevicePanel}
+          />
+        )}
+      </div>
+    );
+  }
   if (entry.status === "WITHDRAWN") {
     return (
       <div className="flex flex-col gap-3">
         {entry.absence && (
           <AbsenceChoice
             row={entry.absence}
+            label={seatLabel(entry)}
             onSetTreatment={onSetAbsenceTreatment}
           />
         )}
@@ -529,6 +632,7 @@ function RosterRowActions({
         {entry.absence && (
           <AbsenceChoice
             row={entry.absence}
+            label={seatLabel(entry)}
             onSetTreatment={onSetAbsenceTreatment}
           />
         )}
@@ -551,7 +655,175 @@ function RosterRowActions({
           renderMoveDevicePanel={renderMoveDevicePanel}
         />
       )}
+      <WithoutStandingButton
+        entry={entry}
+        onChangeStanding={onChangeStanding}
+      />
       <WithdrawButton seat={entry.seat} onWithdraw={onWithdraw} />
+    </div>
+  );
+}
+
+/**
+ * Mark a playing pair "without standing" (it plays on but isn't ranked, EBU
+ * §2.4.9), or restore it. Both are plain standing changes with no round or
+ * treatment, so a confirm is all that is needed.
+ */
+function WithoutStandingButton({
+  entry,
+  onChangeStanding,
+}: {
+  entry: RosterEntry;
+  onChangeStanding: PairsRosterActions["onChangeStanding"];
+}) {
+  const restoring = entry.status === "WITHOUT_STANDING";
+  return (
+    <ConfirmAction
+      label={restoring ? "Restore standing" : "Mark without standing"}
+      confirm={
+        restoring
+          ? "Rank this pair again?"
+          : "Mark without standing? They'll play on but won't be ranked."
+      }
+      run={() =>
+        onChangeStanding(
+          entry.seat,
+          restoring ? { standing: "ACTIVE" } : { standing: "WITHOUT_STANDING" },
+        )
+      }
+    />
+  );
+}
+
+/**
+ * Swiss Pairs: mark a pair stationary (it keeps its table and direction for the
+ * whole event) or release it. Saves as soon as it is flipped and reverts if the
+ * save fails. Hidden when the container supplies no control, or the pair has no
+ * movement id to mark.
+ */
+function StationaryToggle({ entry }: { entry: RosterEntry }) {
+  const control = useContext(StationaryContext);
+  const [pending, setPending] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const current = control?.isStationary(entry) ?? null;
+  if (!control || current == null) return null;
+
+  const value = pending ?? current;
+  const labelId = `stationary-${entry.seat.replace(/\W+/g, "-")}`;
+
+  async function change(next: boolean) {
+    if (next === value) return;
+    setError(null);
+    setPending(next);
+    try {
+      await control!.toggle(entry);
+    } catch (err) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : "Could not save. Please try again.",
+      );
+    } finally {
+      // The container's data now carries the saved value (or the unchanged one
+      // after a failure), so stop overriding it.
+      setPending(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-3">
+        <span id={labelId} className="text-sm font-medium text-gray-700">
+          Stationary
+        </span>
+        <Toggle
+          value={value}
+          offLabel="No"
+          onLabel="Yes"
+          labelledBy={labelId}
+          onChange={(next) => void change(next)}
+        />
+      </div>
+      <p className="text-xs text-gray-500">
+        Applies to rounds drawn from now on; rounds already drawn stay as they
+        were.
+      </p>
+      {error && (
+        <p role="alert" className="text-sm font-medium text-red-600">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The full Active / Withdrawn / Late / No standing editor (round, REMOVE vs
+ * PENALISED, fine %), as the old Manage Tables screen did. Used for Swiss Pairs and for
+ * Teams (shared with the Teams roster): neither has pre-scheduled boards to
+ * mark absent, so this only records the standing; the draw and scoring read it
+ * from there. `seat` is the seat the standing is stored on (for a team, its
+ * home NS seat).
+ */
+export function StandingControl({
+  seat,
+  label,
+  status,
+  onChangeStanding,
+}: {
+  seat: string;
+  /** Names the contestant for the editor's accessible labels. */
+  label: string;
+  status: RosterStatus;
+  onChangeStanding: PairsRosterActions["onChangeStanding"];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="w-full rounded-lg border border-gray-300 bg-white py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+      >
+        Change standing
+      </button>
+    );
+  }
+
+  const current = status;
+  return (
+    <div className="flex flex-col gap-2">
+      {error && (
+        <p role="alert" className="text-sm font-medium text-red-600">
+          {error}
+        </p>
+      )}
+      <StandingForm
+        label={label}
+        current={
+          current === "WITHDRAWN" ||
+          current === "LATE" ||
+          current === "WITHOUT_STANDING"
+            ? current
+            : "ACTIVE"
+        }
+        onCancel={() => setEditing(false)}
+        onSave={(change) => {
+          setError(null);
+          onChangeStanding(seat, change).then(
+            () => setEditing(false),
+            (err: unknown) =>
+              setError(
+                err instanceof Error && err.message
+                  ? err.message
+                  : "Could not save. Please try again.",
+              ),
+          );
+        }}
+      />
     </div>
   );
 }
@@ -681,9 +953,7 @@ function ConfirmAction({
 
   const primary = danger
     ? "border-red-600 bg-red-600 hover:bg-red-700 focus-visible:ring-red-500"
-    : /* v8 ignore start -- unreachable: the only caller (WithdrawButton) always passes danger */
-      "border-blue-600 bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-500";
-  /* v8 ignore stop */
+    : "border-blue-600 bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-500";
 
   if (!confirming) {
     return (
@@ -746,9 +1016,12 @@ function absenceSummary(row: AbsentPair): string {
  */
 function AbsenceChoice({
   row,
+  label,
   onSetTreatment,
 }: {
   row: AbsentPair;
+  /** What to call an unnamed pair (its movement id), when `row.pair` is null. */
+  label: string;
   onSetTreatment: (seat: string, treatment: AbsenceTreatment) => Promise<void>;
 }) {
   const [treatment, setTreatment] = useState<AbsenceTreatment>(row.treatment);
@@ -776,7 +1049,7 @@ function AbsenceChoice({
       <span className="text-sm font-medium text-gray-700">Missed boards</span>
       <PillToggle<AbsenceTreatment>
         name={`absence-${seatSlug}`}
-        legend={`Missed boards for ${row.pair ?? row.seat}`}
+        legend={`Missed boards for ${row.pair ?? label}`}
         options={[
           { value: "AVERAGE", label: "AVE− / AVE+" },
           { value: "REMOVED", label: "Remove" },

@@ -74,6 +74,51 @@ describe("generateUsebio", () => {
     vi.clearAllMocks();
   });
 
+  it("numbers pairs by anchor id, matching the traveller lines", async () => {
+    // A Howell-style movement: the pair that started at seat A1EW is pair A4.
+    // Its <PAIR> number must equal the id its board rows carry, not its seat.
+    vi.mocked(findPairs).mockResolvedValue([
+      {
+        initialSeat: "A1NS",
+        anchorId: "A3",
+        player1: { firstName: "A", lastName: "B" },
+        player2: { firstName: "C", lastName: "D" },
+      },
+      {
+        initialSeat: "A1EW",
+        anchorId: "A4",
+        player1: { firstName: "E", lastName: "F" },
+        player2: { firstName: "G", lastName: "H" },
+      },
+    ] as any);
+
+    const db = mockDb([
+      {
+        tableNumber: 1,
+        boardNumber: 1,
+        roundNumber: 1,
+        ns: "A3",
+        ew: "A4",
+        status: "PLAYED",
+        confirmedResult: "3NTN=",
+        directorOverrideResult: null,
+        confirmedLead: null,
+        section: "A",
+      },
+    ]);
+
+    await generateUsebio(db, makeGame(), club, "NORMAL_CLUB");
+
+    const data = vi.mocked(generateUsebioXml).mock
+      .calls[0][0] as UsebioPairsData;
+    expect(data.pairs.map((p) => [p.pairNumber, p.direction])).toEqual([
+      ["3", "N"],
+      ["4", "E"],
+    ]);
+    expect(data.boardResults[0].nsPairNumber).toBe("3");
+    expect(data.boardResults[0].ewPairNumber).toBe("4");
+  });
+
   it("maps NS/EW directions and every outcome/lead fallback branch", async () => {
     vi.mocked(findPairs).mockResolvedValue([
       {

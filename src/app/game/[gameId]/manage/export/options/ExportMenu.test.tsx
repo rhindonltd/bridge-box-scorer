@@ -2,9 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 const mockPush = vi.fn();
+const mockBack = vi.fn();
+const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, back: mockBack, replace: mockReplace }),
 }));
+import { recordAppNavigation, resetAppNavigation } from "@/lib/nav-history";
+// The global setup stubs this hook; these tests check the real back behaviour.
+vi.unmock("@/hooks/useBackNavigation");
 
 let swrData: Record<string, unknown>;
 vi.mock("swr", () => ({
@@ -57,7 +62,6 @@ describe("ExportMenu", () => {
   it("routes each action to its screen", () => {
     render(<ExportMenu gameId="g1" />);
     const routes: Record<string, string> = {
-      onBack: "/game/g1/manage/export",
       onDownloadUsebioClick: "/game/g1/manage/download-usebio",
       onDownloadPbnClick: "/game/g1/manage/download-pbn",
       onUploadBridgewebsClick: "/game/g1/manage/upload-bridgewebs",
@@ -67,6 +71,24 @@ describe("ExportMenu", () => {
       fireEvent.click(screen.getByRole("button", { name }));
       expect(mockPush).toHaveBeenLastCalledWith(path);
     }
+  });
+
+  it("backs out by popping history, not by pushing the menu again", () => {
+    // Pushing the parent would add a second entry, so the browser back button
+    // would loop between the two screens.
+    recordAppNavigation();
+    render(<ExportMenu gameId="g1" />);
+    fireEvent.click(screen.getByRole("button", { name: "onBack" }));
+    expect(mockBack).toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the parent (replacing, not pushing) when opened directly", () => {
+    resetAppNavigation();
+    render(<ExportMenu gameId="g1" />);
+    fireEvent.click(screen.getByRole("button", { name: "onBack" }));
+    expect(mockReplace).toHaveBeenCalledWith("/game/g1/manage/export");
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it("shows everything enabled when started, configured and complete", () => {

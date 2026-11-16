@@ -16,12 +16,12 @@ describe("SectionPills", () => {
 
     const tabs = screen.getAllByRole("tab");
     expect(tabs).toHaveLength(2);
-    expect(screen.getByRole("tab", { name: "Section A" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "A" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
     expect(
-      screen.getByRole("tab", { name: /Section B — Blue/ }),
+      screen.getByRole("tab", { name: "Blue" }),
     ).toHaveAttribute("aria-selected", "false");
   });
 
@@ -31,7 +31,7 @@ describe("SectionPills", () => {
       <SectionPills sections={sections} selected="A" onSelect={onSelect} />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
+    fireEvent.click(screen.getByRole("tab", { name: "Blue" }));
     expect(onSelect).toHaveBeenCalledWith("B");
   });
 
@@ -65,7 +65,7 @@ describe("SectionPills", () => {
       />,
     );
 
-    // No "Section A" tab when there's only one section.
+    // No section tab when there's only one section.
     expect(screen.queryByRole("tab")).toBeNull();
     // A single "Split into sections" pill opens the add flow.
     const split = screen.getByRole("button", { name: /Split into sections/ });

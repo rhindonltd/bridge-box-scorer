@@ -5,6 +5,19 @@ import { ContractSuit, Doubling, Level } from "@/model/contract";
 import { SpecialBoardOutcome } from "@/model/result";
 import { Direction, Rank, Suit } from "@/model/common";
 
+/** Pre-filled state for {@link useContractEntry} (e.g. returning from the waiting screen). */
+export interface ContractEntryInitial {
+  level?: Level | null;
+  suit?: ContractSuit | null;
+  declarer?: Direction | null;
+  dbl?: Doubling;
+  specialOutcome?: SpecialBoardOutcome | null;
+  leadSuit?: Suit | null;
+  leadRank?: Rank | null;
+  resultMode?: "made" | "down";
+  resultValue?: number;
+}
+
 /**
  * The contract-entry sub-flow shared by the player board wizard
  * ({@link import("./board-flow").useBoardFlow}) and the director correction
@@ -25,22 +38,31 @@ import { Direction, Rank, Suit } from "@/model/common";
 export function useContractEntry(
   leadCardRequired: boolean,
   setStep: (step: number) => void,
+  initial?: ContractEntryInitial,
 ) {
   // Contract state
-  const [level, setLevel] = useState<Level | null>(null);
-  const [suit, setSuit] = useState<ContractSuit | null>(null);
-  const [declarer, setDeclarer] = useState<Direction | null>(null);
-  const [dbl, setDbl] = useState<Doubling>("");
+  const [level, setLevel] = useState<Level | null>(initial?.level ?? null);
+  const [suit, setSuit] = useState<ContractSuit | null>(initial?.suit ?? null);
+  const [declarer, setDeclarer] = useState<Direction | null>(
+    initial?.declarer ?? null,
+  );
+  const [dbl, setDbl] = useState<Doubling>(initial?.dbl ?? "");
   const [specialOutcome, setSpecialOutcome] =
-    useState<SpecialBoardOutcome | null>(null);
+    useState<SpecialBoardOutcome | null>(initial?.specialOutcome ?? null);
 
   // Lead state
-  const [leadSuit, setLeadSuit] = useState<Suit | null>(null);
-  const [leadRank, setLeadRank] = useState<Rank | null>(null);
+  const [leadSuit, setLeadSuit] = useState<Suit | null>(
+    initial?.leadSuit ?? null,
+  );
+  const [leadRank, setLeadRank] = useState<Rank | null>(
+    initial?.leadRank ?? null,
+  );
 
   // Result state
-  const [resultMode, setResultMode] = useState<"made" | "down">("made");
-  const [resultValue, setResultValue] = useState(0);
+  const [resultMode, setResultMode] = useState<"made" | "down">(
+    initial?.resultMode ?? "made",
+  );
+  const [resultValue, setResultValue] = useState(initial?.resultValue ?? 0);
 
   // --- Forward transition handlers (identical in both wizards) ---
 

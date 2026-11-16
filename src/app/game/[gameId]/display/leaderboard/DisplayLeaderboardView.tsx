@@ -45,6 +45,11 @@ export interface DisplayLeaderboardViewProps {
   leaderboard: LeaderboardView | null;
   /** Per-section leaderboards; more than one enables the section tabs. */
   sections: SectionLeaderboard[];
+  /**
+   * Each section's display name, keyed by section letter (e.g. A → "Red"). A
+   * section with no entry shows its letter.
+   */
+  sectionLabels?: Record<string, string>;
   /** While true, show a spinner instead of the board. */
   isLoading: boolean;
   /**
@@ -90,6 +95,7 @@ export function DisplayLeaderboardView({
   eventName,
   leaderboard: combined,
   sections,
+  sectionLabels = {},
   isLoading,
   dwellMs = MIN_DWELL_MS,
   scoringMode,
@@ -150,7 +156,9 @@ export function DisplayLeaderboardView({
   // Heading is the event name, with the section appended when a specific
   // section (not the combined view) is being shown.
   const heading =
-    view === "combined" ? eventName : `${eventName} — Section ${view}`;
+    view === "combined"
+      ? eventName
+      : `${eventName} — ${sectionLabels[view] ?? view}`;
 
   // Spread into two columns when there are many places and the screen is wide
   // enough to make each column readable. Only for a single (one-winner / teams)
@@ -200,7 +208,7 @@ export function DisplayLeaderboardView({
             {sections.map((s) => (
               <ViewTab
                 key={s.section}
-                label={`Section ${s.section}`}
+                label={sectionLabels[s.section] ?? s.section}
                 active={view === s.section}
                 onClick={() => selectView(s.section)}
               />

@@ -106,7 +106,7 @@ below:
   (`played-contract`, `contract-variants`, `play-flow`, `sit-out`).
 - **Dual-side confirmation**: match→confirm, both mismatch variants + re-enter
   (`mismatch.journey.ts`), sit-out submission rejection.
-- **Board deal capture**: player post-round deal entry + director Enter Deals +
+- **Board deal capture**: player post-round deal entry + director Deals +
   show-hand on traveller (`deal-entry.journey.ts`).
 - **Withdrawals, reinstating and late arrivals** (`withdrawals-late.journey.ts`,
   seeded 3-table games): a player withdrawing from their phone (Cancel, then
@@ -265,7 +265,7 @@ where the coverage lives.
 
 ### 1. PBN export (director) — CLOSED
 
-- `tests/journeys/pbn.journey.ts`: records a deal (director Enter Deals), then
+- `tests/journeys/pbn.journey.ts`: records a deal (director Deals), then
   downloads the `.pbn` and asserts non-empty content with the `[Event`,
   `[Board "n"]` and `[Deal` tags; plus a club-not-configured disabled state.
 - Director-auth (401 no/bogus token) added to `authorization.journey.ts`.

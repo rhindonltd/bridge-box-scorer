@@ -61,7 +61,9 @@ describe("ExportReadinessPage", () => {
       />,
     );
     expect(screen.getByText("Results entered")).toBeInTheDocument();
-    expect(screen.getByText("All 24 boards have a result.")).toBeInTheDocument();
+    expect(
+      screen.getByText("All 24 boards have a result."),
+    ).toBeInTheDocument();
     expect(screen.getByText("Club information")).toBeInTheDocument();
   });
 
@@ -90,7 +92,9 @@ describe("ExportReadinessPage", () => {
         items={readyItems}
       />,
     );
-    expect(screen.getByText("Everything is ready to export.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Everything is ready to export."),
+    ).toBeInTheDocument();
   });
 
   it("shows a warning summary when a result item is a warning", () => {
@@ -128,9 +132,7 @@ describe("ExportReadinessPage", () => {
         ]}
       />,
     );
-    expect(
-      screen.getByText(/can't be generated yet/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/can't be generated yet/i)).toBeInTheDocument();
   });
 
   describe("outstanding-board breakdown", () => {
@@ -178,7 +180,9 @@ describe("ExportReadinessPage", () => {
       expect(
         screen.getByText("Round 3 · Table 2 · Board 7"),
       ).toBeInTheDocument();
-      expect(screen.getByText("Alice & Bob vs Carol & Dan")).toBeInTheDocument();
+      expect(
+        screen.getByText("Alice & Bob vs Carol & Dan"),
+      ).toBeInTheDocument();
       expect(
         screen.getByText("Round 3 · Table 3 · Board 7"),
       ).toBeInTheDocument();

@@ -66,8 +66,11 @@ export function WaitingToStartPage({ gameId, seat }: Props) {
   }
 
   // Only surface the section when the game actually has more than one, so
-  // single-section games don't show a meaningless "Section A".
+  // single-section games don't show a meaningless "A". It is shown by its name
+  // (which defaults to its letter).
   const showSection = sections.length > 1 && section != null;
+  const sectionName =
+    sections.find((s) => s.section === section)?.label ?? section;
 
   return (
     <GamePageLayout headerTitle="You're seated" centerContent={true} hideBack>
@@ -83,7 +86,7 @@ export function WaitingToStartPage({ gameId, seat }: Props) {
 
         {tableNumber != null && direction != null ? (
           <p className="mb-6 text-base text-gray-600">
-            You&rsquo;re seated{showSection ? ` in Section ${section}` : ""} at{" "}
+            You&rsquo;re seated{showSection ? ` in ${sectionName}` : ""} at{" "}
             <span className="font-semibold text-gray-900">
               Table {tableNumber}
             </span>

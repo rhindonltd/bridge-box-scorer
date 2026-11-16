@@ -590,8 +590,8 @@ describe("per-section timer UI", () => {
     ];
     render(<TimerSetup />);
 
-    // Single-section: no "Section A" pill, just a "Split into sections" pill.
-    expect(screen.queryByRole("tab", { name: "Section A" })).toBeNull();
+    // Single-section: no section pill, just a "Split into sections" pill.
+    expect(screen.queryByRole("tab", { name: "A" })).toBeNull();
     expect(
       screen.getByRole("button", { name: /Split into sections/ }),
     ).toBeInTheDocument();
@@ -613,7 +613,7 @@ describe("per-section timer UI", () => {
     fireEvent.click(screen.getByLabelText("Per Round"));
 
     // Switching sections unmounts the A container, flushing its pending save.
-    fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
+    fireEvent.click(screen.getByRole("tab", { name: "B" }));
     await waitFor(() => expect(savesForSection("A").length).toBeGreaterThan(0));
 
     // Editing section B auto-saves for section B.
@@ -744,7 +744,7 @@ describe("per-section timer UI", () => {
 
     render(<TimerManager started={true} />);
 
-    fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
+    fireEvent.click(screen.getByRole("tab", { name: "B" }));
     fireEvent.click(screen.getByRole("button", { name: "Start" }));
     expect(mockEmitWithAck).toHaveBeenCalledWith(
       SocketEvents.START_TIMER,

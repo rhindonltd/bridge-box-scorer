@@ -94,7 +94,7 @@ Use **F11-A**. Manage Games → the E2E event → **Set Up Game** → **Tables**
 | ☐ EL-5 | Mark **both** empty seats **Expected late = Yes** (Table 3 E/W, Table 2 N/S). **Done** → **Start Game**. | **Ready**: any number of seats may be expected late. |
 | ☐ EL-6 | Set both toggles back to **No**. Seat a pair at table 2 N/S again (Join Game on a device), then evict **table 3's N/S** pair so the whole of table 3 is empty. Open **Start Game**. | **Blocked** with only "More than one pair is missing…": no half-table message, because table 3 is wholly empty. |
 | ☐ EL-7 | Mark both table-3 seats **Expected late = Yes** and **Start Game**. | The game **starts** with table 3 empty. |
-| ☐ EL-8 | Manage Game Menu → **Manage Tables** → Table 3. | Each row reads "Expected late — not yet seated" and "The pair can join from a device when they arrive." The toggle has gone. On other tables, seated rows no longer offer **Evict**. |
+| ☐ EL-8 | Manage Game Menu → **Pairs**. | Table 3's two seats show a **Not arrived** badge, headed by their pair numbers. Seated pairs offer **Withdraw this pair**, not **Evict**. |
 
 ---
 
@@ -252,5 +252,5 @@ fresh browser). Plant **A2EW** on a second device.
 | Check | Step | Expected |
 |---|---|---|
 | ☐ GATE-1 | **Swiss Pairs** (`--scoring SWISS_PAIRS_MP --tables 4 --play round1 --tokens`): player **Menu**. | **No Withdraw** item. |
-| ☐ GATE-2 | **Teams** (`--scoring TEAMS_IMP_VP --tables 4 --play round1`): Manage Game Menu → **Pairs**. | "No pairs seated yet." The roster applies to pairs events only. |
-| ☐ GATE-3 | Teams or Swiss: **Manage Tables** → a table, after the start. | A **Change standing** button (Active / Withdrawn / Late / No standing) is still offered. On a Pairs event it is **hidden**. |
+| ☐ GATE-2 | **Teams** (`--scoring TEAMS_IMP_VP --tables 4 --play round1`): Manage Game Menu. | There is a **Teams** item and no **Pairs** item. **Teams** lists the four teams by number and name, each **Active**. |
+| ☐ GATE-3 | Teams (**Teams** item) or Swiss Pairs (**Pairs** item): tap a team / pair, after the start. | A **Change standing** button (Active / Withdrawn / Late / No standing) is offered. On a board-pooled Pairs event the row offers **Withdraw this pair** and **Mark without standing** instead. |

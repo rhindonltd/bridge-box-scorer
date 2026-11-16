@@ -11,15 +11,17 @@ import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { MovementByTable } from "@/movement/movementData";
 import { useSections } from "@/hooks/sections";
+import { SectionPills } from "@/components/manage/sections/SectionPills";
 import { useResultsComplete } from "@/hooks/results-complete";
 import { SwissDrawControl } from "./SwissDrawControl";
 import { SwissTeamsDrawControl } from "./SwissTeamsDrawControl";
 
 interface ManageMovementPageProps {
-  backHref: string;
+  /** Where back goes when there is no in-app history to pop (e.g. a direct link). */
+  backFallbackHref: string;
 }
 
-export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
+export function ManageMovementPage({ backFallbackHref }: ManageMovementPageProps) {
   interface MovementResponse {
     type: string;
     tables: MovementByTable[];
@@ -83,21 +85,20 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
     ) : null;
 
   const selector = multiSection ? (
-    <div className="flex flex-wrap gap-2 px-4 py-3 bg-gray-50 border-b shrink-0">
-      {sections.map((s) => (
-        <SectionTab
-          key={s.section}
-          label={`Section ${s.section}`}
-          active={activeSection === s.section}
-          onClick={() => setSelectedSection(s.section)}
-        />
-      ))}
+    // Shared section pills in a pinned grey bar, matching the setup screens.
+    // No add-section affordance: sections can't be added from here.
+    <div className="flex shrink-0 justify-center border-b border-gray-200 bg-gray-50 px-4 py-3">
+      <SectionPills
+        sections={sections}
+        selected={activeSection ?? ""}
+        onSelect={setSelectedSection}
+      />
     </div>
   ) : null;
 
   if (isLoading || !data) {
     return (
-      <PageLayout headerTitle="Movement Details" backHref={backHref}>
+      <PageLayout headerTitle="Movement Details" backFallbackHref={backFallbackHref}>
         {selector}
         <div className="flex-1 flex items-center justify-center">
           <Spinner />
@@ -108,7 +109,7 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
 
   if (data.tables.length === 0) {
     return (
-      <PageLayout headerTitle="Movement Details" backHref={backHref}>
+      <PageLayout headerTitle="Movement Details" backFallbackHref={backFallbackHref}>
         {selector}
         <div className="flex-1 flex items-center justify-center">
           <p className="text-gray-500 text-base">No movement set up yet.</p>
@@ -118,35 +119,10 @@ export function ManageMovementPage({ backHref }: ManageMovementPageProps) {
   }
 
   return (
-    <PageLayout headerTitle="Movement Details" backHref={backHref}>
+    <PageLayout headerTitle="Movement Details" backFallbackHref={backFallbackHref}>
       {selector}
       {swissControl}
       <MovementDetailView tables={data.tables} />
     </PageLayout>
-  );
-}
-
-function SectionTab({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`rounded-full px-4 py-1.5 text-sm font-semibold transition ${
-        active
-          ? "bg-blue-600 text-white"
-          : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-      }`}
-    >
-      {label}
-    </button>
   );
 }

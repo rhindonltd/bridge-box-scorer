@@ -174,9 +174,7 @@ function ReadinessRow({ item }: { item: ReadinessItem }) {
                 key={b.id}
                 className="rounded-lg bg-gray-50 px-3 py-2 break-words"
               >
-                <p className="text-sm font-semibold text-gray-800">
-                  {b.title}
-                </p>
+                <p className="text-sm font-semibold text-gray-800">{b.title}</p>
                 <p className="text-sm text-gray-600">{b.players}</p>
               </li>
             ))}

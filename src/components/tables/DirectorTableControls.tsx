@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Player } from "@/db/games/tables/players";
-import { ParticipantStanding, Seat } from "@/model/participants";
+import { Seat } from "@/model/participants";
 import PlayerCard from "@/components/common/PlayerCard";
 import TableCompassLayout from "@/components/layout/TableCompassLayout";
 
@@ -43,18 +43,6 @@ export interface DirectorTable {
     S: boolean;
     E: boolean;
     W: boolean;
-  };
-  /**
-   * The EBU §2.4 lifecycle standing of each compass position's pair (null when
-   * the seat is empty or the pair is plain ACTIVE). N/S share the NS pair and
-   * E/W share the EW pair, so each pair's standing is flagged on both of its
-   * compass points — same grouping as {@link stationary}.
-   */
-  standing?: {
-    N: ParticipantStanding["standing"] | null;
-    S: ParticipantStanding["standing"] | null;
-    E: ParticipantStanding["standing"] | null;
-    W: ParticipantStanding["standing"] | null;
   };
   /**
    * Whether each compass position's seat is marked "expected late" (§2.4.7) —
@@ -200,7 +188,11 @@ function TablePlacementNote({
         <div className="text-[11px] font-medium text-gray-600">
           {/* Two lines: the "Shares with table(s)" label, then the table
               number list beneath it, so a long list wraps cleanly. */}
-          <div>{sharesWith.length === 1 ? "Shares with table" : "Shares with tables"}</div>
+          <div>
+            {sharesWith.length === 1
+              ? "Shares with table"
+              : "Shares with tables"}
+          </div>
           <div>{sharesWith.join(", ")}</div>
         </div>
       )}

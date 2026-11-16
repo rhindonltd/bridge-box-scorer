@@ -1,17 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
+import useSWR, { useSWRConfig } from "swr";
 import {
   PairsRosterPage,
+  type StationaryControl,
   type SubstitutionSaveOptions,
 } from "@/app/game/[gameId]/manage/pairs/PairsRosterPage";
 import { unwrapFetcher } from "@/lib/fetcher";
+import { useSections } from "@/hooks/sections";
+import { setSectionSwissMovement } from "@/lib/section-service";
 import {
   setAbsenceTreatment,
   setSubstitutionOptions,
   withdrawPairAsDirector,
 } from "@/lib/game-service";
+import {
+  setParticipantStanding,
+  type StandingChange,
+} from "@/lib/standing-service";
 import { ChangeDeviceView } from "@/app/game/[gameId]/play/[initialSeat]/ChangeDeviceView";
 import { swrKeys } from "@/swr/swr-keys";
 import { useSocketRevalidate } from "@/hooks/use-socket-revalidate";
@@ -29,7 +36,10 @@ import type { AbsenceTreatment } from "@/model/absence";
  * the list reflects the change.
  */
 export function PairsRoster({ gameId }: { gameId: string }) {
-  const router = useRouter();
+  // Pop back to the menu rather than pushing it again: a push would add a
+  // second menu entry, and the browser back button would then loop between the
+  // menu and this screen.
+  const { onBack } = useBackNavigation(`/game/${gameId}/manage`);
   const rosterKey = swrKeys.roster(gameId);
 
   const {
@@ -50,6 +60,56 @@ export function PairsRoster({ gameId }: { gameId: string }) {
     unwrapFetcher<BridgeGame>("game"),
   );
   const isPairs = game?.gameType === "PAIRS";
+  const isSwiss = game?.eventFormat === "SWISS";
+
+  // Swiss Pairs: a pair can be marked stationary while the event runs. The flag
+  // lives in its section's Swiss movement spec (a list of stable pair ids), so
+  // flipping one re-saves the whole spec. The server records the list the
+  // rounds already drawn were played under, so only later draws change.
+  const { sections } = useSections(gameId);
+  const sectionLabels = Object.fromEntries(
+    sections.map((s) => [s.section, s.label]),
+  );
+  const { mutate: globalMutate } = useSWRConfig();
+
+  function swissSpecFor(entry: RosterEntry) {
+    const letters = entry.seat.match(/^[A-Z]+/)?.[0];
+    const section = sections.find((s) => s.section === letters);
+    const movement = section?.selectedMovement;
+    return section && movement?.source === "SWISS"
+      ? { section: section.section, spec: movement.swiss }
+      : null;
+  }
+
+  // A Swiss pair's stable id is the number in its movement id ("A5" → 5).
+  function swissPairId(entry: RosterEntry): number | null {
+    const digits = entry.anchorId?.match(/\d+$/)?.[0];
+    return digits ? Number(digits) : null;
+  }
+
+  const stationary: StationaryControl | undefined = isSwiss
+    ? {
+        isStationary(entry) {
+          const found = swissSpecFor(entry);
+          const id = swissPairId(entry);
+          if (!found || id == null) return null;
+          return (found.spec.stationaryPairs ?? []).includes(id);
+        },
+        async toggle(entry) {
+          const found = swissSpecFor(entry);
+          const id = swissPairId(entry);
+          if (!found || id == null) return;
+          const current = new Set(found.spec.stationaryPairs ?? []);
+          if (current.has(id)) current.delete(id);
+          else current.add(id);
+          await setSectionSwissMovement(gameId, found.section, {
+            ...found.spec,
+            stationaryPairs: Array.from(current).sort((a, b) => a - b),
+          });
+          await globalMutate(swrKeys.sections(gameId));
+        },
+      }
+    : undefined;
 
   if (isLoading) {
     return <FullScreenSpinner />;
@@ -76,14 +136,26 @@ export function PairsRoster({ gameId }: { gameId: string }) {
     await mutate();
   }
 
+  async function onChangeStanding(
+    seat: string,
+    change: StandingChange,
+  ): Promise<void> {
+    await setParticipantStanding(gameId, seat, change);
+    await mutate();
+  }
+
   return (
     <PairsRosterPage
-      onBack={() => router.push(`/game/${gameId}/manage`)}
+      onBack={onBack}
       roster={roster ?? []}
       isPairs={isPairs}
+      isSwiss={isSwiss}
+      sectionLabels={sectionLabels}
+      stationary={stationary}
       onSaveSubstitution={onSaveSubstitution}
       onSetAbsenceTreatment={onSetAbsenceTreatment}
       onWithdraw={onWithdraw}
+      onChangeStanding={onChangeStanding}
       // Reinstating hands a device a fresh token, so it goes through the
       // seat-transfer code flow — the returning pair's device claims a
       // REINSTATE code, which reinstates the pair with that device's token.

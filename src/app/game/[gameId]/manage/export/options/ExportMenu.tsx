@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import useSWR from "swr";
 import { ExportMenuPage } from "@/app/game/[gameId]/manage/export/options/ExportMenuPage";
 import { useGameStarted } from "@/hooks/game-started";
@@ -18,6 +19,7 @@ import type { EbuStatus } from "@/db/system/queries/ebu-credentials";
  */
 export function ExportMenu({ gameId }: { gameId: string }) {
   const router = useRouter();
+  const { onBack } = useBackNavigation(`/game/${gameId}/manage/export`);
 
   const { started } = useGameStarted(gameId);
   const { allResultsIn } = useResultsComplete(gameId);
@@ -37,7 +39,7 @@ export function ExportMenu({ gameId }: { gameId: string }) {
 
   return (
     <ExportMenuPage
-      onBack={() => router.push(`/game/${gameId}/manage/export`)}
+      onBack={onBack}
       onDownloadUsebioClick={() =>
         router.push(`/game/${gameId}/manage/download-usebio`)
       }

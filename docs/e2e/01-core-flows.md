@@ -113,7 +113,7 @@ Keep the DIRECTOR on **Tables** to watch seats fill live.
 | ☐ START-3 | Tap **Start Game**. | Game starts; you land on the **Manage Game Menu**. Timer (if set) begins. | | |
 | ☐ START-4 | **NS & EW:** confirm they move into round play. | Players see "Table 1, Round 1". | | |
 | ☐ START-5 | **Start guard:** (fresh game) leave **two** seats empty and unmarked, then try **Start Game**. | Blocked, listing the problem per section ("More than one pair is missing…"); cannot start. Marking the empty seats **Expected late** clears it (`EL-5`). | | |
-| ☐ START-6 | After the start, look at the **Manage Game Menu**. | **Manage Tables**, **Travellers**, **Enter Deals**, **Movement**, **Pairs**, **Export & Publish**, and red **Delete Game**. There is **no** "Share Director Access" button: it is in the header **Menu** ([file 10](10-sharing-export-lifecycle.md) `SHARE-*`). | | |
+| ☐ START-6 | After the start, look at the **Manage Game Menu**. | **Travellers**, **Deals**, **Movement**, **Pairs** (**Teams** in a Teams event), **Export & Publish**, and red **Delete Game**. There is **no** "Share Director Access" button: it is in the header **Menu** ([file 10](10-sharing-export-lifecycle.md) `SHARE-*`). | | |
 
 ---
 
@@ -127,8 +127,8 @@ The heart of the app: both sides enter the **same** board and it confirms.
 |---|---|---|---|---|---|
 | ☐ PLAY-1 | Tap **Enter Round**. | Tap **Enter Round**. | Both enter the contract wizard. | | |
 | ☐ PLAY-2 | If asked, tap the first **board number**. | Same board. | "Enter Contract". | | |
-| ☐ PLAY-3 | **Level** 4 → **Suit** 4♠ → **Declarer** South, double **None** → **Result** Made, **=**. | Same choices. | Each step advances; lands on **Confirm**. | | |
-| ☐ PLAY-4 | **Confirm:** summary reads `4♠ by South, Made`. Tap **Submit**. | — | NS shows **"Waiting for confirmation"**, with **You entered** `4♠S=` (the result just submitted) underneath. | | |
+| ☐ PLAY-3 | **Level** 4 → **Suit** 4♠ → **Declarer** South, double **None** → **Result** Made, **=**. | Same choices. | Each step advances; submitting the result goes straight to the waiting screen (there is no Confirm page). | | |
+| ☐ PLAY-4 | **Submit:** after the **Result** step there is no Confirm page. | — | NS shows **"Waiting for confirmation"**, with **You entered** `4♠S=` (the result just submitted) underneath. | | |
 | ☐ PLAY-5 | — | Submit the matching result. | The board **confirms**; both devices show the **Board Results** (traveller). | | |
 
 > With **Record Opening Lead = Yes**, an **Opening Lead** step appears between

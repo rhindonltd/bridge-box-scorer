@@ -103,7 +103,9 @@ export function ExportMenuPage({
             disabled={uploadBridgewebsDisabled}
             className={standardButtonClass}
           >
-            <span className="flex items-center gap-3">Upload to BridgeWebs</span>
+            <span className="flex items-center gap-3">
+              Upload to BridgeWebs
+            </span>
           </button>
         )}
 

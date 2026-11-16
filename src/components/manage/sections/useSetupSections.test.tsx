@@ -158,7 +158,7 @@ describe("useSetupSections", () => {
     ];
     render(<Harness />);
 
-    fireEvent.click(screen.getByRole("tab", { name: /Section B/ }));
+    fireEvent.click(screen.getByRole("tab", { name: "B" }));
     expect(screen.getByTestId("selected")).toHaveTextContent("B");
 
     openModal();

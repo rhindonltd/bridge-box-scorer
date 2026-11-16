@@ -136,13 +136,13 @@ round-1 result enough to reshuffle round-1 standings.
 
 ---
 
-## RULE-I. Enter deals (director)
+## RULE-I. Deals (director)
 
 **Fixture:** any, with **Allow Hand Entry** on (create live, or any seeded game).
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ RULE-28 | Manage Game Menu → **Enter Deals** → **Select Board** → a board. | Deal entry with direction tabs (North/East/South/West), each "{count}/13". |
+| ☐ RULE-28 | Manage Game Menu → **Deals** → **Select Board** → a board. | Deal entry with direction tabs (North/East/South/West), each "{count}/13". |
 | ☐ RULE-29 | Lay out all four hands (52 cards). | **Save deal** becomes available. |
 | ☐ RULE-30 | Tap **Save deal**. | Saved; a **Show hand** button now appears on that board's traveller for everyone. |
 
@@ -154,7 +154,7 @@ Hands from a dealing machine (Duplimate) arrive as a `.pbn` file on the director
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ RULE-31 | Manage Game Menu → **Enter Deals** → tap **Import from PBN file**. | **Import PBN** page with a **PBN file** chooser and an **Or paste PBN text** box. **Import** is disabled. |
+| ☐ RULE-31 | Manage Game Menu → **Deals** → tap **Import from PBN file**. | **Import PBN** page with a **PBN file** chooser and an **Or paste PBN text** box. **Import** is disabled. |
 | ☐ RULE-32 | Choose the `.pbn` file. | "Loaded {file name}" appears, then a preview: "{n} boards found, {m} missing", with the warning "Any hands already entered for these boards will be replaced." |
 | ☐ RULE-33 | Use a file that has extra boards, a board missing, and one damaged deal (for example a hand shown as `-`). | The preview lists "Event boards not in the file", "Not in this event, so skipped", and a red line for the damaged board ("Deal is incomplete…"). The valid boards are still counted. |
 | ☐ RULE-34 | Clear the file and paste the PBN text instead. | The same preview appears for the pasted text. |

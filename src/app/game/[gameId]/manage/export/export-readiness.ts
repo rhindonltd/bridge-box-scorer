@@ -26,6 +26,11 @@ export interface ExportReadinessInput {
    * the table number stands alone).
    */
   multiSection?: boolean;
+  /**
+   * Each section's display name, keyed by section letter (e.g. A → "Red"). A
+   * section with no entry shows its letter.
+   */
+  sectionLabels?: Record<string, string>;
 }
 
 /**
@@ -51,6 +56,7 @@ export function buildExportReadiness(
     ebuConfigured,
     outstandingBoards,
     multiSection = false,
+    sectionLabels = {},
   } = input;
 
   const outstanding = Math.max(totalPlayable - finalized, 0);
@@ -79,7 +85,7 @@ export function buildExportReadiness(
           outstandingBoards && outstandingBoards.length > 0
             ? outstandingBoards.map((b) => ({
                 id: `${b.section}-${b.tableNumber}-${b.boardNumber}`,
-                title: boardTitle(b, multiSection),
+                title: boardTitle(b, multiSection, sectionLabels),
                 players: pairsLabel(b.nsPair, b.ewPair),
               }))
             : undefined,
@@ -139,9 +145,13 @@ export function buildExportReadiness(
  * table number, which restarts within each section). For a single-section event
  * the section prefix is dropped so the table number stands alone.
  */
-function boardTitle(b: OutstandingBoard, multiSection: boolean): string {
+function boardTitle(
+  b: OutstandingBoard,
+  multiSection: boolean,
+  sectionLabels: Record<string, string>,
+): string {
   const table = multiSection
-    ? `Section ${b.section} · Table ${b.tableNumber}`
+    ? `${sectionLabels[b.section] ?? b.section} · Table ${b.tableNumber}`
     : `Table ${b.tableNumber}`;
   return `Round ${b.roundNumber} · ${table} · Board ${b.boardNumber}`;
 }

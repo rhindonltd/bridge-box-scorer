@@ -28,7 +28,7 @@ export function SectionPills({
   onSelect,
   onAddSection,
 }: Props) {
-  // A single section has no meaningful choice to make, so hide the "Section A"
+  // A single section has no meaningful choice to make, so hide the section
   // pill. When adding is allowed, show just a "Split into sections" affordance
   // instead; otherwise (e.g. a running game) show nothing.
   const singleSection = sections.length < 2;
@@ -50,7 +50,11 @@ export function SectionPills({
   return (
     <div className="flex w-full max-w-md flex-wrap gap-2">
       {!singleSection && (
-        <div role="tablist" aria-label="Section" className="flex flex-wrap gap-2">
+        <div
+          role="tablist"
+          aria-label="Section"
+          className="flex flex-wrap gap-2"
+        >
           {sections.map((s) => {
             const active = s.section === selected;
             return (
@@ -65,8 +69,7 @@ export function SectionPills({
                     : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                 }`}
               >
-                Section{" "}
-                {s.section === s.label ? s.section : `${s.section} — ${s.label}`}
+                {s.label}
               </button>
             );
           })}
