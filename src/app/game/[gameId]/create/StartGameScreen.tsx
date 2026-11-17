@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useRequiredGame } from "@/context/GameContext";
@@ -44,6 +45,7 @@ function groupBySection(
  * Tables view used to own.
  */
 export function StartGameScreen({ menu }: Props) {
+  const router = useRouter();
   const { game, mutateGame } = useRequiredGame();
   const { canStart, problems, sitOutSeat } = useStartCheck(game.gameId);
   // Headings use each section's name (which defaults to its letter).
@@ -61,7 +63,10 @@ export function StartGameScreen({ menu }: Props) {
     setStarting(true);
     try {
       await startGame(game.gameId);
-      await mutateGame();
+      // Setup is finished: go back to the main menu (the setup page would
+      // otherwise redirect to the manage menu once the game has started).
+      router.replace("/");
+      void mutateGame();
     } catch (err) {
       alert(errorMessage(err, "Failed to start game"));
     } finally {

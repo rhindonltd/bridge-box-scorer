@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { withGameRoute } from "@/lib/api/gameRoute";
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
@@ -37,7 +37,7 @@ const patchSchema = z.object({
  * missed boards score: AVERAGE (AVE−/AVE+) or REMOVED. Director-only. Pushes a
  * fresh leaderboard (the choice changes the standings).
  */
-export const PATCH = withDirectorRoute(
+export const PATCH = withDirectorEditRoute(
   async ({ gameId, body }) => {
     try {
       if (!(await isPairsAbsenceGame(gameId))) {

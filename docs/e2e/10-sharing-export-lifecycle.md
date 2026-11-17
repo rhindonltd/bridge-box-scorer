@@ -49,21 +49,23 @@ code ([file 11](11-withdrawals-late-arrivals.md) `RE-*`).
 
 ---
 
-## 3. Export results (DIRECTOR)
+## 3. Finalise and export results
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ EXP-1 | Ensure **all** results are in (play/confirm, or use `--play all` fixture, or fill gaps via director overrides). | Game complete. |
-| ☐ EXP-2 | Manage Game Menu → **Export & Publish** → **Download USEBIO**. (Disabled until all results are in.) | A **USEBIO XML** file downloads. |
-| ☐ EXP-3 | Open the USEBIO file. | Non-empty; contains the event name, the **club details** entered in [file 09](09-settings-admin-cloud.md), and board/result data; the scoring method matches the game. |
-| ☐ EXP-4 | If deals were entered, **Export & Publish** → **Download PBN**. | A `.pbn` file downloads with board/deal tags. |
-| ☐ EXP-5 | Open the PBN file. | Non-empty; contains the entered deals. |
-| ☐ EXP-6 | **Export gating:** before all results are in, confirm **Download USEBIO** is **disabled**. | Disabled until complete. |
-| ☐ EXP-7 | **Absent boards don't block export:** on **F11-D** ([file 11](11-withdrawals-late-arrivals.md)), play the remaining round-3 boards at tables 2 and 3. | **Download USEBIO** becomes **enabled**: the withdrawn pair's absent boards count as resolved, whichever treatment is chosen. |
-| ☐ EXP-8 | Download it with the treatment on **AVE− / AVE+**, then again on **Remove**. | With AVE, the absent boards appear with their AVE result. With Remove, those boards are left out. The leaderboard and the file agree. |
+| ☐ EXP-1 | Before all results are in: Manage Game Menu → **Finalise Game**. | The screen lists what's outstanding (the boards by name when only a few remain) and offers **no** finalise button. |
+| ☐ EXP-2 | Try `/game/<id>/export` on a player device, and on the director device. | The player is sent to the main menu; the director is sent to **Finalise Game**. Nothing can be downloaded yet. |
+| ☐ EXP-3 | Ensure **all** results are in (play/confirm, or use `--play all` fixture, or fill gaps via director overrides), then **Finalise Game** → **Tap to Finalise Game** → **Finalise**. | You return to the main menu. The game has gone from **Manage Games** (and Join/Display). |
+| ☐ EXP-4 | **Read-only:** on a player device try to enter a result; as director open an old Manage Game link (e.g. Travellers). | The result is refused ("This game is finalised. Reopen it to make changes."); the manage link goes to the game's **Export Game** page instead. |
+| ☐ EXP-5 | On a **player** device: main menu → **Export Game** → the game. | Only finalised games are listed. The page shows **Download USEBIO** and **Download PBN** only: no level, uploads or Reopen. |
+| ☐ EXP-6 | Player: **Download USEBIO**, then **Download PBN** (if deals were entered). Open both. | The USEBIO is non-empty with the event name, the **club details** from [file 09](09-settings-admin-cloud.md) and the results; the PBN contains the entered deals. |
+| ☐ EXP-7 | On the **director** device open the same export page. Change **Tournament Level**, then download USEBIO again. | Director controls show (level, uploads if configured, **Reopen game**). The new file carries the new level's masterpoint fields. |
+| ☐ EXP-8 | **Absent boards don't block finalising:** on **F11-D** ([file 11](11-withdrawals-late-arrivals.md)), play the remaining round-3 boards at tables 2 and 3. | **Finalise Game** shows **Everything's in**: the withdrawn pair's absent boards count as resolved, whichever treatment is chosen. |
+| ☐ EXP-9 | Export it with the treatment on **AVE− / AVE+**, then reopen, switch to **Remove**, finalise and export again. | With AVE, the absent boards appear with their AVE result. With Remove, those boards are left out. The leaderboard and the file agree. |
+| ☐ EXP-10 | Director: **Reopen game** → **Reopen**. | Back to the main menu; the game is in **Manage Games** again, gone from **Export Game**, and editable. |
 
 > **BridgeWebs upload:** if BridgeWebs is configured (file 09, `SET-11/12`), an
-> **Upload to BridgeWebs** action appears (also disabled until complete).
+> **Upload to BridgeWebs** action appears on the director's export page.
 > Optional: tap it and confirm a success message. (`EXP-BW-1`)
 
 ---
@@ -72,7 +74,7 @@ code ([file 11](11-withdrawals-late-arrivals.md) `RE-*`).
 
 | Check | Step | Expected |
 |---|---|---|
-| ☐ DEL-1 | Manage Game Menu → **Delete Game** (red). | A confirmation prompt. |
+| ☐ DEL-1 | Manage Game Menu → **Delete Game** (red). (A finalised game must be reopened first: it is not in Manage Games.) | A confirmation prompt. |
 | ☐ DEL-2 | Confirm deletion. | The game is removed; it disappears from the Join/Manage lists. |
 | ☐ DEL-3 | Confirm the deleted game no longer appears under **Join Game**. | Not listed. |
 | ☐ DEL-4 | Open an old join/play link for a **completed** game (if you have one). | Redirected to its **leaderboard**, not the seat picker. |

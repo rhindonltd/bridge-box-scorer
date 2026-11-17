@@ -33,14 +33,18 @@ export type WithinRoundPosition =
       boardNumber: number;
       /** The result this seat submitted (shown while it waits). */
       result?: string;
+      /** The opening lead this seat submitted, if any. */
+      lead?: string;
     }
   | {
       at: "mismatch";
       boardNumber: number;
       nsBoardNumber: number;
       nsResult: string;
+      nsLead?: string;
       ewBoardNumber: number;
       ewResult: string;
+      ewLead?: string;
     }
   | { at: "roundComplete" };
 
@@ -315,8 +319,10 @@ async function resolveWithinRound(
       boardNumber,
       nsBoardNumber: outcome.ns.boardNumber,
       nsResult: outcome.ns.result ?? "",
+      ...(outcome.ns.lead ? { nsLead: outcome.ns.lead } : {}),
       ewBoardNumber: outcome.ew.boardNumber,
       ewResult: outcome.ew.result ?? "",
+      ...(outcome.ew.lead ? { ewLead: outcome.ew.lead } : {}),
     };
   }
 
@@ -329,5 +335,6 @@ async function resolveWithinRound(
     at: "waitingConfirmation",
     boardNumber,
     ...(mine?.result ? { result: mine.result } : {}),
+    ...(mine?.lead ? { lead: mine.lead } : {}),
   };
 }

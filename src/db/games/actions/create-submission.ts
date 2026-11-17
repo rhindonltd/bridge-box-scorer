@@ -23,6 +23,7 @@ export async function createBoardSubmission(
       set: {
         boardNumber: boardSubmission.boardNumber,
         result: boardSubmission.result,
+        lead: boardSubmission.lead ?? null,
       },
     });
 }

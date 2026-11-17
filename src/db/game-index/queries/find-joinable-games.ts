@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getDb } from "@/db/game-index";
-import { and, gte } from "drizzle-orm";
+import { and, gte, isNull } from "drizzle-orm";
 import { BridgeGame, games } from "../schema";
 import { isGameCompleted } from "./is-game-completed";
 
@@ -16,7 +16,7 @@ export async function findJoinableGames(): Promise<BridgeGame[]> {
   const candidates = await db
     .select()
     .from(games)
-    .where(and(gte(games.eventDate, today)));
+    .where(and(gte(games.eventDate, today), isNull(games.finalisedAt)));
 
   // Exclude games that are already completed — there is nothing left to join.
   const completed = await Promise.all(

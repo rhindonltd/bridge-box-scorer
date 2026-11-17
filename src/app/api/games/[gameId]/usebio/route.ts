@@ -1,24 +1,20 @@
 import { NextResponse } from "next/server";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findClub } from "@/db/system/queries/find-club";
-import { updateTournamentLevel } from "@/db/game-index/actions/update-tournament-level";
-import {
-  TournamentLevels,
-  TournamentLevel,
-} from "@/db/games/types/tournament-level";
+import { DEFAULT_TOURNAMENT_LEVEL } from "@/model/tournament-level";
 import { generateUsebio } from "@/services/usebio-service";
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withGameRoute } from "@/lib/api/gameRoute";
+import { requireFinalisedGuard } from "@/lib/api/finalised-guard";
 
 /**
- * GET /api/games/[gameId]/usebio?tournamentLevel=... — download this game's
- * USEBIO XML. Director-authed (GET downloads can't carry a body, so the EBU
- * tournament level comes in on the query string). The chosen level fixes the
- * masterpoint/charge EVENT fields and is saved back to the game so it pre-fills
- * next time.
+ * GET /api/games/[gameId]/usebio — download this game's USEBIO XML. Open to
+ * anyone (players included) once the director has finalised the game; 403
+ * before that. The EBU tournament level (which fixes the masterpoint/charge
+ * EVENT fields) is the one SAVED on the game: only a director can change it,
+ * and downloading never writes anything.
  */
-export const GET = withDirectorRoute(async ({ db, gameId, req }) => {
+export const GET = withGameRoute(async ({ db, gameId }) => {
   const game = await findGameById(gameId);
-
   if (!game) {
     return NextResponse.json(
       {
@@ -29,20 +25,10 @@ export const GET = withDirectorRoute(async ({ db, gameId, req }) => {
     );
   }
 
-  const levelParam = new URL(req.url).searchParams.get("tournamentLevel");
-  if (
-    levelParam === null ||
-    !(TournamentLevels as readonly string[]).includes(levelParam)
-  ) {
-    return NextResponse.json(
-      { success: false, error: "Invalid or missing tournament level." },
-      { status: 400 },
-    );
-  }
-  const tournamentLevel = levelParam as TournamentLevel;
+  const notFinalised = await requireFinalisedGuard(gameId);
+  if (notFinalised) return notFinalised;
 
   const club = await findClub();
-
   if (!club) {
     return NextResponse.json(
       {
@@ -54,14 +40,15 @@ export const GET = withDirectorRoute(async ({ db, gameId, req }) => {
     );
   }
 
-  // Persist the chosen level so it pre-fills the next export.
-  await updateTournamentLevel(gameId, tournamentLevel);
-
-  const xml = await generateUsebio(db, game, club, tournamentLevel);
+  const xml = await generateUsebio(
+    db,
+    game,
+    club,
+    game.tournamentLevel ?? DEFAULT_TOURNAMENT_LEVEL,
+  );
 
   // Return as downloadable XML file
   const filename = `${game.eventName.replace(/[^a-zA-Z0-9]/g, "_")}_${game.eventDate.split("T")[0]}.xml`;
-
   return new NextResponse(xml, {
     headers: {
       "Content-Type": "application/xml",

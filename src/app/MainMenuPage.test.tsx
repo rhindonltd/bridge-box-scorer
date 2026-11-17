@@ -35,9 +35,10 @@ describe("MainMenuPage", () => {
   it("links Create New Game to /create", () => {
     render(<MainMenuPage />);
 
-    expect(
-      screen.getByRole("link", { name: "Create Game" }),
-    ).toHaveAttribute("href", "/create");
+    expect(screen.getByRole("link", { name: "Create Game" })).toHaveAttribute(
+      "href",
+      "/create",
+    );
   });
 
   it("links Manage Game to /manage", () => {
@@ -46,6 +47,14 @@ describe("MainMenuPage", () => {
     expect(screen.getByRole("link", { name: "Manage Game" })).toHaveAttribute(
       "href",
       "/manage",
+    );
+  });
+
+  it("links Export Game to /export", () => {
+    render(<MainMenuPage />);
+    expect(screen.getByRole("link", { name: "Export Game" })).toHaveAttribute(
+      "href",
+      "/export",
     );
   });
 

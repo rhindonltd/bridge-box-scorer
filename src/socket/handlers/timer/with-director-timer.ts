@@ -5,6 +5,7 @@ import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { scheduleGame, cancelGameSchedule } from "@/timer/scheduler";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { HandlerError } from "@/socket/handlers/handler-wrapper";
+import { assertNotFinalised } from "@/socket/middleware/finalised-guard";
 import { makeTimerBroadcaster } from "./broadcast-timer";
 import { SectionLetter } from "@/model/participants";
 
@@ -44,6 +45,7 @@ export function makeDirectorTimerRunner(io: Server) {
       throw new HandlerError("Unauthorized");
     }
 
+    await assertNotFinalised(gameId);
     const engine = await getEngine(gameId, section);
     if (!engine) throw new HandlerError("Timer not found");
 

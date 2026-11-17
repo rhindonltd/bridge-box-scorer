@@ -129,8 +129,8 @@ results), **P2** game setup & live display, **P3** device settings & utilities.
 | `/game/[gameId]/manage/movement` | `ManageMovementPage` | Default-only (shell) | present | **Partial** | P2 | Story exercises layout shell only. |
 | `/game/[gameId]/manage/share-access` | `ShareDirectorAccessPage` | none | strong (countdown, expiry, regen, errors) | **Partial** | P2 | No story; rich timer behaviour untested visually. |
 | `/game/[gameId]/manage/timer` | `ManageTimerPage` (container) | on children `TimerConfigView`/`TimerLiveView` | present (started/config split) | **Partial** | P2 | Container unstoried; children well-storied. |
-| `/game/[gameId]/manage/download-usebio` | `DownloadUsebioPage` | Default-only | strong | **Partial** | P2 | Single-state story. |
-| `/game/[gameId]/manage/upload-bridgewebs` | `UploadBridgewebsPage` | none | strong (configured/not, success/error/network) | **Partial** | P2 | No story. |
+| `/game/[gameId]/export/download-usebio` | `DownloadUsebioPage` | Default-only | strong | **Partial** | P2 | Single-state story. |
+| `/game/[gameId]/export/upload-bridgewebs` | `UploadBridgewebsPage` | none | strong (configured/not, success/error/network) | **Partial** | P2 | No story. |
 | `/game/[gameId]/manage/delete-game` | `DeleteGamePage` | Default-only | strong | **Partial** | P2 | Single-state story. |
 | `/join` | `JoinGamePage` | none | present (header + navigate) | **Partial** | P2 | No story; thin wrapper over `SelectGamePage`. |
 | `/manage` | `ManageSelectGameFlow` | none | present | **Partial** | P2 | No story. |
@@ -139,7 +139,7 @@ results), **P2** game setup & live display, **P3** device settings & utilities.
 | `/game/[gameId]/display` | `DisplayMenuPage` | Default-only | present | **Partial** | P2 | Single-state story. |
 | `/game/[gameId]/display/timer` | `TimerPage` (container) | on child `DisplayTimerPage` (11 states) | strong (connecting, tick, section chooser) | **Partial** | P2 | Container unstoried; child extremely well-storied. |
 | `/game/[gameId]/display/leaderboard` | `DisplayLeaderboardPage` | present | present | **Partial** | P2 | Both present; treat as best-covered display route (confirm story depth when upgrading). |
-| `/game/[gameId]/manage/download-pbn` | `DownloadPbnPage` | none | none | **Missing** | P2 | **Real logic uncovered:** club-configured branch, download/blob flow, disabled state, error paths. Notable hole. |
+| `/game/[gameId]/export/download-pbn` | `DownloadPbnPage` | none | none | **Missing** | P2 | **Real logic uncovered:** club-configured branch, download/blob flow, disabled state, error paths. Notable hole. |
 | `/game/[gameId]/join` | `JoinGameAsPlayer` | none | none | **Missing** | P2 | Thin wrapper → `SelectSeatPage`. Low own-logic, but zero coverage; verify `SelectSeatPage` separately. |
 | `/settings/club` | inline form (`page.tsx`) | none | none | **Missing** | P3 | **Convention violation.** Full form (SWR load, save, 401 clear, validation) inline. |
 | `/settings/bridgewebs` | inline form (`page.tsx`) | none | none | **Missing** | P3 | **Convention violation.** Full form inline (club/password, first-config rule, 401). |
@@ -199,7 +199,7 @@ results), **P2** game setup & live display, **P3** device settings & utilities.
 - **`SetupGamePage`, `DeleteGamePage`, `DownloadUsebioPage`, `ManageMovementPage`,
   `MainMenuPage`, `DisplayMenuPage`, `SelectGamePage`** — story is `Default`-only; add
   meaningful state variants.
-- **`/game/[gameId]/manage/download-pbn` `DownloadPbnPage`** — **Missing both.** Uncovered
+- **`/game/[gameId]/export/download-pbn` `DownloadPbnPage`** — **Missing both.** Uncovered
   logic: club-not-configured branch (disabled button + inline warning), successful download
   via blob URL + filename parsing, non-ok HTTP error, network error. Highest-value P2 gap.
 - **`/game/[gameId]/join` `JoinGameAsPlayer`** — **Missing both.** Thin wrapper; low own

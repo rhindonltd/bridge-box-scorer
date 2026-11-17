@@ -5,7 +5,11 @@ import Database from "better-sqlite3";
 import path from "node:path";
 
 import { createGame } from "../fixtures/game-create";
-import { setTableCount, pickFirstMovement, startGame } from "../fixtures/game-setup";
+import {
+  setTableCount,
+  pickFirstMovement,
+  startGame,
+} from "../fixtures/game-setup";
 import { seatSeatsOnDevices } from "../fixtures/join";
 import { deleteGame } from "../fixtures/delete-game";
 import { closeSeatDevices, newParticipant } from "./support";
@@ -53,11 +57,11 @@ async function setUpOnePairShortGame(
   // Seat three of the four seats, each from its OWN device (so each pair holds
   // its own token to submit results). Table 1 NS + EW and table 2 NS are
   // filled; table 2 EW is left empty, so "A2EW" becomes the sit-out seat.
-  const seats = await seatSeatsOnDevices(() => newParticipant(browser), gameId, [
-    "A1NS",
-    "A1EW",
-    "A2NS",
-  ]);
+  const seats = await seatSeatsOnDevices(
+    () => newParticipant(browser),
+    gameId,
+    ["A1NS", "A1EW", "A2NS"],
+  );
 
   await startGame(directorPage, gameId);
 
@@ -246,14 +250,13 @@ async function playRoundsUpToSitOut(
         timeout: 15000,
       });
       await player.getByTestId("board-results-next").click();
-      if (
-        await partner
-          .getByTestId("board-results-next")
-          .isVisible()
-          .catch(() => false)
-      ) {
-        await partner.getByTestId("board-results-next").click();
-      }
+      // The partner submitted second, so the board confirms on its page too.
+      // Wait for its Board Results before moving on: with no Confirm page the
+      // submit is instant, so an immediate visibility check can miss it.
+      await expect(partner.getByTestId("board-results-next")).toBeVisible({
+        timeout: 15000,
+      });
+      await partner.getByTestId("board-results-next").click();
     }
 
     // After the last board of the round, the optional "Enter cards" step is
@@ -268,7 +271,10 @@ async function playRoundsUpToSitOut(
     const cont = player.getByRole("button", { name: "Continue", exact: true });
     await expect(cont).toBeVisible({ timeout: 15000 });
     await cont.click();
-    const pcont = partner.getByRole("button", { name: "Continue", exact: true });
+    const pcont = partner.getByRole("button", {
+      name: "Continue",
+      exact: true,
+    });
     if (await pcont.isVisible().catch(() => false)) await pcont.click();
   }
 }
@@ -285,14 +291,24 @@ async function enterRoundToBoardSelect(page: Page): Promise<void> {
 
 /**
  * Enter a Pass Out for a SPECIFIC board. Waits for the board-select step, picks
- * that board, then Pass Out (which submits). The player flow reopens the board-select
+ * that board (unless it is the only one left and already chosen), then Pass Out
+ * (which submits). The player flow reopens the board-select
  * step for each board of the round, so we always target the intended board.
  */
 async function passOutSpecificBoard(page: Page, board: number): Promise<void> {
   const boardButton = page.getByTestId(`wizard-board-${board}`);
-  await expect(boardButton).toBeVisible({ timeout: 15000 });
-  await boardButton.click();
-  await page.getByTestId("wizard-pass-out").click();
+  const passOut = page.getByTestId("wizard-pass-out");
+  // When only one board is left the wizard skips the picker and opens on the
+  // level step with that board already chosen.
+  await expect(boardButton.or(passOut)).toBeVisible({ timeout: 15000 });
+  if (await boardButton.isVisible()) {
+    await boardButton.click();
+  } else {
+    await expect(
+      page.getByRole("button", { name: `Board ${board}` }),
+    ).toBeVisible();
+  }
+  await passOut.click();
 }
 
 /**
@@ -322,7 +338,10 @@ async function submitAgainstSitOutBoard(
   const socket: Socket = ioClient(E2E_BASE_URL);
   try {
     await new Promise<void>((resolve, reject) => {
-      const t = setTimeout(() => reject(new Error("socket connect timeout")), 10_000);
+      const t = setTimeout(
+        () => reject(new Error("socket connect timeout")),
+        10_000,
+      );
       socket.on("connect", () => {
         clearTimeout(t);
         resolve();
@@ -336,21 +355,23 @@ async function submitAgainstSitOutBoard(
     const seat = `A${target!.tableNumber}NS`;
     const token = readSeatSecret(gameId, seat);
 
-    return await new Promise<{ success: boolean; error?: string }>((resolve) => {
-      socket.emit(
-        "game:submitResult",
-        {
-          gameId,
-          seat,
-          token,
-          roundNumber: target!.roundNumber,
-          tableNumber: target!.tableNumber,
-          boardNumber: target!.boardNumber,
-          result: "PO",
-        },
-        (res: { success: boolean; error?: string }) => resolve(res),
-      );
-    });
+    return await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        socket.emit(
+          "game:submitResult",
+          {
+            gameId,
+            seat,
+            token,
+            roundNumber: target!.roundNumber,
+            tableNumber: target!.tableNumber,
+            boardNumber: target!.boardNumber,
+            result: "PO",
+          },
+          (res: { success: boolean; error?: string }) => resolve(res),
+        );
+      },
+    );
   } finally {
     socket.disconnect();
   }
@@ -398,7 +419,9 @@ function readSeatSecret(gameId: string, seat: string): string {
   const db = new Database(dbFile, { readonly: true });
   try {
     const row = db
-      .prepare("SELECT secret_key AS secret FROM seat_occupancy WHERE seat = ? AND standing != 'WITHOUT_STANDING' ORDER BY id DESC LIMIT 1")
+      .prepare(
+        "SELECT secret_key AS secret FROM seat_occupancy WHERE seat = ? AND standing != 'WITHOUT_STANDING' ORDER BY id DESC LIMIT 1",
+      )
       .get(seat) as { secret: string } | undefined;
     if (!row) {
       throw new Error(`No participant secret found for seat ${seat}`);

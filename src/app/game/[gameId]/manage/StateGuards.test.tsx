@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 const mockUseGameStarted = vi.fn();
-const mockUseResultsComplete = vi.fn();
+const mockGame = vi.fn();
+vi.mock("@/context/GameContext", () => ({
+  useRequiredGame: () => ({ game: mockGame() }),
+}));
 vi.mock("@/hooks/game-started", () => ({
   useGameStarted: () => mockUseGameStarted(),
-}));
-vi.mock("@/hooks/results-complete", () => ({
-  useResultsComplete: () => mockUseResultsComplete(),
 }));
 
 // Capture the props GameStateGuard receives so we can assert how each wrapper
@@ -23,7 +23,7 @@ vi.mock("./GameStateGuard", () => ({
 import {
   StartedGuard,
   NotStartedGuard,
-  ResultsCompleteGuard,
+  NotFinalisedGuard,
 } from "./StateGuards";
 
 const lastProps = () => guardProps[guardProps.length - 1];
@@ -33,10 +33,7 @@ describe("StateGuards", () => {
     vi.clearAllMocks();
     guardProps.length = 0;
     mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
-    mockUseResultsComplete.mockReturnValue({
-      allResultsIn: false,
-      isLoading: false,
-    });
+    mockGame.mockReturnValue({ finalisedAt: null });
   });
 
   describe("StartedGuard", () => {
@@ -112,54 +109,36 @@ describe("StateGuards", () => {
     });
   });
 
-  describe("ResultsCompleteGuard", () => {
-    it("is allowed once all results are in", () => {
-      mockUseResultsComplete.mockReturnValue({
-        allResultsIn: true,
-        isLoading: false,
-      });
+  it("NotStartedGuard can redirect somewhere other than the manage menu", () => {
+    mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
+    render(
+      <NotStartedGuard gameId="g1" redirectTo="/">
+        <span>child</span>
+      </NotStartedGuard>,
+    );
+    expect(lastProps()).toMatchObject({ allowed: false, redirectTo: "/" });
+  });
 
+  describe("NotFinalisedGuard", () => {
+    it("allows an open game", () => {
       render(
-        <ResultsCompleteGuard gameId="g1">
-          <span>child</span>
-        </ResultsCompleteGuard>,
+        <NotFinalisedGuard gameId="g1">
+          <span>content</span>
+        </NotFinalisedGuard>,
       );
-
-      expect(lastProps()).toMatchObject({
-        allowed: true,
-        loading: false,
-        redirectTo: "/game/g1/manage",
-      });
+      expect(lastProps().allowed).toBe(true);
+      expect(lastProps().loading).toBe(false);
     });
 
-    it("is not allowed while results are outstanding", () => {
-      mockUseResultsComplete.mockReturnValue({
-        allResultsIn: false,
-        isLoading: false,
-      });
-
+    it("redirects a finalised game to its export page", () => {
+      mockGame.mockReturnValue({ finalisedAt: "2026-01-01T00:00:00Z" });
       render(
-        <ResultsCompleteGuard gameId="g1">
-          <span>child</span>
-        </ResultsCompleteGuard>,
+        <NotFinalisedGuard gameId="g1">
+          <span>content</span>
+        </NotFinalisedGuard>,
       );
-
-      expect(lastProps()).toMatchObject({ allowed: false });
-    });
-
-    it("forwards the loading flag", () => {
-      mockUseResultsComplete.mockReturnValue({
-        allResultsIn: false,
-        isLoading: true,
-      });
-
-      render(
-        <ResultsCompleteGuard gameId="g1">
-          <span>child</span>
-        </ResultsCompleteGuard>,
-      );
-
-      expect(lastProps()).toMatchObject({ loading: true });
+      expect(lastProps().allowed).toBe(false);
+      expect(lastProps().redirectTo).toBe("/game/g1/export");
     });
   });
 });

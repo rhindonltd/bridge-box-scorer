@@ -5,6 +5,7 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { BoardOutcome } from "@/model/score";
+import type { Card } from "@/model/common";
 import { parseSeat } from "@/model/participants";
 import { parseMismatch, withMismatch } from "@/model/swiss-mismatch";
 
@@ -39,17 +40,18 @@ function boardWhere(key: BoardKey) {
 
 /**
  * Record a confirmed player result on a board (both sides agreed). Sets the
- * `confirmedResult` and flips the row to CONFIRMED. Shared by the submit-result
+ * `confirmedResult` (and `confirmedLead`, when both sides agreed one) and flips the row to CONFIRMED. Shared by the submit-result
  * confirmation path.
  */
 export async function confirmBoardResult(
   db: BoardsWriter,
   key: BoardKey,
   result: BoardOutcome,
+  lead: Card | null = null,
 ): Promise<void> {
   await db
     .update(boards)
-    .set({ confirmedResult: result, status: "CONFIRMED" })
+    .set({ confirmedResult: result, confirmedLead: lead, status: "CONFIRMED" })
     .where(boardWhere(key));
 }
 
@@ -100,10 +102,7 @@ export async function setBoardSeatsSwapped(
   key: BoardKey,
   swapped: boolean,
 ): Promise<void> {
-  await db
-    .update(boards)
-    .set({ seatsSwapped: swapped })
-    .where(boardWhere(key));
+  await db.update(boards).set({ seatsSwapped: swapped }).where(boardWhere(key));
 }
 
 /**
@@ -204,7 +203,10 @@ async function resolveActedMatch(
     // Should not happen (home is always a seat id); treat the acted room as home.
     return { matchId: boardRow.matchId, actedIsHome: true };
   }
-  return { matchId: boardRow.matchId, actedIsHome: homeTable === key.tableNumber };
+  return {
+    matchId: boardRow.matchId,
+    actedIsHome: homeTable === key.tableNumber,
+  };
 }
 
 /** Write a ruling token onto a match row. */

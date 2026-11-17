@@ -15,6 +15,8 @@ interface Props {
    * (e.g. the home menu this list opens from) always goes somewhere live.
    */
   backHref?: string;
+  /** Shown when the list is empty. Defaults to the "no games created" text. */
+  emptyMessage?: string;
 }
 
 export function SelectGame({
@@ -23,6 +25,7 @@ export function SelectGame({
   isLoading,
   onGameSelected,
   backHref,
+  emptyMessage = "No games have been created yet.",
 }: Props) {
   return (
     <PageLayout headerTitle={headerTitle} backHref={backHref}>
@@ -35,7 +38,7 @@ export function SelectGame({
 
         {!isLoading && games.length === 0 && (
           <div className="flex flex-1 items-center justify-center px-6 text-center text-gray-500 text-base">
-            No games have been created yet.
+            {emptyMessage}
           </div>
         )}
 

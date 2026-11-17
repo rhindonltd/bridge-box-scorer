@@ -17,8 +17,8 @@ export interface DirectorMenuPageProps {
   onPairsClick: () => void;
   /** Open the "Teams" roster (standing of every team + per-team actions). */
   onTeamsClick: () => void;
-  /** Open the "Export & Publish" submenu (USEBIO / PBN / BridgeWebs / EBU). */
-  onExportClick: () => void;
+  /** Open the "Finalise Game" check (all results in -> make the game read-only). */
+  onFinaliseClick: () => void;
   onDeleteGameClick: () => void;
   /** Show "Set Up Game" — only before the game has started. */
   showSetUpGame: boolean;
@@ -44,11 +44,11 @@ export interface DirectorMenuPageProps {
   /** Show "Teams" — the roster of every team's standing; Teams events, after start. */
   showTeams: boolean;
   /**
-   * Show "Export & Publish" — only once the game has started. Opens the submenu
-   * holding the results-export / publishing actions; the per-action gating
-   * (results complete, BridgeWebs / EBU configured) lives in that submenu.
+   * Show "Finalise Game" — only once the game has started. Finalising checks
+   * that every result is in, then makes the game read-only and moves it to
+   * Export Game on the main menu.
    */
-  showExport: boolean;
+  showFinalise: boolean;
 }
 
 export function ManageGameMenuPage({
@@ -61,7 +61,7 @@ export function ManageGameMenuPage({
   onReviewMismatchesClick,
   onPairsClick,
   onTeamsClick,
-  onExportClick,
+  onFinaliseClick,
   onDeleteGameClick,
   showSetUpGame,
   showTravellers,
@@ -71,7 +71,7 @@ export function ManageGameMenuPage({
   showReviewMismatches,
   showPairs,
   showTeams,
-  showExport,
+  showFinalise,
 }: DirectorMenuPageProps) {
   const standardButtonClass =
     "w-full py-3.5 text-lg font-semibold bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed pl-4";
@@ -82,6 +82,9 @@ export function ManageGameMenuPage({
   return (
     <GamePageLayout
       headerTitle="Manage Game Menu"
+      // Always return to the main menu. The default (pop the stack) can land on
+      // a setup page that just redirects back here.
+      backHref="/"
       centerContent={true}
       headerRight={headerRight}
     >
@@ -137,11 +140,9 @@ export function ManageGameMenuPage({
           </button>
         )}
 
-        {showExport && (
-          <button onClick={onExportClick} className={standardButtonClass}>
-            <span className="flex items-center gap-3">
-              Export &amp; Publish
-            </span>
+        {showFinalise && (
+          <button onClick={onFinaliseClick} className={standardButtonClass}>
+            <span className="flex items-center gap-3">Finalise Game</span>
           </button>
         )}
 

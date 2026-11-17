@@ -83,7 +83,7 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Share director access | [10](10-sharing-export-lifecycle.md) | `SHARE-*` |
 | Change device / seat transfer | 01 + 10 | `XFER-*` |
 | Player Scorecard | 01 | `SCORE-*` |
-| USEBIO / PBN / BridgeWebs export (+ gating) | 10 | `EXP-*` |
+| Finalise Game, read-only lock, Export Game (open downloads, director uploads, reopen) | 10 | `EXP-*` |
 | Delete game & completed-game redirect | 10 | `DEL-*` |
 
 ## Withdrawals, late arrivals, handovers & the Pairs screen
@@ -102,7 +102,7 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Handover on the same device | [12](12-handover-substitution.md) | `HAND-1..8` |
 | Handover to a different device by code | 12 | `HAND-9..14` |
 | Returning pair, third-pair / nothing-left / teams limits, retired tokens | 12 | `RET-1..7` |
-| Absent boards and export completeness | [10](10-sharing-export-lifecycle.md) | `EXP-7..8` |
+| Absent boards and export completeness | [10](10-sharing-export-lifecycle.md) | `EXP-8..9` |
 | Share Director Access in the header menu; back returns to the previous page | 10 | `SHARE-1..10` |
 
 ## Known gaps / out of scope

@@ -4,6 +4,8 @@ import { z } from "zod";
 import type { Logger } from "pino";
 import { SocketResponse } from "@/socket/socket-response";
 import { childLogger } from "@/lib/log";
+import { isGameFinalised } from "@/db/game-index/queries/is-game-finalised";
+import { FINALISED_MESSAGE } from "@/lib/finalised-message";
 
 /**
  * A user-facing error in a socket event: something the caller got wrong (bad
@@ -60,6 +62,13 @@ export interface HandlerDefinition<TPayload, TData> {
    * without having acked.
    */
   handler: (ctx: HandlerContext<TPayload, TData>) => Promise<void> | void;
+  /**
+   * Reject the event with "This game is finalised..." when the payload's
+   * `gameId` belongs to a finalised (read-only) game. Set on every handler
+   * that changes a game; leave unset for reads and for the join / handover /
+   * share-code style events a finalised game still allows.
+   */
+  blockWhenFinalised?: boolean;
 }
 
 /**
@@ -83,7 +92,7 @@ export function registerHandler<TPayload, TData = void>(
   event: string,
   definition: HandlerDefinition<TPayload, TData>,
 ) {
-  const { schema, handler } = definition;
+  const { schema, handler, blockWhenFinalised } = definition;
 
   socket.on(
     event,
@@ -124,6 +133,12 @@ export function registerHandler<TPayload, TData = void>(
       }
 
       try {
+        if (blockWhenFinalised) {
+          const gameId = (payload as { gameId?: unknown } | null)?.gameId;
+          if (typeof gameId === "string" && (await isGameFinalised(gameId))) {
+            throw new HandlerError(FINALISED_MESSAGE);
+          }
+        }
         await handler({ payload, socket, io, ack, log });
       } catch (err) {
         if (err instanceof HandlerError) {

@@ -65,6 +65,11 @@ export const games = sqliteTable("games", {
   combinedRanking: integer("combined_ranking", { mode: "boolean" })
     .notNull()
     .default(true),
+  // When the director finalised the game (ISO timestamp), or null while it is
+  // still open. A finalised game is read-only, leaves Manage Games / Join /
+  // Display, and appears under Export Game. Reopening clears it. "Started" is
+  // NOT stored here: it stays derived from the per-game boards table.
+  finalisedAt: text("finalised_at"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

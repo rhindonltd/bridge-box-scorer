@@ -324,10 +324,24 @@ export async function startGame(page: Page, gameId: string): Promise<void> {
   const startButton = page.getByRole("button", { name: "Start Game" });
   await expect(startButton).toBeEnabled({ timeout: 15000 });
   await startButton.click();
-  // handleStartGame POSTs /api/games/[id]/start then revalidates the game; the
-  // button flips to "Starting…" while in flight. Wait for it to settle back so
-  // the request has resolved before players enter the round.
-  await expect(
-    page.getByRole("button", { name: "Starting", exact: false }),
-  ).toHaveCount(0, { timeout: 15000 });
+  // handleStartGame POSTs /api/games/[id]/start and, once it resolves, sends
+  // the director back to the main menu. Waiting for that navigation proves the
+  // request has resolved before players enter the round.
+  await page.waitForURL((url) => url.pathname === "/", { timeout: 15000 });
+}
+
+/**
+ * Finalise a game through the director UI: open the Finalise Game check, tap the
+ * card and confirm. Requires every result to be in (the card only appears then)
+ * and must run in the game-creating (director) context. Finalising sends the
+ * director back to the main menu, which is what this waits for. A finalised
+ * game leaves Manage Games and is read-only until it is reopened.
+ */
+export async function finaliseGame(page: Page, gameId: string): Promise<void> {
+  await page.goto(`/game/${gameId}/manage/finalise`);
+  const card = page.getByRole("button", { name: "Finalise game" });
+  await expect(card).toBeVisible({ timeout: 15000 });
+  await card.click();
+  await page.getByRole("button", { name: "Finalise", exact: true }).click();
+  await page.waitForURL((url) => url.pathname === "/", { timeout: 15000 });
 }

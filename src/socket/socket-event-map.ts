@@ -54,6 +54,8 @@ export type SocketEventMap = {
     tableNumber: number;
     boardNumber: number;
     result: string;
+    /** Opening lead (e.g. "SA"), when the player entered one. */
+    lead?: string | null;
   };
 
   [SocketEvents.WITHDRAW_SUBMISSION]: {
@@ -79,8 +81,10 @@ export type SocketEventMap = {
     tableNumber: number;
     nsBoardNumber: number;
     nsResult: string;
+    nsLead?: string | null;
     ewBoardNumber: number;
     ewResult: string;
+    ewLead?: string | null;
   };
 
   [SocketEvents.SEAT_TAKEN_OVER]: {

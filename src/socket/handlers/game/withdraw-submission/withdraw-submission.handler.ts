@@ -33,6 +33,7 @@ const payloadSchema = z.object({
  */
 export function registerWithdrawSubmissionHandler(socket: Socket, io: Server) {
   registerHandler(socket, io, SocketEvents.WITHDRAW_SUBMISSION, {
+    blockWhenFinalised: true,
     schema: payloadSchema,
     handler: async ({ payload, ack }) => {
       const { gameId, seat, token, roundNumber, tableNumber, boardNumber } =

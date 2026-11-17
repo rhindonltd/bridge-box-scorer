@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { setSectionMovement } from "@/db/games/actions/set-section-movement";
@@ -34,7 +34,7 @@ const bodySchema = z.object({
  * empty body (clear) are accepted. On an actual change, the section's timer is
  * cleared (its round structure is derived from the movement).
  */
-export const PUT = withDirectorRoute(
+export const PUT = withDirectorEditRoute(
   async ({ gameId, db, section, body }) => {
     if (!section) {
       return NextResponse.json(

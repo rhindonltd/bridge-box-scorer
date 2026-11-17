@@ -2,6 +2,7 @@ import { useState } from "react";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { Spinner } from "@/components/common/Spinner";
 import { BoardResult } from "@/components/traveller/BoardResult";
+import { LeadCard } from "@/components/common/LeadCard";
 import type { BoardOutcome } from "@/model/score";
 
 interface Props {
@@ -11,6 +12,8 @@ interface Props {
    * they can check it while waiting. Omitted when not known.
    */
   result?: string;
+  /** The opening lead this player entered (e.g. "SA"), shown with the result. */
+  lead?: string;
   /**
    * Back out to re-enter the result (the entry was wrong). Should clear the
    * submitted entry server-side and then leave this screen; rejects if it can't
@@ -31,6 +34,7 @@ const SPECIAL_LABEL: Record<string, string> = {
 export function WaitingForConfirmation({
   boardNumber,
   result,
+  lead,
   onBack,
   headerRight,
 }: Props) {
@@ -81,6 +85,14 @@ export function WaitingForConfirmation({
                 <BoardResult boardOutcome={result as BoardOutcome} />
               )}
             </div>
+            {lead && (
+              <div
+                className="mt-2 text-lg text-gray-700"
+                data-testid="waiting-entered-lead"
+              >
+                Lead: <LeadCard card={lead} />
+              </div>
+            )}
           </div>
         )}
 

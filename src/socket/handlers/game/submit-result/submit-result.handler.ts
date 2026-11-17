@@ -4,6 +4,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { Db, getDb } from "@/db/games";
 import { BoardOutcome } from "@/model/score";
+import type { Card } from "@/model/common";
 import { parseSeat, PairSeat } from "@/model/participants";
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
@@ -28,6 +29,11 @@ const payloadSchema = z.object({
   // The board result is a domain-encoded string (validated downstream by the
   // scoring model); accept it as an opaque outcome here.
   result: z.custom<BoardOutcome>(),
+  // Optional opening lead, e.g. "SA" (suit then rank).
+  lead: z
+    .string()
+    .regex(/^[SHDC][AKQJT98765432]$/)
+    .nullish(),
 });
 
 export function registerSubmitResultHandler(socket: Socket, io: Server) {
@@ -36,6 +42,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.SUBMIT_RESULT,
     {
+    blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack, log }) => {
         const {
@@ -46,6 +53,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           tableNumber,
           boardNumber,
           result,
+          lead,
         } = payload;
 
         // Verify the submission carries the seat's player token before any read
@@ -85,6 +93,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             boardNumber,
             side: direction,
             result,
+            lead: (lead ?? null) as Card | null,
           });
         } catch (err) {
           log.error({ err, gameId, seat }, "Failed to store board submission");
@@ -115,8 +124,10 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             tableNumber,
             nsBoardNumber: outcome.ns.boardNumber,
             nsResult: outcome.ns.result,
+            nsLead: outcome.ns.lead,
             ewBoardNumber: outcome.ew.boardNumber,
             ewResult: outcome.ew.result,
+            ewLead: outcome.ew.lead,
           });
           return;
         }
@@ -130,6 +141,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           tableNumber,
           boardNumber: outcome.boardNumber,
           result: outcome.result as BoardOutcome,
+          lead: outcome.lead,
         });
       },
     },
@@ -153,19 +165,28 @@ async function confirmAndBroadcast(
     tableNumber: number;
     boardNumber: number;
     result: BoardOutcome;
+    lead: Card | null;
   },
 ) {
   if (!db) {
     throw new Error("Game db does not exist");
   }
 
-  const { gameId, section, roundNumber, tableNumber, boardNumber, result } =
-    args;
+  const {
+    gameId,
+    section,
+    roundNumber,
+    tableNumber,
+    boardNumber,
+    result,
+    lead,
+  } = args;
 
   await confirmBoardResult(
     db,
     { section, roundNumber, tableNumber, boardNumber },
     result,
+    lead,
   );
 
   io.to(Rooms.game(gameId)).emit(SocketEvents.BOARD_CONFIRMED, {

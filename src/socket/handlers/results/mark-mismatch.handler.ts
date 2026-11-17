@@ -42,6 +42,7 @@ export function registerMarkMismatchHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.MISMATCH_TRAVELLER,
     {
+    blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack, log }) => {
         const {

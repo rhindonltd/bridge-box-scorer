@@ -3,11 +3,11 @@ import fs from "fs";
 import path from "path";
 import { games } from "@/db/game-index/schema";
 import { getDb as getIndexDb } from "@/db/game-index";
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { broadcastGameDeleted } from "@/socket/broadcast/game-deleted-broadcast";
 
-export const DELETE = withDirectorRoute(async ({ gameId }) => {
+export const DELETE = withDirectorEditRoute(async ({ gameId }) => {
   // Tell everyone currently viewing this game (players, director, room
   // displays) that it is gone, so their screens show "not found" live. Emitted
   // BEFORE the row/db are removed — the emit only needs the room name, and
@@ -15,7 +15,7 @@ export const DELETE = withDirectorRoute(async ({ gameId }) => {
   broadcastGameDeleted(gameId);
 
   // The game row lives in the game-index database, NOT the per-game database
-  // that `withDirectorRoute`/`withGameRoute` resolves. Delete it from the
+  // that `withDirectorEditRoute`/`withGameRoute` resolves. Delete it from the
   // index, then remove the per-game SQLite file from disk.
   const indexDb = getIndexDb();
   await indexDb.delete(games).where(eq(games.gameId, gameId));

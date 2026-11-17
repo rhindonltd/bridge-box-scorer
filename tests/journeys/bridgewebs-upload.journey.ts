@@ -3,7 +3,11 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmEntireGame } from "../fixtures/complete-game";
 import { fetchAdminToken } from "../fixtures/settings";
-import { startBridgewebsMock, type BridgewebsMock } from "../fixtures/bridgewebs-mock";
+import { finaliseGame } from "../fixtures/game-setup";
+import {
+  startBridgewebsMock,
+  type BridgewebsMock,
+} from "../fixtures/bridgewebs-mock";
 import { setUpStartedTwoTableGame, expectInlineError } from "./support";
 
 /**
@@ -95,18 +99,16 @@ test.describe("BridgeWebs upload", () => {
 
     try {
       // Prerequisites: club info (for the USEBIO file) + BridgeWebs credentials
-      // (so the upload is enabled and routes to our mock), and every result in
-      // (the manage menu gates the upload on completion).
+      // (so the upload is enabled and routes to our mock), and a finalised game
+      // (every result in, then finalised: uploads only open after that).
       await setClubInfo(request, "E2E Bridge Club", "12345");
       await setBridgewebsCredentials(request, "e2eclub", "secret");
       await confirmEntireGame(request, gameId);
-
-      await directorPage.goto(`/game/${gameId}/manage/upload-bridgewebs`);
-
+      await finaliseGame(directorPage, gameId);
+      await directorPage.goto(`/game/${gameId}/export/upload-bridgewebs`);
       await directorPage
         .getByRole("button", { name: "Upload to BridgeWebs" })
         .click();
-
       // The page shows the parsed BridgeWebs reply message on success.
       await expect(directorPage.getByRole("status")).toContainText(
         "Upload Successful",
@@ -115,7 +117,10 @@ test.describe("BridgeWebs upload", () => {
 
       // The app POSTed to our mock with the expected upload payload.
       const req = mock.lastRequest();
-      expect(req, "the app should have called the BridgeWebs mock").not.toBeNull();
+      expect(
+        req,
+        "the app should have called the BridgeWebs mock",
+      ).not.toBeNull();
       expect(req!.url).toContain("club=e2eclub");
       expect(req!.fields.type).toBe("upload");
       expect(req!.fields.club).toBe("e2eclub");
@@ -127,9 +132,7 @@ test.describe("BridgeWebs upload", () => {
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await Promise.all(
-        Object.values(seats).map((p) => p.context().close()),
-      );
+      await Promise.all(Object.values(seats).map((p) => p.context().close()));
     }
   });
 
@@ -152,20 +155,17 @@ test.describe("BridgeWebs upload", () => {
       await setClubInfo(request, "E2E Bridge Club", "12345");
       await setBridgewebsCredentials(request, "e2eclub", "secret");
       await confirmEntireGame(request, gameId);
-
-      await directorPage.goto(`/game/${gameId}/manage/upload-bridgewebs`);
+      await finaliseGame(directorPage, gameId);
+      await directorPage.goto(`/game/${gameId}/export/upload-bridgewebs`);
       await directorPage
         .getByRole("button", { name: "Upload to BridgeWebs" })
         .click();
-
       // A non-"Successful" reply renders as an inline error (not a status).
       await expectInlineError(directorPage, /Upload failed/i);
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
-      await Promise.all(
-        Object.values(seats).map((p) => p.context().close()),
-      );
+      await Promise.all(Object.values(seats).map((p) => p.context().close()));
     }
   });
 

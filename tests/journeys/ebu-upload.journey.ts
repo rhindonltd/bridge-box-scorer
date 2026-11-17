@@ -2,6 +2,7 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
 import { fetchAdminToken } from "../fixtures/settings";
 import { startEbuMock, type EbuMock } from "../fixtures/ebu-mock";
 import { closeDevices, openDirector, seedGame } from "../fixtures/seeded-game";
+import { finaliseGame } from "../fixtures/game-setup";
 
 /**
  * EBU results submission journey.
@@ -52,7 +53,7 @@ async function saveClub(request: APIRequestContext) {
   expect(res.ok()).toBe(true);
 }
 
-/** A finished 2-table game, opened on its EBU submission page. */
+/** A finished, finalised 2-table game, opened on its EBU submission page. */
 async function finishedGameOnEbuPage(
   browser: import("@playwright/test").Browser,
 ) {
@@ -63,11 +64,15 @@ async function finishedGameOnEbuPage(
     play: "all",
     eventName: `EBU Upload ${Date.now()}`,
   });
-  const director = await openDirector(
-    browser,
-    game,
-    `/game/${game.gameId}/manage/upload-ebu`,
-  );
+  const director = await openDirector(browser, game);
+  // Uploads only open once the director has finalised the game.
+  await finaliseGame(director, game.gameId);
+  await director.goto(`/game/${game.gameId}/export/upload-ebu`);
+  // Wait for the page to finish its director check: a caller that reloads
+  // mid-check can be bounced to Manage Games.
+  await expect(
+    director.getByRole("button", { name: "Submit to EBU" }),
+  ).toBeVisible({ timeout: 15000 });
   return { game, director };
 }
 

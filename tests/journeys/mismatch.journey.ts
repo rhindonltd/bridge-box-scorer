@@ -63,17 +63,17 @@ test.describe("Dual-side mismatch and re-enter", () => {
 
       // Both sides land on the result-mismatch screen (title "Board 1", with
       // the "different results" explanation and both sides' entries shown).
-      await expect(
-        nsPage.getByText("Results Don't Match"),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(nsPage.getByText("Results Don't Match")).toBeVisible({
+        timeout: 15000,
+      });
       await expect(
         nsPage.getByText(/entered different results/i),
       ).toBeVisible();
       await expect(nsPage.getByText("NS entered:")).toBeVisible();
       await expect(nsPage.getByText("EW entered:")).toBeVisible();
-      await expect(
-        ewPage.getByText("Results Don't Match"),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(ewPage.getByText("Results Don't Match")).toBeVisible({
+        timeout: 15000,
+      });
 
       // Re-enter on both sides with a matching result (4♥=). Both mismatch
       // screens offer "Re-enter Result", which reopens the wizard at board
@@ -128,9 +128,13 @@ test.describe("Dual-side mismatch and re-enter", () => {
       });
       await expect(nsPage.getByTestId("waiting-entered-result")).toBeVisible();
 
-      await nsPage.getByRole("button", { name: "Go back", exact: true }).click();
+      await nsPage
+        .getByRole("button", { name: "Go back", exact: true })
+        .click();
+      // Back returns to the result step with the contract kept, so only the
+      // result needs choosing again.
       await expect(
-        nsPage.locator('[data-testid^="wizard-board-"]').first(),
+        nsPage.getByRole("heading", { name: "Enter Result" }),
       ).toBeVisible({ timeout: 15000 });
 
       // EW now enters the very same 4♥=. NS's earlier entry was cleared on
@@ -143,8 +147,9 @@ test.describe("Dual-side mismatch and re-enter", () => {
       });
       await expect(nsPage.getByText("Board Results")).toHaveCount(0);
 
-      // NS re-enters the (agreed) result and the board now confirms.
-      await reenterMatching(nsPage, FOUR_HEARTS_MADE);
+      // NS picks the (agreed) result again; choosing it submits, and the board
+      // now confirms.
+      await nsPage.locator("button").filter({ hasText: /^=$/ }).first().click();
       await expect(nsPage.getByText("Board Results")).toBeVisible({
         timeout: 15000,
       });

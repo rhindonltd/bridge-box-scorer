@@ -30,6 +30,7 @@ const game: BridgeGame = {
   handEntryEnabled: false,
   createdAt: "2024-11-18 00:00:00",
   updatedAt: "2024-11-18 00:00:00",
+  finalisedAt: null,
 };
 
 /**

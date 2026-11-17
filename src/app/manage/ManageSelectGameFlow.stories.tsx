@@ -22,6 +22,7 @@ const games: BridgeGame[] = [
     tournamentLevel: "NORMAL_CLUB",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    finalisedAt: null,
   },
 ];
 

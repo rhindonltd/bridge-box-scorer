@@ -34,6 +34,7 @@ const payloadSchema = z.object({
  */
 export function registerSelectMovementHandler(socket: Socket, io: Server) {
   registerHandler(socket, io, SocketEvents.SELECT_MOVEMENT, {
+    blockWhenFinalised: true,
     schema: payloadSchema,
     handler: async ({ payload, ack }) => {
       const { gameId, id, boardsPerRound, mitchell, directorToken } = payload;

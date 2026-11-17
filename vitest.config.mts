@@ -143,6 +143,7 @@ export default mergeConfig(
             name: "unit-node",
             environment: "node",
             globals: true,
+            setupFiles: ["./vitest.setup.node.ts"],
             include: ["src/app/api/**/route.test.ts"],
             testTimeout: 20000,
             hookTimeout: 20000,

@@ -1,7 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
-import { confirmBoardPassOut } from "../fixtures/play";
+import { confirmEntireGame } from "../fixtures/complete-game";
+import { finaliseGame } from "../fixtures/game-setup";
 import { fillAndSaveFullDeal } from "../fixtures/deal-entry";
 import { fetchAdminToken } from "../fixtures/settings";
 import {
@@ -13,11 +14,11 @@ import {
 /**
  * PBN export journey.
  *
- * The director can download a PBN (Portable Bridge Notation) file of the game's
- * dealt cards from the Manage Game menu. Unlike USEBIO, the PBN is deal-oriented
- * (one block per board with an entered deal) and does not need every result in —
- * but it DOES need the club name (used as the PBN `Site`) configured in Settings,
- * and it only emits boards that actually have a recorded deal.
+ * Once the director has finalised the game (every result in), anyone can
+ * download a PBN (Portable Bridge Notation) file of its dealt cards. The PBN is
+ * deal-oriented (one block per board with an entered deal), and it needs the
+ * club name (used as the PBN `Site`) configured in Settings. It only emits
+ * boards that actually have a recorded deal.
  *
  * So the happy path records one deal (via the director Deals screen) so
  * the file has a board block to serialise, then downloads and inspects it.
@@ -40,9 +41,6 @@ test.describe("PBN export", () => {
       `PBN ${Date.now()}`,
       { recordOpeningLead: false },
     );
-    const nsPage = seats["A1NS"];
-    const ewPage = seats["A1EW"];
-
     try {
       // Configure club info (admin-gated) — the club name is the PBN `Site`, so
       // the export requires it and the download button stays disabled without
@@ -55,14 +53,14 @@ test.describe("PBN export", () => {
       expect(clubRes.ok()).toBe(true);
 
       // Record a deal for round 1's first board so the PBN has a board block to
-      // emit (a game with no entered deals produces an empty file). Confirm the
-      // board first so it exists, then enter its deal on the director Enter
-      // Deals screen.
+      // emit (a game with no entered deals produces an empty file). Confirm every
+      // board (finalising needs every result in), then enter the first board's
+      // deal on the director Enter Deals screen.
       const res = await request.get(`/api/games/${gameId}/play-state/A1NS`);
       expect(res.ok()).toBeTruthy();
       const schedule: Schedule = (await res.json()).result;
       const board = schedule.rounds.find((r) => r.roundNumber === 1)!.boards[0];
-      await confirmBoardPassOut(nsPage, ewPage, gameId, 1, board);
+      await confirmEntireGame(request, gameId);
 
       // The deals page's StartedGuard can briefly redirect to /manage while it
       // resolves, so gotoStable rides that out.
@@ -81,9 +79,10 @@ test.describe("PBN export", () => {
         { timeout: 15000 },
       );
 
-      // Open the Download PBN screen; the configured club name is shown
-      // read-only.
-      await gotoStable(directorPage, `/game/${gameId}/manage/download-pbn`);
+      // Finalise the game, which opens the PBN download to everyone, then open
+      // the Download PBN screen; the configured club name is shown read-only.
+      await finaliseGame(directorPage, gameId);
+      await gotoStable(directorPage, `/game/${gameId}/export/download-pbn`);
       await expect(directorPage.getByTestId("pbn-club-name")).toHaveText(
         "E2E Bridge Club",
         { timeout: 15000 },
@@ -134,8 +133,9 @@ test.describe("PBN export", () => {
         data: { name: "", clubNumber: "" },
       });
       expect(clubRes.ok()).toBe(true);
-
-      await gotoStable(directorPage, `/game/${gameId}/manage/download-pbn`);
+      await confirmEntireGame(request, gameId);
+      await finaliseGame(directorPage, gameId);
+      await gotoStable(directorPage, `/game/${gameId}/export/download-pbn`);
 
       // With club not configured, the screen points to Settings and the
       // Download button is disabled (club is not editable here).

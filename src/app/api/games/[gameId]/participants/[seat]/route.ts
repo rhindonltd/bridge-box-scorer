@@ -1,4 +1,4 @@
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { ClientError, respondToActionError } from "@/lib/api/client-error";
 import { deleteParticipant } from "@/db/games/actions/delete-participant";
@@ -26,7 +26,7 @@ function seatFromUrl(url: string): string | null {
  * DELETE /api/games/[gameId]/participants/[seat] — evict (remove) the pair
  * seated at `seat` (director-only). Broadcasts the updated participant list.
  */
-export const DELETE = withDirectorRoute(async ({ gameId, req }) => {
+export const DELETE = withDirectorEditRoute(async ({ gameId, req }) => {
   const seat = seatFromUrl(req.url);
 
   try {

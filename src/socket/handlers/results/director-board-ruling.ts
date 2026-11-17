@@ -71,6 +71,7 @@ export function registerDirectorBoardRuling<TPayload extends BoardRulingBase>(
   }: DirectorBoardRulingDefinition<TPayload>,
 ) {
   registerHandler<TPayload, null>(socket, io, event, {
+    blockWhenFinalised: true,
     schema,
     handler: async ({ payload, ack, log }) => {
       const { gameId, directorToken, boardNumber } = payload;

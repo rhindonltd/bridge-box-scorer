@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { splitSection } from "@/db/games/actions/split-section";
@@ -41,7 +41,7 @@ const bodySchema = z.object({
  * change does (`broadcastSectionMovementChanged`). Otherwise the shrunk source
  * would keep a timer sized for its old round structure and promote it at start.
  */
-export const POST = withDirectorRoute(
+export const POST = withDirectorEditRoute(
   async ({ gameId, body }) => {
     if (await isGameStarted(gameId)) {
       return NextResponse.json(
